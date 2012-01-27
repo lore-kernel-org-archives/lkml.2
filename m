@@ -1,103 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab2A0FDi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 00:03:38 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:41372 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab2A0FDf (ORCPT
+	id S1755305Ab2A0FDP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 00:03:15 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:56458 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944Ab2A0Erw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 00:03:35 -0500
-Message-ID: <4F22301B.5090804@linux.vnet.ibm.com>
-Date: Fri, 27 Jan 2012 10:33:23 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@infradead.org, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
-        vweaver1@eecs.utk.edu
-Subject: Re: [PATCH 02/13] perf_events: add Intel LBR MSR definitions (v3)
-References: <1326127761-2723-1-git-send-email-eranian@google.com> <1326127761-2723-3-git-send-email-eranian@google.com>
-In-Reply-To: <1326127761-2723-3-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12012705-8256-0000-0000-0000010914E3
+	Thu, 26 Jan 2012 23:47:52 -0500
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <linux-fsdevel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        Damien Millescamps <damien.millescamps@6wind.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 11/29] sysctl: register only tables of sysctl files
+Date: Thu, 26 Jan 2012 20:49:52 -0800
+Message-Id: <1327639810-12760-11-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <m1pqe5ah3z.fsf@fess.ebiederm.org>
+References: <m1pqe5ah3z.fsf@fess.ebiederm.org>
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX188rhiqvDIevKDglSw4m5L2VVjeb7v0m0Y=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 January 2012 10:19 PM, Stephane Eranian wrote:
-> This patch adds the LBR definitions for NHM/WSM/SNB and Core.
-> It also adds the definitions for the architected LBR MSR:
-> LBR_SELECT, LBRT_TOS.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-  Reviewed   by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-> ---
->  arch/x86/include/asm/msr-index.h           |    7 +++++++
->  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++---------
->  2 files changed, 16 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-> index a6962d9..ccb8059 100644
-> --- a/arch/x86/include/asm/msr-index.h
-> +++ b/arch/x86/include/asm/msr-index.h
-> @@ -56,6 +56,13 @@
->  #define MSR_OFFCORE_RSP_0		0x000001a6
->  #define MSR_OFFCORE_RSP_1		0x000001a7
-> 
-> +#define MSR_LBR_SELECT			0x000001c8
-> +#define MSR_LBR_TOS			0x000001c9
-> +#define MSR_LBR_NHM_FROM		0x00000680
-> +#define MSR_LBR_NHM_TO			0x000006c0
-> +#define MSR_LBR_CORE_FROM		0x00000040
-> +#define MSR_LBR_CORE_TO			0x00000060
-> +
->  #define MSR_IA32_PEBS_ENABLE		0x000003f1
->  #define MSR_IA32_DS_AREA		0x00000600
->  #define MSR_IA32_PERF_CAPABILITIES	0x00000345
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> index c3f8100..e14431f 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> @@ -205,23 +205,23 @@ void intel_pmu_lbr_read(void)
->  void intel_pmu_lbr_init_core(void)
->  {
->  	x86_pmu.lbr_nr     = 4;
-> -	x86_pmu.lbr_tos    = 0x01c9;
-> -	x86_pmu.lbr_from   = 0x40;
-> -	x86_pmu.lbr_to     = 0x60;
-> +	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-> +	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
-> +	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
->  }
-> 
->  void intel_pmu_lbr_init_nhm(void)
->  {
->  	x86_pmu.lbr_nr     = 16;
-> -	x86_pmu.lbr_tos    = 0x01c9;
-> -	x86_pmu.lbr_from   = 0x680;
-> -	x86_pmu.lbr_to     = 0x6c0;
-> +	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-> +	x86_pmu.lbr_from   = MSR_LBR_NHM_FROM;
-> +	x86_pmu.lbr_to     = MSR_LBR_NHM_TO;
->  }
-> 
->  void intel_pmu_lbr_init_atom(void)
->  {
->  	x86_pmu.lbr_nr	   = 8;
-> -	x86_pmu.lbr_tos    = 0x01c9;
-> -	x86_pmu.lbr_from   = 0x40;
-> -	x86_pmu.lbr_to     = 0x60;
-> +	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-> +	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
-> +	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
->  }
+Split the registration of a complex ctl_table array which may have
+arbitrary numbers of directories (->child != NULL) and tables of files
+into a series of simpler registrations that only register tables of files.
 
+Graphically:
 
+   register('dir', { + file-a
+                     + file-b
+                     + subdir1
+                       + file-c
+                     + subdir2
+                       + file-d
+                       + file-e })
+
+is transformed into:
+   wrapper->subheaders[0] = register('dir', {file1-a, file1-b})
+   wrapper->subheaders[1] = register('dir/subdir1', {file-c})
+   wrapper->subheaders[2] = register('dir/subdir2', {file-d, file-e})
+   return wrapper
+
+This guarantees that __register_sysctl_table will only see a simple
+ctl_table array with all entries having (->child == NULL).
+
+Care was taken to pass the original simple ctl_table arrays to
+__register_sysctl_table whenever possible.
+
+This change is derived from a similar patch written
+by Lucrian Grijincu.
+
+Inspired-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ fs/proc/proc_sysctl.c  |  165 ++++++++++++++++++++++++++++++++++++++++++-----
+ include/linux/sysctl.h |    2 +-
+ 2 files changed, 148 insertions(+), 19 deletions(-)
+
+diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+index 9b91dee..6bab2ae 100644
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -882,7 +882,7 @@ static int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *tabl
+ #endif /* CONFIG_SYSCTL_SYSCALL_CHECK */
+ 
+ /**
+- * __register_sysctl_table - register a sysctl table
++ * __register_sysctl_table - register a leaf sysctl table
+  * @root: List of sysctl headers to register on
+  * @namespaces: Data to compute which lists of sysctl entries are visible
+  * @path: The path to the directory the sysctl table is in.
+@@ -900,29 +900,19 @@ static int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *tabl
+  *
+  * maxlen - the maximum size in bytes of the data
+  *
+- * mode - the file permissions for the /proc/sys file, and for sysctl(2)
++ * mode - the file permissions for the /proc/sys file
+  *
+- * child - a pointer to the child sysctl table if this entry is a directory, or
+- *         %NULL.
++ * child - must be %NULL.
+  *
+  * proc_handler - the text handler routine (described below)
+  *
+- * de - for internal use by the sysctl routines
+- *
+  * extra1, extra2 - extra pointers usable by the proc handler routines
+  *
+  * Leaf nodes in the sysctl tree will be represented by a single file
+  * under /proc; non-leaf nodes will be represented by directories.
+  *
+- * sysctl(2) can automatically manage read and write requests through
+- * the sysctl table.  The data and maxlen fields of the ctl_table
+- * struct enable minimal validation of the values being written to be
+- * performed, and the mode field allows minimal authentication.
+- *
+- * There must be a proc_handler routine for any terminal nodes
+- * mirrored under /proc/sys (non-terminals are handled by a built-in
+- * directory handler).  Several default handlers are available to
+- * cover common cases -
++ * There must be a proc_handler routine for any terminal nodes.
++ * Several default handlers are available to cover common cases -
+  *
+  * proc_dostring(), proc_dointvec(), proc_dointvec_jiffies(),
+  * proc_dointvec_userhz_jiffies(), proc_dointvec_minmax(),
+@@ -1059,6 +1049,100 @@ static char *append_path(const char *path, char *pos, const char *name)
+ 	return pos;
+ }
+ 
++static int count_subheaders(struct ctl_table *table)
++{
++	int has_files = 0;
++	int nr_subheaders = 0;
++	struct ctl_table *entry;
++
++	/* special case: no directory and empty directory */
++	if (!table || !table->procname)
++		return 1;
++
++	for (entry = table; entry->procname; entry++) {
++		if (entry->child)
++			nr_subheaders += count_subheaders(entry->child);
++		else
++			has_files = 1;
++	}
++	return nr_subheaders + has_files;
++}
++
++static int register_leaf_sysctl_tables(const char *path, char *pos,
++	struct ctl_table_header ***subheader,
++	struct ctl_table_root *root, struct nsproxy *namespaces,
++	struct ctl_table *table)
++{
++	struct ctl_table *ctl_table_arg = NULL;
++	struct ctl_table *entry, *files;
++	int nr_files = 0;
++	int nr_dirs = 0;
++	int err = -ENOMEM;
++
++	for (entry = table; entry->procname; entry++) {
++		if (entry->child)
++			nr_dirs++;
++		else
++			nr_files++;
++	}
++
++	files = table;
++	/* If there are mixed files and directories we need a new table */
++	if (nr_dirs && nr_files) {
++		struct ctl_table *new;
++		files = kzalloc(sizeof(struct ctl_table) * (nr_files + 1),
++				GFP_KERNEL);
++		if (!files)
++			goto out;
++
++		ctl_table_arg = files;
++		for (new = files, entry = table; entry->procname; entry++) {
++			if (entry->child)
++				continue;
++			*new = *entry;
++			new++;
++		}
++	}
++
++	/* Register everything except a directory full of subdirectories */
++	if (nr_files || !nr_dirs) {
++		struct ctl_table_header *header;
++		header = __register_sysctl_table(root, namespaces, path, files);
++		if (!header) {
++			kfree(ctl_table_arg);
++			goto out;
++		}
++
++		/* Remember if we need to free the file table */
++		header->ctl_table_arg = ctl_table_arg;
++		**subheader = header;
++		(*subheader)++;
++	}
++
++	/* Recurse into the subdirectories. */
++	for (entry = table; entry->procname; entry++) {
++		char *child_pos;
++
++		if (!entry->child)
++			continue;
++
++		err = -ENAMETOOLONG;
++		child_pos = append_path(path, pos, entry->procname);
++		if (!child_pos)
++			goto out;
++
++		err = register_leaf_sysctl_tables(path, child_pos, subheader,
++						  root, namespaces, entry->child);
++		pos[0] = '\0';
++		if (err)
++			goto out;
++	}
++	err = 0;
++out:
++	/* On failure our caller will unregister all registered subheaders */
++	return err;
++}
++
+ /**
+  * __register_sysctl_paths - register a sysctl table hierarchy
+  * @root: List of sysctl headers to register on
+@@ -1077,7 +1161,8 @@ struct ctl_table_header *__register_sysctl_paths(
+ 	const struct ctl_path *path, struct ctl_table *table)
+ {
+ 	struct ctl_table *ctl_table_arg = table;
+-	struct ctl_table_header *header = NULL;
++	int nr_subheaders = count_subheaders(table);
++	struct ctl_table_header *header = NULL, **subheaders, **subheader;
+ 	const struct ctl_path *component;
+ 	char *new_path, *pos;
+ 
+@@ -1097,12 +1182,39 @@ struct ctl_table_header *__register_sysctl_paths(
+ 			goto out;
+ 		table = table->child;
+ 	}
+-	header = __register_sysctl_table(root, namespaces, new_path, table);
+-	if (header)
++	if (nr_subheaders == 1) {
++		header = __register_sysctl_table(root, namespaces, new_path, table);
++		if (header)
++			header->ctl_table_arg = ctl_table_arg;
++	} else {
++		header = kzalloc(sizeof(*header) +
++				 sizeof(*subheaders)*nr_subheaders, GFP_KERNEL);
++		if (!header)
++			goto out;
++
++		subheaders = (struct ctl_table_header **) (header + 1);
++		subheader = subheaders;
+ 		header->ctl_table_arg = ctl_table_arg;
++
++		if (register_leaf_sysctl_tables(new_path, pos, &subheader,
++						root, namespaces, table))
++			goto err_register_leaves;
++	}
++
+ out:
+ 	kfree(new_path);
+ 	return header;
++
++err_register_leaves:
++	while (subheader > subheaders) {
++		struct ctl_table_header *subh = *(--subheader);
++		struct ctl_table *table = subh->ctl_table_arg;
++		unregister_sysctl_table(subh);
++		kfree(table);
++	}
++	kfree(header);
++	header = NULL;
++	goto out;
+ }
+ 
+ /**
+@@ -1149,11 +1261,28 @@ EXPORT_SYMBOL(register_sysctl_table);
+  */
+ void unregister_sysctl_table(struct ctl_table_header * header)
+ {
++	int nr_subheaders;
+ 	might_sleep();
+ 
+ 	if (header == NULL)
+ 		return;
+ 
++	nr_subheaders = count_subheaders(header->ctl_table_arg);
++	if (unlikely(nr_subheaders > 1)) {
++		struct ctl_table_header **subheaders;
++		int i;
++
++		subheaders = (struct ctl_table_header **)(header + 1);
++		for (i = nr_subheaders -1; i >= 0; i--) {
++			struct ctl_table_header *subh = subheaders[i];
++			struct ctl_table *table = subh->ctl_table_arg;
++			unregister_sysctl_table(subh);
++			kfree(table);
++		}
++		kfree(header);
++		return;
++	}
++
+ 	spin_lock(&sysctl_lock);
+ 	start_unregistering(header);
+ 	if (!--header->parent->count) {
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index a514e0f..25c7dfe 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -1015,7 +1015,7 @@ struct ctl_table
+ 	void *data;
+ 	int maxlen;
+ 	umode_t mode;
+-	struct ctl_table *child;
++	struct ctl_table *child;	/* Deprecated */
+ 	struct ctl_table *parent;	/* Automatically set */
+ 	proc_handler *proc_handler;	/* Callback for text formatting */
+ 	struct ctl_table_poll *poll;
 -- 
-Linux Technology Centre
-IBM Systems and Technology Group
-Bangalore India
+1.7.2.5
 
