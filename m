@@ -1,108 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab2A0A6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:58:22 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52123 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab2A0A6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:58:20 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at kernel/workqueue.c:3659
-Date: Fri, 27 Jan 2012 02:01:55 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Jiri Slaby <jirislaby@gmail.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Baohua.Song@csr.com,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <4F1EC8D5.5040102@suse.cz> <201201260051.45000.rjw@sisk.pl> <4F213392.2090203@suse.cz>
-In-Reply-To: <4F213392.2090203@suse.cz>
+	id S1754607Ab2A0BF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 20:05:59 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35526 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab2A0BF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 20:05:58 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201270201.55771.rjw@sisk.pl>
+In-Reply-To: <1327613587.2649.231.camel@groeck-laptop>
+References: <20120125052313.GA11583@ericsson.com> <1327613587.2649.231.camel@groeck-laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 26 Jan 2012 17:05:38 -0800
+X-Google-Sender-Auth: FPaW7LZofsD9Laggu4b8oyRZSJk
+Message-ID: <CA+55aFxMgy977nMago3jWteaJrY8Epqp08d6HjVzOW-JDk-KUg@mail.gmail.com>
+Subject: Re: [lm-sensors] [GIT PULL] hwmon updates for 3.3
+To: guenter.roeck@ericsson.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 26, 2012, Jiri Slaby wrote:
-> On 01/26/2012 12:51 AM, Rafael J. Wysocki wrote:
-> > IOW, Jiri, does the patch below help?
-> 
-> Yeah, this fixes the issue as well. Thanks.
+On Thu, Jan 26, 2012 at 1:33 PM, Guenter Roeck
+<guenter.roeck@ericsson.com> wrote:
+>
+> I noticed you did not apply this set of patches. Please let me know if
+> this was an oversight, still coming, too much for a release candidate,
+> or some other problem.
 
-Cool, thanks for the confirmation!
+It just looked like churn to me, and I didn't feel this looked like a
+post-merge-window pull request.
 
-> > [BTW, the freeze_tasks()'s kerneldoc seems to be outdated.  Tejun?]
-> > 
-> > ---
-> >  include/linux/freezer.h |    2 ++
-> >  kernel/power/process.c  |   19 +++++++++++++++++++
-> >  kernel/power/user.c     |    1 +
-> >  3 files changed, 22 insertions(+)
-> > 
-> > Index: linux/include/linux/freezer.h
-> > ===================================================================
-> > --- linux.orig/include/linux/freezer.h
-> > +++ linux/include/linux/freezer.h
-> > @@ -39,6 +39,7 @@ extern bool __refrigerator(bool check_kt
-> >  extern int freeze_processes(void);
-> >  extern int freeze_kernel_threads(void);
-> >  extern void thaw_processes(void);
-> > +extern void thaw_kernel_threads(void);
-> >  
-> >  static inline bool try_to_freeze(void)
-> >  {
-> > @@ -174,6 +175,7 @@ static inline bool __refrigerator(bool c
-> >  static inline int freeze_processes(void) { return -ENOSYS; }
-> >  static inline int freeze_kernel_threads(void) { return -ENOSYS; }
-> >  static inline void thaw_processes(void) {}
-> > +static inline void thaw_kernel_threads(void) {}
-> >  
-> >  static inline bool try_to_freeze(void) { return false; }
-> >  
-> > Index: linux/kernel/power/process.c
-> > ===================================================================
-> > --- linux.orig/kernel/power/process.c
-> > +++ linux/kernel/power/process.c
-> > @@ -188,3 +188,22 @@ void thaw_processes(void)
-> >  	printk("done.\n");
-> >  }
-> >  
-> > +void thaw_kernel_threads(void)
-> > +{
-> > +	struct task_struct *g, *p;
-> > +
-> > +	pm_nosig_freezing = false;
-> > +	printk("Restarting kernel threads ... ");
-> > +
-> > +	thaw_workqueues();
-> > +
-> > +	read_lock(&tasklist_lock);
-> > +	do_each_thread(g, p) {
-> > +		if (p->flags & (PF_KTHREAD | PF_WQ_WORKER))
-> > +			__thaw_task(p);
-> > +	} while_each_thread(g, p);
-> > +	read_unlock(&tasklist_lock);
-> > +
-> > +	schedule();
-> > +	printk("done.\n");
-> > +}
-> > Index: linux/kernel/power/user.c
-> > ===================================================================
-> > --- linux.orig/kernel/power/user.c
-> > +++ linux/kernel/power/user.c
-> > @@ -274,6 +274,7 @@ static long snapshot_ioctl(struct file *
-> >  		swsusp_free();
-> >  		memset(&data->handle, 0, sizeof(struct snapshot_handle));
-> >  		data->ready = 0;
-> > +		thaw_kernel_threads();
-> >  		break;
-> >  
-> >  	case SNAPSHOT_PREF_IMAGE_SIZE:
-> 
-> 
-> 
-
+                 Linus
