@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab2A0S0G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:26:06 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:55225 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753393Ab2A0S0D (ORCPT
+	id S1752877Ab2A0S3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:29:31 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:34688 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab2A0S3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:26:03 -0500
-Date: Fri, 27 Jan 2012 10:25:59 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 21/21] PCI: only enable pci realloc when SRIOV bar is
- not assigned
-Message-ID: <20120127102559.1c2cb65a@jbarnes-desktop>
-In-Reply-To: <1327140517-14811-22-git-send-email-yinghai@kernel.org>
-References: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
-	<1327140517-14811-22-git-send-email-yinghai@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/5Y5XoT9whJ4K6NON.Tqyd0W"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 27 Jan 2012 13:29:30 -0500
+X-IronPort-AV: E=Sophos;i="4.71,581,1320624000"; 
+   d="scan'208";a="10339804"
+Date: Fri, 27 Jan 2012 18:30:30 +0000
+From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/2] Xen (PV and HVM) multiple PV consoles
+Message-ID: <alpine.DEB.2.00.1201271823240.3196@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5Y5XoT9whJ4K6NON.Tqyd0W
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi all,
+this small patch series (sent before a few times) achieves two goals:
 
-On Sat, 21 Jan 2012 02:08:37 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+- make PV consoles work for PV on HVM guests;
 
-> If bios does not assign those BAR or wrong address, then kernel will
-> try to do pci realloc.
->=20
-> in that case, user still can use pci=3Drealloc=3Doff to override it.
->=20
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/setup-bus.c |   26 ++++++++++++++++++++++++++
->  1 files changed, 26 insertions(+), 0 deletions(-)
->=20
+- implement support for multiple PV consoles for PV and PV on HVM guests.
 
-I worry about this one; distros may enable IOV to keep a unified kernel
-binary and end up messing up all sorts of systems that happen to have
-IOV devices that the user doesn't actually care about.
 
-I'd prefer to leave it disabled by default, and let drivers spew a
-message about IOV resources being unavailable and mentioning the
-realloc=3D param...
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+Changes in v2:
 
---Sig_/5Y5XoT9whJ4K6NON.Tqyd0W
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+- nicer safety check in patch #1;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+- kzalloc instead of kmalloc;
 
-iQIcBAEBAgAGBQJPIuw3AAoJEIEoDkX4Qk9h4pQP/iQSyyBcy7pwphXMOVFGHJ5/
-CnVvltQHJWPk03OZbfXTxIonOadmUvtM+/JpNzpQAcoFsJwhMwGVq5qOR+Of1jev
-FyY3OMlTMr860pZvkdKCSV++YcWQ/atklrM7X4ZrWJPrH4L1E4F3EBjjCvP+5sB1
-k+09stfQvCsCzJ0C80cE7Rs5xelTn3xru/kv9nqppx6LqW/2kYEcwSbgOnddriQG
-VL001GWY5WTdaCjU3EpS9I0scUHzKks+btVm+2DK7omNd2AnHgK6ilvRMqWg7E2H
-EM8hJXxtE0XLx2oSpKgEVkhZHL3pqOvnJDF4vbaFPKqPlNWbmZ++plOHkmunk4bG
-8udYOgkoarTQtfp4z80faaYt/rwoFyksBw3T1Ofwm4B6rjlyhECX9JMAlX5/yj25
-YYyVry9NQFqH4BGDB0UdrPdDHI4QzqcWm//uiYC6hiKRovP/jNb+okdmevh6WevC
-rMS/hNdV3WPTOMu25CS6VFMF/D5HpufyXcmHR6PJt50IkP4Y9ZCtFsnTrhygCvnU
-jmo+YcUWZ8wpyn2kQfjenxfDEudTP6AK81mR4MhEZRBKzMKzEzh+7qWBpZEZzuU5
-AyGUzmXszkTbNVn8mEuJ6RNM1hTqXEaFUFhsuhiBreZ9+rZybQd4RtsWENHSubGF
-gRM96zjx2gbuCZiEKDr2
-=6POi
------END PGP SIGNATURE-----
+- removed the spin_lock in vtermno_to_xencons, use
+list_for_each_entry_safe.
 
---Sig_/5Y5XoT9whJ4K6NON.Tqyd0W--
+
+It has been tested with pv and hvm guests, with console=ttyS0,
+console=hvc0, and earlyprintk=xen, with and without serial='pty' in the
+VM config file.
+
+
+Stefano Stabellini (2):
+      hvc_xen: support PV on HVM consoles
+      hvc_xen: implement multiconsole support
+
+ drivers/tty/hvc/hvc_xen.c          |  455 ++++++++++++++++++++++++++++++++----
+ include/xen/interface/hvm/params.h |    6 +-
+ 2 files changed, 420 insertions(+), 41 deletions(-)
+
+
+A branch with these patches based on 3.2 is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 3.2-multiconsole-2
+
+Cheers,
+
+Stefano
