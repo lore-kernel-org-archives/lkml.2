@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab2A0Ol3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 09:41:29 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:46371 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752702Ab2A0Ol2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 09:41:28 -0500
-Date: Fri, 27 Jan 2012 06:41:27 -0800 (PST)
-From: Jakob Bornecrantz <jakob@vmware.com>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: airlied@linux.ie, airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, joe Perches <joe@perches.com>,
-        Ryan Mallon <rmallon@gmail.com>
-Message-ID: <170320114.179239.1327675287439.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <4F22B4A6.1070202@vmware.com>
-Subject: Re: [RFC PATCH] vmwgfx: Fix assignment in
- vmw_framebuffer_create_handle
+	id S1755277Ab2A0Ost (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 09:48:49 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:39473 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752017Ab2A0Osr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 09:48:47 -0500
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Sasha Levin <levinsasha928@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Miller <davem@davemloft.net>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "xemul@parallels.com" <xemul@parallels.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "sjurbren@gmail.com" <sjurbren@gmail.com>
+Date: Fri, 27 Jan 2012 15:48:00 +0100
+Subject: RE: [PATCH 2/2] net caif:  Register properly as a pernet subsystem.
+Thread-Topic: [PATCH 2/2] net caif:  Register properly as a pernet subsystem.
+Thread-Index: Aczc9wGNCNDbquJ2Tu2VvKzx5rX0xgACvAoA
+Message-ID: <81C3A93C17462B4BBD7E272753C105791FB48AD1FB@EXDCVYMBSTM005.EQ1STM.local>
+References: <4F212E7E.2040801@parallels.com>
+	 <1327575108.2500.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <m1zkdacbsx.fsf@fess.ebiederm.org>
+	 <20120126.180754.679593869814492219.davem@davemloft.net>
+	 <m1ehumc8r4.fsf_-_@fess.ebiederm.org> <m1aa5ac8nu.fsf_-_@fess.ebiederm.org>
+ <1327670668.14789.4.camel@lappy>
+In-Reply-To: <1327670668.14789.4.camel@lappy>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [85.225.38.204]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - GC15 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> On 01/27/2012 03:24 PM, Jakob Bornecrantz wrote:
-> > I was asking around and this seems to only be used by X when it
-> > starts and we want to preserve the contents of the screen. That
-> > feature is implemented by the X driver. So we need to figure how we
-> > want to solve it.
+> > caif is a subsystem and as such it needs to register with
+> > register_pernet_subsys instead of register_pernet_device.
 > >
-> > Either way this fix should probably go into this RC series, not
-> > sure if we need to send this to stable, since we are not leaking
-> > data to userspace (check drm_mode_getfb), but we might as well.
+> > Among other problems using register_pernet_device was resulting in
+> > net_generic being called before the caif_net structure was allocated.
+> > Which has been causing net_generic to fail with either BUG_ON's or by
+> > return NULL pointers.
 > >
-> > Reviewed-by: Jakob Bornecrantz<jakob@vmware.com>
+> > A more ugly problem that could be caused is packets in flight why the
+> > subsystem is shutting down.
+> >
+> > To remove confusion also remove the cruft cause by inappropriately
+> > trying to fix this bug.
+> >
+> > With the aid of the previous patch I have tested this patch and
+> > confirmed that using register_pernet_subsys makes the failure go away
+> > as it should.
+> >
+> > Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 > 
-> But shouldn't we return the *real* handle. Not 0??
+> I've tested these two patches as well, and they also work for me.
+> 
+> 	Tested-by: Sasha Levin <levinsasha928@gmail.com>
 
-Yeah, you are right. Not sure we have user_handle in the stable
-kernels tho.
+This looks very good to me, thank you Eric. 
 
-We need to change not only the X driver but also all the other
-userspace components since at least libkms doesn't create shared
-buffers. And if the thing that is running before X is using fbdev
-this wont do much good either since fbdev is not backed by a
-fb in the way other drivers do it.
-
-Cheers, Jakob.
+Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
