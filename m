@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab2A0XUb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 18:20:31 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39302 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab2A0XU1 (ORCPT
+	id S1752624Ab2A0XXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 18:23:33 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:11506 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab2A0XXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 18:20:27 -0500
-Message-ID: <4F233188.2010307@gmail.com>
-Date: Sat, 28 Jan 2012 10:21:44 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Fri, 27 Jan 2012 18:23:32 -0500
+Date: Sat, 28 Jan 2012 00:23:41 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-scsi@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Jing Huang <huangj@brocade.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH] SCSI, bfa: don't leak mem in bfad_im_bsg_els_ct_request()
+Message-ID: <alpine.LNX.2.00.1201280021320.13952@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Joe Perches <joe@perches.com>, Dan Carpenter <dan.carpenter@oracle.com>,
-        Jiri Kosina <trivial@kernel.org>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH next V2] drivers: Use NULL not zero pointer assignments
-References: <20120126061330.GA15856@elgon.mountain>  <1327559803.28707.6.camel@joe2Laptop> <1327642391.4846.36.camel@joe2Laptop>  <4F22421A.5020501@gmail.com> <1327649890.12089.20.camel@joe2Laptop> <4F2324EB.1030109@gmail.com> <alpine.DEB.2.02.1201272337580.1993@hadrien>
-In-Reply-To: <alpine.DEB.2.02.1201272337580.1993@hadrien>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/12 09:46, Julia Lawall wrote:
-> On Sat, 28 Jan 2012, Ryan Mallon wrote:
->
->> On 27/01/12 18:38, Joe Perches wrote:
->>> On Fri, 2012-01-27 at 17:20 +1100, Ryan Mallon wrote:
->>>> On 27/01/12 16:33, Joe Perches wrote:
->>>>> Using NULL pointer assignments is more kernel-style standard.
->>>>> Uncompiled, untested.
->>>>> Done via cocinelle script:
->>>>> @@
->>>>> type T;
->>>>> T *pointer;
->>>>> @@
->>>>> -pointer = 0
->>>>> +pointer = NULL
->>>> Hi Joe,
->>> Hi Ryan.
->>>
->>>> I think you can drop a lot of the initialisations completely rather than
->>>> convert them. I've pointed some out below. I'm just scanning through for
->>>> likely candidates and I didn't bother looking at the staging drivers, so
->>>> this list is not comprehensive.
->>> I'll try a more generic solution.
->>> Here's a possible cocci script that looks for declarations with
->>> initializations that are later overwritten.
->>
->> I think you need to be careful with this. I don't know enough about Coccinelle, but in general control flow makes this a difficult problem. This are also the cases where a variable is assigned on all control paths before being used, but also has an (seemingly useless) initialiser because gcc occasionally cannot determine that the variable is always initialised (because in general it is undecidable) and so the initialisation is there to prevent a compiler warning.
->
-> Coccinelle follows control-flow paths.  But it is not likely to be more clever about this than gcc.  It is unaware of the value of anything, so it does not realize that some control-flow paths are impossible.  So I don't think there would be big problems here.
->
->> There were also a couple of cases I pointed out where the assignment of zero to a pointer variable was actually masking some other bug, and so replacing the assignment with NULL, or removing the initialisation is not necessarily the correct fix.
->
-> But in this case it doesn't seem like it would hurt?  Having 0 or NULL would probably not make someone more or less likely to think about the function as a whole?
+If 'drv_fcxp = kzalloc(sizeof(struct bfad_fcxp), GFP_KERNEL);' fails
+and returns NULL, then we'll leak the memory allocated to 'bsg_fcpt'
+when we jump to 'out:' and the variable subsequently goes out of
+scope.
 
-The reason not to do this is because it is just code churn: Replacing broken code with code that is broken in a slightly different way is not particularly constructive.
+Also remove the cast of the kzalloc() return value. kzalloc() returns
+a void* which is implicitly converted, so the explicit cast is
+pointless.
 
->
-> For example, in the container_of case, having NULL is probably better than 0, because someone else is more likely to look for container_of's of NULL than container_of's of 0.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/scsi/bfa/bfad_bsg.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Possibly, I think it should be obvious in either case though that the code is probably not correct and needs to be fixed correctly.
+ Compile tested only, as I have no hardware to test for real.
 
-~Ryan
+diff --git a/drivers/scsi/bfa/bfad_bsg.c b/drivers/scsi/bfa/bfad_bsg.c
+index 530de2b..8005c6c 100644
+--- a/drivers/scsi/bfa/bfad_bsg.c
++++ b/drivers/scsi/bfa/bfad_bsg.c
+@@ -3047,8 +3047,7 @@ bfad_im_bsg_els_ct_request(struct fc_bsg_job *job)
+ 	 * Allocate buffer for bsg_fcpt and do a copy_from_user op for payload
+ 	 * buffer of size bsg_data->payload_len
+ 	 */
+-	bsg_fcpt = (struct bfa_bsg_fcpt_s *)
+-		   kzalloc(bsg_data->payload_len, GFP_KERNEL);
++	bsg_fcpt = kzalloc(bsg_data->payload_len, GFP_KERNEL);
+ 	if (!bsg_fcpt)
+ 		goto out;
+ 
+@@ -3060,6 +3059,7 @@ bfad_im_bsg_els_ct_request(struct fc_bsg_job *job)
+ 
+ 	drv_fcxp = kzalloc(sizeof(struct bfad_fcxp), GFP_KERNEL);
+ 	if (drv_fcxp == NULL) {
++		kfree(bsg_fcpt);
+ 		rc = -ENOMEM;
+ 		goto out;
+ 	}
+-- 
+1.7.8.4
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
