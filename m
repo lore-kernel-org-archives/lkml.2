@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab2A0Aqx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:46:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57166 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab2A0Aqv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:46:51 -0500
-From: Manoj Iyer <manoj.iyer@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: [PATCH] Bluetooth: Add support for BCM20702A0 [0a5c:21e1]
-Date: Thu, 26 Jan 2012 18:46:39 -0600
-Message-Id: <1327625199-10750-2-git-send-email-manoj.iyer@canonical.com>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1327625199-10750-1-git-send-email-manoj.iyer@canonical.com>
-References: <1327625199-10750-1-git-send-email-manoj.iyer@canonical.com>
+	id S1754555Ab2A0AzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 19:55:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60977 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab2A0AzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 19:55:02 -0500
+Date: Thu, 26 Jan 2012 16:53:45 -0800
+From: Greg KH <gregkh@suse.de>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, bp@amd64.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, lenb@kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: WARN... Device 'cpu1' does not have a release() function, it is
+ broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
+Message-ID: <20120127005345.GA13278@suse.de>
+References: <20120123180601.GA24553@phenom.dumpdata.com>
+ <20120127000612.GA14678@suse.de>
+ <CAPXgP134gz6baAiVPPfhdaQsYZ5hDncZfb4C_Wj=iC51=Uqixw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP134gz6baAiVPPfhdaQsYZ5hDncZfb4C_Wj=iC51=Uqixw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add vendor specific ID for BCM20702A0.
+On Fri, Jan 27, 2012 at 01:22:46AM +0100, Kay Sievers wrote:
+> On Fri, Jan 27, 2012 at 01:06, Greg KH <gregkh@suse.de> wrote:
+> > On Mon, Jan 23, 2012 at 01:06:01PM -0500, Konrad Rzeszutek Wilk wrote:
+> 
+> >> Is anybody else hitting this with ACPI CPU hot-unplug? Or do I have
+> >> the privilige of being the first? Oh, I hadn't done a full bisection
+> >> but v3.2 does not have this.
+> >
+> > Kay, this is a mess.
+> >
+> > This cpu system device is is interconnected with the different arches
+> > and their cpu-specific structures.  Some arches have a static array,
+> > some allocate a huge structure (struct arch_cpu * NUM_CPUS), and others
+> > try to do the right thing with DECLARE_PER_CPU() but don't quite get it
+> > right, making that a static array per cpu.
+> >
+> > To unwind all of this, is much beyond 3.3 material, as I'm sure I'll get
+> > it wrong, and have a bunch of non-x86-64 build problems along the way.
+> >
+> > Any objection to me just doing the "hack" of the empty release function
+> > at the moment to get rid of this warning, and then clean it all up
+> > properly for 3.4?
+> 
+> No problem at all.
+> 
+> It would be nice if we get all that to the usual model some day, but I
+> can totally see that CPU devices try to deal with statically allocated
+> per-cpu memory. It seems fine, as long as they know what they are
+> doing.
+> 
+> Just silencing the driver-core warning here sounds fine to me.
 
-usb-devices:
-T:  Bus=02 Lev=02 Prnt=02 Port=05 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0a5c ProdID=21e1 Rev=01.12
-S:  Manufacturer=Broadcom Corp
-S:  Product=BCM20702A0
-S:  SerialNumber=60D819F03A6D
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+Ok, I'll do that tomorrow and send a patch out and then start working on
+making all of this dynamic, as it really should be.
 
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
----
- drivers/bluetooth/btusb.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+thanks,
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index f00f596..233b48d 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -101,6 +101,7 @@ static struct usb_device_id btusb_table[] = {
- 	{ USB_DEVICE(0x0c10, 0x0000) },
- 
- 	/* Broadcom BCM20702A0 */
-+	{ USB_DEVICE(0x0a5c, 0x21e1) },
- 	{ USB_DEVICE(0x0a5c, 0x21e3) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
- 
--- 
-1.7.8.3
-
+greg k-h
