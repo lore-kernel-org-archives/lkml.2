@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab2A0Skx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:40:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56132 "EHLO
+	id S1754172Ab2A0Sn6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:43:58 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38019 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab2A0SkM (ORCPT
+	with ESMTP id S1753178Ab2A0Sn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:40:12 -0500
-Date: Fri, 27 Jan 2012 22:40:05 +0400
+	Fri, 27 Jan 2012 13:43:57 -0500
+Date: Fri, 27 Jan 2012 22:43:51 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andi Kleen <andi@firstfloor.org>
+To: Kees Cook <keescook@chromium.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Pavel Emelyanov <xemul@openvz.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
         Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
         Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-Message-ID: <20120127184005.GH11086@moon>
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC c/r 4/4] c/r: prctl: Extend PR_SET_MM to set up more
+ mm_struct entries
+Message-ID: <20120127184351.GI11086@moon>
 References: <20120127175342.273260614@openvz.org>
- <20120127175939.795551339@openvz.org>
- <20120127181525.GD11715@one.firstfloor.org>
- <20120127182403.GG11086@moon>
- <20120127183155.GE11715@one.firstfloor.org>
+ <20120127175939.928628374@openvz.org>
+ <CAGXu5jJtBJGt-8iLrC5Jg9N0K2zeYxDtt8uZojY41osejV_aKg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120127183155.GE11715@one.firstfloor.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5jJtBJGt-8iLrC5Jg9N0K2zeYxDtt8uZojY41osejV_aKg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 07:31:55PM +0100, Andi Kleen wrote:
-> On Fri, Jan 27, 2012 at 10:24:03PM +0400, Cyrill Gorcunov wrote:
-> > Sure, I'll try to (btw, where I should send it to? And in which
-> > format novadays mans are written? In plain old troff or some
-> > human readable asciidocs?) And... should I post man page
-> > on LKML as well?
+On Fri, Jan 27, 2012 at 10:37:05AM -0800, Kees Cook wrote:
+> On Fri, Jan 27, 2012 at 9:53 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> > +               if (opt == PR_SET_MM_START_STACK)
+> > +                       mm->start_stack = addr;
+> > +               else if (opt == PR_SET_MM_ARG_START)
+> > +                       mm->arg_start = addr;
+> > +               else if (opt == PR_SET_MM_ARG_END)
+> > +                       mm->arg_end = addr;
+> > +               else if (opt == PR_SET_MM_ENV_START)
+> > +                       mm->env_start = addr;
+> > +               else if (opt == PR_SET_MM_ENV_END)
+> > +                       mm->env_end = addr;
+> > +               break;
 > 
-> Manpages are written in troff with -man and you would add the ASCII output
-> of the manpage to the commit log and send the troff source at some
-> point to linux-man.
->
-
-OK, I see, thanks.
-
-> The basic problem is if this interface is at the right level of abstraction.
-> I have some doubts on that. It seems like a long term maintenance nightmare to 
-> me. It may be better to put the loop that would call this into the kernel.
+> Why not a switch statement here? Not that it really matters. :)
 > 
 
-Hmm, ie selftest right in kenel?
+Just to look different from toplevel switch, which is better from my POV.
 
-> > 
-> > Hmm.. Andi, I seem not following. And?
+> > +
+> > +       case PR_SET_MM_AUXV:
+> > +               if (arg4 > sizeof(mm->saved_auxv))
+> > +                       goto out;
+> > +               up_read(&mm->mmap_sem);
+> > +
+> > +               error = -EFAULT;
+> > +               if (!copy_from_user(mm->saved_auxv, (const void __user *)addr, arg4))
+> > +                       error = 0;
+> > +
+> > +               return error;
 > 
-> It just doesn't seem like a very useful thing to compare.
+> Is the mmap_sem released here because of the copy_from_user()? Is it
+> still safe to write to saved_auxv?
+> 
 
-I see.
+At moment I believe yes (if only I'm not missing something), we poke this
+vector at elf loading procedure, so it's up to user to sync access to "own"
+saved_auxv and write sane values inside.
 
 	Cyrill
