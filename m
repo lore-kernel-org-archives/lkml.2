@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab2A0Q7M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:59:12 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16709 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab2A0Q7K convert rfc822-to-8bit (ORCPT
+	id S1751978Ab2A0RCL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 12:02:11 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64877 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab2A0RCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:59:10 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 27 Jan 2012 08:58:49 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Date: Fri, 27 Jan 2012 08:58:47 -0800
-Subject: RE: Pinmux bindings proposal
-Thread-Topic: Pinmux bindings proposal
-Thread-Index: Aczc60fV95dWKgpfRCGUGwX1Celm1QAKLkRw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E123E3C@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
-	<7FE21149F4667147B645348EC6057885091DEA@039-SN2MPN1-013.039d.mgd.msft.net>
-	<20120117082334.GA31295@S2101-09.ap.freescale.net>
-	<7FE21149F4667147B645348EC6057885092D56@039-SN2MPN1-013.039d.mgd.msft.net>
-	<74CDBE0F657A3D45AFBB94109FB122FF17801D22F5@HQMAIL01.nvidia.com>
-	<7FE21149F4667147B645348EC6057885095125@039-SN2MPN1-013.039d.mgd.msft.net>
-	<74CDBE0F657A3D45AFBB94109FB122FF1780DAB445@HQMAIL01.nvidia.com>
- <CACRpkdae58AYCYzwx8ysSDr_i0UHBfCujm2Fmnb+hx7825Lm4w@mail.gmail.com>
-In-Reply-To: <CACRpkdae58AYCYzwx8ysSDr_i0UHBfCujm2Fmnb+hx7825Lm4w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 27 Jan 2012 12:02:09 -0500
+Date: Fri, 27 Jan 2012 18:02:04 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCH 2/7] ftrace: Add enable/disable ftrace_ops control
+ interface
+Message-ID: <20120127170202.GB3391@somewhere>
+References: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
+ <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+ <1326912275-26405-3-git-send-email-jolsa@redhat.com>
+ <20120120170232.GF18056@somewhere>
+ <1327533221.22710.74.camel@gandalf.stny.rr.com>
+ <20120126023726.GI20878@somewhere>
+ <20120127103714.GA6294@m.brq.redhat.com>
+ <20120127164045.GA3391@somewhere>
+ <20120127165416.GD10601@m.brq.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120127165416.GD10601@m.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Friday, January 27, 2012 5:01 AM:
-> On Fri, Jan 20, 2012 at 9:28 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> > Dong Aisheng wrote at Wednesday, January 18, 2012 4:06 AM:
-> >>
-> >> Each entry in the list is PIN rather than group.
-> >> So we cannot create each map for each entry in the list except we treat the PIN as
-> >> A group(this will cause a huge maps and predefined groups and functions).
-> >
-> > Linusw has NAKd the idea that we should not use these "virtual groups",
-> > i.e. he believes they're fine to use if you wish.
+On Fri, Jan 27, 2012 at 05:54:16PM +0100, Jiri Olsa wrote:
+> On Fri, Jan 27, 2012 at 05:40:49PM +0100, Frederic Weisbecker wrote:
+> > On Fri, Jan 27, 2012 at 11:37:14AM +0100, Jiri Olsa wrote:
+> > > On Thu, Jan 26, 2012 at 03:37:29AM +0100, Frederic Weisbecker wrote:
+> > > > On Wed, Jan 25, 2012 at 06:13:41PM -0500, Steven Rostedt wrote:
+> > > > > On Fri, 2012-01-20 at 18:02 +0100, Frederic Weisbecker wrote:
+> > > > > >  
+> > > > > > > +/**
+> > > > > > > + * ftrace_function_enable - enable controlled ftrace_ops on given cpu
+> > > > > > > + *
+> > > > > > > + * This function enables tracing on given cpu by decreasing
+> > > > > > > + * the per cpu control variable.
+> > > > > > > + * It must be called with preemption disabled and only on
+> > > > > > > + * ftrace_ops registered with FTRACE_OPS_FL_CONTROL.
+> > > > > > > + */
+> > > > > > > +static inline void ftrace_function_enable(struct ftrace_ops *ops, int cpu)
+> > > > > > > +{
+> > > > > > > +	atomic_t *disabled;
+> > > > > > > +
+> > > > > > > +	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL) ||
+> > > > > > > +			 !preempt_count()))
+> > > > > > > +		return;
+> > > > > > > +
+> > > > > > > +	disabled = per_cpu_ptr(ops->disabled, cpu);
+> > > > > > > +	atomic_dec(disabled);
+> > > > > > > +}
+> > > > > > 
+> > > > > > As you're using this for the local CPU exclusively, I suggest you rather
+> > > > > > rename it to "ftrace_function_{dis,en}able_cpu(struct ftrace_ops *ops)"
+> > > > > 
+> > > > > I wonder if "ftrace_function_local_{dis,en}able(ops)" would be better?
+> > > > > That would match something like local_irq_disable/enable.
+> > > > 
+> > > > Good idea.
+> > > > 
+> > > > > 
+> > > > > > and use __get_cpu_var() that does the preempt check for you.
+> > > 
+> > > I haven't found preempt check this_cpu_ptr path.. not sure I missed it..
+> > > so I'm keeping the implicit preemt check.
+> > 
+> > #ifdef CONFIG_DEBUG_PREEMPT
+> > #define my_cpu_offset per_cpu_offset(smp_processor_id())
+> > #else
+> > #define my_cpu_offset __my_cpu_offset
+> > #endif
+> > 
+> > #ifdef CONFIG_DEBUG_PREEMPT
+> > #define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
+> > #else
+> > #define this_cpu_ptr(ptr) __this_cpu_ptr(ptr)
+> > #endif
+> > 
+> > And smp_processor_id() has a preemption check.
 > 
-> Interesting double inversion here: I NACK to NOT use groups
-> this way...
+> yay.. ok :) so this one is triggered only if there's CONFIG_DEBUG_PREEMPT
+> option enabled.. seems to me it'd better to keep the implicit check anyway.
+> 
+> jirka
 
-I don't think that's true.
 
-If you did that, you would be /forcing/ people to use virtual pin groups,
-which means that the Tegra driver I proposed wouldn't be acceptable
-since it only defines groups that actually exist in HW.
+This is a debugging option deemed to lower runtime debugging checks in
+production.
 
-> The groups are not "virtual" if they share some physical
-> property. Such as being used by the same device.
-
-No, that's not what a virtual group is (I'm the person who came up
-with that term, and really the only person using it, so I get to decide
-what I mean by it!) I suppose you can mean something different, but that's
-just going to be ridiculously confusing.
-
-In HW, there are individual register fields. Each one of these affects
-often a single pin, but on some chips n pins at a time. A physical
-group would be precisely those groups of pins which the actual HW
-registers affect. A virtual group is a SW group that ends up affecting
-more than one of those physical groups, since when a virtual groups is
-programmed, the pinctrl driver goes and programs n register fields and
-hence affects n physical groups.
-
-And those registers and either physical or virtual groups don't have to
-be anything to do with muxing. On Tegra, there are certainly groups that
-only affect e.g. drive strength and not mux selection.
-
--- 
-nvpublic
-
+Is there a good reason to keep the check on every case?
