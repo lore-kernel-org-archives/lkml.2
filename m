@@ -1,84 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab2A0Kii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 05:38:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15755 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753854Ab2A0Kih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 05:38:37 -0500
-Date: Fri, 27 Jan 2012 11:38:29 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 2/7] ftrace: Add enable/disable ftrace_ops control
+	id S1754148Ab2A0Kir (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 05:38:47 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51278 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab2A0Kip (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 05:38:45 -0500
+Message-ID: <1327660721.2220.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [patch v5, kernel version 3.2.1] Source mode for macvlan
  interface
-Message-ID: <20120127103829.GB6294@m.brq.redhat.com>
-References: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
- <1326912275-26405-1-git-send-email-jolsa@redhat.com>
- <1326912275-26405-3-git-send-email-jolsa@redhat.com>
- <20120120170232.GF18056@somewhere>
- <1327533221.22710.74.camel@gandalf.stny.rr.com>
- <20120126023726.GI20878@somewhere>
- <20120127103714.GA6294@m.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120127103714.GA6294@m.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Stefan Gula <steweg@ynet.sk>
+Cc: Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 27 Jan 2012 11:38:41 +0100
+In-Reply-To: <21673653.551327658293199.JavaMail.root@5-MeO-DMT.ynet.sk>
+References: <21673653.551327658293199.JavaMail.root@5-MeO-DMT.ynet.sk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 11:37:14AM +0100, Jiri Olsa wrote:
-> On Thu, Jan 26, 2012 at 03:37:29AM +0100, Frederic Weisbecker wrote:
-> > On Wed, Jan 25, 2012 at 06:13:41PM -0500, Steven Rostedt wrote:
-> > > On Fri, 2012-01-20 at 18:02 +0100, Frederic Weisbecker wrote:
-> > > >  
-> > > > > +/**
-> > > > > + * ftrace_function_enable - enable controlled ftrace_ops on given cpu
-> > > > > + *
-> > > > > + * This function enables tracing on given cpu by decreasing
-> > > > > + * the per cpu control variable.
-> > > > > + * It must be called with preemption disabled and only on
-> > > > > + * ftrace_ops registered with FTRACE_OPS_FL_CONTROL.
-> > > > > + */
-> > > > > +static inline void ftrace_function_enable(struct ftrace_ops *ops, int cpu)
-> > > > > +{
-> > > > > +	atomic_t *disabled;
-> > > > > +
-> > > > > +	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL) ||
-> > > > > +			 !preempt_count()))
-> > > > > +		return;
-> > > > > +
-> > > > > +	disabled = per_cpu_ptr(ops->disabled, cpu);
-> > > > > +	atomic_dec(disabled);
-> > > > > +}
-> > > > 
-> > > > As you're using this for the local CPU exclusively, I suggest you rather
-> > > > rename it to "ftrace_function_{dis,en}able_cpu(struct ftrace_ops *ops)"
-> > > 
-> > > I wonder if "ftrace_function_local_{dis,en}able(ops)" would be better?
-> > > That would match something like local_irq_disable/enable.
-> > 
-> > Good idea.
-> > 
-> > > 
-> > > > and use __get_cpu_var() that does the preempt check for you.
+Le vendredi 27 janvier 2012 à 10:58 +0100, Stefan Gula a écrit :
+> From: Stefan Gula <steweg@gmail.com>
 > 
-> I haven't found preempt check this_cpu_ptr path.. not sure I missed it..
-> so I'm keeping the implicit preemt check.
-> Attaching new version of the patch (I'll need to resend whole serie once
-> this one is agreed).
-> 
-> changes:
->  - using this_cpu_ptr to touch ftrace_ops::disable
->  - renamed ftrace_ops:disable API:
-> 	void ftrace_function_local_enable(struct ftrace_ops *ops)
-> 	void ftrace_function_local_disable(struct ftrace_ops *ops)
-> 	int  ftrace_function_local_disabled(struct ftrace_ops *ops)
 
-ops, missed one... using int instead of atomic_t for ftrace_ops::disable
+...
 
-jirka
+> +static struct macvlan_source_list *macvlan_hash_lookup_sources_list(
+> +	const struct macvlan_dev *vlan,
+> +	const unsigned char *addr)
+> +{
+> +	struct macvlan_source_list *list;
+> +	struct hlist_node *n;
+> +	struct hlist_head *h = &vlan->port->vlan_source_hash[addr[5]];
+> +
+> +	hlist_for_each_entry_rcu(list, n, h, hlist) {
+
+You dont hold rcu_read_lock() here, and dont need to, since you are in
+the controler path, rtnl is locked :
+
+	hlist_for_each_entry(...)
+
+> +		if (!compare_ether_addr_64bits(list->addr, addr) &&
+> +		    list->vlan == vlan)
+> +			return list;
+> +	}
+> +	return NULL;
+> +}
+> +
+> +static int macvlan_hash_add_sources(struct macvlan_dev *vlan,
+> +				    const unsigned char *addr)
+> +{
+> +	struct macvlan_port *port = vlan->port;
+> +	struct macvlan_source_list *list;
+> +	struct hlist_head *h;
+> +
+> +	list = macvlan_hash_lookup_sources_list(vlan, addr);
+> +	if (!list) {
+> +		list = kmalloc(sizeof(*list), GFP_KERNEL);
+
+By the way, use of GFP_KERNEL here is a proof you dont hold
+rcu_read_lock().
+
+(If you were, you would not be allowed to sleep in kmalloc())
+
+> +		if (list) {
+> +			memcpy(list->addr, addr, ETH_ALEN);
+> +			list->vlan = vlan;
+> +			h = &port->vlan_source_hash[addr[5]];
+> +			hlist_add_head_rcu(&list->hlist, h);
+> +		} else
+> +			return -ENOMEM;
+
+	if (cond) {
+		foo;
+		bar;
+	} else {
+		blip;
+	}
+
+
+> +	}
+> +	return 0;
+> +}
+> +
+> +static void macvlan_hash_del_sources(struct macvlan_source_list *list)
+> +{
+> +	hlist_del_rcu(&list->hlist);
+> +	kfree_rcu(list, rcu);
+> +}
+> +
+
+...
+
+> +static int macvlan_changelink_sources(struct macvlan_dev *vlan, u32 mode,
+> +				      unsigned char *addr)
+> +{
+> +	if (mode == MACVLAN_MACADDR_ADD)
+> +		return macvlan_hash_add_sources(vlan, addr);
+> +
+
+Same codestyle here...
+
+	if (cond) {
+		foo;
+	} else if (cond2) {
+	} else {
+		blip;
+	}
+
+
+> +	else if (mode == MACVLAN_MACADDR_DEL) {
+> +		struct macvlan_source_list *list;
+> +
+> +		list = macvlan_hash_lookup_sources_list(vlan, addr);
+> +		if (list)
+> +			macvlan_hash_del_sources(list);
+> +	} else
+> +		return -EINVAL;
+> +
+> +	return 0;
+> +}
+> +
+
+
