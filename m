@@ -1,82 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab2A0Oeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 09:34:46 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:57258 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752017Ab2A0Oep (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 09:34:45 -0500
-X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jan 2012 09:34:45 EST
-Date: Fri, 27 Jan 2012 06:24:53 -0800 (PST)
-From: Jakob Bornecrantz <jakob@vmware.com>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: airlied@linux.ie, airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, joe Perches <joe@perches.com>,
-        Ryan Mallon <rmallon@gmail.com>
-Message-ID: <1345211595.178155.1327674293610.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <4F22B02F.2010502@vmware.com>
-Subject: Re: [RFC PATCH] vmwgfx: Fix assignment in
- vmw_framebuffer_create_handle
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [85.225.38.204]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - GC15 (Linux)/7.1.3_GA_3346)
+	id S1755573Ab2A0Oex (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 09:34:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35774 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755220Ab2A0Oet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 09:34:49 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 2/9] perf, tool: Remove unused functions from debugfs object
+Date: Fri, 27 Jan 2012 15:34:21 +0100
+Message-Id: <1327674868-10486-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1327674868-10486-1-git-send-email-jolsa@redhat.com>
+References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
+ <1327674868-10486-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was asking around and this seems to only be used by X when it
-starts and we want to preserve the contents of the screen. That
-feature is implemented by the X driver. So we need to figure how we
-want to solve it.
+Following debugfs object functions are not referenced
+within the code:
 
-Either way this fix should probably go into this RC series, not
-sure if we need to send this to stable, since we are not leaking
-data to userspace (check drm_mode_getfb), but we might as well.
+  int debugfs_valid_entry(const char *path);
+  int debugfs_umount(void);
+  int debugfs_write(const char *entry, const char *value);
+  int debugfs_read(const char *entry, char *buffer, size_t size);
+  void debugfs_force_cleanup(void);
+  int debugfs_make_path(const char *element, char *buffer, int size);
 
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Removing them.
 
-Cheers, Jakob.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/debugfs.c |  141 ---------------------------------------------
+ tools/perf/util/debugfs.h |    6 --
+ 2 files changed, 0 insertions(+), 147 deletions(-)
 
------ Original Message -----
-> Ryan,
-> 
-> Thanks for pointing this out. Unfortunately there  seems to be two
-> bugs here, the one you pointed out and the fact that we set the handle
-> to zero, when it probably should be set to struct
-> vmw_framebuffer::user_handle.
-> 
-> Jakob, can you comment on this?
-> 
-> /Thomas
-> 
-> On 01/27/2012 07:25 AM, Ryan Mallon wrote:
-> > The assignment of handle in vmw_framebuffer_create_handle doesn't
-> > actually do anything useful and is incorrectly assigning an integer
-> > value to a pointer argument. It appears that this is a typo and
-> > should
-> > be dereferencing handle rather than assigning to it directly.
-> >
-> > Signed-off-by: Ryan Mallon<rmallon@gmail.com>
-> > ---
-> >
-> > diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-> > b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-> > index 0af6ebd..b66ef0e 100644
-> > --- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-> > +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-> > @@ -378,7 +378,7 @@ int vmw_framebuffer_create_handle(struct
-> > drm_framebuffer *fb,
-> >   				  unsigned int *handle)
-> >   {
-> >   	if (handle)
-> > -		handle = 0;
-> > +		*handle = 0;
-> >
-> >   	return 0;
-> >   }
-> >
-> 
-> 
+diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
+index ffc35e7..dd8b193 100644
+--- a/tools/perf/util/debugfs.c
++++ b/tools/perf/util/debugfs.c
+@@ -15,32 +15,6 @@ static const char *debugfs_known_mountpoints[] = {
+ 	0,
+ };
+ 
+-/* use this to force a umount */
+-void debugfs_force_cleanup(void)
+-{
+-	debugfs_find_mountpoint();
+-	debugfs_premounted = 0;
+-	debugfs_umount();
+-}
+-
+-/* construct a full path to a debugfs element */
+-int debugfs_make_path(const char *element, char *buffer, int size)
+-{
+-	int len;
+-
+-	if (strlen(debugfs_mountpoint) == 0) {
+-		buffer[0] = '\0';
+-		return -1;
+-	}
+-
+-	len = strlen(debugfs_mountpoint) + strlen(element) + 1;
+-	if (len >= size)
+-		return len+1;
+-
+-	snprintf(buffer, size-1, "%s/%s", debugfs_mountpoint, element);
+-	return 0;
+-}
+-
+ static int debugfs_found;
+ 
+ /* find the path to the mounted debugfs */
+@@ -97,17 +71,6 @@ int debugfs_valid_mountpoint(const char *debugfs)
+ 	return 0;
+ }
+ 
+-
+-int debugfs_valid_entry(const char *path)
+-{
+-	struct stat st;
+-
+-	if (stat(path, &st))
+-		return -errno;
+-
+-	return 0;
+-}
+-
+ static void debugfs_set_tracing_events_path(const char *mountpoint)
+ {
+ 	snprintf(tracing_events_path, sizeof(tracing_events_path), "%s/%s",
+@@ -149,107 +112,3 @@ void debugfs_set_path(const char *mountpoint)
+ 	snprintf(debugfs_mountpoint, sizeof(debugfs_mountpoint), "%s", mountpoint);
+ 	debugfs_set_tracing_events_path(mountpoint);
+ }
+-
+-/* umount the debugfs */
+-
+-int debugfs_umount(void)
+-{
+-	char umountcmd[128];
+-	int ret;
+-
+-	/* if it was already mounted, leave it */
+-	if (debugfs_premounted)
+-		return 0;
+-
+-	/* make sure it's a valid mount point */
+-	ret = debugfs_valid_mountpoint(debugfs_mountpoint);
+-	if (ret)
+-		return ret;
+-
+-	snprintf(umountcmd, sizeof(umountcmd),
+-		 "/bin/umount %s", debugfs_mountpoint);
+-	return system(umountcmd);
+-}
+-
+-int debugfs_write(const char *entry, const char *value)
+-{
+-	char path[PATH_MAX + 1];
+-	int ret, count;
+-	int fd;
+-
+-	/* construct the path */
+-	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
+-
+-	/* verify that it exists */
+-	ret = debugfs_valid_entry(path);
+-	if (ret)
+-		return ret;
+-
+-	/* get how many chars we're going to write */
+-	count = strlen(value);
+-
+-	/* open the debugfs entry */
+-	fd = open(path, O_RDWR);
+-	if (fd < 0)
+-		return -errno;
+-
+-	while (count > 0) {
+-		/* write it */
+-		ret = write(fd, value, count);
+-		if (ret <= 0) {
+-			if (ret == EAGAIN)
+-				continue;
+-			close(fd);
+-			return -errno;
+-		}
+-		count -= ret;
+-	}
+-
+-	/* close it */
+-	close(fd);
+-
+-	/* return success */
+-	return 0;
+-}
+-
+-/*
+- * read a debugfs entry
+- * returns the number of chars read or a negative errno
+- */
+-int debugfs_read(const char *entry, char *buffer, size_t size)
+-{
+-	char path[PATH_MAX + 1];
+-	int ret;
+-	int fd;
+-
+-	/* construct the path */
+-	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
+-
+-	/* verify that it exists */
+-	ret = debugfs_valid_entry(path);
+-	if (ret)
+-		return ret;
+-
+-	/* open the debugfs entry */
+-	fd = open(path, O_RDONLY);
+-	if (fd < 0)
+-		return -errno;
+-
+-	do {
+-		/* read it */
+-		ret = read(fd, buffer, size);
+-		if (ret == 0) {
+-			close(fd);
+-			return EOF;
+-		}
+-	} while (ret < 0 && errno == EAGAIN);
+-
+-	/* close it */
+-	close(fd);
+-
+-	/* make *sure* there's a null character at the end */
+-	buffer[ret] = '\0';
+-
+-	/* return the number of chars read */
+-	return ret;
+-}
+diff --git a/tools/perf/util/debugfs.h b/tools/perf/util/debugfs.h
+index 4a878f7..68f3e87 100644
+--- a/tools/perf/util/debugfs.h
++++ b/tools/perf/util/debugfs.h
+@@ -3,14 +3,8 @@
+ 
+ const char *debugfs_find_mountpoint(void);
+ int debugfs_valid_mountpoint(const char *debugfs);
+-int debugfs_valid_entry(const char *path);
+ char *debugfs_mount(const char *mountpoint);
+-int debugfs_umount(void);
+ void debugfs_set_path(const char *mountpoint);
+-int debugfs_write(const char *entry, const char *value);
+-int debugfs_read(const char *entry, char *buffer, size_t size);
+-void debugfs_force_cleanup(void);
+-int debugfs_make_path(const char *element, char *buffer, int size);
+ 
+ extern char debugfs_mountpoint[];
+ extern char tracing_events_path[];
+-- 
+1.7.4.4
+
