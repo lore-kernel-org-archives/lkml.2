@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab2A0PBf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 10:01:35 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:38620 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755756Ab2A0PBd (ORCPT
+	id S1755667Ab2A0PHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 10:07:10 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39776 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752017Ab2A0PHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 10:01:33 -0500
-Date: Fri, 27 Jan 2012 07:01:33 -0800 (PST)
-From: Jakob Bornecrantz <jakob@vmware.com>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: airlied@linux.ie, airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, joe Perches <joe@perches.com>,
-        Ryan Mallon <rmallon@gmail.com>
-Message-ID: <1884829440.180014.1327676493018.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <4F22BA91.9020406@vmware.com>
-Subject: Re: [RFC PATCH] vmwgfx: Fix assignment in
- vmw_framebuffer_create_handle
+	Fri, 27 Jan 2012 10:07:09 -0500
+X-Sasl-enc: UnLaE08qAHuDBjkGENprn5KFTa4UKAiCWtr5uTNCTp98 1327676828
+Date: Fri, 27 Jan 2012 06:56:00 -0800
+From: Greg KH <greg@kroah.com>
+To: naveen yadav <yad.naveen@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Long term stable kernel seletion (3.0)
+Message-ID: <20120127145600.GA4259@kroah.com>
+References: <CAJ8eaTwfYvAEUXX=LMFfHvvyG1JKT4wADqofb0YdyaUtDT8GEg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [85.225.38.204]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - GC15 (Linux)/7.1.3_GA_3346)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJ8eaTwfYvAEUXX=LMFfHvvyG1JKT4wADqofb0YdyaUtDT8GEg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> On 01/27/2012 03:41 PM, Jakob Bornecrantz wrote:
-> > ----- Original Message -----
-> >> On 01/27/2012 03:24 PM, Jakob Bornecrantz wrote:
-> >>> I was asking around and this seems to only be used by X when it
-> >>> starts and we want to preserve the contents of the screen. That
-> >>> feature is implemented by the X driver. So we need to figure how
-> >>> we
-> >>> want to solve it.
-> >>>
-> >>> Either way this fix should probably go into this RC series, not
-> >>> sure if we need to send this to stable, since we are not leaking
-> >>> data to userspace (check drm_mode_getfb), but we might as well.
-> >>>
-> >>> Reviewed-by: Jakob Bornecrantz<jakob@vmware.com>
-> >> But shouldn't we return the *real* handle. Not 0??
-> >
-> > Yeah, you are right. Not sure we have user_handle in the stable
-> > kernels tho.
->
-> We do AFAICT.
+On Fri, Jan 27, 2012 at 10:54:42AM +0530, naveen yadav wrote:
+> Dear All,
 > 
-> >
-> > We need to change not only the X driver but also all the other
-> > userspace components since at least libkms doesn't create shared
-> > buffers.
->
-> Libkms is not used anymore, at least not in the X server driver.
+> Recently Greg decide and select linux 3.0 for long term.
+> 
+> http://www.kroah.com/log/
+> 3.0.y - this is the new "longterm" kernel release, it will be
+> maintained for 2 years at the minimum by me.
+> 
+> PS. Catalin+ Greg
+> So I have one request from Mr. Catalin and Greg.
+> 
+> Is ARM-15 support will be added in this or not. ?
 
-I was more referring to Plymouth and the like.
+No new features get added to stable or longterm supported kernels,
+please see the rules for what gets added to these kernels in the file,
+Documentation/stable_kernel_rules.txt.
 
-> >   And if the thing that is running before X is using fbdev
-> > this wont do much good either since fbdev is not backed by a
-> > fb in the way other drivers do it.
->
-> OK. Then I suggest we just return 0 here, and go ahead with the
-> current patch, and when we've figured out how to do the handover,
-> we bump kernel minor and return a proper handle. Does that sound
-> OK?
+So if it isn't there already, it's not going to be, sorry.
 
-Sounds good to me.
-
-Cheers, Jakob.
+greg k-h
