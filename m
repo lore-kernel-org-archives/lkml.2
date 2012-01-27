@@ -1,158 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab2A0Xzs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 18:55:48 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:60462 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751521Ab2A0Xzq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 18:55:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120127140240.6b52c906@pyramind.ukuu.org.uk>
-References: <CAFLxGvw85fWdsAodBn1Z0vFYZx0U+vYg6hgsBYbmfuyaFTgznA@mail.gmail.com>
-	<58311.79.160.186.248.1327615864.squirrel@www.nlc.no>
-	<CAFLxGvzsg71gtyPEtOAVnS-DtozYzqgoGNK-ZJRvBfq1mf3Oug@mail.gmail.com>
-	<CAFLxGvzffs=uSjxogdWtk_gqoJHPnmgQSLw9WaZRr_be=J5cgw@mail.gmail.com>
-	<20120127010838.GA27899@suse.de>
-	<CAPXgP12Bj1K3j5HL1=GTj=xEC+oWgB7VFeQL_Pg23fCevTQAcw@mail.gmail.com>
-	<CAFLxGvzth1m=iUmXbU2WyGrw0i8441d2nKLjH=mY_f1O-hkKPQ@mail.gmail.com>
-	<20120127115143.1943336b@pyramind.ukuu.org.uk>
-	<CAFLxGvwA3jjsbZ_-VN2oNUzmRzf01=2MN=SHCqv=u+57=T3Y7w@mail.gmail.com>
-	<20120127140240.6b52c906@pyramind.ukuu.org.uk>
-Date: Sat, 28 Jan 2012 00:55:45 +0100
-Message-ID: <CAFLxGvzD3E3wDAWYObUbsKaDKZo3qmP=z7XxwyjPm2+5xnS=0g@mail.gmail.com>
-Subject: Re: [uml-devel] /sys/class/tty/tty0/active?
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Greg KH <gregkh@suse.de>,
-        stian@nixia.no, LKML <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753121Ab2A0X52 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 18:57:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55554 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab2A0X51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 18:57:27 -0500
+Date: Fri, 27 Jan 2012 15:57:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 4/8] smp: add func to IPI cpus based on parameter func
+Message-Id: <20120127155725.86654035.akpm@linux-foundation.org>
+In-Reply-To: <1327572121-13673-5-git-send-email-gilad@benyossef.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	<1327572121-13673-5-git-send-email-gilad@benyossef.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 3:02 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Fri, 27 Jan 2012 13:04:37 +0100
-> richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
->
->> On Fri, Jan 27, 2012 at 12:51 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> >> UML's console driver (arch/um/drivers/line.c) implements tty_operations.
->> >> The crash happens because the tty subsystem calls the driver's close()
->> >> function and later
->> >> write_room() or chars_in_buffer().
->> >>
->> >> write_room() and chars_in_buffer() fail badly because close() already
->> >> cleaned up the driver's private data...
->> >
->> > You don't want to do that.
->>
->> That's what i thought.
->>
->> >> Greg, is UML's assumption wrong that after closing the tty no call to
->> >> write_room() or chars_in_buffer() can happen?
->> >> I have no idea why systemd is able to trigger this, UML's console
->> >> driver is old and has always worked quite well.
->> >
->> > It's always been untrue but it's even more untrue nowdays. The tty layer
->> > objects are refcounted, and the code has had significant rewrites. line.c
->> > hidden away in uml hasn't been updated.
->> >
->> > I added a comment about 3 years ago pointing out another older change
->> > that was needed and that wasn't acted on either..
->> >
->> > Take a look at how all the other tty drivers use tty_port, how the ioctls
->> > have been supposed to work for the past few years and the callback
->> > changes, then use them.
->>
->> Can you recommend a well-written driver?
->
-> drivers/mmc/card/sdio_uart.c
->
-> uses just about all the features including handling hotplug and stuff you
-> don't need.
->
-> drivers/usb/serial/usb-serial.c
->
-> may also be handy as it provides the interface but then calls into other
-> driver code to do the work.
->
-> Basically though you want a struct tty_port in your private data, either
-> created at open, or usually more cleanly for the physical port lifetime
->
->        tty_port_init()
->
-> Sets it up, then set the port ops
->
->        tty_port_open()
->        tty_port_close()
->        tty_port_hangup()
->
-> do almost all of the rest of the work for you. They call back to your
-> activate and shutdown port methods, they serialize them, they call them
-> on first open/last close in matching pairs.
->
-> For the tty itself
->
->        tty_port_tty_get()
->
-> gets you a reference to the tty from the port (or NULL) - so handles a
-> close/hangup racing with data arrival
->
->        tty_kref_put()
->
-> releases a reference
->
-> and
->        tty->ops->cleanup()
->
-> is called on the final destruction of the tty object (ie its where you
-> can free tty lifetime data in tty->private_data)
->
-> So for a simple non pluggable tty it tends to look like
->
->        int my_tty_open(struct tty_struct *tty, struct file *filp)
->        {
->                tty->driver_data = &my_port;
->                return tty_port_open(&my_port, tty, filp);
->        }
->
->        void my_tty_close(struct tty_struct *tty, struct file *filp)
->        {
->                struct my_tty *m = tty->driver_data;
->                if (m == NULL)
->                        return;
->                tty_port_close(&m->port, tty, filp);
->        }
->
->        void my_tty_hangup(struct tty_struct *tty)
->        {
->                struct my_tty *m = tty->driver_data;
->                tty_port_hangup(&m->port);
->        }
->
-> provide the needed callbacks and it'll do the locking and the like for
-> you.
->
-> On the ioctl side as far as I can see you should simply get rid of the
-> method entirely.
->
-> For buffer_data you might want to allocate the buffer sanely at open time
-> (tty_port has a function for this too) so it can't fail weirdly
->
-> And your termios method is a bit odd but makes sense if you are just
-> pretending anything works and is supported.
+On Thu, 26 Jan 2012 12:01:57 +0200
+Gilad Ben-Yossef <gilad@benyossef.com> wrote:
 
-Thanks for your help!
-tty_port makes sense and I think I understood it.
+> Add the on_each_cpu_cond() function that wraps on_each_cpu_mask()
+> and calculates the cpumask of cpus to IPI by calling a function supplied
+> as a parameter in order to determine whether to IPI each specific cpu.
+> 
+> The function works around allocation failure of cpumask variable in
+> CONFIG_CPUMASK_OFFSTACK=y by itereating over cpus sending an IPI a
+> time via smp_call_function_single().
+> 
+> The function is useful since it allows to seperate the specific
+> code that decided in each case whether to IPI a specific cpu for
+> a specific request from the common boilerplate code of handling
+> creating the mask, handling failures etc.
+> 
+> ...
+>
+> @@ -153,6 +162,16 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
+>  			local_irq_enable();		\
+>  		}					\
+>  	} while (0)
+> +#define on_each_cpu_cond(cond_func, func, info, wait, gfpflags) \
+> +	do {						\
+> +		preempt_disable();			\
+> +		if (cond_func(0, info)) {		\
+> +			local_irq_disable();		\
+> +			(func)(info);			\
+> +			local_irq_enable();		\
 
-But after modifying the driver to use tty_port the kernel crashes in
-tty_io.c:__tty_fasync() because filp->f_path.dentry is NULL.
+Ordinarily, local_irq_enable() in such a low-level thing is dangerous,
+because it can cause horrid bugs when called from local_irq_disable()d
+code.
 
-Any idea which kind of error can cause this?
+However I think we're OK here because it is a bug to call on_each_cpu()
+and friends with local irqs disabled, yes?
 
--- 
-Thanks,
-//richard
+Do we have any warnings printks if someone calls the ipi-sending
+functions with local interrupts disabled?  I didn't see any, but didn't
+look very hard.
+
+If my above claims are correct then why does on_each_cpu() use
+local_irq_save()?  hrm.
+
+> +		}					\
+> +		preempt_enable();			\
+> +	} while (0)
+>  
+>  static inline void smp_send_reschedule(int cpu) { }
+>  #define num_booting_cpus()			1
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index a081e6c..fa0912a 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -730,3 +730,61 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+>  	put_cpu();
+>  }
+>  EXPORT_SYMBOL(on_each_cpu_mask);
+> +
+> +/*
+> + * on_each_cpu_cond(): Call a function on each processor for which
+> + * the supplied function cond_func returns true, optionally waiting
+> + * for all the required CPUs to finish. This may include the local
+> + * processor.
+> + * @cond_func:	A callback function that is passed a cpu id and
+> + *		the the info parameter. The function is called
+> + *		with preemption disabled. The function should
+> + *		return a blooean value indicating whether to IPI
+> + *		the specified CPU.
+> + * @func:	The function to run on all applicable CPUs.
+> + *		This must be fast and non-blocking.
+> + * @info:	An arbitrary pointer to pass to both functions.
+> + * @wait:	If true, wait (atomically) until function has
+> + *		completed on other CPUs.
+> + * @gfpflags:	GFP flags to use when allocating the cpumask
+> + *		used internally by the function.
+> + *
+> + * The function might sleep if the GFP flags indicates a non
+> + * atomic allocation is allowed.
+> + *
+> + * You must not call this function with disabled interrupts or
+> + * from a hardware interrupt handler or from a bottom half handler.
+> + */
+> +void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+> +			smp_call_func_t func, void *info, bool wait,
+> +			gfp_t gfpflags)
+
+bah.
+
+z:/usr/src/linux-3.3-rc1> grep -r gfpflags . | wc -l
+78
+z:/usr/src/linux-3.3-rc1> grep -r gfp_flags . | wc -l 
+548
+
+> +{
+> +	cpumask_var_t cpus;
+> +	int cpu, ret;
+> +
+> +	might_sleep_if(gfpflags & __GFP_WAIT);
+
+For the zalloc_cpumask_var(), it seems.  I expect there are
+might_sleep() elsewhere in the memory allocation paths, but putting one
+here will detect bugs even if CONFIG_CPUMASK_OFFSTACK=n.
+
+> +	if (likely(zalloc_cpumask_var(&cpus, (gfpflags|__GFP_NOWARN)))) {
+> +		preempt_disable();
+> +		for_each_online_cpu(cpu)
+> +			if (cond_func(cpu, info))
+> +				cpumask_set_cpu(cpu, cpus);
+> +		on_each_cpu_mask(cpus, func, info, wait);
+> +		preempt_enable();
+> +		free_cpumask_var(cpus);
+> +	} else {
+> +		/*
+> +		 * No free cpumask, bother. No matter, we'll
+> +		 * just have to IPI them one by one.
+> +		 */
+> +		preempt_disable();
+> +		for_each_online_cpu(cpu)
+> +			if (cond_func(cpu, info)) {
+> +				ret = smp_call_function_single(cpu, func,
+> +								info, wait);
+> +				WARN_ON_ONCE(!ret);
+> +			}
+> +		preempt_enable();
+> +	}
+> +}
+> +EXPORT_SYMBOL(on_each_cpu_cond);
+
+I assume the preempt_disable()s here are to suspend CPU hotplug?
+
