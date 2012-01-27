@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab2A0Rhf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 12:37:35 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:33657 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751977Ab2A0Rhe (ORCPT
+	id S1752679Ab2A0Rhr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 12:37:47 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40138 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2A0Rhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 12:37:34 -0500
+	Fri, 27 Jan 2012 12:37:45 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+yKMwbYHGL1ug7JLLamsSy
 Date: Fri, 27 Jan 2012 09:37:32 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: linux-pci@vger.kernel.org, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [trivial] pci: Fix typo in setup-res.c
-Message-ID: <20120127093732.46425cca@jbarnes-desktop>
-In-Reply-To: <1327589147-2193-1-git-send-email-standby24x7@gmail.com>
-References: <1327589147-2193-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/u6yH3_UzCphrJIJBQOnw/D6"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+From: Tony Lindgren <tony@atomide.com>
+To: Simon Glass <sjg@chromium.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>, Dong Aisheng <dongas86@gmail.com>,
+        "Shawn Guo (shawn.guo@linaro.org)" <shawn.guo@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Pinmux bindings proposal V2
+Message-ID: <20120127173732.GJ13504@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
+ <CAPnjgZ3Xhebn1x1A-Vdy78DWbDd=cp0AK6tL-R1SRzS4GdF97g@mail.gmail.com>
+ <20120127022111.GK29812@atomide.com>
+ <CAPnjgZ2EkvTMsOkWyf4pfwRpvcvYs=WaKy5Gi8fdkAUQmvt=ig@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPnjgZ2EkvTMsOkWyf4pfwRpvcvYs=WaKy5Gi8fdkAUQmvt=ig@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/u6yH3_UzCphrJIJBQOnw/D6
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+* Simon Glass <sjg@chromium.org> [120127 07:12]:
+> 
+> On Thu, Jan 26, 2012 at 6:21 PM, Tony Lindgren <tony@atomide.com> wrote:
+> >
+> > Maybe we need two bindings: A minimal subset of what Stephen is suggesting
+> > that can handle 95% of the muxes with minimal overhead, then what you're
+> > suggesting for the few muxes that need multiple states?
+> 
+> Perhaps that would work, it certainly deals nicely with making the
+> rare cases less ugly if indeed they are rare. Of course a single
+> binding that is not too ugly and still reasonably efficient would be
+> best.
+> 
+> I will have a think about this a bit more and see if anything leaps
+> out. It's quite an interesting problem...
 
-On Thu, 26 Jan 2012 23:45:47 +0900
-Masanari Iida <standby24x7@gmail.com> wrote:
+Just to try to recap what has come up so far:
 
-> Correct spelling "resouce" to "resource" in
-> dricers/pci/setup-res.c
->=20
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  drivers/pci/setup-res.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-> index b66bfdb..5c18194 100644
-> --- a/drivers/pci/setup-res.c
-> +++ b/drivers/pci/setup-res.c
-> @@ -228,7 +228,7 @@ int pci_reassign_resource(struct pci_dev *dev, int re=
-sno, resource_size_t addsiz
->  	int ret;
-> =20
->  	if (!res->parent) {
-> -		dev_info(&dev->dev, "BAR %d: can't reassign an unassigned resouce %pR "
-> +		dev_info(&dev->dev, "BAR %d: can't reassign an unassigned resource %pR=
- "
->  			 "\n", resno, res);
->  		return -EINVAL;
->  	}
+1. We need to avoid bloating things for basic cases to initialize
+   several hundred pins.
 
-Applied to -next, thanks.
+2. Some muxes need to define multiple states.
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+3. We need to pass a flag for each mux to know whether or
+   not it can be freed after init.
 
---Sig_/u6yH3_UzCphrJIJBQOnw/D6
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+So how about let's do separate static and dynamic bindings,
+something like this:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+	/*
+	 * Static init time only mux where
+	 * we only specify phandle to driver
+	 * and, offset of the mux, and the value.
+	 * These pins are discarded after init.
+	 *
+	 * Format:	  mux_ctrl      offset value
+	 */
+	pinctrl-static = <&pmx_driver1  0x0020 0x1245
+			   &pmx_driver2 0x0022 0x6578>;
 
-iQIcBAEBAgAGBQJPIuDcAAoJEIEoDkX4Qk9hMN0QAM7Q6ODzFdGWEciQuII/fAl+
-rGoOm+lZb01Gq6BvbgqMM5UqcFgjJUJjXwzX4EFgLSrU0BGi4YA8obcKnvHBE/qC
-DZ8TCdO964LRpFvug4A4qXgWJ7gxrCcnjYmVRrKZlqjIVFskOZbMG6RDPXCkjeIY
-NNVckQWnKXMlGIeja6OYomEEuPvUspoMT+mHkgxGf9PnKU4EeO7IQY2JfIJRIvhd
-kw/TboE+yDB65tE97eGsJHStQO6EIeRed+dFvHqjGKCNZMhYt63sSJ0c+rEeB3UX
-Ho0L9JIZI6bufudkL0XQwcvRtMSKaKPmTixYriyhRIWVtuFODzFlFsw2w1hXAuHX
-6Tp7sqiufeRSWNx5d2y458qPtD7FhCGy1UALiBUhc8WWPza1oyDML2IfZ5SGVbhO
-PZciw/vTCZwjViblybBb8qLTNwd+eq7p4CEURXWOuTStIfrMQEtEsiTYSfBmriMk
-hdcata23myyEuclSfCFYZELHZbAECq3ObSbn/BDMzODSeMKTioX0PzEN3gW2z8AO
-WopOxMWdNetTtz0XNHZzgTE066Uq7bxeqgvFh31/vss5kNRcJWJhbePiGqBi9Kun
-sqMCWS/vMHbwEsfrnEOE5zOv0F7XiRnJEEuxGj0no7pBGw0GWO7Ratcuz6xuXF5i
-3WH8zpV6ivecRNzCYerQ
-=//Hy
------END PGP SIGNATURE-----
+	/*
+	 * Dynamic mux where the mux is kept around after
+	 * init and multiple states can be defined for
+	 * a mux as a subnode of the pinmux controller.
+	 *
+	 * Format:	   mux_phandle   initial state
+	 */ 
+	pinctrl-dynamic = <&pmx_sdhci    PMX_STATE_ENABLED
+			   &pmx_ehci_xcv PMX_STATE_ENABLED>;
 
---Sig_/u6yH3_UzCphrJIJBQOnw/D6--
+This would make pinctrl-static binding follow the same
+standard as GPIO binding and can be parsed easily with
+of_parse_phandle_with_args.
+
+Then for pinctrl-dynamic we can make a custom parser,
+and the binding can follow the more readable format as
+Simon posted.
+
+Regards,
+
+Tony
