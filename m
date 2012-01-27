@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab2A0Ifq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 03:35:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61047 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041Ab2A0Ifp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 03:35:45 -0500
-Message-ID: <4F2261BF.8040206@redhat.com>
-Date: Fri, 27 Jan 2012 09:35:11 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>, mmarek@suse.cz
-Subject: Re: Ioctl warning for a partition
-References: <20120126223037.GE28368@quack.suse.cz> <CA+55aFwkRhsdAYwP-S5_qPkRX=dMSnxv5Ow1ULaSJjKe3aTy2w@mail.gmail.com>
-In-Reply-To: <CA+55aFwkRhsdAYwP-S5_qPkRX=dMSnxv5Ow1ULaSJjKe3aTy2w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752640Ab2A0Ihi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 03:37:38 -0500
+Received: from relmlor1.renesas.com ([210.160.252.171]:61069 "EHLO
+	relmlor1.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab2A0Ihg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 03:37:36 -0500
+X-IronPort-AV: E=Sophos;i="4.71,579,1320591600";   d="scan'208";a="65422132"
+Message-id: <4F22624E.2090201@renesas.com>
+Date: Fri, 27 Jan 2012 17:37:34 +0900
+From: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222
+ Thunderbird/9.0.1
+MIME-version: 1.0
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 1/7 v2] dmaengine: add a simple dma library
+References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
+ <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de>
+In-reply-to: <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2012 12:01 AM, Linus Torvalds wrote:
-> I suspect we can just remove the warning entirely - once we've gotten
-> enough coverage with the -rc kernels that people (me in particular)
-> are happy that no normal load really needs it, and returning an error
-> is fine.
->
-> So I don't really consider the warning to be something long-term - I
-> wanted it to make sure that some random binary in some odd
-> distribution wouldn't break in mysterious ways that would take a lot
-> of debugging to find. And so that we really know what we end up
-> blocking in practice.
->
-> I'm not sure how good the -rc kernel coverage is, but I think it's
-> good enough that we can drop the warning before doing a real 3.3
-> release. And I don't think the stable kernel versions ever got that
-> warning printout, did they? That would be great for coverage, of
-> course, if they did.
+Hello Guennadi-san,
 
-They did.
+2012/01/26 23:56, Guennadi Liakhovetski wrote:
+> This patch adds a library of functions, helping to implement dmaengine
+> drivers for hardware, unable to handle scatter-gather lists natively.
+> The first version of this driver only supports memcpy and slave DMA
+> operation.
+> 
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+> 
+> v2:
+> 
+> 1. switch from using a tasklet to threaded IRQ, which allowed to
 
-Here is the list I put together from people who contacted me about the 
-warning:
+I tested this driver on 2 environment, but it could not work correctly.
+ - renesas_usbhs driver with shdma driver on the mackerel board
+ - renesas_usbhs driver with experimental SUDMAC driver
 
-BLKFLSBUF, BLKROSET:
-	These two can be passed down to ops->ioctl even though
-	they are generic block layer ioctls.  Nothing overrides them
-	*and* calls scsi_verify_blk_ioctl so we aren't breaking
-	anything.  However, these ioctls are obviously good for
-	partitions so we should add them to the whitelist.
+In this case, should we modify the renesas_usbhs driver?
+For reference, if I changed the threaded IRQ to tasklet,
+the 2 environment worked correctly:
+==============
+diff --git a/drivers/dma/dma-simple.c b/drivers/dma/dma-simple.c
+index 49d8f7d..65a5170 100644
+--- a/drivers/dma/dma-simple.c
++++ b/drivers/dma/dma-simple.c
+@@ -715,16 +715,18 @@ static irqreturn_t chan_irq(int irq, void *dev)
 
-CDROM_DRIVE_STATUS, FDGETPRM, MTIOCGET32:
-	These three are used for detection of devices that do not
-	support	partitions.  They can be handled the same as
-	CDROM_GET_CAPABILITY, i.e. we can fail them and not break
-	anything.
+ 	spin_lock(&schan->chan_lock);
 
-RAID_VERSION:
-	Also used for detection, however (unlike floppies and CD-ROMs)
-	RAID devices do have partitions.  RAID partitions do not
-	support SCSI ioctls and thus do not call scsi_verify_blk_ioctl,
-	which means we can fail this one right away too.
+-	ret = ops->chan_irq(schan, irq) ? IRQ_WAKE_THREAD : IRQ_NONE;
++	ret = ops->chan_irq(schan, irq) ? IRQ_HANDLED : IRQ_NONE;
++	if (ret == IRQ_HANDLED)
++		tasklet_schedule(&schan->tasklet);
 
-I was preparing a patch to update the whitelist, but I think I will wait 
-a couple more weeks and remove the warning altogether.
+ 	spin_unlock(&schan->chan_lock);
 
-Paolo
+ 	return ret;
+ }
+
+-static irqreturn_t chan_irqt(int irq, void *dev)
++static void chan_irqt(unsigned long dev)
+ {
+-	struct dma_simple_chan *schan = dev;
++	struct dma_simple_chan *schan = (struct dma_simple_chan *)dev;
+ 	const struct dma_simple_ops *ops =
+ 		to_simple_dev(schan->dma_chan.device)->ops;
+ 	struct dma_simple_desc *sdesc;
+@@ -744,15 +746,13 @@ static irqreturn_t chan_irqt(int irq, void *dev)
+ 	spin_unlock_irq(&schan->chan_lock);
+
+ 	simple_chan_ld_cleanup(schan, false);
+-
+-	return IRQ_HANDLED;
+ }
+
+ int dma_simple_request_irq(struct dma_simple_chan *schan, int irq,
+ 			   unsigned long flags, const char *name)
+ {
+-	int ret = request_threaded_irq(irq, chan_irq, chan_irqt,
+-				       flags, name, schan);
++	int ret = request_irq(irq, chan_irq, flags, name, schan);
++	tasklet_init(&schan->tasklet, chan_irqt, (unsigned long)schan);
+
+ 	schan->irq = ret < 0 ? ret : irq;
+
+diff --git a/include/linux/dma-simple.h b/include/linux/dma-simple.h
+index 5336674..beb1489 100644
+--- a/include/linux/dma-simple.h
++++ b/include/linux/dma-simple.h
+@@ -68,6 +68,7 @@ struct dma_simple_chan {
+ 	int id;				/* Raw id of this channel */
+ 	int irq;			/* Channel IRQ */
+ 	enum dma_simple_pm_state pm_state;
++	struct tasklet_struct tasklet;
+ };
+
+ /**
+==============
+
+Best regards,
+Yoshihiro Shimoda
