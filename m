@@ -1,200 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab2A0VtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 16:49:17 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46129 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751834Ab2A0VtQ (ORCPT
+	id S1756452Ab2A0VuY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 16:50:24 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44150 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab2A0VuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 16:49:16 -0500
-Message-ID: <1327700951.2977.78.camel@dabdike.int.hansenpartnership.com>
-Subject: RE: [PATCH] mm: implement WasActive page flag (for improving
- cleancache)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
-        Chris Mason <chris.mason@oracle.com>,
-        lsf-pc@lists.linux-foundation.org
-Date: Fri, 27 Jan 2012 15:49:11 -0600
-In-Reply-To: <9813c0cd-0335-4994-b734-e9fc7872c0cb@default>
-References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
-	 <4F218D36.2060308@linux.vnet.ibm.com>
-	 <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
-	 <20120126163150.31a8688f.akpm@linux-foundation.org>
-	 <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>
-	 <20120126171548.2c85dd44.akpm@linux-foundation.org>
-	 <7198bfb3-1e32-40d3-8601-d88aed7aabd8@default>
-	 <1327671787.2977.17.camel@dabdike.int.hansenpartnership.com>
-	 <3ac611ee-8830-41bd-8464-6867da701948@default>
-	 <1327686876.2977.37.camel@dabdike.int.hansenpartnership.com>
-	 <9813c0cd-0335-4994-b734-e9fc7872c0cb@default>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	Fri, 27 Jan 2012 16:50:23 -0500
+Message-ID: <4F231C6C.80803@gmail.com>
+Date: Sat, 28 Jan 2012 08:51:40 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: airlied@linux.ie, airlied@redhat.com, thellstrom@vmware.com,
+        jakob@vmware.com
+CC: dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
+        joe@perches.com, stable@vger.kernel.org
+Subject: [PATCH] vmwgfx: Fix assignment in vmw_framebuffer_create_handle
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-27 at 10:46 -0800, Dan Magenheimer wrote:
-> > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> > Subject: RE: [PATCH] mm: implement WasActive page flag (for improving cleancache)
-> > 
-> > On Fri, 2012-01-27 at 09:32 -0800, Dan Magenheimer wrote:
-> > > > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> > > > What I was wondering was instead of using a flag, could we make the LRU
-> > > > lists do this for us ... something like have a special LRU list for
-> > > > pages added to the page cache but never referenced since added?  It
-> > > > sounds like you can get your WasActive information from the same type of
-> > > > LRU list tricks (assuming we can do them).
-> > >
-> > > Hmmm... I think this would mean more LRU queues but that may be
-> > > the right long term answer.  Something like?
-> > >
-> > > 	read but not used yet LRU
-> > > 	readahead but not used yet LRU
-> > 
-> > What's the difference between these two?  I think read but not used is
-> > some form of readahead regardless of where it came from.
-> 
-> Oops, I meant "read but used only once (to resolve a page fault)" LRU.
-> 
-> > > 	active LRU
-> > > 	previously active LRU
-> > 
-> > I don't quite understand why you need two queues here, either.  Surely
-> > active is logically at the bottom of the LRU and previously active at
-> > the top (assuming we've separated the unused pages to a different LRU
-> > list).
-> 
-> Cleancache only sees pages when they "fall off the end of the world",
-> so would like to differentiate between clean pages that were used just
-> once and pages that were used more than once, but not recently.
-> There may be better heuristics for cleancache too.
->  
-> > > Naturally, this then complicates the eviction selection process.
-> > >
-> > > > I think the memory pressure eviction heuristic is: referenced but not
-> > > > recently used pages first followed by unreferenced and not recently used
-> > > > readahead pages.  The key being to keep recently read in readahead pages
-> > > > until last because there's a time between doing readahead and getting
-> > > > the page accessed and we don't want to trash a recently red in readahead
-> > > > page only to have the process touch it and find it has to be read in
-> > > > again.
-> > >
-> > > I suspect that any further progress on the page replacement heuristics
-> > > is going to require more per-page data to be stored.  Which means
-> > > that it probably won't work under the constraints of 32-bit systems.
-> > > So it might also make sense to revisit when/whether to allow the
-> > > heuristics to be better on a 64-bit system than on a 32-bit.
-> > > (Even ARM now has 64-bit processors!)  I put this on my topic list
-> > > for LSF/MM, though I have no history of previous discussion so
-> > > this may already have previously been decided.
-> > 
-> > I've got to say why? on this.  The object is to find a simple solution
-> > that's good enough.  I think separating the LRU list into two based on
-> > once referenced/never referenced might be enough to derive all the
-> > information we need.
-> 
-> Maybe I'm misunderstanding (in which case a complete list of the LRU
-> queues you are proposing would be good), but doesn't the existing design
-> already do this?  Actually, IIUC the existing file cache design has a
-> 	"referenced more than once" LRU ("active")
+The assignment of handle in vmw_framebuffer_create_handle doesn't actually do anything useful and is incorrectly assigning an integer value to a pointer argument. It appears that this is a typo and should be dereferencing handle rather than assigning to it directly. This fixes a bug where an undefined handle value is potentially returned to user-space.
 
-So here, I was just saying your desire to store more data in the page
-table and expand the page flags looks complex.
+Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+Reviewed-by: Jakob Bornecrantz<jakob@vmware.com>
+Cc: stable@vger.kernel.org
+---
+Thomas and Jakob have said that a correct fix involves returning the correct user_handle, but also requires changes to userspace. This patch is therefore a temporary fix only. Because it corrects an undefined handle value being returned to userspace, this should also be merged for stable kernels.
 
-Perhaps we do have a fundamental misunderstanding:  For readahead, I
-don't really care about the referenced part.  referenced just means
-pointed to by one or more vmas and active means pointed to by two or
-more vmas (unless executable in which case it's one).
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+index 0af6ebd..b66ef0e 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+@@ -378,7 +378,7 @@ int vmw_framebuffer_create_handle(struct drm_framebuffer *fb,
+ 				  unsigned int *handle)
+ {
+ 	if (handle)
+-		handle = 0;
++		*handle = 0;
+ 
+ 	return 0;
+ }
 
-What I think we care about for readahead is accessed.  This means a page
-that got touched regardless of how many references it has.  An
-unaccessed unaged RA page is a less good candidate for reclaim because
-it should soon be accessed (under the RA heuristics) than an accessed RA
-page.  Obviously if the heuristics misfire, we end up with futile RA
-pages, which we read in expecting to be accessed, but which in fact
-never were (so an unaccessed aged RA page) and need to be evicted.
-
-But for me, perhaps it's enough to put unaccessed RA pages into the
-active list on instantiation and then actually put them in the inactive
-list when they're accessed (following the usual active rules, so they
-become inactive if they only have a single reference, but remain active
-if they have two or more).
-
-I'm less clear on why you think a WasActive() flag is needed.  I think
-you mean a member of the inactive list that was at some point previously
-active.
-
-Perhaps now I've said all this, it's less clear what readahead wants and
-what you want with your flag are similar.
-
-> and a second ("inactive") LRU queue which combines
-> 	"referenced only once" OR
-> 	"readahead and never referenced" OR
-> 	"referenced more than once but not referenced recently"
-> Are you proposing to add more queues or define the existing two queues
-> differently?
-
-Actually, I think I'm just proposing different insertion criteria.
-
-Incidentally, we don't have two LRU lists, we have five:  we have a four
-way split between active/inactive and anon/file backed and then we have
-the unreclaimable lru list.
-
-Obviously, for readahead I'm ignoring all the anon and unreclaimable
-lists.
-
-> So my strawman list of LRU queues separates the three ORs in the inactive
-> LRU queue to three separate LRU queues, for a total of four.
-> 
->  INACTIVE-typeA) read but used only once to resolve a page fault LRU
->  INACTIVE-typeB) readahead but not used yet LRU
->  INACTIVE-typeC) previously active LRU
->  ACTIVE) active LRU
-
-Um, that's complex.  Doesn't your inactive-C list really just identify
-pages that were shared but have sunk in the LRU lists due to lack of
-use?  Inactive-A would appear to identify either streaming pages, or
-single application data pages.  Like I said, I think Inactive-B is easy
-to work around just by putting RA pages into the active list and letting
-the current algorithms run their course.
-
-If that's what you really want, isn't the simplest thing to do to add a
-PAGECACHE_TAG_ACTIVE in the page cache radix tree?  We're only using
-three of the radix tag bits, so we're not as pressed for them as we are
-for actual page bits.  You set it at the same time you activate the page
-(mostly, you probably don't want to set it for RA pages).  Then it
-remains in the radix tree even if the page sinks to the inactive list.
-
-> > Until that theory is disproved, there's not much
-> > benefit to developing ever more complex heuristics.
-> 
-> I think we are both "disproving" the theory that the existing
-> two LRU queues are sufficient.
-
-What I meant was begin with a theory that something simple works first
-and then disprove it before moving on to something more complex ...
-rather than start out with complex first.
-
-James
-
->   You need to differentiate between
-> typeA and typeB (to ensure typeB doesn't get evicted too quickly)
-> and I would like to differentiate typeC from typeA/typeB to have
-> heuristic data for cleancache at the time the kernel evicts the page.
-> 
-> Does that make sense?
-> 
-> P.S. I'm interpreting from http://linux-mm.org/PageReplacementDesign 
-> rather from full understanding of the current code, so please correct
-> me if I got it wrong.
 
 
