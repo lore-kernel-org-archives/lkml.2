@@ -1,107 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab2A0FxD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 00:53:03 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:56573 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab2A0FxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 00:53:01 -0500
-Date: Fri, 27 Jan 2012 16:52:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, gregkh@suse.de,
-        rmk+kernel@arm.linux.org.uk, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC - PATCH 0/7] consolidation of BUG support code.
-Message-Id: <20120127165245.263bd8f7259ea629d8f7df31@canb.auug.org.au>
-In-Reply-To: <1327632272-12928-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1327632272-12928-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Jan_2012_16_52_45_+1100_lPa_iHIceHXncyG/"
+	id S1755386Ab2A0F6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 00:58:50 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48926 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab2A0F6s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 00:58:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <1327597641-7519-9-git-send-email-pdeschrijver@nvidia.com>
+References: <1327597641-7519-1-git-send-email-pdeschrijver@nvidia.com>
+	<1327597641-7519-9-git-send-email-pdeschrijver@nvidia.com>
+Date: Fri, 27 Jan 2012 11:28:47 +0530
+Message-ID: <CAF0Txbpy-oeTkdotDVcoFUu50F7OLvxv_1PKwwxVb_UBmfnOmA@mail.gmail.com>
+Subject: Re: [PATCH v1 8/8] ARM: tegra: support for secondary cores on Tegra30
+From: Murali N <nalajala.murali@gmail.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Jan_2012_16_52_45_+1100_lPa_iHIceHXncyG/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Paul,
-
-On Thu, 26 Jan 2012 21:44:25 -0500 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
+On Thu, Jan 26, 2012 at 10:37 PM, Peter De Schrijver
+<pdeschrijver@nvidia.com> wrote:
 >
-> The changes shown here are to unify linux's BUG support under
-> the one <linux/bug.h> file.  Due to historical reasons, we have
-> some BUG code in bug.h and some in kernel.h -- i.e. the support for
-> BUILD_BUG in linux/kernel.h predates the addition of linux/bug.h,
-> but old code in kernel.h wasn't moved to bug.h at that time.  As
-> a band-aid, kernel.h was including <asm/bug.h> to pseudo link them.
-> With the above in mind, the goals of this changeset are:
->=20
-> 1) find and fix any include/*.h files that were relying on the
->    implicit presence of BUG code.
-> 2) find and fix any C files that were consuming kernel.h and
->    hence relying on implicitly getting some/all BUG code.
-> 3) Move the BUG related code living in kernel.h to <linux/bug.h>
-> 4) remove the asm/bug.h from kernel.h to finally break the chain.
->=20
-> During development, the order was more like 3-4, build-test, 1-2.
-> But to ensure that git history for bisect doesn't get needless
-> build failures introduced, the commits have been reorderd to fix
-> the problem areas in advance.
+> Add support for bringing up secondary cores on Tegra30. On Tegra30 secondary
+> CPU cores are powergated, so we need to turn on the domains before we can bring
+> the CPU cores online. Bringing secondary cores online happens early during the
+> ssytem boot, so we call powergating initialization from platform early_init
 
-I have expressed reservations with these tree wide include file cleanups
-in the past (there was going pain for me and others during the module.h
-split up for example).  So, have you considered the following alternate
-method of achieving most (if not all) of the gains:
+small spelling correction "system"
 
-First a patch that moves the BUG related stuff from kernel.h to
-linux/bug.h and replacing the include of asm/bug.h with linux/bug.h in
-kernel.h.  This should essentially be a noop (bar some strange
-interesting bugs).
+> function.
+>
+> Based on work by:
+>
+> Scott Williams <scwilliams@nvidia.com>
+> Colin Cross <ccross@android.com>
+> Alex Frid <afrid@nvidia.com>
+>
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> ---
+>  arch/arm/mach-tegra/headsmp.S |   32 +++++++++++++++++++++++++
+>  arch/arm/mach-tegra/platsmp.c |   52 ++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 83 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/arm/mach-tegra/headsmp.S b/arch/arm/mach-tegra/headsmp.S
+> index bb13e22..925c4a0 100644
+> --- a/arch/arm/mach-tegra/headsmp.S
+> +++ b/arch/arm/mach-tegra/headsmp.S
+> @@ -188,6 +188,38 @@ __die:
+>        str     r1, [r7, #0x340]                @ CLK_RST_CPU_CMPLX_SET
+>  #endif
+>  1:
+> +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
+> +       mov32   r6, TEGRA_FLOW_CTRL_BASE
+> +
+> +       cmp     r10, #0
+> +       moveq   r1, #FLOW_CTRL_HALT_CPU0_EVENTS
+> +       moveq   r2, #FLOW_CTRL_CPU0_CSR
+> +       movne   r1, r10, lsl #3
+> +       addne   r2, r1, #(FLOW_CTRL_CPU1_CSR-8)
+> +       addne   r1, r1, #(FLOW_CTRL_HALT_CPU1_EVENTS-8)
+> +
+> +       /* Clear CPU "event" and "interrupt" flags and power gate
+> +          it when halting but not before it is in the "WFI" state. */
+> +       ldr     r0, [r6, +r2]
+> +       orr     r0, r0, #FLOW_CTRL_CSR_INTR_FLAG | FLOW_CTRL_CSR_EVENT_FLAG
+> +       orr     r0, r0, #FLOW_CTRL_CSR_ENABLE
+> +       str     r0, [r6, +r2]
+> +
+> +       /* Unconditionally halt this CPU */
+> +       mov     r0, #FLOW_CTRL_WAITEVENT
+> +       str     r0, [r6, +r1]
+> +       ldr     r0, [r6, +r1]                   @ memory barrier
+> +
+> +       dsb
+> +       isb
+> +       wfi                                     @ CPU should be power gated here
+> +
+> +       /* If the CPU didn't power gate above just kill it's clock. */
+> +
+> +       mov     r0, r11, lsl #8
+> +       str     r0, [r7, #348]                  @ CLK_CPU_CMPLX_SET
+> +#endif
+> +
+>        /* If the CPU still isn't dead, just spin here. */
+>        b       .
+>  ENDPROC(__tegra_cpu_reset_handler)
+> diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
+> index fa1178d..672a751 100644
+> --- a/arch/arm/mach-tegra/platsmp.c
+> +++ b/arch/arm/mach-tegra/platsmp.c
+> @@ -24,7 +24,9 @@
+>  #include <asm/mach-types.h>
+>  #include <asm/smp_scu.h>
+>
+> +#include <mach/clk.h>
+>  #include <mach/iomap.h>
+> +#include <mach/powergate.h>
+>
+>  #include "chipid.h"
+>  #include "flowctrl.h"
+> @@ -42,6 +44,8 @@ static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
+>        (IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x340)
+>  #define CLK_RST_CONTROLLER_RST_CPU_CMPLX_CLR \
+>        (IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x344)
+> +#define CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR \
+> +       (IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x34c)
+>
+>  #define CPU_CLOCK(cpu) (0x1<<(8+cpu))
+>  #define CPU_RESET(cpu) (0x1111ul<<(cpu))
+> @@ -73,11 +77,54 @@ static int tegra20_power_up_cpu(unsigned int cpu)
+>        return 0;
+>  }
+>
+> +static int tegra30_power_up_cpu(unsigned int cpu)
+> +{
+> +       u32 reg;
+> +       int ret, pwrgateid;
+> +       unsigned long timeout;
+> +
+> +       pwrgateid = tegra_cpu_powergate_id(cpu);
+> +       if (pwrgateid < 0)
+> +               return pwrgateid;
+> +
+> +       /* If this is the first boot, toggle powergates directly. */
+> +       if (!tegra_powergate_is_powered(pwrgateid)) {
+> +               ret = tegra_powergate_power_on(pwrgateid);
+> +               if (ret)
+> +                       return ret;
+> +
+> +               /* Wait for the power to come up. */
+> +               timeout = jiffies + 10*HZ;
+> +               do {
+> +                       if (tegra_powergate_is_powered(pwrgateid))
+> +                               goto remove_clamps;
+> +                       udelay(10);
+> +               } while (time_before(jiffies, timeout));
+> +               return -ETIMEDOUT;
+> +       }
+> +
+> +remove_clamps:
+> +       /* CPU partition is powered. Enable the CPU clock. */
+> +       writel(CPU_CLOCK(cpu), CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
+> +       reg = readl(CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
+> +       udelay(10);
+> +
+> +       /* Remove I/O clamps. */
+> +       ret = tegra_powergate_remove_clamping(pwrgateid);
+> +       udelay(10);
+> +
+> +       /* Clear flow controller CSR. */
+> +       flowctrl_write_cpu_csr(cpu, 0);
+> +
+> +       return 0;
+> +}
+> +
+>  int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  {
+>        int status;
+>
+> -       /* Force the CPU into reset. The CPU must remain in reset when the
+> +       /*
+> +        * Force the CPU into reset. The CPU must remain in reset when the
+>         * flow controller state is cleared (which will cause the flow
+>         * controller to stop driving reset if the CPU has been power-gated
+>         * via the flow controller). This will have no effect on first boot
+> @@ -98,6 +145,9 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+>        case TEGRA20:
+>                status = tegra20_power_up_cpu(cpu);
+>                break;
+> +       case TEGRA30:
+> +               status = tegra30_power_up_cpu(cpu);
+> +               break;
+>        default:
+>                status = -EINVAL;
+>                break;
+> --
+> 1.7.7.rc0.72.g4b5ea.dirty
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-The trick is to convince Linus that this patch is OK for the current RC ser=
-ies ...
 
-Then you can (at your leisure) fix all the files that need linux/bug.h
-included - farming them out as required.  And we could add a check in
-checkpatch.pl.
 
-Then (either after 3.4-rc1 or in the 3.5 merge window) we can remove the
-include of linux/bug.h from linux/kernel.h and fix any left over build
-problems.
 
-I have not thought about this too hard, so there may be large holes in
-this plan.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__27_Jan_2012_16_52_45_+1100_lPa_iHIceHXncyG/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPIjutAAoJEECxmPOUX5FERhsP+QEY/NRp9glh41m/LafiWRy2
-lj22NE7gC/yGpm4KsrWfdDqy+vZfdhoex9w6VBLGXn+DhsBxMdD6jpTDlfjwV3Uh
-Y8yNuUT/rl+wfTRQbi/veZpNUVv2fch0/O1bFVX8zSl9gbcgDpl0xerg1jdmyY+I
-B9r/1HNayOKqU/Tdm6WL3H4q3stRiZr1IxSKw52FfSauq+hFOpv7iZC1NXus/mve
-jjeg/wswf9EnzK9RIOlruQEpDv9hgP1KQ3pMJObMnaqkbaui31ItK+SJxi8E1zsT
-au/bbdZ0QScXoDq+M95M5tH9fj+ceScEfaGl+Pa6qZhWSjlGdf3RFWJtJo3AWa9B
-Xh6XcV1ECuBa5F83X6G9h0tBweWR7dB/WUJdnuC50rfh3mYNjS2gmUVLLFsF1m+l
-R8BgUwEMCSPuNTgkKWF+wckjPuKdCD5XamV+O2e1K0Rs+ws3NqZllXif7ueGJZsH
-JGZslQJ0sHZ41RNndnHW9+e610bSC1MmHEiUksla+mSZcsB+QKT5F0ttEhCdL8ap
-SpdF6qtCuVkDi/i24tpcvVOy3JYbHa2B+lvPVYA1Of6PAumtmAUjHVAZMFptjj4J
-kwdrslyx6l0d7xVMcu6MynZDbfdrvAuq/hLEo/YDdrtNHyT/qGehcC90Lzgfe0VZ
-u/DgnoUjJXuVUfXbuPEa
-=wvI4
------END PGP SIGNATURE-----
-
---Signature=_Fri__27_Jan_2012_16_52_45_+1100_lPa_iHIceHXncyG/--
+--
+Regards,
+Murali N
