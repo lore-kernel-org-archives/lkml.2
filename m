@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab2A0DlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 22:41:25 -0500
-Received: from mga14.intel.com ([143.182.124.37]:48949 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754155Ab2A0Dki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 22:40:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100232698"
-Message-Id: <20120127031327.430238053@intel.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 27 Jan 2012 11:05:32 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+	id S1754970Ab2A0DmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 22:42:17 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40142 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794Ab2A0DmN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 22:42:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOtrxKMb==2aR-BF2_XJy+y2_7JAhxHF2H60het19BQE163J8g@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+ <20120108221342.GA7058@ime.usp.br> <CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+ <20120109112207.7f993845@jbarnes-desktop> <CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+ <CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+ <CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+ <CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+ <CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+ <CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+ <20120113115946.GA10615@ime.usp.br> <CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+ <CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+ <CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+ <CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+ <CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+ <CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+ <CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+ <CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
+ <CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
+ <CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
+ <CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
+ <CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
+ <CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
+ <CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
+ <CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
+ <CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
+ <CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
+ <CAOtrxKO9kZce4sDopN4yKFtLVx-BQS56OwyEav0Bh1XjqnS1MQ@mail.gmail.com>
+ <CAE9FiQU5239LD-e7FdpKq1iY3k80BFg2pLVw28YScufuai0R4w@mail.gmail.com> <CAOtrxKMb==2aR-BF2_XJy+y2_7JAhxHF2H60het19BQE163J8g@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 26 Jan 2012 20:41:52 -0700
+Message-ID: <CAErSpo7wFda_6C7q9YLApJmRe8D=dnB4ks8VJ3UXQta_qm_8vA@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Yinghai Lu <yinghai@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-cc: Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 8/9] readahead: dont do start-of-file readahead after lseek()
-References: <20120127030524.854259561@intel.com>
-Content-Disposition: inline; filename=readahead-lseek.patch
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some applications (eg. blkid, id3tool etc.) seek around the file
-to get information. For example, blkid does
+On Thu, Jan 26, 2012 at 4:16 AM, Rogério Brito <rbrito@ime.usp.br> wrote:
+> On Thu, Jan 26, 2012 at 00:03, Yinghai Lu <yinghai@kernel.org> wrote:
+>> 2012/1/25 Rogério Brito <rbrito@ime.usp.br>:
+>>>
+>>> Wild thoughts: I just saw that nouveau calls some ACPI stuff to get
+>>> EDID information and, as ACPI is broken on this notebook, could that
+>>> be a potential reason for the panic that I'm seeing? (Yes, I can take
+>>> a photo of the screen).
+>>
+>> Which 2.6.x kernel works on your laptop without disabling acpi?
+>
+> Unfortunately, no 2.6 kernel has worked on this laptop without
+> acpi=off. I also once booted FreeBSD here just to see how it would
+> behave and it also hang with ACPI enabled.
+>
+> From what I see on this notebook, if ACPI is not turned off, the
+> computer simply hangs once the ACPI is started (it gives one layman
+> like me the impression of entering an infinite loop). But, again, this
+> is just a layman observation of what the system appears to be doing.
 
-	     seek to	0
-	     read	1024
-	     seek to	1536
-	     read	16384
+My guess is that most of these problems are related, so if we fixed
+whatever causes the ACPI hang, the other problems would probably go
+away, too.
 
-The start-of-file readahead heuristic is wrong for them, whose
-access pattern can be identified by lseek() calls.
+Did you figure out anything about the MTRRs?
 
-So test-and-set a READAHEAD_LSEEK flag on lseek() and don't
-do start-of-file readahead on seeing it. Proposed by Linus.
-
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/read_write.c    |    3 +++
- include/linux/fs.h |    1 +
- mm/readahead.c     |    4 ++++
- 3 files changed, 8 insertions(+)
-
---- linux-next.orig/mm/readahead.c	2012-01-25 15:57:57.000000000 +0800
-+++ linux-next/mm/readahead.c	2012-01-25 15:57:58.000000000 +0800
-@@ -485,6 +485,7 @@ unsigned long ra_submit(struct file_ra_s
- 			ra->pattern, ra->start, ra->size, ra->async_size,
- 			actual);
- 
-+	ra->lseek = 0;
- 	ra->for_mmap = 0;
- 	ra->for_metadata = 0;
- 	return actual;
-@@ -636,6 +637,8 @@ ondemand_readahead(struct address_space 
- 	 * start of file
- 	 */
- 	if (!offset) {
-+		if (ra->lseek && req_size < max)
-+			goto random_read;
- 		ra->pattern = RA_PATTERN_INITIAL;
- 		goto initial_readahead;
- 	}
-@@ -721,6 +724,7 @@ ondemand_readahead(struct address_space 
- 	if (try_context_readahead(mapping, ra, offset, req_size, max))
- 		goto readit;
- 
-+random_read:
- 	/*
- 	 * standalone, small random read
- 	 */
---- linux-next.orig/fs/read_write.c	2012-01-25 15:57:46.000000000 +0800
-+++ linux-next/fs/read_write.c	2012-01-25 15:57:58.000000000 +0800
-@@ -47,6 +47,9 @@ static loff_t lseek_execute(struct file 
- 		file->f_pos = offset;
- 		file->f_version = 0;
- 	}
-+
-+	file->f_ra.lseek = 1;
-+
- 	return offset;
- }
- 
---- linux-next.orig/include/linux/fs.h	2012-01-25 15:57:57.000000000 +0800
-+++ linux-next/include/linux/fs.h	2012-01-25 15:57:58.000000000 +0800
-@@ -956,6 +956,7 @@ struct file_ra_state {
- 	u8 pattern;			/* one of RA_PATTERN_* */
- 	unsigned int for_mmap:1;	/* readahead for mmap accesses */
- 	unsigned int for_metadata:1;	/* readahead for meta data */
-+	unsigned int lseek:1;		/* this read has a leading lseek */
- 
- 	loff_t prev_pos;		/* Cache last read() position */
- };
-
-
+Bjorn
