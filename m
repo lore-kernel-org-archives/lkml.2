@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab2A0Qd1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:33:27 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2263 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352Ab2A0Qd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:33:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="103410983"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, "mjg@redhat.com" <mjg@redhat.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/5] platform-x86: intel_mid_thermal: add msic_thermal
- alias
-Thread-Topic: [PATCH 3/5] platform-x86: intel_mid_thermal: add msic_thermal
- alias
-Thread-Index: AQHM3E+RSn3xbMeVo0qBuGpxj4p5/5YgaYNQ
-Date: Fri, 27 Jan 2012 16:33:21 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5902FDDD@BGSMSX101.gar.corp.intel.com>
-References: <20120126173729.16719.15431.stgit@bob.linux.org.uk>
- <20120126173912.16719.51752.stgit@bob.linux.org.uk>
-In-Reply-To: <20120126173912.16719.51752.stgit@bob.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1756254Ab2A0QeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 11:34:22 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:62152 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab2A0QeV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 11:34:21 -0500
+Date: Fri, 27 Jan 2012 11:34:16 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs fixes
+Message-ID: <20120127163416.GE991@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	Linux-kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4F22D20A.0083,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0RGXWox020513
 
-Hi Alan,
+[ sorry resend without bad auto-complete for lkml ]
 
-> -----Original Message-----
-> From: platform-driver-x86-owner@vger.kernel.org [mailto:platform-driver-x86-
-> owner@vger.kernel.org] On Behalf Of Alan Cox
-> Sent: Thursday, January 26, 2012 11:09 PM
-> To: mjg@redhat.com; platform-driver-x86@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH 3/5] platform-x86: intel_mid_thermal: add msic_thermal alias
-> 
-> From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> In newer boards this device is called "msic_thermal" instead of
-> "msic_sensor". To support both we add suitable alias for the driver.
+Hi Linus,
 
-In all the medfield boards, that we use here, this is named 'msic_thermal'.
-So, maybe we should remove msic_sensor and just use msic_thermal.
-Or, Do you have any medfield boards that have this entry as 'msic_sensor' ?
+We've got a variety pack of fixes in the for-linus branch of the btrfs
+repo:
 
-Thanks,
-Durga
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
-> 
->  drivers/platform/x86/intel_mid_thermal.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> 
-> diff --git a/drivers/platform/x86/intel_mid_thermal.c
-> b/drivers/platform/x86/intel_mid_thermal.c
-> index ccd7b1f..de2e62e 100644
-> --- a/drivers/platform/x86/intel_mid_thermal.c
-> +++ b/drivers/platform/x86/intel_mid_thermal.c
-> @@ -550,6 +550,7 @@ static int mid_thermal_remove(struct platform_device *pdev)
-> 
->  static const struct platform_device_id therm_id_table[] = {
->  	{ DRIVER_NAME, 1 },
-> +	{ "msic_thermal", 1 },
->  	{ }
->  };
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+These are all smaller fixes caught from different testers, benchmarks
+and the occasional compiler warning.
+
+Josef Bacik (3) commits (+3/-2):
+    Btrfs: use cluster->window_start when allocating from a cluster bitmap (+1/-1)
+    Btrfs: advance window_start if we're using a bitmap (+1/-0)
+    Btrfs: make sure a bitmap has enough bytes (+1/-1)
+
+Stefan Behrens (1) commits (+6/-5):
+    Btrfs: fix warning for 32-bit build of fs/btrfs/check-integrity.c
+
+Jan Schmidt (1) commits (+2/-2):
+    Btrfs: fix uninit warning in backref.c
+
+Liu Bo (1) commits (+1/-1):
+    Btrfs: do not defrag a file partially
+
+Mitch Harder (1) commits (+2/-0):
+    Btrfs: Check for NULL page in extent_range_uptodate
+
+Chris Mason (1) commits (+8/-2):
+    Btrfs: fix reservations in btrfs_page_mkwrite
+
+David Sterba (1) commits (+7/-0):
+    btrfs: mask out gfp flags in releasepage
+
+Jan Kara (1) commits (+4/-2):
+    btrfs: Fix busyloops in transaction waiting code
+
+Miao Xie (1) commits (+27/-22):
+    Btrfs: fix enospc error caused by wrong checks of the chunk
+
+Total: (11) commits (+60/-36)
+
+ fs/btrfs/backref.c          |    4 +-
+ fs/btrfs/check-integrity.c  |   11 +++++----
+ fs/btrfs/disk-io.c          |    7 ++++++
+ fs/btrfs/extent-tree.c      |   49 +++++++++++++++++++++++-------------------
+ fs/btrfs/extent_io.c        |    2 +
+ fs/btrfs/free-space-cache.c |    5 ++-
+ fs/btrfs/inode.c            |   10 +++++++-
+ fs/btrfs/ioctl.c            |    2 +-
+ fs/btrfs/tree-log.c         |    6 +++-
+ 9 files changed, 60 insertions(+), 36 deletions(-)
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
