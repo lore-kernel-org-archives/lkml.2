@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab2A0TiI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 14:38:08 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35195 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753653Ab2A0TiG (ORCPT
+	id S1754102Ab2A0Tig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 14:38:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60786 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778Ab2A0Tie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 14:38:06 -0500
-X-Sasl-enc: xmm7sFeRhvwo5+H4kQ6INimrSooYq6JjoEPOTL5X55Vc 1327693082
-Date: Fri, 27 Jan 2012 17:37:56 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>, mmarek@suse.cz
-Subject: Re: Ioctl warning for a partition
-Message-ID: <20120127193756.GC25348@khazad-dum.debian.net>
-References: <20120126223037.GE28368@quack.suse.cz>
- <CA+55aFwkRhsdAYwP-S5_qPkRX=dMSnxv5Ow1ULaSJjKe3aTy2w@mail.gmail.com>
- <4F21E828.8090502@msgid.tls.msk.ru>
- <20120127192817.GB25348@khazad-dum.debian.net>
+	Fri, 27 Jan 2012 14:38:34 -0500
+Message-ID: <4F22FD36.6020309@canonical.com>
+Date: Fri, 27 Jan 2012 11:38:30 -0800
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120119 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120127192817.GB25348@khazad-dum.debian.net>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: James Morris <jmorris@namei.org>
+CC: Kees Cook <kees@ubuntu.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] AppArmor: refactor securityfs to use structures
+References: <1327624163-21576-1-git-send-email-kees@ubuntu.com>
+In-Reply-To: <1327624163-21576-1-git-send-email-kees@ubuntu.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jan 2012, Henrique de Moraes Holschuh wrote:
-> On Fri, 27 Jan 2012, Michael Tokarev wrote:
-> > mdadm ioctls reported in various places apparently got fixed by
-> > ENOTTY/ENOIOCTLCMD change.
+On 01/26/2012 04:29 PM, Kees Cook wrote:
+> This is the ground-work for expanding the AppArmor securityfs to include
+> useful information that the userspace tools can more easily interact with.
+> Presently, this is only static information about the state of AppArmor.
 > 
-> Does that fix still need to be backported to -stable?
-> 
-> Linux v3.0.18 + Debian stable userspace (mdadm v3.1.4) causes this on
-> boot (when mdadm runs in the initramfs):
-> 
-> mdadm: sending ioctl 1261 to a partition!
-> mdadm: sending ioctl 1261 to a partition!
-> mdadm: sending ioctl 1261 to a partition!
-> mdadm: sending ioctl 1261 to a partition!
-> mdadm: sending ioctl 1261 to a partition!
-> mdadm: sending ioctl 1261 to a partition!
-> mdadm: sending ioctl 1261 to a partition!
-> mdadm: sending ioctl 1261 to a partition!
-> mdadm: sending ioctl 800c0910 to a partition!
-> mdadm: sending ioctl 800c0910 to a partition!
+James,
 
-This is on x86-64/amd64.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+if no one else has issues with these, I will pull these patches into the
+apparmor tree to batch them together as pull request with some other
+apparmor patches
