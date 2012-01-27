@@ -1,91 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab2A0KG1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 05:06:27 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62648 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab2A0KGY (ORCPT
+	id S1753749Ab2A0KHU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 05:07:20 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4494 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab2A0KHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 05:06:24 -0500
-Message-ID: <4F22771B.3030402@monstr.eu>
-Date: Fri, 27 Jan 2012 11:06:19 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Fri, 27 Jan 2012 05:07:18 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 27 Jan 2012 02:07:17 -0800
+Message-ID: <4F227728.9070400@nvidia.com>
+Date: Fri, 27 Jan 2012 15:36:32 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Ohad Ben-Cohen <ohad@wizery.com>,
-        John Williams <john.williams@petalogix.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: remoteproc: Load coprocessor code to the specific main memory
- location
-References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com> <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com> <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com> <4F212E9E.9060807@monstr.eu>
-In-Reply-To: <4F212E9E.9060807@monstr.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stephen Warren <swarren@nvidia.com>
+CC: "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V1] ARM: tegra: dma: Support variable transfer sizes
+References: <1327490378-10904-1-git-send-email-ldewangan@nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF178CB8202B@HQMAIL01.nvidia.com> <4F20B03A.3030303@nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF178CB82335@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178CB82335@HQMAIL01.nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Simek wrote:
-> Ohad Ben-Cohen wrote:
->> On Wed, Jan 25, 2012 at 4:19 PM, Michal Simek <monstr@monstr.eu> wrote:
->>> I started with pur vanilla kernel and patches from your tree
->>> git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git
->>> for-next branch
->>> but then I had to moved to for-next-acked-merged because in the origin
->>> one were some problems.
+On Thursday 26 January 2012 10:23 PM, Stephen Warren wrote:
+> Laxman Dewangan wrote at Wednesday, January 25, 2012 6:46 PM:
+>> On Wednesday 25 January 2012 10:33 PM, Stephen Warren wrote:
+>>> Laxman Dewangan wrote at Wednesday, January 25, 2012 4:20 AM:
+>>>> Allow the transfer size to vary in each DMA request,
+>
+>> Still issue may come when we need to read the transfered count from dma
+>> through status register whether it has completed the old and started new
+>> one or still on old req. This can be resolved by having proper lock
+>> between the isr and reading status so that if isr clears the
+>> interrupt_done, just raise a flag that int_done arrive and so
+>> get-active_count() function can handle it properly before workqueu get
+>> scheduled. I am seeing that there is  missing synchronization between
+>> int_done status and get_active_count().
+>> I am also thinking that we can remove the work queue and handle the
+>> queue management in isr only
 >>
->> Unlike for-next-acked-merged, the other branches aren't rebased and
->> therefore have merge conflicts with 3.3 material; that's intentional.
->>
->>> Do you have any kernel tree with CMA just for sure?
->>
->> Not a 3.3-based one, so I recommend you to just merge Marek's branch 
->> directly.
->>
->> I'll soon create a full-fledged 3.3 branch though, so you may want to
->> wait a bit until I get to it.
-> 
-> I have done it and tested. It works as expected. Thanks.
-> I have created region at phys addr 0x10000000 with selected size.
-> I had to move carveout in resource table to be first in this area.
-> Also removed that copying from kick function.
-> 
-> 
-> 
-> I have one small problem which is that physical address is 0x10000000
-> which means that firmware entry point is the same.
-> In rproc_load_segments is da composed from phdr->p_paddr which is 
-> 0x10000000.
-> And code is designed that this load addr is offset.
-> 
-> Here is the code:
->     /* go through the available ELF segments */
->     for (i = 0; i < ehdr->e_phnum; i++, phdr++) {
->         u32 da = phdr->p_paddr; // OFFSET 0x10000000
->         u32 memsz = phdr->p_memsz;
-> 
-> But for my case is physical address correct and it is not offset 
-> 0x10000000.
-> I have created temporary fix which substract virtual address to get 
-> correct da.
-> 
-> u32 da = phdr->p_paddr - phdr->p_vaddr;
-> 
-> What should be correct solution?
+> So I assume you need to make some/all of those modifications before we can
+> apply this patch?
+>
+Ok, I will push that patches first and then we can go for this patch.
 
-Just follow up. I have find out that moving to 0x10000000 offset will be problematic
-because there must be vector table at 0x0. IIUC Linux remaps reset vectors to 0xffff0000 offset
-through cp15 reg in bootup code.
+>>> Actually looking at the current continuous mode, I'm not convinced that
+>>> it correctly handles replacing an in-progress buffer with a new buffer;
+>>> I certainly see where handle_continuous_dma() checks for a second (SW)
+>>> queued buffer and tells the HW to use that buffer instead, but I don't
+>>> see where the (SW) queue management is done; where is the old req removed
+>>> from the head of ch->list and marked complete? I assume the "out of sync"
+>>> case is only intended to be an error condition and not part of the
+>>> buffer switch?
+>> We are removing the old req from list in handling of full buffer
+>> interrupt handling.
+>>
+>> 660                 } else if (req->buffer_status ==
+>> 661                         TEGRA_DMA_REQ_BUF_STATUS_HALF_FULL) {
+>> :::::::::::::::::::::::::::::::::::::::
+>> 670                         req->buffer_status =
+>> TEGRA_DMA_REQ_BUF_STATUS_FULL;
+>> 671                         req->bytes_transferred = bytes_transferred;
+>> 672                         req->status = TEGRA_DMA_REQ_SUCCESS;
+>> 673                         list_del(&req->node);
+> Oh right... Maybe I'm misunderstanding continuous mode works then; I
+> thought that the client driver queued a request once, and it continued
+> to execute forever until either a new request was queued to replace it,
+> or the original request for dequeued. It looks like instead, the req
+> is always removed from the queue once we've seen both the ping and the
+> pong interrupts. Am I totally misunderstanding what's happening?
+>
+I agree that many issues are there in this piece of code.
+Originally, continuous double support was added only for glitch less 
+audio playback. The audio driver makes some requests and the request in 
+dma-queue get programmed before the current dma complete and so after 
+buffer transfer completion, it will jump to newly programmed value 
+without pausing or transfer gap in dma transfer and so no audio glitch. 
+The last request was always like silence so that dma can be stop before 
+wrapping up actual audio data. Some of the code is missing in this file 
+which was fixed.
+Currently the audio driver is not using the continuous double buffering 
+mechanism, it is using the oneshot dma and you may have small glitches 
+in audio when you run higher sampling rate audio.
 
-Michal
+Here I agree with your thought: continuous double buffering mechanism 
+should be in loop if it is last request i.e. do not delete last req 
+until client call dequeue or stop_dma. If new request queued then dma 
+will start transfer to new address/size once current is completed and 
+loop on that request forever.
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Currently it is not implemented like that. I will correct this with 
+proper documentation on header file about this mode.
+
+
+
