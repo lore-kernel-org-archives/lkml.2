@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab2A0G7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 01:59:47 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47187 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab2A0G7T convert rfc822-to-8bit (ORCPT
+	id S1755906Ab2A0G7S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 01:59:18 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:33811 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751917Ab2A0G7N convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 01:59:19 -0500
-From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v1 3/3] ARM: tegra: cpuidle driver for tegra
-Thread-Topic: [PATCH v1 3/3] ARM: tegra: cpuidle driver for tegra
-Thread-Index: AQHM3Efdz4WGVcb5lUWhYfrRza69QJYfx+nQ
-Date: Fri, 27 Jan 2012 06:59:03 +0000
-Message-ID: <B5906170F1614E41A8A28DE3B8D1214331791EA6@DBDE01.ent.ti.com>
-References: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
- <1327594923-21822-4-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1327594923-21822-4-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
+	Fri, 27 Jan 2012 01:59:13 -0500
+X-WSS-ID: 0LYG3EL-0A-25T-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Anton Vorontsov" <cbouatmailru@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 26 Jan 2012 22:59:00 -0800
+Subject: [PATCH 5/6] lp8727_charger: add description of platform data
+Thread-Topic: [PATCH 5/6] lp8727_charger: add description of platform
+ data
+Thread-Index: AczcwSWhKIfJWMNqTxSIM8f5g+qnUw==
+Message-ID: <B567DBAB974C0544994013492B949F8E3812D6EB0A@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.41]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
+X-WSS-ID: 633C94BC1LS9965383-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 21:52:03, Peter De Schrijver wrote:
-[...]
-> +static int tegra_idle_enter_lp3(struct cpuidle_device *dev,
-> +	struct cpuidle_driver *drv, int index)
-> +{
-> +	ktime_t enter, exit;
-> +	s64 us;
-> +
-> +	local_irq_disable();
-> +	local_fiq_disable();
-> +
-> +	enter = ktime_get();
-> +
-> +	tegra_cpu_wfi();
-> +
-> +	exit = ktime_sub(ktime_get(), enter);
-> +	us = ktime_to_us(exit);
-> +
-> +	local_fiq_enable();
-> +	local_irq_enable();
-> +
-> +	dev->last_residency = us;
-> +
-> +	return index;
-> +}
+Add brief description of lp8727_platform_data and lp8727_chg_param.
 
-You can probably drop local_irq_disable() and local_irq_enable().
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ include/linux/lp8727.h |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/lp8727.h b/include/linux/lp8727.h
+index 43d4242..9a4611f 100644
+--- a/include/linux/lp8727.h
++++ b/include/linux/lp8727.h
+@@ -34,13 +34,24 @@ enum lp8727_ichg {
+ 	ICHG_1000mA,
+ };
+ 
++/**
++ * struct lp8727_chg_param
++ * @eoc_level : end of charge level setting
++ * @ichg : charging current
++ */
+ struct lp8727_chg_param {
+-	/* end of charge level setting */
+ 	enum lp8727_eoc_level eoc_level;
+-	/* charging current */
+ 	enum lp8727_ichg ichg;
+ };
+ 
++/**
++ * struct lp8727_platform_data
++ * @get_batt_present : check battery status - exists or not
++ * @get_batt_level : get battery voltage (mV)
++ * @get_batt_capacity : get battery capacity (%)
++ * @get_batt_temp : get battery temperature
++ * @ac, @usb : charging parameters each charger type
++ */
+ struct lp8727_platform_data {
+ 	u8 (*get_batt_present)(void);
+ 	u16 (*get_batt_level)(void);
+-- 
+1.7.4.1
+
+
+Best Regards,
+Milo (Woogyom) Kim
+Texas Instruments Incorporated
+
+
+
+
