@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab2A0Abw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:31:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45154 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab2A0Abv (ORCPT
+	id S1754521Ab2A0AhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 19:37:10 -0500
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:62246 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab2A0AhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:31:51 -0500
-Date: Thu, 26 Jan 2012 16:31:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH] mm: implement WasActive page flag (for improving
- cleancache)
-Message-Id: <20120126163150.31a8688f.akpm@linux-foundation.org>
-In-Reply-To: <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
-References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
-	<4F218D36.2060308@linux.vnet.ibm.com>
-	<9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 26 Jan 2012 19:37:08 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX180f010rtrLx7ZYsweDUYby
+Date: Thu, 26 Jan 2012 16:37:05 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/15] arch/arm/mach-omap2/smartreflex.c: add missing
+ iounmap
+Message-ID: <20120127003704.GH29812@atomide.com>
+References: <1326362117-29371-15-git-send-email-Julia.Lawall@lip6.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326362117-29371-15-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jan 2012 13:28:02 -0800 (PST)
-Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
-
-> > I do think it also needs to get cleared on the way in to the page
-> > allocator.  Otherwise:
-> > 
-> > 	PageSetWasActive(page);
-> > 	free_page(page);
-> > 	...
-> > 	another_user_page = get_free_page()
-> > 	// now cleancache sees the active bit for the prev user
-> > 
-> > Or am I missing somewhere it gets cleared non-explicitly somewhere?
+* Julia Lawall <Julia.Lawall@lip6.fr> [120112 01:23]:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> True, it is not getting cleared and it should be, good catch!
+> Add missing iounmap in error handling code, in a case where the function
+> already preforms iounmap on some other execution path.
 
-It should be added to PAGE_FLAGS_CHECK_AT_FREE.
+Thanks I'll apply this into omap fixes branch.
 
-> I'll find the place to add the call to ClearPageWasActive() for v2.
+Regards,
 
-AFAICT this patch consumes our second-last page flag, or close to it. 
-We'll all be breaking out in hysterics when the final one is gone.
-
-This does appear to be a make or break thing for cleancache - if we
-can't fix https://lkml.org/lkml/2012/1/22/61 then cleancache is pretty
-much a dead duck.  But I'm going to ask for great effort to avoid
-consuming another page flag.  Either fix cleancache via other means or,
-much less desirably, find an existing page flag and overload it.
-
-And I'm afraid that neither I nor other MM developers are likely to
-help you with "fix cleancache via other means" because we weren't
-provided with any description of what the problem is within cleancache,
-nor how it will be fixed.  All we are given is the assertion "cleancache
-needs this".
+Tony
+ 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e;
+> statement S,S1;
+> int ret;
+> @@
+> e = \(ioremap\|ioremap_nocache\)(...)
+> ... when != iounmap(e)
+> if (<+...e...+>) S
+> ... when any
+>     when != iounmap(e)
+> *if (...)
+>    { ... when != iounmap(e)
+>      return ...; }
+> ... when any
+> iounmap(e);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  arch/arm/mach-omap2/smartreflex.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+> index 9dd9345..7e755bb 100644
+> --- a/arch/arm/mach-omap2/smartreflex.c
+> +++ b/arch/arm/mach-omap2/smartreflex.c
+> @@ -897,7 +897,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
+>  		ret = sr_late_init(sr_info);
+>  		if (ret) {
+>  			pr_warning("%s: Error in SR late init\n", __func__);
+> -			return ret;
+> +			goto err_iounmap;
+>  		}
+>  	}
+>  
+> 
