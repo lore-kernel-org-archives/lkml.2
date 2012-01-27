@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2A0C7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 21:59:31 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:56055 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab2A0C73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 21:59:29 -0500
-Date: Fri, 27 Jan 2012 13:59:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Michael Buesch <m@bues.ch>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: linux-next: build failure after merge of the driver-core tree
-Message-Id: <20120127135912.e5f45bf1c4a99b114c18bf72@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Jan_2012_13_59_12_+1100_yyPkG7dRZ2PC++TB"
+	id S1754747Ab2A0DIG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 22:08:06 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:30715 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab2A0DIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 22:08:04 -0500
+Date: Thu, 26 Jan 2012 22:05:33 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: socketpair@gmail.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Fwd: BUG in
+ linux+v3.2.1/drivers/xen/xen-pciback/pci_stub.c
+Message-ID: <20120127030533.GA20352@phenom.dumpdata.com>
+References: <CAEmTpZHkKB29FLWqs0R=uD1zXBOJkfSstGgMM=8bA1VVXGT+wQ@mail.gmail.com>
+ <CAEmTpZH+OeQO=RNBFh_+j_QCmPa8sGhV_OOqqsiKUMmjhBwESw@mail.gmail.com>
+ <20120125163910.GC23999@phenom.dumpdata.com>
+ <20120125212214.GA29571@phenom.dumpdata.com>
+ <4F212835020000780006F264@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F212835020000780006F264@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4F22150D.00DF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Jan_2012_13_59_12_+1100_yyPkG7dRZ2PC++TB
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 26, 2012 at 09:17:25AM +0000, Jan Beulich wrote:
+> >>> On 25.01.12 at 22:22, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > --- a/drivers/xen/xen-pciback/xenbus.c
+> > +++ b/drivers/xen/xen-pciback/xenbus.c
+> > @@ -206,8 +206,9 @@ static int xen_pcibk_publish_pci_dev(struct 
+> > xen_pcibk_device *pdev,
+> >  		goto out;
+> >  	}
+> >  
+> > +	/* TODO: implement feature-use-decimal-for-devfn */
+> >  	err = xenbus_printf(XBT_NIL, pdev->xdev->nodename, str,
+> > -			    "%04x:%02x:%02x.%02x", domain, bus,
+> > +			    "%04x:%02x:%02x.%1x", domain, bus,
+> >  			    PCI_SLOT(devfn), PCI_FUNC(devfn));
+> >  
+> >  out:
+> 
+> If you are concerned about compatibility (as the added comment
+> suggests), then removing the leading zero is not an option either.
+> 
+> However, as long as all parsers of the string use plain %x or %d,
+> there's no issue here and you could as well use %d here too (as
+> PCI functions are always in the 0-7 range, which is identically
+> represented in octal [important for the case of a leading zero],
+> decimal, and hex).
+> 
+> Bottom line - just add the comment here, and leave the format
+> unchanged, or change the format to %d right away.
 
-Hi Greg,
+Yeah, I was thinking of leaving it as is. I think I got a bit overzealous
+on changing all the patch sites and ignored my own comment.
 
-After merging the driver-core tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-drivers/pci/xen-pcifront.c: In function 'pcifront_common_process':
-drivers/pci/xen-pcifront.c:596:6: error: used struct type value where scala=
-r is required
-
-Caused by commit f3ff9247088a ("Remove useless get_driver()/put_driver()
-calls").
-
-Please build test this stuff ...
-
-I have used the driver-core tree from next-20120125 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__27_Jan_2012_13_59_12_+1100_yyPkG7dRZ2PC++TB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPIhMAAAoJEECxmPOUX5FEyY0P/0KeXr87U1FOJhjER2/Q2NP/
-i2xWaDZKDNBAjVjC/zNN2iq3YomUaDvXEzuwY9BaBDxa6G9y0U6Uk6svwWdONqey
-iWHAMtI8L4F4fYFaraeLNiDEvB6bv8HdO+jPWBtTcrJowTzqmUWjpTrfnCPmQuau
-0vh/2krJQg82pthGeENeKVQEbZyMgbWh7V3u5OlhmQRBTsbLDuHpHfrMyptQq9un
-D2DV/Adx28Z41gQ31Hp5gE5mEuCYESDo8NAEwYjKXxnoAqSSnbMw4bdw3Nkbqo4h
-5IR6B+wlnKreEXC3c0wvAM6JlPmMzt3lK7sWs64emV8wLQvRaezScDzjtNc6NQTN
-znhioD/PyL6cFbXnYxQNNsnXA7zNX14ATuZFRbUvABzek0ZKPLtcjXNgqXzoo15S
-LKMG0prZ1uMQiIH9JYbNhpoj63pOakLJsD7cA7Tr2HjWwe7A2nZOyk4pIvDSzD4a
-dTv6Pk6Q5ILyQjxqII8Hsy7YwDK04mRNmx2HiR7yVU8sQZwfBDzdtLufkBzPdNXl
-rCIJgvJLrWIgCc1khTnZqHKljvA7MosPnjgaq/hV93nQe0Z83QmdR/ocbIG2fjqU
-L5/aPX6K8MIlGwNsxxGWnsm9slZS2cVMZJdAvGqLUExx+CFWk0UJXC3ALuIaf/0I
-7j7ZHHP6Kn9ky00GfP+j
-=hjVn
------END PGP SIGNATURE-----
-
---Signature=_Fri__27_Jan_2012_13_59_12_+1100_yyPkG7dRZ2PC++TB--
+> 
+> Jan
