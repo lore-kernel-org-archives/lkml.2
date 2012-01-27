@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812Ab2A0Gve (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 01:51:34 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:34174 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab2A0Gvd convert rfc822-to-8bit (ORCPT
+	id S1755874Ab2A0GxT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 01:53:19 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38279 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755695Ab2A0GxS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 01:51:33 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        "levinsasha928\@gmail.com" <levinsasha928@gmail.com>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem\@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davej\@redhat.com" <davej@redhat.com>,
-        "sjurbren\@gmail.com" <sjurbren@gmail.com>
-Subject: Re: [PATCH] netns: fix net_alloc_generic()
-References: <CA+1xoqe+Qa1OByj7z7XzAPG_g9+BmNj9NPZR=_5b_MTEmc9Chw@mail.gmail.com>
-	<1327523631-3480-1-git-send-email-sjur.brandeland@stericsson.com>
-	<1327574498.2500.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<4F212E7E.2040801@parallels.com>
-	<1327575108.2500.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<m1zkdacbsx.fsf@fess.ebiederm.org>
-	<1327644547.2919.11.camel@edumazet-laptop>
-Date: Thu, 26 Jan 2012 22:54:07 -0800
-In-Reply-To: <1327644547.2919.11.camel@edumazet-laptop> (Eric Dumazet's
-	message of "Fri, 27 Jan 2012 07:09:07 +0100")
-Message-ID: <m1k44d8wkw.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 27 Jan 2012 01:53:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <CAOtrxKMb==2aR-BF2_XJy+y2_7JAhxHF2H60het19BQE163J8g@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+	<CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+	<CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+	<CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+	<CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+	<CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+	<CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+	<CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
+	<CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
+	<CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
+	<CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
+	<CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
+	<CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
+	<CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
+	<CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
+	<CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
+	<CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
+	<CAOtrxKO9kZce4sDopN4yKFtLVx-BQS56OwyEav0Bh1XjqnS1MQ@mail.gmail.com>
+	<CAE9FiQU5239LD-e7FdpKq1iY3k80BFg2pLVw28YScufuai0R4w@mail.gmail.com>
+	<CAOtrxKMb==2aR-BF2_XJy+y2_7JAhxHF2H60het19BQE163J8g@mail.gmail.com>
+Date: Thu, 26 Jan 2012 22:53:17 -0800
+X-Google-Sender-Auth: zovz6TEhEI3lWqWn2SJU-c7AbFo
+Message-ID: <CAE9FiQVROAqZYwdmMXJC22H3nmBzguZhP+86hfZG4k2=J7JUaA@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: Yinghai Lu <yinghai@kernel.org>
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+ERRRH5132F6zj5G1e1Sstapd3rW9Zm58=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> writes:
-
-> Le jeudi 26 janvier 2012 Ã  14:57 -0800, Eric W. Biederman a Ã©crit :
+2012/1/26 Rogério Brito <rbrito@ime.usp.br>:
 >
->> It is not a chicken and egg problem.  It is a bug in caif.
->> caif is claiming to be a network device when it is acting as a subsytem.
->> That means it is being initialized too late.
->> 
+>> BTW, can you post you .config?
 >
-> Ah ok !
+> Sure, it is here:
 >
->> Untested but this should trivially fix the problem, and a bunch
->> of others of the same ilk.
->> 
->
-> Hmm, please refrain from using "trivially" or "trivial", you're not
-> fooling anyone.
+>    http://www.ime.usp.br/~rbrito/linux/clevo/linux-configs/config-3.2.0-rc5-12270-g6fe13a6-yinghai
 
-All I meant is that the change was trivial.
+are you sure ?
 
-> Truth is this netns layer is horribly complex, since this CAIF bug
-> needed no more than four patch attempts and lastly your own work before
-> finding the root cause.
+your dmesg is 32bit
 
-As for the complexity I don't know that it is noticeably worse than the
-initialization complexity of the network stack in general.
+http://www.ime.usp.br/~rbrito/linux/clevo/2012-01-13-0951-yanghai-for-pci2-branch/dmesg-3.2.0-rc5+.txt
 
-I do think that it is non-obvious that serious initialization ordering
-problems can be caused by such a small difference.  The non-locality
-and of cause and effect, combined with unfamiliarity of the code seems
-to be what hides problems like this.
+and this config is 64bit.
 
-Once you know that initialization ordering problems tend to registering
-the wrong way.  Aka as a device instead of a subsys the solution to
-problems like this tend to jump out at you.
-
-Now the common plumbing in net/core/net_namespace.c does count as
-complex.  The fact we missed such an obvious optimization opportunity
-for so long seems to confirm that.
-
-I am open for ideas on how to simply things.  
-
-Eric
+Yinghai
