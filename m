@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab2A0AIF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:08:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59421 "EHLO mx2.suse.de"
+	id S1754497Ab2A0AIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 19:08:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59429 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185Ab2A0AIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:08:02 -0500
-Date: Thu, 26 Jan 2012 16:06:12 -0800
+	id S1754380Ab2A0AIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 19:08:04 -0500
+Date: Thu, 26 Jan 2012 16:07:23 -0800
 From: Greg KH <gregkh@suse.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, kay.sievers@vrfy.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, bp@amd64.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, lenb@kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: WARN... Device 'cpu1' does not have a release() function, it is
- broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
-Message-ID: <20120127000612.GA14678@suse.de>
-References: <20120123180601.GA24553@phenom.dumpdata.com>
+To: Simon Glass <sjg@chromium.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: [PATCH] usb: Use a workqueue in usb_add_hcd() to reduce boot time
+Message-ID: <20120127000723.GB14678@suse.de>
+References: <CAPnjgZ0-VdAzudGFopBd+5j4HhOp10C=x0kPuJEZyaYSzwjBAA@mail.gmail.com>
+ <Pine.LNX.4.44L0.1201211055180.24505-100000@netrider.rowland.org>
+ <20120124165711.GC3836@linutronix.de>
+ <20120124172231.GA27273@suse.de>
+ <CAPnjgZ0a4i1eGRK_pjKuiaG=sXKGCHT8kO4segHxqN6L2wm8Qw@mail.gmail.com>
+ <20120126235129.GA13095@suse.de>
+ <CAPnjgZ3=ddUTC231YFCqoDHFFGpn5EJAhXoLFgqwG9KJfTCf_g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120123180601.GA24553@phenom.dumpdata.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPnjgZ3=ddUTC231YFCqoDHFFGpn5EJAhXoLFgqwG9KJfTCf_g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 01:06:01PM -0500, Konrad Rzeszutek Wilk wrote:
-> When I bring a CPU down in a guest (which should be the same as bringing a
-> CPU down using the ACPI framework), I get this:
+On Thu, Jan 26, 2012 at 03:57:23PM -0800, Simon Glass wrote:
+> Hi Greg,
 > 
-> [   14.484206] SMP alternatives: switching to UP code
-> [   14.514287] ------------[ cut here ]------------
-> [   14.514318] WARNING: at /home/konrad/linux-linus/drivers/base/core.c:194 device_release+0x82/0x90()
-> [   14.514354] Device 'cpu1' does not have a release() function, it is broken and must be fixed.
-> [   14.514386] Modules linked in: radeon fbcon tileblit font ttm bitblit softcursor drm_kms_helper xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea xen_kbdfront xenfs xen_privcmd
-> [   14.514557] Pid: 22, comm: xenwatch Not tainted 3.3.0-rc1 #1
-> [   14.514586] Call Trace:
-> [   14.515094]  [<ffffffff810897fa>] warn_slowpath_common+0x7a/0xb0
-> [   14.515094]  [<ffffffff810898d1>] warn_slowpath_fmt+0x41/0x50
-> [   14.515094]  [<ffffffff813dea02>] device_release+0x82/0x90
-> [   14.515094]  [<ffffffff812dfb85>] kobject_release+0x45/0x90
-> [   14.515094]  [<ffffffff812dfa4c>] kobject_put+0x2c/0x60
-> [   14.515094]  [<ffffffff813de6a2>] put_device+0x12/0x20
-> [   14.515094]  [<ffffffff813df409>] device_unregister+0x19/0x20
-> [   14.515094]  [<ffffffff813e4edf>] unregister_cpu+0x4f/0x80
-> [   14.515094]  [<ffffffff81052c7c>] arch_unregister_cpu+0x1c/0x20
-> [   14.515094]  [<ffffffff8137f787>] handle_vcpu_hotplug_event+0xc7/0xd0
-> [   14.515094]  [<ffffffff8137b900>] xenwatch_thread+0xb0/0x180
-> [   14.515094]  [<ffffffff810ad3f0>] ? wake_up_bit+0x40/0x40
-> [   14.515094]  [<ffffffff8137b850>] ? split+0xf0/0xf0
-> [   14.515094]  [<ffffffff810acd16>] kthread+0x96/0xa0
-> [   14.515094]  [<ffffffff816151e4>] kernel_thread_helper+0x4/0x10
-> [   14.515094]  [<ffffffff8160cc80>] ? retint_restore_args+0x5/0x6
-> [   14.515094]  [<ffffffff816151e0>] ? gs_change+0x13/0x13
-> [   14.515094] ---[ end trace 8f70af51a2e2611f ]---
+> On Thu, Jan 26, 2012 at 3:51 PM, Greg KH <gregkh@suse.de> wrote:
+> > On Thu, Jan 26, 2012 at 03:48:43PM -0800, Simon Glass wrote:
+> >> Hi Greg,
+> >>
+> >> On Tue, Jan 24, 2012 at 9:22 AM, Greg KH <gregkh@suse.de> wrote:
+> >> > On Tue, Jan 24, 2012 at 05:57:11PM +0100, Sebastian Andrzej Siewior wrote:
+> >> >> * Alan Stern | 2012-01-21 11:11:09 [-0500]:
+> >> >>
+> >> >> >Doing time-consuming things later won't make any difference.  That is,
+> >> >> >suppose the boot sequence performs activities A and B, where A takes a
+> >> >> >long time.  Doing A later, so that the boot sequence performs B and
+> >> >> >then A, won't change the total time required.
+> >> >>
+> >> >> That is true. However if you show the gui _now_ and look for USB later
+> >> >> then it feels faster and this is usually enough.
+> >> >
+> >> > Which has been done before, with great success (i.e. we did it for
+> >> > Moblin boot times), so it shouldn't be that big of an issue.
+> >> >
+> >> > Which points out the question, exactly what is the issue here?  We have
+> >> > "multithreaded" pci driver startup for a long time now, did that stop
+> >> > working here?  If you use bootchart, does it show that the USB host
+> >> > driver is stoping the machine from proceeding to the next stage in the
+> >> > boot process?
+> >> >
+> >> > From my experience, I never saw the USB host controller get in the way
+> >> > at all, it was always somethine else happening that caused problems
+> >> > (i.e. video.)
+> >> >
+> >> > Simon, do you have boot charts anywhere showing this?
+> >>
+> >> I did have initcall timing when I last looked at this. USB was holding
+> >> up progress. Sorry for the delay - I hope to get back to this next
+> >> week.
+> >
+> > Are you building your USB host controllers into the kernel, or are they
+> > modules?
+> >
+> > What is sitting on the USB bus that is needed for the boot process to
+> > continue on to init and then later?  Is the root disk on it?
 > 
-> Looking at "commit e032d80774315869aa2285b217fdbbfed86c0b49
-> Author: Greg Kroah-Hartman <gregkh@suse.de>
-> Date:   Mon Jan 16 14:40:28 2012 -0800
-> 
->     mce: fix warning messages about static struct mce_device
-> "
-> 
-> it looks like the corret fix is to make the 'cpu_devices' in
-> arch/x86/kernel/topology.c to be changed to be more dynamic
-> (or perhaps have an empty release function)?
-> 
-> Is anybody else hitting this with ACPI CPU hot-unplug? Or do I have
-> the privilige of being the first? Oh, I hadn't done a full bisection
-> but v3.2 does not have this.
+> A hub with a few things on it (Ethernet, USB stick). No we don't
+> normally have a root disk on it - we could in fact init USB *much*
+> later and be quite happy. Sorry I don't have full answers until I get
+> back to this. But USB does 'start' each port within the initcall which
+> seems to take time. Maybe it is at bottom a driver issue?
 
-Kay, this is a mess.
-
-This cpu system device is is interconnected with the different arches
-and their cpu-specific structures.  Some arches have a static array,
-some allocate a huge structure (struct arch_cpu * NUM_CPUS), and others
-try to do the right thing with DECLARE_PER_CPU() but don't quite get it
-right, making that a static array per cpu.
-
-To unwind all of this, is much beyond 3.3 material, as I'm sure I'll get
-it wrong, and have a bunch of non-x86-64 build problems along the way.
-
-Any objection to me just doing the "hack" of the empty release function
-at the moment to get rid of this warning, and then clean it all up
-properly for 3.4?
-
-thanks,
+Then load the usb module from a thread after init starts up and you
+should be fine for boot speed, right?  That's what other distros did
+with no known ill side effects.
 
 greg k-h
