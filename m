@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab2A0SUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:20:25 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36375
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753024Ab2A0SUY (ORCPT
+	id S1753315Ab2A0SVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:21:12 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:59645 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752203Ab2A0SVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:20:24 -0500
-Date: Fri, 27 Jan 2012 13:20:17 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] uml/hostfs: Propagate dirent.d_type to filldir()
-Message-ID: <20120127182016.GA15705@infradead.org>
-References: <y>
- <1327688098-10159-1-git-send-email-geert@linux-m68k.org>
+	Fri, 27 Jan 2012 13:21:10 -0500
+Message-ID: <4F22EAFD.1020006@fb.com>
+Date: Fri, 27 Jan 2012 10:20:45 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327688098-10159-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
+        <mingo@elte.hu>, <acme@infradead.org>, <robert.richter@amd.com>,
+        <ming.m.lin@intel.com>, <andi@firstfloor.org>, <ravitillo@lbl.gov>,
+        <vweaver1@eecs.utk.edu>
+Subject: Re: [PATCH 00/13] perf_events: add support for sampling taken branches
+ (v3)
+References: <1326127761-2723-1-git-send-email-eranian@google.com> <1327666141.2446.168.camel@twins>
+In-Reply-To: <1327666141.2446.168.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.211,0.0.0000
+ definitions=2012-01-27_06:2012-01-27,2012-01-27,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 07:14:58PM +0100, Geert Uytterhoeven wrote:
-> Currently the (optional) d_type member in struct dirent is always
-> DT_UNKNOWN on hostfs, which may confuse buggy software using readdir().
-> Make sure to propagate its value from the underlying filesystem if it's
-> available there.
+On 1/27/12 4:09 AM, Peter Zijlstra wrote:
+>> Here is a kernel example, where we want to sample indirect calls:
+>> $ perf record -a -C 1 -b ind_call -e r1c4:k sleep 10
+>> $ perf report -b
+>> #
+>> # Overhead  Source Symbol               Target Symbol
+>> # ........  ..........................  ..........................
+>> #
+>>      36.36%  [k] __delay                 [k] delay_tsc
+>>       9.09%  [k] ktime_get               [k] read_tsc
+>>       9.09%  [k] getnstimeofday          [k] read_tsc
+>>       9.09%  [k] notifier_call_chain     [k] tick_notify
+>>       4.55%  [k] cpuidle_idle_call       [k] intel_idle
+>>       4.55%  [k] cpuidle_idle_call       [k] menu_reflect
+>>       2.27%  [k] handle_irq              [k] handle_edge_irq
+>>       2.27%  [k] ack_apic_edge           [k] native_apic_mem_write
+>>       2.27%  [k] hpet_interrupt_handler  [k] hrtimer_interrupt
+>>       2.27%  [k] __run_hrtimer           [k] watchdog_timer_fn
+>>       2.27%  [k] enqueue_task            [k] enqueue_task_rt
+>>       2.27%  [k] try_to_wake_up          [k] select_task_rq_rt
+>>       2.27%  [k] do_timer                [k] read_tsc
+>>
+>> Due to HW limitations, branch filtering may be approximate on
+>> Core, Atom processors. It is more accurate on Nehalem, Westmere
+>> and best on Sandy Bridge.
+>
+> Can I have you ACK on this userspace stuff (patches 11-13)?
 
-What software would that be?  We have lots of filesystems not filling
-in d_type, and several operating systems don't have it at all.
+While the current "Source -> Target" based UI works well for many cases, 
+it'd be nice to have "-g -b any_call" to result in a callgraph like 
+output, so for userspace programs compiled without frame pointers, we 
+get a limited callgraph.
 
+  -Arun
