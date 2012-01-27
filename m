@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab2A0UKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 15:10:30 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44560 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab2A0UK2 (ORCPT
+	id S1753515Ab2A0UPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 15:15:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54110 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107Ab2A0UPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 15:10:28 -0500
-Date: Sat, 28 Jan 2012 00:10:22 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        ebiederm@xmission.com, xemul@openvz.org, xemul@parallels.com,
-        serge.hallyn@canonical.com, keescook@chromium.org,
-        kamezawa.hiroyu@jp.fujitsu.com, adobriyan@gmail.com, tj@kernel.org,
-        avagin@openvz.org, segoon@openwall.com
-Subject: Re: [RFC c/r 3/4] c/r: procfs: add arg_start/end, env_start/end and
- exit_code members to /proc/$pid/stat
-Message-ID: <20120127201022.GP11086@moon>
-References: <20120127175342.273260614@openvz.org>
- <20120127175939.862102158@openvz.org>
- <4F230265.8050506@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F230265.8050506@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Jan 2012 15:15:52 -0500
+Date: Fri, 27 Jan 2012 12:15:51 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>, Jens Axboe <axboe@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/9] readahead: add /debug/readahead/stats
+Message-Id: <20120127121551.acd256aa.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1201271006480.16756@router.home>
+References: <20120127030524.854259561@intel.com>
+	<20120127031327.159293683@intel.com>
+	<alpine.DEB.2.00.1201271006480.16756@router.home>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 03:00:37PM -0500, KOSAKI Motohiro wrote:
-...
-> 
-> > +
-> > +		seq_printf(m, "%d\n", task->exit_code);
-> > +
-> 
-> Bad this part seems to make new side channel. exit_code is one of
-> inter process communication messages. IPC messages should NOT be
-> observed from completely unrelated proesses.
-> 
+On Fri, 27 Jan 2012 10:21:36 -0600 (CST)
+Christoph Lameter <cl@linux.com> wrote:
 
-You mean we need "permitted" test here, right?
+> > +
+> > +static void readahead_stats_reset(void)
+> > +{
+> > +	int i, j;
+> > +
+> > +	for (i = 0; i < RA_PATTERN_ALL; i++)
+> > +		for (j = 0; j < RA_ACCOUNT_MAX; j++)
+> > +			percpu_counter_set(&ra_stat[i][j], 0);
+> 
+> for_each_online(cpu)
+> 	memset(per_cpu_ptr(&ra_stat, cpu), 0, sizeof(ra_stat));
 
-	Cyrill
+for_each_possible_cpu().  And that's one reason to not open-code the
+operation.  Another is so we don't have tiresome open-coded loops all
+over the place.
+
+But before doing either of those things we should choose boring old
+atomic_inc().  Has it been shown that the cost of doing so is
+unacceptable?  Bearing this in mind:
+
+> The accounting code will be compiled in by default
+> (CONFIG_READAHEAD_STATS=y), and will remain inactive by default.
+
+I agree with those choices.  They effectively mean that the stats will
+be a developer-only/debugger-only thing.  So even if the atomic_inc()
+costs are measurable during these develop/debug sessions, is anyone
+likely to care?
+
+
