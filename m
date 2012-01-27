@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab2A0XXq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 18:23:46 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:46243 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752694Ab2A0XXo (ORCPT
+	id S1752896Ab2A0XZT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 18:25:19 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54900 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab2A0XZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 18:23:44 -0500
-X-Sasl-enc: u4F/TdBtjkoE2OhgCt5rwSMm/lPeujAhe1jo/MY7+Nu6 1327706623
-Date: Fri, 27 Jan 2012 15:23:35 -0800
-From: Greg KH <greg@kroah.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: stable@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Petr Matousek <pmatouse@redhat.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [PATCH 2.6.32-stable] block: fail SCSI passthrough ioctls on
- partition devices
-Message-ID: <20120127232335.GA19109@kroah.com>
-References: <20120126213307.GA28807@suse.de>
- <1327683414-31156-1-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327683414-31156-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Jan 2012 18:25:17 -0500
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        wad@chromium.org, luto@mit.edu, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk, indan@nul.nu, mcgrathr@chromium.org
+Subject: [PATCH v5 1/3] seccomp: kill the seccomp_t typedef
+Date: Fri, 27 Jan 2012 17:24:39 -0600
+Message-Id: <1327706681-11959-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 05:56:54PM +0100, Paolo Bonzini wrote:
-> commit 0bfc96cb77224736dfa35c3c555d37b3646ef35e upstream.
-> 
-> Linux allows executing the SG_IO ioctl on a partition or LVM volume, and
-> will pass the command to the underlying block device.  This is
-> well-known, but it is also a large security problem when (via Unix
-> permissions, ACLs, SELinux or a combination thereof) a program or user
-> needs to be granted access only to part of the disk.
-> 
-> This patch lets partitions forward a small set of harmless ioctls;
-> others are logged with printk so that we can see which ioctls are
-> actually sent.  In my tests only CDROM_GET_CAPABILITY actually occurred.
-> Of course it was being sent to a (partition on a) hard disk, so it would
-> have failed with ENOTTY and the patch isn't changing anything in
-> practice.  Still, I'm treating it specially to avoid spamming the logs.
-> 
-> In principle, this restriction should include programs running with
-> CAP_SYS_RAWIO.  If for example I let a program access /dev/sda2 and
-> /dev/sdb, it still should not be able to read/write outside the
-> boundaries of /dev/sda2 independent of the capabilities.  However, for
-> now programs with CAP_SYS_RAWIO will still be allowed to send the
-> ioctls.  Their actions will still be logged.
-> 
-> This patch does not affect the non-libata IDE driver.  That driver
-> however already tests for bd != bd->bd_contains before issuing some
-> ioctl; it could be restricted further to forbid these ioctls even for
-> programs running with CAP_SYS_ADMIN/CAP_SYS_RAWIO.
-> 
-> Cc: linux-scsi@vger.kernel.org
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: James Bottomley <JBottomley@parallels.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> [ Make it also print the command name when warning - Linus ]
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> [ Changes with respect to 3.3: return -ENOTTY from scsi_verify_blk_ioctl
->   and -ENOIOCTLCMD from sd_compat_ioctl. ]
+Replaces the seccomp_t typedef with seccomp_struct to match modern
+kernel style.
 
-Thanks, I've replaced the version in the 2.6.32-stable queue with this
-one.
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ include/linux/sched.h   |    2 +-
+ include/linux/seccomp.h |   10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-greg k-h
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4032ec1..288b5cb 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1418,7 +1418,7 @@ struct task_struct {
+ 	uid_t loginuid;
+ 	unsigned int sessionid;
+ #endif
+-	seccomp_t seccomp;
++	struct seccomp_struct seccomp;
+ 
+ /* Thread group tracking */
+    	u32 parent_exec_id;
+diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+index cc7a4e9..171ab66 100644
+--- a/include/linux/seccomp.h
++++ b/include/linux/seccomp.h
+@@ -7,7 +7,9 @@
+ #include <linux/thread_info.h>
+ #include <asm/seccomp.h>
+ 
+-typedef struct { int mode; } seccomp_t;
++struct seccomp_struct {
++	int mode;
++};
+ 
+ extern void __secure_computing(int);
+ static inline void secure_computing(int this_syscall)
+@@ -19,7 +21,7 @@ static inline void secure_computing(int this_syscall)
+ extern long prctl_get_seccomp(void);
+ extern long prctl_set_seccomp(unsigned long);
+ 
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp_struct *s)
+ {
+ 	return s->mode;
+ }
+@@ -28,7 +30,7 @@ static inline int seccomp_mode(seccomp_t *s)
+ 
+ #include <linux/errno.h>
+ 
+-typedef struct { } seccomp_t;
++struct seccomp_struct { };
+ 
+ #define secure_computing(x) do { } while (0)
+ 
+@@ -42,7 +44,7 @@ static inline long prctl_set_seccomp(unsigned long arg2)
+ 	return -EINVAL;
+ }
+ 
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp_struct *s)
+ {
+ 	return 0;
+ }
+-- 
+1.7.5.4
+
