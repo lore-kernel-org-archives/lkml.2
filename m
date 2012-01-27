@@ -1,61 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab2A0Sp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:45:26 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57576 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab2A0SpZ (ORCPT
+	id S1752284Ab2A0SrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:47:13 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:49660 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab2A0SrM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:45:25 -0500
-Date: Fri, 27 Jan 2012 22:45:19 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-Message-ID: <20120127184519.GJ11086@moon>
-References: <20120127175342.273260614@openvz.org>
- <20120127175939.795551339@openvz.org>
- <m1zkd92dl5.fsf@fess.ebiederm.org>
+	Fri, 27 Jan 2012 13:47:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1zkd92dl5.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <9813c0cd-0335-4994-b734-e9fc7872c0cb@default>
+Date: Fri, 27 Jan 2012 10:46:57 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
+        Chris Mason <chris.mason@oracle.com>,
+        lsf-pc@lists.linux-foundation.org
+Subject: RE: [PATCH] mm: implement WasActive page flag (for improving
+ cleancache)
+References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
+ <4F218D36.2060308@linux.vnet.ibm.com>
+ <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
+ <20120126163150.31a8688f.akpm@linux-foundation.org>
+ <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>
+ <20120126171548.2c85dd44.akpm@linux-foundation.org>
+ <7198bfb3-1e32-40d3-8601-d88aed7aabd8@default>
+ <1327671787.2977.17.camel@dabdike.int.hansenpartnership.com>
+ <3ac611ee-8830-41bd-8464-6867da701948@default>
+ <1327686876.2977.37.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1327686876.2977.37.camel@dabdike.int.hansenpartnership.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4F22F11F.0062,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 10:40:54AM -0800, Eric W. Biederman wrote:
-> Can you make the prototype:
-> static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Subject: RE: [PATCH] mm: implement WasActive page flag (for improving cleancache)
 > 
-> So the caller does not need to have casts?
-
-Sure.
-
-> I believe I commented on this earlier but it looks like it got lost in
-> the noise.
+> On Fri, 2012-01-27 at 09:32 -0800, Dan Magenheimer wrote:
+> > > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> > > What I was wondering was instead of using a flag, could we make the LRU
+> > > lists do this for us ... something like have a special LRU list for
+> > > pages added to the page cache but never referenced since added?  It
+> > > sounds like you can get your WasActive information from the same type of
+> > > LRU list tricks (assuming we can do them).
+> >
+> > Hmmm... I think this would mean more LRU queues but that may be
+> > the right long term answer.  Something like?
+> >
+> > 	read but not used yet LRU
+> > 	readahead but not used yet LRU
 > 
-> file == NULL != file == NULL.
-> 
-> When you can't lookup the file kcmp should return -EBADF.
-> 
+> What's the difference between these two?  I think read but not used is
+> some form of readahead regardless of where it came from.
 
-Yes, Eric, I somehow missed it in replies flowing. I'll update.
-Thanks!
+Oops, I meant "read but used only once (to resolve a page fault)" LRU.
 
-	Cyrill
+> > 	active LRU
+> > 	previously active LRU
+> 
+> I don't quite understand why you need two queues here, either.  Surely
+> active is logically at the bottom of the LRU and previously active at
+> the top (assuming we've separated the unused pages to a different LRU
+> list).
+
+Cleancache only sees pages when they "fall off the end of the world",
+so would like to differentiate between clean pages that were used just
+once and pages that were used more than once, but not recently.
+There may be better heuristics for cleancache too.
+ 
+> > Naturally, this then complicates the eviction selection process.
+> >
+> > > I think the memory pressure eviction heuristic is: referenced but not
+> > > recently used pages first followed by unreferenced and not recently used
+> > > readahead pages.  The key being to keep recently read in readahead pages
+> > > until last because there's a time between doing readahead and getting
+> > > the page accessed and we don't want to trash a recently red in readahead
+> > > page only to have the process touch it and find it has to be read in
+> > > again.
+> >
+> > I suspect that any further progress on the page replacement heuristics
+> > is going to require more per-page data to be stored.  Which means
+> > that it probably won't work under the constraints of 32-bit systems.
+> > So it might also make sense to revisit when/whether to allow the
+> > heuristics to be better on a 64-bit system than on a 32-bit.
+> > (Even ARM now has 64-bit processors!)  I put this on my topic list
+> > for LSF/MM, though I have no history of previous discussion so
+> > this may already have previously been decided.
+> 
+> I've got to say why? on this.  The object is to find a simple solution
+> that's good enough.  I think separating the LRU list into two based on
+> once referenced/never referenced might be enough to derive all the
+> information we need.
+
+Maybe I'm misunderstanding (in which case a complete list of the LRU
+queues you are proposing would be good), but doesn't the existing design
+already do this?  Actually, IIUC the existing file cache design has a
+	"referenced more than once" LRU ("active")
+and a second ("inactive") LRU queue which combines
+	"referenced only once" OR
+	"readahead and never referenced" OR
+	"referenced more than once but not referenced recently"
+Are you proposing to add more queues or define the existing two queues
+differently?
+
+So my strawman list of LRU queues separates the three ORs in the inactive
+LRU queue to three separate LRU queues, for a total of four.
+
+ INACTIVE-typeA) read but used only once to resolve a page fault LRU
+ INACTIVE-typeB) readahead but not used yet LRU
+ INACTIVE-typeC) previously active LRU
+ ACTIVE) active LRU
+
+> Until that theory is disproved, there's not much
+> benefit to developing ever more complex heuristics.
+
+I think we are both "disproving" the theory that the existing
+two LRU queues are sufficient.  You need to differentiate between
+typeA and typeB (to ensure typeB doesn't get evicted too quickly)
+and I would like to differentiate typeC from typeA/typeB to have
+heuristic data for cleancache at the time the kernel evicts the page.
+
+Does that make sense?
+
+P.S. I'm interpreting from http://linux-mm.org/PageReplacementDesign 
+rather from full understanding of the current code, so please correct
+me if I got it wrong.
