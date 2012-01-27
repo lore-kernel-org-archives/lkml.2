@@ -1,62 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab2A0Q3G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:29:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52073 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751534Ab2A0Q3B (ORCPT
+	id S1756176Ab2A0QaI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 11:30:08 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:57499 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752148Ab2A0QaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:29:01 -0500
-Date: Fri, 27 Jan 2012 16:28:59 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 2/3] regmap: Add support for 2/6 register formating
-Message-ID: <20120127162859.GC18572@opensource.wolfsonmicro.com>
-References: <1327677023-29310-1-git-send-email-w.sang@pengutronix.de>
- <1327677023-29310-2-git-send-email-w.sang@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="adJ1OR3c6QgCpb/j"
-Content-Disposition: inline
-In-Reply-To: <1327677023-29310-2-git-send-email-w.sang@pengutronix.de>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Jan 2012 11:30:06 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: w.sang@pengutronix.de, grant.likely@secretlab.ca, linux@arm.linux.org.uk,
+        linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 1/2] Fix gpio-lpc32xx.c: Pin masking missing
+Date: Fri, 27 Jan 2012 17:29:33 +0100
+Message-Id: <1327681773-2395-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.8.3
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add missing mask to pin bit selection in gpio-lpc32xx.c
+(#define GPIO3_PIN_IN_SEL)
 
---adJ1OR3c6QgCpb/j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+A table indentation was necessary due to line length restrictions.
 
-On Fri, Jan 27, 2012 at 04:10:22PM +0100, Wolfram Sang wrote:
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Applied, thanks.
-
---adJ1OR3c6QgCpb/j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPItDEAAoJEBus8iNuMP3dzpAP/jhkAE8X7eOLfpTOaV1e8xtU
-2nyBAsTxg7QF77N0PVufgJ1uXb0QHr+HO5UpMPY3S/RzTkK7Tx6Ddi6jlTxyRJUB
-AERsMOdykh4X4/cv6T6v4LjfDXL/BNJkwW1aXdLgRvsJ8pyaXs8ifZXtE/LoIbRy
-ybXMQAKII31EeMNj9KhZIucya+TJD8fNaKSM7yfgM6Gwe4tfG138plLRaeS1UF1a
-qHYi9iiO+VBw1oprfAjAZ7iCHEHMcJ8hWA//MKhEOvazZY5w8yJZDBIivlLOgNzk
-HbMXgHa7F/7xAydb9WEOj4xmXa+XHC9FK4z+umzE2xjMj4khvQGstrB98hDFiTuR
-lQl71RfNhXat2DtCsJ6L/6WdEEwIQQC2cbHw40uDtuAg0kZu3MlubZBaz06Na2Cm
-on760hLQqsBc2cGB7gCrbccXnZD4wucIo/L2/ZD2qJaCoijnWTIU2z6MJ1ZhrQNP
-UqMbjYQR24G+nhPO1pQ5ZCQkGf+kcxq55pQw4ObVvyVtDB0Rcbm2QKCj9hHr/2/9
-T3j9WzuACyYftyY0+rhLtRy/7mQTuj+kxpB0WFJd7TQIurBx8AVPWCjBMsdfBHoD
-wnKtvhiydEISP/3c20xEFRrddYzGxQhWgDF0kkmsGQJ7A2cdtRP+WZDYYNqUvw55
-3oW1OUoC6H4SpVSpoJZP
-=WmnW
------END PGP SIGNATURE-----
-
---adJ1OR3c6QgCpb/j--
+diff --git a/drivers/gpio/gpio-lpc32xx.c b/drivers/gpio/gpio-lpc32xx.c
+index ddfacc5..21b65e5 100644
+--- a/drivers/gpio/gpio-lpc32xx.c
++++ b/drivers/gpio/gpio-lpc32xx.c
+@@ -26,42 +26,42 @@
+ #include <mach/platform.h>
+ #include <mach/gpio-lpc32xx.h>
+ 
+-#define LPC32XX_GPIO_P3_INP_STATE		_GPREG(0x000)
+-#define LPC32XX_GPIO_P3_OUTP_SET		_GPREG(0x004)
+-#define LPC32XX_GPIO_P3_OUTP_CLR		_GPREG(0x008)
+-#define LPC32XX_GPIO_P3_OUTP_STATE		_GPREG(0x00C)
+-#define LPC32XX_GPIO_P2_DIR_SET			_GPREG(0x010)
+-#define LPC32XX_GPIO_P2_DIR_CLR			_GPREG(0x014)
+-#define LPC32XX_GPIO_P2_DIR_STATE		_GPREG(0x018)
+-#define LPC32XX_GPIO_P2_INP_STATE		_GPREG(0x01C)
+-#define LPC32XX_GPIO_P2_OUTP_SET		_GPREG(0x020)
+-#define LPC32XX_GPIO_P2_OUTP_CLR		_GPREG(0x024)
+-#define LPC32XX_GPIO_P2_MUX_SET			_GPREG(0x028)
+-#define LPC32XX_GPIO_P2_MUX_CLR			_GPREG(0x02C)
+-#define LPC32XX_GPIO_P2_MUX_STATE		_GPREG(0x030)
+-#define LPC32XX_GPIO_P0_INP_STATE		_GPREG(0x040)
+-#define LPC32XX_GPIO_P0_OUTP_SET		_GPREG(0x044)
+-#define LPC32XX_GPIO_P0_OUTP_CLR		_GPREG(0x048)
+-#define LPC32XX_GPIO_P0_OUTP_STATE		_GPREG(0x04C)
+-#define LPC32XX_GPIO_P0_DIR_SET			_GPREG(0x050)
+-#define LPC32XX_GPIO_P0_DIR_CLR			_GPREG(0x054)
+-#define LPC32XX_GPIO_P0_DIR_STATE		_GPREG(0x058)
+-#define LPC32XX_GPIO_P1_INP_STATE		_GPREG(0x060)
+-#define LPC32XX_GPIO_P1_OUTP_SET		_GPREG(0x064)
+-#define LPC32XX_GPIO_P1_OUTP_CLR		_GPREG(0x068)
+-#define LPC32XX_GPIO_P1_OUTP_STATE		_GPREG(0x06C)
+-#define LPC32XX_GPIO_P1_DIR_SET			_GPREG(0x070)
+-#define LPC32XX_GPIO_P1_DIR_CLR			_GPREG(0x074)
+-#define LPC32XX_GPIO_P1_DIR_STATE		_GPREG(0x078)
+-
+-#define GPIO012_PIN_TO_BIT(x)			(1 << (x))
+-#define GPIO3_PIN_TO_BIT(x)			(1 << ((x) + 25))
+-#define GPO3_PIN_TO_BIT(x)			(1 << (x))
+-#define GPIO012_PIN_IN_SEL(x, y)		(((x) >> (y)) & 1)
+-#define GPIO3_PIN_IN_SHIFT(x)			((x) == 5 ? 24 : 10 + (x))
+-#define GPIO3_PIN_IN_SEL(x, y)			((x) >> GPIO3_PIN_IN_SHIFT(y))
+-#define GPIO3_PIN5_IN_SEL(x)			(((x) >> 24) & 1)
+-#define GPI3_PIN_IN_SEL(x, y)			(((x) >> (y)) & 1)
++#define LPC32XX_GPIO_P3_INP_STATE	_GPREG(0x000)
++#define LPC32XX_GPIO_P3_OUTP_SET	_GPREG(0x004)
++#define LPC32XX_GPIO_P3_OUTP_CLR	_GPREG(0x008)
++#define LPC32XX_GPIO_P3_OUTP_STATE	_GPREG(0x00C)
++#define LPC32XX_GPIO_P2_DIR_SET		_GPREG(0x010)
++#define LPC32XX_GPIO_P2_DIR_CLR		_GPREG(0x014)
++#define LPC32XX_GPIO_P2_DIR_STATE	_GPREG(0x018)
++#define LPC32XX_GPIO_P2_INP_STATE	_GPREG(0x01C)
++#define LPC32XX_GPIO_P2_OUTP_SET	_GPREG(0x020)
++#define LPC32XX_GPIO_P2_OUTP_CLR	_GPREG(0x024)
++#define LPC32XX_GPIO_P2_MUX_SET		_GPREG(0x028)
++#define LPC32XX_GPIO_P2_MUX_CLR		_GPREG(0x02C)
++#define LPC32XX_GPIO_P2_MUX_STATE	_GPREG(0x030)
++#define LPC32XX_GPIO_P0_INP_STATE	_GPREG(0x040)
++#define LPC32XX_GPIO_P0_OUTP_SET	_GPREG(0x044)
++#define LPC32XX_GPIO_P0_OUTP_CLR	_GPREG(0x048)
++#define LPC32XX_GPIO_P0_OUTP_STATE	_GPREG(0x04C)
++#define LPC32XX_GPIO_P0_DIR_SET		_GPREG(0x050)
++#define LPC32XX_GPIO_P0_DIR_CLR		_GPREG(0x054)
++#define LPC32XX_GPIO_P0_DIR_STATE	_GPREG(0x058)
++#define LPC32XX_GPIO_P1_INP_STATE	_GPREG(0x060)
++#define LPC32XX_GPIO_P1_OUTP_SET	_GPREG(0x064)
++#define LPC32XX_GPIO_P1_OUTP_CLR	_GPREG(0x068)
++#define LPC32XX_GPIO_P1_OUTP_STATE	_GPREG(0x06C)
++#define LPC32XX_GPIO_P1_DIR_SET		_GPREG(0x070)
++#define LPC32XX_GPIO_P1_DIR_CLR		_GPREG(0x074)
++#define LPC32XX_GPIO_P1_DIR_STATE	_GPREG(0x078)
++
++#define GPIO012_PIN_TO_BIT(x)		(1 << (x))
++#define GPIO3_PIN_TO_BIT(x)		(1 << ((x) + 25))
++#define GPO3_PIN_TO_BIT(x)		(1 << (x))
++#define GPIO012_PIN_IN_SEL(x, y)	(((x) >> (y)) & 1)
++#define GPIO3_PIN_IN_SHIFT(x)		((x) == 5 ? 24 : 10 + (x))
++#define GPIO3_PIN_IN_SEL(x, y)		(((x) >> GPIO3_PIN_IN_SHIFT(y)) & 1)
++#define GPIO3_PIN5_IN_SEL(x)		(((x) >> 24) & 1)
++#define GPI3_PIN_IN_SEL(x, y)		(((x) >> (y)) & 1)
+ 
+ struct gpio_regs {
+ 	void __iomem *inp_state;
