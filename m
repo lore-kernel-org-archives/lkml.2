@@ -1,138 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab2A0CV2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 21:21:28 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28078 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab2A0CV1 (ORCPT
+	id S1754722Ab2A0CVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 21:21:40 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:45634 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754686Ab2A0CVi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 21:21:27 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19NAdZwQz9qlgX5OEkvqKja
-Date: Thu, 26 Jan 2012 18:21:12 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Simon Glass <sjg@chromium.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>, Dong Aisheng <dongas86@gmail.com>,
-        "Shawn Guo (shawn.guo@linaro.org)" <shawn.guo@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Pinmux bindings proposal V2
-Message-ID: <20120127022111.GK29812@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
- <CAPnjgZ3Xhebn1x1A-Vdy78DWbDd=cp0AK6tL-R1SRzS4GdF97g@mail.gmail.com>
+	Thu, 26 Jan 2012 21:21:38 -0500
+X-WSS-ID: 0LYFQJY-0A-0BF-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+cc: "Arun MURTHY" <arun.murthy@stericsson.com>,
+        "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
+Date: Thu, 26 Jan 2012 18:21:25 -0800
+Subject: RE: [PATCH 1/4] leds-lp5521: add 'name' in the
+ lp5521_led_config
+Thread-Topic: [PATCH 1/4] leds-lp5521: add 'name' in the
+ lp5521_led_config
+Thread-Index: AczYZ8yVBSJYBleRQuSZif3IIM5wFAEMgoeA
+Message-ID: <B567DBAB974C0544994013492B949F8E3812D6E9F5@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPnjgZ3Xhebn1x1A-Vdy78DWbDd=cp0AK6tL-R1SRzS4GdF97g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-WSS-ID: 633CD5AD1LS9962348-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add Arun, Srinidhi, Linus and Andrew on CC
 
-* Simon Glass <sjg@chromium.org> [120126 09:11]:
+> -----Original Message-----
+> From: Kim, Milo
+> Sent: Sunday, January 22, 2012 3:09 AM
+> To: 'linux-kernel@vger.kernel.org'; 'rpurdie@rpsys.net'
+> Subject: [PATCH 1/4] leds-lp5521: add 'name' in the lp5521_led_config
 > 
-> On Fri, Jan 20, 2012 at 2:22 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> The name of each led channel can be configurable.
+> For the compatibility, the name is set to default value(xx:channelN)
+> when 'name' is not defined.
 > 
-> 1. It doesn't seem to make full use of the device tree format. For example,
+> * kernel patch based on 3.0.1
 > 
->    <TEGRA_PMX_PG_DTD TEGRA_PMX_CONF_DRIVE_STRENGTH 5>
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  Documentation/leds/leds-lp5521.txt |    6 ++++++
+>  drivers/leds/leds-lp5521.c         |   11 ++++++++---
+>  include/linux/leds-lp5521.h        |    1 +
+>  3 files changed, 15 insertions(+), 3 deletions(-)
 > 
-> would be better as something like
+> diff --git a/Documentation/leds/leds-lp5521.txt
+> b/Documentation/leds/leds-lp5521.txt
+> index c4d8d15..f48ab75 100644
+> --- a/Documentation/leds/leds-lp5521.txt
+> +++ b/Documentation/leds/leds-lp5521.txt
+> @@ -43,17 +43,23 @@ Format: 10x mA i.e 10 means 1.0 mA
+>  example platform data:
 > 
->     drive-strength = <5>;
+>  Note: chan_nr can have values between 0 and 2.
+> +The name of each channel can be configurable.
+> +If the name field is not defined, the default name will be set to
+> 'xxxx:channelN'
+> +(XXXX : pdata->label or i2c client name, N : channel number)
 > 
-> if we could arrange it. It also reduces the need for these
-> TEGRA_PMX_CONF_DRIVE_STRENGTH defines.
+>  static struct lp5521_led_config lp5521_led_config[] = {
+>          {
+> +		.name = "red",
+>                  .chan_nr        = 0,
+>                  .led_current    = 50,
+>  		.max_current    = 130,
+>          }, {
+> +		.name = "green",
+>                  .chan_nr        = 1,
+>                  .led_current    = 0,
+>  		.max_current    = 130,
+>          }, {
+> +		.name = "blue",
+>                  .chan_nr        = 2,
+>                  .led_current    = 0,
+>  		.max_current    = 130,
+> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+> index cc1dc48..c0e7c10 100644
+> --- a/drivers/leds/leds-lp5521.c
+> +++ b/drivers/leds/leds-lp5521.c
+> @@ -617,10 +617,15 @@ static int __devinit lp5521_init_led(struct
+> lp5521_led *led,
+>  		return -EINVAL;
+>  	}
+> 
+> -	snprintf(name, sizeof(name), "%s:channel%d",
+> -			pdata->label ?: client->name, chan);
+>  	led->cdev.brightness_set = lp5521_set_brightness;
+> -	led->cdev.name = name;
+> +	if (pdata->led_config[chan].name) {
+> +		led->cdev.name = pdata->led_config[chan].name;
+> +	} else {
+> +		snprintf(name, sizeof(name), "%s:channel%d",
+> +			pdata->label ?: client->name, chan);
+> +		led->cdev.name = name;
+> +	}
+> +
+>  	res = led_classdev_register(dev, &led->cdev);
+>  	if (res < 0) {
+>  		dev_err(dev, "couldn't register led on channel %d\n", chan);
+> diff --git a/include/linux/leds-lp5521.h b/include/linux/leds-lp5521.h
+> index fd548d2..e675b8d 100644
+> --- a/include/linux/leds-lp5521.h
+> +++ b/include/linux/leds-lp5521.h
+> @@ -26,6 +26,7 @@
+>  /* See Documentation/leds/leds-lp5521.txt */
+> 
+>  struct lp5521_led_config {
+> +	char		*name;
+>  	u8		chan_nr;
+>  	u8		led_current; /* mA x10, 0 if led is not connected */
+>  	u8		max_current;
+> --
+> 1.7.4.1
+> 
+> Best Regards,
+> Milo (Woogyom) Kim
+> Texas Instruments Incorporated
 
-I agree. This is something that most pinmux/pinconf drivers need to
-implement, so it's best done in a generic way.
- 
-> In tegra20.dtsi:
-> 
-> / {
-> 	&tegra_pmx {
-> 		#address-cells = <1>;
-> 		#size-cells = <0>;
-> 
-> 		/*
-> 		 * This is the first option for SDIO1. It comes out
-> 		 * on pin groups DTA and DTD. Boards can simply use this
-> 		 * phandle in the driver node to get this option. Any options
-> 		 * not used could potentially be dropped from the device tree
-> 		 * blob for space-constrained boot loaders.
-> 		 */
-> 		pmx_sdhci1_dta_dtd: sdhci1-dta-dtd@0 {
-> 			#address-cells = <1>;
-> 			#size-cells = <0>;
-> 			reg = <0>;
-> 			label = "SDIO1 on DTA, DTD (4-bit)";
-> 
-> 			/*
-> 			 * Here are the pin groups needed for this option.
-> 			 * First DTA, then DTD.
-> 			 */
-> 			pmx@dta {
-> 				reg = <PG_DTA>;
-> 				mux = <PMX_MUX_SDIO1>;
-> 				drive-strengh = <5>;
-> 				slew-rate = <4>;
-
-Using reg for the register offsets here makes sense to me. But doesn't that
-mean that now we're back to having a node for each pin? And that is something
-we're trying to avoid because of the bloat as most systems have one register
-per pin, so this is not efficient for listing multiple pins.
-
-So maybe we should just use what Stephen suggested for the array of registers
-here:
-
-				mux = <MUX_OFFSET1 INITIAL_MUX_VALUE1
-				       MUX_OFFSET2 INITIAL_MUX_VALUE2>;
-
-> 
-> 				/*
-> 				 * We support two states here, active
-> 				 * and standby. Properties in these child
-> 				 * nodes can override the ones at this level.
-> 				 * Drivers can move between states just by
-> 				 * making the changes in these nodes.
-> 				 */
-> 				state-active {
-> 					reg = <PMX_CONF_ACTIVE>;
-> 					tristate = <0>;
-> 				};
-> 				state-standby {
-> 					reg = <PMX_CONF_STANDBY>;
-> 					tristate = <1>;
-> 					drive-strengh = <2>;
-> 				};
-> 			};
-
-This seems like a qood way to represent the alternative mux states for
-the muxes that need them. This is assuming the states have standard
-bindings and not some random names. I still don't know if we need them
-though. And again when we have multiple registers, we'd have to have
-either multiple entries for each pin, or use the array instead of reg.
-
-Maybe we need two bindings: A minimal subset of what Stephen is suggesting
-that can handle 95% of the muxes with minimal overhead, then what you're
-suggesting for the few muxes that need multiple states?
-
-Regards,
-
-Tony
