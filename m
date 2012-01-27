@@ -1,110 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab2A0LwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 06:52:10 -0500
-Received: from ns1.ryston.cz ([31.30.2.11]:45094 "EHLO ns1.ryston.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752580Ab2A0LwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 06:52:08 -0500
-X-Greylist: delayed 1993 seconds by postgrey-1.27 at vger.kernel.org; Fri, 27 Jan 2012 06:52:07 EST
-From: "Karel Znamenacek" <karel@ryston.cz>
-Organization: Ryston Electronics s.r.o.
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Date: Fri, 27 Jan 2012 12:17:36 +0100
+	id S1754657Ab2A0MAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 07:00:37 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37533 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab2A0MAg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 07:00:36 -0500
 MIME-Version: 1.0
-Subject: Re: [PATCH] ARM: at91: USB AT91 gadget registration for module
-CC: karel@ryston.cz, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        stable <stable@vger.kernel.org>
-Message-ID: <4F2287CF.5411.F0E5DC@karel.ryston.cz>
-In-reply-to: <1327660087-20864-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1327660087-20864-1-git-send-email-nicolas.ferre@atmel.com>
-X-mailer: Pegasus Mail for Windows (4.51)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB445@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+	<7FE21149F4667147B645348EC6057885091DEA@039-SN2MPN1-013.039d.mgd.msft.net>
+	<20120117082334.GA31295@S2101-09.ap.freescale.net>
+	<7FE21149F4667147B645348EC6057885092D56@039-SN2MPN1-013.039d.mgd.msft.net>
+	<74CDBE0F657A3D45AFBB94109FB122FF17801D22F5@HQMAIL01.nvidia.com>
+	<7FE21149F4667147B645348EC6057885095125@039-SN2MPN1-013.039d.mgd.msft.net>
+	<74CDBE0F657A3D45AFBB94109FB122FF1780DAB445@HQMAIL01.nvidia.com>
+Date: Fri, 27 Jan 2012 13:00:35 +0100
+Message-ID: <CACRpkdae58AYCYzwx8ysSDr_i0UHBfCujm2Fmnb+hx7825Lm4w@mail.gmail.com>
+Subject: Re: Pinmux bindings proposal
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK
+On Fri, Jan 20, 2012 at 9:28 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Dong Aisheng wrote at Wednesday, January 18, 2012 4:06 AM:
+>>
+>> Each entry in the list is PIN rather than group.
+>> So we cannot create each map for each entry in the list except we treat the PIN as
+>> A group(this will cause a huge maps and predefined groups and functions).
+>
+> Linusw has NAKd the idea that we should not use these "virtual groups",
+> i.e. he believes they're fine to use if you wish.
 
-Karel
+Interesting double inversion here: I NACK to NOT use groups
+this way...
 
-On 27 Jan 2012 at 11:28, Nicolas Ferre wrote:
+The groups are not "virtual" if they share some physical
+property. Such as being used by the same device.
 
-> Registration of at91_udc as a module will enable SoC
-> related code.
-> 
-> Fix following an idea from Karel Znamenacek.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: stable <stable@vger.kernel.org>
-> ---
-> Karel,
-> 
-> Do you want to add your "Acked-by" line?
-> 
->  arch/arm/mach-at91/at91rm9200_devices.c  |    2 +-
->  arch/arm/mach-at91/at91sam9260_devices.c |    2 +-
->  arch/arm/mach-at91/at91sam9261_devices.c |    2 +-
->  arch/arm/mach-at91/at91sam9263_devices.c |    2 +-
->  4 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/at91rm9200_devices.c b/arch/arm/mach-at91/at91rm9200_devices.c
-> index 18bacec..97676bd 100644
-> --- a/arch/arm/mach-at91/at91rm9200_devices.c
-> +++ b/arch/arm/mach-at91/at91rm9200_devices.c
-> @@ -83,7 +83,7 @@ void __init at91_add_device_usbh(struct at91_usbh_data *data) {}
->   *  USB Device (Gadget)
->   * -------------------------------------------------------------------- */
->  
-> -#ifdef CONFIG_USB_AT91
-> +#if defined(CONFIG_USB_AT91) || defined(CONFIG_USB_AT91_MODULE)
->  static struct at91_udc_data udc_data;
->  
->  static struct resource udc_resources[] = {
-> diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-> index 642ccb6..f1a1bb45 100644
-> --- a/arch/arm/mach-at91/at91sam9260_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9260_devices.c
-> @@ -84,7 +84,7 @@ void __init at91_add_device_usbh(struct at91_usbh_data *data) {}
->   *  USB Device (Gadget)
->   * -------------------------------------------------------------------- */
->  
-> -#ifdef CONFIG_USB_AT91
-> +#if defined(CONFIG_USB_AT91) || defined(CONFIG_USB_AT91_MODULE)
->  static struct at91_udc_data udc_data;
->  
->  static struct resource udc_resources[] = {
-> diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
-> index fc59cbd..1e28bed 100644
-> --- a/arch/arm/mach-at91/at91sam9261_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9261_devices.c
-> @@ -87,7 +87,7 @@ void __init at91_add_device_usbh(struct at91_usbh_data *data) {}
->   *  USB Device (Gadget)
->   * -------------------------------------------------------------------- */
->  
-> -#ifdef CONFIG_USB_AT91
-> +#if defined(CONFIG_USB_AT91) || defined(CONFIG_USB_AT91_MODULE)
->  static struct at91_udc_data udc_data;
->  
->  static struct resource udc_resources[] = {
-> diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-> index 7b46b27..618013d 100644
-> --- a/arch/arm/mach-at91/at91sam9263_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9263_devices.c
-> @@ -92,7 +92,7 @@ void __init at91_add_device_usbh(struct at91_usbh_data *data) {}
->   *  USB Device (Gadget)
->   * -------------------------------------------------------------------- */
->  
-> -#ifdef CONFIG_USB_AT91
-> +#if defined(CONFIG_USB_AT91) || defined(CONFIG_USB_AT91_MODULE)
->  static struct at91_udc_data udc_data;
->  
->  static struct resource udc_resources[] = {
-> -- 
-> 1.7.5.4
-> 
+The subsystem has callbacks to list, name and get the
+pins belonging to a group. What defines a group is up
+to the driver, it better be something that makes sense
+else the driver will likely become hard to maintain.
 
+If and only if you enable the *OPTIONAL* pinmux part
+of the pin control subsystem, there is something
+called pinmuxes, these have pins associated with them,
+and by design they have to present the pins associated
+with them by naming one or more groups.
 
+It is possible that the pinmux should be able to
+contain single pins as well, Tony indicated something
+like that to me. Currently you would have to use a
+group with 1 pin in it to associate a single pin with
+a pinmux, maybe this is not so elegant, it can be
+fixed,
+
+Yours,
+Linus Walleij
