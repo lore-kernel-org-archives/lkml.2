@@ -1,140 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab2A0SrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:47:13 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:49660 "EHLO
+	id S1752544Ab2A0SsU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:48:20 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:24720 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab2A0SrM convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751443Ab2A0SsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:47:12 -0500
+	Fri, 27 Jan 2012 13:48:19 -0500
+Date: Fri, 27 Jan 2012 13:45:39 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] hvc_xen: implement multiconsole support
+Message-ID: <20120127184538.GA18321@phenom.dumpdata.com>
+References: <alpine.DEB.2.00.1201271823240.3196@kaball-desktop>
+ <1327689097-12788-2-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-Message-ID: <9813c0cd-0335-4994-b734-e9fc7872c0cb@default>
-Date: Fri, 27 Jan 2012 10:46:57 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
-        Chris Mason <chris.mason@oracle.com>,
-        lsf-pc@lists.linux-foundation.org
-Subject: RE: [PATCH] mm: implement WasActive page flag (for improving
- cleancache)
-References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
- <4F218D36.2060308@linux.vnet.ibm.com>
- <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
- <20120126163150.31a8688f.akpm@linux-foundation.org>
- <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>
- <20120126171548.2c85dd44.akpm@linux-foundation.org>
- <7198bfb3-1e32-40d3-8601-d88aed7aabd8@default>
- <1327671787.2977.17.camel@dabdike.int.hansenpartnership.com>
- <3ac611ee-8830-41bd-8464-6867da701948@default>
- <1327686876.2977.37.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1327686876.2977.37.camel@dabdike.int.hansenpartnership.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4F22F11F.0062,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327689097-12788-2-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090202.4F22F167.0050,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Subject: RE: [PATCH] mm: implement WasActive page flag (for improving cleancache)
-> 
-> On Fri, 2012-01-27 at 09:32 -0800, Dan Magenheimer wrote:
-> > > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> > > What I was wondering was instead of using a flag, could we make the LRU
-> > > lists do this for us ... something like have a special LRU list for
-> > > pages added to the page cache but never referenced since added?  It
-> > > sounds like you can get your WasActive information from the same type of
-> > > LRU list tricks (assuming we can do them).
-> >
-> > Hmmm... I think this would mean more LRU queues but that may be
-> > the right long term answer.  Something like?
-> >
-> > 	read but not used yet LRU
-> > 	readahead but not used yet LRU
-> 
-> What's the difference between these two?  I think read but not used is
-> some form of readahead regardless of where it came from.
+> +static void xencons_disconnect_backend(struct xencons_info *info)
+> +{
+> +	if (info->irq > 0)
+> +		unbind_from_irqhandler(info->irq, NULL);
+> +	info->irq = 0;
+> +	if (info->evtchn > 0)
+> +		xenbus_free_evtchn(info->xbdev, info->evtchn);
+> +	info->evtchn = 0;
+> +	if (info->gntref > 0)
+> +		gnttab_free_grant_references(info->gntref);
+> +	info->gntref = 0;
+> +	if (info->hvc != NULL)
+> +		hvc_remove(info->hvc);
+> +	info->hvc = NULL;
+> +}
+> +
+> +static void xencons_free(struct xencons_info *info)
+> +{
+> +	xencons_disconnect_backend(info);
+> +	free_page((unsigned long)info->intf);
+> +	info->intf = NULL;
+> +	info->vtermno = 0;
+> +	kfree(info);
+> +}
+> +
+> +static int xencons_remove(struct xenbus_device *dev)
+> +{
+> +	struct xencons_info *info = dev_get_drvdata(&dev->dev);
+> +
 
-Oops, I meant "read but used only once (to resolve a page fault)" LRU.
+I would say put
+	xencons_disconnect_backend(info)
 
-> > 	active LRU
-> > 	previously active LRU
-> 
-> I don't quite understand why you need two queues here, either.  Surely
-> active is logically at the bottom of the LRU and previously active at
-> the top (assuming we've separated the unused pages to a different LRU
-> list).
+here, that way it calls hvc_remove first, and then this would
+delete an "not-called" anymore structure.
 
-Cleancache only sees pages when they "fall off the end of the world",
-so would like to differentiate between clean pages that were used just
-once and pages that were used more than once, but not recently.
-There may be better heuristics for cleancache too.
- 
-> > Naturally, this then complicates the eviction selection process.
-> >
-> > > I think the memory pressure eviction heuristic is: referenced but not
-> > > recently used pages first followed by unreferenced and not recently used
-> > > readahead pages.  The key being to keep recently read in readahead pages
-> > > until last because there's a time between doing readahead and getting
-> > > the page accessed and we don't want to trash a recently red in readahead
-> > > page only to have the process touch it and find it has to be read in
-> > > again.
-> >
-> > I suspect that any further progress on the page replacement heuristics
-> > is going to require more per-page data to be stored.  Which means
-> > that it probably won't work under the constraints of 32-bit systems.
-> > So it might also make sense to revisit when/whether to allow the
-> > heuristics to be better on a 64-bit system than on a 32-bit.
-> > (Even ARM now has 64-bit processors!)  I put this on my topic list
-> > for LSF/MM, though I have no history of previous discussion so
-> > this may already have previously been decided.
-> 
-> I've got to say why? on this.  The object is to find a simple solution
-> that's good enough.  I think separating the LRU list into two based on
-> once referenced/never referenced might be enough to derive all the
-> information we need.
+> +	spin_lock(&xencons_lock);
+> +	list_del(&info->list);
+> +	spin_unlock(&xencons_lock);
+> +	xencons_free(info);
 
-Maybe I'm misunderstanding (in which case a complete list of the LRU
-queues you are proposing would be good), but doesn't the existing design
-already do this?  Actually, IIUC the existing file cache design has a
-	"referenced more than once" LRU ("active")
-and a second ("inactive") LRU queue which combines
-	"referenced only once" OR
-	"readahead and never referenced" OR
-	"referenced more than once but not referenced recently"
-Are you proposing to add more queues or define the existing two queues
-differently?
+>  	return 0;
+>  }
+>
 
-So my strawman list of LRU queues separates the three ORs in the inactive
-LRU queue to three separate LRU queues, for a total of four.
+.. snip..
+> +
+> +static const struct xenbus_device_id xencons_ids[] = {
+> +	{ "console" },
+> +	{ "" }
+> +};
+> +
+> +
+>  static void __exit xen_hvc_fini(void)
+>  {
+> -	if (hvc)
+> -		hvc_remove(hvc);
+> +	struct xencons_info *entry, *next;
+> +
+> +	if (list_empty(&xenconsoles))
+> +			return;
+> +
+> +	spin_lock(&xencons_lock);
 
- INACTIVE-typeA) read but used only once to resolve a page fault LRU
- INACTIVE-typeB) readahead but not used yet LRU
- INACTIVE-typeC) previously active LRU
- ACTIVE) active LRU
+Take that spin-lock out.
 
-> Until that theory is disproved, there's not much
-> benefit to developing ever more complex heuristics.
+> +	list_for_each_entry_safe(entry, next, &xenconsoles, list) {
+> +		list_del(&entry->list);
+> +		if (entry->xbdev)
+> +			xencons_remove(entry->xbdev);
 
-I think we are both "disproving" the theory that the existing
-two LRU queues are sufficient.  You need to differentiate between
-typeA and typeB (to ensure typeB doesn't get evicted too quickly)
-and I would like to differentiate typeC from typeA/typeB to have
-heuristic data for cleancache at the time the kernel evicts the page.
+This guy deletes itself from the list..
+> +		else {
+> +			if (entry->irq > 0)
+> +				unbind_from_irqhandler(entry->irq, NULL);
+> +			if (entry->hvc);
+> +				hvc_remove(entry->hvc);
+> +			kfree(entry);
 
-Does that make sense?
+..but this one does not.  You could make xencons_remove just remove
+itself from the list and nothing else. Then rename it to 'xencons_remove_itself' perhaps?
 
-P.S. I'm interpreting from http://linux-mm.org/PageReplacementDesign 
-rather from full understanding of the current code, so please correct
-me if I got it wrong.
+After that, introduce a new function 'xencons_delete' that would call
+xecons_disconnect_backend, xencons_remove_itself, and xencons_free?
+
+> +		}
+> +	}
+> +	spin_unlock(&xencons_lock);
+>  }
+>  
+>  static int xen_cons_init(void)
+> @@ -256,18 +566,31 @@ static int xen_cons_init(void)
+>  	if (xen_initial_domain())
+>  		ops = &dom0_hvc_ops;
+>  	else {
+> +		int r;
+>  		ops = &domU_hvc_ops;
+>  
+> -		if (xen_pv_domain())
+> -			console_evtchn = xen_start_info->console.domU.evtchn;
+> +		if (xen_hvm_domain())
+> +			r = xen_hvm_console_init();
+>  		else
+> -			xen_hvm_console_init();
+> +			r = xen_pv_console_init();
+> +		if (r < 0)
+> +			return r;
+>  	}
+>  
+>  	hvc_instantiate(HVC_COOKIE, 0, ops);
+>  	return 0;
+>  }
+>  
+> +static struct xenbus_driver xencons_driver = {
+
+This needs to be wrapped in the new macro that Jan prepared.
+DEFINE_XENBUS_DRIVER (73db144b58a32fc39733db6a7e1fe582072ad26a)
+
+> +	.name = "xenconsole",
+> +	.owner = THIS_MODULE,
+> +	.ids = xencons_ids,
+> +	.probe = xencons_probe,
+> +	.remove = xencons_remove,
+> +	.resume = xencons_resume,
+> +	.otherend_changed = xencons_backend_changed,
+> +};
+> +
+>  module_init(xen_hvc_init);
+>  module_exit(xen_hvc_fini);
+>  console_initcall(xen_cons_init);
+> -- 
+> 1.7.2.5
