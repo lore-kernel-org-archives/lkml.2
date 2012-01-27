@@ -1,244 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab2A0Q25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:28:57 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44682 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab2A0Q2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:28:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="103409420"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, "mjg@redhat.com" <mjg@redhat.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 4/5] platform-x86: intel_mid_thermal: convert to use
- Intel MSIC API
-Thread-Topic: [PATCH 4/5] platform-x86: intel_mid_thermal: convert to use
- Intel MSIC API
-Thread-Index: AQHM3FC0RIVXuNz8okWjqr7E+oL63pYgaLwg
-Date: Fri, 27 Jan 2012 16:28:50 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5902FDCA@BGSMSX101.gar.corp.intel.com>
-References: <20120126173729.16719.15431.stgit@bob.linux.org.uk>
- <20120126173927.16719.25711.stgit@bob.linux.org.uk>
-In-Reply-To: <20120126173927.16719.25711.stgit@bob.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1756216Ab2A0Q3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 11:29:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52073 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751534Ab2A0Q3B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 11:29:01 -0500
+Date: Fri, 27 Jan 2012 16:28:59 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 2/3] regmap: Add support for 2/6 register formating
+Message-ID: <20120127162859.GC18572@opensource.wolfsonmicro.com>
+References: <1327677023-29310-1-git-send-email-w.sang@pengutronix.de>
+ <1327677023-29310-2-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="adJ1OR3c6QgCpb/j"
+Content-Disposition: inline
+In-Reply-To: <1327677023-29310-2-git-send-email-w.sang@pengutronix.de>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0RGT1ZQ020486
 
 
+--adJ1OR3c6QgCpb/j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> -----Original Message-----
-> From: platform-driver-x86-owner@vger.kernel.org [mailto:platform-driver-x86-
-> owner@vger.kernel.org] On Behalf Of Alan Cox
-> Sent: Thursday, January 26, 2012 11:10 PM
-> To: mjg@redhat.com; platform-driver-x86@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH 4/5] platform-x86: intel_mid_thermal: convert to use Intel MSIC
-> API
-> 
-> From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> Intel MSIC MFD driver provides common register access interface to the
-> devices in the MSIC die so we use that instead of SCU IPC.
-> 
+On Fri, Jan 27, 2012 at 04:10:22PM +0100, Wolfram Sang wrote:
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 
-Acked-by: Durgadoss R <durgadoss.r@intel.com>
+Applied, thanks.
 
-Thanks,
-Durga
+--adJ1OR3c6QgCpb/j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
-> 
->  drivers/platform/x86/Kconfig             |    2 +-
->  drivers/platform/x86/intel_mid_thermal.c |   39 ++++++++++++++----------------
->  2 files changed, 19 insertions(+), 22 deletions(-)
-> 
-> 
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index 5715e4d..86720bc 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -672,7 +672,7 @@ config INTEL_MID_POWER_BUTTON
-> 
->  config INTEL_MFLD_THERMAL
->         tristate "Thermal driver for Intel Medfield platform"
-> -       depends on INTEL_SCU_IPC && THERMAL
-> +       depends on MFD_INTEL_MSIC && THERMAL
->         help
->           Say Y here to enable thermal driver support for the  Intel Medfield
->           platform.
-> diff --git a/drivers/platform/x86/intel_mid_thermal.c
-> b/drivers/platform/x86/intel_mid_thermal.c
-> index de2e62e..aef4979 100644
-> --- a/drivers/platform/x86/intel_mid_thermal.c
-> +++ b/drivers/platform/x86/intel_mid_thermal.c
-> @@ -33,18 +33,15 @@
->  #include <linux/slab.h>
->  #include <linux/pm.h>
->  #include <linux/thermal.h>
-> -
-> -#include <asm/intel_scu_ipc.h>
-> +#include <linux/mfd/intel_msic.h>
-> 
->  /* Number of thermal sensors */
->  #define MSIC_THERMAL_SENSORS	4
-> 
->  /* ADC1 - thermal registers */
-> -#define MSIC_THERM_ADC1CNTL1	0x1C0
->  #define MSIC_ADC_ENBL		0x10
->  #define MSIC_ADC_START		0x08
-> 
-> -#define MSIC_THERM_ADC1CNTL3	0x1C2
->  #define MSIC_ADCTHERM_ENBL	0x04
->  #define MSIC_ADCRRDATA_ENBL	0x05
->  #define MSIC_CHANL_MASK_VAL	0x0F
-> @@ -75,8 +72,8 @@
->  #define ADC_VAL60C		315
-> 
->  /* ADC base addresses */
-> -#define ADC_CHNL_START_ADDR	0x1C5	/* increments by 1 */
-> -#define ADC_DATA_START_ADDR	0x1D4	/* increments by 2 */
-> +#define ADC_CHNL_START_ADDR	INTEL_MSIC_ADC1ADDR0	/* increments by 1 */
-> +#define ADC_DATA_START_ADDR	INTEL_MSIC_ADC1SNS0H	/* increments by 2 */
-> 
->  /* MSIC die attributes */
->  #define MSIC_DIE_ADC_MIN	488
-> @@ -189,17 +186,17 @@ static int mid_read_temp(struct thermal_zone_device *tzd,
-> unsigned long *temp)
->  	addr = td_info->chnl_addr;
-> 
->  	/* Enable the msic for conversion before reading */
-> -	ret = intel_scu_ipc_iowrite8(MSIC_THERM_ADC1CNTL3, MSIC_ADCRRDATA_ENBL);
-> +	ret = intel_msic_reg_write(INTEL_MSIC_ADC1CNTL3, MSIC_ADCRRDATA_ENBL);
->  	if (ret)
->  		return ret;
-> 
->  	/* Re-toggle the RRDATARD bit (temporary workaround) */
-> -	ret = intel_scu_ipc_iowrite8(MSIC_THERM_ADC1CNTL3, MSIC_ADCTHERM_ENBL);
-> +	ret = intel_msic_reg_write(INTEL_MSIC_ADC1CNTL3, MSIC_ADCTHERM_ENBL);
->  	if (ret)
->  		return ret;
-> 
->  	/* Read the higher bits of data */
-> -	ret = intel_scu_ipc_ioread8(addr, &data);
-> +	ret = intel_msic_reg_read(addr, &data);
->  	if (ret)
->  		return ret;
-> 
-> @@ -207,7 +204,7 @@ static int mid_read_temp(struct thermal_zone_device *tzd,
-> unsigned long *temp)
->  	adc_val = (data << 2);
->  	addr++;
-> 
-> -	ret = intel_scu_ipc_ioread8(addr, &data);/* Read lower bits */
-> +	ret = intel_msic_reg_read(addr, &data);/* Read lower bits */
->  	if (ret)
->  		return ret;
-> 
-> @@ -235,7 +232,7 @@ static int configure_adc(int val)
->  	int ret;
->  	uint8_t data;
-> 
-> -	ret = intel_scu_ipc_ioread8(MSIC_THERM_ADC1CNTL1, &data);
-> +	ret = intel_msic_reg_read(INTEL_MSIC_ADC1CNTL1, &data);
->  	if (ret)
->  		return ret;
-> 
-> @@ -246,7 +243,7 @@ static int configure_adc(int val)
->  		/* Just stop the ADC */
->  		data &= (~MSIC_ADC_START);
->  	}
-> -	return intel_scu_ipc_iowrite8(MSIC_THERM_ADC1CNTL1, data);
-> +	return intel_msic_reg_write(INTEL_MSIC_ADC1CNTL1, data);
->  }
-> 
->  /**
-> @@ -262,21 +259,21 @@ static int set_up_therm_channel(u16 base_addr)
->  	int ret;
-> 
->  	/* Enable all the sensor channels */
-> -	ret = intel_scu_ipc_iowrite8(base_addr, SKIN_SENSOR0_CODE);
-> +	ret = intel_msic_reg_write(base_addr, SKIN_SENSOR0_CODE);
->  	if (ret)
->  		return ret;
-> 
-> -	ret = intel_scu_ipc_iowrite8(base_addr + 1, SKIN_SENSOR1_CODE);
-> +	ret = intel_msic_reg_write(base_addr + 1, SKIN_SENSOR1_CODE);
->  	if (ret)
->  		return ret;
-> 
-> -	ret = intel_scu_ipc_iowrite8(base_addr + 2, SYS_SENSOR_CODE);
-> +	ret = intel_msic_reg_write(base_addr + 2, SYS_SENSOR_CODE);
->  	if (ret)
->  		return ret;
-> 
->  	/* Since this is the last channel, set the stop bit
->  	 * to 1 by ORing the DIE_SENSOR_CODE with 0x10 */
-> -	ret = intel_scu_ipc_iowrite8(base_addr + 3,
-> +	ret = intel_msic_reg_write(base_addr + 3,
->  			(MSIC_DIE_SENSOR_CODE | 0x10));
->  	if (ret)
->  		return ret;
-> @@ -295,11 +292,11 @@ static int reset_stopbit(uint16_t addr)
->  {
->  	int ret;
->  	uint8_t data;
-> -	ret = intel_scu_ipc_ioread8(addr, &data);
-> +	ret = intel_msic_reg_read(addr, &data);
->  	if (ret)
->  		return ret;
->  	/* Set the stop bit to zero */
-> -	return intel_scu_ipc_iowrite8(addr, (data & 0xEF));
-> +	return intel_msic_reg_write(addr, (data & 0xEF));
->  }
-> 
->  /**
-> @@ -322,7 +319,7 @@ static int find_free_channel(void)
->  	uint8_t data;
-> 
->  	/* check whether ADC is enabled */
-> -	ret = intel_scu_ipc_ioread8(MSIC_THERM_ADC1CNTL1, &data);
-> +	ret = intel_msic_reg_read(INTEL_MSIC_ADC1CNTL1, &data);
->  	if (ret)
->  		return ret;
-> 
-> @@ -331,7 +328,7 @@ static int find_free_channel(void)
-> 
->  	/* ADC is already enabled; Looking for an empty channel */
->  	for (i = 0; i < ADC_CHANLS_MAX; i++) {
-> -		ret = intel_scu_ipc_ioread8(ADC_CHNL_START_ADDR + i, &data);
-> +		ret = intel_msic_reg_read(ADC_CHNL_START_ADDR + i, &data);
->  		if (ret)
->  			return ret;
-> 
-> @@ -359,7 +356,7 @@ static int mid_initialize_adc(struct device *dev)
->  	 * Ensure that adctherm is disabled before we
->  	 * initialize the ADC
->  	 */
-> -	ret = intel_scu_ipc_ioread8(MSIC_THERM_ADC1CNTL3, &data);
-> +	ret = intel_msic_reg_read(INTEL_MSIC_ADC1CNTL3, &data);
->  	if (ret)
->  		return ret;
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPItDEAAoJEBus8iNuMP3dzpAP/jhkAE8X7eOLfpTOaV1e8xtU
+2nyBAsTxg7QF77N0PVufgJ1uXb0QHr+HO5UpMPY3S/RzTkK7Tx6Ddi6jlTxyRJUB
+AERsMOdykh4X4/cv6T6v4LjfDXL/BNJkwW1aXdLgRvsJ8pyaXs8ifZXtE/LoIbRy
+ybXMQAKII31EeMNj9KhZIucya+TJD8fNaKSM7yfgM6Gwe4tfG138plLRaeS1UF1a
+qHYi9iiO+VBw1oprfAjAZ7iCHEHMcJ8hWA//MKhEOvazZY5w8yJZDBIivlLOgNzk
+HbMXgHa7F/7xAydb9WEOj4xmXa+XHC9FK4z+umzE2xjMj4khvQGstrB98hDFiTuR
+lQl71RfNhXat2DtCsJ6L/6WdEEwIQQC2cbHw40uDtuAg0kZu3MlubZBaz06Na2Cm
+on760hLQqsBc2cGB7gCrbccXnZD4wucIo/L2/ZD2qJaCoijnWTIU2z6MJ1ZhrQNP
+UqMbjYQR24G+nhPO1pQ5ZCQkGf+kcxq55pQw4ObVvyVtDB0Rcbm2QKCj9hHr/2/9
+T3j9WzuACyYftyY0+rhLtRy/7mQTuj+kxpB0WFJd7TQIurBx8AVPWCjBMsdfBHoD
+wnKtvhiydEISP/3c20xEFRrddYzGxQhWgDF0kkmsGQJ7A2cdtRP+WZDYYNqUvw55
+3oW1OUoC6H4SpVSpoJZP
+=WmnW
+-----END PGP SIGNATURE-----
+
+--adJ1OR3c6QgCpb/j--
