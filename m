@@ -1,120 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab2A0Gu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 01:50:29 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:53191 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752720Ab2A0Gu2 (ORCPT
+	id S1755812Ab2A0Gve (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 01:51:34 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:34174 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab2A0Gvd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 01:50:28 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/u1M8MhOPuBKGQ0Yi9CRI/Z4xu/uS11tAVQXj7pk
-	8cpogjxUsNiLpj
-Subject: Re: Shift by one instruction in the perf annotate output
-From: Mike Galbraith <efault@gmx.de>
-To: =?ISO-8859-1?Q?L=E9na=EFc?= Huard <lenaic@lhuard.fr.eu.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <201201270001.27765.lenaic@lhuard.fr.eu.org>
-References: <201201270001.27765.lenaic@lhuard.fr.eu.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 27 Jan 2012 07:50:11 +0100
-Message-ID: <1327647011.6335.22.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	Fri, 27 Jan 2012 01:51:33 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        "levinsasha928\@gmail.com" <levinsasha928@gmail.com>,
+        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem\@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davej\@redhat.com" <davej@redhat.com>,
+        "sjurbren\@gmail.com" <sjurbren@gmail.com>
+Subject: Re: [PATCH] netns: fix net_alloc_generic()
+References: <CA+1xoqe+Qa1OByj7z7XzAPG_g9+BmNj9NPZR=_5b_MTEmc9Chw@mail.gmail.com>
+	<1327523631-3480-1-git-send-email-sjur.brandeland@stericsson.com>
+	<1327574498.2500.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<4F212E7E.2040801@parallels.com>
+	<1327575108.2500.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<m1zkdacbsx.fsf@fess.ebiederm.org>
+	<1327644547.2919.11.camel@edumazet-laptop>
+Date: Thu, 26 Jan 2012 22:54:07 -0800
+In-Reply-To: <1327644547.2919.11.camel@edumazet-laptop> (Eric Dumazet's
+	message of "Fri, 27 Jan 2012 07:09:07 +0100")
+Message-ID: <m1k44d8wkw.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+ERRRH5132F6zj5G1e1Sstapd3rW9Zm58=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-27 at 00:01 +0100, Lénaïc Huard wrote:
-> Hello,
-> 
-> Using perf and zooming up to the annotated assembler, I noticed a “shift by 
-> one” issue between the assembler instructions and the reported consumed cycles 
-> in the left margin.
-> Each time a given instruction is expensive, the high event count appears on 
-> the line right after.
-> In order to validate that feeling, I tried to put an expensive instruction 
-> (division) inside a block of cheaper instructions (no operation). And here is 
-> the output of perf annotate:
-> 
->     0,00 :          40041d:       nop
->     0,00 :          40041e:       nop
->     5,31 :          40041f:       nop                                                                                                                                               
->     0,00 :          400420:       divl   (%rsp)
->    84,18 :          400423:       nop                                                                                                                                               
->     0,00 :          400424:       nop
->     0,07 :          400425:       nop
-> 
-> I would have expected the 84,18 count to be in front of the “divl” instruction 
-> and not in front of the “nop” one.
-> 
-> I am running Linux and perf 3.2 but I remember that previous versions suffered 
-> from the same issue.
+Eric Dumazet <eric.dumazet@gmail.com> writes:
 
-Yeah, it's been that way since day 1 here, you have to squint a little.
-It's not always off, it gets lock btr right, but lock xadd wrong.  Same
-CPU as yours.  I see the same with cache-misses too, but since the right
-instruction is right next door, it's always been easy to spot the real
-culprit, so I just squint and ignore it, figuring it's a hw detail.
+> Le jeudi 26 janvier 2012 à 14:57 -0800, Eric W. Biederman a écrit :
+>
+>> It is not a chicken and egg problem.  It is a bug in caif.
+>> caif is claiming to be a network device when it is acting as a subsytem.
+>> That means it is being initialized too late.
+>> 
+>
+> Ah ok !
+>
+>> Untested but this should trivially fix the problem, and a bunch
+>> of others of the same ilk.
+>> 
+>
+> Hmm, please refrain from using "trivially" or "trivial", you're not
+> fooling anyone.
 
-Showing cycles for __schedule
-  Events  Pcnt (>=5%)
- Percent |      Source code & Disassembly of vmlinux
-------------------------------------------------
-         :              next = pick_next_task(rq);
-         :              clear_tsk_need_resched(prev);
-         :
-         :              if (likely(prev != next)) {
-    7.68 :      ffffffff8139efca:       mov    -0xf0(%rbp),%rcx
-         :
-         :      static inline void load_cr3(pgd_t *pgdir)
-         :      {
-         :              write_cr3(__pa(pgdir));
-    6.87 :      ffffffff8139f061:       mov    0x48(%r15),%rdi
-         :                              : CONST_MASK_ADDR(nr, addr)
-         :                              : "iq" ((u8)~CONST_MASK(nr)));
-         :              } else {
-         :                      asm volatile(LOCK_PREFIX "btr %1,%0"
-   38.27 :      ffffffff8139f06d:       lock btr %r14d,0x300(%r12)
-         :                      /*
-         :                       * load the LDT, if the LDT is different:
-         :                       */
-         :                      if (unlikely(prev->context.ldt != next->context.ldt))
-   12.53 :      ffffffff8139f077:       mov    0x308(%r15),%r13
-    0.40 :      ffffffff8139f0df:       jne    ffffffff813a7c60 <ret_from_fork>
-    0.00 :      ffffffff8139f0e5:       mov    %rbp,%rsi
-    0.00 :      ffffffff8139f0e8:       pop    %rbp
-    0.00 :      ffffffff8139f0e9:       popfq  
-    5.12 :      ffffffff8139f0ea:       mov    %rax,-0xe8(%rbp)
+All I meant is that the change was trivial.
 
-Showing cycles for _raw_spin_lock_irqsave
-  Events  Pcnt (>=5%)
- Percent |      Source code & Disassembly of vmlinux
-------------------------------------------------
-         :               * documented behavior of the "pop" instruction.
-         :               */
-         :              asm volatile("# __raw_save_flags\n\t"
-    0.00 :      ffffffff813a0b1f:       pushfq 
-   15.38 :      ffffffff813a0b20:       pop    %r12
-         :              unsigned long flags;
-         :
-         :              local_irq_save(flags);
-         :              preempt_disable();
-   16.24 :      ffffffff813a0b23:       mov    $0x1,%edi
-         :              register struct __raw_tickets inc = { .tail = 1 };
-         :
-         :              inc = xadd(&lock->tickets, inc);
-    0.00 :      ffffffff813a0b32:       lock xadd %ax,(%rbx)
-   46.15 :      ffffffff813a0b37:       movzbl %ah,%edx
-         :              return __raw_spin_lock_irqsave(lock);
-         :      }
-    0.85 :      ffffffff813a0b49:       mov    %r12,%rax
-    0.00 :      ffffffff813a0b4c:       pop    %rbx
-   17.09 :      ffffffff813a0b4d:       pop    %r12
+> Truth is this netns layer is horribly complex, since this CAIF bug
+> needed no more than four patch attempts and lastly your own work before
+> finding the root cause.
 
+As for the complexity I don't know that it is noticeably worse than the
+initialization complexity of the network stack in general.
 
+I do think that it is non-obvious that serious initialization ordering
+problems can be caused by such a small difference.  The non-locality
+and of cause and effect, combined with unfamiliarity of the code seems
+to be what hides problems like this.
+
+Once you know that initialization ordering problems tend to registering
+the wrong way.  Aka as a device instead of a subsys the solution to
+problems like this tend to jump out at you.
+
+Now the common plumbing in net/core/net_namespace.c does count as
+complex.  The fact we missed such an obvious optimization opportunity
+for so long seems to confirm that.
+
+I am open for ideas on how to simply things.  
+
+Eric
