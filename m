@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab2A0XB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 18:01:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64664 "EHLO mx1.redhat.com"
+	id S1752410Ab2A0XCE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 18:02:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28903 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab2A0XB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 18:01:57 -0500
+	id S1751450Ab2A0XCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 18:02:00 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -16,59 +16,85 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 3/6] pagemap: export KPF_THP
-Date: Fri, 27 Jan 2012 18:02:50 -0500
-Message-Id: <1327705373-29395-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 4/6] pagemap: document KPF_THP and make page-types aware of it
+Date: Fri, 27 Jan 2012 18:02:51 -0500
+Message-Id: <1327705373-29395-5-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1327705373-29395-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1327705373-29395-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag shows that a given pages is a subpage of transparent hugepage.
-It helps us debug and test kernel by showing physical address of thp.
+page-types, which is a common user of pagemap, gets aware of thp
+with this patch. This helps system admins and kernel hackers know
+about how thp works.
+Here is a sample output of page-types over a thp:
+
+  $ page-types -p <pid> --raw --list
+
+  voffset offset  len     flags
+  ...
+  7f9d40200       3f8400  1       ___U_lA____Ma_bH______t____________
+  7f9d40201       3f8401  1ff     ________________T_____t____________
+
+               flags      page-count       MB  symbolic-flags                     long-symbolic-flags
+  0x0000000000410000             511        1  ________________T_____t____________        compound_tail,thp
+  0x000000000040d868               1        0  ___U_lA____Ma_bH______t____________        uptodate,lru,active,mmap,anonymous,swapbacked,compound_head,thp
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Changes since v2:
-  - replace if with else-if not to set KPF_THP for hugetlbfs page
-
 Changes since v1:
-  - remove unnecessary ifdefs
-  - fix confusing patch description
+  - fix misused word
 ---
- fs/proc/page.c                    |    2 ++
- include/linux/kernel-page-flags.h |    1 +
- 2 files changed, 3 insertions(+), 0 deletions(-)
+ Documentation/vm/page-types.c |    2 ++
+ Documentation/vm/pagemap.txt  |    4 ++++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git 3.3-rc1.orig/fs/proc/page.c 3.3-rc1/fs/proc/page.c
-index 6d8e6a9..7fcd0d6 100644
---- 3.3-rc1.orig/fs/proc/page.c
-+++ 3.3-rc1/fs/proc/page.c
-@@ -115,6 +115,8 @@ u64 stable_page_flags(struct page *page)
- 		u |= 1 << KPF_COMPOUND_TAIL;
- 	if (PageHuge(page))
- 		u |= 1 << KPF_HUGE;
-+	else if (PageTransCompound(page))
-+		u |= 1 << KPF_THP;
- 
- 	/*
- 	 * Caveats on high order pages: page->_count will only be set
-diff --git 3.3-rc1.orig/include/linux/kernel-page-flags.h 3.3-rc1/include/linux/kernel-page-flags.h
-index bd92a89..26a6571 100644
---- 3.3-rc1.orig/include/linux/kernel-page-flags.h
-+++ 3.3-rc1/include/linux/kernel-page-flags.h
-@@ -30,6 +30,7 @@
+diff --git 3.3-rc1.orig/Documentation/vm/page-types.c 3.3-rc1/Documentation/vm/page-types.c
+index 7445caa..0b13f02 100644
+--- 3.3-rc1.orig/Documentation/vm/page-types.c
++++ 3.3-rc1/Documentation/vm/page-types.c
+@@ -98,6 +98,7 @@
+ #define KPF_HWPOISON		19
  #define KPF_NOPAGE		20
- 
  #define KPF_KSM			21
 +#define KPF_THP			22
  
- /* kernel hacking assistances
-  * WARNING: subject to change, never rely on them!
+ /* [32-] kernel hacking assistances */
+ #define KPF_RESERVED		32
+@@ -147,6 +148,7 @@ static const char *page_flag_names[] = {
+ 	[KPF_HWPOISON]		= "X:hwpoison",
+ 	[KPF_NOPAGE]		= "n:nopage",
+ 	[KPF_KSM]		= "x:ksm",
++	[KPF_THP]		= "t:thp",
+ 
+ 	[KPF_RESERVED]		= "r:reserved",
+ 	[KPF_MLOCKED]		= "m:mlocked",
+diff --git 3.3-rc1.orig/Documentation/vm/pagemap.txt 3.3-rc1/Documentation/vm/pagemap.txt
+index df09b96..4600cbe 100644
+--- 3.3-rc1.orig/Documentation/vm/pagemap.txt
++++ 3.3-rc1/Documentation/vm/pagemap.txt
+@@ -60,6 +60,7 @@ There are three components to pagemap:
+     19. HWPOISON
+     20. NOPAGE
+     21. KSM
++    22. THP
+ 
+ Short descriptions to the page flags:
+ 
+@@ -97,6 +98,9 @@ Short descriptions to the page flags:
+ 21. KSM
+     identical memory pages dynamically shared between one or more processes
+ 
++22. THP
++    contiguous pages which construct transparent hugepages
++
+     [IO related page flags]
+  1. ERROR     IO error occurred
+  3. UPTODATE  page has up-to-date data
 -- 
 1.7.7.6
 
