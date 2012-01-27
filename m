@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab2A0SGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:06:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48784 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751154Ab2A0SGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:06:07 -0500
-Message-ID: <4F22E75E.6090602@zytor.com>
-Date: Fri, 27 Jan 2012 10:05:18 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1752725Ab2A0SH6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:07:58 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33348 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab2A0SH4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 13:07:56 -0500
+Message-ID: <4F22E7F8.30804@lwfinger.net>
+Date: Fri, 27 Jan 2012 12:07:52 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
 CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-References: <20120127175342.273260614@openvz.org> <20120127175939.795551339@openvz.org>
-In-Reply-To: <20120127175939.795551339@openvz.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+        wireless <linux-wireless@vger.kernel.org>
+Subject: Re: Kernel BUG due to kernel page fault
+References: <4F21D57F.7090103@lwfinger.net> <20120127164219.GE19323@redhat.com>
+In-Reply-To: <20120127164219.GE19323@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2012 09:53 AM, Cyrill Gorcunov wrote:
-> +
-> +/*
-> + * We don't expose real in-memory order of objects for security
-> + * reasons, still the comparision results should be suitable for
-> + * sorting. Thus, we obfuscate kernel pointers values (using random
-> + * cookies obtaned at early boot stage) and compare the production
-> + * instead.
-> + */
-> +static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
-> +
-> +static long kptr_obfuscate(long v, int type)
-> +{
-> +	return (v ^ cookies[type][0]) * cookies[type][1];
-> +}
-> +
-> +/*
-> + * 0 - equal
-> + * 1 - less than
-> + * 2 - greater than
-> + * 3 - not equal but ordering unavailable (reserved for future)
-> + */
-> +static int kcmp_ptr(long v1, long v2, enum kcmp_type type)
-> +{
-> +	long ret;
-> +
-> +	ret = kptr_obfuscate(v1, type) - kptr_obfuscate(v2, type);
-> +
-> +	return (ret < 0) | ((ret > 0) << 1);
-> +}
-> +
+On 01/27/2012 10:42 AM, Stanislaw Gruszka wrote:
+> On Thu, Jan 26, 2012 at 04:36:47PM -0600, Larry Finger wrote:
+>> Modules linked in: fuse autofs4 snd_pcm_oss snd_mixer_oss snd_seq
+>> snd_seq_device edd nfs nfsd lockd auth_rpcgss nfs_acl sunrpc
+>> exportfs ipv6 vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O)
+>                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>> RIP: 0010:[<ffffffff811e3ecb>]  [<ffffffff811e3ecb>] strnlen+0xb/0x30
+> [snip]
+>> Call Trace:
+>>   [<ffffffff811e58ae>] string.isra.4+0x3e/0xd0
+>>   [<ffffffff811e6889>] vsnprintf+0x219/0x600
+>>   [<ffffffff81153093>] seq_printf+0x53/0x80
+>>   [<ffffffff811e21db>] ? radix_tree_lookup+0xb/0x10
+>>   [<ffffffff810ba5ab>] show_interrupts+0x24b/0x300
+>>   [<ffffffff81153474>] seq_read+0x2b4/0x3f0
+>>   [<ffffffff811531c0>] ? seq_lseek+0x100/0x100
+>>   [<ffffffff8118b651>] proc_reg_read+0x81/0xc0
+>>   [<ffffffff8112f967>] vfs_read+0xa7/0x160
+>>   [<ffffffff8112fa65>] sys_read+0x45/0x90
+>>   [<ffffffff813a33a2>] system_call_fastpath+0x16/0x1b
+>
+> This is call trace from cat /proc/interrupts, seems something pass
+> malformed string to request_irq(). I do not think this is rtlwifi,
+> rather that vbox thing.
 
-I just want to point out that we could do hard cryptography, too --
-using DES or AES and compare the result since symmetric cryptography is
-an isomorphism.  One would have to compare the whole result, obviously,
-not a truncated one, so using memcmp() or the similar.
+Thanks for responding. Vbox may be guilty of a lot of things, but this is not 
+one of them.
 
-I'll leave it up to the security guys to worry about if that is needed,
-but since it is something that can be slotted in without changing the
-API it seems reasonably safe.
+Just before I received your reply, I found the problem. The PCI driver in 
+rtlwifi sets a flag to indicate that interrupts have been enabled, and uses that 
+flag to tell if the cleanup needs to disable them. When I moved the code that 
+starts mac80211, I also moved the statement that sets the flag. As a result, the 
+driver was exiting with interrupts still enabled, and the BUG resulted from 
+that. I can now unload the driver when firmware is not available.
 
-	-hpa
+Larry
+
+
+
+
