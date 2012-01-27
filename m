@@ -1,164 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab2A0VbQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 16:31:16 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:37541 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936Ab2A0VbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 16:31:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
-	MUz1OmEoxaT9Vnhq6pFYJ6T5bQyzpyvnP+lFvlXwPMaG4ibULp+mie2JZB3O+Mkr
-	1p/+BvKGUXf5kejW6FsVRkrZMTme7V14nfzks+cbq6GjuZBEQh+aqqXC5yy1hl8V
-	yS4HLPIhxvocHzetEwMKMaX7x7blyzuRd1qIHDN8MgY=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.9
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 27 Jan 2012 13:31:09 -0800
-Message-ID: <7vipjwzvc2.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 3B845752-492E-11E1-B255-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	id S1754013Ab2A0Vef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 16:34:35 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56049 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab2A0Ved convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 16:34:33 -0500
+Message-ID: <1327700063.2446.178.camel@twins>
+Subject: Re: perf: prctl(PR_TASK_PERF_EVENTS_DISABLE) has no effect
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrew Steets <asteets@rgmadvisors.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Date: Fri, 27 Jan 2012 22:34:23 +0100
+In-Reply-To: <4F2303D8.80300@rgmadvisors.com>
+References: <4F22D8D9.3010108@rgmadvisors.com>
+	 <1327684363.2446.176.camel@twins> <4F2303D8.80300@rgmadvisors.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest feature release Git 1.7.9 is now available at the usual
-places.
+On Fri, 2012-01-27 at 14:06 -0600, Andrew Steets wrote:
+> On 1/27/12 11:12 AM, Peter Zijlstra wrote:
+> > On Fri, 2012-01-27 at 11:03 -0600, Andrew Steets wrote:
+> >> Can anyone tell
+> >> me if I'm using this wrong or if this is a bug?
+> >
+> > You're using it wrong, it will disable events you own (created) not
+> > events that monitor you.
+> 
+> Is there an alternate way of disabling events that monitor the current
+> process? 
 
-The release tarballs are found at:
+Nope, nor will there ever be.
 
-    http://code.google.com/p/git-core/downloads/list
-
-and their SHA-1 checksums are:
-
-ed51ef5ef250daaa6e98515cf2641820cd268d4c  git-1.7.9.tar.gz
-c7b1fa20dc501beb2cb5091dd24dbfd2a0013a0c  git-htmldocs-1.7.9.tar.gz
-1ca1fc430b2814f9e9cf82ec3bf7f2eaf5209b7a  git-manpages-1.7.9.tar.gz
-
-Also the following public repositories all have a copy of the v1.7.9
-tag and the master branch that the tag points at:
-
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Have fun.
-
-
-Git v1.7.9 Release Notes
-========================
-
-Updates since v1.7.8
---------------------
-
- * gitk updates accumulated since early 2011.
-
- * git-gui updated to 0.16.0.
-
- * git-p4 (in contrib/) updates.
-
- * Git uses gettext to translate its most common interface messages
-   into the user's language if translations are available and the
-   locale is appropriately set. Distributors can drop new PO files
-   in po/ to add new translations.
-
- * The code to handle username/password for HTTP transactions used in
-   "git push" & "git fetch" learned to talk "credential API" to
-   external programs to cache or store them, to allow integration with
-   platform native keychain mechanisms.
-
- * The input prompts in the terminal use our own getpass() replacement
-   when possible. HTTP transactions used to ask for the username without
-   echoing back what was typed, but with this change you will see it as
-   you type.
-
- * The internals of "revert/cherry-pick" have been tweaked to prepare
-   building more generic "sequencer" on top of the implementation that
-   drives them.
-
- * "git rev-parse FETCH_HEAD" after "git fetch" without specifying
-   what to fetch from the command line will now show the commit that
-   would be merged if the command were "git pull".
-
- * "git add" learned to stream large files directly into a packfile
-   instead of writing them into individual loose object files.
-
- * "git checkout -B <current branch> <elsewhere>" is a more intuitive
-   way to spell "git reset --keep <elsewhere>".
-
- * "git checkout" and "git merge" learned "--no-overwrite-ignore" option
-   to tell Git that untracked and ignored files are not expendable.
-
- * "git commit --amend" learned "--no-edit" option to say that the
-   user is amending the tree being recorded, without updating the
-   commit log message.
-
- * "git commit" and "git reset" re-learned the optimization to prime
-   the cache-tree information in the index, which makes it faster to
-   write a tree object out after the index entries are updated.
-
- * "git commit" detects and rejects an attempt to stuff NUL byte in
-   the commit log message.
-
- * "git commit" learned "-S" to GPG-sign the commit; this can be shown
-   with the "--show-signature" option to "git log".
-
- * fsck and prune are relatively lengthy operations that still go
-   silent while making the end-user wait. They learned to give progress
-   output like other slow operations.
-
- * The set of built-in function-header patterns for various languages
-   knows MATLAB.
-
- * "git log --format='<format>'" learned new %g[nNeE] specifiers to
-   show information from the reflog entries when walking the reflog
-   (i.e. with "-g").
-
- * "git pull" can be used to fetch and merge an annotated/signed tag,
-   instead of the tip of a topic branch. The GPG signature from the
-   signed tag is recorded in the resulting merge commit for later
-   auditing.
-
- * "git log" learned "--show-signature" option to show the signed tag
-   that was merged that is embedded in the merge commit. It also can
-   show the signature made on the commit with "git commit -S".
-
- * "git branch --edit-description" can be used to add descriptive text
-   to explain what a topic branch is about.
-
- * "git fmt-merge-msg" learned to take the branch description into
-   account when preparing a merge summary that "git merge" records
-   when merging a local branch.
-
- * "git request-pull" has been updated to convey more information
-   useful for integrators to decide if a topic is worth merging and
-   what is pulled is indeed what the requestor asked to pull,
-   including:
-
-   - the tip of the branch being requested to be merged;
-   - the branch description describing what the topic is about;
-   - the contents of the annotated tag, when requesting to pull a tag.
-
- * "git pull" learned to notice 'pull.rebase' configuration variable,
-   which serves as a global fallback for setting 'branch.<name>.rebase'
-   configuration variable per branch.
-
- * "git tag" learned "--cleanup" option to control how the whitespaces
-   and empty lines in tag message are cleaned up.
-
- * "gitweb" learned to show side-by-side diff.
-
-Also contains minor documentation updates and code clean-ups.
+>  I ask because I came across the following description in
+> tools/perf/design.txt:
+> 
+>      A process can enable or disable all the counter groups that are
+>      attached to it, using prctl:
+> 
+>          prctl(PR_TASK_PERF_EVENTS_ENABLE);
+> 
+>          prctl(PR_TASK_PERF_EVENTS_DISABLE);
+> 
+>      This applies to all counters on the current process, whether created
+>      by this process or by another, and doesn't affect any counters that
+>      this process has created on other processes.  It only enables or
+>      disables the group leaders, not any other members in the groups.
 
 
-Fixes since v1.7.8
-------------------
-
-Unless otherwise noted, all the fixes since v1.7.8 in the maintenance
-releases are contained in this release (see release notes to them for
-details).
+That's wrong.. also I wouldn't ever allow such a 'feature', that's just
+asking for trouble.
