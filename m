@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab2A0T3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 14:29:35 -0500
-Received: from mail.windriver.com ([147.11.1.11]:43930 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab2A0T3d (ORCPT
+	id S1753929Ab2A0Tbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 14:31:36 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63594 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab2A0Tbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 14:29:33 -0500
-Date: Fri, 27 Jan 2012 14:28:32 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <gregkh@suse.de>, <rmk+kernel@arm.linux.org.uk>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/7] x86: relocate get/set debugreg fcns to
- include/asm/debugreg.
-Message-ID: <20120127192831.GB7150@windriver.com>
-References: <1327632272-12928-1-git-send-email-paul.gortmaker@windriver.com>
- <1327632272-12928-2-git-send-email-paul.gortmaker@windriver.com>
- <20120127115136.GA26228@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120127115136.GA26228@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 27 Jan 2012 14:31:35 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=YuO6iUK6s4AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=nAZpAcOWgCNCb6R3ZxkA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1327692694.22710.128.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] trace-cmd: fix length calculation for padding events
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com, chavey@google.com,
+        Gregory Haskins <gregory.haskins@gmail.com>
+Date: Fri, 27 Jan 2012 14:31:34 -0500
+In-Reply-To: <CAJL_eksfxza82jy62NUPmZGtQ77LVuHk+RnN3F95s-hSaSpK2w@mail.gmail.com>
+References: <1327633215-4013-1-git-send-email-dhsharp@google.com>
+	 <1327635873.22710.113.camel@gandalf.stny.rr.com>
+	 <CAJL_eksfxza82jy62NUPmZGtQ77LVuHk+RnN3F95s-hSaSpK2w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH 1/7] x86: relocate get/set debugreg fcns to include/asm/debugreg.] On 27/01/2012 (Fri 12:51) Ingo Molnar wrote:
+On Fri, 2012-01-27 at 11:21 -0800, David Sharp wrote:
 
+> > Nice catch!  I wonder how long this has been around without notice?
+> > Probably from day one.
 > 
-> * Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> 
-> > Since we already have a debugreg.h header file, move the
-> > assoc. get/set functions to it.  In addition to it being the
-> > logical home for them, it has a secondary advantage.  The
-> > functions that are moved use BUG().  So we really need to
-> > have linux/bug.h in scope.  But asm/processor.h is used about
-> > 600 times, vs. only about 15 for debugreg.h -- so adding bug.h
-> > to the latter reduces the amount of time we'll be processing
-> > it during a compile.
-> > 
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > CC: Thomas Gleixner <tglx@linutronix.de>
-> > CC: Ingo Molnar <mingo@redhat.com>
-> > CC: "H. Peter Anvin" <hpa@zytor.com>
-> > ---
-> >  arch/x86/include/asm/debugreg.h  |   67 ++++++++++++++++++++++++++++++++++++++
-> >  arch/x86/include/asm/processor.h |   63 -----------------------------------
-> >  arch/x86/kernel/cpu/common.c     |    1 +
-> >  3 files changed, 68 insertions(+), 63 deletions(-)
-> 
-> Acked-by: Ingo Molnar <mingo@elte.hu>
-> 
-> I suspect you'd like to carry this in your tree, so that all 
-> these patches are together?
+> Yeah, I think so. It's an easy mistake to make, because it's
+> incongruent with the rest of the event types.
 
-Yes, that was my original intent, unless there is a consensus
-from people indicating that they'd really rather not see such
-standalone cleanup trees exist at all.
+Yeah, I admit, that was a flaw in the buffer design. :-/
 
-Thanks,
-Paul.
+-- Steve
 
-> 
-> Thanks,
-> 
-> 	Ingo
+
