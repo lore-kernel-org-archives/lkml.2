@@ -1,287 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab2A0NKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 08:10:45 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:65209 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab2A0NKn (ORCPT
+	id S1754910Ab2A0NLq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 08:11:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63486 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754743Ab2A0NLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 08:10:43 -0500
+	Fri, 27 Jan 2012 08:11:44 -0500
 MIME-Version: 1.0
-Date: Fri, 27 Jan 2012 14:10:42 +0100
-Message-ID: <CABt6N0DvWRO5KT6GpFJEy47XCK57Y+La51DR8FtHhqNU71Bkow@mail.gmail.com>
-Subject: [RFC] perf doc: allow producing documentation in a specified output directory
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB45E@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17801D202F@HQMAIL01.nvidia.com>
+	<20120116182808.GG4223@ponder.secretlab.ca>
+	<20120118141329.GA22818@atomide.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1780DAAEBB@HQMAIL01.nvidia.com>
+	<20120119105728.GE22818@atomide.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1780DAB45E@HQMAIL01.nvidia.com>
+Date: Fri, 27 Jan 2012 14:11:43 +0100
+Message-ID: <CACRpkdaRePot9qt-z3Chk-GHqHDfyu07ojKfGA2HEXxvjKn=Vg@mail.gmail.com>
+Subject: Re: Pinmux bindings proposal
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Tony Lindgren <tony@atomide.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Franck Bui-Huu <fbuihuu@gmail.com>
+On Fri, Jan 20, 2012 at 9:50 PM, Stephen Warren <swarren@nvidia.com> wrote:
 
-Currently we can put the object files in a different directory by
-using 'O' comand line variable.
+> For Tegra20 (and IIRC some other HW), the pin mux HW actually muxes
+> groups of pins; one register field sets n (1, 2, 3, ...) pins to that
+> function at once. Hence, the entries are real physical groups.
 
-However the generated documentation files don't follow this directive,
+Maybe I am getting things wrong, but I've read:
 
-This patch fixes that. It's been tested for man target but the others
-seems currently broken so no tests have been done on them so far.
+http://en.wiktionary.org/wiki/real
+http://en.wiktionary.org/wiki/virtual
 
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
----
+And now I am trying to address this from my understanding of
+"real" as defined in clause 1:
 
- Hello Arnaldo,
+"1. That has physical existence.
+    No one has ever seen a real unicorn."
 
- I send you this patch as an RFC because it's pretty ugly but I don't see how to
- do that otherwise.
+And "virtual" as defined in clause 3:
 
- Thanks for considering.
+"3. Of something that is simulated in a computer or on-line.
+    The virtual world of his computer game allowed character interaction."
 
- tools/perf/Documentation/Makefile |   91 +++++++++++++++++++++++--------------
- tools/perf/Makefile               |   10 ++--
- 2 files changed, 61 insertions(+), 40 deletions(-)
+Please tell me if I have the wrong definitions in my
+head, I am not trying to play smart, I just want to understand
+why this rubs me the wrong way. So:
 
-diff --git a/tools/perf/Documentation/Makefile
-b/tools/perf/Documentation/Makefile
-index 4626a39..ac0a052 100644
---- a/tools/perf/Documentation/Makefile
-+++ b/tools/perf/Documentation/Makefile
-@@ -1,3 +1,10 @@
-+OUTPUT := ./
-+ifeq ("$(origin O)", "command line")
-+ifneq ($(O),)
-+	OUTPUT := $(O)/Documentation/
-+endif
-+endif
-+
- MAN1_TXT= \
- 	$(filter-out $(addsuffix .txt, $(ARTICLES) $(SP_ARTICLES)), \
- 		$(wildcard perf-*.txt)) \
-@@ -6,10 +13,11 @@ MAN5_TXT=
- MAN7_TXT=
+On the Nomadik GPIO controller (not yet migrated to the pin
+control subsystem, mea culpa) pins 0,1,2,3 can be used for UART0.
 
- MAN_TXT = $(MAN1_TXT) $(MAN5_TXT) $(MAN7_TXT)
--MAN_XML=$(patsubst %.txt,%.xml,$(MAN_TXT))
--MAN_HTML=$(patsubst %.txt,%.html,$(MAN_TXT))
-+_MAN_XML=$(patsubst %.txt,%.xml,$(MAN_TXT))
-+_MAN_HTML=$(patsubst %.txt,%.html,$(MAN_TXT))
+These four pins can also be used for GPIO, and two other
+functions.
 
--DOC_HTML=$(MAN_HTML)
-+MAN_XML=$(addprefix $(OUTPUT),$(_MAN_XML))
-+MAN_HTML=$(addprefix $(OUTPUT),$(_MAN_HTML))
+Does that make the group UART0 = {0,1,2,3} a virtual group
+in sense (3) of the wiktionary article, i.e. "simulated in a
+computer"?
 
- ARTICLES =
- # with their own formatting rules.
-@@ -18,11 +26,17 @@ API_DOCS = $(patsubst %.txt,%,$(filter-out
-technical/api-index-skel.txt technica
- SP_ARTICLES += $(API_DOCS)
- SP_ARTICLES += technical/api-index
+To me: no, not at all.
 
--DOC_HTML += $(patsubst %,%.html,$(ARTICLES) $(SP_ARTICLES))
-+_DOC_HTML = $(_MAN_HTML)
-+_DOC_HTML+=$(patsubst %,%.html,$(ARTICLES) $(SP_ARTICLES))
-+DOC_HTML=$(addprefix $(OUTPUT),$(_DOC_HTML))
+Because it is a very real physical property of these pins that
+UART0 can *only* appear on these 4 pins, not 4 other pins.
+It is clear from the data sheet.
 
--DOC_MAN1=$(patsubst %.txt,%.1,$(MAN1_TXT))
--DOC_MAN5=$(patsubst %.txt,%.5,$(MAN5_TXT))
--DOC_MAN7=$(patsubst %.txt,%.7,$(MAN7_TXT))
-+_DOC_MAN1=$(patsubst %.txt,%.1,$(MAN1_TXT))
-+_DOC_MAN5=$(patsubst %.txt,%.5,$(MAN5_TXT))
-+_DOC_MAN7=$(patsubst %.txt,%.7,$(MAN7_TXT))
-+
-+DOC_MAN1=$(addprefix $(OUTPUT),$(_DOC_MAN1))
-+DOC_MAN5=$(addprefix $(OUTPUT),$(_DOC_MAN5))
-+DOC_MAN7=$(addprefix $(OUTPUT),$(_DOC_MAN7))
+And even if they could appear on other pins, the number of
+such appearances would be limited by physical factors, and
+UART0_1 = {0,1,2,3} vs UART0_2 = {4,5,6,7} wouldn't
+make it virtual. This is also a physical property, not simulated or virtual.
 
- # Make the path relative to DESTDIR, not prefix
- ifndef DESTDIR
-@@ -150,9 +164,9 @@ man1: $(DOC_MAN1)
- man5: $(DOC_MAN5)
- man7: $(DOC_MAN7)
+The *only* case where I could *maybe* accept the "virtual"
+terminology would be for a phone-exchange type of
+pinmux, where say this UART could appear on any 4 pins,
+arbitrarily chosen. Still this is not fully virtual since it is
+a physical fact that the UART group has to have 4 pins,
+not 1, not 17.
 
--info: perf.info perfman.info
-+info: $(OUTPUT)perf.info $(OUTPUT)perfman.info
+Notice that I don't involve the use of that group on a
+specific board in this argument, since the *silicon* limits the
+muxable properties of this group, and it is a very real
+group of pins.
 
--pdf: user-manual.pdf
-+pdf: $(OUTPUT)user-manual.pdf
+This is why I think it is a bad idea to try to define pins as
+being in a "real" or "virtual" group like this, where the only
+criteria for that terminology is whether each pin has its own
+control register or not.
 
- install: install-man
+I'm all happy with "Tegra type groups" and "Tegra type pins"
+or "groups with separate control registers" or "pins with
+separate control registers" which tells us what it really is,
+"real" or "virtual" does not fit our discussion here the way
+I see it.
 
-@@ -166,7 +180,7 @@ install-man: man
-
- install-info: info
- 	$(INSTALL) -d -m 755 $(DESTDIR)$(infodir)
--	$(INSTALL) -m 644 perf.info perfman.info $(DESTDIR)$(infodir)
-+	$(INSTALL) -m 644 $(OUTPUT)perf.info $(OUTPUT)perfman.info
-$(DESTDIR)$(infodir)
- 	if test -r $(DESTDIR)$(infodir)/dir; then \
- 	  $(INSTALL_INFO) --info-dir=$(DESTDIR)$(infodir) perf.info ;\
- 	  $(INSTALL_INFO) --info-dir=$(DESTDIR)$(infodir) perfman.info ;\
-@@ -176,27 +190,30 @@ install-info: info
-
- install-pdf: pdf
- 	$(INSTALL) -d -m 755 $(DESTDIR)$(pdfdir)
--	$(INSTALL) -m 644 user-manual.pdf $(DESTDIR)$(pdfdir)
-+	$(INSTALL) -m 644 $(OUTPUT)user-manual.pdf $(DESTDIR)$(pdfdir)
-
- #install-html: html
- #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
-
- ../PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	$(QUIET_SUBDIR0)../ $(QUIET_SUBDIR1) PERF-VERSION-FILE
-+ifneq ($(OUTPUT),)
-+	@mkdir -p $(OUTPUT)
-+endif
-
- -include ../PERF-VERSION-FILE
-
- #
- # Determine "include::" file references in asciidoc files.
- #
--doc.dep : $(wildcard *.txt) build-docdep.perl
-+$(OUTPUT)doc.dep : $(wildcard *.txt) build-docdep.perl
- 	$(QUIET_GEN)$(RM) $@+ $@ && \
- 	$(PERL_PATH) ./build-docdep.perl >$@+ $(QUIET_STDERR) && \
- 	mv $@+ $@
-
---include doc.dep
-+-include $(OUPTUT)doc.dep
-
--cmds_txt = cmds-ancillaryinterrogators.txt \
-+_cmds_txt = cmds-ancillaryinterrogators.txt \
- 	cmds-ancillarymanipulators.txt \
- 	cmds-mainporcelain.txt \
- 	cmds-plumbinginterrogators.txt \
-@@ -205,32 +222,36 @@ cmds_txt = cmds-ancillaryinterrogators.txt \
- 	cmds-synchelpers.txt \
- 	cmds-purehelpers.txt \
- 	cmds-foreignscminterface.txt
-+cmds_txt=$(addprefix $(OUTPUT),$(_cmds_txt))
-
--$(cmds_txt): cmd-list.made
-+$(cmds_txt): $(OUTPUT)cmd-list.made
-
--cmd-list.made: cmd-list.perl ../command-list.txt $(MAN1_TXT)
-+$(OUTPUT)cmd-list.made: cmd-list.perl ../command-list.txt $(MAN1_TXT)
- 	$(QUIET_GEN)$(RM) $@ && \
- 	$(PERL_PATH) ./cmd-list.perl ../command-list.txt $(QUIET_STDERR) && \
- 	date >$@
-
- clean:
--	$(RM) *.xml *.xml+ *.html *.html+ *.1 *.5 *.7
--	$(RM) *.texi *.texi+ *.texi++ perf.info perfman.info
--	$(RM) howto-index.txt howto/*.html doc.dep
--	$(RM) technical/api-*.html technical/api-index.txt
--	$(RM) $(cmds_txt) *.made
--
--$(MAN_HTML): %.html : %.txt
-+	$(RM) $(MAN_XML) $(addsuffix +,$(MAN_XML))
-+	$(RM) $(MAN_HTML) $(addsuffix +,$(MAN_HTML))
-+	$(RM) $(DOC_HTML) $(DOC_MAN1) $(DOC_MAN5) $(DOC_MAN7)
-+	$(RM) $(OUTPUT)*.texi $(OUTPUT)*.texi+ $(OUTPUT)*.texi++
-+	$(RM) $(OUTPUT)perf.info $(OUTPUT)perfman.info
-+	$(RM) $(OUTPUT)howto-index.txt $(OUTPUT)howto/*.html $(OUTPUT)doc.dep
-+	$(RM) $(OUTPUT)technical/api-*.html $(OUTPUT)technical/api-index.txt
-+	$(RM) $(cmds_txt) $(OUTPUT)*.made
-+
-+$(MAN_HTML): $(OUTPUT)%.html : %.txt
- 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
- 	$(ASCIIDOC) -b xhtml11 -d manpage -f asciidoc.conf \
- 		$(ASCIIDOC_EXTRA) -aperf_version=$(PERF_VERSION) -o $@+ $< && \
- 	mv $@+ $@
-
--%.1 %.5 %.7 : %.xml
-+$(OUTPUT)%.1 $(OUTPUT)%.5 $(OUTPUT)%.7 : $(OUTPUT)%.xml
- 	$(QUIET_XMLTO)$(RM) $@ && \
--	xmlto -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
-+	xmlto -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
-
--%.xml : %.txt
-+$(OUTPUT)%.xml : %.txt
- 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
- 	$(ASCIIDOC) -b docbook -d manpage -f asciidoc.conf \
- 		$(ASCIIDOC_EXTRA) -aperf_version=$(PERF_VERSION) -o $@+ $< && \
-@@ -239,25 +260,25 @@ $(MAN_HTML): %.html : %.txt
- XSLT = docbook.xsl
- XSLTOPTS = --xinclude --stringparam html.stylesheet docbook-xsl.css
-
--user-manual.html: user-manual.xml
-+$(OUTPUT)user-manual.html: $(OUTPUT)user-manual.xml
- 	$(QUIET_XSLTPROC)xsltproc $(XSLTOPTS) -o $@ $(XSLT) $<
-
--perf.info: user-manual.texi
--	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split -o $@ user-manual.texi
-+$(OUTPUT)perf.info: $(OUTPUT)user-manual.texi
-+	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split -o $@ $(OUTPUT)user-manual.texi
-
--user-manual.texi: user-manual.xml
-+$(OUTPUT)user-manual.texi: $(OUTPUT)user-manual.xml
- 	$(QUIET_DB2TEXI)$(RM) $@+ $@ && \
--	$(DOCBOOK2X_TEXI) user-manual.xml --encoding=UTF-8 --to-stdout >$@++ && \
-+	$(DOCBOOK2X_TEXI) $(OUTPUT)user-manual.xml --encoding=UTF-8
---to-stdout >$@++ && \
- 	$(PERL_PATH) fix-texi.perl <$@++ >$@+ && \
- 	rm $@++ && \
- 	mv $@+ $@
-
--user-manual.pdf: user-manual.xml
-+$(OUTPUT)user-manual.pdf: $(OUTPUT)user-manual.xml
- 	$(QUIET_DBLATEX)$(RM) $@+ $@ && \
- 	$(DBLATEX) -o $@+ -p /etc/asciidoc/dblatex/asciidoc-dblatex.xsl -s
-/etc/asciidoc/dblatex/asciidoc-dblatex.sty $< && \
- 	mv $@+ $@
-
--perfman.texi: $(MAN_XML) cat-texi.perl
-+$(OUTPUT)perfman.texi: $(MAN_XML) cat-texi.perl
- 	$(QUIET_DB2TEXI)$(RM) $@+ $@ && \
- 	($(foreach xml,$(MAN_XML),$(DOCBOOK2X_TEXI) --encoding=UTF-8 \
- 		--to-stdout $(xml) &&) true) > $@++ && \
-@@ -265,7 +286,7 @@ perfman.texi: $(MAN_XML) cat-texi.perl
- 	rm $@++ && \
- 	mv $@+ $@
-
--perfman.info: perfman.texi
-+$(OUTPUT)perfman.info: $(OUTPUT)perfman.texi
- 	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split --no-validate $*.texi
-
- $(patsubst %.txt,%.texi,$(MAN_TXT)): %.texi : %.xml
-@@ -300,4 +321,4 @@ $(patsubst %.txt,%.html,$(wildcard howto/*.txt)):
-%.html : %.txt
- #quick-install-html:
- #	'$(SHELL_PATH_SQ)' ./install-doc-quick.sh $(HTML_REF) $(DESTDIR)$(htmldir)
-
--.PHONY: .FORCE-PERF-VERSION-FILE
-+.PHONY: .FORCE-PERF-VERSION-FILE .FORCE-MKDIR-OUTPUT
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b98e307..8e700fa 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -798,19 +798,19 @@ help:
- 	@echo '  clean			- clean all binary objects and build output'
-
- doc:
--	$(MAKE) -C Documentation all
-+	$(MAKE) -C Documentation O=$(O) all
-
- man:
--	$(MAKE) -C Documentation man
-+	$(MAKE) -C Documentation O=$(O) man
-
- html:
--	$(MAKE) -C Documentation html
-+	$(MAKE) -C Documentation O=$(O) html
-
- info:
--	$(MAKE) -C Documentation info
-+	$(MAKE) -C Documentation O=$(O) info
-
- pdf:
--	$(MAKE) -C Documentation pdf
-+	$(MAKE) -C Documentation O=$(O) pdf
-
- TAGS:
- 	$(RM) TAGS
--- 
-1.7.7.4
+Yours,
+Linus Walleij
