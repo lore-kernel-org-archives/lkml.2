@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2A0JMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 04:12:13 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:58649 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751029Ab2A0JMJ convert rfc822-to-8bit (ORCPT
+	id S1754338Ab2A0JN3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 04:13:29 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:33733 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489Ab2A0JN0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 04:12:09 -0500
-X-WSS-ID: 0LYG9K4-0A-3EM-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Richard Purdie" <rpurdie@rpsys.net>
-Date: Fri, 27 Jan 2012 01:12:00 -0800
-Subject: RE: [PATCH v2] backlight: new backlight driver for LP855x
- devices
-Thread-Topic: [PATCH v2] backlight: new backlight driver for LP855x
- devices
-Thread-Index: AczchMjYacxwynU7RZKqa+mKdJrzuQAEa/nAAA6Yu+A=
-Message-ID: <B567DBAB974C0544994013492B949F8E3812D6EBA0@EXMAIL03.scwf.nsc.com>
-References: <B567DBAB974C0544994013492B949F8E3812CD3EE5@EXMAIL03.scwf.nsc.com>
- <20120126154651.767c4e55.akpm@linux-foundation.org>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
+	Fri, 27 Jan 2012 04:13:26 -0500
 MIME-Version: 1.0
-X-WSS-ID: 633CB5E81LS9967290-02-01
-Content-Type: text/plain;
- charset=us-ascii
+In-Reply-To: <20120126145914.58619765@cuia.bos.redhat.com>
+References: <20120126145450.2d3d2f4c@cuia.bos.redhat.com>
+	<20120126145914.58619765@cuia.bos.redhat.com>
+Date: Fri, 27 Jan 2012 17:13:25 +0800
+Message-ID: <CAJd=RBB=MDiYLVSYJj8d8NfBZp+OU0Lf3-W5+xZUqj0J1JA4cQ@mail.gmail.com>
+Subject: Re: [PATCH v3 -mm 1/3] mm: reclaim at order 0 when compaction is enabled
+From: Hillf Danton <dhillf@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > I had a few little problems here.
-> >
-> > - For some reason my email client doesn't like MIME quoted-printable
-> >   and cannot correctly extract the plain text.  It appears that
-> >   globally deleting =\n and globally replacing =3D with = fixes
-> things.
-> >   Ho hum.  I really should go see if this has been fixed, or hassle
-> >   the sylpheed developer(s).
-> >
-> > - The driver generates a great storm of scripts/checkpatch.pl
-> >   whitespace warnings.  Things like using eight spaces instead of a
-> >   tab.  These really should be fixed, so please take a look at the
-> >   checkpatch output then resend?
-> 
- 
-> But for the whitespace problem, I'm afraid something wrong in my mail
-> client - outlook 2007.
-> Patch mail sent from myself has normal tab indentation with plain text.
-> But in notice mail from akpm, all tabs were replaced with 8 spaces !
-> 
+Hi Rik
 
-It seems that tab-replacement problem is related with the size of text in my email client.
-So lp855x driver split into three patches. And it looks fine.
+On Fri, Jan 27, 2012 at 3:59 AM, Rik van Riel <riel@redhat.com> wrote:
+> When built with CONFIG_COMPACTION, kswapd should not try to free
+> contiguous pages, because it is not trying hard enough to have
+> a real chance at being successful, but still disrupts the LRU
+> enough to break other things.
+>
+> Do not do higher order page isolation unless we really are in
+> lumpy reclaim mode.
+>
+> Stop reclaiming pages once we have enough free pages that
+> compaction can deal with things, and we hit the normal order 0
+> watermarks used by kswapd.
+>
+> Also remove a line of code that increments balanced right before
+> exiting the function.
+>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+> -v4: further cleanups suggested by Mel Gorman
+>  mm/vmscan.c |   43 +++++++++++++++++++++++++++++--------------
+>  1 files changed, 29 insertions(+), 14 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 2880396..2e2e43d 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1139,7 +1139,7 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
+>  * @mz:                The mem_cgroup_zone to pull pages from.
+>  * @dst:       The temp list to put pages on to.
+>  * @nr_scanned:        The number of pages that were scanned.
+> - * @order:     The caller's attempted allocation order
+> + * @sc:                The scan_control struct for this reclaim session
+>  * @mode:      One of the LRU isolation modes
+>  * @active:    True [1] if isolating active pages
+>  * @file:      True [1] if isolating file [!anon] pages
+> @@ -1148,8 +1148,8 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
+>  */
+>  static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>                struct mem_cgroup_zone *mz, struct list_head *dst,
+> -               unsigned long *nr_scanned, int order, isolate_mode_t mode,
+> -               int active, int file)
+> +               unsigned long *nr_scanned, struct scan_control *sc,
+> +               isolate_mode_t mode, int active, int file)
+>  {
+>        struct lruvec *lruvec;
+>        struct list_head *src;
+> @@ -1195,7 +1195,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>                        BUG();
+>                }
+>
+> -               if (!order)
+> +               if (!sc->order || !(sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM))
+>                        continue;
+>
+Just a tiny advice 8-)
 
-Please refer to '[PATCH v3]' for new lp855x driver.
-Title : 
-[PATCH v3 1/3] backlight: new backlight driver for LP855x devices
-[PATCH v3 2/3] backlight: new backlight driver for LP855x devices
-[PATCH v3 3/3] backlight: new backlight driver for LP855x devices
+mind to move checking lumpy reclaim out of the loop,
+something like
 
-Thanks & BR
-Milo -
+	unsigned long nr_lumpy_failed = 0;
+	unsigned long scan;
+	int lru = LRU_BASE;
++	int order = sc->order;
++
++	if (!(sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM))
++		order = 0;
 
+	lruvec = mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup);
+	if (active)
+		lru += LRU_ACTIVE;
+
+with a line of comment?
+
+Hillf
