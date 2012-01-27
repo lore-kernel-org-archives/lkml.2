@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab2A0O0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 09:26:37 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38756 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab2A0OYv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 09:24:51 -0500
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH] mtd/onenand: use string library
-Date: Fri, 27 Jan 2012 23:24:50 +0900
-Message-Id: <1327674295-3700-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1327674295-3700-1-git-send-email-akinobu.mita@gmail.com>
-References: <1327674295-3700-1-git-send-email-akinobu.mita@gmail.com>
+	id S1755379Ab2A0O1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 09:27:36 -0500
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:46693 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755165Ab2A0O1e convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 09:27:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <00de01ccdce1$e7c8a360$b759ea20$%szyprowski@samsung.com>
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+	<1327568457-27734-13-git-send-email-m.szyprowski@samsung.com>
+	<CADMYwHw1B4RNV_9BqAg_M70da=g69Z3kyo5Cr6izCMwJ9LAtvA@mail.gmail.com>
+	<00de01ccdce1$e7c8a360$b759ea20$%szyprowski@samsung.com>
+Date: Fri, 27 Jan 2012 08:27:33 -0600
+Message-ID: <CAO8GWqnQg-W=TEc+CUc8hs=GrdCa9XCCWcedQx34cqURhNwNwA@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 12/15] drivers: add Contiguous Memory Allocator
+From: "Clark, Rob" <rob@ti.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Use memchr_inv to check if the data contains all 0xFF bytes.
-  It is faster than looping for each byte.
+2012/1/27 Marek Szyprowski <m.szyprowski@samsung.com>:
+> Hi Ohad,
+>
+> On Friday, January 27, 2012 10:44 AM Ohad Ben-Cohen wrote:
+>
+>> With v19, I can't seem to allocate big regions anymore (e.g. 101MiB).
+>> In particular, this seems to fail:
+>>
+>> On Thu, Jan 26, 2012 at 11:00 AM, Marek Szyprowski
+>> <m.szyprowski@samsung.com> wrote:
+>> > +static int cma_activate_area(unsigned long base_pfn, unsigned long count)
+>> > +{
+>> > +       unsigned long pfn = base_pfn;
+>> > +       unsigned i = count >> pageblock_order;
+>> > +       struct zone *zone;
+>> > +
+>> > +       WARN_ON_ONCE(!pfn_valid(pfn));
+>> > +       zone = page_zone(pfn_to_page(pfn));
+>> > +
+>> > +       do {
+>> > +               unsigned j;
+>> > +               base_pfn = pfn;
+>> > +               for (j = pageblock_nr_pages; j; --j, pfn++) {
+>> > +                       WARN_ON_ONCE(!pfn_valid(pfn));
+>> > +                       if (page_zone(pfn_to_page(pfn)) != zone)
+>> > +                               return -EINVAL;
+>>
+>> The above WARN_ON_ONCE is triggered, and then the conditional is
+>> asserted (page_zone() retuns a "Movable" zone, whereas zone is
+>> "Normal") and the function fails.
+>>
+>> This happens to me on OMAP4 with your 3.3-rc1-cma-v19 branch (and a
+>> bunch of remoteproc/rpmsg patches).
+>>
+>> Do big allocations work for you ?
+>
+> I've tested it with 256MiB on Exynos4 platform. Could you check if the
+> problem also appears on 3.2-cma-v19 branch (I've uploaded it a few hours
+> ago) and 3.2-cma-v18? Both are available on our public repo:
+> git://git.infradead.org/users/kmpark/linux-samsung/
+>
+> The above code has not been changed since v16, so I'm really surprised
+> that it causes problems. Maybe the memory configuration or layout has
+> been changed in 3.3-rc1 for OMAP4?
 
-- Use memcmp to compare memory areas
+is highmem still an issue?  I remember hitting this WARN_ON_ONCE() but
+went away after I switched to a 2g/2g vm split (which avoids highmem)
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-mtd@lists.infradead.org
----
- drivers/mtd/onenand/onenand_base.c |    8 ++------
- drivers/mtd/onenand/onenand_bbt.c  |   10 +++-------
- 2 files changed, 5 insertions(+), 13 deletions(-)
+BR,
+-R
 
-diff --git a/drivers/mtd/onenand/onenand_base.c b/drivers/mtd/onenand/onenand_base.c
-index a061bc1..374605f 100644
---- a/drivers/mtd/onenand/onenand_base.c
-+++ b/drivers/mtd/onenand/onenand_base.c
-@@ -3673,7 +3673,7 @@ static void flexonenand_get_size(struct mtd_info *mtd)
- static int flexonenand_check_blocks_erased(struct mtd_info *mtd, int start, int end)
- {
- 	struct onenand_chip *this = mtd->priv;
--	int i, ret;
-+	int ret;
- 	int block;
- 	struct mtd_oob_ops ops = {
- 		.mode = MTD_OPS_PLACE_OOB,
-@@ -3699,11 +3699,7 @@ static int flexonenand_check_blocks_erased(struct mtd_info *mtd, int start, int
- 		if (ret)
- 			return ret;
- 
--		for (i = 0; i < mtd->oobsize; i++)
--			if (this->oob_buf[i] != 0xff)
--				break;
--
--		if (i != mtd->oobsize) {
-+		if (memchr_inv(this->oob_buf, 0xff, mtd->oobsize)) {
- 			printk(KERN_WARNING "%s: Block %d not erased.\n",
- 				__func__, block);
- 			return 1;
-diff --git a/drivers/mtd/onenand/onenand_bbt.c b/drivers/mtd/onenand/onenand_bbt.c
-index 66fe3b7..8b1277b 100644
---- a/drivers/mtd/onenand/onenand_bbt.c
-+++ b/drivers/mtd/onenand/onenand_bbt.c
-@@ -32,14 +32,10 @@
-  */
- static int check_short_pattern(uint8_t *buf, int len, int paglen, struct nand_bbt_descr *td)
- {
--	int i;
--	uint8_t *p = buf;
--
- 	/* Compare the pattern */
--	for (i = 0; i < td->len; i++) {
--		if (p[i] != td->pattern[i])
--			return -1;
--	}
-+	if (memcmp(buf, td->pattern, td->len))
-+		return -1;
-+
-         return 0;
- }
- 
--- 
-1.7.4.4
-
+> Best regards
+> --
+> Marek Szyprowski
+> Samsung Poland R&D Center
+>
+>
+>
+>
+> _______________________________________________
+> Linaro-mm-sig mailing list
+> Linaro-mm-sig@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
