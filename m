@@ -1,150 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab2A0CoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 21:44:09 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37754 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab2A0CoH convert rfc822-to-8bit (ORCPT
+	id S1754725Ab2A0CpB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 21:45:01 -0500
+Received: from mail.windriver.com ([147.11.1.11]:53756 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab2A0Co6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 21:44:07 -0500
-MIME-Version: 1.0
-Message-ID: <7198bfb3-1e32-40d3-8601-d88aed7aabd8@default>
-Date: Thu, 26 Jan 2012 18:43:55 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, riel@redhat.com,
-        Chris Mason <chris.mason@oracle.com>
-Subject: RE: [PATCH] mm: implement WasActive page flag (for improving
- cleancache)
-References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
- <4F218D36.2060308@linux.vnet.ibm.com>
- <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
- <20120126163150.31a8688f.akpm@linux-foundation.org>
- <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>
- <20120126171548.2c85dd44.akpm@linux-foundation.org>
-In-Reply-To: <20120126171548.2c85dd44.akpm@linux-foundation.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4F220F68.0083,ss=1,re=0.000,fgs=0
+	Thu, 26 Jan 2012 21:44:58 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org, gregkh@suse.de,
+        rmk+kernel@arm.linux.org.uk
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 4/7] bug.h: add include of it to various implicit C users
+Date: Thu, 26 Jan 2012 21:44:29 -0500
+Message-Id: <1327632272-12928-5-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.7.2
+In-Reply-To: <1327632272-12928-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1327632272-12928-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Andrew Morton [mailto:akpm@linux-foundation.org]
-> Subject: Re: [PATCH] mm: implement WasActive page flag (for improving cleancache)
-> 
-> On Thu, 26 Jan 2012 16:56:34 -0800 (PST)
-> Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
-> 
-> > > > I'll find the place to add the call to ClearPageWasActive() for v2.
-> > >
-> > > AFAICT this patch consumes our second-last page flag, or close to it.
-> > > We'll all be breaking out in hysterics when the final one is gone.
-> >
-> > I'd be OK with only using this on 64-bit systems, though there
-> > are ARM folks playing with zcache that might disagree.
-> 
-> 64-bit only is pretty lame and will reduce the appeal of cleancache and
-> will increase the maintenance burden by causing different behavior on
-> different CPU types.  Most Linux machines are 32-bit!  (My cheerily
-> unsubstantiated assertion of the day).
+With bug.h currently living right in linux/kernel.h there
+are files that use BUG_ON and friends but are not including
+the header explicitly.  Fix them up so we can remove the
+presence in kernel.h file.
 
-Three years ago, I would have agreed.  I suspect the tipping point
-has been crossed, especially if one is counting only servers (not
-smartphones) though my opinion is also unsubstantiated.
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ arch/arm/mach-ux500/board-mop500-pins.c         |    1 +
+ arch/mips/fw/arc/cmdline.c                      |    1 +
+ arch/mips/fw/arc/identify.c                     |    1 +
+ arch/powerpc/kernel/pmc.c                       |    1 +
+ arch/powerpc/xmon/ppc-opc.c                     |    1 +
+ arch/powerpc/xmon/spu-opc.c                     |    1 +
+ arch/x86/kernel/paravirt.c                      |    1 +
+ arch/x86/mm/kmemcheck/selftest.c                |    1 +
+ drivers/gpu/drm/radeon/cayman_blit_shaders.c    |    1 +
+ drivers/gpu/drm/radeon/evergreen_blit_shaders.c |    1 +
+ drivers/gpu/drm/radeon/r600_blit_shaders.c      |    1 +
+ lib/bitmap.c                                    |    1 +
+ lib/iommu-helper.c                              |    1 +
+ lib/list_debug.c                                |    1 +
+ lib/plist.c                                     |    1 +
+ lib/string.c                                    |    1 +
+ lib/timerqueue.c                                |    1 +
+ 17 files changed, 17 insertions(+), 0 deletions(-)
 
-But...
+diff --git a/arch/arm/mach-ux500/board-mop500-pins.c b/arch/arm/mach-ux500/board-mop500-pins.c
+index 74bfcff..f5413dc 100644
+--- a/arch/arm/mach-ux500/board-mop500-pins.c
++++ b/arch/arm/mach-ux500/board-mop500-pins.c
+@@ -6,6 +6,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/init.h>
++#include <linux/bug.h>
+ 
+ #include <asm/mach-types.h>
+ #include <plat/pincfg.h>
+diff --git a/arch/mips/fw/arc/cmdline.c b/arch/mips/fw/arc/cmdline.c
+index 9fdf07e..c0122a1 100644
+--- a/arch/mips/fw/arc/cmdline.c
++++ b/arch/mips/fw/arc/cmdline.c
+@@ -7,6 +7,7 @@
+  *
+  * Copyright (C) 1996 David S. Miller (davem@davemloft.net)
+  */
++#include <linux/bug.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+diff --git a/arch/mips/fw/arc/identify.c b/arch/mips/fw/arc/identify.c
+index 788060a..54a33c7 100644
+--- a/arch/mips/fw/arc/identify.c
++++ b/arch/mips/fw/arc/identify.c
+@@ -11,6 +11,7 @@
+  *
+  * Copyright (C) 1996 David S. Miller (davem@davemloft.net)
+  */
++#include <linux/bug.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/types.h>
+diff --git a/arch/powerpc/kernel/pmc.c b/arch/powerpc/kernel/pmc.c
+index a841a9d..58eaa3d 100644
+--- a/arch/powerpc/kernel/pmc.c
++++ b/arch/powerpc/kernel/pmc.c
+@@ -13,6 +13,7 @@
+  */
+ 
+ #include <linux/errno.h>
++#include <linux/bug.h>
+ #include <linux/spinlock.h>
+ #include <linux/export.h>
+ 
+diff --git a/arch/powerpc/xmon/ppc-opc.c b/arch/powerpc/xmon/ppc-opc.c
+index af3780e..6845e91 100644
+--- a/arch/powerpc/xmon/ppc-opc.c
++++ b/arch/powerpc/xmon/ppc-opc.c
+@@ -22,6 +22,7 @@
+ 
+ #include <linux/stddef.h>
+ #include <linux/kernel.h>
++#include <linux/bug.h>
+ #include "nonstdio.h"
+ #include "ppc.h"
+ 
+diff --git a/arch/powerpc/xmon/spu-opc.c b/arch/powerpc/xmon/spu-opc.c
+index 530df3d..7d37597 100644
+--- a/arch/powerpc/xmon/spu-opc.c
++++ b/arch/powerpc/xmon/spu-opc.c
+@@ -19,6 +19,7 @@
+    51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+ 
+ #include <linux/kernel.h>
++#include <linux/bug.h>
+ #include "spu.h"
+ 
+ /* This file holds the Spu opcode table */
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index d90272e..83e7b81 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -26,6 +26,7 @@
+ 
+ #include <asm/bug.h>
+ #include <asm/paravirt.h>
++#include <asm/debugreg.h>
+ #include <asm/desc.h>
+ #include <asm/setup.h>
+ #include <asm/pgtable.h>
+diff --git a/arch/x86/mm/kmemcheck/selftest.c b/arch/x86/mm/kmemcheck/selftest.c
+index 036efbe..aef7140 100644
+--- a/arch/x86/mm/kmemcheck/selftest.c
++++ b/arch/x86/mm/kmemcheck/selftest.c
+@@ -1,3 +1,4 @@
++#include <linux/bug.h>
+ #include <linux/kernel.h>
+ 
+ #include "opcode.h"
+diff --git a/drivers/gpu/drm/radeon/cayman_blit_shaders.c b/drivers/gpu/drm/radeon/cayman_blit_shaders.c
+index 7b4eeb7..19a0114 100644
+--- a/drivers/gpu/drm/radeon/cayman_blit_shaders.c
++++ b/drivers/gpu/drm/radeon/cayman_blit_shaders.c
+@@ -24,6 +24,7 @@
+  *     Alex Deucher <alexander.deucher@amd.com>
+  */
+ 
++#include <linux/bug.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ 
+diff --git a/drivers/gpu/drm/radeon/evergreen_blit_shaders.c b/drivers/gpu/drm/radeon/evergreen_blit_shaders.c
+index 3a10399..f85c0af 100644
+--- a/drivers/gpu/drm/radeon/evergreen_blit_shaders.c
++++ b/drivers/gpu/drm/radeon/evergreen_blit_shaders.c
+@@ -24,6 +24,7 @@
+  *     Alex Deucher <alexander.deucher@amd.com>
+  */
+ 
++#include <linux/bug.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ 
+diff --git a/drivers/gpu/drm/radeon/r600_blit_shaders.c b/drivers/gpu/drm/radeon/r600_blit_shaders.c
+index 2d1f6c5..3af3c64 100644
+--- a/drivers/gpu/drm/radeon/r600_blit_shaders.c
++++ b/drivers/gpu/drm/radeon/r600_blit_shaders.c
+@@ -24,6 +24,7 @@
+  *     Alex Deucher <alexander.deucher@amd.com>
+  */
+ 
++#include <linux/bug.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ 
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index 0d4a127..90a683b 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -10,6 +10,7 @@
+ #include <linux/errno.h>
+ #include <linux/bitmap.h>
+ #include <linux/bitops.h>
++#include <linux/bug.h>
+ #include <asm/uaccess.h>
+ 
+ /*
+diff --git a/lib/iommu-helper.c b/lib/iommu-helper.c
+index da05331..8b1ab62 100644
+--- a/lib/iommu-helper.c
++++ b/lib/iommu-helper.c
+@@ -4,6 +4,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/bitmap.h>
++#include <linux/bug.h>
+ 
+ int iommu_is_span_boundary(unsigned int index, unsigned int nr,
+ 			   unsigned long shift,
+diff --git a/lib/list_debug.c b/lib/list_debug.c
+index 7204e61..1bf2fe3 100644
+--- a/lib/list_debug.c
++++ b/lib/list_debug.c
+@@ -8,6 +8,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/list.h>
++#include <linux/bug.h>
+ #include <linux/kernel.h>
+ 
+ /*
+diff --git a/lib/plist.c b/lib/plist.c
+index a0a4da4..6ab0e52 100644
+--- a/lib/plist.c
++++ b/lib/plist.c
+@@ -23,6 +23,7 @@
+  * information.
+  */
+ 
++#include <linux/bug.h>
+ #include <linux/plist.h>
+ #include <linux/spinlock.h>
+ 
+diff --git a/lib/string.c b/lib/string.c
+index dc4a863..0573a20 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -22,6 +22,7 @@
+ #include <linux/types.h>
+ #include <linux/string.h>
+ #include <linux/ctype.h>
++#include <linux/bug.h>
+ #include <linux/module.h>
+ 
+ #ifndef __HAVE_ARCH_STRNICMP
+diff --git a/lib/timerqueue.c b/lib/timerqueue.c
+index 191176a..9230231 100644
+--- a/lib/timerqueue.c
++++ b/lib/timerqueue.c
+@@ -25,6 +25,7 @@
+ #include <linux/timerqueue.h>
+ #include <linux/rbtree.h>
+ #include <linux/module.h>
++#include <linux/bug.h>
+ 
+ /**
+  * timerqueue_add - Adds timer to timerqueue.
+-- 
+1.7.7.2
 
-> >  Am I
-> > correct in assuming that your "second-last page flag" concern
-> > applies only to 32-bit systems?
-> 
-> Sort-of.  Usually a flag which is 64-bit-only causes the above issues.
-
-Agreed so a non-page-flag approach or overloading a page flag would
-be better (though I'd still settle for 64-bit-only if it's the
-only option).
-
-Maybe the Active page bit could be overloaded with some minor
-rewriting?  IOW, perhaps the Active bit could be ignored when
-the page is moved to the inactive LRU?  (Confusing I know, but I am
-just brainstorming...)
-
-> > I can see that may not be sufficient, so let me expand on it.
-> >
-> > First, just as page replacement worked prior to the active/inactive
-> > redesign at 2.6.27, cleancache works without the WasActive page flag.
-> > However, just as pre-2.6.27 page replacement had problems on
-> > streaming workloads, so does cleancache.  The WasActive page flag
-> > is an attempt to pass the same active/inactive info gathered by
-> > the post-2.6.27 kernel into cleancache, with the same objectives and
-> > presumably the same result: improving the "quality" of pages preserved
-> > in memory thus reducing refaults.
-> >
-> > Is that clearer?  If so, I'll do better on the description at v2.
-> 
-> It really didn't tell us anything, apart from referring to vague
-> "problems on streaming workloads", which forces everyone to go off and
-> do an hour or two's kernel archeology, probably in the area of
-> readahead.
-> 
-> Just describe the problem!  Why is it slow?  Where's the time being
-> spent?  How does the proposed fix (which we haven't actually seen)
-> address the problem?  If you inform us of these things then perhaps
-> someone will have a useful suggestion.  And as a side-effect, we'll
-> understand cleancache better.
-
-Sorry, I'm often told that my explanations are long-winded so
-as a result I sometimes err on the side of brevity...
-
-The problem is that if a pageframe is used for a page that is
-very unlikely (or never going) to be used again instead of for
-a page that IS likely to be used again, it results in more
-refaults (which means more I/O which means poorer performance).
-So we want to keep pages that are most likely to be used again.
-And pages that were active are more likely to be used again than
-pages that were never active... at least the post-2.6.27 kernel
-makes that assumption.  A cleancache backend can keep or discard
-any page it pleases... it makes sense for it to keep pages
-that were previously active rather than pages that were never
-active.
-
-For zcache, we can store twice as many pages per pageframe.
-But if we are storing two pages that are very unlikely
-(or never going) to be used again instead of one page
-that IS likely to be used again, that's probably still a bad choice.
-Further, for every page that never gets used again (or gets reclaimed
-before it can be used again because there's so much data streaming
-through cleancache), zcache wastes the cpu cost of a page compression.
-On newer machines, compression is suitably fast that this additional
-cpu cost is small-ish.  On older machines, it adds up fast and that's
-what Nebojsa was seeing in https://lkml.org/lkml/2011/8/17/351 
-
-Page replacement algorithms are all about heuristics and
-heuristics require information.  The WasActive flag provides
-information that has proven useful to the kernel (as proven
-by the 2.6.27 page replacement design rewrite) to cleancache
-backends (such as zcache).
-
-> How does the proposed fix (which we haven't actually seen)
-> address the problem?
-
-Not sure I understand... The patch as posted is the entire proposed
-fix (except for the missing page bit clearing as Dave pointed out),
-including for one cleancache backend (zcache).  RAMster can also
-use WasActive.  It's not clear yet whether Xen tmem (or a future
-KVM implementation) needs to.
-
-Thanks again for the great feedback... after being buried in
-tmem for so long, it's difficult to see another's perspective.
-
-Dan
