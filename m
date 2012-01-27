@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab2A0Iux (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 03:50:53 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:35240 "EHLO sc-mailgw05.nsc.com"
+	id S1752838Ab2A0Iuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 03:50:40 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:35153 "EHLO sc-mailgw05.nsc.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753426Ab2A0Iuv convert rfc822-to-8bit (ORCPT
+	id S1750984Ab2A0Iuj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 03:50:51 -0500
-X-WSS-ID: 0LYG8KL-0A-36J-02
+	Fri, 27 Jan 2012 03:50:39 -0500
+X-WSS-ID: 0LYG8KA-0A-35Z-02
 X-M-MSG: 
 X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: "Andrew Morton" <akpm@linux-foundation.org>
 cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Richard Purdie" <rpurdie@rpsys.net>, "Kim, Milo" <Milo.Kim@nsc.com>
-Date: Fri, 27 Jan 2012 00:50:27 -0800
-Subject: [PATCH v3 3/3] backlight: new backlight driver for LP855x
+Date: Fri, 27 Jan 2012 00:50:19 -0800
+Subject: [PATCH v3 1/3] backlight: new backlight driver for LP855x
  devices
-Thread-Topic: [PATCH v3 3/3] backlight: new backlight driver for LP855x
+Thread-Topic: [PATCH v3 1/3] backlight: new backlight driver for LP855x
  devices
-Thread-Index: Aczc0LeIX4UYgFtVSmujwnN76zgZ3A==
-Message-ID: <B567DBAB974C0544994013492B949F8E3812D6EB8D@EXMAIL03.scwf.nsc.com>
+Thread-Index: Aczc0LJ3Swzsi1zyQz6aphAWUcA+Dw==
+Message-ID: <B567DBAB974C0544994013492B949F8E3812D6EB8B@EXMAIL03.scwf.nsc.com>
 Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-X-WSS-ID: 633CBAD31LS9967022-07-01
+X-WSS-ID: 633CBAD81LS9967020-02-01
 Content-Type: text/plain;
  charset=us-ascii
 Content-Transfer-Encoding: 8BIT
@@ -35,350 +35,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-C driver file is created.
+This patch supports TI LP8550/LP8551/LP8552/LP8553/LP8556 backlight driver.
+
+The brightness can be controlled by the I2C or PWM input.
+The lp855x driver provides both modes.
+For the PWM control, pwm-specific functions can be defined in the platform data.
+And some information can be read via the sysfs(lp855x device attributes).
+
+For the details, please refer to 'Documentation/backlight/lp855x-driver.txt'.
+
+* patch based on kernel 3.0.1
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/video/backlight/lp855x_bl.c |  330 +++++++++++++++++++++++++++++++++++
- 1 files changed, 330 insertions(+), 0 deletions(-)
- create mode 100644 drivers/video/backlight/lp855x_bl.c
+ Documentation/backlight/lp855x-driver.txt |   81 +++++++++++++++++++++++++++++
+ drivers/video/backlight/Kconfig           |    7 +++
+ drivers/video/backlight/Makefile          |    1 +
+ 3 files changed, 89 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/backlight/lp855x-driver.txt
 
-diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+diff --git a/Documentation/backlight/lp855x-driver.txt b/Documentation/backlight/lp855x-driver.txt
 new file mode 100644
-index 0000000..8f628b8
+index 0000000..321351e
 --- /dev/null
-+++ b/drivers/video/backlight/lp855x_bl.c
-@@ -0,0 +1,330 @@
-+/*
-+ * TI LP855x Backlight Driver
-+ *
-+ *			Copyright (C) 2011 Texas Instruments
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
++++ b/Documentation/backlight/lp855x-driver.txt
+@@ -0,0 +1,81 @@
++Kernel driver lp855x
++====================
 +
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/backlight.h>
-+#include <linux/err.h>
-+#include <linux/debugfs.h>
-+#include <linux/uaccess.h>
-+#include <linux/lp855x.h>
++Backlight driver for LP855x ICs
 +
-+/* Registers */
-+#define BRIGHTNESS_CTRL		(0x00)
-+#define DEVICE_CTRL		(0x01)
++Supported chips:
++	Texas Instruments LP8550, LP8551, LP8552, LP8553 and LP8556
 +
-+#define BUF_SIZE		(20)
-+#define DEFAULT_BL_NAME		"lcd-backlight"
++Author: Milo(Woogyom) Kim <milo.kim@ti.com>
 +
-+struct lp855x {
-+	const char *chipid;
-+	struct i2c_client *client;
-+	struct backlight_device *bl;
-+	struct device *dev;
-+	struct mutex xfer_lock;
-+	struct lp855x_platform_data *pdata;
++Description
++-----------
++
++* Brightness control
++
++Brightness can be controlled by the pwm input or the i2c command.
++The lp855x driver supports both cases.
++
++* Device attributes
++
++1) bl_ctl_mode
++Backlight control mode.
++Value : pwm based or register based
++
++2) chip_id
++The lp855x chip id.
++Value : lp8550/lp8551/lp8552/lp8553/lp8556
++
++Platform data for lp855x
++------------------------
++
++For supporting platform specific data, the lp855x platform data can be used.
++
++* name : Backlight driver name. If it is not defined, default name is set.
++* mode : Brightness control mode. PWM or register based.
++* device_control : Value of DEVICE CONTROL register.
++* initial_brightness : Initial value of backlight brightness.
++* max_brightness : Maximum value of backlight brightness.
++* pwm_data : Platform specific pwm generation functions.
++	     Only valid when brightness is pwm input mode.
++	     Functions should be implemented by PWM driver.
++	     - pwm_set_intensity() : set duty of PWM
++	     - pwm_get_intensity() : get current duty of PWM
++* load_new_rom_data :
++	0 : use default configuration data
++	1 : update values of eeprom or eprom registers on loading driver
++* size_program : Total size of lp855x_rom_data.
++* rom_data : List of new eeprom/eprom registers.
++
++example 1) lp8552 platform data : i2c register mode with new eeprom data
++
++#define EEPROM_A5_ADDR	0xA5
++#define EEPROM_A5_VAL	0x4f	/* EN_VSYNC=0 */
++
++static struct lp855x_rom_data lp8552_eeprom_arr[] = {
++	{EEPROM_A5_ADDR, EEPROM_A5_VAL},
 +};
 +
-+static int lp855x_read_byte(struct lp855x *lp, u8 reg, u8 *data)
-+{
-+	int ret;
-+
-+	mutex_lock(&lp->xfer_lock);
-+	ret = i2c_smbus_read_byte_data(lp->client, reg);
-+	if (ret < 0) {
-+		dev_err(lp->dev, "failed to read 0x%.2x\n", reg);
-+		return ret;
-+	}
-+	mutex_unlock(&lp->xfer_lock);
-+
-+	*data = (u8)ret;
-+	return 0;
-+}
-+
-+static int lp855x_write_byte(struct lp855x *lp, u8 reg, u8 data)
-+{
-+	int ret;
-+
-+	mutex_lock(&lp->xfer_lock);
-+	ret = i2c_smbus_write_byte_data(lp->client, reg, data);
-+	mutex_unlock(&lp->xfer_lock);
-+
-+	return ret;
-+}
-+
-+static int lp855x_is_valid_rom_area(struct lp855x *lp, u8 addr)
-+{
-+	const char *id = lp->chipid;
-+	u8 start, end;
-+
-+	if (strstr(id, "lp8550") || strstr(id, "lp8551")
-+	    || strstr(id, "lp8552") || strstr(id, "lp8553")) {
-+		start = EEPROM_START;
-+		end = EEPROM_END;
-+	} else if (strstr(id, "lp8556")) {
-+		start = EPROM_START;
-+		end = EPROM_END;
-+	}
-+
-+	return (addr >= start && addr <= end) ? 1 : 0;
-+}
-+
-+static int lp855x_init_registers(struct lp855x *lp)
-+{
-+	u8 val, addr;
-+	int i, ret;
-+	struct lp855x_platform_data *pd = lp->pdata;
-+
-+	val = pd->initial_brightness;
-+	ret = lp855x_write_byte(lp, BRIGHTNESS_CTRL, val);
-+	if (ret)
-+		return ret;
-+
-+	val = pd->device_control;
-+	ret = lp855x_write_byte(lp, DEVICE_CTRL, val);
-+	if (ret)
-+		return ret;
-+
-+	if (pd->load_new_rom_data && pd->size_program) {
-+		for (i = 0; i < pd->size_program; i++) {
-+			addr = pd->rom_data[i].addr;
-+			val = pd->rom_data[i].val;
-+			if (!lp855x_is_valid_rom_area(lp, addr))
-+				continue;
-+
-+			ret = lp855x_write_byte(lp, addr, val);
-+			if (ret)
-+				return ret;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static int lp855x_bl_update_status(struct backlight_device *bl)
-+{
-+	struct lp855x *lp = bl_get_data(bl);
-+	enum lp855x_brightness_ctrl_mode mode = lp->pdata->mode;
-+
-+	if (bl->props.state & BL_CORE_SUSPENDED)
-+		bl->props.brightness = 0;
-+
-+	if (mode == PWM_BASED) {
-+		struct lp855x_pwm_data *pd = &lp->pdata->pwm_data;
-+		int br = bl->props.brightness;
-+		int max_br = bl->props.max_brightness;
-+
-+		if (pd->pwm_set_intensity)
-+			pd->pwm_set_intensity(br, max_br);
-+
-+	} else if (mode == REGISTER_BASED) {
-+		u8 val = bl->props.brightness;
-+		lp855x_write_byte(lp, BRIGHTNESS_CTRL, val);
-+	}
-+
-+	return bl->props.brightness;
-+}
-+
-+static int lp855x_bl_get_brightness(struct backlight_device *bl)
-+{
-+	struct lp855x *lp = bl_get_data(bl);
-+	enum lp855x_brightness_ctrl_mode mode = lp->pdata->mode;
-+
-+	if (mode == PWM_BASED) {
-+		struct lp855x_pwm_data *pd = &lp->pdata->pwm_data;
-+		int max_br = bl->props.max_brightness;
-+
-+		if (pd->pwm_get_intensity)
-+			bl->props.brightness = pd->pwm_get_intensity(max_br);
-+
-+	} else if (mode == REGISTER_BASED) {
-+		u8 val = 0;
-+
-+		lp855x_read_byte(lp, BRIGHTNESS_CTRL, &val);
-+		bl->props.brightness = val;
-+	}
-+
-+	return bl->props.brightness;
-+}
-+
-+static const struct backlight_ops lp855x_bl_ops = {
-+	.options = BL_CORE_SUSPENDRESUME,
-+	.update_status = lp855x_bl_update_status,
-+	.get_brightness = lp855x_bl_get_brightness,
++static struct lp855x_platform_data lp8552_pdata = {
++	.name = "lcd-bl",
++	.mode = REGISTER_BASED,
++	.device_control = I2C_CONFIG(LP8552),
++	.initial_brightness = INITIAL_BRT,
++	.max_brightness = MAX_BRT,
++	.load_new_rom_data = 1,
++	.size_program = ARRAY_SIZE(lp8552_eeprom_arr),
++	.rom_data = lp8552_eeprom_arr,
 +};
 +
-+static int lp855x_backlight_register(struct lp855x *lp)
-+{
-+	struct backlight_device *bl;
-+	struct backlight_properties props;
-+	struct lp855x_platform_data *pdata = lp->pdata;
-+	char *name = pdata->name ? : DEFAULT_BL_NAME;
++example 2) lp8556 platform data : pwm input mode with default rom data
 +
-+	props.type = BACKLIGHT_PLATFORM;
-+	props.brightness = pdata->initial_brightness;
-+	props.max_brightness =
-+		(pdata->max_brightness < pdata->initial_brightness) ?
-+		255 : pdata->max_brightness;
-+
-+	bl = backlight_device_register(name, lp->dev, lp,
-+				       &lp855x_bl_ops, &props);
-+	if (IS_ERR(bl))
-+		return PTR_ERR(bl);
-+
-+	lp->bl = bl;
-+
-+	return 0;
-+}
-+
-+static void lp855x_backlight_unregister(struct lp855x *lp)
-+{
-+	if (lp->bl)
-+		backlight_device_unregister(lp->bl);
-+}
-+
-+static ssize_t lp855x_get_chip_id(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp855x *lp = dev_get_drvdata(dev);
-+	return scnprintf(buf, BUF_SIZE, "%s\n", lp->chipid);
-+}
-+
-+static ssize_t lp855x_get_bl_ctl_mode(struct device *dev,
-+				     struct device_attribute *attr, char *buf)
-+{
-+	struct lp855x *lp = dev_get_drvdata(dev);
-+	enum lp855x_brightness_ctrl_mode mode = lp->pdata->mode;
-+	char *strmode = NULL;
-+
-+	if (mode == PWM_BASED)
-+		strmode = "pwm based";
-+	else if (mode == REGISTER_BASED)
-+		strmode = "register based";
-+
-+	return scnprintf(buf, BUF_SIZE, "%s\n", strmode);
-+}
-+
-+static DEVICE_ATTR(chip_id, S_IRUGO, lp855x_get_chip_id, NULL);
-+static DEVICE_ATTR(bl_ctl_mode, S_IRUGO, lp855x_get_bl_ctl_mode, NULL);
-+
-+static struct attribute *lp855x_attributes[] = {
-+	&dev_attr_chip_id.attr,
-+	&dev_attr_bl_ctl_mode.attr,
-+	NULL,
++static struct lp855x_platform_data lp8556_pdata = {
++	.mode = PWM_BASED,
++	.device_control = PWM_CONFIG(LP8556),
++	.initial_brightness = INITIAL_BRT,
++	.max_brightness = MAX_BRT,
++	.pwm_data = {
++		     .pwm_set_intensity = platform_pwm_set_intensity,
++		     .pwm_get_intensity = platform_pwm_get_intensity,
++		     },
 +};
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index 2d93c8d..995088a 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -327,6 +327,13 @@ config BACKLIGHT_PCF50633
+ 	  If you have a backlight driven by a NXP PCF50633 MFD, say Y here to
+ 	  enable its driver.
+ 
++config BACKLIGHT_LP855X
++	tristate "Backlight driver for TI LP855X"
++	depends on BACKLIGHT_CLASS_DEVICE && I2C
++	help
++	  This supports TI LP8550, LP8551, LP8552, LP8553 and LP8556
++	  backlight driver.
 +
-+static const struct attribute_group lp855x_attr_group = {
-+	.attrs = lp855x_attributes,
-+};
-+
-+static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
-+{
-+	struct lp855x *lp;
-+	struct lp855x_platform_data *pdata = cl->dev.platform_data;
-+	enum lp855x_brightness_ctrl_mode mode = pdata->mode;
-+	int ret;
-+
-+	if (!i2c_check_functionality(cl->adapter, I2C_FUNC_SMBUS_I2C_BLOCK))
-+		return -EIO;
-+
-+	lp = kzalloc(sizeof(struct lp855x), GFP_KERNEL);
-+	if (!lp)
-+		return -ENOMEM;
-+
-+	lp->client = cl;
-+	lp->dev = &cl->dev;
-+	lp->pdata = pdata;
-+	lp->chipid = id->name;
-+	i2c_set_clientdata(cl, lp);
-+
-+	mutex_init(&lp->xfer_lock);
-+
-+	ret = lp855x_init_registers(lp);
-+	if (ret) {
-+		dev_err(lp->dev, "i2c communication err: %d", ret);
-+		if (mode == REGISTER_BASED)
-+			goto err_dev;
-+	}
-+
-+	ret = lp855x_backlight_register(lp);
-+	if (ret) {
-+		dev_err(lp->dev,
-+			"failed to register backlight. err: %d\n", ret);
-+		goto err_dev;
-+	}
-+
-+	ret = sysfs_create_group(&lp->dev->kobj, &lp855x_attr_group);
-+	if (ret) {
-+		dev_err(lp->dev, "failed to register sysfs. err: %d\n", ret);
-+		goto err_sysfs;
-+	}
-+
-+	backlight_update_status(lp->bl);
-+	return ret;
-+
-+err_dev:
-+	kfree(lp);
-+	return ret;
-+err_sysfs:
-+	lp855x_backlight_unregister(lp);
-+	kfree(lp);
-+	return ret;
-+}
-+
-+static int __devexit lp855x_remove(struct i2c_client *cl)
-+{
-+	struct lp855x *lp = i2c_get_clientdata(cl);
-+
-+	lp->bl->props.brightness = 0;
-+	backlight_update_status(lp->bl);
-+	sysfs_remove_group(&lp->dev->kobj, &lp855x_attr_group);
-+	lp855x_backlight_unregister(lp);
-+	kfree(lp);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id lp855x_ids[] = {
-+	{"lp8550", LP8550},
-+	{"lp8551", LP8551},
-+	{"lp8552", LP8552},
-+	{"lp8553", LP8553},
-+	{"lp8556", LP8556},
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, lp855x_ids);
-+
-+static struct i2c_driver lp855x_driver = {
-+	.driver = {
-+		   .name = "lp855x",
-+		   },
-+	.probe = lp855x_probe,
-+	.remove = __devexit_p(lp855x_remove),
-+	.id_table = lp855x_ids,
-+};
-+
-+static int __init lp855x_init(void)
-+{
-+	return i2c_add_driver(&lp855x_driver);
-+}
-+
-+static void __exit lp855x_exit(void)
-+{
-+	i2c_del_driver(&lp855x_driver);
-+}
-+
-+module_init(lp855x_init);
-+module_exit(lp855x_exit);
-+
-+MODULE_DESCRIPTION("Texas Instruments LP855x Backlight driver");
-+MODULE_AUTHOR("Milo Kim <milo.kim@ti.com>");
-+MODULE_LICENSE("GPL");
+ endif # BACKLIGHT_CLASS_DEVICE
+ 
+ endif # BACKLIGHT_LCD_SUPPORT
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index ee72adb..27788c9 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -37,4 +37,5 @@ obj-$(CONFIG_BACKLIGHT_ADP8860)	+= adp8860_bl.o
+ obj-$(CONFIG_BACKLIGHT_ADP8870)	+= adp8870_bl.o
+ obj-$(CONFIG_BACKLIGHT_88PM860X) += 88pm860x_bl.o
+ obj-$(CONFIG_BACKLIGHT_PCF50633)	+= pcf50633-backlight.o
++obj-$(CONFIG_BACKLIGHT_LP855X)	+= lp855x_bl.o
+ 
 -- 
 1.7.4.1
 
@@ -386,4 +176,7 @@ index 0000000..8f628b8
 Best Regards,
 Milo (Woogyom) Kim
 Texas Instruments Incorporated
+
+
+
 
