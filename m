@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab2A0VC2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 16:02:28 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62378 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab2A0U6W (ORCPT
+	id S1753915Ab2A0VFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 16:05:44 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51544 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab2A0VFm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 15:58:22 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
-        khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: [PATCH v4 02/18] perf: add Intel LBR MSR definitions
-Date: Fri, 27 Jan 2012 21:56:02 +0100
-Message-Id: <1327697778-18515-3-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1327697778-18515-1-git-send-email-eranian@google.com>
-References: <1327697778-18515-1-git-send-email-eranian@google.com>
+	Fri, 27 Jan 2012 16:05:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120127191032.GA22999@dirshya.in.ibm.com>
+References: <20120127191032.GA22999@dirshya.in.ibm.com>
+Date: Fri, 27 Jan 2012 13:05:41 -0800
+X-Google-Sender-Auth: W6b_XP_CTG1lgz6ktRo_NFL_-78
+Message-ID: <CAE9FiQVKLmrryoOhyjr_rGucGGZLW=PSD=s_AjW0Za6vHCvOtg@mail.gmail.com>
+Subject: Re: [BUGFIX][PATCH] pci: check for 4k resource_size alignment in sriov_init
+From: Yinghai Lu <yinghai@kernel.org>
+To: svaidy@linux.vnet.ibm.com
+Cc: Ram Pai <linuxram@us.ibm.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the LBR definitions for NHM/WSM/SNB and Core.
-It also adds the definitions for the architected LBR MSR:
-LBR_SELECT, LBRT_TOS.
+On Fri, Jan 27, 2012 at 11:10 AM, Vaidyanathan Srinivasan
+<svaidy@linux.vnet.ibm.com> wrote:
+> Hi Ram and Jesse,
+>
+> I found a trivial issue with page size alignment check on IBM POWER
+> box with 64k base page size.  In sriov_init(), changing the check from
+> PAGE_SIZE (arch and config dependent) to HW_PAGE_SIZE (always 4k) was
+> required to use one of the sriov adapter as PF since the
+> resource_size() comes up as 0x8000 and PAGE_SIZE would be 0x10000 for
+> pseries boxes.
+>
+> I think resource_size() could be less than SystemPageSize, but I would
+> like your comments/ack/nack on any consequences of checking for only
+> 4k alignment here in a system with larger base page size.
+>
+> Thanks,
+> Vaidy
+>
+> ---
+>
+>    pci: check for 4k resource_size alignment in sriov_init
+>
+>    pci sriov_init should check for 4k page size alignment of resource_size
+>    even if base page size is larger -- like 64k in powerpc.
+>
+>    Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+>
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index 0321fa3..5816fa0 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -474,7 +474,7 @@ found:
+>                                     pos + PCI_SRIOV_BAR + i * 4);
+>                if (!res->flags)
+>                        continue;
+> -               if (resource_size(res) & (PAGE_SIZE - 1)) {
+> +               if (resource_size(res) & (HW_PAGE_SIZE - 1)) {
+>                        rc = -EIO;
+>                        goto failed;
+>                }
+>
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/include/asm/msr-index.h           |    7 +++++++
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++---------
- 2 files changed, 16 insertions(+), 9 deletions(-)
+but HW_PAGE_SIZE is only defined for powerpc.
 
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index a6962d9..ccb8059 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -56,6 +56,13 @@
- #define MSR_OFFCORE_RSP_0		0x000001a6
- #define MSR_OFFCORE_RSP_1		0x000001a7
- 
-+#define MSR_LBR_SELECT			0x000001c8
-+#define MSR_LBR_TOS			0x000001c9
-+#define MSR_LBR_NHM_FROM		0x00000680
-+#define MSR_LBR_NHM_TO			0x000006c0
-+#define MSR_LBR_CORE_FROM		0x00000040
-+#define MSR_LBR_CORE_TO			0x00000060
-+
- #define MSR_IA32_PEBS_ENABLE		0x000003f1
- #define MSR_IA32_DS_AREA		0x00000600
- #define MSR_IA32_PERF_CAPABILITIES	0x00000345
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index c3f8100..e14431f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -205,23 +205,23 @@ void intel_pmu_lbr_read(void)
- void intel_pmu_lbr_init_core(void)
- {
- 	x86_pmu.lbr_nr     = 4;
--	x86_pmu.lbr_tos    = 0x01c9;
--	x86_pmu.lbr_from   = 0x40;
--	x86_pmu.lbr_to     = 0x60;
-+	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-+	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
-+	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
- }
- 
- void intel_pmu_lbr_init_nhm(void)
- {
- 	x86_pmu.lbr_nr     = 16;
--	x86_pmu.lbr_tos    = 0x01c9;
--	x86_pmu.lbr_from   = 0x680;
--	x86_pmu.lbr_to     = 0x6c0;
-+	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-+	x86_pmu.lbr_from   = MSR_LBR_NHM_FROM;
-+	x86_pmu.lbr_to     = MSR_LBR_NHM_TO;
- }
- 
- void intel_pmu_lbr_init_atom(void)
- {
- 	x86_pmu.lbr_nr	   = 8;
--	x86_pmu.lbr_tos    = 0x01c9;
--	x86_pmu.lbr_from   = 0x40;
--	x86_pmu.lbr_to     = 0x60;
-+	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-+	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
-+	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
- }
--- 
-1.7.1
+also there is PAGE_SHIFT around in that function.
 
+maybe you can just define another MARCO according to IOV spec?
+
+Thanks
+
+Yinghai
