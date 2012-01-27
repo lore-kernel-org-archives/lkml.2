@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2A0QeW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:34:22 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:62152 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab2A0QeV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:34:21 -0500
-Date: Fri, 27 Jan 2012 11:34:16 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs fixes
-Message-ID: <20120127163416.GE991@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	Linux-kernel <linux-kernel@vger.kernel.org>
+	id S1756264Ab2A0Qfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 11:35:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756036Ab2A0Qfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 11:35:36 -0500
+Message-ID: <4F22D236.4@redhat.com>
+Date: Fri, 27 Jan 2012 11:35:02 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4F22D20A.0083,ss=1,re=0.000,fgs=0
+To: Hillf Danton <dhillf@gmail.com>
+CC: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH v3 -mm 1/3] mm: reclaim at order 0 when compaction is
+ enabled
+References: <20120126145450.2d3d2f4c@cuia.bos.redhat.com> <20120126145914.58619765@cuia.bos.redhat.com> <CAJd=RBB=MDiYLVSYJj8d8NfBZp+OU0Lf3-W5+xZUqj0J1JA4cQ@mail.gmail.com>
+In-Reply-To: <CAJd=RBB=MDiYLVSYJj8d8NfBZp+OU0Lf3-W5+xZUqj0J1JA4cQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ sorry resend without bad auto-complete for lkml ]
+On 01/27/2012 04:13 AM, Hillf Danton wrote:
 
-Hi Linus,
+>> @@ -1195,7 +1195,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+>>                         BUG();
+>>                 }
+>>
+>> -               if (!order)
+>> +               if (!sc->order || !(sc->reclaim_mode&  RECLAIM_MODE_LUMPYRECLAIM))
+>>                         continue;
+>>
+> Just a tiny advice 8-)
+>
+> mind to move checking lumpy reclaim out of the loop,
+> something like
 
-We've got a variety pack of fixes in the for-linus branch of the btrfs
-repo:
+Hehe, I made the change the way it is on request
+of Mel Gorman :)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+I don't particularly care either way and will be
+happy to make the code whichever way people prefer.
 
-These are all smaller fixes caught from different testers, benchmarks
-and the occasional compiler warning.
+Just let me know.
 
-Josef Bacik (3) commits (+3/-2):
-    Btrfs: use cluster->window_start when allocating from a cluster bitmap (+1/-1)
-    Btrfs: advance window_start if we're using a bitmap (+1/-0)
-    Btrfs: make sure a bitmap has enough bytes (+1/-1)
-
-Stefan Behrens (1) commits (+6/-5):
-    Btrfs: fix warning for 32-bit build of fs/btrfs/check-integrity.c
-
-Jan Schmidt (1) commits (+2/-2):
-    Btrfs: fix uninit warning in backref.c
-
-Liu Bo (1) commits (+1/-1):
-    Btrfs: do not defrag a file partially
-
-Mitch Harder (1) commits (+2/-0):
-    Btrfs: Check for NULL page in extent_range_uptodate
-
-Chris Mason (1) commits (+8/-2):
-    Btrfs: fix reservations in btrfs_page_mkwrite
-
-David Sterba (1) commits (+7/-0):
-    btrfs: mask out gfp flags in releasepage
-
-Jan Kara (1) commits (+4/-2):
-    btrfs: Fix busyloops in transaction waiting code
-
-Miao Xie (1) commits (+27/-22):
-    Btrfs: fix enospc error caused by wrong checks of the chunk
-
-Total: (11) commits (+60/-36)
-
- fs/btrfs/backref.c          |    4 +-
- fs/btrfs/check-integrity.c  |   11 +++++----
- fs/btrfs/disk-io.c          |    7 ++++++
- fs/btrfs/extent-tree.c      |   49 +++++++++++++++++++++++-------------------
- fs/btrfs/extent_io.c        |    2 +
- fs/btrfs/free-space-cache.c |    5 ++-
- fs/btrfs/inode.c            |   10 +++++++-
- fs/btrfs/ioctl.c            |    2 +-
- fs/btrfs/tree-log.c         |    6 +++-
- 9 files changed, 60 insertions(+), 36 deletions(-)
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+All rights reversed
