@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab2A0Ktl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 05:49:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44435 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941Ab2A0Ktj convert rfc822-to-8bit (ORCPT
+	id S1754081Ab2A0KxD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 05:53:03 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34561
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753137Ab2A0KxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 05:49:39 -0500
-Message-ID: <1327661364.2446.159.camel@twins>
-Subject: Re: Shift by one instruction in the perf annotate output
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: =?ISO-8859-1?Q?L=E9na=EFc?= Huard <lenaic@lhuard.fr.eu.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 27 Jan 2012 11:49:24 +0100
-In-Reply-To: <20120127104442.GB31782@elte.hu>
-References: <201201270001.27765.lenaic@lhuard.fr.eu.org>
-	 <1327652120.2446.123.camel@twins> <20120127102741.GA31782@elte.hu>
-	 <1327660811.2446.155.camel@twins> <20120127104442.GB31782@elte.hu>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Fri, 27 Jan 2012 05:53:01 -0500
+Date: Fri, 27 Jan 2012 05:52:53 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Ben Myers <bpm@sgi.com>, Alex Elder <aelder@sgi.com>,
+        Christoph Hellwig <hch@lst.de>, Alex Elder <elder@kernel.org>,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com, xfs-masters@oss.sgi.com,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH] xfs: pass KM_SLEEP flag to kmem_realloc() in
+ xlog_recover_add_to_cnt_trans()
+Message-ID: <20120127105253.GA23335@infradead.org>
+References: <20120127063726.16227.681.stgit@ltc219.sdl.hitachi.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120127063726.16227.681.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-27 at 11:44 +0100, Ingo Molnar wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> 
-> > On Fri, 2012-01-27 at 11:27 +0100, Ingo Molnar wrote:
-> >
-> > > On Core2 CPUs there's PEBS so 'p' will work, but there's no 
-> > > LBR so the IP-rewinding does not work.
-> > 
-> > Not on his thing.. PEBS is a trainwreck on model 15.
-> 
-> ok - i have a model 23, there it works:
-> 
-> [    0.044260] CPU0: Intel(R) Core(TM)2 Duo CPU     T9600  @ 2.80GHz stepping 06
-> [    0.044996] Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+On Fri, Jan 27, 2012 at 03:37:26PM +0900, Mitsuo Hayasaka wrote:
+> The kmem_realloc() in xfs is given KM_* memory allocation flags. And it
+> allocates memory using kmalloc() after they are converted to gfp_mask
+> flags. In xlog_recover_add_to_cont_trans(), 0u is passed to kmem_realloc(),
+> instead of them. I guess it is preferred to use them, and here memory must
+> be allocated but don't have to be done with GFP_ATOMIC. So, this patch
+> changes it to KM_SLEEP.
 
-Right, only model 15 the very first core2 chips were badly broken, they
-fixed it in the shrink (model 22,23,29).
+Looks good.  I actually just noticed it when changing the kmem_realloc
+implementation, but let's put your patch in before that and send it off
+to Linus ASAP.
 
-And as you know, something got screwy in SNB (model 42) so that's got
-PEBS fully disabled until further notice as well.
+Reviewed-by: Christoph Hellwig <hch@lst.de>
