@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab2A0Jk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 04:40:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59585 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab2A0Jk4 convert rfc822-to-8bit (ORCPT
+	id S1753236Ab2A0Jo2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 04:44:28 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36650 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab2A0Jo0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 04:40:56 -0500
-Message-ID: <1327657245.2446.153.camel@twins>
-Subject: Re: [RFC PATCH v1 1/2] sched: unified sched_powersavings sysfs
- tunable
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: svaidy@linux.vnet.ibm.com
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Indan Zupancic <indan@nul.nu>, Youquan Song <youquan.song@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 27 Jan 2012 10:40:45 +0100
-In-Reply-To: <20120127092205.GC8897@dirshya.in.ibm.com>
-References: <20120116161740.29759.4679.stgit@localhost>
-	 <20120116162241.29759.13220.stgit@localhost>
-	 <1327504213.2614.78.camel@laptop>
-	 <20120127092205.GC8897@dirshya.in.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Fri, 27 Jan 2012 04:44:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <1327568457-27734-13-git-send-email-m.szyprowski@samsung.com>
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com> <1327568457-27734-13-git-send-email-m.szyprowski@samsung.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 27 Jan 2012 11:44:05 +0200
+X-Google-Sender-Auth: lR2jnmuz_5iJU7-1qBZgu4g7YN8
+Message-ID: <CADMYwHw1B4RNV_9BqAg_M70da=g69Z3kyo5Cr6izCMwJ9LAtvA@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 12/15] drivers: add Contiguous Memory Allocator
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-27 at 14:52 +0530, Vaidyanathan Srinivasan wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-01-25 16:10:13]:
-> 
-> > On Mon, 2012-01-16 at 21:52 +0530, Vaidyanathan Srinivasan wrote:
-> > > @@ -6150,10 +6150,8 @@ SD_INIT_FUNC(CPU)
-> > >   SD_INIT_FUNC(ALLNODES)
-> > >   SD_INIT_FUNC(NODE)
-> > >  #endif
-> > > -#ifdef CONFIG_SCHED_SMT
-> > > +#ifdef CONFIG_SCHED_POWERSAVE
-> > >   SD_INIT_FUNC(SIBLING)
-> > > -#endif
-> > > -#ifdef CONFIG_SCHED_MC
-> > >   SD_INIT_FUNC(MC)
-> > >  #endif
-> > >  #ifdef CONFIG_SCHED_BOOK
-> > > @@ -6250,7 +6248,7 @@ static void claim_allocations(int cpu, struct sched_domain *sd)
-> > >                 *per_cpu_ptr(sdd->sgp, cpu) = NULL;
-> > >  }
-> > >  
-> > > -#ifdef CONFIG_SCHED_SMT
-> > > +#ifdef CONFIG_SCHED_POWERSAVE
-> > >  static const struct cpumask *cpu_smt_mask(int cpu)
-> > >  {
-> > >         return topology_thread_cpumask(cpu);
-> > > @@ -6261,10 +6259,8 @@ static const struct cpumask *cpu_smt_mask(int cpu)
-> > >   * Topology list, bottom-up.
-> > >   */
-> > >  static struct sched_domain_topology_level default_topology[] = {
-> > > -#ifdef CONFIG_SCHED_SMT
-> > > +#ifdef CONFIG_SCHED_POWERSAVE
-> > >         { sd_init_SIBLING, cpu_smt_mask, },
-> > > -#endif
-> > > -#ifdef CONFIG_SCHED_MC
-> > >         { sd_init_MC, cpu_coregroup_mask, },
-> > >  #endif
-> > >  #ifdef CONFIG_SCHED_BOOK 
-> > 
-> > I don't like this either, SCHED_{MC,SMT} here have nothing to do with
-> > powersavings, its topology support.
->  
-> Yes, but we don't need these domains for any other purpose other than
-> powersave balance.  The code overheads are not high,  I will remove
-> the config option and check.
+Hi Marek,
 
-Yes we do, SMT perf skips siblings and only loads them when there's only
-siblings left idle. Similarly for MC, we prefer to run tasks on separate
-sockets when possible.
+With v19, I can't seem to allocate big regions anymore (e.g. 101MiB).
+In particular, this seems to fail:
+
+On Thu, Jan 26, 2012 at 11:00 AM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+> +static int cma_activate_area(unsigned long base_pfn, unsigned long count)
+> +{
+> +       unsigned long pfn = base_pfn;
+> +       unsigned i = count >> pageblock_order;
+> +       struct zone *zone;
+> +
+> +       WARN_ON_ONCE(!pfn_valid(pfn));
+> +       zone = page_zone(pfn_to_page(pfn));
+> +
+> +       do {
+> +               unsigned j;
+> +               base_pfn = pfn;
+> +               for (j = pageblock_nr_pages; j; --j, pfn++) {
+> +                       WARN_ON_ONCE(!pfn_valid(pfn));
+> +                       if (page_zone(pfn_to_page(pfn)) != zone)
+> +                               return -EINVAL;
+
+The above WARN_ON_ONCE is triggered, and then the conditional is
+asserted (page_zone() retuns a "Movable" zone, whereas zone is
+"Normal") and the function fails.
+
+This happens to me on OMAP4 with your 3.3-rc1-cma-v19 branch (and a
+bunch of remoteproc/rpmsg patches).
+
+Do big allocations work for you ?
+
+Thanks,
+Ohad.
