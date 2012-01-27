@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab2A0Qj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:39:28 -0500
-Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:35552 "EHLO
-	herc.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab2A0Qj0 convert rfc822-to-8bit (ORCPT
+	id S1755050Ab2A0Qkl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 11:40:41 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:27170
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754504Ab2A0Qkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:39:26 -0500
-Date: Fri, 27 Jan 2012 16:34:24 +0000 (UTC)
-From: Thorsten Glaser <tg@debian.org>
-X-X-Sender: tg@herc.mirbsd.org
-To: linux-kernel@vger.kernel.org
-cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Debian kernel team <debian-kernel@lists.debian.org>,
-        linux-m68k@vger.kernel.org, debian-68k@lists.debian.org,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCHv2 1/2] cpu: Do not return errors from cpu_dev_init()
- which will be ignored; [PATCHv2 2/2] cpu: Register a generic CPU device on
- architectures that currently do not
-In-Reply-To: <1326164672.3432.34.camel@deadeye>
-Message-ID: <Pine.BSM.4.64L.1201271632120.25139@herc.mirbsd.org>
-References: <1326164389.3432.29.camel@deadeye> <1326164672.3432.34.camel@deadeye>
-X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
+	Fri, 27 Jan 2012 11:40:40 -0500
+X-SpamScore: -19
+X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4R8275bh8275dhz2dhc1bhc31hc1ah668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LYGUBK-02-5D6-02
+X-M-MSG: 
+Date: Fri, 27 Jan 2012 17:40:29 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: David Brown <davidb@codeaurora.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: Re: [PATCH] iommu/msm: Fix error handling in msm_iommu_unmap()
+Message-ID: <20120127164029.GQ19255@amd.com>
+References: <1327598984-20662-1-git-send-email-joerg.roedel@amd.com>
+ <20120127000630.GB16263@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120127000630.GB16263@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings dixit:
+On Thu, Jan 26, 2012 at 04:06:30PM -0800, David Brown wrote:
+> On Thu, Jan 26, 2012 at 06:29:44PM +0100, Joerg Roedel wrote:
+> > Error handling in msm_iommu_unmap() is broken. On some error
+> > conditions retval is set to a non-zero value which causes
+> > the function to return 'len' at the end. This hides the
+> > error from the user. Zero should be returned in those error
+> > cases.
+> > 
+> > Cc: David Brown <davidb@codeaurora.org>
+> > Cc: Stepan Moskovchenko <stepanm@codeaurora.org>
+> > Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> > ---
+> >  drivers/iommu/msm_iommu.c |    7 +------
+> >  1 files changed, 1 insertions(+), 6 deletions(-)
+> 
+> Acked-by: David Brown <davidb@codeaurora.org>
 
->cpu_dev_init() is only called from driver_init(), which does not check
-[…]
+Thanks. I'll queue this up with iommu fixes for 3.3 and mark it for
+stable as well.
 
-= and =
 
->frv, h8300, m68k, microblaze, openrisc, score, um and xtensa currently
->do not register a CPU device.  Add the config option
->GENERIC_CPU_DEVICES which causes a generic CPU device to be registered
-[…]
+	Joerg
 
-Now that these are in the Debian Linux kernel package and a build has
-been done, I can confirm the result boots on ARAnyM (m68k).
-
-Tested-by: Thorsten Glaser <tg@debian.org>
-
-bye,
-//mirabilos
 -- 
-I believe no one can invent an algorithm. One just happens to hit upon it
-when God enlightens him. Or only God invents algorithms, we merely copy them.
-If you don't believe in God, just consider God as Nature if you won't deny
-existence.		-- Coywolf Qi Hunt
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
