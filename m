@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab2A0Bxk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 20:53:40 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:48300 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751645Ab2A0Bxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 20:53:39 -0500
-Date: Fri, 27 Jan 2012 12:53:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Frid <afrid@nvidia.com>, Antti Miettinen <amiettinen@nvidia.com>,
-        Diwakar Tundlam <dtundlam@nvidia.com>,
-        Scott Williams <scwilliams@nvidia.com>, Yu-Huan Hsu <yhsu@nvidia.com>,
-        markgross <markgross@thegnar.org>
-Subject: linux-next: build failure after merge of the pm tree
-Message-Id: <20120127125315.e6e70511badf68c4e760afc3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__27_Jan_2012_12_53_15_+1100_nSPKJPZvT+xC.6g_"
+	id S1753870Ab2A0CGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 21:06:33 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:59257 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751480Ab2A0CGc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 21:06:32 -0500
+X-WSS-ID: 0LYFPUS-0A-06P-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Andrew Morton" <akpm@linux-foundation.org>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Richard Purdie" <rpurdie@rpsys.net>
+Date: Thu, 26 Jan 2012 18:06:14 -0800
+Subject: RE: [PATCH v2] backlight: new backlight driver for LP855x
+ devices
+Thread-Topic: [PATCH v2] backlight: new backlight driver for LP855x
+ devices
+Thread-Index: AczchMjYacxwynU7RZKqa+mKdJrzuQAEa/nA
+Message-ID: <B567DBAB974C0544994013492B949F8E3812D6E9E6@EXMAIL03.scwf.nsc.com>
+References: <B567DBAB974C0544994013492B949F8E3812CD3EE5@EXMAIL03.scwf.nsc.com>
+ <20120126154651.767c4e55.akpm@linux-foundation.org>
+In-Reply-To: <20120126154651.767c4e55.akpm@linux-foundation.org>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
+MIME-Version: 1.0
+X-WSS-ID: 633CD9111LS9962156-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__27_Jan_2012_12_53_15_+1100_nSPKJPZvT+xC.6g_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Sent: Friday, January 27, 2012 8:47 AM
+> To: Kim, Milo
+> Cc: linux-kernel@vger.kernel.org; Richard Purdie
+> Subject: Re: [PATCH v2] backlight: new backlight driver for LP855x
+> devices
+> 
+> On Tue, 24 Jan 2012 22:24:02 -0800
+> "Kim, Milo" <Milo.Kim@ti.com> wrote:
+> 
+> > This patch supports TI LP8550/LP8551/LP8852/LP8553/LP8556 backlight
+> driver.
+> >
+> > ...
+> 
+> I had a few little problems here.
+> 
+> - For some reason my email client doesn't like MIME quoted-printable
+>   and cannot correctly extract the plain text.  It appears that
+>   globally deleting =\n and globally replacing =3D with = fixes things.
+>   Ho hum.  I really should go see if this has been fixed, or hassle
+>   the sylpheed developer(s).
+> 
+> - The driver generates a great storm of scripts/checkpatch.pl
+>   whitespace warnings.  Things like using eight spaces instead of a
+>   tab.  These really should be fixed, so please take a look at the
+>   checkpatch output then resend?
 
-Hi Rafael,
+Thanks a lot for your notice.
+In my side, 2 warnings and 2 errors are found after running checkpath.pl.
+I'll resend the patch after fix as title : [PATCH v3].
 
-After merging the pm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+------------------------------------------------------------------
+The result of running checkpatch : lp855x.h
+WARNING: please, no space before tabs
+#28: FILE: linux/lp855x.h:28:
++#define LP8550_I2C_CONFIG ^I((ENABLE_BL << BL_CTL_SHFT) | \$
 
-kernel/power/process.c: In function 'thaw_kernel_threads':
-kernel/power/process.c:199:2: error: 'g' undeclared (first use in this func=
-tion)
-kernel/power/process.c:199:2: note: each undeclared identifier is reported =
-only once for each function it appears in
-kernel/power/process.c:199:2: error: 'p' undeclared (first use in this func=
-tion)
+WARNING: please, no space before tabs
+#46: FILE: linux/lp855x.h:46:
++#define LP8556_I2C_CONFIG ^I((ENABLE_BL << BL_CTL_SHFT) | \$
 
-Caused by commit 625278ca8016 ("PM / QoS: Simplify PM QoS expansion/merge").
+total: 0 errors, 2 warnings, 133 lines checked
 
-Clearly never built :-(  At least, not in this form.
+The result of running checkpatch : lp855x_bl.c
+ERROR: return is not a function, parentheses are not required
+#134: FILE: video/backlight/lp855x_bl.c:134:
++	return (bl->props.brightness);
 
-I have used the pm tree from next-20120125 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ERROR: return is not a function, parentheses are not required
+#156: FILE: video/backlight/lp855x_bl.c:156:
++	return (bl->props.brightness);
 
---Signature=_Fri__27_Jan_2012_12_53_15_+1100_nSPKJPZvT+xC.6g_
-Content-Type: application/pgp-signature
+total: 2 errors, 0 warnings, 331 lines checked
+------------------------------------------------------------------
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+But for the whitespace problem, I'm afraid something wrong in my mail client - outlook 2007.
+Patch mail sent from myself has normal tab indentation with plain text.
+But in notice mail from akpm, all tabs were replaced with 8 spaces !
 
-iQIcBAEBCAAGBQJPIgOLAAoJEECxmPOUX5FEr04P+wQMzYzLL1enHc2uIAVudGq6
-dgGDoce62CvKgFia2502Rp/e4s6QQuLL0FWx97Zd69Sk/t7tdA7eL9BQRZKJ2t6W
-7TaQex5hsW1vlyeOnBKCVUbdX33pPNsessSryJFCEC9NH529BThRrmUT+xzc8SIo
-eWK3zY908UbagypGHqRkS+08gkWveAd0s+Gz0Bte+EhHEW4e3kghcSR+tolJFufO
-/KQYI+8w8ClEBsgXaU+RS8SAiEc/YbtpSSbR8cl5lGa0se95yFaozNjaeHLFyLrr
-1QUaf/BKg/xf1jJvxtMUh8A7dkGdDxRgADfd1+F88bEsNBZRZ2YTpjdouj3wdeVR
-jqQagSbK2ePmo5HvnrJL0SvWRtsiaaAwapn5SOSVXYo4OnGxVrBP/C/9gdkDOI/a
-uVTAXPUAjzEdg2YBw4bKXAzIS2AOV5o7bmib7t3swxxixoYM5OUDKkwZUyS5HfvR
-ioJspqdrkN3n/Gs+zrTRiiiiNvchZO2VPidM2lzM21R+lEf2EPruYPuKjgSt5NBh
-60VmvA0y/dL1J+G/GUmWvw81ATayO9sGjjbN7XStcyj6YiDuElR4IgTltjPAdZEi
-8Vz1gK7PVQ+QfAIYKfbo6eQHhkDAA+DRMXimTpnsUZLCJFaUCL5GIH4wZL+Df0zs
-IqKbvSpNAoA8f4j8Qjjs
-=wTGo
------END PGP SIGNATURE-----
+Thanks & BR
+Milo -
 
---Signature=_Fri__27_Jan_2012_12_53_15_+1100_nSPKJPZvT+xC.6g_--
