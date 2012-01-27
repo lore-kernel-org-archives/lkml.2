@@ -1,620 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab2A0SbJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:31:09 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:43031 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab2A0SbH (ORCPT
+	id S1753610Ab2A0SbT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:31:19 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:38088 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753570Ab2A0SbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:31:07 -0500
-X-IronPort-AV: E=Sophos;i="4.71,581,1320642000"; 
-   d="scan'208";a="179416156"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: xen-devel@lists.xensource.com
-CC: Stefano.Stabellini@eu.citrix.com, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v2 2/2] hvc_xen: implement multiconsole support
-Date: Fri, 27 Jan 2012 18:31:37 +0000
-Message-ID: <1327689097-12788-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1201271823240.3196@kaball-desktop>
-References: <alpine.DEB.2.00.1201271823240.3196@kaball-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 27 Jan 2012 13:31:15 -0500
+Date: Fri, 27 Jan 2012 10:31:10 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Seth Heasley <seth.heasley@intel.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        james.d.ralston@intel.com
+Subject: Re: [PATCH 6/6] pci: irq and pci_ids patch for Intel Lynx Point
+ DeviceIDs
+Message-ID: <20120127103110.2a4d667f@jbarnes-desktop>
+In-Reply-To: <201201231646.24194.seth.heasley@intel.com>
+References: <201201231646.24194.seth.heasley@intel.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/WpPe4ajWb+6sZKoA8.4d8Ds"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements support for multiple consoles:
-consoles other than the first one are setup using the traditional xenbus
-and grant-table based mechanism.
-We use a list to keep track of the allocated consoles, we don't
-expect too many of them anyway.
+--Sig_/WpPe4ajWb+6sZKoA8.4d8Ds
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/tty/hvc/hvc_xen.c |  439 +++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 381 insertions(+), 58 deletions(-)
+On Mon, 23 Jan 2012 16:46:24 -0800
+Seth Heasley <seth.heasley@intel.com> wrote:
 
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index d5000aa..8209293 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -23,6 +23,7 @@
- #include <linux/err.h>
- #include <linux/init.h>
- #include <linux/types.h>
-+#include <linux/list.h>
- 
- #include <asm/io.h>
- #include <asm/xen/hypervisor.h>
-@@ -30,47 +31,67 @@
- #include <xen/xen.h>
- #include <xen/interface/xen.h>
- #include <xen/hvm.h>
-+#include <xen/grant_table.h>
- #include <xen/page.h>
- #include <xen/events.h>
- #include <xen/interface/io/console.h>
- #include <xen/hvc-console.h>
-+#include <xen/xenbus.h>
- 
- #include "hvc_console.h"
- 
- #define HVC_COOKIE   0x58656e /* "Xen" in hex */
- 
--static struct hvc_struct *hvc;
--static int xencons_irq;
-+struct xencons_info {
-+	struct list_head list;
-+	struct xenbus_device *xbdev;
-+	struct xencons_interface *intf;
-+	unsigned int evtchn;
-+	struct hvc_struct *hvc;
-+	int irq;
-+	int vtermno;
-+	grant_ref_t gntref;
-+};
-+
-+static LIST_HEAD(xenconsoles);
-+static DEFINE_SPINLOCK(xencons_lock);
-+static struct xenbus_driver xencons_driver;
- 
- /* ------------------------------------------------------------------ */
- 
--static unsigned long console_pfn = ~0ul;
--static unsigned int console_evtchn = ~0ul;
--static struct xencons_interface *xencons_if = NULL;
-+static struct xencons_info *vtermno_to_xencons(int vtermno)
-+{
-+	struct xencons_info *entry, *n, *ret = NULL;
-+
-+	if (list_empty(&xenconsoles))
-+			return NULL;
- 
--static inline struct xencons_interface *xencons_interface(void)
-+	list_for_each_entry_safe(entry, n, &xenconsoles, list) {
-+		if (entry->vtermno == vtermno) {
-+			ret  = entry;
-+			break;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static inline int xenbus_devid_to_vtermno(int devid)
- {
--	if (xencons_if != NULL)
--		return xencons_if;
--	if (console_pfn == ~0ul)
--		return mfn_to_virt(xen_start_info->console.domU.mfn);
--	else
--		return __va(console_pfn << PAGE_SHIFT);
-+	return devid + HVC_COOKIE;
- }
- 
--static inline void notify_daemon(void)
-+static inline void notify_daemon(struct xencons_info *cons)
- {
- 	/* Use evtchn: this is called early, before irq is set up. */
--	if (console_evtchn == ~0ul)
--		notify_remote_via_evtchn(xen_start_info->console.domU.evtchn);
--	else
--		notify_remote_via_evtchn(console_evtchn);
-+	notify_remote_via_evtchn(cons->evtchn);
- }
- 
--static int __write_console(const char *data, int len)
-+static int __write_console(struct xencons_info *xencons,
-+		const char *data, int len)
- {
--	struct xencons_interface *intf = xencons_interface();
- 	XENCONS_RING_IDX cons, prod;
-+	struct xencons_interface *intf = xencons->intf;
- 	int sent = 0;
- 
- 	cons = intf->out_cons;
-@@ -85,13 +106,16 @@ static int __write_console(const char *data, int len)
- 	intf->out_prod = prod;
- 
- 	if (sent)
--		notify_daemon();
-+		notify_daemon(xencons);
- 	return sent;
- }
- 
- static int domU_write_console(uint32_t vtermno, const char *data, int len)
- {
- 	int ret = len;
-+	struct xencons_info *cons = vtermno_to_xencons(vtermno);
-+	if (cons == NULL)
-+		return -EINVAL;
- 
- 	/*
- 	 * Make sure the whole buffer is emitted, polling if
-@@ -100,7 +124,7 @@ static int domU_write_console(uint32_t vtermno, const char *data, int len)
- 	 * kernel is crippled.
- 	 */
- 	while (len) {
--		int sent = __write_console(data, len);
-+		int sent = __write_console(cons, data, len);
- 		
- 		data += sent;
- 		len -= sent;
-@@ -114,9 +138,13 @@ static int domU_write_console(uint32_t vtermno, const char *data, int len)
- 
- static int domU_read_console(uint32_t vtermno, char *buf, int len)
- {
--	struct xencons_interface *intf = xencons_interface();
-+	struct xencons_interface *intf;
- 	XENCONS_RING_IDX cons, prod;
- 	int recv = 0;
-+	struct xencons_info *xencons = vtermno_to_xencons(vtermno);
-+	if (xencons == NULL)
-+		return -EINVAL;
-+	intf = xencons->intf;
- 
- 	cons = intf->in_cons;
- 	prod = intf->in_prod;
-@@ -129,7 +157,7 @@ static int domU_read_console(uint32_t vtermno, char *buf, int len)
- 	mb();			/* read ring before consuming */
- 	intf->in_cons = cons;
- 
--	notify_daemon();
-+	notify_daemon(xencons);
- 	return recv;
- }
- 
-@@ -172,78 +200,360 @@ static int xen_hvm_console_init(void)
- 	int r;
- 	uint64_t v = 0;
- 	unsigned long mfn;
-+	struct xencons_info *info;
- 
- 	if (!xen_hvm_domain())
- 		return -ENODEV;
- 
--	if (xencons_if != NULL)
--		return -EBUSY;
-+	info = vtermno_to_xencons(HVC_COOKIE);
-+	if (!info) {
-+		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+		if (!info)
-+			return -ENOMEM;
-+	}
-+
-+	/* already configured */
-+	if (info->intf != NULL)
-+		return 0;
- 
- 	r = hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
--	if (r < 0)
-+	if (r < 0) {
-+		kfree(info);
- 		return -ENODEV;
--	console_evtchn = v;
-+	}
-+	info->evtchn = v;
- 	hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
--	if (r < 0)
-+	if (r < 0) {
-+		kfree(info);
- 		return -ENODEV;
-+	}
- 	mfn = v;
--	xencons_if = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
--	if (xencons_if == NULL)
-+	info->intf = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
-+	if (info->intf == NULL) {
-+		kfree(info);
-+		return -ENODEV;
-+	}
-+	info->vtermno = HVC_COOKIE;
-+
-+	spin_lock(&xencons_lock);
-+	list_add_tail(&info->list, &xenconsoles);
-+	spin_unlock(&xencons_lock);
-+
-+	return 0;
-+}
-+
-+static int xen_pv_console_init(void)
-+{
-+	struct xencons_info *info;
-+
-+	if (!xen_pv_domain())
- 		return -ENODEV;
- 
-+	if (!xen_start_info->console.domU.evtchn)
-+		return -ENODEV;
-+
-+	info = vtermno_to_xencons(HVC_COOKIE);
-+	if (!info) {
-+		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+		if (!info)
-+			return -ENOMEM;
-+	}
-+
-+	/* already configured */
-+	if (info->intf != NULL)
-+		return 0;
-+
-+	info->evtchn = xen_start_info->console.domU.evtchn;
-+	info->intf = mfn_to_virt(xen_start_info->console.domU.mfn);
-+	info->vtermno = HVC_COOKIE;
-+
-+	spin_lock(&xencons_lock);
-+	list_add_tail(&info->list, &xenconsoles);
-+	spin_unlock(&xencons_lock);
-+
-+	return 0;
-+}
-+
-+static int xen_initial_domain_console_init(void)
-+{
-+	struct xencons_info *info;
-+
-+	if (!xen_initial_domain())
-+		return -ENODEV;
-+
-+	info = vtermno_to_xencons(HVC_COOKIE);
-+	if (!info) {
-+		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+		if (!info)
-+			return -ENOMEM;
-+	}
-+
-+	info->irq = bind_virq_to_irq(VIRQ_CONSOLE, 0);
-+	info->vtermno = HVC_COOKIE;
-+
-+	spin_lock(&xencons_lock);
-+	list_add_tail(&info->list, &xenconsoles);
-+	spin_unlock(&xencons_lock);
-+
- 	return 0;
- }
- 
- static int __init xen_hvc_init(void)
- {
--	struct hvc_struct *hp;
--	struct hv_ops *ops;
- 	int r;
-+	struct xencons_info *info;
-+	const struct hv_ops *ops;
- 
- 	if (!xen_domain())
- 		return -ENODEV;
- 
- 	if (xen_initial_domain()) {
- 		ops = &dom0_hvc_ops;
--		xencons_irq = bind_virq_to_irq(VIRQ_CONSOLE, 0);
-+		r = xen_initial_domain_console_init();
-+		if (r < 0)
-+			return r;
-+		info = vtermno_to_xencons(HVC_COOKIE);
- 	} else {
- 		ops = &domU_hvc_ops;
--		if (xen_pv_domain()) {
--			if (!xen_start_info->console.domU.evtchn)
--				return -ENODEV;
--			console_pfn = mfn_to_pfn(xen_start_info->console.domU.mfn);
--			console_evtchn = xen_start_info->console.domU.evtchn;
--		} else {
-+		if (xen_hvm_domain())
- 			r = xen_hvm_console_init();
--			if (r < 0)
--				return r;
--		}
--		xencons_irq = bind_evtchn_to_irq(console_evtchn);
--		if (xencons_irq < 0)
--			xencons_irq = 0; /* NO_IRQ */
- 		else
--			irq_set_noprobe(xencons_irq);
-+			r = xen_pv_console_init();
-+		if (r < 0)
-+			return r;
-+
-+		info = vtermno_to_xencons(HVC_COOKIE);
-+		info->irq = bind_evtchn_to_irq(info->evtchn);
-+	}
-+	if (info->irq < 0)
-+		info->irq = 0; /* NO_IRQ */
-+	else
-+		irq_set_noprobe(info->irq);
-+
-+	info->hvc = hvc_alloc(HVC_COOKIE, info->irq, ops, 256);
-+	if (IS_ERR(info->hvc)) {
-+		r = PTR_ERR(info->hvc);
-+		spin_lock(&xencons_lock);
-+		list_del(&info->list);
-+		spin_unlock(&xencons_lock);
-+		if (info->irq)
-+			unbind_from_irqhandler(info->irq, NULL);
-+		kfree(info);
-+		return r;
- 	}
- 
--	hp = hvc_alloc(HVC_COOKIE, xencons_irq, ops, 256);
--	if (IS_ERR(hp))
--		return PTR_ERR(hp);
-+	return xenbus_register_frontend(&xencons_driver);
-+}
- 
--	hvc = hp;
-+void xen_console_resume(void)
-+{
-+	struct xencons_info *info = vtermno_to_xencons(HVC_COOKIE);
-+	if (info != NULL && info->irq)
-+		rebind_evtchn_irq(info->evtchn, info->irq);
-+}
- 
-+static void xencons_disconnect_backend(struct xencons_info *info)
-+{
-+	if (info->irq > 0)
-+		unbind_from_irqhandler(info->irq, NULL);
-+	info->irq = 0;
-+	if (info->evtchn > 0)
-+		xenbus_free_evtchn(info->xbdev, info->evtchn);
-+	info->evtchn = 0;
-+	if (info->gntref > 0)
-+		gnttab_free_grant_references(info->gntref);
-+	info->gntref = 0;
-+	if (info->hvc != NULL)
-+		hvc_remove(info->hvc);
-+	info->hvc = NULL;
-+}
-+
-+static void xencons_free(struct xencons_info *info)
-+{
-+	xencons_disconnect_backend(info);
-+	free_page((unsigned long)info->intf);
-+	info->intf = NULL;
-+	info->vtermno = 0;
-+	kfree(info);
-+}
-+
-+static int xencons_remove(struct xenbus_device *dev)
-+{
-+	struct xencons_info *info = dev_get_drvdata(&dev->dev);
-+
-+	spin_lock(&xencons_lock);
-+	list_del(&info->list);
-+	spin_unlock(&xencons_lock);
-+	xencons_free(info);
- 	return 0;
- }
- 
--void xen_console_resume(void)
-+static int xencons_connect_backend(struct xenbus_device *dev,
-+				  struct xencons_info *info)
-+{
-+	int ret, evtchn, devid, ref, irq;
-+	struct xenbus_transaction xbt;
-+	grant_ref_t gref_head;
-+	unsigned long mfn;
-+
-+	ret = xenbus_alloc_evtchn(dev, &evtchn);
-+	if (ret)
-+		return ret;
-+	info->evtchn = evtchn;
-+	irq = bind_evtchn_to_irq(evtchn);
-+	if (irq < 0)
-+		return irq;
-+	info->irq = irq;
-+	devid = dev->nodename[strlen(dev->nodename) - 1] - '0';
-+	info->hvc = hvc_alloc(xenbus_devid_to_vtermno(devid),
-+			irq, &domU_hvc_ops, 256);
-+	if (IS_ERR(info->hvc))
-+		return PTR_ERR(info->hvc);
-+	if (xen_pv_domain())
-+		mfn = virt_to_mfn(info->intf);
-+	else
-+		mfn = __pa(info->intf) >> PAGE_SHIFT;
-+	ret = gnttab_alloc_grant_references(1, &gref_head);
-+	if (ret < 0)
-+		return ret;
-+	info->gntref = gref_head;
-+	ref = gnttab_claim_grant_reference(&gref_head);
-+	if (ref < 0)
-+		return ref;
-+	gnttab_grant_foreign_access_ref(ref, info->xbdev->otherend_id,
-+			mfn, 0);
-+
-+ again:
-+	ret = xenbus_transaction_start(&xbt);
-+	if (ret) {
-+		xenbus_dev_fatal(dev, ret, "starting transaction");
-+		return ret;
-+	}
-+	ret = xenbus_printf(xbt, dev->nodename, "ring-ref", "%d", ref);
-+	if (ret)
-+		goto error_xenbus;
-+	ret = xenbus_printf(xbt, dev->nodename, "port", "%u",
-+			    evtchn);
-+	if (ret)
-+		goto error_xenbus;
-+	ret = xenbus_printf(xbt, dev->nodename, "type", "ioemu");
-+	if (ret)
-+		goto error_xenbus;
-+	ret = xenbus_transaction_end(xbt, 0);
-+	if (ret) {
-+		if (ret == -EAGAIN)
-+			goto again;
-+		xenbus_dev_fatal(dev, ret, "completing transaction");
-+		return ret;
-+	}
-+
-+	xenbus_switch_state(dev, XenbusStateInitialised);
-+	return 0;
-+
-+ error_xenbus:
-+	xenbus_transaction_end(xbt, 1);
-+	xenbus_dev_fatal(dev, ret, "writing xenstore");
-+	return ret;
-+}
-+
-+static int __devinit xencons_probe(struct xenbus_device *dev,
-+				  const struct xenbus_device_id *id)
- {
--	if (xencons_irq)
--		rebind_evtchn_irq(console_evtchn, xencons_irq);
-+	int ret, devid;
-+	struct xencons_info *info;
-+
-+	devid = dev->nodename[strlen(dev->nodename) - 1] - '0';
-+	if (devid == 0)
-+		return -ENODEV;
-+
-+	info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+	if (!info)
-+		goto error_nomem;
-+	dev_set_drvdata(&dev->dev, info);
-+	info->xbdev = dev;
-+	info->vtermno = xenbus_devid_to_vtermno(devid);
-+	info->intf = (void *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
-+	if (!info->intf)
-+		goto error_nomem;
-+
-+	ret = xencons_connect_backend(dev, info);
-+	if (ret < 0)
-+		goto error;
-+	spin_lock(&xencons_lock);
-+	list_add_tail(&info->list, &xenconsoles);
-+	spin_unlock(&xencons_lock);
-+
-+	return 0;
-+
-+ error_nomem:
-+	ret = -ENOMEM;
-+	xenbus_dev_fatal(dev, ret, "allocating device memory");
-+ error:
-+	xencons_free(info);
-+	return ret;
-+}
-+
-+static int xencons_resume(struct xenbus_device *dev)
-+{
-+	struct xencons_info *info = dev_get_drvdata(&dev->dev);
-+
-+	xencons_disconnect_backend(info);
-+	memset(info->intf, 0, PAGE_SIZE);
-+	return xencons_connect_backend(dev, info);
- }
- 
-+static void xencons_backend_changed(struct xenbus_device *dev,
-+				   enum xenbus_state backend_state)
-+{
-+	switch (backend_state) {
-+	case XenbusStateReconfiguring:
-+	case XenbusStateReconfigured:
-+	case XenbusStateInitialising:
-+	case XenbusStateInitialised:
-+	case XenbusStateUnknown:
-+	case XenbusStateClosed:
-+		break;
-+
-+	case XenbusStateInitWait:
-+		break;
-+
-+	case XenbusStateConnected:
-+		xenbus_switch_state(dev, XenbusStateConnected);
-+		break;
-+
-+	case XenbusStateClosing:
-+		xenbus_frontend_closed(dev);
-+		break;
-+	}
-+}
-+
-+static const struct xenbus_device_id xencons_ids[] = {
-+	{ "console" },
-+	{ "" }
-+};
-+
-+
- static void __exit xen_hvc_fini(void)
- {
--	if (hvc)
--		hvc_remove(hvc);
-+	struct xencons_info *entry, *next;
-+
-+	if (list_empty(&xenconsoles))
-+			return;
-+
-+	spin_lock(&xencons_lock);
-+	list_for_each_entry_safe(entry, next, &xenconsoles, list) {
-+		list_del(&entry->list);
-+		if (entry->xbdev)
-+			xencons_remove(entry->xbdev);
-+		else {
-+			if (entry->irq > 0)
-+				unbind_from_irqhandler(entry->irq, NULL);
-+			if (entry->hvc);
-+				hvc_remove(entry->hvc);
-+			kfree(entry);
-+		}
-+	}
-+	spin_unlock(&xencons_lock);
- }
- 
- static int xen_cons_init(void)
-@@ -256,18 +566,31 @@ static int xen_cons_init(void)
- 	if (xen_initial_domain())
- 		ops = &dom0_hvc_ops;
- 	else {
-+		int r;
- 		ops = &domU_hvc_ops;
- 
--		if (xen_pv_domain())
--			console_evtchn = xen_start_info->console.domU.evtchn;
-+		if (xen_hvm_domain())
-+			r = xen_hvm_console_init();
- 		else
--			xen_hvm_console_init();
-+			r = xen_pv_console_init();
-+		if (r < 0)
-+			return r;
- 	}
- 
- 	hvc_instantiate(HVC_COOKIE, 0, ops);
- 	return 0;
- }
- 
-+static struct xenbus_driver xencons_driver = {
-+	.name = "xenconsole",
-+	.owner = THIS_MODULE,
-+	.ids = xencons_ids,
-+	.probe = xencons_probe,
-+	.remove = xencons_remove,
-+	.resume = xencons_resume,
-+	.otherend_changed = xencons_backend_changed,
-+};
-+
- module_init(xen_hvc_init);
- module_exit(xen_hvc_fini);
- console_initcall(xen_cons_init);
--- 
-1.7.2.5
+> This patch adds the LPC Controller DeviceIDs for the Intel Lynx Point PCH.
+>=20
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+> ---
+>  arch/x86/pci/irq.c      |    4 +++-
+>  include/linux/pci_ids.h |    2 ++
+>  2 files changed, 5 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+> index 372e9b8..22468b6 100644
+> --- a/arch/x86/pci/irq.c
+> +++ b/arch/x86/pci/irq.c
+> @@ -604,7 +604,9 @@ static __init int intel_router_probe(struct irq_route=
+r *r, struct pci_dev *route
+>  	||  (device >=3D PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MIN &&
+>  	     device <=3D PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MAX)
+>  	||  (device >=3D PCI_DEVICE_ID_INTEL_PANTHERPOINT_LPC_MIN &&
+> -	     device <=3D PCI_DEVICE_ID_INTEL_PANTHERPOINT_LPC_MAX)) {
+> +	     device <=3D PCI_DEVICE_ID_INTEL_PANTHERPOINT_LPC_MAX)
+> +	||  (device >=3D PCI_DEVICE_ID_INTEL_LYNXPOINT_LPC_MIN &&
+> +	     device <=3D PCI_DEVICE_ID_INTEL_LYNXPOINT_LPC_MAX)) {
+>  		r->name =3D "PIIX/ICH";
+>  		r->get =3D pirq_piix_get;
+>  		r->set =3D pirq_piix_set;
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index 31d77af..6a0359a 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -2800,6 +2800,8 @@
+>  #define PCI_DEVICE_ID_INTEL_82454NX     0x84cb
+>  #define PCI_DEVICE_ID_INTEL_84460GX	0x84ea
+>  #define PCI_DEVICE_ID_INTEL_IXP4XX	0x8500
+> +#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LPC_MIN	0x8c40
+> +#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LPC_MAX	0x8c5f
+>  #define PCI_DEVICE_ID_INTEL_IXP2800	0x9004
+>  #define PCI_DEVICE_ID_INTEL_S21152BB	0xb152
+> =20
 
+Seems we add every new GMCH or PCH anyway, why not just use the piix
+routines for any unknown (therefore presumably new) Intel PCH device?
+
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/WpPe4ajWb+6sZKoA8.4d8Ds
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPIu1uAAoJEIEoDkX4Qk9h4tYQAKFpQ8kAUWHl13VVJMl4kyQg
+BcR0HcXskOB2zpgCTefxwe92extMDVABopqGCo/pvvrl2dl+3LhB532Evj3n5Pja
+E2p8NKEWWlMBbLVzjYQM0YwKBTQNVAHQbKtRsMUsDDrA2WniA/jjiVpjxvUW2LGw
+q0Ma+YmxrRFg2wAYoWowIo04gSDu35yCCRIzK30Oodcj9q393b3oU4xsI73S/SEl
+hK6eYZX4IPQM1Tw9ovjGQQngSx8peQjdzNcSnArozkVSXoYKlCL6AkY9d2Zs/ql/
+59c9Y0r7yWkecrn24wntvOebf3MDWDpImvZVNyB5XYicFgW0wVZMHh9z64IYpFUA
+DdGaXdW/5+ogs9MjQjBqSDRIpYhATvu1WTII+JJoQVNNO9OJcR8qNEMU+jVTdgq+
+5Xq1b7sFqDDqJgveMkOzL+hIdrOyA2ODBtrlS3/sFDYw+Qpyey7MePIy1g8mbrJB
+hNlNYbQ0GcZ7zTcJi3VEfiy99ICL0PGRZpZYZ0ZX+641u/wLDdxOUx948AUefpYW
+dqwzff/apAoMdpaef1akR5RXsh2THl4rWUUUKlVQYYYQXmfbJ8btxaYY5RwQsvXv
+cuSy71i5bag5dXHol5D1iC5GrUlnJxLcayle3DjSGhrDpVMUWsD+MINlScB2tbf7
+hHaCnqcHf5j+T7FhiQJ8
+=GtcP
+-----END PGP SIGNATURE-----
+
+--Sig_/WpPe4ajWb+6sZKoA8.4d8Ds--
