@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab2A0Jo2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 04:44:28 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36650 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab2A0Jo0 convert rfc822-to-8bit (ORCPT
+	id S1753111Ab2A0J4n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 04:56:43 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:37479 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab2A0J4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 04:44:26 -0500
+	Fri, 27 Jan 2012 04:56:41 -0500
+Message-ID: <4F2274CA.7020809@atmel.com>
+Date: Fri, 27 Jan 2012 10:56:26 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <1327568457-27734-13-git-send-email-m.szyprowski@samsung.com>
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com> <1327568457-27734-13-git-send-email-m.szyprowski@samsung.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 27 Jan 2012 11:44:05 +0200
-X-Google-Sender-Auth: lR2jnmuz_5iJU7-1qBZgu4g7YN8
-Message-ID: <CADMYwHw1B4RNV_9BqAg_M70da=g69Z3kyo5Cr6izCMwJ9LAtvA@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 12/15] drivers: add Contiguous Memory Allocator
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Russell King <rmk@arm.linux.org.uk>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: linux-next: merge of the arm tree into the at91 tree
+References: <20120127093619.f2c90c6aa8b542134a157956@canb.auug.org.au>
+In-Reply-To: <20120127093619.f2c90c6aa8b542134a157956@canb.auug.org.au>
+X-Enigmail-Version: 1.3.4
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-With v19, I can't seem to allocate big regions anymore (e.g. 101MiB).
-In particular, this seems to fail:
+On 01/26/2012 11:36 PM, Stephen Rothwell :
+> Hi all,
+> 
+> I noticed that the for-next branch of the arm tree has been merged 
+> into the at91 tree.  My understanding (and Russell, please correct 
+> me if I am wrong) is that the for-next branch is *not* stable and 
+> may be rebased. This will cause all sorts of problems in
+> linux-next in the future (and also when Russell or the arm=soc guys
+> merge the at91 tree into theirs).
+> 
+> In fact, I am going to have problems today as Russell has already 
+> rebase his for-next branch.  :-(
+> 
+> I assume that the merge was done to fix some conflicts or pick up 
+> some functionality that is in Russell's tree.  This should be done 
+> by merging topic branch(es) of that tree that Russell has 
+> explicitly said are stable.
 
-On Thu, Jan 26, 2012 at 11:00 AM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
-> +static int cma_activate_area(unsigned long base_pfn, unsigned long count)
-> +{
-> +       unsigned long pfn = base_pfn;
-> +       unsigned i = count >> pageblock_order;
-> +       struct zone *zone;
-> +
-> +       WARN_ON_ONCE(!pfn_valid(pfn));
-> +       zone = page_zone(pfn_to_page(pfn));
-> +
-> +       do {
-> +               unsigned j;
-> +               base_pfn = pfn;
-> +               for (j = pageblock_nr_pages; j; --j, pfn++) {
-> +                       WARN_ON_ONCE(!pfn_valid(pfn));
-> +                       if (page_zone(pfn_to_page(pfn)) != zone)
-> +                               return -EINVAL;
+Yes, I was anticipating a stable branch from Russell and never should
+have pushed into a branch that would have gone to linux-next: My
+mistake, sorry.
 
-The above WARN_ON_ONCE is triggered, and then the conditional is
-asserted (page_zone() retuns a "Movable" zone, whereas zone is
-"Normal") and the function fails.
+Note that my intention was not to use this branch or one based on
+rmk/for-next in any "pull request". It was just a hint for people that
+wanted to work on at91 for 3.4...
 
-This happens to me on OMAP4 with your 3.3-rc1-cma-v19 branch (and a
-bunch of remoteproc/rpmsg patches).
+So, Stephen, can I ask you to remove the at91-next branch from your
+pull list. For the moment we can rely on arm-soc guys to experiment
+our changes in linux-next. It may be simpler for everyone.
 
-Do big allocations work for you ?
+thanks for your understanding, best regards,
+- -- 
+Nicolas Ferre
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-Thanks,
-Ohad.
+iQEcBAEBAgAGBQJPInTFAAoJEAf03oE53VmQ01UIALIkAxoj3Oxou45+Ts0hjqCk
+ddQpqXsoZt44B/b+M+b2wPKK+stmjAVXT8KQJporgckmJyatc/H3BOdaCw5a4rGR
+PPrBjEZRx+cH6IXnzII2b73MkdvmKrICOlKpcuIlJiXPcpWet0J1K4lmMWxDPC2D
+zGeTFMqqUYMOxxADtRZhsHo/ryZivtaZf9LfYS5pYc7u4vhqjkCt8q07NabgIRaL
+GpfyXSLFl30Sqx53Di6DLr0OUUmHGPvjDj1xR3yqdeXtO9vpoiwZequlVX+PYboL
+S6OUPYjrDy8uRTNNkz1X8erruOx/y0T87/l4SHt28Aoz9p9sobcykcyRqQyHGJw=
+=YhKe
+-----END PGP SIGNATURE-----
