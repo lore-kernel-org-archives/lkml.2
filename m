@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab2A0VnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 16:43:07 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42461 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754800Ab2A0Vgg (ORCPT
+	id S1754828Ab2A0Vrh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 16:47:37 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45441 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab2A0Vrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 16:36:36 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Michal Simek <monstr@monstr.eu>
-Subject: [PATCH v3 04/25] irq_domain: convert microblaze from irq_host to irq_domain
-Date: Fri, 27 Jan 2012 14:35:58 -0700
-Message-Id: <1327700179-17454-5-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
+	Fri, 27 Jan 2012 16:47:36 -0500
+X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=JdVoL3hd7TAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=hK5XsNzSdRvcdbDsc-cA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1327700854.22710.145.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 5/5] jump labels/x86: Use etiher 5 byte or 2 byte jumps
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Jason Baron <jbaron@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Fri, 27 Jan 2012 16:47:34 -0500
+In-Reply-To: <20120127202032.323768805@goodmis.org>
+References: <20120127201442.080360013@goodmis.org>
+	 <20120127202032.323768805@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial change, microblaze doesn't use irq remapping yet.
+On Fri, 2012-01-27 at 15:14 -0500, Steven Rostedt wrote:
+> +static unsigned char nop_short[] = { P6_NOP2 };
+> +
+> +/* These are the nops added at compile time */
+> +static unsigned char default_nop[] = { JUMP_LABEL_INIT_NOP };
+> +
+> 
+Andrew,
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Michal Simek <monstr@monstr.eu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- arch/microblaze/include/asm/irq.h |    4 ++--
- arch/microblaze/kernel/irq.c      |    2 +-
- arch/microblaze/kernel/setup.c    |    2 --
- 3 files changed, 3 insertions(+), 5 deletions(-)
+I also made the above two into static const. Just so you know ;-)
 
-diff --git a/arch/microblaze/include/asm/irq.h b/arch/microblaze/include/asm/irq.h
-index a175132..7798ad1 100644
---- a/arch/microblaze/include/asm/irq.h
-+++ b/arch/microblaze/include/asm/irq.h
-@@ -39,7 +39,7 @@ static inline void irq_dispose_mapping(unsigned int virq)
- 	return;
- }
- 
--struct irq_host;
-+struct irq_domain;
- 
- /**
-  * irq_create_mapping - Map a hardware interrupt into linux virq space
-@@ -51,7 +51,7 @@ struct irq_host;
-  * If the sense/trigger is to be specified, set_irq_type() should be called
-  * on the number returned from that call.
-  */
--extern unsigned int irq_create_mapping(struct irq_host *host,
-+extern unsigned int irq_create_mapping(struct irq_domain *host,
- 					irq_hw_number_t hwirq);
- 
- #endif /* _ASM_MICROBLAZE_IRQ_H */
-diff --git a/arch/microblaze/kernel/irq.c b/arch/microblaze/kernel/irq.c
-index bbebcae..3f613df 100644
---- a/arch/microblaze/kernel/irq.c
-+++ b/arch/microblaze/kernel/irq.c
-@@ -51,7 +51,7 @@ next_irq:
- 
- /* MS: There is no any advance mapping mechanism. We are using simple 32bit
-   intc without any cascades or any connection that's why mapping is 1:1 */
--unsigned int irq_create_mapping(struct irq_host *host, irq_hw_number_t hwirq)
-+unsigned int irq_create_mapping(struct irq_domain *host, irq_hw_number_t hwirq)
- {
- 	return hwirq + IRQ_OFFSET;
- }
-diff --git a/arch/microblaze/kernel/setup.c b/arch/microblaze/kernel/setup.c
-index d4fc1a9..208cd04 100644
---- a/arch/microblaze/kernel/setup.c
-+++ b/arch/microblaze/kernel/setup.c
-@@ -52,8 +52,6 @@ void __init setup_arch(char **cmdline_p)
- 
- 	unflatten_device_tree();
- 
--	/* NOTE I think that this function is not necessary to call */
--	/* irq_early_init(); */
- 	setup_cpuinfo();
- 
- 	microblaze_cache_init();
--- 
-1.7.5.4
+-- Steve
+
 
