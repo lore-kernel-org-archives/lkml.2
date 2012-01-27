@@ -1,143 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab2A0Aig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:38:36 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:52576 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173Ab2A0Aie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:38:34 -0500
-From: Kees Cook <kees@ubuntu.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, John Johansen <john.johansen@canonical.com>
-Subject: [PATCH 4/4] AppArmor: export known rlimit names/value mappings in securityfs
-Date: Thu, 26 Jan 2012 16:29:23 -0800
-Message-Id: <1327624163-21576-5-git-send-email-kees@ubuntu.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1327624163-21576-1-git-send-email-kees@ubuntu.com>
-References: <1327624163-21576-1-git-send-email-kees@ubuntu.com>
-X-HELO: www.outflux.net
+	id S1754530Ab2A0Anu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 19:43:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45194 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab2A0Ant (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 19:43:49 -0500
+Date: Thu, 26 Jan 2012 16:43:42 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Tuner <pjt@google.com>
+Subject: Re: [PATCH v2] proc:  speedup /proc/stat handling
+Message-Id: <20120126164342.a496ded0.akpm@linux-foundation.org>
+In-Reply-To: <20120126185520.25c8f9b6.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1327075164.12389.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<1327449683.14373.12.camel@edumazet-laptop>
+	<20120124161221.032325d1.akpm@linux-foundation.org>
+	<1327450945.14373.24.camel@edumazet-laptop>
+	<20120124172732.19b3d9f4.akpm@linux-foundation.org>
+	<1327469372.14373.31.camel@edumazet-laptop>
+	<20120125170416.385ee9fa.akpm@linux-foundation.org>
+	<20120126185520.25c8f9b6.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the parser needs to know which rlimits are known to the kernel,
-export the list via a mask file in the "rlimit" subdirectory in the
-securityfs "features" directory.
+On Thu, 26 Jan 2012 18:55:20 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Signed-off-by: Kees Cook <kees@ubuntu.com>
----
- security/apparmor/Makefile           |   24 ++++++++++++++++++------
- security/apparmor/apparmorfs.c       |    2 ++
- security/apparmor/include/resource.h |    4 ++++
- security/apparmor/resource.c         |    5 +++++
- 4 files changed, 29 insertions(+), 6 deletions(-)
+> On Wed, 25 Jan 2012 17:04:16 -0800
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > On Wed, 25 Jan 2012 06:29:32 +0100
+> > Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > 
+> > > Le mardi 24 janvier 2012 __ 17:27 -0800, Andrew Morton a __crit :
+> > > 
+> > > > I had a fiddle on an 8-way x86_64 machine.  I'm unable to demonstrate
+> > > > any improvement for either of
+> > > > 
+> > > > time (for i in $(seq 1000); do; cat /proc/self/stat > /dev/null; done)
+> > > > time (for i in $(seq 1000); do; cat /proc/1/stat > /dev/null; done)
+> > > > 
+> > > > oh well.
+> > > 
+> > > What size is /proc/stat ?
+> > 
+> > About 40mm, but it depends on the font size.
+> > 
+> > > wc -c /proc/stat
+> > > 
+> > > If under 4096, there is no problem with existing code.
+> > 
+> > akpm2:/home/akpm> wc -c /proc/stat 
+> > 2800 /proc/stat
+> > 
+> > > I had the problem on a 16-way machine.
+> > 
+> > OK..
+> 
+> 
+> I wrote following patch just for my fun, which makes /proc/stat twice fast.
+> But I'm not sure whether this kind of dirty && special printk is worth to do or not..
+> because I can't see /proc/stat cost at shell-scripting.
 
-diff --git a/security/apparmor/Makefile b/security/apparmor/Makefile
-index 2dafe50..86103ce 100644
---- a/security/apparmor/Makefile
-+++ b/security/apparmor/Makefile
-@@ -28,25 +28,37 @@ cmd_make-caps = echo "static const char *capability_names[] = {" > $@ ;\
- #    [RLIMIT_STACK] = "stack",
- #
- # and build a second integer table (with the second sed cmd), that maps
--# RLIMIT defines to the order defined in asm-generic/resource.h  Thi is
-+# RLIMIT defines to the order defined in asm-generic/resource.h  This is
- # required by policy load to map policy ordering of RLIMITs to internal
- # ordering for architectures that redefine an RLIMIT.
- # Transforms lines from
- #    #define RLIMIT_STACK		3	/* max stack size */
- # to
- # RLIMIT_STACK, 
-+#
-+# and build the securityfs entries for the mapping.
-+# Transforms lines from
-+#    #define RLIMIT_FSIZE        1   /* Maximum filesize */
-+#    #define RLIMIT_STACK		3	/* max stack size */
-+# to
-+# #define AA_FS_RLIMIT_MASK "fsize stack"
- quiet_cmd_make-rlim = GEN     $@
--cmd_make-rlim = echo "static const char *rlim_names[] = {" > $@ ;\
-+cmd_make-rlim = echo "static const char *rlim_names[RLIM_NLIMITS] = {" > $@ ;\
- 	sed $< >> $@ -r -n \
- 	    -e 's/^\# ?define[ \t]+(RLIMIT_([A-Z0-9_]+)).*/[\1] = "\L\2",/p';\
- 	echo "};" >> $@ ;\
--	echo "static const int rlim_map[] = {" >> $@ ;\
-+	echo "static const int rlim_map[RLIM_NLIMITS] = {" >> $@ ;\
- 	sed -r -n "s/^\# ?define[ \t]+(RLIMIT_[A-Z0-9_]+).*/\1,/p" $< >> $@ ;\
--	echo "};" >> $@
-+	echo "};" >> $@ ; \
-+	echo -n '\#define AA_FS_RLIMIT_MASK "' >> $@ ;\
-+	sed -r -n 's/^\# ?define[ \t]+RLIMIT_([A-Z0-9_]+).*/\L\1/p' $< | \
-+	    tr '\n' ' ' | sed -e 's/ $$/"\n/' >> $@
- 
- $(obj)/capability.o : $(obj)/capability_names.h
- $(obj)/resource.o : $(obj)/rlim_names.h
--$(obj)/capability_names.h : $(srctree)/include/linux/capability.h
-+$(obj)/capability_names.h : $(srctree)/include/linux/capability.h \
-+			    $(src)/Makefile
- 	$(call cmd,make-caps)
--$(obj)/rlim_names.h : $(srctree)/include/asm-generic/resource.h
-+$(obj)/rlim_names.h : $(srctree)/include/asm-generic/resource.h \
-+		      $(src)/Makefile
- 	$(call cmd,make-rlim)
-diff --git a/security/apparmor/apparmorfs.c b/security/apparmor/apparmorfs.c
-index 68ce771..38d6262 100644
---- a/security/apparmor/apparmorfs.c
-+++ b/security/apparmor/apparmorfs.c
-@@ -25,6 +25,7 @@
- #include "include/audit.h"
- #include "include/context.h"
- #include "include/policy.h"
-+#include "include/resource.h"
- 
- /**
-  * aa_simple_write_to_buffer - common routine for getting policy from user
-@@ -202,6 +203,7 @@ static struct aa_fs_entry aa_fs_entry_features[] = {
- 	AA_FS_DIR("file",			aa_fs_entry_file),
- 	AA_FS_FILE_BOOLEAN("namespaces",	1),
- 	AA_FS_FILE_U64("capability",		VFS_CAP_FLAGS_MASK),
-+	AA_FS_DIR("rlimit",			aa_fs_entry_rlimit),
- 	{ }
- };
- 
-diff --git a/security/apparmor/include/resource.h b/security/apparmor/include/resource.h
-index 02baec7..d3f4cf0 100644
---- a/security/apparmor/include/resource.h
-+++ b/security/apparmor/include/resource.h
-@@ -18,6 +18,8 @@
- #include <linux/resource.h>
- #include <linux/sched.h>
- 
-+#include "apparmorfs.h"
-+
- struct aa_profile;
- 
- /* struct aa_rlimit - rlimit settings for the profile
-@@ -32,6 +34,8 @@ struct aa_rlimit {
- 	struct rlimit limits[RLIM_NLIMITS];
- };
- 
-+extern struct aa_fs_entry aa_fs_entry_rlimit[];
-+
- int aa_map_resource(int resource);
- int aa_task_setrlimit(struct aa_profile *profile, struct task_struct *,
- 		      unsigned int resource, struct rlimit *new_rlim);
-diff --git a/security/apparmor/resource.c b/security/apparmor/resource.c
-index a4136c1..72c25a4 100644
---- a/security/apparmor/resource.c
-+++ b/security/apparmor/resource.c
-@@ -23,6 +23,11 @@
-  */
- #include "rlim_names.h"
- 
-+struct aa_fs_entry aa_fs_entry_rlimit[] = {
-+	AA_FS_FILE_STRING("mask", AA_FS_RLIMIT_MASK),
-+	{ }
-+};
-+
- /* audit callback for resource specific fields */
- static void audit_cb(struct audit_buffer *ab, void *va)
- {
--- 
-1.7.0.4
+It is rather a lot of not-very-general infrastructure.
+
+>
+> ...
+>
+> @@ -131,8 +143,8 @@ static int show_stat(struct seq_file *p, void *v)
+>  	seq_printf(p, "intr %llu", (unsigned long long)sum);
+>  
+>  	/* sum again ? it could be updated? */
+> -	for_each_irq_nr(j)
+> -		seq_printf(p, " %u", kstat_irqs(j));
+> +	j = 0;
+> +	seq_printnum_batch(p, " %u", &j, get_next_kstat_irq);
+
+I expect most of these numbers are zero.  I wonder if we would get
+useful speedups from
+
+	for_each_irq_nr(j) {
+		/* Apologetic comment goes here */
+		if (kstat_irqs(j))
+			seq_printf(p, " %u", kstat_irqs(j));
+		else
+			seq_puts(p, " 0");
+	}
 
