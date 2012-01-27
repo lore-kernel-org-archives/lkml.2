@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab2A0SXQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:23:16 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:50646 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751404Ab2A0SXO (ORCPT
+	id S1753367Ab2A0SYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:24:12 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42469 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960Ab2A0SYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:23:14 -0500
-Date: Fri, 27 Jan 2012 10:23:11 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: Re: [PATCH 18/21] PCI: Fix cardbus bridge resources as optional
- size handling
-Message-ID: <20120127102311.6027ea2c@jbarnes-desktop>
-In-Reply-To: <1327140517-14811-19-git-send-email-yinghai@kernel.org>
-References: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
-	<1327140517-14811-19-git-send-email-yinghai@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/I4YBQgV0WXMHr3fJej0LjKC"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 27 Jan 2012 13:24:09 -0500
+Date: Fri, 27 Jan 2012 22:24:03 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
+Message-ID: <20120127182403.GG11086@moon>
+References: <20120127175342.273260614@openvz.org>
+ <20120127175939.795551339@openvz.org>
+ <20120127181525.GD11715@one.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120127181525.GD11715@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/I4YBQgV0WXMHr3fJej0LjKC
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jan 27, 2012 at 07:15:25PM +0100, Andi Kleen wrote:
+> > It takes up to 5 agruments - the pids of the two tasks (which
+> > characteristics should be compared), the comparision type and
+> > (in case of comparision of files) two file descriptors.
+> 
+> Can you please write a manpage for it? That's really required
+> to evaluate the interface properly.
 
-On Sat, 21 Jan 2012 02:08:34 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+Sure, I'll try to (btw, where I should send it to? And in which
+format novadays mans are written? In plain old troff or some
+human readable asciidocs?) And... should I post man page
+on LKML as well?
 
-> We should not set the requested size to -2.
->=20
-> that will confuse the resource list sorting with align when SIZEALIGN is =
-used.
->=20
-> Change to STARTALIGN and pass align from start.
->=20
-> We are safe to do that just as we do that regular pci bridge.
->=20
-> In the long run, we should just treat cardbus like regular pci bridge.
->=20
-> Also fix when realloc is not passed, should keep the requested size.
->=20
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> As I understand it every time the kernel adds some new kind of state
+> this would need to be extended too? This would seem like a lot of work,
+> especially since you always need to synchronize kernel/user space.
+> How would the user space break if it doesn't know about some newly
+> added state?
 
-I'd like to see some testing on this one... Dominik?
+Wait, maybe I should use kernel-doc here and put comments with example
+right on top of SYSCALL definition?
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+> 
+> Maybe it would be better to put more of the relevant code into the
+> kernel to encapsulate this better.
+> 
+> 
+> > +	case KCMP_SYSVSEM:
+> > +#ifdef CONFIG_SYSVIPC
+> > +		ret = kcmp_ptr((long)task1->sysvsem.undo_list,
+> > +			       (long)task2->sysvsem.undo_list,
+> > +			       KCMP_SYSVSEM);
+> 
+> I assume that's normally NULL.
+> 
 
---Sig_/I4YBQgV0WXMHr3fJej0LjKC
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Hmm.. Andi, I seem not following. And?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> > +#ifdef CONFIG_X86_64
+> > +static long syscall5(int nr, unsigned long arg0, unsigned long arg1,
+> > +		unsigned long arg2, unsigned long arg3,
+> > +		unsigned long arg4)
+> 
+> Why not just use syscall() in glibc?
+> 
 
-iQIcBAEBAgAGBQJPIuuPAAoJEIEoDkX4Qk9hnSIQAMsD+A35VK+u91iQPjPEjM99
-iXg2Ey6Aph8jJV/As0FsluOEGhOIYsSqPl/zCV8bvAT9RtdcWo7l+LFWs2bFy+gK
-A2w+KZH5hBLnFDF3Pr3wIUIsJufpqZhz2z+YtY1qZ8F3qRt3IDX6CMYZcAU38bHK
-bh2rT7sY2U3uBNpwcvyObnwMkoMW0WuAOm21oK2vBgJSJ6gEpS00dXn85sJb8GNT
-Cg06hN61G0l85kkN26Men1amLurq79BnNJGWEwIJIr+lNQrKJusq7KOL8aCwM0oV
-zF0eYGGN9NNYgBex0dxOUSeo/zOCOWcki3k1cNpJcc1e8OS4LP6cz0c96EtD2C6B
-ivC8hV83dP2X23qTLKpZSxb08S3F7nUbwUkZd40eNwyFUdWrqkj4mEfr50Rl+1+n
-sg7MTxIvoByJAWK0apFBv+BQT8LEfq+1hgn6DagG77kj3UWioadFmT1xIIp7APLR
-aPWem9mUMgwoyLTnO1QXsouXC/dJxVCa5q/g2qg+z3sBuSRUfzh+5GDxKY4w8cR1
-Al2VTt0PTRRQOduTgzyNhVFalGri6kWnt22kevtaO6sZpDVeIceWv0Sd7TUraa/K
-nQK2gJdVdS5Jk/ekrKJ/hciifQLC/0zzQDJ/b23HMQw8AAnp8lHBfH3GUMdPxxyk
-udDgfHsFmKI79vNt5WKp
-=Gbck
------END PGP SIGNATURE-----
+Never heard of it. I'll take a look, thanks. But I suppose all this
+comments might be addressed in patch on top?
 
---Sig_/I4YBQgV0WXMHr3fJej0LjKC--
+	Cyrill
