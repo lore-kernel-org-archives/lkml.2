@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab2A0KyQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 05:54:16 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53307 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753545Ab2A0KyO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 05:54:14 -0500
+	id S1754120Ab2A0K7B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 05:59:01 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34589
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752362Ab2A0K7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 05:59:00 -0500
+Date: Fri, 27 Jan 2012 05:58:59 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Kelbel Junior <jymmyjr@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: XFS problem
+Message-ID: <20120127105859.GC23335@infradead.org>
+References: <CAAA8XhOXuszcyCaMOcVWb-erGAJQdhBHCX-gsJ4KpH+Td7+bPQ@mail.gmail.com>
+ <20120124213936.GA1505@infradead.org>
+ <CAAA8XhMf9BhZP5csLfGVVbQxN7Uqh-+R6aqCLfezdiTECaRRjg@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [59.167.234.130]
-In-Reply-To: <1327643984.2919.6.camel@edumazet-laptop>
-References: <CAGsizzJnRy74ni-HH=5q1VR4g6sfDPg9SFw4UKgSjJjkSR8OJA@mail.gmail.com>
-	<20120125.203746.1977019610549185259.davem@davemloft.net>
-	<CAGsizzLYxsc2MGxF7yK_QzS+3bexHa1F_6+NE87u3F18m7=R1g@mail.gmail.com>
-	<20120126.133033.964571202129052712.davem@davemloft.net>
-	<CAOzFzEj-UCXwhw0NA=Y=qExG=RdVJB3RAdqU0HrsMo7V+4eGcQ@mail.gmail.com>
-	<1327643984.2919.6.camel@edumazet-laptop>
-Date: Fri, 27 Jan 2012 21:54:12 +1100
-Message-ID: <CAOzFzEjqy8G1khxxwKt=hJydz=gUAh8viahA0aVavtyBv7+MXA@mail.gmail.com>
-Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-From: Joseph Glanville <joseph.glanville@orionvm.com.au>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, steweg@ynet.sk, jesse@nicira.com,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAA8XhMf9BhZP5csLfGVVbQxN7Uqh-+R6aqCLfezdiTECaRRjg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On Thu, Jan 26, 2012 at 01:57:34PM -0200, Kelbel Junior wrote:
+> Well, in 24/01 i upgrade to the kernel 3.2.1 in one server and forgot
+> read my emails...until now it's running without problems.
+> Then, yesterday i put kernel 3.2.1 on another server and this morning
+> a several same messages "server013 kernel: XFS: possible memory
+> allocation deadlock in kmem_alloc (mode:0x250)" and delays.
+> 
+> (without call trace because i forgot to apply that patch with dump_stack)
 
-I have been testing on the 3.2.X series of kernels and the 3.0.X and
-3.1.X prior to that but most of my results are for 3.2.1.
-My test hardware includes pairs of hardware (two or more of each)
-based on the following chips.
+Not a problem, we know where it comes from now.
 
-AMD 6140
-Intel X5650
-Intel Core i5 2400 (desktop)
+> I work in a cache solution company, so I/O performance is very
+> important in our context.
 
-I conducted throughput and PPS benchmarks using iperf and pktgen.
-All tests were performed over a real IP network (IP over Infiniband)
-that can operate at a much greater speed than the software is capable
-of forwarding at.
-If the list is interested I will re-run and post all of my benchmarks
-or atleast send them to you personally.
-Unfortunately I didn't store the benchmarks (much to my own stupidty)
-and I repurposed the hardware for other things.
+What I'm really curious about is what kind of workloads you have.  We
+should only run into problems here if we have a huge extent indirection
+array, which points to a massively fragmented file.  Right now the
+handling of that isn't optimal, and we need to improve on that.  But
+you'd probably get better results by avoiding that massive fragmentaion
+in the first place, e.g. try to preallocate or set extent size hints
+if you do random writes to a sparse file.
 
-Yes I was going to mention this in my last email but deleted it on
-lack of relevance at the time.
-Under pathological load OVS suffers in benchmarks, continual
-establishment of new flows is really not good for it - I haven't
-observed this personally though.
-It does however worry me that this could be used as a viable DoS.. I
-don't really know what could be done to mitigate this however.
-That aside it's GRE implementation using loopback (internal)
-interfaces performs very well and is like I said onpar with Linux
-Bridge + GRE.
-
-Are the any specific things you would like to see?
-I'm not a networking guru and would welcome any assistance you could
-provide on improving my test methodology.
-Someone suggested netperf to me the other day, I intend on running
-some benchmarks with it next week.
-
-Joseph.
-
-On 27 January 2012 16:59, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le vendredi 27 janvier 2012 à 09:24 +1100, Joseph Glanville a écrit :
->> David is correct, the forwarding speed of Open vSwitch is at parity
->> with the Linux Bridging module and its tunneling speed is actually
->> slightly faster than the in kernel GRE implementation. I have tested
->> this across a variety of configurations.
->
-> Thanks for this input ! When was this tested exactly, and do you have
-> some "perf tool" reports to provide ?
->
-> GRE is lockless since one year or so (modulo how is setup the tunnel as
-> discovered recently)
->
-> Also please note that openvSwitch is said to be fast path only on
-> established flows.
->
->
->
-
-
-
--- 
-Founder | Director | VP Research
-Orion Virtualisation Solutions | www.orionvm.com.au | Phone: 1300 56
-99 52 | Mobile: 0428 754 846
