@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab2A0EsC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 23:48:02 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:51919 "EHLO
+	id S1755121Ab2A0EsA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 23:48:00 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:51911 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab2A0Erz (ORCPT
+	with ESMTP id S1755007Ab2A0Erz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 26 Jan 2012 23:47:55 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
@@ -12,73 +12,106 @@ To: <linux-kernel@vger.kernel.org>
 Cc: <linux-fsdevel@vger.kernel.org>, <netdev@vger.kernel.org>,
         Damien Millescamps <damien.millescamps@6wind.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 29/29] sysctl: Add register_sysctl for normal sysctl users
-Date: Thu, 26 Jan 2012 20:50:10 -0800
-Message-Id: <1327639810-12760-29-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 21/29] sysctl: Add a root pointer to ctl_table_set
+Date: Thu, 26 Jan 2012 20:50:02 -0800
+Message-Id: <1327639810-12760-21-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <m1pqe5ah3z.fsf@fess.ebiederm.org>
 References: <m1pqe5ah3z.fsf@fess.ebiederm.org>
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19d0yKzSvTJsILncPXue+czJtXOFx/H16s=
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18Gxq0tEQ3Vnobhbj46l9EIG8P9X4LG5K0=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The plan is to convert all callers of register_sysctl_table
-and register_sysctl_paths to register_sysctl.  The interface
-to register_sysctl is enough nicer this should make the callers
-a bit more readable.  Additionally after the conversion the
-230 lines of backwards compatibility can be removed.
+Add a ctl_table_root pointer to ctl_table set so it is easy to
+go from a ctl_table_set to a ctl_table_root.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/proc/proc_sysctl.c  |   17 +++++++++++++++++
- include/linux/sysctl.h |    1 +
- 2 files changed, 18 insertions(+), 0 deletions(-)
+ fs/proc/proc_sysctl.c  |    3 +++
+ include/linux/sysctl.h |    3 +++
+ net/sysctl_net.c       |    5 ++---
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
 diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index 05c393a..8dc7f0e 100644
+index d9c3ae6..65c13dd 100644
 --- a/fs/proc/proc_sysctl.c
 +++ b/fs/proc/proc_sysctl.c
-@@ -1228,6 +1228,23 @@ fail:
- 	return NULL;
+@@ -45,6 +45,7 @@ static struct ctl_table_header root_table_header = {
+ static struct ctl_table_root sysctl_table_root = {
+ 	.root_list = LIST_HEAD_INIT(sysctl_table_root.root_list),
+ 	.default_set.list = LIST_HEAD_INIT(root_table_header.ctl_entry),
++	.default_set.root = &sysctl_table_root,
+ };
+ 
+ static DEFINE_SPINLOCK(sysctl_lock);
+@@ -1348,9 +1349,11 @@ void unregister_sysctl_table(struct ctl_table_header * header)
+ EXPORT_SYMBOL(unregister_sysctl_table);
+ 
+ void setup_sysctl_set(struct ctl_table_set *p,
++	struct ctl_table_root *root,
+ 	int (*is_seen)(struct ctl_table_set *))
+ {
+ 	INIT_LIST_HEAD(&p->list);
++	p->root = root;
+ 	p->is_seen = is_seen;
  }
  
-+/**
-+ * register_sysctl - register a sysctl table
-+ * @path: The path to the directory the sysctl table is in.
-+ * @table: the table structure
-+ *
-+ * Register a sysctl table. @table should be a filled in ctl_table
-+ * array. A completely 0 filled entry terminates the table.
-+ *
-+ * See __register_sysctl_table for more details.
-+ */
-+struct ctl_table_header *register_sysctl(const char *path, struct ctl_table *table)
-+{
-+	return __register_sysctl_table(&sysctl_table_root.default_set,
-+					path, table);
-+}
-+EXPORT_SYMBOL(register_sysctl);
-+
- static char *append_path(const char *path, char *pos, const char *name)
- {
- 	int namelen;
 diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index 35c50ed..c34b4c8 100644
+index e40b8f6..e73ba33 100644
 --- a/include/linux/sysctl.h
 +++ b/include/linux/sysctl.h
-@@ -1090,6 +1090,7 @@ struct ctl_table_header *__register_sysctl_table(
- struct ctl_table_header *__register_sysctl_paths(
- 	struct ctl_table_set *set,
- 	const struct ctl_path *path, struct ctl_table *table);
-+struct ctl_table_header *register_sysctl(const char *path, struct ctl_table *table);
- struct ctl_table_header *register_sysctl_table(struct ctl_table * table);
- struct ctl_table_header *register_sysctl_paths(const struct ctl_path *path,
- 						struct ctl_table *table);
+@@ -1047,6 +1047,7 @@ struct ctl_table_header
+ 
+ struct ctl_table_set {
+ 	struct list_head list;
++	struct ctl_table_root *root;
+ 	int (*is_seen)(struct ctl_table_set *);
+ };
+ 
+@@ -1069,6 +1070,7 @@ struct ctl_path {
+ void proc_sys_poll_notify(struct ctl_table_poll *poll);
+ 
+ extern void setup_sysctl_set(struct ctl_table_set *p,
++	struct ctl_table_root *root,
+ 	int (*is_seen)(struct ctl_table_set *));
+ extern void retire_sysctl_set(struct ctl_table_set *set);
+ 
+@@ -1103,6 +1105,7 @@ static inline void unregister_sysctl_table(struct ctl_table_header * table)
+ }
+ 
+ static inline void setup_sysctl_set(struct ctl_table_set *p,
++	struct ctl_table_root *root,
+ 	int (*is_seen)(struct ctl_table_set *))
+ {
+ }
+diff --git a/net/sysctl_net.c b/net/sysctl_net.c
+index 07c6b87..e998c64 100644
+--- a/net/sysctl_net.c
++++ b/net/sysctl_net.c
+@@ -74,8 +74,7 @@ static struct ctl_table_root net_sysctl_ro_root = {
+ 
+ static int __net_init sysctl_net_init(struct net *net)
+ {
+-	setup_sysctl_set(&net->sysctls,
+-			 is_seen);
++	setup_sysctl_set(&net->sysctls, &net_sysctl_root, is_seen);
+ 	return 0;
+ }
+ 
+@@ -95,7 +94,7 @@ static __init int net_sysctl_init(void)
+ 	ret = register_pernet_subsys(&sysctl_pernet_ops);
+ 	if (ret)
+ 		goto out;
+-	setup_sysctl_set(&net_sysctl_ro_root.default_set, NULL);
++	setup_sysctl_set(&net_sysctl_ro_root.default_set, &net_sysctl_ro_root, NULL);
+ 	register_sysctl_root(&net_sysctl_ro_root);
+ 	register_sysctl_root(&net_sysctl_root);
+ out:
 -- 
 1.7.2.5
 
