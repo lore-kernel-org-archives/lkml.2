@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab2A0Gg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 01:36:29 -0500
-Received: from pyr75-3-78-192-68-46.fbxo.proxad.net ([78.192.68.46]:50419 "EHLO
-	molly.corsac.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab2A0Gg1 (ORCPT
+	id S1753474Ab2A0Gla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 01:41:30 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:64179 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab2A0GlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 01:36:27 -0500
-Message-ID: <1327646199.2254.1.camel@scapa>
-Subject: Re: [3.2+] BUG: scheduling while atomic: swapper/0/0/0x10000100
-From: Yves-Alexis Perez <corsac@debian.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: balbi@ti.com, Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Date: Fri, 27 Jan 2012 07:36:39 +0100
-In-Reply-To: <87hazi56rw.wl%kuninori.morimoto.gx@renesas.com>
-References: <1327587732.2296.25.camel@scapa>
-	 <20120126161539.GA2098@kroah.com>
-	 <20120126163130.GB8665@legolas.emea.dhcp.ti.com>
-	 <1327595767.2062.7.camel@scapa>
-	 <20120126164512.GD8665@legolas.emea.dhcp.ti.com>
-	 <87hazi56rw.wl%kuninori.morimoto.gx@renesas.com>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-RoyUz6hNfZ3n1D4mkveB"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	Fri, 27 Jan 2012 01:41:22 -0500
+X-AuditID: cbfee60e-b7ca4ae000007903-4d-4f22471035ed
+Date: Fri, 27 Jan 2012 06:41:20 +0000 (GMT)
+From: =?euc-kr?B?wPyzssDn?= <namjae.jeon@samsung.com>
+Subject: Re: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
+ routine fails
+To: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>
+Cc: Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>
+Reply-to: namjae.jeon@samsung.com
+MIME-version: 1.0
+X-MTR: 20120127052828534@namjae.jeon
+Msgkey: 20120127052828534@namjae.jeon
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120127052828534@namjae.jeon
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <19811243.113401327646477519.JavaMail.weblogic@epml09>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0R6fxnD017731
+
+I changed recipients.
+
+I hope you answer us about the below email.
+
+Thanks. 
+------- Original Message -------
+Sender : Amit Sahrawat<amit.sahrawat83@gmail.com> 
+Date   : 2012-01-27 14:20 (GMT+09:00)
+Title  : Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
+ routine fails
+
+Dear James/Jeff,
+
+I have few questions regarding the code changes which can be accepted
+in this regards.
+
+In our scenario we are not making use of CONFIG_ATA, but still if that
+is the proper manner to bring out the changes ? then we can enable and
+make changes in the respective file which seems to be libata-scsi.c
+
+We need a mechanism wherein we can query and then get the response so
+that we set the WCE bit accordingly. For that matter, I think we can
+introduce some function in libata-scsi.c and then call that function
+from either drivers/scsi/sd.c or drivers/usb/storage/scsiglue.c
+
+Please share your valuable inputs on how and where actually these
+changes should be done. Otherwise, there is again a chance that our
+changes gets rejected.
+
+Please help in this regards.
+
+Thanks & Regards,
+Amit Sahrawat
 
 
---=-RoyUz6hNfZ3n1D4mkveB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On jeu., 2012-01-26 at 16:27 -0800, Kuninori Morimoto wrote:
->=20
-> I was very much surprised at this issue.
-> As Felipe explained, renesas_usbhs was for SuperH system.
-> x86 can not use it,
-> but, if your PC has "renesas_usbhs.ko" as kernel module,
-> and loaded it somehow...
-
-Then I guess I did something wrong at bisect time (wether the first or
-the second). I'll try to redo it and report back.
-
-Sorry for wasting your time.
-
-Regards,
---=20
-Yves-Alexis
-
---=-RoyUz6hNfZ3n1D4mkveB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABCAAGBQJPIkX3AAoJEDBVD3hx7wuox2oP/2bPlPtZe8EVsHvayWIyPf+d
-ol8vEQH3kAUFornOH2MBqb2IZ8+bESmufmVB6gaqhai2l3AaVrCiKFgWTBGpi4AN
-cUOj0gKQCjTijXqa7OPZJ4fxI4fJIzOuieHBxW+tcY0QiqEewyVKU/WEHdhr5Ww5
-RDkYZY+jonqPkCD2FW1NXSUsqaXkMouyQuAwJ8IyTeFezpBBy4CS9F+ISC7Hs1O3
-dCf+CWguaSbC2i7+gCpInefAf3TYh5wdOuKU5meLZOGOiEVsCwQmHPObTGU3VPAI
-+EC8g9THDQkvmr7VQG96GO1HRC1pWTiFAnuxbiYOq8X6OA4zehkEYg2yYpPcSGt6
-Ehz+bcUYtSD6HZHQHvJ13scCBkoKKUBbejLNw6Cu5U/y41n1f/n7hyU/9tDQ0xJh
-l2du0eXGiI7n4RFYUnX+cyAl7IjyosvTdHKbfSJncP2ERwkm+xok6dU4Oc8V1TlU
-kJlo7pQafXwt7uVTsvYwRA+Hq7ms5ClZwDSAVYxvGJ4R3K0zDA4v1jn4fXN+ZnrB
-VydbNu2PgShKcVgBcmx/rx5o+0jYrWUq0sSv6Va+m1QHsxM90eK+VsRxCubCD5oM
-i7KW9Cx4seEUXt2Bf1s2BnpW4xHxMdNqgEKHoP24FYu6hGmFzpc5bSWthyti8/nf
-/rV9yNC9Qv/6DjLJYeN6
-=FgKx
------END PGP SIGNATURE-----
-
---=-RoyUz6hNfZ3n1D4mkveB--
+On Thu, Dec 15, 2011 at 5:55 AM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+> 2011/12/14 James Bottomley <James.Bottomley@hansenpartnership.com>:
+>> On Wed, 2011-12-14 at 09:14 +0530, Amit Sahrawat wrote:
+>>> Just to add a thought - this issues is not related with ATA, this is
+>>> primarily related with HDD's with a USB interface i.e., SCSI <-> USB.
+>>> And, when I check my kernel config, CONFIG_ATA is not selected,
+>>> libata-scsi - this gets compiled only in case CONFIG_ATA is on.
+>>> Are these two things inter-related?
+>>
+> Hi. James.
+>
+>> OK, so what you're telling us is that you're trying to correct a
+>> deficiency in a SATL inside a USB device? ?The device itself is ATA but
+>> it doesn't use our libata connectors.
+>>
+>> I think in that case, the best way forwards is a mini-SATL correction
+>> layer within USB storage. ?USB storage is certainly the place to
+>> black/white list whether this should be done. ?ATA_16 is a bit of a
+>> dangerous command to be throwing around because it's known to crash
+>> various USB devices (and some old SCSI ones might even choke on it).
+> Okay, how about make some option in Kconfig of scsi or usb storage to
+> protect from the a bit of risk ATA_16 ?
+> The user can select this option to use stable filesystem on USB HDD.
+>>
+>> depending on how big this SATL ends up being we should consider whether
+>> it should share processing with the libata SATL. ?If it's just a single
+>> mode sense, my instinct is that it's probably OK to implement separately
+>> (however, you need to use the libata headers ... no duplication of
+>> libata opcodes and status defines like you had in the original SCSI
+>> patch). ?If there are more commands to correct on the way, it might be
+>> better as shared code.
+> I agree. I and Amit will check the best way between SATL or miniSATL
+> in usb_storage accoding to your advice.
+>
+>> James
+>>
+>>
+<p>&nbsp;</p><p>&nbsp;</p>ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
