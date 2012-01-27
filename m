@@ -1,69 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab2A0HLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 02:11:00 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49249 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010Ab2A0HK6 convert rfc822-to-8bit (ORCPT
+	id S1755903Ab2A0HPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 02:15:24 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55155 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab2A0HPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 02:10:58 -0500
+	Fri, 27 Jan 2012 02:15:23 -0500
+Message-ID: <4F224EF9.5040307@linux.vnet.ibm.com>
+Date: Fri, 27 Jan 2012 12:45:05 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <B5906170F1614E41A8A28DE3B8D1214331791EA6@DBDE01.ent.ti.com>
-References: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
-	<1327594923-21822-4-git-send-email-pdeschrijver@nvidia.com>
-	<B5906170F1614E41A8A28DE3B8D1214331791EA6@DBDE01.ent.ti.com>
-Date: Thu, 26 Jan 2012 23:10:58 -0800
-X-Google-Sender-Auth: t2qee92Io3sjTcSXsotKgCF6seM
-Message-ID: <CAMbhsRQ00Cm-wo9hL9jRfpUfATPZc+znNJu-EagK6qV0qRs4SA@mail.gmail.com>
-Subject: Re: [PATCH v1 3/3] ARM: tegra: cpuidle driver for tegra
-From: Colin Cross <ccross@android.com>
-To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-X-System-Of-Record: true
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@infradead.org, robert.richter@amd.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
+        vweaver1@eecs.utk.edu
+Subject: Re: [PATCH 09/13] perf_events: disable PERF_SAMPLE_BRANCH_* when
+ not supported (v3)
+References: <1326127761-2723-1-git-send-email-eranian@google.com> <1326127761-2723-10-git-send-email-eranian@google.com>
+In-Reply-To: <1326127761-2723-10-git-send-email-eranian@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+x-cbid: 12012621-7014-0000-0000-0000007BBE6E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 10:59 PM, Bedia, Vaibhav <vaibhav.bedia@ti.com> wrote:
-> On Thu, Jan 26, 2012 at 21:52:03, Peter De Schrijver wrote:
-> [...]
->> +static int tegra_idle_enter_lp3(struct cpuidle_device *dev,
->> +     struct cpuidle_driver *drv, int index)
->> +{
->> +     ktime_t enter, exit;
->> +     s64 us;
->> +
->> +     local_irq_disable();
->> +     local_fiq_disable();
->> +
->> +     enter = ktime_get();
->> +
->> +     tegra_cpu_wfi();
->> +
->> +     exit = ktime_sub(ktime_get(), enter);
->> +     us = ktime_to_us(exit);
->> +
->> +     local_fiq_enable();
->> +     local_irq_enable();
->> +
->> +     dev->last_residency = us;
->> +
->> +     return index;
->> +}
->
-> You can probably drop local_irq_disable() and local_irq_enable().
+On Monday 09 January 2012 10:19 PM, Stephane Eranian wrote:
+> PERF_SAMPLE_BRANCH_* is disabled for:
+> - SW events (sw counters, tracepoints)
+> - HW breakpoints
+> - ALL but Intel X86 architecture
+> - AMD64 processors
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  arch/alpha/kernel/perf_event.c       |    4 ++++
+>  arch/arm/kernel/perf_event.c         |    4 ++++
+>  arch/mips/kernel/perf_event_mipsxx.c |    4 ++++
+>  arch/powerpc/kernel/perf_event.c     |    4 ++++
+>  arch/sh/kernel/perf_event.c          |    4 ++++
+>  arch/sparc/kernel/perf_event.c       |    4 ++++
+>  arch/x86/kernel/cpu/perf_event_amd.c |    3 +++
+>  kernel/events/core.c                 |   24 ++++++++++++++++++++++++
+>  kernel/events/hw_breakpoint.c        |    6 ++++++
+>  9 files changed, 57 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
+> index 8143cd7..0dae252 100644
+> --- a/arch/alpha/kernel/perf_event.c
+> +++ b/arch/alpha/kernel/perf_event.c
+> @@ -685,6 +685,10 @@ static int alpha_pmu_event_init(struct perf_event *event)
+>  {
+>  	int err;
+> 
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event->attr.type) {
+>  	case PERF_TYPE_RAW:
+>  	case PERF_TYPE_HARDWARE:
+> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> index 88b0941..42262ff 100644
+> --- a/arch/arm/kernel/perf_event.c
+> +++ b/arch/arm/kernel/perf_event.c
+> @@ -540,6 +540,10 @@ static int armpmu_event_init(struct perf_event *event)
+>  	int err = 0;
+>  	atomic_t *active_events = &armpmu->active_events;
+> 
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_smpl(event))
+I guess this would be 'has_branch_stack' instead of 'has_branch_smpl'.
+'has_branch_smpl' has not been defined any where but getting called here.
+> +		return -EOPNOTSUPP;
+> +
+>  	if (armpmu->map_event(event) == -ENOENT)
+>  		return -ENOENT;
+> 
+> diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
+> index 315fc0b..7070f8c 100644
+> --- a/arch/mips/kernel/perf_event_mipsxx.c
+> +++ b/arch/mips/kernel/perf_event_mipsxx.c
+> @@ -606,6 +606,10 @@ static int mipspmu_event_init(struct perf_event *event)
+>  {
+>  	int err = 0;
+> 
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event->attr.type) {
+>  	case PERF_TYPE_RAW:
+>  	case PERF_TYPE_HARDWARE:
+> diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+> index d614ab5..4e0b265 100644
+> --- a/arch/powerpc/kernel/perf_event.c
+> +++ b/arch/powerpc/kernel/perf_event.c
+> @@ -1078,6 +1078,10 @@ static int power_pmu_event_init(struct perf_event *event)
+>  	if (!ppmu)
+>  		return -ENOENT;
+> 
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event->attr.type) {
+>  	case PERF_TYPE_HARDWARE:
+>  		ev = event->attr.config;
+> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+> index 10b14e3..068b8a2 100644
+> --- a/arch/sh/kernel/perf_event.c
+> +++ b/arch/sh/kernel/perf_event.c
+> @@ -310,6 +310,10 @@ static int sh_pmu_event_init(struct perf_event *event)
+>  {
+>  	int err;
+> 
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event->attr.type) {
+>  	case PERF_TYPE_RAW:
+>  	case PERF_TYPE_HW_CACHE:
+> diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+> index 614da62..8e16a4a 100644
+> --- a/arch/sparc/kernel/perf_event.c
+> +++ b/arch/sparc/kernel/perf_event.c
+> @@ -1105,6 +1105,10 @@ static int sparc_pmu_event_init(struct perf_event *event)
+>  	if (atomic_read(&nmi_active) < 0)
+>  		return -ENODEV;
+> 
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (attr->type) {
+>  	case PERF_TYPE_HARDWARE:
+>  		if (attr->config >= sparc_pmu->max_events)
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+> index 0397b23..0d8da03 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> @@ -138,6 +138,9 @@ static int amd_pmu_hw_config(struct perf_event *event)
+>  	if (ret)
+>  		return ret;
+> 
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	if (event->attr.exclude_host && event->attr.exclude_guest)
+>  		/*
+>  		 * When HO == GO == 1 the hardware treats that as GO == HO == 0
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index ed39225..36d1a63 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -5000,6 +5000,12 @@ static int perf_swevent_init(struct perf_event *event)
+>  	if (event->attr.type != PERF_TYPE_SOFTWARE)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for software events
+> +	 */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event_id) {
+>  	case PERF_COUNT_SW_CPU_CLOCK:
+>  	case PERF_COUNT_SW_TASK_CLOCK:
+> @@ -5110,6 +5116,12 @@ static int perf_tp_event_init(struct perf_event *event)
+>  	if (event->attr.type != PERF_TYPE_TRACEPOINT)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for tracepoint events
+> +	 */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	err = perf_trace_init(event);
+>  	if (err)
+>  		return err;
+> @@ -5335,6 +5347,12 @@ static int cpu_clock_event_init(struct perf_event *event)
+>  	if (event->attr.config != PERF_COUNT_SW_CPU_CLOCK)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for software events
+> +	 */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	perf_swevent_init_hrtimer(event);
+> 
+>  	return 0;
+> @@ -5409,6 +5427,12 @@ static int task_clock_event_init(struct perf_event *event)
+>  	if (event->attr.config != PERF_COUNT_SW_TASK_CLOCK)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for software events
+> +	 */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	perf_swevent_init_hrtimer(event);
+> 
+>  	return 0;
+> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+> index b0309f7..cee5423 100644
+> --- a/kernel/events/hw_breakpoint.c
+> +++ b/kernel/events/hw_breakpoint.c
+> @@ -581,6 +581,12 @@ static int hw_breakpoint_event_init(struct perf_event *bp)
+>  	if (bp->attr.type != PERF_TYPE_BREAKPOINT)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for breakpoint events
+> +	 */
+> +	if (has_branch_stack(bp))
+> +		return -EOPNOTSUPP;
+> +
+>  	err = register_perf_hw_breakpoint(bp);
+>  	if (err)
+>  		return err;
 
-local_irq_enable() is required by the cpuidle call semantics.  See
-arch/arm/process.c, it has a 				WARN_ON(irqs_disabled()) after the
-idle function call.  The local_irq_disable() can and probably should
-be dropped, although a comment that the function is called with
-interrupts off and is expected to return with interrupts on would be
-helpful.
+
+-- 
+Linux Technology Centre
+IBM Systems and Technology Group
+Bangalore India
+
