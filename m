@@ -1,160 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab2A0SsU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:48:20 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:24720 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab2A0SsT (ORCPT
+	id S1752753Ab2A0SsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:48:24 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25471 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443Ab2A0SsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:48:19 -0500
-Date: Fri, 27 Jan 2012 13:45:39 -0500
+	Fri, 27 Jan 2012 13:48:21 -0500
+Date: Fri, 27 Jan 2012 13:45:48 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] hvc_xen: implement multiconsole support
-Message-ID: <20120127184538.GA18321@phenom.dumpdata.com>
+Subject: Re: [PATCH v2 1/2] hvc_xen: support PV on HVM consoles
+Message-ID: <20120127184548.GB18321@phenom.dumpdata.com>
 References: <alpine.DEB.2.00.1201271823240.3196@kaball-desktop>
- <1327689097-12788-2-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1327689097-12788-1-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327689097-12788-2-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1327689097-12788-1-git-send-email-stefano.stabellini@eu.citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F22F167.0050,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090201.4F22F16F.00A2,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static void xencons_disconnect_backend(struct xencons_info *info)
+On Fri, Jan 27, 2012 at 06:31:36PM +0000, Stefano Stabellini wrote:
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+applied.
+
+> ---
+>  drivers/tty/hvc/hvc_xen.c          |   84 +++++++++++++++++++++++++++++-------
+>  include/xen/interface/hvm/params.h |    6 ++-
+>  2 files changed, 73 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+> index 52fdf60..d5000aa 100644
+> --- a/drivers/tty/hvc/hvc_xen.c
+> +++ b/drivers/tty/hvc/hvc_xen.c
+> @@ -24,9 +24,12 @@
+>  #include <linux/init.h>
+>  #include <linux/types.h>
+>  
+> +#include <asm/io.h>
+>  #include <asm/xen/hypervisor.h>
+>  
+>  #include <xen/xen.h>
+> +#include <xen/interface/xen.h>
+> +#include <xen/hvm.h>
+>  #include <xen/page.h>
+>  #include <xen/events.h>
+>  #include <xen/interface/io/console.h>
+> @@ -42,9 +45,13 @@ static int xencons_irq;
+>  /* ------------------------------------------------------------------ */
+>  
+>  static unsigned long console_pfn = ~0ul;
+> +static unsigned int console_evtchn = ~0ul;
+> +static struct xencons_interface *xencons_if = NULL;
+>  
+>  static inline struct xencons_interface *xencons_interface(void)
+>  {
+> +	if (xencons_if != NULL)
+> +		return xencons_if;
+>  	if (console_pfn == ~0ul)
+>  		return mfn_to_virt(xen_start_info->console.domU.mfn);
+>  	else
+> @@ -54,7 +61,10 @@ static inline struct xencons_interface *xencons_interface(void)
+>  static inline void notify_daemon(void)
+>  {
+>  	/* Use evtchn: this is called early, before irq is set up. */
+> -	notify_remote_via_evtchn(xen_start_info->console.domU.evtchn);
+> +	if (console_evtchn == ~0ul)
+> +		notify_remote_via_evtchn(xen_start_info->console.domU.evtchn);
+> +	else
+> +		notify_remote_via_evtchn(console_evtchn);
+>  }
+>  
+>  static int __write_console(const char *data, int len)
+> @@ -157,28 +167,63 @@ static struct hv_ops dom0_hvc_ops = {
+>  	.notifier_hangup = notifier_hangup_irq,
+>  };
+>  
+> +static int xen_hvm_console_init(void)
 > +{
-> +	if (info->irq > 0)
-> +		unbind_from_irqhandler(info->irq, NULL);
-> +	info->irq = 0;
-> +	if (info->evtchn > 0)
-> +		xenbus_free_evtchn(info->xbdev, info->evtchn);
-> +	info->evtchn = 0;
-> +	if (info->gntref > 0)
-> +		gnttab_free_grant_references(info->gntref);
-> +	info->gntref = 0;
-> +	if (info->hvc != NULL)
-> +		hvc_remove(info->hvc);
-> +	info->hvc = NULL;
+> +	int r;
+> +	uint64_t v = 0;
+> +	unsigned long mfn;
+> +
+> +	if (!xen_hvm_domain())
+> +		return -ENODEV;
+> +
+> +	if (xencons_if != NULL)
+> +		return -EBUSY;
+> +
+> +	r = hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
+> +	if (r < 0)
+> +		return -ENODEV;
+> +	console_evtchn = v;
+> +	hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+> +	if (r < 0)
+> +		return -ENODEV;
+> +	mfn = v;
+> +	xencons_if = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
+> +	if (xencons_if == NULL)
+> +		return -ENODEV;
+> +
+> +	return 0;
 > +}
 > +
-> +static void xencons_free(struct xencons_info *info)
-> +{
-> +	xencons_disconnect_backend(info);
-> +	free_page((unsigned long)info->intf);
-> +	info->intf = NULL;
-> +	info->vtermno = 0;
-> +	kfree(info);
-> +}
-> +
-> +static int xencons_remove(struct xenbus_device *dev)
-> +{
-> +	struct xencons_info *info = dev_get_drvdata(&dev->dev);
-> +
-
-I would say put
-	xencons_disconnect_backend(info)
-
-here, that way it calls hvc_remove first, and then this would
-delete an "not-called" anymore structure.
-
-> +	spin_lock(&xencons_lock);
-> +	list_del(&info->list);
-> +	spin_unlock(&xencons_lock);
-> +	xencons_free(info);
-
+>  static int __init xen_hvc_init(void)
+>  {
+>  	struct hvc_struct *hp;
+>  	struct hv_ops *ops;
+> +	int r;
+>  
+> -	if (!xen_pv_domain())
+> +	if (!xen_domain())
+>  		return -ENODEV;
+>  
+>  	if (xen_initial_domain()) {
+>  		ops = &dom0_hvc_ops;
+>  		xencons_irq = bind_virq_to_irq(VIRQ_CONSOLE, 0);
+>  	} else {
+> -		if (!xen_start_info->console.domU.evtchn)
+> -			return -ENODEV;
+> -
+>  		ops = &domU_hvc_ops;
+> -		xencons_irq = bind_evtchn_to_irq(xen_start_info->console.domU.evtchn);
+> +		if (xen_pv_domain()) {
+> +			if (!xen_start_info->console.domU.evtchn)
+> +				return -ENODEV;
+> +			console_pfn = mfn_to_pfn(xen_start_info->console.domU.mfn);
+> +			console_evtchn = xen_start_info->console.domU.evtchn;
+> +		} else {
+> +			r = xen_hvm_console_init();
+> +			if (r < 0)
+> +				return r;
+> +		}
+> +		xencons_irq = bind_evtchn_to_irq(console_evtchn);
+> +		if (xencons_irq < 0)
+> +			xencons_irq = 0; /* NO_IRQ */
+> +		else
+> +			irq_set_noprobe(xencons_irq);
+>  	}
+> -	if (xencons_irq < 0)
+> -		xencons_irq = 0; /* NO_IRQ */
+> -	else
+> -		irq_set_noprobe(xencons_irq);
+>  
+>  	hp = hvc_alloc(HVC_COOKIE, xencons_irq, ops, 256);
+>  	if (IS_ERR(hp))
+> @@ -186,15 +231,13 @@ static int __init xen_hvc_init(void)
+>  
+>  	hvc = hp;
+>  
+> -	console_pfn = mfn_to_pfn(xen_start_info->console.domU.mfn);
+> -
 >  	return 0;
 >  }
->
-
-.. snip..
-> +
-> +static const struct xenbus_device_id xencons_ids[] = {
-> +	{ "console" },
-> +	{ "" }
-> +};
-> +
-> +
->  static void __exit xen_hvc_fini(void)
+>  
+>  void xen_console_resume(void)
 >  {
-> -	if (hvc)
-> -		hvc_remove(hvc);
-> +	struct xencons_info *entry, *next;
-> +
-> +	if (list_empty(&xenconsoles))
-> +			return;
-> +
-> +	spin_lock(&xencons_lock);
-
-Take that spin-lock out.
-
-> +	list_for_each_entry_safe(entry, next, &xenconsoles, list) {
-> +		list_del(&entry->list);
-> +		if (entry->xbdev)
-> +			xencons_remove(entry->xbdev);
-
-This guy deletes itself from the list..
-> +		else {
-> +			if (entry->irq > 0)
-> +				unbind_from_irqhandler(entry->irq, NULL);
-> +			if (entry->hvc);
-> +				hvc_remove(entry->hvc);
-> +			kfree(entry);
-
-..but this one does not.  You could make xencons_remove just remove
-itself from the list and nothing else. Then rename it to 'xencons_remove_itself' perhaps?
-
-After that, introduce a new function 'xencons_delete' that would call
-xecons_disconnect_backend, xencons_remove_itself, and xencons_free?
-
-> +		}
-> +	}
-> +	spin_unlock(&xencons_lock);
+>  	if (xencons_irq)
+> -		rebind_evtchn_irq(xen_start_info->console.domU.evtchn, xencons_irq);
+> +		rebind_evtchn_irq(console_evtchn, xencons_irq);
 >  }
 >  
+>  static void __exit xen_hvc_fini(void)
+> @@ -205,16 +248,22 @@ static void __exit xen_hvc_fini(void)
+>  
 >  static int xen_cons_init(void)
-> @@ -256,18 +566,31 @@ static int xen_cons_init(void)
+>  {
+> -	struct hv_ops *ops;
+> +	const struct hv_ops *ops;
+>  
+> -	if (!xen_pv_domain())
+> +	if (!xen_domain())
+>  		return 0;
+>  
 >  	if (xen_initial_domain())
 >  		ops = &dom0_hvc_ops;
->  	else {
-> +		int r;
+> -	else
+> +	else {
 >  		ops = &domU_hvc_ops;
 >  
-> -		if (xen_pv_domain())
-> -			console_evtchn = xen_start_info->console.domU.evtchn;
-> +		if (xen_hvm_domain())
-> +			r = xen_hvm_console_init();
->  		else
-> -			xen_hvm_console_init();
-> +			r = xen_pv_console_init();
-> +		if (r < 0)
-> +			return r;
->  	}
->  
+> +		if (xen_pv_domain())
+> +			console_evtchn = xen_start_info->console.domU.evtchn;
+> +		else
+> +			xen_hvm_console_init();
+> +	}
+> +
 >  	hvc_instantiate(HVC_COOKIE, 0, ops);
 >  	return 0;
 >  }
+> @@ -230,6 +279,9 @@ static void xenboot_write_console(struct console *console, const char *string,
+>  	unsigned int linelen, off = 0;
+>  	const char *pos;
 >  
-> +static struct xenbus_driver xencons_driver = {
-
-This needs to be wrapped in the new macro that Jan prepared.
-DEFINE_XENBUS_DRIVER (73db144b58a32fc39733db6a7e1fe582072ad26a)
-
-> +	.name = "xenconsole",
-> +	.owner = THIS_MODULE,
-> +	.ids = xencons_ids,
-> +	.probe = xencons_probe,
-> +	.remove = xencons_remove,
-> +	.resume = xencons_resume,
-> +	.otherend_changed = xencons_backend_changed,
-> +};
+> +	if (!xen_pv_domain())
+> +		return;
 > +
->  module_init(xen_hvc_init);
->  module_exit(xen_hvc_fini);
->  console_initcall(xen_cons_init);
+>  	dom0_write_console(0, string, len);
+>  
+>  	if (xen_initial_domain())
+> diff --git a/include/xen/interface/hvm/params.h b/include/xen/interface/hvm/params.h
+> index 1888d8c..1b4f923 100644
+> --- a/include/xen/interface/hvm/params.h
+> +++ b/include/xen/interface/hvm/params.h
+> @@ -90,6 +90,10 @@
+>  /* Boolean: Enable aligning all periodic vpts to reduce interrupts */
+>  #define HVM_PARAM_VPT_ALIGN    16
+>  
+> -#define HVM_NR_PARAMS          17
+> +/* Console debug shared memory ring and event channel */
+> +#define HVM_PARAM_CONSOLE_PFN    17
+> +#define HVM_PARAM_CONSOLE_EVTCHN 18
+> +
+> +#define HVM_NR_PARAMS          19
+>  
+>  #endif /* __XEN_PUBLIC_HVM_PARAMS_H__ */
 > -- 
 > 1.7.2.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
