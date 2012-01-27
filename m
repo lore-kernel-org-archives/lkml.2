@@ -1,85 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab2A0AhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:37:10 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:62246 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab2A0AhI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:37:08 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX180f010rtrLx7ZYsweDUYby
-Date: Thu, 26 Jan 2012 16:37:05 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/15] arch/arm/mach-omap2/smartreflex.c: add missing
- iounmap
-Message-ID: <20120127003704.GH29812@atomide.com>
-References: <1326362117-29371-15-git-send-email-Julia.Lawall@lip6.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326362117-29371-15-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754599Ab2A0Aij (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 19:38:39 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:33473 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752363Ab2A0Aie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 19:38:34 -0500
+From: Kees Cook <kees@ubuntu.com>
+To: linux-security-module@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, John Johansen <john.johansen@canonical.com>
+Subject: [PATCH 3/4] AppArmor: add "file" details to securityfs
+Date: Thu, 26 Jan 2012 16:29:22 -0800
+Message-Id: <1327624163-21576-4-git-send-email-kees@ubuntu.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1327624163-21576-1-git-send-email-kees@ubuntu.com>
+References: <1327624163-21576-1-git-send-email-kees@ubuntu.com>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Julia Lawall <Julia.Lawall@lip6.fr> [120112 01:23]:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Add missing iounmap in error handling code, in a case where the function
-> already preforms iounmap on some other execution path.
+Create the "file" directory in the securityfs for tracking features
+related to files.
 
-Thanks I'll apply this into omap fixes branch.
+Signed-off-by: Kees Cook <kees@ubuntu.com>
+---
+ security/apparmor/apparmorfs.c         |   10 ++++++++++
+ security/apparmor/include/apparmorfs.h |    6 ++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-Regards,
-
-Tony
+diff --git a/security/apparmor/apparmorfs.c b/security/apparmor/apparmorfs.c
+index 36efe64..68ce771 100644
+--- a/security/apparmor/apparmorfs.c
++++ b/security/apparmor/apparmorfs.c
+@@ -154,6 +154,9 @@ static int aa_fs_seq_show(struct seq_file *seq, void *v)
+ 	case AA_FS_TYPE_BOOLEAN:
+ 		seq_printf(seq, "%s\n", fs_file->v.boolean ? "yes" : "no");
+ 		break;
++	case AA_FS_TYPE_STRING:
++		seq_printf(seq, "%s\n", fs_file->v.string);
++		break;
+ 	case AA_FS_TYPE_U64:
+ 		seq_printf(seq, "%#08lx\n", fs_file->v.u64);
+ 		break;
+@@ -180,6 +183,12 @@ const struct file_operations aa_fs_seq_file_ops = {
  
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e;
-> statement S,S1;
-> int ret;
-> @@
-> e = \(ioremap\|ioremap_nocache\)(...)
-> ... when != iounmap(e)
-> if (<+...e...+>) S
-> ... when any
->     when != iounmap(e)
-> *if (...)
->    { ... when != iounmap(e)
->      return ...; }
-> ... when any
-> iounmap(e);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  arch/arm/mach-omap2/smartreflex.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
-> index 9dd9345..7e755bb 100644
-> --- a/arch/arm/mach-omap2/smartreflex.c
-> +++ b/arch/arm/mach-omap2/smartreflex.c
-> @@ -897,7 +897,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
->  		ret = sr_late_init(sr_info);
->  		if (ret) {
->  			pr_warning("%s: Error in SR late init\n", __func__);
-> -			return ret;
-> +			goto err_iounmap;
->  		}
->  	}
->  
-> 
+ /** Base file system setup **/
+ 
++static struct aa_fs_entry aa_fs_entry_file[] = {
++	AA_FS_FILE_STRING("mask", "create read write exec append mmap_exec " \
++				  "link lock"),
++	{ }
++};
++
+ static struct aa_fs_entry aa_fs_entry_domain[] = {
+ 	AA_FS_FILE_BOOLEAN("change_hat",	1),
+ 	AA_FS_FILE_BOOLEAN("change_hatv",	1),
+@@ -190,6 +199,7 @@ static struct aa_fs_entry aa_fs_entry_domain[] = {
+ 
+ static struct aa_fs_entry aa_fs_entry_features[] = {
+ 	AA_FS_DIR("domain",			aa_fs_entry_domain),
++	AA_FS_DIR("file",			aa_fs_entry_file),
+ 	AA_FS_FILE_BOOLEAN("namespaces",	1),
+ 	AA_FS_FILE_U64("capability",		VFS_CAP_FLAGS_MASK),
+ 	{ }
+diff --git a/security/apparmor/include/apparmorfs.h b/security/apparmor/include/apparmorfs.h
+index 16e6545..7ea4769 100644
+--- a/security/apparmor/include/apparmorfs.h
++++ b/security/apparmor/include/apparmorfs.h
+@@ -17,6 +17,7 @@
+ 
+ enum aa_fs_type {
+ 	AA_FS_TYPE_BOOLEAN,
++	AA_FS_TYPE_STRING,
+ 	AA_FS_TYPE_U64,
+ 	AA_FS_TYPE_FOPS,
+ 	AA_FS_TYPE_DIR,
+@@ -31,6 +32,7 @@ struct aa_fs_entry {
+ 	enum aa_fs_type v_type;
+ 	union {
+ 		bool boolean;
++		char *string;
+ 		unsigned long u64;
+ 		struct aa_fs_entry *files;
+ 	} v;
+@@ -43,6 +45,10 @@ extern const struct file_operations aa_fs_seq_file_ops;
+ 	{ .name = (_name), .mode = 0444, \
+ 	  .v_type = AA_FS_TYPE_BOOLEAN, .v.boolean = (_value), \
+ 	  .file_ops = &aa_fs_seq_file_ops }
++#define AA_FS_FILE_STRING(_name, _value) \
++	{ .name = (_name), .mode = 0444, \
++	  .v_type = AA_FS_TYPE_STRING, .v.string = (_value), \
++	  .file_ops = &aa_fs_seq_file_ops }
+ #define AA_FS_FILE_U64(_name, _value) \
+ 	{ .name = (_name), .mode = 0444, \
+ 	  .v_type = AA_FS_TYPE_U64, .v.u64 = (_value), \
+-- 
+1.7.0.4
+
