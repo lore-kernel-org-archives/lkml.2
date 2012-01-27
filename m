@@ -1,112 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab2A0TYW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 14:24:22 -0500
-Received: from mail.windriver.com ([147.11.1.11]:43035 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab2A0TYU (ORCPT
+	id S1753892Ab2A0T2Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 14:28:24 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43278 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751773Ab2A0T2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 14:24:20 -0500
-Date: Fri, 27 Jan 2012 14:23:55 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <gregkh@suse.de>, <rmk+kernel@arm.linux.org.uk>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC - PATCH 0/7] consolidation of BUG support code.
-Message-ID: <20120127192354.GA7150@windriver.com>
-References: <1327632272-12928-1-git-send-email-paul.gortmaker@windriver.com>
- <20120127165245.263bd8f7259ea629d8f7df31@canb.auug.org.au>
+	Fri, 27 Jan 2012 14:28:22 -0500
+X-Sasl-enc: V/UafIkyYa6EqAabKqsgNPHkF/TqI8tfwhQLBjl1lqDM 1327692501
+Date: Fri, 27 Jan 2012 17:28:17 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>, mmarek@suse.cz
+Subject: Re: Ioctl warning for a partition
+Message-ID: <20120127192817.GB25348@khazad-dum.debian.net>
+References: <20120126223037.GE28368@quack.suse.cz>
+ <CA+55aFwkRhsdAYwP-S5_qPkRX=dMSnxv5Ow1ULaSJjKe3aTy2w@mail.gmail.com>
+ <4F21E828.8090502@msgid.tls.msk.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120127165245.263bd8f7259ea629d8f7df31@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F21E828.8090502@msgid.tls.msk.ru>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [RFC - PATCH 0/7] consolidation of BUG support code.] On 27/01/2012 (Fri 16:52) Stephen Rothwell wrote:
+Hi Michael!
 
-> Hi Paul,
-> 
-> On Thu, 26 Jan 2012 21:44:25 -0500 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> >
-> > The changes shown here are to unify linux's BUG support under
-> > the one <linux/bug.h> file.  Due to historical reasons, we have
-> > some BUG code in bug.h and some in kernel.h -- i.e. the support for
-> > BUILD_BUG in linux/kernel.h predates the addition of linux/bug.h,
-> > but old code in kernel.h wasn't moved to bug.h at that time.  As
-> > a band-aid, kernel.h was including <asm/bug.h> to pseudo link them.
-> > With the above in mind, the goals of this changeset are:
+On Fri, 27 Jan 2012, Michael Tokarev wrote:
+
+> On 27.01.2012 03:01, Linus Torvalds wrote:
+> > On Thu, Jan 26, 2012 at 2:30 PM, Jan Kara <jack@suse.cz> wrote:
+> >>
+> >> It's easy enough to silence the warning the same way as
+> >> CDROM_GET_CAPABILITY since the ioctl is safe but it's not so simple for
+> >> 32-bit userspace.  MTIOCGET32 is defined only in fs/compat_ioctl.c so we
+> >> cannot easily add it to scsi_verify_blk_ioctl(). Any opinion how to cleanly
+> >> solve this? The only idea I had was to define compat structures and ioctl
+> >> numbers in a special header and use it both in fs/compat_ioctl.c and in
+> >> block/scsi_ioctl.c.
 > > 
-> > 1) find and fix any include/*.h files that were relying on the
-> >    implicit presence of BUG code.
-> > 2) find and fix any C files that were consuming kernel.h and
-> >    hence relying on implicitly getting some/all BUG code.
-> > 3) Move the BUG related code living in kernel.h to <linux/bug.h>
-> > 4) remove the asm/bug.h from kernel.h to finally break the chain.
+> > I suspect we can just remove the warning entirely - once we've gotten
+> > enough coverage with the -rc kernels that people (me in particular)
+> > are happy that no normal load really needs it, and returning an error
+> > is fine.
 > > 
-> > During development, the order was more like 3-4, build-test, 1-2.
-> > But to ensure that git history for bisect doesn't get needless
-> > build failures introduced, the commits have been reorderd to fix
-> > the problem areas in advance.
+> > So I don't really consider the warning to be something long-term - I
+> > wanted it to make sure that some random binary in some odd
+> > distribution wouldn't break in mysterious ways that would take a lot
+> > of debugging to find. And so that we really know what we end up
+> > blocking in practice.
+> > 
+> > I'm not sure how good the -rc kernel coverage is, but I think it's
+> > good enough that we can drop the warning before doing a real 3.3
+> > release. And I don't think the stable kernel versions ever got that
+> > warning printout, did they? That would be great for coverage, of
+> > course, if they did.
 > 
-> I have expressed reservations with these tree wide include file cleanups
-> in the past (there was going pain for me and others during the module.h
-
-Well, I thought module.h went reasonably OK for something that touched
-close to 2500 files.  I don't recall getting a lot of scorn and flame.
-In any case, this is nowhere near that size or scope of the module.h
-work, so I'll go out on a limb and say it should be nearly "pain free".
-
-> split up for example).  So, have you considered the following alternate
-
-> method of achieving most (if not all) of the gains:
+> They did, 3.0 and 3.2.
 > 
-> First a patch that moves the BUG related stuff from kernel.h to
-> linux/bug.h and replacing the include of asm/bug.h with linux/bug.h in
-> kernel.h.  This should essentially be a noop (bar some strange
-> interesting bugs).
-
-You don't even really need the above as a prerequisite in order to start
-adding bug.h to all the places that are using it.  As I noted in one of
-the commit logs, things are compiling today, so files using BUG are
-already getting it one way or another -- just implicitly.
-
+> For example, 3.0.18:
 > 
-> The trick is to convince Linus that this patch is OK for the current RC series ...
+> [  610.488489] kvm: sending ioctl 5326 to a partition!
+> [  610.488540] kvm: sending ioctl 80200204 to a partition!
 > 
-> Then you can (at your leisure) fix all the files that need linux/bug.h
-> included - farming them out as required.  And we could add a check in
-> checkpatch.pl.
+> mdadm ioctls reported in various places apparently got fixed by
+> ENOTTY/ENOIOCTLCMD change.
 
-I originally had the module.h stuff broken across maintainer lines, as
-I was assuming they would need to be farmed out as chunks, when Ingo
-suggested to just lump it all into one pull request and have it go at
-once (and I was fine with that).  So this time I didn't bother making
-things like the one include/* commit into 60-odd separate commits.
+Does that fix still need to be backported to -stable?
 
-I'm not really inclined to greatly favour one way over the other.
-Tracking all the one line commits to make sure they make it through
-the various sub-maintainers will take a bit more effort, but if that
-is what folks *really* want me to do, I'm OK with that.  It is just
-that your feedback here is the 1st I've heard favouring that method
-so far.
+Linux v3.0.18 + Debian stable userspace (mdadm v3.1.4) causes this on
+boot (when mdadm runs in the initramfs):
 
-Thanks,
-Paul.
+mdadm: sending ioctl 1261 to a partition!
+mdadm: sending ioctl 1261 to a partition!
+mdadm: sending ioctl 1261 to a partition!
+mdadm: sending ioctl 1261 to a partition!
+mdadm: sending ioctl 1261 to a partition!
+mdadm: sending ioctl 1261 to a partition!
+mdadm: sending ioctl 1261 to a partition!
+mdadm: sending ioctl 1261 to a partition!
+mdadm: sending ioctl 800c0910 to a partition!
+mdadm: sending ioctl 800c0910 to a partition!
 
-> 
-> Then (either after 3.4-rc1 or in the 3.5 merge window) we can remove the
-> include of linux/bug.h from linux/kernel.h and fix any left over build
-> problems.
-> 
-> I have not thought about this too hard, so there may be large holes in
-> this plan.
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
