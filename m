@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab2A0FDR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 00:03:17 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:56456 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754937Ab2A0Erw (ORCPT
+	id S1755427Ab2A0FDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 00:03:38 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:41372 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab2A0FDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 23:47:52 -0500
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-fsdevel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Damien Millescamps <damien.millescamps@6wind.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 10/29] sysctl: Add ctl_table chains into cstring paths
-Date: Thu, 26 Jan 2012 20:49:51 -0800
-Message-Id: <1327639810-12760-10-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <m1pqe5ah3z.fsf@fess.ebiederm.org>
-References: <m1pqe5ah3z.fsf@fess.ebiederm.org>
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+8i4bMNMTRrhjyc1LSxG8lPTANv4MFTqk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	Fri, 27 Jan 2012 00:03:35 -0500
+Message-ID: <4F22301B.5090804@linux.vnet.ibm.com>
+Date: Fri, 27 Jan 2012 10:33:23 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@infradead.org, robert.richter@amd.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
+        vweaver1@eecs.utk.edu
+Subject: Re: [PATCH 02/13] perf_events: add Intel LBR MSR definitions (v3)
+References: <1326127761-2723-1-git-send-email-eranian@google.com> <1326127761-2723-3-git-send-email-eranian@google.com>
+In-Reply-To: <1326127761-2723-3-git-send-email-eranian@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12012705-8256-0000-0000-0000010914E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For any component of table passed to __register_sysctl_paths
-that actually serves as a path, add that to the cstring path
-that is passed to __register_sysctl_table.
+On Monday 09 January 2012 10:19 PM, Stephane Eranian wrote:
+> This patch adds the LBR definitions for NHM/WSM/SNB and Core.
+> It also adds the definitions for the architected LBR MSR:
+> LBR_SELECT, LBRT_TOS.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+  Reviewed   by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+> ---
+>  arch/x86/include/asm/msr-index.h           |    7 +++++++
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++---------
+>  2 files changed, 16 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+> index a6962d9..ccb8059 100644
+> --- a/arch/x86/include/asm/msr-index.h
+> +++ b/arch/x86/include/asm/msr-index.h
+> @@ -56,6 +56,13 @@
+>  #define MSR_OFFCORE_RSP_0		0x000001a6
+>  #define MSR_OFFCORE_RSP_1		0x000001a7
+> 
+> +#define MSR_LBR_SELECT			0x000001c8
+> +#define MSR_LBR_TOS			0x000001c9
+> +#define MSR_LBR_NHM_FROM		0x00000680
+> +#define MSR_LBR_NHM_TO			0x000006c0
+> +#define MSR_LBR_CORE_FROM		0x00000040
+> +#define MSR_LBR_CORE_TO			0x00000060
+> +
+>  #define MSR_IA32_PEBS_ENABLE		0x000003f1
+>  #define MSR_IA32_DS_AREA		0x00000600
+>  #define MSR_IA32_PERF_CAPABILITIES	0x00000345
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index c3f8100..e14431f 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -205,23 +205,23 @@ void intel_pmu_lbr_read(void)
+>  void intel_pmu_lbr_init_core(void)
+>  {
+>  	x86_pmu.lbr_nr     = 4;
+> -	x86_pmu.lbr_tos    = 0x01c9;
+> -	x86_pmu.lbr_from   = 0x40;
+> -	x86_pmu.lbr_to     = 0x60;
+> +	x86_pmu.lbr_tos    = MSR_LBR_TOS;
+> +	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
+> +	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
+>  }
+> 
+>  void intel_pmu_lbr_init_nhm(void)
+>  {
+>  	x86_pmu.lbr_nr     = 16;
+> -	x86_pmu.lbr_tos    = 0x01c9;
+> -	x86_pmu.lbr_from   = 0x680;
+> -	x86_pmu.lbr_to     = 0x6c0;
+> +	x86_pmu.lbr_tos    = MSR_LBR_TOS;
+> +	x86_pmu.lbr_from   = MSR_LBR_NHM_FROM;
+> +	x86_pmu.lbr_to     = MSR_LBR_NHM_TO;
+>  }
+> 
+>  void intel_pmu_lbr_init_atom(void)
+>  {
+>  	x86_pmu.lbr_nr	   = 8;
+> -	x86_pmu.lbr_tos    = 0x01c9;
+> -	x86_pmu.lbr_from   = 0x40;
+> -	x86_pmu.lbr_to     = 0x60;
+> +	x86_pmu.lbr_tos    = MSR_LBR_TOS;
+> +	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
+> +	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
+>  }
 
-The result is that for most calls to __register_sysctl_paths
-we only pass a table to __register_sysctl_table that contains
-no child directories.
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- fs/proc/proc_sysctl.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index 5704ff0..9b91dee 100644
---- a/fs/proc/proc_sysctl.c
-+++ b/fs/proc/proc_sysctl.c
-@@ -1076,6 +1076,7 @@ struct ctl_table_header *__register_sysctl_paths(
- 	struct nsproxy *namespaces,
- 	const struct ctl_path *path, struct ctl_table *table)
- {
-+	struct ctl_table *ctl_table_arg = table;
- 	struct ctl_table_header *header = NULL;
- 	const struct ctl_path *component;
- 	char *new_path, *pos;
-@@ -1090,7 +1091,15 @@ struct ctl_table_header *__register_sysctl_paths(
- 		if (!pos)
- 			goto out;
- 	}
-+	while (table->procname && table->child && !table[1].procname) {
-+		pos = append_path(new_path, pos, table->procname);
-+		if (!pos)
-+			goto out;
-+		table = table->child;
-+	}
- 	header = __register_sysctl_table(root, namespaces, new_path, table);
-+	if (header)
-+		header->ctl_table_arg = ctl_table_arg;
- out:
- 	kfree(new_path);
- 	return header;
 -- 
-1.7.2.5
+Linux Technology Centre
+IBM Systems and Technology Group
+Bangalore India
 
