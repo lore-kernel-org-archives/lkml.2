@@ -1,51 +1,620 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab2A0Say (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:30:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48979 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553Ab2A0Sax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:30:53 -0500
-Message-ID: <4F22ED34.4060204@zytor.com>
-Date: Fri, 27 Jan 2012 10:30:12 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753561Ab2A0SbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:31:09 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:43031 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab2A0SbH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 13:31:07 -0500
+X-IronPort-AV: E=Sophos;i="4.71,581,1320642000"; 
+   d="scan'208";a="179416156"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: xen-devel@lists.xensource.com
+CC: Stefano.Stabellini@eu.citrix.com, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v2 2/2] hvc_xen: implement multiconsole support
+Date: Fri, 27 Jan 2012 18:31:37 +0000
+Message-ID: <1327689097-12788-2-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <alpine.DEB.2.00.1201271823240.3196@kaball-desktop>
+References: <alpine.DEB.2.00.1201271823240.3196@kaball-desktop>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        mtk.manpages@gmail.com
-Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-References: <20120127175342.273260614@openvz.org> <20120127175939.795551339@openvz.org> <20120127181525.GD11715@one.firstfloor.org> <20120127182403.GG11086@moon>
-In-Reply-To: <20120127182403.GG11086@moon>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2012 10:24 AM, Cyrill Gorcunov wrote:
-> 
-> Sure, I'll try to (btw, where I should send it to? And in which
-> format novadays mans are written? In plain old troff or some
-> human readable asciidocs?) And... should I post man page
-> on LKML as well?
-> 
+This patch implements support for multiple consoles:
+consoles other than the first one are setup using the traditional xenbus
+and grant-table based mechanism.
+We use a list to keep track of the allocated consoles, we don't
+expect too many of them anyway.
 
-Normally they're written using the mandoc macro set in *roff.  Michael
-Kerrisk (mtk) is the authority on how to do things.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ drivers/tty/hvc/hvc_xen.c |  439 +++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 381 insertions(+), 58 deletions(-)
 
-	-hpa
+diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+index d5000aa..8209293 100644
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -23,6 +23,7 @@
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
++#include <linux/list.h>
+ 
+ #include <asm/io.h>
+ #include <asm/xen/hypervisor.h>
+@@ -30,47 +31,67 @@
+ #include <xen/xen.h>
+ #include <xen/interface/xen.h>
+ #include <xen/hvm.h>
++#include <xen/grant_table.h>
+ #include <xen/page.h>
+ #include <xen/events.h>
+ #include <xen/interface/io/console.h>
+ #include <xen/hvc-console.h>
++#include <xen/xenbus.h>
+ 
+ #include "hvc_console.h"
+ 
+ #define HVC_COOKIE   0x58656e /* "Xen" in hex */
+ 
+-static struct hvc_struct *hvc;
+-static int xencons_irq;
++struct xencons_info {
++	struct list_head list;
++	struct xenbus_device *xbdev;
++	struct xencons_interface *intf;
++	unsigned int evtchn;
++	struct hvc_struct *hvc;
++	int irq;
++	int vtermno;
++	grant_ref_t gntref;
++};
++
++static LIST_HEAD(xenconsoles);
++static DEFINE_SPINLOCK(xencons_lock);
++static struct xenbus_driver xencons_driver;
+ 
+ /* ------------------------------------------------------------------ */
+ 
+-static unsigned long console_pfn = ~0ul;
+-static unsigned int console_evtchn = ~0ul;
+-static struct xencons_interface *xencons_if = NULL;
++static struct xencons_info *vtermno_to_xencons(int vtermno)
++{
++	struct xencons_info *entry, *n, *ret = NULL;
++
++	if (list_empty(&xenconsoles))
++			return NULL;
+ 
+-static inline struct xencons_interface *xencons_interface(void)
++	list_for_each_entry_safe(entry, n, &xenconsoles, list) {
++		if (entry->vtermno == vtermno) {
++			ret  = entry;
++			break;
++		}
++	}
++
++	return ret;
++}
++
++static inline int xenbus_devid_to_vtermno(int devid)
+ {
+-	if (xencons_if != NULL)
+-		return xencons_if;
+-	if (console_pfn == ~0ul)
+-		return mfn_to_virt(xen_start_info->console.domU.mfn);
+-	else
+-		return __va(console_pfn << PAGE_SHIFT);
++	return devid + HVC_COOKIE;
+ }
+ 
+-static inline void notify_daemon(void)
++static inline void notify_daemon(struct xencons_info *cons)
+ {
+ 	/* Use evtchn: this is called early, before irq is set up. */
+-	if (console_evtchn == ~0ul)
+-		notify_remote_via_evtchn(xen_start_info->console.domU.evtchn);
+-	else
+-		notify_remote_via_evtchn(console_evtchn);
++	notify_remote_via_evtchn(cons->evtchn);
+ }
+ 
+-static int __write_console(const char *data, int len)
++static int __write_console(struct xencons_info *xencons,
++		const char *data, int len)
+ {
+-	struct xencons_interface *intf = xencons_interface();
+ 	XENCONS_RING_IDX cons, prod;
++	struct xencons_interface *intf = xencons->intf;
+ 	int sent = 0;
+ 
+ 	cons = intf->out_cons;
+@@ -85,13 +106,16 @@ static int __write_console(const char *data, int len)
+ 	intf->out_prod = prod;
+ 
+ 	if (sent)
+-		notify_daemon();
++		notify_daemon(xencons);
+ 	return sent;
+ }
+ 
+ static int domU_write_console(uint32_t vtermno, const char *data, int len)
+ {
+ 	int ret = len;
++	struct xencons_info *cons = vtermno_to_xencons(vtermno);
++	if (cons == NULL)
++		return -EINVAL;
+ 
+ 	/*
+ 	 * Make sure the whole buffer is emitted, polling if
+@@ -100,7 +124,7 @@ static int domU_write_console(uint32_t vtermno, const char *data, int len)
+ 	 * kernel is crippled.
+ 	 */
+ 	while (len) {
+-		int sent = __write_console(data, len);
++		int sent = __write_console(cons, data, len);
+ 		
+ 		data += sent;
+ 		len -= sent;
+@@ -114,9 +138,13 @@ static int domU_write_console(uint32_t vtermno, const char *data, int len)
+ 
+ static int domU_read_console(uint32_t vtermno, char *buf, int len)
+ {
+-	struct xencons_interface *intf = xencons_interface();
++	struct xencons_interface *intf;
+ 	XENCONS_RING_IDX cons, prod;
+ 	int recv = 0;
++	struct xencons_info *xencons = vtermno_to_xencons(vtermno);
++	if (xencons == NULL)
++		return -EINVAL;
++	intf = xencons->intf;
+ 
+ 	cons = intf->in_cons;
+ 	prod = intf->in_prod;
+@@ -129,7 +157,7 @@ static int domU_read_console(uint32_t vtermno, char *buf, int len)
+ 	mb();			/* read ring before consuming */
+ 	intf->in_cons = cons;
+ 
+-	notify_daemon();
++	notify_daemon(xencons);
+ 	return recv;
+ }
+ 
+@@ -172,78 +200,360 @@ static int xen_hvm_console_init(void)
+ 	int r;
+ 	uint64_t v = 0;
+ 	unsigned long mfn;
++	struct xencons_info *info;
+ 
+ 	if (!xen_hvm_domain())
+ 		return -ENODEV;
+ 
+-	if (xencons_if != NULL)
+-		return -EBUSY;
++	info = vtermno_to_xencons(HVC_COOKIE);
++	if (!info) {
++		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
++		if (!info)
++			return -ENOMEM;
++	}
++
++	/* already configured */
++	if (info->intf != NULL)
++		return 0;
+ 
+ 	r = hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
+-	if (r < 0)
++	if (r < 0) {
++		kfree(info);
+ 		return -ENODEV;
+-	console_evtchn = v;
++	}
++	info->evtchn = v;
+ 	hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+-	if (r < 0)
++	if (r < 0) {
++		kfree(info);
+ 		return -ENODEV;
++	}
+ 	mfn = v;
+-	xencons_if = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
+-	if (xencons_if == NULL)
++	info->intf = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
++	if (info->intf == NULL) {
++		kfree(info);
++		return -ENODEV;
++	}
++	info->vtermno = HVC_COOKIE;
++
++	spin_lock(&xencons_lock);
++	list_add_tail(&info->list, &xenconsoles);
++	spin_unlock(&xencons_lock);
++
++	return 0;
++}
++
++static int xen_pv_console_init(void)
++{
++	struct xencons_info *info;
++
++	if (!xen_pv_domain())
+ 		return -ENODEV;
+ 
++	if (!xen_start_info->console.domU.evtchn)
++		return -ENODEV;
++
++	info = vtermno_to_xencons(HVC_COOKIE);
++	if (!info) {
++		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
++		if (!info)
++			return -ENOMEM;
++	}
++
++	/* already configured */
++	if (info->intf != NULL)
++		return 0;
++
++	info->evtchn = xen_start_info->console.domU.evtchn;
++	info->intf = mfn_to_virt(xen_start_info->console.domU.mfn);
++	info->vtermno = HVC_COOKIE;
++
++	spin_lock(&xencons_lock);
++	list_add_tail(&info->list, &xenconsoles);
++	spin_unlock(&xencons_lock);
++
++	return 0;
++}
++
++static int xen_initial_domain_console_init(void)
++{
++	struct xencons_info *info;
++
++	if (!xen_initial_domain())
++		return -ENODEV;
++
++	info = vtermno_to_xencons(HVC_COOKIE);
++	if (!info) {
++		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
++		if (!info)
++			return -ENOMEM;
++	}
++
++	info->irq = bind_virq_to_irq(VIRQ_CONSOLE, 0);
++	info->vtermno = HVC_COOKIE;
++
++	spin_lock(&xencons_lock);
++	list_add_tail(&info->list, &xenconsoles);
++	spin_unlock(&xencons_lock);
++
+ 	return 0;
+ }
+ 
+ static int __init xen_hvc_init(void)
+ {
+-	struct hvc_struct *hp;
+-	struct hv_ops *ops;
+ 	int r;
++	struct xencons_info *info;
++	const struct hv_ops *ops;
+ 
+ 	if (!xen_domain())
+ 		return -ENODEV;
+ 
+ 	if (xen_initial_domain()) {
+ 		ops = &dom0_hvc_ops;
+-		xencons_irq = bind_virq_to_irq(VIRQ_CONSOLE, 0);
++		r = xen_initial_domain_console_init();
++		if (r < 0)
++			return r;
++		info = vtermno_to_xencons(HVC_COOKIE);
+ 	} else {
+ 		ops = &domU_hvc_ops;
+-		if (xen_pv_domain()) {
+-			if (!xen_start_info->console.domU.evtchn)
+-				return -ENODEV;
+-			console_pfn = mfn_to_pfn(xen_start_info->console.domU.mfn);
+-			console_evtchn = xen_start_info->console.domU.evtchn;
+-		} else {
++		if (xen_hvm_domain())
+ 			r = xen_hvm_console_init();
+-			if (r < 0)
+-				return r;
+-		}
+-		xencons_irq = bind_evtchn_to_irq(console_evtchn);
+-		if (xencons_irq < 0)
+-			xencons_irq = 0; /* NO_IRQ */
+ 		else
+-			irq_set_noprobe(xencons_irq);
++			r = xen_pv_console_init();
++		if (r < 0)
++			return r;
++
++		info = vtermno_to_xencons(HVC_COOKIE);
++		info->irq = bind_evtchn_to_irq(info->evtchn);
++	}
++	if (info->irq < 0)
++		info->irq = 0; /* NO_IRQ */
++	else
++		irq_set_noprobe(info->irq);
++
++	info->hvc = hvc_alloc(HVC_COOKIE, info->irq, ops, 256);
++	if (IS_ERR(info->hvc)) {
++		r = PTR_ERR(info->hvc);
++		spin_lock(&xencons_lock);
++		list_del(&info->list);
++		spin_unlock(&xencons_lock);
++		if (info->irq)
++			unbind_from_irqhandler(info->irq, NULL);
++		kfree(info);
++		return r;
+ 	}
+ 
+-	hp = hvc_alloc(HVC_COOKIE, xencons_irq, ops, 256);
+-	if (IS_ERR(hp))
+-		return PTR_ERR(hp);
++	return xenbus_register_frontend(&xencons_driver);
++}
+ 
+-	hvc = hp;
++void xen_console_resume(void)
++{
++	struct xencons_info *info = vtermno_to_xencons(HVC_COOKIE);
++	if (info != NULL && info->irq)
++		rebind_evtchn_irq(info->evtchn, info->irq);
++}
+ 
++static void xencons_disconnect_backend(struct xencons_info *info)
++{
++	if (info->irq > 0)
++		unbind_from_irqhandler(info->irq, NULL);
++	info->irq = 0;
++	if (info->evtchn > 0)
++		xenbus_free_evtchn(info->xbdev, info->evtchn);
++	info->evtchn = 0;
++	if (info->gntref > 0)
++		gnttab_free_grant_references(info->gntref);
++	info->gntref = 0;
++	if (info->hvc != NULL)
++		hvc_remove(info->hvc);
++	info->hvc = NULL;
++}
++
++static void xencons_free(struct xencons_info *info)
++{
++	xencons_disconnect_backend(info);
++	free_page((unsigned long)info->intf);
++	info->intf = NULL;
++	info->vtermno = 0;
++	kfree(info);
++}
++
++static int xencons_remove(struct xenbus_device *dev)
++{
++	struct xencons_info *info = dev_get_drvdata(&dev->dev);
++
++	spin_lock(&xencons_lock);
++	list_del(&info->list);
++	spin_unlock(&xencons_lock);
++	xencons_free(info);
+ 	return 0;
+ }
+ 
+-void xen_console_resume(void)
++static int xencons_connect_backend(struct xenbus_device *dev,
++				  struct xencons_info *info)
++{
++	int ret, evtchn, devid, ref, irq;
++	struct xenbus_transaction xbt;
++	grant_ref_t gref_head;
++	unsigned long mfn;
++
++	ret = xenbus_alloc_evtchn(dev, &evtchn);
++	if (ret)
++		return ret;
++	info->evtchn = evtchn;
++	irq = bind_evtchn_to_irq(evtchn);
++	if (irq < 0)
++		return irq;
++	info->irq = irq;
++	devid = dev->nodename[strlen(dev->nodename) - 1] - '0';
++	info->hvc = hvc_alloc(xenbus_devid_to_vtermno(devid),
++			irq, &domU_hvc_ops, 256);
++	if (IS_ERR(info->hvc))
++		return PTR_ERR(info->hvc);
++	if (xen_pv_domain())
++		mfn = virt_to_mfn(info->intf);
++	else
++		mfn = __pa(info->intf) >> PAGE_SHIFT;
++	ret = gnttab_alloc_grant_references(1, &gref_head);
++	if (ret < 0)
++		return ret;
++	info->gntref = gref_head;
++	ref = gnttab_claim_grant_reference(&gref_head);
++	if (ref < 0)
++		return ref;
++	gnttab_grant_foreign_access_ref(ref, info->xbdev->otherend_id,
++			mfn, 0);
++
++ again:
++	ret = xenbus_transaction_start(&xbt);
++	if (ret) {
++		xenbus_dev_fatal(dev, ret, "starting transaction");
++		return ret;
++	}
++	ret = xenbus_printf(xbt, dev->nodename, "ring-ref", "%d", ref);
++	if (ret)
++		goto error_xenbus;
++	ret = xenbus_printf(xbt, dev->nodename, "port", "%u",
++			    evtchn);
++	if (ret)
++		goto error_xenbus;
++	ret = xenbus_printf(xbt, dev->nodename, "type", "ioemu");
++	if (ret)
++		goto error_xenbus;
++	ret = xenbus_transaction_end(xbt, 0);
++	if (ret) {
++		if (ret == -EAGAIN)
++			goto again;
++		xenbus_dev_fatal(dev, ret, "completing transaction");
++		return ret;
++	}
++
++	xenbus_switch_state(dev, XenbusStateInitialised);
++	return 0;
++
++ error_xenbus:
++	xenbus_transaction_end(xbt, 1);
++	xenbus_dev_fatal(dev, ret, "writing xenstore");
++	return ret;
++}
++
++static int __devinit xencons_probe(struct xenbus_device *dev,
++				  const struct xenbus_device_id *id)
+ {
+-	if (xencons_irq)
+-		rebind_evtchn_irq(console_evtchn, xencons_irq);
++	int ret, devid;
++	struct xencons_info *info;
++
++	devid = dev->nodename[strlen(dev->nodename) - 1] - '0';
++	if (devid == 0)
++		return -ENODEV;
++
++	info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
++	if (!info)
++		goto error_nomem;
++	dev_set_drvdata(&dev->dev, info);
++	info->xbdev = dev;
++	info->vtermno = xenbus_devid_to_vtermno(devid);
++	info->intf = (void *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
++	if (!info->intf)
++		goto error_nomem;
++
++	ret = xencons_connect_backend(dev, info);
++	if (ret < 0)
++		goto error;
++	spin_lock(&xencons_lock);
++	list_add_tail(&info->list, &xenconsoles);
++	spin_unlock(&xencons_lock);
++
++	return 0;
++
++ error_nomem:
++	ret = -ENOMEM;
++	xenbus_dev_fatal(dev, ret, "allocating device memory");
++ error:
++	xencons_free(info);
++	return ret;
++}
++
++static int xencons_resume(struct xenbus_device *dev)
++{
++	struct xencons_info *info = dev_get_drvdata(&dev->dev);
++
++	xencons_disconnect_backend(info);
++	memset(info->intf, 0, PAGE_SIZE);
++	return xencons_connect_backend(dev, info);
+ }
+ 
++static void xencons_backend_changed(struct xenbus_device *dev,
++				   enum xenbus_state backend_state)
++{
++	switch (backend_state) {
++	case XenbusStateReconfiguring:
++	case XenbusStateReconfigured:
++	case XenbusStateInitialising:
++	case XenbusStateInitialised:
++	case XenbusStateUnknown:
++	case XenbusStateClosed:
++		break;
++
++	case XenbusStateInitWait:
++		break;
++
++	case XenbusStateConnected:
++		xenbus_switch_state(dev, XenbusStateConnected);
++		break;
++
++	case XenbusStateClosing:
++		xenbus_frontend_closed(dev);
++		break;
++	}
++}
++
++static const struct xenbus_device_id xencons_ids[] = {
++	{ "console" },
++	{ "" }
++};
++
++
+ static void __exit xen_hvc_fini(void)
+ {
+-	if (hvc)
+-		hvc_remove(hvc);
++	struct xencons_info *entry, *next;
++
++	if (list_empty(&xenconsoles))
++			return;
++
++	spin_lock(&xencons_lock);
++	list_for_each_entry_safe(entry, next, &xenconsoles, list) {
++		list_del(&entry->list);
++		if (entry->xbdev)
++			xencons_remove(entry->xbdev);
++		else {
++			if (entry->irq > 0)
++				unbind_from_irqhandler(entry->irq, NULL);
++			if (entry->hvc);
++				hvc_remove(entry->hvc);
++			kfree(entry);
++		}
++	}
++	spin_unlock(&xencons_lock);
+ }
+ 
+ static int xen_cons_init(void)
+@@ -256,18 +566,31 @@ static int xen_cons_init(void)
+ 	if (xen_initial_domain())
+ 		ops = &dom0_hvc_ops;
+ 	else {
++		int r;
+ 		ops = &domU_hvc_ops;
+ 
+-		if (xen_pv_domain())
+-			console_evtchn = xen_start_info->console.domU.evtchn;
++		if (xen_hvm_domain())
++			r = xen_hvm_console_init();
+ 		else
+-			xen_hvm_console_init();
++			r = xen_pv_console_init();
++		if (r < 0)
++			return r;
+ 	}
+ 
+ 	hvc_instantiate(HVC_COOKIE, 0, ops);
+ 	return 0;
+ }
+ 
++static struct xenbus_driver xencons_driver = {
++	.name = "xenconsole",
++	.owner = THIS_MODULE,
++	.ids = xencons_ids,
++	.probe = xencons_probe,
++	.remove = xencons_remove,
++	.resume = xencons_resume,
++	.otherend_changed = xencons_backend_changed,
++};
++
+ module_init(xen_hvc_init);
+ module_exit(xen_hvc_fini);
+ console_initcall(xen_cons_init);
+-- 
+1.7.2.5
+
