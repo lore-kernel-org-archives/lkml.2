@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab2A0Ost (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 09:48:49 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:39473 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752017Ab2A0Osr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 09:48:47 -0500
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Sasha Levin <levinsasha928@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: David Miller <davem@davemloft.net>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "xemul@parallels.com" <xemul@parallels.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "sjurbren@gmail.com" <sjurbren@gmail.com>
-Date: Fri, 27 Jan 2012 15:48:00 +0100
-Subject: RE: [PATCH 2/2] net caif:  Register properly as a pernet subsystem.
-Thread-Topic: [PATCH 2/2] net caif:  Register properly as a pernet subsystem.
-Thread-Index: Aczc9wGNCNDbquJ2Tu2VvKzx5rX0xgACvAoA
-Message-ID: <81C3A93C17462B4BBD7E272753C105791FB48AD1FB@EXDCVYMBSTM005.EQ1STM.local>
-References: <4F212E7E.2040801@parallels.com>
-	 <1327575108.2500.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <m1zkdacbsx.fsf@fess.ebiederm.org>
-	 <20120126.180754.679593869814492219.davem@davemloft.net>
-	 <m1ehumc8r4.fsf_-_@fess.ebiederm.org> <m1aa5ac8nu.fsf_-_@fess.ebiederm.org>
- <1327670668.14789.4.camel@lappy>
-In-Reply-To: <1327670668.14789.4.camel@lappy>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755463Ab2A0OvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 09:51:16 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:16644 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab2A0OvP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 09:51:15 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-8859-2
+Date: Fri, 27 Jan 2012 15:51:09 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [Linaro-mm-sig] [PATCH 12/15] drivers: add Contiguous Memory
+ Allocator
+In-reply-to: <CAO8GWqnQg-W=TEc+CUc8hs=GrdCa9XCCWcedQx34cqURhNwNwA@mail.gmail.com>
+To: "'Clark, Rob'" <rob@ti.com>
+Cc: "'Ohad Ben-Cohen'" <ohad@wizery.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Message-id: <010301ccdd03$1ad15ab0$50741010$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Content-transfer-encoding: 8BIT
+Thread-index: Aczc/9N/Cw3RTRnfSzy0/R+u+SrJPwAAqCog
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+ <1327568457-27734-13-git-send-email-m.szyprowski@samsung.com>
+ <CADMYwHw1B4RNV_9BqAg_M70da=g69Z3kyo5Cr6izCMwJ9LAtvA@mail.gmail.com>
+ <00de01ccdce1$e7c8a360$b759ea20$%szyprowski@samsung.com>
+ <CAO8GWqnQg-W=TEc+CUc8hs=GrdCa9XCCWcedQx34cqURhNwNwA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > caif is a subsystem and as such it needs to register with
-> > register_pernet_subsys instead of register_pernet_device.
-> >
-> > Among other problems using register_pernet_device was resulting in
-> > net_generic being called before the caif_net structure was allocated.
-> > Which has been causing net_generic to fail with either BUG_ON's or by
-> > return NULL pointers.
-> >
-> > A more ugly problem that could be caused is packets in flight why the
-> > subsystem is shutting down.
-> >
-> > To remove confusion also remove the cruft cause by inappropriately
-> > trying to fix this bug.
-> >
-> > With the aid of the previous patch I have tested this patch and
-> > confirmed that using register_pernet_subsys makes the failure go away
-> > as it should.
-> >
-> > Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> 
-> I've tested these two patches as well, and they also work for me.
-> 
-> 	Tested-by: Sasha Levin <levinsasha928@gmail.com>
+Hello,
 
-This looks very good to me, thank you Eric. 
+On Friday, January 27, 2012 3:28 PM Clark, Rob wrote:
 
-Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> 2012/1/27 Marek Szyprowski <m.szyprowski@samsung.com>:
+> > Hi Ohad,
+> >
+> > On Friday, January 27, 2012 10:44 AM Ohad Ben-Cohen wrote:
+> >
+> >> With v19, I can't seem to allocate big regions anymore (e.g. 101MiB).
+> >> In particular, this seems to fail:
+> >>
+> >> On Thu, Jan 26, 2012 at 11:00 AM, Marek Szyprowski
+> >> <m.szyprowski@samsung.com> wrote:
+> >> > +static int cma_activate_area(unsigned long base_pfn, unsigned long count)
+> >> > +{
+> >> > +       unsigned long pfn = base_pfn;
+> >> > +       unsigned i = count >> pageblock_order;
+> >> > +       struct zone *zone;
+> >> > +
+> >> > +       WARN_ON_ONCE(!pfn_valid(pfn));
+> >> > +       zone = page_zone(pfn_to_page(pfn));
+> >> > +
+> >> > +       do {
+> >> > +               unsigned j;
+> >> > +               base_pfn = pfn;
+> >> > +               for (j = pageblock_nr_pages; j; --j, pfn++) {
+> >> > +                       WARN_ON_ONCE(!pfn_valid(pfn));
+> >> > +                       if (page_zone(pfn_to_page(pfn)) != zone)
+> >> > +                               return -EINVAL;
+> >>
+> >> The above WARN_ON_ONCE is triggered, and then the conditional is
+> >> asserted (page_zone() retuns a "Movable" zone, whereas zone is
+> >> "Normal") and the function fails.
+> >>
+> >> This happens to me on OMAP4 with your 3.3-rc1-cma-v19 branch (and a
+> >> bunch of remoteproc/rpmsg patches).
+> >>
+> >> Do big allocations work for you ?
+> >
+> > I've tested it with 256MiB on Exynos4 platform. Could you check if the
+> > problem also appears on 3.2-cma-v19 branch (I've uploaded it a few hours
+> > ago) and 3.2-cma-v18? Both are available on our public repo:
+> > git://git.infradead.org/users/kmpark/linux-samsung/
+> >
+> > The above code has not been changed since v16, so I'm really surprised
+> > that it causes problems. Maybe the memory configuration or layout has
+> > been changed in 3.3-rc1 for OMAP4?
+> 
+> is highmem still an issue?  I remember hitting this WARN_ON_ONCE() but
+> went away after I switched to a 2g/2g vm split (which avoids highmem)
+
+No, it shouldn't be an issue. I've tested CMA v19 on a system with 1GiB of
+the memory and general purpose (global) cma region was allocated correctly
+at the end of low memory. For device private regions you should take care 
+of correct placement by yourself, so maybe this is an issue in this case?
+
+Ohad, could you tell a bit more about your issue? Does this 'large region'
+is a device private region (declared with dma_declare_contiguous()) or is it
+a global one (defined in Kconfig or cma= kernel boot parameter)? 
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
