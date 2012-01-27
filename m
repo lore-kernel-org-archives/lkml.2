@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab2A0Uay (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 15:30:54 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48723 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab2A0Uax (ORCPT
+	id S1754501Ab2A0Uej (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 15:34:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54248 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab2A0Uej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 15:30:53 -0500
-Message-ID: <4F23099D.1090606@jp.fujitsu.com>
-Date: Fri, 27 Jan 2012 15:31:25 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: gorcunov@openvz.org
-CC: keescook@chromium.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, ebiederm@xmission.com, xemul@openvz.org,
-        mtk.manpages@gmail.com, tj@kernel.org, avagin@openvz.org,
-        serge.hallyn@canonical.com, xemul@parallels.com, segoon@openwall.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [RFC c/r 4/4] c/r: prctl: Extend PR_SET_MM to set up more mm_struct
- entries
-References: <20120127175342.273260614@openvz.org> <20120127175939.928628374@openvz.org> <CAGXu5jJtBJGt-8iLrC5Jg9N0K2zeYxDtt8uZojY41osejV_aKg@mail.gmail.com> <20120127184351.GI11086@moon>
-In-Reply-To: <20120127184351.GI11086@moon>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 27 Jan 2012 15:34:39 -0500
+Date: Fri, 27 Jan 2012 12:34:37 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Jason Baron <jbaron@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 2/5] x86/jump-label: Do not bother updating nops if they
+ are correct
+Message-Id: <20120127123437.481791ba.akpm@linux-foundation.org>
+In-Reply-To: <20120127202031.234193929@goodmis.org>
+References: <20120127201442.080360013@goodmis.org>
+	<20120127202031.234193929@goodmis.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> +
->>> +       case PR_SET_MM_AUXV:
->>> +               if (arg4 > sizeof(mm->saved_auxv))
->>> +                       goto out;
->>> +               up_read(&mm->mmap_sem);
->>> +
->>> +               error = -EFAULT;
->>> +               if (!copy_from_user(mm->saved_auxv, (const void __user *)addr, arg4))
->>> +                       error = 0;
->>> +
->>> +               return error;
->>
->> Is the mmap_sem released here because of the copy_from_user()? Is it
->> still safe to write to saved_auxv?
->>
-> 
-> At moment I believe yes (if only I'm not missing something), we poke this
-> vector at elf loading procedure, so it's up to user to sync access to "own"
-> saved_auxv and write sane values inside.
+On Fri, 27 Jan 2012 15:14:44 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Think prctl(PR_SET_MM_AUXV) vs prctl(PR_SET_MM_AUXV) race. That might make to write corrupted value.
-syscall should be atomic from a point of userland view.
+> --- a/arch/x86/kernel/jump_label.c
+> +++ b/arch/x86/kernel/jump_label.c
+> @@ -53,7 +53,25 @@ void arch_jump_label_transform(struct jump_entry *entry,
+>  void arch_jump_label_transform_static(struct jump_entry *entry,
+>  				      enum jump_label_type type)
+>  {
+> -	__jump_label_transform(entry, type, text_poke_early);
+> +	static int once;
+> +	static int update;
+> +
+> +	/*
+> +	 * This function is called at boot up and when modules are
+> +	 * first loaded. Check if the default nop, the one that is
+> +	 * inserted at compile time, is the ideal nop. If it is, then
+> +	 * we do not need to update the nop, and we can leave it as is.
+> +	 * If it is not, then we need to update the nop to the ideal nop.
+> +	 */
+> +	if (!once) {
+> +		unsigned char default_nop[] = { JUMP_LABEL_INIT_NOP };
+
+const.  It generates less code.  With my compiler version, at least. 
+That was a bit dumb of it, given that memcmp() is declared to take
+const args.
+
+> +		const unsigned char *ideal_nop = ideal_nops[NOP_ATOMIC5];
+> +		once++;
+> +		if (memcmp(ideal_nop, default_nop, 5) != 0)
+> +			update = 1;
+> +	}
+> +	if (update)
+> +		__jump_label_transform(entry, type, text_poke_early);
+>  }
