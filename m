@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab2A0Tig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 14:38:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60786 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778Ab2A0Tie (ORCPT
+	id S1754144Ab2A0TlE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 14:41:04 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:38604 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778Ab2A0TlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 14:38:34 -0500
-Message-ID: <4F22FD36.6020309@canonical.com>
-Date: Fri, 27 Jan 2012 11:38:30 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120119 Thunderbird/10.0
-MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: Kees Cook <kees@ubuntu.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] AppArmor: refactor securityfs to use structures
-References: <1327624163-21576-1-git-send-email-kees@ubuntu.com>
-In-Reply-To: <1327624163-21576-1-git-send-email-kees@ubuntu.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 27 Jan 2012 14:41:03 -0500
+Date: Fri, 27 Jan 2012 20:40:58 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
+Message-ID: <20120127194058.GF11715@one.firstfloor.org>
+References: <20120127175342.273260614@openvz.org> <20120127175939.795551339@openvz.org> <20120127181525.GD11715@one.firstfloor.org> <20120127182403.GG11086@moon> <20120127183155.GE11715@one.firstfloor.org> <20120127184005.GH11086@moon>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120127184005.GH11086@moon>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2012 04:29 PM, Kees Cook wrote:
-> This is the ground-work for expanding the AppArmor securityfs to include
-> useful information that the userspace tools can more easily interact with.
-> Presently, this is only static information about the state of AppArmor.
+> > The basic problem is if this interface is at the right level of abstraction.
+> > I have some doubts on that. It seems like a long term maintenance nightmare to 
+> > me. It may be better to put the loop that would call this into the kernel.
+> > 
 > 
-James,
+> Hmm, ie selftest right in kenel?
 
-if no one else has issues with these, I will pull these patches into the
-apparmor tree to batch them together as pull request with some other
-apparmor patches
+Not testing, but more the general stability of the interface. IMHO it exposes
+too many kernel internals. I know they are already exposed by clone/unshare, 
+but in those nothing breaks if the user program doesn't know about some new
+flags. But this looks like the user always has to be updated for every change.
+I think I would prefer if more of the user was in kernel to not expose
+that much.
+
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
