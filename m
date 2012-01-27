@@ -1,108 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab2A0A5w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 19:57:52 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52104 "EHLO ogre.sisk.pl"
+	id S1754639Ab2A0A6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 19:58:22 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52123 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278Ab2A0A5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 19:57:51 -0500
+	id S1751353Ab2A0A6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 26 Jan 2012 19:58:20 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+To: Jiri Slaby <jslaby@suse.cz>
 Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at kernel/workqueue.c:3659
-Date: Fri, 27 Jan 2012 02:01:26 +0100
+Date: Fri, 27 Jan 2012 02:01:55 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: Jiri Slaby <jirislaby@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Baohua.Song@csr.com, "pavel@ucw.cz" <pavel@ucw.cz>,
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Jiri Slaby <jirislaby@gmail.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Baohua.Song@csr.com,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
         Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <4F1EC8D5.5040102@suse.cz> <201201260051.45000.rjw@sisk.pl> <4F21A80D.6080200@linux.vnet.ibm.com>
-In-Reply-To: <4F21A80D.6080200@linux.vnet.ibm.com>
+References: <4F1EC8D5.5040102@suse.cz> <201201260051.45000.rjw@sisk.pl> <4F213392.2090203@suse.cz>
+In-Reply-To: <4F213392.2090203@suse.cz>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201270201.26438.rjw@sisk.pl>
+Message-Id: <201201270201.55771.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 26, 2012, Srivatsa S. Bhat wrote:
-> On 01/26/2012 05:21 AM, Rafael J. Wysocki wrote:
-> 
-> > Hi,
-> >>
-> >> SNAPSHOT_CREATE_IMAGE has a check for data->ready such as:
-> >>
-> >>         if (data->mode != O_RDONLY || !data->frozen  || data->ready) {
-> >>                 error = -EPERM;
-> >>                 break;
-> >>         }
-> >>
-> >> data->ready would be set to 1 only under SNAPSHOT_CREATE_IMAGE. However,
-> >> SNAPSHOT_FREE (invoked at the place shown above) will reset the value to 0.
-> >> This makes it possible for hibernation_snapshot() and hence
-> >> freeze_workqueues_begin() to be called a second time, which is unfortunate.
-> > 
-> > Yes, I obviously forgot about that code path when I was working on the commit
-> > that introduced the problem. :-(
-> > 
-> > Thanks a lot for the great analysis, it's really helpful!
-> >
-> 
-> 
-> Welcome :-) It was fun!
-> 
->  
-> >> And actually, the patch I posted in my previous mail is not really the right
-> >> long-term fix, though it might fix the particular issue that Jiri is facing..
-> >>
-> >> Because, allowing hibernation_snapshot() to get called a second time while
-> >> kernel threads are still frozen brings us to the same situation that commit
-> >> 2aede851 (PM / Hibernate: Freeze kernel threads after preallocating memory)
-> >> tried to prevent! IOW, a call to hibernate_preallocate_memory() would be
-> >> done inside hibernation_snapshot(), when kernel threads are frozen.. which
-> >> is known to break XFS, to give one example as mentioned in the changelog
-> >> of the above commit.
-> > 
-> > That's exactly right.
-> > 
-> >> So, the right way to fix this IMHO, would be to split up thaw_processes()
-> >> just like freezing phase:
-> >>
-> >> /* freezes or thaws user space processes */
-> >> freeze_processes() - thaw_processes()
-> >>
-> >> /* freezes or thaws kernel threads */
-> >> freeze_kernel_threads() - thaw_kernel_threads()
-> >>
-> >> We have to insert this thaw_kernel_threads() at appropriate places in such a
-> >> way as to not require another ioctl if possible... Then things would be
-> >> more symmetric (and hence more easy to understand) and we can avoid getting
-> >> into strange situations as discussed here.
-> >>
-> >> But before we venture into that, it would be good to know if the patch posted
-> >> in the previous mail fixes the particular problem reported in this thread,
-> >> atleast just to see if there are other problems lurking that we aren't aware
-> >> of yet..
-> > 
-> > Jiri has already said that the patch works.
-> > 
-> > I think we could avoid the issue entirely by introducing thaw_kernel_threads
-> > and making SNAPSHOT_FREE call it.  No other changes should be necessary.
-> > 
+On Thursday, January 26, 2012, Jiri Slaby wrote:
+> On 01/26/2012 12:51 AM, Rafael J. Wysocki wrote:
 > > IOW, Jiri, does the patch below help?
-> > 
+> 
+> Yeah, this fixes the issue as well. Thanks.
+
+Cool, thanks for the confirmation!
+
 > > [BTW, the freeze_tasks()'s kerneldoc seems to be outdated.  Tejun?]
 > > 
 > > ---
-> 
-> 
-> This is exactly the kind of fix I was suggesting.. Thanks Rafael!
-> 
-> I have a small request for a comment. Please see below.
-> I have a question too, but for that I'll have to reply to my earlier
-> thread so that I can comment on the userspace code.
-> 
 > >  include/linux/freezer.h |    2 ++
 > >  kernel/power/process.c  |   19 +++++++++++++++++++
 > >  kernel/power/user.c     |    1 +
@@ -117,7 +52,7 @@ On Thursday, January 26, 2012, Srivatsa S. Bhat wrote:
 > >  extern int freeze_kernel_threads(void);
 > >  extern void thaw_processes(void);
 > > +extern void thaw_kernel_threads(void);
-> > 
+> >  
 > >  static inline bool try_to_freeze(void)
 > >  {
 > > @@ -174,6 +175,7 @@ static inline bool __refrigerator(bool c
@@ -125,9 +60,9 @@ On Thursday, January 26, 2012, Srivatsa S. Bhat wrote:
 > >  static inline int freeze_kernel_threads(void) { return -ENOSYS; }
 > >  static inline void thaw_processes(void) {}
 > > +static inline void thaw_kernel_threads(void) {}
-> > 
+> >  
 > >  static inline bool try_to_freeze(void) { return false; }
-> > 
+> >  
 > > Index: linux/kernel/power/process.c
 > > ===================================================================
 > > --- linux.orig/kernel/power/process.c
@@ -135,7 +70,7 @@ On Thursday, January 26, 2012, Srivatsa S. Bhat wrote:
 > > @@ -188,3 +188,22 @@ void thaw_processes(void)
 > >  	printk("done.\n");
 > >  }
-> > 
+> >  
 > > +void thaw_kernel_threads(void)
 > > +{
 > > +	struct task_struct *g, *p;
@@ -163,27 +98,11 @@ On Thursday, January 26, 2012, Srivatsa S. Bhat wrote:
 > >  		swsusp_free();
 > >  		memset(&data->handle, 0, sizeof(struct snapshot_handle));
 > >  		data->ready = 0;
-> 
-> 
-> It would be nice to have a comment here explaining why we call
-> thaw_kernel_threads() here.
-
-I agree and I'll add one in the final version.
-
-> (Such a comment would avoid confusion when people
-> look at SNAPSHOT_CREATE_IMAGE and SNAPSHOT_FREE and wonder why there is
-> thawing involved, while the corresponding freezing is nowhere in sight..
-> Of course the freezing is hidden inside hibernation_snapshot(), but that
-> might not be immediately apparent to everyone.)
-
-Sure.
-
 > > +		thaw_kernel_threads();
-> 
 > >  		break;
-> 
-> > 
+> >  
 > >  	case SNAPSHOT_PREF_IMAGE_SIZE:
+> 
+> 
+> 
 
-Thanks,
-Rafael
