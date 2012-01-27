@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab2A0GJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 01:09:14 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:44598 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab2A0GJM (ORCPT
+	id S1755371Ab2A0GPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 01:15:14 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:38903 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab2A0GPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 01:09:12 -0500
-Message-ID: <1327644547.2919.11.camel@edumazet-laptop>
-Subject: Re: [PATCH] netns: fix net_alloc_generic()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Sjur =?ISO-8859-1?Q?Br=E6ndeland?= 
-	<sjur.brandeland@stericsson.com>,
-        "levinsasha928@gmail.com" <levinsasha928@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "sjurbren@gmail.com" <sjurbren@gmail.com>
-Date: Fri, 27 Jan 2012 07:09:07 +0100
-In-Reply-To: <m1zkdacbsx.fsf@fess.ebiederm.org>
-References: <CA+1xoqe+Qa1OByj7z7XzAPG_g9+BmNj9NPZR=_5b_MTEmc9Chw@mail.gmail.com>
-	 <1327523631-3480-1-git-send-email-sjur.brandeland@stericsson.com>
-	 <1327574498.2500.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <4F212E7E.2040801@parallels.com>
-	 <1327575108.2500.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <m1zkdacbsx.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Fri, 27 Jan 2012 01:15:12 -0500
+Message-ID: <4F2240DD.9050006@linux.vnet.ibm.com>
+Date: Fri, 27 Jan 2012 11:44:53 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@infradead.org, robert.richter@amd.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
+        vweaver1@eecs.utk.edu
+Subject: Re: [PATCH 07/13] perf_events: implement PERF_SAMPLE_BRANCH for Intel
+ X86 (v3)
+References: <1326127761-2723-1-git-send-email-eranian@google.com> <1326127761-2723-8-git-send-email-eranian@google.com>
+In-Reply-To: <1326127761-2723-8-git-send-email-eranian@google.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+x-cbid: 12012706-8256-0000-0000-00000109405B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 26 janvier 2012 Ã  14:57 -0800, Eric W. Biederman a Ã©crit :
-
-> It is not a chicken and egg problem.  It is a bug in caif.
-> caif is claiming to be a network device when it is acting as a subsytem.
-> That means it is being initialized too late.
+On Monday 09 January 2012 10:19 PM, Stephane Eranian wrote:
+> This patch implements PERF_SAMPLE_BRANCH support for Intel
+> X86 processors. It connects PERF_SAMPLE_BRANCH to the actual LBR.
 > 
-
-Ah ok !
-
-> Untested but this should trivially fix the problem, and a bunch
-> of others of the same ilk.
+> The patch adds the hooks in the PMU irq handler to save the LBR
+> on counter overflow for both regular and PEBS modes.
 > 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c     |   35 +++++++++++++
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c  |   10 ++--
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   73 +++++++++++++++++++++++++++-
+>  include/linux/perf_event.h                 |    3 +
+>  4 files changed, 113 insertions(+), 8 deletions(-)
+> 
+This patch FAILs to compile independently because of the function
+'intel_pmu_setup_lbr_filter' which is defined arch/x86/kernel/
+cpu/perf_event_intel_lbr.c but used in arch/x86/kernel/cpu
+/perf_event_intel.c without making the prototype update in
+the header arch/x86/kernel/cpu/perf_event.h. Though [PATCH 8/13]
+rectifies the problem, [PATCH 7/13] fails to compile independently.
 
-Hmm, please refrain from using "trivially" or "trivial", you're not
-fooling anyone.
+arch/x86/kernel/cpu/perf_event_intel_lbr.c:291: warning: ‘intel_pmu_setup_lbr_filter’ defined but not used
+  CC      arch/x86/kernel/cpu/perf_event_intel_ds.o
+  CC      arch/x86/kernel/cpu/perf_event_intel.o
+arch/x86/kernel/cpu/perf_event_intel.c: In function ‘intel_pmu_hw_config’:
+arch/x86/kernel/cpu/perf_event_intel.c:1342: error: implicit declaration of function ‘intel_pmu_setup_lbr_filter’
+make[3]: *** [arch/x86/kernel/cpu/perf_event_intel.o] Error 1
+make[2]: *** [arch/x86/kernel/cpu] Error 2
+make[1]: *** [arch/x86/kernel] Error 2
+make: *** [arch/x86] Error 2
 
-Truth is this netns layer is horribly complex, since this CAIF bug
-needed no more than four patch attempts and lastly your own work before
-finding the root cause.
-
-Thanks
-
+-- 
+Linux Technology Centre
+IBM Systems and Technology Group
+Bangalore India
 
