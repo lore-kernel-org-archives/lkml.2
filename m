@@ -1,113 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab2A0QaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 11:30:08 -0500
-Received: from mail.work-microwave.de ([62.245.205.51]:57499 "EHLO
+	id S1756227Ab2A0Qaa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 11:30:30 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:32926 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752148Ab2A0QaG (ORCPT
+	with ESMTP id S1754741Ab2A0Qa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 11:30:06 -0500
+	Fri, 27 Jan 2012 11:30:28 -0500
 From: Roland Stigge <stigge@antcom.de>
 To: w.sang@pengutronix.de, grant.likely@secretlab.ca, linux@arm.linux.org.uk,
         linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 1/2] Fix gpio-lpc32xx.c: Pin masking missing
-Date: Fri, 27 Jan 2012 17:29:33 +0100
-Message-Id: <1327681773-2395-1-git-send-email-stigge@antcom.de>
+Subject: [PATCH 2/2] LPC32XX: Add output reading to GPO P3
+Date: Fri, 27 Jan 2012 17:29:56 +0100
+Message-Id: <1327681796-2445-1-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.8.3
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing mask to pin bit selection in gpio-lpc32xx.c
-(#define GPIO3_PIN_IN_SEL)
-
-A table indentation was necessary due to line length restrictions.
+The chip offers the function to detect the current state of output of the GPO
+P3 pins. Useful for reading GPIO output state in Linux' GPIO API, e.g. via
+sysfs
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 diff --git a/drivers/gpio/gpio-lpc32xx.c b/drivers/gpio/gpio-lpc32xx.c
-index ddfacc5..21b65e5 100644
+index 21b65e5..9bd59cf 100644
 --- a/drivers/gpio/gpio-lpc32xx.c
 +++ b/drivers/gpio/gpio-lpc32xx.c
-@@ -26,42 +26,42 @@
- #include <mach/platform.h>
- #include <mach/gpio-lpc32xx.h>
- 
--#define LPC32XX_GPIO_P3_INP_STATE		_GPREG(0x000)
--#define LPC32XX_GPIO_P3_OUTP_SET		_GPREG(0x004)
--#define LPC32XX_GPIO_P3_OUTP_CLR		_GPREG(0x008)
--#define LPC32XX_GPIO_P3_OUTP_STATE		_GPREG(0x00C)
--#define LPC32XX_GPIO_P2_DIR_SET			_GPREG(0x010)
--#define LPC32XX_GPIO_P2_DIR_CLR			_GPREG(0x014)
--#define LPC32XX_GPIO_P2_DIR_STATE		_GPREG(0x018)
--#define LPC32XX_GPIO_P2_INP_STATE		_GPREG(0x01C)
--#define LPC32XX_GPIO_P2_OUTP_SET		_GPREG(0x020)
--#define LPC32XX_GPIO_P2_OUTP_CLR		_GPREG(0x024)
--#define LPC32XX_GPIO_P2_MUX_SET			_GPREG(0x028)
--#define LPC32XX_GPIO_P2_MUX_CLR			_GPREG(0x02C)
--#define LPC32XX_GPIO_P2_MUX_STATE		_GPREG(0x030)
--#define LPC32XX_GPIO_P0_INP_STATE		_GPREG(0x040)
--#define LPC32XX_GPIO_P0_OUTP_SET		_GPREG(0x044)
--#define LPC32XX_GPIO_P0_OUTP_CLR		_GPREG(0x048)
--#define LPC32XX_GPIO_P0_OUTP_STATE		_GPREG(0x04C)
--#define LPC32XX_GPIO_P0_DIR_SET			_GPREG(0x050)
--#define LPC32XX_GPIO_P0_DIR_CLR			_GPREG(0x054)
--#define LPC32XX_GPIO_P0_DIR_STATE		_GPREG(0x058)
--#define LPC32XX_GPIO_P1_INP_STATE		_GPREG(0x060)
--#define LPC32XX_GPIO_P1_OUTP_SET		_GPREG(0x064)
--#define LPC32XX_GPIO_P1_OUTP_CLR		_GPREG(0x068)
--#define LPC32XX_GPIO_P1_OUTP_STATE		_GPREG(0x06C)
--#define LPC32XX_GPIO_P1_DIR_SET			_GPREG(0x070)
--#define LPC32XX_GPIO_P1_DIR_CLR			_GPREG(0x074)
--#define LPC32XX_GPIO_P1_DIR_STATE		_GPREG(0x078)
--
--#define GPIO012_PIN_TO_BIT(x)			(1 << (x))
--#define GPIO3_PIN_TO_BIT(x)			(1 << ((x) + 25))
--#define GPO3_PIN_TO_BIT(x)			(1 << (x))
--#define GPIO012_PIN_IN_SEL(x, y)		(((x) >> (y)) & 1)
--#define GPIO3_PIN_IN_SHIFT(x)			((x) == 5 ? 24 : 10 + (x))
--#define GPIO3_PIN_IN_SEL(x, y)			((x) >> GPIO3_PIN_IN_SHIFT(y))
--#define GPIO3_PIN5_IN_SEL(x)			(((x) >> 24) & 1)
--#define GPI3_PIN_IN_SEL(x, y)			(((x) >> (y)) & 1)
-+#define LPC32XX_GPIO_P3_INP_STATE	_GPREG(0x000)
-+#define LPC32XX_GPIO_P3_OUTP_SET	_GPREG(0x004)
-+#define LPC32XX_GPIO_P3_OUTP_CLR	_GPREG(0x008)
-+#define LPC32XX_GPIO_P3_OUTP_STATE	_GPREG(0x00C)
-+#define LPC32XX_GPIO_P2_DIR_SET		_GPREG(0x010)
-+#define LPC32XX_GPIO_P2_DIR_CLR		_GPREG(0x014)
-+#define LPC32XX_GPIO_P2_DIR_STATE	_GPREG(0x018)
-+#define LPC32XX_GPIO_P2_INP_STATE	_GPREG(0x01C)
-+#define LPC32XX_GPIO_P2_OUTP_SET	_GPREG(0x020)
-+#define LPC32XX_GPIO_P2_OUTP_CLR	_GPREG(0x024)
-+#define LPC32XX_GPIO_P2_MUX_SET		_GPREG(0x028)
-+#define LPC32XX_GPIO_P2_MUX_CLR		_GPREG(0x02C)
-+#define LPC32XX_GPIO_P2_MUX_STATE	_GPREG(0x030)
-+#define LPC32XX_GPIO_P0_INP_STATE	_GPREG(0x040)
-+#define LPC32XX_GPIO_P0_OUTP_SET	_GPREG(0x044)
-+#define LPC32XX_GPIO_P0_OUTP_CLR	_GPREG(0x048)
-+#define LPC32XX_GPIO_P0_OUTP_STATE	_GPREG(0x04C)
-+#define LPC32XX_GPIO_P0_DIR_SET		_GPREG(0x050)
-+#define LPC32XX_GPIO_P0_DIR_CLR		_GPREG(0x054)
-+#define LPC32XX_GPIO_P0_DIR_STATE	_GPREG(0x058)
-+#define LPC32XX_GPIO_P1_INP_STATE	_GPREG(0x060)
-+#define LPC32XX_GPIO_P1_OUTP_SET	_GPREG(0x064)
-+#define LPC32XX_GPIO_P1_OUTP_CLR	_GPREG(0x068)
-+#define LPC32XX_GPIO_P1_OUTP_STATE	_GPREG(0x06C)
-+#define LPC32XX_GPIO_P1_DIR_SET		_GPREG(0x070)
-+#define LPC32XX_GPIO_P1_DIR_CLR		_GPREG(0x074)
-+#define LPC32XX_GPIO_P1_DIR_STATE	_GPREG(0x078)
-+
-+#define GPIO012_PIN_TO_BIT(x)		(1 << (x))
-+#define GPIO3_PIN_TO_BIT(x)		(1 << ((x) + 25))
-+#define GPO3_PIN_TO_BIT(x)		(1 << (x))
-+#define GPIO012_PIN_IN_SEL(x, y)	(((x) >> (y)) & 1)
-+#define GPIO3_PIN_IN_SHIFT(x)		((x) == 5 ? 24 : 10 + (x))
-+#define GPIO3_PIN_IN_SEL(x, y)		(((x) >> GPIO3_PIN_IN_SHIFT(y)) & 1)
-+#define GPIO3_PIN5_IN_SEL(x)		(((x) >> 24) & 1)
-+#define GPI3_PIN_IN_SEL(x, y)		(((x) >> (y)) & 1)
+@@ -62,9 +62,11 @@
+ #define GPIO3_PIN_IN_SEL(x, y)		(((x) >> GPIO3_PIN_IN_SHIFT(y)) & 1)
+ #define GPIO3_PIN5_IN_SEL(x)		(((x) >> 24) & 1)
+ #define GPI3_PIN_IN_SEL(x, y)		(((x) >> (y)) & 1)
++#define GPO3_PIN_IN_SEL(x, y)		(((x) >> (y)) & 1)
  
  struct gpio_regs {
  	void __iomem *inp_state;
++	void __iomem *outp_state;
+ 	void __iomem *outp_set;
+ 	void __iomem *outp_clr;
+ 	void __iomem *dir_set;
+@@ -145,6 +147,7 @@ static struct gpio_regs gpio_grp_regs_p2 = {
+ 
+ static struct gpio_regs gpio_grp_regs_p3 = {
+ 	.inp_state	= LPC32XX_GPIO_P3_INP_STATE,
++	.outp_state	= LPC32XX_GPIO_P3_OUTP_STATE,
+ 	.outp_set	= LPC32XX_GPIO_P3_OUTP_SET,
+ 	.outp_clr	= LPC32XX_GPIO_P3_OUTP_CLR,
+ 	.dir_set	= LPC32XX_GPIO_P2_DIR_SET,
+@@ -240,6 +243,12 @@ static int __get_gpi_state_p3(struct lpc32xx_gpio_chip *group,
+ 	return GPI3_PIN_IN_SEL(__raw_readl(group->gpio_grp->inp_state), pin);
+ }
+ 
++static int __get_gpo_state_p3(struct lpc32xx_gpio_chip *group,
++	unsigned pin)
++{
++	return GPO3_PIN_IN_SEL(__raw_readl(group->gpio_grp->outp_state), pin);
++}
++
+ /*
+  * GENERIC_GPIO primitives.
+  */
+@@ -340,6 +349,13 @@ static void lpc32xx_gpo_set_value(struct gpio_chip *chip, unsigned pin,
+ 	__set_gpo_level_p3(group, pin, value);
+ }
+ 
++static int lpc32xx_gpo_get_value(struct gpio_chip *chip, unsigned pin)
++{
++	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
++
++	return __get_gpo_state_p3(group, pin);
++}
++
+ static int lpc32xx_gpio_request(struct gpio_chip *chip, unsigned pin)
+ {
+ 	if (pin < chip->ngpio)
+@@ -427,6 +443,7 @@ static struct lpc32xx_gpio_chip lpc32xx_gpiochip[] = {
+ 			.label			= "gpo_p3",
+ 			.direction_output	= lpc32xx_gpio_dir_out_always,
+ 			.set			= lpc32xx_gpo_set_value,
++			.get			= lpc32xx_gpo_get_value,
+ 			.request		= lpc32xx_gpio_request,
+ 			.base			= LPC32XX_GPO_P3_GRP,
+ 			.ngpio			= LPC32XX_GPO_P3_MAX,
