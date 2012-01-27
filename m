@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab2A0Ba5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 26 Jan 2012 20:30:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60698 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab2A0Ba4 convert rfc822-to-8bit (ORCPT
+	id S1754677Ab2A0BqI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 26 Jan 2012 20:46:08 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:32472 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab2A0Bpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 26 Jan 2012 20:30:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120127010838.GA27899@suse.de>
-References: <CAFLxGvw85fWdsAodBn1Z0vFYZx0U+vYg6hgsBYbmfuyaFTgznA@mail.gmail.com>
- <58311.79.160.186.248.1327615864.squirrel@www.nlc.no> <CAFLxGvzsg71gtyPEtOAVnS-DtozYzqgoGNK-ZJRvBfq1mf3Oug@mail.gmail.com>
- <CAFLxGvzffs=uSjxogdWtk_gqoJHPnmgQSLw9WaZRr_be=J5cgw@mail.gmail.com> <20120127010838.GA27899@suse.de>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 27 Jan 2012 02:30:33 +0100
-Message-ID: <CAPXgP12Bj1K3j5HL1=GTj=xEC+oWgB7VFeQL_Pg23fCevTQAcw@mail.gmail.com>
-Subject: Re: [uml-devel] /sys/class/tty/tty0/active?
-To: Greg KH <gregkh@suse.de>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>, stian@nixia.no,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 26 Jan 2012 20:45:52 -0500
+X-AuditID: cbfee61a-b7cd2ae000004fa5-44-4f2201cfe262
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Greg KH'" <gregkh@suse.de>
+Subject: [PATCH] serial: samsung: Add support serial for EXYNOS4212 and
+ EXYNOS4412
+Date: Fri, 27 Jan 2012 10:45:51 +0900
+Message-id: <017001ccdc95$6698f5c0$33cae140$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczclWaEzxcCP5D8S+m5SusHDXnFWg==
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 02:08, Greg KH <gregkh@suse.de> wrote:
-> On Thu, Jan 26, 2012 at 11:56:50PM +0100, richard -rw- weinberger wrote:
->> On Thu, Jan 26, 2012 at 11:12 PM, richard -rw- weinberger
->> <richard.weinberger@gmail.com> wrote:
->> > On Thu, Jan 26, 2012 at 11:11 PM,  <stian@nixia.no> wrote:
->> >>> Hi!
->> >>>
->> >>> systemd goes nuts on UML.
->> >>> While hunting down all issues I found out that systemd wants to read from
->> >>> /sys/class/tty/tty0/active.
->> >>
->> >> Kernel version?
->> >
->> > Linus' tree as of today.
->>
->> Hmm, fbc92a34 introduced it.
->> But it depends on CONFIG_VT. :-\
->
-> Is that a problem for UML somehow?
 
-In general, the "crippled" environments might not really the right
-thing too run full-blown user login managers like logind.
+This should be added for EXYNOS4212 and EXYNOS4412 SoCs.
 
-The main systemd 'init' will not have any problems with that, but
-running logind might not really work out under UML.
+Cc: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: stable@kerne.org
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+---
+ drivers/tty/serial/samsung.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Depending how far full-OS support in UML should go, logind should
-either not run inside UML, or if, UML should provide the needed bits
-for in virtual consoles.
+diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
+index f96f37b..ce632da 100644
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -1593,7 +1593,8 @@ static struct s3c24xx_serial_drv_data s5pv210_serial_drv_data = {
+ #define S5PV210_SERIAL_DRV_DATA	(kernel_ulong_t)NULL
+ #endif
+ 
+-#ifdef CONFIG_CPU_EXYNOS4210
++#if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SOC_EXYNOS4212) || \
++	defined(CONFIG_CPU_EXYNOS4412)
+ static struct s3c24xx_serial_drv_data exynos4210_serial_drv_data = {
+ 	.info = &(struct s3c24xx_uart_info) {
+ 		.name		= "Samsung Exynos4 UART",
+-- 
+1.7.1
 
-If it is not to be solved otherwise, maybe logind needs more
-VT-avoiding logic like this:
-  http://cgit.freedesktop.org/systemd/systemd/commit/?id=addedec48ba0ffc4472ef6d3b5a45c9d4239f1cd
 
-Kay
