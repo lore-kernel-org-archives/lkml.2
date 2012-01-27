@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253Ab2A0XCC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 18:02:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60753 "EHLO mx1.redhat.com"
+	id S1752664Ab2A0XCb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 18:02:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19646 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752009Ab2A0XCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 18:02:00 -0500
+	id S1752032Ab2A0XCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 18:02:01 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -16,189 +16,335 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 6/6] pagemap: introduce data structure for pagemap entry
-Date: Fri, 27 Jan 2012 18:02:53 -0500
-Message-Id: <1327705373-29395-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 2/6] thp: optimize away unnecessary page table locking
+Date: Fri, 27 Jan 2012 18:02:49 -0500
+Message-Id: <1327705373-29395-3-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1327705373-29395-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1327705373-29395-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently a local variable of pagemap entry in pagemap_pte_range()
-is named pfn and typed with u64, but it's not correct (pfn should
-be unsigned long.)
-This patch introduces special type for pagemap entry and replace
-code with it.
+Currently when we check if we can handle thp as it is or we need to
+split it into regular sized pages, we hold page table lock prior to
+check whether a given pmd is mapping thp or not. Because of this,
+when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
+To remove it, this patch introduces a optimized check function and
+replace several similar logics with it.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>
+
+Changes since v3:
+  - Fix likely/unlikely pattern in pmd_trans_huge_stable()
+  - Change suffix from _stable to _lock
+  - Introduce __pmd_trans_huge_lock() to avoid micro-regression
+  - Return 1 when wait_split_huge_page path is taken
+
+Changes since v2:
+  - Fix missing "return 0" in "thp under splitting" path
+  - Remove unneeded comment
+  - Change the name of check function to describe what it does
+  - Add VM_BUG_ON(mmap_sem)
 ---
- fs/proc/task_mmu.c |   66 +++++++++++++++++++++++++++------------------------
- 1 files changed, 35 insertions(+), 31 deletions(-)
+ fs/proc/task_mmu.c      |   70 +++++++++------------------
+ include/linux/huge_mm.h |   17 +++++++
+ mm/huge_memory.c        |  120 ++++++++++++++++++++++-------------------------
+ 3 files changed, 96 insertions(+), 111 deletions(-)
 
 diff --git 3.3-rc1.orig/fs/proc/task_mmu.c 3.3-rc1/fs/proc/task_mmu.c
-index e2063d9..c2807a3 100644
+index cfbba8d..2622b64 100644
 --- 3.3-rc1.orig/fs/proc/task_mmu.c
 +++ 3.3-rc1/fs/proc/task_mmu.c
-@@ -586,9 +586,13 @@ const struct file_operations proc_clear_refs_operations = {
- 	.llseek		= noop_llseek,
- };
- 
-+typedef struct {
-+	u64 pme;
-+} pme_t;
-+
- struct pagemapread {
- 	int pos, len;
--	u64 *buffer;
-+	pme_t *buffer;
- };
- 
- #define PAGEMAP_WALK_SIZE	(PMD_SIZE)
-@@ -611,10 +615,15 @@ struct pagemapread {
- #define PM_NOT_PRESENT      PM_PSHIFT(PAGE_SHIFT)
- #define PM_END_OF_BUFFER    1
- 
--static int add_to_pagemap(unsigned long addr, u64 pfn,
-+static inline pme_t make_pme(u64 val)
-+{
-+	return (pme_t) { .pme = val };
-+}
-+
-+static int add_to_pagemap(unsigned long addr, pme_t *pme,
- 			  struct pagemapread *pm)
- {
--	pm->buffer[pm->pos++] = pfn;
-+	pm->buffer[pm->pos++] = *pme;
- 	if (pm->pos >= pm->len)
- 		return PM_END_OF_BUFFER;
- 	return 0;
-@@ -626,8 +635,10 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
- 	struct pagemapread *pm = walk->private;
- 	unsigned long addr;
- 	int err = 0;
-+	pme_t pme = make_pme(PM_NOT_PRESENT);
-+
- 	for (addr = start; addr < end; addr += PAGE_SIZE) {
--		err = add_to_pagemap(addr, PM_NOT_PRESENT, pm);
-+		err = add_to_pagemap(addr, &pme, pm);
- 		if (err)
- 			break;
- 	}
-@@ -640,36 +651,31 @@ static u64 swap_pte_to_pagemap_entry(pte_t pte)
- 	return swp_type(e) | (swp_offset(e) << MAX_SWAPFILES_SHIFT);
- }
- 
--static u64 pte_to_pagemap_entry(pte_t pte)
-+static void pte_to_pagemap_entry(pme_t *pme, pte_t pte)
- {
--	u64 pme = 0;
- 	if (is_swap_pte(pte))
--		pme = PM_PFRAME(swap_pte_to_pagemap_entry(pte))
--			| PM_PSHIFT(PAGE_SHIFT) | PM_SWAP;
-+		*pme = make_pme(PM_PFRAME(swap_pte_to_pagemap_entry(pte))
-+				| PM_PSHIFT(PAGE_SHIFT) | PM_SWAP);
- 	else if (pte_present(pte))
--		pme = PM_PFRAME(pte_pfn(pte))
--			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
--	return pme;
-+		*pme = make_pme(PM_PFRAME(pte_pfn(pte))
-+				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
- }
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
--static u64 thp_pmd_to_pagemap_entry(pmd_t pmd, int offset)
-+static void thp_pmd_to_pagemap_entry(pme_t *pme, pmd_t pmd, int offset)
- {
--	u64 pme = 0;
- 	/*
- 	 * Currently pmd for thp is always present because thp can not be
- 	 * swapped-out, migrated, or HWPOISONed (split in such cases instead.)
- 	 * This if-check is just to prepare for future implementation.
- 	 */
- 	if (pmd_present(pmd))
--		pme = PM_PFRAME(pmd_pfn(pmd) + offset)
--			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
--	return pme;
-+		*pme = make_pme(PM_PFRAME(pmd_pfn(pmd) + offset)
-+				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
- }
- #else
--static inline u64 thp_pmd_to_pagemap_entry(pmd_t pmd, int offset)
-+static inline void thp_pmd_to_pagemap_entry(pme_t *pme, pmd_t pmd, int offset)
- {
--	return 0;
- }
- #endif
- 
-@@ -680,7 +686,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	struct pagemapread *pm = walk->private;
+@@ -394,20 +394,11 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
  	pte_t *pte;
- 	int err = 0;
--	u64 pfn = PM_NOT_PRESENT;
-+	pme_t pme = make_pme(PM_NOT_PRESENT);
+ 	spinlock_t *ptl;
  
+-	spin_lock(&walk->mm->page_table_lock);
+-	if (pmd_trans_huge(*pmd)) {
+-		if (pmd_trans_splitting(*pmd)) {
+-			spin_unlock(&walk->mm->page_table_lock);
+-			wait_split_huge_page(vma->anon_vma, pmd);
+-		} else {
+-			smaps_pte_entry(*(pte_t *)pmd, addr,
+-					HPAGE_PMD_SIZE, walk);
+-			spin_unlock(&walk->mm->page_table_lock);
+-			mss->anonymous_thp += HPAGE_PMD_SIZE;
+-			return 0;
+-		}
+-	} else {
++	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_PMD_SIZE, walk);
+ 		spin_unlock(&walk->mm->page_table_lock);
++		mss->anonymous_thp += HPAGE_PMD_SIZE;
++		return 0;
+ 	}
+ 	/*
+ 	 * The mmap_sem held all the way back in m_start() is what
+@@ -694,25 +685,17 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
  	/* find the first VMA at or above 'addr' */
  	vma = find_vma(walk->mm, addr);
-@@ -689,8 +695,8 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 		for (; addr != end; addr += PAGE_SIZE) {
- 			unsigned long offset = (addr & ~PAGEMAP_WALK_MASK)
- 				>> PAGE_SHIFT;
--			pfn = thp_pmd_to_pagemap_entry(*pmd, offset);
--			err = add_to_pagemap(addr, pfn, pm);
-+			thp_pmd_to_pagemap_entry(&pme, *pmd, offset);
-+			err = add_to_pagemap(addr, &pme, pm);
- 			if (err)
- 				break;
+ 
+-	spin_lock(&walk->mm->page_table_lock);
+-	if (pmd_trans_huge(*pmd)) {
+-		if (pmd_trans_splitting(*pmd)) {
+-			spin_unlock(&walk->mm->page_table_lock);
+-			wait_split_huge_page(vma->anon_vma, pmd);
+-		} else {
+-			for (; addr != end; addr += PAGE_SIZE) {
+-				unsigned long offset = (addr & ~PAGEMAP_WALK_MASK)
+-					>> PAGE_SHIFT;
+-				pfn = thp_pmd_to_pagemap_entry(*pmd, offset);
+-				err = add_to_pagemap(addr, pfn, pm);
+-				if (err)
+-					break;
+-			}
+-			spin_unlock(&walk->mm->page_table_lock);
+-			return err;
++	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++		for (; addr != end; addr += PAGE_SIZE) {
++			unsigned long offset = (addr & ~PAGEMAP_WALK_MASK)
++				>> PAGE_SHIFT;
++			pfn = thp_pmd_to_pagemap_entry(*pmd, offset);
++			err = add_to_pagemap(addr, pfn, pm);
++			if (err)
++				break;
  		}
-@@ -709,11 +715,11 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 		if (vma && (vma->vm_start <= addr) &&
- 		    !is_vm_hugetlb_page(vma)) {
- 			pte = pte_offset_map(pmd, addr);
--			pfn = pte_to_pagemap_entry(*pte);
-+			pte_to_pagemap_entry(&pme, *pte);
- 			/* unmap before userspace copy */
- 			pte_unmap(pte);
- 		}
--		err = add_to_pagemap(addr, pfn, pm);
-+		err = add_to_pagemap(addr, &pme, pm);
- 		if (err)
- 			return err;
+-	} else {
+ 		spin_unlock(&walk->mm->page_table_lock);
++		return err;
  	}
-@@ -724,13 +730,11 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- }
- 
- #ifdef CONFIG_HUGETLB_PAGE
--static u64 huge_pte_to_pagemap_entry(pte_t pte, int offset)
-+static void huge_pte_to_pagemap_entry(pme_t *pme, pte_t pte, int offset)
- {
--	u64 pme = 0;
- 	if (pte_present(pte))
--		pme = PM_PFRAME(pte_pfn(pte) + offset)
--			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
--	return pme;
-+		*pme = make_pme(PM_PFRAME(pte_pfn(pte) + offset)
-+				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
- }
- 
- /* This function walks within one hugetlb entry in the single call */
-@@ -740,12 +744,12 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
- {
- 	struct pagemapread *pm = walk->private;
- 	int err = 0;
--	u64 pfn;
-+	pme_t pme = make_pme(PM_NOT_PRESENT);
  
  	for (; addr != end; addr += PAGE_SIZE) {
- 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
--		pfn = huge_pte_to_pagemap_entry(*pte, offset);
--		err = add_to_pagemap(addr, pfn, pm);
-+		huge_pte_to_pagemap_entry(&pme, *pte, offset);
-+		err = add_to_pagemap(addr, &pme, pm);
- 		if (err)
- 			return err;
+@@ -979,24 +962,17 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+ 	pte_t *pte;
+ 
+ 	md = walk->private;
+-	spin_lock(&walk->mm->page_table_lock);
+-	if (pmd_trans_huge(*pmd)) {
+-		if (pmd_trans_splitting(*pmd)) {
+-			spin_unlock(&walk->mm->page_table_lock);
+-			wait_split_huge_page(md->vma->anon_vma, pmd);
+-		} else {
+-			pte_t huge_pte = *(pte_t *)pmd;
+-			struct page *page;
+-
+-			page = can_gather_numa_stats(huge_pte, md->vma, addr);
+-			if (page)
+-				gather_stats(page, md, pte_dirty(huge_pte),
+-						HPAGE_PMD_SIZE/PAGE_SIZE);
+-			spin_unlock(&walk->mm->page_table_lock);
+-			return 0;
+-		}
+-	} else {
++
++	if (pmd_trans_huge_lock(pmd, md->vma) == 1) {
++		pte_t huge_pte = *(pte_t *)pmd;
++		struct page *page;
++
++		page = can_gather_numa_stats(huge_pte, md->vma, addr);
++		if (page)
++			gather_stats(page, md, pte_dirty(huge_pte),
++				     HPAGE_PMD_SIZE/PAGE_SIZE);
+ 		spin_unlock(&walk->mm->page_table_lock);
++		return 0;
  	}
+ 
+ 	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+diff --git 3.3-rc1.orig/include/linux/huge_mm.h 3.3-rc1/include/linux/huge_mm.h
+index 1b92129..f56cacb 100644
+--- 3.3-rc1.orig/include/linux/huge_mm.h
++++ 3.3-rc1/include/linux/huge_mm.h
+@@ -113,6 +113,18 @@ extern void __vma_adjust_trans_huge(struct vm_area_struct *vma,
+ 				    unsigned long start,
+ 				    unsigned long end,
+ 				    long adjust_next);
++extern int __pmd_trans_huge_lock(pmd_t *pmd,
++				 struct vm_area_struct *vma);
++/* mmap_sem must be held on entry */
++static inline int pmd_trans_huge_lock(pmd_t *pmd,
++				      struct vm_area_struct *vma)
++{
++	VM_BUG_ON(!rwsem_is_locked(&vma->vm_mm->mmap_sem));
++	if (pmd_trans_huge(*pmd))
++		return __pmd_trans_huge_lock(pmd, vma);
++	else
++		return 0;
++}
+ static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
+ 					 unsigned long start,
+ 					 unsigned long end,
+@@ -176,6 +188,11 @@ static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
+ 					 long adjust_next)
+ {
+ }
++static inline int pmd_trans_huge_lock(pmd_t *pmd,
++				      struct vm_area_struct *vma)
++{
++	return 0;
++}
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ 
+ #endif /* _LINUX_HUGE_MM_H */
+diff --git 3.3-rc1.orig/mm/huge_memory.c 3.3-rc1/mm/huge_memory.c
+index b3ffc21..cca6461 100644
+--- 3.3-rc1.orig/mm/huge_memory.c
++++ 3.3-rc1/mm/huge_memory.c
+@@ -1030,30 +1030,22 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ {
+ 	int ret = 0;
+ 
+-	spin_lock(&tlb->mm->page_table_lock);
+-	if (likely(pmd_trans_huge(*pmd))) {
+-		if (unlikely(pmd_trans_splitting(*pmd))) {
+-			spin_unlock(&tlb->mm->page_table_lock);
+-			wait_split_huge_page(vma->anon_vma,
+-					     pmd);
+-		} else {
+-			struct page *page;
+-			pgtable_t pgtable;
+-			pgtable = get_pmd_huge_pte(tlb->mm);
+-			page = pmd_page(*pmd);
+-			pmd_clear(pmd);
+-			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
+-			page_remove_rmap(page);
+-			VM_BUG_ON(page_mapcount(page) < 0);
+-			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
+-			VM_BUG_ON(!PageHead(page));
+-			spin_unlock(&tlb->mm->page_table_lock);
+-			tlb_remove_page(tlb, page);
+-			pte_free(tlb->mm, pgtable);
+-			ret = 1;
+-		}
+-	} else
++	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
++		struct page *page;
++		pgtable_t pgtable;
++		pgtable = get_pmd_huge_pte(tlb->mm);
++		page = pmd_page(*pmd);
++		pmd_clear(pmd);
++		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
++		page_remove_rmap(page);
++		VM_BUG_ON(page_mapcount(page) < 0);
++		add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
++		VM_BUG_ON(!PageHead(page));
+ 		spin_unlock(&tlb->mm->page_table_lock);
++		tlb_remove_page(tlb, page);
++		pte_free(tlb->mm, pgtable);
++		ret = 1;
++	}
+ 
+ 	return ret;
+ }
+@@ -1064,21 +1056,14 @@ int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ {
+ 	int ret = 0;
+ 
+-	spin_lock(&vma->vm_mm->page_table_lock);
+-	if (likely(pmd_trans_huge(*pmd))) {
+-		ret = !pmd_trans_splitting(*pmd);
+-		spin_unlock(&vma->vm_mm->page_table_lock);
+-		if (unlikely(!ret))
+-			wait_split_huge_page(vma->anon_vma, pmd);
+-		else {
+-			/*
+-			 * All logical pages in the range are present
+-			 * if backed by a huge page.
+-			 */
+-			memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+-		}
+-	} else
++	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
++		/*
++		 * All logical pages in the range are present
++		 * if backed by a huge page.
++		 */
+ 		spin_unlock(&vma->vm_mm->page_table_lock);
++		memset(vec, 1, (end - addr) >> PAGE_SHIFT);
++	}
+ 
+ 	return ret;
+ }
+@@ -1108,20 +1093,10 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
+ 		goto out;
+ 	}
+ 
+-	spin_lock(&mm->page_table_lock);
+-	if (likely(pmd_trans_huge(*old_pmd))) {
+-		if (pmd_trans_splitting(*old_pmd)) {
+-			spin_unlock(&mm->page_table_lock);
+-			wait_split_huge_page(vma->anon_vma, old_pmd);
+-			ret = -1;
+-		} else {
+-			pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
+-			VM_BUG_ON(!pmd_none(*new_pmd));
+-			set_pmd_at(mm, new_addr, new_pmd, pmd);
+-			spin_unlock(&mm->page_table_lock);
+-			ret = 1;
+-		}
+-	} else {
++	if ((ret = __pmd_trans_huge_lock(old_pmd, vma)) == 1) {
++		pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
++		VM_BUG_ON(!pmd_none(*new_pmd));
++		set_pmd_at(mm, new_addr, new_pmd, pmd);
+ 		spin_unlock(&mm->page_table_lock);
+ 	}
+ out:
+@@ -1134,24 +1109,41 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	int ret = 0;
+ 
+-	spin_lock(&mm->page_table_lock);
++	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
++		pmd_t entry;
++		entry = pmdp_get_and_clear(mm, addr, pmd);
++		entry = pmd_modify(entry, newprot);
++		set_pmd_at(mm, addr, pmd, entry);
++		spin_unlock(&vma->vm_mm->page_table_lock);
++		ret = 1;
++	}
++
++	return ret;
++}
++
++/*
++ * Returns 1 if a given pmd maps a stable (not under splitting) thp,
++ * -1 if the pmd maps thp under splitting, 0 if the pmd does not map thp.
++ *
++ * Note that if it returns 1, this routine returns without unlocking page
++ * table locks. So callers must unlock them.
++ */
++int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
++{
++	spin_lock(&vma->vm_mm->page_table_lock);
+ 	if (likely(pmd_trans_huge(*pmd))) {
+ 		if (unlikely(pmd_trans_splitting(*pmd))) {
+-			spin_unlock(&mm->page_table_lock);
++			spin_unlock(&vma->vm_mm->page_table_lock);
+ 			wait_split_huge_page(vma->anon_vma, pmd);
++			return -1;
+ 		} else {
+-			pmd_t entry;
+-
+-			entry = pmdp_get_and_clear(mm, addr, pmd);
+-			entry = pmd_modify(entry, newprot);
+-			set_pmd_at(mm, addr, pmd, entry);
+-			spin_unlock(&vma->vm_mm->page_table_lock);
+-			ret = 1;
++			/* Thp mapped by 'pmd' is stable, so we can
++			 * handle it as it is. */
++			return 1;
+ 		}
+-	} else
+-		spin_unlock(&vma->vm_mm->page_table_lock);
+-
+-	return ret;
++	}
++	spin_unlock(&vma->vm_mm->page_table_lock);
++	return 0;
+ }
+ 
+ pmd_t *page_check_address_pmd(struct page *page,
 -- 
 1.7.7.6
 
