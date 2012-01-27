@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab2A0Sb5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:31:57 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:38512 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab2A0Sb4 (ORCPT
+	id S1753076Ab2A0SdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:33:10 -0500
+Received: from oproxy9.bluehost.com ([69.89.24.6]:51744 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751635Ab2A0SdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:31:56 -0500
-Date: Fri, 27 Jan 2012 19:31:55 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-Message-ID: <20120127183155.GE11715@one.firstfloor.org>
-References: <20120127175342.273260614@openvz.org> <20120127175939.795551339@openvz.org> <20120127181525.GD11715@one.firstfloor.org> <20120127182403.GG11086@moon>
+	Fri, 27 Jan 2012 13:33:08 -0500
+Date: Fri, 27 Jan 2012 10:33:05 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pciehp: Disable/enable link during slot power off/on
+Message-ID: <20120127103305.5fdb8de3@jbarnes-desktop>
+In-Reply-To: <4F22E136.5010404@oracle.com>
+References: <4ED95AD0.7090003@oracle.com>
+	<20120127092622.6d8c2ae8@jbarnes-desktop>
+	<4F22E136.5010404@oracle.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120127182403.GG11086@moon>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/zOgfkL6gxa4hgGWk1=_tJtV"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 10:24:03PM +0400, Cyrill Gorcunov wrote:
-> Sure, I'll try to (btw, where I should send it to? And in which
-> format novadays mans are written? In plain old troff or some
-> human readable asciidocs?) And... should I post man page
-> on LKML as well?
+--Sig_/zOgfkL6gxa4hgGWk1=_tJtV
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Manpages are written in troff with -man and you would add the ASCII output
-of the manpage to the commit log and send the troff source at some
-point to linux-man.
+On Fri, 27 Jan 2012 09:39:02 -0800
+Yinghai Lu <yinghai.lu@oracle.com> wrote:
+> Please you check updated versions that i sent later.
+>=20
+> it was changed to three patches... i sent those patchs 1/123
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git f=
+or-pci-hp
+>=20
+> you can find other patches in=20
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git f=
+or-pci2
+>=20
+> and
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git f=
+or-pci-busn-alloc
 
-> 
-> > 
-> > As I understand it every time the kernel adds some new kind of state
-> > this would need to be extended too? This would seem like a lot of work,
-> > especially since you always need to synchronize kernel/user space.
-> > How would the user space break if it doesn't know about some newly
-> > added state?
-> 
-> Wait, maybe I should use kernel-doc here and put comments with example
-> right on top of SYSCALL definition?
+Ok I'll see if I can dig them out of the list; note I can't pull
+directly from your branches since I usually need to rewrite the
+changelogs and the patches need careful review.
 
-The basic problem is if this interface is at the right level of abstraction.
-I have some doubts on that. It seems like a long term maintenance nightmare to 
-me.  It may be better to put the loop that would call this into the kernel.
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-> > > +#ifdef CONFIG_SYSVIPC
-> > > +		ret = kcmp_ptr((long)task1->sysvsem.undo_list,
-> > > +			       (long)task2->sysvsem.undo_list,
-> > > +			       KCMP_SYSVSEM);
-> > 
-> > I assume that's normally NULL.
-> > 
-> 
-> Hmm.. Andi, I seem not following. And?
+--Sig_/zOgfkL6gxa4hgGWk1=_tJtV
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-It just doesn't seem like a very useful thing to compare.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
--Andi
+iQIcBAEBAgAGBQJPIu3hAAoJEIEoDkX4Qk9hiroP/0Vn0r2N5pObmyrL12gkhiB5
++t2qWgA58VusLyS3KCPG3lMrSZ+gtl2POPso0u4PPvCqr/P1LurbwjrtSIRb++fR
+miXk2fyo5fPjiVS3GTyrW2gnVGP9Dbd/Gem+uQuXapRlH5Nc0DdFVs25Grbinb65
+RHU8UDL+u/lskAwk3g+AGWirU0OdlXm+4b9RnY1l0mTkDAYlvjLjJWbmUcjrX9uZ
+H1nxkugFPwmTlIvabZ5c4BlBMMxT7+D+9b3AvWPhMzfSVAH3ca9GAB+OnL/+/jIW
+s5CSg2DevJVs5OUd36bq4IAUYmxN02mPDQSCsj42iFY/n7VWKcy/jvpXXMKcyffT
+Y7GhPcV9xctf2Bpv23VR5K/QyMQ75xHIZ07Eh0pa5ZFMsAxza5kA/0f9J5oCdleG
+hVc1o4M3gvbrcEI6K/mUUQLB0GqD5933Osu1UPHcxDSdkf+qyH44hWgbE7f5A24h
+MK+oDzlbgo1kzjsnKjgx4TTIuOvu9HkIh7kfhurzprCWgHQTeCz2ku0yY2mQe4ua
+rsHwNzyFzwaBiiVG/lhCnRL5oDrBrDEt7dY/7oKzyVE6KAjulx34Ifwv9Vy8Fupf
+IWatMYzRvooH6k8rAs3Q1DM2WCoeQl8hvLmlFhPhFMsvxXGujJciYcWCiMb3KQUA
+z6EoOlGNCBdsJvh7Jih1
+=LBcK
+-----END PGP SIGNATURE-----
+
+--Sig_/zOgfkL6gxa4hgGWk1=_tJtV--
