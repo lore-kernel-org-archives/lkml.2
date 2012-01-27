@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab2A0O1g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 09:27:36 -0500
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:46693 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755165Ab2A0O1e convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 09:27:34 -0500
+	id S1755364Ab2A0O27 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 09:28:59 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:35522 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751973Ab2A0O26 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 Jan 2012 09:28:58 -0500
+Message-ID: <4F22B4A6.1070202@vmware.com>
+Date: Fri, 27 Jan 2012 15:28:54 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <00de01ccdce1$e7c8a360$b759ea20$%szyprowski@samsung.com>
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
-	<1327568457-27734-13-git-send-email-m.szyprowski@samsung.com>
-	<CADMYwHw1B4RNV_9BqAg_M70da=g69Z3kyo5Cr6izCMwJ9LAtvA@mail.gmail.com>
-	<00de01ccdce1$e7c8a360$b759ea20$%szyprowski@samsung.com>
-Date: Fri, 27 Jan 2012 08:27:33 -0600
-Message-ID: <CAO8GWqnQg-W=TEc+CUc8hs=GrdCa9XCCWcedQx34cqURhNwNwA@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 12/15] drivers: add Contiguous Memory Allocator
-From: "Clark, Rob" <rob@ti.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jakob Bornecrantz <jakob@vmware.com>
+CC: airlied@linux.ie, airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, joe Perches <joe@perches.com>,
+        Ryan Mallon <rmallon@gmail.com>
+Subject: Re: [RFC PATCH] vmwgfx: Fix assignment in vmw_framebuffer_create_handle
+References: <1345211595.178155.1327674293610.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <1345211595.178155.1327674293610.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/27 Marek Szyprowski <m.szyprowski@samsung.com>:
-> Hi Ohad,
+On 01/27/2012 03:24 PM, Jakob Bornecrantz wrote:
+> I was asking around and this seems to only be used by X when it
+> starts and we want to preserve the contents of the screen. That
+> feature is implemented by the X driver. So we need to figure how we
+> want to solve it.
 >
-> On Friday, January 27, 2012 10:44 AM Ohad Ben-Cohen wrote:
+> Either way this fix should probably go into this RC series, not
+> sure if we need to send this to stable, since we are not leaking
+> data to userspace (check drm_mode_getfb), but we might as well.
 >
->> With v19, I can't seem to allocate big regions anymore (e.g. 101MiB).
->> In particular, this seems to fail:
->>
->> On Thu, Jan 26, 2012 at 11:00 AM, Marek Szyprowski
->> <m.szyprowski@samsung.com> wrote:
->> > +static int cma_activate_area(unsigned long base_pfn, unsigned long count)
->> > +{
->> > +       unsigned long pfn = base_pfn;
->> > +       unsigned i = count >> pageblock_order;
->> > +       struct zone *zone;
->> > +
->> > +       WARN_ON_ONCE(!pfn_valid(pfn));
->> > +       zone = page_zone(pfn_to_page(pfn));
->> > +
->> > +       do {
->> > +               unsigned j;
->> > +               base_pfn = pfn;
->> > +               for (j = pageblock_nr_pages; j; --j, pfn++) {
->> > +                       WARN_ON_ONCE(!pfn_valid(pfn));
->> > +                       if (page_zone(pfn_to_page(pfn)) != zone)
->> > +                               return -EINVAL;
->>
->> The above WARN_ON_ONCE is triggered, and then the conditional is
->> asserted (page_zone() retuns a "Movable" zone, whereas zone is
->> "Normal") and the function fails.
->>
->> This happens to me on OMAP4 with your 3.3-rc1-cma-v19 branch (and a
->> bunch of remoteproc/rpmsg patches).
->>
->> Do big allocations work for you ?
->
-> I've tested it with 256MiB on Exynos4 platform. Could you check if the
-> problem also appears on 3.2-cma-v19 branch (I've uploaded it a few hours
-> ago) and 3.2-cma-v18? Both are available on our public repo:
-> git://git.infradead.org/users/kmpark/linux-samsung/
->
-> The above code has not been changed since v16, so I'm really surprised
-> that it causes problems. Maybe the memory configuration or layout has
-> been changed in 3.3-rc1 for OMAP4?
+> Reviewed-by: Jakob Bornecrantz<jakob@vmware.com>
 
-is highmem still an issue?  I remember hitting this WARN_ON_ONCE() but
-went away after I switched to a 2g/2g vm split (which avoids highmem)
+But shouldn't we return the *real* handle. Not 0??
 
-BR,
--R
+/Thomas
 
-> Best regards
-> --
-> Marek Szyprowski
-> Samsung Poland R&D Center
+
+
+
 >
+> Cheers, Jakob.
 >
->
->
-> _______________________________________________
-> Linaro-mm-sig mailing list
-> Linaro-mm-sig@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
+> ----- Original Message -----
+>> Ryan,
+>>
+>> Thanks for pointing this out. Unfortunately there  seems to be two
+>> bugs here, the one you pointed out and the fact that we set the handle
+>> to zero, when it probably should be set to struct
+>> vmw_framebuffer::user_handle.
+>>
+>> Jakob, can you comment on this?
+>>
+>> /Thomas
+>>
+>> On 01/27/2012 07:25 AM, Ryan Mallon wrote:
+>>> The assignment of handle in vmw_framebuffer_create_handle doesn't
+>>> actually do anything useful and is incorrectly assigning an integer
+>>> value to a pointer argument. It appears that this is a typo and
+>>> should
+>>> be dereferencing handle rather than assigning to it directly.
+>>>
+>>> Signed-off-by: Ryan Mallon<rmallon@gmail.com>
+>>> ---
+>>>
+>>> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+>>> b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+>>> index 0af6ebd..b66ef0e 100644
+>>> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+>>> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+>>> @@ -378,7 +378,7 @@ int vmw_framebuffer_create_handle(struct
+>>> drm_framebuffer *fb,
+>>>    				  unsigned int *handle)
+>>>    {
+>>>    	if (handle)
+>>> -		handle = 0;
+>>> +		*handle = 0;
+>>>
+>>>    	return 0;
+>>>    }
+>>>
+>>
+
