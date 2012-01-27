@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab2A0VuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 16:50:24 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44150 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab2A0VuX (ORCPT
+	id S1754933Ab2A0VvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 16:51:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41150 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269Ab2A0VvK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 16:50:23 -0500
-Message-ID: <4F231C6C.80803@gmail.com>
-Date: Sat, 28 Jan 2012 08:51:40 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Fri, 27 Jan 2012 16:51:10 -0500
 MIME-Version: 1.0
-To: airlied@linux.ie, airlied@redhat.com, thellstrom@vmware.com,
-        jakob@vmware.com
-CC: dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        joe@perches.com, stable@vger.kernel.org
-Subject: [PATCH] vmwgfx: Fix assignment in vmw_framebuffer_create_handle
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1327643984.2919.6.camel@edumazet-laptop>
+References: <CAGsizzJnRy74ni-HH=5q1VR4g6sfDPg9SFw4UKgSjJjkSR8OJA@mail.gmail.com>
+ <20120125.203746.1977019610549185259.davem@davemloft.net> <CAGsizzLYxsc2MGxF7yK_QzS+3bexHa1F_6+NE87u3F18m7=R1g@mail.gmail.com>
+ <20120126.133033.964571202129052712.davem@davemloft.net> <CAOzFzEj-UCXwhw0NA=Y=qExG=RdVJB3RAdqU0HrsMo7V+4eGcQ@mail.gmail.com>
+ <1327643984.2919.6.camel@edumazet-laptop>
+From: Jesse Gross <jesse@nicira.com>
+Date: Fri, 27 Jan 2012 13:50:49 -0800
+Message-ID: <CAEP_g=-BwxSA6Wbs=HjJbTic3bZ5tBXCocvSvFkxXQGzKzNTnQ@mail.gmail.com>
+Subject: Re: [patch v4, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
+ multipoint GRE over IP
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Joseph Glanville <joseph.glanville@orionvm.com.au>,
+        David Miller <davem@davemloft.net>, steweg@ynet.sk,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The assignment of handle in vmw_framebuffer_create_handle doesn't actually do anything useful and is incorrectly assigning an integer value to a pointer argument. It appears that this is a typo and should be dereferencing handle rather than assigning to it directly. This fixes a bug where an undefined handle value is potentially returned to user-space.
+On Thu, Jan 26, 2012 at 9:59 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le vendredi 27 janvier 2012 à 09:24 +1100, Joseph Glanville a écrit :
+>> David is correct, the forwarding speed of Open vSwitch is at parity
+>> with the Linux Bridging module and its tunneling speed is actually
+>> slightly faster than the in kernel GRE implementation. I have tested
+>> this across a variety of configurations.
+>
+> Thanks for this input ! When was this tested exactly, and do you have
+> some "perf tool" reports to provide ?
+>
+> GRE is lockless since one year or so (modulo how is setup the tunnel as
+> discovered recently)
 
-Signed-off-by: Ryan Mallon <rmallon@gmail.com>
-Reviewed-by: Jakob Bornecrantz<jakob@vmware.com>
-Cc: stable@vger.kernel.org
----
-Thomas and Jakob have said that a correct fix involves returning the correct user_handle, but also requires changes to userspace. This patch is therefore a temporary fix only. Because it corrects an undefined handle value being returned to userspace, this should also be merged for stable kernels.
-
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-index 0af6ebd..b66ef0e 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-@@ -378,7 +378,7 @@ int vmw_framebuffer_create_handle(struct drm_framebuffer *fb,
- 				  unsigned int *handle)
- {
- 	if (handle)
--		handle = 0;
-+		*handle = 0;
- 
- 	return 0;
- }
-
-
-
+The out-of-tree OVS GRE stack (which is separate for practical and
+historical reasons but I would like to combine with the in-kernel one
+in the future) uses a few dirty tricks to help performance.  I don't
+know the parameters that Joseph used to test but one that he might be
+benefiting from here is where we cache the full set of headers to be
+pushed (GRE/IP/Ethernet) as well any routing/switching decisions.
+This turns a GRE encapsulation into a simple memcpy if there is enough
+headroom.  It's not something that I would want to propose for more
+general usage but I think that GSO/GRO for GRE would get at least some
+of that benefit and would also make things easier when NICs with
+support for encapsulated offloads start showing up.
