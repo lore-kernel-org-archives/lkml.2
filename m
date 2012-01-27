@@ -1,66 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab2A0SH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 13:07:58 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33348 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab2A0SH4 (ORCPT
+	id S1752733Ab2A0SKT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 13:10:19 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:32100 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab2A0SKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 13:07:56 -0500
-Message-ID: <4F22E7F8.30804@lwfinger.net>
-Date: Fri, 27 Jan 2012 12:07:52 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Fri, 27 Jan 2012 13:10:17 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/CiN2DvoBj4pBtkdmITtYM
+Date: Fri, 27 Jan 2012 10:10:04 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Simon Glass <sjg@chromium.org>, Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>, Dong Aisheng <dongas86@gmail.com>,
+        "Shawn Guo (shawn.guo@linaro.org)" <shawn.guo@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Pinmux bindings proposal V2
+Message-ID: <20120127181004.GA9339@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
+ <CAPnjgZ3Xhebn1x1A-Vdy78DWbDd=cp0AK6tL-R1SRzS4GdF97g@mail.gmail.com>
+ <20120127022111.GK29812@atomide.com>
+ <CAPnjgZ2EkvTMsOkWyf4pfwRpvcvYs=WaKy5Gi8fdkAUQmvt=ig@mail.gmail.com>
+ <20120127173732.GJ13504@atomide.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF178E123E62@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        wireless <linux-wireless@vger.kernel.org>
-Subject: Re: Kernel BUG due to kernel page fault
-References: <4F21D57F.7090103@lwfinger.net> <20120127164219.GE19323@redhat.com>
-In-Reply-To: <20120127164219.GE19323@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178E123E62@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2012 10:42 AM, Stanislaw Gruszka wrote:
-> On Thu, Jan 26, 2012 at 04:36:47PM -0600, Larry Finger wrote:
->> Modules linked in: fuse autofs4 snd_pcm_oss snd_mixer_oss snd_seq
->> snd_seq_device edd nfs nfsd lockd auth_rpcgss nfs_acl sunrpc
->> exportfs ipv6 vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O)
->                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->> RIP: 0010:[<ffffffff811e3ecb>]  [<ffffffff811e3ecb>] strnlen+0xb/0x30
-> [snip]
->> Call Trace:
->>   [<ffffffff811e58ae>] string.isra.4+0x3e/0xd0
->>   [<ffffffff811e6889>] vsnprintf+0x219/0x600
->>   [<ffffffff81153093>] seq_printf+0x53/0x80
->>   [<ffffffff811e21db>] ? radix_tree_lookup+0xb/0x10
->>   [<ffffffff810ba5ab>] show_interrupts+0x24b/0x300
->>   [<ffffffff81153474>] seq_read+0x2b4/0x3f0
->>   [<ffffffff811531c0>] ? seq_lseek+0x100/0x100
->>   [<ffffffff8118b651>] proc_reg_read+0x81/0xc0
->>   [<ffffffff8112f967>] vfs_read+0xa7/0x160
->>   [<ffffffff8112fa65>] sys_read+0x45/0x90
->>   [<ffffffff813a33a2>] system_call_fastpath+0x16/0x1b
->
-> This is call trace from cat /proc/interrupts, seems something pass
-> malformed string to request_irq(). I do not think this is rtlwifi,
-> rather that vbox thing.
+* Stephen Warren <swarren@nvidia.com> [120127 09:21]:
+> Tony Lindgren wrote at Friday, January 27, 2012 10:38 AM:
+> ...
+> > So how about let's do separate static and dynamic bindings,
+> > something like this:
+> > 
+> > 	/*
+> > 	 * Static init time only mux where
+> > 	 * we only specify phandle to driver
+> > 	 * and, offset of the mux, and the value.
+> > 	 * These pins are discarded after init.
+> > 	 *
+> > 	 * Format:	  mux_ctrl      offset value
+> > 	 */
+> > 	pinctrl-static = <&pmx_driver1  0x0020 0x1245
+> > 			   &pmx_driver2 0x0022 0x6578>;
+> 
+> So those are direct register writes? That sounds pretty scary, and a
+> royal pain to author the device tree.
 
-Thanks for responding. Vbox may be guilty of a lot of things, but this is not 
-one of them.
+Driver specific, either registers or enumeration. It could also
+it could be also generic defines, something along the lines of
+PMX_MUX_FUNCTION_1 | PMX_MUX_GPIO_INPUT.
+ 
+> If we do go with this, I think we'd need a mask for each register write
+> too, so you can leave certain bits unaffected; there's no reason to
+> believe in general that each pin has a dedicated register only for that
+> pin, or even that only pinmux/config data is in the register.
 
-Just before I received your reply, I found the problem. The PCI driver in 
-rtlwifi sets a flag to indicate that interrupts have been enabled, and uses that 
-flag to tell if the cleanup needs to disable them. When I moved the code that 
-starts mac80211, I also moved the statement that sets the flag. As a result, the 
-driver was exiting with interrupts still enabled, and the BUG resulted from 
-that. I can now unload the driver when firmware is not available.
+I'm currently using "pinmux-simple,function-mask", but yeah sounds like
+it should be a generic mask name.
+ 
+> This also makes it difficult to extract semantic information from the
+> DT. How can the pinctrl subsystem know which pins are in use and which
+> aren't here? This is relevant if some module loads later and attempts
+> to claim some pins - are they already in use by another driver or not?
 
-Larry
+We could just have one spinlock for all the discarded pins instead of
+having a single spinlock for each discarded pin?
+ 
+> Now individual pinctrl drivers could interpret those register values
+> and know that this means pin/group "x" is programmed to mux value "y",
+> but does that mean pin "x" is actually /used/, or just that the init
+> table had to program value "y" because the default for that pin is "z"
+> which conflicted in HW with some other mux setting that the board
+> needed (e.g. muxing signal "y" to some other pin).
+> 
+> (Put another way, this binding completely bypasses the pinctrl subsystem;
+> is that OK?)
 
+Well I was thinking we should still register the pins, and have pinctrl
+fwk set those values, then discard those pins but still keep them as
+locked.
+ 
+> > 	/*
+> > 	 * Dynamic mux where the mux is kept around after
+> > 	 * init and multiple states can be defined for
+> > 	 * a mux as a subnode of the pinmux controller.
+> > 	 *
+> > 	 * Format:	   mux_phandle   initial state
+> > 	 */
+> > 	pinctrl-dynamic = <&pmx_sdhci    PMX_STATE_ENABLED
+> > 			   &pmx_ehci_xcv PMX_STATE_ENABLED>;
+> > 
+> > This would make pinctrl-static binding follow the same
+> > standard as GPIO binding and can be parsed easily with
+> > of_parse_phandle_with_args.
+> > 
+> > Then for pinctrl-dynamic we can make a custom parser,
+> > and the binding can follow the more readable format as
+> > Simon posted.
+> 
+> I don't think there's any point in having 2 separate bindings; it's been
+> hard enough to come up with /one/ binding! If we do go for raw register
+> writes for the static stuff, we should just do the same for the dynamic
+> stuff too.
 
+But then we need to waste a register for the static/dynamic flag for
+each mux.. Or make the tree deeper.
+ 
+> In fact, given this would all bypass the pinctrl subsystem entirely,
+> perhaps lets not even define a standard format for pinctrl-static or
+> pinctrl-dynamic, and just have each pin controller driver parse tables
+> inside its own node, in a format specific to that pin controller's
+> binding. I already had that working for the static case back in last
+> August and would love to just apply those patches and be done with this.
 
+Hmm I don't think it would by pass it, we just need to let pinctrl
+fwk deal with the init time only pins too.
+
+For the dynamic pins, note that PMX_STATE_* defines would be one of the
+standard states supported by the pinctrl fwk. Then of course where
+pmx_sdhci binding is implemented, you could have either hardware specific
+register values, enumeration or generic defines depending on how the
+pinctrl driver is implemented.
+
+Regards,
+
+Tony 
 
