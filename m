@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab2A1So0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 13:44:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47959 "EHLO mx1.redhat.com"
+	id S1752874Ab2A1SoZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 13:44:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65433 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545Ab2A1Snr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752540Ab2A1Snr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jan 2012 13:43:47 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
 Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/7] ftrace: Add enable/disable ftrace_ops control interface
-Date: Sat, 28 Jan 2012 19:43:24 +0100
-Message-Id: <1327776209-4883-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/7] ftrace, perf: Add add/del tracepoint perf registration actions
+Date: Sat, 28 Jan 2012 19:43:26 +0100
+Message-Id: <1327776209-4883-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1327776209-4883-1-git-send-email-jolsa@redhat.com>
 References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
  <1327776209-4883-1-git-send-email-jolsa@redhat.com>
@@ -21,317 +21,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding a way to temporarily enable/disable ftrace_ops. The change
-follows the same way as 'global' ftrace_ops are done.
+Adding TRACE_REG_PERF_ADD and TRACE_REG_PERF_DEL to handle
+perf event schedule in/out actions.
 
-Introducing 2 global ftrace_ops - control_ops and ftrace_control_list
-which take over all ftrace_ops registered with FTRACE_OPS_FL_CONTROL
-flag. In addition new per cpu flag called 'disabled' is also added to
-ftrace_ops to provide the control information for each cpu.
-
-When ftrace_ops with FTRACE_OPS_FL_CONTROL is registered, it is
-set as disabled for all cpus.
-
-The ftrace_control_list contains all the registered 'control' ftrace_ops.
-The control_ops provides function which iterates ftrace_control_list
-and does the check for 'disabled' flag on current cpu.
-
-Adding 3 inline functions:
-  ftrace_function_local_disable/ftrace_function_local_enable
-  - enable/disable the ftrace_ops on current cpu
-  ftrace_function_local_disabled
-  - get disabled ftrace_ops::disabled value for current cpu
+The add action is invoked for when the perf event is scheduled in,
+while the del action is invoked when the event is scheduled out.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/ftrace.h |   65 ++++++++++++++++++++++++++++
- kernel/trace/ftrace.c  |  111 +++++++++++++++++++++++++++++++++++++++++++++---
- kernel/trace/trace.h   |    2 +
- 3 files changed, 171 insertions(+), 7 deletions(-)
+ include/linux/ftrace_event.h    |    2 ++
+ kernel/trace/trace_event_perf.c |    4 +++-
+ kernel/trace/trace_events.c     |    2 ++
+ kernel/trace/trace_kprobe.c     |    2 ++
+ kernel/trace/trace_syscalls.c   |    4 ++++
+ 5 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index f33fb3b..5cb3a51 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -31,16 +31,32 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
- 
- typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip);
- 
-+/*
-+ * FTRACE_OPS_FL_* bits denote the state of ftrace_ops struct and are
-+ * set in the flags member.
-+ *
-+ * ENABLED - set/unset when ftrace_ops is registered/unregistered
-+ * GLOBAL  - set manualy by ftrace_ops user to denote the ftrace_ops
-+ *           is part of the global tracers sharing the same filter
-+ *           via set_ftrace_* debugfs files.
-+ * DYNAMIC - set when ftrace_ops is registered to denote dynamically
-+ *           allocated ftrace_ops which need special care
-+ * CONTROL - set manualy by ftrace_ops user to denote the ftrace_ops
-+ *           could be controled by following calls:
-+ *           ftrace_function_enable, ftrace_function_disable
-+ */
- enum {
- 	FTRACE_OPS_FL_ENABLED		= 1 << 0,
- 	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
- 	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
-+	FTRACE_OPS_FL_CONTROL		= 1 << 3,
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 195e360..2bf677c 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -148,6 +148,8 @@ enum trace_reg {
+ 	TRACE_REG_PERF_UNREGISTER,
+ 	TRACE_REG_PERF_OPEN,
+ 	TRACE_REG_PERF_CLOSE,
++	TRACE_REG_PERF_ADD,
++	TRACE_REG_PERF_DEL,
  };
  
- struct ftrace_ops {
- 	ftrace_func_t			func;
- 	struct ftrace_ops		*next;
- 	unsigned long			flags;
-+	int __percpu			*disabled;
- #ifdef CONFIG_DYNAMIC_FTRACE
- 	struct ftrace_hash		*notrace_hash;
- 	struct ftrace_hash		*filter_hash;
-@@ -97,6 +113,55 @@ int register_ftrace_function(struct ftrace_ops *ops);
- int unregister_ftrace_function(struct ftrace_ops *ops);
- void clear_ftrace_function(void);
+ struct ftrace_event_call;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 0cfcc37..d72af0b 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -211,12 +211,14 @@ int perf_trace_add(struct perf_event *p_event, int flags)
+ 	list = this_cpu_ptr(pcpu_list);
+ 	hlist_add_head_rcu(&p_event->hlist_entry, list);
  
-+/**
-+ * ftrace_function_local_enable - enable controlled ftrace_ops on current cpu
-+ *
-+ * This function enables tracing on current cpu by decreasing
-+ * the per cpu control variable.
-+ * It must be called with preemption disabled and only on ftrace_ops
-+ * registered with FTRACE_OPS_FL_CONTROL. If called without preemption
-+ * disabled, this_cpu_ptr will complain when CONFIG_DEBUG_PREEMPT is enabled.
-+ */
-+static inline void ftrace_function_local_enable(struct ftrace_ops *ops)
-+{
-+	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL)))
-+		return;
-+
-+	(*this_cpu_ptr(ops->disabled))--;
-+}
-+
-+/**
-+ * ftrace_function_local_disable - enable controlled ftrace_ops on current cpu
-+ *
-+ * This function enables tracing on current cpu by decreasing
-+ * the per cpu control variable.
-+ * It must be called with preemption disabled and only on ftrace_ops
-+ * registered with FTRACE_OPS_FL_CONTROL. If called without preemption
-+ * disabled, this_cpu_ptr will complain when CONFIG_DEBUG_PREEMPT is enabled.
-+ */
-+static inline void ftrace_function_local_disable(struct ftrace_ops *ops)
-+{
-+	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL)))
-+		return;
-+
-+	(*this_cpu_ptr(ops->disabled))++;
-+}
-+
-+/**
-+ * ftrace_function_local_disabled - returns ftrace_ops disabled value
-+ *                                  on current cpu
-+ *
-+ * This function returns value of ftrace_ops::disabled on current cpu.
-+ * It must be called with preemption disabled and only on ftrace_ops
-+ * registered with FTRACE_OPS_FL_CONTROL. If called without preemption
-+ * disabled, this_cpu_ptr will complain when CONFIG_DEBUG_PREEMPT is enabled.
-+ */
-+static inline int ftrace_function_local_disabled(struct ftrace_ops *ops)
-+{
-+	WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL));
-+	return *this_cpu_ptr(ops->disabled);
-+}
-+
- extern void ftrace_stub(unsigned long a0, unsigned long a1);
- 
- #else /* !CONFIG_FUNCTION_TRACER */
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index e2e0597..c8d2af2 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -62,6 +62,8 @@
- #define FTRACE_HASH_DEFAULT_BITS 10
- #define FTRACE_HASH_MAX_BITS 12
- 
-+#define FL_GLOBAL_CONTROL_MASK (FTRACE_OPS_FL_GLOBAL | FTRACE_OPS_FL_CONTROL)
-+
- /* ftrace_enabled is a method to turn ftrace on or off */
- int ftrace_enabled __read_mostly;
- static int last_ftrace_enabled;
-@@ -89,12 +91,14 @@ static struct ftrace_ops ftrace_list_end __read_mostly = {
- };
- 
- static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
-+static struct ftrace_ops *ftrace_control_list __read_mostly = &ftrace_list_end;
- static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
- ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
- static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
- ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
- static struct ftrace_ops global_ops;
-+static struct ftrace_ops control_ops;
- 
- static void
- ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
-@@ -168,6 +172,32 @@ static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip)
+-	return 0;
++	return tp_event->class->reg(tp_event, TRACE_REG_PERF_ADD, p_event);
  }
+ 
+ void perf_trace_del(struct perf_event *p_event, int flags)
+ {
++	struct ftrace_event_call *tp_event = p_event->tp_event;
+ 	hlist_del_rcu(&p_event->hlist_entry);
++	tp_event->class->reg(tp_event, TRACE_REG_PERF_DEL, p_event);
+ }
+ 
+ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 5138fea..079a93a 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -173,6 +173,8 @@ int ftrace_event_reg(struct ftrace_event_call *call,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
  #endif
- 
-+static void control_ops_disable_all(struct ftrace_ops *ops)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		*per_cpu_ptr(ops->disabled, cpu) = 1;
-+}
-+
-+static int control_ops_alloc(struct ftrace_ops *ops)
-+{
-+	int __percpu *disabled;
-+
-+	disabled = alloc_percpu(int);
-+	if (!disabled)
-+		return -ENOMEM;
-+
-+	ops->disabled = disabled;
-+	control_ops_disable_all(ops);
-+	return 0;
-+}
-+
-+static void control_ops_free(struct ftrace_ops *ops)
-+{
-+	free_percpu(ops->disabled);
-+}
-+
- static void update_global_ops(void)
- {
- 	ftrace_func_t func;
-@@ -259,6 +289,26 @@ static int remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
- 	return 0;
- }
- 
-+static void add_ftrace_list_ops(struct ftrace_ops **list,
-+				struct ftrace_ops *main_ops,
-+				struct ftrace_ops *ops)
-+{
-+	int first = *list == &ftrace_list_end;
-+	add_ftrace_ops(list, ops);
-+	if (first)
-+		add_ftrace_ops(&ftrace_ops_list, main_ops);
-+}
-+
-+static int remove_ftrace_list_ops(struct ftrace_ops **list,
-+				  struct ftrace_ops *main_ops,
-+				  struct ftrace_ops *ops)
-+{
-+	int ret = remove_ftrace_ops(list, ops);
-+	if (!ret && *list == &ftrace_list_end)
-+		ret = remove_ftrace_ops(&ftrace_ops_list, main_ops);
-+	return ret;
-+}
-+
- static int __register_ftrace_function(struct ftrace_ops *ops)
- {
- 	if (ftrace_disabled)
-@@ -270,15 +320,20 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
- 	if (WARN_ON(ops->flags & FTRACE_OPS_FL_ENABLED))
- 		return -EBUSY;
- 
-+	/* We don't support both control and global flags set. */
-+	if ((ops->flags & FL_GLOBAL_CONTROL_MASK) == FL_GLOBAL_CONTROL_MASK)
-+		return -EINVAL;
-+
- 	if (!core_kernel_data((unsigned long)ops))
- 		ops->flags |= FTRACE_OPS_FL_DYNAMIC;
- 
- 	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
--		int first = ftrace_global_list == &ftrace_list_end;
--		add_ftrace_ops(&ftrace_global_list, ops);
-+		add_ftrace_list_ops(&ftrace_global_list, &global_ops, ops);
- 		ops->flags |= FTRACE_OPS_FL_ENABLED;
--		if (first)
--			add_ftrace_ops(&ftrace_ops_list, &global_ops);
-+	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
-+		if (control_ops_alloc(ops))
-+			return -ENOMEM;
-+		add_ftrace_list_ops(&ftrace_control_list, &control_ops, ops);
- 	} else
- 		add_ftrace_ops(&ftrace_ops_list, ops);
- 
-@@ -302,11 +357,23 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
- 		return -EINVAL;
- 
- 	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
--		ret = remove_ftrace_ops(&ftrace_global_list, ops);
--		if (!ret && ftrace_global_list == &ftrace_list_end)
--			ret = remove_ftrace_ops(&ftrace_ops_list, &global_ops);
-+		ret = remove_ftrace_list_ops(&ftrace_global_list,
-+					     &global_ops, ops);
- 		if (!ret)
- 			ops->flags &= ~FTRACE_OPS_FL_ENABLED;
-+	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
-+		ret = remove_ftrace_list_ops(&ftrace_control_list,
-+					     &control_ops, ops);
-+		if (!ret) {
-+			/*
-+			 * The ftrace_ops is now removed from the list,
-+			 * so there'll be no new users. We must ensure
-+			 * all current users are done before we free
-+			 * the control data.
-+			 */
-+			synchronize_sched();
-+			control_ops_free(ops);
-+		}
- 	} else
- 		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
- 
-@@ -3874,6 +3941,36 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
- #endif /* CONFIG_DYNAMIC_FTRACE */
- 
- static void
-+ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip)
-+{
-+	struct ftrace_ops *op;
-+
-+	if (unlikely(trace_recursion_test(TRACE_CONTROL_BIT)))
-+		return;
-+
-+	/*
-+	 * Some of the ops may be dynamically allocated,
-+	 * they must be freed after a synchronize_sched().
-+	 */
-+	preempt_disable_notrace();
-+	trace_recursion_set(TRACE_CONTROL_BIT);
-+	op = rcu_dereference_raw(ftrace_control_list);
-+	while (op != &ftrace_list_end) {
-+		if (!ftrace_function_local_disabled(op) &&
-+		    ftrace_ops_test(op, ip))
-+			op->func(ip, parent_ip);
-+
-+		op = rcu_dereference_raw(op->next);
-+	};
-+	trace_recursion_clear(TRACE_CONTROL_BIT);
-+	preempt_enable_notrace();
-+}
-+
-+static struct ftrace_ops control_ops = {
-+	.func = ftrace_ops_control_func,
-+};
-+
-+static void
- ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
- {
- 	struct ftrace_ops *op;
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index b93ecba..55c6ea0 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -288,6 +288,8 @@ struct tracer {
- /* for function tracing recursion */
- #define TRACE_INTERNAL_BIT		(1<<11)
- #define TRACE_GLOBAL_BIT		(1<<12)
-+#define TRACE_CONTROL_BIT		(1<<13)
-+
- /*
-  * Abuse of the trace_recursion.
-  * As we need a way to maintain state if we are tracing the function
+ 	}
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 5667f89..580a05e 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1912,6 +1912,8 @@ int kprobe_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 6916b0d..dbdd804 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -666,6 +666,8 @@ static int syscall_enter_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+@@ -690,6 +692,8 @@ static int syscall_exit_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
 -- 
 1.7.1
 
