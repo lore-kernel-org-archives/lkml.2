@@ -1,111 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab2A1QjX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 11:39:23 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33122 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab2A1QjW (ORCPT
+	id S1752605Ab2A1QoL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 11:44:11 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45271 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab2A1QoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 11:39:22 -0500
-Date: Sat, 28 Jan 2012 17:39:17 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 2/7] ftrace: Add enable/disable ftrace_ops control
- interface
-Message-ID: <20120128163913.GE3391@somewhere>
-References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
- <1326912275-26405-3-git-send-email-jolsa@redhat.com>
- <20120120170232.GF18056@somewhere>
- <1327533221.22710.74.camel@gandalf.stny.rr.com>
- <20120126023726.GI20878@somewhere>
- <20120127103714.GA6294@m.brq.redhat.com>
- <20120127164045.GA3391@somewhere>
- <20120127165416.GD10601@m.brq.redhat.com>
- <20120127170202.GB3391@somewhere>
- <20120127172012.GE10601@m.brq.redhat.com>
+	Sat, 28 Jan 2012 11:44:09 -0500
+Date: Sat, 28 Jan 2012 17:44:05 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v3 22/25] irq_domain/x86: Convert x86 (embedded) to use
+ common irq_domain
+Message-ID: <20120128164405.GA20763@linutronix.de>
+References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
+ <1327700179-17454-23-git-send-email-grant.likely@secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20120127172012.GE10601@m.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1327700179-17454-23-git-send-email-grant.likely@secretlab.ca>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 06:20:12PM +0100, Jiri Olsa wrote:
-> On Fri, Jan 27, 2012 at 06:02:04PM +0100, Frederic Weisbecker wrote:
-> > On Fri, Jan 27, 2012 at 05:54:16PM +0100, Jiri Olsa wrote:
-> > > On Fri, Jan 27, 2012 at 05:40:49PM +0100, Frederic Weisbecker wrote:
-> > > > On Fri, Jan 27, 2012 at 11:37:14AM +0100, Jiri Olsa wrote:
-> > > > > On Thu, Jan 26, 2012 at 03:37:29AM +0100, Frederic Weisbecker wrote:
-> > > > > > On Wed, Jan 25, 2012 at 06:13:41PM -0500, Steven Rostedt wrote:
-> > > > > > > On Fri, 2012-01-20 at 18:02 +0100, Frederic Weisbecker wrote:
-> > > > > > > >  
-> > > > > > > > > +/**
-> > > > > > > > > + * ftrace_function_enable - enable controlled ftrace_ops on given cpu
-> > > > > > > > > + *
-> > > > > > > > > + * This function enables tracing on given cpu by decreasing
-> > > > > > > > > + * the per cpu control variable.
-> > > > > > > > > + * It must be called with preemption disabled and only on
-> > > > > > > > > + * ftrace_ops registered with FTRACE_OPS_FL_CONTROL.
-> > > > > > > > > + */
-> > > > > > > > > +static inline void ftrace_function_enable(struct ftrace_ops *ops, int cpu)
-> > > > > > > > > +{
-> > > > > > > > > +	atomic_t *disabled;
-> > > > > > > > > +
-> > > > > > > > > +	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL) ||
-> > > > > > > > > +			 !preempt_count()))
-> > > > > > > > > +		return;
-> > > > > > > > > +
-> > > > > > > > > +	disabled = per_cpu_ptr(ops->disabled, cpu);
-> > > > > > > > > +	atomic_dec(disabled);
-> > > > > > > > > +}
-> > > > > > > > 
-> > > > > > > > As you're using this for the local CPU exclusively, I suggest you rather
-> > > > > > > > rename it to "ftrace_function_{dis,en}able_cpu(struct ftrace_ops *ops)"
-> > > > > > > 
-> > > > > > > I wonder if "ftrace_function_local_{dis,en}able(ops)" would be better?
-> > > > > > > That would match something like local_irq_disable/enable.
-> > > > > > 
-> > > > > > Good idea.
-> > > > > > 
-> > > > > > > 
-> > > > > > > > and use __get_cpu_var() that does the preempt check for you.
-> > > > > 
-> > > > > I haven't found preempt check this_cpu_ptr path.. not sure I missed it..
-> > > > > so I'm keeping the implicit preemt check.
-> > > > 
-> > > > #ifdef CONFIG_DEBUG_PREEMPT
-> > > > #define my_cpu_offset per_cpu_offset(smp_processor_id())
-> > > > #else
-> > > > #define my_cpu_offset __my_cpu_offset
-> > > > #endif
-> > > > 
-> > > > #ifdef CONFIG_DEBUG_PREEMPT
-> > > > #define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
-> > > > #else
-> > > > #define this_cpu_ptr(ptr) __this_cpu_ptr(ptr)
-> > > > #endif
-> > > > 
-> > > > And smp_processor_id() has a preemption check.
-> > > 
-> > > yay.. ok :) so this one is triggered only if there's CONFIG_DEBUG_PREEMPT
-> > > option enabled.. seems to me it'd better to keep the implicit check anyway.
-> > > 
-> > > jirka
-> > 
-> > 
-> > This is a debugging option deemed to lower runtime debugging checks in
-> > production.
-> > 
-> > Is there a good reason to keep the check on every case?
-> 
-> none I guess, apart from me feeling better.. ;)
-> attached new version without the preemt_count check int the WARN_ON_ONCE
+* Grant Likely | 2012-01-27 14:36:16 [-0700]:
 
-Looks good.
+>This patch removes the x86-specific definition of irq_domain and replaces
+>it with the common implementation.
 
-Thanks.
+I pulled your devicetree/next tree. After this patch I get:
+
+|Hierarchical RCU implementation.
+|NR_IRQS:2304 nr_irqs:256 16
+|------------[ cut here ]------------
+|WARNING: at /home/bigeasy/work/shiva/git/linux-2.6-tip/kernel/irq/irqdomain.c:114 irq_domain_add_legacy+0x75/0x150()
+|Modules linked in:
+|Pid: 0, comm: swapper/0 Not tainted 3.3.0-rc1+ #65
+|Call Trace:
+| [<c15044e0>] ? printk+0x18/0x1a
+| [<c102cdbd>] warn_slowpath_common+0x6d/0xa0
+| [<c1095575>] ? irq_domain_add_legacy+0x75/0x150
+| [<c1095575>] ? irq_domain_add_legacy+0x75/0x150
+| [<c102ce0d>] warn_slowpath_null+0x1d/0x20
+| [<c1095575>] irq_domain_add_legacy+0x75/0x150
+| [<c1714824>] x86_add_irq_domains+0x96/0xd6
+| [<c1708df2>] init_IRQ+0x8/0x33
+| [<c170557f>] start_kernel+0x191/0x2e1
+| [<c170517f>] ? loglevel+0x2b/0x2b
+| [<c1705081>] i386_start_kernel+0x81/0x86
+|---[ end trace 4eaa2a86a8e2da22 ]---
+|------------[ cut here ]------------
+|kernel BUG at /home/bigeasy/work/shiva/git/linux-2.6-tip/arch/x86/kernel/devicetree.c:367!
+
+The warning is comming from this piece in irq_domain_add_legacy()
+|for (i = 0; i < size; i++) {
+|                 int irq = first_irq + i;
+|                 struct irq_data *irq_data = irq_get_irq_data(irq);
+| 
+|                 if (WARN_ON(!irq_data || irq_data->domain)) {
+
+irq_data is NULL here.
+
+|                         mutex_unlock(&irq_domain_mutex);
+|                         of_node_put(domain->of_node);
+|                         kfree(domain);
+|                         return NULL;
+|                 }
+|         }
+| 
+
+This is not always the case. arch_early_irq_init() in [0] sets up the
+first 16 entries. The reminaing few (there is a toal of 24 irqs for
+first ioapic and a second ioapic) are not initialized. This happens
+later via ->xlate, ioapic_xlate() => io_apic_setup_irq_pin() =>
+alloc_irq_and_cfg_at() calls irq_set_chip_data() on demand.
+
+[0] arch/x86/kernel/apic/io_apic.c
+
+Sebastian
