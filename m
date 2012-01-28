@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab2A1Vc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 16:32:28 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58397 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab2A1Vc0 convert rfc822-to-8bit (ORCPT
+	id S1753517Ab2A1WMM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 17:12:12 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34848 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab2A1WMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 16:32:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <m139azpn2n.fsf@fess.ebiederm.org>
-References: <20120124000517.GA28878@sergelap> <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
- <20120124002555.GA29534@sergelap> <CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
- <20120124010758.GJ23916@ZenIV.linux.org.uk> <m1k44gj1cu.fsf@fess.ebiederm.org>
- <20120124220247.GA26353@hallyn.com> <CAPXgP13_gczQmG_USAp0p2AuTfxkzAvzHvjbZY_rbbLH-4rDyg@mail.gmail.com>
- <20120124231601.GA4470@sergelap> <CAPXgP12REAwmDORzdGJhsxZKU8nhiauCxoVdKa8Eifw4MWWtgA@mail.gmail.com>
- <20120128195103.GA11299@sergelap> <m139azpn2n.fsf@fess.ebiederm.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Sat, 28 Jan 2012 22:32:06 +0100
-Message-ID: <CAPXgP12hk4iQNYGVrcKG1xBEJ2TmCH8jDx-E+1a8Mw8wiWCeDA@mail.gmail.com>
-Subject: Re: [RFC] fix devpts mount behavior
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        containers@lists.linux-foundation.org,
-        Dave Hansen <haveblue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>, sukadev@linux.vnet.ibm.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 28 Jan 2012 17:12:10 -0500
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        wad@chromium.org, luto@mit.edu, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk, indan@nul.nu, mcgrathr@chromium.org
+Subject: [PATCH v6 1/3] seccomp: kill the seccomp_t typedef
+Date: Sat, 28 Jan 2012 16:11:53 -0600
+Message-Id: <1327788715-24076-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 28, 2012 at 21:52, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Serge Hallyn <serge.hallyn@canonical.com> writes:
->
->> Quoting Kay Sievers (kay.sievers@vrfy.org):
->>> We might also thing about changing /sys/class/tty/ptmx/, and have the
->>> kernel create the symlink? The loops through userspace to setup
->>> default kernel stuff are kind of crazy ...
+Replaces the seccomp_t typedef with seccomp_struct to match modern
+kernel style.
 
->> sorry, there is something I'm missing here.  Without a target kobj
->> to link to, how would we go about telling the kernel that /dev/ptmx
->> should be a symlink to /dev/pts/ptmx?  Is there a way to do that?
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ include/linux/sched.h   |    2 +-
+ include/linux/seccomp.h |   10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-There is no support for symlinks in the core at the moment. But I
-guess we could just add support for it to the driver core and devtmpfs
-to create a symlink in /dev instead of a device node.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4032ec1..288b5cb 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1418,7 +1418,7 @@ struct task_struct {
+ 	uid_t loginuid;
+ 	unsigned int sessionid;
+ #endif
+-	seccomp_t seccomp;
++	struct seccomp_struct seccomp;
+ 
+ /* Thread group tracking */
+    	u32 parent_exec_id;
+diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+index cc7a4e9..171ab66 100644
+--- a/include/linux/seccomp.h
++++ b/include/linux/seccomp.h
+@@ -7,7 +7,9 @@
+ #include <linux/thread_info.h>
+ #include <asm/seccomp.h>
+ 
+-typedef struct { int mode; } seccomp_t;
++struct seccomp_struct {
++	int mode;
++};
+ 
+ extern void __secure_computing(int);
+ static inline void secure_computing(int this_syscall)
+@@ -19,7 +21,7 @@ static inline void secure_computing(int this_syscall)
+ extern long prctl_get_seccomp(void);
+ extern long prctl_set_seccomp(unsigned long);
+ 
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp_struct *s)
+ {
+ 	return s->mode;
+ }
+@@ -28,7 +30,7 @@ static inline int seccomp_mode(seccomp_t *s)
+ 
+ #include <linux/errno.h>
+ 
+-typedef struct { } seccomp_t;
++struct seccomp_struct { };
+ 
+ #define secure_computing(x) do { } while (0)
+ 
+@@ -42,7 +44,7 @@ static inline long prctl_set_seccomp(unsigned long arg2)
+ 	return -EINVAL;
+ }
+ 
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp_struct *s)
+ {
+ 	return 0;
+ }
+-- 
+1.7.5.4
 
-The ptmx device would need to pass that information along to the
-driver core call when creating the ptmx device.
-
-> There is precedent in the /dev/fd symlinks, so I expect you want
-> to look and see where the configuration for that comes from.
-
-That's a static list of stuff created at startup. But it's easier to
-do in usersace, because /proc is not configurable or optional for
-usual use cases, so we can just do it unconditionally in userspace.
-They also can not conflict with device nodes.
-
-Kay
