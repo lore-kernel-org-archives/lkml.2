@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab2A1OlU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 09:41:20 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33431 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752822Ab2A1OlS (ORCPT
+	id S1752945Ab2A1PLb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 10:11:31 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36199 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab2A1PLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 09:41:18 -0500
-X-Sasl-enc: dwQ7FvQWRplY2e//FX2Yhg4c1q/VEavz8Lwmb/omjxMH 1327761678
-Date: Sat, 28 Jan 2012 12:41:14 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Michael Tokarev <mjt@tls.msk.ru>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>, mmarek@suse.cz
-Subject: Re: Ioctl warning for a partition
-Message-ID: <20120128144114.GB22008@khazad-dum.debian.net>
-References: <20120126223037.GE28368@quack.suse.cz>
- <CA+55aFwkRhsdAYwP-S5_qPkRX=dMSnxv5Ow1ULaSJjKe3aTy2w@mail.gmail.com>
- <4F21E828.8090502@msgid.tls.msk.ru>
- <20120127192817.GB25348@khazad-dum.debian.net>
- <4F23CC53.4040304@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F23CC53.4040304@redhat.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 28 Jan 2012 10:11:30 -0500
+Message-ID: <1327763490.16907.1.camel@lappy>
+Subject: Re: BUG: unable to handle kernel paging request at ffffc7ff81000398
+ (sys_kexec_load)
+From: Sasha Levin <levinsasha928@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Dave Jones <davej@redhat.com>, kexec@lists.infradead.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 28 Jan 2012 10:11:30 -0500
+In-Reply-To: <m1lip0s5nt.fsf@fess.ebiederm.org>
+References: <1327212367.32115.4.camel@lappy>
+	 <m1lip0s5nt.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jan 2012, Paolo Bonzini wrote:
-> On 01/27/2012 08:28 PM, Henrique de Moraes Holschuh wrote:
-> >Does that fix still need to be backported to -stable?
-> >
-> >Linux v3.0.18 + Debian stable userspace (mdadm v3.1.4) causes this on
-> >boot (when mdadm runs in the initramfs):
-> >
-> >mdadm: sending ioctl 1261 to a partition!
-> >mdadm: sending ioctl 1261 to a partition!
-> >mdadm: sending ioctl 1261 to a partition!
-> >mdadm: sending ioctl 1261 to a partition!
-> >mdadm: sending ioctl 1261 to a partition!
-> >mdadm: sending ioctl 1261 to a partition!
-> >mdadm: sending ioctl 1261 to a partition!
-> >mdadm: sending ioctl 1261 to a partition!
-> >mdadm: sending ioctl 800c0910 to a partition!
-> >mdadm: sending ioctl 800c0910 to a partition!
+On Sat, 2012-01-21 at 20:49 -0800, Eric W. Biederman wrote:
+> Interesting.
 > 
-> The warnings are intended; the kernel will behave as before they
-> were introduced.  I'm monitoring reports and looking at them as they
-> come in.  They are harmless as long as the ioctls have always
-> failed, and so far this has always been the case.  As soon as we are
-> reasonably certain, the warnings will go away.
+> The fact that this happens in native_set_pte would suggest that we are
+> trying to write to a page table that does not exist.  So this might
+> be a layer below kexec_load that has the problem.
+> 
+> Do you have the kernel you were testing?    A disassembly of the
+> native_set_pte, machine_kexec_prepare and sys_kexec_load
+> would be interesting, for attempting to trace this back to what went
+> wrong.
 
-I am aware of that.  It is just that a previous message in this thread
-implied the ioctls from mdadm had already been dealth with (i.e.  should
-not be issuing warnings anymore).
+I did some work into investigating it today, looks like it's simple to trigger it using the following code:
 
-After it has been tested enough in mainline, please make sure to direct
-all patches related to this issue to stable@v.k.o.
+	#include <fcntl.h>
+	int main(void)
+	{
+		char dummy[4096] = {0};
+		syscall(246, 0xffffffff81008000, 1, dummy, 2);
+		return 0;
+	}
+
+I'll continue trying to figure out whats wrong, but hopefully this lead will help in reproducing it easily.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+
+Sasha.
+
