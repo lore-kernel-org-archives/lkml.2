@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab2A1WTv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 17:19:51 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56766 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab2A1WTu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 17:19:50 -0500
-Date: Sat, 28 Jan 2012 23:19:45 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Paul Cercueil <paul@crapouillou.net>,
-        Lars-Peter Clausen <lars@metafoo.de>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v3] watchdog: Convert jz4740_wdt driver to watchdog core
-Message-ID: <20120128221945.GA26708@pengutronix.de>
-References: <1327572645.25187.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
-Content-Disposition: inline
-In-Reply-To: <1327572645.25187.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752668Ab2A1Wcr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 17:32:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53412 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752109Ab2A1Wcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 17:32:46 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
+Date: Sat, 28 Jan 2012 17:33:46 -0500
+Message-Id: <1327790026-29060-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <CAJd=RBCGeqqAMvNAF3wPKAVQCFO-hNk1c+7UwKod6tMWqQ1Gkw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hillf,
 
---M9NhX3UHpAaciwkO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Jan 28, 2012 at 07:23:47PM +0800, Hillf Danton wrote:
+> Hi Naoya
+> 
+> On Sat, Jan 28, 2012 at 7:02 AM, Naoya Horiguchi
+> <n-horiguchi@ah.jp.nec.com> wrote:
+> > Currently when we check if we can handle thp as it is or we need to
+> > split it into regular sized pages, we hold page table lock prior to
+> > check whether a given pmd is mapping thp or not. Because of this,
+> > when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
+> > To remove it, this patch introduces a optimized check function and
+> > replace several similar logics with it.
+> >
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Cc: David Rientjes <rientjes@google.com>
+> >
+> > Changes since v3:
+> > - Fix likely/unlikely pattern in pmd_trans_huge_stable()
+> > - Change suffix from _stable to _lock
+> > - Introduce __pmd_trans_huge_lock() to avoid micro-regression
+> > - Return 1 when wait_split_huge_page path is taken
+> >
+> > Changes since v2:
+> > - Fix missing "return 0" in "thp under splitting" path
+> > - Remove unneeded comment
+> > - Change the name of check function to describe what it does
+> > - Add VM_BUG_ON(mmap_sem)
+> > ---
+> > fs/proc/task_mmu.c   |  70 +++++++++------------------
+> > include/linux/huge_mm.h |  17 +++++++
+> > mm/huge_memory.c    | 120 ++++++++++++++++++++++-------------------------
+> > 3 files changed, 96 insertions(+), 111 deletions(-)
+> >
+> [...]
+> 
+> > @@ -1064,21 +1056,14 @@ int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+> > {
+> >    int ret = 0;
+> >
+> > -    spin_lock(&vma->vm_mm->page_table_lock);
+> > -    if (likely(pmd_trans_huge(*pmd))) {
+> > -        ret = !pmd_trans_splitting(*pmd);
+> 
+> Here the value of ret is either false or true,
 
-On Thu, Jan 26, 2012 at 06:10:45PM +0800, Axel Lin wrote:
-> This patch converts jz4740_wdt driver to use watchdog core APIs.
-> Also use devm_* APIs to save a few error handling code.
->=20
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Acked-by: Paul Cercueil <paul@crapouillou.net>
-> ---
-> v3: - Remove unused define for WDT_IN_USE and WDT_OK_TO_CLOSE
->     - Remove mem from struct jz4740_wdt_drvdata
->=20
-> v2: Address all the comments by Wolfram.
->     - Remove unneed header file inclusion
->     - Drop 'heartbeat' usage in jz4740_wdt_set_heartbeat and jz4740_wdt_s=
-tart
->     - Init wdt_dev->timeout in probe using the global 'heartbeat'
->     - Remove unneed pointer check for drvdata->mem
+You're right.
 
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+> > -        spin_unlock(&vma->vm_mm->page_table_lock);
+> > -        if (unlikely(!ret))
+> > -            wait_split_huge_page(vma->anon_vma, pmd);
+> > -        else {
+> > -            /*
+> > -            * All logical pages in the range are present
+> > -            * if backed by a huge page.
+> > -            */
+> > -            memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+> > -        }
+> > -    } else
+> > +    if (__pmd_trans_huge_lock(pmd, vma) == 1) {
+> > +        /*
+> > +        * All logical pages in the range are present
+> > +        * if backed by a huge page.
+> > +        */
+> >        spin_unlock(&vma->vm_mm->page_table_lock);
+> > +        memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+> > +    }
+> >
+> >    return ret;
+> 
+> what is the returned value of this function? /Hillf
 
-Thanks!
+In this patch, mincore_huge_pmd() always returns 0 and it's obviously wrong.
+We need to set ret to 1 in if-block.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---M9NhX3UHpAaciwkO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk8kdIEACgkQD27XaX1/VRuEywCgqTkg+NLKNHHQr91+CewzPc2M
-e5sAmwVGPCFxOnwifMcMZgcfurdyWS/e
-=8cNi
------END PGP SIGNATURE-----
-
---M9NhX3UHpAaciwkO--
+Thanks,
+Naoya
