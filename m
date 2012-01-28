@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab2A1Uoo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 15:44:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50436 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab2A1Uon (ORCPT
+	id S1753133Ab2A1Utc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 15:49:32 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:52886 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab2A1Utb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 15:44:43 -0500
+	Sat, 28 Jan 2012 15:49:31 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+        containers@lists.linux-foundation.org,
+        Dave Hansen <haveblue@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>, sukadev@linux.vnet.ibm.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC] fix devpts mount behavior
+References: <20120124000517.GA28878@sergelap>
+	<CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
+	<20120124002555.GA29534@sergelap>
+	<CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
+	<20120124010758.GJ23916@ZenIV.linux.org.uk>
+	<m1k44gj1cu.fsf@fess.ebiederm.org> <20120124220247.GA26353@hallyn.com>
+	<CAPXgP13_gczQmG_USAp0p2AuTfxkzAvzHvjbZY_rbbLH-4rDyg@mail.gmail.com>
+	<20120124231601.GA4470@sergelap>
+	<CAPXgP12REAwmDORzdGJhsxZKU8nhiauCxoVdKa8Eifw4MWWtgA@mail.gmail.com>
+	<20120128195103.GA11299@sergelap>
+Date: Sat, 28 Jan 2012 12:52:00 -0800
+In-Reply-To: <20120128195103.GA11299@sergelap> (Serge Hallyn's message of
+	"Sat, 28 Jan 2012 13:51:03 -0600")
+Message-ID: <m139azpn2n.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [93.173.166.112]
-In-Reply-To: <20120127130329.GM19255@amd.com>
-References: <1327603257-17028-1-git-send-email-joerg.roedel@amd.com>
- <1327603257-17028-3-git-send-email-joerg.roedel@amd.com> <CAK=WgbbZB0hGRr84JV4a7c0KvW7VbVzsnCx1PGg=wjoB0OSrYw@mail.gmail.com>
- <20120127102608.GK19255@amd.com> <CAK=WgbZQB+76FuJXK82x09CieDmF23zLQ8KbHbEtjnQsc_4axg@mail.gmail.com>
- <20120127130329.GM19255@amd.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sat, 28 Jan 2012 22:44:22 +0200
-Message-ID: <CAK=WgbY+aBwTno4YxGLaxS7Y-R=CS1604+c5j-6EMQSfJeGvTA@mail.gmail.com>
-Subject: Re: [PATCH 2/6] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stuart Yoder <b08248@gmail.com>, Scott Wood <scottwood@freescale.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19tNgy1rPe4wqpWo8Hn8Vt9Ikt+vgiZZnY=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 3:03 PM, Joerg Roedel <joerg.roedel@amd.com> wrote:
-> Note that only the read-side is handled by the core. An IOMMU driver may
-> decide to implement a write-side for the geometry which would be not in
-> the core then. Having a dedicated function for the write-side does not
-> make sense because (for now) there is only one upcoming driver requiring
-> this.
+Serge Hallyn <serge.hallyn@canonical.com> writes:
 
-I'd still go with a type-safe interface here, but maybe it's only me.
+> Quoting Kay Sievers (kay.sievers@vrfy.org):
+>> We might also thing about changing /sys/class/tty/ptmx/, and have the
+>> kernel create the symlink? The loops through userspace to setup
+>> default kernel stuff are kind of crazy ...
+>> 
+>> Kay
+>
+> Hi Kay,
+>
+> sorry, there is something I'm missing here.  Without a target kobj
+> to link to, how would we go about telling the kernel that /dev/ptmx
+> should be a symlink to /dev/pts/ptmx?  Is there a way to do that?
 
-> I think dedicated functions also make the API harder to use because a
-> developer first needs to find out if a property is read/written by a
-> dedicated function or the set/get-attr interface.
+There is precedent in the /dev/fd symlinks, so I expect you want
+to look and see where the configuration for that comes from.
 
-I'm not so sure how would drivers use these "hardware-specific api
-attr extensions" in general.
-
-Is the intention that only hardware-specific drivers will use them ? I
-guess that generic drivers won't be able to use them, because their
-behavior will not be well-defined across all hardware implementations.
-
-Thanks,
-Ohad.
+Eric
