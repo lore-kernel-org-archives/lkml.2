@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab2A1Pd7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 10:33:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41633 "EHLO mx1.redhat.com"
+	id S1754155Ab2A1Pd5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 10:33:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43903 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753351Ab2A1Pc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753344Ab2A1Pc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jan 2012 10:32:58 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFCv2 08/16] edac: Prepare to push down to drivers the filling of the dimm_info
-Date: Sat, 28 Jan 2012 13:32:43 -0200
-Message-Id: <1327764771-28649-9-git-send-email-mchehab@redhat.com>
+Subject: [PATCH RFCv2 07/16] edac: Add per dimm's sysfs nodes
+Date: Sat, 28 Jan 2012 13:32:42 -0200
+Message-Id: <1327764771-28649-8-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1327764771-28649-1-git-send-email-mchehab@redhat.com>
 References: <1327764771-28649-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -20,143 +20,235 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several data that it is currently stored per csrow will be
-pushed into the dimm themselves. Due to that, the mci->dimms
-filling will need to happen inside the drivers.
-
-Prepare for that, by initializing the dimm fields during mci
-alloc. With this change, the changes at the drivers will be
-smaller, as they won't need to touch at the fields they don't
-currently initialize.
-
-No functional changes.
+Instead of just exporting a per-csrow dimm directories, add
+a pure per-dimm attributes. This will help to better map
+the DIMM properties, when csrow info is not available.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_mc.c      |   43 ++++++++++++++++++++-----------------------
- drivers/edac/i5100_edac.c   |    1 +
- drivers/edac/i7core_edac.c  |    1 +
- drivers/edac/i82975x_edac.c |    1 +
- drivers/edac/sb_edac.c      |    1 +
- 5 files changed, 24 insertions(+), 23 deletions(-)
+ drivers/edac/edac_mc_sysfs.c |  172 +++++++++++++++++++++++++++++++++++++++++-
+ include/linux/edac.h         |    2 +
+ 2 files changed, 173 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 93ef044..37dca79 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -214,6 +214,24 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index a439bed..54b24cb 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -415,6 +415,156 @@ err_out:
+ 	return err;
+ }
+ 
++/* dimm specific attribute structure */
++struct dimmdev_attribute {
++	struct attribute attr;
++	 ssize_t(*show) (struct dimm_info *, char *);
++	 ssize_t(*store) (struct dimm_info *, const char *, size_t);
++};
++
++#define DIMMDEV_ATTR(_name,_mode,_show,_store)	\
++static struct dimmdev_attribute attr_##_name = {			\
++	.attr = {.name = __stringify(_name), .mode = _mode },	\
++	.show   = _show,					\
++	.store  = _store,					\
++};
++
++#define to_dimm(k) container_of(k, struct dimm_info, kobj)
++#define to_dimmdev_attr(a) container_of(a, struct dimmdev_attribute, attr)
++
++/* Set of show/store higher level functions for default dimm attributes */
++static ssize_t dimmdev_show(struct kobject *kobj,
++			struct attribute *attr, char *buffer)
++{
++	struct dimm_info *dimm = to_dimm(kobj);
++	struct dimmdev_attribute *dimmdev_attr = to_dimmdev_attr(attr);
++
++	if (dimmdev_attr->show)
++		return dimmdev_attr->show(dimm, buffer);
++	return -EIO;
++}
++
++static ssize_t dimmdev_store(struct kobject *kobj, struct attribute *attr,
++			const char *buffer, size_t count)
++{
++	struct dimm_info *dimm = to_dimm(kobj);
++	struct dimmdev_attribute *dimmdev_attr = to_dimmdev_attr(attr);
++
++	if (dimmdev_attr->store)
++		return dimmdev_attr->store(dimm,
++					buffer,
++					count);
++	return -EIO;
++}
++
++static const struct sysfs_ops dimmfs_ops = {
++	.show = dimmdev_show,
++	.store = dimmdev_store
++};
++
++/* show/store functions for DIMM Label attributes */
++static ssize_t dimmdev_location_show(struct dimm_info *dimm, char *data)
++{
++	if (dimm->mci->dimm_loc_type == DIMM_LOC_CSROW)
++		return sprintf(data, "csrow %d, channel %d\n",
++			       dimm->location.csrow,
++			       dimm->location.csrow_channel);
++	else
++		return sprintf(data, "channel %d, dimm %d\n",
++			       dimm->location.mc_channel,
++			       dimm->location.mc_dimm_number);
++}
++
++static ssize_t dimmdev_label_show(struct dimm_info *dimm, char *data)
++{
++	/* if field has not been initialized, there is nothing to send */
++	if (!dimm->label[0])
++		return 0;
++
++	return snprintf(data, EDAC_MC_LABEL_LEN, "%s\n", dimm->label);
++}
++
++static ssize_t dimmdev_label_store(struct dimm_info *dimm,
++					const char *data,
++					size_t count)
++{
++	ssize_t max_size = 0;
++
++	max_size = min((ssize_t) count, (ssize_t) EDAC_MC_LABEL_LEN - 1);
++	strncpy(dimm->label, data, max_size);
++	dimm->label[max_size] = '\0';
++
++	return max_size;
++}
++
++/* default cwrow<id>/attribute files */
++DIMMDEV_ATTR(label, S_IRUGO | S_IWUSR, dimmdev_label_show, dimmdev_label_store);
++DIMMDEV_ATTR(location, S_IRUGO, dimmdev_location_show, NULL);
++
++/* default attributes of the DIMM<id> object */
++static struct dimmdev_attribute *default_dimm_attr[] = {
++	&attr_label,
++	&attr_location,
++	NULL,
++};
++
++/* No memory to release for this kobj */
++static void edac_dimm_instance_release(struct kobject *kobj)
++{
++	struct mem_ctl_info *mci;
++	struct dimm_info *cs;
++
++	debugf1("%s()\n", __func__);
++
++	cs = container_of(kobj, struct dimm_info, kobj);
++	mci = cs->mci;
++
++	kobject_put(&mci->edac_mci_kobj);
++}
++
++/* the kobj_type instance for a DIMM */
++static struct kobj_type ktype_dimm = {
++	.release = edac_dimm_instance_release,
++	.sysfs_ops = &dimmfs_ops,
++	.default_attrs = (struct attribute **)default_dimm_attr,
++};
++/* Create a CSROW object under specifed edac_mc_device */
++static int edac_create_dimm_object(struct mem_ctl_info *mci,
++					struct dimm_info *dimm, int index)
++{
++	struct kobject *kobj_mci = &mci->edac_mci_kobj;
++	struct kobject *kobj;
++	int err;
++
++	/* generate ..../edac/mc/mc<id>/dimm<index>   */
++	memset(&dimm->kobj, 0, sizeof(dimm->kobj));
++	dimm->mci = mci;	/* include container up link */
++
++	/* bump the mci instance's kobject's ref count */
++	kobj = kobject_get(&mci->edac_mci_kobj);
++	if (!kobj) {
++		err = -ENODEV;
++		goto err_out;
++	}
++
++	/* Instanstiate the dimm object */
++	err = kobject_init_and_add(&dimm->kobj, &ktype_dimm, kobj_mci,
++				   "dimm%d", index);
++	if (err)
++		goto err_release_top_kobj;
++
++	kobject_uevent(&dimm->kobj, KOBJ_ADD);
++	return 0;
++
++	/* error unwind stack */
++err_release_top_kobj:
++	kobject_put(&mci->edac_mci_kobj);
++
++err_out:
++	return err;
++}
++
++
+ /* default sysfs methods and data structures for the main MCI kobject */
+ 
+ static ssize_t mci_reset_counters_store(struct mem_ctl_info *mci,
+@@ -905,7 +1055,7 @@ static void edac_remove_mci_instance_attributes(struct mem_ctl_info *mci,
+  */
+ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+ {
+-	int i;
++	int i, j;
+ 	int err;
+ 	struct csrow_info *csrow;
+ 	struct kobject *kobj_mci = &mci->edac_mci_kobj;
+@@ -952,8 +1102,24 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
  		}
  	}
  
 +	/*
-+	 * By default, assumes that a per-csrow arrangement will be used,
-+	 * as most drivers are based on such assumption.
++	 * Make directories for each DIMM object under the mc<id> kobject
 +	 */
-+	if (!mci->nr_dimms) {
-+		mci->dimm_loc_type = DIMM_LOC_CSROW;
-+		dimm = mci->dimms;
-+		for (row = 0; row < mci->nr_csrows; row++) {
-+			for (chn = 0; chn < mci->csrows[row].nr_channels; chn++) {
-+				mci->csrows[row].channels[chn].dimm = dimm;
-+				dimm->location.csrow = row;
-+				dimm->location.csrow_channel = chn;
-+				dimm++;
-+				mci->nr_dimms++;
-+			}
++	for (j = 0; j < mci->nr_dimms; j++) {
++		err = edac_create_dimm_object(mci, &mci->dimms[j] , j);
++		if (err) {
++			debugf1("%s() failure: create dimm %d obj\n",
++				__func__, j);
++			goto fail2;
 +		}
 +	}
 +
- 	mci->op_state = OP_ALLOC;
- 	INIT_LIST_HEAD(&mci->grp_kobj_list);
+ 	return 0;
  
-@@ -512,37 +530,16 @@ EXPORT_SYMBOL(edac_mc_find);
- /* FIXME - should a warning be printed if no error detection? correction? */
- int edac_mc_add_mc(struct mem_ctl_info *mci)
- {
--	int i, j;
--	struct dimm_info *dimm;
--
- 	debugf0("%s()\n", __func__);
++fail2:
++	for (j--; j >= 0; j--)
++		kobject_put(&mci->dimms[i].kobj);
++
+ 	/* CSROW error: backout what has already been registered,  */
+ fail1:
+ 	for (i--; i >= 0; i--) {
+@@ -984,6 +1150,10 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
  
--	/*
--	 * If nr_dimms is not filled, that means that the driver itself
--	 * were not converted to use the new struct, or that the driver
--	 * is for a csrow-based device.
--	 * Fill the dimms accordingly.
--	 */
--	if (!mci->nr_dimms) {
--		mci->dimm_loc_type = DIMM_LOC_CSROW;
--		dimm = mci->dimms;
--		for (i = 0; i < mci->nr_csrows; i++) {
--			for (j = 0; j < mci->csrows[i].nr_channels; j++) {
--				mci->csrows[i].channels[j].dimm = dimm;
--				dimm->location.csrow = i;
--				dimm->location.csrow_channel = j;
--				dimm++;
--				mci->nr_dimms++;
--			}
--		}
--	}
- #ifdef CONFIG_EDAC_DEBUG
- 	if (edac_debug_level >= 3)
- 		edac_mc_dump_mci(mci);
- 
- 	if (edac_debug_level >= 4) {
--
-+		int i;
- 		for (i = 0; i < mci->nr_csrows; i++) {
-+			int j;
- 			edac_mc_dump_csrow(&mci->csrows[i]);
- 			for (j = 0; j < mci->csrows[i].nr_channels; j++)
- 				edac_mc_dump_channel(&mci->csrows[i].
-diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
-index 302e43b..52939ca 100644
---- a/drivers/edac/i5100_edac.c
-+++ b/drivers/edac/i5100_edac.c
-@@ -852,6 +852,7 @@ static void __devinit i5100_init_csrows(struct mem_ctl_info *mci)
- 
- 	dimm = mci->dimms;
- 	mci->dimm_loc_type = DIMM_LOC_MC_CHANNEL;
-+	mci->nr_dimms = 0;
+ 	/* remove all csrow kobjects */
+ 	debugf4("%s()  unregister this mci kobj\n", __func__);
++	for (i = 0; i < mci->nr_dimms; i++) {
++		debugf0("%s()  unreg dimm-%d\n", __func__, i);
++		kobject_put(&mci->dimms[i].kobj);
++	}
  	for (i = 0; i < mci->nr_csrows; i++) {
- 		const unsigned long npages = i5100_npages(mci, i);
- 		const unsigned chan = i5100_csrow_to_chan(mci, i);
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 4819df8..d6dd9bf 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -641,6 +641,7 @@ static int get_dimm_config(struct mem_ctl_info *mci)
+ 		if (mci->csrows[i].nr_pages > 0) {
+ 			debugf0("%s()  unreg csrow-%d\n", __func__, i);
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index 9f4deed..027e478 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -268,6 +268,8 @@ struct dimm_info {
+ 			unsigned csrow_channel;
+ 		};
+ 	} location;
++	struct kobject kobj;		/* sysfs kobject for this csrow */
++	struct mem_ctl_info *mci;	/* the parent */
+ };
  
- 	dimm = mci->dimms;
- 	mci->dimm_loc_type = DIMM_LOC_MC_CHANNEL;
-+	mci->nr_dimms = 0;
- 	for (i = 0; i < NUM_CHANS; i++) {
- 		u32 data, dimm_dod[3], value[8];
- 
-diff --git a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
-index 4a4026e..47f023e 100644
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -379,6 +379,7 @@ static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 
- 	mci->dimm_loc_type = DIMM_LOC_CSROW;
- 	dimm = mci->dimms;
-+	mci->nr_dimms = 0;
- 	for (index = 0; index < mci->nr_csrows; index++) {
- 		csrow = &mci->csrows[index];
- 
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index 34fa898..43fc65e 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -614,6 +614,7 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 
- 	dimm = mci->dimms;
- 	mci->dimm_loc_type = DIMM_LOC_MC_CHANNEL;
-+	mci->nr_dimms = 0;
- 	for (i = 0; i < NUM_CHANNELS; i++) {
- 		u32 mtr;
- 
+ struct csrow_channel_info {
 -- 
 1.7.8
 
