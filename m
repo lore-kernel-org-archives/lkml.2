@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab2A1LWs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 06:22:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605Ab2A1LWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 06:22:45 -0500
-Message-ID: <1327749669.15441.9.camel@cr0>
-Subject: Re: [PATCH v5 2/3] seccomp_filters: system call filtering using BPF
-From: Cong Wang <amwang@redhat.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
-        alan@lxorguk.ukuu.org.uk, indan@nul.nu, mcgrathr@chromium.org
-Date: Sat, 28 Jan 2012 19:21:09 +0800
-In-Reply-To: <1327706681-11959-2-git-send-email-wad@chromium.org>
-References: <1327706681-11959-1-git-send-email-wad@chromium.org>
-	 <1327706681-11959-2-git-send-email-wad@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752640Ab2A1LXu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 06:23:50 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:60163 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab2A1LXt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 06:23:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <1327705373-29395-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1327705373-29395-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1327705373-29395-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Sat, 28 Jan 2012 19:23:47 +0800
+Message-ID: <CAJd=RBCGeqqAMvNAF3wPKAVQCFO-hNk1c+7UwKod6tMWqQ1Gkw@mail.gmail.com>
+Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
+From: Hillf Danton <dhillf@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-27 at 17:24 -0600, Will Drewry wrote:
-> +config SECCOMP_FILTER
-> +       bool "Enable seccomp-based system call filtering"
-> +       select SECCOMP
+Hi Naoya
 
-Is 'depends on SECCOMP' better?
+On Sat, Jan 28, 2012 at 7:02 AM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> Currently when we check if we can handle thp as it is or we need to
+> split it into regular sized pages, we hold page table lock prior to
+> check whether a given pmd is mapping thp or not. Because of this,
+> when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
+> To remove it, this patch introduces a optimized check function and
+> replace several similar logics with it.
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: David Rientjes <rientjes@google.com>
+>
+> Changes since v3:
+>  - Fix likely/unlikely pattern in pmd_trans_huge_stable()
+>  - Change suffix from _stable to _lock
+>  - Introduce __pmd_trans_huge_lock() to avoid micro-regression
+>  - Return 1 when wait_split_huge_page path is taken
+>
+> Changes since v2:
+>  - Fix missing "return 0" in "thp under splitting" path
+>  - Remove unneeded comment
+>  - Change the name of check function to describe what it does
+>  - Add VM_BUG_ON(mmap_sem)
+> ---
+>  fs/proc/task_mmu.c      |   70 +++++++++------------------
+>  include/linux/huge_mm.h |   17 +++++++
+>  mm/huge_memory.c        |  120 ++++++++++++++++++++++-------------------------
+>  3 files changed, 96 insertions(+), 111 deletions(-)
+>
+[...]
 
-> +       help
-> +         This option provide support for limiting the accessibility
-> of
+> @@ -1064,21 +1056,14 @@ int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+>  {
+>        int ret = 0;
+>
+> -       spin_lock(&vma->vm_mm->page_table_lock);
+> -       if (likely(pmd_trans_huge(*pmd))) {
+> -               ret = !pmd_trans_splitting(*pmd);
 
-s/provide/provides/
+Here the value of ret is either false or true,
 
-> +         systems calls at a task-level using a dynamically defined
-> policy.
+> -               spin_unlock(&vma->vm_mm->page_table_lock);
+> -               if (unlikely(!ret))
+> -                       wait_split_huge_page(vma->anon_vma, pmd);
+> -               else {
+> -                       /*
+> -                        * All logical pages in the range are present
+> -                        * if backed by a huge page.
+> -                        */
+> -                       memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+> -               }
+> -       } else
+> +       if (__pmd_trans_huge_lock(pmd, vma) == 1) {
+> +               /*
+> +                * All logical pages in the range are present
+> +                * if backed by a huge page.
+> +                */
+>                spin_unlock(&vma->vm_mm->page_table_lock);
+> +               memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+> +       }
+>
+>        return ret;
 
+what is the returned value of this function? /Hillf
 
-s/systems/system/
-
-> +
-> +         System call filtering policy is expressed by the user using
-> +         a Berkeley Packet Filter program.  The program is attached
-> using
-
-s/the user using//
-
-> +         prctl(2).  For every system call the task makes, its number,
-> +         arguments, and other metadata will be evaluated by the
-> attached
-> +         filter program.  The result determines if the system call
-> may
-> +         may proceed or if the task should be terminated.
-
-One more "may"... and "be proceeded"
-
-> +
-> +         This behavior is meant to aid security-conscious software in
-> +         its ability to minimize the risk of running potentially
-> +         risky code.
-> +
-> +         See Documentation/prctl/seccomp_filter.txt for more detail.
-> + 
-
-
-Thanks.
-
+>  }
+> @@ -1108,20 +1093,10 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
+>                goto out;
+>        }
