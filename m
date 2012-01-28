@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab2A1LAn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 06:00:43 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:45939 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab2A1LAm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 06:00:42 -0500
-Date: Sat, 28 Jan 2012 12:00:36 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Namhyung Kim <namhyung@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] x86, dumpstack: removed unneeded check in dump_trace()
-Message-ID: <20120128110034.GD3391@somewhere>
-References: <20120128105246.GA25092@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120128105246.GA25092@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752502Ab2A1LPh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 06:15:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25339 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751992Ab2A1LPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 06:15:35 -0500
+Message-ID: <1327749226.15441.4.camel@cr0>
+Subject: Re: [PATCH v5 1/3] seccomp: kill the seccomp_t typedef
+From: Cong Wang <amwang@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net, alan@lxorguk.ukuu.org.uk, indan@nul.nu,
+        mcgrathr@chromium.org
+Date: Sat, 28 Jan 2012 19:13:46 +0800
+In-Reply-To: <CABqD9hZ9StgL_v-Z+hpGnbC6Ggu1N3hWXfV_gqUu6caCbcMCtQ@mail.gmail.com>
+References: <1327706681-11959-1-git-send-email-wad@chromium.org>
+	 <20120127234140.GA19407@suse.de>
+	 <CABqD9hZ9StgL_v-Z+hpGnbC6Ggu1N3hWXfV_gqUu6caCbcMCtQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 28, 2012 at 01:52:46PM +0300, Dan Carpenter wrote:
-> Smatch complains that we have some inconsistent NULL checking.  If
-> "task" were NULL then it would lead to a NULL dereference later.  We
-> can remove this test because earlier on in the function we have:
-> 	if (!task)
-> 		task = current;
+On Fri, 2012-01-27 at 17:47 -0600, Will Drewry wrote:
+> On Fri, Jan 27, 2012 at 5:41 PM, Greg KH <gregkh@suse.de> wrote:
+> > On Fri, Jan 27, 2012 at 05:24:39PM -0600, Will Drewry wrote:
+> >> Replaces the seccomp_t typedef with seccomp_struct to match modern
+> >> kernel style.
+> >>
+> >> Signed-off-by: Will Drewry <wad@chromium.org>
+> >> ---
+> >>  include/linux/sched.h   |    2 +-
+> >>  include/linux/seccomp.h |   10 ++++++----
+> >>  2 files changed, 7 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> >> index 4032ec1..288b5cb 100644
+> >> --- a/include/linux/sched.h
+> >> +++ b/include/linux/sched.h
+> >> @@ -1418,7 +1418,7 @@ struct task_struct {
+> >>       uid_t loginuid;
+> >>       unsigned int sessionid;
+> >>  #endif
+> >> -     seccomp_t seccomp;
+> >> +     struct seccomp_struct seccomp;
+> >
+> > Isn't 'struct seccomp_struct' a bit redundant?
+> >
+> > How about a simple 'struct seccomp' instead?
 > 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Works for me - I can't recall why that seemed to make sense (other
+> than the user of similar redundant names elsewhere).
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+seccomp_struct for a type is okay, but you also have:
 
-> 
-> diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-> index 6d728d9..af7785f 100644
-> --- a/arch/x86/kernel/dumpstack_64.c
-> +++ b/arch/x86/kernel/dumpstack_64.c
-> @@ -129,7 +129,7 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
->  	if (!stack) {
->  		if (regs)
->  			stack = (unsigned long *)regs->sp;
-> -		else if (task && task != current)
-> +		else if (task != current)
->  			stack = (unsigned long *)task->thread.sp;
->  		else
->  			stack = &dummy;
++#define seccomp_struct_init_task(_seccomp) do { } while (0);
++#define seccomp_struct_fork(_tsk, _orig) do { } while (0);
++#define seccomp_struct_free_task(_seccomp) do { } while (0);
+
+in patch 2/3, "struct" in these function/macro names is redundant.
+
+Thanks.
+
+
