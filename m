@@ -1,282 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab2A1NmQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 08:42:16 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54277 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753197Ab2A1NmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 08:42:12 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH] PM / Sleep: Freeze filesystems during system suspend/hibernation
-Date: Sat, 28 Jan 2012 14:45:49 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201281445.49377.rjw@sisk.pl>
+	id S1753499Ab2A1Nuq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 08:50:46 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:46504
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753236Ab2A1Nup (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 08:50:45 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: gregkh@suse.de, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, standby24x7@gmail.com, trivial@kernel.org
+Subject: [PATCH] [trivial] usb: Fix typo in langwell_otg.c
+Date: Sat, 28 Jan 2012 22:50:08 +0900
+Message-Id: <1327758608-7575-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+Correct spelling "reseting" to "resetting" in
+drivers/usb/otg/langwell_otg.c
 
-Freeze all filesystems during system suspend and (kernel-driven)
-hibernation by calling freeze_supers() for all superblocks and thaw
-them during the subsequent resume with the help of thaw_supers().
-
-This makes filesystems stay in a consistent state in case something
-goes wrong between system suspend (or hibernation) and the subsequent
-resume (e.g. journal replays won't be necessary in those cases).  In
-particular, this should help to solve a long-standing issue that, in
-some cases, during resume from hibernation the boot loader causes the
-journal to be replied for the filesystem containing the kernel image
-and/or initrd causing it to become inconsistent with the information
-stored in the hibernation image.
-
-The user-space-driven hibernation (s2disk) is not covered by this
-change, because the freezing of filesystems prevents s2disk from
-accessing device special files it needs to do its job.
-
-This change is based on earlier work by Nigel Cunningham.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- fs/super.c               |   73 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h       |    3 +
- kernel/power/hibernate.c |   11 +++++--
- kernel/power/power.h     |   23 --------------
- kernel/power/suspend.c   |   42 +++++++++++++++++++++++++++
- 5 files changed, 128 insertions(+), 24 deletions(-)
+ drivers/usb/otg/langwell_otg.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Index: linux/include/linux/fs.h
-===================================================================
---- linux.orig/include/linux/fs.h
-+++ linux/include/linux/fs.h
-@@ -210,6 +210,7 @@ struct inodes_stat_t {
- #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
- #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
- #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-+#define MS_FROZEN	(1<<25) /* Frozen filesystem */
- #define MS_NOSEC	(1<<28)
- #define MS_BORN		(1<<29)
- #define MS_ACTIVE	(1<<30)
-@@ -2501,6 +2502,8 @@ extern void drop_super(struct super_bloc
- extern void iterate_supers(void (*)(struct super_block *, void *), void *);
- extern void iterate_supers_type(struct file_system_type *,
- 			        void (*)(struct super_block *, void *), void *);
-+extern int freeze_supers(void);
-+extern void thaw_supers(void);
+diff --git a/drivers/usb/otg/langwell_otg.c b/drivers/usb/otg/langwell_otg.c
+index f08f784..2500878 100644
+--- a/drivers/usb/otg/langwell_otg.c
++++ b/drivers/usb/otg/langwell_otg.c
+@@ -633,7 +633,7 @@ static void reset_otg(void)
+ 	int			delay_time = 1000;
+ 	u32			val;
  
- extern int dcache_dir_open(struct inode *, struct file *);
- extern int dcache_dir_close(struct inode *, struct file *);
-Index: linux/fs/super.c
-===================================================================
---- linux.orig/fs/super.c
-+++ linux/fs/super.c
-@@ -594,6 +594,79 @@ void iterate_supers_type(struct file_sys
- EXPORT_SYMBOL(iterate_supers_type);
- 
- /**
-+ *	thaw_supers - call thaw_super() for all superblocks
-+ */
-+void thaw_supers(void)
-+{
-+	struct super_block *sb, *p = NULL;
-+
-+	spin_lock(&sb_lock);
-+	list_for_each_entry(sb, &super_blocks, s_list) {
-+		if (list_empty(&sb->s_instances))
-+			continue;
-+		sb->s_count++;
-+		spin_unlock(&sb_lock);
-+
-+		if (sb->s_flags & MS_FROZEN) {
-+			thaw_super(sb);
-+			sb->s_flags &= ~MS_FROZEN;
-+		}
-+
-+		spin_lock(&sb_lock);
-+		if (p)
-+			__put_super(p);
-+		p = sb;
-+	}
-+	if (p)
-+		__put_super(p);
-+	spin_unlock(&sb_lock);
-+}
-+
-+/**
-+ *	freeze_supers - call freeze_super() for all superblocks
-+ */
-+int freeze_supers(void)
-+{
-+	struct super_block *sb, *p = NULL;
-+	int error = 0;
-+
-+	spin_lock(&sb_lock);
-+	/*
-+	 * Freeze in reverse order so filesystems depending on others are
-+	 * frozen in the right order (eg. loopback on ext3).
-+	 */
-+	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
-+		if (list_empty(&sb->s_instances))
-+			continue;
-+		sb->s_count++;
-+		spin_unlock(&sb_lock);
-+
-+		if (sb->s_root && sb->s_frozen != SB_FREEZE_TRANS
-+		    && !(sb->s_flags & MS_RDONLY)) {
-+			error = freeze_super(sb);
-+			if (!error)
-+				sb->s_flags |= MS_FROZEN;
-+		}
-+
-+		spin_lock(&sb_lock);
-+		if (error)
-+			break;
-+		if (p)
-+			__put_super(p);
-+		p = sb;
-+	}
-+	if (p)
-+		__put_super(p);
-+	spin_unlock(&sb_lock);
-+
-+	if (error)
-+		thaw_supers();
-+
-+	return error;
-+}
-+
-+
-+/**
-  *	get_super - get the superblock of a device
-  *	@bdev: device to get the superblock for
-  *	
-Index: linux/kernel/power/power.h
-===================================================================
---- linux.orig/kernel/power/power.h
-+++ linux/kernel/power/power.h
-@@ -1,3 +1,4 @@
-+#include <linux/fs.h>
- #include <linux/suspend.h>
- #include <linux/suspend_ioctls.h>
- #include <linux/utsname.h>
-@@ -227,25 +228,3 @@ enum {
- #define TEST_MAX	(__TEST_AFTER_LAST - 1)
- 
- extern int pm_test_level;
--
--#ifdef CONFIG_SUSPEND_FREEZER
--static inline int suspend_freeze_processes(void)
--{
--	int error = freeze_processes();
--	return error ? : freeze_kernel_threads();
--}
--
--static inline void suspend_thaw_processes(void)
--{
--	thaw_processes();
--}
--#else
--static inline int suspend_freeze_processes(void)
--{
--	return 0;
--}
--
--static inline void suspend_thaw_processes(void)
--{
--}
--#endif
-Index: linux/kernel/power/suspend.c
-===================================================================
---- linux.orig/kernel/power/suspend.c
-+++ linux/kernel/power/suspend.c
-@@ -29,6 +29,48 @@
- 
- #include "power.h"
- 
-+#ifdef CONFIG_SUSPEND_FREEZER
-+
-+static inline int suspend_freeze_processes(void)
-+{
-+	int error;
-+
-+	error = freeze_processes();
-+	if (error)
-+		return error;
-+
-+	error = freeze_supers();
-+	if (error) {
-+		thaw_processes();
-+		return error;
-+	}
-+
-+	error = freeze_kernel_threads();
-+	if (error)
-+		thaw_supers();
-+
-+	return error;
-+}
-+
-+static inline void suspend_thaw_processes(void)
-+{
-+	thaw_supers();
-+	thaw_processes();
-+}
-+
-+#else /* !CONFIG_SUSPEND_FREEZER */
-+
-+static inline int suspend_freeze_processes(void)
-+{
-+	return 0;
-+}
-+
-+static inline void suspend_thaw_processes(void)
-+{
-+}
-+
-+#endif /* !CONFIG_SUSPEND_FREEZER */
-+
- const char *const pm_states[PM_SUSPEND_MAX] = {
- 	[PM_SUSPEND_STANDBY]	= "standby",
- 	[PM_SUSPEND_MEM]	= "mem",
-Index: linux/kernel/power/hibernate.c
-===================================================================
---- linux.orig/kernel/power/hibernate.c
-+++ linux/kernel/power/hibernate.c
-@@ -626,12 +626,17 @@ int hibernate(void)
- 	if (error)
- 		goto Finish;
- 
--	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
-+	error = freeze_supers();
- 	if (error)
- 		goto Thaw;
-+
-+	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
-+	if (error)
-+		goto Thaw_fs;
-+
- 	if (freezer_test_done) {
- 		freezer_test_done = false;
--		goto Thaw;
-+		goto Thaw_fs;
- 	}
- 
- 	if (in_suspend) {
-@@ -655,6 +660,8 @@ int hibernate(void)
- 		pr_debug("PM: Image restored successfully.\n");
- 	}
- 
-+ Thaw_fs:
-+	thaw_supers();
-  Thaw:
- 	thaw_processes();
-  Finish:
+-	dev_dbg(lnw->dev, "reseting OTG controller ...\n");
++	dev_dbg(lnw->dev, "resetting OTG controller ...\n");
+ 	val = readl(lnw->iotg.base + CI_USBCMD);
+ 	writel(val | USBCMD_RST, lnw->iotg.base + CI_USBCMD);
+ 	do {
+-- 
+1.7.6.5
+
