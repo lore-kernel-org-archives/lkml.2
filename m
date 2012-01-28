@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab2A1Wcr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 17:32:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53412 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752109Ab2A1Wcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 17:32:46 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
-Date: Sat, 28 Jan 2012 17:33:46 -0500
-Message-Id: <1327790026-29060-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <CAJd=RBCGeqqAMvNAF3wPKAVQCFO-hNk1c+7UwKod6tMWqQ1Gkw@mail.gmail.com>
+	id S1753060Ab2A1XC4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 18:02:56 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59250 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab2A1XCz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 18:02:55 -0500
+Message-ID: <4F247E9B.2060908@lwfinger.net>
+Date: Sat, 28 Jan 2012 17:02:51 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+MIME-Version: 1.0
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        wireless <linux-wireless@vger.kernel.org>
+Subject: Re: Kernel BUG due to kernel page fault
+References: <4F21D57F.7090103@lwfinger.net> (sfid-20120126_233645_796686_E4D04A53) <4F2379E6.9050303@sipsolutions.net>
+In-Reply-To: <4F2379E6.9050303@sipsolutions.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hillf,
+On 01/27/2012 10:30 PM, Johannes Berg wrote:
+> Larry,
+>
+> On 1/26/2012 2:36 PM, Larry Finger wrote:
+>> I am trying to convert the rtlwifi family of drivers to use asynchronous
+>> firmware loading. With recent changes in udev, many problems are being
+>> reported. See Bug 42632] at b.k.o.
+>
+> I'm not sure what caused your problem, but your email reminded me of an issue we
+> had with asynchronous firmware loading that you may want to consider.
+>
+> When request_firmware_async() is called, it eventually calls the callback you
+> give it. This may, however, be a long time later (I think the current default
+> timeout is 1 minute). In the meantime, the module could be unloaded by the user,
+> and then the system crashes as soon as the firmwaer code attempts to invoke the
+> callback.
+>
+> To fix this, we have a completion in iwlwifi that some exit code path waits for
+> to make sure this scenario doesn't happen.
+>
+> I think you should implement that.
+>
+> A better fix would probably be to make request_firmware_async() take a struct
+> module * argument and pass THIS_MODULE to it, and make the firmware code handle
+> this, but currently it doesn't.
 
-On Sat, Jan 28, 2012 at 07:23:47PM +0800, Hillf Danton wrote:
-> Hi Naoya
-> 
-> On Sat, Jan 28, 2012 at 7:02 AM, Naoya Horiguchi
-> <n-horiguchi@ah.jp.nec.com> wrote:
-> > Currently when we check if we can handle thp as it is or we need to
-> > split it into regular sized pages, we hold page table lock prior to
-> > check whether a given pmd is mapping thp or not. Because of this,
-> > when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
-> > To remove it, this patch introduces a optimized check function and
-> > replace several similar logics with it.
-> >
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Cc: David Rientjes <rientjes@google.com>
-> >
-> > Changes since v3:
-> > - Fix likely/unlikely pattern in pmd_trans_huge_stable()
-> > - Change suffix from _stable to _lock
-> > - Introduce __pmd_trans_huge_lock() to avoid micro-regression
-> > - Return 1 when wait_split_huge_page path is taken
-> >
-> > Changes since v2:
-> > - Fix missing "return 0" in "thp under splitting" path
-> > - Remove unneeded comment
-> > - Change the name of check function to describe what it does
-> > - Add VM_BUG_ON(mmap_sem)
-> > ---
-> > fs/proc/task_mmu.c   |  70 +++++++++------------------
-> > include/linux/huge_mm.h |  17 +++++++
-> > mm/huge_memory.c    | 120 ++++++++++++++++++++++-------------------------
-> > 3 files changed, 96 insertions(+), 111 deletions(-)
-> >
-> [...]
-> 
-> > @@ -1064,21 +1056,14 @@ int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-> > {
-> >    int ret = 0;
-> >
-> > -    spin_lock(&vma->vm_mm->page_table_lock);
-> > -    if (likely(pmd_trans_huge(*pmd))) {
-> > -        ret = !pmd_trans_splitting(*pmd);
-> 
-> Here the value of ret is either false or true,
+Thanks for explaining why the completion queue is in iwlwifi. That was easy to 
+implement.
 
-You're right.
+Larry
 
-> > -        spin_unlock(&vma->vm_mm->page_table_lock);
-> > -        if (unlikely(!ret))
-> > -            wait_split_huge_page(vma->anon_vma, pmd);
-> > -        else {
-> > -            /*
-> > -            * All logical pages in the range are present
-> > -            * if backed by a huge page.
-> > -            */
-> > -            memset(vec, 1, (end - addr) >> PAGE_SHIFT);
-> > -        }
-> > -    } else
-> > +    if (__pmd_trans_huge_lock(pmd, vma) == 1) {
-> > +        /*
-> > +        * All logical pages in the range are present
-> > +        * if backed by a huge page.
-> > +        */
-> >        spin_unlock(&vma->vm_mm->page_table_lock);
-> > +        memset(vec, 1, (end - addr) >> PAGE_SHIFT);
-> > +    }
-> >
-> >    return ret;
-> 
-> what is the returned value of this function? /Hillf
-
-In this patch, mincore_huge_pmd() always returns 0 and it's obviously wrong.
-We need to set ret to 1 in if-block.
-
-Thanks,
-Naoya
