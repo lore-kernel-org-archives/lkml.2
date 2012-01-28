@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab2A1BQu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 20:16:50 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47927 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab2A1BQt (ORCPT
+	id S1753404Ab2A1BnW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 20:43:22 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:47524 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab2A1BnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 20:16:49 -0500
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH] regmap: Properly round reg_bytes and val_bytes
-Date: Sat, 28 Jan 2012 02:16:41 +0100
-Message-Id: <1327713401-16236-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.5
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 27 Jan 2012 20:43:20 -0500
+Date: Fri, 27 Jan 2012 20:42:10 -0500 (EST)
+Message-Id: <20120127.204210.1693783796267469687.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-01-27
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120127201023.GC2510@tuxdriver.com>
+References: <20120127201023.GC2510@tuxdriver.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 27 Jan 2012 17:42:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the upcoming 2/6-format, we don't see debugfs output otherwise,
-since the current division results in 0. I'd think 10/14 is broken
-currently, too.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Fri, 27 Jan 2012 15:10:23 -0500
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
----
+> Here are a couple of "one-liner" fixes intended for 3.3.
+> 
+> A mac80211 fix from Eliad Peller fixes a regression from an earlier
+> patche that accidentally removed a necessary line of code.  The other
+> one from Eliad adds an overlooked assignment necessary for proper
+> management of some state information.  Finally, the fix from Johannes
+> moves an unlock to include an additional operation within the critical
+> section.
+> 
+> Pleae let me know if there are problems!
 
-rebased to topic/core
-
- drivers/base/regmap/regmap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index b4475d8..3c34526 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -167,9 +167,9 @@ struct regmap *regmap_init(struct device *dev,
- 
- 	mutex_init(&map->lock);
- 	map->format.buf_size = (config->reg_bits + config->val_bits) / 8;
--	map->format.reg_bytes = config->reg_bits / 8;
-+	map->format.reg_bytes = DIV_ROUND_UP(config->reg_bits, 8);
- 	map->format.pad_bytes = config->pad_bits / 8;
--	map->format.val_bytes = config->val_bits / 8;
-+	map->format.val_bytes = DIV_ROUND_UP(config->val_bits, 8);
- 	map->format.buf_size += map->format.pad_bytes;
- 	map->dev = dev;
- 	map->bus = bus;
--- 
-1.7.2.5
-
+Pulled, thanks John.
