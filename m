@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab2A1QRU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 11:17:20 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45280 "EHLO
+	id S1754204Ab2A1QRV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 11:17:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64943 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868Ab2A1QQ3 (ORCPT
+	with ESMTP id S1753913Ab2A1QQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 Jan 2012 11:16:29 -0500
-X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=rEUMyDaEN9QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=3FE5NN9oZHMokVY65lcA:9 a=ioj0HhELp7ngitVBJFYA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=JY7AFlBBnmmjCcqsJP4A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=HvQodIuWcEkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=meVymXHHAAAA:8 a=VWnXU4kBQmB5lzw8e10A:9 a=M6zHii8pmiJdXllgSEsA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jeBq3FmKZ4MA:10 a=njfJ2e0Jh8yaWINSjmMA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120128161627.908330057@goodmis.org>
+Message-Id: <20120128161626.898021193@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Sat, 28 Jan 2012 11:09:30 -0500
+Date: Sat, 28 Jan 2012 11:09:27 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Jason Baron <jbaron@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 5/5 v2] x86/jump labels: Use etiher 5 byte or 2 byte jumps
+Subject: [PATCH 2/5 v2] x86/jump-label: Do not bother updating nops if they are correct
 References: <20120128160925.275163704@goodmis.org>
-Content-Disposition: inline; filename=0005-x86-jump-labels-Use-etiher-5-byte-or-2-byte-jumps.patch
+Content-Disposition: inline; filename=0002-x86-jump-label-Do-not-bother-updating-nops-if-they-a.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,212 +32,47 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Have the jump labels add a "jmp" in the assembly instead
-of a default nop. This will cause the assembler to put in
-either a 2 byte or 5 byte jmp depending on where the target
-lable is.
+On boot up, the jump label init function scans all the jump label locations
+and converts them to the best nop for the machine. If the nop is already
+the ideal nop, do not bother with changing it.
 
-Then at compile time, the update_jump_label code will replace
-the jmps with either 2 or 5 byte nops.
-
-On boot up, the code can be examined to see if the jump label
-uses either a 2 or 5 byte nop and replace it.
-
-By allowing the jump labels to be 2 bytes, it speeds up the
-nops, not only 2 byte nops are faster than 5 byte nops, but also
-because it saves on cache foot print.
-
-   text    data     bss     dec     hex filename
-13403667 3666856 2998272 20068795 13239bb ../nobackup/mxtest/vmlinux-old
-13398536 3666856 2998272 20063664 13225b0 ../nobackup/mxtest/vmlinux-new
-
-Converting the current v3.2 trace points saved 5,131 bytes.
-As more places use jump labels, this will have a bigger savings.
-
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/Kconfig                  |    1 +
- arch/x86/include/asm/jump_label.h |    7 +++-
- arch/x86/kernel/jump_label.c      |   85 ++++++++++++++++++++++++++++-----=
----
- 3 files changed, 73 insertions(+), 20 deletions(-)
+ arch/x86/kernel/jump_label.c |   20 +++++++++++++++++++-
+ 1 files changed, 19 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index efb4294..b5004c1 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -61,6 +61,7 @@ config X86
- 	select HAVE_ARCH_KMEMCHECK
- 	select HAVE_USER_RETURN_NOTIFIER
- 	select HAVE_ARCH_JUMP_LABEL
-+	select HAVE_BUILD_TIME_JUMP_LABEL
- 	select HAVE_TEXT_POKE_SMP
- 	select HAVE_GENERIC_HARDIRQS
- 	select HAVE_SPARSE_IRQ
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_=
-label.h
-index 7082743..ba12f7e 100644
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -10,6 +10,11 @@
-=20
- #define JUMP_LABEL_NOP_SIZE 5
-=20
-+/*
-+ * The JUMP_LABEL_INIT_NOP must match the nops used in
-+ * scripts/update_jump_label.c. Otherwise the boot time checks
-+ * will fail and trigger a BUG() on boot up.
-+ */
- #ifdef CONFIG_X86_64
- # define JUMP_LABEL_INIT_NOP P6_NOP5_ATOMIC
- #else
-@@ -19,7 +24,7 @@
- static __always_inline bool arch_static_branch(struct jump_label_key *key)
- {
- 	asm goto("1:"
--		".byte " __stringify(JUMP_LABEL_INIT_NOP) "\n\t"
-+		"jmp %l[l_yes]\n"
- 		".pushsection __jump_table,  \"aw\" \n\t"
- 		_ASM_ALIGN "\n\t"
- 		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
 diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-index 12a8812..7112a27 100644
+index ea9d5f2f..cd42721 100644
 --- a/arch/x86/kernel/jump_label.c
 +++ b/arch/x86/kernel/jump_label.c
-@@ -16,12 +16,20 @@
-=20
- #ifdef HAVE_JUMP_LABEL
-=20
-+/* These are the nops added at compile time */
-+static const unsigned char nop_short[] =3D { P6_NOP2 };
-+static const unsigned char default_nop[] =3D { JUMP_LABEL_INIT_NOP };
-+
- union jump_code_union {
- 	char code[JUMP_LABEL_NOP_SIZE];
- 	struct {
- 		char jump;
- 		int offset;
--	} __attribute__((packed));
-+	} __packed;
-+	struct {
-+		char jump_short;
-+		char offset_short;
-+	} __packed;
- };
-=20
- static void __jump_label_transform(struct jump_entry *entry,
-@@ -30,18 +38,33 @@ static void __jump_label_transform(struct jump_entry *e=
-ntry,
- 				   int init)
+@@ -53,7 +53,25 @@ void arch_jump_label_transform(struct jump_entry *entry,
+ void arch_jump_label_transform_static(struct jump_entry *entry,
+ 				      enum jump_label_type type)
  {
- 	union jump_code_union code;
-+	unsigned char nop;
-+	unsigned char op;
-+	unsigned size;
-+	void *ip =3D (void *)entry->code;
- 	const unsigned char *ideal_nop =3D ideal_nops[NOP_ATOMIC5];
-=20
--	if (type =3D=3D JUMP_LABEL_ENABLE) {
--		/*
--		 * We are enabling this jump label. If it is not a nop
--		 * then something must have gone wrong.
--		 */
--		BUG_ON(memcmp((void *)entry->code, ideal_nop, 5) !=3D 0);
-+	/* Use probe_kernel_read()? */
-+	op =3D *(unsigned char *)ip;
-+	nop =3D ideal_nops[NOP_ATOMIC5][0];
-=20
--		code.jump =3D 0xe9;
--		code.offset =3D entry->target -
--				(entry->code + JUMP_LABEL_NOP_SIZE);
-+	if (type =3D=3D JUMP_LABEL_ENABLE) {
-+		if (memcmp(ip, nop_short, 2) =3D=3D 0) {
-+			size =3D 2;
-+			code.jump_short =3D 0xeb;
-+			code.offset =3D entry->target - (entry->code + 2);
-+			/* Check for overflow ? */
-+		} else if (memcmp(ip, ideal_nop, 5) =3D=3D 0) {
-+			size =3D JUMP_LABEL_NOP_SIZE;
-+			code.jump =3D 0xe9;
-+			code.offset =3D entry->target - (entry->code + size);
-+		} else
-+			/*
-+			 * The location is not a nop that we were expecting,
-+			 * something went wrong. Crash the box, as something could be
-+			 * corrupting the kernel.
-+			 */
-+			BUG();
- 	} else {
- 		/*
- 		 * We are disabling this jump label. If it is not what
-@@ -50,18 +73,44 @@ static void __jump_label_transform(struct jump_entry *e=
-ntry,
- 		 * are converting the default nop to the ideal nop.
- 		 */
- 		if (init) {
--			const unsigned char default_nop[] =3D { JUMP_LABEL_INIT_NOP };
--			BUG_ON(memcmp((void *)entry->code, default_nop, 5) !=3D 0);
--		} else {
-+			/* Ignore short nops, we do not change them */
-+			if (memcmp(ip, nop_short, 2) =3D=3D 0)
-+				return;
+-	__jump_label_transform(entry, type, text_poke_early);
++	static int once;
++	static int update;
 +
-+			/* We are initializing from the default nop */
-+			BUG_ON(memcmp(ip, default_nop, 5) !=3D 0);
-+
-+			/* Set to the ideal nop */
-+			size =3D JUMP_LABEL_NOP_SIZE;
-+			memcpy(&code, ideal_nops[NOP_ATOMIC5], size);
-+
-+		} else if (op =3D=3D 0xe9) {
-+			/* Replace a 5 byte jmp */
-+
-+			/* Make sure this is what we expected it to be */
- 			code.jump =3D 0xe9;
- 			code.offset =3D entry->target -
- 				(entry->code + JUMP_LABEL_NOP_SIZE);
--			BUG_ON(memcmp((void *)entry->code, &code, 5) !=3D 0);
--		}
--		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
-+			BUG_ON(memcmp(ip, &code, 5) !=3D 0);
-+
-+			size =3D JUMP_LABEL_NOP_SIZE;
-+			memcpy(&code, ideal_nops[NOP_ATOMIC5], size);
-+		} else if (op =3D=3D 0xeb) {
-+			/* Replace a 2 byte jmp */
-+
-+			/* Had better be a 2 byte jmp */
-+			code.jump_short =3D 0xeb;
-+			code.offset =3D entry->target - (entry->code + 2);
-+			BUG_ON(memcmp(ip, &code, 2) !=3D 0);
-+
-+			size =3D 2;
-+			memcpy(&code, nop_short, size);
-+		} else
-+			/* The code was not what we expected!  */
-+			BUG();
- 	}
-=20
--	(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+	(*poker)(ip, &code, size);
++	/*
++	 * This function is called at boot up and when modules are
++	 * first loaded. Check if the default nop, the one that is
++	 * inserted at compile time, is the ideal nop. If it is, then
++	 * we do not need to update the nop, and we can leave it as is.
++	 * If it is not, then we need to update the nop to the ideal nop.
++	 */
++	if (!once) {
++		const unsigned char default_nop[] =3D { JUMP_LABEL_INIT_NOP };
++		const unsigned char *ideal_nop =3D ideal_nops[NOP_ATOMIC5];
++		once++;
++		if (memcmp(ideal_nop, default_nop, 5) !=3D 0)
++			update =3D 1;
++	}
++	if (update)
++		__jump_label_transform(entry, type, text_poke_early);
  }
 =20
- void arch_jump_label_transform(struct jump_entry *entry,
-@@ -88,7 +137,6 @@ void arch_jump_label_transform_static(struct jump_entry =
-*entry,
- 	 * If it is not, then we need to update the nop to the ideal nop.
- 	 */
- 	if (!once) {
--		const unsigned char default_nop[] =3D { JUMP_LABEL_INIT_NOP };
- 		const unsigned char *ideal_nop =3D ideal_nops[NOP_ATOMIC5];
- 		once++;
- 		if (memcmp(ideal_nop, default_nop, 5) !=3D 0)
-@@ -97,5 +145,4 @@ void arch_jump_label_transform_static(struct jump_entry =
-*entry,
- 	if (update)
- 		__jump_label_transform(entry, type, text_poke_early, 1);
- }
--
  #endif
 --=20
 1.7.8.3
@@ -251,19 +86,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPJB9bAAoJEIy3vGnGbaoAzCwP/RSYEyVFoEP8RXI+mF0YF5vr
-TZKJZ3ub5lHPdfNcr5INt3VlmnsWQyNephWpOpBIq0yxznFtjHpxelLKJc0MKW4N
-9I0IKj0MLtMlbk5SbnAE1aQ/WpIiqbofQHKfpcuuqwM3nn8TZopb1AMw+Em15rcN
-htWakjfb2Stmctdux+mU9Dx9NTQ1+ivckzxS+Q3XliVn98S0eMQy36l2i66p7aqi
-bTJsSLI7dT6vqwp6rmTWlB7osUg2sAQcy1Gf/kqRbtmdg+wX2RCc8y7ZKWtil2e/
-qk5YD9zwBNEAJyeUl9Z8Y4V/XNUcxeAl/9QhmLnuouBmvloJLU16Qbyt4DC7EF5S
-JsA5lObKRoPvwkM9c2UogGmWhgIaJUM3Q6ieRWyAi1YAHtbsqmPf6z53W0tGgGkh
-Z/PTJ1XxTOYFrkPfp75QOyBc5hD6GnOg5tnvmytmZLcosVjxKRSuPIg/ZCvPz6DE
-b8or5rSg5BP2kUcliDFduAtt46qMbC65S4be73IsTgshIg9UkNZ1YqI21cO+ZUxV
-nCOADt0bhgxTVmWAUA2hP6/vRtoGYmPYotj2XySivMI41Of7G3Q9PFRfasRYL9+0
-ct5WIB1zAXStL2nzRAfzgWIuAp7Y2z8EL8CAcjdKAyalf4qrcV5GPuW1ZZe9oHXA
-hVXDXrZAI2wKqvXH5GEj
-=iA5+
+iQIcBAABAgAGBQJPJB9aAAoJEIy3vGnGbaoAAjIQANzxKQwxkNp+sgMBkGuHzz0P
+LAAY6bRQz/iZo/o4T926yXdTdlWQuOM2tJ7H0HWKLI4mrcmzW+tM+6Y66krQsCwy
+CiZuZsKE1lkTHzhf/6OBCQDTp9q+0O5FCt2J7UteXDoQeydMxbgDSgaOXmuJ2qn1
+vrSWCKcDyR8y7U48q2QOeVU9B/zRSkgj/iVpGEl7osKVWTcSvLwzL8yY9bC6ZGC7
+uCcRDhRfaQ6WYV0zDcmluWLHBQ9OHCidn/PjL22nfkzhu91JgeFxPAboUGYzjPWM
+jh1tuRcORovsvUP4+2tP1EwuSArhnpfHCfU3vL9s5HlZmEOrz/PogK7/T0yzbJ70
+NerCYd7AJLGWoM99xQB2zeIB/YC8yStr9eHqb5QWnwXa1Z1WxokZPQ7MGfYLBX41
+KMkcQsbLFLb5Tqj0vWqs/RIj9x6MFrPCJVvYuhUx2jKqR/xKStgBujyVlUUldbZh
+E6ZbcDb4pX0ra/5gUZ+kgJI9I6sY6nRa+Aok/aJGkPwVf1ZD79GDgR82UJlNExD+
+WqhpYoqBEUMu4FpEf1LbDPuOJAW1FwrRhU1HUqUmeFtbm63jLWeO9LtyoMAaD8Wk
+2KAugb+4UirHBTGceZpWmvo++1XghdK9wXuFckydy9qsxmPrkHC9ouz4YGTjRcFg
+0pbVVnXfO8WbyLPSMRfl
+=h9xl
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
