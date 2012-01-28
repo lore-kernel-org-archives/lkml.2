@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab2A1TvT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 14:51:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34791 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab2A1TvR (ORCPT
+	id S1752827Ab2A1T4K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 14:56:10 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48081 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751656Ab2A1T4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 14:51:17 -0500
-Date: Sat, 28 Jan 2012 13:51:03 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        containers@lists.linux-foundation.org,
-        Dave Hansen <haveblue@us.ibm.com>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Whitcroft <apw@canonical.com>, sukadev@linux.vnet.ibm.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC] fix devpts mount behavior
-Message-ID: <20120128195103.GA11299@sergelap>
-References: <20120124000517.GA28878@sergelap>
- <CA+55aFz9ofF+Ey8VCDS8UEf2XSw36kj2RhkHfFScuzLXMeNrkA@mail.gmail.com>
- <20120124002555.GA29534@sergelap>
- <CA+55aFzwOU137V6wtyBjessx05NJo2G4KV0rvTKWvC79A+o9iQ@mail.gmail.com>
- <20120124010758.GJ23916@ZenIV.linux.org.uk>
- <m1k44gj1cu.fsf@fess.ebiederm.org>
- <20120124220247.GA26353@hallyn.com>
- <CAPXgP13_gczQmG_USAp0p2AuTfxkzAvzHvjbZY_rbbLH-4rDyg@mail.gmail.com>
- <20120124231601.GA4470@sergelap>
- <CAPXgP12REAwmDORzdGJhsxZKU8nhiauCxoVdKa8Eifw4MWWtgA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP12REAwmDORzdGJhsxZKU8nhiauCxoVdKa8Eifw4MWWtgA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 28 Jan 2012 14:56:08 -0500
+Message-ID: <1327780565.2924.24.camel@dabdike.int.hansenpartnership.com>
+Subject: Hang deconfiguring network interface (in shutdown) on 3.3-rc1
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Parisc List <linux-parisc@vger.kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Michael Chan <mchan@broadcom.com>,
+        Paul McKenny <paulmck@linux.vnet.ibm.com>
+Date: Sat, 28 Jan 2012 13:56:05 -0600
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kay Sievers (kay.sievers@vrfy.org):
-> We might also thing about changing /sys/class/tty/ptmx/, and have the
-> kernel create the symlink? The loops through userspace to setup
-> default kernel stuff are kind of crazy ...
-> 
-> Kay
+It looks like it might be a tg3 or RCU issue.  When I shut down my
+parisc SMP 4 way system, I get an immediate hang here
 
-Hi Kay,
+Deconfiguring network interfaces...Internet Systems Consortium DHCP
+Client 4.1.1-P1
+Copyright 2004-2010 Internet Systems Consortium.
+All rights reserved.
+For info, please visit https://www.isc.org/software/dhcp/
 
-sorry, there is something I'm missing here.  Without a target kobj
-to link to, how would we go about telling the kernel that /dev/ptmx
-should be a symlink to /dev/pts/ptmx?  Is there a way to do that?
+Listening on LPF/eth0/00:30:6e:4b:15:59
+Sending on   LPF/eth0/00:30:6e:4b:15:59
+Sending on   Socket/fallback
+DHCPRELEASE on eth0 to 153.66.140.171 port 67
 
-thanks,
--serge
+Followed some seconds later by
+
+[ 5714.268000] INFO: rcu_sched detected stall on CPU 3 (t=15000 jiffies)
+[ 5714.268000] Backtrace:
+[ 5714.268000]  [<000000004011fdd4>] show_stack+0x14/0x20
+[ 5714.268000]  [<000000004011fdf8>] dump_stack+0x18/0x28
+[ 5714.268000]  [<00000000401c1fec>] __rcu_pending+0xcc/0x5c8
+[ 5714.276000]  [<00000000401c2d60>] rcu_check_callbacks+0x80/0xf8
+[ 5714.276000] INFO: rcu_sched detected stalls on CPUs/tasks: { 3}
+(detected by 2, t=15002 jiffies)
+[ 5714.276000] Backtrace:
+[ 5714.276000]  [<000000004011fdd4>] show_stack+0x14/0x20
+[ 5714.276000]  [<000000004011fdf8>] dump_stack+0x18/0x28
+[ 5714.276000]  [<00000000401c2484>] __rcu_pending+0x564/0x5c8
+[ 5714.276000]  [<00000000401c2d60>] rcu_check_callbacks+0x80/0xf8
+[ 5714.276000]  [<0000000040155dc8>] update_process_times+0x68/0xd8
+[ 5714.276000]  [<0000000040121378>] timer_interrupt+0x1c0/0x220
+[ 5714.276000]  [<00000000401b9cfc>] handle_irq_event_percpu+0xa4/0x2a0
+[ 5714.276000]  [<00000000401be58c>] handle_percpu_irq+0x9c/0xd0
+[ 5714.276000]  [<00000000401b9500>] generic_handle_irq+0x48/0x60
+[ 5714.276000]  [<0000000040121a50>] do_cpu_irq_mask+0x1b8/0x2a8
+[ 5714.276000]  [<0000000040105074>] intr_return+0x0/0x4
+[ 5714.276000]  [<0000000040105074>] intr_return+0x0/0x4
+[ 5714.276000]  [<00000000401296dc>] cpu_idle+0x74/0x80
+[ 5714.276000]  [<000000004078e1d0>] smp_callin+0x150/0x1a0
+[ 5714.276000] 
+[ 5714.348000]  [<0000000040155dc8>] update_process_times+0x68/0xd8
+[ 5714.348000]  [<0000000040121378>] timer_interrupt+0x1c0/0x220
+[ 5714.356000]  [<00000000401b9cfc>] handle_irq_event_percpu+0xa4/0x2a0
+[ 5714.364000]  [<00000000401be58c>] handle_percpu_irq+0x9c/0xd0
+[ 5714.364000]  [<00000000401b9500>] generic_handle_irq+0x48/0x60
+[ 5714.372000]  [<0000000040121a50>] do_cpu_irq_mask+0x1b8/0x2a8
+[ 5714.372000]  [<0000000040105074>] intr_return+0x0/0x4
+[ 5714.380000] 
+
+This didn't happen in 3.2
+
+Sysrq still works and sysrq-T shows ifconfig stuck:
+
+
+[ 6030.376000] ifconfig        R  running task        0  1470   1452
+0x00000014
+[ 6030.376000] Backtrace:
+[ 6030.376000]  [<000000004017c6c8>] scheduler_tick+0x180/0x1a0
+[ 6030.376000]  [<0000000040155e1c>] update_process_times+0xbc/0xd8
+[ 6030.376000]  [<0000000040121378>] timer_interrupt+0x1c0/0x220
+[ 6030.376000]  [<00000000401b9d54>] handle_irq_event_percpu+0xfc/0x2a0
+[ 6030.376000]  [<0000000040105074>] intr_return+0x0/0x4
+[ 6030.376000]  [<000000004011c638>] _raw_spin_lock_bh+0x30/0x40
+[ 6030.376000]  [<000000004011c620>] _raw_spin_lock_bh+0x18/0x40
+[ 6030.376000]  [<000000001c6e3a64>] tg3_chip_reset+0x9c4/0x1328 [tg3]
+[ 6030.376000]  [<000000001c6eca9c>] tg3_halt+0xdc/0x1d8 [tg3]
+[ 6030.376000]  [<000000001c6f9964>] tg3_close+0x194/0x3f0 [tg3]
+[ 6030.376000]  [<0000000040411518>] __dev_close_many+0x100/0x178
+[ 6030.376000]  [<0000000040415130>] __dev_close+0x30/0x50
+[ 6030.376000]  [<000000004040ebf8>] __dev_change_flags+0xb0/0x1d0
+[ 6030.376000]  [<00000000404113b0>] dev_change_flags+0x28/0x90
+[ 6030.376000]  [<0000000040488d70>] devinet_ioctl+0x748/0x898
+[ 6030.376000]  [<000000004048a5f4>] inet_ioctl+0x204/0x228
+
+James
+
+
