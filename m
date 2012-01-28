@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab2A1MHT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 07:07:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56532 "EHLO
+	id S1753031Ab2A1MH5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 07:07:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56542 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab2A1MHQ (ORCPT
+	with ESMTP id S1752736Ab2A1MHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 07:07:16 -0500
-Date: Sat, 28 Jan 2012 04:06:54 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-39be350127ec60a078edffe5b4915dafba4ba514@git.kernel.org>
+	Sat, 28 Jan 2012 07:07:55 -0500
+Date: Sat, 28 Jan 2012 04:07:42 -0800
+From: tip-bot for Vincent Guittot <vincent.guittot@linaro.org>
+Message-ID: <tip-4ec4412e1e91f44a3dcb97b6c9172a13fc78bac9@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        axboe@kernel.dk, a.p.zijlstra@chello.nl, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, vincent.guittot@linaro.org, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, axboe@kernel.dk, tglx@linutronix.de
-In-Reply-To: <1327579450.2446.95.camel@twins>
-References: <1327579450.2446.95.camel@twins>
+        a.p.zijlstra@chello.nl, vincent.guittot@linaro.org, tglx@linutronix.de
+In-Reply-To: <1323717668-2143-1-git-send-email-vincent.guittot@linaro.org>
+References: <1323717668-2143-1-git-send-email-vincent.guittot@linaro.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched, block: Unify cache detection
-Git-Commit-ID: 39be350127ec60a078edffe5b4915dafba4ba514
+Subject: [tip:sched/core] sched: Ensure cpu_power periodic update
+Git-Commit-ID: 4ec4412e1e91f44a3dcb97b6c9172a13fc78bac9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,168 +27,103 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Jan 2012 04:07:01 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Jan 2012 04:07:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  39be350127ec60a078edffe5b4915dafba4ba514
-Gitweb:     http://git.kernel.org/tip/39be350127ec60a078edffe5b4915dafba4ba514
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 26 Jan 2012 12:44:34 +0100
+Commit-ID:  4ec4412e1e91f44a3dcb97b6c9172a13fc78bac9
+Gitweb:     http://git.kernel.org/tip/4ec4412e1e91f44a3dcb97b6c9172a13fc78bac9
+Author:     Vincent Guittot <vincent.guittot@linaro.org>
+AuthorDate: Mon, 12 Dec 2011 20:21:08 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 27 Jan 2012 13:28:48 +0100
+CommitDate: Fri, 27 Jan 2012 13:28:49 +0100
 
-sched, block: Unify cache detection
+sched: Ensure cpu_power periodic update
 
-The block layer has some code trying to determine if two CPUs share a
-cache, the scheduler has a similar function. Expose the function used
-by the scheduler and make the block layer use it, thereby removing the
-block layers usage of CONFIG_SCHED* and topology bits.
+With a lot of small tasks, the softirq sched is nearly never called
+when no_hz is enabled. In this case load_balance() is mainly called
+with the newly_idle mode which doesn't update the cpu_power.
 
+Add a next_update field which ensure a maximum update period when
+there is short activity.
+
+Having stale cpu_power information can skew the load-balancing
+decisions, this is cured by the guaranteed update.
+
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Jens Axboe <axboe@kernel.dk>
-Link: http://lkml.kernel.org/r/1327579450.2446.95.camel@twins
+Link: http://lkml.kernel.org/r/1323717668-2143-1-git-send-email-vincent.guittot@linaro.org
 ---
- block/blk-softirq.c   |   16 ++++++++--------
- block/blk.h           |   16 ----------------
- include/linux/sched.h |    8 ++++++++
- kernel/sched/core.c   |    6 +++---
- 4 files changed, 19 insertions(+), 27 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched/fair.c   |   24 ++++++++++++++++--------
+ 2 files changed, 17 insertions(+), 8 deletions(-)
 
-diff --git a/block/blk-softirq.c b/block/blk-softirq.c
-index 1366a89..467c8de 100644
---- a/block/blk-softirq.c
-+++ b/block/blk-softirq.c
-@@ -8,6 +8,7 @@
- #include <linux/blkdev.h>
- #include <linux/interrupt.h>
- #include <linux/cpu.h>
-+#include <linux/sched.h>
- 
- #include "blk.h"
- 
-@@ -103,9 +104,10 @@ static struct notifier_block __cpuinitdata blk_cpu_notifier = {
- 
- void __blk_complete_request(struct request *req)
- {
--	int ccpu, cpu, group_cpu = NR_CPUS;
-+	int ccpu, cpu;
- 	struct request_queue *q = req->q;
- 	unsigned long flags;
-+	bool shared = false;
- 
- 	BUG_ON(!q->softirq_done_fn);
- 
-@@ -117,22 +119,20 @@ void __blk_complete_request(struct request *req)
- 	 */
- 	if (req->cpu != -1) {
- 		ccpu = req->cpu;
--		if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags)) {
--			ccpu = blk_cpu_to_group(ccpu);
--			group_cpu = blk_cpu_to_group(cpu);
--		}
-+		if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags))
-+			shared = cpus_share_cache(cpu, ccpu);
- 	} else
- 		ccpu = cpu;
- 
- 	/*
--	 * If current CPU and requested CPU are in the same group, running
--	 * softirq in current CPU. One might concern this is just like
-+	 * If current CPU and requested CPU share a cache, run the softirq on
-+	 * the current CPU. One might concern this is just like
- 	 * QUEUE_FLAG_SAME_FORCE, but actually not. blk_complete_request() is
- 	 * running in interrupt handler, and currently I/O controller doesn't
- 	 * support multiple interrupts, so current CPU is unique actually. This
- 	 * avoids IPI sending from current CPU to the first CPU of a group.
- 	 */
--	if (ccpu == cpu || ccpu == group_cpu) {
-+	if (ccpu == cpu || shared) {
- 		struct list_head *list;
- do_local:
- 		list = &__get_cpu_var(blk_cpu_done);
-diff --git a/block/blk.h b/block/blk.h
-index 7efd772..df5b59a 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -164,22 +164,6 @@ static inline int queue_congestion_off_threshold(struct request_queue *q)
- 	return q->nr_congestion_off;
- }
- 
--static inline int blk_cpu_to_group(int cpu)
--{
--	int group = NR_CPUS;
--#ifdef CONFIG_SCHED_MC
--	const struct cpumask *mask = cpu_coregroup_mask(cpu);
--	group = cpumask_first(mask);
--#elif defined(CONFIG_SCHED_SMT)
--	group = cpumask_first(topology_thread_cpumask(cpu));
--#else
--	return cpu;
--#endif
--	if (likely(group < NR_CPUS))
--		return group;
--	return cpu;
--}
--
- /*
-  * Contribute to IO statistics IFF:
-  *
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 513f524..0e19595 100644
+index 0e19595..92313a3f 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1052,6 +1052,8 @@ static inline int test_sd_parent(struct sched_domain *sd, int flag)
- unsigned long default_scale_freq_power(struct sched_domain *sd, int cpu);
- unsigned long default_scale_smt_power(struct sched_domain *sd, int cpu);
+@@ -905,6 +905,7 @@ struct sched_group_power {
+ 	 * single CPU.
+ 	 */
+ 	unsigned int power, power_orig;
++	unsigned long next_update;
+ 	/*
+ 	 * Number of busy cpus in this group.
+ 	 */
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7c6414f..8e77a6b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -215,6 +215,8 @@ calc_delta_mine(unsigned long delta_exec, unsigned long weight,
  
-+bool cpus_share_cache(int this_cpu, int that_cpu);
+ const struct sched_class fair_sched_class;
+ 
++static unsigned long __read_mostly max_load_balance_interval = HZ/10;
 +
- #else /* CONFIG_SMP */
- 
- struct sched_domain_attr;
-@@ -1061,6 +1063,12 @@ partition_sched_domains(int ndoms_new, cpumask_var_t doms_new[],
- 			struct sched_domain_attr *dattr_new)
- {
- }
-+
-+static inline bool cpus_share_cache(int this_cpu, int that_cpu)
-+{
-+	return true;
-+}
-+
- #endif	/* !CONFIG_SMP */
- 
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5255c9d..d7c4322 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1507,7 +1507,7 @@ static int ttwu_activate_remote(struct task_struct *p, int wake_flags)
- }
- #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
- 
--static inline int ttwu_share_cache(int this_cpu, int that_cpu)
-+bool cpus_share_cache(int this_cpu, int that_cpu)
- {
- 	return per_cpu(sd_llc_id, this_cpu) == per_cpu(sd_llc_id, that_cpu);
- }
-@@ -1518,7 +1518,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
- 	struct rq *rq = cpu_rq(cpu);
- 
- #if defined(CONFIG_SMP)
--	if (sched_feat(TTWU_QUEUE) && !ttwu_share_cache(smp_processor_id(), cpu)) {
-+	if (sched_feat(TTWU_QUEUE) && !cpus_share_cache(smp_processor_id(), cpu)) {
- 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
- 		ttwu_queue_remote(p, cpu);
- 		return;
-@@ -5754,7 +5754,7 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
-  *
-  * Also keep a unique ID per domain (we use the first cpu number in
-  * the cpumask of the domain), this allows us to quickly tell if
-- * two cpus are in the same cache domain, see ttwu_share_cache().
-+ * two cpus are in the same cache domain, see cpus_share_cache().
+ /**************************************************************
+  * CFS operations on generic schedulable entities:
   */
- DEFINE_PER_CPU(struct sched_domain *, sd_llc);
- DEFINE_PER_CPU(int, sd_llc_id);
+@@ -3776,6 +3778,11 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 	struct sched_domain *child = sd->child;
+ 	struct sched_group *group, *sdg = sd->groups;
+ 	unsigned long power;
++	unsigned long interval;
++
++	interval = msecs_to_jiffies(sd->balance_interval);
++	interval = clamp(interval, 1UL, max_load_balance_interval);
++	sdg->sgp->next_update = jiffies + interval;
+ 
+ 	if (!child) {
+ 		update_cpu_power(sd, cpu);
+@@ -3883,12 +3890,15 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+ 	 * domains. In the newly idle case, we will allow all the cpu's
+ 	 * to do the newly idle load balance.
+ 	 */
+-	if (idle != CPU_NEWLY_IDLE && local_group) {
+-		if (balance_cpu != this_cpu) {
+-			*balance = 0;
+-			return;
+-		}
+-		update_group_power(sd, this_cpu);
++	if (local_group) {
++		if (idle != CPU_NEWLY_IDLE) {
++			if (balance_cpu != this_cpu) {
++				*balance = 0;
++				return;
++			}
++			update_group_power(sd, this_cpu);
++		} else if (time_after_eq(jiffies, group->sgp->next_update))
++			update_group_power(sd, this_cpu);
+ 	}
+ 
+ 	/* Adjust by relative CPU power of the group */
+@@ -4945,8 +4955,6 @@ static int __cpuinit sched_ilb_notifier(struct notifier_block *nfb,
+ 
+ static DEFINE_SPINLOCK(balancing);
+ 
+-static unsigned long __read_mostly max_load_balance_interval = HZ/10;
+-
+ /*
+  * Scale the max load_balance interval with the number of CPUs in the system.
+  * This trades load-balance latency on larger machines for less cross talk.
