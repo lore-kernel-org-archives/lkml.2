@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab2A1RUF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 12:20:05 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46871 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab2A1RUC convert rfc822-to-8bit (ORCPT
+	id S1753679Ab2A1RZi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 12:25:38 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:36558 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753333Ab2A1RZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 12:20:02 -0500
+	Sat, 28 Jan 2012 12:25:37 -0500
+Message-ID: <4F243D2C.7040709@xenotime.net>
+Date: Sat, 28 Jan 2012 10:23:40 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <4F22ED34.4060204@zytor.com>
-References: <20120127175342.273260614@openvz.org> <20120127175939.795551339@openvz.org>
- <20120127181525.GD11715@one.firstfloor.org> <20120127182403.GG11086@moon> <4F22ED34.4060204@zytor.com>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Sun, 29 Jan 2012 06:19:41 +1300
-Message-ID: <CAKgNAkhYy9b_BqFZ0ycE4ufCHZj6ow3n4kPSOZe+yE5dh67wVA@mail.gmail.com>
-Subject: Re: [RFC c/r 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-To: "H. Peter Anvin" <hpa@zytor.com>, Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v3 01/25] irq_domain: add documentation and MAINTAINERS
+ entry.
+References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca> <1327700179-17454-2-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1327700179-17454-2-git-send-email-grant.likely@secretlab.ca>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 28, 2012 at 7:30 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 01/27/2012 10:24 AM, Cyrill Gorcunov wrote:
->>
->> Sure, I'll try to (btw, where I should send it to? And in which
->> format novadays mans are written? In plain old troff or some
->> human readable asciidocs?) And... should I post man page
->> on LKML as well?
->>
->
-> Normally they're written using the mandoc macro set in *roff.  Michael
-> Kerrisk (mtk) is the authority on how to do things.
+On 01/27/2012 01:35 PM, Grant Likely wrote:
+> Documentation for irq_domain library which will be created in subsequent
+> patches.
 
-Cyrill, see  http://www.kernel.org/doc/man-pages/patches.html and the
-following man pages
-man-pages(7)
-man(7)
-groff_man(7)
+I posted a lot of comments to v2 on Jan. 24.
+Looks like they were ignored.
 
-Thanks,
+Please see  http://marc.info/?l=linuxppc-embedded&m=132742951211808&w=2
 
-Michael
+
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Milton Miller <miltonm@bga.com>
+> ---
+>  Documentation/IRQ-domain.txt |  113 ++++++++++++++++++++++++++++++++++++++++++
+>  MAINTAINERS                  |    9 +++
+>  2 files changed, 122 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/IRQ-domain.txt
+
+
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
