@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab2A1Q2c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 11:28:32 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:60848 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751788Ab2A1Q2a convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 11:28:30 -0500
+	id S1752173Ab2A1QjX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 11:39:23 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:33122 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab2A1QjW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 11:39:22 -0500
+Date: Sat, 28 Jan 2012 17:39:17 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCH 2/7] ftrace: Add enable/disable ftrace_ops control
+ interface
+Message-ID: <20120128163913.GE3391@somewhere>
+References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+ <1326912275-26405-3-git-send-email-jolsa@redhat.com>
+ <20120120170232.GF18056@somewhere>
+ <1327533221.22710.74.camel@gandalf.stny.rr.com>
+ <20120126023726.GI20878@somewhere>
+ <20120127103714.GA6294@m.brq.redhat.com>
+ <20120127164045.GA3391@somewhere>
+ <20120127165416.GD10601@m.brq.redhat.com>
+ <20120127170202.GB3391@somewhere>
+ <20120127172012.GE10601@m.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1327706681-11959-2-git-send-email-wad@chromium.org>
-References: <1327706681-11959-1-git-send-email-wad@chromium.org> <1327706681-11959-2-git-send-email-wad@chromium.org>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sat, 28 Jan 2012 08:28:09 -0800
-X-Google-Sender-Auth: GgCSPKebzZRZTXuzriCg7MUoD44
-Message-ID: <CAObL_7FAh27PU5koksh--v5yE9N7abz26=MQJ8np1U0PQDnP-w@mail.gmail.com>
-Subject: Re: [PATCH v5 2/3] seccomp_filters: system call filtering using BPF
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk, indan@nul.nu,
-        mcgrathr@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120127172012.GE10601@m.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 3:24 PM, Will Drewry <wad@chromium.org> wrote:
-> Filter programs will be inherited across fork/clone and execve.
-> However, if the task attaching the filter is unprivileged
-> (!CAP_SYS_ADMIN) the no_new_privs bit will be set on the task.  This
-> ensures that unprivileged tasks cannot attach filters that affect
-> privileged tasks (e.g., setuid binary).
+On Fri, Jan 27, 2012 at 06:20:12PM +0100, Jiri Olsa wrote:
+> On Fri, Jan 27, 2012 at 06:02:04PM +0100, Frederic Weisbecker wrote:
+> > On Fri, Jan 27, 2012 at 05:54:16PM +0100, Jiri Olsa wrote:
+> > > On Fri, Jan 27, 2012 at 05:40:49PM +0100, Frederic Weisbecker wrote:
+> > > > On Fri, Jan 27, 2012 at 11:37:14AM +0100, Jiri Olsa wrote:
+> > > > > On Thu, Jan 26, 2012 at 03:37:29AM +0100, Frederic Weisbecker wrote:
+> > > > > > On Wed, Jan 25, 2012 at 06:13:41PM -0500, Steven Rostedt wrote:
+> > > > > > > On Fri, 2012-01-20 at 18:02 +0100, Frederic Weisbecker wrote:
+> > > > > > > >  
+> > > > > > > > > +/**
+> > > > > > > > > + * ftrace_function_enable - enable controlled ftrace_ops on given cpu
+> > > > > > > > > + *
+> > > > > > > > > + * This function enables tracing on given cpu by decreasing
+> > > > > > > > > + * the per cpu control variable.
+> > > > > > > > > + * It must be called with preemption disabled and only on
+> > > > > > > > > + * ftrace_ops registered with FTRACE_OPS_FL_CONTROL.
+> > > > > > > > > + */
+> > > > > > > > > +static inline void ftrace_function_enable(struct ftrace_ops *ops, int cpu)
+> > > > > > > > > +{
+> > > > > > > > > +	atomic_t *disabled;
+> > > > > > > > > +
+> > > > > > > > > +	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL) ||
+> > > > > > > > > +			 !preempt_count()))
+> > > > > > > > > +		return;
+> > > > > > > > > +
+> > > > > > > > > +	disabled = per_cpu_ptr(ops->disabled, cpu);
+> > > > > > > > > +	atomic_dec(disabled);
+> > > > > > > > > +}
+> > > > > > > > 
+> > > > > > > > As you're using this for the local CPU exclusively, I suggest you rather
+> > > > > > > > rename it to "ftrace_function_{dis,en}able_cpu(struct ftrace_ops *ops)"
+> > > > > > > 
+> > > > > > > I wonder if "ftrace_function_local_{dis,en}able(ops)" would be better?
+> > > > > > > That would match something like local_irq_disable/enable.
+> > > > > > 
+> > > > > > Good idea.
+> > > > > > 
+> > > > > > > 
+> > > > > > > > and use __get_cpu_var() that does the preempt check for you.
+> > > > > 
+> > > > > I haven't found preempt check this_cpu_ptr path.. not sure I missed it..
+> > > > > so I'm keeping the implicit preemt check.
+> > > > 
+> > > > #ifdef CONFIG_DEBUG_PREEMPT
+> > > > #define my_cpu_offset per_cpu_offset(smp_processor_id())
+> > > > #else
+> > > > #define my_cpu_offset __my_cpu_offset
+> > > > #endif
+> > > > 
+> > > > #ifdef CONFIG_DEBUG_PREEMPT
+> > > > #define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
+> > > > #else
+> > > > #define this_cpu_ptr(ptr) __this_cpu_ptr(ptr)
+> > > > #endif
+> > > > 
+> > > > And smp_processor_id() has a preemption check.
+> > > 
+> > > yay.. ok :) so this one is triggered only if there's CONFIG_DEBUG_PREEMPT
+> > > option enabled.. seems to me it'd better to keep the implicit check anyway.
+> > > 
+> > > jirka
+> > 
+> > 
+> > This is a debugging option deemed to lower runtime debugging checks in
+> > production.
+> > 
+> > Is there a good reason to keep the check on every case?
+> 
+> none I guess, apart from me feeling better.. ;)
+> attached new version without the preemt_count check int the WARN_ON_ONCE
 
-This makes me nervous -- I don't think that the behavior of any new
-API should be different depending on privilege level -- adding a
-privilege should just make things work that would otherwise fail.  You
-might end up with bugs where a program is completely safe if run
-without CAP_SYS_ADMIN but, if run with CAP_SYS_ADMIN, bad things
-happen.  (The behavior of setuid(geteuid()) is an example of this
-problem.)
+Looks good.
 
-One way to fix it is to make setting a filter program fail unless
-capable(CAP_SYS_ADMIN ) || no_new_privs.
-
---Andy
+Thanks.
