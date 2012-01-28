@@ -1,160 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab2A1PlQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 10:41:16 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:34409 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab2A1PlP (ORCPT
+	id S1753883Ab2A1QBE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 11:01:04 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53688 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab2A1QBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 10:41:15 -0500
-Message-ID: <4F241710.9040205@linux.vnet.ibm.com>
-Date: Sat, 28 Jan 2012 21:11:04 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Sat, 28 Jan 2012 11:01:01 -0500
+Date: Sat, 28 Jan 2012 16:00:11 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roland Stigge <stigge@antcom.de>
+Cc: w.sang@pengutronix.de, grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix LPC32XX's clock.c
+Message-ID: <20120128160011.GA15455@n2100.arm.linux.org.uk>
+References: <1327673868-19741-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Jiri Slaby <jirislaby@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Baohua.Song@csr.com, "pavel@ucw.cz" <pavel@ucw.cz>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [linux-pm] PM: cannot hibernate -- BUG at kernel/workqueue.c:3659
-References: <4F1EC8D5.5040102@suse.cz> <201201260051.45000.rjw@sisk.pl> <4F2276AE.7010509@linux.vnet.ibm.com> <201201272344.04086.rjw@sisk.pl>
-In-Reply-To: <201201272344.04086.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12012815-5816-0000-0000-0000010F45D8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327673868-19741-1-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2012 04:14 AM, Rafael J. Wysocki wrote:
-
->> Rafael, thanks for the clarification in the other mail.
->>
->> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->>
->> I think we need to get this into 3.2-stable as well, as Jiri mentioned.
-> 
-> Yes, we do.
-> 
-> Below it goes again with the missing comment in user.c and a changelog.
-> 
-> Please let me know if there's anything wrong with it, otherwise I'm going
-> to push it to Linus in a couple of days.
-> 
-> Thanks,
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Hibernate: Fix s2disk regression related to freezing workqueues
-> 
-> Commit 2aede851ddf08666f68ffc17be446420e9d2a056
-> 
->   PM / Hibernate: Freeze kernel threads after preallocating memory
-> 
-> introduced a mechanism by which kernel threads were frozen after
-> the preallocation of hibernate image memory to avoid problems with
-> frozen kernel threads not responding to memory freeing requests.
-> However, it overlooked the s2disk code path in which the
-> SNAPSHOT_CREATE_IMAGE ioctl was run directly after SNAPSHOT_FREE,
-> which caused freeze_workqueues_begin() to BUG(), because it saw
-> that worqueues had been already frozen.
-> 
-> Although in principle this issue might be addressed by removing
-> the relevant BUG_ON() from freeze_workqueues_begin(), that would
-> reintroduce the very problem that commit 2aede851ddf08666f68ffc17be4
-> attempted to avoid into that particular code path.  For this reason,
-> to fix the issue at hand, introduce thaw_kernel_threads() and make
-> the SNAPSHOT_FREE ioctl execute it.
-> 
-> Special thanks to Srivatsa S. Bhat for detailed analysis of the
-> problem.
-> 
-> Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-
-
-Cc: stable@vger.kernel.org ?
-
-Other than that, the patch is perfect!
-
-Regards,
-Srivatsa S. Bhat
-
-> ---
->  include/linux/freezer.h |    2 ++
->  kernel/power/process.c  |   19 +++++++++++++++++++
->  kernel/power/user.c     |    9 +++++++++
->  3 files changed, 30 insertions(+)
-> 
-> Index: linux/include/linux/freezer.h
-> ===================================================================
-> --- linux.orig/include/linux/freezer.h
-> +++ linux/include/linux/freezer.h
-> @@ -39,6 +39,7 @@ extern bool __refrigerator(bool check_kt
->  extern int freeze_processes(void);
->  extern int freeze_kernel_threads(void);
->  extern void thaw_processes(void);
-> +extern void thaw_kernel_threads(void);
-> 
->  static inline bool try_to_freeze(void)
+On Fri, Jan 27, 2012 at 03:17:48PM +0100, Roland Stigge wrote:
+> @@ -382,30 +388,62 @@ static u32 local_clk_usbpll_setup(struct clk_pll_setup *pHCLKPllSetup)
+>  static int local_usbpll_enable(struct clk *clk, int enable)
 >  {
-> @@ -174,6 +175,7 @@ static inline bool __refrigerator(bool c
->  static inline int freeze_processes(void) { return -ENOSYS; }
->  static inline int freeze_kernel_threads(void) { return -ENOSYS; }
->  static inline void thaw_processes(void) {}
-> +static inline void thaw_kernel_threads(void) {}
-> 
->  static inline bool try_to_freeze(void) { return false; }
-> 
-> Index: linux/kernel/power/process.c
-> ===================================================================
-> --- linux.orig/kernel/power/process.c
-> +++ linux/kernel/power/process.c
-> @@ -188,3 +188,22 @@ void thaw_processes(void)
->  	printk("done.\n");
->  }
-> 
-> +void thaw_kernel_threads(void)
-> +{
-> +	struct task_struct *g, *p;
-> +
-> +	pm_nosig_freezing = false;
-> +	printk("Restarting kernel threads ... ");
-> +
-> +	thaw_workqueues();
-> +
-> +	read_lock(&tasklist_lock);
-> +	do_each_thread(g, p) {
-> +		if (p->flags & (PF_KTHREAD | PF_WQ_WORKER))
-> +			__thaw_task(p);
-> +	} while_each_thread(g, p);
-> +	read_unlock(&tasklist_lock);
-> +
-> +	schedule();
-> +	printk("done.\n");
-> +}
-> Index: linux/kernel/power/user.c
-> ===================================================================
-> --- linux.orig/kernel/power/user.c
-> +++ linux/kernel/power/user.c
-> @@ -274,6 +274,15 @@ static long snapshot_ioctl(struct file *
->  		swsusp_free();
->  		memset(&data->handle, 0, sizeof(struct snapshot_handle));
->  		data->ready = 0;
+>  	u32 reg;
+> -	int ret = -ENODEV;
+> -	unsigned long timeout = 1 + msecs_to_jiffies(10);
+> +	int ret = 0;
+> +	unsigned long timeout = jiffies + msecs_to_jiffies(20);
+
+...
+
+> -		/* Wait for PLL lock */
+> -		while ((timeout > jiffies) & (ret == -ENODEV)) {
 > +		/*
-> +		 * It is necessary to thaw kernel threads here, because
-> +		 * SNAPSHOT_CREATE_IMAGE may be invoked directly after
-> +		 * SNAPSHOT_FREE.  In that case, if kernel threads were not
-> +		 * thawed, the preallocation of memory carried out by
-> +		 * hibernation_snapshot() might run into problems (i.e. it
-> +		 * might fail or even deadlock).
+> +		 * Enable PLL
 > +		 */
-> +		thaw_kernel_threads();
->  		break;
-> 
->  	case SNAPSHOT_PREF_IMAGE_SIZE:
+> +		reg |= LPC32XX_CLKPWR_USBCTRL_PLL_PWRUP;
+> +		__raw_writel(reg, LPC32XX_CLKPWR_USB_CTRL);
+> +
+> +		/*
+> +		 * Wait for PLL to lock
+> +		 */
+> +		while ((timeout > jiffies) && (ret == -ENODEV)) {
 
-
+This is buggy - it's waiting to go wrong when jiffies wraps.  You really
+want to use time_before() or time_after() to make these comparisons, which
+are safe against wrap-around.
