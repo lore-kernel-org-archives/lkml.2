@@ -1,32 +1,46 @@
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S932211Ab2DYNsR (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Wed, 25 Apr 2012 09:48:17 -0400
-Received: from trx4.indiatimes.com ([223.165.24.216]:57992 "EHLO
-        trx4.indiatimes.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1759188Ab2DYNsO (ORCPT
-        <rfc822;linux-kernel@vger.kernel.org>);
-        Wed, 25 Apr 2012 09:48:14 -0400
-X-Indiatimes-Scanner-Mail-From: ahoussoutuma25@indiatimes.com via vomta1.indiatimes.com
-X-Indiatimes-Scanner: 1.25st (Clear:RC:1(192.168.24.54):SA:0(3.5/4.9):. Processed in 0.226037 secs Process 15557)
-Date: Wed, 25 Apr 2012 19:18:20 +0530 (IST)
-From: ahoussou tuma <ahoussoutuma25@indiatimes.com>
-Reply-To: Ms Tuma Ahoussou <tuma.ahoussou@hotmail.com>
-Message-ID: <1162829783.121771335361700764.JavaMail.root@tilmb14.indiatimes.com>
-Subject: Hello
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.82.102.41]
-X-Mailer: Zimbra 5.0.6_GA_2313.RHEL4_64 (zclient/5.0.6_GA_2313.RHEL4_64)
-To: undisclosed-recipients:;
+	id S1754577Ab2EBPCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 11:02:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35920 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab2EBPCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 11:02:35 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH] perf tools: Fix Makefile to clean auto-generated bison/flex files properly
+Date: Sat, 28 Jan 2012 01:50:56 -0800
+Message-Id: <1327744256-10786-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 
+The commit 65f3e56e0c81 ("perf tools: Remove auto-generated bison/flex
+files") removed those files from git and modified Makefile to clean
+auto-generated bison/flex files. But, in Makefile, regular expression
+"*-{bison,flex}*" doesn't work. Fix it.
 
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 
-Hello my dear
-I am Ms tuma
-How are you doing
-I hope you are in good Health?
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 9bf3fc7..295c477 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -987,7 +987,7 @@ clean:
+ 	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
+ 	$(MAKE) -C Documentation/ clean
+ 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
+-	$(RM) $(OUTPUT)util/*-{bison,flex}*
++	$(RM) $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
+ 	$(python-clean)
+ 
+ .PHONY: all install clean strip
+-- 
+1.7.0.4
+
