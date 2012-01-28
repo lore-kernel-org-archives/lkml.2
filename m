@@ -1,181 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab2A1Sib (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 13:38:31 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47457 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab2A1Si3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 13:38:29 -0500
-Message-ID: <4F2440A2.5080601@gmail.com>
-Date: Sat, 28 Jan 2012 12:38:26 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 00/25] irq_domain generalization and refinement
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1752099Ab2A1Sno (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 13:43:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7509 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751502Ab2A1Snn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 13:43:43 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: [PATCHv7 0/7] ftrace, perf: Adding support to use function trace
+Date: Sat, 28 Jan 2012 19:43:22 +0100
+Message-Id: <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2012 03:35 PM, Grant Likely wrote:
-> Hey everyone,
-> 
-> This patch series is ready for much wider consumption now.  I'd like
-> to get it into linux-next ASAP because there will be ARM board support
-> depending on it.  I'll wait a few days before I ask Stephen to pull
-> this in.
-> 
-> Stephen/Milton/Ben, any testing you can help with here would be
-> appreciated since you've got access to a wider variety of Power
-> machines than I do.
-> 
-> Thomas, I think it makes sense to maintain this in a separate branch
-> from other irq changes until the next merge window.  If you prefer,
-> I'm happy to maintain this branch until then.
-> 
+hi,
+here's another version of perf support for function trace
+with filter. 
 
-I picked up your irqdomain/next branch and it doesn't compile:
+attached patches:
+  1/7 ftrace: Change filter/notrace set functions to return exit code
+  2/7 ftrace: Add enable/disable ftrace_ops control interface
+  3/7 ftrace, perf: Add open/close tracepoint perf registration actions
+  4/7 ftrace, perf: Add add/del tracepoint perf registration actions
+  5/7 ftrace, perf: Add support to use function tracepoint in perf
+  6/7 ftrace, perf: Distinguish ftrace function event field type
+  7/7 ftrace, perf: Add filter support for function trace event
 
-  CC      kernel/irq/irqdomain.o
-kernel/irq/irqdomain.c: In function ‘irq_create_mapping’:
-kernel/irq/irqdomain.c:403:47: error: ‘irq’ undeclared (first use in
-this function)
-kernel/irq/irqdomain.c:403:47: note: each undeclared identifier is
-reported only once for each function it app
+v7 changes:
+  2/7 - using int instead of atomic_t for ftrace_ops::disable
+      - using this_cpu_ptr to touch ftrace_ops::disable
+      - renamed ftrace_ops:disable API
+          void ftrace_function_local_enable(struct ftrace_ops *ops)
+          void ftrace_function_local_disable(struct ftrace_ops *ops)
+          int  ftrace_function_local_disabled(struct ftrace_ops *ops)
 
-Rob
+v6 changes:
+  2/7 - added comments to FTRACE_OPS_FL_* bits enum
+  5/7 - added more info to the change log regarding ftrace_ops enable/disable
+  7/7 - rebased to the latest filter changes
 
-> Cheers,
-> g.
-> 
-> The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
-> 
->   Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
-> 
-> are available in the git repository at:
->   git://git.secretlab.ca/git/linux-2.6 irqdomain/next
-> 
-> Grant Likely (24):
->       irq_domain: add documentation and MAINTAINERS entry.
->       dt: Make irqdomain less verbose
->       irq_domain: Make irq_domain structure match powerpc's irq_host
->       irq_domain: convert microblaze from irq_host to irq_domain
->       irq_domain/powerpc: Use common irq_domain structure instead of irq_host
->       irq_domain/powerpc: eliminate irq_map; use irq_alloc_desc() instead
->       irq_domain/powerpc: Eliminate virq_is_host()
->       irq_domain: Move irq_domain code from powerpc to kernel/irq
->       irqdomain: remove NO_IRQ from irq domain code
->       irq_domain: Remove references to old irq_host names
->       irq_domain: Replace irq_alloc_host() with revmap-specific initializers
->       irq_domain: Add support for base irq and hwirq in legacy mappings
->       irq_domain: Remove 'new' irq_domain in favour of the ppc one
->       irq_domain: Remove irq_domain_add_simple()
->       irq_domain: Create common xlate functions that device drivers can use
->       irq_domain: constify irq_domain_ops
->       irq_domain/c6x: constify irq_domain structures
->       irq_domain/c6x: Use library of xlate functions
->       irq_domain/powerpc: constify irq_domain_ops
->       irqdomain/powerpc: Replace custom xlate functions with library functions
->       irq_domain/x86: Convert x86 (embedded) to use common irq_domain
->       irq_domain: Include hwirq number in /proc/interrupts
->       irq_domain: remove "hint" when allocating irq numbers
->       irq_domain: mostly eliminate slow-path revmap lookups
-> 
-> Mark Salter (1):
->       irq_domain/c6x: Convert c6x to use generic irq_domain support.
-> 
->  Documentation/IRQ-domain.txt                     |  113 +++
->  MAINTAINERS                                      |    9 +
->  arch/arm/common/gic.c                            |   95 ++--
->  arch/arm/common/vic.c                            |   16 +-
->  arch/arm/include/asm/hardware/gic.h              |    4 +-
->  arch/arm/include/asm/hardware/vic.h              |    2 +
->  arch/arm/mach-exynos/common.c                    |    2 +-
->  arch/arm/mach-imx/mach-imx6q.c                   |    3 +-
->  arch/arm/mach-msm/board-msm8x60.c                |    8 +-
->  arch/arm/mach-mx5/imx51-dt.c                     |    4 +-
->  arch/arm/mach-mx5/imx53-dt.c                     |    4 +-
->  arch/arm/mach-omap2/board-generic.c              |    2 +-
->  arch/arm/mach-prima2/irq.c                       |    2 +-
->  arch/arm/mach-versatile/core.c                   |    5 +-
->  arch/c6x/Kconfig                                 |    1 +
->  arch/c6x/include/asm/irq.h                       |  245 +-------
->  arch/c6x/kernel/irq.c                            |  612 +----------------
->  arch/c6x/platforms/megamod-pic.c                 |   25 +-
->  arch/microblaze/include/asm/irq.h                |    4 +-
->  arch/microblaze/kernel/irq.c                     |    2 +-
->  arch/microblaze/kernel/setup.c                   |    2 -
->  arch/powerpc/Kconfig                             |    1 +
->  arch/powerpc/include/asm/ehv_pic.h               |    2 +-
->  arch/powerpc/include/asm/i8259.h                 |    2 +-
->  arch/powerpc/include/asm/irq.h                   |  247 +-------
->  arch/powerpc/include/asm/mpic.h                  |    2 +-
->  arch/powerpc/include/asm/xics.h                  |    2 +-
->  arch/powerpc/kernel/irq.c                        |  617 +----------------
->  arch/powerpc/platforms/512x/mpc5121_ads_cpld.c   |   12 +-
->  arch/powerpc/platforms/52xx/media5200.c          |   15 +-
->  arch/powerpc/platforms/52xx/mpc52xx_gpt.c        |   16 +-
->  arch/powerpc/platforms/52xx/mpc52xx_pic.c        |   12 +-
->  arch/powerpc/platforms/82xx/pq2ads-pci-pic.c     |   14 +-
->  arch/powerpc/platforms/85xx/socrates_fpga_pic.c  |   15 +-
->  arch/powerpc/platforms/86xx/gef_pic.c            |   15 +-
->  arch/powerpc/platforms/cell/axon_msi.c           |   29 +-
->  arch/powerpc/platforms/cell/beat_interrupt.c     |   16 +-
->  arch/powerpc/platforms/cell/interrupt.c          |   16 +-
->  arch/powerpc/platforms/cell/spider-pic.c         |   14 +-
->  arch/powerpc/platforms/embedded6xx/flipper-pic.c |   30 +-
->  arch/powerpc/platforms/embedded6xx/hlwd-pic.c    |   35 +-
->  arch/powerpc/platforms/iseries/irq.c             |   11 +-
->  arch/powerpc/platforms/powermac/pic.c            |   26 +-
->  arch/powerpc/platforms/powermac/smp.c            |    9 +-
->  arch/powerpc/platforms/ps3/interrupt.c           |   11 +-
->  arch/powerpc/platforms/wsp/opb_pic.c             |   26 +-
->  arch/powerpc/sysdev/cpm1.c                       |    9 +-
->  arch/powerpc/sysdev/cpm2_pic.c                   |   23 +-
->  arch/powerpc/sysdev/ehv_pic.c                    |   14 +-
->  arch/powerpc/sysdev/fsl_msi.c                    |   10 +-
->  arch/powerpc/sysdev/fsl_msi.h                    |    2 +-
->  arch/powerpc/sysdev/i8259.c                      |   15 +-
->  arch/powerpc/sysdev/ipic.c                       |   31 +-
->  arch/powerpc/sysdev/ipic.h                       |    2 +-
->  arch/powerpc/sysdev/mpc8xx_pic.c                 |   11 +-
->  arch/powerpc/sysdev/mpic.c                       |   17 +-
->  arch/powerpc/sysdev/mpic_msi.c                   |    2 +-
->  arch/powerpc/sysdev/mv64x60_pic.c                |   11 +-
->  arch/powerpc/sysdev/qe_lib/qe_ic.c               |   26 +-
->  arch/powerpc/sysdev/qe_lib/qe_ic.h               |    2 +-
->  arch/powerpc/sysdev/tsi108_pci.c                 |   22 +-
->  arch/powerpc/sysdev/uic.c                        |   26 +-
->  arch/powerpc/sysdev/xics/xics-common.c           |   28 +-
->  arch/powerpc/sysdev/xilinx_intc.c                |   19 +-
->  arch/x86/Kconfig                                 |    2 +
->  arch/x86/include/asm/irq_controller.h            |   12 -
->  arch/x86/include/asm/prom.h                      |   10 -
->  arch/x86/kernel/devicetree.c                     |  101 +--
->  drivers/gpio/gpio-mpc8xxx.c                      |   30 +-
->  drivers/mfd/twl-core.c                           |   12 +-
->  drivers/net/phy/mdio-gpio.c                      |    4 +-
->  include/linux/irqdomain.h                        |  190 ++++--
->  kernel/irq/irqdomain.c                           |  816 +++++++++++++++++++---
->  kernel/irq/proc.c                                |    3 +
->  74 files changed, 1334 insertions(+), 2471 deletions(-)
->  create mode 100644 Documentation/IRQ-domain.txt
->  delete mode 100644 arch/x86/include/asm/irq_controller.h
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+v5 changes:
+  7/7 - fixed to properly support ',' in filter expressions
 
+v4 changes:
+  2/7 - FL_GLOBAL_CONTROL changed to FL_GLOBAL_CONTROL_MASK
+      - changed WARN_ON_ONCE() to include the !preempt_count()
+      - changed this_cpu_ptr to per_cpu_ptr
+
+  ommited Fix possible NULL dereferencing in __ftrace_hash_rec_update
+  (2/8 in v3)
+
+v3 changes:
+  3/8 - renamed __add/remove_ftrace_ops
+      - fixed preemtp_enable/recursion_clear order in ftrace_ops_control_func 
+      - renamed/commented API functions -  enable/disable_ftrace_function
+  
+  ommited graph tracer workarounf patch 10/10  
+
+v2 changes:
+ 01/10 - keeping the old fix instead of adding hash_has_contents func
+         I'll send separating patchset for this
+ 02/10 - using different way to avoid the issue (3/9 in v1)
+ 03/10 - using the way proposed by Steven for controling ftrace_ops
+         (4/9 in v1)
+ 06/10 - added check ensuring the ftrace:function event could be used by
+         root only (7/9 in v1)
+ 08/10 - added more description (8/9 in v1)
+ 09/10 - changed '&&' operator to '||' which seems more suitable
+         in this case (9/9 in v1)
+
+thanks,
+jirka
+---
+ include/linux/ftrace.h             |   70 ++++++++++++-
+ include/linux/ftrace_event.h       |    9 +-
+ include/linux/perf_event.h         |    3 +
+ kernel/trace/ftrace.c              |  132 ++++++++++++++++++++--
+ kernel/trace/trace.h               |   11 ++-
+ kernel/trace/trace_event_perf.c    |  212 +++++++++++++++++++++++++++++-------
+ kernel/trace/trace_events.c        |   12 ++-
+ kernel/trace/trace_events_filter.c |  172 +++++++++++++++++++++++++++--
+ kernel/trace/trace_export.c        |   53 ++++++++-
+ kernel/trace/trace_kprobe.c        |    8 +-
+ kernel/trace/trace_syscalls.c      |   18 +++-
+ 11 files changed, 616 insertions(+), 84 deletions(-)
