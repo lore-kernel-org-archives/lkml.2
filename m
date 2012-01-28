@@ -1,102 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab2A1T4K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 14:56:10 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48081 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751656Ab2A1T4I (ORCPT
+	id S1752937Ab2A1UNS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 15:13:18 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52360 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab2A1UNP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 14:56:08 -0500
-Message-ID: <1327780565.2924.24.camel@dabdike.int.hansenpartnership.com>
-Subject: Hang deconfiguring network interface (in shutdown) on 3.3-rc1
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Parisc List <linux-parisc@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Michael Chan <mchan@broadcom.com>,
-        Paul McKenny <paulmck@linux.vnet.ibm.com>
-Date: Sat, 28 Jan 2012 13:56:05 -0600
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 28 Jan 2012 15:13:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <1327749669.15441.9.camel@cr0>
+References: <1327706681-11959-1-git-send-email-wad@chromium.org>
+	<1327706681-11959-2-git-send-email-wad@chromium.org>
+	<1327749669.15441.9.camel@cr0>
+Date: Sat, 28 Jan 2012 12:13:13 -0800
+Message-ID: <CABqD9hZh-Rkjgvn8fu2PUf-KRHmBEiai3cJhcoPZ8-FHbW7BzQ@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] seccomp_filters: system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk, indan@nul.nu, mcgrathr@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like it might be a tg3 or RCU issue.  When I shut down my
-parisc SMP 4 way system, I get an immediate hang here
+On Sat, Jan 28, 2012 at 3:21 AM, Cong Wang <amwang@redhat.com> wrote:
+> On Fri, 2012-01-27 at 17:24 -0600, Will Drewry wrote:
+>> +config SECCOMP_FILTER
+>> +       bool "Enable seccomp-based system call filtering"
+>> +       select SECCOMP
+>
+> Is 'depends on SECCOMP' better?
 
-Deconfiguring network interfaces...Internet Systems Consortium DHCP
-Client 4.1.1-P1
-Copyright 2004-2010 Internet Systems Consortium.
-All rights reserved.
-For info, please visit https://www.isc.org/software/dhcp/
+Either way is fine for me.  I chose select so that SECCOMP_FILTER
+wouldn't be hidden if SECCOMP was off when they hit the security menu.
 
-Listening on LPF/eth0/00:30:6e:4b:15:59
-Sending on   LPF/eth0/00:30:6e:4b:15:59
-Sending on   Socket/fallback
-DHCPRELEASE on eth0 to 153.66.140.171 port 67
+>
+>> +       help
+>> +         This option provide support for limiting the accessibility
+>> of
+>
+> s/provide/provides/
+>
+>> +         systems calls at a task-level using a dynamically defined
+>> policy.
+>
+>
+> s/systems/system/
+>
+>> +
+>> +         System call filtering policy is expressed by the user using
+>> +         a Berkeley Packet Filter program.  The program is attached
+>> using
+>
+> s/the user using//
+>
+>> +         prctl(2).  For every system call the task makes, its number,
+>> +         arguments, and other metadata will be evaluated by the
+>> attached
+>> +         filter program.  The result determines if the system call
+>> may
+>> +         may proceed or if the task should be terminated.
+>
+> One more "may"... and "be proceeded"
+>
+>> +
+>> +         This behavior is meant to aid security-conscious software in
+>> +         its ability to minimize the risk of running potentially
+>> +         risky code.
+>> +
+>> +         See Documentation/prctl/seccomp_filter.txt for more detail.
+>> +
+>
+>
+> Thanks.
 
-Followed some seconds later by
-
-[ 5714.268000] INFO: rcu_sched detected stall on CPU 3 (t=15000 jiffies)
-[ 5714.268000] Backtrace:
-[ 5714.268000]  [<000000004011fdd4>] show_stack+0x14/0x20
-[ 5714.268000]  [<000000004011fdf8>] dump_stack+0x18/0x28
-[ 5714.268000]  [<00000000401c1fec>] __rcu_pending+0xcc/0x5c8
-[ 5714.276000]  [<00000000401c2d60>] rcu_check_callbacks+0x80/0xf8
-[ 5714.276000] INFO: rcu_sched detected stalls on CPUs/tasks: { 3}
-(detected by 2, t=15002 jiffies)
-[ 5714.276000] Backtrace:
-[ 5714.276000]  [<000000004011fdd4>] show_stack+0x14/0x20
-[ 5714.276000]  [<000000004011fdf8>] dump_stack+0x18/0x28
-[ 5714.276000]  [<00000000401c2484>] __rcu_pending+0x564/0x5c8
-[ 5714.276000]  [<00000000401c2d60>] rcu_check_callbacks+0x80/0xf8
-[ 5714.276000]  [<0000000040155dc8>] update_process_times+0x68/0xd8
-[ 5714.276000]  [<0000000040121378>] timer_interrupt+0x1c0/0x220
-[ 5714.276000]  [<00000000401b9cfc>] handle_irq_event_percpu+0xa4/0x2a0
-[ 5714.276000]  [<00000000401be58c>] handle_percpu_irq+0x9c/0xd0
-[ 5714.276000]  [<00000000401b9500>] generic_handle_irq+0x48/0x60
-[ 5714.276000]  [<0000000040121a50>] do_cpu_irq_mask+0x1b8/0x2a8
-[ 5714.276000]  [<0000000040105074>] intr_return+0x0/0x4
-[ 5714.276000]  [<0000000040105074>] intr_return+0x0/0x4
-[ 5714.276000]  [<00000000401296dc>] cpu_idle+0x74/0x80
-[ 5714.276000]  [<000000004078e1d0>] smp_callin+0x150/0x1a0
-[ 5714.276000] 
-[ 5714.348000]  [<0000000040155dc8>] update_process_times+0x68/0xd8
-[ 5714.348000]  [<0000000040121378>] timer_interrupt+0x1c0/0x220
-[ 5714.356000]  [<00000000401b9cfc>] handle_irq_event_percpu+0xa4/0x2a0
-[ 5714.364000]  [<00000000401be58c>] handle_percpu_irq+0x9c/0xd0
-[ 5714.364000]  [<00000000401b9500>] generic_handle_irq+0x48/0x60
-[ 5714.372000]  [<0000000040121a50>] do_cpu_irq_mask+0x1b8/0x2a8
-[ 5714.372000]  [<0000000040105074>] intr_return+0x0/0x4
-[ 5714.380000] 
-
-This didn't happen in 3.2
-
-Sysrq still works and sysrq-T shows ifconfig stuck:
-
-
-[ 6030.376000] ifconfig        R  running task        0  1470   1452
-0x00000014
-[ 6030.376000] Backtrace:
-[ 6030.376000]  [<000000004017c6c8>] scheduler_tick+0x180/0x1a0
-[ 6030.376000]  [<0000000040155e1c>] update_process_times+0xbc/0xd8
-[ 6030.376000]  [<0000000040121378>] timer_interrupt+0x1c0/0x220
-[ 6030.376000]  [<00000000401b9d54>] handle_irq_event_percpu+0xfc/0x2a0
-[ 6030.376000]  [<0000000040105074>] intr_return+0x0/0x4
-[ 6030.376000]  [<000000004011c638>] _raw_spin_lock_bh+0x30/0x40
-[ 6030.376000]  [<000000004011c620>] _raw_spin_lock_bh+0x18/0x40
-[ 6030.376000]  [<000000001c6e3a64>] tg3_chip_reset+0x9c4/0x1328 [tg3]
-[ 6030.376000]  [<000000001c6eca9c>] tg3_halt+0xdc/0x1d8 [tg3]
-[ 6030.376000]  [<000000001c6f9964>] tg3_close+0x194/0x3f0 [tg3]
-[ 6030.376000]  [<0000000040411518>] __dev_close_many+0x100/0x178
-[ 6030.376000]  [<0000000040415130>] __dev_close+0x30/0x50
-[ 6030.376000]  [<000000004040ebf8>] __dev_change_flags+0xb0/0x1d0
-[ 6030.376000]  [<00000000404113b0>] dev_change_flags+0x28/0x90
-[ 6030.376000]  [<0000000040488d70>] devinet_ioctl+0x748/0x898
-[ 6030.376000]  [<000000004048a5f4>] inet_ioctl+0x204/0x228
-
-James
-
-
+Thanks!  Cleaned up, as recommended, and slightly reworded.  I'll
+include the updates in the next salvo.
