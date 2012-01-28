@@ -1,354 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab2A1Ji6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 04:38:58 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18378 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab2A1Jiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 04:38:54 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sat, 28 Jan 2012 01:38:54 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: lrg@ti.com, broonie@opensource.wolfsonmicro.com, jedu@slimlogic.co.uk,
-        sameo@linux.intel.com, gg@slimlogic.co.uk
-Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        ldewangan@nvidia.com
-Subject: [PATCH V4] regulator: tps65910: Sleep control through external inputs
-Date: Sat, 28 Jan 2012 15:07:57 +0530
-Message-Id: <1327743477-31512-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S1752495Ab2A1KUj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 05:20:39 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:51298 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751331Ab2A1KUh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 05:20:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPVoSvQhnJC-7UGuggcUOLUcWD1nYOw5yhQzpO-bW0+AAWqYOg@mail.gmail.com>
+References: <CAPVoSvSXMvRb=1itu9DjF+s=6zfAChvUxS-x=b8EV9kOZinNpA@mail.gmail.com>
+	<20120123165752.GA1980@homer.localdomain>
+	<CAPVoSvQYaCC9WcYBeZJtQ++DQhq4QCS8D=nChNjhVNKUHefYdg@mail.gmail.com>
+	<CAPVoSvQhnJC-7UGuggcUOLUcWD1nYOw5yhQzpO-bW0+AAWqYOg@mail.gmail.com>
+Date: Sat, 28 Jan 2012 11:20:34 +0100
+Message-ID: <CAPVoSvT-skg=qnFozn5W+ymKz-2Ls1dPDocGMFU5oW-HpmP3VQ@mail.gmail.com>
+Subject: Re: [3.3-rc1]radeon 0000:07:00.0: GPU lockup CP stall for more than 10000msec
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for sleep controls of different regulator through
-external inputs EN1, EN2 or EN3.
-Each regulator's output will be active when its external
-input is high and turns to OFF/Low power mode when its
-external input is low.
-The configuration parameters for sleep control is provided through
-board specific platform data.
+On Tue, Jan 24, 2012 at 8:34 AM, Torsten Kaiser
+<just.for.lkml@googlemail.com> wrote:
+> On Mon, Jan 23, 2012 at 7:01 PM, Torsten Kaiser
+> <just.for.lkml@googlemail.com> wrote:
+>> On Mon, Jan 23, 2012 at 5:57 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>>> On Sat, Jan 21, 2012 at 08:03:37PM +0100, Torsten Kaiser wrote:
+>>>> After updating to kernel 3.3-rc1 I have experienced a lockup of my GPU.
+>>>> I left my KDE desktop running until the screensaver turned off the
+>>>> monitors. But on key presses it would not turn back on. Ctrl+Alt+F1 to
+>>>> switch to another virtual console also did not work.
+>>>> Alt+SysRq magic still worked, so I was able to force the syslog to
+>>>> disk and restart the system.
+>>>>
+>>>
+>>> Can you test if attached patch help your case ?
+>>
+>> Patch is installed, but I can't reproduce the hang on demand.
+>> It did happen a second time yesterday while letting the screensaver
+>> kick in, but only at around the third or fourth try. Just using "xset
+>> dpms force standby/suspend/off" did not trigger it.
+>
+> I think the patch did what it was intended to do, but it did not really help.
+> While the GPU reset did seem to work, X still got stuck and was not
+> able to turn the monitors back on.
+>
+> From the log:
+> The GPU lockup happend while the system was idle:
+> Jan 23 23:53:54 thoregon kernel: [17121.080129] radeon 0000:07:00.0:
+> GPU lockup CP stall for more than 10000msec
+> Jan 23 23:53:54 thoregon kernel: [17121.080137] GPU lockup (waiting
+> for 0x002080B7 last fence id 0x002080B6)
+> Jan 23 23:53:54 thoregon kernel: [17121.096334] radeon 0000:07:00.0:
+> GPU softreset
+> Jan 23 23:53:54 thoregon kernel: [17121.096341] radeon 0000:07:00.0:
+> R_008010_GRBM_STATUS=0xA0003028
+> Jan 23 23:53:54 thoregon kernel: [17121.096346] radeon 0000:07:00.0:
+> R_008014_GRBM_STATUS2=0x00000002
+> Jan 23 23:53:54 thoregon kernel: [17121.096351] radeon 0000:07:00.0:
+> R_000E50_SRBM_STATUS=0x200000C0
+> Jan 23 23:53:54 thoregon kernel: [17121.096362] radeon 0000:07:00.0:
+> R_008020_GRBM_SOFT_RESET=0x00007FEE
+> Jan 23 23:53:54 thoregon kernel: [17121.111386] radeon 0000:07:00.0:
+> R_008020_GRBM_SOFT_RESET=0x00000001
+> Jan 23 23:53:54 thoregon kernel: [17121.127378] radeon 0000:07:00.0:
+> R_008010_GRBM_STATUS=0x00003028
+> Jan 23 23:53:54 thoregon kernel: [17121.127384] radeon 0000:07:00.0:
+> R_008014_GRBM_STATUS2=0x00000002
+> Jan 23 23:53:54 thoregon kernel: [17121.127390] radeon 0000:07:00.0:
+> R_000E50_SRBM_STATUS=0x200000C0
+> Jan 23 23:53:54 thoregon kernel: [17121.128393] radeon 0000:07:00.0:
+> GPU reset succeed
+> Jan 23 23:53:54 thoregon kernel: [17121.133330] [drm] PCIE GART of
+> 512M enabled (table at 0x0000000000040000).
+> Jan 23 23:53:54 thoregon kernel: [17121.133364] radeon 0000:07:00.0: WB enabled
+> Jan 23 23:53:54 thoregon kernel: [17121.133370] [drm] fence driver on
+> ring 0 use gpu addr 0x20000c00 and cpu addr 0xffff8803286e5c00
+> Jan 23 23:53:54 thoregon kernel: [17121.179627] [drm] ring test on 0
+> succeeded in 1 usecs
+> Jan 23 23:53:54 thoregon kernel: [17121.179653] [drm] ib test on ring
+> 0 succeeded in 1 usecs
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from patch V1:
-- Put checks to make sure multiple external controls are not set.
-- More details in the function shutdown.
-- Remove LOW_POWER selection through platform data and move this to
-  set mode.
+I found the commit (in xf86-video-ati) that causes the lockups and
+filed a bug at the xorg bugzilla about it:
+https://bugs.freedesktop.org/show_bug.cgi?id=45329
 
-Changes from patch V2:
-- Remove the configuring the regulator in LOW power mode from set mode.
-- Add suspend mode apis set_suspend_enable, .set_suspend_disable and
-  .set_suspend_mode for selecting the regulator mode in suspend.
+But that still leaves the regression in 3.3-rc1 that even with Jeromes
+patch the X server is no longer able to recover from the lockup, as
+shown by the SysRq+W trace below.
 
-Changes from V3:
-- As per suggestion on patch V2, splitting the change in two parts, one
- for basic external configuration and other for the suspend callbacks.
-- This patch only deals with the external controls configuration.
-
- drivers/regulator/tps65910-regulator.c |  206 ++++++++++++++++++++++++++++++++
- include/linux/mfd/tps65910.h           |    8 ++
- 2 files changed, 214 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index 1d13cf9..9092b7f 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -26,6 +26,9 @@
- #include <linux/mfd/tps65910.h>
- 
- #define TPS65910_SUPPLY_STATE_ENABLED	0x1
-+#define EXT_SLEEP_CONTROL (TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1 |	\
-+			TPS65910_SLEEP_CONTROL_EXT_INPUT_EN2 |		\
-+			TPS65910_SLEEP_CONTROL_EXT_INPUT_EN3)
- 
- /* supported VIO voltages in milivolts */
- static const u16 VIO_VSEL_table[] = {
-@@ -252,6 +255,39 @@ static struct tps_info tps65911_regs[] = {
- 	},
- };
- 
-+#define EXT_CONTROL_REG_BITS(id, regs_offs, bits) (((regs_offs) << 8) | (bits))
-+static unsigned int tps65910_ext_sleep_control[] = {
-+	0,
-+	EXT_CONTROL_REG_BITS(VIO,    1, 0),
-+	EXT_CONTROL_REG_BITS(VDD1,   1, 1),
-+	EXT_CONTROL_REG_BITS(VDD2,   1, 2),
-+	EXT_CONTROL_REG_BITS(VDD3,   1, 3),
-+	EXT_CONTROL_REG_BITS(VDIG1,  0, 1),
-+	EXT_CONTROL_REG_BITS(VDIG2,  0, 2),
-+	EXT_CONTROL_REG_BITS(VPLL,   0, 6),
-+	EXT_CONTROL_REG_BITS(VDAC,   0, 7),
-+	EXT_CONTROL_REG_BITS(VAUX1,  0, 3),
-+	EXT_CONTROL_REG_BITS(VAUX2,  0, 4),
-+	EXT_CONTROL_REG_BITS(VAUX33, 0, 5),
-+	EXT_CONTROL_REG_BITS(VMMC,   0, 0),
-+};
-+
-+static unsigned int tps65911_ext_sleep_control[] = {
-+	0,
-+	EXT_CONTROL_REG_BITS(VIO,     1, 0),
-+	EXT_CONTROL_REG_BITS(VDD1,    1, 1),
-+	EXT_CONTROL_REG_BITS(VDD2,    1, 2),
-+	EXT_CONTROL_REG_BITS(VDDCTRL, 1, 3),
-+	EXT_CONTROL_REG_BITS(LDO1,    0, 1),
-+	EXT_CONTROL_REG_BITS(LDO2,    0, 2),
-+	EXT_CONTROL_REG_BITS(LDO3,    0, 7),
-+	EXT_CONTROL_REG_BITS(LDO4,    0, 6),
-+	EXT_CONTROL_REG_BITS(LDO5,    0, 3),
-+	EXT_CONTROL_REG_BITS(LDO6,    0, 0),
-+	EXT_CONTROL_REG_BITS(LDO7,    0, 5),
-+	EXT_CONTROL_REG_BITS(LDO8,    0, 4),
-+};
-+
- struct tps65910_reg {
- 	struct regulator_desc *desc;
- 	struct tps65910 *mfd;
-@@ -261,6 +297,8 @@ struct tps65910_reg {
- 	int num_regulators;
- 	int mode;
- 	int  (*get_ctrl_reg)(int);
-+	unsigned int *ext_sleep_control;
-+	unsigned int board_ext_control[TPS65910_NUM_REGS];
- };
- 
- static inline int tps65910_read(struct tps65910_reg *pmic, u8 reg)
-@@ -861,6 +899,131 @@ static struct regulator_ops tps65911_ops = {
- 	.list_voltage		= tps65911_list_voltage,
- };
- 
-+static int tps65910_set_ext_sleep_config(struct tps65910_reg *pmic,
-+		int id, int ext_sleep_config)
-+{
-+	struct tps65910 *mfd = pmic->mfd;
-+	u8 regoffs = (pmic->ext_sleep_control[id] >> 8) & 0xFF;
-+	u8 bit_pos = (1 << pmic->ext_sleep_control[id] & 0xFF);
-+	int ret;
-+
-+	/*
-+	 * Regulator can not be control from multiple external input EN1, EN2
-+	 * and EN3 together.
-+	 */
-+	if (ext_sleep_config & EXT_SLEEP_CONTROL) {
-+		int en_count;
-+		en_count = ((ext_sleep_config &
-+				TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1) != 0);
-+		en_count += ((ext_sleep_config &
-+				TPS65910_SLEEP_CONTROL_EXT_INPUT_EN2) != 0);
-+		en_count += ((ext_sleep_config &
-+				TPS65910_SLEEP_CONTROL_EXT_INPUT_EN3) != 0);
-+		if (en_count > 1) {
-+			dev_err(mfd->dev,
-+				"External sleep control flag is not proper\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	pmic->board_ext_control[id] = ext_sleep_config;
-+
-+	/* External EN1 control */
-+	if (ext_sleep_config & TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1)
-+		ret = tps65910_set_bits(mfd,
-+				TPS65910_EN1_LDO_ASS + regoffs, bit_pos);
-+	else
-+		ret = tps65910_clear_bits(mfd,
-+				TPS65910_EN1_LDO_ASS + regoffs, bit_pos);
-+	if (ret < 0) {
-+		dev_err(mfd->dev,
-+			"Error in configuring external control EN1\n");
-+		return ret;
-+	}
-+
-+	/* External EN2 control */
-+	if (ext_sleep_config & TPS65910_SLEEP_CONTROL_EXT_INPUT_EN2)
-+		ret = tps65910_set_bits(mfd,
-+				TPS65910_EN2_LDO_ASS + regoffs, bit_pos);
-+	else
-+		ret = tps65910_clear_bits(mfd,
-+				TPS65910_EN2_LDO_ASS + regoffs, bit_pos);
-+	if (ret < 0) {
-+		dev_err(mfd->dev,
-+			"Error in configuring external control EN2\n");
-+		return ret;
-+	}
-+
-+	/* External EN3 control for TPS65910 LDO only */
-+	if ((tps65910_chip_id(mfd) == TPS65910) &&
-+			(id >= TPS65910_REG_VDIG1)) {
-+		if (ext_sleep_config & TPS65910_SLEEP_CONTROL_EXT_INPUT_EN3)
-+			ret = tps65910_set_bits(mfd,
-+				TPS65910_EN3_LDO_ASS + regoffs, bit_pos);
-+		else
-+			ret = tps65910_clear_bits(mfd,
-+				TPS65910_EN3_LDO_ASS + regoffs, bit_pos);
-+		if (ret < 0) {
-+			dev_err(mfd->dev,
-+				"Error in configuring external control EN3\n");
-+			return ret;
-+		}
-+	}
-+
-+	/* Return if no external control is selected */
-+	if (!(ext_sleep_config & EXT_SLEEP_CONTROL)) {
-+		/* Clear all sleep controls */
-+		ret = tps65910_clear_bits(mfd,
-+			TPS65910_SLEEP_KEEP_LDO_ON + regoffs, bit_pos);
-+		if (!ret)
-+			ret = tps65910_clear_bits(mfd,
-+				TPS65910_SLEEP_SET_LDO_OFF + regoffs, bit_pos);
-+		if (ret < 0)
-+			dev_err(mfd->dev,
-+				"Error in configuring SLEEP register\n");
-+		return ret;
-+	}
-+
-+	/*
-+	 * For regulator that has separate operational and sleep register make
-+	 * sure that operational is used and clear sleep register to turn
-+	 * regulator off when external control is inactive
-+	 */
-+	if ((id == TPS65910_REG_VDD1) ||
-+		(id == TPS65910_REG_VDD2) ||
-+			((id == TPS65911_REG_VDDCTRL) &&
-+				(tps65910_chip_id(mfd) == TPS65911))) {
-+		int op_reg_add = pmic->get_ctrl_reg(id) + 1;
-+		int sr_reg_add = pmic->get_ctrl_reg(id) + 2;
-+		int opvsel = tps65910_reg_read(pmic, op_reg_add);
-+		int srvsel = tps65910_reg_read(pmic, sr_reg_add);
-+		if (opvsel & VDD1_OP_CMD_MASK) {
-+			u8 reg_val = srvsel & VDD1_OP_SEL_MASK;
-+			ret = tps65910_reg_write(pmic, op_reg_add, reg_val);
-+			if (ret < 0) {
-+				dev_err(mfd->dev,
-+					"Error in configuring op register\n");
-+				return ret;
-+			}
-+		}
-+		ret = tps65910_reg_write(pmic, sr_reg_add, 0);
-+		if (ret < 0) {
-+			dev_err(mfd->dev, "Error in settting sr register\n");
-+			return ret;
-+		}
-+	}
-+
-+	ret = tps65910_clear_bits(mfd,
-+			TPS65910_SLEEP_KEEP_LDO_ON + regoffs, bit_pos);
-+	if (!ret)
-+		ret = tps65910_set_bits(mfd,
-+			TPS65910_SLEEP_SET_LDO_OFF + regoffs, bit_pos);
-+	if (ret < 0)
-+		dev_err(mfd->dev,
-+			"Error in configuring SLEEP register\n");
-+	return ret;
-+}
-+
- static __devinit int tps65910_probe(struct platform_device *pdev)
- {
- 	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
-@@ -891,11 +1054,13 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
- 	case TPS65910:
- 		pmic->get_ctrl_reg = &tps65910_get_ctrl_register;
- 		pmic->num_regulators = ARRAY_SIZE(tps65910_regs);
-+		pmic->ext_sleep_control = tps65910_ext_sleep_control;
- 		info = tps65910_regs;
- 		break;
- 	case TPS65911:
- 		pmic->get_ctrl_reg = &tps65911_get_ctrl_register;
- 		pmic->num_regulators = ARRAY_SIZE(tps65911_regs);
-+		pmic->ext_sleep_control = tps65911_ext_sleep_control;
- 		info = tps65911_regs;
- 		break;
- 	default:
-@@ -958,6 +1123,16 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
- 				pmic->desc[i].ops = &tps65911_ops;
- 		}
- 
-+		err = tps65910_set_ext_sleep_config(pmic, i,
-+				pmic_plat_data->regulator_ext_sleep_control[i]);
-+		/*
-+		 * Failing on regulator for configuring externally control
-+		 * is not a serious issue, just throw warning.
-+		 */
-+		if (err < 0)
-+			dev_warn(tps65910->dev,
-+				"Failed to initialise ext control config\n");
-+
- 		pmic->desc[i].type = REGULATOR_VOLTAGE;
- 		pmic->desc[i].owner = THIS_MODULE;
- 
-@@ -1004,6 +1179,36 @@ static int __devexit tps65910_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static void tps65910_shutdown(struct platform_device *pdev)
-+{
-+	struct tps65910_reg *pmic = platform_get_drvdata(pdev);
-+	int i;
-+
-+	/*
-+	 * Before bootloader jumps to kernel, it makes sure that required
-+	 * external control signals are in desired state so that given rails
-+	 * can be configure accordingly.
-+	 * If rails are configured to be controlled from external control
-+	 * then before shutting down/rebooting the system, the external
-+	 * control configuration need to be remove from the rails so that
-+	 * its output will be available as per register programming even
-+	 * if external controls are removed. This is require when the POR
-+	 * value of the control signals are not in active state and before
-+	 * bootloader initializes it, the system requires the rail output
-+	 * to be active for booting.
-+	 */
-+	for (i = 0; i < pmic->num_regulators; i++) {
-+		int err;
-+		if (!pmic->rdev[i])
-+			continue;
-+
-+		err = tps65910_set_ext_sleep_config(pmic, i, 0);
-+		if (err < 0)
-+			dev_err(&pdev->dev,
-+				"Error in clearing external control\n");
-+	}
-+}
-+
- static struct platform_driver tps65910_driver = {
- 	.driver = {
- 		.name = "tps65910-pmic",
-@@ -1011,6 +1216,7 @@ static struct platform_driver tps65910_driver = {
- 	},
- 	.probe = tps65910_probe,
- 	.remove = __devexit_p(tps65910_remove),
-+	.shutdown = tps65910_shutdown,
- };
- 
- static int __init tps65910_init(void)
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index d0cb12e..fa6c6bf 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -768,6 +768,13 @@
- /* Max number of TPS65910/11 regulators */
- #define TPS65910_NUM_REGS				13
- 
-+/* External sleep controls through EN1/EN2/EN3 inputs*/
-+#define TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1		0x1
-+#define TPS65910_SLEEP_CONTROL_EXT_INPUT_EN2		0x2
-+#define TPS65910_SLEEP_CONTROL_EXT_INPUT_EN3		0x4
-+/* TPS65911 names the EN3 signal as SLEEP */
-+#define TPS65911_SLEEP_CONTROL_EXT_INPUT_SLEEP		0x4
-+
- /**
-  * struct tps65910_board
-  * Board platform data may be used to initialize regulators.
-@@ -779,6 +786,7 @@ struct tps65910_board {
- 	int irq_base;
- 	int vmbch_threshold;
- 	int vmbch2_threshold;
-+	unsigned long regulator_ext_sleep_control[TPS65910_NUM_REGS];
- 	struct regulator_init_data *tps65910_pmic_init_data[TPS65910_NUM_REGS];
- };
- 
--- 
-1.7.1.1
-
+> There where no messages about X getting stuck ("blocked for more than
+> 120 seconds"), but after trying to access the system and failing
+> SysRq+W reported this:
+> Jan 24 08:08:20 thoregon kernel: [46786.741180] SysRq : Show Blocked State
+> Jan 24 08:08:20 thoregon kernel: [46786.741190]   task
+>       PC stack   pid father
+> Jan 24 08:08:20 thoregon kernel: [46786.741270] X               D
+> ffff880337d50a00     0  3047   3026 0x00400004
+> Jan 24 08:08:20 thoregon kernel: [46786.741281]  ffff880327eacac0
+> 0000000000000086 ffff880327d52e00 0000000000010a00
+> Jan 24 08:08:20 thoregon kernel: [46786.741292]  ffff88031be9bfd8
+> 0000000000010a00 ffff88031be9a000 ffff88031be9bfd8
+> Jan 24 08:08:20 thoregon kernel: [46786.741301]  0000000000010a00
+> ffff880327eacac0 0000000000010a00 0000000000010a00
+> Jan 24 08:08:20 thoregon kernel: [46786.741310] Call Trace:
+> Jan 24 08:08:20 thoregon kernel: [46786.741326]  [<ffffffff815ee9f7>]
+> ? schedule_timeout+0x157/0x220
+> Jan 24 08:08:20 thoregon kernel: [46786.741336]  [<ffffffff8103fbd0>]
+> ? run_timer_softirq+0x240/0x240
+> Jan 24 08:08:20 thoregon kernel: [46786.741346]  [<ffffffff8133ee39>]
+> ? radeon_fence_wait+0x239/0x3b0
+> Jan 24 08:08:20 thoregon kernel: [46786.741356]  [<ffffffff8104f340>]
+> ? wake_up_bit+0x40/0x40
+> Jan 24 08:08:20 thoregon kernel: [46786.741364]  [<ffffffff81352e07>]
+> ? radeon_ib_get+0x257/0x2e0
+> Jan 24 08:08:20 thoregon kernel: [46786.741372]  [<ffffffff81354d7a>]
+> ? radeon_cs_ioctl+0x27a/0x4d0
+> Jan 24 08:08:20 thoregon kernel: [46786.741381]  [<ffffffff812f42d4>]
+> ? drm_ioctl+0x3e4/0x490
+> Jan 24 08:08:20 thoregon kernel: [46786.741389]  [<ffffffff81354b00>]
+> ? radeon_cs_finish_pages+0xa0/0xa0
+> Jan 24 08:08:20 thoregon kernel: [46786.741398]  [<ffffffff81024769>]
+> ? do_page_fault+0x199/0x420
+> Jan 24 08:08:20 thoregon kernel: [46786.741406]  [<ffffffff810af30c>]
+> ? mmap_region+0x1dc/0x570
+> Jan 24 08:08:20 thoregon kernel: [46786.741414]  [<ffffffff810de446>]
+> ? do_vfs_ioctl+0x96/0x4e0
+> Jan 24 08:08:20 thoregon kernel: [46786.741422]  [<ffffffff810de8d9>]
+> ? sys_ioctl+0x49/0x90
+> Jan 24 08:08:20 thoregon kernel: [46786.741430]  [<ffffffff815f1922>]
+> ? system_call_fastpath+0x16/0x1b
+>
+> I did search my logs for more GPU lockups after noting that this also
+> happened with 3.2.
+> The first lockup in my logs occurred on Nov 4 under 3.1. But until
+> 3.3-rc1 X always was able to resume normal operations.
+>
+> My best guess for the cause of the GPU lockups seems to be the upgrade
+> from xf86-video-ati-6.14.2 to 6.14.3, but 3.3-rc1 seems to have an
+> independent bug that prevents X to recover from a GPU lockup/reset.
+>
+>>> Of course it would be best if we did not lockup in the first place.
+>>
+>> Not sure if this is important: I also upgraded to mesa 8.0-rc1 before
+>> the first hang, but after switching back to 3.2 but still using mesa
+>> 8.0 I did not have any problems.
+>> Except the KDE desktop effects there should not have been any OpenGL
+>> programs running.
+>> The screen saver itself is just turning the screens off via the KDE
+>> power profile.
+>>
+>> I will report again, when I succeeded in triggering the GPU lockup again...
+>>
+>> Torsten
