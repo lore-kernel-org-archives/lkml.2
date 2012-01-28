@@ -1,36 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab2A1EFe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 23:05:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55262 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab2A1EFd (ORCPT
+	id S1753412Ab2A1EbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 23:31:07 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:45082 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab2A1EbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 23:05:33 -0500
+	Fri, 27 Jan 2012 23:31:05 -0500
+Message-ID: <4F2379E6.9050303@sipsolutions.net>
+Date: Fri, 27 Jan 2012 20:30:30 -0800
+From: Johannes Berg <johannes@sipsolutions.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <1326187433.2442.101.camel@twins>
-References: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
-	<1325786132.3508.1.camel@twins>
-	<1325787342.12696.59.camel@gandalf.stny.rr.com>
-	<1325799904.3508.12.camel@twins>
-	<CAOAMb1A3DNU87oFRHPJZc5OARtsN4wjarmr+Ffu9oB_b0HOioA@mail.gmail.com>
-	<1326187433.2442.101.camel@twins>
-Date: Sat, 28 Jan 2012 13:05:31 +0900
-Message-ID: <CAOAMb1AThA3qowiGKBP--YeWP09fvpP95XNREez-tDxBmfLhMA@mail.gmail.com>
-Subject: Re: [PATCH] sched_rt: the task in irq context can be migrated during
- context switching
-From: Chanho Min <chanho0207@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, chanho.min@lge.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        wireless <linux-wireless@vger.kernel.org>
+Subject: Re: Kernel BUG due to kernel page fault
+References: <4F21D57F.7090103@lwfinger.net> (sfid-20120126_233645_796686_E4D04A53)
+In-Reply-To: <4F21D57F.7090103@lwfinger.net> (sfid-20120126_233645_796686_E4D04A53)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 6:23 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> Yeah, thanks. I've queued it, should show up in -tip soonish.
-Hi,
-I haven't seen it yet in tip tree. Is there any other issue?
+Larry,
 
-Thanks,
+On 1/26/2012 2:36 PM, Larry Finger wrote:
+> I am trying to convert the rtlwifi family of drivers to use asynchronous
+> firmware loading. With recent changes in udev, many problems are being
+> reported. See Bug 42632] at b.k.o.
+
+I'm not sure what caused your problem, but your email reminded me of an 
+issue we had with asynchronous firmware loading that you may want to 
+consider.
+
+When request_firmware_async() is called, it eventually calls the 
+callback you give it. This may, however, be a long time later (I think 
+the current default timeout is 1 minute). In the meantime, the module 
+could be unloaded by the user, and then the system crashes as soon as 
+the firmwaer code attempts to invoke the callback.
+
+To fix this, we have a completion in iwlwifi that some exit code path 
+waits for to make sure this scenario doesn't happen.
+
+I think you should implement that.
+
+A better fix would probably be to make request_firmware_async() take a 
+struct module * argument and pass THIS_MODULE to it, and make the 
+firmware code handle this, but currently it doesn't.
+
+johannes
