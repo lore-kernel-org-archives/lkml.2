@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab2A1MGj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 07:06:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56518 "EHLO
+	id S1752927Ab2A1MHT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 07:07:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56532 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406Ab2A1MGi (ORCPT
+	with ESMTP id S1752563Ab2A1MHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 07:06:38 -0500
-Date: Sat, 28 Jan 2012 04:06:06 -0800
-From: tip-bot for Chanho Min <chanho0207@gmail.com>
-Message-ID: <tip-cb297a3e433dbdcf7ad81e0564e7b804c941ff0d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, chanho.min@lge.com, chanho0207@gmail.com,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        rostedt@goodmis.org, stable@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, chanho0207@gmail.com,
-        chanho.min@lge.com, linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        a.p.zijlstra@chello.nl, stable@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
-References: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
+	Sat, 28 Jan 2012 07:07:16 -0500
+Date: Sat, 28 Jan 2012 04:06:54 -0800
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-39be350127ec60a078edffe5b4915dafba4ba514@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        axboe@kernel.dk, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, axboe@kernel.dk, tglx@linutronix.de
+In-Reply-To: <1327579450.2446.95.camel@twins>
+References: <1327579450.2446.95.camel@twins>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt:
-  Fix task stack corruption under __ARCH_WANT_INTERRUPTS_ON_CTXSW
-Git-Commit-ID: cb297a3e433dbdcf7ad81e0564e7b804c941ff0d
+Subject: [tip:sched/core] sched, block: Unify cache detection
+Git-Commit-ID: 39be350127ec60a078edffe5b4915dafba4ba514
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,100 +27,168 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Jan 2012 04:06:14 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 28 Jan 2012 04:07:01 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb297a3e433dbdcf7ad81e0564e7b804c941ff0d
-Gitweb:     http://git.kernel.org/tip/cb297a3e433dbdcf7ad81e0564e7b804c941ff0d
-Author:     Chanho Min <chanho0207@gmail.com>
-AuthorDate: Thu, 5 Jan 2012 20:00:19 +0900
+Commit-ID:  39be350127ec60a078edffe5b4915dafba4ba514
+Gitweb:     http://git.kernel.org/tip/39be350127ec60a078edffe5b4915dafba4ba514
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Thu, 26 Jan 2012 12:44:34 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 27 Jan 2012 12:49:41 +0100
+CommitDate: Fri, 27 Jan 2012 13:28:48 +0100
 
-sched/rt: Fix task stack corruption under __ARCH_WANT_INTERRUPTS_ON_CTXSW
+sched, block: Unify cache detection
 
-This issue happens under the following conditions:
+The block layer has some code trying to determine if two CPUs share a
+cache, the scheduler has a similar function. Expose the function used
+by the scheduler and make the block layer use it, thereby removing the
+block layers usage of CONFIG_SCHED* and topology bits.
 
- 1. preemption is off
- 2. __ARCH_WANT_INTERRUPTS_ON_CTXSW is defined
- 3. RT scheduling class
- 4. SMP system
-
-Sequence is as follows:
-
- 1.suppose current task is A. start schedule()
- 2.task A is enqueued pushable task at the entry of schedule()
-   __schedule
-    prev = rq->curr;
-    ...
-    put_prev_task
-     put_prev_task_rt
-      enqueue_pushable_task
- 4.pick the task B as next task.
-   next = pick_next_task(rq);
- 3.rq->curr set to task B and context_switch is started.
-   rq->curr = next;
- 4.At the entry of context_swtich, release this cpu's rq->lock.
-   context_switch
-    prepare_task_switch
-     prepare_lock_switch
-      raw_spin_unlock_irq(&rq->lock);
- 5.Shortly after rq->lock is released, interrupt is occurred and start IRQ context
- 6.try_to_wake_up() which called by ISR acquires rq->lock
-    try_to_wake_up
-     ttwu_remote
-      rq = __task_rq_lock(p)
-      ttwu_do_wakeup(rq, p, wake_flags);
-        task_woken_rt
- 7.push_rt_task picks the task A which is enqueued before.
-   task_woken_rt
-    push_rt_tasks(rq)
-     next_task = pick_next_pushable_task(rq)
- 8.At find_lock_lowest_rq(), If double_lock_balance() returns 0,
-   lowest_rq can be the remote rq.
-  (But,If preemption is on, double_lock_balance always return 1 and it
-   does't happen.)
-   push_rt_task
-    find_lock_lowest_rq
-     if (double_lock_balance(rq, lowest_rq))..
- 9.find_lock_lowest_rq return the available rq. task A is migrated to
-   the remote cpu/rq.
-   push_rt_task
-    ...
-    deactivate_task(rq, next_task, 0);
-    set_task_cpu(next_task, lowest_rq->cpu);
-    activate_task(lowest_rq, next_task, 0);
- 10. But, task A is on irq context at this cpu.
-     So, task A is scheduled by two cpus at the same time until restore from IRQ.
-     Task A's stack is corrupted.
-
-To fix it, don't migrate an RT task if it's still running.
-
-Signed-off-by: Chanho Min <chanho.min@lge.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: <stable@kernel.org>
-Link: http://lkml.kernel.org/r/CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Link: http://lkml.kernel.org/r/1327579450.2446.95.camel@twins
 ---
- kernel/sched/rt.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ block/blk-softirq.c   |   16 ++++++++--------
+ block/blk.h           |   16 ----------------
+ include/linux/sched.h |    8 ++++++++
+ kernel/sched/core.c   |    6 +++---
+ 4 files changed, 19 insertions(+), 27 deletions(-)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 3640ebb..f42ae7f 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1587,6 +1587,11 @@ static int push_rt_task(struct rq *rq)
- 	if (!next_task)
- 		return 0;
+diff --git a/block/blk-softirq.c b/block/blk-softirq.c
+index 1366a89..467c8de 100644
+--- a/block/blk-softirq.c
++++ b/block/blk-softirq.c
+@@ -8,6 +8,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
++#include <linux/sched.h>
  
-+#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-+       if (unlikely(task_running(rq, next_task)))
-+               return 0;
-+#endif
+ #include "blk.h"
+ 
+@@ -103,9 +104,10 @@ static struct notifier_block __cpuinitdata blk_cpu_notifier = {
+ 
+ void __blk_complete_request(struct request *req)
+ {
+-	int ccpu, cpu, group_cpu = NR_CPUS;
++	int ccpu, cpu;
+ 	struct request_queue *q = req->q;
+ 	unsigned long flags;
++	bool shared = false;
+ 
+ 	BUG_ON(!q->softirq_done_fn);
+ 
+@@ -117,22 +119,20 @@ void __blk_complete_request(struct request *req)
+ 	 */
+ 	if (req->cpu != -1) {
+ 		ccpu = req->cpu;
+-		if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags)) {
+-			ccpu = blk_cpu_to_group(ccpu);
+-			group_cpu = blk_cpu_to_group(cpu);
+-		}
++		if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags))
++			shared = cpus_share_cache(cpu, ccpu);
+ 	} else
+ 		ccpu = cpu;
+ 
+ 	/*
+-	 * If current CPU and requested CPU are in the same group, running
+-	 * softirq in current CPU. One might concern this is just like
++	 * If current CPU and requested CPU share a cache, run the softirq on
++	 * the current CPU. One might concern this is just like
+ 	 * QUEUE_FLAG_SAME_FORCE, but actually not. blk_complete_request() is
+ 	 * running in interrupt handler, and currently I/O controller doesn't
+ 	 * support multiple interrupts, so current CPU is unique actually. This
+ 	 * avoids IPI sending from current CPU to the first CPU of a group.
+ 	 */
+-	if (ccpu == cpu || ccpu == group_cpu) {
++	if (ccpu == cpu || shared) {
+ 		struct list_head *list;
+ do_local:
+ 		list = &__get_cpu_var(blk_cpu_done);
+diff --git a/block/blk.h b/block/blk.h
+index 7efd772..df5b59a 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -164,22 +164,6 @@ static inline int queue_congestion_off_threshold(struct request_queue *q)
+ 	return q->nr_congestion_off;
+ }
+ 
+-static inline int blk_cpu_to_group(int cpu)
+-{
+-	int group = NR_CPUS;
+-#ifdef CONFIG_SCHED_MC
+-	const struct cpumask *mask = cpu_coregroup_mask(cpu);
+-	group = cpumask_first(mask);
+-#elif defined(CONFIG_SCHED_SMT)
+-	group = cpumask_first(topology_thread_cpumask(cpu));
+-#else
+-	return cpu;
+-#endif
+-	if (likely(group < NR_CPUS))
+-		return group;
+-	return cpu;
+-}
+-
+ /*
+  * Contribute to IO statistics IFF:
+  *
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 513f524..0e19595 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1052,6 +1052,8 @@ static inline int test_sd_parent(struct sched_domain *sd, int flag)
+ unsigned long default_scale_freq_power(struct sched_domain *sd, int cpu);
+ unsigned long default_scale_smt_power(struct sched_domain *sd, int cpu);
+ 
++bool cpus_share_cache(int this_cpu, int that_cpu);
 +
- retry:
- 	if (unlikely(next_task == rq->curr)) {
- 		WARN_ON(1);
+ #else /* CONFIG_SMP */
+ 
+ struct sched_domain_attr;
+@@ -1061,6 +1063,12 @@ partition_sched_domains(int ndoms_new, cpumask_var_t doms_new[],
+ 			struct sched_domain_attr *dattr_new)
+ {
+ }
++
++static inline bool cpus_share_cache(int this_cpu, int that_cpu)
++{
++	return true;
++}
++
+ #endif	/* !CONFIG_SMP */
+ 
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5255c9d..d7c4322 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1507,7 +1507,7 @@ static int ttwu_activate_remote(struct task_struct *p, int wake_flags)
+ }
+ #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+ 
+-static inline int ttwu_share_cache(int this_cpu, int that_cpu)
++bool cpus_share_cache(int this_cpu, int that_cpu)
+ {
+ 	return per_cpu(sd_llc_id, this_cpu) == per_cpu(sd_llc_id, that_cpu);
+ }
+@@ -1518,7 +1518,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
+ 	struct rq *rq = cpu_rq(cpu);
+ 
+ #if defined(CONFIG_SMP)
+-	if (sched_feat(TTWU_QUEUE) && !ttwu_share_cache(smp_processor_id(), cpu)) {
++	if (sched_feat(TTWU_QUEUE) && !cpus_share_cache(smp_processor_id(), cpu)) {
+ 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
+ 		ttwu_queue_remote(p, cpu);
+ 		return;
+@@ -5754,7 +5754,7 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
+  *
+  * Also keep a unique ID per domain (we use the first cpu number in
+  * the cpumask of the domain), this allows us to quickly tell if
+- * two cpus are in the same cache domain, see ttwu_share_cache().
++ * two cpus are in the same cache domain, see cpus_share_cache().
+  */
+ DEFINE_PER_CPU(struct sched_domain *, sd_llc);
+ DEFINE_PER_CPU(int, sd_llc_id);
