@@ -1,123 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab2A1AMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 19:12:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55685 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab2A1AMi (ORCPT
+	id S1753324Ab2A1ANp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 19:13:45 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57368 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab2A1ANn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 19:12:38 -0500
-Date: Fri, 27 Jan 2012 16:12:36 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 7/8] mm: only IPI CPUs to drain local pages if they exist
-Message-Id: <20120127161236.ff1e7e7e.akpm@linux-foundation.org>
-In-Reply-To: <1327572121-13673-8-git-send-email-gilad@benyossef.com>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
-	<1327572121-13673-8-git-send-email-gilad@benyossef.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 27 Jan 2012 19:13:43 -0500
+Message-ID: <1327709621.14789.9.camel@lappy>
+Subject: Re: [PATCH] vhost-net: Acquire device lock when releasing device
+From: Sasha Levin <levinsasha928@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Date: Fri, 27 Jan 2012 19:13:41 -0500
+In-Reply-To: <20111127170558.GA31970@redhat.com>
+References: <1321607982-16283-1-git-send-email-levinsasha928@gmail.com>
+	 <20111127164925.GA24941@redhat.com> <20111127170558.GA31970@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 26 Jan 2012 12:02:00 +0200
-Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+I just noticed that it happened again, and that this patch didn't make
+it's way in.
 
-> Calculate a cpumask of CPUs with per-cpu pages in any zone
-> and only send an IPI requesting CPUs to drain these pages
-> to the buddy allocator if they actually have pages when
-> asked to flush.
-> 
-> This patch saves 85%+ of IPIs asking to drain per-cpu
-> pages in case of severe memory preassure that leads
-> to OOM since in these cases multiple, possibly concurrent,
-> allocation requests end up in the direct reclaim code
-> path so when the per-cpu pages end up reclaimed on first
-> allocation failure for most of the proceeding allocation
-> attempts until the memory pressure is off (possibly via
-> the OOM killer) there are no per-cpu pages on most CPUs
-> (and there can easily be hundreds of them).
-> 
-> This also has the side effect of shortening the average
-> latency of direct reclaim by 1 or more order of magnitude
-> since waiting for all the CPUs to ACK the IPI takes a
-> long time.
-> 
-> Tested by running "hackbench 400" on a 8 CPU x86 VM and
-> observing the difference between the number of direct
-> reclaim attempts that end up in drain_all_pages() and
-> those were more then 1/2 of the online CPU had any per-cpu
-> page in them, using the vmstat counters introduced
-> in the next patch in the series and using proc/interrupts.
-> 
-> In the test sceanrio, this was seen to save around 3600 global
-> IPIs after trigerring an OOM on a concurrent workload:
-> 
->
-> ...
->
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1165,7 +1165,36 @@ void drain_local_pages(void *arg)
->   */
->  void drain_all_pages(void)
->  {
-> -	on_each_cpu(drain_local_pages, NULL, 1);
-> +	int cpu;
-> +	struct per_cpu_pageset *pcp;
-> +	struct zone *zone;
-> +
-> +	/* Allocate in the BSS so we wont require allocation in
-> +	 * direct reclaim path for CONFIG_CPUMASK_OFFSTACK=y
-> +	 */
-> +	static cpumask_t cpus_with_pcps;
-> +
-> +	/*
-> +	 * We don't care about racing with CPU hotplug event
-> +	 * as offline notification will cause the notified
-> +	 * cpu to drain that CPU pcps and on_each_cpu_mask
-> +	 * disables preemption as part of its processing
-> +	 */
+The patch below indeed fixes the problem for me. Please push it in.
 
-hmmm.
-
-> +	for_each_online_cpu(cpu) {
-> +		bool has_pcps = false;
-> +		for_each_populated_zone(zone) {
-> +			pcp = per_cpu_ptr(zone->pageset, cpu);
-> +			if (pcp->pcp.count) {
-> +				has_pcps = true;
-> +				break;
-> +			}
-> +		}
-> +		if (has_pcps)
-> +			cpumask_set_cpu(cpu, &cpus_with_pcps);
-> +		else
-> +			cpumask_clear_cpu(cpu, &cpus_with_pcps);
-> +	}
-> +	on_each_cpu_mask(&cpus_with_pcps, drain_local_pages, NULL, 1);
+On Sun, 2011-11-27 at 19:06 +0200, Michael S. Tsirkin wrote:
+> On Sun, Nov 27, 2011 at 06:49:27PM +0200, Michael S. Tsirkin wrote:
+> > On Fri, Nov 18, 2011 at 11:19:42AM +0200, Sasha Levin wrote:
+> > > Device lock should be held when releasing a device, and specifically
+> > > when calling vhost_dev_cleanup(). Otherwise, RCU complains about it:
+> > > 
+> > > [ 2025.642835] ===============================
+> > > [ 2025.643838] [ INFO: suspicious RCU usage. ]
+> > > [ 2025.645182] -------------------------------
+> > > [ 2025.645927] drivers/vhost/vhost.c:475 suspicious rcu_dereference_protected() usage!
+> > > [ 2025.647329]
+> > > [ 2025.647330] other info that might help us debug this:
+> > > [ 2025.647331]
+> > > [ 2025.649042]
+> > > [ 2025.649043] rcu_scheduler_active = 1, debug_locks = 1
+> > > [ 2025.650235] no locks held by trinity/21042.
+> > > [ 2025.650971]
+> > > [ 2025.650972] stack backtrace:
+> > > [ 2025.651789] Pid: 21042, comm: trinity Not tainted 3.2.0-rc2-sasha-00057-ga9098b3 #5
+> > > [ 2025.653342] Call Trace:
+> > > [ 2025.653792]  [<ffffffff810b4a6a>] lockdep_rcu_suspicious+0xaf/0xb9
+> > > [ 2025.654916]  [<ffffffff818d4c2c>] vhost_dev_cleanup+0x342/0x3ac
+> > > [ 2025.655985]  [<ffffffff818d4f18>] vhost_net_release+0x48/0x7f
+> > > [ 2025.657247]  [<ffffffff811416e3>] fput+0x11e/0x1dc
+> > > [ 2025.658091]  [<ffffffff8113f1ec>] filp_close+0x6e/0x79
+> > > [ 2025.658964]  [<ffffffff81089ed7>] put_files_struct+0xcc/0x196
+> > > [ 2025.659971]  [<ffffffff8108a034>] exit_files+0x46/0x4f
+> > > [ 2025.660865]  [<ffffffff8108a716>] do_exit+0x264/0x75c
+> > > [ 2025.662201]  [<ffffffff8113f490>] ? fsnotify_modify+0x60/0x68
+> > > [ 2025.663260]  [<ffffffff81bbdbca>] ? sysret_check+0x2e/0x69
+> > > [ 2025.664269]  [<ffffffff8108acc1>] do_group_exit+0x83/0xb1
+> > > [ 2025.665448]  [<ffffffff8108ad01>] sys_exit_group+0x12/0x16
+> > > [ 2025.666396]  [<ffffffff81bbdb92>] system_call_fastpath+0x16/0x1b
+> > > 
+> > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > > Cc: kvm@vger.kernel.org
+> > > Cc: virtualization@lists.linux-foundation.org
+> > > Cc: netdev@vger.kernel.org
+> > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > > ---
+> > >  drivers/vhost/net.c |    2 ++
+> > >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> > > index 882a51f..c9be601 100644
+> > > --- a/drivers/vhost/net.c
+> > > +++ b/drivers/vhost/net.c
+> > > @@ -586,6 +586,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+> > >  	struct socket *tx_sock;
+> > >  	struct socket *rx_sock;
+> > >  
+> > > +	mutex_lock(&n->dev.mutex);
+> > >  	vhost_net_stop(n, &tx_sock, &rx_sock);
+> > >  	vhost_net_flush(n);
+> > >  	vhost_dev_cleanup(&n->dev);
+> > > @@ -596,6 +597,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+> > >  	/* We do an extra flush before freeing memory,
+> > >  	 * since jobs can re-queue themselves. */
+> > >  	vhost_net_flush(n);
+> > > +	mutex_unlock(&n->dev.mutex);
+> > >  	kfree(n);
+> > >  	return 0;
+> > >  }
+> > 
+> > This calls fput fom release under lock which is generally a bad idea,
+> > as locks become nested then. For example, consider what would happen if this
+> > somehow triggers a release which in turn needs the same mutex.
+> > 
+> > And, we are releasing the device, so it seems better to check
+> > that no one has the lock.
+> > How about the following instead? What do you think?
+> > 
+> > -->
+> > 
+> > vhost: fix release path lockdep checks
+> > 
+> > We shouldn't hold any locks on release path. Pass a flag to
+> > vhost_dev_cleanup to use the lockdep info correctly.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > 
+> > ---
+> 
+> Sorry, this got cut short. Here's the full patch (1st chunk was
+> missing).  Does this solve the problem for you?
+> 
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 8b16d16..9bba4b3 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -598,7 +598,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+>  
+>  	vhost_net_stop(n, &tx_sock, &rx_sock);
+>  	vhost_net_flush(n);
+> -	vhost_dev_cleanup(&n->dev);
+> +	vhost_dev_cleanup(&n->dev, false);
+>  	if (tx_sock)
+>  		fput(tx_sock->file);
+>  	if (rx_sock)
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index a8c95ef..96f9769 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -424,7 +424,7 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+>  	if (!memory)
+>  		return -ENOMEM;
+>  
+> -	vhost_dev_cleanup(dev);
+> +	vhost_dev_cleanup(dev, true);
+>  
+>  	memory->nregions = 0;
+>  	RCU_INIT_POINTER(dev->memory, memory);
+> @@ -455,8 +455,8 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
+>  	return j;
 >  }
+>  
+> -/* Caller should have device mutex */
+> -void vhost_dev_cleanup(struct vhost_dev *dev)
+> +/* Caller should have device mutex if and only if locked is set */
+> +void vhost_dev_cleanup(struct vhost_dev *dev, bool locked)
+>  {
+>  	int i;
+>  
+> @@ -493,7 +493,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+>  	dev->log_file = NULL;
+>  	/* No one will access memory at this point */
+>  	kfree(rcu_dereference_protected(dev->memory,
+> -					lockdep_is_held(&dev->mutex)));
+> +					locked ==
+> +						lockdep_is_held(&dev->mutex)));
+>  	RCU_INIT_POINTER(dev->memory, NULL);
+>  	WARN_ON(!list_empty(&dev->work_list));
+>  	if (dev->worker) {
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index b3e8cc3..97e18d3 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -164,7 +164,7 @@ struct vhost_dev {
+>  long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue *vqs, int nvqs);
+>  long vhost_dev_check_owner(struct vhost_dev *);
+>  long vhost_dev_reset_owner(struct vhost_dev *);
+> -void vhost_dev_cleanup(struct vhost_dev *);
+> +void vhost_dev_cleanup(struct vhost_dev *, bool locked);
+>  long vhost_dev_ioctl(struct vhost_dev *, unsigned int ioctl, unsigned long arg);
+>  int vhost_vq_access_ok(struct vhost_virtqueue *vq);
+>  int vhost_log_access_ok(struct vhost_dev *);
 
-Can we end up sending an IPI to a now-unplugged CPU?  That won't work
-very well if that CPU is now sitting on its sysadmin's desk.
 
-There's also the case of CPU online.  We could end up failing to IPI a
-CPU which now has some percpu pages.  That's not at all serious - 90%
-is good enough in page reclaim.  But this thinking merits a mention in
-the comment.  Or we simply make this code hotplug-safe.
+-- 
+
+Sasha.
 
