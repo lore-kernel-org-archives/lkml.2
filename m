@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2A1AnL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 Jan 2012 19:43:11 -0500
-Received: from mail2.seas.wustl.edu ([128.252.21.109]:10009 "EHLO
-	POSTOFFICE.seas.wustl.edu" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752088Ab2A1AnK (ORCPT
+	id S1752551Ab2A1BOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 Jan 2012 20:14:11 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47918 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab2A1BOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 Jan 2012 19:43:10 -0500
-Message-ID: <4F234498.5070800@seas.wustl.edu>
-Date: Fri, 27 Jan 2012 18:43:04 -0600
-From: Professor Berkley Shands <berkley@seas.wustl.edu>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Fri, 27 Jan 2012 20:14:10 -0500
+Date: Sat, 28 Jan 2012 02:14:03 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 1/3] regmap: Properly round reg_bytes and val_bytes
+Message-ID: <20120128011403.GA6669@pengutronix.de>
+References: <1327677023-29310-1-git-send-email-w.sang@pengutronix.de>
+ <20120127162837.GB18572@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: 3.0.18 tcsetattr on fd 0 when detached freezes system (RCU timeouts)
- (Centos 6.1 x86_64)
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Jan 2012 00:43:09.0904 (UTC) FILETIME=[CED6BD00:01CCDD55]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
+Content-Disposition: inline
+In-Reply-To: <20120127162837.GB18572@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-typedef struct
-{
-    struct termios term;
-} XKEY_DATA;
+--J/dobhs11T7y2rNN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-typedef XKEY_DATA *xkeyhandle;
+On Fri, Jan 27, 2012 at 04:28:37PM +0000, Mark Brown wrote:
+> On Fri, Jan 27, 2012 at 04:10:21PM +0100, Wolfram Sang wrote:
+> > For the upcoming 2/6-format, we don't see debugfs output otherwise,
+> > since the current division results in 0. I'd think 10/14 is broken
+> > currently, too.
+>=20
+> This looks good but could you please rebase on top of topic/core, it
+> conflicts with the support for padding bytes.  It's not really entirely
+> incorrect, the bytes values aren't terribly well defined for register
+> sizes that aren't integer numbers of bytes as they were never intended
+> to be used then.  The assumption did leak out into debugfs though.
 
-static inline xkeyhandle xkeystart()
-{
+I wondered if you'd save reg_bits and val_bits there (converting to *_bytes
+when needed), you could replace all the format_x_y-functions with a few gen=
+eric
+functions doing (reg << y) | val. Unsure if it is worth it...
 
-    // Turn off echo.
-    struct termios temp;
-    err = tcgetattr(0, &temp);
-    if (err)
-    {
-       perror("tcgetattr failure");
-    }
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-    XKEY_DATA *handle = new XKEY_DATA;
-    handle->term = temp;
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-    temp.c_lflag &= ~ECHO;
-    temp.c_lflag &= ~ICANON;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-    err = tcsetattr(0, TCSANOW, &temp);        // this line causes the 
-kernel to get very sick
-    if (err)
-    {
-       perror("tcsetattr failure");
-    }
+iEYEARECAAYFAk8jS9sACgkQD27XaX1/VRt1bQCdHXDI0c3HFZiqhbs7ow7RxcN7
+PjIAoJoh+50BtZIKsGuJcNPmaRDT4UHB
+=V/HS
+-----END PGP SIGNATURE-----
 
-    return handle;
-
-}
-
-The above code, called from main() will produce an error from tcsh:
-
-/home/bshands> ./a.out > /dev/null &
-[1] 3635
-/home/bshands>
-/home/bshands>
-[1]  + Suspended (tty output) ./a.out > /dev/null
-/home/bshands>
-
-this does not appear on the redhat kernel, nor 2.6.32.43, but appeared 
-infrequently in 3.0.9.
-in 3.0.18, doing this in the background does *EVIL* things.
-
-ssh system "./a.out > /dev/null &" &
-
-Now when the code reaches the tcsetattr() the system quits scheduling tasks.
-top shows 100%sy on 4/12 cores, kernel threads blocked, stalled tasks 
-count increasing.
-
-
-Jan 27 18:58:50 system kernel: [ 1269.891610] kjournald       S 
-ffff880321270a30     0   416      2 0x00000000
-Jan 27 18:58:50 system kernel: [ 1269.891684]  ffff880321f5de50 
-0000000000000046 ffff880321270680 0000000000000000
-Jan 27 18:58:50 system kernel: [ 1269.891816]  ffff880321270680 
-0000000000012ac0 ffff880321f5dfd8 ffff880321f5c010
-Jan 27 18:58:50 system kernel: [ 1269.891948]  ffff880321f5dfd8 
-0000000000012ac0 ffff880327a61260 ffff880321270680
-Jan 27 18:58:50 system kernel: [ 1269.892083] Call Trace:
-Jan 27 18:58:50 system kernel: [ 1269.892144]  [<ffffffff824c126f>] 
-schedule+0x3f/0x60
-Jan 27 18:58:50 system kernel: [ 1269.892226]  [<ffffffffa0030f9d>] 
-kjournald+0x20d/0x230 [jbd]
-Jan 27 18:58:50 system kernel: [ 1269.892294]  [<ffffffff82082230>] ? 
-wake_up_bit+0x40/0x40
-Jan 27 18:58:50 system kernel: [ 1269.892362]  [<ffffffffa0030d90>] ? 
-commit_timeout+0x10/0x10 [jbd]
-Jan 27 18:58:50 system kernel: [ 1269.892431]  [<ffffffff82081bb6>] 
-kthread+0x96/0xa0
-Jan 27 18:58:50 system kernel: [ 1269.892497]  [<ffffffff824cbe04>] 
-kernel_thread_helper+0x4/0x10
-Jan 27 18:58:50 system kernel: [ 1269.892565]  [<ffffffff82081b20>] ? 
-kthread_worker_fn+0x1a0/0x1a0
-Jan 27 18:58:50 system kernel: [ 1269.892633]  [<ffffffff824cbe00>] ? 
-gs_change+0x13/0x13
-
-After a little while, the system locks up. rcu timeout errors may appear 
-in dmesg.
-dumps are available.
-
-Note that this little bugger is a user mode crash, once started, you are 
-done.
-it appears that later use of termios is still sufficient to trigger the 
-lockup.
-they key is being detached.
-
-Berkley
-
-
-
-
-
+--J/dobhs11T7y2rNN--
