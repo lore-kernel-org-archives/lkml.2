@@ -1,128 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab2A2Rgj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 12:36:39 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52089 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab2A2Rgh convert rfc822-to-8bit (ORCPT
+	id S1753495Ab2A2Rkb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 12:40:31 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:52383 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab2A2Rka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 12:36:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <1327639925-12920-18-git-send-email-ebiederm@xmission.com>
-References: <m1pqe5ah3z.fsf@fess.ebiederm.org> <1327639925-12920-18-git-send-email-ebiederm@xmission.com>
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Sun, 29 Jan 2012 19:36:06 +0200
-Message-ID: <CAPLs8y9-nA7gZymMkFzOdB6zh0h2hS+dhWu42ciOaHzJ++Z+gg@mail.gmail.com>
-Subject: Re: [PATCH 18/29] sysctl: Normalize the root_table data structure.
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        netdev@vger.kernel.org,
-        Damien Millescamps <damien.millescamps@6wind.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 29 Jan 2012 12:40:30 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Nathan Fontenot <nfont@austin.ibm.com>, Robin Holt <holt@sgi.com>
+Subject: [PATCH -v2] mm: Fix memory_dev_init() long delay
+Date: Sun, 29 Jan 2012 09:39:20 -0800
+Message-Id: <1327858760-3231-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090206.4F25845A.0005,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 6:51 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Every other directory has a .child member and we look at the .child
-> for our entries.  Do the same for the root_table.
->
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  fs/proc/proc_sysctl.c |   15 +++++++++++----
->  1 files changed, 11 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-> index 7e96a26..88d1b06 100644
-> --- a/fs/proc/proc_sysctl.c
-> +++ b/fs/proc/proc_sysctl.c
-> @@ -25,7 +25,14 @@ void proc_sys_poll_notify(struct ctl_table_poll *poll)
->        wake_up_interruptible(&poll->wait);
->  }
->
-> -static struct ctl_table root_table[1];
-> +static struct ctl_table root_table[] = {
-> +       {
-> +               .procname = "",
-> +               .mode = S_IRUGO|S_IXUGO,
+One system with 2048g ram, reported soft lockup on recent kernel.
 
-Why not: .mode = S_IFDIR|S_IRUGO|S_IXUGO ?
+[   34.426749] cpu_dev_init done
+[   61.166399] BUG: soft lockup - CPU#0 stuck for 22s! [swapper/0:1]
+[   61.166733] Modules linked in:
+[   61.166904] irq event stamp: 1935610
+[   61.178431] hardirqs last  enabled at (1935609): [<ffffffff81ce8c05>] mutex_lock_nested+0x299/0x2b4
+[   61.178923] hardirqs last disabled at (1935610): [<ffffffff81cf2bab>] apic_timer_interrupt+0x6b/0x80
+[   61.198767] softirqs last  enabled at (1935476): [<ffffffff8106e59c>] __do_softirq+0x195/0x1ab
+[   61.218604] softirqs last disabled at (1935471): [<ffffffff81cf359c>] call_softirq+0x1c/0x30
+[   61.238408] CPU 0 
+[   61.238549] Modules linked in:
+[   61.238744] 
+[   61.238825] Pid: 1, comm: swapper/0 Not tainted 3.3.0-rc1-tip-yh-02076-g962f689-dirty #171
+[   61.278212] RIP: 0010:[<ffffffff810b3e3a>]  [<ffffffff810b3e3a>] lock_release+0x90/0x9c
+[   61.278627] RSP: 0018:ffff883f64dbfd70  EFLAGS: 00000246
+[   61.298287] RAX: ffff883f64dc0000 RBX: 0000000000000000 RCX: 000000000000008b
+[   61.298690] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+[   61.318383] RBP: ffff883f64dbfda0 R08: 0000000000000001 R09: 000000000000008b
+[   61.338215] R10: 0000000000000000 R11: 0000000000000000 R12: ffff883f64dbfd10
+[   61.338610] R13: ffff883f64dc0708 R14: ffff883f64dc0708 R15: ffffffff81095657
+[   61.358299] FS:  0000000000000000(0000) GS:ffff883f7d600000(0000) knlGS:0000000000000000
+[   61.378118] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   61.378450] CR2: 0000000000000000 CR3: 00000000024af000 CR4: 00000000000007f0
+[   61.398144] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   61.417918] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   61.418260] Process swapper/0 (pid: 1, threadinfo ffff883f64dbe000, task ffff883f64dc0000)
+[   61.445358] Stack:
+[   61.445511]  0000000000000002 ffff897f649ba168 ffff883f64dbfe10 ffff88ff64bb57a8
+[   61.458040]  0000000000000000 0000000000000000 ffff883f64dbfdc0 ffffffff81ceb1b4
+[   61.458491]  000000000011608c ffff88ff64bb58a8 ffff883f64dbfdf0 ffffffff81c57638
+[   61.478215] Call Trace:
+[   61.478367]  [<ffffffff81ceb1b4>] _raw_spin_unlock+0x21/0x2e
+[   61.497994]  [<ffffffff81c57638>] klist_next+0x9e/0xbc
+[   61.498264]  [<ffffffff8148ba99>] next_device+0xe/0x1e
+[   61.517867]  [<ffffffff8148c0cc>] subsys_find_device_by_id+0xb7/0xd6
+[   61.518197]  [<ffffffff81498846>] find_memory_block_hinted+0x3d/0x66
+[   61.537927]  [<ffffffff8149887f>] find_memory_block+0x10/0x12
+[   61.538193]  [<ffffffff814988b6>] add_memory_section+0x35/0x9e
+[   61.557932]  [<ffffffff827fecef>] memory_dev_init+0x68/0xda
+[   61.558227]  [<ffffffff827fec01>] driver_init+0x97/0xa7
+[   61.577853]  [<ffffffff827cdf3c>] kernel_init+0xf6/0x1c0
+[   61.578140]  [<ffffffff81cf34a4>] kernel_thread_helper+0x4/0x10
+[   61.597850]  [<ffffffff81ceb59d>] ? retint_restore_args+0xe/0xe
+[   61.598144]  [<ffffffff827cde46>] ? start_kernel+0x3ab/0x3ab
+[   61.617826]  [<ffffffff81cf34a0>] ? gs_change+0xb/0xb
+[   61.618060] Code: 10 48 83 3b 00 eb e8 4c 89 f2 44 89 fe 4c 89 ef e8 e1 fe ff ff 65 48 8b 04 25 40 bc 00 00 c7 80 cc 06 00 00 00 00 00 00 41 54 9d <5e> 5b 41 5c 41 5d 41 5e 41 5f 5d c3 55 48 89 e5 41 57 41 89 cf 
+[   89.285380] memory_dev_init done
 
-You change it later and add IFDIR in patch 22/29 because of this
-change (from 22/29):
--	if (!table->child) {
-+	if (!S_ISDIR(table->mode)) {
+Found we should find the memory_block for BOOT path.
 
-but if might as well be done here.
+Root cause: for x86_64, 2048g (with 2g hole at [2g,4g), and TOP2 will be 2050g), will have 16400 memory block.
 
+find_memory_block/subsys_find_device_by_id will be expensive with that much entries.
 
-> +               .child = &root_table[1],
-> +       },
-> +       { }
-> +};
->  static struct ctl_table_root sysctl_table_root;
->  static struct ctl_table_header root_table_header = {
->        {{.count = 1,
-> @@ -319,7 +326,7 @@ static struct dentry *proc_sys_lookup(struct inode *dir, struct dentry *dentry,
->                goto out;
->        }
+Actually, we don't need to find that memory block for BOOT case.
 
-Somewhere above we have
-  struct ctl_table *table = PROC_I(inode)->sysctl_entry;
-and sysctl_entry can take two values:
-   - NULL: fs/proc/inode.c:proc_alloc_inode()
-   - a non-NULL table in: proc_sys_make_inode()
+Skip that make it get back to normal.
 
-The only inode that can be passed to proc_sys_lookup that can have
-table=NULL is the root inode.
-In that case head will be &root_table_header.
+[   34.466696] cpu_dev_init done
+[   35.290080] memory_dev_init done
 
+-v2: check the sections_per_block, and update cc list
 
-So head->ctl_table[1] == root_table_header.ctl_table[1] == root_table[1].
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Robin Holt <holt@sgi.com>
 
+---
+ drivers/base/memory.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
->
-> -       table = table ? table->child : head->ctl_table;
-> +       table = table ? table->child : &head->ctl_table[1];
-
-I think this could be improved to something like this:
-/* table == NULL only for the procfs root directory */
-table = table ? table->child : &root_table[1];
-
-
-It's not that important, as this code will go away in a few patches.
-
->
->        p = find_in_table(table, name);
->        if (!p) {
-> @@ -510,7 +517,7 @@ static int proc_sys_readdir(struct file *filp, void *dirent, filldir_t filldir)
->                goto out;
->        }
->
-> -       table = table ? table->child : head->ctl_table;
-> +       table = table ? table->child : &head->ctl_table[1];
-
-Similar.
-
->        ret = 0;
->        /* Avoid a switch here: arm builds fail with missing __cmpdi2 */
-> @@ -966,7 +973,7 @@ struct ctl_table_header *__register_sysctl_table(
->        spin_lock(&sysctl_lock);
->        header->set = lookup_header_set(root, namespaces);
->        header->attached_by = header->ctl_table;
-> -       header->attached_to = root_table;
-> +       header->attached_to = &root_table[1];
->        header->parent = &root_table_header;
->        set = header->set;
->        root = header->root;
-> --
-> 1.7.2.5
->
-
-
-
--- 
- .
-..: Lucian
+Index: linux-2.6/drivers/base/memory.c
+===================================================================
+--- linux-2.6.orig/drivers/base/memory.c
++++ linux-2.6/drivers/base/memory.c
+@@ -574,12 +574,16 @@ static int init_memory_block(struct memo
+ static int add_memory_section(int nid, struct mem_section *section,
+ 			unsigned long state, enum mem_add_context context)
+ {
+-	struct memory_block *mem;
++	struct memory_block *mem = NULL;
+ 	int ret = 0;
+ 
+ 	mutex_lock(&mem_sysfs_mutex);
+ 
+-	mem = find_memory_block(section);
++	if (context == BOOT && sections_per_block == 1) {
++		/* don't need to find memory block in this case */
++	} else
++		mem = find_memory_block(section);
++
+ 	if (mem) {
+ 		mem->section_count++;
+ 		kobject_put(&mem->dev.kobj);
