@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2A2QNu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 11:13:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15530 "EHLO mx1.redhat.com"
+	id S1753312Ab2A2QVH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 11:21:07 -0500
+Received: from mga03.intel.com ([143.182.124.21]:55017 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab2A2QNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 11:13:48 -0500
-Date: Sun, 29 Jan 2012 17:07:11 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, y-goto@jp.fujitsu.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched: Fix ancient race in do_exit()
-Message-ID: <20120129160711.GA20803@redhat.com>
-References: <20120117174031.3118.E1E9C6FF@jp.fujitsu.com> <tip-b5740f4b2cb3503b436925eb2242bc3d75cd3dfe@git.kernel.org> <CA+55aFyO0KxGQxYYUqmVrNqG6qVFnRT2g-kYYKtH5QG3vTnO=A@mail.gmail.com>
+	id S1752692Ab2A2QVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 11:21:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100879313"
+Date: Mon, 30 Jan 2012 00:10:58 +0800
+From: Wu Fengguang <wfg@linux.intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Herbert Poetzl <herbert@13thfloor.at>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Bad SSD performance with recent kernels
+Message-ID: <20120129161058.GA13156@localhost>
+References: <20120127060034.GG29272@MAIL.13thfloor.at>
+ <20120128125108.GA9661@localhost>
+ <1327757611.7199.6.camel@edumazet-laptop>
+ <20120129055917.GB8513@localhost>
+ <1327831380.14602.6.camel@edumazet-laptop>
+ <20120129111645.GA5839@localhost>
+ <1327842831.2718.2.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyO0KxGQxYYUqmVrNqG6qVFnRT2g-kYYKtH5QG3vTnO=A@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1327842831.2718.2.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28, Linus Torvalds wrote:
->
-> On Sat, Jan 28, 2012 at 4:03 AM, tip-bot for Yasunori Goto
-> <y-goto@jp.fujitsu.com> wrote:
-> >
-> > sched: Fix ancient race in do_exit()
->
-> Ugh.
->
-> It would be much nicer to just clear the rwsem waiter->task thing
-> *after* waking the task up, which would avoid this race entirely,
-> afaik.
+On Sun, Jan 29, 2012 at 02:13:51PM +0100, Eric Dumazet wrote:
+> Le dimanche 29 janvier 2012 à 19:16 +0800, Wu Fengguang a écrit :
+> 
+> 
+> > Note that as long as buffered read(2) is used, it makes almost no
+> > difference (well, at least for now) to do "dd bs=128k" or "dd bs=2MB":
+> > the 128kb readahead size will be used underneath to submit read IO.
+> > 
+> 
+> Hmm...
+> 
+> # echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=128k count=32768
+> 32768+0 enregistrements lus
+> 32768+0 enregistrements écrits
+> 4294967296 octets (4,3 GB) copiés, 20,7718 s, 207 MB/s
+> 
+> 
+> # echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=2M count=2048
+> 2048+0 enregistrements lus
+> 2048+0 enregistrements écrits
+> 4294967296 octets (4,3 GB) copiés, 27,7824 s, 155 MB/s
 
-How? The problem is that wake_up_process(tsk) sees this task in
-TASK_UNINTERRUPTIBLE state (the first "p->state & state" check in
-try_to_wake_up), but then this task changes its state to TASK_DEAD
-without schedule() and ttwu() does s/TASK_DEAD/TASK_RUNNING/.
+Interesting. Here are my test results:
 
-IOW, the task doing
+root@lkp-nex04 /home/wfg# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=128k count=32768
+32768+0 records in
+32768+0 records out
+4294967296 bytes (4.3 GB) copied, 19.0121 s, 226 MB/s
+root@lkp-nex04 /home/wfg# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=2M count=2048
+2048+0 records in
+2048+0 records out
+4294967296 bytes (4.3 GB) copied, 19.0214 s, 226 MB/s
 
-	current->state = TASK_A;
-	...
-	current->state = TASK_B;
-	schedule();
+Maybe the /dev/sda performance bug on your machine is sensitive to timing?
 
-can be woken up by try_to_wake_up(TASK_A), despite the fact it
-sleeps in TASK_B. do_exit() is only "special" because it is not
-easy to handle the spurious wakeup.
-	
-> Tell me, why wouldn't that work? rwsem_down_failed_common() does
->
->         /* wait to be given the lock */
->         for (;;) {
->                 if (!waiter.task)
->                         break;
->                ...
->
-> so then we wouldn't need the task refcount crap in rwsem either etc,
-> and we'd get rid of all races with wakeup.
->
-> I wonder why we're clearing that whole waiter->task so early.
-
-I must have missed something. I can't understand how this can help,
-and "clear the rwsem waiter->task thing *after* waking" looks
-obviously wrong. If we do this, then we can miss the "!!waiter.task"
-condition. The loop above actually does
-
-	set_task_state(TASK_UNINTERRUPTIBLE);
-
-	if (!waiter.task)
-		break;
-	schedule();
-
-and
-	wake_up_process(tsk);
-	waiter->task = NULL;
-
-can happen right after set_task_state().
-
-Oleg.
-
+Thanks,
+Fengguang
