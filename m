@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab2A2AvA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 19:51:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61889 "EHLO mx1.redhat.com"
+	id S1752862Ab2A2A6M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 19:58:12 -0500
+Received: from mga14.intel.com ([143.182.124.37]:3435 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752024Ab2A2Au7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 19:50:59 -0500
-Message-ID: <4F2497DC.2040405@redhat.com>
-Date: Sat, 28 Jan 2012 19:50:36 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        lsf-pc@lists.linux-foundation.org
-Subject: Re: [PATCH] mm: implement WasActive page flag (for improving cleancache)
-References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>  <4F218D36.2060308@linux.vnet.ibm.com>  <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>  <20120126163150.31a8688f.akpm@linux-foundation.org>  <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>  <20120126171548.2c85dd44.akpm@linux-foundation.org>  <7198bfb3-1e32-40d3-8601-d88aed7aabd8@default>  <1327671787.2977.17.camel@dabdike.int.hansenpartnership.com>  <3ac611ee-8830-41bd-8464-6867da701948@default>  <1327686876.2977.37.camel@dabdike.int.hansenpartnership.com>  <9813c0cd-0335-4994-b734-e9fc7872c0cb@default> <1327700951.2977.78.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1327700951.2977.78.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752024Ab2A2A6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 19:58:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="60910932"
+Message-ID: <1327798687.7922.44.camel@yhuang-dev>
+Subject: Re: [PATCH 2/3] ACPI, APEI: Add RAM mapping support to ACPI
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, rjw@sisk.pl, trenn@suse.de,
+        linux-kernel@vger.kernel.org
+Date: Sun, 29 Jan 2012 08:58:07 +0800
+In-Reply-To: <CAErSpo5KDxkcMn3OrvujeSHhzF7PjG0hsYqMXe1HmpPJaLHvDg@mail.gmail.com>
+References: <20120121021318.14723.45698.stgit@amt.stowe>
+	 <20120121021330.14723.72537.stgit@amt.stowe>
+	 <CAErSpo5KDxkcMn3OrvujeSHhzF7PjG0hsYqMXe1HmpPJaLHvDg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2012 04:49 PM, James Bottomley wrote:
+Hi, Bjorn,
 
-> So here, I was just saying your desire to store more data in the page
-> table and expand the page flags looks complex.
->
-> Perhaps we do have a fundamental misunderstanding:  For readahead, I
-> don't really care about the referenced part.  referenced just means
-> pointed to by one or more vmas and active means pointed to by two or
-> more vmas (unless executable in which case it's one).
+Sorry for late.  Just return from Chinese new year holiday.
 
-That is not at all what "referenced" means everywhere
-else in the VM.
+On Sat, 2012-01-21 at 08:04 -0700, Bjorn Helgaas wrote:
+[snip]
+> > +
+> > +static void __iomem *acpi_map(acpi_physical_address pg_off, unsigned long pg_sz)
+> > +{
+> > +       unsigned long pfn;
+> > +
+> > +       pfn = pg_off >> PAGE_SHIFT;
+> > +       if (should_use_kmap(pfn)) {
+> > +               if (pg_sz > PAGE_SIZE)
+> > +                       return NULL;
+> > +               return (void __iomem __force *)kmap(pfn_to_page(pfn));
+> > +       } else
+> > +               return acpi_os_ioremap(pg_off, pg_sz);
+> 
+> This implies that ioremap() works differently on ia64 than on x86.
+> Apparently one can ioremap() RAM on x86, but not on ia64.  Why is this
+> different?  Shouldn't we instead fix ioremap() on ia64 so it works the
+> same as on x86?
 
-If you write theories on what Dan should use, it would
-help if you limited yourself to stuff the VM provides
-and/or could provide :)
+If my understanding were correct, ioremap can not work for RAM on x86.
+So we need to use kmap for RAM.  And on IA64, ioremap works for RAM and
+will take care of cache attributes while kmap will not.  So ioremap is
+used on IA64, while kmap is used on x86.
 
-> What I think we care about for readahead is accessed.  This means a page
-> that got touched regardless of how many references it has.  An
-> unaccessed unaged RA page is a less good candidate for reclaim because
-> it should soon be accessed (under the RA heuristics) than an accessed RA
-> page.  Obviously if the heuristics misfire, we end up with futile RA
-> pages, which we read in expecting to be accessed, but which in fact
-> never were (so an unaccessed aged RA page) and need to be evicted.
->
-> But for me, perhaps it's enough to put unaccessed RA pages into the
-> active list on instantiation and then actually put them in the inactive
-> list when they're accessed
+> I looked at the ia64 ioremap(), and I can't see the reason it fails
+> for RAM.  Huang, do you remember the details from 76da3fb3575?
+> 
+> > +}
+> > +
+> > +static void acpi_unmap(acpi_physical_address pg_off, void __iomem *vaddr)
+> > +{
+> > +       unsigned long pfn;
+> > +
+> > +       pfn = pg_off >> PAGE_SHIFT;
+> > +       if (page_is_ram(pfn))
+> > +               kunmap(pfn_to_page(pfn));
+> > +       else
+> > +               iounmap(vaddr);
+> 
+> I hope we can resolve the ioremap() question so we don't need this
+> patch at all.  But if we do need this, I don't like the asymmetry here
+> -- on x86 RAM, I think we use ioremap() and kunmap(), which seems
+> wrong.  We should be able to use ioremap() and iounmap().
 
-That is an absolutely terrible idea for many obvious reasons.
+Yes.   The asymmetry here is not good.  We should use should_use_kmap()
+instead of page_is_ram directly here.
 
-Having readahead pages displace the working set wholesale
-is the absolute last thing we want.
+Best Regards,
+Huang Ying
 
-> I'm less clear on why you think a WasActive() flag is needed.  I think
-> you mean a member of the inactive list that was at some point previously
-> active.
 
-> Um, that's complex.  Doesn't your inactive-C list really just identify
-> pages that were shared but have sunk in the LRU lists due to lack of
-> use?
-
-Nope. Pages that are not mapped can still end up on the active
-list, by virtue of getting accessed multiple times in a "short"
-period of time (the residence on the inactive list).
-
-We want to cache frequently accessed pages with preference over
-streaming IO data that gets accessed infrequently.
-
--- 
-All rights reversed
