@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab2A2Vmx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 16:42:53 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21216 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126Ab2A2Vmw (ORCPT
+	id S1753902Ab2A2Vn2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 16:43:28 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57235 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753346Ab2A2Vn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 16:42:52 -0500
-Date: Sun, 29 Jan 2012 22:43:06 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        Liam Girdwood <lrg@ti.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] Sound, SoC, WM9090: Remove unused variable 'wm9090' from
- wm9090_i2c_remove()
-In-Reply-To: <20120129214205.GD2994@opensource.wolfsonmicro.com>
-Message-ID: <alpine.LNX.2.00.1201292242530.27749@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201280055410.13952@swampdragon.chaosbits.net> <20120129214205.GD2994@opensource.wolfsonmicro.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 29 Jan 2012 16:43:27 -0500
+Date: Sun, 29 Jan 2012 21:43:24 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: Properly round reg_bytes and val_bytes
+Message-ID: <20120129214323.GE2994@opensource.wolfsonmicro.com>
+References: <1327713401-16236-1-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MnLPg7ZWsaic7Fhd"
+Content-Disposition: inline
+In-Reply-To: <1327713401-16236-1-git-send-email-w.sang@pengutronix.de>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 Jan 2012, Mark Brown wrote:
 
-> On Sat, Jan 28, 2012 at 12:57:42AM +0100, Jesper Juhl wrote:
-> > The variable 'wm9090' is assigned to but never used, so let's just
-> > remove it.
-> 
-> There's already a fix in for this (adding use back).
-> 
-Ok. Thank you for letting me know.
+--MnLPg7ZWsaic7Fhd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+On Sat, Jan 28, 2012 at 02:16:41AM +0100, Wolfram Sang wrote:
+> For the upcoming 2/6-format, we don't see debugfs output otherwise,
+> since the current division results in 0. I'd think 10/14 is broken
+> currently, too.
 
+Applied, thanks.
+
+--MnLPg7ZWsaic7Fhd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPJb11AAoJEBus8iNuMP3dNlkP/1sqbB2rhvnikcFqyWip4o1m
+HbrtzCEX3ZNFkmDQPkDf5TgfrrbxL8Wef1s7g44E0Ye26l+DfXjM3sueRa7BVCDV
+UDHPxg0N2UFjM7QM2fcD0MxXUGHij3v5/HrnbViGjuVSwWMVDPqZ+XT0Mavib1BO
+14AftWSwP3K2mIEI+b2WV3wY0cL92yNG2qPp+bCbuXtE5qdULE7XihV8Xfr+JN04
+RMoUhu0E86gAR4IsN4SrIkq6cnx/KEAih0sLiqsx5XgTsSQz/YxNL7fGRmAoFOBl
+Y8bSi4rln4Q+lsIm/le4XvQMoK3H0AHoR2Pbw49QbALYil6UC/LUghDe4rWZ/TNV
+yRNSWqq1YK6+vVYTljjxBmYwGRJoTfPu0bYH47QQjpLYtHqATwFvkKmdE+rLWe9Q
+mTFvtJKCp/QRx5Wa1uzlRsELbhcZ+CiBBwKB0V6Zlp+IJMlk7c3rVPmPxy01W95i
+J/9w8MBfLTbIk3rtjNPBhc7CJ4wwprs+sHrGRUB/4G622m285RI2BDNsrnnCtr/O
+N7jD29rBINEtangcYX4rsHsAARAVhvaM4gJ4ltaD9sA2K6FuTt+YLCAAbNPRbbwV
+h1w8gWD0kHyZbI+97WidjsFe8qa8sQO+wyAi8YwKbPF7IrOMTnjyRfD38ofxAJp8
+HtNiLLdiBgdTOmFHzf5i
+=r6dE
+-----END PGP SIGNATURE-----
+
+--MnLPg7ZWsaic7Fhd--
