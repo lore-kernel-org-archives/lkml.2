@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab2A2U4o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 15:56:44 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35410 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab2A2U4n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 15:56:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <1327805865.2805.23.camel@edumazet-laptop>
-References: <CAB0C5qK1FGc5xhGxGzpmELbWfC6GVVxEB9Zan_nU9cC_MxMzew@mail.gmail.com>
-	<1327805865.2805.23.camel@edumazet-laptop>
-Date: Sun, 29 Jan 2012 15:56:41 -0500
-Message-ID: <CAB0C5qLhUL6fKcZsjmfs1At8wWk7vQhpXOdk0S85fxypiW28Og@mail.gmail.com>
-Subject: Re: [PATCH 001/001] net: Add tx_queue/rx_queue info to /proc/net/unix
-From: Ryan Hajdaj <rhajdaj@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753684Ab2A2VHL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 16:07:11 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:47591 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752255Ab2A2VHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 16:07:09 -0500
+Date: Mon, 30 Jan 2012 08:06:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: linux-next: merge of the arm tree into the at91 tree
+Message-Id: <20120130080655.4d963134c5b239e09fb65d7f@canb.auug.org.au>
+In-Reply-To: <4F2274CA.7020809@atmel.com>
+References: <20120127093619.f2c90c6aa8b542134a157956@canb.auug.org.au>
+	<4F2274CA.7020809@atmel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__30_Jan_2012_08_06_55_+1100_PfZo=6aLcIj6Sz+7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acknowledged, unix_diag (ss command) addresses the need for this patch.
-- Ryan
+--Signature=_Mon__30_Jan_2012_08_06_55_+1100_PfZo=6aLcIj6Sz+7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 1/28/12, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le samedi 28 janvier 2012 à 21:37 -0500, Ryan Hajdaj a écrit :
->> From: Ryan Hajdaj <rhajdaj@gmail.com>
->>
->> Add tx_queue/rx_queue info to /proc/net/unix (unix_seq_show)
->>
->> Signed-off-by: Ryan Hajdaj <rhajdaj@gmail.com>
->> Tested-by: Ryan Hajdaj <rhajdaj@gmail.com>
->> ---
->> tx_queue/rx_queue info is useful in systems with multiple processes
->> using Unix Domain sockets to communicate, as it can be used to check
->> process health "at a glance".
->> Unit tested on Unix stream and datagram sockets.
->> --- linux-3.3-rc1/net/unix/af_unix.c.orig	2012-01-28 20:36:33.000000000
->> +0000
->> +++ linux-3.3-rc1/net/unix/af_unix.c	2012-01-28 19:09:18.000000000 +0000
->> @@ -2286,13 +2286,14 @@ static int unix_seq_show(struct seq_file
->>
->>  	if (v == SEQ_START_TOKEN)
->>  		seq_puts(seq, "Num       RefCount Protocol Flags    Type St "
->> -			 "Inode Path\n");
->> +			 "tx_queue rx_queue Inode Path\n");
->>  	else {
->>  		struct sock *s = v;
->>  		struct unix_sock *u = unix_sk(s);
->>  		unix_state_lock(s);
->>
->> -		seq_printf(seq, "%pK: %08X %08X %08X %04X %02X %5lu",
->> +		seq_printf(seq,
->> +			"%pK: %08X %08X %08X %04X %02X %08lX %08lX %5lu",
->>  			s,
->>  			atomic_read(&s->sk_refcnt),
->>  			0,
->> @@ -2301,6 +2302,8 @@ static int unix_seq_show(struct seq_file
->>  			s->sk_socket ?
->>  			(s->sk_state == TCP_ESTABLISHED ? SS_CONNECTED : SS_UNCONNECTED) :
->>  			(s->sk_state == TCP_ESTABLISHED ? SS_CONNECTING : SS_DISCONNECTING),
->> +			unix_outq_len(s),
->> +			(unix_inq_len(s) < 0 ? 0 : unix_inq_len(s)),
->>  			sock_i_ino(s));
->>
->>  		if (u->addr) {
+Hi Nicolas,
+
+On Fri, 27 Jan 2012 10:56:26 +0100 Nicolas Ferre <nicolas.ferre@atmel.com> =
+wrote:
 >
-> You missed some discussion on netdev about this kind of patches.
->
-> /proc/net/unix format is frozen.
->
-> Pavel Emelyanov did the work to support unix_diag, where you can find
-> all you need.
->
->
->
->
+> So, Stephen, can I ask you to remove the at91-next branch from your
+> pull list. For the moment we can rely on arm-soc guys to experiment
+> our changes in linux-next. It may be simpler for everyone.
+
+Done.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__30_Jan_2012_08_06_55_+1100_PfZo=6aLcIj6Sz+7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPJbTvAAoJEECxmPOUX5FEX7UQAKW4AupCHWQFie0nBJlF9SxF
+vTghBe1bDp71VDQBbljGiXIq00F3N0nicuaMjop7t5BjQNVqL79xC5QmDkj/bZPv
+f3cCQCfKtA66ffXzWbu8TauCqBmBJnFP9CYFpyG39IlHZwhi3nSH0IOWiq1YbRcX
+TUSNsZbg1Uu56xgbAyPgS0b3aTbQkTMAYoApA3hVROhLkqE6VI3r8NCOSj4Gwe6T
+pAXzZDXpHrDOgPw9oui2cIsLnmPSjRPGWdyLdE9X6Znnsixv+T9fknQCinis/93d
+W27f+L3kQ55MnfbmCPowR2fY59t2ii9Udbfz5KDOaoZhlDkB0YRYsCXufpQjVeFq
+PPUohpMRvTedcEmlRp02wcuZDYua7pfqkr+BQBHK4P8zdaCclcESZh0k3+X/c178
+f0uQmX+v+evtnlgfTYDGRPIFtd0ncxG/UdCgGAevOcLH01FsKeWcfwKnWwnfUyoP
+KiCtwARaynkaFLeW4RRpsDb3fSMOJKQ7jsQYuwZ+Zfm4SJkZwQz36g0kp6kXo9Cb
+Lk5mLNLpy5vLJNZFSD6ST2CCVBs9MDLLpivuUCoDbG6uNsegnmyHrKUFub7rComc
+sBn3Wt4XKqBWEskoXT9eOTTtGXm7HcZo3EjeJYYGoiF6SSSZVcJDyaIcsUSMCxRE
+aXSyaR/ES6ksQQNX8cGy
+=BAiJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__30_Jan_2012_08_06_55_+1100_PfZo=6aLcIj6Sz+7--
