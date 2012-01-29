@@ -1,123 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab2A2Rkb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 12:40:31 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:52383 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab2A2Rka (ORCPT
+	id S1753506Ab2A2RpF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 12:45:05 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36262 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab2A2RpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 12:40:30 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Nathan Fontenot <nfont@austin.ibm.com>, Robin Holt <holt@sgi.com>
-Subject: [PATCH -v2] mm: Fix memory_dev_init() long delay
-Date: Sun, 29 Jan 2012 09:39:20 -0800
-Message-Id: <1327858760-3231-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090206.4F25845A.0005,ss=1,re=0.000,fgs=0
+	Sun, 29 Jan 2012 12:45:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120129160711.GA20803@redhat.com>
+References: <20120117174031.3118.E1E9C6FF@jp.fujitsu.com> <tip-b5740f4b2cb3503b436925eb2242bc3d75cd3dfe@git.kernel.org>
+ <CA+55aFyO0KxGQxYYUqmVrNqG6qVFnRT2g-kYYKtH5QG3vTnO=A@mail.gmail.com> <20120129160711.GA20803@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 29 Jan 2012 09:44:42 -0800
+X-Google-Sender-Auth: SmWaVp1XC8FDH7UACTkp0dCXots
+Message-ID: <CA+55aFz20=H0ZubZEAmEbv0gL8j3C5Kgt4m2+5MU63uVipZt0Q@mail.gmail.com>
+Subject: Re: [tip:sched/core] sched: Fix ancient race in do_exit()
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, y-goto@jp.fujitsu.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Content-Type: multipart/mixed; boundary=005045017caa190bd504b7ae4ae3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One system with 2048g ram, reported soft lockup on recent kernel.
+--005045017caa190bd504b7ae4ae3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-[   34.426749] cpu_dev_init done
-[   61.166399] BUG: soft lockup - CPU#0 stuck for 22s! [swapper/0:1]
-[   61.166733] Modules linked in:
-[   61.166904] irq event stamp: 1935610
-[   61.178431] hardirqs last  enabled at (1935609): [<ffffffff81ce8c05>] mutex_lock_nested+0x299/0x2b4
-[   61.178923] hardirqs last disabled at (1935610): [<ffffffff81cf2bab>] apic_timer_interrupt+0x6b/0x80
-[   61.198767] softirqs last  enabled at (1935476): [<ffffffff8106e59c>] __do_softirq+0x195/0x1ab
-[   61.218604] softirqs last disabled at (1935471): [<ffffffff81cf359c>] call_softirq+0x1c/0x30
-[   61.238408] CPU 0 
-[   61.238549] Modules linked in:
-[   61.238744] 
-[   61.238825] Pid: 1, comm: swapper/0 Not tainted 3.3.0-rc1-tip-yh-02076-g962f689-dirty #171
-[   61.278212] RIP: 0010:[<ffffffff810b3e3a>]  [<ffffffff810b3e3a>] lock_release+0x90/0x9c
-[   61.278627] RSP: 0018:ffff883f64dbfd70  EFLAGS: 00000246
-[   61.298287] RAX: ffff883f64dc0000 RBX: 0000000000000000 RCX: 000000000000008b
-[   61.298690] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-[   61.318383] RBP: ffff883f64dbfda0 R08: 0000000000000001 R09: 000000000000008b
-[   61.338215] R10: 0000000000000000 R11: 0000000000000000 R12: ffff883f64dbfd10
-[   61.338610] R13: ffff883f64dc0708 R14: ffff883f64dc0708 R15: ffffffff81095657
-[   61.358299] FS:  0000000000000000(0000) GS:ffff883f7d600000(0000) knlGS:0000000000000000
-[   61.378118] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   61.378450] CR2: 0000000000000000 CR3: 00000000024af000 CR4: 00000000000007f0
-[   61.398144] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   61.417918] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   61.418260] Process swapper/0 (pid: 1, threadinfo ffff883f64dbe000, task ffff883f64dc0000)
-[   61.445358] Stack:
-[   61.445511]  0000000000000002 ffff897f649ba168 ffff883f64dbfe10 ffff88ff64bb57a8
-[   61.458040]  0000000000000000 0000000000000000 ffff883f64dbfdc0 ffffffff81ceb1b4
-[   61.458491]  000000000011608c ffff88ff64bb58a8 ffff883f64dbfdf0 ffffffff81c57638
-[   61.478215] Call Trace:
-[   61.478367]  [<ffffffff81ceb1b4>] _raw_spin_unlock+0x21/0x2e
-[   61.497994]  [<ffffffff81c57638>] klist_next+0x9e/0xbc
-[   61.498264]  [<ffffffff8148ba99>] next_device+0xe/0x1e
-[   61.517867]  [<ffffffff8148c0cc>] subsys_find_device_by_id+0xb7/0xd6
-[   61.518197]  [<ffffffff81498846>] find_memory_block_hinted+0x3d/0x66
-[   61.537927]  [<ffffffff8149887f>] find_memory_block+0x10/0x12
-[   61.538193]  [<ffffffff814988b6>] add_memory_section+0x35/0x9e
-[   61.557932]  [<ffffffff827fecef>] memory_dev_init+0x68/0xda
-[   61.558227]  [<ffffffff827fec01>] driver_init+0x97/0xa7
-[   61.577853]  [<ffffffff827cdf3c>] kernel_init+0xf6/0x1c0
-[   61.578140]  [<ffffffff81cf34a4>] kernel_thread_helper+0x4/0x10
-[   61.597850]  [<ffffffff81ceb59d>] ? retint_restore_args+0xe/0xe
-[   61.598144]  [<ffffffff827cde46>] ? start_kernel+0x3ab/0x3ab
-[   61.617826]  [<ffffffff81cf34a0>] ? gs_change+0xb/0xb
-[   61.618060] Code: 10 48 83 3b 00 eb e8 4c 89 f2 44 89 fe 4c 89 ef e8 e1 fe ff ff 65 48 8b 04 25 40 bc 00 00 c7 80 cc 06 00 00 00 00 00 00 41 54 9d <5e> 5b 41 5c 41 5d 41 5e 41 5f 5d c3 55 48 89 e5 41 57 41 89 cf 
-[   89.285380] memory_dev_init done
+On Sun, Jan 29, 2012 at 8:07 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 01/28, Linus Torvalds wrote:
+>>
+>> It would be much nicer to just clear the rwsem waiter->task thing
+>> *after* waking the task up, which would avoid this race entirely,
+>> afaik.
+>
+> How? The problem is that wake_up_process(tsk) sees this task in
+> TASK_UNINTERRUPTIBLE state (the first "p->state & state" check in
+> try_to_wake_up), but then this task changes its state to TASK_DEAD
+> without schedule() and ttwu() does s/TASK_DEAD/TASK_RUNNING/.
 
-Found we should find the memory_block for BOOT path.
+Exactly.
 
-Root cause: for x86_64, 2048g (with 2g hole at [2g,4g), and TOP2 will be 2050g), will have 16400 memory block.
+The problem is that THE TASK HAS LONG SINCE GONE AWAY FROM THE RWSEM!
 
-find_memory_block/subsys_find_device_by_id will be expensive with that much entries.
+The task is already finishing up the exit (it might even have
+*completed* the exit, which is why we take the extra reference count
+to the task) when the wakeup happens.
 
-Actually, we don't need to find that memory block for BOOT case.
+THAT is the problem. The fact that in that big problem ("we do a
+spurious wakeup for the rwsem long after the task no longer waits for
+it") we then have a really small and tiny race (the race between
+TASK_UNINTERRUPTIBLE -> (TASK_RUNNING ->) TASK_DEAD) is just a tiny
+small detail.
 
-Skip that make it get back to normal.
+So the real problem is that rwsem's are broken. Normal wakeups never
+have this issue, because they use the spinlock for the waitqueue to
+serialize: either a process wakes up in a timely manner, or the
+process has removed itself from the wait-queue - you never see wakeups
+long after the process has stopped caring.
 
-[   34.466696] cpu_dev_init done
-[   35.290080] memory_dev_init done
+The whole problem with the exit sequence is just a random detail. The
+same spurious wakeup could happen in other places too - it just
+doesn't happen to cause an Oops anywhere else (that we know about -
+who knows if some code woudl be unhappy with getting woken up
+unexpectedly).
 
--v2: check the sections_per_block, and update cc list
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Nathan Fontenot <nfont@austin.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>
 
----
- drivers/base/memory.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/drivers/base/memory.c
-===================================================================
---- linux-2.6.orig/drivers/base/memory.c
-+++ linux-2.6/drivers/base/memory.c
-@@ -574,12 +574,16 @@ static int init_memory_block(struct memo
- static int add_memory_section(int nid, struct mem_section *section,
- 			unsigned long state, enum mem_add_context context)
- {
--	struct memory_block *mem;
-+	struct memory_block *mem = NULL;
- 	int ret = 0;
- 
- 	mutex_lock(&mem_sysfs_mutex);
- 
--	mem = find_memory_block(section);
-+	if (context == BOOT && sections_per_block == 1) {
-+		/* don't need to find memory block in this case */
-+	} else
-+		mem = find_memory_block(section);
-+
- 	if (mem) {
- 		mem->section_count++;
- 		kobject_put(&mem->dev.kobj);
+>> Tell me, why wouldn't that work? rwsem_down_failed_common() does
+>>
+>> =A0 =A0 =A0 =A0 /* wait to be given the lock */
+>> =A0 =A0 =A0 =A0 for (;;) {
+>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (!waiter.task)
+>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 break;
+>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0...
+>>
+>> so then we wouldn't need the task refcount crap in rwsem either etc,
+>> and we'd get rid of all races with wakeup.
+>>
+>> I wonder why we're clearing that whole waiter->task so early.
+>
+> I must have missed something. I can't understand how this can help,
+> and "clear the rwsem waiter->task thing *after* waking" looks
+> obviously wrong.
+
+Why? It helps because it means that the task that did the "down()" on
+the rwsem will *never* leave its task pointer around to be spuriously
+woken later: it will wait for the waiter->task entry to be NULL - so
+that we know that the wakeup path has used the task _and_ woken it up,
+so there is no possibility for the task pointer still being active and
+used to wake up some *random* state later.
+
+> If we do this, then we can miss the "!!waiter.task"
+> condition. The loop above actually does
+>
+> =A0 =A0 =A0 =A0set_task_state(TASK_UNINTERRUPTIBLE);
+>
+> =A0 =A0 =A0 =A0if (!waiter.task)
+> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0break;
+> =A0 =A0 =A0 =A0schedule();
+>
+> and
+> =A0 =A0 =A0 =A0wake_up_process(tsk);
+> =A0 =A0 =A0 =A0waiter->task =3D NULL;
+>
+> can happen right after set_task_state().
+
+So? That's the *point*. We want to wait until the wakeup is *done*
+before we return from down(). We do *not* want to "break" (and go off
+doing something else) while some other CPU may still be using 'task'.
+
+But yes, if you're talking about TASK_UNINTERRUPTIBLE, we do need to
+just remove the setting of that entirely. It needs to be set *before*
+adding us to the list, not after. That's just a bug - we get woken up
+when we've been given the lock.
+
+IOW, I think the fix should look like the attched.  TOTALLY UNTESTED!
+This is certainly a much scarier patch, but I think it fixes the
+actual *reason* for the problem, rather than just working around the
+symptom.
+
+So it may be completely and utterly broken for some subtle reason, but
+I don't see what it would be. It seems to clean up and simplify the
+logic, and remove all the bogus workarounds for the fact that we used
+to do things stupidly.
+
+But maybe there's some reason for those "stupid" things. I just don't see i=
+t.
+
+                   Linus
+
+--005045017caa190bd504b7ae4ae3
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gy0cww0b0
+
+IGxpYi9yd3NlbS5jIHwgICAxMCArKy0tLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDIgaW5zZXJ0
+aW9ucygrKSwgOCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9saWIvcndzZW0uYyBiL2xpYi9y
+d3NlbS5jCmluZGV4IDQxMGFhMTE4OWIxMy4uN2FmYjQwMzkxOGRhIDEwMDY0NAotLS0gYS9saWIv
+cndzZW0uYworKysgYi9saWIvcndzZW0uYwpAQCAtOTIsMTAgKzkyLDkgQEAgX19yd3NlbV9kb193
+YWtlKHN0cnVjdCByd19zZW1hcGhvcmUgKnNlbSwgaW50IHdha2VfdHlwZSkKIAkgKi8KIAlsaXN0
+X2RlbCgmd2FpdGVyLT5saXN0KTsKIAl0c2sgPSB3YWl0ZXItPnRhc2s7CisJd2FrZV91cF9wcm9j
+ZXNzKHRzayk7CiAJc21wX21iKCk7CiAJd2FpdGVyLT50YXNrID0gTlVMTDsKLQl3YWtlX3VwX3By
+b2Nlc3ModHNrKTsKLQlwdXRfdGFza19zdHJ1Y3QodHNrKTsKIAlnb3RvIG91dDsKIAogIHJlYWRl
+cnNfb25seToKQEAgLTE0NiwxMCArMTQ1LDkgQEAgX19yd3NlbV9kb193YWtlKHN0cnVjdCByd19z
+ZW1hcGhvcmUgKnNlbSwgaW50IHdha2VfdHlwZSkKIAkJd2FpdGVyID0gbGlzdF9lbnRyeShuZXh0
+LCBzdHJ1Y3QgcndzZW1fd2FpdGVyLCBsaXN0KTsKIAkJbmV4dCA9IHdhaXRlci0+bGlzdC5uZXh0
+OwogCQl0c2sgPSB3YWl0ZXItPnRhc2s7CisJCXdha2VfdXBfcHJvY2Vzcyh0c2spOwogCQlzbXBf
+bWIoKTsKIAkJd2FpdGVyLT50YXNrID0gTlVMTDsKLQkJd2FrZV91cF9wcm9jZXNzKHRzayk7Ci0J
+CXB1dF90YXNrX3N0cnVjdCh0c2spOwogCX0KIAogCXNlbS0+d2FpdF9saXN0Lm5leHQgPSBuZXh0
+OwpAQCAtMTgzLDcgKzE4MSw2IEBAIHJ3c2VtX2Rvd25fZmFpbGVkX2NvbW1vbihzdHJ1Y3Qgcndf
+c2VtYXBob3JlICpzZW0sCiAJcmF3X3NwaW5fbG9ja19pcnEoJnNlbS0+d2FpdF9sb2NrKTsKIAl3
+YWl0ZXIudGFzayA9IHRzazsKIAl3YWl0ZXIuZmxhZ3MgPSBmbGFnczsKLQlnZXRfdGFza19zdHJ1
+Y3QodHNrKTsKIAogCWlmIChsaXN0X2VtcHR5KCZzZW0tPndhaXRfbGlzdCkpCiAJCWFkanVzdG1l
+bnQgKz0gUldTRU1fV0FJVElOR19CSUFTOwpAQCAtMjExLDExICsyMDgsOCBAQCByd3NlbV9kb3du
+X2ZhaWxlZF9jb21tb24oc3RydWN0IHJ3X3NlbWFwaG9yZSAqc2VtLAogCQlpZiAoIXdhaXRlci50
+YXNrKQogCQkJYnJlYWs7CiAJCXNjaGVkdWxlKCk7Ci0JCXNldF90YXNrX3N0YXRlKHRzaywgVEFT
+S19VTklOVEVSUlVQVElCTEUpOwogCX0KIAotCXRzay0+c3RhdGUgPSBUQVNLX1JVTk5JTkc7Ci0K
+IAlyZXR1cm4gc2VtOwogfQogCg==
+--005045017caa190bd504b7ae4ae3--
