@@ -1,61 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2A2P2M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 10:28:12 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46236 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab2A2P2L (ORCPT
+	id S1753302Ab2A2PuN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 10:50:13 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41332 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744Ab2A2PuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 10:28:11 -0500
-Message-ID: <4F256587.3090504@gmail.com>
-Date: Sun, 29 Jan 2012 08:28:07 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Sun, 29 Jan 2012 10:50:10 -0500
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] perf record: Add error message for EMFILE
-References: <1327827356-8786-1-git-send-email-namhyung@gmail.com> <1327827356-8786-2-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1327827356-8786-2-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1327639925-12920-19-git-send-email-ebiederm@xmission.com>
+References: <m1pqe5ah3z.fsf@fess.ebiederm.org> <1327639925-12920-19-git-send-email-ebiederm@xmission.com>
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Sun, 29 Jan 2012 17:49:38 +0200
+Message-ID: <CAPLs8y837kTX0DzQi9NdNoAeYfx3EPDGKGdG=XUY=Ec3dx958w@mail.gmail.com>
+Subject: Re: [PATCH 19/29] sysctl: Rewrite proc_sys_lookup introducing
+ find_entry and lookup_entry.
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        netdev@vger.kernel.org,
+        Damien Millescamps <damien.millescamps@6wind.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0TFp2ab029735
 
-
-
-On 01/29/2012 01:55 AM, Namhyung Kim wrote:
-> When a user tries to open so many events, perf_event_oen syscall
-> may fail with EMFILE. Provide an advice for that case.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+On Fri, Jan 27, 2012 at 6:51 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Replace the helpers that proc_sys_lookup uses with helpers that work
+> in terms of an entire sysctl directory.  This is worse for sysctl_lock
+> hold times but it is much better for code clarity and the code cleanups
+> to come.
+>
+> find_in_table is no longer needed so it is removed.
+>
+> find_entry a general helper to find entries in a directory is added.
+>
+> lookup_entry is a simple wrapper around find_entry that takes the
+> sysctl_lock increases the use count if an entry is found and drops
+> the sysctl_lock.
+>
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 > ---
->  tools/perf/builtin-record.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 32870eef952f..5d3b6794d93b 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -249,6 +249,10 @@ try_again:
->  				ui__warning("The %s event is not supported.\n",
->  					    event_name(pos));
->  				exit(EXIT_FAILURE);
-> +			} else if (err == EMFILE) {
-> +				ui__warning("Too many events are opened.\n"
-> +					    "Try again after reducing the number of events.\n");
-> +				exit(EXIT_FAILURE);
->  			}
->  
->  			printf("\n");
+>  fs/proc/proc_sysctl.c |  102 ++++++++++++++++++++++++++++++++++++------------
+>  1 files changed, 76 insertions(+), 26 deletions(-)
+>
+> diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+> index 88d1b06..3b63f29 100644
+> --- a/fs/proc/proc_sysctl.c
+> +++ b/fs/proc/proc_sysctl.c
+> @@ -49,6 +49,55 @@ static struct ctl_table_root sysctl_table_root = {
+>
+>  static DEFINE_SPINLOCK(sysctl_lock);
+>
+> +static int namecmp(const char *name1, int len1, const char *name2, int len2)
+> +{
+> +       int minlen;
+> +       int cmp;
+> +
+> +       minlen = len1;
+> +       if (minlen > len2)
+> +               minlen = len2;
+> +
+> +       cmp = memcmp(name1, name2, minlen);
+> +       if (cmp == 0)
+> +               cmp = len1 - len2;
+> +       return cmp;
+> +}
+> +
 
-It's not just the number of events: an fd is opened for each specified
-event on each specified cpu and for each specified task. See
-__perf_evsel__open(). e.g., the new --uid option on a 16 cpu server can
-hit the limit pretty fast.
 
-David
+I would add a note that this needs sysctl_lock as this requirement
+remains valid in the final version of the code too:
+
+/* called under sysctl_lock */
+
+> +static struct ctl_table *find_entry(struct ctl_table_header **phead,
+> +       struct ctl_table_set *set,
+> +       struct ctl_table_header *dir_head, struct ctl_table *dir,
+> +       const char *name, int namelen)
+> +{
+> +       struct ctl_table_header *head;
+> +       struct ctl_table *entry;
+> +
+> +       if (dir_head->set == set) {
+> +               for (entry = dir; entry->procname; entry++) {
+> +                       const char *procname = entry->procname;
+> +                       if (namecmp(procname, strlen(procname), name, namelen) == 0) {
+> +                               *phead = dir_head;
+> +                               return entry;
+> +                       }
+> +               }
+> +       }
+> +
+> +       list_for_each_entry(head, &set->list, ctl_entry) {
+> +               if (head->unregistering)
+> +                       continue;
+> +               if (head->attached_to != dir)
+> +                       continue;
+> +               for (entry = head->attached_by; entry->procname; entry++) {
+> +                       const char *procname = entry->procname;
+> +                       if (namecmp(procname, strlen(procname), name, namelen) == 0) {
+> +                               *phead = head;
+> +                               return entry;
+> +                       }
+> +               }
+> +       }
+> +       return NULL;
+> +}
+> +
+>  static void init_header(struct ctl_table_header *head,
+>        struct ctl_table_root *root, struct ctl_table_set *set,
+>        struct ctl_table *table)
+> @@ -168,6 +217,32 @@ lookup_header_list(struct ctl_table_root *root, struct nsproxy *namespaces)
+>        return &set->list;
+>  }
+>
+> +static struct ctl_table *lookup_entry(struct ctl_table_header **phead,
+> +                                     struct ctl_table_header *dir_head,
+> +                                     struct ctl_table *dir,
+> +                                     const char *name, int namelen)
+> +{
+> +       struct ctl_table_header *head;
+> +       struct ctl_table *entry;
+> +       struct ctl_table_root *root;
+> +       struct ctl_table_set *set;
+> +
+> +       spin_lock(&sysctl_lock);
+> +       root = &sysctl_table_root;
+> +       do {
+> +               set = lookup_header_set(root, current->nsproxy);
+> +               entry = find_entry(&head, set, dir_head, dir, name, namelen);
+> +               if (entry && use_table(head))
+> +                       *phead = head;
+> +               else
+> +                       entry = NULL;
+> +               root = list_entry(root->root_list.next,
+> +                                 struct ctl_table_root, root_list);
+> +       } while (!entry && root != &sysctl_table_root);
+> +       spin_unlock(&sysctl_lock);
+> +       return entry;
+> +}
+> +
+>  static struct ctl_table_header *__sysctl_head_next(struct nsproxy *namespaces,
+>                                                struct ctl_table_header *prev)
+>  {
+> @@ -284,21 +359,6 @@ out:
+>        return inode;
+>  }
+>
+> -static struct ctl_table *find_in_table(struct ctl_table *p, struct qstr *name)
+> -{
+> -       for ( ; p->procname; p++) {
+> -               if (strlen(p->procname) != name->len)
+> -                       continue;
+> -
+> -               if (memcmp(p->procname, name->name, name->len) != 0)
+> -                       continue;
+> -
+> -               /* I have a match */
+> -               return p;
+> -       }
+> -       return NULL;
+> -}
+> -
+>  static struct ctl_table_header *grab_header(struct inode *inode)
+>  {
+>        struct ctl_table_header *head = PROC_I(inode)->sysctl;
+> @@ -328,17 +388,7 @@ static struct dentry *proc_sys_lookup(struct inode *dir, struct dentry *dentry,
+>
+>        table = table ? table->child : &head->ctl_table[1];
+>
+> -       p = find_in_table(table, name);
+> -       if (!p) {
+> -               for (h = sysctl_head_next(NULL); h; h = sysctl_head_next(h)) {
+> -                       if (h->attached_to != table)
+> -                               continue;
+> -                       p = find_in_table(h->attached_by, name);
+> -                       if (p)
+> -                               break;
+> -               }
+> -       }
+> -
+> +       p = lookup_entry(&h, head, table, name->name, name->len);
+>        if (!p)
+>                goto out;
+>
+> --
+> 1.7.2.5
+>
+
+
+
+-- 
+ .
+..: Lucian
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
