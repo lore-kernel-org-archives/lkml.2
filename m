@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab2A2UcO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 15:32:14 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:53440 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751220Ab2A2UcM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 15:32:12 -0500
+	id S1752788Ab2A2Udx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 15:33:53 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20198 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531Ab2A2Udv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 15:33:51 -0500
+Date: Sun, 29 Jan 2012 21:34:04 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>
+cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] bcma: Fix mem leak in bcma_bus_scan()
+Message-ID: <alpine.LNX.2.00.1201292131480.27749@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAN_cFWMPNRx75GC0d0Z5CZC0dPH=wv1YVuA+7j4pfFh9ww9bgg@mail.gmail.com>
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
-	<201201261531.40551.arnd@arndb.de>
-	<20120127162624.40cba14e.akpm@linux-foundation.org>
-	<CAN_cFWMPNRx75GC0d0Z5CZC0dPH=wv1YVuA+7j4pfFh9ww9bgg@mail.gmail.com>
-Date: Sun, 29 Jan 2012 22:32:11 +0200
-Message-ID: <CAJL_dMtSArpbKXA3xGdsBH=j0L8m_SnpK=WPX+s5DqdU0OaJhA@mail.gmail.com>
-Subject: Re: [PATCHv19 00/15] Contiguous Memory Allocator
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Rob Clark <rob.clark@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Also there is the supreme tag: "Tested-by:.".  Ohad (at least) has been
->> testing the code.  Let's mention that.
->>
->
-> fyi Marek, I've been testing CMA as well, both in context of Ohad's
-> rpmsg driver and my omapdrm driver (and combination of the two)..  so
-> you can add:
->
-> Tested-by: Rob Clark <rob.clark@linaro.org>
->
-> And there are some others from linaro that have written a test driver,
-> and various stress test scripts using the test driver.  I guess that
-> could also count for some additional Tested-by's.
+bcma_bus_scan() leaks 'struct bcma_device' bytes if
+bcma_get_next_core() returns error.
 
-Convince them to report with Tested-by tag.
-This is a first step for them to face the open source.
+Restructure the code so we always kfree() the memory we allocate to
+the variable 'core' before it goes out of scope.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/bcma/scan.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
+
+ Note: Patch is compile tested only.
+
+diff --git a/drivers/bcma/scan.c b/drivers/bcma/scan.c
+index cad9948..3a2f672 100644
+--- a/drivers/bcma/scan.c
++++ b/drivers/bcma/scan.c
+@@ -399,15 +399,18 @@ int bcma_bus_scan(struct bcma_bus *bus)
+ 		core->bus = bus;
+ 
+ 		err = bcma_get_next_core(bus, &eromptr, NULL, core_num, core);
+-		if (err == -ENODEV) {
+-			core_num++;
+-			continue;
+-		} else if (err == -ENXIO)
+-			continue;
+-		else if (err == -ESPIPE)
+-			break;
+-		else if (err < 0)
++		if (err < 0) {
++			kfree(core);
++			if (err == -ENODEV) {
++				core_num++;
++				continue;
++			} else if (err == -ENXIO) {
++				continue;
++			} else if (err == -ESPIPE) {
++				break;
++			}
+ 			return err;
++		}
+ 
+ 		core->core_index = core_num++;
+ 		bus->nr_cores++;
+-- 
+1.7.8.4
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
