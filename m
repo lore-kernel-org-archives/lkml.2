@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab2A2RUE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 12:20:04 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46078 "EHLO
+	id S1753500Ab2A2Rgj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 12:36:39 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52089 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab2A2RUB convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753162Ab2A2Rgh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 12:20:01 -0500
+	Sun, 29 Jan 2012 12:36:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <1327639925-12920-21-git-send-email-ebiederm@xmission.com>
-References: <m1pqe5ah3z.fsf@fess.ebiederm.org> <1327639925-12920-21-git-send-email-ebiederm@xmission.com>
+In-Reply-To: <1327639925-12920-18-git-send-email-ebiederm@xmission.com>
+References: <m1pqe5ah3z.fsf@fess.ebiederm.org> <1327639925-12920-18-git-send-email-ebiederm@xmission.com>
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Sun, 29 Jan 2012 19:19:29 +0200
-Message-ID: <CAPLs8y-+kg9TvjwjQgOU0_2Fqr+2dAhE0fO3cB7e_wpH1jHeBA@mail.gmail.com>
-Subject: Re: [PATCH 21/29] sysctl: Add a root pointer to ctl_table_set
+Date: Sun, 29 Jan 2012 19:36:06 +0200
+Message-ID: <CAPLs8y9-nA7gZymMkFzOdB6zh0h2hS+dhWu42ciOaHzJ++Z+gg@mail.gmail.com>
+Subject: Re: [PATCH 18/29] sysctl: Normalize the root_table data structure.
 To: "Eric W. Biederman" <ebiederm@xmission.com>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         netdev@vger.kernel.org,
@@ -26,94 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Jan 27, 2012 at 6:51 AM, Eric W. Biederman
 <ebiederm@xmission.com> wrote:
-> Add a ctl_table_root pointer to ctl_table set so it is easy to
-
-"ctl_table set" -> "ctl_table_set"
-
-> go from a ctl_table_set to a ctl_table_root.
+> Every other directory has a .child member and we look at the .child
+> for our entries.  Do the same for the root_table.
 >
 > Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 > ---
->  fs/proc/proc_sysctl.c  |    3 +++
->  include/linux/sysctl.h |    3 +++
->  net/sysctl_net.c       |    5 ++---
->  3 files changed, 8 insertions(+), 3 deletions(-)
+>  fs/proc/proc_sysctl.c |   15 +++++++++++----
+>  1 files changed, 11 insertions(+), 4 deletions(-)
 >
 > diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-> index d9c3ae6..65c13dd 100644
+> index 7e96a26..88d1b06 100644
 > --- a/fs/proc/proc_sysctl.c
 > +++ b/fs/proc/proc_sysctl.c
-> @@ -45,6 +45,7 @@ static struct ctl_table_header root_table_header = {
->  static struct ctl_table_root sysctl_table_root = {
->        .root_list = LIST_HEAD_INIT(sysctl_table_root.root_list),
->        .default_set.list = LIST_HEAD_INIT(root_table_header.ctl_entry),
-> +       .default_set.root = &sysctl_table_root,
->  };
->
->  static DEFINE_SPINLOCK(sysctl_lock);
-> @@ -1348,9 +1349,11 @@ void unregister_sysctl_table(struct ctl_table_header * header)
->  EXPORT_SYMBOL(unregister_sysctl_table);
->
->  void setup_sysctl_set(struct ctl_table_set *p,
-> +       struct ctl_table_root *root,
->        int (*is_seen)(struct ctl_table_set *))
->  {
->        INIT_LIST_HEAD(&p->list);
-> +       p->root = root;
->        p->is_seen = is_seen;
+> @@ -25,7 +25,14 @@ void proc_sys_poll_notify(struct ctl_table_poll *poll)
+>        wake_up_interruptible(&poll->wait);
 >  }
 >
-> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-> index e40b8f6..e73ba33 100644
-> --- a/include/linux/sysctl.h
-> +++ b/include/linux/sysctl.h
-> @@ -1047,6 +1047,7 @@ struct ctl_table_header
->
->  struct ctl_table_set {
->        struct list_head list;
-> +       struct ctl_table_root *root;
->        int (*is_seen)(struct ctl_table_set *);
->  };
->
-> @@ -1069,6 +1070,7 @@ struct ctl_path {
->  void proc_sys_poll_notify(struct ctl_table_poll *poll);
->
->  extern void setup_sysctl_set(struct ctl_table_set *p,
-> +       struct ctl_table_root *root,
->        int (*is_seen)(struct ctl_table_set *));
->  extern void retire_sysctl_set(struct ctl_table_set *set);
->
-> @@ -1103,6 +1105,7 @@ static inline void unregister_sysctl_table(struct ctl_table_header * table)
->  }
->
->  static inline void setup_sysctl_set(struct ctl_table_set *p,
-> +       struct ctl_table_root *root,
->        int (*is_seen)(struct ctl_table_set *))
->  {
->  }
-> diff --git a/net/sysctl_net.c b/net/sysctl_net.c
-> index 07c6b87..e998c64 100644
-> --- a/net/sysctl_net.c
-> +++ b/net/sysctl_net.c
-> @@ -74,8 +74,7 @@ static struct ctl_table_root net_sysctl_ro_root = {
->
->  static int __net_init sysctl_net_init(struct net *net)
->  {
-> -       setup_sysctl_set(&net->sysctls,
-> -                        is_seen);
-> +       setup_sysctl_set(&net->sysctls, &net_sysctl_root, is_seen);
->        return 0;
->  }
->
-> @@ -95,7 +94,7 @@ static __init int net_sysctl_init(void)
->        ret = register_pernet_subsys(&sysctl_pernet_ops);
->        if (ret)
+> -static struct ctl_table root_table[1];
+> +static struct ctl_table root_table[] = {
+> +       {
+> +               .procname = "",
+> +               .mode = S_IRUGO|S_IXUGO,
+
+Why not: .mode = S_IFDIR|S_IRUGO|S_IXUGO ?
+
+You change it later and add IFDIR in patch 22/29 because of this
+change (from 22/29):
+-	if (!table->child) {
++	if (!S_ISDIR(table->mode)) {
+
+but if might as well be done here.
+
+
+> +               .child = &root_table[1],
+> +       },
+> +       { }
+> +};
+>  static struct ctl_table_root sysctl_table_root;
+>  static struct ctl_table_header root_table_header = {
+>        {{.count = 1,
+> @@ -319,7 +326,7 @@ static struct dentry *proc_sys_lookup(struct inode *dir, struct dentry *dentry,
 >                goto out;
-> -       setup_sysctl_set(&net_sysctl_ro_root.default_set, NULL);
-> +       setup_sysctl_set(&net_sysctl_ro_root.default_set, &net_sysctl_ro_root, NULL);
->        register_sysctl_root(&net_sysctl_ro_root);
->        register_sysctl_root(&net_sysctl_root);
->  out:
+>        }
+
+Somewhere above we have
+  struct ctl_table *table = PROC_I(inode)->sysctl_entry;
+and sysctl_entry can take two values:
+   - NULL: fs/proc/inode.c:proc_alloc_inode()
+   - a non-NULL table in: proc_sys_make_inode()
+
+The only inode that can be passed to proc_sys_lookup that can have
+table=NULL is the root inode.
+In that case head will be &root_table_header.
+
+
+So head->ctl_table[1] == root_table_header.ctl_table[1] == root_table[1].
+
+
+>
+> -       table = table ? table->child : head->ctl_table;
+> +       table = table ? table->child : &head->ctl_table[1];
+
+I think this could be improved to something like this:
+/* table == NULL only for the procfs root directory */
+table = table ? table->child : &root_table[1];
+
+
+It's not that important, as this code will go away in a few patches.
+
+>
+>        p = find_in_table(table, name);
+>        if (!p) {
+> @@ -510,7 +517,7 @@ static int proc_sys_readdir(struct file *filp, void *dirent, filldir_t filldir)
+>                goto out;
+>        }
+>
+> -       table = table ? table->child : head->ctl_table;
+> +       table = table ? table->child : &head->ctl_table[1];
+
+Similar.
+
+>        ret = 0;
+>        /* Avoid a switch here: arm builds fail with missing __cmpdi2 */
+> @@ -966,7 +973,7 @@ struct ctl_table_header *__register_sysctl_table(
+>        spin_lock(&sysctl_lock);
+>        header->set = lookup_header_set(root, namespaces);
+>        header->attached_by = header->ctl_table;
+> -       header->attached_to = root_table;
+> +       header->attached_to = &root_table[1];
+>        header->parent = &root_table_header;
+>        set = header->set;
+>        root = header->root;
 > --
 > 1.7.2.5
 >
