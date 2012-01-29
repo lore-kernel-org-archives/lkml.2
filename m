@@ -1,152 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab2A2O6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 09:58:39 -0500
-Received: from mga03.intel.com ([143.182.124.21]:18897 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273Ab2A2O6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 09:58:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100864901"
-Date: Sun, 29 Jan 2012 21:23:26 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Keith Packard <keithp@keithp.com>, Takashi Iwai <tiwai@suse.de>,
-        "intel-gfx@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>,
-        Michal Marek <mmarek@suse.com>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Lemaire <rlemaire@suse.com>
-Subject: Re: [PATCH][rebased] drm/i915: set AUD_CONFIG N_value_index for
- DisplayPort
-Message-ID: <20120129132326.GA4123@localhost>
-References: <86y5tgx02g.fsf@sumi.keithp.com>
- <20120110054519.GA27257@localhost>
- <86ty404yhd.fsf@sumi.keithp.com>
- <20120116080252.GA18538@localhost>
- <20120116202618.GG3627@phenom.ffwll.local>
- <86obu31io4.fsf@sumi.keithp.com>
- <20120116230809.GA7837@localhost>
- <20120117102203.GC4093@phenom.ffwll.local>
- <20120129044423.GA26244@localhost>
- <CAKMK7uFSv=SO-a+4o8Nga75U6uOAp=TqUP6dU=-38n3ntxtdpQ@mail.gmail.com>
+	id S1753210Ab2A2PBB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 10:01:01 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38241 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab2A2PA7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 10:00:59 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="zhXaljGHf11kAtnf"
-Content-Disposition: inline
-In-Reply-To: <CAKMK7uFSv=SO-a+4o8Nga75U6uOAp=TqUP6dU=-38n3ntxtdpQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1327829851-11415-1-git-send-email-yinghai@kernel.org>
+References: <1327829851-11415-1-git-send-email-yinghai@kernel.org>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Sun, 29 Jan 2012 16:00:39 +0100
+Message-ID: <CAPXgP13j9Mq7SgP1OScoQ4To9-VOAcMxDW0bQjdbCAO6mE1WDg@mail.gmail.com>
+Subject: Re: [PATCH] mm: Fix memory_dev_init() long delay
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Nathan Fontenot <nfont@austin.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Adding Robin to Cc: for comments. He knows about that code.]
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-> > Daniel, this is now based on linux-next. I use quilt, hope it also
-> > works for you :)
-> 
-> On a quick check this patch is missing the hunk to actually write the
-> aud configuration into the register. I presume that's not intentional,
-> so can you please resend?
-
-This is weird, my outbox has the below chunk. Anyway here is the
-attached patch.
-
-@@ -6107,7 +6111,9 @@ static void ironlake_write_eld(struct dr
-        if (intel_pipe_has_type(crtc, INTEL_OUTPUT_DISPLAYPORT)) {
-                DRM_DEBUG_DRIVER("ELD: DisplayPort detected\n");
-                eld[5] |= (1 << 2);     /* Conn_Type, 0x1 = DisplayPort */
--       }
-+               I915_WRITE(aud_config, AUD_CONFIG_N_VALUE_INDEX); /* 0x1 = DP */
-+       } else
-+               I915_WRITE(aud_config, 0);
-        
-Thanks,
-Fengguang
-
---zhXaljGHf11kAtnf
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="displayport-AUD_CONFIG-N_value_index.patch"
-
-Subject: drm/i915: set AUD_CONFIG N_value_index for DisplayPort
-Date: Fri Jan 06 14:41:31 CST 2012
-
-It should be programmed to "0" for HDMI or "1" for DisplayPort.
-
-This enables DisplayPort audio for
-
-- HP EliteBook 8460p
-  (whose BIOS does not set the N_value_index bit for us)
-
-- DisplayPort monitor hot plugged after boot
-  (otherwise most BIOS will fill the N_value_index bit for us)
-
-Tested-by: Robert Lemaire <rlemaire@suse.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- drivers/gpu/drm/i915/i915_reg.h      |   12 ++++++++++++
- drivers/gpu/drm/i915/intel_display.c |    8 +++++++-
- 2 files changed, 19 insertions(+), 1 deletion(-)
-
---- linux-next.orig/drivers/gpu/drm/i915/i915_reg.h	2012-01-07 20:47:34.000000000 +0800
-+++ linux-next/drivers/gpu/drm/i915/i915_reg.h	2012-01-29 12:37:31.000000000 +0800
-@@ -3742,4 +3742,16 @@
-  */
- #define GEN7_SO_WRITE_OFFSET(n)		(0x5280 + (n) * 4)
- 
-+#define IBX_AUD_CONFIG_A			0xe2000
-+#define CPT_AUD_CONFIG_A			0xe5000
-+#define   AUD_CONFIG_N_VALUE_INDEX		(1 << 29)
-+#define   AUD_CONFIG_N_PROG_ENABLE		(1 << 28)
-+#define   AUD_CONFIG_UPPER_N_SHIFT		20
-+#define   AUD_CONFIG_UPPER_N_VALUE		(0xff << 20)
-+#define   AUD_CONFIG_LOWER_N_SHIFT		4
-+#define   AUD_CONFIG_LOWER_N_VALUE		(0xfff << 4)
-+#define   AUD_CONFIG_PIXEL_CLOCK_HDMI_SHIFT	16
-+#define   AUD_CONFIG_PIXEL_CLOCK_HDMI		(0xf << 16)
-+#define   AUD_CONFIG_DISABLE_NCTS		(1 << 3)
-+
- #endif /* _I915_REG_H_ */
---- linux-next.orig/drivers/gpu/drm/i915/intel_display.c	2012-01-29 12:23:17.000000000 +0800
-+++ linux-next/drivers/gpu/drm/i915/intel_display.c	2012-01-29 12:37:31.000000000 +0800
-@@ -6072,15 +6072,18 @@ static void ironlake_write_eld(struct dr
- 	uint32_t i;
- 	int len;
- 	int hdmiw_hdmiedid;
-+	int aud_config;
- 	int aud_cntl_st;
- 	int aud_cntrl_st2;
- 
- 	if (HAS_PCH_IBX(connector->dev)) {
- 		hdmiw_hdmiedid = IBX_HDMIW_HDMIEDID_A;
-+		aud_config = IBX_AUD_CONFIG_A;
- 		aud_cntl_st = IBX_AUD_CNTL_ST_A;
- 		aud_cntrl_st2 = IBX_AUD_CNTL_ST2;
- 	} else {
- 		hdmiw_hdmiedid = CPT_HDMIW_HDMIEDID_A;
-+		aud_config = CPT_AUD_CONFIG_A;
- 		aud_cntl_st = CPT_AUD_CNTL_ST_A;
- 		aud_cntrl_st2 = CPT_AUD_CNTRL_ST2;
- 	}
-@@ -6088,6 +6091,7 @@ static void ironlake_write_eld(struct dr
- 	i = to_intel_crtc(crtc)->pipe;
- 	hdmiw_hdmiedid += i * 0x100;
- 	aud_cntl_st += i * 0x100;
-+	aud_config += i * 0x100;
- 
- 	DRM_DEBUG_DRIVER("ELD on pipe %c\n", pipe_name(i));
- 
-@@ -6107,7 +6111,9 @@ static void ironlake_write_eld(struct dr
- 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_DISPLAYPORT)) {
- 		DRM_DEBUG_DRIVER("ELD: DisplayPort detected\n");
- 		eld[5] |= (1 << 2);	/* Conn_Type, 0x1 = DisplayPort */
--	}
-+		I915_WRITE(aud_config, AUD_CONFIG_N_VALUE_INDEX); /* 0x1 = DP */
-+	} else
-+		I915_WRITE(aud_config, 0);
- 
- 	if (intel_eld_uptodate(connector,
- 			       aud_cntrl_st2, eldv,
-
---zhXaljGHf11kAtnf--
+On Sun, Jan 29, 2012 at 10:37, Yinghai Lu <yinghai@kernel.org> wrote:
+> One system with 2048g ram, reported soft lockup on recent kernel.
+>
+> [   34.426749] cpu_dev_init done
+> [   61.166399] BUG: soft lockup - CPU#0 stuck for 22s! [swapper/0:1]
+> [   61.166733] Modules linked in:
+> [   61.166904] irq event stamp: 1935610
+> [   61.178431] hardirqs last  enabled at (1935609): [<ffffffff81ce8c05>] mutex_lock_nested+0x299/0x2b4
+> [   61.178923] hardirqs last disabled at (1935610): [<ffffffff81cf2bab>] apic_timer_interrupt+0x6b/0x80
+> [   61.198767] softirqs last  enabled at (1935476): [<ffffffff8106e59c>] __do_softirq+0x195/0x1ab
+> [   61.218604] softirqs last disabled at (1935471): [<ffffffff81cf359c>] call_softirq+0x1c/0x30
+> [   61.238408] CPU 0
+> [   61.238549] Modules linked in:
+> [   61.238744]
+> [   61.238825] Pid: 1, comm: swapper/0 Not tainted 3.3.0-rc1-tip-yh-02076-g962f689-dirty #171
+> [   61.278212] RIP: 0010:[<ffffffff810b3e3a>]  [<ffffffff810b3e3a>] lock_release+0x90/0x9c
+> [   61.278627] RSP: 0018:ffff883f64dbfd70  EFLAGS: 00000246
+> [   61.298287] RAX: ffff883f64dc0000 RBX: 0000000000000000 RCX: 000000000000008b
+> [   61.298690] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+> [   61.318383] RBP: ffff883f64dbfda0 R08: 0000000000000001 R09: 000000000000008b
+> [   61.338215] R10: 0000000000000000 R11: 0000000000000000 R12: ffff883f64dbfd10
+> [   61.338610] R13: ffff883f64dc0708 R14: ffff883f64dc0708 R15: ffffffff81095657
+> [   61.358299] FS:  0000000000000000(0000) GS:ffff883f7d600000(0000) knlGS:0000000000000000
+> [   61.378118] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [   61.378450] CR2: 0000000000000000 CR3: 00000000024af000 CR4: 00000000000007f0
+> [   61.398144] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   61.417918] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   61.418260] Process swapper/0 (pid: 1, threadinfo ffff883f64dbe000, task ffff883f64dc0000)
+> [   61.445358] Stack:
+> [   61.445511]  0000000000000002 ffff897f649ba168 ffff883f64dbfe10 ffff88ff64bb57a8
+> [   61.458040]  0000000000000000 0000000000000000 ffff883f64dbfdc0 ffffffff81ceb1b4
+> [   61.458491]  000000000011608c ffff88ff64bb58a8 ffff883f64dbfdf0 ffffffff81c57638
+> [   61.478215] Call Trace:
+> [   61.478367]  [<ffffffff81ceb1b4>] _raw_spin_unlock+0x21/0x2e
+> [   61.497994]  [<ffffffff81c57638>] klist_next+0x9e/0xbc
+> [   61.498264]  [<ffffffff8148ba99>] next_device+0xe/0x1e
+> [   61.517867]  [<ffffffff8148c0cc>] subsys_find_device_by_id+0xb7/0xd6
+> [   61.518197]  [<ffffffff81498846>] find_memory_block_hinted+0x3d/0x66
+> [   61.537927]  [<ffffffff8149887f>] find_memory_block+0x10/0x12
+> [   61.538193]  [<ffffffff814988b6>] add_memory_section+0x35/0x9e
+> [   61.557932]  [<ffffffff827fecef>] memory_dev_init+0x68/0xda
+> [   61.558227]  [<ffffffff827fec01>] driver_init+0x97/0xa7
+> [   61.577853]  [<ffffffff827cdf3c>] kernel_init+0xf6/0x1c0
+> [   61.578140]  [<ffffffff81cf34a4>] kernel_thread_helper+0x4/0x10
+> [   61.597850]  [<ffffffff81ceb59d>] ? retint_restore_args+0xe/0xe
+> [   61.598144]  [<ffffffff827cde46>] ? start_kernel+0x3ab/0x3ab
+> [   61.617826]  [<ffffffff81cf34a0>] ? gs_change+0xb/0xb
+> [   61.618060] Code: 10 48 83 3b 00 eb e8 4c 89 f2 44 89 fe 4c 89 ef e8 e1 fe ff ff 65 48 8b 04 25 40 bc 00 00 c7 80 cc 06 00 00 00 00 00 00 41 54 9d <5e> 5b 41 5c 41 5d 41 5e 41 5f 5d c3 55 48 89 e5 41 57 41 89 cf
+> [   89.285380] memory_dev_init done
+>
+> Found we should find the memory_block for BOOT path.
+>
+> Root cause: for x86_64, 2048g (with 2g hole at [2g,4g), and TOP2 will be 2050g), will have 16400 memory block.
+>
+> find_memory_block/subsys_find_device_by_id will be expensive with that much entries.
+>
+> Actually, we don't need to find that memory block for BOOT case.
+>
+> Skip that make it get back to normal.
+>
+> [   34.466696] cpu_dev_init done
+> [   35.290080] memory_dev_init done
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: Nathan Fontenot <nfont@austin.ibm.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+>
+> ---
+>  drivers/base/memory.c |    7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+>
+> Index: linux-2.6/drivers/base/memory.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/base/memory.c
+> +++ linux-2.6/drivers/base/memory.c
+> @@ -574,12 +574,15 @@ static int init_memory_block(struct memo
+>  static int add_memory_section(int nid, struct mem_section *section,
+>                        unsigned long state, enum mem_add_context context)
+>  {
+> -       struct memory_block *mem;
+> +       struct memory_block *mem = NULL;
+>        int ret = 0;
+>
+>        mutex_lock(&mem_sysfs_mutex);
+>
+> -       mem = find_memory_block(section);
+> +       /* don't need to find memory block for BOOT */
+> +       if (context != BOOT)
+> +               mem = find_memory_block(section);
+> +
+>        if (mem) {
+>                mem->section_count++;
+>                kobject_put(&mem->dev.kobj);
