@@ -1,229 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab2A2TCt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 14:02:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52065 "EHLO mx1.redhat.com"
+	id S1753768Ab2A2TGV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 14:06:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36835 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676Ab2A2TCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 14:02:47 -0500
-Message-ID: <4F2597D3.6050606@redhat.com>
-Date: Sun, 29 Jan 2012 20:02:43 +0100
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753684Ab2A2TGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 14:06:20 -0500
+Date: Sun, 29 Jan 2012 19:59:49 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, y-goto@jp.fujitsu.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched: Fix ancient race in do_exit()
+Message-ID: <20120129185949.GA27192@redhat.com>
+References: <20120117174031.3118.E1E9C6FF@jp.fujitsu.com> <tip-b5740f4b2cb3503b436925eb2242bc3d75cd3dfe@git.kernel.org> <CA+55aFyO0KxGQxYYUqmVrNqG6qVFnRT2g-kYYKtH5QG3vTnO=A@mail.gmail.com> <20120129160711.GA20803@redhat.com> <CA+55aFz20=H0ZubZEAmEbv0gL8j3C5Kgt4m2+5MU63uVipZt0Q@mail.gmail.com>
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, "David Miller davem"@davemloft.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Deinline __nlmsg_put and genlmsg_put. -7k code on i386 defconfig
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz20=H0ZubZEAmEbv0gL8j3C5Kgt4m2+5MU63uVipZt0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change also removes commented-out copy of __nlmsg_put
-which was last touched in 2005 with "Enable once all users
-have been converted" comment on top.
+On 01/29, Linus Torvalds wrote:
+>
+> But yes, if you're talking about TASK_UNINTERRUPTIBLE, we do need to
+> just remove the setting of that entirely. It needs to be set *before*
+> adding us to the list, not after. That's just a bug - we get woken up
+> when we've been given the lock.
 
-    text	   data	    bss	    dec	    hex	filename
-8453183	 533115	1810804	10797102 a4c02e	vmlinux.o.before
-8446103	 533115	1810804	10790022 a4a486	vmlinux.o
+Yes, I think this should work although I am not familiar with this code.
 
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
----
-  include/linux/netlink.h  |   18 ++----------------
-  include/net/genetlink.h  |   32 ++------------------------------
-  include/net/netlink.h    |   35 -----------------------------------
-  net/netlink/af_netlink.c |   17 +++++++++++++++++
-  net/netlink/genetlink.c  |   31 +++++++++++++++++++++++++++++++
-  5 files changed, 52 insertions(+), 81 deletions(-)
+If we remove set_task_state() from the main waiting loop we can never race
+with __rwsem_do_wake()->try_to_wake_up() seeing us in UNINTERRUPTIBLE state.
+rwsem_down_failed_common() simply can't return until UNINTERRUPTIBLE->RUNNING
+transition is finished (__rwsem_do_wake does wakeup first).
 
-diff --git a/include/linux/netlink.h b/include/linux/netlink.h
-index 52e4895..a390e9d 100644
---- a/include/linux/netlink.h
-+++ b/include/linux/netlink.h
-@@ -237,22 +237,8 @@ struct netlink_notify {
-  	int protocol;
-  };
+And since we do not play with current->state after spin_unlock(), it is
+fine to "race" with waiter->task clearing, just we can do the unnecessary
+but harmless schedule() in TASK_RUNNING.
 
--static __inline__ struct nlmsghdr *
--__nlmsg_put(struct sk_buff *skb, u32 pid, u32 seq, int type, int len, int flags)
--{
--	struct nlmsghdr *nlh;
--	int size = NLMSG_LENGTH(len);
--
--	nlh = (struct nlmsghdr*)skb_put(skb, NLMSG_ALIGN(size));
--	nlh->nlmsg_type = type;
--	nlh->nlmsg_len = size;
--	nlh->nlmsg_flags = flags;
--	nlh->nlmsg_pid = pid;
--	nlh->nlmsg_seq = seq;
--	if (!__builtin_constant_p(size) || NLMSG_ALIGN(size) - size != 0)
--		memset(NLMSG_DATA(nlh) + len, 0, NLMSG_ALIGN(size) - size);
--	return nlh;
--}
-+struct nlmsghdr *
-+__nlmsg_put(struct sk_buff *skb, u32 pid, u32 seq, int type, int len, int flags);
+> So it may be completely and utterly broken for some subtle reason,
 
-  #define NLMSG_NEW(skb, pid, seq, type, len, flags) \
-  ({	if (unlikely(skb_tailroom(skb) < (int)NLMSG_SPACE(len))) \
-diff --git a/include/net/genetlink.h b/include/net/genetlink.h
-index 7db3299..d514c59 100644
---- a/include/net/genetlink.h
-+++ b/include/net/genetlink.h
-@@ -130,36 +130,8 @@ extern void genl_unregister_mc_group(struct genl_family *family,
-  				     struct genl_multicast_group *grp);
-  extern void genl_notify(struct sk_buff *skb, struct net *net, u32 pid,
-  			u32 group, struct nlmsghdr *nlh, gfp_t flags);
--
--/**
-- * genlmsg_put - Add generic netlink header to netlink message
-- * @skb: socket buffer holding the message
-- * @pid: netlink pid the message is addressed to
-- * @seq: sequence number (usually the one of the sender)
-- * @family: generic netlink family
-- * @flags netlink message flags
-- * @cmd: generic netlink command
-- *
-- * Returns pointer to user specific header
-- */
--static inline void *genlmsg_put(struct sk_buff *skb, u32 pid, u32 seq,
--				struct genl_family *family, int flags, u8 cmd)
--{
--	struct nlmsghdr *nlh;
--	struct genlmsghdr *hdr;
--
--	nlh = nlmsg_put(skb, pid, seq, family->id, GENL_HDRLEN +
--			family->hdrsize, flags);
--	if (nlh == NULL)
--		return NULL;
--
--	hdr = nlmsg_data(nlh);
--	hdr->cmd = cmd;
--	hdr->version = family->version;
--	hdr->reserved = 0;
--
--	return (char *) hdr + GENL_HDRLEN;
--}
-+extern void *genlmsg_put(struct sk_buff *skb, u32 pid, u32 seq,
-+			 struct genl_family *family, int flags, u8 cmd);
+Well, what about another spurious wakeup from somewhere? In this case
+rwsem_down_failed_common() will do a busy-wait loop.
 
-  /**
-   * genlmsg_nlhdr - Obtain netlink header from user specified header
-diff --git a/include/net/netlink.h b/include/net/netlink.h
-index cb1f350..f394fe5 100644
---- a/include/net/netlink.h
-+++ b/include/net/netlink.h
-@@ -441,41 +441,6 @@ static inline int nlmsg_report(const struct nlmsghdr *nlh)
-  	nla_for_each_attr(pos, nlmsg_attrdata(nlh, hdrlen), \
-  			  nlmsg_attrlen(nlh, hdrlen), rem)
+> @@ -92,10 +92,9 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+>  	 */
+>  	list_del(&waiter->list);
+>  	tsk = waiter->task;
+> +	wake_up_process(tsk);
+>  	smp_mb();
+>  	waiter->task = NULL;
 
--#if 0
--/* FIXME: Enable once all users have been converted */
--
--/**
-- * __nlmsg_put - Add a new netlink message to an skb
-- * @skb: socket buffer to store message in
-- * @pid: netlink process id
-- * @seq: sequence number of message
-- * @type: message type
-- * @payload: length of message payload
-- * @flags: message flags
-- *
-- * The caller is responsible to ensure that the skb provides enough
-- * tailroom for both the netlink header and payload.
-- */
--static inline struct nlmsghdr *__nlmsg_put(struct sk_buff *skb, u32 pid,
--					   u32 seq, int type, int payload,
--					   int flags)
--{
--	struct nlmsghdr *nlh;
--
--	nlh = (struct nlmsghdr *) skb_put(skb, nlmsg_total_size(payload));
--	nlh->nlmsg_type = type;
--	nlh->nlmsg_len = nlmsg_msg_size(payload);
--	nlh->nlmsg_flags = flags;
--	nlh->nlmsg_pid = pid;
--	nlh->nlmsg_seq = seq;
--
--	memset((unsigned char *) nlmsg_data(nlh) + payload, 0,
--	       nlmsg_padlen(payload));
--
--	return nlh;
--}
--#endif
--
-  /**
-   * nlmsg_put - Add a new netlink message to an skb
-   * @skb: socket buffer to store message in
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 629b061..7e2c35f 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1645,6 +1645,23 @@ static void netlink_destroy_callback(struct netlink_callback *cb)
-  	kfree(cb);
-  }
+OK, now I understand why do we need "clear after wakeup".
 
-+struct nlmsghdr *
-+__nlmsg_put(struct sk_buff *skb, u32 pid, u32 seq, int type, int len, int flags)
-+{
-+	struct nlmsghdr *nlh;
-+	int size = NLMSG_LENGTH(len);
-+
-+	nlh = (struct nlmsghdr*)skb_put(skb, NLMSG_ALIGN(size));
-+	nlh->nlmsg_type = type;
-+	nlh->nlmsg_len = size;
-+	nlh->nlmsg_flags = flags;
-+	nlh->nlmsg_pid = pid;
-+	nlh->nlmsg_seq = seq;
-+	memset(NLMSG_DATA(nlh) + len, 0, NLMSG_ALIGN(size) - size);
-+	return nlh;
-+}
-+EXPORT_SYMBOL(__nlmsg_put);
-+
-  /*
-   * It looks a bit ugly.
-   * It would be better to create kernel thread.
-diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
-index c29d256..a115471 100644
---- a/net/netlink/genetlink.c
-+++ b/net/netlink/genetlink.c
-@@ -498,6 +498,37 @@ int genl_unregister_family(struct genl_family *family)
-  }
-  EXPORT_SYMBOL(genl_unregister_family);
+But then I don't really understand this mb, perhaps wmb() is enough?
+Afaics we only need to ensure we change waiter->task after changing
+task's state.
 
-+/**
-+ * genlmsg_put - Add generic netlink header to netlink message
-+ * @skb: socket buffer holding the message
-+ * @pid: netlink pid the message is addressed to
-+ * @seq: sequence number (usually the one of the sender)
-+ * @family: generic netlink family
-+ * @flags netlink message flags
-+ * @cmd: generic netlink command
-+ *
-+ * Returns pointer to user specific header
-+ */
-+void *genlmsg_put(struct sk_buff *skb, u32 pid, u32 seq,
-+				struct genl_family *family, int flags, u8 cmd)
-+{
-+	struct nlmsghdr *nlh;
-+	struct genlmsghdr *hdr;
-+
-+	nlh = nlmsg_put(skb, pid, seq, family->id, GENL_HDRLEN +
-+			family->hdrsize, flags);
-+	if (nlh == NULL)
-+		return NULL;
-+
-+	hdr = nlmsg_data(nlh);
-+	hdr->cmd = cmd;
-+	hdr->version = family->version;
-+	hdr->reserved = 0;
-+
-+	return (char *) hdr + GENL_HDRLEN;
-+}
-+EXPORT_SYMBOL(genlmsg_put);
-+
-  static int genl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
-  {
-  	struct genl_ops *ops;
--- 
-1.7.7.6
+OTOH,
+
+> @@ -183,7 +181,6 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+>  	raw_spin_lock_irq(&sem->wait_lock);
+>  	waiter.task = tsk;
+>  	waiter.flags = flags;
+> -	get_task_struct(tsk);
+>
+>  	if (list_empty(&sem->wait_list))
+>  		adjustment += RWSEM_WAITING_BIAS;
+> @@ -211,11 +208,8 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+>  		if (!waiter.task)
+>  			break;
+>  		schedule();
+> -		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+>  	}
+>
+> -	tsk->state = TASK_RUNNING;
+> -
+>  	return sem;
+>  }
+
+Suppose that this task does tsk->state = TASK_WHATEVER after that.
+It seems that we need mb() before return, otherwise the next ->state
+change can be reordered with "if (!waiter.task)" above. Or not?
+
+Oleg.
+
