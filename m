@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab2A2ICu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 03:02:50 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:59877 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751508Ab2A2ICt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 03:02:49 -0500
+	id S1751900Ab2A2IZs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 03:25:48 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55931 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab2A2IZr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 03:25:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
-References: <1327021265-22184-1-git-send-email-matthew.r.wilcox@intel.com>
-	<CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
-	<20120121082857.GC32134@elte.hu>
-	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
-	<20120121165830.GA9216@elte.hu>
-	<CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
-	<CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
-Date: Sun, 29 Jan 2012 17:02:49 +0900
-Message-ID: <CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
-Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <1327591185.2446.102.camel@twins>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	<1327591185.2446.102.camel@twins>
+Date: Sun, 29 Jan 2012 10:25:46 +0200
+Message-ID: <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
         Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        linux-kernel@vger.kernel.org, hpa@linux.intel.com
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 01:57, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Jan 23, 2012 at 8:05 AM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
->>
->> I wrote the patch which adds the new file include/asm-generic/io-nonatomic.h.
->> io-nonatomic.h provides non-atomic version readq()/writeq().
+On Thu, Jan 26, 2012 at 5:19 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 >
-> I do wonder if we should do "little-endian" and "big-endian" variations?
+> On Thu, 2012-01-26 at 12:01 +0200, Gilad Ben-Yossef wrote:
+> > Gilad Ben-Yossef (8):
+> >   smp: introduce a generic on_each_cpu_mask function
+> >   arm: move arm over to generic on_each_cpu_mask
+> >   tile: move tile to use generic on_each_cpu_mask
+> >   smp: add func to IPI cpus based on parameter func
+> >   slub: only IPI CPUs that have per cpu obj to flush
+> >   fs: only send IPI to invalidate LRU BH when needed
+> >   mm: only IPI CPUs to drain local pages if they exist
+>
+> These patches look very nice!
+>
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>
 
-Thanks, I'll prepare two variations based on CPU_LITTLE_ENDIAN.
+Thank you :-)
+
+If this is of interest, I keep a list tracking global IPI and global
+task schedulers sources in the core kernel here:
+https://github.com/gby/linux/wiki.
+
+I plan to visit all these potential interference source to see if
+something can be done to lower their effect on
+isolated CPUs over time.
 
 >
-> Quoting Willy:
->
->  "For this particular hardware, it's defined to work if you read the
-> low order bits first"
->
-> so I think we need make that explicit, and make two include files:
->
->   include/asm-generic/io-64b-lo-hi.h
->   include/asm-generic/io-64b-hi-lo.h
->
-> or something like that. And thus indirectly document these kinds of
-> requirements.
->
-> Hmm?
->
->                Linus
+> >   mm: add vmstat counters for tracking PCP drains
+> >
+> I understood from previous postings this patch wasn't meant for
+> inclusion, if it is, note that cpumask_weight() is a potentially very
+> expensive operation.
 
-I have a question about the order of readl/writel.
-If the non-atomic readq/writeq is placed under asm-generic/,
-they will be used by every architecture.
+Right. The only purpose of the patch is to show the usefulness
+of the previous patch in the series. It is not meant for mainline.
 
-I don't know about the minor architectures, but some of them,
-like alpha, seems to do reordering of memory access agressively.
+Thanks,
+Gilad
 
-Is the reordering is applied to io rw?
-Should memory barriers be placed between two readl/writel?
 
--- 
-Hitoshi Mitake
-h.mitake@gmail.com
+
+--
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
