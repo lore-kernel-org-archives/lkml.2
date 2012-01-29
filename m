@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab2A2I4p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 03:56:45 -0500
+	id S1752408Ab2A2I4o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 03:56:44 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:59349 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab2A2I4F (ORCPT
+	with ESMTP id S1752163Ab2A2I4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 03:56:05 -0500
+	Sun, 29 Jan 2012 03:56:08 -0500
 From: Namhyung Kim <namhyung@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] perf record: Add error message for EMFILE
-Date: Sun, 29 Jan 2012 17:55:53 +0900
-Message-Id: <1327827356-8786-2-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 3/5] perf stat: Add error message for EMFILE
+Date: Sun, 29 Jan 2012 17:55:54 +0900
+Message-Id: <1327827356-8786-3-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.8.2
 In-Reply-To: <1327827356-8786-1-git-send-email-namhyung@gmail.com>
 References: <1327827356-8786-1-git-send-email-namhyung@gmail.com>
@@ -26,24 +26,23 @@ may fail with EMFILE. Provide an advice for that case.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- tools/perf/builtin-record.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ tools/perf/builtin-stat.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 32870eef952f..5d3b6794d93b 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -249,6 +249,10 @@ try_again:
- 				ui__warning("The %s event is not supported.\n",
- 					    event_name(pos));
- 				exit(EXIT_FAILURE);
-+			} else if (err == EMFILE) {
-+				ui__warning("Too many events are opened.\n"
-+					    "Try again after reducing the number of events.\n");
-+				exit(EXIT_FAILURE);
- 			}
- 
- 			printf("\n");
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 459b8620a5d9..f74f9a557c9a 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -477,6 +477,9 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 				      "\t Consider tweaking"
+ 				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
+ 				      system_wide ? "system-wide " : "");
++			} else if (errno == EMFILE) {
++				error("Too many events are opened.\n"
++				      "\t Try again after reducing the number of events.\n");
+ 			} else {
+ 				error("open_counter returned with %d (%s). "
+ 				      "/bin/dmesg may provide additional information.\n",
 -- 
 1.7.8.2
 
