@@ -1,120 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab2A2Jiu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 04:38:50 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:64830 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab2A2Jiq (ORCPT
+	id S1752370Ab2A2Jll (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 04:41:41 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60270 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab2A2Jlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 04:38:46 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Nathan Fontenot <nfont@austin.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] mm: Fix memory_dev_init() long delay
-Date: Sun, 29 Jan 2012 01:37:31 -0800
-Message-Id: <1327829851-11415-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F25136E.006E,ss=1,re=0.000,fgs=0
+	Sun, 29 Jan 2012 04:41:39 -0500
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, dm-devel@redhat.com
+Subject: [PATCH] block: add missing block_bio_complete() tracepoint
+Date: Sun, 29 Jan 2012 18:41:33 +0900
+Message-Id: <1327830093-12130-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One system with 2048g ram, reported soft lockup on recent kernel.
+The block_bio_complete() TP has been missed so long, so that bio-based
+drivers haven't been able to trace its IO behavior. Add it.
 
-[   34.426749] cpu_dev_init done
-[   61.166399] BUG: soft lockup - CPU#0 stuck for 22s! [swapper/0:1]
-[   61.166733] Modules linked in:
-[   61.166904] irq event stamp: 1935610
-[   61.178431] hardirqs last  enabled at (1935609): [<ffffffff81ce8c05>] mutex_lock_nested+0x299/0x2b4
-[   61.178923] hardirqs last disabled at (1935610): [<ffffffff81cf2bab>] apic_timer_interrupt+0x6b/0x80
-[   61.198767] softirqs last  enabled at (1935476): [<ffffffff8106e59c>] __do_softirq+0x195/0x1ab
-[   61.218604] softirqs last disabled at (1935471): [<ffffffff81cf359c>] call_softirq+0x1c/0x30
-[   61.238408] CPU 0 
-[   61.238549] Modules linked in:
-[   61.238744] 
-[   61.238825] Pid: 1, comm: swapper/0 Not tainted 3.3.0-rc1-tip-yh-02076-g962f689-dirty #171
-[   61.278212] RIP: 0010:[<ffffffff810b3e3a>]  [<ffffffff810b3e3a>] lock_release+0x90/0x9c
-[   61.278627] RSP: 0018:ffff883f64dbfd70  EFLAGS: 00000246
-[   61.298287] RAX: ffff883f64dc0000 RBX: 0000000000000000 RCX: 000000000000008b
-[   61.298690] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-[   61.318383] RBP: ffff883f64dbfda0 R08: 0000000000000001 R09: 000000000000008b
-[   61.338215] R10: 0000000000000000 R11: 0000000000000000 R12: ffff883f64dbfd10
-[   61.338610] R13: ffff883f64dc0708 R14: ffff883f64dc0708 R15: ffffffff81095657
-[   61.358299] FS:  0000000000000000(0000) GS:ffff883f7d600000(0000) knlGS:0000000000000000
-[   61.378118] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   61.378450] CR2: 0000000000000000 CR3: 00000000024af000 CR4: 00000000000007f0
-[   61.398144] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   61.417918] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   61.418260] Process swapper/0 (pid: 1, threadinfo ffff883f64dbe000, task ffff883f64dc0000)
-[   61.445358] Stack:
-[   61.445511]  0000000000000002 ffff897f649ba168 ffff883f64dbfe10 ffff88ff64bb57a8
-[   61.458040]  0000000000000000 0000000000000000 ffff883f64dbfdc0 ffffffff81ceb1b4
-[   61.458491]  000000000011608c ffff88ff64bb58a8 ffff883f64dbfdf0 ffffffff81c57638
-[   61.478215] Call Trace:
-[   61.478367]  [<ffffffff81ceb1b4>] _raw_spin_unlock+0x21/0x2e
-[   61.497994]  [<ffffffff81c57638>] klist_next+0x9e/0xbc
-[   61.498264]  [<ffffffff8148ba99>] next_device+0xe/0x1e
-[   61.517867]  [<ffffffff8148c0cc>] subsys_find_device_by_id+0xb7/0xd6
-[   61.518197]  [<ffffffff81498846>] find_memory_block_hinted+0x3d/0x66
-[   61.537927]  [<ffffffff8149887f>] find_memory_block+0x10/0x12
-[   61.538193]  [<ffffffff814988b6>] add_memory_section+0x35/0x9e
-[   61.557932]  [<ffffffff827fecef>] memory_dev_init+0x68/0xda
-[   61.558227]  [<ffffffff827fec01>] driver_init+0x97/0xa7
-[   61.577853]  [<ffffffff827cdf3c>] kernel_init+0xf6/0x1c0
-[   61.578140]  [<ffffffff81cf34a4>] kernel_thread_helper+0x4/0x10
-[   61.597850]  [<ffffffff81ceb59d>] ? retint_restore_args+0xe/0xe
-[   61.598144]  [<ffffffff827cde46>] ? start_kernel+0x3ab/0x3ab
-[   61.617826]  [<ffffffff81cf34a0>] ? gs_change+0xb/0xb
-[   61.618060] Code: 10 48 83 3b 00 eb e8 4c 89 f2 44 89 fe 4c 89 ef e8 e1 fe ff ff 65 48 8b 04 25 40 bc 00 00 c7 80 cc 06 00 00 00 00 00 00 41 54 9d <5e> 5b 41 5c 41 5d 41 5e 41 5f 5d c3 55 48 89 e5 41 57 41 89 cf 
-[   89.285380] memory_dev_init done
+In some rare cases, such as loop_switch, @bio->bi_bdev can be NULL.
+Thus convert it to TRACE_EVENT_CONDITION() as Steven suggested.
 
-Found we should find the memory_block for BOOT path.
+>From now on, request-based drivers will also get BLK_TA_COMPLETEs for
+all bio's in requests. This needs to be handled in userland properly.
 
-Root cause: for x86_64, 2048g (with 2g hole at [2g,4g), and TOP2 will be 2050g), will have 16400 memory block.
+Also remove external use of the TP in DM and unexport it.
 
-find_memory_block/subsys_find_device_by_id will be expensive with that much entries.
-
-Actually, we don't need to find that memory block for BOOT case.
-
-Skip that make it get back to normal.
-
-[   34.466696] cpu_dev_init done
-[   35.290080] memory_dev_init done
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Nathan Fontenot <nfont@austin.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: dm-devel@redhat.com
 ---
- drivers/base/memory.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+* v2:
+ - Merge previous patches into one as suggested by Tejun.
+ - Drop BIO_COMPLETE_MASK. Now I think it should be handled in userland
+   like other (maybe duplicated, in some sense) bio complete reports.
 
-Index: linux-2.6/drivers/base/memory.c
-===================================================================
---- linux-2.6.orig/drivers/base/memory.c
-+++ linux-2.6/drivers/base/memory.c
-@@ -574,12 +574,15 @@ static int init_memory_block(struct memo
- static int add_memory_section(int nid, struct mem_section *section,
- 			unsigned long state, enum mem_add_context context)
- {
--	struct memory_block *mem;
-+	struct memory_block *mem = NULL;
- 	int ret = 0;
+ block/blk-core.c             |    1 -
+ drivers/md/dm.c              |    1 -
+ fs/bio.c                     |    2 ++
+ include/trace/events/block.h |    4 +++-
+ 4 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 1b4fd93af2c0..399c128f516c 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -37,7 +37,6 @@
  
- 	mutex_lock(&mem_sysfs_mutex);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_remap);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
+-EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_complete);
  
--	mem = find_memory_block(section);
-+	/* don't need to find memory block for BOOT */
-+	if (context != BOOT)
-+		mem = find_memory_block(section);
+ DEFINE_IDA(blk_queue_ida);
+ 
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 4720f68f817e..01185fa0eb74 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -648,7 +648,6 @@ static void dec_pending(struct dm_io *io, int error)
+ 			queue_io(md, bio);
+ 		} else {
+ 			/* done with normal IO or empty flush */
+-			trace_block_bio_complete(md->queue, bio, io_error);
+ 			bio_endio(bio, io_error);
+ 		}
+ 	}
+diff --git a/fs/bio.c b/fs/bio.c
+index b1fe82cf88cf..14c03eaf384e 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1447,6 +1447,8 @@ void bio_endio(struct bio *bio, int error)
+ 	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+ 		error = -EIO;
+ 
++	trace_block_bio_complete(bdev_get_queue(bio->bi_bdev), bio, error);
 +
- 	if (mem) {
- 		mem->section_count++;
- 		kobject_put(&mem->dev.kobj);
+ 	if (bio->bi_end_io)
+ 		bio->bi_end_io(bio, error);
+ }
+diff --git a/include/trace/events/block.h b/include/trace/events/block.h
+index 05c5e61f0a7c..96955f4828b3 100644
+--- a/include/trace/events/block.h
++++ b/include/trace/events/block.h
+@@ -213,12 +213,14 @@ TRACE_EVENT(block_bio_bounce,
+  * This tracepoint indicates there is no further work to do on this
+  * block IO operation @bio.
+  */
+-TRACE_EVENT(block_bio_complete,
++TRACE_EVENT_CONDITION(block_bio_complete,
+ 
+ 	TP_PROTO(struct request_queue *q, struct bio *bio, int error),
+ 
+ 	TP_ARGS(q, bio, error),
+ 
++	TP_CONDITION(bio->bi_bdev != NULL),
++
+ 	TP_STRUCT__entry(
+ 		__field( dev_t,		dev		)
+ 		__field( sector_t,	sector		)
+-- 
+1.7.8.2
+
