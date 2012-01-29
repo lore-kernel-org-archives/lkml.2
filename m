@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab2A2WOK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 17:14:10 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21403 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2A2WOI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 17:14:08 -0500
-Date: Sun, 29 Jan 2012 23:14:22 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: =?ISO-8859-15?Q?Niklas_S=F6derlund?= <niso@kth.se>
-cc: mchehab@redhat.com, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] i7core_edac: fix erroneous size of static array
-In-Reply-To: <1327874672-19222-1-git-send-email-niso@kth.se>
-Message-ID: <alpine.LNX.2.00.1201292314010.27749@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201290300100.20079@swampdragon.chaosbits.net> <1327874672-19222-1-git-send-email-niso@kth.se>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753929Ab2A2WPH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 17:15:07 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:23669 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab2A2WPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 17:15:05 -0500
+X-IronPort-AV: E=Sophos;i="4.71,588,1320652800"; 
+   d="asc'?scan'208";a="620712251"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>
+Subject: [GIT PULL] Please pull 1 bugfix for the NFS client
+Thread-Topic: [GIT PULL] Please pull 1 bugfix for the NFS client
+Thread-Index: AQHM3tNv42duPcE140WNL+HIcYUORg==
+Date: Sun, 29 Jan 2012 22:14:58 +0000
+Message-ID: <1327875297.6246.1.camel@lade.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-x7voXplEQHfTeGV9L5fl"
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1620297489-1327875262=:27749"
+X-OriginalArrivalTime: 29 Jan 2012 22:15:00.0260 (UTC) FILETIME=[71063640:01CCDED3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+--=-x7voXplEQHfTeGV9L5fl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
---8323328-1620297489-1327875262=:27749
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Hi Linus,
 
-On Sun, 29 Jan 2012, Niklas Söderlund wrote:
+Please pull from the signed tag "nfs-for-3.3-3" in the repository at
 
-> Remove size from lookup arrays and mark them as const.
-> 
-> Signed-off-by: Niklas Söderlund <niso@kth.se>
+   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tag nfs-=
+for-3.3-3
 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+This will update the following files through the appended changesets.
+
+  Cheers,
+    Trond
+
+----
+ net/sunrpc/auth_generic.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
+
+commit 875ad3f8e7dff6bc1d053e5bfe73d8e8d2e6ae67
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Mon Jan 23 12:49:36 2012 -0500
+
+    SUNRPC: Fix machine creds in generic_create_cred and generic_match
+   =20
+    - generic_create_cred needs to copy the '.principal' field.
+    - generic_match needs to ignore the groups and match on the '.principal=
+'
+      field.
+   =20
+    This fixes an Oops that was introduced by commit 68c9715 (SUNRPC:
+    Clean up the RPCSEC_GSS service ticket requests)
+   =20
+    Reported-by: J. Bruce Fields <bfields@redhat.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Tested-by: J. Bruce Fields <bfields@redhat.com>
 
 
-> ---
->  drivers/edac/i7core_edac.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-> index 70ad892..f50acfb 100644
-> --- a/drivers/edac/i7core_edac.c
-> +++ b/drivers/edac/i7core_edac.c
-> @@ -417,21 +417,21 @@ static inline int numdimms(u32 dimms)
->  
->  static inline int numrank(u32 rank)
->  {
-> -	static int ranks[4] = { 1, 2, 4, -EINVAL };
-> +	static const int ranks[] = { 1, 2, 4, -EINVAL };
->  
->  	return ranks[rank & 0x3];
->  }
->  
->  static inline int numbank(u32 bank)
->  {
-> -	static int banks[4] = { 4, 8, 16, -EINVAL };
-> +	static const int banks[] = { 4, 8, 16, -EINVAL };
->  
->  	return banks[bank & 0x3];
->  }
->  
->  static inline int numrow(u32 row)
->  {
-> -	static int rows[8] = {
-> +	static const int rows[] = {
->  		1 << 12, 1 << 13, 1 << 14, 1 << 15,
->  		1 << 16, -EINVAL, -EINVAL, -EINVAL,
->  	};
-> @@ -441,7 +441,7 @@ static inline int numrow(u32 row)
->  
->  static inline int numcol(u32 col)
->  {
-> -	static int cols[8] = {
-> +	static const int cols[] = {
->  		1 << 10, 1 << 11, 1 << 12, -EINVAL,
->  	};
->  	return cols[col & 0x3];
-> 
+--=20
+Trond Myklebust
+Linux NFS client maintainer
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
---8323328-1620297489-1327875262=:27749--
+
+--=-x7voXplEQHfTeGV9L5fl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPJcThAAoJEGcL54qWCgDyigIP/iJkRkVvzJ6uaLpxiCvHRrY7
+GJeHmcl1NqpJ+lkxITxqelYacXMIedRXtPwwbsMkqE6WGIAo9QWmjoPR8fHjt/3w
+R0nhtwnmWgkW47apE3RI0RmZCIKLxtCJ1Vx+AlSnd4fNkih+M6h5uvVGOnhIjyl9
+JliaNNPi54Tqfop5aqoapxUYeCpg0mqR2MSuFXG9M3tSglyVPhEul6ymPBHX+iu1
+8ztVqEuuy8F+cxKEB77S8ZXODWx2E6+m5wlrasPk0lR/vpF+cwZcTCoryFMGrlh/
+/Wm18N1v2WwxH31p3rCL5ktm/+xI31tHcLMVIlKLqcZW8WmI0QXxTOF1hEPrKk5S
+3GQGgtrmV3B3mJidlBZTiyinJ5fE7D0xa7jYNhQH1tZ/XwMWEP/gw2q8I16s7Nm1
+xl7Dz0rlZ5/d86o+sbm1gXyAoE8MEmvmFuH/djlCqnRwXYWXXSRe2/qjWWS+zvgT
+leQUta1IvlmnXmO072ajsCr4iLT/q6LYwMZD6tHFugNZSeRhYtHLr4k0XNRkMnVa
+DIv5FvX+d8+fa9/T2qp3HzWOj1l9jY0qwmhWA+NiLcEwCgkO2DkA4tTKo+DWJxR2
+90gJFCSoz8Be5fOyk7SaLMgFz6Ebhd9IMP44S8rDhCkixX79OTUR2dpbwrUvJjdU
+5gzewCTDuaqcANY98eGS
+=b+9N
+-----END PGP SIGNATURE-----
+
+--=-x7voXplEQHfTeGV9L5fl--
