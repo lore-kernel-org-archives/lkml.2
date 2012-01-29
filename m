@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab2A2AkF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 Jan 2012 19:40:05 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:40488 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751954Ab2A2AkD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 Jan 2012 19:40:03 -0500
+	id S1752743Ab2A2AvA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 Jan 2012 19:51:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61889 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752024Ab2A2Au7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 Jan 2012 19:50:59 -0500
+Message-ID: <4F2497DC.2040405@redhat.com>
+Date: Sat, 28 Jan 2012 19:50:36 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <20120129003550.GA21385@ponder.secretlab.ca>
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
- <1327700179-17454-23-git-send-email-grant.likely@secretlab.ca>
- <20120128164405.GA20763@linutronix.de> <20120129003550.GA21385@ponder.secretlab.ca>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sat, 28 Jan 2012 17:39:43 -0700
-X-Google-Sender-Auth: SdGm26ZbWt5vygW76swVvcgkbvc
-Message-ID: <CACxGe6veC5RLETn3n866a07TGKLj5MKd=hLHN=HkWcH8Ah7rnw@mail.gmail.com>
-Subject: Re: [PATCH v3 22/25] irq_domain/x86: Convert x86 (embedded) to use
- common irq_domain
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        lsf-pc@lists.linux-foundation.org
+Subject: Re: [PATCH] mm: implement WasActive page flag (for improving cleancache)
+References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>  <4F218D36.2060308@linux.vnet.ibm.com>  <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>  <20120126163150.31a8688f.akpm@linux-foundation.org>  <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>  <20120126171548.2c85dd44.akpm@linux-foundation.org>  <7198bfb3-1e32-40d3-8601-d88aed7aabd8@default>  <1327671787.2977.17.camel@dabdike.int.hansenpartnership.com>  <3ac611ee-8830-41bd-8464-6867da701948@default>  <1327686876.2977.37.camel@dabdike.int.hansenpartnership.com>  <9813c0cd-0335-4994-b734-e9fc7872c0cb@default> <1327700951.2977.78.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1327700951.2977.78.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 28, 2012 at 5:35 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Sat, Jan 28, 2012 at 05:44:05PM +0100, Sebastian Andrzej Siewior wrote:
->> * Grant Likely | 2012-01-27 14:36:16 [-0700]:
->>
->> >This patch removes the x86-specific definition of irq_domain and replaces
->> >it with the common implementation.
->>
->> I pulled your devicetree/next tree. After this patch I get:
->>
->> |Hierarchical RCU implementation.
->> |NR_IRQS:2304 nr_irqs:256 16
->> |------------[ cut here ]------------
->> |WARNING: at /home/bigeasy/work/shiva/git/linux-2.6-tip/kernel/irq/irqdomain.c:114 irq_domain_add_legacy+0x75/0x150()
->> |Modules linked in:
->> |Pid: 0, comm: swapper/0 Not tainted 3.3.0-rc1+ #65
->> |Call Trace:
->> | [<c15044e0>] ? printk+0x18/0x1a
->> | [<c102cdbd>] warn_slowpath_common+0x6d/0xa0
->> | [<c1095575>] ? irq_domain_add_legacy+0x75/0x150
->> | [<c1095575>] ? irq_domain_add_legacy+0x75/0x150
->> | [<c102ce0d>] warn_slowpath_null+0x1d/0x20
->> | [<c1095575>] irq_domain_add_legacy+0x75/0x150
->> | [<c1714824>] x86_add_irq_domains+0x96/0xd6
->> | [<c1708df2>] init_IRQ+0x8/0x33
->> | [<c170557f>] start_kernel+0x191/0x2e1
->> | [<c170517f>] ? loglevel+0x2b/0x2b
->> | [<c1705081>] i386_start_kernel+0x81/0x86
->> |---[ end trace 4eaa2a86a8e2da22 ]---
->> |------------[ cut here ]------------
->> |kernel BUG at /home/bigeasy/work/shiva/git/linux-2.6-tip/arch/x86/kernel/devicetree.c:367!
->>
->> The warning is comming from this piece in irq_domain_add_legacy()
->> |for (i = 0; i < size; i++) {
->> |                 int irq = first_irq + i;
->> |                 struct irq_data *irq_data = irq_get_irq_data(irq);
->> |
->> |                 if (WARN_ON(!irq_data || irq_data->domain)) {
->>
->> irq_data is NULL here.
->>
->> |                         mutex_unlock(&irq_domain_mutex);
->> |                         of_node_put(domain->of_node);
->> |                         kfree(domain);
->> |                         return NULL;
->> |                 }
->> |         }
->> |
->>
->> This is not always the case. arch_early_irq_init() in [0] sets up the
->> first 16 entries. The reminaing few (there is a toal of 24 irqs for
->> first ioapic and a second ioapic) are not initialized. This happens
->> later via ->xlate, ioapic_xlate() => io_apic_setup_irq_pin() =>
->> alloc_irq_and_cfg_at() calls irq_set_chip_data() on demand.
->>
->> [0] arch/x86/kernel/apic/io_apic.c
+On 01/27/2012 04:49 PM, James Bottomley wrote:
+
+> So here, I was just saying your desire to store more data in the page
+> table and expand the page flags looks complex.
 >
-> That's not going to work then.  The irqs must not be set up in ->xlate.
-> They need to be set up either before creating the irq_domain, or in the
-> .map hook.  Inside the map hook is preferred, but having some
-> configured and some not at initialization time does make it difficult
+> Perhaps we do have a fundamental misunderstanding:  For readahead, I
+> don't really care about the referenced part.  referenced just means
+> pointed to by one or more vmas and active means pointed to by two or
+> more vmas (unless executable in which case it's one).
 
-Actually, that's still not right.  irq_set_chip_data() (sets
-desc->irq_data.chip_data) has nothing to do with irq_get_irq_data()
-(which returns desc->irq_data).  It's the   allocation of the irq_desc
-that is at issue here.  Where does the allocation occur?  (I haven't
-dug in to find it yet)
+That is not at all what "referenced" means everywhere
+else in the VM.
 
-g.
+If you write theories on what Dan should use, it would
+help if you limited yourself to stuff the VM provides
+and/or could provide :)
+
+> What I think we care about for readahead is accessed.  This means a page
+> that got touched regardless of how many references it has.  An
+> unaccessed unaged RA page is a less good candidate for reclaim because
+> it should soon be accessed (under the RA heuristics) than an accessed RA
+> page.  Obviously if the heuristics misfire, we end up with futile RA
+> pages, which we read in expecting to be accessed, but which in fact
+> never were (so an unaccessed aged RA page) and need to be evicted.
+>
+> But for me, perhaps it's enough to put unaccessed RA pages into the
+> active list on instantiation and then actually put them in the inactive
+> list when they're accessed
+
+That is an absolutely terrible idea for many obvious reasons.
+
+Having readahead pages displace the working set wholesale
+is the absolute last thing we want.
+
+> I'm less clear on why you think a WasActive() flag is needed.  I think
+> you mean a member of the inactive list that was at some point previously
+> active.
+
+> Um, that's complex.  Doesn't your inactive-C list really just identify
+> pages that were shared but have sunk in the LRU lists due to lack of
+> use?
+
+Nope. Pages that are not mapped can still end up on the active
+list, by virtue of getting accessed multiple times in a "short"
+period of time (the residence on the inactive list).
+
+We want to cache frequently accessed pages with preference over
+streaming IO data that gets accessed infrequently.
+
+-- 
+All rights reversed
