@@ -1,125 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab2A2SFM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 13:05:12 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52287 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab2A2SFK convert rfc822-to-8bit (ORCPT
+	id S1753594Ab2A2SJG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 13:09:06 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35304 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab2A2SJF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 13:05:10 -0500
+	Sun, 29 Jan 2012 13:09:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAB6DaTMKiePraRLJK=BdguFVriiEHJ2UgB0qSce50FW1R7bVSA@mail.gmail.com>
-References: <1326400778-24131-1-git-send-email-dumitru.sorin87@gmail.com>
- <20120113122547.GA8161@infradead.org> <CAB6DaTMKiePraRLJK=BdguFVriiEHJ2UgB0qSce50FW1R7bVSA@mail.gmail.com>
-From: Sorin Dumitru <dumitru.sorin87@gmail.com>
-Date: Sun, 29 Jan 2012 20:04:49 +0200
-Message-ID: <CAB6DaTOC6GNFxQun=-TTLVAz_WbReEj4xfd9hZ8BqxxefdvGLg@mail.gmail.com>
-Subject: Re: [PATCH] perf: check if address is in range
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        Daniel Baluta <daniel.baluta@gmail.com>
+In-Reply-To: <20120127162624.40cba14e.akpm@linux-foundation.org>
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+	<201201261531.40551.arnd@arndb.de>
+	<20120127162624.40cba14e.akpm@linux-foundation.org>
+Date: Sun, 29 Jan 2012 12:09:03 -0600
+Message-ID: <CAN_cFWMPNRx75GC0d0Z5CZC0dPH=wv1YVuA+7j4pfFh9ww9bgg@mail.gmail.com>
+Subject: Re: [PATCHv19 00/15] Contiguous Memory Allocator
+From: Rob Clark <rob.clark@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 6:35 PM, Sorin Dumitru
-<dumitru.sorin87@gmail.com> wrote:
-> On Fri, Jan 13, 2012 at 2:25 PM, Arnaldo Carvalho de Melo
-> <acme@ghostprotocols.net> wrote:
->> Em Thu, Jan 12, 2012 at 10:39:38PM +0200, Sorin Dumitru escreveu:
->>> When addr isn't in the [sym->start,sym->end] range offset
->>> will be a very big value, giving us a segfault when we do:
->>>       h->addr[offset]++
->>> Fix this by checking that addr is in the correct range.
+On Fri, Jan 27, 2012 at 6:26 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Thu, 26 Jan 2012 15:31:40 +0000
+> Arnd Bergmann <arnd@arndb.de> wrote:
+>
+>> On Thursday 26 January 2012, Marek Szyprowski wrote:
+>> > Welcome everyone!
+>> >
+>> > Yes, that's true. This is yet another release of the Contiguous Memory
+>> > Allocator patches. This version mainly includes code cleanups requested
+>> > by Mel Gorman and a few minor bug fixes.
 >>
->> Is this against what tree? Can you please provide a backtrace of when
->> this happens?
->
-> This is against mainline from kernel.org. I'm using 3.1.8 under arch linux.
-> Backtrace of crash:
->
-> #0  symbol__inc_addr_samples (sym=0x8b863e0, map=0x8299930, evidx=0,
-> addr=1376452) at util/annotate.c:73
-> #1  0x08066593 in record_precise_ip (ip=<optimized out>, counter=0,
-> he=<optimized out>) at builtin-top.c:223
-> #2  perf_event__process_sample (session=0x824db88, sample=0xbffff9d4,
-> evsel=<optimized out>, event=<optimized out>) at builtin-top.c:801
-> #3  perf_session__mmap_read_idx (self=0x824db88, idx=1) at
-> builtin-top.c:825
-> #4  0x08068489 in perf_session__mmap_read (self=0x824db88) at
-> builtin-top.c:839
-> #5  __cmd_top () at builtin-top.c:1003
-> #6  cmd_top (argc=<optimized out>, argv=0xbffffd18, prefix=0x0) at
-> builtin-top.c:1274
-> #7  0x08055e90 in run_builtin (p=0x80f2624, argc=1, argv=0xbffffd18)
-> at perf.c:286
-> #8  0x08055651 in handle_internal_command (argv=0xbffffd18, argc=1) at
-> perf.c:358
-> #9  run_argv (argv=0xbffffbb8, argcp=0xbffffbbc) at perf.c:402
-> #10 main (argc=1, argv=0xbffffd18) at perf.c:512
->
->> I ask this because this is a kind of BUG_ON() situation, one shouldn't
->> get to this point if the address is not within that symbol.
->
-> That's what i thought too at first. But i'm not very familiar with the perf code
-> so i thought that since we have this check for sym->end, which seems
-> like a similar situation, a check for sym->start might be needed.
->
->> - Arnaldo
+>> Hi Marek,
 >>
->>> Signed-off-by: Sorin Dumitru <dumitru.sorin87@gmail.com>
->>> ---
->>>  tools/perf/util/annotate.c |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
->>> index 011ed26..4ddc55f 100644
->>> --- a/tools/perf/util/annotate.c
->>> +++ b/tools/perf/util/annotate.c
->>> @@ -64,7 +64,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
->>>
->>>       pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
->>>
->>> -     if (addr >= sym->end)
->>> +     if (addr <= sym->start || addr >= sym->end)
->>>               return 0;
->>>
->>>       offset = addr - sym->start;
->>> --
->>> 1.7.8.3
+>> Thanks for keeping up this work! I really hope it works out for the
+>> next merge window.
+>
+> Someone please tell me when it's time to start paying attention
+> again ;)
+>
+> These patches don't seem to have as many acked-bys and reviewed-bys as
+> I'd expect.  Given the scope and duration of this, it would be useful
+> to gather these up.  But please ensure they are real ones - people
+> sometimes like to ack things without showing much sign of having
+> actually read them.
+>
+> Also there is the supreme tag: "Tested-by:.".  Ohad (at least) has been
+> testing the code.  Let's mention that.
+>
 
-The problem seems to be that the symbol is found using al.addr but we
-pass event->ip.ip to perf_top__record_precise_ip. al.addr comes from
-event->ip.ip but can be modified by map_ip function pointer before we
-find the symbol.
+fyi Marek, I've been testing CMA as well, both in context of Ohad's
+rpmsg driver and my omapdrm driver (and combination of the two)..  so
+you can add:
 
-If this isn't the right approch, can you give me some pointers where
-something might go wrong, because this bug is really bugging me.
+Tested-by: Rob Clark <rob.clark@linaro.org>
 
+And there are some others from linaro that have written a test driver,
+and various stress test scripts using the test driver.  I guess that
+could also count for some additional Tested-by's.
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e8b033c..3946dcb 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -660,7 +660,6 @@ static void perf_event__process_sample(struct
-perf_tool *tool,
- {
-        struct perf_top *top = container_of(tool, struct perf_top, tool);
-        struct symbol *parent = NULL;
--       u64 ip = event->ip.ip;
-        struct addr_location al;
-        int err;
+BR,
+-R
 
-@@ -747,7 +746,7 @@ static void perf_event__process_sample(struct
-perf_tool *tool,
-                }
-
-                if (top->sort_has_symbols)
--                       perf_top__record_precise_ip(top, he, evsel->idx, ip);
-+                       perf_top__record_precise_ip(top, he,
-evsel->idx, al.addr);
-        }
-
-        return;
+> The patches do seem to have been going round in ever-decreasing circles
+> lately and I think we have decided to merge them (yes?) so we may as well
+> get on and do that and sort out remaining issues in-tree.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
