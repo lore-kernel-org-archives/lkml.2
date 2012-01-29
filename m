@@ -1,104 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab2A2WPH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 17:15:07 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:23669 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031Ab2A2WPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 17:15:05 -0500
-X-IronPort-AV: E=Sophos;i="4.71,588,1320652800"; 
-   d="asc'?scan'208";a="620712251"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>
-Subject: [GIT PULL] Please pull 1 bugfix for the NFS client
-Thread-Topic: [GIT PULL] Please pull 1 bugfix for the NFS client
-Thread-Index: AQHM3tNv42duPcE140WNL+HIcYUORg==
-Date: Sun, 29 Jan 2012 22:14:58 +0000
-Message-ID: <1327875297.6246.1.camel@lade.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-x7voXplEQHfTeGV9L5fl"
-MIME-Version: 1.0
-X-OriginalArrivalTime: 29 Jan 2012 22:15:00.0260 (UTC) FILETIME=[71063640:01CCDED3]
+	id S1753917Ab2A2WZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 17:25:26 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49920 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752200Ab2A2WZZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 17:25:25 -0500
+Message-ID: <1327875921.21193.11.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] mm: implement WasActive page flag (for improving
+ cleancache)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        lsf-pc@lists.linux-foundation.org
+Date: Sun, 29 Jan 2012 16:25:21 -0600
+In-Reply-To: <4F2497DC.2040405@redhat.com>
+References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
+	  <4F218D36.2060308@linux.vnet.ibm.com>
+	  <9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
+	  <20120126163150.31a8688f.akpm@linux-foundation.org>
+	  <ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>
+	  <20120126171548.2c85dd44.akpm@linux-foundation.org>
+	  <7198bfb3-1e32-40d3-8601-d88aed7aabd8@default>
+	  <1327671787.2977.17.camel@dabdike.int.hansenpartnership.com>
+	  <3ac611ee-8830-41bd-8464-6867da701948@default>
+	  <1327686876.2977.37.camel@dabdike.int.hansenpartnership.com>
+	  <9813c0cd-0335-4994-b734-e9fc7872c0cb@default>
+	 <1327700951.2977.78.camel@dabdike.int.hansenpartnership.com>
+	 <4F2497DC.2040405@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-x7voXplEQHfTeGV9L5fl
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2012-01-28 at 19:50 -0500, Rik van Riel wrote:
+> On 01/27/2012 04:49 PM, James Bottomley wrote:
+> 
+> > So here, I was just saying your desire to store more data in the page
+> > table and expand the page flags looks complex.
+> >
+> > Perhaps we do have a fundamental misunderstanding:  For readahead, I
+> > don't really care about the referenced part.  referenced just means
+> > pointed to by one or more vmas and active means pointed to by two or
+> > more vmas (unless executable in which case it's one).
+> 
+> That is not at all what "referenced" means everywhere
+> else in the VM.
 
-Hi Linus,
+I'm aware there's more subtlety, but I think it's a reasonable
+generality: your one sentence summary of page_referenced() seems
+conspicuously absent; care to provide it ... or would you prefer the VM
+internals remain inaccessible to mere mortals? 
 
-Please pull from the signed tag "nfs-for-3.3-3" in the repository at
+> If you write theories on what Dan should use, it would
+> help if you limited yourself to stuff the VM provides
+> and/or could provide :)
 
-   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tag nfs-=
-for-3.3-3
+I didn't give any theories at all about what he should or shouldn't do.
+I'm trying to think out loud about whether what he wants and what I
+think would help readahead are the same thing (I started of thinking
+they were and I talked myself out of it by the end of the previous
+email).
 
-This will update the following files through the appended changesets.
+> > What I think we care about for readahead is accessed.  This means a page
+> > that got touched regardless of how many references it has.  An
+> > unaccessed unaged RA page is a less good candidate for reclaim because
+> > it should soon be accessed (under the RA heuristics) than an accessed RA
+> > page.  Obviously if the heuristics misfire, we end up with futile RA
+> > pages, which we read in expecting to be accessed, but which in fact
+> > never were (so an unaccessed aged RA page) and need to be evicted.
+> >
+> > But for me, perhaps it's enough to put unaccessed RA pages into the
+> > active list on instantiation and then actually put them in the inactive
+> > list when they're accessed
+> 
+> That is an absolutely terrible idea for many obvious reasons.
+> 
+> Having readahead pages displace the working set wholesale
+> is the absolute last thing we want.
 
-  Cheers,
-    Trond
+Um, only if you assume you place them at the most recently used head of
+the active list ... for obvious reasons, that's not what I was thinking.
+I'm still not sure it's more feasible than having separate lists, though
+since most recently used tail is  nasty because it's reverse ordering
+them and probably not providing sufficient boost and middle insertion
+looks just plain wrong.
 
-----
- net/sunrpc/auth_generic.c |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
+> > I'm less clear on why you think a WasActive() flag is needed.  I think
+> > you mean a member of the inactive list that was at some point previously
+> > active.
+> 
+> > Um, that's complex.  Doesn't your inactive-C list really just identify
+> > pages that were shared but have sunk in the LRU lists due to lack of
+> > use?
+> 
+> Nope. Pages that are not mapped can still end up on the active
+> list, by virtue of getting accessed multiple times in a "short"
+> period of time (the residence on the inactive list).
+> 
+> We want to cache frequently accessed pages with preference over
+> streaming IO data that gets accessed infrequently.
 
-commit 875ad3f8e7dff6bc1d053e5bfe73d8e8d2e6ae67
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Mon Jan 23 12:49:36 2012 -0500
+Well, no, that's what I'm trying to argue against.  The chances are that
+Streaming RA I/O gets accessed once (the classic movie scenario).  So
+the idea is that if you can identify RA as streaming, it should be kept
+while unaccessed but discarded after it's been accessed.  To get the LRU
+lists to identify this, we want to give a boost to unaccessed unaged RA,
+a suppression to accessed once RA and standard heuristics if RA gets
+accessed more than once.
 
-    SUNRPC: Fix machine creds in generic_create_cred and generic_match
-   =20
-    - generic_create_cred needs to copy the '.principal' field.
-    - generic_match needs to ignore the groups and match on the '.principal=
-'
-      field.
-   =20
-    This fixes an Oops that was introduced by commit 68c9715 (SUNRPC:
-    Clean up the RPCSEC_GSS service ticket requests)
-   =20
-    Reported-by: J. Bruce Fields <bfields@redhat.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Tested-by: J. Bruce Fields <bfields@redhat.com>
-
-
---=20
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+James
 
 
---=-x7voXplEQHfTeGV9L5fl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPJcThAAoJEGcL54qWCgDyigIP/iJkRkVvzJ6uaLpxiCvHRrY7
-GJeHmcl1NqpJ+lkxITxqelYacXMIedRXtPwwbsMkqE6WGIAo9QWmjoPR8fHjt/3w
-R0nhtwnmWgkW47apE3RI0RmZCIKLxtCJ1Vx+AlSnd4fNkih+M6h5uvVGOnhIjyl9
-JliaNNPi54Tqfop5aqoapxUYeCpg0mqR2MSuFXG9M3tSglyVPhEul6ymPBHX+iu1
-8ztVqEuuy8F+cxKEB77S8ZXODWx2E6+m5wlrasPk0lR/vpF+cwZcTCoryFMGrlh/
-/Wm18N1v2WwxH31p3rCL5ktm/+xI31tHcLMVIlKLqcZW8WmI0QXxTOF1hEPrKk5S
-3GQGgtrmV3B3mJidlBZTiyinJ5fE7D0xa7jYNhQH1tZ/XwMWEP/gw2q8I16s7Nm1
-xl7Dz0rlZ5/d86o+sbm1gXyAoE8MEmvmFuH/djlCqnRwXYWXXSRe2/qjWWS+zvgT
-leQUta1IvlmnXmO072ajsCr4iLT/q6LYwMZD6tHFugNZSeRhYtHLr4k0XNRkMnVa
-DIv5FvX+d8+fa9/T2qp3HzWOj1l9jY0qwmhWA+NiLcEwCgkO2DkA4tTKo+DWJxR2
-90gJFCSoz8Be5fOyk7SaLMgFz6Ebhd9IMP44S8rDhCkixX79OTUR2dpbwrUvJjdU
-5gzewCTDuaqcANY98eGS
-=b+9N
------END PGP SIGNATURE-----
-
---=-x7voXplEQHfTeGV9L5fl--
