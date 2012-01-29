@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab2A2TGV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 14:06:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36835 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753684Ab2A2TGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 14:06:20 -0500
-Date: Sun, 29 Jan 2012 19:59:49 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, y-goto@jp.fujitsu.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched: Fix ancient race in do_exit()
-Message-ID: <20120129185949.GA27192@redhat.com>
-References: <20120117174031.3118.E1E9C6FF@jp.fujitsu.com> <tip-b5740f4b2cb3503b436925eb2242bc3d75cd3dfe@git.kernel.org> <CA+55aFyO0KxGQxYYUqmVrNqG6qVFnRT2g-kYYKtH5QG3vTnO=A@mail.gmail.com> <20120129160711.GA20803@redhat.com> <CA+55aFz20=H0ZubZEAmEbv0gL8j3C5Kgt4m2+5MU63uVipZt0Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFz20=H0ZubZEAmEbv0gL8j3C5Kgt4m2+5MU63uVipZt0Q@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753749Ab2A2TUs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 14:20:48 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44078 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab2A2TUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 14:20:46 -0500
+Date: Sun, 29 Jan 2012 14:21:17 -0500
+Message-Id: <87vcnub9hu.fsf@gmail.com>
+From: Michael D Labriola <michael.d.labriola@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg@redhat.com>,
+        Michael D Labriola <mlabriol@gdeb.com>,
+        Kushal Koolwal <kushalkoolwal@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, reboot: remove VersaLogic Menlow reboot quirk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29, Linus Torvalds wrote:
->
-> But yes, if you're talking about TASK_UNINTERRUPTIBLE, we do need to
-> just remove the setting of that entirely. It needs to be set *before*
-> adding us to the list, not after. That's just a bug - we get woken up
-> when we've been given the lock.
+This commit removes the reboot quirk originally added by commit e19e074
+(x86: Fix reboot problem on VersaLogic Menlow boards).
 
-Yes, I think this should work although I am not familiar with this code.
+Testing with a VersaLogic Ocelot (VL-EPMs-21a rev 1.00 w/ BIOS 6.5.102)
+revealed the following regarding the reboot hang problem:
 
-If we remove set_task_state() from the main waiting loop we can never race
-with __rwsem_do_wake()->try_to_wake_up() seeing us in UNINTERRUPTIBLE state.
-rwsem_down_failed_common() simply can't return until UNINTERRUPTIBLE->RUNNING
-transition is finished (__rwsem_do_wake does wakeup first).
+- v2.6.37 reboot=bios was needed.
 
-And since we do not play with current->state after spin_unlock(), it is
-fine to "race" with waiter->task clearing, just we can do the unnecessary
-but harmless schedule() in TASK_RUNNING.
+- v2.6.38-rc1: behavior changed, reboot=acpi is needed, reboot=kbd and
+  reboot=bios result in system hang.
 
-> So it may be completely and utterly broken for some subtle reason,
+- v2.6.38: VersaLogic patch (e19e074 x86: Fix reboot problem on
+  VersaLogic Menlow boards) was applied prior to v2.6.38-rc7.  This
+  patch sets a quirk for VersaLogic Menlow boards that forces the use
+  of reboot=bios, which doesn't work anymore.
 
-Well, what about another spurious wakeup from somewhere? In this case
-rwsem_down_failed_common() will do a busy-wait loop.
+- v3.2: It seems that commit 660e34c (x86: Reorder reboot method
+  preferences) changed the default reboot method to acpi prior to
+  v3.0-rc1, which means the default behavior is appropriate for the
+  Ocelot.  No VersaLogic quirk is required.
 
-> @@ -92,10 +92,9 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
->  	 */
->  	list_del(&waiter->list);
->  	tsk = waiter->task;
-> +	wake_up_process(tsk);
->  	smp_mb();
->  	waiter->task = NULL;
+The Ocelot board used for testing can successfully reboot w/out having to
+pass any reboot= arguments for all 3 current versions of the BIOS.
 
-OK, now I understand why do we need "clear after wakeup".
+Signed-off-by: Michael D Labriola <michael.d.labriola@gmail.com>
+---
+ arch/x86/kernel/reboot.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-But then I don't really understand this mb, perhaps wmb() is enough?
-Afaics we only need to ensure we change waiter->task after changing
-task's state.
-
-OTOH,
-
-> @@ -183,7 +181,6 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
->  	raw_spin_lock_irq(&sem->wait_lock);
->  	waiter.task = tsk;
->  	waiter.flags = flags;
-> -	get_task_struct(tsk);
->
->  	if (list_empty(&sem->wait_list))
->  		adjustment += RWSEM_WAITING_BIAS;
-> @@ -211,11 +208,8 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
->  		if (!waiter.task)
->  			break;
->  		schedule();
-> -		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
->  	}
->
-> -	tsk->state = TASK_RUNNING;
-> -
->  	return sem;
->  }
-
-Suppose that this task does tsk->state = TASK_WHATEVER after that.
-It seems that we need mb() before return, otherwise the next ->state
-change can be reordered with "if (!waiter.task)" above. Or not?
-
-Oleg.
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index b257f0e..d840e69 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -309,14 +309,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on VersaLogic Menlow boards */
+-		.callback = set_bios_reboot,
+-		.ident = "VersaLogic Menlow based board",
+-		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "VersaLogic Corporation"),
+-			DMI_MATCH(DMI_BOARD_NAME, "VersaLogic Menlow board"),
+-		},
+-	},
+ 	{ /* Handle reboot issue on Acer Aspire one */
+ 		.callback = set_kbd_reboot,
+ 		.ident = "Acer Aspire One A110",
+-- 
+1.7.1.1
 
