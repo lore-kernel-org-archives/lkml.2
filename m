@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab2A2NOL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 08:14:11 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40971 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab2A2NOJ (ORCPT
+	id S1753065Ab2A2NRf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 08:17:35 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59385 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab2A2NRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 08:14:09 -0500
-Message-ID: <1327842831.2718.2.camel@edumazet-laptop>
-Subject: Re: Bad SSD performance with recent kernels
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Wu Fengguang <wfg@linux.intel.com>
-Cc: Herbert Poetzl <herbert@13thfloor.at>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Date: Sun, 29 Jan 2012 14:13:51 +0100
-In-Reply-To: <20120129111645.GA5839@localhost>
-References: <20120127060034.GG29272@MAIL.13thfloor.at>
-	 <20120128125108.GA9661@localhost> <1327757611.7199.6.camel@edumazet-laptop>
-	 <20120129055917.GB8513@localhost>
-	 <1327831380.14602.6.camel@edumazet-laptop>
-	 <20120129111645.GA5839@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Sun, 29 Jan 2012 08:17:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <1327705373-29395-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1327705373-29395-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1327705373-29395-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Sun, 29 Jan 2012 21:17:32 +0800
+Message-ID: <CAJd=RBDLEWuAKmRcaUJXuz=h9_3kaexbdGyqv7KXn+dmMeUvCQ@mail.gmail.com>
+Subject: Re: [PATCH 1/6] pagemap: avoid splitting thp when reading /proc/pid/pagemap
+From: Hillf Danton <dhillf@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 29 janvier 2012 à 19:16 +0800, Wu Fengguang a écrit :
+Hi Naoya
 
+On Sat, Jan 28, 2012 at 7:02 AM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> Thp split is not necessary if we explicitly check whether pmds are
+> mapping thps or not. This patch introduces this check and adds code
+> to generate pagemap entries for pmds mapping thps, which results in
+> less performance impact of pagemap on thp.
+>
 
-> Note that as long as buffered read(2) is used, it makes almost no
-> difference (well, at least for now) to do "dd bs=128k" or "dd bs=2MB":
-> the 128kb readahead size will be used underneath to submit read IO.
-> 
+Could the method proposed here cover the two cases of split THP in mem cgroup?
 
-Hmm...
-
-# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=128k count=32768
-32768+0 enregistrements lus
-32768+0 enregistrements écrits
-4294967296 octets (4,3 GB) copiés, 20,7718 s, 207 MB/s
-
-
-# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=2M count=2048
-2048+0 enregistrements lus
-2048+0 enregistrements écrits
-4294967296 octets (4,3 GB) copiés, 27,7824 s, 155 MB/s
-
-
-
+Thanks
+Hillf
