@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab2A3SPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 13:15:37 -0500
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:37964 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752055Ab2A3SPg (ORCPT
+	id S1753280Ab2A3SQp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 13:16:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47923 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246Ab2A3SQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 13:15:36 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: iqgTEjwVM1mE1IuM8Wv0lrr5JMh6WEjLDIIjs33lPqj8XKC
- Uvr2d9A9ppXKV3PBs3cXfE7Knjgw7ncp1Pfu91GOJa6.QlhSDOiNfaoPnvgx
- RQTovk75Q3ATuAQZwOnGPo3uM1lQELi3R4ldsfISXNCMgntKr3znZOFG2F2h
- 1N3C2jWUTgC8xQHFRUculbfvkJOuvu2bA.TvWuXs6dWnEaeKbFjF3Po9cm3z
- 3.ymr3HKMg3Oe5sAZcmtRR3N4BdECGDcHpj.2DlpDOCXYgHuGpAFl.s5pkU0
- dUPQr2h4YPyA7ewNmTMJs9yL3icFwJaJiSHTQZZ1jP3I8JMr8jQIq_uy5dhf
- KHw32VxYvmSgaCVTN.m5VGZHTdIL644ZUnvEtaYcmrxlVeYr.cf3V8bGFSaW
- L.AcDyY3UfcK3hrBORK52P7f9DXVgEWJMWub6cfKd
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 30 Jan 2012 12:15:32 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: Dmitry Antipov <dmitry.antipov@linaro.org>,
+	Mon, 30 Jan 2012 13:16:44 -0500
+Date: Mon, 30 Jan 2012 10:16:39 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Dmitry Antipov <dmitry.antipov@linaro.org>,
         Rusty Russell <rusty@rustcorp.com.au>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, patches@linaro.org,
         linaro-dev@lists.linaro.org
 Subject: Re: [PATCH 1/3] percpu: use ZERO_SIZE_PTR / ZERO_OR_NULL_PTR
-In-Reply-To: <20120130181313.GI3355@google.com>
-Message-ID: <alpine.DEB.2.00.1201301215120.28693@router.home>
-References: <1327912654-8738-1-git-send-email-dmitry.antipov@linaro.org> <20120130171558.GB3355@google.com> <alpine.DEB.2.00.1201301121330.28693@router.home> <20120130174256.GF3355@google.com> <alpine.DEB.2.00.1201301145570.28693@router.home>
- <20120130175434.GG3355@google.com> <alpine.DEB.2.00.1201301156530.28693@router.home> <20120130180224.GH3355@google.com> <20120130181313.GI3355@google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Message-ID: <20120130181639.GJ3355@google.com>
+References: <1327912654-8738-1-git-send-email-dmitry.antipov@linaro.org>
+ <20120130171558.GB3355@google.com>
+ <alpine.DEB.2.00.1201301121330.28693@router.home>
+ <20120130174256.GF3355@google.com>
+ <alpine.DEB.2.00.1201301145570.28693@router.home>
+ <20120130175434.GG3355@google.com>
+ <alpine.DEB.2.00.1201301156530.28693@router.home>
+ <20120130180224.GH3355@google.com>
+ <alpine.DEB.2.00.1201301206080.28693@router.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1201301206080.28693@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jan 2012, Tejun Heo wrote:
+On Mon, Jan 30, 2012 at 12:12:18PM -0600, Christoph Lameter wrote:
+> > I thought it didn't.  I rememer thinking about this and determining
+> > that NULL can't be allocated for dynamic addresses.  Maybe I'm
+> > imagining things.  Anyways, if it can return NULL for valid
+> > allocation, it is a bug and should be fixed.
+> 
+> I dont see anything that would hinder an arbitrary value to be returned.
+> NULL is also used for the failure case. Definitely a bug.
 
-> Anyways, yeah, it seems we should improve this part too.
+Given the address translation we do and kernel image layout, I don't
+think this can happen on x86.  It may theoretically possible on other
+archs tho.  Anyways, yeah, this one needs improving.
 
-I agree.
+> > We don't have returned addr >= PAGE_SIZE guarantee yet but I'm fairly
+> > sure that's the only acceptable direction if we want any improvement
+> > in this area.
+> 
+> The ZERO_SIZE_PTR patch would not make the situation that much worse.
 
+I'm not objecting to marking zero-sized allocations per-se.  I'm
+saying the patch is pointless at this point.  It doesn't contribute
+anything while giving the illusion of better error checking than we
+actually do.  Let's do it when it can actually work.
+
+Thanks.
+
+-- 
+tejun
