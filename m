@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab2A3MmQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 07:42:16 -0500
-Received: from b.relay.invitel.net ([62.77.203.4]:41852 "EHLO
-	b.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab2A3MmP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 07:42:15 -0500
-X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jan 2012 07:42:15 EST
-Date: Mon, 30 Jan 2012 13:35:45 +0100
-From: Heiko Schocher <hs@denx.de>
-Subject: Re: [PATCH] drivers, char: add U-Boot bootcount driver
-In-reply-to: <4EDEA3BF.6020507@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Wolfgang Denk <wd@denx.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Vitaly Bordug <vbordug@ru.mvista.com>, linux-watchdog@vger.kernel.org
-Reply-to: hs@denx.de
-Message-id: <4F268EA1.3090907@denx.de>
-Organization: DENX Software Engineering
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-References: <1322991921-21096-1-git-send-email-hs@denx.de>
- <20111204114741.GA5788@pengutronix.de> <4EDCD7B2.5030409@denx.de>
- <20111206215056.GD14154@pengutronix.de>
- <20111206215609.5D1FF1A32820@gemini.denx.de>
- <20111206220620.GF14154@pengutronix.de> <4EDEA3BF.6020507@gmail.com>
-User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
+	id S1752853Ab2A3Mmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 07:42:49 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:37410 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751181Ab2A3Mms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 07:42:48 -0500
+Date: Mon, 30 Jan 2012 12:42:45 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Subject: Re: [PATCH 10/15] mm: extract reclaim code from
+ __alloc_pages_direct_reclaim()
+Message-ID: <20120130124245.GM25268@csn.ul.ie>
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+ <1327568457-27734-11-git-send-email-m.szyprowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1327568457-27734-11-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rob,
-
-Sorry for the late reply ...
-
-Rob Herring wrote:
-> On 12/06/2011 04:06 PM, Wolfram Sang wrote:
->>>> bootcount itself is not a device. It is a feature of certain devices. And that
->>>> needs to be implemented; possibly generic enough that it can work for register
->>>> based, i2c based, and so forth, accesses.
->>> If "boot counter" is not a good name for such a device, then what name
->>> would you suggest?
->> None.
->>
->>> Or do you think a counter (which can be implemented in a number of
->>> different ways, depending on hardware specifics) is not a device?
->> Yes.
->>
->>> What would be such a device, then?
->> "maxim,ds1338"
->>
->> Please have a look at the devicetree.org-wiki-page I just mentioned:
->>
->> http://devicetree.org/Device_Tree_Usage
->>
+On Thu, Jan 26, 2012 at 10:00:52AM +0100, Marek Szyprowski wrote:
+> This patch extracts common reclaim code from __alloc_pages_direct_reclaim()
+> function to separate function: __perform_reclaim() which can be later used
+> by alloc_contig_range().
 > 
-> Perhaps fs/pstore would be a good choice for the user space interface
-> (defining a new file bootcount). This can support any arbitrary backing
-> device although pretty much only ACPI is implemented.
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
+> ---
+>  mm/page_alloc.c |   30 +++++++++++++++++++++---------
+>  1 files changed, 21 insertions(+), 9 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 4e60c0b..e35d06b 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2094,16 +2094,13 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+>  }
+>  #endif /* CONFIG_COMPACTION */
+>  
+> -/* The really slow allocator path where we enter direct reclaim */
+> -static inline struct page *
+> -__alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+> -	struct zonelist *zonelist, enum zone_type high_zoneidx,
+> -	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+> -	int migratetype, unsigned long *did_some_progress)
+> +/* Perform direct synchronous page reclaim */
+> +static inline int
+> +__perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
+> +		  nodemask_t *nodemask)
 
-I tried to use fs/pstore for the bootcount feature, and I can mount
-and read the bootcount value from the file, I created. But I could not
-write to that file ... I only see the callback from
-include/linux/pstore.h
+This function is too large to be inlined. Make it a static int. Once
+that is fixed add a
 
-struct pstore_info {
-[...]
-        int             (*write)(enum pstore_type_id type,
-                        enum kmsg_dump_reason reason, u64 *id,
-                        unsigned int part, size_t size, struct pstore_info *psi);
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-called, if I reboot ... do I miss something? Or is it not possible
-to write to the files created through fs/pstore?
-
-bye,
-Heiko
 -- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Mel Gorman
+SUSE Labs
