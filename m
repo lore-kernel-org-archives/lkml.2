@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab2A3Ink (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 03:43:40 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53618 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725Ab2A3Inj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 03:43:39 -0500
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Dmitry Antipov <dmitry.antipov@linaro.org>
-Subject: [PATCH 3/3] module: use ZERO_OR_NULL_PTR allocation pointer checking
-Date: Mon, 30 Jan 2012 12:44:40 +0400
-Message-Id: <1327913080-8850-1-git-send-email-dmitry.antipov@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1754601Ab2A3IqZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 03:46:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33689 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753109Ab2A3IqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 03:46:24 -0500
+Date: Mon, 30 Jan 2012 09:46:21 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Peng Haitao <penght@cn.fujitsu.com>
+Cc: cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: how to make memory.memsw.failcnt is nonzero
+Message-ID: <20120130084621.GA31570@tiehlicka.suse.cz>
+References: <4EFADFF8.5020703@cn.fujitsu.com>
+ <20120103160411.GD3891@tiehlicka.suse.cz>
+ <4F2601C9.6000606@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2601C9.6000606@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use ZERO_OR_NULL_PTR allocation pointer checking where allocation
-function may return ZERO_SIZE_PTR.
+On Mon 30-01-12 10:34:49, Peng Haitao wrote:
+> 
+> Michal Hocko said the following on 2012-1-4 0:04:
+> > On Wed 28-12-11 17:23:04, Peng Haitao wrote:
+> >>
+> >> memory.memsw.failcnt shows the number of memory+Swap hits limits.
+> >> So I think when memory+swap usage is equal to limit, memsw.failcnt should be nonzero.
+> >>
+> >> I test as follows:
+> >>
+> >> # uname -a
+> >> Linux K-test 3.2.0-rc7-17-g371de6e #2 SMP Wed Dec 28 12:02:52 CST 2011 x86_64 x86_64 x86_64 GNU/Linux
+> >> # mkdir /cgroup/memory/group
+> >> # cd /cgroup/memory/group/
+> >> # echo 10M > memory.limit_in_bytes
+> >> # echo 10M > memory.memsw.limit_in_bytes
+> >> # echo $$ > tasks
+> >> # dd if=/dev/zero of=/tmp/temp_file count=20 bs=1M
+> >> Killed
+> >> # cat memory.memsw.failcnt
+> >> 0
+> >> # grep "failcnt" /var/log/messages | tail -2
+> >> Dec 28 17:05:52 K-test kernel: memory: usage 10240kB, limit 10240kB, failcnt 21
+> >> Dec 28 17:05:52 K-test kernel: memory+swap: usage 10240kB, limit 10240kB, failcnt 0
+> >>
+> >> memory+swap usage is equal to limit, but memsw.failcnt is zero.
+> >>
+> > Please note that memsw.limit_in_bytes is triggered only if we have
+> > consumed some swap space already (and the feature is primarily intended
+> > to stop extensive swap usage in fact).
+> > It goes like this: If we trigger hard limit (memory.limit_in_bytes) then
+> > we start the direct reclaim (with swap available). If we trigger memsw
+> > limit then we try to reclaim without swap available. We will OOM if we
+> > cannot reclaim enough to satisfy the respective limit.
+> > 
+> > The other part of the answer is, yes there is something wrong going
+> > on her because we definitely shouldn't OOM. The workload is a single
+> > threaded and we have a plenty of page cache that could be reclaimed
+> > easily. On the other hand we end up with:
+> > # echo $$ > tasks 
+> > /dev/memctl/a# echo 10M > memory.limit_in_bytes 
+> > /dev/memctl/a# echo 10M > memory.memsw.limit_in_bytes 
+> > /dev/memctl/a# dd if=/dev/zero of=/tmp/temp_file count=20 bs=1M
+> > Killed
+> > /dev/memctl/a# cat memory.stat 
+> > cache 9265152
+> > [...]
+> > 
+> > So there is almost 10M of page cache that we can simply reclaim. If we
+> > use 40M limit then we are OK. So this looks like the small limit somehow
+> > tricks our math in the reclaim path and we think there is nothing to
+> > reclaim.
+> > I will look into this.
+> 
+> Have any conclusion for this?
 
-Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
----
- kernel/module.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+I am sorry, but I didn't get to this. The last two months were really
+busy and I am leaving for a long vacation next week. It's still on my
+todo list...
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 2c93276..5183f91 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -438,7 +438,7 @@ static int percpu_modalloc(struct module *mod,
- 	}
- 
- 	mod->percpu = __alloc_reserved_percpu(size, align);
--	if (!mod->percpu) {
-+	if (unlikely(ZERO_OR_NULL_PTR(mod->percpu))) {
- 		printk(KERN_WARNING
- 		       "%s: Could not allocate %lu bytes percpu data\n",
- 		       mod->name, size);
-@@ -572,7 +572,7 @@ EXPORT_TRACEPOINT_SYMBOL(module_get);
- static int module_unload_init(struct module *mod)
- {
- 	mod->refptr = alloc_percpu(struct module_ref);
--	if (!mod->refptr)
-+	if (unlikely(ZERO_OR_NULL_PTR(mod->refptr)))
- 		return -ENOMEM;
- 
- 	INIT_LIST_HEAD(&mod->source_list);
-@@ -2322,14 +2322,14 @@ static void dynamic_debug_remove(struct _ddebug *debug)
- 
- void * __weak module_alloc(unsigned long size)
- {
--	return size == 0 ? NULL : vmalloc_exec(size);
-+	return vmalloc_exec(size);
- }
- 
- static void *module_alloc_update_bounds(unsigned long size)
- {
- 	void *ret = module_alloc(size);
- 
--	if (ret) {
-+	if (likely(!ZERO_OR_NULL_PTR(ret))) {
- 		mutex_lock(&module_mutex);
- 		/* Update module bounds. */
- 		if ((unsigned long)ret < module_addr_min)
-@@ -2638,7 +2638,7 @@ static int move_module(struct module *mod, struct load_info *info)
- 	 * leak.
- 	 */
- 	kmemleak_not_leak(ptr);
--	if (!ptr)
-+	if (unlikely(ZERO_OR_NULL_PTR(ptr)))
- 		return -ENOMEM;
- 
- 	memset(ptr, 0, mod->core_size);
-@@ -2652,7 +2652,7 @@ static int move_module(struct module *mod, struct load_info *info)
- 	 * after the module is initialized.
- 	 */
- 	kmemleak_ignore(ptr);
--	if (!ptr && mod->init_size) {
-+	if (unlikely(ZERO_OR_NULL_PTR(ptr)) && mod->init_size) {
- 		module_free(mod, mod->module_core);
- 		return -ENOMEM;
- 	}
+> Thanks.
+
 -- 
-1.7.7.6
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
