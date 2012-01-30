@@ -1,140 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab2A3SAT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 13:00:19 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:53759 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab2A3SAP (ORCPT
+	id S1752860Ab2A3SCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 13:02:30 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64710 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784Ab2A3SC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 13:00:15 -0500
-Date: Mon, 30 Jan 2012 12:57:38 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: Re: Regression in skge that started around acb42a3 (so past v3.3-rc1)
-Message-ID: <20120130175738.GA4002@phenom.dumpdata.com>
-References: <20120130155816.GA1400@phenom.dumpdata.com>
- <20120130083843.160ffe5e@nehalam.linuxnetplumber.net>
+	Mon, 30 Jan 2012 13:02:29 -0500
+Date: Mon, 30 Jan 2012 10:02:24 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Dmitry Antipov <dmitry.antipov@linaro.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: [PATCH 1/3] percpu: use ZERO_SIZE_PTR / ZERO_OR_NULL_PTR
+Message-ID: <20120130180224.GH3355@google.com>
+References: <1327912654-8738-1-git-send-email-dmitry.antipov@linaro.org>
+ <20120130171558.GB3355@google.com>
+ <alpine.DEB.2.00.1201301121330.28693@router.home>
+ <20120130174256.GF3355@google.com>
+ <alpine.DEB.2.00.1201301145570.28693@router.home>
+ <20120130175434.GG3355@google.com>
+ <alpine.DEB.2.00.1201301156530.28693@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120130083843.160ffe5e@nehalam.linuxnetplumber.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F26DAAD.001D,ss=1,re=0.000,fgs=0
+In-Reply-To: <alpine.DEB.2.00.1201301156530.28693@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 08:38:43AM -0800, Stephen Hemminger wrote:
-> On Mon, 30 Jan 2012 10:58:16 -0500
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> 
-> > I hadn't done any git bisection yet, but with acb42a3 I started getting this:
-> > 
-> > (and only on i686 - x86_64 does not show these):
-> > 
-> > (This is with Xen, the other one is without)
-> > [   28.602121] eth2: no IPv6 routers present
-> > [   70.457712] eth2: hw csum failure.
-> > [   70.458695] Pid: 0, comm: swapper/0 Not tainted 3.3.0-rc1-00287-gacb42a3 #1
-> > [   70.
-> > [   70.458695]  [<c140942b>] __skb_checksum_complete+0xb/0x10
-> > [   70.458695]  [<c148e3b0>] nf_ip_checksum+0x60/0x120
-> > [   70.458695]  [<c143ee6b>] udp_error+0xbb/0x1f0
-> > [   70.458695]  [<c103c1e4>] ? check_events+0x8/0xc
-> > [   70.458695]  [<c103c1db>] ? xen_restore_fl_direct_reloc+0x4/0x4
-> > [   70.458695]  [<c11497ee>] ? put_cpu_partial+0x9e/0xb0
-> > [   70.458695]  [<c143edb0>] ? udp_pkt_to_tuple+0x60/0x60
-> > [   70.458695]  [<c143a2b6>] nf_conntrack_in+0xc6/0x5c0
-> > [   70.458695]  [<c14751f8>] ? __udp4_lib_rcv+0x428/0x630
-> > [   70.458695]  [<c1149dd0>] ? kfree+0xf0/0x120
-> > [   70.458695]  [<c1405b60>] ? skb_release_data+0x90/0xb0
-> > [   70.458695]  [<c1405b60>] ? skb_release_data+0x90/0xb0
-> > [   70.458695]  [<c14057d8>] ? __kfree_skb+0x38/0x90
-> > [   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
-> > [   70.458695]  [<c148f41e>] ipv4_conntrack_in+0x1e/0x30
-> > [   70.458695]  [<c14360d3>] nf_iterate+0x63/0x90
-> > [   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
-> > [   70.458695]  [<c1436292>] nf_hook_slow+0x62/0x140
-> > [   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
-> > [   70.458695]  [<c144dbb5>] ip_rcv+0x235/0x310
-> > [   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
-> > [   70.458695]  [<c1412c36>] __netif_receive_skb+0x1d6/0x550
-> > [   70.458695]  [<c147c6a9>] ? inet_gro_receive+0x59/0x1f0
-> > [   70.458695]  [<c1413312>] netif_receive_skb+0x22/0x90
-> > [   70.458695]  [<c1413487>] napi_skb_finish+0x37/0x50
-> > [   70.458695]  [<c14139e3>] napi_gro_receive+0xe3/0xf0
-> > [   70.458695]  [<c12ff4c0>] ? xen_swiotlb_map_sg+0x20/0x20
-> > [   70.458695]  [<c12ff4d9>] ? xen_swiotlb_unmap_page+0x19/0x20
-> > [   70.458695]  [<f7983d6c>] skge_poll+0x34c/0x6f4 [skge]
-> > [   70.458695]  [<c141431a>] net_rx_action+0xfa/0x2a0
-> > [   70.458695]  [<c107cecf>] __do_softirq+0x9f/0x210
-> > [   70.458695]  [<c107ce30>] ? irq_exit+0xd0/0xd0
-> > [   70.458695]  <IRQ>  [<c107ce15>] ? irq_exit+0xb5/0xd0
-> 
-> The skge driver uses hardware receive checksum where it computes the sum
-> of the packet (but does not check it). This kind of problem happens when some
-> part of the call chain above it updates the packet but does not update the checksum.
-> A fix like the following is presumably needed for some part of this path.
+Hello,
 
-Ah, so you are saying that the problem above is already fixed in 3.3-rc1.
-
-OK, so what about the other one that I mentioned in the email:
-
-[  288.735236] IP: [<c127b1aa>] memcpy+0x1a/0x0a4f001 *pde = 0000000000000000 
-[  288.735236] Oops: 0000 [#1] PREEMPT SMP 
-[  288.751724] Modules linked in: dm_multipath dm_mod iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi libcrc32c crc32c sg sd_mod ata_generic sata_nv nouveau fbcon tileblit font bitblit e1000 softcursor ttm libata skge drm_kms_helper mxm_wmi video wmi scsi_mod [last unloaded: dump_dma]
-[  288.751724] 
-[  288.751724] Pid: 0, comm: swapper/0 Tainted: G           O 3.3.0-rc1-00383-g0a96265 #1 BIOSTAR Group N61PB-M2S/N61PB-M2S
-[  288.751724] EIP: 0060:[<c127b1aa>] EFLAGS: 00010217 CPU: 0
-[  288.751724] EIP is at memcpy+0x1a/0x40
-[  288.751724] EAX: f0a11040 EBX: 00000062 ECX: 00000018 EDX: 00000000
-[  288.751724] ESI: 00000000 EDI: f0a11040 EBP: f100bf2c ESP: f100bf20
-[  288.751724]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[  288.751724] Process swapper/0 (pid: 0, ti=f100a000 task=c16b1020 task.ti=c16aa000)
-[  288.751724] Stack:
-[  288.751724]  f1297c00 f1086144 f762dd80 f100bf88 f8449ccb 39e70110 00000043 39e70110
-[  288.751724]  00000043 00000000 c176b140 00000002 f100bf98 f0991d80 f1297c00 f11c4060
-[  288.751724]  ffff0000 00000040 f1297c08 f1297800 00000000 00000000 00000062 f1297c08
-[  288.751724] Call Trace:
-[  288.751724]  [<f8449ccb>] skge_poll+0x2ab/0x6f4 [skge]
-[  288.751724]  [<c1413dba>] net_rx_action+0xfa/0x2a0
-[  288.751724]  [<c107cecf>] __do_softirq+0x9f/0x210
-[  288.751724]  [<c107ce30>] ? irq_exit+0xd0/0xd0
-[  288.751724]  <IRQ> 
-[  288.751724]  [<c107ce15>] ? irq_exit+0xb5/0xd0
-[  288.751724]  [<c1045e06>] ? do_IRQ+0x46/0xb0
-[  288.751724]  [<c107cdc1>] ? irq_exit+0x61/0xd0
-[  288.751724]  [<c105fb23>] ? smp_apic_timer_interrupt+0x53/0x90
-[  288.751724]  [<c153abb0>] ? common_interrupt+0x30/0x38
-[  288.751724]  [<c10685f5>] ? native_safe_halt+0x5/0x10
-[  288.751724]  [<c104c53d>] ? default_idle+0xfd/0x200
-[  288.751724]  [<c104c68c>] ? amd_e400_idle+0x4c/0x100
-[  288.751724]  [<c1043fd8>] ? cpu_idle+0xa8/0xf0
-[  288.751724]  [<c151602b>] ? rest_init+0x7b/0x80
-[  288.751724]  [<c16f686d>] ? start_kernel+0x348/0x34e
-[  288.751724]  [<c16f634f>] ? kernel_init+0x149/0x149
-[  288.751724]  [<c16f60ba>] ? i386_start_kernel+0xa9/0xb0
-[  288.751724] Code: c6 43 4c 04 88 43 4d 8b 1c 24 89 ec 5d c3 90 90 90 55 89 e5 83 ec 0c 89 1c 24 89 cb 89 74 24 04 c1 e9 02 89 d6 89 7c 24 08 89 c7 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 8b 1c 24 8b 74 24 04 8b 7c 24 
-[  288.751724] EIP: [<c127b1aa>] memcpy+0x1a/0x40 SS:ESP 0068:f100bf20
-[  288.751724] CR2: 0000000000000000
-[  288.972094] ---[ end trace dca3e5f32515fe5d ]---
-[  288.976724] Kernel panic - not syncing: Fatal exception in interrupt
-[  288.983094] panic occurred, switching back to text console
-
+On Mon, Jan 30, 2012 at 11:58:52AM -0600, Christoph Lameter wrote:
+> > No, NULL is never gonna be a valid return from any allocator including
+> > percpu.  Percpu allocator doesn't and will never do so.
 > 
-> commit fa2da8cdae1dd64f78fc915ca1d1a4a93c71e7cb
-> Author: stephen hemminger <shemminger@vyatta.com>
-> Date:   Tue Nov 15 08:09:14 2011 +0000
+> How do you prevent the percpu allocator from returning NULL? I thought the
+> per cpu offsets can wrap around?
+
+I thought it didn't.  I rememer thinking about this and determining
+that NULL can't be allocated for dynamic addresses.  Maybe I'm
+imagining things.  Anyways, if it can return NULL for valid
+allocation, it is a bug and should be fixed.
+
+> > I'm saying we don't have this for ZERO_SIZE_PTR in any meaningful way
+> > at this point.  If somebody wants to implement it properly, please
+> > feel free to, but simply applying ZERO_SIZE_PTR without other changes
+> > doesn't make any sense.
 > 
->     bridge: correct IPv6 checksum after pull
->     
->     Bridge multicast snooping of ICMPv6 would incorrectly report a checksum prob
->     when used with Ethernet devices like sky2 that use CHECKSUM_COMPLETE.
->     When bytes are removed from skb, the computed checksum needs to be adjusted.
->     
->     Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
->     Tested-by: Martin Volf <martin.volf.42@gmail.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
+> We have no clean notion of how a percpu pointer needs to be handled. Both
+> ways of handling things have drawbacks.
+
+We don't have returned addr >= PAGE_SIZE guarantee yet but I'm fairly
+sure that's the only acceptable direction if we want any improvement
+in this area.
+
+Thanks.
+
+-- 
+tejun
