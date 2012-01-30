@@ -1,70 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab2A3WmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:42:15 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54473 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752772Ab2A3WmM (ORCPT
+	id S1754455Ab2A3Wmz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:42:55 -0500
+Received: from outmail023.snc4.facebook.com ([66.220.144.157]:63168 "EHLO
+	intmgw002.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754081Ab2A3Wmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:42:12 -0500
-X-Sasl-enc: CS/4vR19OdOPE4QTHxvqGu24zNBF73SvOr/WF4BcFAOI 1327963330
-Subject: Re: [PATCH v3 4/4] Allow unprivileged chroot when safe
-From: Colin Walters <walters@verbum.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jamie Lokier <jamie@shareable.org>, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
-        alan@lxorguk.ukuu.org.uk
-Date: Mon, 30 Jan 2012 17:41:47 -0500
-In-Reply-To: <CALCETrWqOsWjnJOLD5TytOiSSiRE7wAwo6dRj5A7-jP-zEGa3A@mail.gmail.com>
-References: <cover.1327858005.git.luto@amacapital.net>
-	 <0e2f0f54e19bff53a3739ecfddb4ffa9a6dbde4d.1327858005.git.luto@amacapital.net>
-	 <1327960736.5355.5.camel@lenny>
-	 <CALCETrWqOsWjnJOLD5TytOiSSiRE7wAwo6dRj5A7-jP-zEGa3A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1327963309.5355.7.camel@lenny>
-Mime-Version: 1.0
+	Mon, 30 Jan 2012 17:42:53 -0500
+From: Arun Sharma <asharma@fb.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Glauber Costa <glommer@parallels.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] net: Disambiguate kernel message
+Date: Mon, 30 Jan 2012 14:41:44 -0800
+Message-Id: <1327963304-24828-1-git-send-email-asharma@fb.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 14:10 -0800, Andy Lutomirski wrote:
-> On Mon, Jan 30, 2012 at 1:58 PM, Colin Walters <walters@verbum.org> wrote:
-> > On Mon, 2012-01-30 at 08:17 -0800, Andy Lutomirski wrote:
-> >> Chroot can easily be used to subvert setuid programs.  If no_new_privs,
-> >> then setuid programs don't gain any privilege, so allow chroot.
-> >
-> > Is this needed/desired by anyone now, or are you just using it to "demo"
-> > NO_NEW_PRIVS?  I don't see it as very useful on its own, since in any
-> > "container"-type chroot you really want /proc and /dev, and your patch
-> > doesn't help with that.
-> 
-> It's a demo, but it could still be useful for container-ish things.
-> If something privileged sets up /proc, /sys, and /dev, then
-> unprivileged code can chroot into the container.  This would allow
-> much simpler implementations of tools like schroot.
+Some of our machines were reporting:
 
-What's the win if you still need a setuid binary?  schroot (and my
-linux-user chroot binary) can just as easily call chroot as they can
-create bind mounts; I'm not buying a code complexity argument.
+TCP: too many of orphaned sockets
 
-> With this change, they wouldn't need to start privileged.
-> (Admittedly, this isn't a great argument for this patch.)
+even when the number of orphaned sockets was well below the
+limit.
 
-Right...I'm not aware of anyone who would find that useful.
+We print a different message depending on whether we're out
+of TCP memory or there are too many orphan sockets.
 
+Signed-off-by: Arun Sharma <asharma@fb.com>
+Suggested-by: Mohan Srinivasan <mohan@fb.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>
+Cc: Glauber Costa <glommer@parallels.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ include/net/tcp.h    |   12 ++++++++----
+ net/ipv4/tcp.c       |   14 +++++++++++++-
+ net/ipv4/tcp_timer.c |    9 +++++++--
+ 3 files changed, 28 insertions(+), 7 deletions(-)
+
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 0118ea9..92965dd 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -273,6 +273,14 @@ static inline int between(__u32 seq1, __u32 seq2, __u32 seq3)
+ 	return seq3 - seq2 >= seq1 - seq2;
+ }
+ 
++static inline bool tcp_out_of_memory(struct sock *sk)
++{
++	if (sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
++	    sk_memory_allocated(sk) > sk_prot_mem_limits(sk, 2))
++		return true;
++	return false;
++}
++
+ static inline bool tcp_too_many_orphans(struct sock *sk, int shift)
+ {
+ 	struct percpu_counter *ocp = sk->sk_prot->orphan_count;
+@@ -283,10 +291,6 @@ static inline bool tcp_too_many_orphans(struct sock *sk, int shift)
+ 		if (orphans << shift > sysctl_tcp_max_orphans)
+ 			return true;
+ 	}
+-
+-	if (sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
+-	    sk_memory_allocated(sk) > sk_prot_mem_limits(sk, 2))
+-		return true;
+ 	return false;
+ }
+ 
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 9bcdec3..395a4ef 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2015,10 +2015,22 @@ adjudge_to_death:
+ 	}
+ 	if (sk->sk_state != TCP_CLOSE) {
+ 		sk_mem_reclaim(sk);
+-		if (tcp_too_many_orphans(sk, 0)) {
++		bool too_many_orphans = tcp_too_many_orphans(sk, 0);
++		bool out_of_socket_memory = tcp_out_of_memory(sk);
++
++		if (too_many_orphans) {
+ 			if (net_ratelimit())
+ 				printk(KERN_INFO "TCP: too many of orphaned "
+ 				       "sockets\n");
++		}
++
++		if (out_of_socket_memory) {
++			if (net_ratelimit())
++				printk(KERN_INFO "TCP: out of memory. "
++				       "Consider tuning tcp_mem\n");
++		}
++
++		if (too_many_orphans || out_of_socket_memory) {
+ 			tcp_set_state(sk, TCP_CLOSE);
+ 			tcp_send_active_reset(sk, GFP_ATOMIC);
+ 			NET_INC_STATS_BH(sock_net(sk),
+diff --git a/net/ipv4/tcp_timer.c b/net/ipv4/tcp_timer.c
+index a516d1e..89907c3 100644
+--- a/net/ipv4/tcp_timer.c
++++ b/net/ipv4/tcp_timer.c
+@@ -67,6 +67,7 @@ static int tcp_out_of_resources(struct sock *sk, int do_reset)
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	int shift = 0;
++	bool too_many_orphans, out_of_socket_memory;
+ 
+ 	/* If peer does not open window for long time, or did not transmit
+ 	 * anything for long time, penalize it. */
+@@ -77,9 +78,13 @@ static int tcp_out_of_resources(struct sock *sk, int do_reset)
+ 	if (sk->sk_err_soft)
+ 		shift++;
+ 
+-	if (tcp_too_many_orphans(sk, shift)) {
+-		if (net_ratelimit())
++	too_many_orphans = tcp_too_many_orphans(sk, shift);
++	out_of_socket_memory = tcp_out_of_memory(sk);
++	if (too_many_orphans || out_of_socket_memory) {
++		if (out_of_socket_memory && net_ratelimit())
+ 			printk(KERN_INFO "Out of socket memory\n");
++		if (too_many_orphans && net_ratelimit())
++			printk(KERN_INFO "TCP: too many orphaned sockets\n");
+ 
+ 		/* Catch exceptional cases, when connection requires reset.
+ 		 *      1. Last segment was sent recently. */
+-- 
+1.7.4
 
