@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2A3Ohw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 09:37:52 -0500
-Received: from mail.solarflare.com ([216.237.3.220]:8629 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753196Ab2A3Ohu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 09:37:50 -0500
-Message-ID: <1327934267.5400.445.camel@deadeye>
-Subject: RE: [07/22] Cyclades PC300 driver: ioctl() fixes for mixed
- 64/32-bit systems
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Laight <David.Laight@ACULAB.COM>
-CC: Andrea Shepard <andrea@persephoneslair.org>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <khc@pm.waw.pl>, <davem@davemloft.net>, <mmarek@suse.cz>,
-        <jkosina@suse.cz>, <joe@perches.com>, <justinmattock@gmail.com>,
-        <gregkh@suse.de>, <alan@linux.intel.com>, <jdmason@kudzu.us>
-Date: Mon, 30 Jan 2012 14:37:47 +0000
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6E3F@saturn3.aculab.com>
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E3F@saturn3.aculab.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	id S1753341Ab2A3Oio (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 09:38:44 -0500
+Received: from mga03.intel.com ([143.182.124.21]:23482 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752495Ab2A3Oin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 09:38:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="101128170"
+Date: Mon, 30 Jan 2012 22:28:37 +0800
+From: Wu Fengguang <wfg@linux.intel.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Bad SSD performance with recent kernels
+Message-ID: <20120130142837.GA21750@localhost>
+References: <1327831380.14602.6.camel@edumazet-laptop>
+ <20120129111645.GA5839@localhost>
+ <1327842831.2718.2.camel@edumazet-laptop>
+ <20120129161058.GA13156@localhost>
+ <CANejiEW86b7btiOcVFF3qVhqU1t6FRosvgfiydWwU5zgeDFOqw@mail.gmail.com>
+ <20120130071346.GM29272@MAIL.13thfloor.at>
+ <1327908158.21268.3.camel@sli10-conroe>
+ <20120130073621.GN29272@MAIL.13thfloor.at>
+ <1327911142.21268.7.camel@sli10-conroe>
+ <CANejiEXwt7zdWRD0gTg1JXNPZ52vU1Z4cQsb3xztqDLccyTPSQ@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18676.004
-X-TM-AS-Result: No--21.883300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANejiEXwt7zdWRD0gTg1JXNPZ52vU1Z4cQsb3xztqDLccyTPSQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 11:44 +0000, David Laight wrote:
-> > +struct pc300_net_stats {
-> > +	u64 rx_packets;
-> ...
-> > +	u64 rx_compressed;
-> > +	u64 tx_compressed;
-> > +};
-> > +
-> >  typedef struct pc300stats {
-> >  	int hw_type;
-> >  	u32 line_on;
-> >  	u32 line_off;
-> > -	struct net_device_stats gen_stats;
-> > +	/* Use this instead of net_device_stats, since passing
-> > +	 * net_device_stats breaks 32-bit user processes on 
-> > 64-bit kernels,
-> > +	 * and rtnetlink is unreasonably complicated just to get
-> > +	 * some statistics.
-> > +	 */
-> > +	struct pc300_net_stats net_stats;
-> >  	falc_t te_stats;
-> >  } pc300stats_t;
-> 
-> Since 'struct net_device_stats' looks like a common structure,
-> maybe the 64bit version should be added in the same place??
-[...]
+On Mon, Jan 30, 2012 at 06:31:34PM +0800, Li, Shaohua wrote:
 
-It's called struct rtnl_link_stats64 and is already defined in
-<linux/rtnetlink.h> (where it must remain).
+> Looks the 2.6.39 block plug introduces some latency here. deleting
+> blk_start_plug/blk_finish_plug in generic_file_aio_read seems
+> workaround
+> the issue. The plug seems not good for sequential IO, because readahead
+> code already has plug and has fine grained control.
 
-This change doesn't seem to be a proper fix.  If the ioctl interface to
-this driver uses struct net_device_stats (which I didn't realise,
-otherwise I would have left that structure exported from
-<linux/netdevice.h>) then it should continue doing so to maintain
-compatibility.  The driver will have to fix up the outgoing structure
-with the aid of is_compat_task().
+Why not remove the generic_file_aio_read() plug completely? It
+actually prevents unplugging immediately after the readahead IO is
+submitted and in turn stalls the IO pipeline as showed by Eric's
+blktrace data.
 
-If backward-compatibility is really not a concern for the driver then
-this ioctl should be completely removed in favour of ethtool extended
-stats.
+Eric, will you test this patch? Thank you.
 
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+--- linux.orig/mm/filemap.c	2012-01-30 22:27:11.000000000 +0800
++++ linux/mm/filemap.c	2012-01-30 22:27:25.000000000 +0800
+@@ -1414,15 +1414,12 @@ generic_file_aio_read(struct kiocb *iocb
+ 	unsigned long seg = 0;
+ 	size_t count;
+ 	loff_t *ppos = &iocb->ki_pos;
+-	struct blk_plug plug;
+ 
+ 	count = 0;
+ 	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+ 	if (retval)
+ 		return retval;
+ 
+-	blk_start_plug(&plug);
+-
+ 	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
+ 	if (filp->f_flags & O_DIRECT) {
+ 		loff_t size;
+@@ -1495,7 +1492,6 @@ generic_file_aio_read(struct kiocb *iocb
+ 			break;
+ 	}
+ out:
+-	blk_finish_plug(&plug);
+ 	return retval;
+ }
+ EXPORT_SYMBOL(generic_file_aio_read);
