@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab2A3WKp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:10:45 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58164 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab2A3WKn convert rfc822-to-8bit (ORCPT
+	id S1754055Ab2A3WL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:11:58 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39254 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab2A3WL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:10:43 -0500
+	Mon, 30 Jan 2012 17:11:56 -0500
+Message-ID: <4F2715A7.9030101@gmail.com>
+Date: Mon, 30 Jan 2012 23:11:51 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120124 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <1327960736.5355.5.camel@lenny>
-References: <cover.1327858005.git.luto@amacapital.net> <0e2f0f54e19bff53a3739ecfddb4ffa9a6dbde4d.1327858005.git.luto@amacapital.net>
- <1327960736.5355.5.camel@lenny>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 30 Jan 2012 14:10:22 -0800
-Message-ID: <CALCETrWqOsWjnJOLD5TytOiSSiRE7wAwo6dRj5A7-jP-zEGa3A@mail.gmail.com>
-Subject: Re: [PATCH v3 4/4] Allow unprivileged chroot when safe
-To: Colin Walters <walters@verbum.org>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jamie Lokier <jamie@shareable.org>, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Danny Kukawka <danny.kukawka@bisect.de>
+CC: ath5k-devel@venema.h4ckr.net, Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        Bob Copeland <me@bobcopeland.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/16] ath5k: make ath5k_modparam_no_hw_rfkill_switch
+ real
+References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de> <1327960820-11867-12-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1327960820-11867-12-git-send-email-danny.kukawka@bisect.de>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 1:58 PM, Colin Walters <walters@verbum.org> wrote:
-> On Mon, 2012-01-30 at 08:17 -0800, Andy Lutomirski wrote:
->> Chroot can easily be used to subvert setuid programs.  If no_new_privs,
->> then setuid programs don't gain any privilege, so allow chroot.
->
-> Is this needed/desired by anyone now, or are you just using it to "demo"
-> NO_NEW_PRIVS?  I don't see it as very useful on its own, since in any
-> "container"-type chroot you really want /proc and /dev, and your patch
-> doesn't help with that.
+On 01/30/2012 11:00 PM, Danny Kukawka wrote:
+> Make ath5k_modparam_no_hw_rfkill_switch real bool to fix:
+> 'warning: return from incompatible pointer type' compiler warning.
 
-It's a demo, but it could still be useful for container-ish things.
-If something privileged sets up /proc, /sys, and /dev, then
-unprivileged code can chroot into the container.  This would allow
-much simpler implementations of tools like schroot.
+Hi, I'm afraid you are too late:
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=11deb53328a06ad4edbf774f5c3b61c6dbb9104c
 
->
-> System daemons that do chroot for a modicum of security already start
-> privileged, so this doesn't help them either.
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  drivers/net/wireless/ath/ath5k/base.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
+> index d366dad..ad2f115 100644
+> --- a/drivers/net/wireless/ath/ath5k/base.c
+> +++ b/drivers/net/wireless/ath/ath5k/base.c
+> @@ -80,7 +80,7 @@ static bool modparam_fastchanswitch;
+>  module_param_named(fastchanswitch, modparam_fastchanswitch, bool, S_IRUGO);
+>  MODULE_PARM_DESC(fastchanswitch, "Enable fast channel switching for AR2413/AR5413 radios.");
+>  
+> -static int ath5k_modparam_no_hw_rfkill_switch;
+> +static bool ath5k_modparam_no_hw_rfkill_switch;
+>  module_param_named(no_hw_rfkill_switch, ath5k_modparam_no_hw_rfkill_switch,
+>  								bool, S_IRUGO);
+>  MODULE_PARM_DESC(no_hw_rfkill_switch, "Ignore the GPIO RFKill switch state");
 
-With this change, they wouldn't need to start privileged.
-(Admittedly, this isn't a great argument for this patch.)
-
-It would be really nice to have unprivileged filesystem namespace
-features, but that would be more complicated to do safely.
-
---Andy
-
->
->
->
-
-
-
+thanks,
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
-Office: (310) 553-5322
-Mobile: (650) 906-0647
+js
