@@ -1,127 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab2A3GjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 01:39:06 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55249 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab2A3GjE (ORCPT
+	id S1752147Ab2A3Gvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 01:51:50 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44646 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab2A3Gvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 01:39:04 -0500
-X-AuditID: 9c93016f-b7c20ae000005067-9f-4f263b057a0a
-To: undisclosed-recipients:;
-Message-ID: <4F263B01.4050103@gmail.com>
-Date: Mon, 30 Jan 2012 15:38:57 +0900
-From: Namhyung Kim <namhyung@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.kernel.device-mapper.devel
-CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        dm-devel@redhat.com
-Subject: Re: [PATCH] block: add missing block_bio_complete() tracepoint
-References: <1327830093-12130-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1327830093-12130-1-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 30 Jan 2012 01:51:49 -0500
+From: "Devendra.Naga" <devendra.aaru@gmail.com>
+To: <Larry.Finger@lwfinger.net>, <chaoming_li@realsil.com.cn>,
+        <linville@tuxdriver.com>, <paul.gortmaker@windriver.com>,
+        <joe@perches.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "Devendra.Naga" <devendra.aaru@gmail.com>
+Subject: [PATCH 1/1] wireless: move ifs' in _rtl92c_store_pwrIndex_diffrate_offset into elseif statements
+Date: Mon, 30 Jan 2012 01:50:45 -0500
+Message-Id: <1327906245-8200-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-01-29 6:41 PM, Namhyung Kim wrote:
-> The block_bio_complete() TP has been missed so long, so that bio-based
-> drivers haven't been able to trace its IO behavior. Add it.
->
-> In some rare cases, such as loop_switch, @bio->bi_bdev can be NULL.
-> Thus convert it to TRACE_EVENT_CONDITION() as Steven suggested.
->
+From: "Devendra.Naga" <devendra.aaru@gmail.com>
 
-Now I see that it seems TRACE_EVENT_CONDITION() can protect event 
-tracing from such condition, but what about other users of the TP like 
-blktrace? I think it'll still get NULL pointer dereference on 
-bdev_get_queue() after the change, right? If so, convert to T_E_C() 
-looks meaningless IMHO. Do I miss something?
+        The regaddr is compared against different rates in each case and the powerlevels are set
+        accordingly. as this can match for the first if and we still check for other powerlevels too,
+        use else if ratherthan using if statements
+Signed-off-by: Devendra.Naga <devendra.aaru@gmail.com>
+---
+ drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |   47 +++++++------------
+ 1 files changed, 17 insertions(+), 30 deletions(-)
 
-Thanks,
-Namhyung
-
-
->  From now on, request-based drivers will also get BLK_TA_COMPLETEs for
-> all bio's in requests. This needs to be handled in userland properly.
->
-> Also remove external use of the TP in DM and unexport it.
->
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: dm-devel@redhat.com
-> ---
-> * v2:
->   - Merge previous patches into one as suggested by Tejun.
->   - Drop BIO_COMPLETE_MASK. Now I think it should be handled in userland
->     like other (maybe duplicated, in some sense) bio complete reports.
->
->   block/blk-core.c             |    1 -
->   drivers/md/dm.c              |    1 -
->   fs/bio.c                     |    2 ++
->   include/trace/events/block.h |    4 +++-
->   4 files changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 1b4fd93af2c0..399c128f516c 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -37,7 +37,6 @@
->
->   EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_remap);
->   EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
-> -EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_complete);
->
->   DEFINE_IDA(blk_queue_ida);
->
-> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-> index 4720f68f817e..01185fa0eb74 100644
-> --- a/drivers/md/dm.c
-> +++ b/drivers/md/dm.c
-> @@ -648,7 +648,6 @@ static void dec_pending(struct dm_io *io, int error)
->   			queue_io(md, bio);
->   		} else {
->   			/* done with normal IO or empty flush */
-> -			trace_block_bio_complete(md->queue, bio, io_error);
->   			bio_endio(bio, io_error);
->   		}
->   	}
-> diff --git a/fs/bio.c b/fs/bio.c
-> index b1fe82cf88cf..14c03eaf384e 100644
-> --- a/fs/bio.c
-> +++ b/fs/bio.c
-> @@ -1447,6 +1447,8 @@ void bio_endio(struct bio *bio, int error)
->   	else if (!test_bit(BIO_UPTODATE,&bio->bi_flags))
->   		error = -EIO;
->
-> +	trace_block_bio_complete(bdev_get_queue(bio->bi_bdev), bio, error);
-> +
->   	if (bio->bi_end_io)
->   		bio->bi_end_io(bio, error);
->   }
-> diff --git a/include/trace/events/block.h b/include/trace/events/block.h
-> index 05c5e61f0a7c..96955f4828b3 100644
-> --- a/include/trace/events/block.h
-> +++ b/include/trace/events/block.h
-> @@ -213,12 +213,14 @@ TRACE_EVENT(block_bio_bounce,
->    * This tracepoint indicates there is no further work to do on this
->    * block IO operation @bio.
->    */
-> -TRACE_EVENT(block_bio_complete,
-> +TRACE_EVENT_CONDITION(block_bio_complete,
->
->   	TP_PROTO(struct request_queue *q, struct bio *bio, int error),
->
->   	TP_ARGS(q, bio, error),
->
-> +	TP_CONDITION(bio->bi_bdev != NULL),
-> +
->   	TP_STRUCT__entry(
->   		__field( dev_t,		dev		)
->   		__field( sector_t,	sector		)
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
+index 22e998d..cb11e5a 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
+@@ -260,106 +260,93 @@ void _rtl92c_store_pwrIndex_diffrate_offset(struct ieee80211_hw *hw,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][0] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][0]);
+-	}
+-	if (regaddr == RTXAGC_A_RATE54_24) {
++	} else if (regaddr == RTXAGC_A_RATE54_24) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][1] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][1] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][1]);
+-	}
+-	if (regaddr == RTXAGC_A_CCK1_MCS32) {
++	} else if (regaddr == RTXAGC_A_CCK1_MCS32) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][6] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][6] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][6]);
+-	}
+-	if (regaddr == RTXAGC_B_CCK11_A_CCK2_11 && bitmask == 0xffffff00) {
++	} else if (regaddr == RTXAGC_B_CCK11_A_CCK2_11 &&
++		bitmask == 0xffffff00) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][7] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][7] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][7]);
+-	}
+-	if (regaddr == RTXAGC_A_MCS03_MCS00) {
++	} else if (regaddr == RTXAGC_A_MCS03_MCS00) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][2] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][2] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][2]);
+-	}
+-	if (regaddr == RTXAGC_A_MCS07_MCS04) {
++	} else if (regaddr == RTXAGC_A_MCS07_MCS04) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][3] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][3] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][3]);
+-	}
+-	if (regaddr == RTXAGC_A_MCS11_MCS08) {
++	} else if (regaddr == RTXAGC_A_MCS11_MCS08) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][4] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][4] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][4]);
+-	}
+-	if (regaddr == RTXAGC_A_MCS15_MCS12) {
++	} else if (regaddr == RTXAGC_A_MCS15_MCS12) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][5] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][5] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][5]);
+-	}
+-	if (regaddr == RTXAGC_B_RATE18_06) {
++	} else if (regaddr == RTXAGC_B_RATE18_06) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][8] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][8] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][8]);
+-	}
+-	if (regaddr == RTXAGC_B_RATE54_24) {
++	} else if (regaddr == RTXAGC_B_RATE54_24) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][9] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][9] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][9]);
+-	}
+-	if (regaddr == RTXAGC_B_CCK1_55_MCS32) {
++	} else if (regaddr == RTXAGC_B_CCK1_55_MCS32) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][14] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][14] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][14]);
+-	}
+-	if (regaddr == RTXAGC_B_CCK11_A_CCK2_11 && bitmask == 0x000000ff) {
++	} else if (regaddr == RTXAGC_B_CCK11_A_CCK2_11 &&
++		bitmask == 0x000000ff) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][15] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][15] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][15]);
+-	}
+-	if (regaddr == RTXAGC_B_MCS03_MCS00) {
++	} else if (regaddr == RTXAGC_B_MCS03_MCS00) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][10] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][10] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][10]);
+-	}
+-	if (regaddr == RTXAGC_B_MCS07_MCS04) {
++	} else if (regaddr == RTXAGC_B_MCS07_MCS04) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][11] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][11] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][11]);
+-	}
+-	if (regaddr == RTXAGC_B_MCS11_MCS08) {
++	} else if (regaddr == RTXAGC_B_MCS11_MCS08) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][12] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][12] = 0x%x\n",
+ 			 rtlphy->pwrgroup_cnt,
+ 			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][12]);
+-	}
+-	if (regaddr == RTXAGC_B_MCS15_MCS12) {
++	} else if (regaddr == RTXAGC_B_MCS15_MCS12) {
+ 		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][13] = data;
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+ 			 "MCSTxPowerLevelOriginalOffset[%d][13] = 0x%x\n",
+-- 
+1.7.5.4
 
