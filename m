@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab2A3SCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 13:02:30 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64710 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab2A3SC3 (ORCPT
+	id S1753026Ab2A3SDH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 13:03:07 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:40307 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347Ab2A3SDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 13:02:29 -0500
-Date: Mon, 30 Jan 2012 10:02:24 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Dmitry Antipov <dmitry.antipov@linaro.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org
-Subject: Re: [PATCH 1/3] percpu: use ZERO_SIZE_PTR / ZERO_OR_NULL_PTR
-Message-ID: <20120130180224.GH3355@google.com>
-References: <1327912654-8738-1-git-send-email-dmitry.antipov@linaro.org>
- <20120130171558.GB3355@google.com>
- <alpine.DEB.2.00.1201301121330.28693@router.home>
- <20120130174256.GF3355@google.com>
- <alpine.DEB.2.00.1201301145570.28693@router.home>
- <20120130175434.GG3355@google.com>
- <alpine.DEB.2.00.1201301156530.28693@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1201301156530.28693@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 30 Jan 2012 13:03:04 -0500
+Date: Mon, 30 Jan 2012 13:02:59 -0500 (EST)
+Message-Id: <20120130.130259.1190745234966440677.davem@davemloft.net>
+To: konrad.wilk@oracle.com
+Cc: shemminger@vyatta.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Regression in skge that started around acb42a3 (so past
+ v3.3-rc1)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120130175738.GA4002@phenom.dumpdata.com>
+References: <20120130155816.GA1400@phenom.dumpdata.com>
+	<20120130083843.160ffe5e@nehalam.linuxnetplumber.net>
+	<20120130175738.GA4002@phenom.dumpdata.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 30 Jan 2012 10:03:01 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 30 Jan 2012 12:57:38 -0500
 
-On Mon, Jan 30, 2012 at 11:58:52AM -0600, Christoph Lameter wrote:
-> > No, NULL is never gonna be a valid return from any allocator including
-> > percpu.  Percpu allocator doesn't and will never do so.
-> 
-> How do you prevent the percpu allocator from returning NULL? I thought the
-> per cpu offsets can wrap around?
+> Ah, so you are saying that the problem above is already fixed in 3.3-rc1.
 
-I thought it didn't.  I rememer thinking about this and determining
-that NULL can't be allocated for dynamic addresses.  Maybe I'm
-imagining things.  Anyways, if it can return NULL for valid
-allocation, it is a bug and should be fixed.
+No he's not saying that, he says somewhere we probably need a fix
+"like" the commit he mentioned.
 
-> > I'm saying we don't have this for ZERO_SIZE_PTR in any meaningful way
-> > at this point.  If somebody wants to implement it properly, please
-> > feel free to, but simply applying ZERO_SIZE_PTR without other changes
-> > doesn't make any sense.
-> 
-> We have no clean notion of how a percpu pointer needs to be handled. Both
-> ways of handling things have drawbacks.
+He did not say that commit fixes this bug.
 
-We don't have returned addr >= PAGE_SIZE guarantee yet but I'm fairly
-sure that's the only acceptable direction if we want any improvement
-in this area.
-
-Thanks.
-
--- 
-tejun
