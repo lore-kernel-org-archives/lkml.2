@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617Ab2A3GCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 01:02:23 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52443 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2A3GCW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 01:02:22 -0500
-X-AuditID: 9c93016f-b7c20ae000005067-3c-4f26326c5d47
-Message-ID: <4F26326B.5010806@gmail.com>
-Date: Mon, 30 Jan 2012 15:02:19 +0900
-From: Namhyung Kim <namhyung@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1753901Ab2A3GE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 01:04:29 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:34314 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab2A3GE2 (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Mon, 30 Jan 2012 01:04:28 -0500
+Message-ID: <4F2632C7.2000203@suse.com>
+Date: Mon, 30 Jan 2012 11:33:51 +0530
+From: Suresh Jayaraman <sjayaraman@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.kernel.device-mapper.devel
 To: Tejun Heo <tj@kernel.org>
-CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, dm-devel@redhat.com
-Subject: Re: [PATCH] block: add missing block_bio_complete() tracepoint
-References: <1327830093-12130-1-git-send-email-namhyung@gmail.com> <20120129192447.GB17211@htj.dyndns.org> <4F25F5F3.6060507@gmail.com> <20120130014703.GG17211@htj.dyndns.org> <4F25FEE5.5010309@gmail.com> <20120130023012.GH17211@htj.dyndns.org> <4F260547.1030405@gmail.com> <20120130025326.GI17211@htj.dyndns.org> <4F262FEF.9020406@gmail.com> <20120130055459.GJ17211@htj.dyndns.org>
-In-Reply-To: <20120130055459.GJ17211@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: Slab corruption in floppy driver module
+References: <4F1EAFE9.5000306@suse.com> <20120124223153.GG17291@redhat.com> <20120126150420.GD1891@redhat.com> <20120126180532.GA4077@dhcp-172-17-108-109.mtv.corp.google.com> <20120126193735.GA11297@redhat.com> <giobtq5e46.fsf@mx10.gouders.net> <4F223F11.4050307@suse.com> <giaa59tmbr.fsf@mx10.gouders.net> <20120127195455.GA18068@redhat.com> <20120129193601.GD17211@htj.dyndns.org>
+In-Reply-To: <20120129193601.GD17211@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-01-30 2:54 PM, Tejun Heo wrote:
-> On Mon, Jan 30, 2012 at 02:51:43PM +0900, Namhyung Kim wrote:
->> Hi,
+On 01/30/2012 01:06 AM, Tejun Heo wrote:
+> On Fri, Jan 27, 2012 at 02:54:55PM -0500, Vivek Goyal wrote:
+>> floppy: Fix a crash during rmmmod
 >>
->> 2012-01-30 11:53 AM, Tejun Heo wrote:
->>> Hello,
->>>
->>> On Mon, Jan 30, 2012 at 11:49:43 AM +0900, Namhyung Kim wrote:
->>>> Yes, blktrace will see both of completions for rq and bio's it
->>>> contains from now on, and I thought it's your intention? For the
->>>> bounced bio's, it'll see one more completion per bio.
->>>
->>> Umm... no, blktrace users shouldn't see confusing outputs.  My point
->>> was that we should leave raw tracepoints as raw monitor points so that
->>> they can provide raw data to different users and filter from
->>> blktrace.c so that the existing users aren't disturbed.
->>>
+>> floppy driver does not call add_disk() on all the drives hence we don't take
+>> gendisk reference on request queue for these drives. Don't call put_disk()
+>> with disk->queue set, otherwise we try to put the reference we never took.
 >>
->> That means blktrace should not be changed, and not see duplicated
->> completions for rq based drivers at all?
->
-> Yeap
->
+>> Reported-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> 
+>> Signed-off-by: Vivek Goyal<vgoyal@redhat.com>
+> 
+> Ugh... floppy init is ugly.  Thanks for fixing this.
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> Jens, this one and the previous one are regression fixes and need to
+> be routed through v3.3-fixes.
+> 
 
-I see. I'll prepare the patch soon.
+Looks like it needs to be marked for -stable as well as the commit
+f992ae8 which exposed these problems was originally marked for -stable?
 
-Thanks,
-Namhyung
+
+Suresh
