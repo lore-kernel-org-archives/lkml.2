@@ -1,49 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab2A3Jfx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 04:35:53 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59352 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2A3Jfw convert rfc822-to-8bit (ORCPT
+	id S1751788Ab2A3Jvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 04:51:50 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:41589 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab2A3Jvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 04:35:52 -0500
-Message-ID: <1327916138.2446.187.camel@twins>
-Subject: Re: [PATCH -tip v5 2/5] perf: set correct value to
- perf_event_header.misc for BTS
-From: Peter Zijlstra <peterz@infradead.org>
-To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Date: Mon, 30 Jan 2012 10:35:38 +0100
-In-Reply-To: <20120130044303.2384.63515.stgit@linux3>
-References: <20120130044242.2384.23076.stgit@linux3>
-	 <20120130044303.2384.63515.stgit@linux3>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 30 Jan 2012 04:51:44 -0500
+X-AuditID: b753bd60-a1c87ba000000655-33-4f26682ce0d3
+X-AuditID: b753bd60-a1c87ba000000655-33-4f26682ce0d3
+Message-ID: <4F26681A.3090507@hitachi.com>
+Date: Mon, 30 Jan 2012 18:51:22 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH v9 3.2 1/9] uprobes: Install and remove breakpoints.
+References: <20120110114821.17610.9188.sendpatchset@srdronam.in.ibm.com> <20120110114831.17610.88468.sendpatchset@srdronam.in.ibm.com> <CAK1hOcO3pz+zBLQKfdty3UwQG8zxXwBWo9euFaE+zKawiqTE2g@mail.gmail.com> <CAK1hOcMeYDrLpgbyQXFAkrqk3Le-rLkoVwCN3wjkT61YJg0G6Q@mail.gmail.com> <4F215FCE.8010209@hitachi.com> <CAK1hOcP-+gXcfCV6zJFEu381R9XPR=qxNFQTOT8Y2o4L-1mwhA@mail.gmail.com>
+In-Reply-To: <CAK1hOcP-+gXcfCV6zJFEu381R9XPR=qxNFQTOT8Y2o4L-1mwhA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 13:43 +0900, Akihiro Nagai wrote:
-> @@ -330,6 +342,14 @@ int intel_pmu_drain_bts_buffer(void)
->                 return 1;
->  
->         for (; at < top; at++) {
-> +               /*
-> +                * To resolve user space symbols and DSOs correctly, set
-> +                * PERF_RECORD_MISC_USER if from_addr or to_addr is user space.
-> +                */
-> +               if (!kernel_ip(data.ip) || !kernel_ip(data.addr)) {
-> +                       header.misc &= ~PERF_RECORD_MISC_CPUMODE_MASK;
-> +                       header.misc |= PERF_RECORD_MISC_USER;
-> +               }
->                 data.ip         = at->from;
->                 data.addr       = at->to; 
+(2012/01/27 3:28), Denys Vlasenko wrote:
+> On Thu, Jan 26, 2012 at 3:14 PM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> (2012/01/26 0:32), Denys Vlasenko wrote:
+>>> On Wed, Jan 25, 2012 at 4:13 PM, Denys Vlasenko
+>>> <vda.linux@googlemail.com> wrote:
+>>>>> +       /*
+>>>>> +        * Convert from rip-relative addressing to indirect addressing
+>>>>> +        * via a scratch register.  Change the r/m field from 0x5 (%rip)
+>>>>> +        * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
+>>>>> +        */
+>>>>> +       reg = MODRM_REG(insn);
+>>>>> +       if (reg == 0) {
+>>>>> +               /*
+>>>>> +                * The register operand (if any) is either the A register
+>>>>> +                * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
+>>>>> +                * REX prefix) %r8.  In any case, we know the C register
+>>>>> +                * is NOT the register operand, so we use %rcx (register
+>>>>> +                * #1) for the scratch register.
+>>>>> +                */
+>>>>> +               uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
+>>>>> +               /* Change modrm from 00 000 101 to 00 000 001. */
+>>>>> +               *cursor = 0x1;
+>>>
+>>> Hmm. I think we have a bug here.
+>>>
+>>> What if this instruction has REX.B = 1? Granted, REX.B = 1 has no effect on
+>>> rip-relative addressing and therefore normally won't be generated by gcc/as,
+>>> but still. If you replace md and r/m fields as above, you are trying to convert
+>>> 0x12345678(%rip) reference to (%rcx), but if REX.B = 1, then you in fact
+>>> converted it to (%r9)!
+>>
+>> Right, thanks for finding :)
+>> And %rax register reference encoding has same problem, doesn't it?
+>
+> Yes.
+>
+> The solution is trivial: "if (REX pfx exists) REX.B = 0;"
+>
+> Also, I don't remember whether (%rip) addressing is
+> affected by 0x67 (address size) prefix. If it is, then
+> nothing needs to be done.
 
-Why not key off of the from? If its a jump from userspace its a user
-event, its a jump from kernel space its a kernel event?
+In Intel SDM vol.2, "2.2.1.6 RIP-Relative Addressing" explains
+that as below;
+
+---
+RIP-relative addressing is enabled by 64-bit mode, not by a 64-bit address-size.
+The use of the address-size prefix does not disable RIP-relative addressing. The
+effect of the address-size prefix is to truncate and zero-extend the computed
+effective address to 32 bits.
+---
+
+This means 0x67 pfx can be used with RIP-relative, and
+effective address(EA) will be 32bit, as same as others.
+So, I think it should work :)
+
+
+Thank you!
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
