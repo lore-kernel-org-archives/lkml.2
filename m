@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab2A3XOl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 18:14:41 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:55844 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448Ab2A3XOj (ORCPT
+	id S1754534Ab2A3XPB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 18:15:01 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:58357 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab2A3XO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 18:14:39 -0500
+	Mon, 30 Jan 2012 18:14:59 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 1/4] PM/Freezer: Use thaw_kernel_threads() in preparation
- for changes to thaw_processes()
+Subject: [PATCH v2 2/4] PM/Freezer: Make thaw_processes() thaw only userspace
+ tasks
 To: rjw@sisk.pl
 Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 31 Jan 2012 04:44:30 +0530
-Message-ID: <20120130231418.11129.24809.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 31 Jan 2012 04:44:48 +0530
+Message-ID: <20120130231437.11129.3708.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20120130231342.11129.87187.stgit@srivatsabhat.in.ibm.com>
 References: <20120130231342.11129.87187.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12013023-2000-0000-0000-0000063E9A9C
+x-cbid: 12013023-4790-0000-0000-00000118E062
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of now, thaw_processes() is a superset of thaw_kernel_threads() in the
-sense that thaw_processes() thaws both userspace tasks and kernel threads.
-But that is going to change very soon. So, in preparation for that, add
-some calls to thaw_kernel_threads() like this:
+Currently the situation is:
 
- * If only kernel threads need to be thawed, _replace_ thaw_processes()
-   with thaw_kernel_threads().
+freeze_processes() - freezes only userspace tasks
+freeze_kernel_threads() - freezes only kernel threads
+thaw_kernel_threads() - thaws only kernel threads
+thaw_processes() - thaws *everything* (both userspace tasks and kernel threads)
 
- * If everything needs to be thawed, _add_ a call to thaw_kernel_threads()
-   adjacent to the existing call to thaw_processes().
+The point that thaw_processes() thaws everything is rather unintuitive
+and can lead to bugs. So, modify thaw_processes() so that it thaws only
+userspace processes. This way we can also have more control over what
+exactly gets thawed in different situations.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/power/hibernate.c |    5 +++++
- kernel/power/power.h     |   15 +++++++++++++--
- kernel/power/process.c   |    4 ++--
- kernel/power/user.c      |    8 ++++++++
- 4 files changed, 28 insertions(+), 4 deletions(-)
+ kernel/power/process.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index a5d4cf0..1670387 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -656,6 +656,11 @@ int hibernate(void)
- 	}
- 
-  Thaw:
-+	/*
-+	 * Kernel threads had been frozen inside hibernation_snapshot().
-+	 * So thaw them here, on the success path.
-+	 */
-+	thaw_kernel_threads();
- 	thaw_processes();
-  Finish:
- 	free_basic_memory_bitmaps();
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 0c4defe..e37a1e0 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -231,12 +231,23 @@ extern int pm_test_level;
- #ifdef CONFIG_SUSPEND_FREEZER
- static inline int suspend_freeze_processes(void)
- {
--	int error = freeze_processes();
--	return error ? : freeze_kernel_threads();
-+	int error;
-+
-+	error = freeze_processes();
-+	if (error)
-+		goto Finish;
-+
-+	error = freeze_kernel_threads();
-+	if (error)
-+		thaw_processes();
-+
-+Finish:
-+	return error;
- }
- 
- static inline void suspend_thaw_processes(void)
- {
-+	thaw_kernel_threads();
- 	thaw_processes();
- }
- #else
 diff --git a/kernel/power/process.c b/kernel/power/process.c
-index eeca003..3734fb9 100644
+index 3734fb9..8ae6c4b 100644
 --- a/kernel/power/process.c
 +++ b/kernel/power/process.c
-@@ -143,7 +143,7 @@ int freeze_processes(void)
+@@ -116,7 +116,8 @@ static int try_to_freeze_tasks(bool user_only)
  /**
-  * freeze_kernel_threads - Make freezable kernel threads go to the refrigerator.
+  * freeze_processes - Signal user space processes to enter the refrigerator.
   *
 - * On success, returns 0.  On failure, -errno and system is fully thawed.
-+ * On success, returns 0. On failure, -errno and all kernel threads are thawed.
++ * On success, returns 0.  On failure, -errno and all user space processes
++ * are thawed.
   */
- int freeze_kernel_threads(void)
+ int freeze_processes(void)
  {
-@@ -159,7 +159,7 @@ int freeze_kernel_threads(void)
- 	BUG_ON(in_atomic());
+@@ -170,17 +171,15 @@ void thaw_processes(void)
+ 	if (pm_freezing)
+ 		atomic_dec(&system_freezing_cnt);
+ 	pm_freezing = false;
+-	pm_nosig_freezing = false;
  
- 	if (error)
--		thaw_processes();
-+		thaw_kernel_threads();
- 	return error;
- }
+ 	oom_killer_enable();
  
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 3e10007..eaf5c97 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -119,6 +119,7 @@ static int snapshot_release(struct inode *inode, struct file *filp)
- 	free_all_swap_pages(data->swap);
- 	if (data->frozen) {
- 		pm_restore_gfp_mask();
-+		thaw_kernel_threads();
- 		thaw_processes();
- 	}
- 	pm_notifier_call_chain(data->mode == O_RDONLY ?
-@@ -237,6 +238,13 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 		if (!data->frozen || data->ready)
- 			break;
- 		pm_restore_gfp_mask();
-+
-+		/*
-+		 * Be paranoid and thaw kernel threads as well, in order to
-+		 * make sure that the system gets thawed fully, irrespective
-+		 * of which (error) path we took to come here.
-+		 */
-+		thaw_kernel_threads();
- 		thaw_processes();
- 		usermodehelper_enable();
- 		data->frozen = 0;
+ 	printk("Restarting tasks ... ");
+ 
+-	thaw_workqueues();
+-
+ 	read_lock(&tasklist_lock);
+ 	do_each_thread(g, p) {
+-		__thaw_task(p);
++		if (!(p->flags & (PF_KTHREAD | PF_WQ_WORKER)))
++			__thaw_task(p);
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
+ 
 
