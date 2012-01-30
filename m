@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab2A3RF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 12:05:57 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37485 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab2A3RF4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 12:05:56 -0500
-Date: Mon, 30 Jan 2012 09:05:48 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, dm-devel@redhat.com
-Subject: Re: [PATCH] block: add missing block_bio_complete() tracepoint
-Message-ID: <20120130170548.GA3355@google.com>
-References: <1327830093-12130-1-git-send-email-namhyung@gmail.com>
- <4F263B01.4050103@gmail.com>
+	id S1752937Ab2A3RGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 12:06:53 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:34993 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752084Ab2A3RGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 12:06:52 -0500
+X-Greylist: delayed 627 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jan 2012 12:06:51 EST
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F263B01.4050103@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Subject: RE: [RFC] dmaengine/dma_slave: add context parameter to prep_slave_sg callback
+Date: Mon, 30 Jan 2012 08:55:48 -0800
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E5520281DD5B@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <1327915849.1527.17.camel@vkoul-udesk3>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [RFC] dmaengine/dma_slave: add context parameter to prep_slave_sg callback
+Thread-Index: AczfMdr4oYgDKPZGSwGpnRv43gKFVgAOExMQ
+References: <1327612946-29397-1-git-send-email-alexandre.bounine@idt.com> <1327915849.1527.17.camel@vkoul-udesk3>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <dan.j.williams@intel.com>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0UH6x3Z004245
 
-On Mon, Jan 30, 2012 at 03:38:57PM +0900, Namhyung Kim wrote:
-> 2012-01-29 6:41 PM, Namhyung Kim wrote:
-> >The block_bio_complete() TP has been missed so long, so that bio-based
-> >drivers haven't been able to trace its IO behavior. Add it.
-> >
-> >In some rare cases, such as loop_switch, @bio->bi_bdev can be NULL.
-> >Thus convert it to TRACE_EVENT_CONDITION() as Steven suggested.
-> >
+On Monday, January 30, 2012 at 4:31 AM, Vinod Koul wrote:
 > 
-> Now I see that it seems TRACE_EVENT_CONDITION() can protect event
-> tracing from such condition, but what about other users of the TP
-> like blktrace? I think it'll still get NULL pointer dereference on
-> bdev_get_queue() after the change, right? If so, convert to T_E_C()
-> looks meaningless IMHO. Do I miss something?
+> On Thu, 2012-01-26 at 16:22 -0500, Alexandre Bounine wrote:
+> > As we agreed during our discussion about adding DMA Engine support for RapidIO
+> > subsystem, RapidIO and similar clients may benefit from adding an extra context
+> > parameter to device_prep_slave_sg() callback.
+> > See https://lkml.org/lkml/2011/10/24/275 for more details.
+> >
+> > Adding the context parameter will allow to pass client/target specific
+> > information associated with an individual data transfer request.
+> >
+> > In the case of RapidIO support this additional information consists of target
+> > destination ID and its buffer address (which is not mapped into the local CPU
+> > memory space). Because a single RapidIO-capable DMA channel may queue data
+> > transfer requests to different target devices, the per-request configuration
+> > is required.
+> >
+> > The proposed change eliminates need for new subsystem-specific API.
+> > Existing DMA_SLAVE clients will ignore the new parameter.
+> >
+> > This RFC only demonstrates the API change and does not include corresponding
+> > changes to existing DMA_SLAVE clients. Complete set of patches will be provided
+> > after (if) this API change is accepted.
+>
+> This looks good to me. But was thinking if we need to add this new
+> parameter for other slave calls (circular, interleaved, memcpy...)
+> 
 
-Not really following, but the whole point of using
-TRACE_EVENT_CONDITION() is avoiding the conditional jump when the TP
-is disabled.  Whether the TP users need to test again / more isn't too
-important.
+I agree that cyclic and interleaved calls may benefit from adding that parameter as well.
+Benefits to the cyclic call are straightforward - same as dma_slave.
+Adding a context parameter to the interleaved transfers may be more future proofing option
+than an immediate need. Memcopy and other calls that deal with local memory transfers
+probably should be left untouched.
 
-Thanks.
+What if we limit modifications to:
+1) three calls (slave, cyclic and interleaved) OR
+2) two (slave and cyclic) at this moment?
 
--- 
-tejun
+I am just more focused on dma_slave just because it fits well to provide RDMA
+over RapidIO fabric.
+
+If everybody agrees, I can go ahead and make changes to all three at once.
+
+Alex.
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
