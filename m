@@ -1,129 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2A3PcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 10:32:19 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:64108 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753196Ab2A3PcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 10:32:18 -0500
-X-IronPort-AV: E=Sophos;i="4.71,592,1320624000"; 
-   d="scan'208";a="10369648"
-Date: Mon, 30 Jan 2012 15:33:48 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] hvc_xen: implement multiconsole support
-In-Reply-To: <20120127184538.GA18321@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1201301510240.3196@kaball-desktop>
-References: <alpine.DEB.2.00.1201271823240.3196@kaball-desktop> <1327689097-12788-2-git-send-email-stefano.stabellini@eu.citrix.com> <20120127184538.GA18321@phenom.dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753656Ab2A3Pct (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 10:32:49 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:47631 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752916Ab2A3Pcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 10:32:46 -0500
+Date: Mon, 30 Jan 2012 10:32:44 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: Avi Kivity <avi@redhat.com>
+Cc: mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
+        aliguori@us.ibm.com, mtosatti@redhat.com,
+        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 V10] Add ioctl for KVMCLOCK_GUEST_STOPPED
+Message-ID: <20120130153244.GA6875@mgebm.net>
+References: <1326825641-15765-1-git-send-email-emunson@mgebm.net>
+ <1326825641-15765-4-git-send-email-emunson@mgebm.net>
+ <4F26B220.9050101@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
+Content-Disposition: inline
+In-Reply-To: <4F26B220.9050101@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jan 2012, Konrad Rzeszutek Wilk wrote:
-> > +static void xencons_disconnect_backend(struct xencons_info *info)
-> > +{
-> > +	if (info->irq > 0)
-> > +		unbind_from_irqhandler(info->irq, NULL);
-> > +	info->irq = 0;
-> > +	if (info->evtchn > 0)
-> > +		xenbus_free_evtchn(info->xbdev, info->evtchn);
-> > +	info->evtchn = 0;
-> > +	if (info->gntref > 0)
-> > +		gnttab_free_grant_references(info->gntref);
-> > +	info->gntref = 0;
-> > +	if (info->hvc != NULL)
-> > +		hvc_remove(info->hvc);
-> > +	info->hvc = NULL;
-> > +}
-> > +
-> > +static void xencons_free(struct xencons_info *info)
-> > +{
-> > +	xencons_disconnect_backend(info);
-> > +	free_page((unsigned long)info->intf);
-> > +	info->intf = NULL;
-> > +	info->vtermno = 0;
-> > +	kfree(info);
-> > +}
-> > +
-> > +static int xencons_remove(struct xenbus_device *dev)
-> > +{
-> > +	struct xencons_info *info = dev_get_drvdata(&dev->dev);
-> > +
-> 
-> I would say put
-> 	xencons_disconnect_backend(info)
-> 
-> here, that way it calls hvc_remove first, and then this would
-> delete an "not-called" anymore structure.
-> 
-> > +	spin_lock(&xencons_lock);
-> > +	list_del(&info->list);
-> > +	spin_unlock(&xencons_lock);
-> > +	xencons_free(info);
-> 
-> >  	return 0;
-> >  }
+
+--Q68bSM7Ycu6FN28Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, 30 Jan 2012, Avi Kivity wrote:
+
+> On 01/17/2012 08:40 PM, Eric B Munson wrote:
+> > Now that we have a flag that will tell the guest it was suspended, crea=
+te an
+> > interface for that communication using a KVM ioctl.
 > >
-> 
-> .. snip..
+> >
+> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/=
+kvm/api.txt
+> > index e1d94bf..1931e5c 100644
+> > --- a/Documentation/virtual/kvm/api.txt
+> > +++ b/Documentation/virtual/kvm/api.txt
+> > @@ -1491,6 +1491,19 @@ following algorithm:
+> >  Some guests configure the LINT1 NMI input to cause a panic, aiding in
+> >  debugging.
+> > =20
+> > +4.65 KVMCLOCK_GUEST_PAUSED
 > > +
-> > +static const struct xenbus_device_id xencons_ids[] = {
-> > +	{ "console" },
-> > +	{ "" }
-> > +};
+> > +Capability: KVM_CAP_GUEST_PAUSED
+> > +Architechtures: Any that implement pvclocks (currently x86 only)
+> > +Type: vcpu ioctl
+>=20
+> vm ioctl.
+>=20
+> > +Parameters: None
+> > +Returns: 0 on success, -1 on error
 > > +
+> > +This signals to the host kernel that the specified guest is being paus=
+ed by
+> > +userspace.  The host will set a flag in the pvclock structure that is =
+checked
+> > +from the soft lockup watchdog.  This ioctl can be called during pause =
+or
+> > +unpause.
 > > +
-> >  static void __exit xen_hvc_fini(void)
-> >  {
-> > -	if (hvc)
-> > -		hvc_remove(hvc);
-> > +	struct xencons_info *entry, *next;
+> >  5. The kvm_run structure
+> > =20
+> > =20
+> > +/*
+> > + * kvm_set_guest_paused() indicates to the guest kernel that it has be=
+en
+> > + * stopped by the hypervisor.  This function will be called from the h=
+ost only.
+> > + */
+> > +static int kvm_set_guest_paused(struct kvm *kvm)
+> > +{
+> > +	struct kvm_vcpu *vcpu;
+> > +	struct pvclock_vcpu_time_info *src;
+> > +	int i;
 > > +
-> > +	if (list_empty(&xenconsoles))
-> > +			return;
-> > +
-> > +	spin_lock(&xencons_lock);
-> 
-> Take that spin-lock out.
-> 
-> > +	list_for_each_entry_safe(entry, next, &xenconsoles, list) {
-> > +		list_del(&entry->list);
-> > +		if (entry->xbdev)
-> > +			xencons_remove(entry->xbdev);
-> 
-> This guy deletes itself from the list..
-> > +		else {
-> > +			if (entry->irq > 0)
-> > +				unbind_from_irqhandler(entry->irq, NULL);
-> > +			if (entry->hvc);
-> > +				hvc_remove(entry->hvc);
-> > +			kfree(entry);
-> 
-> ..but this one does not.  You could make xencons_remove just remove
-> itself from the list and nothing else. Then rename it to 'xencons_remove_itself' perhaps?
-> 
-> After that, introduce a new function 'xencons_delete' that would call
-> xecons_disconnect_backend, xencons_remove_itself, and xencons_free?
+> > +	kvm_for_each_vcpu(i, vcpu, kvm) {
+> > +		if (!vcpu->arch.time_page)
+> > +			continue;
+> > +		src =3D &vcpu->arch.hv_clock;
+> > +		src->flags |=3D PVCLOCK_GUEST_STOPPED;
+>=20
+> This looks racy.  The vcpu can remove its kvmclock concurrently with
+> this access, and src will be NULL.
+>=20
+> Can you point me to the discussion that moved this to be a vm ioctl?  In
+> general vm ioctls that do things for all vcpus are racy, like here.=20
+> You're accessing variables that are protected by the vcpu mutex, and not
+> taking the mutex (nor can you, since it is held while the guest is
+> running, unlike most kernel mutexes).
+>=20
 
-Thanks for spotting the deadlock and the useful suggestions.
-I have reworked the shutdown path a bit, making sure that we don't take
-any locks twice and that we call hvc_remove before list_del (see next
-version of the patch, to be posted soon).
+Jan Kiszka suggested that becuase there isn't a use case for notifying
+individual vcpus (can vcpu's be paused individually?) that it makes more se=
+nse
+to have a vm ioctl.
 
+http://thread.gmane.org/gmane.comp.emulators.qemu/131624
 
+If the per vcpu ioctl is the right choice I can resend those patches.
 
-> >  
-> > +static struct xenbus_driver xencons_driver = {
-> 
-> This needs to be wrapped in the new macro that Jan prepared.
-> DEFINE_XENBUS_DRIVER (73db144b58a32fc39733db6a7e1fe582072ad26a)
+Eric
 
-OK
+--Q68bSM7Ycu6FN28Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPJrgcAAoJEKhG9nGc1bpJyVEQAJHHn57M5QSSstQ7A9UrMeHQ
+DmnLzGLhT08AbkD0oWi8TH9b0jFXI4WYqzwCGVQc/IcpqRlliWrEa8/bc4Wti4Fk
+lP57iRE0ZtZNxOdIfM6rPjeqo1o1sWWs91phNs6R2OVLqHwp5Kh2gQ/c8oQv9XNm
+nxK24PgoiudBEZ19TXp9X9X6GM24rLOmd22RqI2ROGPFoqC0H63LMNhZ/lFZwy3S
+dTkKGLObPGzta6oKGxdOFG+2wAnd60qdk0My22inxOSqryU8RDpKxfnAOSdb35uP
+XkVkxC2E7sBDXqu+/V76ap47NhuP8sZy8Vuo7Cvq6XkadOwwbR8sgZL5SijeoeiL
+21ERrwD0SHae3dnoik2npXHGrfp25TYwxHjKllJEJ8g6nVuviq6ttFXMWzrwETNl
+f9HFimzP9QoWAZS8XTH5NAvOWWbwBgVRrQwviCJAUDBB1u/7xhb46JiWoWlVg5Ok
+o4lT+U3JDBtVVFYUeqlvWVOYmH0bFNAtoUN3MzhiLGBCzteUDRd5K2buM004InT5
+bbSLPEkpo4ksRWKnCJA00RBa04GmcUqe5M3MSqHTaHws1jNZ0G4JW5tELCrFAAEM
+2ilR2xgYytcxLVBq86EMOy6u2sS1Ywve06xh2qfgqs/rebKQ4r36+PDzqXSkFh+M
+m9VzBTjwzEWbNp2LQfEM
+=JGIh
+-----END PGP SIGNATURE-----
+
+--Q68bSM7Ycu6FN28Q--
