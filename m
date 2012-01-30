@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab2A3J0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 04:26:04 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42083 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751900Ab2A3J0B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 04:26:01 -0500
-Message-ID: <1327915555.2288.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [PATCH v2] proc:  speedup /proc/stat handling
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>
-Cc: linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Tuner <pjt@google.com>
-Date: Mon, 30 Jan 2012 10:25:55 +0100
-In-Reply-To: <4F264F75.7040601@web.de>
-References: <1327075164.12389.31.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	  <1327449683.14373.12.camel@edumazet-laptop>
-	  <20120125091818.45e00b3c.kamezawa.hiroyu@jp.fujitsu.com>
-	 <1327451195.14373.28.camel@edumazet-laptop> <4F264F75.7040601@web.de>
+	id S1752579Ab2A3J3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 04:29:49 -0500
+Received: from mga01.intel.com ([192.55.52.88]:10453 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab2A3J3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 04:29:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="117958817"
+Subject: Re: [RFC] dmaengine/dma_slave: add context parameter to
+ prep_slave_sg callback
+From: Vinod Koul <vinod.koul@intel.com>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, dan.j.williams@intel.com,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
+In-Reply-To: <1327612946-29397-1-git-send-email-alexandre.bounine@idt.com>
+References: <1327612946-29397-1-git-send-email-alexandre.bounine@idt.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
+Date: Mon, 30 Jan 2012 15:00:49 +0530
+Message-ID: <1327915849.1527.17.camel@vkoul-udesk3>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 30 janvier 2012 à 09:06 +0100, Jörg-Volker Peetz a écrit :
-> Eric Dumazet wrote, on 01/25/12 01:26:
-> > Le mercredi 25 janvier 2012 à 09:18 +0900, KAMEZAWA Hiroyuki a écrit :
-> > 
-> >> BTW, what is the reason of this change ?
-> >>
-> >>> -	unsigned size = 4096 * (1 + num_possible_cpus() / 32);
-> >>> +	unsigned size = 1024 + 128 * num_possible_cpus();
-> >>
-> >> I think size of buffer is affected by the number of online cpus.
-> >> (Maybe 128 is enough but please add comment why 128 ?)
-> >>
-> > 
-> > There is no change, as 4096/32 is 128 bytes per cpu.
-> > 
+On Thu, 2012-01-26 at 16:22 -0500, Alexandre Bounine wrote:
+> As we agreed during our discussion about adding DMA Engine support for RapidIO
+> subsystem, RapidIO and similar clients may benefit from adding an extra context
+> parameter to device_prep_slave_sg() callback.
+> See https://lkml.org/lkml/2011/10/24/275 for more details.
 > 
-> Wrong math, only num_possible_cpus() is divided by 32. Thus,
+> Adding the context parameter will allow to pass client/target specific
+> information associated with an individual data transfer request.
 > 
-> -	unsigned size = 4096 * (1 + num_possible_cpus() / 32);
-> +	unsigned size = 4096 + 128 * num_possible_cpus();
+> In the case of RapidIO support this additional information consists of target
+> destination ID and its buffer address (which is not mapped into the local CPU
+> memory space). Because a single RapidIO-capable DMA channel may queue data
+> transfer requests to different target devices, the per-request configuration
+> is required.
 > 
-> <snip>
+> The proposed change eliminates need for new subsystem-specific API.
+> Existing DMA_SLAVE clients will ignore the new parameter.
+> 
+> This RFC only demonstrates the API change and does not include corresponding
+> changes to existing DMA_SLAVE clients. Complete set of patches will be provided
+> after (if) this API change is accepted.
+This looks good to me. But was thinking if we need to add this new
+parameter for other slave calls (circular, interleaved, memcpy...)
+
+> 
+> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+> Cc: Jassi Brar <jaswinder.singh@linaro.org>
+> Cc: Russell King <rmk@arm.linux.org.uk> 
+> Cc: Kumar Gala <galak@kernel.crashing.org>
+> Cc: Matt Porter <mporter@kernel.crashing.org>
+> Cc: Li Yang <leoli@freescale.com>
+> ---
+>  include/linux/dmaengine.h |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 679b349..79d71bb 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -575,7 +575,7 @@ struct dma_device {
+>  	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+>  		struct dma_chan *chan, struct scatterlist *sgl,
+>  		unsigned int sg_len, enum dma_transfer_direction direction,
+> -		unsigned long flags);
+> +		unsigned long flags, void *context);
+>  	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+>  		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>  		size_t period_len, enum dma_transfer_direction direction);
+> @@ -607,12 +607,13 @@ static inline int dmaengine_slave_config(struct dma_chan *chan,
+>  
+>  static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
+>  	struct dma_chan *chan, void *buf, size_t len,
+> -	enum dma_transfer_direction dir, unsigned long flags)
+> +	enum dma_transfer_direction dir, unsigned long flags, void *context)
+>  {
+>  	struct scatterlist sg;
+>  	sg_init_one(&sg, buf, len);
+>  
+> -	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags);
+> +	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags,
+> +						  context);
+>  }
+>  
+>  static inline int dmaengine_terminate_all(struct dma_chan *chan)
 
 
-It is good math, once you take the time to think a bit about it.
-
-The original question was about the 128 * num_possible_cpus()
-
-4096/32 is 128 as I said. 
-
-The 4096 -> 1024 is just taking into account fact that once you do the
-correct computations, you dont need initial 4096 value, and 1024 is more
-than enough.
-
-Example on a dual core machine : 
-
-# dmesg|grep nr_irq
-[    0.000000] nr_irqs_gsi: 40
-[    0.000000] NR_IRQS:2304 nr_irqs:712 16
-
-size = 1024 + 2*128 + 2*712 = 2704 bytes (rounded to 4096 by kmalloc())
-
-# wc -c /proc/stat
-1767 /proc/stat
-
-Problem with original math was that for a machine with 16 cpus or a
-machine with 1 cpu, we ended with the same 4096 value. That was a real
-problem.
-
-If we instead use "unsigned size = 4096 + 128 * num_possible_cpus();" as
-you suggest, we would always allocate 2 pages of memory, this is not
-needed at all for typical 1/2/4 way machines.
-
-
+-- 
+~Vinod
 
