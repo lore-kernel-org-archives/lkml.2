@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab2A3Fnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 00:43:43 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54925 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab2A3FnD (ORCPT
+	id S1752907Ab2A3FpO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 00:45:14 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48319 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab2A3FpM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 00:43:03 -0500
-Date: Mon, 30 Jan 2012 06:42:59 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 1/7] ftrace: Change filter/notrace set functions to
- return exit code
-Message-ID: <20120130054257.GB22447@somewhere>
-References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
- <1327776209-4883-1-git-send-email-jolsa@redhat.com>
- <1327776209-4883-2-git-send-email-jolsa@redhat.com>
+	Mon, 30 Jan 2012 00:45:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327776209-4883-2-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1327901519.2891.4.camel@edumazet-laptop>
+References: <20120127060034.GG29272@MAIL.13thfloor.at>
+	<20120128125108.GA9661@localhost>
+	<1327757611.7199.6.camel@edumazet-laptop>
+	<20120129055917.GB8513@localhost>
+	<1327831380.14602.6.camel@edumazet-laptop>
+	<20120129111645.GA5839@localhost>
+	<1327842831.2718.2.camel@edumazet-laptop>
+	<20120129161058.GA13156@localhost>
+	<CANejiEW86b7btiOcVFF3qVhqU1t6FRosvgfiydWwU5zgeDFOqw@mail.gmail.com>
+	<1327901519.2891.4.camel@edumazet-laptop>
+Date: Mon, 30 Jan 2012 13:45:12 +0800
+X-Google-Sender-Auth: PZciVRIufj6d_macNiNI39i_wx4
+Message-ID: <CANejiEWXDwYVtPUmOGXFxRohEmN4K3qde7z93Nw8bbk+-ZHP2w@mail.gmail.com>
+Subject: Re: Bad SSD performance with recent kernels
+From: Shaohua Li <shli@kernel.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Wu Fengguang <wfg@linux.intel.com>, Herbert Poetzl <herbert@13thfloor.at>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 28, 2012 at 07:43:23PM +0100, Jiri Olsa wrote:
-> Currently the ftrace_set_filter and ftrace_set_notrace functions
-> do not return any return code. So there's no way for ftrace_ops
-> user to tell wether the filter was correctly applied.
-> 
-> The set_ftrace_filter interface returns error in case the filter
-> did not match:
-> 
->   # echo krava > set_ftrace_filter
->   bash: echo: write error: Invalid argument
-> 
-> Changing both ftrace_set_filter and ftrace_set_notrace functions
-> to return zero if the filter was applied correctly or -E* values
-> in case of error.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+2012/1/30 Eric Dumazet <eric.dumazet@gmail.com>:
+> Le lundi 30 janvier 2012 à 11:17 +0800, Shaohua Li a écrit :
+>
+>> 1M block size is slow, I guess it's CPU related.
+>>
+>> And as for the big regression with newer kernel than 2.6.38, please
+>> check if idle=poll
+>> helps. CPU idle dramatically impacts disk performance and even latest
+>> cpuidle governor
+>> doesn't help for some CPUs.
+>>
+>
+> No change with idle=poll
+I mean the big regression might be related to CPU idle. because I
+saw really bad performance with CPU idle with some CPUs.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+The 1M block size performance is lower than 128K is not. but I still
+guess it's CPU related (like copy). The test result is always like this
+IIRC.
