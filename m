@@ -1,108 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab2A3WFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:05:44 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:48506 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab2A3WFl (ORCPT
+	id S1754409Ab2A3WF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:05:59 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:44197 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754382Ab2A3WF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:05:41 -0500
+	Mon, 30 Jan 2012 17:05:58 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 3/4] PM/Hibernate: Thaw kernel threads in
- hibernation_snapshot() in error/test path
+Subject: [PATCH 4/4] PM/Hibernate: Refactor and simplify freezer_test_done
 To: rjw@sisk.pl
 Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 31 Jan 2012 03:35:30 +0530
-Message-ID: <20120130220520.9442.37363.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 31 Jan 2012 03:35:49 +0530
+Message-ID: <20120130220538.9442.98321.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20120130220259.9442.70091.stgit@srivatsabhat.in.ibm.com>
 References: <20120130220259.9442.70091.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12013022-2674-0000-0000-0000032BB236
+x-cbid: 12013022-8256-0000-0000-00000112744E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the hibernation call path, the kernel threads are frozen inside
-hibernation_snapshot(). If we happen to encounter an error further down
-the road or if we are exiting early due to a successful freezer test,
-then thaw kernel threads before returning to the caller.
+The code related to 'freezer_test_done' is needlessly convoluted.
+Refactor the code and simplify the implementation.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/power/hibernate.c |    9 ++++++---
- kernel/power/user.c      |    8 ++------
- 2 files changed, 8 insertions(+), 9 deletions(-)
+ kernel/power/hibernate.c |   10 +++++-----
+ kernel/power/user.c      |    4 ++--
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 1670387..0ce1220 100644
+index 0ce1220..30b315a 100644
 --- a/kernel/power/hibernate.c
 +++ b/kernel/power/hibernate.c
-@@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
- 		 * successful freezer test.
- 		 */
- 		freezer_test_done = true;
--		goto Cleanup;
-+		goto Thaw;
- 	}
+@@ -629,12 +629,8 @@ int hibernate(void)
+ 		goto Finish;
  
- 	error = dpm_prepare(PMSG_FREEZE);
- 	if (error) {
- 		dpm_complete(PMSG_RECOVER);
--		goto Cleanup;
-+		goto Thaw;
- 	}
+ 	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
+-	if (error)
+-		goto Thaw;
+-	if (freezer_test_done) {
+-		freezer_test_done = false;
++	if (error || freezer_test_done)
+ 		goto Thaw;
+-	}
  
- 	suspend_console();
-@@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
- 	platform_end(platform_mode);
- 	return error;
+ 	if (in_suspend) {
+ 		unsigned int flags = 0;
+@@ -665,6 +661,10 @@ int hibernate(void)
  
-+ Thaw:
-+	thaw_kernel_threads();
-  Cleanup:
- 	swsusp_free();
- 	goto Close;
-@@ -655,12 +657,13 @@ int hibernate(void)
- 		pr_debug("PM: Image restored successfully.\n");
- 	}
- 
-- Thaw:
- 	/*
- 	 * Kernel threads had been frozen inside hibernation_snapshot().
- 	 * So thaw them here, on the success path.
- 	 */
- 	thaw_kernel_threads();
-+
-+ Thaw:
+  Thaw:
  	thaw_processes();
++
++	/* Don't bother checking whether freezer_test_done is true */
++	freezer_test_done = false;
++
   Finish:
  	free_basic_memory_bitmaps();
+ 	usermodehelper_enable();
 diff --git a/kernel/power/user.c b/kernel/power/user.c
-index eaf5c97..62dbe93 100644
+index 62dbe93..056088e 100644
 --- a/kernel/power/user.c
 +++ b/kernel/power/user.c
-@@ -257,16 +257,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 		}
- 		pm_restore_gfp_mask();
+@@ -259,10 +259,10 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
  		error = hibernation_snapshot(data->platform_support);
--		if (error) {
--			thaw_kernel_threads();
--		} else {
-+		if (!error) {
+ 		if (!error) {
  			error = put_user(in_suspend, (int __user *)arg);
- 			if (!error && !freezer_test_done)
- 				data->ready = 1;
--			if (freezer_test_done) {
-+			if (freezer_test_done)
+-			if (!error && !freezer_test_done)
+-				data->ready = 1;
+ 			if (freezer_test_done)
  				freezer_test_done = false;
--				thaw_kernel_threads();
--			}
++			else if (!error)
++				data->ready = 1;
  		}
  		break;
  
