@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2A3RGx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 12:06:53 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:34993 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752084Ab2A3RGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 12:06:52 -0500
-X-Greylist: delayed 627 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jan 2012 12:06:51 EST
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Subject: RE: [RFC] dmaengine/dma_slave: add context parameter to prep_slave_sg callback
-Date: Mon, 30 Jan 2012 08:55:48 -0800
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E5520281DD5B@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <1327915849.1527.17.camel@vkoul-udesk3>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [RFC] dmaengine/dma_slave: add context parameter to prep_slave_sg callback
-Thread-Index: AczfMdr4oYgDKPZGSwGpnRv43gKFVgAOExMQ
-References: <1327612946-29397-1-git-send-email-alexandre.bounine@idt.com> <1327915849.1527.17.camel@vkoul-udesk3>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Vinod Koul <vinod.koul@intel.com>
-CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <dan.j.williams@intel.com>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
+	id S1753175Ab2A3RIb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 12:08:31 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:49324
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752690Ab2A3RIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 12:08:30 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, kys@microsoft.com, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] net/hyperv: Correct the assignment in netvsc_recv_callback()
+Date: Mon, 30 Jan 2012 08:33:35 -0800
+Message-Id: <1327941218-12547-2-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1327941218-12547-1-git-send-email-haiyangz@microsoft.com>
+References: <1327941218-12547-1-git-send-email-haiyangz@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0UH6x3Z004245
 
-On Monday, January 30, 2012 at 4:31 AM, Vinod Koul wrote:
-> 
-> On Thu, 2012-01-26 at 16:22 -0500, Alexandre Bounine wrote:
-> > As we agreed during our discussion about adding DMA Engine support for RapidIO
-> > subsystem, RapidIO and similar clients may benefit from adding an extra context
-> > parameter to device_prep_slave_sg() callback.
-> > See https://lkml.org/lkml/2011/10/24/275 for more details.
-> >
-> > Adding the context parameter will allow to pass client/target specific
-> > information associated with an individual data transfer request.
-> >
-> > In the case of RapidIO support this additional information consists of target
-> > destination ID and its buffer address (which is not mapped into the local CPU
-> > memory space). Because a single RapidIO-capable DMA channel may queue data
-> > transfer requests to different target devices, the per-request configuration
-> > is required.
-> >
-> > The proposed change eliminates need for new subsystem-specific API.
-> > Existing DMA_SLAVE clients will ignore the new parameter.
-> >
-> > This RFC only demonstrates the API change and does not include corresponding
-> > changes to existing DMA_SLAVE clients. Complete set of patches will be provided
-> > after (if) this API change is accepted.
->
-> This looks good to me. But was thinking if we need to add this new
-> parameter for other slave calls (circular, interleaved, memcpy...)
-> 
+The first assignment to variable "net" is wrong, but overridden by the
+latter assignments. So the bug isn't manifested.
 
-I agree that cyclic and interleaved calls may benefit from adding that parameter as well.
-Benefits to the cyclic call are straightforward - same as dma_slave.
-Adding a context parameter to the interleaved transfers may be more future proofing option
-than an immediate need. Memcopy and other calls that deal with local memory transfers
-probably should be left untouched.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-What if we limit modifications to:
-1) three calls (slave, cyclic and interleaved) OR
-2) two (slave and cyclic) at this moment?
+---
+ drivers/net/hyperv/netvsc_drv.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-I am just more focused on dma_slave just because it fits well to provide RDMA
-over RapidIO fabric.
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 1a1ca6c..af25771 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -267,13 +267,10 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+ int netvsc_recv_callback(struct hv_device *device_obj,
+ 				struct hv_netvsc_packet *packet)
+ {
+-	struct net_device *net = dev_get_drvdata(&device_obj->device);
++	struct net_device *net;
+ 	struct sk_buff *skb;
+-	struct netvsc_device *net_device;
+-
+-	net_device = hv_get_drvdata(device_obj);
+-	net = net_device->ndev;
+ 
++	net = ((struct netvsc_device *)hv_get_drvdata(device_obj))->ndev;
+ 	if (!net) {
+ 		netdev_err(net, "got receive callback but net device"
+ 			" not initialized yet\n");
+-- 
+1.7.7
 
-If everybody agrees, I can go ahead and make changes to all three at once.
-
-Alex.
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
