@@ -1,191 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab2A3BvN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 20:51:13 -0500
-Received: from [206.117.179.246] ([206.117.179.246]:52818 "EHLO labridge.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751526Ab2A3BvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 20:51:12 -0500
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH net-next 1/2] netpoll: Convert printks to np_<level> and add pr_fmt
-Date: Sun, 29 Jan 2012 17:50:43 -0800
-Message-Id: <8a61df72a4eb6caaeaa8b5be644be227da61512b.1327888082.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+	id S1753607Ab2A3B6g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 20:58:36 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46527 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab2A3B6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 20:58:35 -0500
+Date: Mon, 30 Jan 2012 10:10:43 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Pinmux bindings proposal V2
+Message-ID: <20120130021041.GB10470@S2101-09.ap.freescale.net>
+References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
+ <20120123210052.GS22818@atomide.com>
+ <20120126093610.GD2287@S2101-09.ap.freescale.net>
+ <20120126175122.GX22818@atomide.com>
+ <20120127071944.GC32740@S2101-09.ap.freescale.net>
+ <20120127171653.GI13504@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120127171653.GI13504@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a more current message logging style.
-Add pr_fmt to prefix dmesg output with "netpoll: "
-Add macros to print np->name.
+On Fri, Jan 27, 2012 at 09:16:53AM -0800, Tony Lindgren wrote:
+...
+> I guess the analog we should follow here is clk_get and clk_set_rate,
+> except we would have pinconf_set_state with predefined states.
+> 
+It seems working for cases that we only change pinconf but never pinmux
+for different configuration states.  But how would that work for cases
+that require mux change for different configuration states?
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/core/netpoll.c |   63 +++++++++++++++++++++++----------------------------
- 1 files changed, 28 insertions(+), 35 deletions(-)
-
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index 556b082..b523274 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -9,6 +9,8 @@
-  * Copyright (C) 2002  Red Hat, Inc.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/moduleparam.h>
- #include <linux/netdevice.h>
- #include <linux/etherdevice.h>
-@@ -55,6 +57,13 @@ static void arp_reply(struct sk_buff *skb);
- static unsigned int carrier_timeout = 4;
- module_param(carrier_timeout, uint, 0644);
- 
-+#define np_info(np, fmt, ...)				\
-+	pr_info("%s: " fmt, np->name, ##__VA_ARGS__)
-+#define np_err(np, fmt, ...)				\
-+	pr_err("%s: " fmt, np->name, ##__VA_ARGS__)
-+#define np_notice(np, fmt, ...)				\
-+	pr_notice("%s: " fmt, np->name, ##__VA_ARGS__)
-+
- static void queue_process(struct work_struct *work)
- {
- 	struct netpoll_info *npinfo =
-@@ -627,18 +636,12 @@ out:
- 
- void netpoll_print_options(struct netpoll *np)
- {
--	printk(KERN_INFO "%s: local port %d\n",
--			 np->name, np->local_port);
--	printk(KERN_INFO "%s: local IP %pI4\n",
--			 np->name, &np->local_ip);
--	printk(KERN_INFO "%s: interface '%s'\n",
--			 np->name, np->dev_name);
--	printk(KERN_INFO "%s: remote port %d\n",
--			 np->name, np->remote_port);
--	printk(KERN_INFO "%s: remote IP %pI4\n",
--			 np->name, &np->remote_ip);
--	printk(KERN_INFO "%s: remote ethernet address %pM\n",
--	                 np->name, np->remote_mac);
-+	np_info(np, "local port %d\n", np->local_port);
-+	np_info(np, "local IP %pI4\n", &np->local_ip);
-+	np_info(np, "interface '%s'\n", np->dev_name);
-+	np_info(np, "remote port %d\n", np->remote_port);
-+	np_info(np, "remote IP %pI4\n", &np->remote_ip);
-+	np_info(np, "remote ethernet address %pM\n", np->remote_mac);
- }
- EXPORT_SYMBOL(netpoll_print_options);
- 
-@@ -680,8 +683,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
- 			goto parse_failed;
- 		*delim = 0;
- 		if (*cur == ' ' || *cur == '\t')
--			printk(KERN_INFO "%s: warning: whitespace"
--					"is not allowed\n", np->name);
-+			np_info(np, "warning: whitespace is not allowed\n");
- 		np->remote_port = simple_strtol(cur, NULL, 10);
- 		cur = delim;
- 	}
-@@ -705,8 +707,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
- 	return 0;
- 
-  parse_failed:
--	printk(KERN_INFO "%s: couldn't parse config at '%s'!\n",
--	       np->name, cur);
-+	np_info(np, "couldn't parse config at '%s'!\n", cur);
- 	return -1;
- }
- EXPORT_SYMBOL(netpoll_parse_options);
-@@ -721,8 +722,8 @@ int __netpoll_setup(struct netpoll *np)
- 
- 	if ((ndev->priv_flags & IFF_DISABLE_NETPOLL) ||
- 	    !ndev->netdev_ops->ndo_poll_controller) {
--		printk(KERN_ERR "%s: %s doesn't support polling, aborting.\n",
--		       np->name, np->dev_name);
-+		np_err(np, "%s doesn't support polling, aborting\n",
-+		       np->dev_name);
- 		err = -ENOTSUPP;
- 		goto out;
- 	}
-@@ -785,14 +786,12 @@ int netpoll_setup(struct netpoll *np)
- 	if (np->dev_name)
- 		ndev = dev_get_by_name(&init_net, np->dev_name);
- 	if (!ndev) {
--		printk(KERN_ERR "%s: %s doesn't exist, aborting.\n",
--		       np->name, np->dev_name);
-+		np_err(np, "%s doesn't exist, aborting\n", np->dev_name);
- 		return -ENODEV;
- 	}
- 
- 	if (ndev->master) {
--		printk(KERN_ERR "%s: %s is a slave device, aborting.\n",
--		       np->name, np->dev_name);
-+		np_err(np, "%s is a slave device, aborting\n", np->dev_name);
- 		err = -EBUSY;
- 		goto put;
- 	}
-@@ -800,16 +799,14 @@ int netpoll_setup(struct netpoll *np)
- 	if (!netif_running(ndev)) {
- 		unsigned long atmost, atleast;
- 
--		printk(KERN_INFO "%s: device %s not up yet, forcing it\n",
--		       np->name, np->dev_name);
-+		np_info(np, "device %s not up yet, forcing it\n", np->dev_name);
- 
- 		rtnl_lock();
- 		err = dev_open(ndev);
- 		rtnl_unlock();
- 
- 		if (err) {
--			printk(KERN_ERR "%s: failed to open %s\n",
--			       np->name, ndev->name);
-+			np_err(np, "failed to open %s\n", ndev->name);
- 			goto put;
- 		}
- 
-@@ -817,9 +814,7 @@ int netpoll_setup(struct netpoll *np)
- 		atmost = jiffies + carrier_timeout * HZ;
- 		while (!netif_carrier_ok(ndev)) {
- 			if (time_after(jiffies, atmost)) {
--				printk(KERN_NOTICE
--				       "%s: timeout waiting for carrier\n",
--				       np->name);
-+				np_notice(np, "timeout waiting for carrier\n");
- 				break;
- 			}
- 			msleep(1);
-@@ -831,9 +826,7 @@ int netpoll_setup(struct netpoll *np)
- 		 */
- 
- 		if (time_before(jiffies, atleast)) {
--			printk(KERN_NOTICE "%s: carrier detect appears"
--			       " untrustworthy, waiting 4 seconds\n",
--			       np->name);
-+			np_notice(np, "carrier detect appears untrustworthy, waiting 4 seconds\n");
- 			msleep(4000);
- 		}
- 	}
-@@ -844,15 +837,15 @@ int netpoll_setup(struct netpoll *np)
- 
- 		if (!in_dev || !in_dev->ifa_list) {
- 			rcu_read_unlock();
--			printk(KERN_ERR "%s: no IP address for %s, aborting\n",
--			       np->name, np->dev_name);
-+			np_err(np, "no IP address for %s, aborting\n",
-+			       np->dev_name);
- 			err = -EDESTADDRREQ;
- 			goto put;
- 		}
- 
- 		np->local_ip = in_dev->ifa_list->ifa_local;
- 		rcu_read_unlock();
--		printk(KERN_INFO "%s: local IP %pI4\n", np->name, &np->local_ip);
-+		np_info(np, "local IP %pI4\n", &np->local_ip);
- 	}
- 
- 	np->dev = ndev;
 -- 
-1.7.8.111.gad25c.dirty
-
+Regards,
+Shawn
