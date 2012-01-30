@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab2A3WHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:07:11 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:47573 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753732Ab2A3WHI (ORCPT
+	id S1754466Ab2A3WHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:07:21 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35513 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753633Ab2A3WHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:07:08 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 15/16] leds-lp5521: fix compiler warning
-Date: Mon, 30 Jan 2012 23:00:19 +0100
-Message-Id: <1327960820-11867-16-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
-References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327961228;58c9a5f2;
+	Mon, 30 Jan 2012 17:07:16 -0500
+X-Sasl-enc: EZG1SqzaqCrD9Jjk9I43qJIa3GSJQDII17Q1UB6KsH+n 1327961235
+Date: Mon, 30 Jan 2012 14:06:11 -0800
+From: Greg KH <greg@kroah.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        systemd-devel@lists.freedesktop.org
+Subject: Re: sysfs regression: wrong link counts
+Message-ID: <20120130220611.GA26655@kroah.com>
+References: <4F27120A.4040106@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F27120A.4040106@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for some -Wuninitialized compiler warnings.
+On Mon, Jan 30, 2012 at 10:56:26PM +0100, Jiri Slaby wrote:
+> Hi,
+> 
+> I cannot boot properly with this commit:
+> commit 524b6c5b39b931311dfe5a2f5abae2f5c9731676
+> Author: Eric W. Biederman <ebiederm@xmission.com>
+> Date:   Sun Dec 18 20:09:31 2011 -0800
+> 
+>     sysfs: Kill nlink counting.
+> 
+> 
+> 1) network systemd rule doesn't start network
+> 2) sensors complain:
+>    sensors_init: Kernel interface error
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/leds/leds-lp5521.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+Odd.
 
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index d62a798..8ce4525 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -193,6 +193,7 @@ static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
- 	struct lp5521_chip *chip = engine_to_lp5521(eng);
- 	struct i2c_client *client = chip->client;
- 	int ret;
-+	int ret2;
- 	int addr;
- 	u8 mode;
- 
-@@ -200,7 +201,11 @@ static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
- 	ret = lp5521_set_engine_mode(eng, LP5521_CMD_DIRECT);
- 	/* Mode change requires min 500 us delay. 1 - 2 ms  with margin */
- 	usleep_range(1000, 2000);
--	ret |= lp5521_read(client, LP5521_REG_OP_MODE, &mode);
-+	ret2 = lp5521_read(client, LP5521_REG_OP_MODE, &mode);
-+	if (ret2 < 0)
-+		return ret2;
-+
-+	ret |= ret2;
- 
- 	/* For loading, all the engines to load mode */
- 	lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
-@@ -692,7 +697,12 @@ static int __devinit lp5521_probe(struct i2c_client *client,
- 	 * otherwise further access to the R G B channels in the
- 	 * LP5521_REG_ENABLE register will not have any effect - strange!
- 	 */
--	lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
-+	ret = lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
-+	if (ret) {
-+		dev_err(&client->dev, "error in reading chip\n");
-+		goto fail2;
-+	}
-+
- 	if (buf != LP5521_REG_R_CURR_DEFAULT) {
- 		dev_err(&client->dev, "error in reseting chip\n");
- 		goto fail2;
--- 
-1.7.7.3
+What in systemd is causing a reliance on this?
 
+> ad 2) look at what it does:
+> /* returns !0 if sysfs filesystem was found, 0 otherwise */
+> int sensors_init_sysfs(void)
+> {
+>         struct stat statbuf;
+> 
+>         snprintf(sensors_sysfs_mount, NAME_MAX, "%s", "/sys");
+>         if (stat(sensors_sysfs_mount, &statbuf) < 0
+>          || statbuf.st_nlink <= 2)      /* Empty directory */
+>                 return 0;
+> 
+>         return 1;
+> }
+
+Ah, a hack to see if the directory is empty.
+
+Isn't there some other "proper" way of doing this in userspace, or is
+this really the correct way?
+
+> So this looks like it became a part of ABI we cannot break...
+> 
+> A revert of this commit on the top of today's -next fixes the problem.
+
+Ick.
+
+Eric, care to fix this up, or do you want me to revert it?
+
+thanks,
+
+greg k-h
