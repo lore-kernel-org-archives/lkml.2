@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2A3Moo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 07:44:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29789 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752443Ab2A3Mon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 07:44:43 -0500
-Date: Mon, 30 Jan 2012 13:38:19 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: + kmod-avoid-deadlock-by-recursive-kmod-call.patch added to
-	-mm tree
-Message-ID: <20120130123819.GA11414@redhat.com>
-References: <20120126175612.GA24011@redhat.com> <87ipjxdfbg.fsf@rustcorp.com.au> <20120127143234.GA13056@redhat.com> <87y5srbaf7.fsf@rustcorp.com.au> <20120129163141.GC20803@redhat.com> <87aa56qedn.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87aa56qedn.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752885Ab2A3Mov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 07:44:51 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18591 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab2A3Mou (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 07:44:50 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 30 Jan 2012 04:44:49 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Diwakar Tundlam <dtundlam@nvidia.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] scheduler: domain: init next_balance in nohz_idle_balancer with jiffies
+Date: Mon, 30 Jan 2012 14:44:22 +0200
+Message-Id: <1327927463-4165-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30, Rusty Russell wrote:
->
-> On Sun, 29 Jan 2012 17:31:41 +0100, Oleg Nesterov <oleg@redhat.com> wrote:
-> > Confused... in this case I do not understand why do you dislike the
-> > idea to kill khelper_wq.
->
-> Yes, you are confused.  I was agreeing with you:
+From: Diwakar Tundlam <dtundlam@nvidia.com>
 
-Ah...
+The next_balance parameter of nohz_idle_balancer should be initialized
+to jiffies since jiffies itself is initialized to 300 seconds shy of
+overflow. Otherwise, nohz_idle_balancer does not run for the first 5
+mins after bootup.
 
-> I thought "I'd prefer that" was pretty clear??
+Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
+Reviewed-by: Aleksandr Frid <afrid@nvidia.com>
+Reviewed-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
+Reviewed-by: Satya Popuri <spopuri@nvidia.com>
+---
+ kernel/sched.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-It was! Looking back, I do not understand how did I manage to misread
-your email.
-
-Thanks Rusty,
-
-Oleg.
+diff --git a/kernel/sched.c b/kernel/sched.c
+index b5efd6c..d3f291f 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8383,6 +8383,7 @@ void __init sched_init(void)
+ 	atomic_set(&nohz.load_balancer, nr_cpu_ids);
+ 	atomic_set(&nohz.first_pick_cpu, nr_cpu_ids);
+ 	atomic_set(&nohz.second_pick_cpu, nr_cpu_ids);
++	nohz.next_balance = jiffies;
+ #endif
+ 	/* May be allocated at isolcpus cmdline parse time */
+ 	if (cpu_isolated_map == NULL)
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
