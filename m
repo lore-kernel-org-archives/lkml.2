@@ -1,73 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab2A3NVi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 08:21:38 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34746 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752568Ab2A3NVh (ORCPT
+	id S1752558Ab2A3NWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 08:22:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46505 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab2A3NW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 08:21:37 -0500
-Date: Mon, 30 Jan 2012 13:21:34 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 1/3] regmap: Properly round reg_bytes and val_bytes
-Message-ID: <20120130132134.GB4882@opensource.wolfsonmicro.com>
-References: <1327677023-29310-1-git-send-email-w.sang@pengutronix.de>
- <20120127162837.GB18572@opensource.wolfsonmicro.com>
- <20120128011403.GA6669@pengutronix.de>
+	Mon, 30 Jan 2012 08:22:28 -0500
+Date: Mon, 30 Jan 2012 05:21:39 -0800
+From: tip-bot for Michael D Labriola <michael.d.labriola@gmail.com>
+Message-ID: <tip-5955633e91bfc5cd0a41d8d82259e1d8b32980ef@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, torvalds@linux-foundation.org, mlabriol@gdeb.com,
+        alan@lxorguk.ukuu.org.uk, michael.d.labriola@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, michael.d.labriola@gmail.com,
+        torvalds@linux-foundation.org, mlabriol@gdeb.com, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk, mingo@elte.hu
+In-Reply-To: <87wr8ab9od.fsf@gmail.com>
+References: <87wr8ab9od.fsf@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/reboot: Skip DMI checks if reboot set by user
+Git-Commit-ID: 5955633e91bfc5cd0a41d8d82259e1d8b32980ef
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZfOjI3PrQbgiZnxM"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120128011403.GA6669@pengutronix.de>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jan 2012 05:21:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  5955633e91bfc5cd0a41d8d82259e1d8b32980ef
+Gitweb:     http://git.kernel.org/tip/5955633e91bfc5cd0a41d8d82259e1d8b32980ef
+Author:     Michael D Labriola <michael.d.labriola@gmail.com>
+AuthorDate: Sun, 29 Jan 2012 14:17:22 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 30 Jan 2012 10:52:32 +0100
 
---ZfOjI3PrQbgiZnxM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+x86/reboot: Skip DMI checks if reboot set by user
 
-On Sat, Jan 28, 2012 at 02:14:03AM +0100, Wolfram Sang wrote:
+Skip DMI checks for vendor specific reboot quirks if the user
+passed in a reboot= arg on the command line - we should never
+override user choices.
 
-> I wondered if you'd save reg_bits and val_bits there (converting to *_bytes
-> when needed), you could replace all the format_x_y-functions with a few generic
-> functions doing (reg << y) | val. Unsure if it is worth it...
+Signed-off-by: Michael D Labriola <michael.d.labriola@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Michael D Labriola <mlabriol@gdeb.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/87wr8ab9od.fsf@gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/reboot.c |   28 ++++++++++++++++++++++++++--
+ 1 files changed, 26 insertions(+), 2 deletions(-)
 
-Clearly we *can* but there's other bits (chiefly the cache code once we
-acquire the ability to do block operations from cache) which really want
-stuff to be 8 bit aligned.  I deliberately chose to make things byte
-aligned so we have to think about this stuff before we do things that
-make byte aligned stuff hard, it felt like if we were going to take a
-complexity hit we probably want it to be on the odd register formats as
-pretty much all of the more demanding modern devices seem to be going
-for multiples of 8 bits.
-
---ZfOjI3PrQbgiZnxM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPJpjHAAoJEBus8iNuMP3djwQP/i0IM21+bujNLinqA/of3T9l
-pNcTb7YjfCvjv+5RGzw2NXuffRp9i1cFZemTC1y+am+eVPvt+k1y4C8YbQXrqFli
-1K38LOjOxTXI5y6oNtg2/Te3sq4OY5OCgRayLZ/wW7I/CcYsf3U/I3BApowLzOJl
-mvrDlPSRXYypPfnE53u41S3W+fOdgf5AxHTjP48Bi2ssD1aLbGgSF+IeDpAaDjEM
-2IarJnTNVap2FlcLSLT7QeIp8opYoSu/C24y3BbVLwjph8hIaECaEHsQZs+UwPu4
-hCx5H3JI8WtgoBCB5ACeBDZY2DAJJJiOGXTajW59JG1qgwiYD2QDctot+gptnSQJ
-C22WzOCh5PMZqbyU5uOvD8m4cw23B8M0xrtlK6e6KBHx98F1y82899L7JogX82AE
-8QmmYw6hZqBGQ2z4mWNJIkSUvpaXHJ1St9vvC4gpf+SapSRoz0npuE0fJezfd4xI
-Hhn6wlNP2EMWoGCEsLNfM5m2zYJQNcTblOEHRR3pz0iH3b8JCBzauWa8yJEhpr5U
-Do8pS3SHoL0IPFGtOVswYAmIprN0KmEsKeLzoxFInJWi2iYqg9mpqI9vOyzJK8RG
-QFHdXDnL2I3JMrH6zknCu+OfZwMBvVgH7Youz4en3sZLN1US0kX5mTgrdRhYhgaD
-K+0SX4Aq1a3CKpR7Ld92
-=SDPn
------END PGP SIGNATURE-----
-
---ZfOjI3PrQbgiZnxM--
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 37a458b..b257f0e 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -39,6 +39,14 @@ static int reboot_mode;
+ enum reboot_type reboot_type = BOOT_ACPI;
+ int reboot_force;
+ 
++/* This variable is used privately to keep track of whether or not
++ * reboot_type is still set to its default value (i.e., reboot= hasn't
++ * been set on the command line).  This is needed so that we can
++ * suppress DMI scanning for reboot quirks.  Without it, it's
++ * impossible to override a faulty reboot quirk without recompiling.
++ */
++static int reboot_default = 1;
++
+ #if defined(CONFIG_X86_32) && defined(CONFIG_SMP)
+ static int reboot_cpu = -1;
+ #endif
+@@ -67,6 +75,12 @@ bool port_cf9_safe = false;
+ static int __init reboot_setup(char *str)
+ {
+ 	for (;;) {
++		/* Having anything passed on the command line via
++		 * reboot= will cause us to disable DMI checking
++		 * below.
++		 */
++		reboot_default = 0;
++
+ 		switch (*str) {
+ 		case 'w':
+ 			reboot_mode = 0x1234;
+@@ -316,7 +330,12 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 
+ static int __init reboot_init(void)
+ {
+-	dmi_check_system(reboot_dmi_table);
++	/* Only do the DMI check if reboot_type hasn't been overridden
++	 * on the command line
++	 */
++	if (reboot_default) {
++		dmi_check_system(reboot_dmi_table);
++	}
+ 	return 0;
+ }
+ core_initcall(reboot_init);
+@@ -465,7 +484,12 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
+ 
+ static int __init pci_reboot_init(void)
+ {
+-	dmi_check_system(pci_reboot_dmi_table);
++	/* Only do the DMI check if reboot_type hasn't been overridden
++	 * on the command line
++	 */
++	if (reboot_default) {
++		dmi_check_system(pci_reboot_dmi_table);
++	}
+ 	return 0;
+ }
+ core_initcall(pci_reboot_init);
