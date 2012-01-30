@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab2A3WCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:02:11 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:45890 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753854Ab2A3WAk (ORCPT
+	id S1754123Ab2A3WD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:03:26 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49938 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661Ab2A3WDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:00:40 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, ivtv-devel@ivtvdriver.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/16] cx18: fix handling of 'radio' module parameter
-Date: Mon, 30 Jan 2012 23:00:09 +0100
-Message-Id: <1327960820-11867-6-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
-References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327960840;836e2fd0;
+	Mon, 30 Jan 2012 17:03:25 -0500
+Date: Mon, 30 Jan 2012 22:04:26 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>,
+        "Huang, Shane" <Shane.Huang@amd.com>, Borislav Petkov <bp@amd64.org>,
+        "Nguyen, Dong" <Dong.Nguyen@amd.com>, jesse.brandeburg@gmail.com
+Subject: Re: [PATCH] Unhandled IRQs on AMD E-450: temporarily switch to
+ low-performance polling IRQ mode
+Message-ID: <20120130220426.4d4d48a7@pyramind.ukuu.org.uk>
+In-Reply-To: <CAPRPZsAt+e3cy1YTriikpb2SNN=jOusvnPF0ByFeun+uaBa5Og@mail.gmail.com>
+References: <CAPRPZsAt+e3cy1YTriikpb2SNN=jOusvnPF0ByFeun+uaBa5Og@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed handling of 'radio' module parameter from module_param_array
-to module_param_named to fix these compiler warnings in cx18-driver.c:
+> +				printk("Polling IRQ %d\n", irq);
 
-In function ‘__check_radio’:
-113:1: warning: return from incompatible pointer type [enabled by default]
-At top level:
-113:1: warning: initialization from incompatible pointer type [enabled by default]
-113:1: warning: (near initialization for ‘__param_arr_radio.num’) [enabled by default]
+printk levels would be good.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/media/video/cx18/cx18-driver.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
-index 349bd9c..27b5330 100644
---- a/drivers/media/video/cx18/cx18-driver.c
-+++ b/drivers/media/video/cx18/cx18-driver.c
-@@ -110,7 +110,7 @@ static int retry_mmio = 1;
- int cx18_debug;
- 
- module_param_array(tuner, int, &tuner_c, 0644);
--module_param_array(radio, bool, &radio_c, 0644);
-+module_param_named(radio, radio_c, bool, 0644);
- module_param_array(cardtype, int, &cardtype_c, 0644);
- module_param_string(pal, pal, sizeof(pal), 0644);
- module_param_string(secam, secam, sizeof(secam), 0644);
--- 
-1.7.7.3
+> -		__report_bad_irq(irq, desc, action_ret);
+> +		/* __report_bad_irq(irq, desc, action_ret); */
 
+And this removes debugging for a reason that isn't described ?
+
+
+In general this looks sane although it may do bad stuff on some platforms
+I guess - notably irqpoll has an x86 ism in it still that now may need
+dealing with (the IRQ 0 magic)
+
+Alan
