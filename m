@@ -1,88 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2A3QKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 11:10:42 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:64430 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab2A3QKN (ORCPT
+	id S1754230Ab2A3QLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 11:11:20 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59735 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753756Ab2A3QLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 11:10:13 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH 0/3] arch: fix ioport mapping on mips,sh
-Date: Mon, 30 Jan 2012 16:09:55 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <jmorris@namei.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Michael Witten <mfwitten@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arch@vger.kernel.org
-References: <cover.1327877053.git.mst@redhat.com>
-In-Reply-To: <cover.1327877053.git.mst@redhat.com>
+	Mon, 30 Jan 2012 11:11:19 -0500
+Date: Mon, 30 Jan 2012 16:11:16 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [RFC 2/2] regmap: make use of cached entries in debugfs
+Message-ID: <20120130161116.GK4882@opensource.wolfsonmicro.com>
+References: <1327932497-28319-1-git-send-email-w.sang@pengutronix.de>
+ <1327932497-28319-2-git-send-email-w.sang@pengutronix.de>
+ <20120130145627.GJ4882@opensource.wolfsonmicro.com>
+ <20120130153427.GH15596@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201301609.56105.arnd@arndb.de>
-X-Provags-ID: V02:K0:YRmjaTYJpZu6S8WxSZdsxdgrZ4yBP5TfISB8Z6OHH/Z
- CO+Ztb/1clhmgzcjEejOSB8X08T+EYcfPe2yyWQYRhwYVc5CDl
- JQj3RbhTCyCU3OOY/EWMH9w9rxOgaP81SVJQWKxCpJzZU9hoO/
- od6lhFDtsstc9ZF9Fy1xxo0E9vXsQHiS21D//bqkfadjYpAz00
- MT7bH/MtHT8FyGPv9lWvfn/VugcY2zTm1HG7NWGSGrjJoPL21G
- 0fEtc5l2MV72qevHUPa73HEpXWiqN6wq88WIunZImUhr2hQNbH
- K/nMw9WrRcpjRa3lJKProgmUFgqscMRrm1iLU7KrH3xjyPLNLB
- Y8bU3210GHolkMOpzDpU=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aziWXe2aaRGlkyg3"
+Content-Disposition: inline
+In-Reply-To: <20120130153427.GH15596@pengutronix.de>
+X-Cookie: Condense soup, not books!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 January 2012, Michael S. Tsirkin wrote:
-> Kevin Cernekee reported that recent cleanup
-> that replaced pci_iomap with a generic function
-> failed to take into account the differences
-> in io port handling on mips and sh architectures.
-> 
-> Rather than revert the changes reintroducing the
-> code duplication, this patchset fixes this
-> by adding ability for architectures to override
-> ioport mapping for pci devices.
-> 
-> I put this in my tree that feeds into linux-next
-> and intend to ask Linus to pull this fix if this
-> doesn't cause any issues and there are no objections.
-> 
-> The patches were tested on x86 and compiled on mips and sh.
-> Would appreciate reviews/acks/testing reports.
 
-Looks good to me, except for the one detail I've commented
-on in the third patch.
+--aziWXe2aaRGlkyg3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Mon, Jan 30, 2012 at 04:34:27PM +0100, Wolfram Sang wrote:
+> On Mon, Jan 30, 2012 at 02:56:28PM +0000, Mark Brown wrote:
 
-I do wonder if the sh and mips implementations are robust enough however
-(independent of your work): It seems that an ioport number is treated
-differently in pci_iomap than it is using ioport_map and inb/outb,
-the assumption being that the port number is a local index per PCI domain.
-This would mean that any port access other than pci_iomap would only
-work on the primary PCI domain. There are two IMHO better solutions that
-I've seen on other architectures:
+> > > -		if (!regmap_readable(map, i))
+> > > +		if (map->cache_type == REGCACHE_NONE && !regmap_readable(map, i))
 
-1. create a larger (e.g. 1MB) io port mapping range in virtual memory
-that is split into 64kb per domain, and use the domain number to
-find the per domain range when setting the resources. Port numbers will
-be larger than 65535 this way, but PCI will ignore the upper address
-bits for any access so it works fine.
+> > This isn't quite what you said in the changelog
 
-2. split the 64kb io port range into subsections per domain (on page
-granularity, e.g. 2 domains with 32kb or at most 16 domains with 4kb)
-and map them virtually contiguous, then reassign all io port resources
-so that only the correct region for each domain is used.
+> Sorry, I reread and can't find the diff?
 
-	Arnd
+Oh, right, you're not actually saying you'll only give cached values
+back - my mistake.
+
+> > and isn't going to play nicely with sparse register maps
+
+> sparse == RBTREE? What does "play nicely" mean here? Too slow?
+
+A sparse register map is one that doesn't contain all possible register
+addresses, it's orthogonal to the cache - you can have an uncached
+device where we know some addresses don't exist or for a cached device
+the cache could be any type.
+
+The check for regmap_readable() is there because it causes the debugfs
+code to not display registers that don't exist, otherwise we could
+easily DoS the output to the point of illegibility by including large
+numbers (potentially thousands) of nonexistant registers in the
+output making it hard for humans to find the ones that actually exist.
+
+> > - it should be
+
+> > 	if (regmap_cached(map, i) || regmap_readable(map, i))
+
+> > or so (regmap_cached() doesn't exist at present but it seems reasonable
+> > that it should).
+
+> Sigh, I have to give up for now. Sadly, I am already way beyond my
+> schedule regarding the amplifier driver and need to work on other things
+> now.
+
+Oh well.  I might get round to it sometime but essentially all the chips
+I work with have read/write support so the issue never comes up.
+
+--aziWXe2aaRGlkyg3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPJsEdAAoJEBus8iNuMP3dsxsP/R1dEovjR5WNBlCmjvNp5hDP
+ZdBqSqmLVUrDgnz/n/AeY6HYqUhoGl+psqLv4HAn4PLySPTqkWr+CjELgkS1NZgt
+sj5l6+c8cYYaxzYe4Jvy/GY5lIs+XaoQ8i5PskOvDN170KI55UAlj+YBClqUCh5x
+Uj/WyysOtm5/0TAGxAMrTZm7BC2a1xDAL+3suc9zMj+YRz0Q4CqwysXlBumvGTj6
+vKttnRMAiNON7Qpp3aYv3pZ6uHqh2Vwm89DKjyzTZc07Y2AWlE6hsS2X8OW8ZGCu
+ujgAunQvNscdlAJN6F+kmH8ZBxGHsFnLvJ5bTckOvyFCQB9Zm8gbX9qj+tK08Sho
+Y3wNTv8xzNaQWkEoym/m6oyddYolMZpfGoVs5mhKLXamonVXJEe187aCb5hFg8A/
+5ER50MjVIATbgeB4Or0sn0b+A8XwxpWH8Y+7jQeZq4UOarnCLx1uXv9zLt6DLO6B
+L7VopW0NIP6lAFRnYL+4pxk217ObzZedtTf84NvpkyZK8Oc+cTnChKzCCrztSvrB
+6459AcqEyV5ME1YmTgquc0rKgSdjwEwVgyEnTjn02ygi1aPzCEJmyC8YlyyNOKTU
+t13CaWScaJaF4j7jCQ3QngqzMXFVYgLRLhe76qpZs0VTtNBwjRgf+kKl61VeAqvg
+ZqMDSoOgX3I5nNRaGpQV
+=49tP
+-----END PGP SIGNATURE-----
+
+--aziWXe2aaRGlkyg3--
