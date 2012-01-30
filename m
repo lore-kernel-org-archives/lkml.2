@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab2A3QDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 11:03:08 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36532 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753374Ab2A3QDE convert rfc822-to-8bit (ORCPT
+	id S1754098Ab2A3QDR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 11:03:17 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:57722 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754077Ab2A3QDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 11:03:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F26B7B6.2080107@lwfinger.net>
-References: <1327930827-1719-1-git-send-email-standby24x7@gmail.com>
-	<4F26B7B6.2080107@lwfinger.net>
-Date: Tue, 31 Jan 2012 01:03:02 +0900
-Message-ID: <CALLJCT1q51mBLvciEXEL88iHS2Bk5bOmTUGsxEpw+X3VDjxmhA@mail.gmail.com>
-Subject: Re: [PATCH] [trivial] net: Fix typo in rtl8192de/dm.c
-From: Masanari Iida <standby24x7@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: wlanfae@realtek.com, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Jan 2012 11:03:15 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: w.sang@pengutronix.de, bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
+        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v2 3/7] LPC32xx: clock.c: Clock registration fixes
+Date: Mon, 30 Jan 2012 17:02:02 +0100
+Message-Id: <1327939327-7799-3-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1327939327-7799-1-git-send-email-stigge@antcom.de>
+References: <1327939327-7799-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 12:31 AM, Larry Finger
-<Larry.Finger@lwfinger.net> wrote:
-> On 01/30/2012 07:40 AM, Masanari Iida wrote:
->>
->> Correct spelling "disconnet" to "disconnect" in
->> drivers/net/wireless/rtlwifi/rtl8192de/dm.c
->>
->> Signed-off-by: Masanari Iida<standby24x7@gmail.com>
->> ---
->>  drivers/net/wireless/rtlwifi/rtl8192de/dm.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->
->
-> The patch is OK, but by convention, the subject should say "[PATCH] rtlwifi:
-> rtl8192dm: Fix typo in dm.c". By getting rtlwifi in it, searching the git
-> log is a lot easier.
->
-> Larry
->
-I will re-post this with correct subject.
-Masanari
+This patch adjusts the clock registration list, ported from the latest version
+of Kevin Wells' latest version of clock.c: i2s0_ck, i2s1_ck and dev:mmc0 have
+NULL pointers associated as the .dev_id and .con_id, respectively. The old
+values were not useful.
+
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+
+--- a/arch/arm/mach-lpc32xx/clock.c
++++ b/arch/arm/mach-lpc32xx/clock.c
+@@ -1076,10 +1098,10 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("dev:ssp1", NULL, clk_ssp1)
+ 	_REGISTER_CLOCK("lpc32xx_keys.0", NULL, clk_kscan)
+ 	_REGISTER_CLOCK("lpc32xx-nand.0", "nand_ck", clk_nand)
+-	_REGISTER_CLOCK("tbd", "i2s0_ck", clk_i2s0)
+-	_REGISTER_CLOCK("tbd", "i2s1_ck", clk_i2s1)
++	_REGISTER_CLOCK(NULL, "i2s0_ck", clk_i2s0)
++	_REGISTER_CLOCK(NULL, "i2s1_ck", clk_i2s1)
+ 	_REGISTER_CLOCK("ts-lpc32xx", NULL, clk_tsc)
+-	_REGISTER_CLOCK("dev:mmc0", "MCLK", clk_mmc)
++	_REGISTER_CLOCK("dev:mmc0", NULL, clk_mmc)
+ 	_REGISTER_CLOCK("lpc-net.0", NULL, clk_net)
+ 	_REGISTER_CLOCK("dev:clcd", NULL, clk_lcd)
+ 	_REGISTER_CLOCK("lpc32xx_udc", "ck_usbd", clk_usbd)
+
