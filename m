@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab2A3WGt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:06:49 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54909 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab2A3WGs (ORCPT
+	id S1754437Ab2A3WHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:07:07 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:47570 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753748Ab2A3WHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:06:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of msb@google.com designates 10.68.199.4 as permitted sender) smtp.mail=msb@google.com; dkim=pass header.i=msb@google.com
-Date: Mon, 30 Jan 2012 14:06:33 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH] cgroup: remove extra calls to find_existing_css_set
-Message-ID: <20120130220633.GT4656@google.com>
-References: <1327956716-11537-1-git-send-email-msb@chromium.org>
- <20120130210128.GA27051@google.com>
- <20120130210404.GA27616@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120130210404.GA27616@google.com>
-X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 30 Jan 2012 17:07:05 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Thomas Sailer <t.sailer@alumni.ethz.ch>
+Cc: linux-hams@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 14/16] hamradio: fix incompatible pointer in module parameter
+Date: Mon, 30 Jan 2012 23:00:18 +0100
+Message-Id: <1327960820-11867-15-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
+References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327961224;0e502121;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo (tj@kernel.org) wrote:
-> On Mon, Jan 30, 2012 at 01:01:28PM -0800, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Mon, Jan 30, 2012 at 12:51:56PM -0800, Mandeep Singh Baines wrote:
-> > > -	/*
-> > > +        /*
-> > 
-> > Whitespace contamination fixed.
-> > 
-> > Applied to cgroup/for-3.4 w/ previous Acked-by's added.  Please
-> > collect them on submission.
-> 
-> Ooh, never mind.  I was confused with acks to other patches.  Only Li
-> has acked it, right?  If somebody else also acked it, please scream.
-> 
+Fixed 'warning: return from incompatible pointer type' related
+to module parameters.
 
-Yep. Just Li.
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/net/hamradio/baycom_epp.c |    2 +-
+ drivers/net/hamradio/baycom_par.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-> Thanks.
-> 
-> -- 
-> tejun
+diff --git a/drivers/net/hamradio/baycom_epp.c b/drivers/net/hamradio/baycom_epp.c
+index 9537aaa..49b8b58 100644
+--- a/drivers/net/hamradio/baycom_epp.c
++++ b/drivers/net/hamradio/baycom_epp.c
+@@ -1162,7 +1162,7 @@ static void baycom_probe(struct net_device *dev)
+ /*
+  * command line settable parameters
+  */
+-static const char *mode[NR_PORTS] = { "", };
++static char *mode[NR_PORTS] = { "", };
+ static int iobase[NR_PORTS] = { 0x378, };
+ 
+ module_param_array(mode, charp, NULL, 0);
+diff --git a/drivers/net/hamradio/baycom_par.c b/drivers/net/hamradio/baycom_par.c
+index 279d229..f1aea0c 100644
+--- a/drivers/net/hamradio/baycom_par.c
++++ b/drivers/net/hamradio/baycom_par.c
+@@ -477,7 +477,7 @@ static int baycom_ioctl(struct net_device *dev, struct ifreq *ifr,
+ /*
+  * command line settable parameters
+  */
+-static const char *mode[NR_PORTS] = { "picpar", };
++static char *mode[NR_PORTS] = { "picpar", };
+ static int iobase[NR_PORTS] = { 0x378, };
+ 
+ module_param_array(mode, charp, NULL, 0);
+-- 
+1.7.7.3
+
