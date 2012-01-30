@@ -1,120 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab2A3QJn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 11:09:43 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59825 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab2A3QJk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 11:09:40 -0500
+	id S1754152Ab2A3QJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 11:09:50 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:63256 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753469Ab2A3QJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 11:09:49 -0500
+Date: Mon, 30 Jan 2012 17:09:18 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        giancarlo.asnaghi@st.com, alan@linux.intel.com
+Subject: [PATCH V2 0/3] STA2X11: patches for pci bridge support
+Message-ID: <cover.1327933724.git.rubini@gnudd.com>
 MIME-Version: 1.0
-In-Reply-To: <1327718971-9598-13-git-send-email-yinghai@kernel.org>
-References: <1327718971-9598-1-git-send-email-yinghai@kernel.org> <1327718971-9598-13-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 30 Jan 2012 08:09:19 -0800
-Message-ID: <CAErSpo6JuJ-2u4KptUyx0N623f5X29CiqkzWEFTKnSFKQ6sP_w@mail.gmail.com>
-Subject: Re: [PATCH 12/13] PCI: kill pci_fixup_parent_subordinate_busnr()
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 6:49 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> Now we can safely extend parent top and shrink them according iobusn_resource tree.
->
-> Don't need that any more.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/probe.c |   45 +++++++++------------------------------------
->  1 files changed, 9 insertions(+), 36 deletions(-)
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 23c2f0d..54615a9 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -608,22 +608,6 @@ struct pci_bus *__ref pci_add_new_bus(struct pci_bus *parent, struct pci_dev *de
->        return child;
->  }
->
-> -static void pci_fixup_parent_subordinate_busnr(struct pci_bus *child, int max)
-> -{
-> -       struct pci_bus *parent = child->parent;
-> -
-> -       /* Attempts to fix that up are really dangerous unless
-> -          we're going to re-assign all bus numbers. */
-> -       if (!pcibios_assign_all_busses())
-> -               return;
-> -
-> -       while (parent->parent && parent->subordinate < max) {
-> -               parent->subordinate = max;
-> -               pci_write_config_byte(parent->self, PCI_SUBORDINATE_BUS, max);
-> -               parent = parent->parent;
-> -       }
-> -}
-> -
->  static void __devinit pci_bus_extend_top(struct pci_bus *parent,
->                 resource_size_t size, struct resource *parent_res)
->  {
-> @@ -925,6 +909,13 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
->                /* Clear errors */
->                pci_write_config_word(dev, PCI_STATUS, 0xffff);
->
-> +               /*
-> +                * For CardBus bridges, we leave 4 bus numbers
-> +                * as cards with a PCI-to-PCI bridge can be
-> +                * inserted later.
-> +                * other just allocate 8 bus to avoid we fall into
-> +                *  small hole in the middle.
-> +                */
+This series is V2 of what I sent on Jan 6th. Back then it was 6
+patches, 3 of them are now in linux-next. The others are here again.
 
-This comment addition is in the wrong patch; it should go in the one
-that added the code.
+Patch 3 is dependent on patch 1 and 2, which are unordered.
 
->                ret = pci_bridge_probe_busn_res(bus, dev, &busn_res,
->                                is_cardbus ? (CARDBUS_RESERVE_BUSNR + 1) : 8,
->                                &parent_res);
-> @@ -963,29 +954,11 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
->
->                if (!is_cardbus) {
->                        child->bridge_ctl = bctl;
-> -                       /*
-> -                        * Adjust subordinate busnr in parent buses.
-> -                        * We do this before scanning for children because
-> -                        * some devices may not be detected if the bios
-> -                        * was lazy.
-> -                        */
-> -                       pci_fixup_parent_subordinate_busnr(child, max);
-> +
->                        /* Now we can scan all subordinate buses... */
->                        max = pci_scan_child_bus(child);
-> -                       /*
-> -                        * now fix it up again since we have found
-> -                        * the real value of max.
-> -                        */
-> -                       pci_fixup_parent_subordinate_busnr(child, max);
-> -
-> -               } else {
-> -                       /*
-> -                        * For CardBus bridges, we leave 4 bus numbers
-> -                        * as cards with a PCI-to-PCI bridge can be
-> -                        * inserted later.
-> -                        */
-> -                       pci_fixup_parent_subordinate_busnr(child, max);
->                }
-> +
->                /*
->                 * Set the subordinate bus number to its real value.
->                 */
-> --
-> 1.7.7
->
+V2: rebased, minor and less-minor changes in patch 3/3.
+
+I repost because I got no feedback and 3 weeks passed. Also,
+today I found errors in my previous patch 4, now 3.
+
+Alessandro Rubini (3):
+  x86: introduce CONFIG_X86_DEV_DMA_OPS
+  x86: introduce CONFIG_X86_DMA_REMAP
+  x86: initial support for sta2x11
+
+ arch/x86/Kconfig                   |   34 +++-
+ arch/x86/include/asm/device.h      |    4 +-
+ arch/x86/include/asm/dma-mapping.h |    9 +-
+ arch/x86/pci/Makefile              |    2 +
+ arch/x86/pci/sta2x11-fixup.c       |  365 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 407 insertions(+), 7 deletions(-)
+ create mode 100644 arch/x86/pci/sta2x11-fixup.c
+
+-- 
+1.7.7.2
