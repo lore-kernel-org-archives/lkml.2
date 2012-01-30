@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab2A3SNT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 13:13:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54216 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab2A3SNS (ORCPT
+	id S1753203Ab2A3SOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 13:14:34 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1270 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927Ab2A3SOd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 13:13:18 -0500
-Date: Mon, 30 Jan 2012 10:13:13 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Dmitry Antipov <dmitry.antipov@linaro.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org
-Subject: Re: [PATCH 1/3] percpu: use ZERO_SIZE_PTR / ZERO_OR_NULL_PTR
-Message-ID: <20120130181313.GI3355@google.com>
-References: <1327912654-8738-1-git-send-email-dmitry.antipov@linaro.org>
- <20120130171558.GB3355@google.com>
- <alpine.DEB.2.00.1201301121330.28693@router.home>
- <20120130174256.GF3355@google.com>
- <alpine.DEB.2.00.1201301145570.28693@router.home>
- <20120130175434.GG3355@google.com>
- <alpine.DEB.2.00.1201301156530.28693@router.home>
- <20120130180224.GH3355@google.com>
+	Mon, 30 Jan 2012 13:14:33 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 30 Jan 2012 10:14:24 -0800
+From: Diwakar Tundlam <dtundlam@nvidia.com>
+To: "'Ingo Molnar'" <mingo@elte.hu>, "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Antti Miettinen <amiettinen@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        Kevin Kranzusch <KKranzusch@nvidia.com>
+Date: Mon, 30 Jan 2012 10:14:23 -0800
+Subject: Fix bug: Scheduler's idle-load-balancer not running in first 5 mins
+ after bootup
+Thread-Topic: Fix bug: Scheduler's idle-load-balancer not running in first 5
+ mins after bootup
+Thread-Index: AczaMJze7gR8TJCfSwalICpzB0nx6AAAdJ6QAMLix1AAjxqtkA==
+Message-ID: <1DD7BFEDD3147247B1355BEFEFE466523791832BD5@HQMAIL04.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120130180224.GH3355@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 10:02:24AM -0800, Tejun Heo wrote:
-> I thought it didn't.  I rememer thinking about this and determining
-> that NULL can't be allocated for dynamic addresses.  Maybe I'm
-> imagining things.  Anyways, if it can return NULL for valid
-> allocation, it is a bug and should be fixed.
+We ran into this at Nvidia. QA filed a bug saying coremark_4pthreads scores lower (as if running on 3 cores) when run shortly after bootup. But later its score increases to expected values on 4 cores.
 
-So, the default translation is
+This patch is relevant to linux-2.6.39 but I noticed this fix is not made in linux-3.0, 3.1, 3.2 or 3.3 also.
 
-#define __addr_to_pcpu_ptr(addr)					\
-	(void __percpu *)((unsigned long)(addr) -			\
-	(unsigned long)pcpu_base_addr +					\
-	(unsigned long)__per_cpu_start)
+Please see commit log for more details of the problem and fix.
 
-It basically offsets the virtual address of the first unit against the
-start of static percpu section, so if the linked percpu data address
-is higher than the base address of the initial chunk, I *think*
-overwrap is possible.  I don't think this can happen on x86 regardless
-of first chunk allocation mode tho but there may be configurations
-where __per_cpu_start is higher than pcpu_base_addr (IIRC some archs
-locate vmalloc area lower than kernel image, dunno whether the used
-address range actually is enough for causing overflow tho).
+Thanks,
+  Diwakar.
+  Tegra Android Kernel SW Engg.
+  NVIDIA.
+  Santa Clara, CA
 
-Anyways, yeah, it seems we should improve this part too.
+commit d04d7ef0e3f8c70bd6cd5abb2abc0236aa8d1f7c
+Author: Diwakar Tundlam <dtundlam@nvidia.com>
+Date:   Wed Jan 18 18:58:57 2012 -0800
 
-Thanks.
+    scheduler: domain: init next_balance in nohz_idle_balancer with jiffies
+    
+    The next_balance parameter of nohz_idle_balancer should be initialized
+    to jiffies since jiffies itself is initialized to 300 seconds shy of
+    overflow. Otherwise, nohz_idle_balancer does not run for the first 5
+    mins after bootup.
+    
+    Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
+    Reviewed-by: Aleksandr Frid <afrid@nvidia.com>
+    Reviewed-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
+    Reviewed-by: Satya Popuri <spopuri@nvidia.com>
 
--- 
-tejun
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c index c5b09f7..506c5da 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8288,6 +8288,7 @@ void __init sched_init(void)
+        atomic_set(&nohz.load_balancer, nr_cpu_ids);
+        atomic_set(&nohz.first_pick_cpu, nr_cpu_ids);
+        atomic_set(&nohz.second_pick_cpu, nr_cpu_ids);
++       nohz.next_balance = jiffies;
+ #endif
+        /* May be allocated at isolcpus cmdline parse time */
+        if (cpu_isolated_map == NULL)
