@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab2A3OT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 09:19:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48021 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989Ab2A3OTc (ORCPT
+	id S1753021Ab2A3OVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 09:21:08 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:60259 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752889Ab2A3OVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 09:19:32 -0500
+	Mon, 30 Jan 2012 09:21:06 -0500
+Message-ID: <4F26A701.3090006@stericsson.com>
+Date: Mon, 30 Jan 2012 15:19:45 +0100
+From: Maxime Coquelin <maxime.coquelin@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111110 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <d78d91d0166651700cf662a50c87d84da4bdab88.1327877053.git.mst@redhat.com>
-References: <cover.1327877053.git.mst@redhat.com>
-	<d78d91d0166651700cf662a50c87d84da4bdab88.1327877053.git.mst@redhat.com>
-Date: Mon, 30 Jan 2012 08:19:31 -0600
-Message-ID: <CACoURw6docF1E4KwvfAAwh3GG0KFo15erj+JJwu0HHB-wtswig@mail.gmail.com>
-Subject: Re: [PATCH 1/3] lib: add NO_GENERIC_PCI_IOPORT_MAP
-From: Shane McDonald <mcdonald.shane@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <jmorris@namei.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Michael Witten <mfwitten@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Andrea GALLO <andrea.gallo@stericsson.com>,
+        Vincent GUITTOT <vincent.guittot@stericsson.com>,
+        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
+        Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFCv1 0/6] PASR: Partial Array Self-Refresh Framework
+References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com> <20120130135341.GA3720@elte.hu>
+In-Reply-To: <20120130135341.GA3720@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a minor nit on the comment:
+Dear Ingo,
 
-On Mon, Jan 30, 2012 at 6:18 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> Some architectures need to override the way
-> IO port mapping is does not PCI devices.
-
-Should this line read "IO port mapping is done on PCI devices."?
-
-> Supply a generic function that calls
-> ioport_map, and make it possible for architectures
-> to override.
+On 01/30/2012 02:53 PM, Ingo Molnar wrote:
+> * Maxime Coquelin<maxime.coquelin@stericsson.com>  wrote:
 >
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>> The role of this framework is to stop the refresh of unused
+>> memory to enhance DDR power consumption.
+> I'm wondering in what scenarios this is useful, and how
+> consistently it is useful.
+>
+> The primary concern I can see is that on most Linux systems with
+> an uptime more than a couple of minutes RAM gets used up by the
+> Linux page-cache:
+>
+>   $ uptime
+>    14:46:39 up 11 days,  2:04, 19 users,  load average: 0.11, 0.29, 0.80
+>   $ free
+>                total       used       free     shared    buffers     cached
+>   Mem:      12255096   12030152     224944          0     651560    6000452
+>   -/+ buffers/cache:    5378140    6876956
+>
+> Even mobile phones easily have days of uptime - quite often
+> weeks of uptime. I'd expect the page-cache to fill up RAM on
+> such systems.
+>
+> So how will this actually end up saving power consistently? Does
+> it have to be combined with a VM policy that more aggressively
+> flushes cached pages from the page-cache?
+You're right Ingo, page-cache fills up the RAM.
+This framework is to be used in combination with a page-cache flush 
+governor.
+In the case of a mobile phone, we can imagine dropping the cache when 
+system's
+screen is off for a while, in order to preserve user's experience.
 
-Shane
+>
+> A secondary concern is fragmentation: right now we fragment
+> memory rather significantly.
+Yes, I think fragmentation is the main challenge.
+This is the same problem faced for Memory Hotplug feature.
+The solution I see is to add a significant Movable zone in the system and
+use the Compaction feature from Mel Gorman.
+The problem of course remains for the Normal zone.
+
+> For the Ux500 PASR driver you've
+> implemented the section size is 64 MB. Do I interpret the code
+> correctly in that a continuous, 64MB physical block of RAM has
+> to be 100% free for us to be able to turn off refresh and power
+> for this block of RAM?
+Current DDR (2Gb/4Gb dies) used in mobile platform have 64MB banks and 
+segments.
+This is the lower granularity for Partial Array Self-refresh.
+
+Thanks for your comments,
+Maxime
+> Thanks,
+>
+> 	Ingo
+
