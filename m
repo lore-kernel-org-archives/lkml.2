@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab2A3MXD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 07:23:03 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:44267 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2A3MXA convert rfc822-to-8bit (ORCPT
+	id S1752805Ab2A3MXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 07:23:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38922 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab2A3MXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 07:23:00 -0500
+	Mon, 30 Jan 2012 07:23:42 -0500
+Message-ID: <4F268BCC.4000008@canonical.com>
+Date: Mon, 30 Jan 2012 14:23:40 +0200
+From: Jussi Pakkanen <jussi.pakkanen@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120127 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <1327914764.1527.15.camel@vkoul-udesk3>
-References: <1326101570-3716-1-git-send-email-s.hauer@pengutronix.de>
-	<1327914764.1527.15.camel@vkoul-udesk3>
-Date: Mon, 30 Jan 2012 13:22:59 +0100
-Message-ID: <CACKLOr3tx0Kc8rZzx5sp91wCmDcjOB0byW0c7KrWT7VF1g2NyQ@mail.gmail.com>
-Subject: Re: [PATCH] fix starting of transfers in i.MX dma drivers
-From: javier Martin <javier.martin@vista-silicon.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, Chris Ball <cjb@laptop.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Chase Douglas <chase.douglas@canonical.com>
+Subject: Re: [PATCH] Input: Document the device properties
+References: <1327912546-16960-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1327912546-16960-1-git-send-email-rydberg@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 January 2012 10:12, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Mon, 2012-01-09 at 10:32 +0100, Sascha Hauer wrote:
->> This moves the start of transfers from tx_submit to issue_pending
->> for the i.MX dma drivers as requested by Vinoud here:
->>
->> https://lkml.org/lkml/2012/1/7/23
->>
->> This requires the users (mxcmmc and i.MX sound) to be fixed first.
->> So Chris, Mark, given your Ack I would suggest to send this via
->> Vinouds DMA tree.
->>
->> Sascha
->>
->> Sascha Hauer (4):
->>       mmc: mxcmmc: add missing dma_async_issue_pending
->>       ASoC: i.MX: Add missing dma_async_issue_pending
->>       dma: imx-dma: start transfer in issue_pending
->>       dma: imx-sdma: start transfer in issue_pending
->>
->>  drivers/dma/imx-dma.c           |    9 ++++-----
->>  drivers/dma/imx-sdma.c          |   11 +++++------
->>  drivers/mmc/host/mxcmmc.c       |    1 +
->>  sound/soc/imx/imx-pcm-dma-mx2.c |    1 +
->>  4 files changed, 11 insertions(+), 11 deletions(-)
->
-> Thanks applied all.
->
-> Fixed change log in 3 & 4, as Russell pointed out
->
-> Got a conflict in 4, pls see that fix is right.
+On 01/30/2012 10:35 AM, Henrik Rydberg wrote:
 
-Hi Vinod,
-could you please tell me where has this been merged?
+> +INPUT_PROP_BUTTONPAD:
+> +--------------------
+> +For touchpads where the button is placed under the touchpad, such as
+> +clickpads and macbooks, this property should be set. Common in devices from
+> +2009 and onwards.
 
-I can't see it at git://git.infradead.org/users/vkoul/slave-dma.git
+"Under" can be interpreted to mean "under as in towards the user when 
+looking from above" as well as "under as in towards the Earth's core". A 
+more unambiguous description would be something like "For touchpads 
+where a physical button is beneath the pad's touch surface so that 
+pushing down on the touchpad causes a button click".
 
-Thank you.
+> +INPUT_PROP_SEMI_MT:
+> +------------------
+> +Some touchpads, most common between 2008 and 2011, can detect the presence
+> +of multiple contacts without resolving the individual positions; only the
+> +number of contacts and the corresponding bounding box is known. For such
+> +touchpads, the semi-mt property should be set.
 
--- 
-Javier Martin
-Vista Silicon S.L.
-CDTUC - FASE C - Oficina S-345
-Avda de los Castros s/n
-39005- Santander. Cantabria. Spain
-+34 942 25 32 60
-www.vista-silicon.com
+A "corresponding bounding box" usually means "a bounding box that 
+contains all touches on the touchpad". I've been told (though I have not 
+checked it myself) that there are devices that don't do this. They only 
+report a bounding box for some subset of touches. If this is the case, 
+it should be documented here.
