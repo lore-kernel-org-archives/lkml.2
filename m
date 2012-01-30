@@ -1,137 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab2A3Eor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 23:44:47 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:33248 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770Ab2A3Eop (ORCPT
+	id S1751533Ab2A3FRT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 00:17:19 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:45520 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751142Ab2A3FRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 23:44:45 -0500
-X-AuditID: b753bd60-a0885ba000000655-ba-4f26203a005d
-X-AuditID: b753bd60-a0885ba000000655-ba-4f26203a005d
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v5 5/5] perf script: add option resolving vmlinux path
-To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Mon, 30 Jan 2012 13:43:20 +0900
-Message-ID: <20120130044320.2384.73322.stgit@linux3>
-In-Reply-To: <20120130044242.2384.23076.stgit@linux3>
-References: <20120130044242.2384.23076.stgit@linux3>
-User-Agent: StGIT/0.14.3
+	Mon, 30 Jan 2012 00:17:17 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+v0M44a+avGIypgtOPfssEQlzE85P4cTDlF/tYYo
+	188byYqLASLX1p
+Message-ID: <4F2627D2.8000005@gmx.de>
+Date: Mon, 30 Jan 2012 05:17:06 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Manuel Lauss <manuel.lauss@googlemail.com>,
+        kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] drivers/video/au*fb.c: use devm_ functions
+References: <1327094732-9050-1-git-send-email-Julia.Lawall@lip6.fr> <1327094732-9050-3-git-send-email-Julia.Lawall@lip6.fr> <4F1AC33E.90405@gmx.de> <CAOLZvyGujvpnCFxe7x82Y91kRRNM1-P165jMXXWryFqY3g-RXw@mail.gmail.com> <alpine.DEB.2.02.1201211600580.1939@hadrien>
+In-Reply-To: <alpine.DEB.2.02.1201211600580.1939@hadrien>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the option get the path of [kernel.kallsyms].
-Specify '--show-kernel-path' option to use this function.
-This patch enables other applications to use this output easily.
+On 01/21/2012 03:01 PM, Julia Lawall wrote:
+> The various devm_ functions allocate memory that is released when a driver
+> detaches.  This patch uses these functions for data that is allocated in
+> the probe function of a platform device and is only freed in the remove
+> function.
+> 
+> In au1100fb.c, the probe function now returns -ENODEV on failure.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Without --show-kernel-path  option
+Applied.
 
-# perf script -f ip,dso
-ffffffff81467612 irq_return ([kernel.kallsyms])
-ffffffff81467612 irq_return ([kernel.kallsyms])
-    7f24fc02a6b3 _start (/lib64/ld-2.14.so)
-[snip]
 
-With --show-kernel-path option
+Thanks,
 
-# perf script -f ip,dso --show-kernel-path
-ffffffff81467612 irq_return (/lib/modules/3.2.0+/build/vmlinux)
-ffffffff81467612 irq_return (/lib/modules/3.2.0+/build/vmlinux)
-    7f24fc02a6b3 _start (/lib64/ld-2.14.so)
-[snip]
+Florian Tobias Schandinat
 
-Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
----
-
- tools/perf/Documentation/perf-script.txt |    3 +++
- tools/perf/builtin-script.c              |    3 +++
- tools/perf/util/map.c                    |    9 ++++++---
- tools/perf/util/symbol.h                 |    1 +
- 4 files changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index 228c7bb..e9cbfcd 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -200,6 +200,9 @@ OPTIONS
- 	It currently includes: cpu and numa topology of the host system.
- 	It can only be used with the perf script report mode.
- 
-+--show-kernel-path::
-+	Try to resolve the path of [kernel.kallsyms]
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script-perl[1],
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 752d401..d4ce733 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1155,6 +1155,9 @@ static const struct option options[] = {
- 		   "only display events for these comms"),
- 	OPT_BOOLEAN('I', "show-info", &show_full_info,
- 		    "display extended information from perf.data file"),
-+	OPT_BOOLEAN('\0', "show-kernel-path", &symbol_conf.show_kernel_path,
-+		    "Show the path of [kernel.kallsyms]"),
-+
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 1107960..dea6d1c 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -216,9 +216,12 @@ size_t map__fprintf_dsoname(struct map *map, FILE *fp)
- {
- 	const char *dsoname;
- 
--	if (map && map->dso && map->dso->name)
--		dsoname = map->dso->name;
--	else
-+	if (map && map->dso && (map->dso->name || map->dso->long_name)) {
-+		if (symbol_conf.show_kernel_path && map->dso->long_name)
-+			dsoname = map->dso->long_name;
-+		else if (map->dso->name)
-+			dsoname = map->dso->name;
-+	} else
- 		dsoname = "[unknown]";
- 
- 	return fprintf(fp, "%s", dsoname);
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index ba909c9..2a683d4 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -70,6 +70,7 @@ struct symbol_conf {
- 	unsigned short	priv_size;
- 	unsigned short	nr_events;
- 	bool		try_vmlinux_path,
-+			show_kernel_path,
- 			use_modules,
- 			sort_by_name,
- 			show_nr_samples,
+> 
+> ---
+> In the case of au1200fb.c, should the error-handling code under the new
+> call to dma_alloc_noncoherent jump to failed, like the other error handling
+> code?  I was not sure that there was actually anything for failed to do at
+> this point in the function.
+> 
+> Added return of -ENODEV.
+> 
+>  drivers/video/au1100fb.c |   32 ++++++++++++--------------------
+>  drivers/video/au1200fb.c |    9 +--------
+>  2 files changed, 13 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/video/au1200fb.c b/drivers/video/au1200fb.c
+> index 04e4479..3e9a773 100644
+> --- a/drivers/video/au1200fb.c
+> +++ b/drivers/video/au1200fb.c
+> @@ -1724,7 +1724,7 @@ static int __devinit au1200fb_drv_probe(struct
+> platform_device *dev)
+>          /* Allocate the framebuffer to the maximum screen size */
+>          fbdev->fb_len = (win->w[plane].xres * win->w[plane].yres * bpp)
+> / 8;
+> 
+> -        fbdev->fb_mem = dma_alloc_noncoherent(&dev->dev,
+> +        fbdev->fb_mem = dmam_alloc_noncoherent(&dev->dev, &dev->dev,
+>                  PAGE_ALIGN(fbdev->fb_len),
+>                  &fbdev->fb_phys, GFP_KERNEL);
+>          if (!fbdev->fb_mem) {
+> @@ -1788,9 +1788,6 @@ static int __devinit au1200fb_drv_probe(struct
+> platform_device *dev)
+> 
+>  failed:
+>      /* NOTE: This only does the current plane/window that failed;
+> others are still active */
+> -    if (fbdev->fb_mem)
+> -        dma_free_noncoherent(&dev->dev, PAGE_ALIGN(fbdev->fb_len),
+> -                fbdev->fb_mem, fbdev->fb_phys);
+>      if (fbi) {
+>          if (fbi->cmap.len != 0)
+>              fb_dealloc_cmap(&fbi->cmap);
+> @@ -1817,10 +1814,6 @@ static int __devexit au1200fb_drv_remove(struct
+> platform_device *dev)
+> 
+>          /* Clean up all probe data */
+>          unregister_framebuffer(fbi);
+> -        if (fbdev->fb_mem)
+> -            dma_free_noncoherent(&dev->dev,
+> -                    PAGE_ALIGN(fbdev->fb_len),
+> -                    fbdev->fb_mem, fbdev->fb_phys);
+>          if (fbi->cmap.len != 0)
+>              fb_dealloc_cmap(&fbi->cmap);
+>          kfree(fbi->pseudo_palette);
+> diff --git a/drivers/video/au1100fb.c b/drivers/video/au1100fb.c
+> index de9da67..befcbd8 100644
+> --- a/drivers/video/au1100fb.c
+> +++ b/drivers/video/au1100fb.c
+> @@ -477,7 +477,8 @@ static int __devinit au1100fb_drv_probe(struct
+> platform_device *dev)
+>      u32 sys_clksrc;
+> 
+>      /* Allocate new device private */
+> -    fbdev = kzalloc(sizeof(struct au1100fb_device), GFP_KERNEL);
+> +    fbdev = devm_kzalloc(&dev->dev, sizeof(struct au1100fb_device),
+> +                 GFP_KERNEL);
+>      if (!fbdev) {
+>          print_err("fail to allocate device private record");
+>          return -ENOMEM;
+> @@ -498,8 +499,9 @@ static int __devinit au1100fb_drv_probe(struct
+> platform_device *dev)
+>      au1100fb_fix.mmio_start = regs_res->start;
+>      au1100fb_fix.mmio_len = resource_size(regs_res);
+> 
+> -    if (!request_mem_region(au1100fb_fix.mmio_start,
+> au1100fb_fix.mmio_len,
+> -                DRIVER_NAME)) {
+> +    if (!devm_request_mem_region(au1100fb_fix.mmio_start,
+> +                     au1100fb_fix.mmio_len,
+> +                     DRIVER_NAME)) {
+>          print_err("fail to lock memory region at 0x%08lx",
+>                  au1100fb_fix.mmio_start);
+>          return -EBUSY;
+> @@ -514,8 +516,9 @@ static int __devinit au1100fb_drv_probe(struct
+> platform_device *dev)
+>      fbdev->fb_len = fbdev->panel->xres * fbdev->panel->yres *
+>                (fbdev->panel->bpp >> 3) * AU1100FB_NBR_VIDEO_BUFFERS;
+> 
+> -    fbdev->fb_mem = dma_alloc_coherent(&dev->dev,
+> PAGE_ALIGN(fbdev->fb_len),
+> -                    &fbdev->fb_phys, GFP_KERNEL);
+> +    fbdev->fb_mem = dmam_alloc_coherent(&dev->dev, &dev->dev,
+> +                        PAGE_ALIGN(fbdev->fb_len),
+> +                        &fbdev->fb_phys, GFP_KERNEL);
+>      if (!fbdev->fb_mem) {
+>          print_err("fail to allocate frambuffer (size: %dK))",
+>                fbdev->fb_len / 1024);
+> @@ -557,14 +560,14 @@ static int __devinit au1100fb_drv_probe(struct
+> platform_device *dev)
+>      fbdev->info.fbops = &au1100fb_ops;
+>      fbdev->info.fix = au1100fb_fix;
+> 
+> -    if (!(fbdev->info.pseudo_palette = kzalloc(sizeof(u32) * 16,
+> GFP_KERNEL))) {
+> +    fbdev->info.pseudo_palette =
+> +        devm_kzalloc(&dev->dev, sizeof(u32) * 16, GFP_KERNEL);
+> +    if (!fbdev->info.pseudo_palette)
+>          return -ENOMEM;
+> -    }
+> 
+>      if (fb_alloc_cmap(&fbdev->info.cmap,
+> AU1100_LCD_NBR_PALETTE_ENTRIES, 0) < 0) {
+>          print_err("Fail to allocate colormap (%d entries)",
+>                 AU1100_LCD_NBR_PALETTE_ENTRIES);
+> -        kfree(fbdev->info.pseudo_palette);
+>          return -EFAULT;
+>      }
+> 
+> @@ -582,9 +585,6 @@ static int __devinit au1100fb_drv_probe(struct
+> platform_device *dev)
+>      return 0;
+> 
+>  failed:
+> -    if (fbdev->regs) {
+> -        release_mem_region(fbdev->regs_phys, fbdev->regs_len);
+> -    }
+>      if (fbdev->fb_mem) {
+>          dma_free_noncoherent(&dev->dev, fbdev->fb_len, fbdev->fb_mem,
+>                       fbdev->fb_phys);
+> @@ -592,10 +592,9 @@ failed:
+>      if (fbdev->info.cmap.len != 0) {
+>          fb_dealloc_cmap(&fbdev->info.cmap);
+>      }
+> -    kfree(fbdev);
+>      platform_set_drvdata(dev, NULL);
+> 
+> -    return 0;
+> +    return -ENODEV;
+>  }
+> 
+>  int au1100fb_drv_remove(struct platform_device *dev)
+> @@ -615,14 +614,7 @@ int au1100fb_drv_remove(struct platform_device *dev)
+>      /* Clean up all probe data */
+>      unregister_framebuffer(&fbdev->info);
+> 
+> -    release_mem_region(fbdev->regs_phys, fbdev->regs_len);
+> -
+> -    dma_free_coherent(&dev->dev, PAGE_ALIGN(fbdev->fb_len), fbdev->fb_mem,
+> -              fbdev->fb_phys);
+> -
+>      fb_dealloc_cmap(&fbdev->info.cmap);
+> -    kfree(fbdev->info.pseudo_palette);
+> -    kfree((void*)fbdev);
+> 
+>      return 0;
+>  }
+> 
 
