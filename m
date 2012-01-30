@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab2A3W2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:28:39 -0500
-Received: from [206.117.179.246] ([206.117.179.246]:54535 "EHLO labridge.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752554Ab2A3W2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:28:36 -0500
-Message-ID: <1327962498.25132.60.camel@joe2Laptop>
-Subject: Re: [RFC PATCH] telephony: Move to staging
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Date: Mon, 30 Jan 2012 14:28:18 -0800
-In-Reply-To: <20120130221838.GA5904@suse.de>
-References: <cd8d3ef8b646dc0b1c451e61c57d639cadbc7c21.1327961290.git.joe@perches.com>
-	 <20120130221838.GA5904@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754204Ab2A3WaS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:30:18 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61774 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab2A3WaQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 17:30:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <CABqD9hYXJapEiDcA_VxggkTkC6KXnJwmoE3zAoPzvYDCgkQXSA@mail.gmail.com>
+References: <1327706681-11959-1-git-send-email-wad@chromium.org>
+ <1327706681-11959-2-git-send-email-wad@chromium.org> <c211732dcacbff72c70127ccab36122a.squirrel@webmail.greenhost.nl>
+ <CABqD9hatfCSSqUt-FYUa6-LcCeDEht8gLMAY7cnWKe6gp-9upg@mail.gmail.com>
+ <13b3f9dcf188908604a9529ef1934ecf.squirrel@webmail.greenhost.nl> <CABqD9hYXJapEiDcA_VxggkTkC6KXnJwmoE3zAoPzvYDCgkQXSA@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 30 Jan 2012 14:29:54 -0800
+X-Google-Sender-Auth: umgFJEb6Gn5vgI2jl9eh7Qfjvmc
+Message-ID: <CAObL_7F-vXXbkj8-9xsrxETyUka5xQ0jD9teN_Li50QzRYZugw@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] seccomp_filters: system call filtering using BPF
+To: Will Drewry <wad@chromium.org>
+Cc: Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net, alan@lxorguk.ukuu.org.uk, mcgrathr@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 14:18 -0800, Greg KH wrote:
-> On Mon, Jan 30, 2012 at 02:11:34PM -0800, Joe Perches wrote:
-> > This stuff is really old and in quite poor shape.
-> > Does anyone still use it?
-> > 
-> > If not, I think it's appropriate to let it simmer
-> > in staging for a few releases.
-> > 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> Is this really unmaintained?
+[not quoting anything because this is a more general question]
 
-No listed MAINTAINER, nothing but drive-by
-cleanups in git history.
+How portable across architectures is this supposed to be?  At least
+syscall numbering varies widely, and calling conventions can be
+different (x86_64 has four of them, for example).  For all I know,
+argument order might be different in some cases.
 
-The company quicknet.net seems out of business.
-Its website is dead since 2004 according to wayback.
-
-Some of these cards are on ebay right now
-but I don't know if asterisk or any other
-VOIP software still supports this stuff.
-
-> Fine with me, but you need a message/TODO file that says if someone
-> needs/wants it, to ask you, and it will be moved back.
-> 
-> Care to add that to the patch and resend it?
-
-OK.
-
+--Andy
