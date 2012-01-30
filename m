@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab2A3RP5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 12:15:57 -0500
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:44406 "HELO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753694Ab2A3RPz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 12:15:55 -0500
+	id S1753830Ab2A3RQG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 12:16:06 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64522 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753768Ab2A3RQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 12:16:04 -0500
+Date: Mon, 30 Jan 2012 09:15:58 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: [PATCH 1/3] percpu: use ZERO_SIZE_PTR / ZERO_OR_NULL_PTR
+Message-ID: <20120130171558.GB3355@google.com>
+References: <1327912654-8738-1-git-send-email-dmitry.antipov@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CAMP44s0YapTKw6tbz3mnYeBXu1Ut-fPahRNy8U3uSroo_zDWtA@mail.gmail.com>
-References: <cover.1327348286.git.vjaquez@igalia.com>
-	<fd9de2a6c650eb4f5cf611ccd7775b6abb73ac35.1327348286.git.vjaquez@igalia.com>
-	<CAMP44s0YapTKw6tbz3mnYeBXu1Ut-fPahRNy8U3uSroo_zDWtA@mail.gmail.com>
-Date: Mon, 30 Jan 2012 11:15:42 -0600
-Message-ID: <CAB-zwWjit=Qpt3PCW4fS0OEL_hw6=nLO0a9bemzj8eAEOFGBxw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] staging: tidspbridge: remove unused header
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: =?ISO-8859-1?Q?V=EDctor_Manuel_J=E1quez_Leal?= <vjaquez@igalia.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Armando Uribe <x0095078@ti.com>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org, Ernesto Ramos <ernesto@ti.com>,
-        Rene Sapiens <rene.sapiens@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327912654-8738-1-git-send-email-dmitry.antipov@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/24 Felipe Contreras <felipe.contreras@gmail.com>:
-> 2012/1/23 Víctor Manuel Jáquez Leal <vjaquez@igalia.com>:
->> No functional changes.
->>
->> The header file drv_interface.h was only used locally, hence there's no need
->> to have it.
->>
->> Also the only prototyped functions were the file_operations callbacks, then
->> this commit moves them up to avoid prototyping too.
-...
->
-> But looks good to me either way.
+On Mon, Jan 30, 2012 at 12:37:34PM +0400, Dmitry Antipov wrote:
+> Fix pcpu_alloc() to return ZERO_SIZE_PTR if requested size is 0;
+> fix free_percpu() to check passed pointer with ZERO_OR_NULL_PTR.
+> 
+> Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
+> ---
+>  mm/percpu.c |   16 +++++++++++-----
+>  1 files changed, 11 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index f47af91..e903a19 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -702,7 +702,8 @@ static struct pcpu_chunk *pcpu_chunk_addr_search(void *addr)
+>   * Does GFP_KERNEL allocation.
+>   *
+>   * RETURNS:
+> - * Percpu pointer to the allocated area on success, NULL on failure.
+> + * ZERO_SIZE_PTR if @size is zero, percpu pointer to the
+> + * allocated area on success or NULL on failure.
+>   */
+>  static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
+>  {
+> @@ -713,7 +714,10 @@ static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
+>  	unsigned long flags;
+>  	void __percpu *ptr;
+>  
+> -	if (unlikely(!size || size > PCPU_MIN_UNIT_SIZE || align > PAGE_SIZE)) {
+> +	if (unlikely(!size))
+> +		return ZERO_SIZE_PTR;
 
-FWIW, I agree.
+Percpu pointers are in a different address space and using
+ZERO_SIZE_PTR directly will trigger sparse address space warning.
+Also, I'm not entirely sure whether 16 is guaranteed to be unused in
+percpu address space (maybe it is but I don't think we have anything
+enforcing that).
 
-Regards,
+Thanks.
 
-Omar
+-- 
+tejun
