@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab2A3Np3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 08:45:29 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34223 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab2A3Np2 convert rfc822-to-8bit (ORCPT
+	id S1753122Ab2A3Npp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 08:45:45 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39669 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753093Ab2A3Npo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 08:45:28 -0500
-Message-ID: <1327931107.2446.205.camel@twins>
-Subject: Re: perf: prctl(PR_TASK_PERF_EVENTS_DISABLE) has no effect
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Andrew Steets <asteets@rgmadvisors.com>,
-        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Mon, 30 Jan 2012 14:45:07 +0100
-In-Reply-To: <20120130113115.GA6565@elte.hu>
-References: <4F22D8D9.3010108@rgmadvisors.com>
-	 <20120128120151.GA10390@elte.hu> <4F248938.5030507@rgmadvisors.com>
-	 <20120129163235.GB23408@elte.hu> <1327917156.2446.191.camel@twins>
-	 <20120130101121.GB8924@elte.hu> <1327921293.2446.202.camel@twins>
-	 <20120130113115.GA6565@elte.hu>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 30 Jan 2012 08:45:44 -0500
+Date: Mon, 30 Jan 2012 13:45:42 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 1/3] regmap: Properly round reg_bytes and val_bytes
+Message-ID: <20120130134542.GH4882@opensource.wolfsonmicro.com>
+References: <1327677023-29310-1-git-send-email-w.sang@pengutronix.de>
+ <20120127162837.GB18572@opensource.wolfsonmicro.com>
+ <20120128011403.GA6669@pengutronix.de>
+ <20120130132134.GB4882@opensource.wolfsonmicro.com>
+ <20120130133529.GF15596@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lrvsYIebpInmECXG"
+Content-Disposition: inline
+In-Reply-To: <20120130133529.GF15596@pengutronix.de>
+X-Cookie: Condense soup, not books!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 12:31 +0100, Ingo Molnar wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> 
-> > On Mon, 2012-01-30 at 11:11 +0100, Ingo Molnar wrote:
-> > > So, what workflow are you suggesting to Andrew?
-> > 
-> > Librarize perf record, then in your code do something like:
-> > 
-> > #include "perf_record.h"
-> 
-> Maybe. (and then it shouldnt be limited to perf_record.h but 
-> should be events.h plus libevents.so or such)
 
-Yes it should be, you want to reserve the more generic name for less
-narrow interfaces.
+--lrvsYIebpInmECXG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > 
-> >   handle = perf_record_init(); /* creates perf events and creates
-> >                                   a record thread that writes samples
-> >                                   to perf.data, consumes env(PERF_*)
-> >                                   for configuration, registers with
-> >                                   at_exit() for cleanup */
-> >   if (!handle)
-> >     /* burn */
-> > 
-> >   /* do you other code */
-> > 
-> >   perf_record_start(handle);
-> > 
-> >   /* do the bit you want profiled */
-> > 
-> >   perf_record_stop(handle);
-> > 
-> > Then build with -lperfrecord or so. Not too hard, right?
-> 
-> Isnt a simple prctl() so much easier and faster?
+On Mon, Jan 30, 2012 at 02:35:29PM +0100, Wolfram Sang wrote:
 
-I really don't want to add another two prctl()s for this, ideally I'd
-remove the ones we have now, but I've never done due to maintaining
-backwards blah..
+> Understood. I'd think we will find a non-intrusive way when a more generic
+> format_x_y-function seems worthwhile.
 
-> What's your concern with the prctl()? This would arguably be the 
-> right kind of usage for prctl(): it's an established API/ABI for 
-> process/task-wide settings.
+Probably either your suggestion of just storing the shifts in there will
+be it or it'll just turn out that there aren't actually enough odd
+formats to make it worth worrying about the hard coding.  I was making
+this decision before we had the cache or anything like that so was
+thinking about what made sense for facilitating the infrastructure work.
 
-Its doing things backwards, also the whole concept of allowing people to
-hide things from a profiler is so rotten I'm not willing to even
-consider the notion.
+--lrvsYIebpInmECXG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPJp7/AAoJEBus8iNuMP3dedAP/RusWokPIArxozPc8siwRslj
+85syTIpBuifJDZ/MvLtxGoqyuyJYX6bhTy0p7wYIHGp9MLydPK0igbI3HQEPYec/
+0WJyCL1A6gEZnkvLqMK59eSzaFFCNMA+F8t8wddKj6613IXagCAEJ54VaLz3Auw/
+9epWtqq5vMXR3Ueq7qhN4zDPIcE1sFE4RMld2ijXGXAsW/oLTDBG+94/7ul3agjo
+VBHjVF9jxLqvO45sCKkZ0c9yEPRe8hBG9bC7RBJRiv9pUxVrfVoHSeBMuyzbdXju
+rgrDUuv9PCoSV024LLxhmBrpv1fNq1poATr6e7g1Q3k+PMxIaoY//LczYSqMztiZ
+C6/k6AaxBrV1MNGbVXtZgix4FVgDhzwMKyuIPLsBlHcx47iRUee8KvgEi74XQaDC
+zzID6oFxtO94vukJPkWQwqBJcyqyzbL4JoaZ8IbLnliwdb8pHz5xp1bmQlwfU53R
+sevZRsaspS+40xbz8hBt6Yph9uMqOOqtn9vzjAjYvMcECMcY+DAviiyb6SIACR+G
+MGK5mdOPLFrM9d84lUBtr9J6MhdaeeqxY2ZXvgltXfA86m9nEgeiJgBjFpeu9jhf
+wgPoroBv1TitNS8MQukp0I9pD515loYvCFlbO52LeSIOQ4fAzKBE8+siTFmjAno5
+lgRWmpnTOk/2/pA3ZzV/
+=Fvat
+-----END PGP SIGNATURE-----
+
+--lrvsYIebpInmECXG--
