@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab2A3TvL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 14:51:11 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55765 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2A3TvK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 14:51:10 -0500
-Date: Mon, 30 Jan 2012 23:51:06 +0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, San Mehat <san@google.com>,
-        Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, kernel-team@android.com,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 1/3] procfs: Export next_tgid(), move it to kernel/pid.c
-Message-ID: <20120130195105.GA1689@oksana.dev.rtsoft.ru>
-References: <20120130011323.GA30274@oksana.dev.rtsoft.ru>
- <m1boplkgzk.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <m1boplkgzk.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753140Ab2A3TxU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 14:53:20 -0500
+Received: from [206.117.179.246] ([206.117.179.246]:56553 "EHLO labridge.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752433Ab2A3TxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 14:53:19 -0500
+Message-ID: <1327953180.25132.39.camel@joe2Laptop>
+Subject: Re: [PATCH 3/5] staging: tidspbridge: Lindent to drv_interface.c
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "Ramirez Luna, Omar" <omar.ramirez@ti.com>,
+        =?ISO-8859-1?Q?V=EDctor?= Manuel =?ISO-8859-1?Q?J=E1quez?=
+	 Leal <vjaquez@igalia.com>,
+        devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Ivan Gomez Castellanos <ivan.gomez@ti.com>,
+        Armando Uribe <x0095078@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Date: Mon, 30 Jan 2012 11:53:00 -0800
+In-Reply-To: <20120130192907.GX3294@mwanda>
+References: <cover.1327348286.git.vjaquez@igalia.com>
+	 <7103a353d393f9b8366b141a608a4370e4392c7b.1327348286.git.vjaquez@igalia.com>
+	 <CAB-zwWjKfakESHw4Cw8JvJ6WpELz51E_9zVtjR0bF84yhMRfMQ@mail.gmail.com>
+	 <20120130192907.GX3294@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 29, 2012 at 07:26:55PM -0800, Eric W. Biederman wrote:
-> Anton Vorontsov <anton.vorontsov@linaro.org> writes:
-> 
-> > We'd like to use this function in the android low memory killer driver, so
-> > let's export it.
-> >
-> > Also, move next_tgid() to kernel/pid.c, so now it lives with the rest of
-> > pid library functions and does not depend on procfs. Plus, we may now hide
-> > find_ge_pid() from the global namespace.
-> >
-> > While at it, also turn next_tgid()'s comments into kerneldoc format.
-> >
-> > There should be no functional changes.
-> 
-> Ouch no.
-> 
-> There is find_ge_pid that is general purpose, and there are a lot of
-> things with the task list.  But this iterator is specific to the
-> implementation of proc especially in how it grabs and drops locks.
+On Mon, 2012-01-30 at 22:29 +0300, Dan Carpenter wrote:
+> On Mon, Jan 30, 2012 at 11:25:34AM -0600, Ramirez Luna, Omar wrote:
+> > > +                       pr_info("%s:%d handle(s) still opened\n", __func__,
+> > > +                               atomic_read(&bridge_cref));
+> > I remember the rule was to break lines as far to the right as
+> > possible, no? Chapter 2 CodingStyle, same for the other similar
+> > changes.
+> It doesn't mean you have to right justify things, it just means
+> indented.  The original code is fine here and the new code is fine
+> here.  It's up to whoever writes the code to decide.
 
-Exactly, the way procfs grabs and drops locks is very attractive for
-us to reuse in lowmemorykiller driver. :-) Proc is efficient in a
-way that it does not need to hold the tacklist lock (otherwise, I guess,
-it could be prone to attacks, e.g. by constantly readdiring /proc/ ?).
+I concur.
 
-> Using this code outside of /proc will make /proc harder to maintain than
-> it already is.
-> 
-> Why in the world would you want to traverse processes by pids when
-> there are well defined iterators for looping over tasks already.
+My personal preference is to use a new line after the format
+string if necessary.
 
-We just did not want to hold the global tasklist lock, if we could
-avoid it. Low memory killer is a low priority stuff, and grabbing
-tasklist lock seemed inefficient.
+ie:
+	pr_<level>("fmt\n"[, args to 80 columns if all fit])
+or
+	pr_<level>("fmt\n",
+		   args when single line exceeds 80 columns);
 
-Thanks,
+So for this case:
+			pr_info("%s:%d handle(s) still opened\n",
+				__func__, atomic_read(&bridge_cref));
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+I've done a patch here to tidspbridge that standardizes
+printk output.
+
+Basically, the patch adds
+#define pr_fmt(fmt) KBUILD_MODNAME "%s: ", __func__
+to prefix "tidspbridge:%s:", removes the leading
+"%s:...",  __func__ from the uses, coalesces
+formats and does argument alignment.
+
+It cleans up the DBC_ASSERT, DBC_REQUIRE and DBC_ENSURE
+macros too.
+
+I'm waiting for the Makefile change and whatever
+patches Víctor produces to be applied.  I'll then
+redo my patch and submit it.
+
+
