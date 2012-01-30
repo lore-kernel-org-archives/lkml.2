@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab2A3Xp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 18:45:28 -0500
-Received: from [206.117.179.246] ([206.117.179.246]:60610 "EHLO labridge.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753070Ab2A3XpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 18:45:24 -0500
-Message-ID: <1327967103.4230.7.camel@joe2Laptop>
-Subject: Re: [PATCH 1/1] wireless: remove return in _rtl_pci_switch_clk_req
-From: Joe Perches <joe@perches.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: "Devendra.Naga" <devendra.aaru@gmail.com>, chaoming_li@realsil.com.cn,
-        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 30 Jan 2012 15:45:03 -0800
-In-Reply-To: <4F27294D.30302@lwfinger.net>
-References: <1327927591-28070-1-git-send-email-devendra.aaru@gmail.com>
-	 <4F27294D.30302@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1753631Ab2A3XvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 18:51:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52244 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab2A3XvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 18:51:11 -0500
+Date: Mon, 30 Jan 2012 15:51:05 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] selftests: Make run_tests executable
+Message-Id: <20120130155105.029b02fb.akpm@linux-foundation.org>
+In-Reply-To: <1327943069-28048-1-git-send-email-fweisbec@gmail.com>
+References: <1327943069-28048-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 17:35 -0600, Larry Finger wrote:
-> The patch is OK, but the patch subject is bad. You should have "[PATCH] 
-> rtlwifi:...". Your patch is for rtlwifi, not wireless.
+On Mon, 30 Jan 2012 18:04:29 +0100
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Hi Devendra.
+> Make the main script that launches the tests to
+> become executable. Otherwise people need to launch
+> it as an argument to a new bash instance.
+> 
 
-A reasonable rule of thumb is use the deepest directory
-path basename you can to prefix the patch.
-Something like:
+That's a feature ;)
 
-[PATCH] $(basename $(dirname $file)): terse description
+The x bit can easily get lost on kernel scripts.  For example, if
+someone upgrades their kernel with patch(1) and the patch adds or
+renames the script, the x bit gets lost.
 
-If you are patching drivers/net/ethernet/realtek/apt.c
-this becomes:
-
-[PATCH] realtek: terse description
-
-There are some exceptions though.  One of them
-is if the patch is in staging, prefix with
-[PATCH] staging: $(basename $(dirname $file)): description
-
-cheers, Joe
+If we were to set the x bit for the subset of people who get their
+scripts direct from a git repository then those people might write and
+distribute tools which fail when used by people who have lost their x
+bit.  I've seen this happen at least once before.
 
