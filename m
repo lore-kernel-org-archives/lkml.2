@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab2A3Vy2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:54:28 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59677 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab2A3Vy0 (ORCPT
+	id S1753945Ab2A3V4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:56:31 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47289 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752914Ab2A3V4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:54:26 -0500
-Message-ID: <4F271188.3060107@linux.vnet.ibm.com>
-Date: Tue, 31 Jan 2012 03:24:16 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Mon, 30 Jan 2012 16:56:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jirislaby@gmail.com designates 10.213.8.193 as permitted sender) smtp.mail=jirislaby@gmail.com; dkim=pass header.i=jirislaby@gmail.com
+Message-ID: <4F27120A.4040106@suse.cz>
+Date: Mon, 30 Jan 2012 22:56:26 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120124 Thunderbird/10.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "pavel@ucw.cz" <pavel@ucw.cz>, "len.brown@intel.com" <len.brown@intel.com>,
-        Tejun Heo <tj@kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] PM/Hibernate: Thaw kernel threads in SNAPSHOT_CREATE_IMAGE
- ioctl path
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: sysfs regression: wrong link counts
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
-x-cbid: 12013021-3864-0000-0000-0000012D68E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the SNAPSHOT_CREATE_IMAGE ioctl, if the call to hibernation_snapshot()
-fails, the frozen tasks are not thawed.
+Hi,
 
-And in the case of success, if we happen to exit due to a successful freezer
-test, all tasks (including those of userspace) are thawed, whereas actually
-we should have thawed only the kernel threads at that point. Fix both these
-issues.
+I cannot boot properly with this commit:
+commit 524b6c5b39b931311dfe5a2f5abae2f5c9731676
+Author: Eric W. Biederman <ebiederm@xmission.com>
+Date:   Sun Dec 18 20:09:31 2011 -0800
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-This applies on top of the patch posted at https://lkml.org/lkml/2012/1/27/501
-
- kernel/power/user.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index e5a21a8..3e10007 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -249,13 +249,15 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 		}
- 		pm_restore_gfp_mask();
- 		error = hibernation_snapshot(data->platform_support);
--		if (!error) {
-+		if (error) {
-+			thaw_kernel_threads();
-+		} else {
- 			error = put_user(in_suspend, (int __user *)arg);
- 			if (!error && !freezer_test_done)
- 				data->ready = 1;
- 			if (freezer_test_done) {
- 				freezer_test_done = false;
--				thaw_processes();
-+				thaw_kernel_threads();
- 			}
- 		}
- 		break;
+    sysfs: Kill nlink counting.
 
 
+1) network systemd rule doesn't start network
+2) sensors complain:
+   sensors_init: Kernel interface error
+
+ad 2) look at what it does:
+/* returns !0 if sysfs filesystem was found, 0 otherwise */
+int sensors_init_sysfs(void)
+{
+        struct stat statbuf;
+
+        snprintf(sensors_sysfs_mount, NAME_MAX, "%s", "/sys");
+        if (stat(sensors_sysfs_mount, &statbuf) < 0
+         || statbuf.st_nlink <= 2)      /* Empty directory */
+                return 0;
+
+        return 1;
+}
+
+
+So this looks like it became a part of ABI we cannot break...
+
+A revert of this commit on the top of today's -next fixes the problem.
+
+thanks,
+-- 
+js
+suse labs
