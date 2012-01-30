@@ -1,36 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2A3UfB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 15:35:01 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36765 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab2A3Ue6 (ORCPT
+	id S1753597Ab2A3Ue5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 15:34:57 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36470 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379Ab2A3Uez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 15:34:58 -0500
-Date: Mon, 30 Jan 2012 20:36:19 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, alan@linux.intel.com,
-        jirislaby@gmail.com, Havard Skinnemoen <hskinnemoen@google.com>
-Subject: Re: [PATCH 1/5] TTY: provide tty_standard_install helper
-Message-ID: <20120130203619.3c318586@pyramind.ukuu.org.uk>
-In-Reply-To: <1327954472-26594-1-git-send-email-jslaby@suse.cz>
-References: <1327954472-26594-1-git-send-email-jslaby@suse.cz>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jan 2012 15:34:55 -0500
+Date: Mon, 30 Jan 2012 12:34:30 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Roland Dreier <roland@kernel.org>
+cc: linux-rdma@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages()
+ parameters
+In-Reply-To: <CAL1RGDXqguZ2QKV=yjLXtk2n_Ag4Nf3CW+kF2BFQFR4ySTNaRA@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1201301217530.4505@eggly.anvils>
+References: <1327557574-6125-1-git-send-email-roland@kernel.org> <alpine.LSU.2.00.1201261133230.1369@eggly.anvils> <CAG4TOxNEV2VY9wOE86p9RnKGqpruB32ci9Wq3yBt8O2zc7f05w@mail.gmail.com> <alpine.LSU.2.00.1201271458130.3402@eggly.anvils>
+ <CAL1RGDXqguZ2QKV=yjLXtk2n_Ag4Nf3CW+kF2BFQFR4ySTNaRA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-318211294-1327955682=:4505"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jan 2012 21:14:28 +0100
-Jiri Slaby <jslaby@suse.cz> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> There are currently many cut&paste copies of what
-> tty_driver_install_tty does when custom ->install method is not
-> provided. Let's get rid of the copies and create a helper with this
-> setup code.
+--8323584-318211294-1327955682=:4505
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+On Mon, 30 Jan 2012, Roland Dreier wrote:
+> On Fri, Jan 27, 2012 at 6:19 PM, Hugh Dickins <hughd@google.com> wrote:
+> >> > > This patch comes from me trying to do userspace RDMA on a memory
+> >> > > region exported from a character driver and mapped with
+> >> > >
+> >> > > =A0 =A0 mmap(... PROT_READ, MAP_PRIVATE ...)
+> >
+> > Why MAP_PRIVATE? =A0There you are explicitly asking for COW: okay,
+> > you wouldn't normally expect any COW while it's just PROT_READ, but
+> > once you bring GUP into the picture, with use of write and force,
+> > then you are just begging for COW with that MAP_PRIVATE. =A0Please
+> > change it to MAP_SHARED - any reason why not?
+>=20
+> I have no idea of the history there... probably could be changed with
+> no problems.
+>=20
+> However, get_user_pages has this comment:
+>=20
+>  * @force:=09whether to force write access even if user mapping is
+>  *=09=09readonly. This will result in the page being COWed even
+>  *=09=09in MAP_SHARED mappings. You do not want this.
+>=20
+> but I don't see where in the code FOLL_FORCE does COW
+> for MAP_SHARED mappings.
+
+It ends up being implemented by the conditionals do_wp_page().
+
+> But on the OTOH I don't see
+> why we set force in the first place.  Why wouldn't we respect
+> the user's mapping permissions.
+>=20
+> > I feel you're trying to handle two very different cases (rdma into
+> > user-supplied anonymous memory, and exporting driver memory to the
+> > user) with the same set of args to get_user_pages(). =A0In fact, I
+> > don't even see why you need get_user_pages() at all when exporting
+> > driver memory to the user. =A0Ah, perhaps you don't, but you do want
+> > your standard access method (which already involves GUP) not to
+> > mess up when applied to such a mapping - is that it?
+>=20
+> Exactly.  Right now we have the libibverbs userspace API, which
+> basically lets userspace create an abstract "memory region" (MR)
+> that is then given to the RDMA hardware to do IO on.  Userspace does
+>=20
+>     mr =3D ibv_reg_mr(..., buf, size, access_flags);
+>=20
+> where access flags say whether we're going to let the hardware
+> read and/or write the memory.
+>=20
+> Ideally userspace should not have to know where the memory
+> underlying its "buf" came from or what type of mapping it is.
+>=20
+> Certainly there are still more unresolved issues around the case
+> where userspace wants to map, say, part of a GPUs PCI memory
+> (which won't have any underlying page structs at all), but I'm at
+> least hoping we can come up with a way to handle both anonymous
+> private maps (which will be COWed from the zero page when
+> the memory is touched for writing) and shared mappings of kernel
+> memory exported by a driver's mmap method.
+>=20
+>=20
+> So I guess I'm left thinking that it seems at least plausible that
+> what we want is a new FOLL_ flag for __get_user_pages() that triggers
+> COW exactly on the pages that userspace might trigger COW on,
+> and avoids COW otherwise -- ie do FOLL_WRITE exactly for the
+> pages that have VM_WRITE in their mapping.
+
+The hardest part about implementing that is deciding what snappy
+name to give the FOLL_ flag.
+
+And it's a comprehensible semantic which sounds good and plausible,
+but I'm afraid we might be deceiving ourselves.
+
+>=20
+> I don't think we want to do the "force" semantics or deal with the
+> VM_MAYWRITE possiblity -- the access we give the hardware on
+> behalf of userspace should just match the access that userspace
+> actually has.  It seems that if we don't try to get pages for writing
+> when VM_WRITE isn't set, we don't need force anymore.
+
+I suspect you never needed or wanted the weird force behaviour on
+shared maywrite, but that you did need the force COW behaviour on
+private currently-unwritable maywrite.  You (or your forebears)
+defined that interface to use the force flag, I'm guessing it was
+for a reason; now you want to change it not to use the force flag,
+and it sounds good, but I'm afraid you'll discover down the line
+what the force flag was for.
+
+Can you, for example, enforce the permissions set up by the user?
+I mean, if they do the ibv_reg_mr() on a private readonly area,
+so __get_user_pages with the FOLL_APPROPRIATELY flag will fault
+in ZERO_PAGEs, can you enforce that RDMA will never spray data
+into those pages?
+
+Hugh
+--8323584-318211294-1327955682=:4505--
