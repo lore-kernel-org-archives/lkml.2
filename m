@@ -1,190 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab2A3WR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:17:58 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:60227 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754123Ab2A3WRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:17:54 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, David Safford <safford@watson.ibm.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [RFC][PATCH v1 9/9] ima: digital signature verification support
-Date: Mon, 30 Jan 2012 17:14:04 -0500
-Message-Id: <1327961644-6886-10-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1327961644-6886-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1327961644-6886-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12013022-3534-0000-0000-000005092A86
+	id S1754156Ab2A3WSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:18:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:59995 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab2A3WSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 17:18:09 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=dckYjZd89k8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=u_0EbvZYnO6A1ro0pycA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1327961884.5882.11.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH v3 4/4] Allow unprivileged chroot when safe
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Colin Walters <walters@verbum.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jamie Lokier <jamie@shareable.org>, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
+Date: Mon, 30 Jan 2012 17:18:04 -0500
+In-Reply-To: <1327960736.5355.5.camel@lenny>
+References: <cover.1327858005.git.luto@amacapital.net>
+	 <0e2f0f54e19bff53a3739ecfddb4ffa9a6dbde4d.1327858005.git.luto@amacapital.net>
+	 <1327960736.5355.5.camel@lenny>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+On Mon, 2012-01-30 at 16:58 -0500, Colin Walters wrote:
+> On Mon, 2012-01-30 at 08:17 -0800, Andy Lutomirski wrote:
+> > Chroot can easily be used to subvert setuid programs.  If no_new_privs,
+> > then setuid programs don't gain any privilege, so allow chroot.
+> 
+> Is this needed/desired by anyone now, or are you just using it to "demo"
+> NO_NEW_PRIVS?  I don't see it as very useful on its own, since in any
+> "container"-type chroot you really want /proc and /dev, and your patch
+> doesn't help with that.
+> 
+> System daemons that do chroot for a modicum of security already start
+> privileged, so this doesn't help them either.
 
-This patch adds support for digital signature based integrity appraisal.
-With this patch, 'security.ima' contains either the file data hash or
-a digital signature of the file data hash. The file data hash provides
-the security attribute of file integrity. In addition to file integrity,
-a digital signature provides the security attribute of authenticity.
+I thought this was all for sandboxing? If a browers (or user) wants to
+run some untrusted code, perhaps a chroot is the best way to do so. It
+just will break if it needs to access /proc or /dev. And perhaps we
+don't want untrusted code accessing /proc and /dev.
 
-Unlike EVM, when the file metadata changes, the digital signature is
-replaced with an HMAC, modification of the file data does not cause the
-'security.ima' digital signature to be replaced with a hash. As a
-result, after any modification, subsequent file integrity appraisals
-would fail.
+-- Steve
 
-Although digitally signed files can be modified, but by not updating
-'security.ima' to reflect these modifications, in essence digitally
-signed files could be considered 'immutable'.
 
-IMA uses a different keyring than EVM. While the EVM keyring should not
-be updated after initialization and locked, the IMA keyring should allow
-updating or adding new keys when upgrading or installing packages.
-
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- security/integrity/ima/ima_appraise.c |   69 ++++++++++++++++++++++++---------
- security/integrity/integrity.h        |    1 +
- 2 files changed, 51 insertions(+), 19 deletions(-)
-
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 3deb37f..fad87c3 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -65,7 +65,7 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
- {
- 	struct dentry *dentry = file->f_dentry;
- 	struct inode *inode = dentry->d_inode;
--	struct evm_ima_xattr_data xattr_value;
-+	struct evm_ima_xattr_data *xattr_value = NULL;
- 	enum integrity_status status = INTEGRITY_UNKNOWN;
- 	const char *op = "appraise_data";
- 	char *cause = "unknown";
-@@ -76,8 +76,8 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
- 	if (iint->flags & IMA_APPRAISED)
- 		return iint->ima_status;
- 
--	rc = inode->i_op->getxattr(dentry, XATTR_NAME_IMA, (u8 *)&xattr_value,
--				   sizeof xattr_value);
-+	rc = vfs_getxattr_alloc(dentry, XATTR_NAME_IMA, (char **)&xattr_value,
-+				0, GFP_NOFS);
- 	if (rc <= 0) {
- 		if (rc && rc != -ENODATA)
- 			goto out;
-@@ -88,8 +88,7 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
- 		goto out;
- 	}
- 
--	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, (u8 *)&xattr_value,
--				 rc, iint);
-+	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
- 	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
- 		if ((status == INTEGRITY_NOLABEL)
- 		    || (status == INTEGRITY_NOXATTRS))
-@@ -99,30 +98,57 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
- 		goto out;
- 	}
- 
--	rc = memcmp(xattr_value.digest, iint->ima_xattr.digest,
--		    IMA_DIGEST_SIZE);
--	if (rc) {
--		status = INTEGRITY_FAIL;
--		cause = "invalid-hash";
--		print_hex_dump_bytes("security.ima: ", DUMP_PREFIX_NONE,
--				     &xattr_value, sizeof xattr_value);
--		print_hex_dump_bytes("collected: ", DUMP_PREFIX_NONE,
--				     (u8 *)&iint->ima_xattr,
--				     sizeof iint->ima_xattr);
--		goto out;
-+	switch (xattr_value->type) {
-+	case IMA_XATTR_DIGEST:
-+		rc = memcmp(xattr_value->digest, iint->ima_xattr.digest,
-+			    IMA_DIGEST_SIZE);
-+		if (rc) {
-+			cause = "invalid-hash";
-+			status = INTEGRITY_FAIL;
-+			print_hex_dump_bytes("security.ima: ", DUMP_PREFIX_NONE,
-+					     xattr_value, sizeof(*xattr_value));
-+			print_hex_dump_bytes("collected: ", DUMP_PREFIX_NONE,
-+					     (u8 *)&iint->ima_xattr,
-+					     sizeof iint->ima_xattr);
-+			break;
-+		}
-+		status = INTEGRITY_PASS;
-+		break;
-+	case EVM_IMA_XATTR_DIGSIG:
-+		iint->flags |= IMA_DIGSIG;
-+		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-+					     xattr_value->digest, rc - 1,
-+					     iint->ima_xattr.digest,
-+					     IMA_DIGEST_SIZE);
-+		if (rc == -EOPNOTSUPP) {
-+			status = INTEGRITY_UNKNOWN;
-+		} else if (rc) {
-+			cause = "invalid-signature";
-+			status = INTEGRITY_FAIL;
-+		} else {
-+			status = INTEGRITY_PASS;
-+		}
-+		break;
-+	default:
-+		status = INTEGRITY_UNKNOWN;
-+		cause = "unknown-ima-data";
-+		break;
- 	}
--	status = INTEGRITY_PASS;
--	iint->flags |= IMA_APPRAISED;
-+
- out:
- 	if (status != INTEGRITY_PASS) {
--		if (ima_appraise & IMA_APPRAISE_FIX) {
-+		if ((ima_appraise & IMA_APPRAISE_FIX) &&
-+		    (xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
- 			ima_fix_xattr(dentry, iint);
- 			status = INTEGRITY_PASS;
- 		}
- 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode, filename,
- 				    op, cause, 1, 0);
-+	} else {
-+		iint->flags |= IMA_APPRAISED;
- 	}
- 	iint->ima_status = status;
-+	kfree(xattr_value);
- 	return status;
- }
- 
-@@ -134,9 +160,14 @@ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file)
- 	struct dentry *dentry = file->f_dentry;
- 	int rc = 0;
- 
-+	/* do not collect and update hash for digital signatures */
-+	if (iint->flags & IMA_DIGSIG)
-+		return;
-+
- 	rc = ima_collect_measurement(iint, file);
- 	if (rc < 0)
- 		return;
-+
- 	ima_fix_xattr(dentry, iint);
- }
- 
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index c145331..0594a57 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -21,6 +21,7 @@
- #define IMA_APPRAISE		4
- #define IMA_APPRAISED		8
- #define IMA_COLLECTED		16
-+#define IMA_DIGSIG		32
- 
- enum evm_ima_xattr_type {
- 	IMA_XATTR_DIGEST = 0x01,
--- 
-1.7.6.5
 
