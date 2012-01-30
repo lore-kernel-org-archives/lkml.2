@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab2A3Vnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:43:55 -0500
-Received: from fieldses.org ([174.143.236.118]:58948 "EHLO fieldses.org"
+	id S1752972Ab2A3VpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:45:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:31208 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab2A3Vny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:43:54 -0500
-Date: Mon, 30 Jan 2012 16:43:51 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kendrick Smith <kmsmith@umich.edu>, Andy Adamson <kandros@umich.edu>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [PATCH] NFS4: Fix NULL deref in nfsd4_lock() by makeing
- unhash_lockowner() safe to call with NULL arg
-Message-ID: <20120130214351.GA1518@fieldses.org>
-References: <alpine.LNX.2.00.1201292226380.27749@swampdragon.chaosbits.net>
+	id S1752023Ab2A3VpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 16:45:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="104302397"
+Message-ID: <4F270F67.4070809@linux.intel.com>
+Date: Mon, 30 Jan 2012 13:45:11 -0800
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1201292226380.27749@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: remove .. in perf includes/
+References: <1327091804-3984-1-git-send-email-andi@firstfloor.org> <20120130191429.GB5797@infradead.org>
+In-Reply-To: <20120130191429.GB5797@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 29, 2012 at 10:29:24PM +0100, Jesper Juhl wrote:
-> The Coverity checker noticed a path through nfsd4_lock() where we call
-> release_lockowner(lock_sop); (at the 'out:' label) where 'lock_sop' is
-> NULL.
-> That goes bad since release_lockowner() calls unhash_lockowner() which
-> dereferences its argument.
-> release_lockowner() also calls nfs4_free_lockowner(), but that's not a
-> problem since that function just calls kfree() and kmem_cache_free(),
-> both of which are safe to call with NULL as argument.
-> 
-> There are several ways to fix the bug.
->  - rework nfsd4_lock() so the call to release_lockowner(NULL) will never happen.
->  - let release_lockowner() test for NULL and return if given one.
->  - let unhash_lockowner() test for NULL and return if given one (which makes both it and release_lockowner() safe).
-> 
-> I chose the last option for this patch.
-> 
-> For information, the path Coverity spotted (in defect report 201504) is this:
-> 
-...
+On 1/30/2012 11:14 AM, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Jan 20, 2012 at 12:36:44PM -0800, Andi Kleen escreveu:
+>> From: Andi Kleen<ak@linux.intel.com>
+>>
+>> The perf user space has a lot of includes with ugly .. chains. This also
+>> makes it impossible to include any perf files from other code.
+>>
+>> I think the original reason for this were some wrapper include files
+>> for the kernel includes, and the explicit paths were needed to avoid
+>> endless recursion. A better way to handle this is #include_next
+>>
+>> - Add all the relevant directories as -I in the Makefile
+>> - Remove (near) all the .. in include statements
+>> - Remove unnecessary wrappers that do nothing
+>> - Fix up some fallout
+>>
+>> This makes the code more pleasant to read.
+>>
+>> I did it all in one big patch to keep bisectability.
+> It builds, but breaks this:
+
+Hmm cannot reproduce. The extra tarball builds fine and includes memset_64.S
+with my patch on Linus latest.
+
+-Andi
 
 
-> [...]
-> 4098out:
-> At conditional (12): "status" taking the true branch.
-> At conditional (13): "new_state" taking the true branch.
-> 4099        if (status && new_state)
-
-new_state is initialized false, and referenced otherwise only once,
-when a reference ot is is passed here:
-
-
-> 4010                status = lookup_or_create_lock_state(cstate, open_stp, lock,
-> 4011                                                        &lock_stp, &new_state);
-
-so if new_state is true, then lookup_or_create_lock_state() set it to
-true.  But it sets that only in one spot, at the end:
-
-	*new = true;
-	return nfs_ok;
-
-Note nfs_ok is zero.  Therefore:
-
-> At conditional (11): "status" taking the true branch.
-> 4012                if (status)
-> 4013                        goto out;
-
-this could not have happened.
-
-So it looks like a Coverity bug.
-
---b.
