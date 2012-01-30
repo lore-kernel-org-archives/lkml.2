@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab2A3Pto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 10:49:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5956 "EHLO mx1.redhat.com"
+	id S1753732Ab2A3PuG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 10:50:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29226 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753196Ab2A3Ptn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 10:49:43 -0500
-Date: Mon, 30 Jan 2012 10:49:35 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Phillip Susi <psusi@ubuntu.com>
-Cc: Maxim Patlasov <maxim.patlasov@gmail.com>, joe@perches.com,
-        kzak@redhat.com, linux-kernel@vger.kernel.org, jaxboe@fusionio.com
-Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
-Message-ID: <20120130154935.GC30245@redhat.com>
-References: <CA+X1aCQRpJ_NwJBSBp+vDN37p+oipJNz=6T5LdJdqzxTiSWWWA@mail.gmail.com>
- <4EFD012D.7040602@cfl.rr.com>
- <20120126190114.GG1891@redhat.com>
- <4F21B91E.90106@ubuntu.com>
- <20120126210456.GC11297@redhat.com>
- <4F21CA16.3020002@ubuntu.com>
+	id S1753597Ab2A3PuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 10:50:02 -0500
+Message-ID: <4F26BC1A.8060002@redhat.com>
+Date: Mon, 30 Jan 2012 17:49:46 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F21CA16.3020002@ubuntu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric B Munson <emunson@mgebm.net>
+CC: mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
+        aliguori@us.ibm.com, mtosatti@redhat.com,
+        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Jan Kiszka <jan.kiszka@web.de>
+Subject: Re: [PATCH 3/4 V10] Add ioctl for KVMCLOCK_GUEST_STOPPED
+References: <1326825641-15765-1-git-send-email-emunson@mgebm.net> <1326825641-15765-4-git-send-email-emunson@mgebm.net> <4F26B220.9050101@redhat.com> <20120130153244.GA6875@mgebm.net>
+In-Reply-To: <20120130153244.GA6875@mgebm.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 04:48:06PM -0500, Phillip Susi wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> On 1/26/2012 4:04 PM, Vivek Goyal wrote:
-> >> Another idea that I had but have not yet checked to see if it is
-> >>  actually feasible is to copy the struct genhd, change the size
-> >> of the copy, and replace the existing one since updating the
-> >> pointer will be atomic.
+On 01/30/2012 05:32 PM, Eric B Munson wrote:
 > > 
-> > You will run into issues if somebody has a pointer stored to 
-> > genhd.
-> 
-> They are already kept in an RCU list which has the same problem.
+> > Can you point me to the discussion that moved this to be a vm ioctl?  In
+> > general vm ioctls that do things for all vcpus are racy, like here. 
+> > You're accessing variables that are protected by the vcpu mutex, and not
+> > taking the mutex (nor can you, since it is held while the guest is
+> > running, unlike most kernel mutexes).
+> > 
+>
+> Jan Kiszka suggested that becuase there isn't a use case for notifying
+> individual vcpus (can vcpu's be paused individually?
 
-Yes, using rcu is one option.
+They can, though the guest will grind to a halt very soon.
 
-> Doesn't that deal with it by using reference counters, so the reader
-> can keep and use the pointer to the old structure just fine, and it
-> will be cleaned up when they release the reference.
+> ) that it makes more sense
+> to have a vm ioctl.
+>
+> http://thread.gmane.org/gmane.comp.emulators.qemu/131624
+>
+> If the per vcpu ioctl is the right choice I can resend those patches.
 
-Then reader needs to take reference count before every read and that
-makes it heavy weight solution for reader.
+The races are solvable but I think it's easier in userspace.  It's also
+more flexible, though I don't really see a use for this flexibility.
 
-Sequence counter keeps it lightweight for reader in fast path.
+-- 
+error compiling committee.c: too many arguments to function
 
-> 
-> > I think simpler thing would be to stick with sequence counter 
-> > approach which keeps read side lockless. We can fix other writers 
-> > of nr_sects over a period of time. If nobody has complained so
-> > far, that means we don't run into issues frequently and it is not a
-> > huge concern.
-> 
-> So you think the patch is fine the way it is?
-
-If you can fix other use cases now, it would be good. Otherwise, I think
-we can leave a big fat comment in the code and if somebody runs into
-issues, we can go fix the individiual cases then.
-
-As we are not introducing any new races, I will not be too concerned
-about that.
-
-Thanks
-Vivek
