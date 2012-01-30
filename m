@@ -1,589 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab2A3KOF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 05:14:05 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44729 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2A3KOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 05:14:01 -0500
-Message-ID: <4F266D64.9030105@suse.cz>
-Date: Mon, 30 Jan 2012 11:13:56 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120124 Thunderbird/10.0
+	id S1751987Ab2A3KPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 05:15:40 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34069 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751097Ab2A3KPj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 05:15:39 -0500
 MIME-Version: 1.0
-To: Andrea Shepard <andrea@persephoneslair.org>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, khc@pm.waw.pl,
-        davem@davemloft.net, mmarek@suse.cz, jkosina@suse.cz, joe@perches.com,
-        justinmattock@gmail.com, gregkh@suse.de, alan@linux.intel.com,
-        jdmason@kudzu.us, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [22/22] Cyclades PC300 driver: omnibus patch from merge up to
- final version (patches 01 through 20 inclusive)
-References: <20120130030156.GW10262@cronus.persephoneslair.org>
-In-Reply-To: <20120130030156.GW10262@cronus.persephoneslair.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F2619A3.6000608@linux.vnet.ibm.com>
+References: <1327697778-18515-1-git-send-email-eranian@google.com>
+	<4F2619A3.6000608@linux.vnet.ibm.com>
+Date: Mon, 30 Jan 2012 11:15:37 +0100
+Message-ID: <CABPqkBR13bv6wb-5WJCyVkeLaNOqEPu2y4vj6j3BEZAKnOLPxg@mail.gmail.com>
+Subject: Re: [PATCH v4 00/18] perf: add support for sampling taken branches
+From: Stephane Eranian <eranian@google.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
+        vweaver1@eecs.utk.edu, dsahern@gmail.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 04:01 AM, Andrea Shepard wrote:
-> --- a/drivers/net/wan/Kconfig
-> +++ b/drivers/net/wan/Kconfig
-> @@ -205,10 +205,8 @@ config WANXL_BUILD_FIRMWARE
->  
->  config PC300
->  	tristate "Cyclades-PC300 support (RS-232/V.35, X.21, T1/E1 boards)"
-> -	depends on HDLC && PCI && BROKEN
-> +	depends on HDLC && PCI
+[repost due to stupid MIME encoding]
 
-You should do this as the very last in the series. You break the build
-by the very first patch.
+On Mon, Jan 30, 2012 at 5:16 AM, Anshuman Khandual
+<khandual@linux.vnet.ibm.com> wrote:
+>
+> On Saturday 28 January 2012 02:26 AM, Stephane Eranian wrote:
+> > This patchset adds an important and useful new feature to
+> > perf_events: branch stack sampling. In other words, the
+> > ability to capture taken branches into each sample.
+> >
+> > Statistical sampling of taken branch should not be confused
+> > for branch tracing. Not all branches are necessarily captured
+> >
+> > Sampling taken branches is important for basic block profiling,
+> > statistical call graph, function call counts. Many of those
+> > measurements can help drive a compiler optimizer.
+> >
+> > The branch stack is a software abstraction which sits on top
+> > of the PMU hardware. As such, it is not available on all
+> > processors. For now, the patch provides the generic interface
+> > and the Intel X86 implementation where it leverages the Last
+> > Branch Record (LBR) feature (from Core2 to SandyBridge).
+> >
+> > Branch stack sampling is supported for both per-thread and
+> > system-wide modes.
+> >
+> > It is possible to filter the type and privilege level of branches
+> > to sample. The target of the branch is used to determine
+> > the privilege level.
+> >
+> > For each branch, the source and destination are captured. On
+> > some hardware platforms, it may be possible to also extract
+> > the target prediction and, in that case, it is also exposed
+> > to end users.
+> >
+> > The branch stack can record a variable number of taken
+> > branches per sample. Those branches are always consecutive
+> > in time. The number of branches captured depends on the
+> > filtering and the underlying hardware. On Intel Nehalem
+> > and later, up to 16 consecutive branches can be captured
+> > per sample.
+> >
+> > Branch sampling is always coupled with an event. It can
+> > be any PMU event but it can't be a SW or tracepoint event.
+> >
+> > Branch sampling is requested by setting a new sample_type
+> > flag called: PERF_SAMPLE_BRANCH_STACK.
+> >
+> > To support branch filtering, we introduce a new field
+> > to the perf_event_attr struct: branch_sample_type. We chose
+> > NOT to overload the config1, config2 field because those
+> > are related to the event encoding. Branch stack is a
+> > separate feature which is combined with the event.
+> >
+> > The branch_sample_type is a bitmask of possible filters.
+> > The following filters are defined (more can be added):
+> > - PERF_SAMPLE_BRANCH_ANY     : any control flow change
+> > - PERF_SAMPLE_BRANCH_USER    : branches when target is at user level
+> > - PERF_SAMPLE_BRANCH_KERNEL  : branches when target is at kernel level
+> > - PERF_SAMPLE_BRANCH_HV      : branches when target is at hypervisor level
+> > - PERF_SAMPLE_BRANCH_ANY_CALL: call branches (incl. syscalls)
+> > - PERF_SAMPLE_BRANCH_ANY_RET : return branches (incl. syscall returns)
+> > - PERF_SAMPLE_BRANCH_IND_CALL: indirect calls
+> >
+> > It is possible to combine filters, e.g., IND_CALL|USER|KERNEL.
+> >
+> > When the privilege level is not specified, the branch stack
+> > inherits that of the associated event.
+> >
+> > Some processors may not offer hardware branch filtering, e.g., Intel
+> > Atom. Some may have HW filtering bugs (e.g., Nehalem). The Intel
+> > X86 implementation in this patchset also provides a SW branch filter
+> > which works on a best effort basis. It can compensate for the lack
+> > of LBR filtering. But first and foremost, it helps work around LBR
+> > filtering errata. The goal is to only capture the type of branches
+> > requested by the user.
+> >
+> > It is possible to combine branch stack sampling with PEBS on Intel
+> > X86 processors. Depending on the precise_sampling mode, there are
+> > certain filterting restrictions. When precise_sampling=1, then
+> > there are no filtering restrictions. When precise_sampling > 1,
+> > then only ANY|USER|KERNEL filter can be used. This comes from
+> > the fact that the kernel uses LBR to compensate for the PEBS
+> > off-by-1 skid on the instruction pointer.
+> >
+> > To demonstrate how the perf_event branch stack sampling interface
+> > works, the patchset also modifies perf record to capture taken
+> > branches. Similarly perf report is enhanced to display a histogram
+> > of taken branches.
+> >
+> > I would like to thank Roberto Vitillo @ LBL for his work on the perf
+> > tool for this.
+> >
+> > Enough talking, let's take a simple example. Our trivial test program
+> > goes like this:
+> >
+> > void f2(void)
+> > {}
+> > void f3(void)
+> > {}
+> > void f1(unsigned long n)
+> > {
+> >   if (n & 1UL)
+> >     f2();
+> >   else
+> >     f3();
+> > }
+> > int main(void)
+> > {
+> >   unsigned long i;
+> >
+> >   for (i=0; i < N; i++)
+> >    f1(i);
+> >   return 0;
+> > }
+> >
+> > $ perf record -b any branchy
+> > $ perf report -b
+> > # Events: 23K cycles
+> > #
+> > # Overhead  Source Symbol     Target Symbol
+> > # ........  ................  ................
+> >
+> >     18.13%  [.] f1            [.] main
+> >     18.10%  [.] main          [.] main
+> >     18.01%  [.] main          [.] f1
+> >     15.69%  [.] f1            [.] f1
+> >      9.11%  [.] f3            [.] f1
+> >      6.78%  [.] f1            [.] f3
+> >      6.74%  [.] f1            [.] f2
+> >      6.71%  [.] f2            [.] f1
+> >
+> > Of the total number of branches captured, 18.13% were from f1() -> main().
+> >
+> > Let's make this clearer by filtering the user call branches only:
+> >
+> > $ perf record -b any_call -e cycles:u branchy
+> > $ perf report -b
+> > # Events: 19K cycles
+> > #
+> > # Overhead  Source Symbol              Target Symbol
+> > # ........  .........................  .........................
+> > #
+> >     52.50%  [.] main                   [.] f1
+> >     23.99%  [.] f1                     [.] f3
+> >     23.48%  [.] f1                     [.] f2
+> >      0.03%  [.] _IO_default_xsputn     [.] _IO_new_file_overflow
+> >      0.01%  [k] _start                 [k] __libc_start_main
+> >
+> > Now it is more obvious. %52 of all the captured branches where calls from main() -> f1().
+> > The rest is split 50/50 between f1() -> f2() and f1() -> f3() which is expected given
+> > that f1() dispatches based on odd vs. even values of n which is constantly increasing.
+> >
+> >
+> > Here is a kernel example, where we want to sample indirect calls:
+> > $ perf record -a -C 1 -b ind_call -e r1c4:k sleep 10
+> > $ perf report -b
+> > #
+> > # Overhead  Source Symbol               Target Symbol
+> > # ........  ..........................  ..........................
+> > #
+> >     36.36%  [k] __delay                 [k] delay_tsc
+> >      9.09%  [k] ktime_get               [k] read_tsc
+> >      9.09%  [k] getnstimeofday          [k] read_tsc
+> >      9.09%  [k] notifier_call_chain     [k] tick_notify
+> >      4.55%  [k] cpuidle_idle_call       [k] intel_idle
+> >      4.55%  [k] cpuidle_idle_call       [k] menu_reflect
+> >      2.27%  [k] handle_irq              [k] handle_edge_irq
+> >      2.27%  [k] ack_apic_edge           [k] native_apic_mem_write
+> >      2.27%  [k] hpet_interrupt_handler  [k] hrtimer_interrupt
+> >      2.27%  [k] __run_hrtimer           [k] watchdog_timer_fn
+> >      2.27%  [k] enqueue_task            [k] enqueue_task_rt
+> >      2.27%  [k] try_to_wake_up          [k] select_task_rq_rt
+> >      2.27%  [k] do_timer                [k] read_tsc
+> >
+> > Due to HW limitations, branch filtering may be approximate on
+> > Core, Atom processors. It is more accurate on Nehalem, Westmere
+> > and best on Sandy Bridge.
+> >
+> > In version 2, we've updated the patch to tip/master (commit 5734857) and
+> > we've incoporated the feedback from v1 concerning anynous bitfield
+> > struct for branch_stack_entry and the hanlding of i386 ABI binaries
+> > on 64-bit host in the instr decoder for the LBR SW filter.
+> >
+> > In version 3, we've updated to 3.2.0-tip. The Atom revision
+> > check has been put into its own patch. We fixed a browser
+> > issue with report report. We fixed all the style issues as well.
+> >
+> > In version 4, we've modified the branch stack API to add a missing
+> > priv level : hypervisor. There is a new PERF_SAMPLE_BRANCH_HV. It
+> > is not used on Intel X86. Thanks to  khandual@linux.vnet.ibm.com
+> > for pointing this out. We also fix compilation error on ARM.
+> >
+> > In version 4, we also extend the patch to include the changes necessary
+> > to the perf tool to support reading perf.data files which were produced
+> > from older perf_event ABI revisions. This patch set extends the ABI
+> > with a new field in struct perf_event_attr. That struct is saved as
+> > is in the perf.data file. Therefore, older perf.data files contain
+> > smaller perf_event_attr struct, yet perf must process them transparently.
+> > That's not the case today. It dies with 'incompatible file format'.
+> >
+> > The patch solves this problem and, at the same time, decouples endianness
+> > detection from the size of perf_event_attr. Endianness is now detected via
+> > the signature (the first 8 bytes of the file). We introduce a new signature
+> > (PERFILE2). It is not laid out the same way in the file based on the endianness
+> So as perf subsystem evolves and we modify perf_event_attr structure, a new 'PERFFILE<N>'
+> marker is generated (for perf subsystem version N) and placed in perf.data. Perf tools
+> would be modified to distinguish between various versions of perf.data file and process
+> them accordingly. Sounds good ! PERFFILE,PERFFILE2,PERFFILE3........ We should have named
+> PERFFILE as PERFILE1 expecting this to happen one day :)
 
-> --- a/drivers/net/wan/pc300.h
-> +++ b/drivers/net/wan/pc300.h
-...
-> @@ -143,13 +150,28 @@
->   * Memory access functions/macros      *
->   * (required to support Alpha systems) *
->   ***************************************/
-> -#define cpc_writeb(port,val)	{writeb((u8)(val),(port)); mb();}
-> -#define cpc_writew(port,val)	{writew((ushort)(val),(port)); mb();}
-> -#define cpc_writel(port,val)	{writel((u32)(val),(port)); mb();}
-> +#ifdef __KERNEL__
 
-Why is this in a header from drivers/ ? Perhaps you should move the
-header if it is an interface. User does not need to see cpc_writeb et
-al. anyway. And u8 and others are not defined there.
+No, as the perf_event_attr evolves, we DO NOT need to modify the
+signature any longer.
+This was necessary to distinguish the "legacy" (broken) signature
+files, from the fixed
+version. In the new version, the signature is not laid out in the same
+way for big vs.
+little endian, as such it can be used to detect endianness, thereby
+"freeing" attr_size
+from this role. It was an error to begin with because attr_size can
+change as the
+event_attr struct grows.
 
-> +#define cpc_writeb(port, val)	{writeb((u8)(val), \
-> +				(void __iomem *)(port)); mb(); }
-> +#define cpc_writew(port, val)	{writew((u16)(val), \
-> +				(void __iomem *)(port)); mb(); }
-> +#define cpc_writel(port, val)	{writel((u32)(val), \
-> +				(void __iomem *)(port)); mb(); }
-> +
-> +#define cpc_readb(port)		readb((void __iomem *)(port))
-> +#define cpc_readw(port)		readw((void __iomem *)(port))
-> +#define cpc_readl(port)		readl((void __iomem *)(port))
->  
-> -#define cpc_readb(port)		readb(port)
-> -#define cpc_readw(port)		readw(port)
-> -#define cpc_readl(port)		readl(port)
-> +#else /* __KERNEL__ */
-> +#define cpc_writeb(port, val)	(*((u8 *)(port)) = (u8)(val))
-> +#define cpc_writew(port, val)	(*((u16 *)(port)) = (u16)(val))
-> +#define cpc_writel(port, val)	(*((u32 *)(port)) = (u32)(val))
-> +
-> +#define cpc_readb(port)		(*((u8 *)(port)))
-> +#define cpc_readw(port)		(*((u16 *)(port)))
-> +#define cpc_readl(port)		(*((u32 *)(port)))
-> +
-> +#endif /* __KERNEL__ */
->  
->  /****** Data Structures *****************************************************/
->  
-> @@ -291,16 +349,31 @@ typedef struct pc300patterntst {
->  	u16 num_errors;
->  } pc300patterntst_t;
->  
-> +#ifdef __KERNEL__
-> +
->  typedef struct pc300dev {
->  	struct pc300ch *chan;
->  	u8 trace_on;
->  	u32 line_on;		/* DCD(X.21, RSV) / sync(TE) change counters */
->  	u32 line_off;
-> +#ifdef __KERNEL__
-
-Double ifdef?
-
->  	char name[16];
-> -	struct net_device *dev;
-> +	hdlc_device *hdlc;
-> +	struct net_device *netdev;
-> +
-> +	void *private;
-> +	struct sk_buff *tx_skb;
-> +
-> +	enum {
-> +	  CPC_DMA_FULL,
-> +	  CPC_DMA_ERROR,
-> +	  TRANSMISSION_ACTIVE,
-> +	  CHANNEL_CLOSED
-> +	} reason_stopped;
->  #ifdef CONFIG_PC300_MLPPP
->  	void *cpc_tty;	/* information to PC300 TTY driver */
->  #endif
-> +#endif /* __KERNEL__ */
->  }pc300dev_t;
-...
-> @@ -346,6 +450,8 @@ typedef struct pc300chconf {
->  	u32 tslot_bitmap;	/* bit[i]=1  =>  timeslot _i_ is active */
->  } pc300chconf_t;
->  
-> +#ifdef __KERNEL__
-> +
->  typedef struct pc300ch {
->  	struct pc300 *card;
->  	int channel;
-> @@ -365,8 +471,10 @@ typedef struct pc300 {
->  	spinlock_t card_lock;
->  } pc300_t;
->  
-> +#endif /* __KERNEL__ */
-> +
->  typedef struct pc300conf {
-> -	pc300hw_t hw;
-> +	struct pc300hw_user hw;
->  	pc300chconf_t conf;
->  } pc300conf_t;
->  
-> @@ -430,7 +538,19 @@ enum pc300_loopback_cmds {
->  #define PC300_TX_QUEUE_LEN	100
->  #define	PC300_DEF_MTU		1600
->  
-> -/* Function Prototypes */
-> -int cpc_open(struct net_device *dev);
-> +#ifdef __KERNEL__
-> +
-> +int cpc_open(struct net_device *);
-> +
-> +#ifdef CONFIG_PC300_MLPPP
-> +void cpc_tty_init(pc300dev_t *);
-> +void cpc_tty_unregister_service(pc300dev_t *);
-> +void cpc_tty_receive(pc300dev_t *);
-> +void cpc_tty_trigger_poll(pc300dev_t *);
-> +void cpc_tty_reset_var(void);
-> +#endif /* CONFIG_PC300_MLPP */
-> +
-> +#endif /* __KERNEL__ */
->  
->  #endif	/* _PC300_H */
-> +
-
-ETOOMANYIFDEFS. You should split the header. One part with the interface
--> include/, the other with internal structures -> leave here.
-
-> --- a/drivers/net/wan/pc300_drv.c
-> +++ b/drivers/net/wan/pc300_drv.c
-> @@ -1,6 +1,6 @@
->  #define	USE_PCI_CLOCK
->  static const char rcsid[] =
-> -"Revision: 3.4.5 Date: 2002/03/07 ";
-> +"Revision: 4.1.0 Date: 2004/02/20 ";
-
-This is useless, isn't it? It doesn't mean anything after some time as
-kernel evolves.
-
-> @@ -16,6 +16,13 @@ static const char rcsid[] =
->   *	2 of the License, or (at your option) any later version.
->   *	
->   *	Using tabstop = 4.
-> + *
-> + * Cyclades version 4.1.0 merged in, with new portability fixes,
-> + * and ported to recent kernels by Andrea Shepard <andrea@persephoneslair.org>
-
-No, we have git log.
-
-> + * Due to changes in certain ioctls necessary for portability, this
-> + * version requires a new version of pc300utils, which may be found
-> + * at: http://charon.persephoneslair.org/~andrea/software/pc300utils/
->   * 
->   * $Log: pc300_drv.c,v $
->   * Revision 3.23  2002/03/20 13:58:40  henrique
-
-Another piece of cvs.
-
-> @@ -238,21 +246,22 @@ static const char rcsid[] =
->  
->  #include "pc300.h"
->  
-> -#define	CPC_LOCK(card,flags)		\
-> -		do {						\
-> -		spin_lock_irqsave(&card->card_lock, flags);	\
-> -		} while (0)
-> +#define	CPC_LOCK(card, flags) \
-> +		{ \
-> +		    spin_lock_irqsave(&((card)->card_lock), (flags)); \
-> +		}
-
-Nah. do-while has its meaning. Try this:
-if (1)
-  CPC_LOCK(card,flags);
-else
-  return;
-
-Overall, you don't need these macros at all.
-
-> -#define CPC_UNLOCK(card,flags)			\
-> -		do {							\
-> -		spin_unlock_irqrestore(&card->card_lock, flags);	\
-> -		} while (0)
-> +#define CPC_UNLOCK(card, flags) \
-> +		{ \
-> +		    spin_unlock_irqrestore(&((card)->card_lock), (flags)); \
-> +		}
-...
-> @@ -279,53 +288,128 @@ MODULE_DEVICE_TABLE(pci, cpc_pci_dev_id);
-...
-> -static void rx_dma_buf_check(pc300_t * card, int ch)
-> +static void rx_dma_buf_check(pc300_t *card, int ch)
->  {
-> -	volatile pcsca_bd_t __iomem *ptdescr;
-> +	pcsca_bd_t __iomem *ptdescr;
->  	int i;
->  	u16 first_bd = card->chan[ch].rx_first_bd;
->  	u16 last_bd = card->chan[ch].rx_last_bd;
->  	int ch_factor;
->  
->  	ch_factor = ch * N_DMA_RX_BUF;
-> -	printk("#CH%d: f_bd = %d, l_bd = %d\n", ch, first_bd, last_bd);
-> -	for (i = 0, ptdescr = (card->hw.rambase +
-> -					      DMA_RX_BD_BASE + ch_factor * sizeof(pcsca_bd_t));
-> -	     i < N_DMA_RX_BUF; i++, ptdescr++) {
-> +	printk(KERN_DEBUG
-> +		"#CH%d: f_bd = %d, l_bd = %d\n", ch, first_bd, last_bd);
-> +	for (
-> +		i = 0,
-> +		ptdescr = (pcsca_bd_t *)
-> +			(card->hw.rambase + DMA_RX_BD_BASE +
-> +			 ch_factor * sizeof(pcsca_bd_t));
-> +
-> +		i < N_DMA_RX_BUF;
-> +
-> +		i++,
-> +		ptdescr++
-> +		) {
-
-This is horrible.
-
->  		if (cpc_readb(&ptdescr->status) & DST_OSB)
-> -			printk ("\n CH%d RX%d: next=0x%x, ptbuf=0x%x, ST=0x%x, len=%d",
-> -				 ch, i, cpc_readl(&ptdescr->next),
-> -				 cpc_readl(&ptdescr->ptbuf),
-> -				 cpc_readb(&ptdescr->status),
-> -				 cpc_readw(&ptdescr->len));
-> +			printk(KERN_DEBUG
-> +				"\n CH%d RX%d: next=0x%08x, ptbuf=0x%08x, ST=0x%2x, len=%d",
-> +				ch, i, (u32) cpc_readl(&ptdescr->next),
-> +				(u32) cpc_readl(&ptdescr->ptbuf),
-> +				cpc_readb(&ptdescr->status),
-> +				cpc_readw(&ptdescr->len));
->  	}
-> -	printk("\n");
-> +	printk(KERN_DEBUG "\n");
->  }
-...
-> -static void falc_intr_enable(pc300_t * card, int ch)
-> +static void falc_intr_enable(pc300_t *card, int ch)
->  {
->  	pc300ch_t *chan = (pc300ch_t *) & card->chan[ch];
->  	pc300chconf_t *conf = (pc300chconf_t *) & chan->conf;
->  	falc_t *pfalc = (falc_t *) & chan->falc;
-> -	void __iomem *falcbase = card->hw.falcbase;
-> +	uintptr_t falcbase = (uintptr_t)(card->hw.falcbase);
-
-Why is that?
-
-> @@ -1940,18 +2212,19 @@ static void cpc_net_rx(struct net_device *dev)
->  			continue;
->  		}
->  
-> -		dev->stats.rx_bytes += rxb;
-> +		stats->rx_bytes += rxb;
->  
->  #ifdef PC300_DEBUG_RX
-> -		printk("%s R:", dev->name);
-> +		printk(KERN_DEBUG "%s R:", dev->name);
->  		for (i = 0; i < skb->len; i++)
-> -			printk(" %02x", *(skb->data + i));
-> -		printk("\n");
-> +			printk(KERN_DEBUG " %02x", *(skb->data + i));
-> +		printk(KERN_DEBUG "\n");
-
-print_hex_dump_bytes();
-
-> @@ -2486,73 +2847,157 @@ static void cpc_sca_status(pc300_t * card, int ch)
-...
->  static int cpc_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
->  {
-> -	pc300dev_t *d = (pc300dev_t *) dev_to_hdlc(dev)->priv;
-> +	pc300dev_t *d = (pc300dev_t *) (dev_to_hdlc(dev))->priv;
->  	pc300ch_t *chan = (pc300ch_t *) d->chan;
->  	pc300_t *card = (pc300_t *) chan->card;
->  	pc300conf_t conf_aux;
->  	pc300chconf_t *conf = (pc300chconf_t *) & chan->conf;
->  	int ch = chan->channel;
-> -	void __user *arg = ifr->ifr_data;
-> +	void *arg = (void *) ifr->ifr_data;
-
-But it is a userspace ptr!
-
-> @@ -3361,47 +3897,67 @@ static void cpc_init_card(pc300_t * card)
-...
-> -			printk (" #%d, %dKB of RAM at 0x%08x, IRQ%d, channel %d.\n",
-> -				 board_nbr, card->hw.ramsize / 1024,
-> -				 card->hw.ramphys, card->hw.irq, i + 1);
-> +#ifdef CONFIG_PHYS_ADDR_T_64BIT
-> +			printk(KERN_INFO " #%d, %dKB of RAM at 0x%016lx, IRQ %d, channel %d.\n",
-> +			       board_nbr, card->hw.ramsize / 1024,
-> +			       (unsigned long)(card->hw.ramphys),
-> +			       card->hw.irq, i + 1);
-> +#else /* !CONFIG_PHYS_ADDR_T_64BIT */
-> +			printk(KERN_INFO " #%d, %dKB of RAM at 0x%08x, IRQ %d, channel %d.\n",
-> +			       board_nbr, card->hw.ramsize / 1024,
-> +			       (unsigned int)(card->hw.ramphys),
-> +			       card->hw.irq, i + 1);
-> +#endif /* CONFIG_PHYS_ADDR_T_64BIT */
-
-What about just a cast to ull?
-
-> @@ -3495,29 +4081,63 @@ cpc_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
-...
-> -	card->hw.plxbase = ioremap(card->hw.plxphys, card->hw.plxsize);
-> -	card->hw.rambase = ioremap(card->hw.ramphys, card->hw.alloc_ramsize);
-> -	card->hw.scabase = ioremap(card->hw.scaphys, card->hw.scasize);
-> +	err = pci_enable_device(pdev);
-> +	if (err != 0)
-> +		goto err_release_sca;
-> +
-> +	card->hw.plxbase =
-> +		(void __iomem *) ioremap(card->hw.plxphys, card->hw.plxsize);
-
-Why do you need the cast? You may use pci_ioremap_bar anyway.
-
-> --- a/drivers/net/wan/pc300_tty.c
-> +++ b/drivers/net/wan/pc300_tty.c
-> @@ -481,11 +502,35 @@ static int cpc_tty_write(struct tty_struct *tty, const unsigned char *buf, int c
->  		return -EINVAL; 
->  	}
->  
-> -	if (cpc_tty_send_to_card(cpc_tty->pc300dev, (void*)buf, count)) { 
-> -	   /* failed to send */
-> -	   CPC_TTY_DBG("%s: trasmition error\n", cpc_tty->name);
-> -	   return 0;
-> +	if (from_user) {
-
-Nowadays, it is always a kernel buffer. This check was removed years ago
-already I suppose. Please do not re-add crap from out of tree drivers.
-
-> +		unsigned char *buf_tmp;
-> +
-> +		buf_tmp = cpc_tty->buf_tx;
-> +		if (copy_from_user(buf_tmp, buf, count)) {
-> +			/* failed to copy from user */
-> +			CPC_TTY_DBG("%s: error in copy from user\n",
-> +					cpc_tty->name);
-> +			return -EINVAL;
-> +		}
-> +
-> +		if (cpc_tty_send_to_card(cpc_tty->pc300dev,
-> +					(void *)buf_tmp, count)) {
-> +			/* failed to send */
-> +			CPC_TTY_DBG("%s: transmission error\n", cpc_tty->name);
-> +			return 0;
-> +		}
-> +	} else {
-> +		if (
-> +				cpc_tty_send_to_card(cpc_tty->pc300dev,
-> +					(void *)buf,
-> +					count)
-> +				) {
-> +			/* failed to send */
-> +			CPC_TTY_DBG("%s: transmission error\n", cpc_tty->name);
-> +			return 0;
-> +		}
->  	}
-> +
->  	return count; 
->  } 
->  
-...
-> @@ -618,9 +666,18 @@ static void cpc_tty_flush_buffer(struct tty_struct *tty)
->  
->  	CPC_TTY_DBG("%s: call wake_up_interruptible\n",cpc_tty->name);
->  
-> -	tty_wakeup(tty);	
-> -	return; 
-> -} 
-> +	wake_up_interruptible(&tty->write_wait);
-> +
-> +	if (
-> +			(tty->flags & (1 << TTY_DO_WRITE_WAKEUP)) &&
-> +			tty->ldisc &&
-> +			tty->ldisc->ops && tty->ldisc->ops->write_wakeup
-> +			) {
-> +		CPC_TTY_DBG("%s: call line disc. wake up\n",
-> +				cpc_tty->name);
-> +		tty->ldisc->ops->write_wakeup(tty);
-> +	}
-> +}
-
-Another instance of such crap.
-
-> @@ -665,35 +722,35 @@ static void cpc_tty_hangup(struct tty_struct *tty)
->   */
->  static void cpc_tty_rx_work(struct work_struct *work)
->  {
-> -	st_cpc_tty_area *cpc_tty;
-> -	unsigned long port;
->  	int i, j;
-> -	volatile st_cpc_rx_buf *buf;
-> -	char flags=0,flg_rx=1; 
-> -	struct tty_ldisc *ld;
-> +	unsigned long port;
-> +	st_cpc_tty_area *cpc_tty;
-> +	st_cpc_rx_buf *buf;
-> +	char flags = 0, flg_rx = 1;
->  
->  	if (cpc_tty_cnt == 0) return;
-> -	
-> -	for (i=0; (i < 4) && flg_rx ; i++) {
-> -		flg_rx = 0;
->  
-> +	for (i = 0; (i < 4) && flg_rx; i++) {
-> +		flg_rx = 0;
->  		cpc_tty = container_of(work, st_cpc_tty_area, tty_rx_work);
->  		port = cpc_tty - cpc_tty_area;
->  
-> -		for (j=0; j < CPC_TTY_NPORTS; j++) {
-> +		for (j = 0; j < CPC_TTY_NPORTS; j++) {
->  			cpc_tty = &cpc_tty_area[port];
-> -		
-> -			if ((buf=cpc_tty->buf_rx.first) != NULL) {
-> -				if (cpc_tty->tty) {
-> -					ld = tty_ldisc_ref(cpc_tty->tty);
-> -					if (ld) {
-> -						if (ld->ops->receive_buf) {
-> -							CPC_TTY_DBG("%s: call line disc. receive_buf\n",cpc_tty->name);
-> -							ld->ops->receive_buf(cpc_tty->tty, (char *)(buf->data), &flags, buf->size);
-> -						}
-> -						tty_ldisc_deref(ld);
-> -					}
-> -				}	
-> +			buf = cpc_tty->buf_rx.first;
-> +			if (buf != NULL) {
-> +				if (cpc_tty->tty && cpc_tty->tty->ldisc &&
-> +				    cpc_tty->tty->ldisc->ops &&
-> +				    cpc_tty->tty->ldisc->ops->receive_buf) {
-
-Third instance of crap. NACK!
-
-> +					CPC_TTY_DBG(
-> +					  "%s: call line disc. receive_buf\n",
-> +					  cpc_tty->name);
-> +					cpc_tty->tty->
-> +					  ldisc->ops->
-> +					  receive_buf(cpc_tty->tty,
-> +						(char *)(buf->data),
-> +						&flags, buf->size);
-> +				}
->  				cpc_tty->buf_rx.first = cpc_tty->buf_rx.first->next;
->  				kfree((void *)buf);
->  				buf = cpc_tty->buf_rx.first;
-...
-> @@ -789,13 +848,13 @@ void cpc_tty_receive(pc300dev_t *pc300dev)
->  		} 
->  		
->  		new = kmalloc(rx_len + sizeof(st_cpc_rx_buf), GFP_ATOMIC);
-> -		if (!new) {
-> +		if (new == 0) {
-
-Nah.
-
-> @@ -821,8 +880,7 @@ void cpc_tty_receive(pc300dev_t *pc300dev)
->  						cpc_tty->name);
->  				cpc_tty_rx_disc_frame(pc300chan);
->  				rx_len = 0;
-> -				kfree(new);
-> -				new = NULL;
-> +				kfree((unsigned char *)new);
-
-Nah. Isn't the assignment necessary (I didn't check)?
-
-> @@ -831,15 +889,14 @@ void cpc_tty_receive(pc300dev_t *pc300dev)
->  				cpc_tty_rx_disc_frame(pc300chan);
->  				stats->rx_dropped++; 
->  				rx_len = 0; 
-> -				kfree(new);
-> -				new = NULL;
-> +				kfree((unsigned char *)new);
-
-Nah.
-
-> @@ -892,15 +950,29 @@ static void cpc_tty_tx_work(struct work_struct *work)
->  {
->  	st_cpc_tty_area *cpc_tty =
->  		container_of(work, st_cpc_tty_area, tty_tx_work);
-> -	struct tty_struct *tty; 
-> +	struct tty_struct *tty;
->  
->  	CPC_TTY_DBG("%s: cpc_tty_tx_work init\n",cpc_tty->name);
->  	
-> -	if ((tty = cpc_tty->tty) == NULL) { 
-> -		CPC_TTY_DBG("%s: the interface is not opened\n",cpc_tty->name);
-> +	tty = cpc_tty->tty;
-> +	if (tty == 0) {
-> +		CPC_TTY_DBG("%s: the interface is not opened\n",
-> +				cpc_tty->name);
->  		return; 
->  	}
-> -	tty_wakeup(tty);
-> +
-> +	if (
-> +			(tty->flags & (1 << TTY_DO_WRITE_WAKEUP)) &&
-> +			tty->ldisc &&
-> +			tty->ldisc->ops &&
-> +			tty->ldisc->ops->write_wakeup
-> +			) {
-> +		CPC_TTY_DBG("%s:call line disc. wakeup\n",
-> +				cpc_tty->name);
-> +		tty->ldisc->ops->write_wakeup(tty);
-> +	}
-> +
-> +	wake_up_interruptible(&tty->write_wait);
-
-No!
-
-> @@ -1032,38 +1108,40 @@ void cpc_tty_unregister_service(pc300dev_t *pc300dev)
->  	ulong flags;
->  	int res;
->  
-> -	if ((cpc_tty= (st_cpc_tty_area *) pc300dev->cpc_tty) == NULL) {
-> -		CPC_TTY_DBG("%s: interface is not TTY\n", pc300dev->dev->name);
-> +	cpc_tty = (st_cpc_tty_area *) pc300dev->cpc_tty;
-> +	if (cpc_tty == 0) {
-
-This is a pointer. 0 is *not* NULL in C.
-
->  	if (--cpc_tty_cnt == 0) { 
-> -		if (serial_drv.refcount) {
-> -			CPC_TTY_DBG("%s: unregister is not possible, refcount=%d",
-> -							cpc_tty->name, serial_drv.refcount);
-> -			cpc_tty_cnt++;
-> -			cpc_tty_unreg_flag = 1;
-> -			return;
-> -		} else { 
-> -			CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
-> -			if ((res=tty_unregister_driver(&serial_drv))) { 
-> -				CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
-> -								cpc_tty->name,res);
-> -			}
-> +		CPC_TTY_DBG("%s: unregister the tty driver\n",
-> +				cpc_tty->name);
-> +		res = tty_unregister_driver(&serial_drv);
-> +		if (res) {
-> +			CPC_TTY_DBG(
-> +				"%s: ERROR ->unregister the tty driver error=%d\n",
-> +				cpc_tty->name, res);
-
-You may ignore the retval.
-
-As you could see, I NACK the series. Please fix the issues.
-
-thanks,
--- 
-js
-suse labs
+>
+> > of the host where the file is written. Therefore, we can dynamically detect
+> > the endianness by simply reading the first 8 bytes. The size of the
+> > perf_event_attr struct can then be processed according to the endianness.
+> > The ambiguity between the size being at the same time, the endianness marker
+> > and the actual size is gone. We can now distinguish an older ABI by the size
+> > and not confuse it with an endianness mismatch.
+> >
+> > Signed-off-by: Stephane Eranian <eranian@google.com>
+> >
+> >
+> > Roberto Agostino Vitillo (3):
+> >   perf: add code to support PERF_SAMPLE_BRANCH_STACK
+> >   perf: add support for sampling taken branch to perf record
+> >   perf: add support for taken branch sampling to perf report
+> >
+> > Stephane Eranian (15):
+> >   perf: add generic taken branch sampling support
+> >   perf: add Intel LBR MSR definitions
+> >   perf: add Intel X86 LBR sharing logic
+> >   perf: sync branch stack sampling with X86 precise_sampling
+> >   perf: add LBR mappings for PERF_SAMPLE_BRANCH filters
+> >   perf: disable LBR support for older Intel Atom processors
+> >   perf: implement PERF_SAMPLE_BRANCH for Intel X86
+> >   perf: add LBR software filter support for Intel X86
+> >   perf: disable PERF_SAMPLE_BRANCH_* when not supported
+> >   perf: add hook to flush branch_stack on context switch
+> >   perf: fix endianness detection in perf.data
+> >   perf: add ABI reference sizes
+> >   perf: enable reading of perf.data files from different ABI rev
+> >   perf: fix bug print_event_desc()
+> >   perf: make perf able to read file from older ABIs
+> >
+> >  arch/alpha/kernel/perf_event.c             |    4 +
+> >  arch/arm/kernel/perf_event.c               |    4 +
+> >  arch/mips/kernel/perf_event_mipsxx.c       |    4 +
+> >  arch/powerpc/kernel/perf_event.c           |    4 +
+> >  arch/sh/kernel/perf_event.c                |    4 +
+> >  arch/sparc/kernel/perf_event.c             |    4 +
+> >  arch/x86/include/asm/msr-index.h           |    7 +
+> >  arch/x86/kernel/cpu/perf_event.c           |   47 ++-
+> >  arch/x86/kernel/cpu/perf_event.h           |   19 +
+> >  arch/x86/kernel/cpu/perf_event_amd.c       |    3 +
+> >  arch/x86/kernel/cpu/perf_event_intel.c     |  120 +++++--
+> >  arch/x86/kernel/cpu/perf_event_intel_ds.c  |   22 +-
+> >  arch/x86/kernel/cpu/perf_event_intel_lbr.c |  532 ++++++++++++++++++++++++++--
+> >  include/linux/perf_event.h                 |   82 ++++-
+> >  kernel/events/core.c                       |  177 +++++++++
+> >  kernel/events/hw_breakpoint.c              |    6 +
+> >  tools/perf/Documentation/perf-record.txt   |   25 ++
+> >  tools/perf/Documentation/perf-report.txt   |    7 +
+> >  tools/perf/builtin-record.c                |   74 ++++
+> >  tools/perf/builtin-report.c                |   98 +++++-
+> >  tools/perf/perf.h                          |   18 +
+> >  tools/perf/util/annotate.c                 |    2 +-
+> >  tools/perf/util/event.h                    |    1 +
+> >  tools/perf/util/evsel.c                    |   14 +
+> >  tools/perf/util/header.c                   |  231 +++++++++++--
+> >  tools/perf/util/hist.c                     |   93 ++++-
+> >  tools/perf/util/hist.h                     |    7 +
+> >  tools/perf/util/session.c                  |   72 ++++
+> >  tools/perf/util/session.h                  |    4 +
+> >  tools/perf/util/sort.c                     |  362 ++++++++++++++-----
+> >  tools/perf/util/sort.h                     |    5 +
+> >  tools/perf/util/symbol.h                   |   13 +
+> >  32 files changed, 1835 insertions(+), 230 deletions(-)
+> >
+>
+>
+> --
+> Anshuman Khandual
+> Linux Technology Centre
+> IBM Systems and Technology Group
+>
