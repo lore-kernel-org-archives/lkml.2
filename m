@@ -1,105 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab2A3HX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 02:23:29 -0500
-Received: from mga03.intel.com ([143.182.124.21]:42195 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab2A3HX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 02:23:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101018329"
-Subject: Re: Bad SSD performance with recent kernels
-From: Shaohua Li <shaohua.li@intel.com>
-To: Herbert Poetzl <herbert@13thfloor.at>
-Cc: Wu Fengguang <wfg@linux.intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-In-Reply-To: <20120130071346.GM29272@MAIL.13thfloor.at>
-References: <20120127060034.GG29272@MAIL.13thfloor.at>
-	 <20120128125108.GA9661@localhost> <1327757611.7199.6.camel@edumazet-laptop>
-	 <20120129055917.GB8513@localhost>
-	 <1327831380.14602.6.camel@edumazet-laptop>
-	 <20120129111645.GA5839@localhost> <1327842831.2718.2.camel@edumazet-laptop>
-	 <20120129161058.GA13156@localhost>
-	 <CANejiEW86b7btiOcVFF3qVhqU1t6FRosvgfiydWwU5zgeDFOqw@mail.gmail.com>
-	 <20120130071346.GM29272@MAIL.13thfloor.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 Jan 2012 15:22:38 +0800
-Message-ID: <1327908158.21268.3.camel@sli10-conroe>
+	id S1753233Ab2A3HZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 02:25:39 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40646 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab2A3HZi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 02:25:38 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 30 Jan 2012 16:24:13 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Peng Haitao <penght@cn.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: how to make memory.memsw.failcnt is nonzero
+Message-Id: <20120130162413.2c82893e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4F2604C5.7050900@cn.fujitsu.com>
+References: <4EFADFF8.5020703@cn.fujitsu.com>
+	<20120103160411.GD3891@tiehlicka.suse.cz>
+	<4F06C31E.4010904@cn.fujitsu.com>
+	<20120106101219.GB10292@tiehlicka.suse.cz>
+	<4F2604C5.7050900@cn.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 08:13 +0100, Herbert Poetzl wrote:
-> On Mon, Jan 30, 2012 at 11:17:38AM +0800, Shaohua Li wrote:
-> > 2012/1/30 Wu Fengguang <wfg@linux.intel.com>:
-> >> On Sun, Jan 29, 2012 at 02:13:51PM +0100, Eric Dumazet wrote:
-> >>> Le dimanche 29 janvier 2012 à 19:16 +0800, Wu Fengguang a écrit :
+On Mon, 30 Jan 2012 10:47:33 +0800
+Peng Haitao <penght@cn.fujitsu.com> wrote:
+
 > 
+> Michal Hocko said the following on 2012-1-6 18:12:
+> >> If there is something wrong, I think the bug will be in mem_cgroup_do_charge()
+> >> of mm/memcontrol.c
+> >>
+> >> 2210         ret = res_counter_charge(&memcg->res, csize, &fail_res);
+> >> 2211 
+> >> 2212         if (likely(!ret)) {
+> ...
+> >> 2221                 flags |= MEM_CGROUP_RECLAIM_NOSWAP;
+> >> 2222         } else
+> >> 2223                 mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+> >>
+> >> When hit memory.limit_in_bytes, res_counter_charge() will return -ENOMEM,
+> >> this will execute line 2222: } else.
+> >> But I think when hit memory.limit_in_bytes, the function should determine further
+> >> to memory.memsw.limit_in_bytes.
+> >> This think is OK?
+> > 
+> > I don't think so. We have an invariant (hard limit is "stronger" than
+> > memsw limit) memory.limit_in_bytes <= memory.memsw.limit_in_bytes so
+> > when we hit the hard limit we do not have to consider memsw because
+> > resource counter:
+> >  a) we already have to do reclaim for hard limit
+> >  b) we check whether we might swap out later on in
+> >  mem_cgroup_hierarchical_reclaim (root_memcg->memsw_is_minimum) so we
+> >  will not end up swapping just to make hard limit ok and go over memsw
+> >  limit.
+> > 
+> > Please also note that we will retry charging after reclaim if there is a
+> > chance to meet the limit.
+> > Makes sense?
 > 
-> >>>> Note that as long as buffered read(2) is used, it makes almost no
-> >>>> difference (well, at least for now) to do "dd bs=128k" or "dd bs=2MB":
-> >>>> the 128kb readahead size will be used underneath to submit read IO.
+> Yeah.
 > 
+> But I want to test memory.memsw.failcnt is nonzero, how steps?
+> Thanks.
 > 
-> >>> Hmm...
-> 
-> >>> # echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=128k count=32768
-> >>> 32768+0 enregistrements lus
-> >>> 32768+0 enregistrements écrits
-> >>> 4294967296 octets (4,3 GB) copiés, 20,7718 s, 207 MB/s
-> 
-> 
-> >>> # echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=2M count=2048
-> >>> 2048+0 enregistrements lus
-> >>> 2048+0 enregistrements écrits
-> >>> 4294967296 octets (4,3 GB) copiés, 27,7824 s, 155 MB/s
-> 
-> >> Interesting. Here are my test results:
-> 
-> >> root@lkp-nex04 /home/wfg# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=128k count=32768
-> >> 32768+0 records in
-> >> 32768+0 records out
-> >> 4294967296 bytes (4.3 GB) copied, 19.0121 s, 226 MB/s
-> >> root@lkp-nex04 /home/wfg# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=2M count=2048
-> >> 2048+0 records in
-> >> 2048+0 records out
-> >> 4294967296 bytes (4.3 GB) copied, 19.0214 s, 226 MB/s
-> 
-> >> Maybe the /dev/sda performance bug on your machine is sensitive to timing?
-> > I got similar result:
-> > 128k: 224M/s
-> > 1M: 182M/s
-> 
-> > 1M block size is slow, I guess it's CPU related.
-> 
-> > And as for the big regression with newer kernel than 2.6.38,
-> > please check if idle=poll helps. CPU idle dramatically impacts
-> > disk performance and even latest cpuidle governor doesn't help
-> > for some CPUs.
-> 
-> here are the tests with idle=poll and after switching to 128k
-> (instead of 1M) blocksize (same amount of data transferred)
-> 
-> kernel    ------------ read /dev/sda -------------
->           --- noop ---  - deadline -  ---- cfs ---
->           [MB/s]  %CPU  [MB/s]  %CPU  [MB/s]  %CPU
-> --------------------------------------------------
-> 3.2.2      45.82   3.7   44.85   3.6   45.04   3.4
-> 3.2.2i     45.59   2.3   51.78   2.6   46.03   2.2
-> 3.2.2i128 250.24  20.9  252.68  21.3  250.00  21.6
-> 
-> kernel    -- write ---  ------------------read -----------------
->           --- noop ---  --- noop ---  - deadline -  ---- cfs ---
->           [MB/s]  %CPU  [MB/s]  %CPU  [MB/s]  %CPU  [MB/s]  %CPU
-> ----------------------------------------------------------------
-> 3.2.2     270.95  42.6  162.36   9.9  162.63   9.9  162.65  10.1
-> 3.2.2i    269.10  41.4  170.82   6.6  171.20   6.6  170.91   6.7
-> 3.2.2i128 270.38  67.7  162.35  10.2  163.01  10.3  162.34  10.7
-What's 3.2.2i and 3.2.2i128? does idle=poll help?
+
+Here is a quick hacked test program. see below.
+
+A rough test.
+
+[root@bluextal memcg_test]# cgcreate -g memory:X
+[root@bluextal memcg_test]# cgset -r memory.limit_in_bytes=200M X
+[root@bluextal memcg_test]# cgset -r memory.memsw.limit_in_bytes=300M X
+[root@bluextal memcg_test]# cgexec -g memory:X ./check 200 300
+[root@bluextal memcg_test]# echo 0 > /cgroup/memory/X/memory.memsw.failcnt
+[root@bluextal memcg_test]# cat /cgroup/memory/X/memory.memsw.failcnt
+0
+[root@bluextal memcg_test]# cgexec -g memory:X ./check 200 300
+Killed <-----------------------------------------------------------------------OOM Killed.
+[root@bluextal memcg_test]# cat /cgroup/memory/X/memory.memsw.failcnt
+17     <-----------------------------------------------------------------------memsw failcnt up.
+
+
+Easy way is
+1. allocate memory in Anon.
+2. kick out anon memory to swap as much as possible by file I/O.-------(*1)
+3. delete file cache by some way (I used unlink() here.) --------------(*2)
+4. allocate anon memory.
+
+The important points are (*1) and (*2). see a program below.
+
+You can prevent OOM (freeze-at-oom) by
+[root@bluextal memcg_test]# cgset -r memory.oom_control=1 X
+
+Here is the memory.stat at OOM.
+
+[root@bluextal test]# cat /cgroup/memory/X/memory.stat
+cache 0
+rss 209666048
+mapped_file 0
+pgpgin 30567
+pgpgout 72381
+swap 104906752
+<snip>
+hierarchical_memory_limit 209715200
+hierarchical_memsw_limit 314572800
+
+rss+cache < memory.limit
+rss+swap == memsw.limit.
+
+
+
+
+
+==
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <string.h>
+
+int main(int argc, char *argv[])
+{
+        char filename[] = "./tmpfile-for-test";
+        unsigned long mem_size = atoi(argv[1]);
+        unsigned long memsw_size = atoi(argv[2]);
+        unsigned long file_size;
+        int fd, len;
+        char *addr, *buf;
+
+        if (memsw_size < 100)
+                return 0;
+        mem_size *= 1024 * 1024;
+        memsw_size *= 1024 * 1024;
+
+        memsw_size = memsw_size - 10 * 1024 * 1024; /* 10M Bytes of margin */
+        addr = mmap(NULL, memsw_size, PROT_READ|PROT_WRITE,
+                        MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+
+        /* allocate pages and cause swap out */
+        memset(addr, 0, memsw_size);
+
+        /* create file, this will make more swaps. */
+        file_size = mem_size * 80 / 100;
+
+        fd = open(filename, O_RDWR| O_TRUNC, 0644);
+
+        buf = malloc(1024 *1024);
+
+        for (len = 0; len < file_size; len += 1024*1024) {
+                write(fd, buf, 1024*1024);
+        }
+        /* read the file again */
+        lseek(fd, SEEK_SET, 0);
+        for (len = 0; len < file_size; len += 1024 * 1024)
+                read(fd, buf, 1024 * 1024);
+        lseek(fd, SEEK_SET, 0);
+        for (len = 0; len < file_size; len += 1024 * 1024)
+                read(fd, buf, 1024 * 1024);
+        unlink(filename);
+
+        addr = malloc(9 * 1024 * 1024);
+        memset(addr, 0, 9 * 1024 * 1024);
+        printf("done\n");
+        sleep(100);
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
