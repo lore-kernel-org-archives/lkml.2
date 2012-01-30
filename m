@@ -1,180 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab2A3FYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 00:24:53 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:47228 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751663Ab2A3FYw (ORCPT
+	id S1752742Ab2A3FcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 00:32:06 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33759 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab2A3FcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 00:24:52 -0500
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+sS7ATaY+s9/233I2st6C+U+1uvMKKoiCBowKzas
-	0J/lH0jpOvkJDZ
-Message-ID: <4F262998.4090207@gmx.de>
-Date: Mon, 30 Jan 2012 05:24:40 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Imre Deak <imre.deak@nokia.com>,
-        Roger Quadros <roger.quadros@nokia.com>,
-        Steve Sakoman <steve@sakoman.com>, Erik Gilling <konkers@android.com>,
-        Gra Ignotas <notasas@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] video: convert drivers/video/* to use module_spi_driver()
-References: <1327651374.7772.1.camel@phoenix>
-In-Reply-To: <1327651374.7772.1.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 30 Jan 2012 00:32:04 -0500
+Message-ID: <1327901519.2891.4.camel@edumazet-laptop>
+Subject: Re: Bad SSD performance with recent kernels
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Wu Fengguang <wfg@linux.intel.com>, Herbert Poetzl <herbert@13thfloor.at>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Date: Mon, 30 Jan 2012 06:31:59 +0100
+In-Reply-To: <CANejiEW86b7btiOcVFF3qVhqU1t6FRosvgfiydWwU5zgeDFOqw@mail.gmail.com>
+References: <20120127060034.GG29272@MAIL.13thfloor.at>
+	 <20120128125108.GA9661@localhost> <1327757611.7199.6.camel@edumazet-laptop>
+	 <20120129055917.GB8513@localhost>
+	 <1327831380.14602.6.camel@edumazet-laptop>
+	 <20120129111645.GA5839@localhost> <1327842831.2718.2.camel@edumazet-laptop>
+	 <20120129161058.GA13156@localhost>
+	 <CANejiEW86b7btiOcVFF3qVhqU1t6FRosvgfiydWwU5zgeDFOqw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2012 08:02 AM, Axel Lin wrote:
-> This patch converts the drivers in drivers/video/* to use the
-> module_spi_driver() macro which makes the code smaller and a bit simpler.
+Le lundi 30 janvier 2012 à 11:17 +0800, Shaohua Li a écrit :
+
+> 1M block size is slow, I guess it's CPU related.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Cc: Imre Deak <imre.deak@nokia.com>
-> Cc: Roger Quadros <roger.quadros@nokia.com>
-> Cc: Steve Sakoman <steve@sakoman.com>
-> Cc: Erik Gilling <konkers@android.com>
-> Cc: Gražvydas Ignotas <notasas@gmail.com>
-
-Applied.
-
-
-Thanks,
-
-Florian Tobias Schandinat
-
-> ---
->  drivers/video/omap/lcd_mipid.c                     |   14 +-------------
->  drivers/video/omap2/displays/panel-acx565akm.c     |   13 +------------
->  .../omap2/displays/panel-lgphilips-lb035q02.c      |   12 +-----------
->  .../omap2/displays/panel-nec-nl8048hl11-01b.c      |   12 +-----------
->  .../video/omap2/displays/panel-tpo-td043mtea1.c    |   13 +------------
->  5 files changed, 5 insertions(+), 59 deletions(-)
+> And as for the big regression with newer kernel than 2.6.38, please
+> check if idle=poll
+> helps. CPU idle dramatically impacts disk performance and even latest
+> cpuidle governor
+> doesn't help for some CPUs.
 > 
-> diff --git a/drivers/video/omap/lcd_mipid.c b/drivers/video/omap/lcd_mipid.c
-> index 8d546dd..e3880c4 100644
-> --- a/drivers/video/omap/lcd_mipid.c
-> +++ b/drivers/video/omap/lcd_mipid.c
-> @@ -609,19 +609,7 @@ static struct spi_driver mipid_spi_driver = {
->  	.remove	= __devexit_p(mipid_spi_remove),
->  };
->  
-> -static int __init mipid_drv_init(void)
-> -{
-> -	spi_register_driver(&mipid_spi_driver);
-> -
-> -	return 0;
-> -}
-> -module_init(mipid_drv_init);
-> -
-> -static void __exit mipid_drv_cleanup(void)
-> -{
-> -	spi_unregister_driver(&mipid_spi_driver);
-> -}
-> -module_exit(mipid_drv_cleanup);
-> +module_spi_driver(mipid_spi_driver);
->  
->  MODULE_DESCRIPTION("MIPI display driver");
->  MODULE_LICENSE("GPL");
-> diff --git a/drivers/video/omap2/displays/panel-acx565akm.c b/drivers/video/omap2/displays/panel-acx565akm.c
-> index 51a87e1..d26f37a 100644
-> --- a/drivers/video/omap2/displays/panel-acx565akm.c
-> +++ b/drivers/video/omap2/displays/panel-acx565akm.c
-> @@ -809,18 +809,7 @@ static struct spi_driver acx565akm_spi_driver = {
->  	.remove	= __devexit_p(acx565akm_spi_remove),
->  };
->  
-> -static int __init acx565akm_init(void)
-> -{
-> -	return spi_register_driver(&acx565akm_spi_driver);
-> -}
-> -
-> -static void __exit acx565akm_exit(void)
-> -{
-> -	spi_unregister_driver(&acx565akm_spi_driver);
-> -}
-> -
-> -module_init(acx565akm_init);
-> -module_exit(acx565akm_exit);
-> +module_spi_driver(acx565akm_spi_driver);
->  
->  MODULE_AUTHOR("Nokia Corporation");
->  MODULE_DESCRIPTION("acx565akm LCD Driver");
-> diff --git a/drivers/video/omap2/displays/panel-lgphilips-lb035q02.c b/drivers/video/omap2/displays/panel-lgphilips-lb035q02.c
-> index e0eb35b..0841cc2 100644
-> --- a/drivers/video/omap2/displays/panel-lgphilips-lb035q02.c
-> +++ b/drivers/video/omap2/displays/panel-lgphilips-lb035q02.c
-> @@ -264,16 +264,6 @@ static struct spi_driver lb035q02_spi_driver = {
->  	.remove		= __devexit_p(lb035q02_panel_spi_remove),
->  };
->  
-> -static int __init lb035q02_panel_drv_init(void)
-> -{
-> -	return spi_register_driver(&lb035q02_spi_driver);
-> -}
-> -
-> -static void __exit lb035q02_panel_drv_exit(void)
-> -{
-> -	spi_unregister_driver(&lb035q02_spi_driver);
-> -}
-> +module_spi_driver(lb035q02_spi_driver);
->  
-> -module_init(lb035q02_panel_drv_init);
-> -module_exit(lb035q02_panel_drv_exit);
->  MODULE_LICENSE("GPL");
-> diff --git a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-> index 0eb31ca..8b38b39 100644
-> --- a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-> +++ b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-> @@ -350,18 +350,8 @@ static struct spi_driver nec_8048_spi_driver = {
->  	},
->  };
->  
-> -static int __init nec_8048_lcd_init(void)
-> -{
-> -	return spi_register_driver(&nec_8048_spi_driver);
-> -}
-> -
-> -static void __exit nec_8048_lcd_exit(void)
-> -{
-> -	return spi_unregister_driver(&nec_8048_spi_driver);
-> -}
-> +module_spi_driver(nec_8048_spi_driver);
->  
-> -module_init(nec_8048_lcd_init);
-> -module_exit(nec_8048_lcd_exit);
->  MODULE_AUTHOR("Erik Gilling <konkers@android.com>");
->  MODULE_DESCRIPTION("NEC-nl8048hl11-01b Driver");
->  MODULE_LICENSE("GPL");
-> diff --git a/drivers/video/omap2/displays/panel-tpo-td043mtea1.c b/drivers/video/omap2/displays/panel-tpo-td043mtea1.c
-> index e6649aa..1d6b7fb 100644
-> --- a/drivers/video/omap2/displays/panel-tpo-td043mtea1.c
-> +++ b/drivers/video/omap2/displays/panel-tpo-td043mtea1.c
-> @@ -518,18 +518,7 @@ static struct spi_driver tpo_td043_spi_driver = {
->  	.remove	= __devexit_p(tpo_td043_spi_remove),
->  };
->  
-> -static int __init tpo_td043_init(void)
-> -{
-> -	return spi_register_driver(&tpo_td043_spi_driver);
-> -}
-> -
-> -static void __exit tpo_td043_exit(void)
-> -{
-> -	spi_unregister_driver(&tpo_td043_spi_driver);
-> -}
-> -
-> -module_init(tpo_td043_init);
-> -module_exit(tpo_td043_exit);
-> +module_spi_driver(tpo_td043_spi_driver);
->  
->  MODULE_AUTHOR("Gražvydas Ignotas <notasas@gmail.com>");
->  MODULE_DESCRIPTION("TPO TD043MTEA1 LCD Driver");
+
+No change with idle=poll
+
+# echo 3 >/proc/sys/vm/drop_caches ;perf record dd if=/dev/sda
+of=/dev/null bs=2M count=2048
+2048+0 enregistrements lus
+2048+0 enregistrements écrits
+4294967296 octets (4,3 GB) copiés, 27,6942 s, 155 MB/s
+[ perf record: Woken up 3 times to write data ]
+[ perf record: Captured and wrote 0.884 MB perf.data (~38630 samples) ]
+
+# perf report
+Events: 22K
+cycles                                                              
+ 40,14%  dd  [kernel.kallsyms]  [k] copy_user_generic_string
+  3,12%  dd  [kernel.kallsyms]  [k] native_read_tsc
+  3,00%  dd  [kernel.kallsyms]  [k] put_page
+  2,98%  dd  [kernel.kallsyms]  [k] iowrite8
+  2,04%  dd  [kernel.kallsyms]  [k] get_page_from_freelist
+  1,87%  dd  [kernel.kallsyms]  [k] delay_tsc
+  1,77%  dd  [kernel.kallsyms]  [k] kmem_cache_alloc
+  1,69%  dd  [kernel.kallsyms]  [k] __mem_cgroup_commit_charge
+  1,52%  dd  [kernel.kallsyms]  [k] submit_bh
+  1,38%  dd  [kernel.kallsyms]  [k] ioread8
+  1,32%  dd  [kernel.kallsyms]  [k] __rmqueue
+  1,29%  dd  [kernel.kallsyms]  [k] block_read_full_page
+  1,28%  dd  [kernel.kallsyms]  [k] __ticket_spin_lock
+  1,23%  dd  [kernel.kallsyms]  [k] __slab_alloc
+  1,15%  dd  [kernel.kallsyms]  [k] file_read_actor
+  0,85%  dd  [kernel.kallsyms]  [k] generic_make_request.part.51
+  0,84%  dd  [kernel.kallsyms]  [k] __alloc_pages_nodemask
+  0,82%  dd  [kernel.kallsyms]  [k] create_empty_buffers
+  0,81%  dd  [kernel.kallsyms]  [k] get_partial_node
+  0,81%  dd  [kernel.kallsyms]  [k] lookup_page_cgroup
+  0,78%  dd  [kernel.kallsyms]  [k] mem_cgroup_add_lru_list.part.45
+  0,72%  dd  [kernel.kallsyms]  [k] ____pagevec_lru_add_fn
+
+# echo 3 >/proc/sys/vm/drop_caches ;perf record dd if=/dev/sda
+of=/dev/null bs=1M count=4096
+4096+0 enregistrements lus
+4096+0 enregistrements écrits
+4294967296 octets (4,3 GB) copiés, 25,8117 s, 166 MB/s
+[ perf record: Woken up 3 times to write data ]
+[ perf record: Captured and wrote 0.810 MB perf.data (~35398 samples) ]
+
+# perf report
+Events: 20K
+cycles                                                              
+ 31,91%  dd  [kernel.kallsyms]  [k] copy_user_generic_string
+  3,87%  dd  [kernel.kallsyms]  [k] native_read_tsc
+  3,58%  dd  [kernel.kallsyms]  [k] iowrite8
+  2,43%  dd  [kernel.kallsyms]  [k] put_page
+  2,30%  dd  [kernel.kallsyms]  [k] delay_tsc
+  2,09%  dd  [kernel.kallsyms]  [k] get_page_from_freelist
+  1,96%  dd  [kernel.kallsyms]  [k] __mem_cgroup_commit_charge
+  1,79%  dd  [kernel.kallsyms]  [k] submit_bh
+  1,75%  dd  [kernel.kallsyms]  [k] kmem_cache_alloc
+  1,74%  dd  [kernel.kallsyms]  [k] ioread8
+  1,68%  dd  [kernel.kallsyms]  [k] block_read_full_page
+  1,62%  dd  [kernel.kallsyms]  [k] __ticket_spin_lock
+  1,38%  dd  [kernel.kallsyms]  [k] __rmqueue
+  1,12%  dd  [kernel.kallsyms]  [k] create_empty_buffers
+  1,08%  dd  [kernel.kallsyms]  [k] __slab_alloc
+  1,07%  dd  [kernel.kallsyms]  [k] file_read_actor
+  1,06%  dd  [kernel.kallsyms]  [k] generic_make_request.part.51
+  0,94%  dd  [kernel.kallsyms]  [k] lookup_page_cgroup
+  0,85%  dd  [kernel.kallsyms]  [k] __alloc_pages_nodemask
+  0,85%  dd  [kernel.kallsyms]  [k] find_get_page
+  0,83%  dd  [kernel.kallsyms]  [k] __lru_cache_add
+  0,81%  dd  [kernel.kallsyms]  [k] add_to_page_cache_locked.part.29
+
+
+# echo 3 >/proc/sys/vm/drop_caches ;perf record dd if=/dev/sda
+of=/dev/null bs=128k count=32768
+32768+0 enregistrements lus
+32768+0 enregistrements écrits
+4294967296 octets (4,3 GB) copiés, 19,6924 s, 218 MB/s
+[ perf record: Woken up 3 times to write data ]
+[ perf record: Captured and wrote 0.961 MB perf.data (~41992 samples) ]
+
+# perf report
+ 29,85%  dd  [kernel.kallsyms]  [k] copy_user_generic_string
+  2,61%  dd  [kernel.kallsyms]  [k] __mem_cgroup_commit_charge
+  2,53%  dd  [kernel.kallsyms]  [k] get_page_from_freelist
+  2,27%  dd  [kernel.kallsyms]  [k] block_read_full_page
+  1,99%  dd  [kernel.kallsyms]  [k] __ticket_spin_lock
+  1,81%  dd  [kernel.kallsyms]  [k] kmem_cache_alloc
+  1,65%  dd  [kernel.kallsyms]  [k] file_read_actor
+  1,60%  dd  [kernel.kallsyms]  [k] __rmqueue
+  1,58%  dd  [kernel.kallsyms]  [k] put_page
+  1,51%  dd  [kernel.kallsyms]  [k] submit_bh
+  1,37%  dd  [kernel.kallsyms]  [k] create_empty_buffers
+  1,30%  dd  [kernel.kallsyms]  [k] generic_make_request.part.51
+  1,09%  dd  [kernel.kallsyms]  [k] __alloc_pages_nodemask
+  1,06%  dd  [kernel.kallsyms]  [k] do_generic_file_read.constprop.35
+  1,01%  dd  [kernel.kallsyms]  [k] lookup_page_cgroup
+  1,00%  dd  [kernel.kallsyms]  [k] add_to_page_cache_locked.part.29
+  0,93%  dd  [kernel.kallsyms]  [k] find_get_page
+  0,92%  dd  [kernel.kallsyms]  [k] blk_rq_map_sg
+  0,92%  dd  [kernel.kallsyms]  [k] radix_tree_insert
+  0,89%  dd  [kernel.kallsyms]  [k] alloc_pages_current
+  0,88%  dd  [kernel.kallsyms]  [k] mem_cgroup_add_lru_list.part.45
+  0,88%  dd  [kernel.kallsyms]  [k] radix_tree_lookup_element
+
+
 
