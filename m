@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab2A3Qjo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 11:39:44 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:50480 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab2A3Qjn (ORCPT
+	id S1753916Ab2A3Qts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 11:49:48 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42313 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab2A3Qtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 11:39:43 -0500
-Date: Mon, 30 Jan 2012 11:39:25 -0500
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: checkpatch.pl: WxV false positive
-Message-ID: <20120130113925.5830f89d@v0nbox>
-In-Reply-To: <20120130111817.GA18810@localhost>
-References: <20120122214834.6414592c@lenov0n>
-	<20120130111817.GA18810@localhost>
-Organization: Savoir-faire Linux Inc.
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 30 Jan 2012 11:49:46 -0500
+Message-ID: <4F26D815.3040105@mvista.com>
+Date: Mon, 30 Jan 2012 20:49:09 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        James Morris <jmorris@namei.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Michael Witten <mfwitten@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 2/3] mips: use the the PCI controller's io_map_base
+References: <cover.1327877053.git.mst@redhat.com> <dd3dab360f11d4f8829854891d04bf838bc50e5e.1327877053.git.mst@redhat.com>
+In-Reply-To: <dd3dab360f11d4f8829854891d04bf838bc50e5e.1327877053.git.mst@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+Hello.
 
-On Mon, 30 Jan 2012 11:18:17 +0000,
-Andy Whitcroft <apw@canonical.com> wrote:
+On 01/30/2012 03:18 PM, Michael S. Tsirkin wrote:
 
-> On Sun, Jan 22, 2012 at 09:48:34PM -0500, Vivien Didelot wrote:
-> 
-> > In the code below, checkpatch thinks that the asterisk is a
-> > multiplication, so it is complaining about coding style.
-> > 
-> >     ERROR: need consistent spacing around '*' (ctx:WxV)
-> >     #304: FILE: x86/platform/ts5500/ts5500_adc.c:304:
-> >     +	.attrs = (struct attribute *[]) {
-> 
-> C types are the pits.  How does the version below handle for you:
-> 
->     http://people.canonical.com/~apw/checkpatch/checkpatch-next.pl
-> 
+> commit eab90291d35438bcebf7c3dc85be66d0f24e3002
 
-This version works for me!
+    Please add that commit's summary in parens.
 
-> Relative patch below.
-> 
-> -apw
-> 
-> commit f8a73045dcaac70f9be770cca06f21c762a13878
-> Author: Andy Whitcroft <apw@canonical.com>
-> Date:   Sun Jan 29 21:46:04 2012 +0000
-> 
->     checkpatch: add [] to type extensions
->     
->     Add [] to a type extensions.  Fixes false positives on:
->     
->         .attrs = (struct attribute *[]) {
->     
->     Signed-off-by: Andy Whitcroft <apw@canonical.com>
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index d1dd544..64de1bd 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -323,7 +323,7 @@ sub build_types {
->  		  }x;
->  	$Type	= qr{
->  			$NonptrType
-> -			(?:[\s\*]+\s*const|[\s\*]+|(?:\s*\[\s*\])+)?
-> +
-> (?:(?:\s|\*|\[\])+\s*const|(?:\s|\*|\[\])+|(?:\s*\[\s*\])+)?
-> (?:\s+$Inline|\s+$Modifier)* }x;
->  	$Declare	= qr{(?:$Storage\s+)?$Type};
+> failed to take into account the PCI controller's
+> io_map_base for mapping IO BARs.
+> This also caused a new warning on mips.
 
-Thanks,
-Vivien
+> Fix this, without re-introducing code duplication,
+> by setting NO_GENERIC_PCI_IOPORT_MAP
+> and supplying a mips-specific __pci_ioport_map.
 
--- 
-Vivien Didelot
-Savoir-faire Linux Inc.
-Tel: (514) 276-5468 #149
+> Reported-by: Kevin Cernekee <cernekee@gmail.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+WBR, Sergei
