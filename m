@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab2A3Pav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 10:30:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20989 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753753Ab2A3Par (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 10:30:47 -0500
-Date: Mon, 30 Jan 2012 10:30:09 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, david@fromorbit.com,
-        jack@suse.cz, zhu.yanhai@gmail.com, namhyung.kim@lge.com
-Subject: Re: [patch v2 0/8]block: An IOPS based ioscheduler
-Message-ID: <20120130153009.GB30245@redhat.com>
-References: <20120130070213.793690895@sli10-conroe.sh.intel.com>
+	id S1753883Ab2A3PbJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 10:31:09 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63009 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478Ab2A3PbG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 10:31:06 -0500
+Message-ID: <4F26B7B6.2080107@lwfinger.net>
+Date: Mon, 30 Jan 2012 09:31:02 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120130070213.793690895@sli10-conroe.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masanari Iida <standby24x7@gmail.com>
+CC: wlanfae@realtek.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] [trivial] net: Fix typo in rtl8192de/dm.c
+References: <1327930827-1719-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1327930827-1719-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 03:02:13PM +0800, Shaohua Li wrote:
-> An IOPS based I/O scheduler
-> 
-> Flash based storage has some different characteristics against rotate disk.
-> 1. no I/O seek.
-> 2. read and write I/O cost usually is much different.
-> 3. Time which a request takes depends on request size.
-> 4. High throughput and IOPS, low latency.
+On 01/30/2012 07:40 AM, Masanari Iida wrote:
+> Correct spelling "disconnet" to "disconnect" in
+> drivers/net/wireless/rtlwifi/rtl8192de/dm.c
+>
+> Signed-off-by: Masanari Iida<standby24x7@gmail.com>
+> ---
+>   drivers/net/wireless/rtlwifi/rtl8192de/dm.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
 
-Hi Shaohua,
+The patch is OK, but by convention, the subject should say "[PATCH] rtlwifi: 
+rtl8192dm: Fix typo in dm.c". By getting rtlwifi in it, searching the git log is 
+a lot easier.
 
-Last time we agreed that you will try to extend CFQ iops mode to take care
-of this case. I was wondering that if that idea is out of the window?
+Larry
 
-Also what's the real workload where this is going to benefit us. I had
-struggled to run something which drove constantly deep queue depths to
-get the fairness without idling.
+>
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/dm.c b/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
+> index 3cd0736..5087fe4 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
+> @@ -296,7 +296,7 @@ static void rtl92d_dm_find_minimum_rssi(struct ieee80211_hw *hw)
+>   		de_digtable.min_undecorated_pwdb_for_dm =
+>   		    rtlpriv->dm.UNDEC_SM_PWDB;
+>   		RT_TRACE(rtlpriv, COMP_BB_POWERSAVING, DBG_LOUD,
+> -			 ("AP Ext Port or disconnet PWDB = 0x%x\n",
+> +			 ("AP Ext Port or disconnect PWDB = 0x%x\n",
+>   			  de_digtable.min_undecorated_pwdb_for_dm));
+>   	}
+>
 
-Thanks
-Vivek
