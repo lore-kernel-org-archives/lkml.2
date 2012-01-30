@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab2A3Npp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 08:45:45 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39669 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753093Ab2A3Npo (ORCPT
+	id S1752912Ab2A3Nrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 08:47:48 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:62764 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269Ab2A3Nrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 08:45:44 -0500
-Date: Mon, 30 Jan 2012 13:45:42 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 1/3] regmap: Properly round reg_bytes and val_bytes
-Message-ID: <20120130134542.GH4882@opensource.wolfsonmicro.com>
-References: <1327677023-29310-1-git-send-email-w.sang@pengutronix.de>
- <20120127162837.GB18572@opensource.wolfsonmicro.com>
- <20120128011403.GA6669@pengutronix.de>
- <20120130132134.GB4882@opensource.wolfsonmicro.com>
- <20120130133529.GF15596@pengutronix.de>
+	Mon, 30 Jan 2012 08:47:47 -0500
+Date: Mon, 30 Jan 2012 16:49:18 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: ebiederm@xmission.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: sysctl: register only tables of sysctl files
+Message-ID: <20120130134918.GG3356@mwanda>
+References: <20120130133933.GA5926@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lrvsYIebpInmECXG"
+	protocol="application/pgp-signature"; boundary="Hy6Wd/+xmQCqA1QQ"
 Content-Disposition: inline
-In-Reply-To: <20120130133529.GF15596@pengutronix.de>
-X-Cookie: Condense soup, not books!
+In-Reply-To: <20120130133933.GA5926@elgon.mountain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4F269F83.008B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---lrvsYIebpInmECXG
+--Hy6Wd/+xmQCqA1QQ
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Mon, Jan 30, 2012 at 02:35:29PM +0100, Wolfram Sang wrote:
+On Mon, Jan 30, 2012 at 04:39:33PM +0300, Dan Carpenter wrote:
+> +       /* Register everything except a directory full of subdirectories */
+> +       if (nr_files || !nr_dirs) {
 
-> Understood. I'd think we will find a non-intrusive way when a more generic
-> format_x_y-function seems worthwhile.
+Crap... Forget about this.  For some reason I missed that his was an
+OR, not an AND.  Sorry for the noise.
 
-Probably either your suggestion of just storing the shifts in there will
-be it or it'll just turn out that there aren't actually enough odd
-formats to make it worth worrying about the hard coding.  I was making
-this decision before we had the cache or anything like that so was
-thinking about what made sense for facilitating the infrastructure work.
+regards,
+dan carpenter
 
---lrvsYIebpInmECXG
+
+--Hy6Wd/+xmQCqA1QQ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPJp7/AAoJEBus8iNuMP3dedAP/RusWokPIArxozPc8siwRslj
-85syTIpBuifJDZ/MvLtxGoqyuyJYX6bhTy0p7wYIHGp9MLydPK0igbI3HQEPYec/
-0WJyCL1A6gEZnkvLqMK59eSzaFFCNMA+F8t8wddKj6613IXagCAEJ54VaLz3Auw/
-9epWtqq5vMXR3Ueq7qhN4zDPIcE1sFE4RMld2ijXGXAsW/oLTDBG+94/7ul3agjo
-VBHjVF9jxLqvO45sCKkZ0c9yEPRe8hBG9bC7RBJRiv9pUxVrfVoHSeBMuyzbdXju
-rgrDUuv9PCoSV024LLxhmBrpv1fNq1poATr6e7g1Q3k+PMxIaoY//LczYSqMztiZ
-C6/k6AaxBrV1MNGbVXtZgix4FVgDhzwMKyuIPLsBlHcx47iRUee8KvgEi74XQaDC
-zzID6oFxtO94vukJPkWQwqBJcyqyzbL4JoaZ8IbLnliwdb8pHz5xp1bmQlwfU53R
-sevZRsaspS+40xbz8hBt6Yph9uMqOOqtn9vzjAjYvMcECMcY+DAviiyb6SIACR+G
-MGK5mdOPLFrM9d84lUBtr9J6MhdaeeqxY2ZXvgltXfA86m9nEgeiJgBjFpeu9jhf
-wgPoroBv1TitNS8MQukp0I9pD515loYvCFlbO52LeSIOQ4fAzKBE8+siTFmjAno5
-lgRWmpnTOk/2/pA3ZzV/
-=Fvat
+iQIcBAEBAgAGBQJPJp/dAAoJEOnZkXI/YHqRuGEP/R0aDozKsBnDX4nQb7TOxg1T
+qo9BSJp9ZKY1dYAMBPaU621/f//JOCHocKMWsgYtPCuJYgY1Y8x3GWRFFQEgRARW
+t0lVzvbUqcOS4BO1W4NU8eTz0Avk8a06yBSQd6DQ0ij3C59t1Ch/MTdRHmJ7MneG
+LoOdgS9YvZB8DutpBQFdmoh72t+AA8a/vl57Zzvx5/6k5g7KMEIGcyJeG2a2jk6+
+r2di1W1bi0rqAnHu0sUuwWmCfj8Tusbyp2MVrICKGyQhvrVUPLR7ubggOAo1dM3u
+yAHgSQg6nYEWddirEQBH2xgv7jIeuDl9deSl/wE+HcAr2U1ijg6Rz6CPvrKXvDLr
+W2qtI99hc7piIktoBb32dg/K5iR0sEXE65c5I7jl8ouwDwf+mysbZCb5BhoAjhcu
+gWhIrdAjYD2osJneCzyHKEQfm+g5+FFqs86ABG4SZT22H53kwvzWYIk7ka8niUsX
+8EVFPDe9b4Nu8CavCTBEvT30QkwC44j6XhzoOnhj/XXl6HFfiLatCg5sG3kI7d+v
+Tj82Rctlu03/W6Jlgd1TDnjV9zij42A52EpiZIGZQ7r2u0LBIHynFeoPP28oVUzi
+TB8dt3xY/2gobBXR3q7p46TFOmyjZWqKW+Af/CqpwYRxGAnXb83oyxIznW+kjs33
+STHTEPgb0riYvwOrVp2+
+=zu1c
 -----END PGP SIGNATURE-----
 
---lrvsYIebpInmECXG--
+--Hy6Wd/+xmQCqA1QQ--
