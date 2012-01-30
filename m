@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab2A3I6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 03:58:05 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:40448 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab2A3I6D (ORCPT
+	id S1751689Ab2A3I7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 03:59:09 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35112 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab2A3I7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 03:58:03 -0500
-Message-ID: <4F265B7E.6060806@atmel.com>
-Date: Mon, 30 Jan 2012 09:57:34 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: "Voss, Nikolaus" <N.Voss@weinmann.de>,
-        "'dedekind1@gmail.com'" <dedekind1@gmail.com>
-CC: "'linux-mtd@lists.infradead.org'" <linux-mtd@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mtd: atmel_nand: fix access to 16 bit NAND devices
-References: <201201251217.q0PCHmRe027024@gatekeeper.vosshq.de> <1327670996.26648.43.camel@sauron.fi.intel.com> <EF2E73589CA71846A15D0B2CDF79505D08AD3E5453@wm021.weinmann.com>
-In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D08AD3E5453@wm021.weinmann.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
+	Mon, 30 Jan 2012 03:59:07 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 30 Jan 2012 17:57:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Nebojsa Trpkovic <trx.lists@gmail.com>, minchan@kernel.org,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH] mm: implement WasActive page flag (for improving
+ cleancache)
+Message-Id: <20120130175730.de654d9c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <22f6781b-9cc4-4857-b3e1-e2d9f595f64d@default>
+References: <ea3b0850-dfe0-46db-9201-2bfef110848d@default>
+	<4F218D36.2060308@linux.vnet.ibm.com>
+	<9fcd06f5-360e-4542-9fbb-f8c7efb28cb6@default>
+	<20120126163150.31a8688f.akpm@linux-foundation.org>
+	<ccb76a4d-d453-4faa-93a9-d1ce015255c0@default>
+	<20120126171548.2c85dd44.akpm@linux-foundation.org>
+	<7198bfb3-1e32-40d3-8601-d88aed7aabd8@default>
+	<4F221AFE.6070108@redhat.com>
+	<22f6781b-9cc4-4857-b3e1-e2d9f595f64d@default>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 08:57 AM, Voss, Nikolaus :
-> Artem Bityutskiy wrote on 2012-01-27:
->> On Wed, 2012-01-18 at 10:16 +0100, Nikolaus Voss wrote:
->>> commit fb5427508abbd635e877fabdf55795488119c2d6 optimizes PIO
->>> NAND accesses by using IO memcpy instead of IO read/write
->>> repeated functions.
->>>
->>> This breaks access to 16 bit NAND devices as memcpy_fromio()/toio()
->>> _always_ use byte accesses (see arch/arm/kernel/io.c), so with
->>> 16 bit NAND, one byte gets lost per NAND access cycle and NAND
->>> address count is wrong.
->>>
->>> Using memcpy() instead of the IO memcpy functions fixes this, but
->>> depends on correct word alignment of the buffer and length has to
->>> be a multiple of four, otherwise it might issue byte accesses and
->>> possibly break 16 bit NAND access (cf arch/arm/lib/copy_template.S).
->>>
->>> Memcpy variants seem to be the wrong approach here, since the
->>> NAND controller doesn't make the NAND appear as truely randomly
->>> accessible memory (as opposed to the DRAM controller which does
->>> exactly that).
->>>
->>> So, my proposal is to use 32 bit IO read/write (and let SMC
->>> map it to 8 bit or 16 bit NAND accesses) and account for
->>> length % 4 > 0 with two additional IO read/writes.
->>>
->>> Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
->>
->> Why not to revert fb5427508abbd635e877fabdf55795488119c2d6 instead, it
->> is in my opinion a bit more readable?
+On Thu, 26 Jan 2012 21:15:16 -0800 (PST)
+Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+
+> > From: Rik van Riel [mailto:riel@redhat.com]
+> > Subject: Re: [PATCH] mm: implement WasActive page flag (for improving cleancache)
+> > 
+> > On 01/26/2012 09:43 PM, Dan Magenheimer wrote:
+> > 
+> > > Maybe the Active page bit could be overloaded with some minor
+> > > rewriting?  IOW, perhaps the Active bit could be ignored when
+> > > the page is moved to the inactive LRU?  (Confusing I know, but I am
+> > > just brainstorming...)
+> > 
+> > The PG_referenced bit is already overloaded.  We keep
+> > the bit set when we move a page from the active to the
+> > inactive list, so a page that was previously active
+> > only needs to be referenced once to become active again.
+> > 
+> > The LRU bits (PG_lru, PG_active, etc) are needed to
+> > figure out which LRU list the page is on.  I don't
+> > think we can overload those...
 > 
-> No objections. I've tried to save the idea of
-> fb5427508abbd635e877fabdf55795488119c2d6 but that length % 4 > 0 stuff
-> uglifies it a little bit...
+> I suspected that was true, but was just brainstorming.
+> Thanks for confirming.
+> 
+> Are there any other page bits that are dont-care when
+> a page is on an LRU list?
+> 
+> I'd also be interested in your/RedHat's opinion on the
+> 64-bit vs 32-bit market.  Will RHEL7 even support 32-bit?
+> 
 
-After double checking with designers, I must admit that I misunderstood
-the way of optimizing accesses to SMC. 16 bit nand is not so common
-those days...
+How about replacing PG_slab ? 
 
-So yes, Nikolaus your correction makes sense.
+I think  PageSlab(page) be implemented as
 
-What I would have liked is to optimize the possibility to trigger
-incremental bursts from the processor to the SMC on internal bus. I
-suspect that this will need further investigation (moreover, note that
-if we use assembly code, we should also think about AVR32).
+#define SLABMAGIC		(some value)
+#define PageSlab(page)		(page->mapping == SLABMAGIC) 
 
-In conclusion, maybe simply reverting the initial commit will allow us
-to rework this part of code from simpler basis.
+or some...
 
-Artem, do you want me to prepare a patch for reverting initial commit or
-you just need my "Acked-by" (feel free to add though)?
+Thanks,
+-Kame
 
-Best regards,
--- 
-Nicolas Ferre
