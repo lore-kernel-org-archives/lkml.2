@@ -1,191 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab2A3QAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 11:00:23 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57980 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab2A3QAT convert rfc822-to-8bit (ORCPT
+	id S1753954Ab2A3QAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 11:00:52 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:63812 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402Ab2A3QAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 11:00:19 -0500
+	Mon, 30 Jan 2012 11:00:50 -0500
+Date: Mon, 30 Jan 2012 10:58:16 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: shemminger@vyatta.com, netdev@vger.kernel.org, davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org
+Subject: Regression in skge that started around acb42a3 (so past v3.3-rc1)
+Message-ID: <20120130155816.GA1400@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <1327718971-9598-10-git-send-email-yinghai@kernel.org>
-References: <1327718971-9598-1-git-send-email-yinghai@kernel.org> <1327718971-9598-10-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 30 Jan 2012 07:59:57 -0800
-Message-ID: <CAErSpo5QYvx6dtL4NqW4Pu29HXbS-kcTq-GKvpJO8AJ6vRYeBw@mail.gmail.com>
-Subject: Re: [PATCH 09/13] PCI: Probe safe range that we can use for
- unassigned bridge.
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F26BEAF.00DE,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 6:49 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> Try to allocate from parent bus busn_res. if can not find any big enough, will try
-> to extend parent bus top. even the extending is through allocating, after allocating
-> will pad the range to parent buses top.
->
-> When extending happens, We will record the parent_res, so could use it as stopper
-> for really extend/shrink top later.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/probe.c |  117 +++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 117 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 3e62f45..83df3fb 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -674,6 +674,123 @@ static void __devinit pci_bus_shrink_top(struct pci_bus *parent,
->        }
->  }
->
-> +static resource_size_t __devinit find_res_top_free_size(struct resource *res)
+I hadn't done any git bisection yet, but with acb42a3 I started getting this:
 
-I think what this does is "find the largest available area in 'res'."
-That *sounds* sort of useful (and like something that could go
-somewhere more generic than drivers/pci/probe.c), but there's no
-locking, so we don't have any assurance that the area we find will
-*remain* available.
+(and only on i686 - x86_64 does not show these):
 
-Since the caller should deal with failure anyway (if the largest
-available area is no longer available by the time it gets around to
-allocating it), it seems like it'd be better to fold this into the
-caller somehow.
+(This is with Xen, the other one is without)
+[   28.602121] eth2: no IPv6 routers present
+[   70.457712] eth2: hw csum failure.
+[   70.458695] Pid: 0, comm: swapper/0 Not tainted 3.3.0-rc1-00287-gacb42a3 #1
+[   70.
+[   70.458695]  [<c140942b>] __skb_checksum_complete+0xb/0x10
+[   70.458695]  [<c148e3b0>] nf_ip_checksum+0x60/0x120
+[   70.458695]  [<c143ee6b>] udp_error+0xbb/0x1f0
+[   70.458695]  [<c103c1e4>] ? check_events+0x8/0xc
+[   70.458695]  [<c103c1db>] ? xen_restore_fl_direct_reloc+0x4/0x4
+[   70.458695]  [<c11497ee>] ? put_cpu_partial+0x9e/0xb0
+[   70.458695]  [<c143edb0>] ? udp_pkt_to_tuple+0x60/0x60
+[   70.458695]  [<c143a2b6>] nf_conntrack_in+0xc6/0x5c0
+[   70.458695]  [<c14751f8>] ? __udp4_lib_rcv+0x428/0x630
+[   70.458695]  [<c1149dd0>] ? kfree+0xf0/0x120
+[   70.458695]  [<c1405b60>] ? skb_release_data+0x90/0xb0
+[   70.458695]  [<c1405b60>] ? skb_release_data+0x90/0xb0
+[   70.458695]  [<c14057d8>] ? __kfree_skb+0x38/0x90
+[   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
+[   70.458695]  [<c148f41e>] ipv4_conntrack_in+0x1e/0x30
+[   70.458695]  [<c14360d3>] nf_iterate+0x63/0x90
+[   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
+[   70.458695]  [<c1436292>] nf_hook_slow+0x62/0x140
+[   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
+[   70.458695]  [<c144dbb5>] ip_rcv+0x235/0x310
+[   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
+[   70.458695]  [<c1412c36>] __netif_receive_skb+0x1d6/0x550
+[   70.458695]  [<c147c6a9>] ? inet_gro_receive+0x59/0x1f0
+[   70.458695]  [<c1413312>] netif_receive_skb+0x22/0x90
+[   70.458695]  [<c1413487>] napi_skb_finish+0x37/0x50
+[   70.458695]  [<c14139e3>] napi_gro_receive+0xe3/0xf0
+[   70.458695]  [<c12ff4c0>] ? xen_swiotlb_map_sg+0x20/0x20
+[   70.458695]  [<c12ff4d9>] ? xen_swiotlb_unmap_page+0x19/0x20
+[   70.458695]  [<f7983d6c>] skge_poll+0x34c/0x6f4 [skge]
+[   70.458695]  [<c141431a>] net_rx_action+0xfa/0x2a0
+[   70.458695]  [<c107cecf>] __do_softirq+0x9f/0x210
+[   70.458695]  [<c107ce30>] ? irq_exit+0xd0/0xd0
+[   70.458695]  <IRQ>  [<c107ce15>] ? irq_exit+0xb5/0xd0
+[   70.458695]  [<c12f4ac0>] ? xen_evtchn_do_upcall+0x20/0x30
+[   70.458695]  [<c153b157>] ? xen_do_upcall+0x7/0xc
+[   70.458695]  [<c10023a7>] ? hypercall_page+0x3a7/0x1000
+[   70.458695]  [<c103b802>] ? xen_safe_halt+0x12/0x20
+[   70.458695]  [<c104c53d>] ? default_idle+0xfd/0x200
+[   70.458695]  [<c103c1db>] ? xen_restore_fl_direct_reloc+0x4/0x4
+[   70.458695]  [<c1043fd8>] ? cpu_idle+0xa8/0xf0
+[   70.458695]  [<c151658b>] ? rest_init+0x7b/0x80
+[   70.458695]  [<c16f886d>] ? start_kernel+0x348/0x34e
+[   70.458695]  [<c16f834f>] ? kernel_init+0x149/0x149
+[   70.458695]  [<c16f80ba>] ? i386_start_kernel+0xa9/0xb0
+[   70.458695]  [<c16fb3b1>] ? xen_start_kernel+0x5f2/0x5fa
+[   70.458695]  [<c1409076>] ? memcpy_fromiovecend+0x76/0x80
+^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G^G failed.
+[FAILED]
 
-> +{
-> +       int ret = -ENOMEM;
-> +       resource_size_t n_size;
-> +       struct resource tmp_res;
-> +
-> +       /*
-> +        *   find out number below res->end, that we can use at first
-> +        *      res->start can not be used.
-> +        */
-> +       n_size = resource_size(res) - 1;
-> +       memset(&tmp_res, 0, sizeof(struct resource));
-> +       while (n_size > 0) {
-> +               ret = allocate_resource(res, &tmp_res, n_size,
-> +                       res->end - n_size + 1, res->end,
-> +                       1, NULL, NULL);
-> +               if (ret == 0) {
-> +                       /* release busn_res */
+which now look like this:
 
-Comments like this that repeat exactly what the next line of code does
-without adding any useful information are unnecessary and distracting.
+[  288.735236] IP: [<c127b1aa>] memcpy+0x1a/0x0a4f001 *pde = 0000000000000000 
+[  288.735236] Oops: 0000 [#1] PREEMPT SMP 
+[  288.751724] Modules linked in: dm_multipath dm_mod iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi libcrc32c crc32c sg sd_mod ata_generic sata_nv nouveau fbcon tileblit font bitblit e1000 softcursor ttm libata skge drm_kms_helper mxm_wmi video wmi scsi_mod [last unloaded: dump_dma]
+[  288.751724] 
+[  288.751724] Pid: 0, comm: swapper/0 Tainted: G           O 3.3.0-rc1-00383-g0a96265 #1 BIOSTAR Group N61PB-M2S/N61PB-M2S
+[  288.751724] EIP: 0060:[<c127b1aa>] EFLAGS: 00010217 CPU: 0
+[  288.751724] EIP is at memcpy+0x1a/0x40
+[  288.751724] EAX: f0a11040 EBX: 00000062 ECX: 00000018 EDX: 00000000
+[  288.751724] ESI: 00000000 EDI: f0a11040 EBP: f100bf2c ESP: f100bf20
+[  288.751724]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[  288.751724] Process swapper/0 (pid: 0, ti=f100a000 task=c16b1020 task.ti=c16aa000)
+[  288.751724] Stack:
+[  288.751724]  f1297c00 f1086144 f762dd80 f100bf88 f8449ccb 39e70110 00000043 39e70110
+[  288.751724]  00000043 00000000 c176b140 00000002 f100bf98 f0991d80 f1297c00 f11c4060
+[  288.751724]  ffff0000 00000040 f1297c08 f1297800 00000000 00000000 00000062 f1297c08
+[  288.751724] Call Trace:
+[  288.751724]  [<f8449ccb>] skge_poll+0x2ab/0x6f4 [skge]
+[  288.751724]  [<c1413dba>] net_rx_action+0xfa/0x2a0
+[  288.751724]  [<c107cecf>] __do_softirq+0x9f/0x210
+[  288.751724]  [<c107ce30>] ? irq_exit+0xd0/0xd0
+[  288.751724]  <IRQ> 
+[  288.751724]  [<c107ce15>] ? irq_exit+0xb5/0xd0
+[  288.751724]  [<c1045e06>] ? do_IRQ+0x46/0xb0
+[  288.751724]  [<c107cdc1>] ? irq_exit+0x61/0xd0
+[  288.751724]  [<c105fb23>] ? smp_apic_timer_interrupt+0x53/0x90
+[  288.751724]  [<c153abb0>] ? common_interrupt+0x30/0x38
+[  288.751724]  [<c10685f5>] ? native_safe_halt+0x5/0x10
+[  288.751724]  [<c104c53d>] ? default_idle+0xfd/0x200
+[  288.751724]  [<c104c68c>] ? amd_e400_idle+0x4c/0x100
+[  288.751724]  [<c1043fd8>] ? cpu_idle+0xa8/0xf0
+[  288.751724]  [<c151602b>] ? rest_init+0x7b/0x80
+[  288.751724]  [<c16f686d>] ? start_kernel+0x348/0x34e
+[  288.751724]  [<c16f634f>] ? kernel_init+0x149/0x149
+[  288.751724]  [<c16f60ba>] ? i386_start_kernel+0xa9/0xb0
+[  288.751724] Code: c6 43 4c 04 88 43 4d 8b 1c 24 89 ec 5d c3 90 90 90 55 89 e5 83 ec 0c 89 1c 24 89 cb 89 74 24 04 c1 e9 02 89 d6 89 7c 24 08 89 c7 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 8b 1c 24 8b 74 24 04 8b 7c 24 
+[  288.751724] EIP: [<c127b1aa>] memcpy+0x1a/0x40 SS:ESP 0068:f100bf20
+[  288.751724] CR2: 0000000000000000
+[  288.972094] ---[ end trace dca3e5f32515fe5d ]---
+[  288.976724] Kernel panic - not syncing: Fatal exception in interrupt
+[  288.983094] panic occurred, switching back to text console
 
-> +                       release_resource(&tmp_res);
-> +                       break;
-> +               }
-> +               n_size--;
-> +       }
-> +
-> +       return n_size;
-> +}
-> +
-> +static int __devinit pci_bridge_probe_busn_res(struct pci_bus *bus,
-> +                        struct pci_dev *dev, struct resource *busn_res,
-> +                        resource_size_t needed_size, struct resource **p)
-> +{
-> +       int ret = -ENOMEM;
-> +       resource_size_t n_size;
-> +       struct pci_bus *parent;
-> +       struct resource *parent_res;
-> +       resource_size_t tmp = bus->busn_res.end + 1;
-> +       int free_sz = -1;
-> +
-> +       parent_res = NULL;
-> +
-> +again:
-> +       /*
-> +        * find bigest range in bus->busn_res that we can use in the middle
-> +        *  and we can not use bus->busn_res.start.
-> +        */
-> +       n_size = resource_size(&bus->busn_res) - 1;
-> +       memset(busn_res, 0, sizeof(struct resource));
-> +       dev_printk(KERN_DEBUG, &dev->dev,
-> +                       "find free busn in busn_res: %06llx-%06llx\n",
-> +                       (unsigned long long)bus->busn_res.start,
-> +                       (unsigned long long)bus->busn_res.end);
-> +       while (n_size >= needed_size) {
-> +               ret = allocate_resource(&bus->busn_res, busn_res, n_size,
-> +                               bus->busn_res.start + 1, bus->busn_res.end,
-> +                               1, NULL, NULL);
-> +               if (ret == 0) {
-> +                       /* release res */
-> +                       release_resource(busn_res);
-> +
-> +                       return ret;
-> +               }
-> +               n_size--;
-> +       }
-> +
-> +       /* try extend the top of parent buss */
-> +       if (free_sz < 0) {
-> +               free_sz = find_res_top_free_size(&bus->busn_res);
-> +               dev_printk(KERN_DEBUG, &dev->dev,
-> +                       "found free busn %d in busn_res: %06llx-%06llx top\n",
-> +                               free_sz,
-> +                               (unsigned long long)bus->busn_res.start,
-> +                               (unsigned long long)bus->busn_res.end);
-> +       }
-> +       n_size = free_sz;
-> +
-> +       /* check if extend could cross domain boundary */
-> +       if ((bus->busn_res.end & 0xff) == 0xff)
-> +               goto reduce_needed_size;
-> +       if ((0x100 - (tmp & 0xff)) < (needed_size - n_size))
-> +               goto reduce_needed_size;
-> +
-> +       /* find exteded range */
-> +       memset(busn_res, 0, sizeof(struct resource));
-> +       parent = bus->parent;
-> +       while (parent) {
-> +               ret = allocate_resource(&parent->busn_res, busn_res,
-> +                        needed_size - n_size,
-> +                        tmp, tmp + needed_size - n_size - 1,
-> +                        1, NULL, NULL);
-> +               if (ret == 0)
-> +                       break;
-> +               parent = parent->parent;
-> +       }
-> +
-> +reduce_needed_size:
-> +       if (ret != 0) {
-> +               needed_size--;
-> +               if (!needed_size)
-> +                       return ret;
-> +
-> +               goto again;
-> +       }
-> +
-> +       /* save parent_res, we need it as stopper later */
-> +       parent_res = busn_res->parent;
-> +       /* release busn_res */
-> +       release_resource(busn_res);
-> +       busn_res->start -= n_size;
-> +
-> +       /* extend parent bus top*/
-> +       pci_bus_extend_top(bus, needed_size - n_size, parent_res);
-> +
-> +       *p = parent_res;
-> +
-> +       return ret;
-> +}
-> +
->  /*
->  * If it's a bridge, configure it and scan the bus behind it.
->  * For CardBus bridges, we don't scan behind as the devices will
-> --
-> 1.7.7
->
+Any thoughts on which patch might be the culprit?
