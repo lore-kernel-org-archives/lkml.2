@@ -1,149 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab2A3VbF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:31:05 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53608 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab2A3VbC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:31:02 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of autifk@gmail.com designates 10.204.146.14 as permitted sender) smtp.mail=autifk@gmail.com; dkim=pass header.i=autifk@gmail.com
+	id S1753849Ab2A3Vbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:31:48 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:48638 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753622Ab2A3Vbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 16:31:47 -0500
+Date: Mon, 30 Jan 2012 13:29:35 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.3-rc2
+Message-ID: <20120130212935.GA4792@ericsson.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1201302228340.31586@swampdragon.chaosbits.net>
-References: <1327958754-10284-1-git-send-email-autfk@gmail.com>
-	<alpine.LNX.2.00.1201302228340.31586@swampdragon.chaosbits.net>
-Date: Mon, 30 Jan 2012 16:31:00 -0500
-Message-ID: <CAJ5j86zfumWL0n5PriuDtK4ZboTMhi98zjjt39SKJpafvES+mg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] staging: rts5139: Fixed coding style issues
-From: Autif Khan <autifk@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        edwin_rong <edwin_rong@realsil.com.cn>,
-        Devendra Naga <devendra.aaru@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Autif Khan <autfk@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My email address is incorrect - autfk@gmail.com is iincorrect
-autifk@gmail.com is correct.
+--k+w/mQv8wyuph6w0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Should I submit another patch?
+Hi Linus,
 
-On Mon, Jan 30, 2012 at 4:29 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> On Mon, 30 Jan 2012, Autif Khan wrote:
->
->>
->> Signed-off-by: Autif Khan <autfk@gmail.com>
->
-> Yeah, looks OK.
->
-> Reviewed-by: Jesper Juhl <jj@chaosbits.net>
->
->
->> ---
->>  drivers/staging/rts5139/ms.h               |    4 ++--
->>  drivers/staging/rts5139/rts51x_chip.h      |    6 +++---
->>  drivers/staging/rts5139/rts51x_fop.h       |    2 +-
->>  drivers/staging/rts5139/rts51x_transport.c |    2 +-
->>  drivers/staging/rts5139/rts51x_transport.h |    2 +-
->>  drivers/staging/rts5139/sd_cprm.c          |    2 +-
->>  6 files changed, 9 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/staging/rts5139/ms.h b/drivers/staging/rts5139/ms.h
->> index f9d46d2..3ce1dc9 100644
->> --- a/drivers/staging/rts5139/ms.h
->> +++ b/drivers/staging/rts5139/ms.h
->> @@ -249,9 +249,9 @@ int ms_delay_write(struct rts51x_chip *chip);
->>  #ifdef SUPPORT_MAGIC_GATE
->>
->>  int ms_switch_clock(struct rts51x_chip *chip);
->> -int ms_write_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 * data,
->> +int ms_write_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 *data,
->>                  int data_len);
->> -int ms_read_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 * data,
->> +int ms_read_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 *data,
->>                 int data_len);
->>  int ms_set_rw_reg_addr(struct rts51x_chip *chip, u8 read_start, u8 read_cnt,
->>                      u8 write_start, u8 write_cnt);
->> diff --git a/drivers/staging/rts5139/rts51x_chip.h b/drivers/staging/rts5139/rts51x_chip.h
->> index 321ece7..13fc2a4 100644
->> --- a/drivers/staging/rts5139/rts51x_chip.h
->> +++ b/drivers/staging/rts5139/rts51x_chip.h
->> @@ -857,12 +857,12 @@ static inline u8 *rts51x_get_rsp_data(struct rts51x_chip *chip)
->>       return chip->rsp_buf;
->>  }
->>
->> -int rts51x_get_card_status(struct rts51x_chip *chip, u16 * status);
->> +int rts51x_get_card_status(struct rts51x_chip *chip, u16 *status);
->>  int rts51x_write_register(struct rts51x_chip *chip, u16 addr, u8 mask, u8 data);
->> -int rts51x_read_register(struct rts51x_chip *chip, u16 addr, u8 * data);
->> +int rts51x_read_register(struct rts51x_chip *chip, u16 addr, u8 *data);
->>  int rts51x_ep0_write_register(struct rts51x_chip *chip, u16 addr, u8 mask,
->>                             u8 data);
->> -int rts51x_ep0_read_register(struct rts51x_chip *chip, u16 addr, u8 * data);
->> +int rts51x_ep0_read_register(struct rts51x_chip *chip, u16 addr, u8 *data);
->>  int rts51x_seq_write_register(struct rts51x_chip *chip, u16 addr, u16 len,
->>                             u8 *data);
->>  int rts51x_seq_read_register(struct rts51x_chip *chip, u16 addr, u16 len,
->> diff --git a/drivers/staging/rts5139/rts51x_fop.h b/drivers/staging/rts5139/rts51x_fop.h
->> index 0453f57..94d75f0 100644
->> --- a/drivers/staging/rts5139/rts51x_fop.h
->> +++ b/drivers/staging/rts5139/rts51x_fop.h
->> @@ -48,7 +48,7 @@ int rts51x_open(struct inode *inode, struct file *filp);
->>  int rts51x_release(struct inode *inode, struct file *filp);
->>  ssize_t rts51x_read(struct file *filp, char __user *buf, size_t count,
->>                   loff_t *f_pos);
->> -ssize_t rts51x_write(struct file *filp, const char __user * buf, size_t count,
->> +ssize_t rts51x_write(struct file *filp, const char __user *buf, size_t count,
->>                    loff_t *f_pos);
->>  #if 0 /* LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 36) */
->>  int rts51x_ioctl(struct inode *inode, struct file *filp, unsigned int cmd,
->> diff --git a/drivers/staging/rts5139/rts51x_transport.c b/drivers/staging/rts5139/rts51x_transport.c
->> index e11467a..da9c83b 100644
->> --- a/drivers/staging/rts5139/rts51x_transport.c
->> +++ b/drivers/staging/rts5139/rts51x_transport.c
->> @@ -883,7 +883,7 @@ int rts51x_transfer_data_partial(struct rts51x_chip *chip, unsigned int pipe,
->>       return result;
->>  }
->>
->> -int rts51x_get_epc_status(struct rts51x_chip *chip, u16 * status)
->> +int rts51x_get_epc_status(struct rts51x_chip *chip, u16 *status)
->>  {
->>       unsigned int pipe = RCV_INTR_PIPE(chip);
->>       struct usb_host_endpoint *ep;
->> diff --git a/drivers/staging/rts5139/rts51x_transport.h b/drivers/staging/rts5139/rts51x_transport.h
->> index 8464c48..9dd556e 100644
->> --- a/drivers/staging/rts5139/rts51x_transport.h
->> +++ b/drivers/staging/rts5139/rts51x_transport.h
->> @@ -73,7 +73,7 @@ int rts51x_start_epc_transfer(struct rts51x_chip *chip);
->>  void rts51x_cancel_epc_transfer(struct rts51x_chip *chip);
->>  #endif
->>
->> -int rts51x_get_epc_status(struct rts51x_chip *chip, u16 * status);
->> +int rts51x_get_epc_status(struct rts51x_chip *chip, u16 *status);
->>  void rts51x_invoke_transport(struct scsi_cmnd *srb, struct rts51x_chip *chip);
->>
->>  #endif /* __RTS51X_TRANSPORT_H */
->> diff --git a/drivers/staging/rts5139/sd_cprm.c b/drivers/staging/rts5139/sd_cprm.c
->> index 407cd43..d5969d9 100644
->> --- a/drivers/staging/rts5139/sd_cprm.c
->> +++ b/drivers/staging/rts5139/sd_cprm.c
->> @@ -233,7 +233,7 @@ RTY_SEND_CMD:
->>       return STATUS_SUCCESS;
->>  }
->>
->> -int ext_sd_get_rsp(struct rts51x_chip *chip, int len, u8 * rsp, u8 rsp_type)
->> +int ext_sd_get_rsp(struct rts51x_chip *chip, int len, u8 *rsp, u8 rsp_type)
->>  {
->>       int retval, rsp_len;
->>       u16 reg_addr;
->>
->
-> --
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
->
+Please pull hwmon subsystem fixes on top of Linux 3.3-rc1 from:
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Thanks,
+Guenter
+
+------
+
+The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
+
+  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Guenter Roeck (2):
+      MAINTAINERS: Drop maintainer for MAX1668 hwmon driver
+      hwmon: (w83627ehf) Disable setting DC mode for pwm2, pwm3 on NCT6776F
+
+Jean Delvare (1):
+      hwmon: (f71805f) Fix clamping of temperature limits
+
+Mark Brown (1):
+      MAINTAINERS: Add hwmon entries for Wolfson
+
+Vivien Didelot (1):
+      hwmon: (sht15) fix bad error code
+
+ MAINTAINERS               |    8 +-------
+ drivers/hwmon/f71805f.c   |   10 +++++-----
+ drivers/hwmon/sht15.c     |    3 ++-
+ drivers/hwmon/w83627ehf.c |    6 ++++++
+ 4 files changed, 14 insertions(+), 13 deletions(-)
+
+--k+w/mQv8wyuph6w0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPJwu/AAoJEMsfJm/On5mB/NwP/RsVmAmNU5l/1/lQm6pww9nP
+8W3/mh70y7ce8xy/WksG1uHNFG3yOawVq46CZzdvWeF4uDfHzaF1P8WBi46CbMWv
+O/fMKW8Qx7Pw78Nr+HALvVU0RaKWTlT7tldLfqs9n9TFp4yz82y/YtrjsEmoDCah
+6aPt3WkcVwnY3pU4I7PTdlwibgBkRWtHT4isKAR1yrNM7PXrI5Xvz/F1asLHGSVp
+uTGxrnuOKtMt3yZNntXtoe8mtAoIduz1XhE+W3mJHojcVHMbHxjziPG1s3EOnQvs
+IQR5GKFhDZm7gEyc3GKgUWPmzwyZdfJyz2hKM43YgadBT4P/hU8/ibGYpG4Lbwpv
+6wS/aU8DQZ7AHfzlbBXADTPn6P/CeTOsmTgytEC1capc5Onng/D2dx04qkokAguV
+7E5GY8znInr7mQYV+bk4olNBm3ZLr9P/z9953RYiBPDEr8jON96dYNlNMiX707s0
+jA/Qj7jzVzePuT+eh1YzsN1G6XpcZXfUJyep1H9EhY7jeRVrL9c15t336u2hjMGv
+3rXPDo/UxHrOPkCq2+0Y2Ia1rn6jQatAlfSA5IgqZYYqbOhFk0rtCnHTcxB27PSl
+d+aLLLlAqQfEoCbMgdfHPrkLgT8JW1+6pSZxQL5fLX3ALMV2ZXRQn8QYh2iV+ETH
+VoIVhoCExGaBEEmJ5QDF
+=zM34
+-----END PGP SIGNATURE-----
+
+--k+w/mQv8wyuph6w0--
