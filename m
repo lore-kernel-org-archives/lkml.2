@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab2A3RMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 12:12:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40567 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570Ab2A3RMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 12:12:05 -0500
-Message-ID: <4F26CF3D.4070001@redhat.com>
-Date: Mon, 30 Jan 2012 19:11:25 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753505Ab2A3RPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 12:15:00 -0500
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:58631 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751987Ab2A3RO7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 12:14:59 -0500
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
-        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4 V10] Add ioctl for KVMCLOCK_GUEST_STOPPED
-References: <1326825641-15765-1-git-send-email-emunson@mgebm.net> <1326825641-15765-4-git-send-email-emunson@mgebm.net> <4F26B220.9050101@redhat.com> <4F26C2EC.5070303@siemens.com>
-In-Reply-To: <4F26C2EC.5070303@siemens.com>
+In-Reply-To: <CAMP44s3B_YN3g+jgZs9-cEyiF_-9U=xy9WM_c_qc+n7R6dJ6CQ@mail.gmail.com>
+References: <cover.1327348286.git.vjaquez@igalia.com>
+	<42f005f230f96409857bd96f38b234a4da01f421.1327348286.git.vjaquez@igalia.com>
+	<CAMP44s3B_YN3g+jgZs9-cEyiF_-9U=xy9WM_c_qc+n7R6dJ6CQ@mail.gmail.com>
+Date: Mon, 30 Jan 2012 11:14:56 -0600
+Message-ID: <CAB-zwWihRUY3GV+ZB=vrh4VVHZPvLxjQjmsiwpYjG-1Jp3vagg@mail.gmail.com>
+Subject: Re: [PATCH 1/5] staging: tidspbridge: more readable code
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: =?ISO-8859-1?Q?V=EDctor_Manuel_J=E1quez_Leal?= <vjaquez@igalia.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Armando Uribe <x0095078@ti.com>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-omap@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 06:18 PM, Jan Kiszka wrote:
-> > 
-> > This looks racy.  The vcpu can remove its kvmclock concurrently with
-> > this access, and src will be NULL.
+2012/1/24 Felipe Contreras <felipe.contreras@gmail.com>:
+> 2012/1/23 Víctor Manuel Jáquez Leal <vjaquez@igalia.com>:
+>> Uppercase function names are not pretty. Also the code flow readability is
+>> enhanced.
 >
-> There is no race here (src is member of the vcpu), but arch.time might
-> have become invalid. KVM_REQ_CLOCK_UPDATE instead of mark_page_dirty
-> would indeed be the way to go. Trivial solution, I would say.
->
-> However, the concept of "guest stopped" has VM, not VCPU scope. 
+> Looks good to me.
 
-We're not stopping the guest here, just setting a flag in kvmclock,
-which certainly is a per-vcpu thing.
+FWIW, I agree.
 
-> That
-> makes the call more appropriate as a VM ioctl. If that thing should
-> really become per-vcpu, at least call it KVMCLOCK_VCPU_STOPPED.
->
+Regards,
 
-All current ioctls start with KVM_. Maybe KVM_KVMCLOCK_CTRL?
-
--- 
-error compiling committee.c: too many arguments to function
-
+Omar
