@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab2A3KrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 05:47:22 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:36213 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930Ab2A3KrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 05:47:21 -0500
-Date: Mon, 30 Jan 2012 10:47:18 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v3 -mm 3/3] mm: only defer compaction for failed order
- and higher
-Message-ID: <20120130104718.GC25268@csn.ul.ie>
-References: <20120126145450.2d3d2f4c@cuia.bos.redhat.com>
- <20120126150102.30b75cfe@cuia.bos.redhat.com>
+	id S1752267Ab2A3Kum (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 05:50:42 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39065 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751202Ab2A3Kul (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 05:50:41 -0500
+Date: Mon, 30 Jan 2012 11:50:37 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, peterz@infradead.org, mingo@elte.hu, dsahern@gmail.com
+Subject: [PATCH] perf: fix perf top number of samples displayed
+Message-ID: <20120130105037.GA5160@quad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120126150102.30b75cfe@cuia.bos.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 03:01:02PM -0500, Rik van Riel wrote:
-> Currently a failed order-9 (transparent hugepage) compaction can
-> lead to memory compaction being temporarily disabled for a memory
-> zone.  Even if we only need compaction for an order 2 allocation,
-> eg. for jumbo frames networking.
-> 
-> The fix is relatively straightforward: keep track of the highest
-> order at which compaction is succeeding, and only defer compaction
-> for orders at which compaction is failing.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+In recent versions of perf top, pressing the 'e' key
+to change the number of displayed samples had no effect.
+The number of samples was still dictated by the size of
+the terminal (stdio mode). That was quite annoying because
+typically only the first dozen samples really matter.
 
--- 
-Mel Gorman
-SUSE Labs
+This patch fixes this.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e8b033c..d869b21 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -88,8 +88,6 @@ void get_term_dimensions(struct winsize *ws)
+ 
+ static void perf_top__update_print_entries(struct perf_top *top)
+ {
+-	top->print_entries = top->winsize.ws_row;
+-
+ 	if (top->print_entries > 9)
+ 		top->print_entries -= 9;
+ }
+@@ -99,6 +97,13 @@ static void perf_top__sig_winch(int sig __used, siginfo_t *info __used, void *ar
+ 	struct perf_top *top = arg;
+ 
+ 	get_term_dimensions(&top->winsize);
++	if (!top->print_entries
++	    || (top->print_entries+4) > top->winsize.ws_row) {
++		top->print_entries = top->winsize.ws_row;
++	} else {
++		top->print_entries += 4;
++		top->winsize.ws_row = top->print_entries;
++	}
+ 	perf_top__update_print_entries(top);
+ }
+ 
+@@ -452,8 +457,10 @@ static void perf_top__handle_keypress(struct perf_top *top, int c)
+ 				};
+ 				perf_top__sig_winch(SIGWINCH, NULL, top);
+ 				sigaction(SIGWINCH, &act, NULL);
+-			} else
++			} else {
++				perf_top__sig_winch(SIGWINCH, NULL, top);
+ 				signal(SIGWINCH, SIG_DFL);
++			}
+ 			break;
+ 		case 'E':
+ 			if (top->evlist->nr_entries > 1) {
