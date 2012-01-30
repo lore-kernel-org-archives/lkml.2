@@ -1,236 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab2A3D5P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 22:57:15 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:39942 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483Ab2A3D5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 22:57:14 -0500
-Message-ID: <4F26150F.6040306@linux.vnet.ibm.com>
-Date: Mon, 30 Jan 2012 09:27:03 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
-        vweaver1@eecs.utk.edu, dsahern@gmail.com
-Subject: Re: [PATCH v4 09/18] perf: disable PERF_SAMPLE_BRANCH_* when not
- supported
-References: <1327697778-18515-1-git-send-email-eranian@google.com> <1327697778-18515-10-git-send-email-eranian@google.com>
-In-Reply-To: <1327697778-18515-10-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754325Ab2A3EAZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 23:00:25 -0500
+Received: from mga01.intel.com ([192.55.52.88]:9942 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752369Ab2A3EAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 23:00:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="117872426"
+Subject: Re: How is dmaengine_prep_slave_single supposed to be used?
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4F22B593.3010402@metafoo.de>
+References: <4F22B593.3010402@metafoo.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 Jan 2012 09:31:30 +0530
+Message-ID: <1327896090.1527.0.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12013003-2000-0000-0000-0000063BC30E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 28 January 2012 02:26 AM, Stephane Eranian wrote:
-> PERF_SAMPLE_BRANCH_* is disabled for:
-> - SW events (sw counters, tracepoints)
-> - HW breakpoints
-> - ALL but Intel X86 architecture
-> - AMD64 processors
+On Fri, 2012-01-27 at 15:32 +0100, Lars-Peter Clausen wrote:
+> Hi,
 > 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->  arch/alpha/kernel/perf_event.c       |    4 ++++
->  arch/arm/kernel/perf_event.c         |    4 ++++
->  arch/mips/kernel/perf_event_mipsxx.c |    4 ++++
->  arch/powerpc/kernel/perf_event.c     |    4 ++++
->  arch/sh/kernel/perf_event.c          |    4 ++++
->  arch/sparc/kernel/perf_event.c       |    4 ++++
->  arch/x86/kernel/cpu/perf_event_amd.c |    3 +++
->  kernel/events/core.c                 |   24 ++++++++++++++++++++++++
->  kernel/events/hw_breakpoint.c        |    6 ++++++
->  9 files changed, 57 insertions(+), 0 deletions(-)
+> I've tried using dmaengine_prep_slave_single in one of my drivers an run
+> into an issue, the dma_address attribute of the sg element is not
+> initialized and thus the dma transfer and the DMA transfer fails.
 > 
-> diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
-> index 8143cd7..0dae252 100644
-> --- a/arch/alpha/kernel/perf_event.c
-> +++ b/arch/alpha/kernel/perf_event.c
-> @@ -685,6 +685,10 @@ static int alpha_pmu_event_init(struct perf_event *event)
->  {
->  	int err;
+> Quoting from Documentation/dmaengine.txt:
 > 
-> +	/* does not support taken branch sampling */
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	switch (event->attr.type) {
->  	case PERF_TYPE_RAW:
->  	case PERF_TYPE_HARDWARE:
-> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> index 5bb91bf..68bb0ce 100644
-> --- a/arch/arm/kernel/perf_event.c
-> +++ b/arch/arm/kernel/perf_event.c
-> @@ -539,6 +539,10 @@ static int armpmu_event_init(struct perf_event *event)
->  	int err = 0;
->  	atomic_t *active_events = &armpmu->active_events;
+>    The peripheral driver is expected to have mapped the scatterlist for
+>    the DMA operation prior to calling device_prep_slave_sg, and must
+>    keep the scatterlist mapped until the DMA operation has completed.
 > 
-> +	/* does not support taken branch sampling */
-> +	if (has_branch_smpl(event))
-ohh, this function is still present ? I could not find the function defined any where in the
-patch set. 
-> +		return -EOPNOTSUPP;
-> +
->  	if (armpmu->map_event(event) == -ENOENT)
->  		return -ENOENT;
+> So this is clearly not the case with dmaengine_prep_slave_single, so I'm
+> wondering how is ut supposed to be used and can it work properly at all?
 > 
-> diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
-> index e3b897a..811084f 100644
-> --- a/arch/mips/kernel/perf_event_mipsxx.c
-> +++ b/arch/mips/kernel/perf_event_mipsxx.c
-> @@ -606,6 +606,10 @@ static int mipspmu_event_init(struct perf_event *event)
->  {
->  	int err = 0;
-> 
-> +	/* does not support taken branch sampling */
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	switch (event->attr.type) {
->  	case PERF_TYPE_RAW:
->  	case PERF_TYPE_HARDWARE:
-> diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
-> index d614ab5..4e0b265 100644
-> --- a/arch/powerpc/kernel/perf_event.c
-> +++ b/arch/powerpc/kernel/perf_event.c
-> @@ -1078,6 +1078,10 @@ static int power_pmu_event_init(struct perf_event *event)
->  	if (!ppmu)
->  		return -ENOENT;
-> 
-> +	/* does not support taken branch sampling */
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	switch (event->attr.type) {
->  	case PERF_TYPE_HARDWARE:
->  		ev = event->attr.config;
-> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
-> index 10b14e3..068b8a2 100644
-> --- a/arch/sh/kernel/perf_event.c
-> +++ b/arch/sh/kernel/perf_event.c
-> @@ -310,6 +310,10 @@ static int sh_pmu_event_init(struct perf_event *event)
->  {
->  	int err;
-> 
-> +	/* does not support taken branch sampling */
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	switch (event->attr.type) {
->  	case PERF_TYPE_RAW:
->  	case PERF_TYPE_HW_CACHE:
-> diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-> index 614da62..8e16a4a 100644
-> --- a/arch/sparc/kernel/perf_event.c
-> +++ b/arch/sparc/kernel/perf_event.c
-> @@ -1105,6 +1105,10 @@ static int sparc_pmu_event_init(struct perf_event *event)
->  	if (atomic_read(&nmi_active) < 0)
->  		return -ENODEV;
-> 
-> +	/* does not support taken branch sampling */
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	switch (attr->type) {
->  	case PERF_TYPE_HARDWARE:
->  		if (attr->config >= sparc_pmu->max_events)
-> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-> index 0397b23..0d8da03 100644
-> --- a/arch/x86/kernel/cpu/perf_event_amd.c
-> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
-> @@ -138,6 +138,9 @@ static int amd_pmu_hw_config(struct perf_event *event)
->  	if (ret)
->  		return ret;
-> 
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	if (event->attr.exclude_host && event->attr.exclude_guest)
->  		/*
->  		 * When HO == GO == 1 the hardware treats that as GO == HO == 0
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index c4520a2..431f7b4 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -5007,6 +5007,12 @@ static int perf_swevent_init(struct perf_event *event)
->  	if (event->attr.type != PERF_TYPE_SOFTWARE)
->  		return -ENOENT;
-> 
-> +	/*
-> +	 * no branch sampling for software events
-> +	 */
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	switch (event_id) {
->  	case PERF_COUNT_SW_CPU_CLOCK:
->  	case PERF_COUNT_SW_TASK_CLOCK:
-> @@ -5117,6 +5123,12 @@ static int perf_tp_event_init(struct perf_event *event)
->  	if (event->attr.type != PERF_TYPE_TRACEPOINT)
->  		return -ENOENT;
-> 
-> +	/*
-> +	 * no branch sampling for tracepoint events
-> +	 */
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	err = perf_trace_init(event);
->  	if (err)
->  		return err;
-> @@ -5342,6 +5354,12 @@ static int cpu_clock_event_init(struct perf_event *event)
->  	if (event->attr.config != PERF_COUNT_SW_CPU_CLOCK)
->  		return -ENOENT;
-> 
-> +	/*
-> +	 * no branch sampling for software events
-> +	 */
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	perf_swevent_init_hrtimer(event);
-> 
->  	return 0;
-> @@ -5416,6 +5434,12 @@ static int task_clock_event_init(struct perf_event *event)
->  	if (event->attr.config != PERF_COUNT_SW_TASK_CLOCK)
->  		return -ENOENT;
-> 
-> +	/*
-> +	 * no branch sampling for software events
-> +	 */
-> +	if (has_branch_stack(event))
-> +		return -EOPNOTSUPP;
-> +
->  	perf_swevent_init_hrtimer(event);
-> 
->  	return 0;
-> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-> index b0309f7..cee5423 100644
-> --- a/kernel/events/hw_breakpoint.c
-> +++ b/kernel/events/hw_breakpoint.c
-> @@ -581,6 +581,12 @@ static int hw_breakpoint_event_init(struct perf_event *bp)
->  	if (bp->attr.type != PERF_TYPE_BREAKPOINT)
->  		return -ENOENT;
-> 
-> +	/*
-> +	 * no branch sampling for breakpoint events
-> +	 */
-> +	if (has_branch_stack(bp))
-> +		return -EOPNOTSUPP;
-> +
->  	err = register_perf_hw_breakpoint(bp);
->  	if (err)
->  		return err;
-
+Yes this is broken now, I will fix this up
 
 -- 
-Anshuman Khandual
-Linux Technology Centre
-IBM Systems and Technology Group
+~Vinod
 
