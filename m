@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab2A3IOC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 03:14:02 -0500
-Received: from portal.weinmann.de ([62.8.140.122]:46333 "EHLO
-	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab2A3IOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 03:14:01 -0500
-X-Greylist: delayed 970 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jan 2012 03:14:00 EST
-From: "Voss, Nikolaus" <N.Voss@weinmann.de>
-To: "'dedekind1@gmail.com'" <dedekind1@gmail.com>
-CC: "'Nicolas Ferre'" <nicolas.ferre@atmel.com>,
-        "'linux-mtd@lists.infradead.org'" <linux-mtd@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Jan 2012 08:57:17 +0100
-Subject: RE: [PATCH] mtd: atmel_nand: fix access to 16 bit NAND devices
-Thread-Topic: [PATCH] mtd: atmel_nand: fix access to 16 bit NAND devices
-Thread-Index: Aczc930cBnGc3h3sTrWuQxqPVXVvogCK57qQ
-Message-ID: <EF2E73589CA71846A15D0B2CDF79505D08AD3E5453@wm021.weinmann.com>
-References: <201201251217.q0PCHmRe027024@gatekeeper.vosshq.de>
- <1327670996.26648.43.camel@sauron.fi.intel.com>
-In-Reply-To: <1327670996.26648.43.camel@sauron.fi.intel.com>
-Accept-Language: en-US, de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, de-DE
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1754606Ab2A3IOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 03:14:12 -0500
+Received: from mga01.intel.com ([192.55.52.88]:52408 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754567Ab2A3IOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 03:14:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="117935285"
+Subject: Re: [PATCH v2 0/2] Add Qualcomm MSM ADM DMAEngine driver
+From: Vinod Koul <vinod.koul@intel.com>
+To: Ravi Kumar V <kumarrav@codeaurora.org>
+Cc: linux-arch@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bryanh@codeaurora.org, tsoni@codeaurora.org,
+        Daniel Walker <dwalker@fifo99.com>, dan.j.williams@intel.com,
+        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org,
+        johlstei@codeaurora.org
+In-Reply-To: <4F1FFF7E.3000802@codeaurora.org>
+References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org>
+	 <1326807902.1540.116.camel@vkoul-udesk3> <4F195E4C.6080805@codeaurora.org>
+	  <1327066287.517.4.camel@vkoul-udesk3> <4F1D4052.3070701@codeaurora.org>
+	 <1327326713.517.32.camel@vkoul-udesk3> <4F1FFF7E.3000802@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 Jan 2012 13:45:15 +0530
+Message-ID: <1327911315.1527.8.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0U8E99n001013
 
-Artem Bityutskiy wrote on 2012-01-27:
-> On Wed, 2012-01-18 at 10:16 +0100, Nikolaus Voss wrote:
->> commit fb5427508abbd635e877fabdf55795488119c2d6 optimizes PIO
->> NAND accesses by using IO memcpy instead of IO read/write
->> repeated functions.
->> 
->> This breaks access to 16 bit NAND devices as memcpy_fromio()/toio()
->> _always_ use byte accesses (see arch/arm/kernel/io.c), so with
->> 16 bit NAND, one byte gets lost per NAND access cycle and NAND
->> address count is wrong.
->> 
->> Using memcpy() instead of the IO memcpy functions fixes this, but
->> depends on correct word alignment of the buffer and length has to
->> be a multiple of four, otherwise it might issue byte accesses and
->> possibly break 16 bit NAND access (cf arch/arm/lib/copy_template.S).
->> 
->> Memcpy variants seem to be the wrong approach here, since the
->> NAND controller doesn't make the NAND appear as truely randomly
->> accessible memory (as opposed to the DRAM controller which does
->> exactly that).
->> 
->> So, my proposal is to use 32 bit IO read/write (and let SMC
->> map it to 8 bit or 16 bit NAND accesses) and account for
->> length % 4 > 0 with two additional IO read/writes.
->> 
->> Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+On Wed, 2012-01-25 at 18:41 +0530, Ravi Kumar V wrote:
+> On 1/23/2012 7:21 PM, Vinod Koul wrote:
+> > On Mon, 2012-01-23 at 16:41 +0530, Ravi Kumar V wrote:
+> >>
+> >> If some changes are made in interleave API then it can support our BOX
+> >> mode. Here in interleaved template he is assuming destination pattern as
+> >> can be contiguous or same as source pattern, but in our case destination
+> >> pattern is different from source pattern.
+> >> So if a new parameter destination data chunk is added in "struct
+> >> dma_interleaved_template" structure then it can support different
+> >> destination pattern.
+> > do you mean you have cases where you are doing a "memcpy" from one
+> > interleaved memory to another?
+> > Can you provide me with a scenario where this maybe helpful?
 > 
-> Why not to revert fb5427508abbd635e877fabdf55795488119c2d6 instead, it
-> is in my opinion a bit more readable?
+> Presently we are transferring data from interleaved memory tho 
+> contagious memory and vice-verse.
+> We can use the interleaved API for present scenario, but it will 
+> restrict the HW capability of transferring data from one interleaved 
+> pattern to other interleaved pattern.
+That's interesting capability.
+My question still unanswered is whats the real work usage of this
+capability. Helps to understand what this would be used for and
+providing optimal solution
+> 
+> >
+> > The reason why the API was designed like this was to give ability to
+> > take these kind of interleaved memory and copy them to peripheral
+> > (constant addr) or memory (typically contagious).
+> >
+> > In case it is just a pattern I wonder why it cannot be described in
+> > standard scatter gather definitions as you can split the block further
+> > down to copy from one respective block to somewhere else in memory.
+> 
+> We can use scatter gather but it will be extra burden on software to 
+> create those many SG list unlike in box mode just a single command 
+> serves the purpose.
+> 
+> >> Also it will good if you can provide another parameter for passing
+> >> private data to dma driver.
+> > 1. what does this parameter do?
+> 
+> Private parameter in our case will be command configuration parameter 
+> where we are passing information to HW like endianness, synchronization 
+> & acknowledge mechanism between DMA HW and peripherals running with 
+> different clock than DMA.
+This is a separate discussion. We had similar talk on need to pass
+controller/subsystem specific parameters [1] sometime back during RIO
+patches. Alexandre has posted a new RFC [2] which should be extended to
+whatever API you finally end up using
 
-No objections. I've tried to save the idea of
-fb5427508abbd635e877fabdf55795488119c2d6 but that length % 4 > 0 stuff
-uglifies it a little bit...
+[1]: https://lkml.org/lkml/2011/10/24/275 
+[2]: https://lkml.org/lkml/2012/1/26/405
 
-Niko
+-- 
+~Vinod
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
