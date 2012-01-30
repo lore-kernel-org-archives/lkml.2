@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab2A3OTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 09:19:34 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36474 "EHLO
+	id S1753269Ab2A3OTd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 09:19:33 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36498 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911Ab2A3OS7 (ORCPT
+	with ESMTP id S1753157Ab2A3OTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 09:18:59 -0500
-Message-Id: <20120130141852.466613862@openvz.org>
+	Mon, 30 Jan 2012 09:19:00 -0500
+Message-Id: <20120130141852.309402052@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 30 Jan 2012 18:09:09 +0400
+Date: Mon, 30 Jan 2012 18:09:07 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -22,198 +22,455 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Alexey Dobriyan <adobriyan@gmail.com>,
         Andi Kleen <andi@firstfloor.org>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: [patch cr 4/4] c/r: prctl: Extend PR_SET_MM to set up more mm_struct entries
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
 References: <20120130140905.441199885@openvz.org>
-Content-Disposition: inline; filename=prctl-restore-mm-members-5
+Content-Disposition: inline; filename=sys-kcmp-13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After restore we would like the 'ps' command show the command
-line and evironment exactly the same it was at checkpoint time.
+While doing the checkpoint-restore in the userspace one need to determine
+whether various kernel objects (like mm_struct-s of file_struct-s) are shared
+between tasks and restore this state.
 
-So this additional PR_SET_MM_ allow us to do so. Note that
-these members of mm_struct is rather used for output in
-procfs, except auxv vector which is used by ld.so mostly.
+The 2nd step can be solved by using appropriate CLONE_ flags and the unshare
+syscall, while there's currently no ways for solving the 1st one.
+
+One of the ways for checking whether two tasks share e.g. mm_struct is to
+provide some mm_struct ID of a task to its proc file, but showing such
+info considered to be not that good for security reasons.
+
+Thus after some debates we end up in conclusion that using that named
+'comparision' syscall might be the best candidate. So here is it --
+__NR_kcmp.
+
+It takes up to 5 agruments - the pids of the two tasks (which
+characteristics should be compared), the comparision type and
+(in case of comparision of files) two file descriptors.
+
+Lookups for pids are done in the caller's PID namespace only.
+
+At moment only x86 is supported and tested.
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Andrey Vagin <avagin@openvz.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: H. Peter Anvin <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Glauber Costa <glommer@parallels.com>
+CC: Andi Kleen <andi@firstfloor.org>
+CC: Tejun Heo <tj@kernel.org>
+CC: Matt Helsley <matthltc@us.ibm.com>
+CC: Pekka Enberg <penberg@kernel.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Vasiliy Kulikov <segoon@openwall.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Valdis.Kletnieks@vt.edu
 ---
- include/linux/prctl.h |    5 ++
- kernel/sys.c          |   86 ++++++++++++++++++++++++++++++++------------------
- 2 files changed, 61 insertions(+), 30 deletions(-)
+ arch/x86/syscalls/syscall_32.tbl         |    1 
+ arch/x86/syscalls/syscall_64.tbl         |    1 
+ include/linux/kcmp.h                     |   17 +++
+ include/linux/syscalls.h                 |    2 
+ kernel/Makefile                          |    1 
+ kernel/kcmp.c                            |  170 +++++++++++++++++++++++++++++++
+ tools/testing/selftests/kcmp/Makefile    |   35 ++++++
+ tools/testing/selftests/kcmp/kcmp_test.c |   89 ++++++++++++++++
+ tools/testing/selftests/run_tests        |    2 
+ 9 files changed, 317 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.git/include/linux/prctl.h
+Index: linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
 ===================================================================
---- linux-2.6.git.orig/include/linux/prctl.h
-+++ linux-2.6.git/include/linux/prctl.h
-@@ -113,5 +113,10 @@
- # define PR_SET_MM_START_STACK		5
- # define PR_SET_MM_START_BRK		6
- # define PR_SET_MM_BRK			7
-+# define PR_SET_MM_ARG_START		8
-+# define PR_SET_MM_ARG_END		9
-+# define PR_SET_MM_ENV_START		10
-+# define PR_SET_MM_ENV_END		11
-+# define PR_SET_MM_AUXV			12
- 
- #endif /* _LINUX_PRCTL_H */
-Index: linux-2.6.git/kernel/sys.c
+--- linux-2.6.git.orig/arch/x86/syscalls/syscall_32.tbl
++++ linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
+@@ -355,3 +355,4 @@
+ 346	i386	setns			sys_setns
+ 347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
+ 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
++349	i386	kcmp			sys_kcmp
+Index: linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
 ===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -1693,17 +1693,23 @@ SYSCALL_DEFINE1(umask, int, mask)
- }
+--- linux-2.6.git.orig/arch/x86/syscalls/syscall_64.tbl
++++ linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
+@@ -318,3 +318,4 @@
+ 309	64	getcpu			sys_getcpu
+ 310	64	process_vm_readv	sys_process_vm_readv
+ 311	64	process_vm_writev	sys_process_vm_writev
++312	64	kcmp			sys_kcmp
+Index: linux-2.6.git/include/linux/kcmp.h
+===================================================================
+--- /dev/null
++++ linux-2.6.git/include/linux/kcmp.h
+@@ -0,0 +1,17 @@
++#ifndef _LINUX_KCMP_H
++#define _LINUX_KCMP_H
++
++/* Comparision type */
++enum kcmp_type {
++	KCMP_FILE,
++	KCMP_VM,
++	KCMP_FILES,
++	KCMP_FS,
++	KCMP_SIGHAND,
++	KCMP_IO,
++	KCMP_SYSVSEM,
++
++	KCMP_TYPES,
++};
++
++#endif /* _LINUX_KCMP_H */
+Index: linux-2.6.git/include/linux/syscalls.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/syscalls.h
++++ linux-2.6.git/include/linux/syscalls.h
+@@ -857,4 +857,6 @@ asmlinkage long sys_process_vm_writev(pi
+ 				      unsigned long riovcnt,
+ 				      unsigned long flags);
  
- #ifdef CONFIG_CHECKPOINT_RESTORE
-+static bool vma_flags_mismatch(struct vm_area_struct *vma,
-+			       unsigned long required,
-+			       unsigned long banned)
++asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
++			 unsigned long idx1, unsigned long idx2);
+ #endif
+Index: linux-2.6.git/kernel/Makefile
+===================================================================
+--- linux-2.6.git.orig/kernel/Makefile
++++ linux-2.6.git/kernel/Makefile
+@@ -25,6 +25,7 @@ endif
+ obj-y += sched/
+ obj-y += power/
+ 
++obj-$(CONFIG_X86) += kcmp.o
+ obj-$(CONFIG_FREEZER) += freezer.o
+ obj-$(CONFIG_PROFILING) += profile.o
+ obj-$(CONFIG_SYSCTL_SYSCALL_CHECK) += sysctl_check.o
+Index: linux-2.6.git/kernel/kcmp.c
+===================================================================
+--- /dev/null
++++ linux-2.6.git/kernel/kcmp.c
+@@ -0,0 +1,170 @@
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <linux/fdtable.h>
++#include <linux/string.h>
++#include <linux/random.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/cache.h>
++#include <linux/bug.h>
++#include <linux/err.h>
++#include <linux/kcmp.h>
++
++#include <asm/unistd.h>
++
++/*
++ * We don't expose real in-memory order of objects for security
++ * reasons, still the comparision results should be suitable for
++ * sorting. Thus, we obfuscate kernel pointers values (using random
++ * cookies obtaned at early boot stage) and compare the production
++ * instead.
++ */
++static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
++
++static long kptr_obfuscate(long v, int type)
 +{
-+	return (vma->vm_flags & required) != required ||
-+		(vma->vm_flags & banned);
++	return (v ^ cookies[type][0]) * cookies[type][1];
 +}
 +
- static int prctl_set_mm(int opt, unsigned long addr,
- 			unsigned long arg4, unsigned long arg5)
- {
- 	unsigned long rlim = rlimit(RLIMIT_DATA);
--	unsigned long vm_req_flags;
--	unsigned long vm_bad_flags;
-+	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma;
- 	int error = 0;
--	struct mm_struct *mm = current->mm;
- 
--	if (arg4 | arg5)
-+	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
- 		return -EINVAL;
- 
- 	if (!capable(CAP_SYS_ADMIN))
-@@ -1715,7 +1721,9 @@ static int prctl_set_mm(int opt, unsigne
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, addr);
- 
--	if (opt != PR_SET_MM_START_BRK && opt != PR_SET_MM_BRK) {
-+	if (opt != PR_SET_MM_START_BRK &&
-+	    opt != PR_SET_MM_BRK &&
-+	    opt != PR_SET_MM_AUXV) {
- 		/* It must be existing VMA */
- 		if (!vma || vma->vm_start > addr)
- 			goto out;
-@@ -1725,11 +1733,8 @@ static int prctl_set_mm(int opt, unsigne
- 	switch (opt) {
- 	case PR_SET_MM_START_CODE:
- 	case PR_SET_MM_END_CODE:
--		vm_req_flags = VM_READ | VM_EXEC;
--		vm_bad_flags = VM_WRITE | VM_MAYSHARE;
--
--		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
--		    (vma->vm_flags & vm_bad_flags))
-+		if (vma_flags_mismatch(vma, VM_READ | VM_EXEC,
-+				       VM_WRITE | VM_MAYSHARE))
- 			goto out;
- 
- 		if (opt == PR_SET_MM_START_CODE)
-@@ -1740,11 +1745,8 @@ static int prctl_set_mm(int opt, unsigne
- 
- 	case PR_SET_MM_START_DATA:
- 	case PR_SET_MM_END_DATA:
--		vm_req_flags = VM_READ | VM_WRITE;
--		vm_bad_flags = VM_EXEC | VM_MAYSHARE;
--
--		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
--		    (vma->vm_flags & vm_bad_flags))
-+		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE,
-+				       VM_EXEC | VM_MAYSHARE))
- 			goto out;
- 
- 		if (opt == PR_SET_MM_START_DATA)
-@@ -1753,19 +1755,6 @@ static int prctl_set_mm(int opt, unsigne
- 			mm->end_data = addr;
- 		break;
- 
--	case PR_SET_MM_START_STACK:
--
--#ifdef CONFIG_STACK_GROWSUP
--		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSUP;
--#else
--		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSDOWN;
--#endif
--		if ((vma->vm_flags & vm_req_flags) != vm_req_flags)
--			goto out;
--
--		mm->start_stack = addr;
--		break;
--
- 	case PR_SET_MM_START_BRK:
- 		if (addr <= mm->end_data)
- 			goto out;
-@@ -1790,16 +1779,53 @@ static int prctl_set_mm(int opt, unsigne
- 		mm->brk = addr;
- 		break;
- 
-+	case PR_SET_MM_START_STACK:
-+	case PR_SET_MM_ARG_START:
-+	case PR_SET_MM_ARG_END:
-+	case PR_SET_MM_ENV_START:
-+	case PR_SET_MM_ENV_END:
-+#ifdef CONFIG_STACK_GROWSUP
-+		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE | VM_GROWSUP, 0))
-+#else
-+		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE | VM_GROWSDOWN, 0))
-+#endif
-+			goto out;
-+		if (opt == PR_SET_MM_START_STACK)
-+			mm->start_stack = addr;
-+		else if (opt == PR_SET_MM_ARG_START)
-+			mm->arg_start = addr;
-+		else if (opt == PR_SET_MM_ARG_END)
-+			mm->arg_end = addr;
-+		else if (opt == PR_SET_MM_ENV_START)
-+			mm->env_start = addr;
-+		else if (opt == PR_SET_MM_ENV_END)
-+			mm->env_end = addr;
-+		break;
++/*
++ * 0 - equal
++ * 1 - less than
++ * 2 - greater than
++ * 3 - not equal but ordering unavailable (reserved for future)
++ */
++static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
++{
++	long ret;
 +
-+	case PR_SET_MM_AUXV: {
-+		unsigned long user_auxv[AT_VECTOR_SIZE];
++	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
 +
-+		if (arg4 > sizeof(mm->saved_auxv))
-+			goto out;
-+		up_read(&mm->mmap_sem);
++	return (ret < 0) | ((ret > 0) << 1);
++}
 +
-+		if (copy_from_user(user_auxv, (const void __user *)addr, arg4))
-+			return EFAULT;
++/* The caller must have pinned the task */
++static struct file *
++get_file_raw_ptr(struct task_struct *task, unsigned int idx)
++{
++	struct fdtable *fdt;
++	struct file *file;
 +
-+		task_lock(current);
-+		memcpy(mm->saved_auxv, user_auxv, arg4);
-+		task_unlock(current);
++	spin_lock(&task->files->file_lock);
++	fdt = files_fdtable(task->files);
++	if (idx < fdt->max_fds)
++		file = fdt->fd[idx];
++	else
++		file = NULL;
++	spin_unlock(&task->files->file_lock);
 +
-+		return 0;
++	return file;
++}
++
++SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
++		unsigned long, idx1, unsigned long, idx2)
++{
++	struct task_struct *task1, *task2;
++	int ret;
++
++	rcu_read_lock();
++
++	/*
++	 * Tasks are looked up in caller's
++	 * PID namespace only.
++	 */
++
++	task1 = find_task_by_vpid(pid1);
++	if (!task1) {
++		rcu_read_unlock();
++		return -ESRCH;
 +	}
- 	default:
- 		error = -EINVAL;
- 		goto out;
- 	}
++
++	task2 = find_task_by_vpid(pid2);
++	if (!task2) {
++		put_task_struct(task1);
++		rcu_read_unlock();
++		return -ESRCH;
++	}
++
++	get_task_struct(task1);
++	get_task_struct(task2);
++
++	rcu_read_unlock();
++
++	/*
++	 * One should have enough rights to inspect tasks details.
++	 */
++	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
++	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
++		ret = -EACCES;
++		goto err;
++	}
++
++	/*
++	 * Note for all cases but the KCMP_FILE we
++	 * don't take any locks in a sake of speed.
++	 */
++
++	switch (type) {
++	case KCMP_FILE: {
++		struct file *filp1, *filp2;
++
++		filp1 = get_file_raw_ptr(task1, idx1);
++		filp2 = get_file_raw_ptr(task2, idx2);
++
++		if (filp1 && filp2)
++			ret = kcmp_ptr(filp1, filp2, KCMP_FILE);
++		else
++			ret = -EBADF;
++		break;
++	}
++	case KCMP_VM:
++		ret = kcmp_ptr(task1->mm, task2->mm, KCMP_VM);
++		break;
++	case KCMP_FILES:
++		ret = kcmp_ptr(task1->files, task2->files, KCMP_FILES);
++		break;
++	case KCMP_FS:
++		ret = kcmp_ptr(task1->fs, task2->fs, KCMP_FS);
++		break;
++	case KCMP_SIGHAND:
++		ret = kcmp_ptr(task1->sighand, task2->sighand, KCMP_SIGHAND);
++		break;
++	case KCMP_IO:
++		ret = kcmp_ptr(task1->io_context, task2->io_context, KCMP_IO);
++		break;
++	case KCMP_SYSVSEM:
++#ifdef CONFIG_SYSVIPC
++		ret = kcmp_ptr(task1->sysvsem.undo_list,
++			       task2->sysvsem.undo_list,
++			       KCMP_SYSVSEM);
++#else
++		ret = -EOPNOTSUP;
++#endif
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++
++err:
++	put_task_struct(task1);
++	put_task_struct(task2);
++
++	return ret;
++}
++
++static __init int kcmp_cookie_init(void)
++{
++	int i, j;
++
++	for (i = 0; i < KCMP_TYPES; i++) {
++		for (j = 0; j < 2; j++) {
++			get_random_bytes(&cookies[i][j],
++					 sizeof(cookies[i][j]));
++		}
++		cookies[i][1] |= (~(~0UL >>  1) | 1);
++	}
++
++	return 0;
++}
++late_initcall(kcmp_cookie_init);
+Index: linux-2.6.git/tools/testing/selftests/kcmp/Makefile
+===================================================================
+--- /dev/null
++++ linux-2.6.git/tools/testing/selftests/kcmp/Makefile
+@@ -0,0 +1,35 @@
++ifeq ($(strip $(V)),)
++	E = @echo
++	Q = @
++else
++	E = @\#
++	Q =
++endif
++export E Q
++
++uname_M := $(shell uname -m 2>/dev/null || echo not)
++ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
++ifeq ($(ARCH),i386)
++        ARCH := X86
++	CFLAGS := -DCONFIG_X86_32
++endif
++ifeq ($(ARCH),x86_64)
++	ARCH := X86
++	CFLAGS := -DCONFIG_X86_64
++endif
++
++CFLAGS += -I../../../../arch/x86/include/generated/
++CFLAGS += -I../../../../include/
++
++all:
++ifeq ($(ARCH),X86)
++	$(E) "  CC run_test"
++	$(Q) gcc $(CFLAGS) kcmp_test.c -o run_test
++else
++	$(E) "Not an x86 target, can't build breakpoints selftests"
++endif
++
++clean:
++	$(E) "  CLEAN"
++	$(Q) rm -fr ./run_test
++	$(Q) rm -fr ./test-file
+Index: linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c
+===================================================================
+--- /dev/null
++++ linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c
+@@ -0,0 +1,89 @@
++#define _GNU_SOURCE
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <limits.h>
++#include <unistd.h>
++#include <errno.h>
++#include <string.h>
++#include <fcntl.h>
++
++#ifdef CONFIG_X86_64
++#include <asm/unistd_64.h>
++#else
++#include <asm/unistd_32.h>
++#endif
++
++#include <linux/kcmp.h>
++
++#include <sys/syscall.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <sys/wait.h>
++
++static long sys_kcmp(int pid1, int pid2, int type, int fd1, int fd2)
++{
++	return syscall(__NR_kcmp, (long)pid1, (long)pid2,
++		       (long)type, (long)fd1, (long)fd2);
++}
++
++int main(int argc, char **argv)
++{
++	int pid1, pid2;
++	int fd1, fd2;
++	int status;
++
++	fd1 = open("test-file", O_RDWR | O_CREAT | O_TRUNC, 0644);
++	pid1 = getpid();
++
++	if (fd1 < 0) {
++		perror("Can't create file");
++		exit(1);
++	}
++
++	pid2 = fork();
++	if (pid2 < 0) {
++		perror("fork failed");
++		exit(1);
++	}
++
++	if (!pid2) {
++		int pid2 = getpid();
++		int ret;
++
++		fd2 = open("test-file", O_RDWR, 0644);
++		if (fd2 < 0) {
++			perror("Can't open file");
++			exit(1);
++		}
++
++		/* An example of output and arguments */
++                printf("pid1: %6d pid2: %6d FD: %2d FILES: %2d VM: %2d FS: %2d "
++		       "SIGHAND: %2d IO: %2d SYSVSEM: %2d INV: %2d\n",
++		       pid1, pid2,
++		       sys_kcmp(pid1, pid2, KCMP_FILE,		fd1, fd2),
++		       sys_kcmp(pid1, pid2, KCMP_FILES,		0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_VM,		0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_FS,		0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_SIGHAND,	0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_IO,		0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_SYSVSEM,	0, 0),
++
++			/* This one should fail */
++		       sys_kcmp(pid1, pid2, KCMP_TYPES + 1,	0, 0));
++
++		/* This one should return same fd */
++		ret = sys_kcmp(pid1, pid2, KCMP_FILE, fd1, fd1);
++		if (ret) {
++			printf("FAIL: 0 expected but %d returned\n", ret);
++			ret = -1;
++		} else
++			printf("PASS: 0 returned as expected\n");
++		exit(ret);
++	}
++
++	waitpid(pid2, &status, P_ALL);
++
++	return 0;
++}
+Index: linux-2.6.git/tools/testing/selftests/run_tests
+===================================================================
+--- linux-2.6.git.orig/tools/testing/selftests/run_tests
++++ linux-2.6.git/tools/testing/selftests/run_tests
+@@ -1,6 +1,6 @@
+ #!/bin/bash
  
- 	error = 0;
--
- out:
- 	up_read(&mm->mmap_sem);
--
- 	return error;
- }
- #else /* CONFIG_CHECKPOINT_RESTORE */
+-TARGETS=breakpoints
++TARGETS="breakpoints kcmp"
+ 
+ for TARGET in $TARGETS
+ do
 
