@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab2A3DYT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 22:24:19 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:38109 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062Ab2A3DYS (ORCPT
+	id S1754185Ab2A3DZo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 22:25:44 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44744 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753062Ab2A3DZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 22:24:18 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, San Mehat <san@google.com>,
-        Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, kernel-team@android.com,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 1/3] procfs: Export next_tgid(), move it to kernel/pid.c
-References: <20120130011323.GA30274@oksana.dev.rtsoft.ru>
-Date: Sun, 29 Jan 2012 19:26:55 -0800
-In-Reply-To: <20120130011323.GA30274@oksana.dev.rtsoft.ru> (Anton Vorontsov's
-	message of "Mon, 30 Jan 2012 05:13:23 +0400")
-Message-ID: <m1boplkgzk.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Sun, 29 Jan 2012 22:25:43 -0500
+Message-ID: <4F260DAE.4000008@gmail.com>
+Date: Mon, 30 Jan 2012 11:25:34 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/0hxAU3YMAn5jAPSijEYvqiEvANvbJyO8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Xiaotian Feng <xtfeng@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] sched: Accelerate "pick_next_entity" under special
+ condition
+References: <4F13EFBE.1030002@linux.vnet.ibm.com> <1326707503.2442.219.camel@twins> <4F14DEAE.60702@linux.vnet.ibm.com> <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com> <4F14E54E.80904@linux.vnet.ibm.com> <1327506934.2614.87.camel@laptop> <20120126100429.GA3853@elte.hu> <4F21FC69.6040402@linux.vnet.ibm.com> <4F222B2B.6010602@gmail.com> <4F24E804.5090808@linux.vnet.ibm.com> <20120129163328.GC23408@elte.hu> <4F260BFE.2070503@linux.vnet.ibm.com>
+In-Reply-To: <4F260BFE.2070503@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anton Vorontsov <anton.vorontsov@linaro.org> writes:
-
-> We'd like to use this function in the android low memory killer driver, so
-> let's export it.
+On 01/30/2012 11:18 AM, Michael Wang wrote:
+> But the sched.o under ./arch/x86/kernel/cpu/ still not change...
+> I think I may checking the wrong file, because this patch is for fair.c.
 >
-> Also, move next_tgid() to kernel/pid.c, so now it lives with the rest of
-> pid library functions and does not depend on procfs. Plus, we may now hide
-> find_ge_pid() from the global namespace.
+> And the fair.o changed after apply the patch, the size is a little
+> bigger, and the gcc generated code changed.
 >
-> While at it, also turn next_tgid()'s comments into kerneldoc format.
->
-> There should be no functional changes.
+> But I still don't know what can we get from this result? Bigger size is
+> caused by additional code, but these additional code will help to step
+> over some unnecessary code under special condition, looks like some
+> balance between size and performance...
 
-Ouch no.
+As your patch reduces the conditionals from 24 to 14, so it is possible 
+that it also reduces the size of the code too. This is Ingo's point.
 
-There is find_ge_pid that is general purpose, and there are a lot of
-things with the task list.  But this iterator is specific to the
-implementation of proc especially in how it grabs and drops locks.
-
-Using this code outside of /proc will make /proc harder to maintain than
-it already is.
-
-Why in the world would you want to traverse processes by pids when
-there are well defined iterators for looping over tasks already.
-
-Eric
+You need to check the diff to see why gcc actually generates bigger code.
