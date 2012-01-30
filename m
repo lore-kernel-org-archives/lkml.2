@@ -1,89 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab2A3Udb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 15:33:31 -0500
-Received: from smtp4.mundo-r.com ([212.51.32.151]:58687 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab2A3Ud3 (ORCPT
+	id S1753507Ab2A3Uez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 15:34:55 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45248 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752956Ab2A3Uey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 15:33:29 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap0EAKb9Jk9bdWOb/2dsb2JhbABDr1uBcgEBBAEyASMjEAsYHBIUJQMhiA8DuFGIPQEDBBANBAMENhSCdwIBAwcCHWo0glRjBJUZhVeDVokm
-X-IronPort-AV: E=Sophos;i="4.71,592,1320620400"; 
-   d="scan'208";a="862426423"
-Date: Mon, 30 Jan 2012 21:33:12 +0100
-From: =?iso-8859-1?Q?V=EDctor_M=2E_J=E1quez_L=2E?= <vjaquez@igalia.com>
-To: Joe Perches <joe@perches.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "Ramirez Luna, Omar" <omar.ramirez@ti.com>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Ivan Gomez Castellanos <ivan.gomez@ti.com>,
-        Armando Uribe <x0095078@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 3/5] staging: tidspbridge: Lindent to drv_interface.c
-Message-ID: <20120130203312.GA3296@lit.local.igalia.com>
-References: <cover.1327348286.git.vjaquez@igalia.com>
- <7103a353d393f9b8366b141a608a4370e4392c7b.1327348286.git.vjaquez@igalia.com>
- <CAB-zwWjKfakESHw4Cw8JvJ6WpELz51E_9zVtjR0bF84yhMRfMQ@mail.gmail.com>
- <20120130192907.GX3294@mwanda>
- <1327953180.25132.39.camel@joe2Laptop>
+	Mon, 30 Jan 2012 15:34:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1327953180.25132.39.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAA8XhMJeoUSMmcCizHqoFLrymbs7Hz216+7d445u6tV+ZC=fg@mail.gmail.com>
+References: <CAAA8XhOXuszcyCaMOcVWb-erGAJQdhBHCX-gsJ4KpH+Td7+bPQ@mail.gmail.com>
+	<20120124213936.GA1505@infradead.org>
+	<CAAA8XhMf9BhZP5csLfGVVbQxN7Uqh-+R6aqCLfezdiTECaRRjg@mail.gmail.com>
+	<20120127105859.GC23335@infradead.org>
+	<CAAA8XhOoF_AN_-1PsYQ+hp7adc08YuYqvA_3Bv9nqtuOzO1kOg@mail.gmail.com>
+	<20120127191532.GA25529@infradead.org>
+	<CAAA8XhMJeoUSMmcCizHqoFLrymbs7Hz216+7d445u6tV+ZC=fg@mail.gmail.com>
+Date: Mon, 30 Jan 2012 18:34:52 -0200
+Message-ID: <CAAA8XhPTnj+d1CzmpDvrYLRuZ3=p6A0sN1z-=yswezxA+MkF+A@mail.gmail.com>
+Subject: Re: XFS problem
+From: Kelbel Junior <jymmyjr@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 11:53:00AM -0800, Joe Perches wrote:
-> On Mon, 2012-01-30 at 22:29 +0300, Dan Carpenter wrote:
-> > On Mon, Jan 30, 2012 at 11:25:34AM -0600, Ramirez Luna, Omar wrote:
-> > > > +                       pr_info("%s:%d handle(s) still opened\n", __func__,
-> > > > +                               atomic_read(&bridge_cref));
-> > > I remember the rule was to break lines as far to the right as
-> > > possible, no? Chapter 2 CodingStyle, same for the other similar
-> > > changes.
-> > It doesn't mean you have to right justify things, it just means
-> > indented.  The original code is fine here and the new code is fine
-> > here.  It's up to whoever writes the code to decide.
-> 
-> I concur.
-> 
-> My personal preference is to use a new line after the format
-> string if necessary.
-> 
-> ie:
-> 	pr_<level>("fmt\n"[, args to 80 columns if all fit])
-> or
-> 	pr_<level>("fmt\n",
-> 		   args when single line exceeds 80 columns);
-> 
-> So for this case:
-> 			pr_info("%s:%d handle(s) still opened\n",
-> 				__func__, atomic_read(&bridge_cref));
-> 
-> I've done a patch here to tidspbridge that standardizes
-> printk output.
-> 
-> Basically, the patch adds
-> #define pr_fmt(fmt) KBUILD_MODNAME "%s: ", __func__
-> to prefix "tidspbridge:%s:", removes the leading
-> "%s:...",  __func__ from the uses, coalesces
-> formats and does argument alignment.
-> 
-> It cleans up the DBC_ASSERT, DBC_REQUIRE and DBC_ENSURE
-> macros too.
+Hi again, Christoph.
 
-hehehe... I also have one for this... But I prefer yours: I'm a newbie :)
+How you prefer to pre allocate space?
+xfs I/O or by 'dd' to do it?
 
-vmjl
+What other information you would like to better understand and manage
+to solve this problem?
 
-> 
-> I'm waiting for the Makefile change and whatever
-> patches Víctor produces to be applied.  I'll then
-> redo my patch and submit it.
-> 
-> 
-> 
+Below sending the first lines of the output 'filefrag -v cachefile' to
+check if there is some useful information ... if you want, I can make
+available for download a file with the output of the 'filefrag-v'
+
+####
+Filesystem type is: 58465342
+File size of cachefile is 885075181568 (216082808 blocks, blocksize 4096)
+ ext  logical physical expected length flags
+   0        0    37651               1
+   1        8  8356011    37651      2
+   2       10 42985973  8356012      5
+   3       16  8356008 42985977      1
+   4       24 14384348  8356008      3
+   5       27 42978781 14384350      4
+   6       31 49416416 42978784      1
+   7       32 14384398 49416416      3
+   8       35 42985981 14384400      3
+   9       40 14384407 42985983      2
+  10       42 42990181 14384408      4
+  11       48 14384433 42990184      3
+  12       56 14384445 14384435      2
+  13       64 14384470 14384446      2
+  14       66 43029387 14384471      2
+  15       72 14384492 43029388      2
+  16       80 14384556 14384493      2
+  17       82 43108186 14384557      2
+  18       88 14388688 43108187      3
+  19       96 14391631 14388690      3
+  20      104 14391634               1
+  21      112 14391635               1
+  22      113 41118314 14391635      1
+  23      120 14391625 41118314      1
+  24      121 43107765 14391625      5
+  25      128 14391888 43107769      7
+  26      136 14391793 14391894      6
+  27      142 14391806 14391798      1
+  28      144 14391802 14391806      4
+  29      152 14391810 14391805      4
+  30      160 14391818 14391813      3
+  31      168 14391826 14391820      4
+  32      176 14391830               1
+  33      184 30960375 14391830     13
+  34      200 30960391 30960387      2
+  35      202 43111672 30960392      5
+  36      208 30960399 43111676      2
+  37      210 42949345 30960400      3
+  38      216 30960407 42949347      3
+  39      224 30960415 30960409      3
+  40      232 30960423 30960417      3
+  41      240 30960431 30960425      3
+  42      248 30960439 30960433      6
+  43      256 30960447 30960444      3
+  44      264 30960455 30960449      2
+  45      266 41079292 30960456      1
+  46      272 30960463 41079292      3
+  47      275 40779450 30960465      1
+####
+
+Another fact, tried to run a 'xfs_bmap' file on my 1TB (not sure if
+the output of this command would be relevant to you) and got the
+following message:
+
+# xfs_bmap -pv cachefile
+xfs_bmap: xfsctl(XFS_IOC_GETBMAPX) iflags=0x4 ["file"]: Unable to
+allocate memory
+
+
+Thanks.
+Kelbel Junior
