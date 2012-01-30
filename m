@@ -1,144 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab2A3VMt (ORCPT <rfc822;w@1wt.eu>);
+	id S1753929Ab2A3VMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:12:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49775 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753285Ab2A3VMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jan 2012 16:12:49 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58909 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753285Ab2A3VMr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:12:47 -0500
-X-Sasl-enc: MUerGIC8UBnBmowIZ1lOnSu5IwAXwambchOyWhBR+gZT 1327957964
-Date: Mon, 30 Jan 2012 13:12:41 -0800
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY/serial patches for 3.3-rc1
-Message-ID: <20120130211241.GA12941@kroah.com>
+Message-ID: <4F270794.8030202@zytor.com>
+Date: Mon, 30 Jan 2012 13:11:48 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jonathan Corbet <corbet@lwn.net>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
+References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120130125812.0075dd04@dt>
+In-Reply-To: <20120130125812.0075dd04@dt>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some tty/serial patches for 3.3-rc1
+On 01/30/2012 11:58 AM, Jonathan Corbet wrote:
+> 
+> That's a cute trick, but do we know that every compiler that will ever see
+> this code will use 1 for a true integer comparison?  Simply spelling it
+> out with an if statement might be more robust, just as efficient, and, at
+> the same time, easier for others to understand.
+> 
 
-Big thing here is the movement of the 8250 serial drivers to their own
-directory, now that the patch churn has calmed down.
+This has been the case in C from the very beginning and is guaranteed by
+the C standard.  The number of places which will break if this isn't
+true is enormous.
 
-Other than that, only minor stuff (omap patches were reverted as they
-were found to be wrong), and another broken driver removed from the
-system.
-
-Please pull from:
-	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git tty-3.1-rc1
-
-All of these patches have been in the -mm and -next trees for a while.
-
-Patches will be sent to the linux-serial mailing list, if anyone wants
-to see them.
-
-thanks,
-
-greg k-h
-
-------------
-
- Documentation/DocBook/device-drivers.tmpl          |    1 -
- MAINTAINERS                                        |    2 +-
- drivers/tty/serial/{ => 8250}/8250.c               |    0
- drivers/tty/serial/{ => 8250}/8250.h               |    0
- drivers/tty/serial/{ => 8250}/8250_accent.c        |    0
- drivers/tty/serial/{ => 8250}/8250_acorn.c         |    0
- drivers/tty/serial/{ => 8250}/8250_boca.c          |    0
- drivers/tty/serial/{ => 8250}/8250_dw.c            |    0
- drivers/tty/serial/{ => 8250}/8250_early.c         |    0
- drivers/tty/serial/{ => 8250}/8250_exar_st16c554.c |    0
- drivers/tty/serial/{ => 8250}/8250_fourport.c      |    0
- drivers/tty/serial/{ => 8250}/8250_fsl.c           |    0
- drivers/tty/serial/{ => 8250}/8250_gsc.c           |    0
- drivers/tty/serial/{ => 8250}/8250_hp300.c         |    0
- drivers/tty/serial/{ => 8250}/8250_hub6.c          |    0
- drivers/tty/serial/{ => 8250}/8250_mca.c           |    0
- drivers/tty/serial/{ => 8250}/8250_pci.c           |    0
- drivers/tty/serial/{ => 8250}/8250_pnp.c           |    0
- drivers/tty/serial/8250/Kconfig                    |  280 ++++++++++++++++
- drivers/tty/serial/8250/Makefile                   |   20 ++
- drivers/tty/serial/{ => 8250}/m32r_sio.c           |    0
- drivers/tty/serial/{ => 8250}/m32r_sio.h           |    0
- drivers/tty/serial/{ => 8250}/m32r_sio_reg.h       |    0
- drivers/tty/serial/{ => 8250}/serial_cs.c          |    0
- drivers/tty/serial/Kconfig                         |  283 +----------------
- drivers/tty/serial/Makefile                        |   20 +-
- drivers/tty/serial/amba-pl011.c                    |   30 ++-
- drivers/tty/serial/jsm/jsm_driver.c                |    1 +
- drivers/tty/serial/max3107-aava.c                  |  344 --------------------
- drivers/tty/serial/omap-serial.c                   |    4 +-
- drivers/tty/serial/serial_core.c                   |    6 +-
- drivers/tty/tty_port.c                             |   12 +-
- 32 files changed, 346 insertions(+), 657 deletions(-)
- rename drivers/tty/serial/{ => 8250}/8250.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250.h (100%)
- rename drivers/tty/serial/{ => 8250}/8250_accent.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_acorn.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_boca.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_dw.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_early.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_exar_st16c554.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_fourport.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_fsl.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_gsc.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_hp300.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_hub6.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_mca.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_pci.c (100%)
- rename drivers/tty/serial/{ => 8250}/8250_pnp.c (100%)
- create mode 100644 drivers/tty/serial/8250/Kconfig
- create mode 100644 drivers/tty/serial/8250/Makefile
- rename drivers/tty/serial/{ => 8250}/m32r_sio.c (100%)
- rename drivers/tty/serial/{ => 8250}/m32r_sio.h (100%)
- rename drivers/tty/serial/{ => 8250}/m32r_sio_reg.h (100%)
- rename drivers/tty/serial/{ => 8250}/serial_cs.c (100%)
- delete mode 100644 drivers/tty/serial/max3107-aava.c
-
----------------
-
-Alan Cox (1):
-      serial: Kill off Moorestown code
-
-Greg Kroah-Hartman (2):
-      Revert "tty: serial: OMAP: transmit FIFO threshold interrupts don't wake the chip"
-      Revert "tty: serial: OMAP: ensure FIFO levels are set correctly in non-DMA mode"
-
-Jiri Slaby (1):
-      TTY: fix UV serial console regression
-
-Lucas Kannebley Tavares (2):
-      Updated TTY MAINTAINERS info
-      jsm: Fixed EEH recovery error
-
-Paul Gortmaker (1):
-      serial: group all the 8250 related code together
-
-Paul Walmsley (2):
-      tty: serial: OMAP: ensure FIFO levels are set correctly in non-DMA mode
-      tty: serial: OMAP: transmit FIFO threshold interrupts don't wake the chip
-
-Rabin Vincent (1):
-      serial: amba-pl011: lock console writes against interrupts
-
-Randy Dunlap (1):
-      docbook: don't use serial_core.h in device-drivers book
-
-Shreshtha Kumar Sahu (1):
-      amba-pl011: do not disable RTS during shutdown
-
-Shubhrajyoti D (2):
-      omap-serial :Make the suspend/resume functions depend on CONFIG_PM_SLEEP.
-      omap-serial: make serial_omap_restore_context depend on CONFIG_PM_RUNTIME
-
-Simon Glass (1):
-      serial: Fix wakeup init logic to speed up startup
+	-hpa
 
