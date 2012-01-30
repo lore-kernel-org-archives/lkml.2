@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab2A3Wo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:44:29 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41805 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754213Ab2A3Wo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:44:26 -0500
-Date: Mon, 30 Jan 2012 22:43:50 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        systemd-devel@lists.freedesktop.org
-Subject: Re: sysfs regression: wrong link counts
-Message-ID: <20120130224350.GN23916@ZenIV.linux.org.uk>
-References: <4F27120A.4040106@suse.cz>
- <20120130220611.GA26655@kroah.com>
- <20120130221059.26ab5edf@pyramind.ukuu.org.uk>
- <20120130222717.GA6393@kroah.com>
+	id S1754238Ab2A3Wqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:46:47 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:57087 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab2A3Wqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 17:46:45 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [PATCH 0/3] PM / Sleep: Introduce new phases of device suspend/resume
+Date: Mon, 30 Jan 2012 23:50:22 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc1+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <201112230029.20174.rjw@sisk.pl> <201201252336.36179.rjw@sisk.pl> <87ehugrf4x.fsf@ti.com>
+In-Reply-To: <87ehugrf4x.fsf@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120130222717.GA6393@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201302350.22975.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 02:27:17PM -0800, Greg KH wrote:
-> On Mon, Jan 30, 2012 at 10:10:59PM +0000, Alan Cox wrote:
-> > > Isn't there some other "proper" way of doing this in userspace, or is
-> > > this really the correct way?
-> > 
-> > You can look at the S_IFMT bits and stuff however link count indicating
-> > number of subdirectories is a standard Unix thing and used by many quite
-> > mundane tools as an optimisation.
+On Monday, January 30, 2012, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
 > 
-> Ah, yeah, that is easier.
+> > On Wednesday, January 25, 2012, Kevin Hilman wrote:
+> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> >> 
+> >> > Hi,
+> >> >
+> >> > On Friday, December 23, 2011, Rafael J. Wysocki wrote:
+> >> >> Hi,
+> >> >> 
+> >> >> On the request of some driver PM developers, that appears to have been quite
+> >> >> popular lately, this series of patches adds new system suspend/resume (and
+> >> >> hibernation/restore) callbacks to struct dev_pm_ops and makes the PM core
+> >> >> use them during system power transitions.
+> >> >> 
+> >> >> [1/2] - Introduce "late suspend" and "early resume" of devices.
+> >> >> [2/2] - Introduce generic callbacks for new device PM phases.
+> >> >> 
+> >> >> The series is on top of the linux-next branch of the linux-pm tree.
+> >> >> 
+> >> >> These patches have been tested on Toshiba Portege R500 with openSUSE 12.1
+> >> >> without crashing the box in the process, which looks promising.  Also,
+> >> >> they shouldn't actually have any impact on the existing setups other than
+> >> >> adding a very short delay to the system suspend/resume code paths.
+> >> >
+> >> > The patches have received some more testing since the were first posted and
+> >> > I've added a PM domains patch on top of them:
+> >> >
+> >> > [3/3] - Make generic PM domains use the new device suspend/resume phases.
+> >> >
+> >> > The series applies on top of linux-pm/pm-for-linus (although it should
+> >> > apply on top of the current mainline too).
+> >> >
+> >> > I'm considering these patches as v3.4 material, if there are no objections.
+> >> 
+> >> Reviewed-by: Kevin Hilman <khilman@ti.com>
+> >> 
+> >> Thanks Rafael for working on this.
+> >> 
+> >> So far I've only reviewed it, but I plan to convert my PM domain noirq
+> >> usage to this and give it some testing as well, hopefully this week.
+> >
+> > Great, thanks!
+> >
 > 
-> Eric, care to fix this or want me to revert it?
+> OK, I gave it a test on OMAP by converting our _noirq usage to the new
+> early/late callbacks.  Works great.  Thanks!
+> 
+> Tested-by: Kevin Hilman <khilman@ti.com>
 
-Fix _what_?  Userland shite quoted upthread?  Because that's where the bug
-is - the mundane tools mentioned by Alan treat 1 in st_nlink as "no
-information about the number of subdirectories".  And shite might be too
-mild a term for the little gem in question, really...
+Many thanks for the testing!
+
+Rafael
