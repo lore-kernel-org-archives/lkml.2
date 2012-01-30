@@ -1,155 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab2A3UAr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 15:00:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51115 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752055Ab2A3UAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 15:00:45 -0500
-Date: Mon, 30 Jan 2012 21:00:40 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system
- suspend/hibernation
-Message-ID: <20120130200040.GB7827@quack.suse.cz>
-References: <201201281445.49377.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201201281445.49377.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753556Ab2A3UCj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 15:02:39 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37746 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752391Ab2A3UCh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 15:02:37 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: Implement managed regmap_init()
+Date: Mon, 30 Jan 2012 20:02:35 +0000
+Message-Id: <1327953755-27246-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 28-01-12 14:45:49, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Freeze all filesystems during system suspend and (kernel-driven)
-> hibernation by calling freeze_supers() for all superblocks and thaw
-> them during the subsequent resume with the help of thaw_supers().
-> 
-> This makes filesystems stay in a consistent state in case something
-> goes wrong between system suspend (or hibernation) and the subsequent
-> resume (e.g. journal replays won't be necessary in those cases).  In
-> particular, this should help to solve a long-standing issue that, in
-> some cases, during resume from hibernation the boot loader causes the
-> journal to be replied for the filesystem containing the kernel image
-> and/or initrd causing it to become inconsistent with the information
-> stored in the hibernation image.
-> 
-> The user-space-driven hibernation (s2disk) is not covered by this
-> change, because the freezing of filesystems prevents s2disk from
-> accessing device special files it needs to do its job.
-> 
-> This change is based on earlier work by Nigel Cunningham.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  fs/super.c               |   73 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/fs.h       |    3 +
->  kernel/power/hibernate.c |   11 +++++--
->  kernel/power/power.h     |   23 --------------
->  kernel/power/suspend.c   |   42 +++++++++++++++++++++++++++
->  5 files changed, 128 insertions(+), 24 deletions(-)
-> 
-> Index: linux/fs/super.c
-> ===================================================================
-> --- linux.orig/fs/super.c
-> +++ linux/fs/super.c
-> @@ -594,6 +594,79 @@ void iterate_supers_type(struct file_sys
->  EXPORT_SYMBOL(iterate_supers_type);
->  
->  /**
-> + *	thaw_supers - call thaw_super() for all superblocks
-> + */
-> +void thaw_supers(void)
-> +{
-> +	struct super_block *sb, *p = NULL;
-> +
-> +	spin_lock(&sb_lock);
-> +	list_for_each_entry(sb, &super_blocks, s_list) {
-> +		if (list_empty(&sb->s_instances))
-> +			continue;
-> +		sb->s_count++;
-> +		spin_unlock(&sb_lock);
-> +
-> +		if (sb->s_flags & MS_FROZEN) {
-> +			thaw_super(sb);
-> +			sb->s_flags &= ~MS_FROZEN;
-> +		}
-> +
-> +		spin_lock(&sb_lock);
-> +		if (p)
-> +			__put_super(p);
-> +		p = sb;
-> +	}
-> +	if (p)
-> +		__put_super(p);
-> +	spin_unlock(&sb_lock);
-> +}
-  At least for thawing you can use iterate_supers() helper.
+Save error handling and unwinding code in drivers by providing managed
+versions of the regmap init functions, simplifying usage.
 
-> +/**
-> + *	freeze_supers - call freeze_super() for all superblocks
-> + */
-> +int freeze_supers(void)
-> +{
-> +	struct super_block *sb, *p = NULL;
-> +	int error = 0;
-> +
-> +	spin_lock(&sb_lock);
-> +	/*
-> +	 * Freeze in reverse order so filesystems depending on others are
-> +	 * frozen in the right order (eg. loopback on ext3).
-> +	 */
-  Ho, hum, are you sure the order in super_blocks list is the one you need?
-Maybe it is but I'm not sure you are guaranteed it is. I've added Al to CC,
-he'll likely have opinion on this...
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-i2c.c |   17 ++++++++++++++++
+ drivers/base/regmap/regmap-spi.c |   17 ++++++++++++++++
+ drivers/base/regmap/regmap.c     |   39 ++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h           |    8 +++++++
+ 4 files changed, 81 insertions(+), 0 deletions(-)
 
-> +	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
-> +		if (list_empty(&sb->s_instances))
-> +			continue;
-> +		sb->s_count++;
-> +		spin_unlock(&sb_lock);
-> +
-> +		if (sb->s_root && sb->s_frozen != SB_FREEZE_TRANS
-> +		    && !(sb->s_flags & MS_RDONLY)) {
-> +			error = freeze_super(sb);
-> +			if (!error)
-> +				sb->s_flags |= MS_FROZEN;
-> +		}
-> +
-> +		spin_lock(&sb_lock);
-> +		if (error)
-> +			break;
-> +		if (p)
-> +			__put_super(p);
-> +		p = sb;
-> +	}
-> +	if (p)
-> +		__put_super(p);
-> +	spin_unlock(&sb_lock);
-> +
-> +	if (error)
-> +		thaw_supers();
-> +
-> +	return error;
-> +}
-> +
-> +
-> +/**
->   *	get_super - get the superblock of a device
->   *	@bdev: device to get the superblock for
->   *	
-
-								Honza
+diff --git a/drivers/base/regmap/regmap-i2c.c b/drivers/base/regmap/regmap-i2c.c
+index 38621ec..9a3a8c5 100644
+--- a/drivers/base/regmap/regmap-i2c.c
++++ b/drivers/base/regmap/regmap-i2c.c
+@@ -111,4 +111,21 @@ struct regmap *regmap_init_i2c(struct i2c_client *i2c,
+ }
+ EXPORT_SYMBOL_GPL(regmap_init_i2c);
+ 
++/**
++ * devm_regmap_init_i2c(): Initialise managed register map
++ *
++ * @i2c: Device that will be interacted with
++ * @config: Configuration for register map
++ *
++ * The return value will be an ERR_PTR() on error or a valid pointer
++ * to a struct regmap.  The regmap will be automatically freed by the
++ * device management code.
++ */
++struct regmap *devm_regmap_init_i2c(struct i2c_client *i2c,
++				    const struct regmap_config *config)
++{
++	return devm_regmap_init(&i2c->dev, &regmap_i2c, config);
++}
++EXPORT_SYMBOL_GPL(devm_regmap_init_i2c);
++
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/base/regmap/regmap-spi.c b/drivers/base/regmap/regmap-spi.c
+index 2560658..7c0c35a 100644
+--- a/drivers/base/regmap/regmap-spi.c
++++ b/drivers/base/regmap/regmap-spi.c
+@@ -70,4 +70,21 @@ struct regmap *regmap_init_spi(struct spi_device *spi,
+ }
+ EXPORT_SYMBOL_GPL(regmap_init_spi);
+ 
++/**
++ * devm_regmap_init_spi(): Initialise register map
++ *
++ * @spi: Device that will be interacted with
++ * @config: Configuration for register map
++ *
++ * The return value will be an ERR_PTR() on error or a valid pointer
++ * to a struct regmap.  The map will be automatically freed by the
++ * device management code.
++ */
++struct regmap *devm_regmap_init_spi(struct spi_device *spi,
++				    const struct regmap_config *config)
++{
++	return devm_regmap_init(&spi->dev, &regmap_spi, config);
++}
++EXPORT_SYMBOL_GPL(devm_regmap_init_spi);
++
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index a4e189c..1fc666c 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -278,6 +278,45 @@ err:
+ }
+ EXPORT_SYMBOL_GPL(regmap_init);
+ 
++static void devm_regmap_release(struct device *dev, void *res)
++{
++	regmap_exit(*(struct regmap **)res);
++}
++
++/**
++ * devm_regmap_init(): Initialise managed register map
++ *
++ * @dev: Device that will be interacted with
++ * @bus: Bus-specific callbacks to use with device
++ * @config: Configuration for register map
++ *
++ * The return value will be an ERR_PTR() on error or a valid pointer
++ * to a struct regmap.  This function should generally not be called
++ * directly, it should be called by bus-specific init functions.  The
++ * map will be automatically freed by the device management code.
++ */
++struct regmap *devm_regmap_init(struct device *dev,
++				const struct regmap_bus *bus,
++				const struct regmap_config *config)
++{
++	struct regmap **ptr, *regmap;
++
++	ptr = devres_alloc(devm_regmap_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	regmap = regmap_init(dev, bus, config);
++	if (!IS_ERR(regmap)) {
++		*ptr = regmap;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return regmap;
++}
++EXPORT_SYMBOL_GPL(devm_regmap_init);
++
+ /**
+  * regmap_reinit_cache(): Reinitialise the current register cache
+  *
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index e8a31a3..5d26599 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -129,6 +129,14 @@ struct regmap *regmap_init_i2c(struct i2c_client *i2c,
+ struct regmap *regmap_init_spi(struct spi_device *dev,
+ 			       const struct regmap_config *config);
+ 
++struct regmap *devm_regmap_init(struct device *dev,
++				const struct regmap_bus *bus,
++				const struct regmap_config *config);
++struct regmap *devm_regmap_init_i2c(struct i2c_client *i2c,
++				    const struct regmap_config *config);
++struct regmap *devm_regmap_init_spi(struct spi_device *dev,
++				    const struct regmap_config *config);
++
+ void regmap_exit(struct regmap *map);
+ int regmap_reinit_cache(struct regmap *map,
+ 			const struct regmap_config *config);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.9.rc1
+
