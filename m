@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab2A3TOm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 14:14:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185Ab2A3TOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 14:14:41 -0500
-Date: Mon, 30 Jan 2012 17:14:29 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf tools: remove .. in perf includes/
-Message-ID: <20120130191429.GB5797@infradead.org>
-References: <1327091804-3984-1-git-send-email-andi@firstfloor.org>
+	id S1753351Ab2A3TQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 14:16:27 -0500
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:36160 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752404Ab2A3TQZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 14:16:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327091804-3984-1-git-send-email-andi@firstfloor.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.LSU.2.00.1201271458130.3402@eggly.anvils>
+References: <1327557574-6125-1-git-send-email-roland@kernel.org>
+ <alpine.LSU.2.00.1201261133230.1369@eggly.anvils> <CAG4TOxNEV2VY9wOE86p9RnKGqpruB32ci9Wq3yBt8O2zc7f05w@mail.gmail.com>
+ <alpine.LSU.2.00.1201271458130.3402@eggly.anvils>
+From: Roland Dreier <roland@kernel.org>
+Date: Mon, 30 Jan 2012 11:16:04 -0800
+X-Google-Sender-Auth: Itl5Cdyzgbepo4pCPgQmZaYoqUU
+Message-ID: <CAL1RGDXqguZ2QKV=yjLXtk2n_Ag4Nf3CW+kF2BFQFR4ySTNaRA@mail.gmail.com>
+Subject: Re: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages() parameters
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-rdma@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jan 20, 2012 at 12:36:44PM -0800, Andi Kleen escreveu:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> The perf user space has a lot of includes with ugly .. chains. This also
-> makes it impossible to include any perf files from other code.
-> 
-> I think the original reason for this were some wrapper include files
-> for the kernel includes, and the explicit paths were needed to avoid
-> endless recursion. A better way to handle this is #include_next
-> 
-> - Add all the relevant directories as -I in the Makefile
-> - Remove (near) all the .. in include statements
-> - Remove unnecessary wrappers that do nothing
-> - Fix up some fallout
-> 
-> This makes the code more pleasant to read.
-> 
-> I did it all in one big patch to keep bisectability.
+On Fri, Jan 27, 2012 at 6:19 PM, Hugh Dickins <hughd@google.com> wrote:
+>> > > This patch comes from me trying to do userspace RDMA on a memory
+>> > > region exported from a character driver and mapped with
+>> > >
+>> > >     mmap(... PROT_READ, MAP_PRIVATE ...)
+>
+> Why MAP_PRIVATE?  There you are explicitly asking for COW: okay,
+> you wouldn't normally expect any COW while it's just PROT_READ, but
+> once you bring GUP into the picture, with use of write and force,
+> then you are just begging for COW with that MAP_PRIVATE.  Please
+> change it to MAP_SHARED - any reason why not?
 
-It builds, but breaks this:
+I have no idea of the history there... probably could be changed with
+no problems.
 
-[acme@emilia linux]$ make help | grep perf
-  perf-tar-src-pkg    - Build perf-3.2.0.tar source tarball
-  perf-targz-src-pkg  - Build perf-3.2.0.tar.gz source tarball
-  perf-tarbz2-src-pkg - Build perf-3.2.0.tar.bz2 source tarball
-  perf-tarxz-src-pkg  - Build perf-3.2.0.tar.xz source tarball
-[acme@emilia linux]$ make perf-tarxz-src-pkg
-  TAR
-[acme@emilia linux]$ ls -la perf-3.2.0.tar.xz
--rw-rw-r--   1 acme acme    391180 Jan 30 14:48 perf-3.2.0.tar.xz
-[acme@emilia linux]$ mv perf-3.2.0.tar.xz /tmp
-[acme@emilia linux]$ cd /tmp
-[acme@emilia tmp]$ tar xvf perf-3.2.0.tar.xz 
-perf-3.2.0/
-perf-3.2.0/arch/
-perf-3.2.0/arch/alpha/
-<SNIP>
-[acme@emilia tmp]$ cd perf-3.2.0
-[acme@emilia perf-3.2.0]$ l
-total 36
-drwxrwxr-x   6 acme acme  4096 Jan 30 14:48 ./
-drwxrwxrwt.  6 root root 12288 Jan 30 14:48 ../
-drwxrwxr-x  27 acme acme  4096 Jan 30 14:48 arch/
--rw-rw-r--   1 acme acme    41 Jan 30 14:48 HEAD
-drwxrwxr-x   3 acme acme  4096 Jan 30 14:48 include/
-drwxrwxr-x   2 acme acme  4096 Jan 30 14:48 lib/
-drwxrwxr-x   3 acme acme  4096 Jan 30 14:48 tools/
-[acme@emilia perf-3.2.0]$ make -C tools/perf/ install
-make: Entering directory `/tmp/perf-3.2.0/tools/perf'
-make[1]: *** No rule to make target `kernelversion'.  Stop.
-PERF_VERSION = 
-make: Leaving directory `/tmp/perf-3.2.0/tools/perf'
-make: Entering directory `/tmp/perf-3.2.0/tools/perf'
-make[1]: *** No rule to make target `kernelversion'.  Stop.
-    GEN common-cmds.h
-    * new build flags or prefix
-    CC perf.o
-make: *** No rule to make target `../../arch/x86/lib/memset_64.S',
-needed by `builtin-annotate.o'.  Stop.
-make: Leaving directory `/tmp/perf-3.2.0/tools/perf'
-[acme@emilia perf-3.2.0]$
+However, get_user_pages has this comment:
 
-I mean jusst the:
+ * @force:	whether to force write access even if user mapping is
+ *		readonly. This will result in the page being COWed even
+ *		in MAP_SHARED mappings. You do not want this.
 
-make: *** No rule to make target `../../arch/x86/lib/memset_64.S',
+but I don't see where in the code FOLL_FORCE does COW
+for MAP_SHARED mappings.  But on the OTOH I don't see
+why we set force in the first place.  Why wouldn't we respect
+the user's mapping permissions.
 
-part, the other one (kernelversion), if you fix, double brownie points
-to ya :-)
+> I feel you're trying to handle two very different cases (rdma into
+> user-supplied anonymous memory, and exporting driver memory to the
+> user) with the same set of args to get_user_pages().  In fact, I
+> don't even see why you need get_user_pages() at all when exporting
+> driver memory to the user.  Ah, perhaps you don't, but you do want
+> your standard access method (which already involves GUP) not to
+> mess up when applied to such a mapping - is that it?
 
-- Arnaldo
+Exactly.  Right now we have the libibverbs userspace API, which
+basically lets userspace create an abstract "memory region" (MR)
+that is then given to the RDMA hardware to do IO on.  Userspace does
 
+    mr = ibv_reg_mr(..., buf, size, access_flags);
+
+where access flags say whether we're going to let the hardware
+read and/or write the memory.
+
+Ideally userspace should not have to know where the memory
+underlying its "buf" came from or what type of mapping it is.
+
+Certainly there are still more unresolved issues around the case
+where userspace wants to map, say, part of a GPUs PCI memory
+(which won't have any underlying page structs at all), but I'm at
+least hoping we can come up with a way to handle both anonymous
+private maps (which will be COWed from the zero page when
+the memory is touched for writing) and shared mappings of kernel
+memory exported by a driver's mmap method.
+
+
+So I guess I'm left thinking that it seems at least plausible that
+what we want is a new FOLL_ flag for __get_user_pages() that triggers
+COW exactly on the pages that userspace might trigger COW on,
+and avoids COW otherwise -- ie do FOLL_WRITE exactly for the
+pages that have VM_WRITE in their mapping.
+
+I don't think we want to do the "force" semantics or deal with the
+VM_MAYWRITE possiblity -- the access we give the hardware on
+behalf of userspace should just match the access that userspace
+actually has.  It seems that if we don't try to get pages for writing
+when VM_WRITE isn't set, we don't need force anymore.
+
+ - R.
