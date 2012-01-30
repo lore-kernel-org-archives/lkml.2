@@ -1,150 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab2A3LP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 06:15:28 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:36486 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750900Ab2A3LP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 06:15:26 -0500
-Date: Mon, 30 Jan 2012 11:15:22 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: Re: [PATCH 02/15] mm: page_alloc: update migrate type of pages on
- pcp when isolating
-Message-ID: <20120130111522.GE25268@csn.ul.ie>
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
- <1327568457-27734-3-git-send-email-m.szyprowski@samsung.com>
+	id S1752315Ab2A3LSV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 06:18:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38604 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab2A3LSU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 06:18:20 -0500
+Date: Mon, 30 Jan 2012 11:18:17 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: checkpatch.pl: WxV false positive
+Message-ID: <20120130111817.GA18810@localhost>
+References: <20120122214834.6414592c@lenov0n>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327568457-27734-3-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <20120122214834.6414592c@lenov0n>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 10:00:44AM +0100, Marek Szyprowski wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
+On Sun, Jan 22, 2012 at 09:48:34PM -0500, Vivien Didelot wrote:
+
+> In the code below, checkpatch thinks that the asterisk is a
+> multiplication, so it is complaining about coding style.
 > 
-> This commit changes set_migratetype_isolate() so that it updates
-> migrate type of pages on pcp list which is saved in their
-> page_private.
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  include/linux/page-isolation.h |    6 ++++++
->  mm/page_alloc.c                |    1 +
->  mm/page_isolation.c            |   24 ++++++++++++++++++++++++
->  3 files changed, 31 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-> index 051c1b1..8c02c2b 100644
-> --- a/include/linux/page-isolation.h
-> +++ b/include/linux/page-isolation.h
-> @@ -27,6 +27,12 @@ extern int
->  test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
->  
->  /*
-> + * Check all pages in pageblock, find the ones on pcp list, and set
-> + * their page_private to MIGRATE_ISOLATE.
-> + */
-> +extern void update_pcp_isolate_block(unsigned long pfn);
-> +
-> +/*
->   * Internal funcs.Changes pageblock's migrate type.
->   * Please use make_pagetype_isolated()/make_pagetype_movable().
->   */
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index e1c5656..70709e7 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5465,6 +5465,7 @@ out:
->  	if (!ret) {
->  		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
->  		move_freepages_block(zone, page, MIGRATE_ISOLATE);
-> +		update_pcp_isolate_block(pfn);
->  	}
->  
->  	spin_unlock_irqrestore(&zone->lock, flags);
-> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> index 4ae42bb..9ea2f6e 100644
-> --- a/mm/page_isolation.c
-> +++ b/mm/page_isolation.c
-> @@ -139,3 +139,27 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
->  	spin_unlock_irqrestore(&zone->lock, flags);
->  	return ret ? 0 : -EBUSY;
->  }
-> +
-> +/* must hold zone->lock */
-> +void update_pcp_isolate_block(unsigned long pfn)
-> +{
-> +	unsigned long end_pfn = pfn + pageblock_nr_pages;
-> +	struct page *page;
-> +
-> +	while (pfn < end_pfn) {
-> +		if (!pfn_valid_within(pfn)) {
-> +			++pfn;
-> +			continue;
-> +		}
-> +
+>     ERROR: need consistent spacing around '*' (ctx:WxV)
+>     #304: FILE: x86/platform/ts5500/ts5500_adc.c:304:
+>     +	.attrs = (struct attribute *[]) {
 
-There is a potential problem here that you need to be aware of.
-set_pageblock_migratetype() is called from start_isolate_page_range().
-I do not think there is a guarantee that pfn + pageblock_nr_pages is
-not in a different block of MAX_ORDER_NR_PAGES. If that is right then
-your options are to add a check like this;
+C types are the pits.  How does the version below handle for you:
 
-if ((pfn & (MAX_ORDER_NR_PAGES - 1)) == 0 && !pfn_valid(pfn))
-	break;
+    http://people.canonical.com/~apw/checkpatch/checkpatch-next.pl
 
-or else ensure that end_pfn is always MAX_ORDER_NR_PAGES aligned and in
-the same block as pfn and relying on the caller to have called
-pfn_valid.
+Relative patch below.
 
-> +		page = pfn_to_page(pfn);
-> +		if (PageBuddy(page)) {
-> +			pfn += 1 << page_order(page);
-> +		} else if (page_count(page) == 0) {
-> +			set_page_private(page, MIGRATE_ISOLATE);
-> +			++pfn;
+-apw
 
-This is dangerous for two reasons. If the page_count is 0, it could
-be because the page is in the process of being freed and is not
-necessarily on the per-cpu lists yet and you cannot be sure if the
-contents of page->private are important. Second, there is nothing to
-prevent another CPU allocating this page from its per-cpu list while
-the private field is getting updated from here which might lead to
-some interesting races.
+commit f8a73045dcaac70f9be770cca06f21c762a13878
+Author: Andy Whitcroft <apw@canonical.com>
+Date:   Sun Jan 29 21:46:04 2012 +0000
 
-I recognise that what you are trying to do is respond to Gilad's
-request that you really check if an IPI here is necessary. I think what
-you need to do is check if a page with a count of 0 is encountered
-and if it is, then a draining of the per-cpu lists is necessary. To
-address Gilad's concerns, be sure to only this this once per attempt at
-CMA rather than for every page encountered with a count of 0 to avoid a
-storm of IPIs.
+    checkpatch: add [] to type extensions
+    
+    Add [] to a type extensions.  Fixes false positives on:
+    
+        .attrs = (struct attribute *[]) {
+    
+    Signed-off-by: Andy Whitcroft <apw@canonical.com>
 
-> +		} else {
-> +			++pfn;
-> +		}
-> +	}
-> +}
-
--- 
-Mel Gorman
-SUSE Labs
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index d1dd544..64de1bd 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -323,7 +323,7 @@ sub build_types {
+ 		  }x;
+ 	$Type	= qr{
+ 			$NonptrType
+-			(?:[\s\*]+\s*const|[\s\*]+|(?:\s*\[\s*\])+)?
++			(?:(?:\s|\*|\[\])+\s*const|(?:\s|\*|\[\])+|(?:\s*\[\s*\])+)?
+ 			(?:\s+$Inline|\s+$Modifier)*
+ 		  }x;
+ 	$Declare	= qr{(?:$Storage\s+)?$Type};
