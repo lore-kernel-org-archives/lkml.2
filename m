@@ -1,106 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab2A3Uez (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 15:34:55 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45248 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752956Ab2A3Uey (ORCPT
+	id S1753692Ab2A3UfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 15:35:01 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36765 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586Ab2A3Ue6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 15:34:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAA8XhMJeoUSMmcCizHqoFLrymbs7Hz216+7d445u6tV+ZC=fg@mail.gmail.com>
-References: <CAAA8XhOXuszcyCaMOcVWb-erGAJQdhBHCX-gsJ4KpH+Td7+bPQ@mail.gmail.com>
-	<20120124213936.GA1505@infradead.org>
-	<CAAA8XhMf9BhZP5csLfGVVbQxN7Uqh-+R6aqCLfezdiTECaRRjg@mail.gmail.com>
-	<20120127105859.GC23335@infradead.org>
-	<CAAA8XhOoF_AN_-1PsYQ+hp7adc08YuYqvA_3Bv9nqtuOzO1kOg@mail.gmail.com>
-	<20120127191532.GA25529@infradead.org>
-	<CAAA8XhMJeoUSMmcCizHqoFLrymbs7Hz216+7d445u6tV+ZC=fg@mail.gmail.com>
-Date: Mon, 30 Jan 2012 18:34:52 -0200
-Message-ID: <CAAA8XhPTnj+d1CzmpDvrYLRuZ3=p6A0sN1z-=yswezxA+MkF+A@mail.gmail.com>
-Subject: Re: XFS problem
-From: Kelbel Junior <jymmyjr@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 30 Jan 2012 15:34:58 -0500
+Date: Mon, 30 Jan 2012 20:36:19 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, alan@linux.intel.com,
+        jirislaby@gmail.com, Havard Skinnemoen <hskinnemoen@google.com>
+Subject: Re: [PATCH 1/5] TTY: provide tty_standard_install helper
+Message-ID: <20120130203619.3c318586@pyramind.ukuu.org.uk>
+In-Reply-To: <1327954472-26594-1-git-send-email-jslaby@suse.cz>
+References: <1327954472-26594-1-git-send-email-jslaby@suse.cz>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again, Christoph.
+On Mon, 30 Jan 2012 21:14:28 +0100
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-How you prefer to pre allocate space?
-xfs I/O or by 'dd' to do it?
+> There are currently many cut&paste copies of what
+> tty_driver_install_tty does when custom ->install method is not
+> provided. Let's get rid of the copies and create a helper with this
+> setup code.
 
-What other information you would like to better understand and manage
-to solve this problem?
-
-Below sending the first lines of the output 'filefrag -v cachefile' to
-check if there is some useful information ... if you want, I can make
-available for download a file with the output of the 'filefrag-v'
-
-####
-Filesystem type is: 58465342
-File size of cachefile is 885075181568 (216082808 blocks, blocksize 4096)
- ext  logical physical expected length flags
-   0        0    37651               1
-   1        8  8356011    37651      2
-   2       10 42985973  8356012      5
-   3       16  8356008 42985977      1
-   4       24 14384348  8356008      3
-   5       27 42978781 14384350      4
-   6       31 49416416 42978784      1
-   7       32 14384398 49416416      3
-   8       35 42985981 14384400      3
-   9       40 14384407 42985983      2
-  10       42 42990181 14384408      4
-  11       48 14384433 42990184      3
-  12       56 14384445 14384435      2
-  13       64 14384470 14384446      2
-  14       66 43029387 14384471      2
-  15       72 14384492 43029388      2
-  16       80 14384556 14384493      2
-  17       82 43108186 14384557      2
-  18       88 14388688 43108187      3
-  19       96 14391631 14388690      3
-  20      104 14391634               1
-  21      112 14391635               1
-  22      113 41118314 14391635      1
-  23      120 14391625 41118314      1
-  24      121 43107765 14391625      5
-  25      128 14391888 43107769      7
-  26      136 14391793 14391894      6
-  27      142 14391806 14391798      1
-  28      144 14391802 14391806      4
-  29      152 14391810 14391805      4
-  30      160 14391818 14391813      3
-  31      168 14391826 14391820      4
-  32      176 14391830               1
-  33      184 30960375 14391830     13
-  34      200 30960391 30960387      2
-  35      202 43111672 30960392      5
-  36      208 30960399 43111676      2
-  37      210 42949345 30960400      3
-  38      216 30960407 42949347      3
-  39      224 30960415 30960409      3
-  40      232 30960423 30960417      3
-  41      240 30960431 30960425      3
-  42      248 30960439 30960433      6
-  43      256 30960447 30960444      3
-  44      264 30960455 30960449      2
-  45      266 41079292 30960456      1
-  46      272 30960463 41079292      3
-  47      275 40779450 30960465      1
-####
-
-Another fact, tried to run a 'xfs_bmap' file on my 1TB (not sure if
-the output of this command would be relevant to you) and got the
-following message:
-
-# xfs_bmap -pv cachefile
-xfs_bmap: xfsctl(XFS_IOC_GETBMAPX) iflags=0x4 ["file"]: Unable to
-allocate memory
-
-
-Thanks.
-Kelbel Junior
+Acked-by: Alan Cox <alan@linux.intel.com>
