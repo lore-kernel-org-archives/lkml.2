@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab2A3HIg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 02:08:36 -0500
-Received: from mga14.intel.com ([143.182.124.37]:5268 "EHLO mga14.intel.com"
+	id S1754534Ab2A3HIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 02:08:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:16158 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752781Ab2A3HHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752402Ab2A3HHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jan 2012 02:07:25 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101015146"
-Message-Id: <20120130070634.907002093@sli10-conroe.sh.intel.com>
+   d="scan'208";a="117918263"
+Message-Id: <20120130070635.412104517@sli10-conroe.sh.intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 30 Jan 2012 15:02:18 +0800
+Date: Mon, 30 Jan 2012 15:02:21 +0800
 From: Shaohua Li <shaohua.li@intel.com>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, vgoyal@redhat.com, david@fromorbit.com,
         jack@suse.cz, zhu.yanhai@gmail.com, namhyung.kim@lge.com,
         shaohua.li@intel.com
-Subject: [patch v2 5/8]block: fiops preserve vios key for deep queue depth workload
+Subject: [patch v2 8/8]block: fiops sync preempts async
 References: <20120130070213.793690895@sli10-conroe.sh.intel.com>
-Content-Disposition: inline; filename=fiops-vios-key-preserve.patch
+Content-Disposition: inline; filename=fiops-preempt-async.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the task has running request, even it's added into service tree newly,
-we preserve its vios key, so it will not lost its share. This should work
-for task driving big queue depth. For single depth task, there is no approach
-to preserve its vios key.
+Debug patch only.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+This implements CFQ like sync preempts async. But like CFQ, this
+will starve async.
+
 ---
- block/fiops-iosched.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ block/fiops-iosched.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 Index: linux/block/fiops-iosched.c
 ===================================================================
---- linux.orig/block/fiops-iosched.c	2012-01-18 14:43:51.000000000 +0800
-+++ linux/block/fiops-iosched.c	2012-01-18 14:44:25.000000000 +0800
-@@ -188,9 +188,12 @@ static void fiops_service_tree_add(struc
- 	int left;
+--- linux.orig/block/fiops-iosched.c	2012-01-21 10:35:04.000000000 +0800
++++ linux/block/fiops-iosched.c	2012-01-21 10:48:52.000000000 +0800
+@@ -408,6 +408,21 @@ static struct fiops_ioc *fiops_select_io
+ 		return NULL;
+ 	}
  
- 	/* New added IOC */
--	if (RB_EMPTY_NODE(&ioc->rb_node))
--		vios = max_vios(service_tree->min_vios, ioc->vios);
--	else {
-+	if (RB_EMPTY_NODE(&ioc->rb_node)) {
-+		if (ioc->in_flight > 0)
-+			vios = ioc->vios;
-+		else
-+			vios = max_vios(service_tree->min_vios, ioc->vios);
-+	} else {
- 		vios = ioc->vios;
- 		/* ioc->service_tree might not equal to service_tree */
- 		fiops_rb_erase(&ioc->rb_node, ioc->service_tree);
++	/* Let sync request preempt async queue */
++	if (!rq_is_sync(rq) && service_tree->count > 1) {
++		struct rb_node *tmp = rb_next(&ioc->rb_node);
++		struct fiops_ioc *sync_ioc = NULL;
++		while (tmp) {
++			sync_ioc = rb_entry(tmp, struct fiops_ioc, rb_node);
++			rq = rq_entry_fifo(sync_ioc->fifo.next);
++			if (rq_is_sync(rq))
++				break;
++			tmp = rb_next(&sync_ioc->rb_node);
++		}
++		if (sync_ioc)
++			ioc = sync_ioc;
++	}
++
+ 	return ioc;
+ }
+ 
 
