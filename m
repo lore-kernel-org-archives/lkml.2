@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab2A3NlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 08:41:25 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:60074
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752727Ab2A3NlY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 08:41:24 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: wlanfae@realtek.com, linux-wireless@vger.kernel.org,
-        Larry.Finger@lwfinger.net
-Cc: standby24x7@gmail.com, linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH] [trivial] net: Fix typo in rtl8192de/dm.c
-Date: Mon, 30 Jan 2012 22:40:27 +0900
-Message-Id: <1327930827-1719-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1752942Ab2A3NmZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 08:42:25 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55378 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752601Ab2A3NmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 08:42:24 -0500
+Date: Mon, 30 Jan 2012 14:42:05 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Michael D Labriola <mlabriol@gdeb.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        Michael D Labriola <michael.d.labriola@gmail.com>
+Subject: Re: [PATCH] x86, reboot: reduce to a single DMI table for reboot
+ quirks
+Message-ID: <20120130134205.GA3351@elte.hu>
+References: <87ty3eb9c9.fsf@gmail.com>
+ <20120130095537.GA8924@elte.hu>
+ <OFE2532E18.A9BD6FEB-ON85257995.004A4456-85257995.004ABE7E@gdeb.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OFE2532E18.A9BD6FEB-ON85257995.004A4456-85257995.004ABE7E@gdeb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "disconnet" to "disconnect" in
-drivers/net/wireless/rtlwifi/rtl8192de/dm.c
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/net/wireless/rtlwifi/rtl8192de/dm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+* Michael D Labriola <mlabriol@gdeb.com> wrote:
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/dm.c b/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
-index 3cd0736..5087fe4 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
-@@ -296,7 +296,7 @@ static void rtl92d_dm_find_minimum_rssi(struct ieee80211_hw *hw)
- 		de_digtable.min_undecorated_pwdb_for_dm =
- 		    rtlpriv->dm.UNDEC_SM_PWDB;
- 		RT_TRACE(rtlpriv, COMP_BB_POWERSAVING, DBG_LOUD,
--			 ("AP Ext Port or disconnet PWDB = 0x%x\n",
-+			 ("AP Ext Port or disconnect PWDB = 0x%x\n",
- 			  de_digtable.min_undecorated_pwdb_for_dm));
- 	}
- 
--- 
-1.7.6.5
+> > I realize that you only move code here - but it's worth 
+> > cleaning it up a bit when touching it.
+> 
+> You are requesting that I clean up only the comments that 
+> appear in the diff, correct?  I'll do that as well.
 
+Yeah, and whatever other cleanliness detail you notice: when we 
+touch some code it is the best opportunity to improve it.
+
+I'd also suggest for ou to do it as two patches: first keep your 
+existing patch then do a second one on top of it cleaning up any 
+details, and send me both.
+
+Thanks,
+
+	Ingo
