@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab2A3RZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 12:25:37 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:60301 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752352Ab2A3RZf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 12:25:35 -0500
+	id S1752717Ab2A3R1H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 12:27:07 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:58173 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752408Ab2A3R1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 12:27:06 -0500
+Date: Mon, 30 Jan 2012 12:26:59 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Nanakos Chrysostomos <nanakos@wired-net.gr>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: Ext4 Kernel Crash
+Message-ID: <20120130172659.GA7681@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Nanakos Chrysostomos <nanakos@wired-net.gr>,
+	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+References: <20120129175057.GA4699@dinofilaria.home>
 MIME-Version: 1.0
-In-Reply-To: <7103a353d393f9b8366b141a608a4370e4392c7b.1327348286.git.vjaquez@igalia.com>
-References: <cover.1327348286.git.vjaquez@igalia.com>
-	<7103a353d393f9b8366b141a608a4370e4392c7b.1327348286.git.vjaquez@igalia.com>
-Date: Mon, 30 Jan 2012 11:25:34 -0600
-Message-ID: <CAB-zwWjKfakESHw4Cw8JvJ6WpELz51E_9zVtjR0bF84yhMRfMQ@mail.gmail.com>
-Subject: Re: [PATCH 3/5] staging: tidspbridge: Lindent to drv_interface.c
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: =?ISO-8859-1?Q?V=EDctor_Manuel_J=E1quez_Leal?= <vjaquez@igalia.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Armando Uribe <x0095078@ti.com>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Ivan Gomez Castellanos <ivan.gomez@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120129175057.GA4699@dinofilaria.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/23 Víctor Manuel Jáquez Leal <vjaquez@igalia.com>:
-> No functional changes.
->
-> According to Lindent, the file drv_internface.c had some lines with bad
-> indentation.
->
-> This commit is the output of Lindent.
+On Sun, Jan 29, 2012 at 07:50:57PM +0200, Nanakos Chrysostomos wrote:
+> Dear Linux Kernel Developers,
+> I am writing to report a kernel or ext4 bug.
 
-Usually lindent tends to do whatever it wants, unless carefully configured...
+Hi Nanakos,
 
-...
-> @@ -342,9 +342,10 @@ static void bridge_recover(struct work_struct *work)
->        if (atomic_read(&bridge_cref)) {
->                INIT_COMPLETION(bridge_comp);
->                while (!wait_for_completion_timeout(&bridge_comp,
-> -                                               msecs_to_jiffies(REC_TIMEOUT)))
-> -                       pr_info("%s:%d handle(s) still opened\n",
-> -                                       __func__, atomic_read(&bridge_cref));
-> +                                                   msecs_to_jiffies
-> +                                                   (REC_TIMEOUT)))
+My apologies for not responding to the message that you sent to me
+personally three days ago, but I was on vacation in Hawaii; the best
+place to send queries about ext4 file systems is to use the
+linux-ext4@vger.kernel.org mailing list.
 
-Like here, it just split msecs_to_jiffies(REC_TIMEOUT) into 2 lines
-making it a little harder to read.
+One thing that I would immediately suggest is to see whether you can
+reproduce this bug using a modern kernel.  You are currently using a
+RHEL6-derived kernel (2.6.32-220.4.1.el6.x86_64).  The ext4 file
+system in such a kernel is quite different from what is in upstream,
+and there were a large number of bugs that have been fixed in ext4
+since 2.6.32.  Many of these fixes were backported into the RHEL6
+kernel, but I'm not an expert on which fixes have been backported into
+RHEL6 and which haven't.  (Especially since Red Hat doesn't release
+broken-out patches for their RHEL kernels....)
 
-> +                       pr_info("%s:%d handle(s) still opened\n", __func__,
-> +                               atomic_read(&bridge_cref));
+My understanding is that Gluster doesn't require any kernel-side
+patches, so it should be OK to run Gluster on a v3.2 kernel.
+Alternatively, if you are a paid customer of RHEL6, I'd suggest
+sending a support request to Red Hat.
 
-I remember the rule was to break lines as far to the right as
-possible, no? Chapter 2 CodingStyle, same for the other similar
-changes.
+Best regards,
 
-...
-> @@ -547,10 +548,9 @@ static int __devexit omap34_xx_bridge_remove(struct platform_device *pdev)
->                pr_err("%s: Failed to retrieve the object handle\n", __func__);
->                goto func_cont;
->        }
-> -
-
-Blank line removed?
-
->  #ifdef CONFIG_TIDSPBRIDGE_DVFS
->        if (cpufreq_unregister_notifier(&iva_clk_notifier,
-> -                                               CPUFREQ_TRANSITION_NOTIFIER))
-> +                                       CPUFREQ_TRANSITION_NOTIFIER))
->                pr_err("%s: cpufreq_unregister_notifier failed for iva2_ck\n",
->                       __func__);
->  #endif /* #ifdef CONFIG_TIDSPBRIDGE_DVFS */
-> --
-> 1.7.8.3
->
-
-Regards,
-
-Omar
+					- Ted
