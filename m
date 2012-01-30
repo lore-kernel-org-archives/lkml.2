@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab2A3Obj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 09:31:39 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40069 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753167Ab2A3Obi (ORCPT
+	id S1753419Ab2A3Odx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 09:33:53 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48484 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab2A3Odw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 09:31:38 -0500
+	Mon, 30 Jan 2012 09:33:52 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] cpufreq/gx: Fix the compile error
+To: ak@linux.intel.com, linux-kernel@vger.kernel.org
+Date: Mon, 30 Jan 2012 14:47:28 +0000
+Message-ID: <20120130144720.5908.37381.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20120127191532.GA25529@infradead.org>
-References: <CAAA8XhOXuszcyCaMOcVWb-erGAJQdhBHCX-gsJ4KpH+Td7+bPQ@mail.gmail.com>
-	<20120124213936.GA1505@infradead.org>
-	<CAAA8XhMf9BhZP5csLfGVVbQxN7Uqh-+R6aqCLfezdiTECaRRjg@mail.gmail.com>
-	<20120127105859.GC23335@infradead.org>
-	<CAAA8XhOoF_AN_-1PsYQ+hp7adc08YuYqvA_3Bv9nqtuOzO1kOg@mail.gmail.com>
-	<20120127191532.GA25529@infradead.org>
-Date: Mon, 30 Jan 2012 12:31:36 -0200
-Message-ID: <CAAA8XhMJeoUSMmcCizHqoFLrymbs7Hz216+7d445u6tV+ZC=fg@mail.gmail.com>
-Subject: Re: XFS problem
-From: Kelbel Junior <jymmyjr@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Christoph.
+From: Alan Cox <alan@linux.intel.com>
 
-Yes, we work on 1TB file, doing lots of random I/O over a single file.
-We are using 'pwrite' ofr each write operation.
+Someone forgot to test this one it seems.
 
-Output of 'filefrag' in this file:
-file: 1364 extents found
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-The 'mount' options are the same as mentioned earlier.
-About RAID, we use RAID 0.
-
-In a file with this size and this extents amount could happen the
-problem that we're seeing?
+ drivers/cpufreq/gx-suspmod.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 
-Thanks.
-Kelbel Junior
+diff --git a/drivers/cpufreq/gx-suspmod.c b/drivers/cpufreq/gx-suspmod.c
+index 5a06c0b..456bee0 100644
+--- a/drivers/cpufreq/gx-suspmod.c
++++ b/drivers/cpufreq/gx-suspmod.c
+@@ -172,7 +172,7 @@ static struct pci_device_id gx_chipset_tbl[] __initdata = {
+ 	{ PCI_VDEVICE(CYRIX, PCI_DEVICE_ID_CYRIX_5510), },
+ 	{ 0, },
+ };
+-MODULE_DEVICE_TABLE(gx_chipset_tbl);
++MODULE_DEVICE_TABLE(pci, gx_chipset_tbl);
+ 
+ static void gx_write_byte(int reg, int value)
+ {
+
