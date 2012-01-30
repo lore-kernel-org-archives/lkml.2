@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab2A3PbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 10:31:09 -0500
+	id S1753847Ab2A3Pat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 10:30:49 -0500
 Received: from mail-yw0-f46.google.com ([209.85.213.46]:63009 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab2A3PbG (ORCPT
+	with ESMTP id S1753721Ab2A3Paq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 10:31:06 -0500
-Message-ID: <4F26B7B6.2080107@lwfinger.net>
-Date: Mon, 30 Jan 2012 09:31:02 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Mon, 30 Jan 2012 10:30:46 -0500
+Date: Mon, 30 Jan 2012 13:30:40 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Andrew Steets <asteets@rgmadvisors.com>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: perf: prctl(PR_TASK_PERF_EVENTS_DISABLE) has no effect
+Message-ID: <20120130153040.GB15935@infradead.org>
+References: <4F22D8D9.3010108@rgmadvisors.com>
+ <20120128120151.GA10390@elte.hu>
+ <4F248938.5030507@rgmadvisors.com>
+ <20120129163235.GB23408@elte.hu>
+ <1327917156.2446.191.camel@twins>
+ <20120130101121.GB8924@elte.hu>
+ <1327921293.2446.202.camel@twins>
+ <20120130113115.GA6565@elte.hu>
+ <1327931107.2446.205.camel@twins>
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: wlanfae@realtek.com, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH] [trivial] net: Fix typo in rtl8192de/dm.c
-References: <1327930827-1719-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1327930827-1719-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327931107.2446.205.camel@twins>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 07:40 AM, Masanari Iida wrote:
-> Correct spelling "disconnet" to "disconnect" in
-> drivers/net/wireless/rtlwifi/rtl8192de/dm.c
->
-> Signed-off-by: Masanari Iida<standby24x7@gmail.com>
-> ---
->   drivers/net/wireless/rtlwifi/rtl8192de/dm.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+Em Mon, Jan 30, 2012 at 02:45:07PM +0100, Peter Zijlstra escreveu:
+> On Mon, 2012-01-30 at 12:31 +0100, Ingo Molnar wrote:
+> > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > > On Mon, 2012-01-30 at 11:11 +0100, Ingo Molnar wrote:
+> > > > So, what workflow are you suggesting to Andrew?
+> > > Librarize perf record, then in your code do something like:
+> > > #include "perf_record.h"
 
-The patch is OK, but by convention, the subject should say "[PATCH] rtlwifi: 
-rtl8192dm: Fix typo in dm.c". By getting rtlwifi in it, searching the git log is 
-a lot easier.
+> > Maybe. (and then it shouldnt be limited to perf_record.h but 
+> > should be events.h plus libevents.so or such)
 
-Larry
+> Yes it should be, you want to reserve the more generic name for less
+> narrow interfaces.
 
->
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/dm.c b/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
-> index 3cd0736..5087fe4 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
-> @@ -296,7 +296,7 @@ static void rtl92d_dm_find_minimum_rssi(struct ieee80211_hw *hw)
->   		de_digtable.min_undecorated_pwdb_for_dm =
->   		    rtlpriv->dm.UNDEC_SM_PWDB;
->   		RT_TRACE(rtlpriv, COMP_BB_POWERSAVING, DBG_LOUD,
-> -			 ("AP Ext Port or disconnet PWDB = 0x%x\n",
-> +			 ("AP Ext Port or disconnect PWDB = 0x%x\n",
->   			  de_digtable.min_undecorated_pwdb_for_dm));
->   	}
->
-
+Agreed.
+ 
+- Arnaldo
