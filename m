@@ -1,181 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab2A3O0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 09:26:38 -0500
-Received: from firewall1.hosting.leiceps.dk ([188.180.106.28]:48939 "EHLO
-	firewall1.hosting.leiceps.dk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752099Ab2A3O0g (ORCPT
+	id S1753308Ab2A3O2i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 09:28:38 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42920 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab2A3O2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 09:26:36 -0500
-X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jan 2012 09:26:36 EST
-X-AuditID: 0ac700ea-b7f3d6d000000d21-2c-4f26a5a41d09
-Message-ID: <4F26A70D.2040901@leiceps.dk>
-Date: Mon, 30 Jan 2012 15:19:57 +0100
-From: Lars Karlslund <lars@leiceps.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120119 Thunderbird/10.0
-MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-Subject: Possible mpt2sas 4k sector bug
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBJMWRmVeSWpSXmKPExsXCdZxBUnfJUjV/g1mzdC0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG74+32Ar6zCu616xiaWBcotzFyMkhIWAicbDrMiuELSZx4d56
-	ti5GLg4hgflMEud3fWQESQgJLGKU6J7rCGLzCmhK/HvUxAZiswioSmxccRHIZudgE1CTOKfe
-	xcjBISoQIvG50QqiWFDi5MwnLCC2iICSxPdr3WADhQXUJVp7rzGD2MwCthIX5lxngbDlJba/
-	ncMMsVRGYtHBG4wTGPlmIRk1C0nLLCQtCxiZVzHy5lbo5aRmJqcWFOulZG9ihITOqx2MmzsM
-	DjEKcDAq8fAG/FP1F2JNLCuuzD3EKMHBrCTCqz9HzV+INyWxsiq1KD++qDQntfgQIxMHp1QD
-	46LXKQk951denmVis0RcMzF7XlzU4c+uBq8Wlz/WZJzGf/r1nL5dos26V86xp+2edd5L+GMT
-	z4LVO/V/x33gWxeTdaV7S3HNg8lSK4PfST9cm8uRM8fr6X2v+B1KsgVcPPNqjq+xvpRpX/dm
-	/ZKS2wnZreczVaJuPVPjPhlv++Djf4aH7/7ZtSmxFGckGmoxFxUnAgAlRhGY+wEAAA==
+	Mon, 30 Jan 2012 09:28:37 -0500
+Message-ID: <1327933829.13286.6.camel@sauron.fi.intel.com>
+Subject: mtd api rework
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>
+Date: Mon, 30 Jan 2012 16:30:29 +0200
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-YMTteI3J99k6Lx2Q8XLN"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I have assembled a system with a LSI 9116i controller (aka 9201-16i), 
-and have hit a weird problem with basic disk-access.
+--=-YMTteI3J99k6Lx2Q8XLN
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Doing writes with anything lower than 4k block size, generates lots of 
-reads on the drives.
+Hi Stephen,
 
-These are the system details, basically it's an Ubuntu 11.10 64-bit with 
-latest updates.
+we are doing MTD API rework and I've just pushed this patch to my l2-mtd
+tree:
 
-System is on SSD drive on onboard SATA controller (sda).
-8 x 1TB drives with 512bytes sector size on LSI controller (sdb to sdi)
-1 x 750GB drive with 512bytes sector size also on LSI controller (sdj - 
-just to verify that it's not the model of drives that are the problem)
+http://git.infradead.org/users/dedekind/l2-mtd.git/commit/a088d81808f6803ca=
+6bfb9ea9148beef53fde1d2
 
-Problem is, doing everything but 4k+ writes on the drives, generates 
-massive reads from the drives, before doing the actual writes.
+Which renames MTD function pointers to make sure no one uses them
+directly. I've build-tested this for i386 and arm and it compiles.
 
-# dd if=/dev/zero of=/dev/sdb bs=512 count=1000000
-1000000+0 records in
-1000000+0 records out
-512000000 bytes (512 MB) copied, 21.5398 s, 23.8 MB/s
+However, there may be compile issues in future if one of subsystems not
+aware of the change try to use old names. Please, be aware. The right
+thing to do in this case for the subsystem is to either not use the
+pointer directly and use the corresponding mtd_func() wrapper. Please,
+let me know if there are any issues related to this change.
 
-dstat output while doing this:
+Thanks!
 
-# dstat -Dsdb
-You did not select any stats, using -cdngy by default.
-----total-cpu-usage---- --dsk/sdb-- -net/total- ---paging-- ---system--
-usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw
-   0   0 100   0   0   0|1592B 1590B|   0     0 |   0     0 |  59    97
-   0   0 100   0   0   0|   0     0 | 330B  836B|   0     0 | 121   149
-   0   0 100   0   0   0|   0     0 | 540B 2750B|   0     0 |  70   118
-   0   1  88  10   0   0|  31M    0 | 497B  114B|   0     0 |8057    24k
-   0   1  88  11   0   0|  32M    0 |1212B   19k|   0     0 |8268    24k
-   0   1  88  11   0   0|  32M    0 | 151B  322B|   0     0 |8235    24k
-   0   2  88  11   0   0|  32M    0 | 151B  322B|   0     0 |8219    25k
-   0   1  88  11   0   0|  32M    0 | 186B  322B|   0     0 |8219    24k
-   0   1  88  11   0   0|  32M    0 | 271B  322B|   0     0 |8225    24k
-   0   2  88  11   0   0|  32M    0 | 126B  322B|   0     0 |8202    24k
-   0   1  88  11   0   0|  32M    0 | 271B  322B|   0     0 |8179    24k
-   0   1  88  11   0   0|  32M    0 | 211B  322B|   0     0 |8229    25k
-   0   1  88  11   0   0|  32M    0 |  66B  322B|   0     0 |8208    24k
-   0   1  88  11   0   0|  32M    0 | 151B  322B|   0     0 |8201    24k
-   0   1  88  11   0   0|  32M    0 |  66B  322B|   0     0 |8217    24k
-   0   1  86  13   0   0|  11M   57M| 653B  322B|   0     0 |3119  8828
-   0   1  88  12   0   0|2576k   76M| 149B  338B|   0     0 | 874  2061
-   0   1  88  12   0   0|  14M   39M|  66B  338B|   0     0 |3853    11k
-   0   1  88  11   0   0|  15M   47M| 149B  338B|   0     0 |3912    11k
-   0   1  88  12   0   0|5832k   64M|  66B  338B|   0     0 |1664  4507
-   0   0  88  12   0   0|2792k   72M| 390B  494B|   0     0 | 946  2253
-   0   1  88  11   0   0|  21M   22M| 150B  322B|   0     0 |5463    16k
-   0   1  88  11   0   0|  13M   47M| 360B 2570B|   0     0 |3521    10k
-   0   2  87  11   0   0|  24M   26M| 906B   15k|   0     0 |6487    19k
-   0   1  92   7   0   0| 336k   41M|  66B  338B|   0     0 | 805   929
-   0   0 100   0   0   0|   0     0 | 616B 2618B|   0     0 |  62    96
-   0   0 100   0   0   0|   0     0 |1085B   14k|   0     0 |  87   144
-   0   0 100   0   0   0|   0     0 |  66B  306B|   0     0 |  44    71
-   0   0 100   0   0   0|   0     0 | 329B  486B|   0     0 |  89   134
-   0   0 100   0   0   0|   0     0 |  66B  306B|   0     0 |  67   111
-   0   0 100   0   0   0|   0     0 | 149B  306B|   0     0 |  61   106
+--=20
+Best Regards,
+Artem Bityutskiy
 
-I.e. lots of reads before the writes??
+--=-YMTteI3J99k6Lx2Q8XLN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Doing dd with bs=4k fixes this, giving expected behaviour:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-# dd if=/dev/zero of=/dev/sdb bs=4k count=125000
-125000+0 records in
-125000+0 records out
-512000000 bytes (512 MB) copied, 6.16785 s, 83.0 MB/s
+iQIcBAABAgAGBQJPJqmFAAoJECmIfjd9wqK0S6sQAJO+9+OTCMIZvY+dknzNBgK3
+zVyx5yxmF5o+OwoJbUq4247xwWm6D3ujHGiTNOwYiXwU9pj5cOawUicv06gHsmZQ
+TRWQ9sdhViTas/eNb1/GIefZ9X/BrHcLdnnR2DJwi15eu6d74Qvl2/m+6bpCUOlp
+imcS5tuEmNqngmhBUeZ4Zr+mEvjTGF20sk+AFYy/3l5J2DfeB3BTYk5t38IEtI/I
+bQDvQ5TkPEMNTPZ8nV1NQkann3AH66143PzD+ljgyjYQQzHUFFHJ36/c3RzBcf0d
+6ATUKPJ5R6AfveLp7k0sdIUbZXw4DcFyiy5GKcF84Bw619GpbnHRXB035gsRiEpw
+FIJLxQcJ3o91rAFx4AY2rBAN453OQLjB9WfUMicWALvFqLYM+HvphzYCW8gSRc2n
+Wr+OASnVKeQ1GNi7gPIGkBuWGR6zLBq4oyuWanYYzRzkzI/CdE3+13ytS6gPJrb6
+OiUmgwe21BNxk3YGnjFEnXWwiflFc5WFaD7zGM3DST/WjF7m8uplA7c2UlpIniPf
+zkfzF3GhrRrhunXxlqBSLpbV3oDWULMfrVFnENlxPqC2uZ+ZBtjM4UPGxIBYVidt
+2AOay0IuPgvW63dJOc45QJ34Y1ws1FHdEn9yI8eBilNkedI3XcPfduj9TrFuAlKT
+1sqUjEPdqqthMiUGVGv1
+=/IFI
+-----END PGP SIGNATURE-----
 
-And dstat output while doing this:
-
-# dstat -Dsdb
-You did not select any stats, using -cdngy by default.
-----total-cpu-usage---- --dsk/sdb-- -net/total- ---paging-- ---system--
-usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw
-   0   0 100   0   0   0|3180B 3177B|   0     0 |   0     0 |  59    98
-   0   0 100   0   0   0|   0     0 | 508B 3098B|   0     0 | 158   173
-   0   3  94   2   0   0|   0    15M| 262B  114B|   0     0 | 320   242
-   0   0  86  14   0   0|   0    82M|   0     0 |   0     0 | 239   146
-   0   0  88  12   0   0|   0    83M| 772B   10k|   0     0 | 261   141
-   0   0  87  12   0   0|   0    83M| 239B  322B|   0     0 | 258   150
-   0   0  88  12   0   0|   0    83M| 210B  322B|   0     0 | 252   123
-   0   0  88  12   0   0|   0    81M| 210B  322B|   0     0 | 229   164
-   0   1  88  11   0   0| 336k   62M| 186B  322B|   0     0 | 521   843
-   0   0 100   0   0   0|   0     0 | 210B  338B|   0     0 | 252   206
-   0   0 100   0   0   0|   0     0 | 540B 2780B|   0     0 |  79   128
-   0   0 100   0   0   0|   0     0 | 643B   10k|   0     0 |  71   117
-
-Details of system:
-
-# lspci | grep LSI
-05:00.0 Serial Attached SCSI controller: LSI Logic / Symbios Logic 
-SAS2116 PCI-Express Fusion-MPT SAS-2 [Meteor] (rev 02)
-
-# uname -a
-Linux storage-ng 3.2.2-030202-generic #201201252035 SMP Thu Jan 26 
-01:36:10 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
-
-(also tested with 3.0.0-15server)
-
-# fdisk /dev/sdb
-Disk /dev/sdb: 1000.2 GB, 1000204886016 bytes
-255 heads, 63 sectors/track, 121601 cylinders, total 1953525168 sectors
-Units = sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disk identifier: 0x39411ba9
-
-Controller firmware upgraded from 7 (version on board when I got it), to 
-12, verified with dmesg:
-# dmesg | grep mpt2sas
-[    3.122653] mpt2sas version 10.100.00.00 loaded
-[    3.123197] mpt2sas 0000:05:00.0: PCI INT A -> GSI 16 (level, low) -> 
-IRQ 16
-[    3.123218] mpt2sas 0000:05:00.0: setting latency timer to 64
-[    3.123225] mpt2sas0: 64 BIT PCI BUS DMA ADDRESSING SUPPORTED, total 
-mem (8176204 kB)
-[    3.123303] mpt2sas 0000:05:00.0: irq 46 for MSI/MSI-X
-[    3.123320] mpt2sas0-msix0: PCI-MSI-X enabled: IRQ 46
-[    3.123329] mpt2sas0: iomem(0x00000000f8ffc000), 
-mapped(0xffffc900117b8000), size(16384)
-[    3.123338] mpt2sas0: ioport(0x000000000000e000), size(256)
-[    3.409371] mpt2sas0: sending message unit reset !!
-[    3.417363] mpt2sas0: message unit reset: SUCCESS
-[    3.585191] mpt2sas0: Allocated physical memory: size(15199 kB)
-[    3.585203] mpt2sas0: Current Controller Queue Depth(7385), Max 
-Controller Queue Depth(7632)
-[    3.585209] mpt2sas0: Scatter Gather Elements per IO(128)
-[    3.817976] mpt2sas0: LSISAS2116: FWVersion(12.00.00.00), 
-ChipRevision(0x02), BiosVersion(07.23.01.00)
-[    3.817991] mpt2sas0: Protocol=(Initiator,Target), 
-Capabilities=(TLR,EEDP,Snapshot Buffer,Diag Trace Buffer,Task Set Full,NCQ)
-[    3.818250] mpt2sas0: sending port enable !!
-[    3.823717] mpt2sas0: host_add: handle(0x0001), 
-sas_addr(0x500062b2000c3600), phys(16)
-[    3.833476] mpt2sas0: port enable: SUCCESS
-
-So now I'm stuck ... any ideas?
-
-Please cc to my mail, as I am not subscribed here.
-
-
-Thanks,
-
-Lars Karlslund
+--=-YMTteI3J99k6Lx2Q8XLN--
 
