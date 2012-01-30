@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab2A3VHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:07:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34357 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab2A3VHI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:07:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.145.210 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
-Date: Tue, 31 Jan 2012 01:07:02 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-Message-ID: <20120130210702.GG4282@moon>
-References: <20120130140905.441199885@openvz.org>
- <20120130141852.309402052@openvz.org>
- <20120130125812.0075dd04@dt>
+	id S1753507Ab2A3VIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:08:15 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12968 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752307Ab2A3VIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 16:08:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="102004630"
+Message-ID: <4F2706AE.8020801@linux.intel.com>
+Date: Mon, 30 Jan 2012 13:07:58 -0800
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120130125812.0075dd04@dt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] cpufreq/gx: Fix the compile error
+References: <20120130144720.5908.37381.stgit@bob.linux.org.uk>
+In-Reply-To: <20120130144720.5908.37381.stgit@bob.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 12:58:12PM -0700, Jonathan Corbet wrote:
-> Just a couple of silly little things that came to mind while I was looking
-> at the code...
-> 
-> > +/*
-> > + * We don't expose real in-memory order of objects for security
-> > + * reasons, still the comparision results should be suitable for
-> > + * sorting. Thus, we obfuscate kernel pointers values (using random
-> > + * cookies obtaned at early boot stage) and compare the production
-> > + * instead.
-> > + */
-> > +static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
-> > +
-> > +static long kptr_obfuscate(long v, int type)
-> > +{
-> > +	return (v ^ cookies[type][0]) * cookies[type][1];
-> > +}
-> 
-> I don't understand the purpose of this at all.  Obfuscation will cause a
-> random shuffling in the ordering of the pointers - it's intended to - so
-> how is the result "suitable for sorting"?  More to the point, is there
-> ever a time when a user of this will care about some contrived ordering
-> value?  It seems like equality is all that really matters.
-> 
+On 1/30/2012 6:47 AM, Alan Cox wrote:
+> From: Alan Cox<alan@linux.intel.com>
+>
+> Someone forgot to test this one it seems.
 
-It won't be completely random shuffling but rather re-ordering in some
-new order, which means the results might be passed to qsort or anything.
-And yes, in c/r we need at least this "re-ordered" order which will help
-to figure out shared file descriptors in case of huge number of files opened.
+Sorry about that
+Thanks. Greg can you please add it to the cpuid probe patchkit?
 
-> > +
-> > +/*
-> > + * 0 - equal
-> > + * 1 - less than
-> > + * 2 - greater than
-> > + * 3 - not equal but ordering unavailable (reserved for future)
-> > + */
-> > +static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
-> > +{
-> > +	long ret;
-> > +
-> > +	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
-> > +
-> > +	return (ret < 0) | ((ret > 0) << 1);
-> > +}
-> 
-> That's a cute trick, but do we know that every compiler that will ever see
-> this code will use 1 for a true integer comparison?  Simply spelling it
-> out with an if statement might be more robust, just as efficient, and, at
-> the same time, easier for others to understand.
+-Andi
 
-Well, I believe if this become true, and (ret < 0) wont emit 1 -- the
-number of places in kernel will be broken as well (for example see
-math_div() function). But of course I don't insist and can rewrite
-this code in straight fashion if needed.
+> Signed-off-by: Alan Cox<alan@linux.intel.com>
+> ---
+>
+>   drivers/cpufreq/gx-suspmod.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>
+> diff --git a/drivers/cpufreq/gx-suspmod.c b/drivers/cpufreq/gx-suspmod.c
+> index 5a06c0b..456bee0 100644
+> --- a/drivers/cpufreq/gx-suspmod.c
+> +++ b/drivers/cpufreq/gx-suspmod.c
+> @@ -172,7 +172,7 @@ static struct pci_device_id gx_chipset_tbl[] __initdata = {
+>   	{ PCI_VDEVICE(CYRIX, PCI_DEVICE_ID_CYRIX_5510), },
+>   	{ 0, },
+>   };
+> -MODULE_DEVICE_TABLE(gx_chipset_tbl);
+> +MODULE_DEVICE_TABLE(pci, gx_chipset_tbl);
+>
+>   static void gx_write_byte(int reg, int value)
+>   {
+>
 
-	Cyrill
