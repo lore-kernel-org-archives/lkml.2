@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab2A3XPc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 18:15:32 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:46342 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab2A3XP3 (ORCPT
+	id S1754583Ab2A3XP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 18:15:28 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:46608 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844Ab2A3XPY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 18:15:29 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 4/4] PM/Hibernate: Refactor and simplify freezer_test_done
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 31 Jan 2012 04:45:19 +0530
-Message-ID: <20120130231513.11129.92320.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120130231342.11129.87187.stgit@srivatsabhat.in.ibm.com>
-References: <20120130231342.11129.87187.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Mon, 30 Jan 2012 18:15:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12013023-5564-0000-0000-0000012A69EA
+In-Reply-To: <1327965046.5355.16.camel@lenny>
+References: <cover.1327858005.git.luto@amacapital.net> <0e2f0f54e19bff53a3739ecfddb4ffa9a6dbde4d.1327858005.git.luto@amacapital.net>
+ <1327960736.5355.5.camel@lenny> <CALCETrWqOsWjnJOLD5TytOiSSiRE7wAwo6dRj5A7-jP-zEGa3A@mail.gmail.com>
+ <1327963309.5355.7.camel@lenny> <CALCETrVMYaz0F9N5aecLJCo3da6zAE3hw+kEH+UFBoajjVu0sw@mail.gmail.com>
+ <1327965046.5355.16.camel@lenny>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 30 Jan 2012 15:15:02 -0800
+Message-ID: <CALCETrXRjR0zHrKuLhbvCfgReO1sWnjQ-EVTRhH7=AMSJ6N-=g@mail.gmail.com>
+Subject: Re: [PATCH v3 4/4] Allow unprivileged chroot when safe
+To: Colin Walters <walters@verbum.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jamie Lokier <jamie@shareable.org>, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code related to 'freezer_test_done' is needlessly convoluted.
-Refactor the code and simplify the implementation.
+On Mon, Jan 30, 2012 at 3:10 PM, Colin Walters <walters@verbum.org> wrote:
+> On Mon, 2012-01-30 at 14:43 -0800, Andy Lutomirski wrote:
+>
+>> You don't need a setuid binary.  Just have an initscript set up the bind mounts.
+>
+> The point is that dchroot is already setuid root, and calls chroot, so
+> it gains nothing from the ability to do it unprivileged.
+>
+> (And wow, I just looked at the source, it's a setuid C++ binary!  Using
+> boost.  Ugh...)
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Exactly!
 
- kernel/power/hibernate.c |   10 +++++-----
- kernel/power/user.c      |    4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
+You can accomplish the same thing *without a scary setuid binary*.
+The use case doesn't even need a new complicated userspace tool.  You
+would set up an initscript or some /etc/fstab entries and then:
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 0ce1220..30b315a 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -629,12 +629,8 @@ int hibernate(void)
- 		goto Finish;
- 
- 	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
--	if (error)
--		goto Thaw;
--	if (freezer_test_done) {
--		freezer_test_done = false;
-+	if (error || freezer_test_done)
- 		goto Thaw;
--	}
- 
- 	if (in_suspend) {
- 		unsigned int flags = 0;
-@@ -665,6 +661,10 @@ int hibernate(void)
- 
-  Thaw:
- 	thaw_processes();
-+
-+	/* Don't bother checking whether freezer_test_done is true */
-+	freezer_test_done = false;
-+
-  Finish:
- 	free_basic_memory_bitmaps();
- 	usermodehelper_enable();
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 62dbe93..056088e 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -259,10 +259,10 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 		error = hibernation_snapshot(data->platform_support);
- 		if (!error) {
- 			error = put_user(in_suspend, (int __user *)arg);
--			if (!error && !freezer_test_done)
--				data->ready = 1;
- 			if (freezer_test_done)
- 				freezer_test_done = false;
-+			else if (!error)
-+				data->ready = 1;
- 		}
- 		break;
- 
+no_new_privs chroot /var/chroot/ubuntu_oneiric/ /bin/bash
 
+et voila.  (Where no_new_privs would be a really simple tool that does
+PR_SET_NO_NEW_PRIVS and then execs its argument.)
+
+Maybe it's just me, but I think this is useful and I would, in fact,
+use it in my regular workflow.
+
+--Andy
