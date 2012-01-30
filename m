@@ -1,86 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957Ab2A3G1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 01:27:36 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:23607
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752584Ab2A3G1f convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 01:27:35 -0500
-X-SpamScore: -13
-X-BigFish: VS-13(zzbb2dI9371I542M1432N98dKzz1202hzzz2dhc1bhc31hc1ah2a8h668h839h8e2h8e3h944hbe9k)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joerg.roedel@amd.com>,
-        Wood Scott-B07421 <B07421@freescale.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        David Brown <davidb@codeaurora.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: RE: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-Thread-Topic: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-Thread-Index: AQHM1rbj1rZDtR84OEuq1/Qi58+pfJYT5niggAHq2gCACZWbAIAAAZsAgAADCwCAAAJ5gIAFCoQg
-Date: Mon, 30 Jan 2012 06:27:30 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D041E81@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1326983405-319-1-git-send-email-joerg.roedel@amd.com>
- <1326983405-319-3-git-send-email-joerg.roedel@amd.com>
- <C5ECD7A89D1DC44195F34B25E172658D038749@039-SN2MPN1-011.039d.mgd.msft.net>
- <20120120160344.GG2205@amd.com> <4F219A9C.8000400@freescale.com>
- <20120126183116.GI19255@amd.com> <4F219E82.106@freescale.com>
- <20120126185101.GJ19255@amd.com>
-In-Reply-To: <20120126185101.GJ19255@amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.134.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1754323Ab2A3G2M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 01:28:12 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60897 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab2A3G2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 01:28:10 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 30 Jan 2012 15:26:46 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] introduce thp_ptep_get()
+Message-Id: <20120130152646.3f202259.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1327705373-29395-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1327705373-29395-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1327705373-29395-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 27 Jan 2012 18:02:52 -0500
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joerg.roedel@amd.com]
-> Sent: Friday, January 27, 2012 12:21 AM
-> To: Wood Scott-B07421
-> Cc: Sethi Varun-B16395; iommu@lists.linux-foundation.org; Ohad Ben-Cohen;
-> Tony Lindgren; Hiroshi DOYU; linux-kernel@vger.kernel.org; Laurent
-> Pinchart; Wood Scott-B07421; David Brown; David Woodhouse
-> Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY
-> attribute
+> Casting pmd into pte_t to handle thp is strongly architecture dependent.
+> This patch introduces a new function to separate this dependency from
+> independent part.
 > 
-> On Thu, Jan 26, 2012 at 12:42:10PM -0600, Scott Wood wrote:
-> > On 01/26/2012 12:31 PM, Joerg Roedel wrote:
-> > > The force_aperture flag indicated whether DMA is only allowed
-> > > between aperture_start and apertuer_end or if DMA is allowed outside
-> > > of this range too (unmapped in this case).
-> > >
-> > > The AMD GART for example would set this flag to false because it
-> > > does not enforce DMA to be in the aperture-range.
-> >
-> > Why is this not an AMD GART specific attribute?  Is there any feature
-> > reporting mechanism by which a user would know if that flag is
-> supported?
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  arch/x86/include/asm/pgtable.h |    5 +++++
+>  fs/proc/task_mmu.c             |    4 ++--
+>  include/asm-generic/pgtable.h  |    4 ++++
+>  3 files changed, 11 insertions(+), 2 deletions(-)
 > 
-> Because this is a flag that makes sense for all IOMMU. Every IOMMU either
-> allows DMA outside its aperture or it doesn't.
+> diff --git 3.3-rc1.orig/arch/x86/include/asm/pgtable.h 3.3-rc1/arch/x86/include/asm/pgtable.h
+> index 49afb3f..4cfcc7e 100644
+> --- 3.3-rc1.orig/arch/x86/include/asm/pgtable.h
+> +++ 3.3-rc1/arch/x86/include/asm/pgtable.h
+> @@ -165,6 +165,11 @@ static inline int has_transparent_hugepage(void)
+>  {
+>  	return cpu_has_pse;
+>  }
+> +
+> +static inline pte_t thp_ptep_get(pmd_t *pmd)
+> +{
+> +	return *(pte_t *)pmd;
+> +}
+
+I'm sorry but I don't think the name is good. 
+(But I know my sense of naming is bad ;)
+
+How about pmd_to_pte_t ?
+
+And, I wonder you can add error check as VM_BUG_ON(!pmd_trans_huge(*pmd));
+
+
+Thanks,
+-Kame
+
+
+
+
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+>  
+>  static inline pte_t pte_set_flags(pte_t pte, pteval_t set)
+> diff --git 3.3-rc1.orig/fs/proc/task_mmu.c 3.3-rc1/fs/proc/task_mmu.c
+> index 2622b64..e2063d9 100644
+> --- 3.3-rc1.orig/fs/proc/task_mmu.c
+> +++ 3.3-rc1/fs/proc/task_mmu.c
+> @@ -395,7 +395,7 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  	spinlock_t *ptl;
+>  
+>  	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+> -		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_PMD_SIZE, walk);
+> +		smaps_pte_entry(thp_ptep_get(pmd), addr, HPAGE_PMD_SIZE, walk);
+>  		spin_unlock(&walk->mm->page_table_lock);
+>  		mss->anonymous_thp += HPAGE_PMD_SIZE;
+>  		return 0;
+> @@ -964,7 +964,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+>  	md = walk->private;
+>  
+>  	if (pmd_trans_huge_lock(pmd, md->vma) == 1) {
+> -		pte_t huge_pte = *(pte_t *)pmd;
+> +		pte_t huge_pte = thp_ptep_get(pmd);
+>  		struct page *page;
+>  
+>  		page = can_gather_numa_stats(huge_pte, md->vma, addr);
+> diff --git 3.3-rc1.orig/include/asm-generic/pgtable.h 3.3-rc1/include/asm-generic/pgtable.h
+> index 76bff2b..f346bdc 100644
+> --- 3.3-rc1.orig/include/asm-generic/pgtable.h
+> +++ 3.3-rc1/include/asm-generic/pgtable.h
+> @@ -434,6 +434,10 @@ static inline int pmd_trans_splitting(pmd_t pmd)
+>  {
+>  	return 0;
+>  }
+> +static inline pte_t thp_ptep_get(pmd_t *pmd)
+> +{
+> +	return 0;
+> +}
+>  #ifndef __HAVE_ARCH_PMD_WRITE
+>  static inline int pmd_write(pmd_t pmd)
+>  {
+> -- 
+> 1.7.7.6
 > 
-> Another reason why it must be in the generic struct is the intended
-> generic dma-ops layer on-top. This code can decide on this flag wheter a
-> address needs to be remapped at all.
-
-
-Can you please explain how would IOMMU remapping be used, based on the force_aperture flag.
-
--Varun 
-
+> 
 
