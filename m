@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab2A3NxD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 08:53:03 -0500
-Received: from mx1.gd-ms.com ([153.11.250.40]:39375 "EHLO mx1.gd-ms.com"
+	id S1753147Ab2A3NyL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 08:54:11 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46196 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753110Ab2A3NxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 08:53:01 -0500
-X-Greylist: delayed 985 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jan 2012 08:53:01 EST
-In-Reply-To: <20120130095537.GA8924@elte.hu>
-References: <87ty3eb9c9.fsf@gmail.com> <20120130095537.GA8924@elte.hu>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org,
-        Michael D Labriola <michael.d.labriola@gmail.com>
+	id S1752980Ab2A3NyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 08:54:10 -0500
+Date: Mon, 30 Jan 2012 14:53:41 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Maxime Coquelin <maxime.coquelin@stericsson.com>
+Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Mel Gorman <mel@csn.ul.ie>, Ankita Garg <ankita@in.ibm.com>,
+        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
+        andrea.gallo@stericsson.com, vincent.guittot@stericsson.com,
+        philippe.langlais@stericsson.com, loic.pallardy@stericsson.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFCv1 0/6] PASR: Partial Array Self-Refresh Framework
+Message-ID: <20120130135341.GA3720@elte.hu>
+References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com>
 MIME-Version: 1.0
-Subject: Re: [PATCH] x86, reboot: reduce to a single DMI table for reboot quirks
-X-KeepSent: E2532E18:A9BD6FEB-85257995:004A4456;
- type=4; name=$KeepSent
-Message-ID: <OFE2532E18.A9BD6FEB-ON85257995.004A4456-85257995.004ABE7E@gdeb.com>
-From: Michael D Labriola <mlabriol@gdeb.com>
-Date: Mon, 30 Jan 2012 08:36:24 -0500
-X-GDMEncrypt: FALSE
-X-GDMMarking: NOT_SENSITIVE
-Content-Type: text/plain; charset="US-ASCII"
-X-GDM-EVAL: score: /30; hits: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-12345678901234567890123456789012345678901234567890123456789012345678901234567890
-         1         2         3         4         5         6         7  8
 
-Ingo Molnar <mingo@elte.hu> wrote on 01/30/2012 04:55:37 AM:
+* Maxime Coquelin <maxime.coquelin@stericsson.com> wrote:
 
-> I've applied your first two patches, thanks Michael!
+> The role of this framework is to stop the refresh of unused 
+> memory to enhance DDR power consumption.
 
-Excellent!
+I'm wondering in what scenarios this is useful, and how 
+consistently it is useful.
 
-> Regarding this patch, it does not apply cleanly to the latest 
-> x86 tree:
-> 
->  2 out of 5 hunks FAILED -- rejects in file arch/x86/kernel/reboot.c
-> 
-> which you can pick up from:
-> 
->  git pull git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git 
-master
+The primary concern I can see is that on most Linux systems with 
+an uptime more than a couple of minutes RAM gets used up by the 
+Linux page-cache:
 
-Ok, I based all of them off v3.2.  I'll rebase off of tip tonight after
-the kids are in bed.  ;-)
+ $ uptime
+  14:46:39 up 11 days,  2:04, 19 users,  load average: 0.11, 0.29, 0.80
+ $ free
+              total       used       free     shared    buffers     cached
+ Mem:      12255096   12030152     224944          0     651560    6000452
+ -/+ buffers/cache:    5378140    6876956
 
-> Also, a style nit, these comments:
-> 
-> > +   /* Write zero to CMOS register number 0x0f, which the BIOS POST
-> > +      routine will recognize as telling it to do a proper reboot. 
-(Well
-> > +      that's what this book in front of me says -- it may only apply 
-to
-> > +      the Phoenix BIOS though, it's not clear).  At the same time,
-> > +      disable NMIs by setting the top bit in the CMOS address 
-register,
-> > +      as we're about to do peculiar things to the CPU.  I'm not sure 
-if
-> > +      `outb_p' is needed instead of just `outb'.  Use it to be on the
-> > +      safe side.  (Yes, CMOS_WRITE does outb_p's. -  Paul G.)
-> > +    */
-> 
-> and the other similar comments that you move should be coverted 
-> to the customary (multi-line) comment style:
-> 
->   /*
->    * Comment .....
->    * ...... goes here.
->    */
-> 
-> specified in Documentation/CodingStyle.
-> 
-> I realize that you only move code here - but it's worth cleaning 
-> it up a bit when touching it.
+Even mobile phones easily have days of uptime - quite often 
+weeks of uptime. I'd expect the page-cache to fill up RAM on 
+such systems.
 
-You are requesting that I clean up only the comments that appear in the
-diff, correct?  I'll do that as well.
+So how will this actually end up saving power consistently? Does 
+it have to be combined with a VM policy that more aggressively 
+flushes cached pages from the page-cache?
 
----
-Michael D Labriola
-Electric Boat
-mlabriol@gdeb.com
-401-848-8871 (desk)
-401-848-8513 (lab)
-401-316-9844 (cell)
+A secondary concern is fragmentation: right now we fragment 
+memory rather significantly. For the Ux500 PASR driver you've 
+implemented the section size is 64 MB. Do I interpret the code 
+correctly in that a continuous, 64MB physical block of RAM has 
+to be 100% free for us to be able to turn off refresh and power 
+for this block of RAM?
 
+Thanks,
 
- 
-
+	Ingo
