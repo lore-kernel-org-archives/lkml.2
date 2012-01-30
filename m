@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab2A3QSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 11:18:48 -0500
+	id S1754408Ab2A3QSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 11:18:43 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:62700 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411Ab2A3QSo (ORCPT
+	with ESMTP id S1754376Ab2A3QSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 11:18:44 -0500
+	Mon, 30 Jan 2012 11:18:39 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org
 Cc: Casey Schaufler <casey@schaufler-ca.com>,
@@ -25,9 +25,9 @@ Cc: Casey Schaufler <casey@schaufler-ca.com>,
         mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
         alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 3/4] Allow unprivileged CLONE_NEWUTS and CLONE_NEWIPC with no_new_privs
-Date: Mon, 30 Jan 2012 08:17:28 -0800
-Message-Id: <9a520b74ad5dc14a3d6950b6d63a64714adbdd7d.1327858005.git.luto@amacapital.net>
+Subject: [PATCH v3 2/4] Fix apparmor for PR_{GET,SET}_NO_NEW_PRIVS
+Date: Mon, 30 Jan 2012 08:17:27 -0800
+Message-Id: <fb49711a1ec532c2f2bc7a5f4c1f70df60e27973.1327858005.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <cover.1327858005.git.luto@amacapital.net>
 References: <cover.1327858005.git.luto@amacapital.net>
@@ -37,33 +37,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are normally disallowed because they could be used to subvert
-setuid programs.  But if setuid is disabled, then they are safe.
+From: John Johansen <john.johansen@canonical.com>
 
+Signed-off-by: John Johansen <john.johansen@canonical.com>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- kernel/nsproxy.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ security/apparmor/domain.c |   39 +++++++++++++++++++++++++++++++++++----
+ 1 files changed, 35 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index b576f7f..47cf873 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -191,7 +191,13 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
- 			       CLONE_NEWNET)))
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+index fcfb610..7316d77 100644
+--- a/security/apparmor/domain.c
++++ b/security/apparmor/domain.c
+@@ -360,10 +360,6 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 	if (bprm->cred_prepared)
  		return 0;
  
--	if (!capable(CAP_SYS_ADMIN))
-+	/* We require either no_new_privs or CAP_SYS_ADMIN for all modes */
-+	if (!current->no_new_privs && !capable(CAP_SYS_ADMIN))
+-	/* XXX: no_new_privs is not usable with AppArmor yet */
+-	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)
+-		return -EPERM;
+-
+ 	cxt = bprm->cred->security;
+ 	BUG_ON(!cxt);
+ 
+@@ -399,6 +395,11 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 			new_profile = find_attach(ns, &ns->base.profiles, name);
+ 		if (!new_profile)
+ 			goto cleanup;
++		/*
++		 * NOTE: Domain transitions from unconfined are allowed
++		 * even when no_new_privs is set because this aways results
++		 * in a further reduction of permissions.
++		 */
+ 		goto apply;
+ 	}
+ 
+@@ -459,6 +460,16 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 		/* fail exec */
+ 		error = -EACCES;
+ 
++	/*
++	 * Policy has specified a domain transition, if no_new_privs then
++	 * fail the exec.
++	 */
++	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS) {
++		aa_put_profile(new_profile);
++		error = -EPERM;
++		goto cleanup;
++	}
++
+ 	if (!new_profile)
+ 		goto audit;
+ 
+@@ -613,6 +624,14 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
+ 	const char *target = NULL, *info = NULL;
+ 	int error = 0;
+ 
++	/*
++	 * Fail explicitly requested domain transitions if no_new_privs.
++	 * There is no exception for unconfined as change_hat is not
++	 * available.
++	 */
++	if (current->no_new_privs)
 +		return -EPERM;
 +
-+	/* NEWNS and NEWNET always require CAP_SYS_ADMIN. */
-+	if ((unshare_flags & (CLONE_NEWNS | CLONE_NEWNET)) &&
-+	    !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+ 	/* released below */
+ 	cred = get_current_cred();
+ 	cxt = cred->security;
+@@ -754,6 +773,18 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
+ 	cxt = cred->security;
+ 	profile = aa_cred_profile(cred);
  
- 	*new_nsp = create_new_namespaces(unshare_flags, current,
++	/*
++	 * Fail explicitly requested domain transitions if no_new_privs
++	 * and not unconfined.
++	 * Domain transitions from unconfined are allowed even when
++	 * no_new_privs is set because this aways results in a reduction
++	 * of permissions.
++	 */
++	if (current->no_new_privs && !unconfined(profile)) {
++		put_cred(cred);
++		return -EPERM;
++	}
++
+ 	if (ns_name) {
+ 		/* released below */
+ 		ns = aa_find_namespace(profile->ns, ns_name);
 -- 
 1.7.7.6
 
