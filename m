@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253Ab2A3G57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 01:57:59 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62047 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750996Ab2A3G55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 01:57:57 -0500
-Message-ID: <4F264013.1040603@cn.fujitsu.com>
-Date: Mon, 30 Jan 2012 15:00:35 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1752846Ab2A3G6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 01:58:42 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60637 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751006Ab2A3G6j convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 01:58:39 -0500
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: RE: [PATCH v2 3/3] arm: da830: move NAND and NOR devices as aemif
+ MFD slaves
+Thread-Topic: [PATCH v2 3/3] arm: da830: move NAND and NOR devices as aemif
+ MFD slaves
+Thread-Index: AQHM202khHLiVXMMKUGsorsXzhdwLZYcztgAgAex+qA=
+Date: Mon, 30 Jan 2012 06:58:12 +0000
+Message-ID: <A73F36158E33644199EB82C5EC81C7BC3175BD35@DBDE01.ent.ti.com>
+References: <1327487156-10238-1-git-send-email-prakash.pm@ti.com>
+ <1327487156-10238-3-git-send-email-prakash.pm@ti.com>
+ <4F2016F4.2080302@mvista.com>
+In-Reply-To: <4F2016F4.2080302@mvista.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mandeep Singh Baines <msb@chromium.org>
-CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH] cgroup: remove extra calls to find_existing_css_set
-References: <1327429591-8507-1-git-send-email-msb@chromium.org>
-In-Reply-To: <1327429591-8507-1-git-send-email-msb@chromium.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-01-30 14:56:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-01-30 14:56:35,
-	Serialize complete at 2012-01-30 14:56:35
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mandeep Singh Baines wrote:
-> In cgroup_attach_proc, we indirectly call find_existing_css_set 3
-> times. It is an expensive call so we want to call it a minimum
-> of times. This patch only calls it once and stores the result so
-> that it can be used later on when we call cgroup_task_migrate.
-> 
-> This required modifying cgroup_task_migrate to take the new css_set
-> (which we obtained from find_css_set) as a parameter. The nice side
-> effect of this is that cgroup_task_migrate is now identical for
-> cgroup_attach_task and cgroup_attach_proc. It also now returns a
-> void since it can never fail.
-> 
-> Changes in V5:
-> * https://lkml.org/lkml/2012/1/20/344 (Tejun Heo)
->   * Remove css_set_refs
-> Changes in V4:
-> * https://lkml.org/lkml/2011/12/22/421 (Li Zefan)
->   * Avoid GFP_KERNEL (sleep) in rcu_read_lock by getting css_set in
->     a separate loop not under an rcu_read_lock
-> Changes in V3:
-> * https://lkml.org/lkml/2011/12/22/13 (Li Zefan)
->   * Fixed earlier bug by creating a seperate patch to remove tasklist_lock
-> Changes in V2:
-> * https://lkml.org/lkml/2011/12/20/372 (Tejun Heo)
->   * Move find_css_set call into loop which creates the flex array
-> * Author
->   * Kill css_set_refs and use group_size instead
->   * Fix an off-by-one error in counting css_set refs
->   * Add a retval check in out_list_teardown
-> 
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Hi Sergei,
 
-Please add my ack in your changelog when you update the patch.
+On Wed, Jan 25, 2012 at 20:21:32, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 01/25/2012 01:25 PM, Manjunathappa, Prakash wrote:
+> 
+> > NAND and NOR device are made as aemif devices slave, hence device
+> > registration achieved via aemif MFD driver.
+> 
+> > Signed-off-by: Manjunathappa, Prakash<prakash.pm@ti.com>
+> > ---
+> > Since v1:
+> > Patch is generated using -M option.
+> 
+> >   arch/arm/mach-davinci/board-da830-evm.c |   31 +++++++++++++++++++++++--------
+> >   1 files changed, 23 insertions(+), 8 deletions(-)
+> 
+>     Why only this file? Don't other board files have NAND/NOR devices?
 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: containers@lists.linux-foundation.org
-> Cc: cgroups@vger.kernel.org
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Paul Menage <paul@paulmenage.org>
-> ---
->  kernel/cgroup.c |  143 +++++++++++--------------------------------------------
->  1 files changed, 28 insertions(+), 115 deletions(-)
+Yes I thought of sending board-da850 changes in separate patch. Should I have to send those changes also in this patch?
+
+Thanks,
+Prakash
+> 
+> WBR, Sergei
+> 
+
