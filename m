@@ -1,126 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab2A3QSz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 11:18:55 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55019 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab2A3QSx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 11:18:53 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jamie Lokier <jamie@shareable.org>, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 4/4] Allow unprivileged chroot when safe
-Date: Mon, 30 Jan 2012 08:17:29 -0800
-Message-Id: <0e2f0f54e19bff53a3739ecfddb4ffa9a6dbde4d.1327858005.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1327858005.git.luto@amacapital.net>
-References: <cover.1327858005.git.luto@amacapital.net>
-In-Reply-To: <cover.1327858005.git.luto@amacapital.net>
-References: <cover.1327858005.git.luto@amacapital.net>
+	id S1754518Ab2A3QTX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 11:19:23 -0500
+Received: from david.siemens.de ([192.35.17.14]:18862 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754492Ab2A3QTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 11:19:19 -0500
+Message-ID: <4F26C2EC.5070303@siemens.com>
+Date: Mon, 30 Jan 2012 17:18:52 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
+        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 V10] Add ioctl for KVMCLOCK_GUEST_STOPPED
+References: <1326825641-15765-1-git-send-email-emunson@mgebm.net> <1326825641-15765-4-git-send-email-emunson@mgebm.net> <4F26B220.9050101@redhat.com>
+In-Reply-To: <4F26B220.9050101@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chroot can easily be used to subvert setuid programs.  If no_new_privs,
-then setuid programs don't gain any privilege, so allow chroot.
+On 2012-01-30 16:07, Avi Kivity wrote:
+> On 01/17/2012 08:40 PM, Eric B Munson wrote:
+>> Now that we have a flag that will tell the guest it was suspended, create an
+>> interface for that communication using a KVM ioctl.
+>>
+>>
+>> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+>> index e1d94bf..1931e5c 100644
+>> --- a/Documentation/virtual/kvm/api.txt
+>> +++ b/Documentation/virtual/kvm/api.txt
+>> @@ -1491,6 +1491,19 @@ following algorithm:
+>>  Some guests configure the LINT1 NMI input to cause a panic, aiding in
+>>  debugging.
+>>  
+>> +4.65 KVMCLOCK_GUEST_PAUSED
+>> +
+>> +Capability: KVM_CAP_GUEST_PAUSED
+>> +Architechtures: Any that implement pvclocks (currently x86 only)
+>> +Type: vcpu ioctl
+> 
+> vm ioctl.
+> 
+>> +Parameters: None
+>> +Returns: 0 on success, -1 on error
+>> +
+>> +This signals to the host kernel that the specified guest is being paused by
+>> +userspace.  The host will set a flag in the pvclock structure that is checked
+>> +from the soft lockup watchdog.  This ioctl can be called during pause or
+>> +unpause.
+>> +
+>>  5. The kvm_run structure
+>>  
+>>  
+>> +/*
+>> + * kvm_set_guest_paused() indicates to the guest kernel that it has been
+>> + * stopped by the hypervisor.  This function will be called from the host only.
+>> + */
+>> +static int kvm_set_guest_paused(struct kvm *kvm)
+>> +{
+>> +	struct kvm_vcpu *vcpu;
+>> +	struct pvclock_vcpu_time_info *src;
+>> +	int i;
+>> +
+>> +	kvm_for_each_vcpu(i, vcpu, kvm) {
+>> +		if (!vcpu->arch.time_page)
+>> +			continue;
+>> +		src = &vcpu->arch.hv_clock;
+>> +		src->flags |= PVCLOCK_GUEST_STOPPED;
+> 
+> This looks racy.  The vcpu can remove its kvmclock concurrently with
+> this access, and src will be NULL.
 
-Because chroot is an easy way to break out of chroot jail, CAP_SYS_ADMIN
-is still required if the caller is already chrooted.
+There is no race here (src is member of the vcpu), but arch.time might
+have become invalid. KVM_REQ_CLOCK_UPDATE instead of mark_page_dirty
+would indeed be the way to go. Trivial solution, I would say.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- fs/open.c |   46 ++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 44 insertions(+), 2 deletions(-)
+However, the concept of "guest stopped" has VM, not VCPU scope. That
+makes the call more appropriate as a VM ioctl. If that thing should
+really become per-vcpu, at least call it KVMCLOCK_VCPU_STOPPED.
 
-diff --git a/fs/open.c b/fs/open.c
-index 77becc0..2e2887a 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -418,10 +418,39 @@ out:
- 	return error;
- }
- 
-+static bool is_chrooted(struct fs_struct *fs)
-+{
-+	bool ret;
-+
-+	/*
-+	 * This is equivalent to checking whether "/.." is the same
-+	 * directory as "/", where the ".." part ignores the current
-+	 * root.  This logic is the same as follow_dotdot except that we
-+	 * ignore fs->root and we don't need to follow the final
-+	 * mountpoint we end up on.
-+	 */
-+	struct path path = fs->root;
-+	path_get(&path);
-+	while (true) {
-+		if (path.dentry != path.mnt->mnt_root) {
-+			ret = true;  /* .. moves up within a vfsmount. */
-+			break;
-+		}
-+
-+		if (!follow_up(&path)) {
-+			ret = false;  /* We've hit the real root. */
-+			break;
-+		}
-+	}
-+	path_put(&path);
-+	return ret;
-+}
-+
- SYSCALL_DEFINE1(chroot, const char __user *, filename)
- {
- 	struct path path;
- 	int error;
-+	struct fs_struct *fs = current->fs;
- 
- 	error = user_path_dir(filename, &path);
- 	if (error)
-@@ -432,13 +461,26 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
- 		goto dput_and_out;
- 
- 	error = -EPERM;
--	if (!capable(CAP_SYS_CHROOT))
-+	/*
-+	 * Chroot is dangerous unless no_new_privs is set, and we also
-+	 * don't want to allow unprivileged users to break out of chroot
-+	 * jail with another chroot call.
-+	 *
-+	 * We therefore allow chroot under one of two circumstances:
-+	 *  a) no_new_privs (so setuid and similar programs can't be
-+	 *     exploited), fs not shared (to avoid bypassing no_new_privs),
-+	 *     and not already chrooted (so there's no chroot jail to break
-+	 *     out of)
-+	 *  b) CAP_SYS_CHROOT
-+	 */
-+	if (!(current->no_new_privs && fs->users == 1 && !is_chrooted(fs)) &&
-+	    !capable(CAP_SYS_CHROOT))
- 		goto dput_and_out;
- 	error = security_path_chroot(&path);
- 	if (error)
- 		goto dput_and_out;
- 
--	set_fs_root(current->fs, &path);
-+	set_fs_root(fs, &path);
- 	error = 0;
- dput_and_out:
- 	path_put(&path);
+Jan
+
 -- 
-1.7.7.6
-
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
