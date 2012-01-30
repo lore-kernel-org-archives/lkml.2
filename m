@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2A3RFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 12:05:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40450 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab2A3RFL (ORCPT
+	id S1753244Ab2A3RF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 12:05:57 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37485 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550Ab2A3RF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 12:05:11 -0500
-Message-ID: <4F26CDF3.5080606@canonical.com>
-Date: Mon, 30 Jan 2012 18:05:55 +0100
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120119 Thunderbird/10.0
+	Mon, 30 Jan 2012 12:05:56 -0500
+Date: Mon, 30 Jan 2012 09:05:48 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, dm-devel@redhat.com
+Subject: Re: [PATCH] block: add missing block_bio_complete() tracepoint
+Message-ID: <20120130170548.GA3355@google.com>
+References: <1327830093-12130-1-git-send-email-namhyung@gmail.com>
+ <4F263B01.4050103@gmail.com>
 MIME-Version: 1.0
-To: Jussi Pakkanen <jussi.pakkanen@canonical.com>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: Document the device properties
-References: <1327912546-16960-1-git-send-email-rydberg@euromail.se> <4F268BCC.4000008@canonical.com>
-In-Reply-To: <4F268BCC.4000008@canonical.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F263B01.4050103@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 01:23 PM, Jussi Pakkanen wrote:
-> On 01/30/2012 10:35 AM, Henrik Rydberg wrote:
->> +INPUT_PROP_SEMI_MT:
->> +------------------
->> +Some touchpads, most common between 2008 and 2011, can detect the presence
->> +of multiple contacts without resolving the individual positions; only the
->> +number of contacts and the corresponding bounding box is known. For such
->> +touchpads, the semi-mt property should be set.
+On Mon, Jan 30, 2012 at 03:38:57PM +0900, Namhyung Kim wrote:
+> 2012-01-29 6:41 PM, Namhyung Kim wrote:
+> >The block_bio_complete() TP has been missed so long, so that bio-based
+> >drivers haven't been able to trace its IO behavior. Add it.
+> >
+> >In some rare cases, such as loop_switch, @bio->bi_bdev can be NULL.
+> >Thus convert it to TRACE_EVENT_CONDITION() as Steven suggested.
+> >
 > 
-> A "corresponding bounding box" usually means "a bounding box that 
-> contains all touches on the touchpad". I've been told (though I have not 
-> checked it myself) that there are devices that don't do this. They only 
-> report a bounding box for some subset of touches. If this is the case, 
-> it should be documented here.
+> Now I see that it seems TRACE_EVENT_CONDITION() can protect event
+> tracing from such condition, but what about other users of the TP
+> like blktrace? I think it'll still get NULL pointer dereference on
+> bdev_get_queue() after the change, right? If so, convert to T_E_C()
+> looks meaningless IMHO. Do I miss something?
 
-Yeah, I thought Henrik's definition was correct for a long time, but
-when Derek Foreman (I think) proposed some patches for the latest
-synaptics devices I took a closer look at my semi-mt synaptics trackpad.
-The coordinates it gave were locations based on two of the touches. When
-three touches are on the touchpad, it gave a bounding box of two of the
-touches, and there's no way to tell which two.
+Not really following, but the whole point of using
+TRACE_EVENT_CONDITION() is avoiding the conditional jump when the TP
+is disabled.  Whether the TP users need to test again / more isn't too
+important.
 
--- Chase
+Thanks.
 
+-- 
+tejun
