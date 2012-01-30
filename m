@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab2A3R25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 12:28:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35148 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab2A3R24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 12:28:56 -0500
-Date: Mon, 30 Jan 2012 09:28:51 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: + kmod-avoid-deadlock-by-recursive-kmod-call.patch added to
- -mm tree
-Message-ID: <20120130172851.GD3355@google.com>
-References: <20120126175612.GA24011@redhat.com>
- <87ipjxdfbg.fsf@rustcorp.com.au>
- <20120127143234.GA13056@redhat.com>
- <87y5srbaf7.fsf@rustcorp.com.au>
- <20120129163141.GC20803@redhat.com>
- <87aa56qedn.fsf@rustcorp.com.au>
- <20120130002511.GF17211@htj.dyndns.org>
- <20120130130335.GB11414@redhat.com>
+	id S1752912Ab2A3R37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 12:29:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216Ab2A3R35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 12:29:57 -0500
+Date: Mon, 30 Jan 2012 18:23:37 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Cleanup of rw_copy_check_uvector and
+	compat_rw_copy_check_uvector
+Message-ID: <20120130172337.GA12696@redhat.com>
+References: <20120130145114.4c084a6a@Gantu.yeoh.info>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120130130335.GB11414@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120130145114.4c084a6a@Gantu.yeoh.info>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 01/30, Christopher Yeoh wrote:
+>
+>  ssize_t compat_rw_copy_check_uvector(int type,
+>  		const struct compat_iovec __user *uvector, unsigned long nr_segs,
+>  		unsigned long fast_segs, struct iovec *fast_pointer,
+> -		struct iovec **ret_pointer, int check_access)
+> +		struct iovec **ret_pointer)
+>  {
+>  	compat_ssize_t tot_len;
+>  	struct iovec *iov = *ret_pointer = fast_pointer;
+> @@ -586,7 +586,7 @@ ssize_t compat_rw_copy_check_uvector(int type,
+>  		}
+>  		if (len < 0)	/* size_t not fitting in compat_ssize_t .. */
+>  			goto out;
+> -		if (check_access &&
+> +		if (type >=0 &&
 
-On Mon, Jan 30, 2012 at 02:03:35PM +0100, Oleg Nesterov wrote:
-> Perhaps we can use another system_wq, but afaics WQ_UNBOUND makes sense
-> in this case. I mean, there is no reason to bind this work to any CPU.
-> See also below.
+I bet checkpatch.pl will complain, this needs the space after '>' ;)
 
-I've been trying to nudge people away from using special wqs or flags
-unless really necessary.  Other than non-reentrancy and strict
-ordering, all behaviors are mostly for optimization and using them
-incorrectly / spuriously usually doesn't cause any visible failure,
-making it very easy to get them wrong and if you have enough of wrong
-/ unnecessary usages in tree, the whole thing gets really confusing
-and difficult to update in the future.
+Otherwise this is nice cleanup, imho.
 
-> > Is it expected consume large
-> > amount of CPU cycles?
-> 
-> Currently __call_usermodehelper() does kernel_thread(), this is almost
-> all. But it can block waiting for kernel_execve().
+Christopher, this is up to Andrew but perhaps you should update
+the changelog. It should explain what this patch does (overload
+"int type", remove the unnecessary "check_access", etc). It should
+not simply mention the previous discussion.
 
-Blocking is completely fine on any workqueue.  The only reason to
-require the use of unbound_wq is if work items would burn a lot of CPU
-cycles.  In such cases, we want to let the scheduler have full
-jurisdiction instead of wq regulating concurrency.
+Oleg.
 
-> Not sure this really makes sense, but if we kill khelper_wq perhaps we
-> can simplify this code a bit. We can change __call_usermodehelper()
-> 
-> 		if (wait == UMH_WAIT_PROC)
-> 	-		pid = kernel_thread(wait_for_helper, sub_info,
-> 	-				    CLONE_FS | CLONE_FILES | SIGCHLD);
-> 	+		wait_for_helper(...);
-> 		else
-> 
-> IOW, the worker thread itself can do the UMH_WAIT_PROC work. This makes
-> this work really "long running", but then we can kill sub_info->complete
-> and use flush_work().
-
-Again, long-running in the sense that the work item spending a lot of
-time sleeping should be fine on system_wq or any other wq with default
-attributes.  AFAICS, the things to consider here are...
-
-* If work items are expected to consume large amount of CPU cycles (as
-  in crypto work items), consider using system_unbound_wq / WQ_UNBOUND.
-
-* If per-domain concurrency limit is necessary (ie. the number of
-  concurrent work items doing this particular task should be limited
-  rather than consuming global system_wq limit), a dedicated workqueue
-  would be better.
-
-Thanks.
-
--- 
-tejun
