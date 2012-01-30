@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab2A3Ov4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 09:51:56 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38283 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab2A3Ovy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 09:51:54 -0500
-Message-ID: <1327935109.2297.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: Bad SSD performance with recent kernels
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Wu Fengguang <wfg@linux.intel.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, Herbert Poetzl <herbert@13thfloor.at>,
+	id S1753560Ab2A3Owf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 09:52:35 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:39058 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753196Ab2A3Owd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 09:52:33 -0500
+Date: Mon, 30 Jan 2012 14:52:30 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Date: Mon, 30 Jan 2012 15:51:49 +0100
-In-Reply-To: <20120130142837.GA21750@localhost>
-References: <1327831380.14602.6.camel@edumazet-laptop>
-	 <20120129111645.GA5839@localhost> <1327842831.2718.2.camel@edumazet-laptop>
-	 <20120129161058.GA13156@localhost>
-	 <CANejiEW86b7btiOcVFF3qVhqU1t6FRosvgfiydWwU5zgeDFOqw@mail.gmail.com>
-	 <20120130071346.GM29272@MAIL.13thfloor.at>
-	 <1327908158.21268.3.camel@sli10-conroe>
-	 <20120130073621.GN29272@MAIL.13thfloor.at>
-	 <1327911142.21268.7.camel@sli10-conroe>
-	 <CANejiEXwt7zdWRD0gTg1JXNPZ52vU1Z4cQsb3xztqDLccyTPSQ@mail.gmail.com>
-	 <20120130142837.GA21750@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Subject: Re: [PATCH 08/15] mm: mmzone: MIGRATE_CMA migration type added
+Message-ID: <20120130145230.GQ25268@csn.ul.ie>
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+ <1327568457-27734-9-git-send-email-m.szyprowski@samsung.com>
+ <20120130123542.GL25268@csn.ul.ie>
+ <op.v8wepotk3l0zgt@mpn-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <op.v8wepotk3l0zgt@mpn-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 30 janvier 2012 à 22:28 +0800, Wu Fengguang a écrit :
-> On Mon, Jan 30, 2012 at 06:31:34PM +0800, Li, Shaohua wrote:
+On Mon, Jan 30, 2012 at 02:06:50PM +0100, Michal Nazarewicz wrote:
+> >>@@ -1017,11 +1049,14 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+> >> 			rmv_page_order(page);
+> >>
+> >> 			/* Take ownership for orders >= pageblock_order */
+> >>-			if (current_order >= pageblock_order)
+> >>+			if (current_order >= pageblock_order &&
+> >>+			    !is_pageblock_cma(page))
+> >> 				change_pageblock_range(page, current_order,
+> >> 							start_migratetype);
+> >>
+> >>-			expand(zone, page, order, current_order, area, migratetype);
+> >>+			expand(zone, page, order, current_order, area,
+> >>+			       is_migrate_cma(start_migratetype)
+> >>+			     ? start_migratetype : migratetype);
+> >>
+> >
+> >What is this check meant to be doing?
+> >
+> >start_migratetype is determined by allocflags_to_migratetype() and
+> >that never will be MIGRATE_CMA so is_migrate_cma(start_migratetype)
+> >should always be false.
 > 
-> > Looks the 2.6.39 block plug introduces some latency here. deleting
-> > blk_start_plug/blk_finish_plug in generic_file_aio_read seems
-> > workaround
-> > the issue. The plug seems not good for sequential IO, because readahead
-> > code already has plug and has fine grained control.
+> Right, thanks!  This should be the other way around, ie.:
 > 
-> Why not remove the generic_file_aio_read() plug completely? It
-> actually prevents unplugging immediately after the readahead IO is
-> submitted and in turn stalls the IO pipeline as showed by Eric's
-> blktrace data.
+> +			expand(zone, page, order, current_order, area,
+> +			       is_migrate_cma(migratetype)
+> +			     ? migratetype : start_migratetype);
 > 
-> Eric, will you test this patch? Thank you.
+> I'll fix this and the calls to is_pageblock_cma().
 > 
-> --- linux.orig/mm/filemap.c	2012-01-30 22:27:11.000000000 +0800
-> +++ linux/mm/filemap.c	2012-01-30 22:27:25.000000000 +0800
-> @@ -1414,15 +1414,12 @@ generic_file_aio_read(struct kiocb *iocb
->  	unsigned long seg = 0;
->  	size_t count;
->  	loff_t *ppos = &iocb->ki_pos;
-> -	struct blk_plug plug;
->  
->  	count = 0;
->  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
->  	if (retval)
->  		return retval;
->  
-> -	blk_start_plug(&plug);
-> -
->  	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
->  	if (filp->f_flags & O_DIRECT) {
->  		loff_t size;
-> @@ -1495,7 +1492,6 @@ generic_file_aio_read(struct kiocb *iocb
->  			break;
->  	}
->  out:
-> -	blk_finish_plug(&plug);
->  	return retval;
->  }
->  EXPORT_SYMBOL(generic_file_aio_read);
 
+That makes a lot more sense. Thanks.
 
-Excellent results
+I have a vague recollection that there was a problem with finding
+unmovable pages in MIGRATE_CMA regions. This might have been part of
+the problem.
 
-# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sdb of=/dev/null bs=2M count=2048
-2048+0 enregistrements lus
-2048+0 enregistrements écrits
-4294967296 octets (4,3 GB) copiés, 16,2309 s, 265 MB/s
-
-# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sdb of=/dev/null bs=128k count=32768
-32768+0 enregistrements lus
-32768+0 enregistrements écrits
-4294967296 octets (4,3 GB) copiés, 16,3153 s, 263 MB/s
-
-# hdparm -t /dev/sdb
-
-/dev/sdb:
- Timing buffered disk reads: 752 MB in  3.00 seconds = 250.62 MB/sec
-
-
+-- 
+Mel Gorman
+SUSE Labs
