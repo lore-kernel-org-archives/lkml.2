@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2A3WEZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:04:25 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47680 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab2A3WEX (ORCPT
+	id S1754024Ab2A3WFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:05:09 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34167 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab2A3WFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:04:23 -0500
+	Mon, 30 Jan 2012 17:05:06 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 0/4] PM / Freezer: Fix the semantics of thaw_processes() and
- thaw_kernel_threads()
+Subject: [PATCH 1/4] PM/Freezer: Make thaw_processes() thaw only userspace
+ tasks
 To: rjw@sisk.pl
 Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 31 Jan 2012 03:34:11 +0530
-Message-ID: <20120130220259.9442.70091.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 31 Jan 2012 03:34:57 +0530
+Message-ID: <20120130220419.9442.39596.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120130220259.9442.70091.stgit@srivatsabhat.in.ibm.com>
+References: <20120130220259.9442.70091.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12013022-5564-0000-0000-0000012A455A
+x-cbid: 12013022-9574-0000-0000-0000012B0323
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the introduction of thaw_kernel_threads(), we can now finally fix the
-semantics of thawing tasks, in such a way as to be just the opposite of
-how tasks are frozen. This opens up some opportunities for code cleanup
-as well. This patchset implements both of these improvements.
+Currently the situation is:
 
-This patchset applies on top of the patch posted at
-https://lkml.org/lkml/2012/1/30/439
+freeze_processes() - freezes only userspace tasks
+freeze_kernel_threads() - freezes only kernel threads
+thaw_kernel_threads() - thaws only kernel threads
+thaw_processes() - thaws *everything* (both userspace tasks and kernel threads)
 
---
- Srivatsa S. Bhat (4):
-      PM/Freezer: Make thaw_processes() thaw only userspace tasks
-      PM/Freezer: Use thaw_processes() and thaw_kernel_threads() correctly
-      PM/Hibernate: Thaw kernel threads in hibernation_snapshot() in error/test path
-      PM/Hibernate: Refactor and simplify freezer_test_done
+The point that thaw_processes() thaws everything is rather unintuitive
+and can lead to bugs. So, modify thaw_processes() so that it thaws only
+userspace processes. This way we can also have more control over what
+exactly gets thawed in different situations.
 
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-  kernel/power/hibernate.c |   22 +++++++++++++++-------
- kernel/power/power.h     |   15 +++++++++++++--
- kernel/power/process.c   |   13 ++++++-------
- kernel/power/user.c      |   20 ++++++++++++--------
- 4 files changed, 46 insertions(+), 24 deletions(-)
+ kernel/power/process.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index eeca003..def6b1b 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -170,17 +170,15 @@ void thaw_processes(void)
+ 	if (pm_freezing)
+ 		atomic_dec(&system_freezing_cnt);
+ 	pm_freezing = false;
+-	pm_nosig_freezing = false;
+ 
+ 	oom_killer_enable();
+ 
+ 	printk("Restarting tasks ... ");
+ 
+-	thaw_workqueues();
+-
+ 	read_lock(&tasklist_lock);
+ 	do_each_thread(g, p) {
+-		__thaw_task(p);
++		if (!(p->flags & (PF_KTHREAD | PF_WQ_WORKER)))
++			__thaw_task(p);
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
+ 
 
