@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab2A3LaR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 06:30:17 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62124 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab2A3LaQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 06:30:16 -0500
+	id S1752531Ab2A3Lba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 06:31:30 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48373 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752347Ab2A3Lb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 06:31:28 -0500
+Date: Mon, 30 Jan 2012 12:31:15 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Andrew Steets <asteets@rgmadvisors.com>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf: prctl(PR_TASK_PERF_EVENTS_DISABLE) has no effect
+Message-ID: <20120130113115.GA6565@elte.hu>
+References: <4F22D8D9.3010108@rgmadvisors.com>
+ <20120128120151.GA10390@elte.hu>
+ <4F248938.5030507@rgmadvisors.com>
+ <20120129163235.GB23408@elte.hu>
+ <1327917156.2446.191.camel@twins>
+ <20120130101121.GB8924@elte.hu>
+ <1327921293.2446.202.camel@twins>
 MIME-Version: 1.0
-Date: Mon, 30 Jan 2012 11:30:15 +0000
-Message-ID: <CAKaSfQBrw2pcC8nsNtyQc5bqevW2WX5ykHnReWMWQNc6b4ZUVA@mail.gmail.com>
-Subject: status of Marvell SATA/SAS controller Drivers
-From: Simon McNair <simonmcnair@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327921293.2446.202.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-I've heard of ongoing problems with the drivers for the Marvell
-Controllers (since 2.6.30 ?) , I have two units with Marvell chips (a
-self build 10 bay sata hot-plug enclosure with Supermicro
-AOC-SASLP-MV8 and a 5 bay Thecus 5200BPro). and I'd like to know if
-there is a list of outstanding issues, if any, with the chips used.  I
-believe these are:
 
-self build :Marvell 6480
-Thecus: Marvell Technology Group Ltd. MV88SX6081 8-port SATA II PCI-X
-Controller (rev 09)
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-The problem that I have personally experienced was on (and before) the
-12 December 2011 and (to my entirely untrained eye) consisted of one
-of more of the drives posting unplug and plug messages.  I suspect
-this later resulted in a degraded array and a resync.  I am not a
-Linux expert so I don't know what else to include.
+> On Mon, 2012-01-30 at 11:11 +0100, Ingo Molnar wrote:
+> > So, what workflow are you suggesting to Andrew?
+> 
+> Librarize perf record, then in your code do something like:
+> 
+> #include "perf_record.h"
 
-As an aside, are there any recommendations regarding sanitising
-kernel/dmesg logs prior to posting as I have a copy of the logs which
-contain the zgrep's of 'mvsas' and resultant errors and would be happy
-to post them if desired.
+Maybe. (and then it shouldnt be limited to perf_record.h but 
+should be events.h plus libevents.so or such)
 
-The reason for this is that my Thecus (Linux 2.6.13N5200 #135 Mon May
-24 17:46:32 CST 2010 i686 unknown) has gone out of support and I am
-looking at installing Ubuntu server on it and I don't want to do this
-is the controller issues are still present.  I've not noticed any
-issues with the 2.6.13 kernel that the unit is on but the logs are
-heavily sanitised by Thecus so I can't tell.  I am considering going
-for the Ubuntu 10.04 LTS Server release but I don't know what, if any,
-impact doing updates will have on the mvsas driver.
+> 
+>   handle = perf_record_init(); /* creates perf events and creates
+>                                   a record thread that writes samples
+>                                   to perf.data, consumes env(PERF_*)
+>                                   for configuration, registers with
+>                                   at_exit() for cleanup */
+>   if (!handle)
+>     /* burn */
+> 
+>   /* do you other code */
+> 
+>   perf_record_start(handle);
+> 
+>   /* do the bit you want profiled */
+> 
+>   perf_record_stop(handle);
+> 
+> Then build with -lperfrecord or so. Not too hard, right?
 
-Thank you for your help and I'm sorry for the lack of information.
+Isnt a simple prctl() so much easier and faster?
 
-regards
-Simon
+What's your concern with the prctl()? This would arguably be the 
+right kind of usage for prctl(): it's an established API/ABI for 
+process/task-wide settings.
+
+Thanks,
+
+	Ingo
