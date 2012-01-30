@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab2A3Rnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 12:43:43 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:35897 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab2A3Rnl (ORCPT
+	id S1752927Ab2A3Rnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 12:43:49 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34330 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752603Ab2A3Rns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 12:43:41 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Vac5tn+ufWcVN1f+R4hBm
-Date: Mon, 30 Jan 2012 09:43:23 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Pinmux bindings proposal V2
-Message-ID: <20120130174323.GF9339@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
- <20120123210052.GS22818@atomide.com>
- <20120126093610.GD2287@S2101-09.ap.freescale.net>
- <20120126175122.GX22818@atomide.com>
- <20120127071944.GC32740@S2101-09.ap.freescale.net>
- <20120127171653.GI13504@atomide.com>
- <20120130021041.GB10470@S2101-09.ap.freescale.net>
+	Mon, 30 Jan 2012 12:43:48 -0500
+Date: Mon, 30 Jan 2012 17:43:45 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: Regulator update for 3.3
+Message-ID: <20120130174345.GN4882@opensource.wolfsonmicro.com>
+References: <20120130134223.GG4882@opensource.wolfsonmicro.com>
+ <CA+55aFyoTP3G_x9KzN_cdDYUxRGTBBdoRVT56nFODkqukog7aQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="N/GrjenRD+RJfyz+"
 Content-Disposition: inline
-In-Reply-To: <20120130021041.GB10470@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFyoTP3G_x9KzN_cdDYUxRGTBBdoRVT56nFODkqukog7aQ@mail.gmail.com>
+X-Cookie: Condense soup, not books!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Shawn Guo <shawn.guo@linaro.org> [120129 17:27]:
-> On Fri, Jan 27, 2012 at 09:16:53AM -0800, Tony Lindgren wrote:
-> ...
-> > I guess the analog we should follow here is clk_get and clk_set_rate,
-> > except we would have pinconf_set_state with predefined states.
-> > 
-> It seems working for cases that we only change pinconf but never pinmux
-> for different configuration states.  But how would that work for cases
-> that require mux change for different configuration states?
 
-I don't see why we should not allow changing the mux state with pinconf
-too, after all it's the mux/pin that's locked, not the functionality of
-the pin.
+--N/GrjenRD+RJfyz+
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-An example of this would be remuxing a shared UART line between rx and
-tx. Those kind of cases could be defined as PMX_DIRECTION_INPUT and
-PMX_DIRECTION_OUTPUT so driver could call Linux generic functions for
-those if implemented.
+On Mon, Jan 30, 2012 at 09:14:56AM -0800, Linus Torvalds wrote:
+> On Mon, Jan 30, 2012 at 5:42 AM, Mark Brown
 
-Regards,
+> > are available in the git repository at:
 
-Tony
+> > =A0git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git =
+for-linus
+
+> "Already up-to-date."
+
+> Forgot to push?
+
+Not quite, I had pushed a new signed tag but I hadn't deleted the old
+for-linus branch (which you had merged).  Since git prefers branches
+to tags when pulling it was looking at the old branch and ignoring the
+signed tag.  Should be cleaned up now, at least I deleted the branch and
+everything looks OK in gitweb.
+
+I actually noticed this with some other things I was doing, what I think
+I want git to do when working with signed tags is allow me to have a tag
+with the same name as the branch and prefer the tag rather than the
+branch.  That way I can tell people to pull from a given name and it'll
+do the right thing if they're using a git that understands pulling from
+tags or not.  Either that or complain bitterly and mock me if I'm so
+foolish as to have a tag and branch with the same name.
+
+--N/GrjenRD+RJfyz+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPJtbKAAoJEBus8iNuMP3dcKAP/RqoiHJcS68ua1SOkXmeySdo
+sPQuFC2kfVzs3HltCBIV3lmY5sdzL+z7FGSWOGDj0CzUYk3WI7fDPYs2cBnh0e7K
+bEpMkgjvC3bOr+f1I+R71ZaPiRfxkDnMDJA+R73TB21PrgU2utIFSEXMeIu4BSbG
+J37z+g0aWH6LA/vL9/y1bg+bsCCo8uGYzfI8h0p9umytaCqXSHhRDexZkSWIsS2S
+N78wT11SxFl6Fh3OsgKhJjFiUVsq5nlJ8dDFC4doLuB1KvOEMerOGzXy2zHdfSMx
+881rliBJcVVbJewIw4t2Aw1H0gHK23eD2TE3FW+nPp7If1WwjD8Ek4ZzH4T+dTQ2
++DGnjFJg/jQt3NB22y0nqDdAVMuu7Jb1P6r1PWzNnfqt6qVrNC1TKmvF19HGDBRx
+YCIg6Qhx1nafy9xLEO1azabwP1GwWXUGPrZPq25A9K/vM/V7P8tVzed3UVZYAZVY
+YhIC6xQGpYdAmB9Fsfua6wSJbbnAnm7o2gTbUq0P4l7wDZ+ofHACLACBDWMrwFr9
+2SPG9YCf0NUt/McYNYOEVjVa8iwYINJxcHhEv2h5vrsAlVthWUSkcPhmJW0FpDxH
+BunlkamzV7Kp+985nGBGLkVB4CmadgFTYToH14Zj/Epg3ns3VZv6uaijtSbqcI32
+L5gCjMisAihab1rpvCoP
+=eCTy
+-----END PGP SIGNATURE-----
+
+--N/GrjenRD+RJfyz+--
