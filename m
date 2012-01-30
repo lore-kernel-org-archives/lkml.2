@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab2A3DmV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 22:42:21 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54406 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab2A3DmT (ORCPT
+	id S1754291Ab2A3DuI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 22:50:08 -0500
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:41549 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753339Ab2A3DuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 22:42:19 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4F26118F.7090803@jp.fujitsu.com>
-Date: Mon, 30 Jan 2012 12:42:07 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Sun, 29 Jan 2012 22:50:06 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>, Chao Xie <cxie4@marvell.com>
+Date: Sun, 29 Jan 2012 19:48:46 -0800
+Subject: RE: linux-next: Tree for Jan 24 (usb/otg/mv_otg)
+Thread-Topic: linux-next: Tree for Jan 24 (usb/otg/mv_otg)
+Thread-Index: Aczav0UMTVQx4zGnROWV5Li13qhhDAEQkRYw
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE1A17429E0D@SC-VEXCH4.marvell.com>
+References: <20120124163055.3c99bca0d5dfd754a352fb02@canb.auug.org.au>
+ <4F1EFA85.6040008@xenotime.net>
+In-Reply-To: <4F1EFA85.6040008@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] PCI: pcie hotplug related patch
-References: <1327139539-14301-1-git-send-email-yinghai@kernel.org> <CAE9FiQUFYcaVWorPPP7PQqiBPnKv-iBkPm_qbGz4T_xLR2THiQ@mail.gmail.com> <20120127103601.09e3f771@jbarnes-desktop> <CAE9FiQU70tBVCK-73x7kTX82XE3H03HTwP+HaS2E4_GqwMY1SQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQU70tBVCK-73x7kTX82XE3H03HTwP+HaS2E4_GqwMY1SQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0U3oQ0l032437
 
-(2012/01/28 3:58), Yinghai Lu wrote:
-> On Fri, Jan 27, 2012 at 10:36 AM, Jesse Barnes<jbarnes@virtuousgeek.org>  wrote:
->
->>>
->>>        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->>> for-pci-hp
->>
->> Ok I dropped the earlier link state check; can you re-post the series
->> with Linus's comments addressed?
->
-> resent.
->
-> first one patch should get Linus's Ack, but he just said that solution
-> is the best so far.
->
->>
->> Kenji-san, do you have time to at least review these?  Testing would be
->> nice too...
->
-> others should already address all Kenji's reviews.
->
+Hi Randy,
+> -----Original Message-----
+> From: Randy Dunlap [mailto:rdunlap@xenotime.net]
+> Sent: 2012å¹´1æœˆ25æ—¥ 2:38
+> To: Stephen Rothwell
+> Cc: linux-next@vger.kernel.org; LKML; linux-usb; Chao Xie; Neil Zhang
+> Subject: Re: linux-next: Tree for Jan 24 (usb/otg/mv_otg)
+> 
+> On 01/23/2012 09:30 PM, Stephen Rothwell wrote:
+> > Hi all,
+> >
+> > Changes since 20120123:
+> 
+> 
+> on i386:
+> 
+> ERROR: "usb_remove_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
+> ERROR: "usb_add_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
+> 
+> 
+> Full randconfig file is attached.
+> 
 
-I have a chance to test the patches in this week. I will do it and report
-the result. For some patches, I don't have any environment to reproduce
-the problem the patch wants to solve. So it is difficult for me to confirm
-the patch fix the problem. But I will test them from the regression
-point of view.
+Thanks for your information, the marvell otg driver is dependent on ehci driver.
+I have submit a patch to add the dependence.
+Thanks.
 
-Regards,
-Kenji Kaneshige
+> 
+> --
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your
+> code ***
+
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
