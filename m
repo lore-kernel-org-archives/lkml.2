@@ -1,81 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab2A3WFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:05:36 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:47520 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754310Ab2A3WFf (ORCPT
+	id S1754354Ab2A3WFo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:05:44 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:48506 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab2A3WFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:05:35 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 16/16] leds-lp5523: fix compiler warning
-Date: Mon, 30 Jan 2012 23:00:20 +0100
-Message-Id: <1327960820-11867-17-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
-References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327961134;990380a8;
+	Mon, 30 Jan 2012 17:05:41 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 3/4] PM/Hibernate: Thaw kernel threads in
+ hibernation_snapshot() in error/test path
+To: rjw@sisk.pl
+Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Tue, 31 Jan 2012 03:35:30 +0530
+Message-ID: <20120130220520.9442.37363.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120130220259.9442.70091.stgit@srivatsabhat.in.ibm.com>
+References: <20120130220259.9442.70091.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12013022-2674-0000-0000-0000032BB236
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for some -Wuninitialized compiler warnings.
+In the hibernation call path, the kernel threads are frozen inside
+hibernation_snapshot(). If we happen to encounter an error further down
+the road or if we are exiting early due to a successful freezer test,
+then thaw kernel threads before returning to the caller.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- drivers/leds/leds-lp5523.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index 73e791a..c11fce0 100644
---- a/drivers/leds/leds-lp5523.c
-+++ b/drivers/leds/leds-lp5523.c
-@@ -192,7 +192,7 @@ static int lp5523_detect(struct i2c_client *client)
- static int lp5523_configure(struct i2c_client *client)
- {
- 	struct lp5523_chip *chip = i2c_get_clientdata(client);
--	int ret = 0;
-+	int ret = 0, ret2 = 0;
- 	u8 status;
+ kernel/power/hibernate.c |    9 ++++++---
+ kernel/power/user.c      |    8 ++------
+ 2 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index 1670387..0ce1220 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
+ 		 * successful freezer test.
+ 		 */
+ 		freezer_test_done = true;
+-		goto Cleanup;
++		goto Thaw;
+ 	}
  
- 	/* one pattern per engine setting led mux start and stop addresses */
-@@ -243,7 +243,10 @@ static int lp5523_configure(struct i2c_client *client)
+ 	error = dpm_prepare(PMSG_FREEZE);
+ 	if (error) {
+ 		dpm_complete(PMSG_RECOVER);
+-		goto Cleanup;
++		goto Thaw;
+ 	}
  
- 	/* Let the programs run for couple of ms and check the engine status */
- 	usleep_range(3000, 6000);
--	lp5523_read(client, LP5523_REG_STATUS, &status);
-+	ret2 = lp5523_read(client, LP5523_REG_STATUS, &status);
-+	if (ret2) 
-+		return -1;
-+	
- 	status &= LP5523_ENG_STATUS_MASK;
+ 	suspend_console();
+@@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
+ 	platform_end(platform_mode);
+ 	return error;
  
- 	if (status == LP5523_ENG_STATUS_MASK) {
-@@ -461,7 +464,10 @@ static ssize_t lp5523_selftest(struct device *dev,
- 	if (!(status & LP5523_LEDTEST_DONE))
- 		usleep_range(3000, 6000); /* Was not ready. Wait little bit */
++ Thaw:
++	thaw_kernel_threads();
+  Cleanup:
+ 	swsusp_free();
+ 	goto Close;
+@@ -655,12 +657,13 @@ int hibernate(void)
+ 		pr_debug("PM: Image restored successfully.\n");
+ 	}
  
--	ret |= lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &vdd);
-+	ret = lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &vdd);
-+	if (ret)
-+		goto fail;
+- Thaw:
+ 	/*
+ 	 * Kernel threads had been frozen inside hibernation_snapshot().
+ 	 * So thaw them here, on the success path.
+ 	 */
+ 	thaw_kernel_threads();
 +
- 	vdd--;	/* There may be some fluctuation in measurement */
++ Thaw:
+ 	thaw_processes();
+  Finish:
+ 	free_basic_memory_bitmaps();
+diff --git a/kernel/power/user.c b/kernel/power/user.c
+index eaf5c97..62dbe93 100644
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -257,16 +257,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 		}
+ 		pm_restore_gfp_mask();
+ 		error = hibernation_snapshot(data->platform_support);
+-		if (error) {
+-			thaw_kernel_threads();
+-		} else {
++		if (!error) {
+ 			error = put_user(in_suspend, (int __user *)arg);
+ 			if (!error && !freezer_test_done)
+ 				data->ready = 1;
+-			if (freezer_test_done) {
++			if (freezer_test_done)
+ 				freezer_test_done = false;
+-				thaw_kernel_threads();
+-			}
+ 		}
+ 		break;
  
- 	for (i = 0; i < LP5523_LEDS; i++) {
-@@ -485,7 +491,9 @@ static ssize_t lp5523_selftest(struct device *dev,
- 		ret = lp5523_read(chip->client, LP5523_REG_STATUS, &status);
- 		if (!(status & LP5523_LEDTEST_DONE))
- 			usleep_range(3000, 6000);/* Was not ready. Wait. */
--		ret |= lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &adc);
-+		ret = lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &adc);
-+		if (ret)
-+			goto fail;
- 
- 		if (adc >= vdd || adc < LP5523_ADC_SHORTCIRC_LIM)
- 			pos += sprintf(buf + pos, "LED %d FAIL\n", i);
--- 
-1.7.7.3
 
