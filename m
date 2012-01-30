@@ -1,103 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab2A3NWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 08:22:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46516 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab2A3NWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 08:22:47 -0500
-Date: Mon, 30 Jan 2012 05:22:27 -0800
-From: tip-bot for Michael D Labriola <michael.d.labriola@gmail.com>
-Message-ID: <tip-e6d36a653becc7bbc643c399a77882e02bf552cb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, torvalds@linux-foundation.org, mlabriol@gdeb.com,
-        kushalkoolwal@gmail.com, michael.d.labriola@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mlabriol@gdeb.com, kushalkoolwal@gmail.com,
-        michael.d.labriola@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <87vcnub9hu.fsf@gmail.com>
-References: <87vcnub9hu.fsf@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/reboot: Remove VersaLogic Menlow reboot quirk
-Git-Commit-ID: e6d36a653becc7bbc643c399a77882e02bf552cb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752612Ab2A3NZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 08:25:18 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:37946 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752051Ab2A3NZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 08:25:16 -0500
+Date: Mon, 30 Jan 2012 13:25:12 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Subject: Re: [PATCHv19 00/15] Contiguous Memory Allocator
+Message-ID: <20120130132512.GO25268@csn.ul.ie>
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+ <201201261531.40551.arnd@arndb.de>
+ <20120127162624.40cba14e.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 30 Jan 2012 05:22:32 -0800 (PST)
+In-Reply-To: <20120127162624.40cba14e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e6d36a653becc7bbc643c399a77882e02bf552cb
-Gitweb:     http://git.kernel.org/tip/e6d36a653becc7bbc643c399a77882e02bf552cb
-Author:     Michael D Labriola <michael.d.labriola@gmail.com>
-AuthorDate: Sun, 29 Jan 2012 14:21:17 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 30 Jan 2012 10:52:33 +0100
+On Fri, Jan 27, 2012 at 04:26:24PM -0800, Andrew Morton wrote:
+> On Thu, 26 Jan 2012 15:31:40 +0000
+> Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > On Thursday 26 January 2012, Marek Szyprowski wrote:
+> > > Welcome everyone!
+> > > 
+> > > Yes, that's true. This is yet another release of the Contiguous Memory
+> > > Allocator patches. This version mainly includes code cleanups requested
+> > > by Mel Gorman and a few minor bug fixes.
+> > 
+> > Hi Marek,
+> > 
+> > Thanks for keeping up this work! I really hope it works out for the
+> > next merge window.
+> 
+> Someone please tell me when it's time to start paying attention
+> again ;)
+> 
+> These patches don't seem to have as many acked-bys and reviewed-bys as
+> I'd expect. 
 
-x86/reboot: Remove VersaLogic Menlow reboot quirk
+I reviewed the core MM changes and I've acked most of them so the
+next release should have a few acks where you expect them. I did not
+add a reviewed-by because I did not build and test the thing.
 
-This commit removes the reboot quirk originally added by commit
-e19e074 ("x86: Fix reboot problem on VersaLogic Menlow boards").
+For me, Patch 2 is the only one that must be fixed prior to merging
+as it can interfere with pages on a remote per-cpu list which is
+dangerous. I know your suggestion will be to delete the per-cpu lists
+and be done with it but I am a bit away from doing that just yet.
 
-Testing with a VersaLogic Ocelot (VL-EPMs-21a rev 1.00 w/ BIOS
-6.5.102) revealed the following regarding the reboot hang
-problem:
+Patch 8 could do with a bit more care too but it is not a
+potential hand grenade like patch 2 and could be fixed as part of
+a follow-up. Even if you don't see an ack from me there, it should not
+be treated as a show stopper.
 
-- v2.6.37 reboot=bios was needed.
+I highlighted some issues on how CMA interacts with reclaim but I
+think this is a problem specific to CMA and should not prevent it being
+merged. I just wanted to be sure that the CMA people were aware of the
+potential issues so they will recognise the class of bug if it occurs.
 
-- v2.6.38-rc1: behavior changed, reboot=acpi is needed,
-  reboot=kbd and reboot=bios results in system hang.
+> Given the scope and duration of this, it would be useful
+> to gather these up.  But please ensure they are real ones - people
+> sometimes like to ack things without showing much sign of having
+> actually read them.
+> 
 
-- v2.6.38: VersaLogic patch (e19e074 "x86: Fix reboot problem on
-  VersaLogic Menlow boards") was applied prior to v2.6.38-rc7.  This
-  patch sets a quirk for VersaLogic Menlow boards that forces the use
-  of reboot=bios, which doesn't work anymore.
+FWIW, the acks I put on the core MM changes are real acks :)
 
-- v3.2: It seems that commit 660e34c ("x86: Reorder reboot method
-  preferences") changed the default reboot method to acpi prior to
-  v3.0-rc1, which means the default behavior is appropriate for the
-  Ocelot.  No VersaLogic quirk is required.
+> The patches do seem to have been going round in ever-decreasing circles
+> lately and I think we have decided to merge them (yes?) so we may as well
+> get on and do that and sort out remaining issues in-tree.
+> 
 
-The Ocelot board used for testing can successfully reboot w/out
-having to pass any reboot= arguments for all 3 current versions
-of the BIOS.
+I'm a lot happier with the core MM patches than I was when I reviewed
+this first around last September or October.
 
-Signed-off-by: Michael D Labriola <michael.d.labriola@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Michael D Labriola <mlabriol@gdeb.com>
-Cc: Kushal Koolwal <kushalkoolwal@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/87vcnub9hu.fsf@gmail.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/reboot.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index b257f0e..d840e69 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -309,14 +309,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
- 		},
- 	},
--	{	/* Handle problems with rebooting on VersaLogic Menlow boards */
--		.callback = set_bios_reboot,
--		.ident = "VersaLogic Menlow based board",
--		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "VersaLogic Corporation"),
--			DMI_MATCH(DMI_BOARD_NAME, "VersaLogic Menlow board"),
--		},
--	},
- 	{ /* Handle reboot issue on Acer Aspire one */
- 		.callback = set_kbd_reboot,
- 		.ident = "Acer Aspire One A110",
+-- 
+Mel Gorman
+SUSE Labs
