@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab2A3OYG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 09:24:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58012 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061Ab2A3OYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 09:24:04 -0500
-Date: Mon, 30 Jan 2012 16:25:57 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shane McDonald <mcdonald.shane@gmail.com>
-Cc: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <jmorris@namei.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Michael Witten <mfwitten@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 1/3] lib: add NO_GENERIC_PCI_IOPORT_MAP
-Message-ID: <20120130142557.GA7382@redhat.com>
-References: <cover.1327877053.git.mst@redhat.com>
- <d78d91d0166651700cf662a50c87d84da4bdab88.1327877053.git.mst@redhat.com>
- <CACoURw6docF1E4KwvfAAwh3GG0KFo15erj+JJwu0HHB-wtswig@mail.gmail.com>
+	id S1753277Ab2A3OYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 09:24:33 -0500
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:15757
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752710Ab2A3OYb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 09:24:31 -0500
+X-SpamScore: -13
+X-BigFish: VPS-13(zz98dKzz1202hzz15d4Rz2dhc1bhc31hc1ah668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LYM80Q-02-444-02
+X-M-MSG: 
+Date: Mon, 30 Jan 2012 15:24:24 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: Joerg Roedel <joro@8bytes.org>, Sethi Varun-B16395 <B16395@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        David Brown <davidb@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 2/5] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+Message-ID: <20120130142424.GR19255@amd.com>
+References: <20120120160344.GG2205@amd.com>
+ <4F219A9C.8000400@freescale.com>
+ <20120126183116.GI19255@amd.com>
+ <4F219E82.106@freescale.com>
+ <20120126185101.GJ19255@amd.com>
+ <4F21A2D5.6000204@freescale.com>
+ <20120126194428.GH6269@8bytes.org>
+ <4F21B152.3010103@freescale.com>
+ <20120127110120.GL19255@amd.com>
+ <4F2315A3.80909@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CACoURw6docF1E4KwvfAAwh3GG0KFo15erj+JJwu0HHB-wtswig@mail.gmail.com>
+In-Reply-To: <4F2315A3.80909@freescale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 08:19:31AM -0600, Shane McDonald wrote:
-> Just a minor nit on the comment:
-> 
-> On Mon, Jan 30, 2012 at 6:18 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > Some architectures need to override the way
-> > IO port mapping is does not PCI devices.
-> 
-> Should this line read "IO port mapping is done on PCI devices."?
+On Fri, Jan 27, 2012 at 03:22:43PM -0600, Scott Wood wrote:
 
-Right, good catch. I'll fix this up in git.
+> OK, so there's a geometry that is read-only, and potentially a
+> driver-specific geometry that is read/write.  The default config for
+> PAMU would likely be a 1 MiB aperture in which the dma api can do
+> arbitrary 4k mappings -- this fits within the get generic geometry
+> operation.
 
-> > Supply a generic function that calls
-> > ioport_map, and make it possible for architectures
-> > to override.
-> >
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> Shane
+Better: There is a read-only geometry for _all_ IOMMUs. Some IOMMUs may
+also allow to write the geometry, like PAMU.
+
+> Should generic get geometry return an error if the driver-specific
+> geometry has been set to something that doesn't fit within the generic
+> geometry model?
+
+A domain can only have one geometry. So if you set a new geometry
+subsequent calls to get_attr will return the new geometry.
+
+> I said a generic attribute (not GART specific) -- but if we're never
+> going to use the generic geometry struct for a set operation, bundling
+> it should be OK.
+
+The generic struct should be used to set the geometry. But you can read
+out the old geometry and set force_aperture to the same value in the new
+geometry. Drivers should actually return -EINVAL when the user tries to
+set an unsupported value for force_aperture.
+
+> No, at this point I'm just trying to follow the API development while
+> tending to other tasks.  I think Varun is working on the code for now.
+
+Okay, maybe it is better to follow a 'release early, release often'
+model here. So we can work out the issues together.
+
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
