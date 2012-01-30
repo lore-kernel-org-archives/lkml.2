@@ -1,130 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab2A3WzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:55:11 -0500
-Received: from [206.117.179.246] ([206.117.179.246]:37186 "EHLO labridge.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752051Ab2A3WzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:55:09 -0500
-Message-ID: <1327964088.25132.65.camel@joe2Laptop>
-Subject: [RFC PATCH V2] telephony: Move to staging
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Date: Mon, 30 Jan 2012 14:54:48 -0800
-In-Reply-To: <20120130221838.GA5904@suse.de>
-References: <cd8d3ef8b646dc0b1c451e61c57d639cadbc7c21.1327961290.git.joe@perches.com>
-	 <20120130221838.GA5904@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754495Ab2A3W4t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:56:49 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57857 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754005Ab2A3W4s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 17:56:48 -0500
+Date: Mon, 30 Jan 2012 22:56:38 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        systemd-devel@lists.freedesktop.org
+Subject: Re: sysfs regression: wrong link counts
+Message-ID: <20120130225638.GO23916@ZenIV.linux.org.uk>
+References: <4F27120A.4040106@suse.cz>
+ <20120130220611.GA26655@kroah.com>
+ <20120130221059.26ab5edf@pyramind.ukuu.org.uk>
+ <20120130222717.GA6393@kroah.com>
+ <20120130224350.GN23916@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120130224350.GN23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This stuff is really old and in quite poor shape.
-Does anyone still use it?
+On Mon, Jan 30, 2012 at 10:43:50PM +0000, Al Viro wrote:
+> On Mon, Jan 30, 2012 at 02:27:17PM -0800, Greg KH wrote:
+> > On Mon, Jan 30, 2012 at 10:10:59PM +0000, Alan Cox wrote:
+> > > > Isn't there some other "proper" way of doing this in userspace, or is
+> > > > this really the correct way?
+> > > 
+> > > You can look at the S_IFMT bits and stuff however link count indicating
+> > > number of subdirectories is a standard Unix thing and used by many quite
+> > > mundane tools as an optimisation.
+> > 
+> > Ah, yeah, that is easier.
+> > 
+> > Eric, care to fix this or want me to revert it?
+> 
+> Fix _what_?  Userland shite quoted upthread?  Because that's where the bug
+> is - the mundane tools mentioned by Alan treat 1 in st_nlink as "no
+> information about the number of subdirectories".  And shite might be too
+> mild a term for the little gem in question, really...
 
-If not, I think it's appropriate to let it simmer
-in staging for a few releases.
+To repeat this piece of bogosity for those who might've missed it:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-Changes since V1:
-Added TODO
-Corrected telephony path in drivers/staging/Kconfig so make works
+/* returns !0 if sysfs filesystem was found, 0 otherwise */
+int sensors_init_sysfs(void)
+{
+        struct stat statbuf;
 
- drivers/Kconfig                              |    2 --
- drivers/staging/Kconfig                      |    2 ++
- drivers/{ => staging}/telephony/Kconfig      |    0
- drivers/{ => staging}/telephony/Makefile     |    0
- drivers/staging/telephony/TODO               |   10 ++++++++++
- drivers/{ => staging}/telephony/ixj-ver.h    |    0
- drivers/{ => staging}/telephony/ixj.c        |    0
- drivers/{ => staging}/telephony/ixj.h        |    0
- drivers/{ => staging}/telephony/ixj_pcmcia.c |    0
- drivers/{ => staging}/telephony/phonedev.c   |    0
- 10 files changed, 12 insertions(+), 2 deletions(-)
- rename drivers/{ => staging}/telephony/Kconfig (100%)
- rename drivers/{ => staging}/telephony/Makefile (100%)
- create mode 100644 drivers/staging/telephony/TODO
- rename drivers/{ => staging}/telephony/ixj-ver.h (100%)
- rename drivers/{ => staging}/telephony/ixj.c (100%)
- rename drivers/{ => staging}/telephony/ixj.h (100%)
- rename drivers/{ => staging}/telephony/ixj_pcmcia.c (100%)
- rename drivers/{ => staging}/telephony/phonedev.c (100%)
+        snprintf(sensors_sysfs_mount, NAME_MAX, "%s", "/sys");
+        if (stat(sensors_sysfs_mount, &statbuf) < 0
+         || statbuf.st_nlink <= 2)      /* Empty directory */
+                return 0;
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index d5138e6..2272307 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -40,8 +40,6 @@ source "drivers/net/Kconfig"
- 
- source "drivers/isdn/Kconfig"
- 
--source "drivers/telephony/Kconfig"
--
- # input before char - char/joystick depends on it. As does USB.
- 
- source "drivers/input/Kconfig"
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index 21e2f4b..aaba36c 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -132,4 +132,6 @@ source "drivers/staging/omapdrm/Kconfig"
- 
- source "drivers/staging/android/Kconfig"
- 
-+source "drivers/staging/telephony/Kconfig"
-+
- endif # STAGING
-diff --git a/drivers/telephony/Kconfig b/drivers/staging/telephony/Kconfig
-similarity index 100%
-rename from drivers/telephony/Kconfig
-rename to drivers/staging/telephony/Kconfig
-diff --git a/drivers/telephony/Makefile b/drivers/staging/telephony/Makefile
-similarity index 100%
-rename from drivers/telephony/Makefile
-rename to drivers/staging/telephony/Makefile
-diff --git a/drivers/staging/telephony/TODO b/drivers/staging/telephony/TODO
-new file mode 100644
-index 0000000..d47dec3
---- /dev/null
-+++ b/drivers/staging/telephony/TODO
-@@ -0,0 +1,10 @@
-+TODO
-+. Determine if the boards are still in use
-+  and move this module back to drivers/telephony if necessary
-+. Coding style cleanups
-+
-+Please send patches to Greg Kroah-Hartman <greg@kroah.com> and
-+cc Joe Perches <joe@perches.com> if the module should be reactivated.
-+
-+If no module activity occurs before version 3.6 is released, this
-+module should be removed.
-diff --git a/drivers/telephony/ixj-ver.h b/drivers/staging/telephony/ixj-ver.h
-similarity index 100%
-rename from drivers/telephony/ixj-ver.h
-rename to drivers/staging/telephony/ixj-ver.h
-diff --git a/drivers/telephony/ixj.c b/drivers/staging/telephony/ixj.c
-similarity index 100%
-rename from drivers/telephony/ixj.c
-rename to drivers/staging/telephony/ixj.c
-diff --git a/drivers/telephony/ixj.h b/drivers/staging/telephony/ixj.h
-similarity index 100%
-rename from drivers/telephony/ixj.h
-rename to drivers/staging/telephony/ixj.h
-diff --git a/drivers/telephony/ixj_pcmcia.c b/drivers/staging/telephony/ixj_pcmcia.c
-similarity index 100%
-rename from drivers/telephony/ixj_pcmcia.c
-rename to drivers/staging/telephony/ixj_pcmcia.c
-diff --git a/drivers/telephony/phonedev.c b/drivers/staging/telephony/phonedev.c
-similarity index 100%
-rename from drivers/telephony/phonedev.c
-rename to drivers/staging/telephony/phonedev.c
--- 
-1.7.8.111.gad25c.dirty
+        return 1;
+}
 
+which is completely bogus - contrary to what it says in comments, it does
+*not* check anything about sysfs (or directories being empty).  Checking
+that sysfs is mounted on /sys could be done by statfs(2) and checking
+->f_type, or, considering what the code in lib/sysfs.c is doing, just
+checking that /sys/class is readable and failing otherwise.
 
-
+Sigh...
