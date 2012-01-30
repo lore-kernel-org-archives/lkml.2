@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2A3Txb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 14:53:31 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65251 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753372Ab2A3Tx2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 14:53:28 -0500
+	id S1753500Ab2A3TzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 14:55:09 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721Ab2A3TzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 14:55:08 -0500
+Message-ID: <4F26F640.2050602@nod.at>
+Date: Mon, 30 Jan 2012 20:57:52 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <20120130190008.GA5797@infradead.org>
-References: <20120113144731.GA5458@quad>
-	<20120113165315.GA24387@infradead.org>
-	<CABPqkBTe1uqiLm02fijYE2bwF=rWWu=V0mjZQbEzW0TUKa4-+Q@mail.gmail.com>
-	<CABPqkBS50jYOHepmAqOzGYY8m+4SCJQuhrMV2yLXRYfdFpE70g@mail.gmail.com>
-	<20120130190008.GA5797@infradead.org>
-Date: Mon, 30 Jan 2012 20:53:26 +0100
-Message-ID: <CABPqkBSzgc7WSbuS4L1gtCf+3u_q3fx002byArsMjKSxd5zw-g@mail.gmail.com>
-Subject: Re: [PATCH] perf: fix broken perf inject -b
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        robert.richter@amd.com
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] um: Use generic io.h
+References: <1327512234-22578-1-git-send-email-richard@nod.at> <20120130182333.GK23916@ZenIV.linux.org.uk> <20120130192552.GL23916@ZenIV.linux.org.uk> <20120130193238.GM23916@ZenIV.linux.org.uk>
+In-Reply-To: <20120130193238.GM23916@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 8:00 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
+Am 30.01.2012 20:32, schrieb Al Viro:
+> On Mon, Jan 30, 2012 at 07:25:52PM +0000, Al Viro wrote:
 >
-> Em Mon, Jan 16, 2012 at 07:53:28PM +0100, Stephane Eranian escreveu:
-> > On Fri, Jan 13, 2012 at 5:54 PM, Stephane Eranian <eranian@google.com> wrote:
-> > > On Fri, Jan 13, 2012 at 5:53 PM, Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > >> Em Fri, Jan 13, 2012 at 03:47:31PM +0100, Stephane Eranian escreveu:
-> > >>> perf inject -b was broken. It would not inject any build_ids
-> > >>> into the stream. Furthermore, it would strip samples from the
-> > >>> stream.
-> <SNIP>
-> > >>> @@ -173,6 +178,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
-> > >>>               goto repipe;
-> > >>>       }
-> > >>> +     machine->pid = event->ip.pid;
+>> While we are at it, param.h and pci.h appear to be candidates for the
+>> same treatment, along with delay.h and auxvec.h.  mutex.h as well...
+>> BTW, we probably can kill arch/um/include/asm/asm-offsets.h - everything
+>> in there is using generated/asm-offsets.h directly.
+>>
+>> FWIW, I'd probably kill current.h as well - replace get_current() in
+>> arch/um/kernel/process.c with get_current_pid() (i.e. task_pid_nr(current)),
+>> kill HOST_TASK_PID and switch arch/x86/um/bugs_32.c to use of get_current_pid()
+>> and we can switch to asm-generic/current.h just fine.
 >
-> > I noticed that this statement conflicts with perf buildid-list (which
-> > I am also fixing for pipe mode).
->
-> > I don't quite understand why, though.
->
-> Have you reached any conclusion about this problem? I haven't looked at
-> it in detail, could you please elaborate more?
->
+> BTW, while looking at those headers - why do we need asm/user.h pulled from
+> arch/um/include/asm/ptrace-generic.h?
 
-I ended up removing it. But I am not sure this is correct.
-Is the pid used in any way when processing buildids?
+Hmmm, looks like a relict.
+Let's remove it.
 
->
-> - Arnaldo
+Thanks,
+//richard
+
