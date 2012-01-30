@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab2A3WHV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:07:21 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35513 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753633Ab2A3WHQ (ORCPT
+	id S1754450Ab2A3WHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:07:19 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:47579 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753409Ab2A3WHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:07:16 -0500
-X-Sasl-enc: EZG1SqzaqCrD9Jjk9I43qJIa3GSJQDII17Q1UB6KsH+n 1327961235
-Date: Mon, 30 Jan 2012 14:06:11 -0800
-From: Greg KH <greg@kroah.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        systemd-devel@lists.freedesktop.org
-Subject: Re: sysfs regression: wrong link counts
-Message-ID: <20120130220611.GA26655@kroah.com>
-References: <4F27120A.4040106@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F27120A.4040106@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 30 Jan 2012 17:07:15 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Antonino Daplas <adaplas@gmail.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 13/16] riva/fbdev: fix several -Wuninitialized
+Date: Mon, 30 Jan 2012 23:00:17 +0100
+Message-Id: <1327960820-11867-14-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
+References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327961235;03cfd146;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 10:56:26PM +0100, Jiri Slaby wrote:
-> Hi,
-> 
-> I cannot boot properly with this commit:
-> commit 524b6c5b39b931311dfe5a2f5abae2f5c9731676
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Sun Dec 18 20:09:31 2011 -0800
-> 
->     sysfs: Kill nlink counting.
-> 
-> 
-> 1) network systemd rule doesn't start network
-> 2) sensors complain:
->    sensors_init: Kernel interface error
+Fix several -Wuninitialized compiler warnings by changing the
+order of getting modedb in riva_update_default_var() to set
+first the fallback and then the prefered timing.
 
-Odd.
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/video/riva/fbdev.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-What in systemd is causing a reliance on this?
+diff --git a/drivers/video/riva/fbdev.c b/drivers/video/riva/fbdev.c
+index 2f58cf9..90df1a6 100644
+--- a/drivers/video/riva/fbdev.c
++++ b/drivers/video/riva/fbdev.c
+@@ -1816,6 +1816,8 @@ static void __devinit riva_update_default_var(struct fb_var_screeninfo *var,
+ 			     specs->modedb, specs->modedb_len,
+ 			     NULL, 8);
+ 	} else if (specs->modedb != NULL) {
++		/* get first mode in database as fallback */
++		modedb = specs->modedb[0];
+ 		/* get preferred timing */
+ 		if (info->monspecs.misc & FB_MISC_1ST_DETAIL) {
+ 			int i;
+@@ -1826,9 +1828,6 @@ static void __devinit riva_update_default_var(struct fb_var_screeninfo *var,
+ 					break;
+ 				}
+ 			}
+-		} else {
+-			/* otherwise, get first mode in database */
+-			modedb = specs->modedb[0];
+ 		}
+ 		var->bits_per_pixel = 8;
+ 		riva_update_var(var, &modedb);
+-- 
+1.7.7.3
 
-> ad 2) look at what it does:
-> /* returns !0 if sysfs filesystem was found, 0 otherwise */
-> int sensors_init_sysfs(void)
-> {
->         struct stat statbuf;
-> 
->         snprintf(sensors_sysfs_mount, NAME_MAX, "%s", "/sys");
->         if (stat(sensors_sysfs_mount, &statbuf) < 0
->          || statbuf.st_nlink <= 2)      /* Empty directory */
->                 return 0;
-> 
->         return 1;
-> }
-
-Ah, a hack to see if the directory is empty.
-
-Isn't there some other "proper" way of doing this in userspace, or is
-this really the correct way?
-
-> So this looks like it became a part of ABI we cannot break...
-> 
-> A revert of this commit on the top of today's -next fixes the problem.
-
-Ick.
-
-Eric, care to fix this up, or do you want me to revert it?
-
-thanks,
-
-greg k-h
