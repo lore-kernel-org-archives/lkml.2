@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab2A3NZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 08:25:47 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:37965 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab2A3NZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 08:25:46 -0500
-Date: Mon, 30 Jan 2012 13:25:43 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: Re: [PATCH 03/15] mm: compaction: introduce
- isolate_migratepages_range().
-Message-ID: <20120130132543.GP25268@csn.ul.ie>
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
- <1327568457-27734-4-git-send-email-m.szyprowski@samsung.com>
- <20120130112428.GF25268@csn.ul.ie>
- <op.v8wdlovn3l0zgt@mpn-glaptop>
+	id S1752664Ab2A3NbZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 08:31:25 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48315 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751678Ab2A3NbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 08:31:24 -0500
+Date: Mon, 30 Jan 2012 13:31:22 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, jedu@slimlogic.co.uk, sameo@linux.intel.com,
+        gg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V4] regulator: tps65910: Sleep control through external
+ inputs
+Message-ID: <20120130133122.GE4882@opensource.wolfsonmicro.com>
+References: <1327743477-31512-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gMR3gsNFwZpnI/Ts"
 Content-Disposition: inline
-In-Reply-To: <op.v8wdlovn3l0zgt@mpn-glaptop>
+In-Reply-To: <1327743477-31512-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Condense soup, not books!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 01:42:50PM +0100, Michal Nazarewicz wrote:
-> >On Thu, Jan 26, 2012 at 10:00:45AM +0100, Marek Szyprowski wrote:
-> >>From: Michal Nazarewicz <mina86@mina86.com>
-> >>@@ -313,7 +316,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
-> >> 		} else if (!locked)
-> >> 			spin_lock_irq(&zone->lru_lock);
-> >>
-> >>-		if (!pfn_valid_within(low_pfn))
-> >>+		if (!pfn_valid(low_pfn))
-> >> 			continue;
-> >> 		nr_scanned++;
-> >>
-> 
-> On Mon, 30 Jan 2012 12:24:28 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> >This chunk looks unrelated to the rest of the patch.
-> >
-> >I think what you are doing is patching around a bug that CMA exposed
-> >which is very similar to the bug report at
-> >http://www.spinics.net/lists/linux-mm/msg29260.html . Is this true?
-> >
-> >If so, I posted a fix that only calls pfn_valid() when necessary. Can
-> >you check if that works for you and if so, drop this hunk please? If
-> >the patch does not work for you, then this hunk still needs to be
-> >in a separate patch and handled separately as it would also be a fix
-> >for -stable.
-> 
-> I'll actually never encountered this bug myself and CMA is unlikely to
-> expose it, since it always operates on continuous memory regions with
-> no holes.
-> 
-> I've made this change because looking at the code it seemed like this
-> may cause problems in some cases.  The crash that you linked to looks
-> like the kind of problem I was thinking about.
-> 
-> I'll drop this hunk and let you resolve this independently of CMA.
-> 
 
-Ok, thanks.
+--gMR3gsNFwZpnI/Ts
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Mel Gorman
-SUSE Labs
+On Sat, Jan 28, 2012 at 03:07:57PM +0530, Laxman Dewangan wrote:
+> Add support for sleep controls of different regulator through
+> external inputs EN1, EN2 or EN3.
+> Each regulator's output will be active when its external
+> input is high and turns to OFF/Low power mode when its
+> external input is low.
+> The configuration parameters for sleep control is provided through
+> board specific platform data.
+
+Applied, thanks.
+
+--gMR3gsNFwZpnI/Ts
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPJpujAAoJEBus8iNuMP3dvgMP/ibQLpN7RwjUamWKuB7+ViC+
+g7sWj8MRmJ5wnqDMtraHaqTkNfGt7+UeNW8rN9G7Y1AvXEc4MhMA65Bb6wqzQMQk
+HqrI46y4N1U0TAsFmJAOlBOqqNX6uRwZRtDdA3E9pvKKe09aTo9lEtAQ0ahzpQNV
+qQon32HswvDaMCU6lhioflT4/EX79wrNRCM9PJlFFgPcspmhBtqzHaitCq3h0liy
+54Esx/up0qe0Gw5hPYGROhM4e4biP0nc3CDMh+XDcJ7M7WPucczIRz/pV5Ms67Ij
+Dnp4OiATOBqdlb5BhLZMl305lmpy0FmbRF9PNnLe5uQ8Mb1kc8BNJmph3EYhkxrl
+4Zw6OXSy0tqS2LBWpFEFWOmr0xK1ImJ6kGqiOPrdQLVcoj44lACIqp/s+TzLGgUh
+9IkzMvweETYpHLuO5umemJU4CccU8C8EODOOs6mNI1dfQRKuZx3FOLkPjGhhQjxV
+mp2oMnuPZdod3tlVyNT/HaXYyW9CTviz3YpTQ2S0MsE/rfBo+5R1X0qPQbKdK8sq
+ZnYztoL7KSPDUXkyL096yqTlNIi0XravoPjuDkwAOGc3y85V0dhdy9fYcOD2ZNhd
+UrBB4fD+LLgYQN722Kl3ZEnCAewTDzeY4q/wyzRwjMIyo4TR22h885XUlmYAPohz
+szgnyEScuIjtzXHfDEf6
+=oBo7
+-----END PGP SIGNATURE-----
+
+--gMR3gsNFwZpnI/Ts--
