@@ -1,131 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2A3JCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 04:02:05 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:15448 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547Ab2A3JCC (ORCPT
+	id S1752370Ab2A3JIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 04:08:38 -0500
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:33032 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751655Ab2A3JIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 04:02:02 -0500
-Message-ID: <4F265C7F.4070500@atmel.com>
-Date: Mon, 30 Jan 2012 10:01:51 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	Mon, 30 Jan 2012 04:08:36 -0500
+Date: Mon, 30 Jan 2012 11:08:32 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: Re: [PATCH] [trivial] usb: Fix typo in langwell_otg.c
+Message-ID: <20120130090824.GB27456@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1327758608-7575-1-git-send-email-standby24x7@gmail.com>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Nikolaus Voss <n.voss@weinmann.de>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] at_hdmac: bugfix for enabling channel irq
-References: <201201171023.q0HANwSE024485@gatekeeper.vosshq.de> <4F159394.7040409@atmel.com>
-In-Reply-To: <4F159394.7040409@atmel.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="z4+8/lEcDcG5Ke9S"
+Content-Disposition: inline
+In-Reply-To: <1327758608-7575-1-git-send-email-standby24x7@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2012 04:28 PM, Nicolas Ferre :
-> On 01/17/2012 10:28 AM, Nikolaus Voss :
->> commit 463894705e4089d0ff69e7d877312d496ac70e5b deleted redundant
->> chan_id and chancnt initialization in dma drivers as this is done
->> in dma_async_device_register().
->>
->> However, atc_enable_irq() relied on chan_id set before registering
->> the device, what left only channel 0 functional for this driver.
->>
->> This patch introduces atc_enable/disable_chan_irq() as a variant
->> of atc_enable/disable_irq() with the channel as explicit argument.
->>
->> Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: stable <stable@vger.kernel.org>
-> 
-> Vinod, can you please queue it in a "fixes" branch for 3.3. The stable
-> tag is needed to address errors in 3.2 kernel series.
 
+--z4+8/lEcDcG5Ke9S
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Vinod, ping?
+Hi,
 
+On Sat, Jan 28, 2012 at 10:50:08PM +0900, Masanari Iida wrote:
+> Correct spelling "reseting" to "resetting" in
+> drivers/usb/otg/langwell_otg.c
+>=20
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-> Nikolaus, thanks for your fix.
-> 
-> Best regards,
-> 
->> ---
->>  drivers/dma/at_hdmac.c      |    4 ++--
->>  drivers/dma/at_hdmac_regs.h |   17 ++++++++---------
->>  2 files changed, 10 insertions(+), 11 deletions(-)
->>
->> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
->> index fcfa0a8..a60adbf 100644
->> --- a/drivers/dma/at_hdmac.c
->> +++ b/drivers/dma/at_hdmac.c
->> @@ -1286,7 +1286,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
->>  
->>  		tasklet_init(&atchan->tasklet, atc_tasklet,
->>  				(unsigned long)atchan);
->> -		atc_enable_irq(atchan);
->> +		atc_enable_chan_irq(atdma, i);
->>  	}
->>  
->>  	/* set base routines */
->> @@ -1353,7 +1353,7 @@ static int __exit at_dma_remove(struct platform_device *pdev)
->>  		struct at_dma_chan	*atchan = to_at_dma_chan(chan);
->>  
->>  		/* Disable interrupts */
->> -		atc_disable_irq(atchan);
->> +		atc_disable_chan_irq(atdma, chan->chan_id);
->>  		tasklet_disable(&atchan->tasklet);
->>  
->>  		tasklet_kill(&atchan->tasklet);
->> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
->> index aa4c9ae..5aa82b4 100644
->> --- a/drivers/dma/at_hdmac_regs.h
->> +++ b/drivers/dma/at_hdmac_regs.h
->> @@ -326,28 +326,27 @@ static void atc_dump_lli(struct at_dma_chan *atchan, struct at_lli *lli)
->>  }
->>  
->>  
->> -static void atc_setup_irq(struct at_dma_chan *atchan, int on)
->> +static void atc_setup_irq(struct at_dma *atdma, int chan_id, int on)
->>  {
->> -	struct at_dma	*atdma = to_at_dma(atchan->chan_common.device);
->> -	u32		ebci;
->> +	u32 ebci;
->>  
->>  	/* enable interrupts on buffer transfer completion & error */
->> -	ebci =    AT_DMA_BTC(atchan->chan_common.chan_id)
->> -		| AT_DMA_ERR(atchan->chan_common.chan_id);
->> +	ebci =    AT_DMA_BTC(chan_id)
->> +		| AT_DMA_ERR(chan_id);
->>  	if (on)
->>  		dma_writel(atdma, EBCIER, ebci);
->>  	else
->>  		dma_writel(atdma, EBCIDR, ebci);
->>  }
->>  
->> -static inline void atc_enable_irq(struct at_dma_chan *atchan)
->> +static void atc_enable_chan_irq(struct at_dma *atdma, int chan_id)
->>  {
->> -	atc_setup_irq(atchan, 1);
->> +	atc_setup_irq(atdma, chan_id, 1);
->>  }
->>  
->> -static inline void atc_disable_irq(struct at_dma_chan *atchan)
->> +static void atc_disable_chan_irq(struct at_dma *atdma, int chan_id)
->>  {
->> -	atc_setup_irq(atchan, 0);
->> +	atc_setup_irq(atdma, chan_id, 0);
->>  }
->>  
->>  
-> 
-> 
+NAK, this driver will be dropped on next merge window. Thanks though :-)
 
+--=20
+balbi
 
--- 
-Nicolas Ferre
+--z4+8/lEcDcG5Ke9S
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPJl4IAAoJEIaOsuA1yqRErY8P/2E2DkKLQ6PCG7G+hY+WacwQ
+dK05pRTZEkkxn+6j84PFUTfnPmLbNC838zIKa/5/P3J7Iq0n2KGERVGD7kFj4nyI
+JViN92bpRmwlvpNdNQZjNkittGZc1i/tUH/40+999we1OuNVt4qRnfW2PneDt9R7
+cvxHEg/GCNlyGZIrWEgOgz4Q3F5lb7Wv9buL3EWBRXTzaFTZsSS6rxG6QI2L1jha
+Xdhgg2cPcV0fpl5SPdRoM2bsVFidJrzlGcqLqFasw+/FCe4S3vvjj+huwVkcGK2Z
+8K3S4RYUNmS/zkVH2XR/0vzDxtfBUwP1etBOIJjY9ggLEoo4bCWkrJ8a+qnDjREy
+JDeiFcRdRVvSPFBJRJbGbwj21/wSC6/qUEf7U5LihJ4jN8WMs1E1kIVbIqFJVK0/
+XDUU6nWt6L3QfPtVkCTATdRQXahaaAWdqsBgRSUgnOMMoQBBKEowSi6txcC6Kk8y
+IN1KDHqkBzfWslkfAnpCdIV0ztHs4CXLc2MfmZ/dlWLpK8MC/KukSqt1Y1XwLpR9
+8wgUH7UQiSeQoqhadbyv49ac0NwKchj3oVewclG0rtyJO0DmxHoRmmc2ogg1TYNB
+yzf0QDwRYB3rCppgQ23SQ7NCfvGZsVjICDBbVj/W51KiFaYSCMx+3LUPOgMX8kAA
+/wfAuGqlNe05OF9KHBOL
+=+rgh
+-----END PGP SIGNATURE-----
+
+--z4+8/lEcDcG5Ke9S--
