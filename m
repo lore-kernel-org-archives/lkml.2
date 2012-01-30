@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2A3PoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 10:44:18 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:39751 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab2A3PoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 10:44:17 -0500
-Date: Mon, 30 Jan 2012 15:44:13 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 7/8] mm: only IPI CPUs to drain local pages if they exist
-Message-ID: <20120130154413.GT25268@csn.ul.ie>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
- <1327572121-13673-8-git-send-email-gilad@benyossef.com>
- <20120130145900.GR25268@csn.ul.ie>
- <CAOtvUMcshnvQs4q4ySbtySWv_qHeEnHiD4USBSiOLGFNHSwzUw@mail.gmail.com>
+	id S1753907Ab2A3Po2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 10:44:28 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53434 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888Ab2A3PoZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 10:44:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOtvUMcshnvQs4q4ySbtySWv_qHeEnHiD4USBSiOLGFNHSwzUw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1327718971-9598-7-git-send-email-yinghai@kernel.org>
+References: <1327718971-9598-1-git-send-email-yinghai@kernel.org> <1327718971-9598-7-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 30 Jan 2012 07:44:04 -0800
+Message-ID: <CAErSpo44qjFk5SQ+VWD=Y+Fg_xyykmh-ZOdFsfN-nELE29YP-A@mail.gmail.com>
+Subject: Re: [PATCH 06/13] PCI, powerpc: Register busn_res for root buses
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 05:14:37PM +0200, Gilad Ben-Yossef wrote:
-> >> +     for_each_online_cpu(cpu) {
-> >> +             bool has_pcps = false;
-> >> +             for_each_populated_zone(zone) {
-> >> +                     pcp = per_cpu_ptr(zone->pageset, cpu);
-> >> +                     if (pcp->pcp.count) {
-> >> +                             has_pcps = true;
-> >> +                             break;
-> >> +                     }
-> >> +             }
-> >> +             if (has_pcps)
-> >> +                     cpumask_set_cpu(cpu, &cpus_with_pcps);
-> >> +             else
-> >> +                     cpumask_clear_cpu(cpu, &cpus_with_pcps);
-> >> +     }
-> >
-> > Lets take two CPUs running this code at the same time. CPU 1 has per-cpu
-> > pages in all zones. CPU 2 has no per-cpu pages in any zone. If both run
-> > at the same time, CPU 2 can be clearing the mask for CPU 1 before it has
-> > had a chance to send the IPI. This means we'll miss sending IPIs to CPUs
-> > that we intended to.
-> 
-> I'm confused. You seem to be assuming that each CPU is looking at its own pcps
-> only (per zone).
+On Fri, Jan 27, 2012 at 6:49 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: linuxppc-dev@lists.ozlabs.org
+> ---
+>  arch/powerpc/kernel/pci-common.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+> index cce98d7..501f29b 100644
+> --- a/arch/powerpc/kernel/pci-common.c
+> +++ b/arch/powerpc/kernel/pci-common.c
+> @@ -1732,6 +1732,8 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+>        bus->secondary = hose->first_busno;
+>        hose->bus = bus;
+>
+> +       pci_bus_insert_busn_res(bus, hose->first_busno, hose->last_busno);
 
-/me slaps self
+The pci_create_root_bus() call is a few lines above this.  So this is
+a case of "create the root bus" followed by "fix something that's
+wrong with the bus we just created."  I'm trying to get rid of that
+pattern because it's just an opportunity for bugs.  I'd rather create
+the root bus with all the information it needs up front.
 
-I was assuming exactly this.
+And pci_bus_insert_busn_res() is not really architecture-specific, so
+I'd like this better if that call were done in the PCI core somewhere.
 
-> Assuming no change in the state of the pcps when both CPUs
-> run this code at the same time, both of them should mark the bit for
-> their respective
-> CPUs the same, unless one of them raced and managed to send the IPI to clear
-> pcps from the other, at which point you might see one of them send a
-> spurious IPI
-> to drains pcps that have been drained - but that isn't bad.
-> 
-
-Indeed, the race is tiny and the consequences are not important.
-
-> At least, that is what I meant the code to do and what I believe it
-> does. What have I
-> missed?
-> 
-
-Nothing, the problem was on my side. Sorry for the noise.
-
--- 
-Mel Gorman
-SUSE Labs
+>        /* Get probe mode and perform scan */
+>        mode = PCI_PROBE_NORMAL;
+>        if (node && ppc_md.pci_probe_mode)
+> @@ -1742,8 +1744,11 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+>                of_scan_bus(node, bus);
+>        }
+>
+> -       if (mode == PCI_PROBE_NORMAL)
+> +       if (mode == PCI_PROBE_NORMAL) {
+> +               pci_bus_update_busn_res_end(bus, 255);
+>                hose->last_busno = bus->subordinate = pci_scan_child_bus(bus);
+> +               pci_bus_update_busn_res_end(bus, bus->subordinate);
+> +       }
+>
+>        /* Platform gets a chance to do some global fixups before
+>         * we proceed to resource allocation
+> --
+> 1.7.7
+>
