@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab2A3K7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 05:59:33 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:36313 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635Ab2A3K7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 05:59:32 -0500
-Date: Mon, 30 Jan 2012 10:59:28 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: Re: [PATCH 01/15] mm: page_alloc: remove trailing whitespace
-Message-ID: <20120130105928.GD25268@csn.ul.ie>
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
- <1327568457-27734-2-git-send-email-m.szyprowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1327568457-27734-2-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752351Ab2A3LBq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 06:01:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60236 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab2A3LBp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 06:01:45 -0500
+Message-ID: <1327921293.2446.202.camel@twins>
+Subject: Re: perf: prctl(PR_TASK_PERF_EVENTS_DISABLE) has no effect
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Andrew Steets <asteets@rgmadvisors.com>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Date: Mon, 30 Jan 2012 12:01:33 +0100
+In-Reply-To: <20120130101121.GB8924@elte.hu>
+References: <4F22D8D9.3010108@rgmadvisors.com>
+	 <20120128120151.GA10390@elte.hu> <4F248938.5030507@rgmadvisors.com>
+	 <20120129163235.GB23408@elte.hu> <1327917156.2446.191.camel@twins>
+	 <20120130101121.GB8924@elte.hu>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 10:00:43AM +0100, Marek Szyprowski wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+On Mon, 2012-01-30 at 11:11 +0100, Ingo Molnar wrote:
+> So, what workflow are you suggesting to Andrew?
 
-Ordinarily, I do not like these sort of patches because they can
-interfere with git blame but as it is comments that are affected;
+Librarize perf record, then in your code do something like:
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+#include "perf_record.h"
 
-Thanks
+  handle = perf_record_init(); /* creates perf events and creates
+                                  a record thread that writes samples
+                                  to perf.data, consumes env(PERF_*)
+                                  for configuration, registers with
+                                  at_exit() for cleanup */
+  if (!handle)
+    /* burn */
 
--- 
-Mel Gorman
-SUSE Labs
+  /* do you other code */
+
+  perf_record_start(handle);
+
+  /* do the bit you want profiled */
+
+  perf_record_stop(handle);
+
+Then build with -lperfrecord or so. Not too hard, right?
