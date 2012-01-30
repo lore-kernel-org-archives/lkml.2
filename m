@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab2A3VpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:45:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31208 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab2A3VpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:45:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="104302397"
-Message-ID: <4F270F67.4070809@linux.intel.com>
-Date: Mon, 30 Jan 2012 13:45:11 -0800
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: remove .. in perf includes/
-References: <1327091804-3984-1-git-send-email-andi@firstfloor.org> <20120130191429.GB5797@infradead.org>
-In-Reply-To: <20120130191429.GB5797@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753694Ab2A3Vth (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:49:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50547 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150Ab2A3Vtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 16:49:35 -0500
+Date: Mon, 30 Jan 2012 13:49:33 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 7/8] mm: only IPI CPUs to drain local pages if they exist
+Message-Id: <20120130134933.39779c48.akpm@linux-foundation.org>
+In-Reply-To: <CAOtvUMfAd_f=248PTEW6=fqkBxtEB6oahsiqdUC_i2yjfN9m8w@mail.gmail.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	<1327572121-13673-8-git-send-email-gilad@benyossef.com>
+	<20120127161236.ff1e7e7e.akpm@linux-foundation.org>
+	<CAOtvUMfAd_f=248PTEW6=fqkBxtEB6oahsiqdUC_i2yjfN9m8w@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/30/2012 11:14 AM, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jan 20, 2012 at 12:36:44PM -0800, Andi Kleen escreveu:
->> From: Andi Kleen<ak@linux.intel.com>
->>
->> The perf user space has a lot of includes with ugly .. chains. This also
->> makes it impossible to include any perf files from other code.
->>
->> I think the original reason for this were some wrapper include files
->> for the kernel includes, and the explicit paths were needed to avoid
->> endless recursion. A better way to handle this is #include_next
->>
->> - Add all the relevant directories as -I in the Makefile
->> - Remove (near) all the .. in include statements
->> - Remove unnecessary wrappers that do nothing
->> - Fix up some fallout
->>
->> This makes the code more pleasant to read.
->>
->> I did it all in one big patch to keep bisectability.
-> It builds, but breaks this:
+On Sun, 29 Jan 2012 14:18:32 +0200
+Gilad Ben-Yossef <gilad@benyossef.com> wrote:
 
-Hmm cannot reproduce. The extra tarball builds fine and includes memset_64.S
-with my patch on Linus latest.
+> On Sat, Jan 28, 2012 at 2:12 AM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Thu, 26 Jan 2012 12:02:00 +0200
+> > Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+> >
+> >> Calculate a cpumask of CPUs with per-cpu pages in any zone
+> >> and only send an IPI requesting CPUs to drain these pages
+> >> to the buddy allocator if they actually have pages when
+> >> asked to flush.
+> >>
+>
+> ...
+>
+> > Can we end up sending an IPI to a now-unplugged CPU? __That won't work
+> > very well if that CPU is now sitting on its sysadmin's desk.
+> 
+> Nope. on_each_cpu_mask() disables preemption and calls smp_call_function_many()
+> which then checks the mask against the cpu_online_mask
 
--Andi
+OK.
 
+General rule of thumb: if a reviewer asked something then it is likely
+that others will wonder the same thing when reading the code later on. 
+So consider reviewer questions as a sign that the code needs additional
+comments!
 
+> > There's also the case of CPU online. __We could end up failing to IPI a
+> > CPU which now has some percpu pages. __That's not at all serious - 90%
+> > is good enough in page reclaim. __But this thinking merits a mention in
+> > the comment. __Or we simply make this code hotplug-safe.
+> 
+> hmm.. I'm probably daft but I don't see how to make the code hotplug safe for
+> CPU online case. I mean, let's say we disable preemption throughout the
+> entire ordeal and then the CPU goes online and gets itself some percpu pages
+> *after* we've calculated the masks, sent the IPIs and waiting for the
+> whole thing
+> to finish but before we've returned...
+
+This is inherent to the whole drain-pages design - it's only a
+best-effort thing and there's nothing to prevent other CPUs from
+undoing your work 2 nanoseconds later.
+
+The exception to this is the case of suspend, which drains the queues
+when all tasks (and, hopefully, IRQs) have been frozen.  This is the
+only way to make draining 100% "reliable".
+
+> I might be missing something here, but I think that unless you have some other
+> means to stop newly hotplugged CPUs to grab per cpus pages there is nothing
+> you can do in this code to stop it. Maybe make the race window
+> shorter, that's all.
+> 
+> Would adding a comment such as the following OK?
+> 
+> "This code is protected against sending  an IPI to an offline CPU but does not
+> guarantee sending an IPI to newly hotplugged CPUs"
+
+Looks OK.  I'd mention *how* this protection comes about:
+on_each_cpu_mask() blocks hotplug and won't talk to offlined CPUs.
