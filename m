@@ -1,72 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab2A3DuI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 22:50:08 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:41549 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753339Ab2A3DuG (ORCPT
+	id S1754251Ab2A3D5P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 22:57:15 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:39942 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483Ab2A3D5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 22:50:06 -0500
-From: Neil Zhang <zhangwm@marvell.com>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>, Chao Xie <cxie4@marvell.com>
-Date: Sun, 29 Jan 2012 19:48:46 -0800
-Subject: RE: linux-next: Tree for Jan 24 (usb/otg/mv_otg)
-Thread-Topic: linux-next: Tree for Jan 24 (usb/otg/mv_otg)
-Thread-Index: Aczav0UMTVQx4zGnROWV5Li13qhhDAEQkRYw
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE1A17429E0D@SC-VEXCH4.marvell.com>
-References: <20120124163055.3c99bca0d5dfd754a352fb02@canb.auug.org.au>
- <4F1EFA85.6040008@xenotime.net>
-In-Reply-To: <4F1EFA85.6040008@xenotime.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Sun, 29 Jan 2012 22:57:14 -0500
+Message-ID: <4F26150F.6040306@linux.vnet.ibm.com>
+Date: Mon, 30 Jan 2012 09:27:03 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
+        vweaver1@eecs.utk.edu, dsahern@gmail.com
+Subject: Re: [PATCH v4 09/18] perf: disable PERF_SAMPLE_BRANCH_* when not
+ supported
+References: <1327697778-18515-1-git-send-email-eranian@google.com> <1327697778-18515-10-git-send-email-eranian@google.com>
+In-Reply-To: <1327697778-18515-10-git-send-email-eranian@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12013003-2000-0000-0000-0000063BC30E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0U3oQ0l032437
 
-Hi Randy,
-> -----Original Message-----
-> From: Randy Dunlap [mailto:rdunlap@xenotime.net]
-> Sent: 2012å¹´1æœˆ25æ—¥ 2:38
-> To: Stephen Rothwell
-> Cc: linux-next@vger.kernel.org; LKML; linux-usb; Chao Xie; Neil Zhang
-> Subject: Re: linux-next: Tree for Jan 24 (usb/otg/mv_otg)
+On Saturday 28 January 2012 02:26 AM, Stephane Eranian wrote:
+> PERF_SAMPLE_BRANCH_* is disabled for:
+> - SW events (sw counters, tracepoints)
+> - HW breakpoints
+> - ALL but Intel X86 architecture
+> - AMD64 processors
 > 
-> On 01/23/2012 09:30 PM, Stephen Rothwell wrote:
-> > Hi all,
-> >
-> > Changes since 20120123:
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  arch/alpha/kernel/perf_event.c       |    4 ++++
+>  arch/arm/kernel/perf_event.c         |    4 ++++
+>  arch/mips/kernel/perf_event_mipsxx.c |    4 ++++
+>  arch/powerpc/kernel/perf_event.c     |    4 ++++
+>  arch/sh/kernel/perf_event.c          |    4 ++++
+>  arch/sparc/kernel/perf_event.c       |    4 ++++
+>  arch/x86/kernel/cpu/perf_event_amd.c |    3 +++
+>  kernel/events/core.c                 |   24 ++++++++++++++++++++++++
+>  kernel/events/hw_breakpoint.c        |    6 ++++++
+>  9 files changed, 57 insertions(+), 0 deletions(-)
 > 
+> diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
+> index 8143cd7..0dae252 100644
+> --- a/arch/alpha/kernel/perf_event.c
+> +++ b/arch/alpha/kernel/perf_event.c
+> @@ -685,6 +685,10 @@ static int alpha_pmu_event_init(struct perf_event *event)
+>  {
+>  	int err;
 > 
-> on i386:
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event->attr.type) {
+>  	case PERF_TYPE_RAW:
+>  	case PERF_TYPE_HARDWARE:
+> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> index 5bb91bf..68bb0ce 100644
+> --- a/arch/arm/kernel/perf_event.c
+> +++ b/arch/arm/kernel/perf_event.c
+> @@ -539,6 +539,10 @@ static int armpmu_event_init(struct perf_event *event)
+>  	int err = 0;
+>  	atomic_t *active_events = &armpmu->active_events;
 > 
-> ERROR: "usb_remove_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
-> ERROR: "usb_add_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_smpl(event))
+ohh, this function is still present ? I could not find the function defined any where in the
+patch set. 
+> +		return -EOPNOTSUPP;
+> +
+>  	if (armpmu->map_event(event) == -ENOENT)
+>  		return -ENOENT;
 > 
+> diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
+> index e3b897a..811084f 100644
+> --- a/arch/mips/kernel/perf_event_mipsxx.c
+> +++ b/arch/mips/kernel/perf_event_mipsxx.c
+> @@ -606,6 +606,10 @@ static int mipspmu_event_init(struct perf_event *event)
+>  {
+>  	int err = 0;
 > 
-> Full randconfig file is attached.
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event->attr.type) {
+>  	case PERF_TYPE_RAW:
+>  	case PERF_TYPE_HARDWARE:
+> diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+> index d614ab5..4e0b265 100644
+> --- a/arch/powerpc/kernel/perf_event.c
+> +++ b/arch/powerpc/kernel/perf_event.c
+> @@ -1078,6 +1078,10 @@ static int power_pmu_event_init(struct perf_event *event)
+>  	if (!ppmu)
+>  		return -ENOENT;
 > 
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event->attr.type) {
+>  	case PERF_TYPE_HARDWARE:
+>  		ev = event->attr.config;
+> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+> index 10b14e3..068b8a2 100644
+> --- a/arch/sh/kernel/perf_event.c
+> +++ b/arch/sh/kernel/perf_event.c
+> @@ -310,6 +310,10 @@ static int sh_pmu_event_init(struct perf_event *event)
+>  {
+>  	int err;
+> 
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event->attr.type) {
+>  	case PERF_TYPE_RAW:
+>  	case PERF_TYPE_HW_CACHE:
+> diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+> index 614da62..8e16a4a 100644
+> --- a/arch/sparc/kernel/perf_event.c
+> +++ b/arch/sparc/kernel/perf_event.c
+> @@ -1105,6 +1105,10 @@ static int sparc_pmu_event_init(struct perf_event *event)
+>  	if (atomic_read(&nmi_active) < 0)
+>  		return -ENODEV;
+> 
+> +	/* does not support taken branch sampling */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (attr->type) {
+>  	case PERF_TYPE_HARDWARE:
+>  		if (attr->config >= sparc_pmu->max_events)
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+> index 0397b23..0d8da03 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> @@ -138,6 +138,9 @@ static int amd_pmu_hw_config(struct perf_event *event)
+>  	if (ret)
+>  		return ret;
+> 
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	if (event->attr.exclude_host && event->attr.exclude_guest)
+>  		/*
+>  		 * When HO == GO == 1 the hardware treats that as GO == HO == 0
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index c4520a2..431f7b4 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -5007,6 +5007,12 @@ static int perf_swevent_init(struct perf_event *event)
+>  	if (event->attr.type != PERF_TYPE_SOFTWARE)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for software events
+> +	 */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	switch (event_id) {
+>  	case PERF_COUNT_SW_CPU_CLOCK:
+>  	case PERF_COUNT_SW_TASK_CLOCK:
+> @@ -5117,6 +5123,12 @@ static int perf_tp_event_init(struct perf_event *event)
+>  	if (event->attr.type != PERF_TYPE_TRACEPOINT)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for tracepoint events
+> +	 */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	err = perf_trace_init(event);
+>  	if (err)
+>  		return err;
+> @@ -5342,6 +5354,12 @@ static int cpu_clock_event_init(struct perf_event *event)
+>  	if (event->attr.config != PERF_COUNT_SW_CPU_CLOCK)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for software events
+> +	 */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	perf_swevent_init_hrtimer(event);
+> 
+>  	return 0;
+> @@ -5416,6 +5434,12 @@ static int task_clock_event_init(struct perf_event *event)
+>  	if (event->attr.config != PERF_COUNT_SW_TASK_CLOCK)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for software events
+> +	 */
+> +	if (has_branch_stack(event))
+> +		return -EOPNOTSUPP;
+> +
+>  	perf_swevent_init_hrtimer(event);
+> 
+>  	return 0;
+> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+> index b0309f7..cee5423 100644
+> --- a/kernel/events/hw_breakpoint.c
+> +++ b/kernel/events/hw_breakpoint.c
+> @@ -581,6 +581,12 @@ static int hw_breakpoint_event_init(struct perf_event *bp)
+>  	if (bp->attr.type != PERF_TYPE_BREAKPOINT)
+>  		return -ENOENT;
+> 
+> +	/*
+> +	 * no branch sampling for breakpoint events
+> +	 */
+> +	if (has_branch_stack(bp))
+> +		return -EOPNOTSUPP;
+> +
+>  	err = register_perf_hw_breakpoint(bp);
+>  	if (err)
+>  		return err;
 
-Thanks for your information, the marvell otg driver is dependent on ehci driver.
-I have submit a patch to add the dependence.
-Thanks.
 
-> 
-> --
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your
-> code ***
+-- 
+Anshuman Khandual
+Linux Technology Centre
+IBM Systems and Technology Group
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
