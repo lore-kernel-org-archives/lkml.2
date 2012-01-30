@@ -1,230 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab2A3TiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 14:38:09 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46700 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab2A3TiH (ORCPT
+	id S1753379Ab2A3Tul (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 14:50:41 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55765 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab2A3Tuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 14:38:07 -0500
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: netdev@vger.kernel.org
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] Deinline __nlmsg_put and genlmsg_put. -7k code on i386 defconfig.
-Date: Mon, 30 Jan 2012 20:37:37 +0100
-Message-Id: <1327952257-20623-1-git-send-email-vda.linux@googlemail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Mon, 30 Jan 2012 14:50:40 -0500
+Date: Mon, 30 Jan 2012 23:50:33 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 1/3] procfs: Export next_tgid(), move it to kernel/pid.c
+Message-ID: <20120130195033.GA1557@oksana.dev.rtsoft.ru>
+References: <20120130011323.GA30274@oksana.dev.rtsoft.ru>
+ <20120130022242.GA5805@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120130022242.GA5805@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-   text	   data	    bss	    dec	    hex	filename
-8455963	 532732	1810804	10799499 a4c98b	vmlinux.o.before
-8448899	 532732	1810804	10792435 a4adf3	vmlinux.o
+On Sun, Jan 29, 2012 at 06:22:42PM -0800, Greg KH wrote:
+> On Mon, Jan 30, 2012 at 05:13:23AM +0400, Anton Vorontsov wrote:
+> > We'd like to use this function in the android low memory killer driver, so
+> > let's export it.
+> 
+> Why is it needed?
+> 
+> I _REALLY_ don't want to add any exports to any part of the kernel for
+> the android low memory stuff.  That is because it is not something that
+> should be touching anything else, especially as numerous people disagree
+> with what it does and how it does it.
+> 
+> Instead, you should be spending the time and effort to properly
+> implement this, as has been discussed numerous times, the last one a
+> mere few weeks ago when someone tried adding the nokia-specific low
+> memory killer/notifier code.
 
-This change also removes commented-out copy of __nlmsg_put
-which was last touched in 2005 with "Enable once all users
-have been converted" comment on top.
+Yep, and I fully agree here. But doing it the right way (i.e. teaching
+Android to use low memory notifiers) will take some time. And improving
+current driver meanwhile is just my sub-task.
 
-Changes in v2: rediffed against net-next.
+> So no, sorry, I will not take these patches, unless you come up with
+> some very good justifications why.
 
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
----
- include/linux/netlink.h  |   18 ++----------------
- include/net/genetlink.h  |   31 ++-----------------------------
- include/net/netlink.h    |   35 -----------------------------------
- net/netlink/af_netlink.c |   18 ++++++++++++++++++
- net/netlink/genetlink.c  |   31 +++++++++++++++++++++++++++++++
- 5 files changed, 53 insertions(+), 80 deletions(-)
+Well, actually, this patches were born as a response to LMK review[1]
+by KOSAKI Motohiro, he did not like the tasklist lock. Though, I agree
+that it might be not a great idea to export API for the driver that
+is about to superseded by a different approach (i.e. notifiers). :-)
 
-diff --git a/include/linux/netlink.h b/include/linux/netlink.h
-index 52e4895..a390e9d 100644
---- a/include/linux/netlink.h
-+++ b/include/linux/netlink.h
-@@ -237,22 +237,8 @@ struct netlink_notify {
- 	int protocol;
- };
- 
--static __inline__ struct nlmsghdr *
--__nlmsg_put(struct sk_buff *skb, u32 pid, u32 seq, int type, int len, int flags)
--{
--	struct nlmsghdr *nlh;
--	int size = NLMSG_LENGTH(len);
--
--	nlh = (struct nlmsghdr*)skb_put(skb, NLMSG_ALIGN(size));
--	nlh->nlmsg_type = type;
--	nlh->nlmsg_len = size;
--	nlh->nlmsg_flags = flags;
--	nlh->nlmsg_pid = pid;
--	nlh->nlmsg_seq = seq;
--	if (!__builtin_constant_p(size) || NLMSG_ALIGN(size) - size != 0)
--		memset(NLMSG_DATA(nlh) + len, 0, NLMSG_ALIGN(size) - size);
--	return nlh;
--}
-+struct nlmsghdr *
-+__nlmsg_put(struct sk_buff *skb, u32 pid, u32 seq, int type, int len, int flags);
- 
- #define NLMSG_NEW(skb, pid, seq, type, len, flags) \
- ({	if (unlikely(skb_tailroom(skb) < (int)NLMSG_SPACE(len))) \
-diff --git a/include/net/genetlink.h b/include/net/genetlink.h
-index 7db3299..ccb6888 100644
---- a/include/net/genetlink.h
-+++ b/include/net/genetlink.h
-@@ -131,35 +131,8 @@ extern void genl_unregister_mc_group(struct genl_family *family,
- extern void genl_notify(struct sk_buff *skb, struct net *net, u32 pid,
- 			u32 group, struct nlmsghdr *nlh, gfp_t flags);
- 
--/**
-- * genlmsg_put - Add generic netlink header to netlink message
-- * @skb: socket buffer holding the message
-- * @pid: netlink pid the message is addressed to
-- * @seq: sequence number (usually the one of the sender)
-- * @family: generic netlink family
-- * @flags netlink message flags
-- * @cmd: generic netlink command
-- *
-- * Returns pointer to user specific header
-- */
--static inline void *genlmsg_put(struct sk_buff *skb, u32 pid, u32 seq,
--				struct genl_family *family, int flags, u8 cmd)
--{
--	struct nlmsghdr *nlh;
--	struct genlmsghdr *hdr;
--
--	nlh = nlmsg_put(skb, pid, seq, family->id, GENL_HDRLEN +
--			family->hdrsize, flags);
--	if (nlh == NULL)
--		return NULL;
--
--	hdr = nlmsg_data(nlh);
--	hdr->cmd = cmd;
--	hdr->version = family->version;
--	hdr->reserved = 0;
--
--	return (char *) hdr + GENL_HDRLEN;
--}
-+void *genlmsg_put(struct sk_buff *skb, u32 pid, u32 seq,
-+				struct genl_family *family, int flags, u8 cmd);
- 
- /**
-  * genlmsg_nlhdr - Obtain netlink header from user specified header
-diff --git a/include/net/netlink.h b/include/net/netlink.h
-index cb1f350..f394fe5 100644
---- a/include/net/netlink.h
-+++ b/include/net/netlink.h
-@@ -441,41 +441,6 @@ static inline int nlmsg_report(const struct nlmsghdr *nlh)
- 	nla_for_each_attr(pos, nlmsg_attrdata(nlh, hdrlen), \
- 			  nlmsg_attrlen(nlh, hdrlen), rem)
- 
--#if 0
--/* FIXME: Enable once all users have been converted */
--
--/**
-- * __nlmsg_put - Add a new netlink message to an skb
-- * @skb: socket buffer to store message in
-- * @pid: netlink process id
-- * @seq: sequence number of message
-- * @type: message type
-- * @payload: length of message payload
-- * @flags: message flags
-- *
-- * The caller is responsible to ensure that the skb provides enough
-- * tailroom for both the netlink header and payload.
-- */
--static inline struct nlmsghdr *__nlmsg_put(struct sk_buff *skb, u32 pid,
--					   u32 seq, int type, int payload,
--					   int flags)
--{
--	struct nlmsghdr *nlh;
--
--	nlh = (struct nlmsghdr *) skb_put(skb, nlmsg_total_size(payload));
--	nlh->nlmsg_type = type;
--	nlh->nlmsg_len = nlmsg_msg_size(payload);
--	nlh->nlmsg_flags = flags;
--	nlh->nlmsg_pid = pid;
--	nlh->nlmsg_seq = seq;
--
--	memset((unsigned char *) nlmsg_data(nlh) + payload, 0,
--	       nlmsg_padlen(payload));
--
--	return nlh;
--}
--#endif
--
- /**
-  * nlmsg_put - Add a new netlink message to an skb
-  * @skb: socket buffer to store message in
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 629b061..4d751e3 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1645,6 +1645,24 @@ static void netlink_destroy_callback(struct netlink_callback *cb)
- 	kfree(cb);
- }
- 
-+struct nlmsghdr *
-+__nlmsg_put(struct sk_buff *skb, u32 pid, u32 seq, int type, int len, int flags)
-+{
-+	struct nlmsghdr *nlh;
-+	int size = NLMSG_LENGTH(len);
-+
-+	nlh = (struct nlmsghdr*)skb_put(skb, NLMSG_ALIGN(size));
-+	nlh->nlmsg_type = type;
-+	nlh->nlmsg_len = size;
-+	nlh->nlmsg_flags = flags;
-+	nlh->nlmsg_pid = pid;
-+	nlh->nlmsg_seq = seq;
-+	if (!__builtin_constant_p(size) || NLMSG_ALIGN(size) - size != 0)
-+		memset(NLMSG_DATA(nlh) + len, 0, NLMSG_ALIGN(size) - size);
-+	return nlh;
-+}
-+EXPORT_SYMBOL(__nlmsg_put);
-+
- /*
-  * It looks a bit ugly.
-  * It would be better to create kernel thread.
-diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
-index c29d256..a115471 100644
---- a/net/netlink/genetlink.c
-+++ b/net/netlink/genetlink.c
-@@ -498,6 +498,37 @@ int genl_unregister_family(struct genl_family *family)
- }
- EXPORT_SYMBOL(genl_unregister_family);
- 
-+/**
-+ * genlmsg_put - Add generic netlink header to netlink message
-+ * @skb: socket buffer holding the message
-+ * @pid: netlink pid the message is addressed to
-+ * @seq: sequence number (usually the one of the sender)
-+ * @family: generic netlink family
-+ * @flags netlink message flags
-+ * @cmd: generic netlink command
-+ *
-+ * Returns pointer to user specific header
-+ */
-+void *genlmsg_put(struct sk_buff *skb, u32 pid, u32 seq,
-+				struct genl_family *family, int flags, u8 cmd)
-+{
-+	struct nlmsghdr *nlh;
-+	struct genlmsghdr *hdr;
-+
-+	nlh = nlmsg_put(skb, pid, seq, family->id, GENL_HDRLEN +
-+			family->hdrsize, flags);
-+	if (nlh == NULL)
-+		return NULL;
-+
-+	hdr = nlmsg_data(nlh);
-+	hdr->cmd = cmd;
-+	hdr->version = family->version;
-+	hdr->reserved = 0;
-+
-+	return (char *) hdr + GENL_HDRLEN;
-+}
-+EXPORT_SYMBOL(genlmsg_put);
-+
- static int genl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- {
- 	struct genl_ops *ops;
+Heh. But you never know where you'll end up before you actually
+try to do something. I have tried to get rid of the tacklist lock,
+and it appears that it causes more trouble. :-)
+
+[1] http://lkml.org/lkml/2011/12/19/294
+
 -- 
-1.7.7.6
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
