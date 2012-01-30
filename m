@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab2A3QZc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 11:25:32 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41672 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753184Ab2A3QZb (ORCPT
+	id S1752541Ab2A3Q1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 11:27:33 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51924 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab2A3Q1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 11:25:31 -0500
-Date: Mon, 30 Jan 2012 16:25:29 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [RFC 1/2] regmap: if format_write is used, declare all registers
- as "unreadable"
-Message-ID: <20120130162529.GL4882@opensource.wolfsonmicro.com>
-References: <1327932497-28319-1-git-send-email-w.sang@pengutronix.de>
+	Mon, 30 Jan 2012 11:27:31 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="m0XfRaZG5aslkcJX"
-Content-Disposition: inline
-In-Reply-To: <1327932497-28319-1-git-send-email-w.sang@pengutronix.de>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120129185949.GA27192@redhat.com>
+References: <20120117174031.3118.E1E9C6FF@jp.fujitsu.com> <tip-b5740f4b2cb3503b436925eb2242bc3d75cd3dfe@git.kernel.org>
+ <CA+55aFyO0KxGQxYYUqmVrNqG6qVFnRT2g-kYYKtH5QG3vTnO=A@mail.gmail.com>
+ <20120129160711.GA20803@redhat.com> <CA+55aFz20=H0ZubZEAmEbv0gL8j3C5Kgt4m2+5MU63uVipZt0Q@mail.gmail.com>
+ <20120129185949.GA27192@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 30 Jan 2012 08:27:11 -0800
+X-Google-Sender-Auth: cVZBxBiJf8NtbT57YEtISrjjoh8
+Message-ID: <CA+55aFzavWN3gGSRtd3Lp6mzY4ndg1af4DhXy1QOCy4HQ8CA9w@mail.gmail.com>
+Subject: Re: [tip:sched/core] sched: Fix ancient race in do_exit()
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, y-goto@jp.fujitsu.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 29, 2012 at 10:59 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> If we remove set_task_state() from the main waiting loop we can never race
+> with __rwsem_do_wake()->try_to_wake_up() seeing us in UNINTERRUPTIBLE state.
+> rwsem_down_failed_common() simply can't return until UNINTERRUPTIBLE->RUNNING
+> transition is finished (__rwsem_do_wake does wakeup first).
+>
+> And since we do not play with current->state after spin_unlock(), it is
+> fine to "race" with waiter->task clearing, just we can do the unnecessary
+> but harmless schedule() in TASK_RUNNING.
 
---m0XfRaZG5aslkcJX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So the more I think about this code, the more nervous I get.
 
-On Mon, Jan 30, 2012 at 03:08:16PM +0100, Wolfram Sang wrote:
-> Using .format_write means, we have a custom function to write to the
-> chip, but not to read back. Also, mark registers as "not precious" and
-> "not volatile" which is implicit because we cannot read them. Make those
-> functions use 'regmap_readable' to reuse the checks done there.
+I did a version that got the sem->wait_lock if it hit the race case
+("task" still non-NULL after the schedule), and I could convince
+myself that it was race-free and safe. But I couldn't actually really
+convince myself that it was better than the old code, because I worry
+that we'd actually hit that case much too often (ie another CPU woke
+us up, but hasn't cleared "task" yet, so spin on the spinlock etc).
 
-Applied, thanks.
+So I do hate the bug in rwsem, but I'm now willing to entertain the
+possibility that the bug actually means that unlocking of an rwsem is
+"nicely decoupled" from the process that got the semaphore, and may be
+a performance advantage.
 
-There are actually some chips that manage to implement read support in
-conjunction with odd register formats but none of these are using regmap
-right now and it's not altogether clear to me that it's a good idea for
-them to do so as they tend to be doing entertaining things that would at
-least need some framework additions.  Anyone doing that work can worry
-about it then.
+To be honest, I don't *really* believe that, but changing the rwsem.c
+code at this point just scares me enough that without lots and lots of
+people looking at it and actually doing some performance analysis, I'm
+willing to just say "screw it, I'll take Yasunori Goto's solution".
 
---m0XfRaZG5aslkcJX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I'm definitely still not a huge fan of that patch, but I'm not a huge
+fan of the alternative either. So Ack on the patch, and I'll just try
+to think about this all some more.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPJsRyAAoJEBus8iNuMP3dxKAP/2ehwuEeQnS/UCNPgjDjtWUt
-QQThyNMo1nO/oVl+iN66uAflsVuJ++F5JbG38nxe6X5IdSM18qsNeyjYCLvR1s5q
-paAeVN22+1bgvqVot4QIojAVHTjkLT5WdMyo+goFvaP25zdY+rduBVv1LhpoXnaP
-MclRdvZh+dZFHYHDPu0CysmYZfTuIkIugEZUd8yvOQDoxSh2k+SO6vRV4ZdYI3/g
-q+Jyu3HFnNwutf0Dk39OdgBkzpg62w0y+3A0iJTlRxuzw7yGaDlCBvBe/0hKihyN
-0ESZfYFvFECOQzxmzAlveADB7jNy58+YHD5cuHGDBPgsWRt+90ytTkAP9Q+TthoY
-iyopYASVVcwVis/Bb1l7cZs0GWYnNwSC9VjF9bMRRNN4eYuxQxxctcOL7kFCQIWN
-XqzauGpvEBc+hBzQAJ2f3re0txfSK+LnFSkl4IBfUOahVZoZucwhxVHs6EPTKTZS
-fcwZBp4mBM8hd4H0wpHVla4gH7LUMjdAuHhfvWG5I1GppEwWYneNrJ2vwCkCtwVG
-jRGZleftUia0nz+Q2MIElCQYKbiKhSP+atYIRY+KAzXafPz8Dj6+iQu5LEtZblpJ
-YE507bLjKmOQ3t87pTJGR8c971JskYHPiPtwFFwmPYHBnmXrrLJTnfpX3dKIDBtb
-zPh+Z4WNIsR9z6O9luCg
-=2E+w
------END PGP SIGNATURE-----
-
---m0XfRaZG5aslkcJX--
+                         Linus
