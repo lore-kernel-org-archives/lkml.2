@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab2A3KBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 05:01:40 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58259 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab2A3KBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 05:01:37 -0500
-From: "Devendra.Naga" <devendra.aaru@gmail.com>
-To: <Larry.Finger@lwfinger.net>, <chaoming_li@realsil.com.cn>,
-        <linville@tuxdriver.com>, <paul.gortmaker@windriver.com>,
-        <joe@perches.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "Devendra.Naga" <devendra.aaru@gmail.com>
-Subject: [PATCH 1/1] wireless: in _rtl92c_phy_calculate_bit_shift remove comparing bitmask against 1
-Date: Mon, 30 Jan 2012 05:00:55 -0500
-Message-Id: <1327917655-6494-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752124Ab2A3KDP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 05:03:15 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:35731 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751669Ab2A3KDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 05:03:14 -0500
+Date: Mon, 30 Jan 2012 10:03:12 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1201301000430.16881@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Devendra.Naga" <devendra.aaru@gmail.com>
 
-in _rtl92c_phy_calculate_bit_shift everytime the right shifted bitmask
-is AND with 1 and compared against 1. i.e.
-        if ((bitmask >> i) & 0x1 == 1)
-                break;
-which in the if condition is anyway becomes a 1 or 0.
+Hi Linus,
 
-Signed-off-by: Devendra.Naga <devendra.aaru@gmail.com>
----
- drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+just some misc fixes that built up over the weekend, nothing too major or 
+serious, one revert from Daniel after testing -rc1 on old hw.
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-index 22e998d..a76b223 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-@@ -177,7 +177,7 @@ u32 _rtl92c_phy_calculate_bit_shift(u32 bitmask)
- 	u32 i;
- 
- 	for (i = 0; i <= 31; i++) {
--		if (((bitmask >> i) & 0x1) == 1)
-+		if ((bitmask >> i) & 0x1)
- 			break;
- 	}
- 	return i;
--- 
-1.7.5.4
+Dave.
 
+The following changes since commit 0a9626575400879d1d5e6bc8768188b938d7c501:
+
+  Merge tag 'driver-core-3.3-rc1-bugfixes' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core (2012-01-28 18:20:48 -0800)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+Chris Wilson (1):
+      drm: Pass the real error code back during GEM bo initialisation
+
+Daniel Vetter (1):
+      Revert "drm/i810: cleanup reclaim_buffers"
+
+Jean Delvare (1):
+      drm/radeon/kms: Fix device tree linkage of i2c buses
+
+Ryan Mallon (1):
+      vmwgfx: Fix assignment in vmw_framebuffer_create_handle
+
+ drivers/gpu/drm/drm_gem.c           |    2 +-
+ drivers/gpu/drm/i810/i810_dma.c     |   17 ++++++-----------
+ drivers/gpu/drm/i810/i810_drv.c     |    1 +
+ drivers/gpu/drm/i810/i810_drv.h     |    6 ++++--
+ drivers/gpu/drm/radeon/radeon_i2c.c |    1 +
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |    2 +-
+ 6 files changed, 14 insertions(+), 15 deletions(-)
