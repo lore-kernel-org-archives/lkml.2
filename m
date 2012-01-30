@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab2A3PPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 10:15:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42686 "EHLO mx1.redhat.com"
+	id S1753789Ab2A3PWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 10:22:42 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:39469 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749Ab2A3PPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 10:15:43 -0500
-Date: Mon, 30 Jan 2012 16:09:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Christopher Yeoh <cyeoh@au1.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] Fix race in process_vm_rw_core
-Message-ID: <20120130150922.GA17643@redhat.com>
-References: <20120130124406.1567af7a@Gantu.yeoh.info>
+	id S1753365Ab2A3PWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 10:22:41 -0500
+Date: Mon, 30 Jan 2012 15:22:37 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Maxime Coquelin <maxime.coquelin@stericsson.com>
+Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Ankita Garg <ankita@in.ibm.com>, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, andrea.gallo@stericsson.com,
+        vincent.guittot@stericsson.com, philippe.langlais@stericsson.com,
+        loic.pallardy@stericsson.com
+Subject: Re: [RFCv1 3/6] PASR: mm: Integrate PASR in Buddy allocator
+Message-ID: <20120130152237.GS25268@csn.ul.ie>
+References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com>
+ <1327930436-10263-4-git-send-email-maxime.coquelin@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20120130124406.1567af7a@Gantu.yeoh.info>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1327930436-10263-4-git-send-email-maxime.coquelin@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30, Christopher Yeoh wrote:
->
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -198,7 +198,7 @@ static int proc_root_link(struct dentry *dentry, struct path *path)
->  	return result;
->  }
->
-> -static struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
-> +struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
-
-This is not enough, we should move it outside of fs/proc/, otherwise
-the kernel can't be compiled without CONFIG_PROC.
-
-> --- a/mm/process_vm_access.c
-> +++ b/mm/process_vm_access.c
-> @@ -298,23 +298,15 @@ static ssize_t process_vm_rw_core(pid_t pid, const struct iovec *lvec,
->  		goto free_proc_pages;
->  	}
+On Mon, Jan 30, 2012 at 02:33:53PM +0100, Maxime Coquelin wrote:
+> Any allocators might call the PASR Framework for DDR power savings. Currently,
+> only Linux Buddy allocator is patched, but HWMEM and PMEM physically
+> contiguous memory allocators will follow.
+> 
+> Linux Buddy allocator porting uses Buddy specificities to reduce the overhead
+> induced by the PASR Framework counter updates. Indeed, the PASR Framework is
+> called only when MAX_ORDER (4MB page blocs by default) buddies are
+> inserted/removed from the free lists.
+> 
+> To port PASR FW into a new allocator:
+> 
+> * Call pasr_put(phys_addr, size) each time a memory chunk becomes unused.
+> * Call pasr_get(phys_addr, size) each time a memory chunk becomes used.
+> 
+> 
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@stericsson.com>
+> ---
+>  mm/page_alloc.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 03d8c48..c62fe11 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -57,6 +57,7 @@
+>  #include <linux/ftrace_event.h>
+>  #include <linux/memcontrol.h>
+>  #include <linux/prefetch.h>
+> +#include <linux/pasr.h>
 >  
-> -	task_lock(task);
-> -	if (__ptrace_may_access(task, PTRACE_MODE_ATTACH)) {
-> -		task_unlock(task);
-> -		rc = -EPERM;
-> -		goto put_task_struct;
-> -	}
-> -	mm = task->mm;
-> -
-> -	if (!mm || (task->flags & PF_KTHREAD)) {
-> -		task_unlock(task);
-> -		rc = -EINVAL;
-> +	mm = mm_access(task, PTRACE_MODE_ATTACH);
-> +	if (!mm || IS_ERR(mm)) {
-> +		if (!mm)
-> +			rc = -EINVAL;
-> +		else
-> +			rc = -EPERM;
->  		goto put_task_struct;
->  	}
->  
-> -	atomic_inc(&mm->mm_users);
-> -	task_unlock(task);
-> -
+>  #include <asm/tlbflush.h>
+>  #include <asm/div64.h>
+> @@ -534,6 +535,7 @@ static inline void __free_one_page(struct page *page,
+>  		/* Our buddy is free, merge with it and move up one order. */
+>  		list_del(&buddy->lru);
+>  		zone->free_area[order].nr_free--;
+> +		pasr_kget(buddy, order);
+>  		rmv_page_order(buddy);
+>  		combined_idx = buddy_idx & page_idx;
+>  		page = page + (combined_idx - page_idx);
 
-Looks obviously correct.
+I did not review this series carefully and I know nothing about
+how you implemented PASR support but driver hooks like this in the
+page allocator are heavily frowned upon. It is subject to abuse but
+it adds overhead to the allocator although I note that you avoiding
+putting hooks in the per-cpu page allocator. I note that you hardcode
+it so only PASR can use the hook but it looks like there is no way
+of avoiding that overhead on platforms that do not have PASR if
+it is enabled in the config. At a glance, it appears to be doing a
+fair amount of work too - looking up maps, taking locks etc. This
+potentially creates a new hot lock because in this paths, we have
+per-zone locking but you are adding a PASR lock into the mix that
+may be more coarse than zone->lock (I didn't check).
 
-Oleg.
+You may be able to use the existing arch_alloc_page() hook and
+call PASR on architectures that support it if and only if PASR is
+present and enabled by the administrator but even this is likely to be
+unpopular as it'll have a measurable performance impact on platforms
+with PASR (not to mention the PASR lock will be even heavier as it'll
+now be also used for per-cpu page allocations). To get the hook you
+want, you'd need to show significant benefit before they were happy with
+the hook.
 
+What is more likely is that you will get pushed to doing something like
+periodically scanning memory as part of a separate power management
+module and calling into PASR if regions of memory that are found that
+can be powered down in some ways.
+
+-- 
+Mel Gorman
+SUSE Labs
