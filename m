@@ -1,156 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab2A3VGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:06:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44980 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab2A3VF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:05:59 -0500
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2] KVM: Fix assigned device MSI-X entry setting leak
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
-        jan.kiszka@siemens.com
-Date: Mon, 30 Jan 2012 14:05:54 -0700
-Message-ID: <20120130210346.22952.5215.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1753864Ab2A3VHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:07:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34357 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab2A3VHI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 16:07:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.145.210 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
+Date: Tue, 31 Jan 2012 01:07:02 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
+Message-ID: <20120130210702.GG4282@moon>
+References: <20120130140905.441199885@openvz.org>
+ <20120130141852.309402052@openvz.org>
+ <20120130125812.0075dd04@dt>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120130125812.0075dd04@dt>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to prioritize our matching when setting MSI-X vector
-entries.  Unused entries should only be used if we don't find
-an exact match or else we risk duplicating entries.  This was
-causing an ENOSPC return when trying to mask and unmask MSI-X
-vectors based on guest MSI-X table updates.
+On Mon, Jan 30, 2012 at 12:58:12PM -0700, Jonathan Corbet wrote:
+> Just a couple of silly little things that came to mind while I was looking
+> at the code...
+> 
+> > +/*
+> > + * We don't expose real in-memory order of objects for security
+> > + * reasons, still the comparision results should be suitable for
+> > + * sorting. Thus, we obfuscate kernel pointers values (using random
+> > + * cookies obtaned at early boot stage) and compare the production
+> > + * instead.
+> > + */
+> > +static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
+> > +
+> > +static long kptr_obfuscate(long v, int type)
+> > +{
+> > +	return (v ^ cookies[type][0]) * cookies[type][1];
+> > +}
+> 
+> I don't understand the purpose of this at all.  Obfuscation will cause a
+> random shuffling in the ordering of the pointers - it's intended to - so
+> how is the result "suitable for sorting"?  More to the point, is there
+> ever a time when a user of this will care about some contrived ordering
+> value?  It seems like equality is all that really matters.
+> 
 
-The new KVM_CAP_DEVICE_MSIX_MASK extension indicates the
-presence of this fix.
+It won't be completely random shuffling but rather re-ordering in some
+new order, which means the results might be passed to qsort or anything.
+And yes, in c/r we need at least this "re-ordered" order which will help
+to figure out shared file descriptors in case of huge number of files opened.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+> > +
+> > +/*
+> > + * 0 - equal
+> > + * 1 - less than
+> > + * 2 - greater than
+> > + * 3 - not equal but ordering unavailable (reserved for future)
+> > + */
+> > +static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
+> > +{
+> > +	long ret;
+> > +
+> > +	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
+> > +
+> > +	return (ret < 0) | ((ret > 0) << 1);
+> > +}
+> 
+> That's a cute trick, but do we know that every compiler that will ever see
+> this code will use 1 for a true integer comparison?  Simply spelling it
+> out with an if statement might be more robust, just as efficient, and, at
+> the same time, easier for others to understand.
 
-v2: Add capability indicating MSIX_MASKing now works.
+Well, I believe if this become true, and (ret < 0) wont emit 1 -- the
+number of places in kernel will be broken as well (for example see
+math_div() function). But of course I don't insist and can rewrite
+this code in straight fashion if needed.
 
-The faulting sequence went something like:
-
-Start:
-[0] entry 0, vector A
-[1] entry 1, vector B
-[2] entry 2, vector C
-
-Set entry 1 to 0:
-[0] entry 0, vector A
-[1] entry 1->1, vector B->0
-[2] entry 2, vector C
-
-Set entry 2 to 0:
-[0] entry 0, vector A
-[1] entry 1->2, vector 0->0 <- incorrectly matched
-[2] entry 2, vector C
-
-Set entry 2 to C:
-[0] entry 0, vector A
-[1] entry 2->2, vector 0->C <- incorrectly matched again
-[2] entry 2, vector C
-
-Set entry 1 to B:
-[0] entry 0, vector A
-[1] entry 2, vector C
-[2] entry 2, vector C
--ENOSPC
-
- Documentation/virtual/kvm/api.txt |    5 +++--
- arch/x86/kvm/x86.c                |    1 +
- include/linux/kvm.h               |    1 +
- virt/kvm/assigned-dev.c           |   21 ++++++++++++++-------
- 4 files changed, 19 insertions(+), 9 deletions(-)
-
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index e1d94bf..dd0b554 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1304,8 +1304,9 @@ Type: vm ioctl
- Parameters: struct kvm_assigned_msix_entry (in)
- Returns: 0 on success, -1 on error
- 
--Specifies the routing of an MSI-X assigned device interrupt to a GSI. Setting
--the GSI vector to zero means disabling the interrupt.
-+Specifies the routing of an MSI-X assigned device interrupt to a GSI. If
-+KVM_CAP_DEVICE_MSIX_MASK is available, setting the GSI vector to zero means
-+disabling the interrupt.
- 
- struct kvm_assigned_msix_entry {
- 	__u32 assigned_dev_id;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 14d6cad..a35255e 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2057,6 +2057,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_XSAVE:
- 	case KVM_CAP_ASYNC_PF:
- 	case KVM_CAP_GET_TSC_KHZ:
-+	case KVM_CAP_DEVICE_MSIX_MASK:
- 		r = 1;
- 		break;
- 	case KVM_CAP_COALESCED_MMIO:
-diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index 68e67e5..64438e6 100644
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -558,6 +558,7 @@ struct kvm_ppc_pvinfo {
- #define KVM_CAP_PPC_PAPR 68
- #define KVM_CAP_S390_GMAP 71
- #define KVM_CAP_TSC_DEADLINE_TIMER 72
-+#define KVM_CAP_DEVICE_MSIX_MASK 73
- 
- #ifdef KVM_CAP_IRQ_ROUTING
- 
-diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-index 758e3b3..58f3f6b 100644
---- a/virt/kvm/assigned-dev.c
-+++ b/virt/kvm/assigned-dev.c
-@@ -728,7 +728,7 @@ msix_nr_out:
- static int kvm_vm_ioctl_set_msix_entry(struct kvm *kvm,
- 				       struct kvm_assigned_msix_entry *entry)
- {
--	int r = 0, i;
-+	int r = 0, i, unused = -1;
- 	struct kvm_assigned_dev_kernel *adev;
- 
- 	mutex_lock(&kvm->lock);
-@@ -741,17 +741,24 @@ static int kvm_vm_ioctl_set_msix_entry(struct kvm *kvm,
- 		goto msix_entry_out;
- 	}
- 
--	for (i = 0; i < adev->entries_nr; i++)
--		if (adev->guest_msix_entries[i].vector == 0 ||
--		    adev->guest_msix_entries[i].entry == entry->entry) {
-+	for (i = 0; i < adev->entries_nr; i++) {
-+		if (adev->guest_msix_entries[i].entry == entry->entry) {
- 			adev->guest_msix_entries[i].entry = entry->entry;
- 			adev->guest_msix_entries[i].vector = entry->gsi;
- 			adev->host_msix_entries[i].entry = entry->entry;
- 			break;
--		}
-+		} else if (unused < 0 && !adev->guest_msix_entries[i].vector)
-+			unused = i;
-+	}
-+
- 	if (i == adev->entries_nr) {
--		r = -ENOSPC;
--		goto msix_entry_out;
-+		if (unused < 0) {
-+			r = -ENOSPC;
-+			goto msix_entry_out;
-+		}
-+		adev->guest_msix_entries[unused].entry = entry->entry;
-+		adev->guest_msix_entries[unused].vector = entry->gsi;
-+		adev->host_msix_entries[unused].entry = entry->entry;
- 	}
- 
- msix_entry_out:
-
+	Cyrill
