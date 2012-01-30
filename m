@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2A3B2l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 20:28:41 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:46240 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752368Ab2A3B2e convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 20:28:34 -0500
-X-WSS-ID: 0LYL83J-0A-0NI-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-cc: "Anton Vorontsov" <cbouatmailru@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 29 Jan 2012 17:28:25 -0800
-Subject: RE: [PATCH 1/6] lp8727_charger: change description about
- company
-Thread-Topic: [PATCH 1/6] lp8727_charger: change description about
- company
-Thread-Index: Aczc6JN9oJtUwrJBRIag29KIlphk9wCBV0Sw
-Message-ID: <B567DBAB974C0544994013492B949F8E3812D6EFC0@EXMAIL03.scwf.nsc.com>
-References: <B567DBAB974C0544994013492B949F8E3812D6EB06@EXMAIL03.scwf.nsc.com>
- <20120127114235.36b985cd@pyramind.ukuu.org.uk>
-In-Reply-To: <20120127114235.36b985cd@pyramind.ukuu.org.uk>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
-MIME-Version: 1.0
-X-WSS-ID: 633B2DBD1LS10007918-04-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	id S1754071Ab2A3Boo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 20:44:44 -0500
+Received: from plane.gmane.org ([80.91.229.3]:45641 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753586Ab2A3Boc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jan 2012 20:44:32 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH] block: add missing block_bio_complete() tracepoint
+Date: Mon, 30 Jan 2012 10:44:19 +0900
+Message-ID: <4F25F5F3.6060507@gmail.com>
+References: <1327830093-12130-1-git-send-email-namhyung@gmail.com> <20120129192447.GB17211@htj.dyndns.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 121.50.20.41
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+In-Reply-To: <20120129192447.GB17211@htj.dyndns.org>
+Cc: dm-devel@redhat.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
-> Sent: Friday, January 27, 2012 8:43 PM
-> To: Kim, Milo
-> Cc: Anton Vorontsov; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/6] lp8727_charger: change description about
-> company
-> 
-> On Thu, 26 Jan 2012 22:58:15 -0800
-> "Kim, Milo" <Milo.Kim@ti.com> wrote:
-> 
-> > TI acquired National semiconductor at 2011.
-> > : National semiconductor -> Texas Instruments
-> >
-> > Add driver information in the header file.
-> >
-> > Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> > ---
-> >  drivers/power/lp8727_charger.c |    4 ++--
-> >  include/linux/lp8727.h         |    4 +++-
-> >  2 files changed, 5 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/power/lp8727_charger.c
-> b/drivers/power/lp8727_charger.c
-> > index b15b575..97be22e 100755
-> > --- a/drivers/power/lp8727_charger.c
-> > +++ b/drivers/power/lp8727_charger.c
-> > @@ -1,7 +1,7 @@
-> >  /*
-> >   * Driver for LP8727 Micro/Mini USB IC with intergrated charger
-> >   *
-> > - *			Copyright (C) 2011 National Semiconductor
-> > + *			Copyright (C) 2011 Texas Instruments
-> >   *
-> >   * This program is free software; you can redistribute it and/or
-> modify
-> >   * it under the terms of the GNU General Public License version 2 as
-> > @@ -488,7 +488,7 @@ static void __exit lp8727_exit(void)
-> >  module_init(lp8727_init);
-> >  module_exit(lp8727_exit);
-> >
-> > -MODULE_DESCRIPTION("National Semiconductor LP8727 charger driver");
-> > +MODULE_DESCRIPTION("Texas Instruments LP8727 charger driver");
-> 
-> This may confuse people into thinking only the current TI branded
-> version
-> works ? I wonder if it should give both names ?
+Hello,
 
-OK, adding new company name is better. New patch has been sent.
-Please refer to ' [PATCH v2] lp8727_charger: add company name and description'.
-Thank you.
+2012-01-30 4:24 AM, Tejun Heo wrote:
+> On Sun, Jan 29, 2012 at 06:41:33 PM +0900, Namhyung Kim wrote:
+>> The block_bio_complete() TP has been missed so long, so that bio-based
+>> drivers haven't been able to trace its IO behavior. Add it.
+>>
+>> In some rare cases, such as loop_switch, @bio->bi_bdev can be NULL.
+>> Thus convert it to TRACE_EVENT_CONDITION() as Steven suggested.
+>>
+>>  From now on, request-based drivers will also get BLK_TA_COMPLETEs for
+>> all bio's in requests. This needs to be handled in userland properly.
+>>
+>> Also remove external use of the TP in DM and unexport it.
+>>
+>> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+>> Cc: Tejun Heo <tj@kernel.org>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: dm-devel@redhat.com
+>
+> I like the smiplicity change but do we know how we can filter this out
+> from userland?  Also, what's the reason not to do it from blktrace.c?
+> What would be the downside of doing that?
+>
+> Thanks.
+>
 
-Best Regards,
-Milo -
+The userland tool cannot distinguish bounced bio from original one at 
+completion TP, but it can expect there will be a duplicated 
+BLK_TA_COMPLETE as it sees BLK_TA_BOUNCE for the bio before.
 
+Filtering it out from kernel side seems to hide a real information that 
+(paranoid?) user might want to get, and it looks like providing "polcy 
+not mechanism" IMHO. That's why I changed my mind finally.
+
+I cannot think of the downside, anyway it's not a big deal, if you think 
+it's wrong choice, I'm OK to change it again.
+
+
+Thanks,
+Namhyung
 
