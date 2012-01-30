@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab2A3Vbs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:31:48 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:48638 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753622Ab2A3Vbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:31:47 -0500
-Date: Mon, 30 Jan 2012 13:29:35 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.3-rc2
-Message-ID: <20120130212935.GA4792@ericsson.com>
+	id S1753702Ab2A3Vc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:32:57 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40914 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220Ab2A3Vcz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 16:32:55 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1201242152480.1658@tux.localdomain>
+References: <1324049134.25554.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<alpine.DEB.2.00.1112161030270.26651@router.home>
+	<alpine.LFD.2.02.1201242152480.1658@tux.localdomain>
+Date: Mon, 30 Jan 2012 22:32:53 +0100
+X-Google-Sender-Auth: B0xRSK_5fdb7LIletvUuw8ZeQ6c
+Message-ID: <CAMuHMdW-RbD-uxpOGmhv0LCsHLG-2Q0LvSRrB0cdM2efGRAYnw@mail.gmail.com>
+Subject: Re: [PATCH] slub: prefetch next freelist pointer in slab_alloc()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, "Alex,Shi" <alex.shi@intel.com>,
+        Shaohua Li <shaohua.li@intel.com>, Matt Mackall <mpm@selenic.com>,
+        Linux-Next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---k+w/mQv8wyuph6w0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, Jan 24, 2012 at 20:54, Pekka Enberg <penberg@kernel.org> wrote:
+> On Fri, 16 Dec 2011, Eric Dumazet wrote:
+>>> Recycling a page is a problem, since freelist link chain is hot on
+>>> cpu(s) which freed objects, and possibly very cold on cpu currently
+>>> owning slab.
+>
+> On Fri, 16 Dec 2011, Christoph Lameter wrote:
+>> Good idea. How do the tcp benchmarks look after this?
+>>
+>> Looks sane.
+>>
+>> Acked-by: Christoph Lameter <cl@linux.com>
+>
+> Applied, thanks!
 
-Hi Linus,
+m68k/allmodconfig at http://kisskb.ellerman.id.au/kisskb/buildresult/5527349/
 
-Please pull hwmon subsystem fixes on top of Linux 3.3-rc1 from:
+mm/slub.c:274: error: implicit declaration of function 'prefetch'
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+Sorry, didn't notice it earlier due to other build breakage in -next.
 
-Thanks,
-Guenter
+Gr{oetje,eeting}s,
 
-------
+                        Geert
 
-The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Guenter Roeck (2):
-      MAINTAINERS: Drop maintainer for MAX1668 hwmon driver
-      hwmon: (w83627ehf) Disable setting DC mode for pwm2, pwm3 on NCT6776F
-
-Jean Delvare (1):
-      hwmon: (f71805f) Fix clamping of temperature limits
-
-Mark Brown (1):
-      MAINTAINERS: Add hwmon entries for Wolfson
-
-Vivien Didelot (1):
-      hwmon: (sht15) fix bad error code
-
- MAINTAINERS               |    8 +-------
- drivers/hwmon/f71805f.c   |   10 +++++-----
- drivers/hwmon/sht15.c     |    3 ++-
- drivers/hwmon/w83627ehf.c |    6 ++++++
- 4 files changed, 14 insertions(+), 13 deletions(-)
-
---k+w/mQv8wyuph6w0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPJwu/AAoJEMsfJm/On5mB/NwP/RsVmAmNU5l/1/lQm6pww9nP
-8W3/mh70y7ce8xy/WksG1uHNFG3yOawVq46CZzdvWeF4uDfHzaF1P8WBi46CbMWv
-O/fMKW8Qx7Pw78Nr+HALvVU0RaKWTlT7tldLfqs9n9TFp4yz82y/YtrjsEmoDCah
-6aPt3WkcVwnY3pU4I7PTdlwibgBkRWtHT4isKAR1yrNM7PXrI5Xvz/F1asLHGSVp
-uTGxrnuOKtMt3yZNntXtoe8mtAoIduz1XhE+W3mJHojcVHMbHxjziPG1s3EOnQvs
-IQR5GKFhDZm7gEyc3GKgUWPmzwyZdfJyz2hKM43YgadBT4P/hU8/ibGYpG4Lbwpv
-6wS/aU8DQZ7AHfzlbBXADTPn6P/CeTOsmTgytEC1capc5Onng/D2dx04qkokAguV
-7E5GY8znInr7mQYV+bk4olNBm3ZLr9P/z9953RYiBPDEr8jON96dYNlNMiX707s0
-jA/Qj7jzVzePuT+eh1YzsN1G6XpcZXfUJyep1H9EhY7jeRVrL9c15t336u2hjMGv
-3rXPDo/UxHrOPkCq2+0Y2Ia1rn6jQatAlfSA5IgqZYYqbOhFk0rtCnHTcxB27PSl
-d+aLLLlAqQfEoCbMgdfHPrkLgT8JW1+6pSZxQL5fLX3ALMV2ZXRQn8QYh2iV+ETH
-VoIVhoCExGaBEEmJ5QDF
-=zM34
------END PGP SIGNATURE-----
-
---k+w/mQv8wyuph6w0--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
