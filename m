@@ -1,141 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab2A3V3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:29:18 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27361 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab2A3V3P (ORCPT
+	id S1753749Ab2A3V3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:29:50 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35522 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753257Ab2A3V3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:29:15 -0500
-Date: Mon, 30 Jan 2012 22:29:31 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Autif Khan <autifk@gmail.com>
-cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        edwin_rong <edwin_rong@realsil.com.cn>,
-        Devendra Naga <devendra.aaru@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Autif Khan <autfk@gmail.com>
-Subject: Re: [PATCH 1/1] staging: rts5139: Fixed coding style issues
-In-Reply-To: <1327958754-10284-1-git-send-email-autfk@gmail.com>
-Message-ID: <alpine.LNX.2.00.1201302228340.31586@swampdragon.chaosbits.net>
-References: <1327958754-10284-1-git-send-email-autfk@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 30 Jan 2012 16:29:48 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] mfd: wm8994: Convert to devm_regmap_init()
+Date: Mon, 30 Jan 2012 21:29:44 +0000
+Message-Id: <1327958986-16115-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jan 2012, Autif Khan wrote:
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
 
-> 
-> Signed-off-by: Autif Khan <autfk@gmail.com>
+OK to take this via regmap, it's another new feature?
 
-Yeah, looks OK.
+ drivers/mfd/wm8994-core.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
-
-
-> ---
->  drivers/staging/rts5139/ms.h               |    4 ++--
->  drivers/staging/rts5139/rts51x_chip.h      |    6 +++---
->  drivers/staging/rts5139/rts51x_fop.h       |    2 +-
->  drivers/staging/rts5139/rts51x_transport.c |    2 +-
->  drivers/staging/rts5139/rts51x_transport.h |    2 +-
->  drivers/staging/rts5139/sd_cprm.c          |    2 +-
->  6 files changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/staging/rts5139/ms.h b/drivers/staging/rts5139/ms.h
-> index f9d46d2..3ce1dc9 100644
-> --- a/drivers/staging/rts5139/ms.h
-> +++ b/drivers/staging/rts5139/ms.h
-> @@ -249,9 +249,9 @@ int ms_delay_write(struct rts51x_chip *chip);
->  #ifdef SUPPORT_MAGIC_GATE
->  
->  int ms_switch_clock(struct rts51x_chip *chip);
-> -int ms_write_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 * data,
-> +int ms_write_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 *data,
->  		   int data_len);
-> -int ms_read_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 * data,
-> +int ms_read_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 *data,
->  		  int data_len);
->  int ms_set_rw_reg_addr(struct rts51x_chip *chip, u8 read_start, u8 read_cnt,
->  		       u8 write_start, u8 write_cnt);
-> diff --git a/drivers/staging/rts5139/rts51x_chip.h b/drivers/staging/rts5139/rts51x_chip.h
-> index 321ece7..13fc2a4 100644
-> --- a/drivers/staging/rts5139/rts51x_chip.h
-> +++ b/drivers/staging/rts5139/rts51x_chip.h
-> @@ -857,12 +857,12 @@ static inline u8 *rts51x_get_rsp_data(struct rts51x_chip *chip)
->  	return chip->rsp_buf;
->  }
->  
-> -int rts51x_get_card_status(struct rts51x_chip *chip, u16 * status);
-> +int rts51x_get_card_status(struct rts51x_chip *chip, u16 *status);
->  int rts51x_write_register(struct rts51x_chip *chip, u16 addr, u8 mask, u8 data);
-> -int rts51x_read_register(struct rts51x_chip *chip, u16 addr, u8 * data);
-> +int rts51x_read_register(struct rts51x_chip *chip, u16 addr, u8 *data);
->  int rts51x_ep0_write_register(struct rts51x_chip *chip, u16 addr, u8 mask,
->  			      u8 data);
-> -int rts51x_ep0_read_register(struct rts51x_chip *chip, u16 addr, u8 * data);
-> +int rts51x_ep0_read_register(struct rts51x_chip *chip, u16 addr, u8 *data);
->  int rts51x_seq_write_register(struct rts51x_chip *chip, u16 addr, u16 len,
->  			      u8 *data);
->  int rts51x_seq_read_register(struct rts51x_chip *chip, u16 addr, u16 len,
-> diff --git a/drivers/staging/rts5139/rts51x_fop.h b/drivers/staging/rts5139/rts51x_fop.h
-> index 0453f57..94d75f0 100644
-> --- a/drivers/staging/rts5139/rts51x_fop.h
-> +++ b/drivers/staging/rts5139/rts51x_fop.h
-> @@ -48,7 +48,7 @@ int rts51x_open(struct inode *inode, struct file *filp);
->  int rts51x_release(struct inode *inode, struct file *filp);
->  ssize_t rts51x_read(struct file *filp, char __user *buf, size_t count,
->  		    loff_t *f_pos);
-> -ssize_t rts51x_write(struct file *filp, const char __user * buf, size_t count,
-> +ssize_t rts51x_write(struct file *filp, const char __user *buf, size_t count,
->  		     loff_t *f_pos);
->  #if 0 /* LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 36) */
->  int rts51x_ioctl(struct inode *inode, struct file *filp, unsigned int cmd,
-> diff --git a/drivers/staging/rts5139/rts51x_transport.c b/drivers/staging/rts5139/rts51x_transport.c
-> index e11467a..da9c83b 100644
-> --- a/drivers/staging/rts5139/rts51x_transport.c
-> +++ b/drivers/staging/rts5139/rts51x_transport.c
-> @@ -883,7 +883,7 @@ int rts51x_transfer_data_partial(struct rts51x_chip *chip, unsigned int pipe,
->  	return result;
->  }
->  
-> -int rts51x_get_epc_status(struct rts51x_chip *chip, u16 * status)
-> +int rts51x_get_epc_status(struct rts51x_chip *chip, u16 *status)
->  {
->  	unsigned int pipe = RCV_INTR_PIPE(chip);
->  	struct usb_host_endpoint *ep;
-> diff --git a/drivers/staging/rts5139/rts51x_transport.h b/drivers/staging/rts5139/rts51x_transport.h
-> index 8464c48..9dd556e 100644
-> --- a/drivers/staging/rts5139/rts51x_transport.h
-> +++ b/drivers/staging/rts5139/rts51x_transport.h
-> @@ -73,7 +73,7 @@ int rts51x_start_epc_transfer(struct rts51x_chip *chip);
->  void rts51x_cancel_epc_transfer(struct rts51x_chip *chip);
->  #endif
->  
-> -int rts51x_get_epc_status(struct rts51x_chip *chip, u16 * status);
-> +int rts51x_get_epc_status(struct rts51x_chip *chip, u16 *status);
->  void rts51x_invoke_transport(struct scsi_cmnd *srb, struct rts51x_chip *chip);
->  
->  #endif /* __RTS51X_TRANSPORT_H */
-> diff --git a/drivers/staging/rts5139/sd_cprm.c b/drivers/staging/rts5139/sd_cprm.c
-> index 407cd43..d5969d9 100644
-> --- a/drivers/staging/rts5139/sd_cprm.c
-> +++ b/drivers/staging/rts5139/sd_cprm.c
-> @@ -233,7 +233,7 @@ RTY_SEND_CMD:
->  	return STATUS_SUCCESS;
->  }
->  
-> -int ext_sd_get_rsp(struct rts51x_chip *chip, int len, u8 * rsp, u8 rsp_type)
-> +int ext_sd_get_rsp(struct rts51x_chip *chip, int len, u8 *rsp, u8 rsp_type)
->  {
->  	int retval, rsp_len;
->  	u16 reg_addr;
-> 
-
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index f275427..e294717 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -401,7 +401,7 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 			      NULL, 0);
+ 	if (ret != 0) {
+ 		dev_err(wm8994->dev, "Failed to add children: %d\n", ret);
+-		goto err_regmap;
++		goto err;
+ 	}
+ 
+ 	switch (wm8994->type) {
+@@ -416,7 +416,7 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		break;
+ 	default:
+ 		BUG();
+-		goto err_regmap;
++		goto err;
+ 	}
+ 
+ 	wm8994->supplies = devm_kzalloc(wm8994->dev,
+@@ -424,7 +424,7 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 					wm8994->num_supplies, GFP_KERNEL);
+ 	if (!wm8994->supplies) {
+ 		ret = -ENOMEM;
+-		goto err_regmap;
++		goto err;
+ 	}
+ 
+ 	switch (wm8994->type) {
+@@ -442,14 +442,14 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		break;
+ 	default:
+ 		BUG();
+-		goto err_regmap;
++		goto err;
+ 	}
+ 		
+ 	ret = regulator_bulk_get(wm8994->dev, wm8994->num_supplies,
+ 				 wm8994->supplies);
+ 	if (ret != 0) {
+ 		dev_err(wm8994->dev, "Failed to get supplies: %d\n", ret);
+-		goto err_regmap;
++		goto err;
+ 	}
+ 
+ 	ret = regulator_bulk_enable(wm8994->num_supplies,
+@@ -581,7 +581,7 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		if (ret != 0) {
+ 			dev_err(wm8994->dev, "Failed to register patch: %d\n",
+ 				ret);
+-			goto err_regmap;
++			goto err;
+ 		}
+ 	}
+ 
+@@ -647,8 +647,7 @@ err_enable:
+ 			       wm8994->supplies);
+ err_get:
+ 	regulator_bulk_free(wm8994->num_supplies, wm8994->supplies);
+-err_regmap:
+-	regmap_exit(wm8994->regmap);
++err:
+ 	mfd_remove_devices(wm8994->dev);
+ 	return ret;
+ }
+@@ -661,7 +660,6 @@ static __devexit void wm8994_device_exit(struct wm8994 *wm8994)
+ 	regulator_bulk_disable(wm8994->num_supplies,
+ 			       wm8994->supplies);
+ 	regulator_bulk_free(wm8994->num_supplies, wm8994->supplies);
+-	regmap_exit(wm8994->regmap);
+ }
+ 
+ static const struct of_device_id wm8994_of_match[] = {
+@@ -687,7 +685,7 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
+ 	wm8994->irq = i2c->irq;
+ 	wm8994->type = id->driver_data;
+ 
+-	wm8994->regmap = regmap_init_i2c(i2c, &wm8994_base_regmap_config);
++	wm8994->regmap = devm_regmap_init_i2c(i2c, &wm8994_base_regmap_config);
+ 	if (IS_ERR(wm8994->regmap)) {
+ 		ret = PTR_ERR(wm8994->regmap);
+ 		dev_err(wm8994->dev, "Failed to allocate register map: %d\n",
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.9.rc1
 
