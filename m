@@ -1,104 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2A3HoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 02:44:04 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:65372 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab2A3HoC (ORCPT
+	id S1754092Ab2A3HyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 02:54:00 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:52129 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab2A3Hx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 02:44:02 -0500
-Date: Mon, 30 Jan 2012 08:43:55 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [Linaro-mm-sig] [PATCH 12/15] drivers: add Contiguous Memory
- Allocator
-In-reply-to: <CAK=WgbY3L7u0AC1c=iNvoMXX+LSJoz1W-xb=S6gmhqcse5CKaA@mail.gmail.com>
-To: "'Ohad Ben-Cohen'" <ohad@wizery.com>
-Cc: "'Clark, Rob'" <rob@ti.com>, "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Message-id: <014101ccdf22$eb610d30$c2232790$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: Aczd7rSrErMaQJiMTruMIKnZ/6ImqwBLOIdg
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
- <1327568457-27734-13-git-send-email-m.szyprowski@samsung.com>
- <CADMYwHw1B4RNV_9BqAg_M70da=g69Z3kyo5Cr6izCMwJ9LAtvA@mail.gmail.com>
- <00de01ccdce1$e7c8a360$b759ea20$%szyprowski@samsung.com>
- <CAO8GWqnQg-W=TEc+CUc8hs=GrdCa9XCCWcedQx34cqURhNwNwA@mail.gmail.com>
- <010301ccdd03$1ad15ab0$50741010$%szyprowski@samsung.com>
- <CAK=WgbZWHBKNQwcoY9OiXXH-r1n3XxB=ZODZJN-3vZopU2yhJA@mail.gmail.com>
- <010501ccdd06$b9844f20$2c8ced60$%szyprowski@samsung.com>
- <CAK=WgbY3L7u0AC1c=iNvoMXX+LSJoz1W-xb=S6gmhqcse5CKaA@mail.gmail.com>
+	Mon, 30 Jan 2012 02:53:57 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6604"; a="158904774"
+Message-ID: <4F264C8E.5030007@codeaurora.org>
+Date: Mon, 30 Jan 2012 13:23:50 +0530
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+CC: linux-arch@vger.kernel.org, tsoni@codeaurora.org, linux@arm.linux.org.uk,
+        arnd@arndb.de, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bryanh@codeaurora.org,
+        johlstei@codeaurora.org, Daniel Walker <dwalker@fifo99.com>,
+        dan.j.williams@intel.com, davidb@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/2] Add Qualcomm MSM ADM DMAEngine driver
+References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org> <1326807902.1540.116.camel@vkoul-udesk3> <4F195E4C.6080805@codeaurora.org> <1327066287.517.4.camel@vkoul-udesk3> <4F1D4052.3070701@codeaurora.org> <1327326713.517.32.camel@vkoul-udesk3> <4F1FFF7E.3000802@codeaurora.org>
+In-Reply-To: <4F1FFF7E.3000802@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 1/25/2012 6:41 PM, Ravi Kumar V wrote:
+> On 1/23/2012 7:21 PM, Vinod Koul wrote:
+>> On Mon, 2012-01-23 at 16:41 +0530, Ravi Kumar V wrote:
+>>>
+>>> If some changes are made in interleave API then it can support our BOX
+>>> mode. Here in interleaved template he is assuming destination pattern as
+>>> can be contiguous or same as source pattern, but in our case destination
+>>> pattern is different from source pattern.
+>>> So if a new parameter destination data chunk is added in "struct
+>>> dma_interleaved_template" structure then it can support different
+>>> destination pattern.
+>> do you mean you have cases where you are doing a "memcpy" from one
+>> interleaved memory to another?
+>> Can you provide me with a scenario where this maybe helpful?
+>
+> Presently we are transferring data from interleaved memory tho
+> contagious memory and vice-verse.
+> We can use the interleaved API for present scenario, but it will
+> restrict the HW capability of transferring data from one interleaved
+> pattern to other interleaved pattern.
+>
+>>
+>> The reason why the API was designed like this was to give ability to
+>> take these kind of interleaved memory and copy them to peripheral
+>> (constant addr) or memory (typically contagious).
+>>
+>> In case it is just a pattern I wonder why it cannot be described in
+>> standard scatter gather definitions as you can split the block further
+>> down to copy from one respective block to somewhere else in memory.
+>
+> We can use scatter gather but it will be extra burden on software to
+> create those many SG list unlike in box mode just a single command
+> serves the purpose.
+>
+>>> Also it will good if you can provide another parameter for passing
+>>> private data to dma driver.
+>> 1. what does this parameter do?
+>
+> Private parameter in our case will be command configuration parameter
+> where we are passing information to HW like endianness, synchronization
+> & acknowledge mechanism between DMA HW and peripherals running with
+> different clock than DMA.
+>
+>> 2. is this parameter static for a channel or it changes per transfer?
+>>
+> This parameter changes per each transfer.
+>
+> We can see these possibilities to implement our DMA driver but still
+> have to add new parameter in "scatterlist" & "interleaved template" for
+> supporting per transfer private data like our command configuration
+> parameter.
+>
+> 1.We have to add new parameter "struct data_chunk" in
+> "interleaved_template" for supporting different destination pattern.
+> It helps a lot for implementing our total HW capability.
+>
+> 2.We have to use present API's for box mode.
+> --scatter gather API for different interleaved source & destination
+> patterns.
+> --interleaved API for interleaved source pattern to destination
+> contiguous pattern/vice-verse.
+> It causes some extra burden on our software to create sglist.
+>
+> 3.Implement New API for BOX mode.
+>
+> I feel if we can go with first option then it helps a lot.
+>
+> Please can you suggest a better way to solve our problem.
+>
+> Thanks,
+> Ravi Kumar
+>
 
-On Saturday, January 28, 2012 7:57 PM Ohad Ben-Cohen wrote:
+Please can you suggest best way.
 
-> On Fri, Jan 27, 2012 at 5:17 PM, Marek Szyprowski
-> <m.szyprowski@samsung.com> wrote:
-> > There have been some vmalloc layout changes merged to v3.3-rc1.
-> 
-> That was dead-on, thanks a lot!
-
-Did you managed to fix this issue?
-
-> 
-> I did then bump into a different allocation failure which happened
-> because dma_alloc_from_contiguous() computes 'mask' before capping the
-> 'align' argument.
-> 
-> The early 'mask' computation was added in v18 (and therefore exists in
-> v19 too) and I was actually testing v17 previously, so I didn't notice
-> it before.
-
-Right, thanks for spotting it, I will squash it to the next release.
-
-> You may want to squash something like this:
-> 
-> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> index f41e699..8455cb7 100644
-> --- a/drivers/base/dma-contiguous.c
-> +++ b/drivers/base/dma-contiguous.c
-> @@ -319,8 +319,7 @@ struct page *dma_alloc_from_contiguous(struct device *dev, i
->                                        unsigned int align)
->  {
->         struct cma *cma = dev_get_cma_area(dev);
-> -       unsigned long pfn, pageno, start = 0;
-> -       unsigned long mask = (1 << align) - 1;
-> +       unsigned long mask, pfn, pageno, start = 0;
->         int ret;
-> 
->         if (!cma || !cma->count)
-> @@ -329,6 +328,8 @@ struct page *dma_alloc_from_contiguous(struct device *dev, i
->         if (align > CONFIG_CMA_ALIGNMENT)
->                 align = CONFIG_CMA_ALIGNMENT;
-> 
-> +       mask = (1 << align) - 1;
-> +
->         pr_debug("%s(cma %p, count %d, align %d)\n", __func__, (void *)cma,
->                  count, align);
-> 
-
-Best regards
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
