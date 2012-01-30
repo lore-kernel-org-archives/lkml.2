@@ -1,55 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab2A3MrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 07:47:07 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:37412 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751733Ab2A3MrE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 07:47:04 -0500
-From: "Devendra.Naga" <devendra.aaru@gmail.com>
-To: <Larry.Finger@lwfinger.net>, <chaoming_li@realsil.com.cn>,
-        <linville@tuxdriver.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "Devendra.Naga" <devendra.aaru@gmail.com>
-Subject: [PATCH 1/1] wireless: remove return in _rtl_pci_switch_clk_req
-Date: Mon, 30 Jan 2012 07:46:31 -0500
-Message-Id: <1327927591-28070-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752230Ab2A3NFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 08:05:46 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:37660 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab2A3NFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 08:05:44 -0500
+Date: Mon, 30 Jan 2012 13:05:40 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Subject: Re: [PATCH 11/15] mm: trigger page reclaim in alloc_contig_range()
+ to stabilize watermarks
+Message-ID: <20120130130540.GN25268@csn.ul.ie>
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+ <1327568457-27734-12-git-send-email-m.szyprowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1327568457-27734-12-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Devendra.Naga" <devendra.aaru@gmail.com>
+On Thu, Jan 26, 2012 at 10:00:53AM +0100, Marek Szyprowski wrote:
+> alloc_contig_range() performs memory allocation so it also should keep
+> track on keeping the correct level of memory watermarks. This commit adds
+> a call to *_slowpath style reclaim to grab enough pages to make sure that
+> the final collection of contiguous pages from freelists will not starve
+> the system.
+> 
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
+> ---
+>  mm/page_alloc.c |   36 ++++++++++++++++++++++++++++++++++++
+>  1 files changed, 36 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index e35d06b..05eaa82 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5613,6 +5613,34 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+>  	return ret;
+>  }
+>  
+> +/*
+> + * Trigger memory pressure bump to reclaim some pages in order to be able to
+> + * allocate 'count' pages in single page units. Does similar work as
+> + *__alloc_pages_slowpath() function.
+> + */
+> +static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
+> +{
+> +	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+> +	struct zonelist *zonelist = node_zonelist(0, gfp_mask);
+> +	int did_some_progress = 0;
+> +	int order = 1;
+> +	unsigned long watermark;
+> +
+> +	/* Obey watermarks as if the page was being allocated */
+> +	watermark = low_wmark_pages(zone) + count;
+> +	while (!zone_watermark_ok(zone, 0, watermark, 0, 0)) {
+> +		wake_all_kswapd(order, zonelist, high_zoneidx, zone_idx(zone));
+> +
+> +		did_some_progress = __perform_reclaim(gfp_mask, order, zonelist,
+> +						      NULL);
+> +		if (!did_some_progress) {
+> +			/* Exhausted what can be done so it's blamo time */
+> +			out_of_memory(zonelist, gfp_mask, order, NULL);
+> +		}
 
-the return value from _rtl_pci_switch_clk_req is not used by any of its callers.
+There are three problems here
 
-Signed-off-by: Devendra.Naga <devendra.aaru@gmail.com>
----
- drivers/net/wireless/rtlwifi/pci.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+1. CMA can trigger the OOM killer.
 
-diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
-index 4326fd1..35f4a0d 100644
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -198,7 +198,7 @@ static bool _rtl_pci_platform_switch_device_pci_aspm(
- }
- 
- /*When we set 0x01 to enable clk request. Set 0x0 to disable clk req.*/
--static bool _rtl_pci_switch_clk_req(struct ieee80211_hw *hw, u8 value)
-+static void _rtl_pci_switch_clk_req(struct ieee80211_hw *hw, u8 value)
- {
- 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
- 	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
-@@ -208,7 +208,6 @@ static bool _rtl_pci_switch_clk_req(struct ieee80211_hw *hw, u8 value)
- 	if (rtlhal->hw_type == HARDWARE_TYPE_RTL8192SE)
- 		udelay(100);
- 
--	return true;
- }
- 
- /*Disable RTL8192SE ASPM & Disable Pci Bridge ASPM*/
+That seems like overkill to me but as I do not know the consequences
+of CMA failing, it's your call.
+
+2. You cannot guarantee that try_to_free_pages will free pages from the
+   zone you care about or that kswapd will do anything
+
+You check the watermarks and take into account the size of the pending
+CMA allocation. kswapd in vmscan.c on the other hand will simply check
+the watermarks and probably go back to sleep. You should be aware of
+this in case you ever get bugs that CMA takes too long and that it
+appears to be stuck in this loop with kswapd staying asleep.
+
+3. You reclaim from zones other than your target zone
+
+try_to_free_pages is not necessarily going to free pages in the
+zone you are checking for. It'll work on ARM in many cases because
+there will be only one zone but on other arches, this logic will
+be problematic and will potentially livelock. You need to pass in
+a zonelist that only contains the zone that CMA cares about. If it
+cannot reclaim, did_some_progress == 0 and it'll exit. Otherwise
+there is a possibility that this will loop forever reclaiming pages
+from the wrong zones.
+
+I won't ack this particular patch but I am not going to insist that
+you fix these prior to merging either. If you leave problem 3 as it
+is, I would really like to see a comment explaning the problem for
+future users of CMA on other arches (if they exist).
+
 -- 
-1.7.5.4
-
+Mel Gorman
+SUSE Labs
