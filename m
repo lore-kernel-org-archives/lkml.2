@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab2A3WF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:05:59 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:44197 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754382Ab2A3WF6 (ORCPT
+	id S1754368Ab2A3WGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:06:49 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54909 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab2A3WGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 17:05:58 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 4/4] PM/Hibernate: Refactor and simplify freezer_test_done
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 31 Jan 2012 03:35:49 +0530
-Message-ID: <20120130220538.9442.98321.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120130220259.9442.70091.stgit@srivatsabhat.in.ibm.com>
-References: <20120130220259.9442.70091.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Mon, 30 Jan 2012 17:06:48 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of msb@google.com designates 10.68.199.4 as permitted sender) smtp.mail=msb@google.com; dkim=pass header.i=msb@google.com
+Date: Mon, 30 Jan 2012 14:06:33 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH] cgroup: remove extra calls to find_existing_css_set
+Message-ID: <20120130220633.GT4656@google.com>
+References: <1327956716-11537-1-git-send-email-msb@chromium.org>
+ <20120130210128.GA27051@google.com>
+ <20120130210404.GA27616@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12013022-8256-0000-0000-00000112744E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120130210404.GA27616@google.com>
+X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code related to 'freezer_test_done' is needlessly convoluted.
-Refactor the code and simplify the implementation.
+Tejun Heo (tj@kernel.org) wrote:
+> On Mon, Jan 30, 2012 at 01:01:28PM -0800, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Mon, Jan 30, 2012 at 12:51:56PM -0800, Mandeep Singh Baines wrote:
+> > > -	/*
+> > > +        /*
+> > 
+> > Whitespace contamination fixed.
+> > 
+> > Applied to cgroup/for-3.4 w/ previous Acked-by's added.  Please
+> > collect them on submission.
+> 
+> Ooh, never mind.  I was confused with acks to other patches.  Only Li
+> has acked it, right?  If somebody else also acked it, please scream.
+> 
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Yep. Just Li.
 
- kernel/power/hibernate.c |   10 +++++-----
- kernel/power/user.c      |    4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 0ce1220..30b315a 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -629,12 +629,8 @@ int hibernate(void)
- 		goto Finish;
- 
- 	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
--	if (error)
--		goto Thaw;
--	if (freezer_test_done) {
--		freezer_test_done = false;
-+	if (error || freezer_test_done)
- 		goto Thaw;
--	}
- 
- 	if (in_suspend) {
- 		unsigned int flags = 0;
-@@ -665,6 +661,10 @@ int hibernate(void)
- 
-  Thaw:
- 	thaw_processes();
-+
-+	/* Don't bother checking whether freezer_test_done is true */
-+	freezer_test_done = false;
-+
-  Finish:
- 	free_basic_memory_bitmaps();
- 	usermodehelper_enable();
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 62dbe93..056088e 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -259,10 +259,10 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 		error = hibernation_snapshot(data->platform_support);
- 		if (!error) {
- 			error = put_user(in_suspend, (int __user *)arg);
--			if (!error && !freezer_test_done)
--				data->ready = 1;
- 			if (freezer_test_done)
- 				freezer_test_done = false;
-+			else if (!error)
-+				data->ready = 1;
- 		}
- 		break;
- 
-
+> Thanks.
+> 
+> -- 
+> tejun
