@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab2A3V4b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:56:31 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47289 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914Ab2A3V4a (ORCPT
+	id S1752914Ab2A3V7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:59:21 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:38846 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752860Ab2A3V7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:56:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jirislaby@gmail.com designates 10.213.8.193 as permitted sender) smtp.mail=jirislaby@gmail.com; dkim=pass header.i=jirislaby@gmail.com
-Message-ID: <4F27120A.4040106@suse.cz>
-Date: Mon, 30 Jan 2012 22:56:26 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120124 Thunderbird/10.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: sysfs regression: wrong link counts
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-2
+	Mon, 30 Jan 2012 16:59:19 -0500
+X-Sasl-enc: WF2+NvEmJOKvpYjS3Jhdy3v3tk0Q5770eqQuaNk3PUFF 1327960758
+Subject: Re: [PATCH v3 4/4] Allow unprivileged chroot when safe
+From: Colin Walters <walters@verbum.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jamie Lokier <jamie@shareable.org>, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk
+Date: Mon, 30 Jan 2012 16:58:54 -0500
+In-Reply-To: <0e2f0f54e19bff53a3739ecfddb4ffa9a6dbde4d.1327858005.git.luto@amacapital.net>
+References: <cover.1327858005.git.luto@amacapital.net>
+	 <0e2f0f54e19bff53a3739ecfddb4ffa9a6dbde4d.1327858005.git.luto@amacapital.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1327960736.5355.5.camel@lenny>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2012-01-30 at 08:17 -0800, Andy Lutomirski wrote:
+> Chroot can easily be used to subvert setuid programs.  If no_new_privs,
+> then setuid programs don't gain any privilege, so allow chroot.
 
-I cannot boot properly with this commit:
-commit 524b6c5b39b931311dfe5a2f5abae2f5c9731676
-Author: Eric W. Biederman <ebiederm@xmission.com>
-Date:   Sun Dec 18 20:09:31 2011 -0800
+Is this needed/desired by anyone now, or are you just using it to "demo"
+NO_NEW_PRIVS?  I don't see it as very useful on its own, since in any
+"container"-type chroot you really want /proc and /dev, and your patch
+doesn't help with that.
 
-    sysfs: Kill nlink counting.
-
-
-1) network systemd rule doesn't start network
-2) sensors complain:
-   sensors_init: Kernel interface error
-
-ad 2) look at what it does:
-/* returns !0 if sysfs filesystem was found, 0 otherwise */
-int sensors_init_sysfs(void)
-{
-        struct stat statbuf;
-
-        snprintf(sensors_sysfs_mount, NAME_MAX, "%s", "/sys");
-        if (stat(sensors_sysfs_mount, &statbuf) < 0
-         || statbuf.st_nlink <= 2)      /* Empty directory */
-                return 0;
-
-        return 1;
-}
+System daemons that do chroot for a modicum of security already start
+privileged, so this doesn't help them either.
 
 
-So this looks like it became a part of ABI we cannot break...
 
-A revert of this commit on the top of today's -next fixes the problem.
-
-thanks,
--- 
-js
-suse labs
