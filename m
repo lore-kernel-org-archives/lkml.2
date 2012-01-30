@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab2A3XOA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 18:14:00 -0500
-Received: from smtp4.mundo-r.com ([212.51.32.151]:49114 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754256Ab2A3XMs (ORCPT
+	id S1754541Ab2A3XON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 18:14:13 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:53815 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754262Ab2A3XOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 18:12:48 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4EAB4jJ09bdWOb/2dsb2JhbABDhQuqUYFzAQUjBAsBIyMQJQIYDgICOQMbBgESh3+nBpFdgS+JUAEFAgICCAEBBA0EBgELCQgUF4MzXhWCQoEWBJUahVaMfA
-X-IronPort-AV: E=Sophos;i="4.71,592,1320620400"; 
-   d="scan'208";a="945795216"
-From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
-	<vjaquez@igalia.com>
-To: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Armando Uribe <x0095078@ti.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: [PATCH v2 4/8] staging: tidspbridge: silence the compiler
-Date: Tue, 31 Jan 2012 00:12:20 +0100
-Message-Id: <d25cfe1b88f2b749cb31887d551a1c9b0fcde42e.1327964066.git.vjaquez@igalia.com>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <cover.1327964066.git.vjaquez@igalia.com>
-References: <cover.1327964066.git.vjaquez@igalia.com>
-In-Reply-To: <cover.1327964066.git.vjaquez@igalia.com>
-References: <cover.1327964066.git.vjaquez@igalia.com>
+	Mon, 30 Jan 2012 18:14:09 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: linux-usb@vger.kernel.org
+Subject: Re: [PATCH 12/16] kobil_sct: fix debug module parameter to be bool
+Date: Tue, 31 Jan 2012 00:13:25 +0100
+User-Agent: KMail/1.9.10
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Johan Hovold <jhovold@gmail.com>, Jir i Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, linuxusb@kobil.de
+References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de> <1327960820-11867-13-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1327960820-11867-13-git-send-email-danny.kukawka@bisect.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201201310013.26307.danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327965249;4fb3ba76;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Silence the warning when compiling drv_interface.c
+On Montag, 30. Januar 2012, Danny Kukawka wrote:
+> Fix debug variable from module parameter to be really bool to
+> fix 'warning: return from incompatible pointer type'.
+>
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  drivers/usb/serial/kobil_sct.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/usb/serial/kobil_sct.c
+> b/drivers/usb/serial/kobil_sct.c index 5d3beee..a92a3ef 100644
+> --- a/drivers/usb/serial/kobil_sct.c
+> +++ b/drivers/usb/serial/kobil_sct.c
+> @@ -38,7 +38,7 @@
+>  #include <linux/ioctl.h>
+>  #include "kobil_sct.h"
+>
+> -static int debug;
+> +static bool debug;
+>
+>  /* Version Information */
+>  #define DRIVER_VERSION "21/05/2004"
 
-Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
----
- drivers/staging/tidspbridge/rmgr/drv_interface.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Forget this one, it's already in linux-next:
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=3297f86a3d4158e052538c7b9a3dea9c855a1b42;hp=2492c6e6454ff3edb11e273b071a6ea80a199c71
 
-diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-index 4316f4e..7a6401a 100644
---- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-@@ -273,8 +273,9 @@ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
- 
- 	dev_dbg(bridge, "%s: vm filp %p offset %x start %lx end %lx page_prot "
--		"%lx flags %lx\n", __func__, filp, offset,
--		vma->vm_start, vma->vm_end, vma->vm_page_prot, vma->vm_flags);
-+		"%ulx flags %lx\n", __func__, filp, offset,
-+		vma->vm_start, vma->vm_end, vma->vm_page_prot,
-+		vma->vm_flags);
- 
- 	status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
- 				 vma->vm_end - vma->vm_start,
--- 
-1.7.8.3
-
+Danny
