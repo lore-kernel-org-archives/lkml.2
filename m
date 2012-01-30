@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab2A3S4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 13:56:11 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60443 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab2A3S4J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 13:56:09 -0500
-Date: Mon, 30 Jan 2012 16:56:01 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/5] perf record: Add error message for EMFILE
-Message-ID: <20120130185601.GD15935@infradead.org>
-References: <1327827356-8786-1-git-send-email-namhyung@gmail.com>
- <1327827356-8786-2-git-send-email-namhyung@gmail.com>
- <4F256587.3090504@gmail.com>
- <4F25EDCC.3010800@gmail.com>
- <CAKYOsXxxmG8xQfPcn9xW+Dzd_-Qo8jUv8071UHdC18RBatq=uw@mail.gmail.com>
+	id S1753497Ab2A3TA1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 14:00:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45808 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752147Ab2A3TA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 14:00:26 -0500
+Date: Mon, 30 Jan 2012 17:00:08 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        robert.richter@amd.com
+Subject: Re: [PATCH] perf: fix broken perf inject -b
+Message-ID: <20120130190008.GA5797@infradead.org>
+References: <20120113144731.GA5458@quad> <20120113165315.GA24387@infradead.org> <CABPqkBTe1uqiLm02fijYE2bwF=rWWu=V0mjZQbEzW0TUKa4-+Q@mail.gmail.com> <CABPqkBS50jYOHepmAqOzGYY8m+4SCJQuhrMV2yLXRYfdFpE70g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAKYOsXxxmG8xQfPcn9xW+Dzd_-Qo8jUv8071UHdC18RBatq=uw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBS50jYOHepmAqOzGYY8m+4SCJQuhrMV2yLXRYfdFpE70g@mail.gmail.com>
 X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Jan 29, 2012 at 07:10:08PM -0700, David Ahern escreveu:
->    On Jan 29, 2012 6:09 PM, "Namhyung Kim" <namhyung@gmail.com> wrote:
->    > 2012-01-30 12:28 AM, David Ahern wrote:
->    > Right. How about this then? If it looks OK to you, I'll resend the patch
->    for record, top, stat:
->    >
->    >
->    >        Too many events are opened.
->    >        Try again after reducing the number of events,
->    >        tasks and/or cpus.
-> 
->    Looks ok to me.
+Em Mon, Jan 16, 2012 at 07:53:28PM +0100, Stephane Eranian escreveu:
+> On Fri, Jan 13, 2012 at 5:54 PM, Stephane Eranian <eranian@google.com> wrote:
+> > On Fri, Jan 13, 2012 at 5:53 PM, Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> >> Em Fri, Jan 13, 2012 at 03:47:31PM +0100, Stephane Eranian escreveu:
+> >>> perf inject -b was broken. It would not inject any build_ids
+> >>> into the stream. Furthermore, it would strip samples from the
+> >>> stream.
+<SNIP>
+> >>> @@ -173,6 +178,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+> >>>               goto repipe;
+> >>>       }
+> >>> +     machine->pid = event->ip.pid;
 
-Ok, waiting for the resend,
+> I noticed that this statement conflicts with perf buildid-list (which
+> I am also fixing for pipe mode).
+
+> I don't quite understand why, though.
+
+Have you reached any conclusion about this problem? I haven't looked at
+it in detail, could you please elaborate more?
 
 - Arnaldo
