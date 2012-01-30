@@ -1,101 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab2A3PWm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 10:22:42 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:39469 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365Ab2A3PWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 10:22:41 -0500
-Date: Mon, 30 Jan 2012 15:22:37 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Maxime Coquelin <maxime.coquelin@stericsson.com>
-Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Ankita Garg <ankita@in.ibm.com>, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, andrea.gallo@stericsson.com,
-        vincent.guittot@stericsson.com, philippe.langlais@stericsson.com,
-        loic.pallardy@stericsson.com
-Subject: Re: [RFCv1 3/6] PASR: mm: Integrate PASR in Buddy allocator
-Message-ID: <20120130152237.GS25268@csn.ul.ie>
-References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com>
- <1327930436-10263-4-git-send-email-maxime.coquelin@stericsson.com>
+	id S1753430Ab2A3P1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 10:27:36 -0500
+Received: from furry1.cpalmer.me.uk ([91.84.39.42]:50502 "EHLO
+	furry1.cpalmer.me.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab2A3P1f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 10:27:35 -0500
+X-Greylist: delayed 1430 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jan 2012 10:27:35 EST
+Message-ID: <4F26B162.4050000@pobox.com>
+Date: Mon, 30 Jan 2012 15:04:02 +0000
+From: Chris Palmer <chris.palmer@pobox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1327930436-10263-4-git-send-email-maxime.coquelin@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: torvalds@linux-foundation.org
+CC: Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
+        ghost3k@ghost3k.net, linux-kernel@vger.kernel.org,
+        hancockrwd@gmail.com, edward.donovan@numble.net, keve@irb.hu
+Subject: ASM1083 PCIx-PCI bridge interrupts - widespread problems
+References: <4E68A6E8.9020700@pobox.com> <20110908165155.f661a738.akpm@linux-foundation.org>
+In-Reply-To: <20110908165155.f661a738.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 02:33:53PM +0100, Maxime Coquelin wrote:
-> Any allocators might call the PASR Framework for DDR power savings. Currently,
-> only Linux Buddy allocator is patched, but HWMEM and PMEM physically
-> contiguous memory allocators will follow.
-> 
-> Linux Buddy allocator porting uses Buddy specificities to reduce the overhead
-> induced by the PASR Framework counter updates. Indeed, the PASR Framework is
-> called only when MAX_ORDER (4MB page blocs by default) buddies are
-> inserted/removed from the free lists.
-> 
-> To port PASR FW into a new allocator:
-> 
-> * Call pasr_put(phys_addr, size) each time a memory chunk becomes unused.
-> * Call pasr_get(phys_addr, size) each time a memory chunk becomes used.
-> 
-> 
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@stericsson.com>
-> ---
->  mm/page_alloc.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 03d8c48..c62fe11 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -57,6 +57,7 @@
->  #include <linux/ftrace_event.h>
->  #include <linux/memcontrol.h>
->  #include <linux/prefetch.h>
-> +#include <linux/pasr.h>
->  
->  #include <asm/tlbflush.h>
->  #include <asm/div64.h>
-> @@ -534,6 +535,7 @@ static inline void __free_one_page(struct page *page,
->  		/* Our buddy is free, merge with it and move up one order. */
->  		list_del(&buddy->lru);
->  		zone->free_area[order].nr_free--;
-> +		pasr_kget(buddy, order);
->  		rmv_page_order(buddy);
->  		combined_idx = buddy_idx & page_idx;
->  		page = page + (combined_idx - page_idx);
+Linus et al
 
-I did not review this series carefully and I know nothing about
-how you implemented PASR support but driver hooks like this in the
-page allocator are heavily frowned upon. It is subject to abuse but
-it adds overhead to the allocator although I note that you avoiding
-putting hooks in the per-cpu page allocator. I note that you hardcode
-it so only PASR can use the hook but it looks like there is no way
-of avoiding that overhead on platforms that do not have PASR if
-it is enabled in the config. At a glance, it appears to be doing a
-fair amount of work too - looking up maps, taking locks etc. This
-potentially creates a new hot lock because in this paths, we have
-per-zone locking but you are adding a PASR lock into the mix that
-may be more coarse than zone->lock (I didn't check).
 
-You may be able to use the existing arch_alloc_page() hook and
-call PASR on architectures that support it if and only if PASR is
-present and enabled by the administrator but even this is likely to be
-unpopular as it'll have a measurable performance impact on platforms
-with PASR (not to mention the PASR lock will be even heavier as it'll
-now be also used for per-cpu page allocations). To get the hook you
-want, you'd need to show significant benefit before they were happy with
-the hook.
+For about 6 months many users have been having interrupt problems with PCI boards, but it hasn't been 
+easy trying to find where the problem may be. However, it is now looking likely that the problem lies 
+in the ASM1083 PCIe-PCI bridge chipset, as used by Asus in many Sandybridge and AMD boards.
 
-What is more likely is that you will get pushed to doing something like
-periodically scanning memory as part of a separate power management
-module and calling into PASR if regions of memory that are found that
-can be powered down in some ways.
+My original bug report is:
+    https://bugzilla.kernel.org/show_bug.cgi?id=38632  (Sandybridge)
 
--- 
-Mel Gorman
-SUSE Labs
+and there several other similar ones. However there is also extensive investigation in the following thread:
+    http://www.gossamer-threads.com/lists/linux/kernel/1466185  (AMD)
+
+There have also been reports of Windows users having similar problems.
+
+This problem prevents use of PCI boards in any motherboard with that bridge chipset - including most 
+ASUS boards. At the moment though we don't know whether the chipset or drivers are faulty, and if a 
+workaround is possible.
+
+At the moment my bug is assigned to drivers_network, but this doesn't look appropriate.
+
+Hoping someone can help...
+
+Regards
+Chris
+
+
+
+
+On 09/09/2011 00:51, Andrew Morton wrote:
+
+> On Thu, 08 Sep 2011 12:28:40 +0100
+> Chris Palmer <chris.palmer@pobox.com> wrote:
+>
+>> Andrew
+>>
+>> I'm writing to ask if you could cast a quick eye over the following
+>> bugs, to give an opinion on where they should be assigned. Mine has been
+>> reassigned to Network Drivers but I'm not convinced that is right, and I
+>> think the problem is wider than that.
+>>
+>> In summary, interrupt handling for *PCI boards with ASUS Sandybridge
+>> motherboards* seems to be broken.
+>>
+>> It has been seen with network and non-network PCI boards. PCIx network
+>> boards work OK. And all reports are for ASUS motherboards.
+>>
+>> My bug report is
+>>
+>> https://bugzilla.kernel.org/show_bug.cgi?id=38632
+>>
+>> Others that I know of are:
+>>
+>> https://bugzilla.redhat.com/show_bug.cgi?id=713351
+>> https://bugzilla.kernel.org/show_bug.cgi?id=35332
+>> https://bugzilla.kernel.org/show_bug.cgi?id=34242
+>> https://bugzilla.kernel.org/show_bug.cgi?id=32242
+>> https://bugzilla.kernel.org/show_bug.cgi?id=39122
+>>
+>>
+>> I'm now on kernel 3.0.4 with the problem still there. The only thing
+>> that seems to make a difference is acpi=off (although one person
+>> reported that it merely changed it from minutes to days before occurring).
+>>
+>> I'd appreciate anything you could do to move this in the right direction...
+>>
+>
+> Most likely ACPI, I expect.  I think that's
+> acpi-config-interrupts@bugzilla.kernel.org.  kernel.org DNS is dead at
+> present and I can't check.
+>
+> Len, can you suggest how to triage these please?
