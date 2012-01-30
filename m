@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab2A3Cxc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jan 2012 21:53:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60562 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab2A3Cxa (ORCPT
+	id S1754256Ab2A3CyW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jan 2012 21:54:22 -0500
+Received: from cronus.persephoneslair.org ([216.254.15.24]:59423 "EHLO
+	cronus.persephoneslair.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753202Ab2A3CyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jan 2012 21:53:30 -0500
-Date: Sun, 29 Jan 2012 18:53:26 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, dm-devel@redhat.com
-Subject: Re: [PATCH] block: add missing block_bio_complete() tracepoint
-Message-ID: <20120130025326.GI17211@htj.dyndns.org>
-References: <1327830093-12130-1-git-send-email-namhyung@gmail.com>
- <20120129192447.GB17211@htj.dyndns.org>
- <4F25F5F3.6060507@gmail.com>
- <20120130014703.GG17211@htj.dyndns.org>
- <4F25FEE5.5010309@gmail.com>
- <20120130023012.GH17211@htj.dyndns.org>
- <4F260547.1030405@gmail.com>
-MIME-Version: 1.0
+	Sun, 29 Jan 2012 21:54:20 -0500
+Date: Sun, 29 Jan 2012 18:53:49 -0800
+From: Andrea Shepard <andrea@persephoneslair.org>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: khc@pm.waw.pl, davem@davemloft.net, mmarek@suse.cz, jkosina@suse.cz,
+        joe@perches.com, justinmattock@gmail.com, gregkh@suse.de,
+        alan@linux.intel.com, jdmason@kudzu.us
+Subject: [12/22] Cyclades PC300 driver: locking improvements
+Message-ID: <20120130025349.GM10262@cronus.persephoneslair.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F260547.1030405@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Avoid redundant do/while in CPC_LOCK/CPC_UNLOCK macros; hold the lock during
+DMA buffer writes in cpc_queue_xmit() to avert a potential race condition.
 
-On Mon, Jan 30, 2012 at 11:49:43AM +0900, Namhyung Kim wrote:
-> Yes, blktrace will see both of completions for rq and bio's it
-> contains from now on, and I thought it's your intention? For the
-> bounced bio's, it'll see one more completion per bio.
+Signed-off-by: Andrea Shepard <andrea@persephoneslair.org>
 
-Umm... no, blktrace users shouldn't see confusing outputs.  My point
-was that we should leave raw tracepoints as raw monitor points so that
-they can provide raw data to different users and filter from
-blktrace.c so that the existing users aren't disturbed.
-
-Thanks.
-
--- 
-tejun
+diff --git a/drivers/net/wan/pc300_drv.c b/drivers/net/wan/pc300_drv.c
+index 36cf3b0..14500eb 100644
+--- a/drivers/net/wan/pc300_drv.c
++++ b/drivers/net/wan/pc300_drv.c
+@@ -243,15 +243,15 @@ static char rcsid[] =
+ 
+ #include "pc300.h"
+ 
+-#define	CPC_LOCK(card,flags)		\
+-		do {						\
+-		spin_lock_irqsave(&card->card_lock, flags);	\
+-		} while (0)
++#define	CPC_LOCK(card, flags) \
++		{ \
++		    spin_lock_irqsave(&((card)->card_lock), (flags)); \
++		}
+ 
+-#define CPC_UNLOCK(card,flags)			\
+-		do {							\
+-		spin_unlock_irqrestore(&card->card_lock, flags);	\
+-		} while (0)
++#define CPC_UNLOCK(card, flags) \
++		{ \
++		    spin_unlock_irqrestore(&((card)->card_lock), (flags)); \
++		}
+ 
+ #undef	PC300_DEBUG_PCI
+ #undef	PC300_DEBUG_INTR
+@@ -1971,8 +1971,10 @@ static int cpc_queue_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		return 0;
+ 	}
+ 
++	CPC_LOCK(card, flags);
+ 	/* Write buffer to DMA buffers */
+ 	if (dma_buf_write(card, ch, (u8 *) skb->data, skb->len) != 0) {
++		CPC_UNLOCK(card, flags);
+ 		printk(KERN_ERR "%s: write error. Dropping TX packet.\n",
+ 		       dev->name);
+ #ifdef PC300_DEBUG_QUEUE
+@@ -1985,7 +1987,8 @@ static int cpc_queue_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		stats->tx_errors++;
+ 		stats->tx_dropped++;
+ 		return 0;
+-	}
++	} else
++		CPC_UNLOCK(card, flags);
+ #ifdef PC300_DEBUG_TX
+ 	printk("%s T:", dev->name);
+ 	for (i = 0; i < skb->len; i++)
