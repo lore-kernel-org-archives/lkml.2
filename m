@@ -1,101 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2A3P1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 10:27:36 -0500
-Received: from furry1.cpalmer.me.uk ([91.84.39.42]:50502 "EHLO
-	furry1.cpalmer.me.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916Ab2A3P1f (ORCPT
+	id S1753549Ab2A3P3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 10:29:19 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42604 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab2A3P3R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 10:27:35 -0500
-X-Greylist: delayed 1430 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jan 2012 10:27:35 EST
-Message-ID: <4F26B162.4050000@pobox.com>
-Date: Mon, 30 Jan 2012 15:04:02 +0000
-From: Chris Palmer <chris.palmer@pobox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Mon, 30 Jan 2012 10:29:17 -0500
 MIME-Version: 1.0
-To: torvalds@linux-foundation.org
-CC: Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        ghost3k@ghost3k.net, linux-kernel@vger.kernel.org,
-        hancockrwd@gmail.com, edward.donovan@numble.net, keve@irb.hu
-Subject: ASM1083 PCIx-PCI bridge interrupts - widespread problems
-References: <4E68A6E8.9020700@pobox.com> <20110908165155.f661a738.akpm@linux-foundation.org>
-In-Reply-To: <20110908165155.f661a738.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.3.4
+In-Reply-To: <1327718971-9598-3-git-send-email-yinghai@kernel.org>
+References: <1327718971-9598-1-git-send-email-yinghai@kernel.org> <1327718971-9598-3-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 30 Jan 2012 07:28:56 -0800
+Message-ID: <CAErSpo7ji9R3azc7Xiu8K-=QXm26w=0oSWmcBh=j8dy=MttEvg@mail.gmail.com>
+Subject: Re: [PATCH 02/13] PCI: Add busn_res operation functions
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus et al
-
-
-For about 6 months many users have been having interrupt problems with PCI boards, but it hasn't been 
-easy trying to find where the problem may be. However, it is now looking likely that the problem lies 
-in the ASM1083 PCIe-PCI bridge chipset, as used by Asus in many Sandybridge and AMD boards.
-
-My original bug report is:
-    https://bugzilla.kernel.org/show_bug.cgi?id=38632  (Sandybridge)
-
-and there several other similar ones. However there is also extensive investigation in the following thread:
-    http://www.gossamer-threads.com/lists/linux/kernel/1466185  (AMD)
-
-There have also been reports of Windows users having similar problems.
-
-This problem prevents use of PCI boards in any motherboard with that bridge chipset - including most 
-ASUS boards. At the moment though we don't know whether the chipset or drivers are faulty, and if a 
-workaround is possible.
-
-At the moment my bug is assigned to drivers_network, but this doesn't look appropriate.
-
-Hoping someone can help...
-
-Regards
-Chris
-
-
-
-
-On 09/09/2011 00:51, Andrew Morton wrote:
-
-> On Thu, 08 Sep 2011 12:28:40 +0100
-> Chris Palmer <chris.palmer@pobox.com> wrote:
+On Fri, Jan 27, 2012 at 6:49 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> will use them insert/update busn res in pci_bus
 >
->> Andrew
->>
->> I'm writing to ask if you could cast a quick eye over the following
->> bugs, to give an opinion on where they should be assigned. Mine has been
->> reassigned to Network Drivers but I'm not convinced that is right, and I
->> think the problem is wider than that.
->>
->> In summary, interrupt handling for *PCI boards with ASUS Sandybridge
->> motherboards* seems to be broken.
->>
->> It has been seen with network and non-network PCI boards. PCIx network
->> boards work OK. And all reports are for ASUS motherboards.
->>
->> My bug report is
->>
->> https://bugzilla.kernel.org/show_bug.cgi?id=38632
->>
->> Others that I know of are:
->>
->> https://bugzilla.redhat.com/show_bug.cgi?id=713351
->> https://bugzilla.kernel.org/show_bug.cgi?id=35332
->> https://bugzilla.kernel.org/show_bug.cgi?id=34242
->> https://bugzilla.kernel.org/show_bug.cgi?id=32242
->> https://bugzilla.kernel.org/show_bug.cgi?id=39122
->>
->>
->> I'm now on kernel 3.0.4 with the problem still there. The only thing
->> that seems to make a difference is acpi=off (although one person
->> reported that it merely changed it from minutes to days before occurring).
->>
->> I'd appreciate anything you could do to move this in the right direction...
->>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/probe.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pci.h |    3 +++
+>  2 files changed, 47 insertions(+), 0 deletions(-)
 >
-> Most likely ACPI, I expect.  I think that's
-> acpi-config-interrupts@bugzilla.kernel.org.  kernel.org DNS is dead at
-> present and I can't check.
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index a114173..71261da 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1622,6 +1622,50 @@ err_out:
+>        return NULL;
+>  }
 >
-> Len, can you suggest how to triage these please?
+> +void pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
+> +{
+> +       struct resource *res = &b->busn_res;
+> +       struct resource *parent_res = &iobusn_resource;
+> +       int ret;
+> +
+> +       res->start = (pci_domain_nr(b) << 8) | bus;
+> +       res->end = (pci_domain_nr(b) << 8) | bus_max;
+> +       res->flags = IORESOURCE_BUS;
+> +
+> +       if (!pci_is_root_bus(b))
+> +               parent_res = &b->parent->busn_res;
+> +
+> +       ret = insert_resource(parent_res, res);
+> +
+> +       dev_printk(KERN_DEBUG, &b->dev,
+> +        "busn_res: %06llx-%06llx %s inserted under %06llx-%06llx\n",
+> +                       (unsigned long long)res->start,
+> +                       (unsigned long long)res->end,
+> +                        ret ? "can not be" : "is",
+> +                       (unsigned long long)parent_res->start,
+> +                       (unsigned long long)parent_res->end);
+
+Please update the %pR implementation so you can use it instead of
+having to fiddle around with start/end separately and casts.
+
+> +}
+> +
+> +void pci_bus_update_busn_res_end(struct pci_bus *b, int bus_max)
+> +{
+> +       struct resource *res = &b->busn_res;
+> +       unsigned long long old_end = res->end;
+> +
+> +       res->end &= ~0xff;
+> +       res->end |= bus_max;
+
+This updates a resource in place, without removing it from the
+resource tree and re-inserting it.  Doesn't this make it possible to
+corrupt the resource tree?  For example, let's say you have this tree:
+
+    00-3f : host bridge A
+      00-1f : P2P bridge B
+    40-7f : host bridge C
+
+Now you use pci_bus_update_busn_res_end() to update the resource for
+P2P bridge B,  setting its end to 5f.  I think the resource tree is
+now corrupted.
+
+> +       dev_printk(KERN_DEBUG, &b->dev,
+> +                "busn_res: %06llx-%06llx end updated to %06llx-%06llx\n",
+> +                       (unsigned long long)res->start,
+> +                       old_end,
+> +                       (unsigned long long)res->start,
+> +                       (unsigned long long)res->end);
+> +}
+> +
+> +void pci_bus_release_busn_res(struct pci_bus *b)
+> +{
+> +       release_resource(&b->busn_res);
+> +}
+> +
+>  struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+>                struct pci_ops *ops, void *sysdata, struct list_head *resources)
+>  {
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 94ad468..3da935c 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -665,6 +665,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
+>  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>                                    struct pci_ops *ops, void *sysdata,
+>                                    struct list_head *resources);
+> +void pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
+> +void pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
+> +void pci_bus_release_busn_res(struct pci_bus *b);
+>  struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+>                                             struct pci_ops *ops, void *sysdata,
+>                                             struct list_head *resources);
+> --
+> 1.7.7
+>
