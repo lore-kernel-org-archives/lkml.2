@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab2A3XON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 18:14:13 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:53815 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754262Ab2A3XOJ (ORCPT
+	id S1754556Ab2A3XOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 18:14:25 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:55675 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475Ab2A3XOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 18:14:09 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: linux-usb@vger.kernel.org
-Subject: Re: [PATCH 12/16] kobil_sct: fix debug module parameter to be bool
-Date: Tue, 31 Jan 2012 00:13:25 +0100
-User-Agent: KMail/1.9.10
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Johan Hovold <jhovold@gmail.com>, Jir i Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, linuxusb@kobil.de
-References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de> <1327960820-11867-13-git-send-email-danny.kukawka@bisect.de>
-In-Reply-To: <1327960820-11867-13-git-send-email-danny.kukawka@bisect.de>
+	Mon, 30 Jan 2012 18:14:22 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v2 0/4] PM / Freezer: Fix the semantics of thaw_processes()
+ and thaw_kernel_threads()
+To: rjw@sisk.pl
+Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Tue, 31 Jan 2012 04:44:11 +0530
+Message-ID: <20120130231342.11129.87187.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201201310013.26307.danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1327965249;4fb3ba76;
+x-cbid: 12013023-2674-0000-0000-0000032BCBE3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Montag, 30. Januar 2012, Danny Kukawka wrote:
-> Fix debug variable from module parameter to be really bool to
-> fix 'warning: return from incompatible pointer type'.
->
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-> ---
->  drivers/usb/serial/kobil_sct.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/usb/serial/kobil_sct.c
-> b/drivers/usb/serial/kobil_sct.c index 5d3beee..a92a3ef 100644
-> --- a/drivers/usb/serial/kobil_sct.c
-> +++ b/drivers/usb/serial/kobil_sct.c
-> @@ -38,7 +38,7 @@
->  #include <linux/ioctl.h>
->  #include "kobil_sct.h"
->
-> -static int debug;
-> +static bool debug;
->
->  /* Version Information */
->  #define DRIVER_VERSION "21/05/2004"
+With the introduction of thaw_kernel_threads(), we can now finally fix the
+semantics of thawing tasks, in such a way as to be just the opposite of
+how tasks are frozen. This opens up some opportunities for code cleanup
+as well. This patchset implements both of these improvements.
 
-Forget this one, it's already in linux-next:
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=3297f86a3d4158e052538c7b9a3dea9c855a1b42;hp=2492c6e6454ff3edb11e273b071a6ea80a199c71
+v2: Interchanged the ordering of patches 1 and 2 and transferred a small
+    comment between them. No code changes.
+--
+ Srivatsa S. Bhat (4):
+      PM/Freezer: Use thaw_kernel_threads() in preparation for changes to thaw_processes()
+      PM/Freezer: Make thaw_processes() thaw only userspace tasks
+      PM/Hibernate: Thaw kernel threads in hibernation_snapshot() in error/test path
+      PM/Hibernate: Refactor and simplify freezer_test_done
 
-Danny
+
+  kernel/power/hibernate.c |   22 +++++++++++++++-------
+ kernel/power/power.h     |   15 +++++++++++++--
+ kernel/power/process.c   |   13 ++++++-------
+ kernel/power/user.c      |   20 ++++++++++++--------
+ 4 files changed, 46 insertions(+), 24 deletions(-)
+
+
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
