@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab2A3WRt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 17:17:49 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:41472 "EHLO e6.ny.us.ibm.com"
+	id S1754095Ab2A3WTG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 17:19:06 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:41856 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753679Ab2A3WRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753447Ab2A3WRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jan 2012 17:17:20 -0500
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
@@ -12,286 +12,809 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, David Safford <safford@watson.ibm.com>,
         Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
         Mimi Zohar <zohar@us.ibm.com>
-Subject: [RFC][PATCH v1 4/9] ima: add appraise action keywords and default rules
-Date: Mon, 30 Jan 2012 17:13:59 -0500
-Message-Id: <1327961644-6886-5-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [RFC][PATCH v1 3/9] ima: integrity appraisal extension
+Date: Mon, 30 Jan 2012 17:13:58 -0500
+Message-Id: <1327961644-6886-4-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1327961644-6886-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1327961644-6886-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12013022-1976-0000-0000-000009F8B899
+x-cbid: 12013022-7182-0000-0000-0000009B3045
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the IMA measurement policy, the appraise policy can not be dependent
-on runtime process information, such as the task uid, as the 'security.ima'
-xattr is written on file close and must be updated each time the file changes,
-regardless of the current task uid.
+This patch adds local measurement integrity appraisal to IMA.  New is the
+creation and maintainance of an extended attribute 'security.ima' containing
+the file hash measurement.  Protection of the xattr is provided by EVM, if
+enabled and configured.
 
-This patch extends the policy language with 'fowner'.  The appraise default
-policy appraises all files owned by root.
+Based on policy, IMA calls evm_verifyxattr() to verify the security.ima
+xattr integrity and, assuming success, compares the xattr hash value with
+the collected file measurement.
 
-Changelog v1:
-- don't appraise RAMFS (Dmitry Kasatkin)
-- merged rest of "ima: ima_must_appraise_or_measure API change" commit
-  (Dmtiry Kasatkin)
-
-  ima_must_appraise_or_measure() called ima_match_policy twice, which
-  searched the policy for a matching rule.  Once for a matching measurement
-  rule and subsequently for an appraisal rule. Searching the policy twice
-  is unnecessary overhead, which could be noticeable with a large policy.
-
-  The new version of ima_must_appraise_or_measure() does everything in a
-  single iteration using a new version of ima_match_policy().  It returns
-  IMA_MEASURE, IMA_APPRAISE mask.
-
-  With the use of action mask only one efficient matching function
-  is enough.  Removed other specific versions of matching functions.
+Changlog v1:
+- removed unused iint mutex (Dmitry Kasatkin)
+- setattr hook must not reset appraised (Dmitry Kasatkin)
+- evm_verifyxattr() now differentiates between no 'security.evm' xattr
+  (INTEGRITY_NOLABEL) and no EVM 'protected' xattrs included in the
+  'security.evm' (INTEGRITY_NOXATTRS).
+- replace hash_status with ima_status (Dmitry Kasatkin)
+- re-initialize slab element ima_status on free (Dmitry Kasatkin)
+- include 'security.ima' in EVM if CONFIG_IMA_APPRAISE, not CONFIG_IMA
+- merged half "ima: ima_must_appraise_or_measure API change" (Dmitry Kasatkin)
+- removed unnecessary error variable in process_measurement() (Dmitry Kasatkin)
+- use ima_inode_post_setattr() stub function, if IMA_APPRAISE not configured
+  (moved ima_inode_post_setattr() to ima_appraise.c)
+- make sure ima_collect_measurement() can read file
 
 Changelog:
-- change 'owner' to 'fowner' to conform to the new LSM conditions posted by
-  Roberto Sassu.
-- fix calls to ima_log_string()
+- add 'iint' to evm_verifyxattr() call (Dimitry Kasatkin)
+- fix the race condition between chmod, which takes the i_mutex and then
+  iint->mutex, and ima_file_free() and process_measurement(), which take
+  the locks in the reverse order, by eliminating iint->mutex. (Dmitry Kasatkin)
+- cleanup of ima_appraise_measurement() (Dmitry Kasatkin)
+- changes as a result of the iint not allocated for all regular files, but
+  only for those measured/appraised.
+- don't try to appraise new/empty files
+- expanded ima_appraisal description in ima/Kconfig
+- IMA appraise definitions required even if IMA_APPRAISE not enabled
+- add return value to ima_must_appraise() stub
+- unconditionally set status = INTEGRITY_PASS *after* testing status,
+  not before.  (Found by Joe Perches)
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- Documentation/ABI/testing/ima_policy  |   25 ++++++++++++--
- security/integrity/ima/ima_appraise.c |    5 ++-
- security/integrity/ima/ima_policy.c   |   56 +++++++++++++++++++++++++++++++--
- 3 files changed, 78 insertions(+), 8 deletions(-)
+ Documentation/kernel-parameters.txt   |    4 +
+ include/linux/xattr.h                 |    3 +
+ security/integrity/evm/evm_main.c     |    3 +
+ security/integrity/iint.c             |    3 +-
+ security/integrity/ima/Kconfig        |   15 +++
+ security/integrity/ima/Makefile       |    2 +
+ security/integrity/ima/ima.h          |   39 +++++++-
+ security/integrity/ima/ima_api.c      |   49 +++++++---
+ security/integrity/ima/ima_appraise.c |  167 +++++++++++++++++++++++++++++++++
+ security/integrity/ima/ima_crypto.c   |    9 ++-
+ security/integrity/ima/ima_main.c     |   78 +++++++++++-----
+ security/integrity/ima/ima_policy.c   |   32 +++++--
+ security/integrity/integrity.h        |    8 +-
+ 13 files changed, 359 insertions(+), 53 deletions(-)
+ create mode 100644 security/integrity/ima/ima_appraise.c
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index 6cd6dae..dcff822 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -12,11 +12,14 @@ Description:
- 		then closing the file.  The new policy takes effect after
- 		the file ima/policy is closed.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 033d4e6..b4dc3fc 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1004,6 +1004,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	ihash_entries=	[KNL]
+ 			Set number of hash buckets for inode cache.
  
-+		IMA appraisal, if configured, uses these file measurements
-+		for local measurement appraisal.
++	ima_appraise=	[IMA] appraise integrity measurements
++			Format: { "off" | "enforce" | "log" | "fix" }
++			default: "enforce"
 +
- 		rule format: action [condition ...]
+ 	ima_audit=	[IMA]
+ 			Format: { "0" | "1" }
+ 			0 -- integrity auditing messages. (Default)
+diff --git a/include/linux/xattr.h b/include/linux/xattr.h
+index e5d1220..77a3e68 100644
+--- a/include/linux/xattr.h
++++ b/include/linux/xattr.h
+@@ -33,6 +33,9 @@
+ #define XATTR_EVM_SUFFIX "evm"
+ #define XATTR_NAME_EVM XATTR_SECURITY_PREFIX XATTR_EVM_SUFFIX
  
--		action: measure | dont_measure
-+		action: measure | dont_measure | appraise | dont_appraise
- 		condition:= base | lsm
--			base:	[[func=] [mask=] [fsmagic=] [uid=]]
-+			base:	[[func=] [mask=] [fsmagic=] [uid=] [fowner]]
- 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
- 				 [obj_user=] [obj_role=] [obj_type=]]
++#define XATTR_IMA_SUFFIX "ima"
++#define XATTR_NAME_IMA XATTR_SECURITY_PREFIX XATTR_IMA_SUFFIX
++
+ #define XATTR_SELINUX_SUFFIX "selinux"
+ #define XATTR_NAME_SELINUX XATTR_SECURITY_PREFIX XATTR_SELINUX_SUFFIX
  
-@@ -24,36 +27,50 @@ Description:
- 			mask:= [MAY_READ] [MAY_WRITE] [MAY_APPEND] [MAY_EXEC]
- 			fsmagic:= hex value
- 			uid:= decimal value
-+			fowner:=decimal value
- 		lsm:  	are LSM specific
- 
- 		default policy:
- 			# PROC_SUPER_MAGIC
- 			dont_measure fsmagic=0x9fa0
-+			dont_appraise fsmagic=0x9fa0
- 			# SYSFS_MAGIC
- 			dont_measure fsmagic=0x62656572
-+			dont_appraise fsmagic=0x62656572
- 			# DEBUGFS_MAGIC
- 			dont_measure fsmagic=0x64626720
-+			dont_appraise fsmagic=0x64626720
- 			# TMPFS_MAGIC
- 			dont_measure fsmagic=0x01021994
-+			dont_appraise fsmagic=0x01021994
-+			# RAMFS_MAGIC
-+			dont_measure fsmagic=0x858458f6
-+			dont_appraise fsmagic=0x858458f6
- 			# SECURITYFS_MAGIC
- 			dont_measure fsmagic=0x73636673
-+			dont_appraise fsmagic=0x73636673
- 
- 			measure func=BPRM_CHECK
- 			measure func=FILE_MMAP mask=MAY_EXEC
- 			measure func=FILE_CHECK mask=MAY_READ uid=0
-+			appraise fowner=0
- 
- 		The default policy measures all executables in bprm_check,
- 		all files mmapped executable in file_mmap, and all files
--		open for read by root in do_filp_open.
-+		open for read by root in do_filp_open.  The default appraisal
-+		policy appraises all files owned by root.
- 
- 		Examples of LSM specific definitions:
- 
- 		SELinux:
- 			# SELINUX_MAGIC
--			dont_measure fsmagic=0xF97CFF8C
-+			dont_measure fsmagic=0xf97cff8c
-+			dont_appraise fsmagic=0xf97cff8c
- 
- 			dont_measure obj_type=var_log_t
-+			dont_appraise obj_type=var_log_t
- 			dont_measure obj_type=auditd_log_t
-+			dont_appraise obj_type=auditd_log_t
- 			measure subj_user=system_u func=FILE_CHECK mask=MAY_READ
- 			measure subj_role=system_r func=FILE_CHECK mask=MAY_READ
- 
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index fbbbfcb..392ceb2 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -38,7 +38,10 @@ __setup("ima_appraise=", default_appraise_setup);
-  */
- int ima_must_appraise(struct inode *inode, enum ima_hooks func, int mask)
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index 8901501..eb54845 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -34,6 +34,9 @@ char *evm_config_xattrnames[] = {
+ #ifdef CONFIG_SECURITY_SMACK
+ 	XATTR_NAME_SMACK,
+ #endif
++#ifdef CONFIG_IMA_APPRAISE
++	XATTR_NAME_IMA,
++#endif
+ 	XATTR_NAME_CAPS,
+ 	NULL
+ };
+diff --git a/security/integrity/iint.c b/security/integrity/iint.c
+index 399641c..e600986 100644
+--- a/security/integrity/iint.c
++++ b/security/integrity/iint.c
+@@ -74,6 +74,7 @@ static void iint_free(struct integrity_iint_cache *iint)
  {
--	return 0;
-+	if (!ima_appraise || !inode->i_op->getxattr)
-+		return 0;
-+
-+	return ima_match_policy(inode, func, mask, IMA_APPRAISE);
+ 	iint->version = 0;
+ 	iint->flags = 0UL;
++	iint->ima_status = INTEGRITY_UNKNOWN;
+ 	iint->evm_status = INTEGRITY_UNKNOWN;
+ 	kmem_cache_free(iint_cache, iint);
+ }
+@@ -157,7 +158,7 @@ static void init_once(void *foo)
+ 	memset(iint, 0, sizeof *iint);
+ 	iint->version = 0;
+ 	iint->flags = 0UL;
+-	mutex_init(&iint->mutex);
++	iint->ima_status = INTEGRITY_UNKNOWN;
+ 	iint->evm_status = INTEGRITY_UNKNOWN;
  }
  
- static void ima_fix_xattr(struct dentry *dentry,
+diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+index 063298a..b2d0fe4 100644
+--- a/security/integrity/ima/Kconfig
++++ b/security/integrity/ima/Kconfig
+@@ -54,3 +54,18 @@ config IMA_LSM_RULES
+ 	default y
+ 	help
+ 	  Disabling this option will disregard LSM based policy rules.
++
++config IMA_APPRAISE
++	bool "Appraise integrity measurements"
++	depends on IMA
++	default n
++	help
++	  This option enables local measurement integrity appraisal.
++	  It requires the system to be labeled with a security extended
++	  attribute containing the file hash measurement.  To protect
++	  the security extended attributes from offline attack, enable
++	  and configure EVM.
++
++	  For more information on integrity appraisal refer to:
++	  <http://linux-ima.sourceforge.net>
++	  If unsure, say N.
+diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
+index 5690c02..bd31516 100644
+--- a/security/integrity/ima/Makefile
++++ b/security/integrity/ima/Makefile
+@@ -7,3 +7,5 @@ obj-$(CONFIG_IMA) += ima.o
+ 
+ ima-y := ima_fs.o ima_queue.o ima_init.o ima_main.o ima_crypto.o ima_api.o \
+ 	 ima_policy.o ima_audit.o
++
++ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 3ccf7ac..f2721a7 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -40,6 +40,7 @@ enum tpm_pcrs { TPM_PCR0 = 0, TPM_PCR8 = 8 };
+ extern int ima_initialized;
+ extern int ima_used_chip;
+ extern char *ima_hash;
++extern int ima_appraise;
+ 
+ /* IMA inode template definition */
+ struct ima_template_data {
+@@ -98,6 +99,7 @@ static inline unsigned long ima_hash_key(u8 *digest)
+ }
+ 
+ /* LIM API function definitions */
++int ima_must_appraise_or_measure(struct inode *inode, int mask, int function);
+ int ima_must_measure(struct inode *inode, int mask, int function);
+ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 			    struct file *file);
+@@ -114,14 +116,47 @@ struct integrity_iint_cache *integrity_iint_insert(struct inode *inode);
+ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
+ 
+ /* IMA policy related functions */
+-enum ima_hooks { FILE_CHECK = 1, FILE_MMAP, BPRM_CHECK };
++enum ima_hooks { FILE_CHECK = 1, FILE_MMAP, BPRM_CHECK, POST_SETATTR };
+ 
+-int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask);
++int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
++		     int flags);
+ void ima_init_policy(void);
+ void ima_update_policy(void);
+ ssize_t ima_parse_add_rule(char *);
+ void ima_delete_rules(void);
+ 
++/* Appraise integrity measurements */
++#define IMA_APPRAISE_ENABLED	0x01
++#define IMA_APPRAISE_ENFORCE	0x02
++#define IMA_APPRAISE_LOG	0x04
++#define IMA_APPRAISE_FIX	0x08
++
++#ifdef CONFIG_IMA_APPRAISE
++int ima_appraise_measurement(struct integrity_iint_cache *iint,
++			     struct file *file, const unsigned char *filename);
++int ima_must_appraise(struct inode *inode, enum ima_hooks func, int mask);
++void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file);
++
++#else
++static inline int ima_appraise_measurement(struct integrity_iint_cache *iint,
++					   struct file *file,
++					   const unsigned char *filename)
++{
++	return INTEGRITY_UNKNOWN;
++}
++
++static inline int ima_must_appraise(struct inode *inode,
++				    enum ima_hooks func, int mask)
++{
++	return 0;
++}
++
++static inline void ima_update_xattr(struct integrity_iint_cache *iint,
++				    struct file *file)
++{
++}
++#endif
++
+ /* LSM based policy rules require audit */
+ #ifdef CONFIG_IMA_LSM_RULES
+ 
+diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+index 88a2788..d73b13e 100644
+--- a/security/integrity/ima/ima_api.c
++++ b/security/integrity/ima/ima_api.c
+@@ -9,13 +9,17 @@
+  * License.
+  *
+  * File: ima_api.c
+- *	Implements must_measure, collect_measurement, store_measurement,
+- *	and store_template.
++ *	Implements must_appraise_or_measure, collect_measurement,
++ *	appraise_measurement, store_measurement and store_template.
+  */
+ #include <linux/module.h>
+ #include <linux/slab.h>
+-
++#include <linux/file.h>
++#include <linux/fs.h>
++#include <linux/xattr.h>
++#include <linux/evm.h>
+ #include "ima.h"
++
+ static const char *IMA_TEMPLATE_NAME = "ima";
+ 
+ /*
+@@ -93,7 +97,7 @@ err_out:
+ }
+ 
+ /**
+- * ima_must_measure - measure decision based on policy.
++ * ima_must_appraise_or_measure - appraise & measure decision based on policy.
+  * @inode: pointer to inode to measure
+  * @mask: contains the permission mask (MAY_READ, MAY_WRITE, MAY_EXECUTE)
+  * @function: calling function (FILE_CHECK, BPRM_CHECK, FILE_MMAP)
+@@ -105,15 +109,22 @@ err_out:
+  * 	mask: contains the permission mask
+  *	fsmagic: hex value
+  *
+- * Return 0 to measure. For matching a DONT_MEASURE policy, no policy,
+- * or other error, return an error code.
+-*/
+-int ima_must_measure(struct inode *inode, int mask, int function)
++ * Returns IMA_MEASURE, IMA_APPRAISE mask.
++ *
++ */
++int ima_must_appraise_or_measure(struct inode *inode, int mask, int function)
+ {
+-	int must_measure;
++	int flags = IMA_MEASURE | IMA_APPRAISE;
++
++	if (!ima_appraise || !inode->i_op->getxattr)
++		flags &= ~IMA_APPRAISE;
++
++	return ima_match_policy(inode, function, mask, flags);
++}
+ 
+-	must_measure = ima_match_policy(inode, function, mask);
+-	return must_measure ? 0 : -EACCES;
++int ima_must_measure(struct inode *inode, int mask, int function)
++{
++	return ima_match_policy(inode, function, mask, IMA_MEASURE);
+ }
+ 
+ /*
+@@ -129,16 +140,23 @@ int ima_must_measure(struct inode *inode, int mask, int function)
+ int ima_collect_measurement(struct integrity_iint_cache *iint,
+ 			    struct file *file)
+ {
+-	int result = -EEXIST;
++	struct inode *inode = file->f_dentry->d_inode;
++	const char *filename = file->f_dentry->d_name.name;
++	int result = 0;
+ 
+-	if (!(iint->flags & IMA_MEASURED)) {
++	if (!(iint->flags & IMA_COLLECTED)) {
+ 		u64 i_version = file->f_dentry->d_inode->i_version;
+ 
+ 		memset(iint->digest, 0, IMA_DIGEST_SIZE);
+ 		result = ima_calc_hash(file, iint->digest);
+-		if (!result)
++		if (!result) {
+ 			iint->version = i_version;
++			iint->flags |= IMA_COLLECTED;
++		}
+ 	}
++	if (result)
++		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode,
++				    filename, "collect_data", "failed", 0, 0);
+ 	return result;
+ }
+ 
+@@ -167,6 +185,9 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+ 	struct ima_template_entry *entry;
+ 	int violation = 0;
+ 
++	if (iint->flags & IMA_MEASURED)
++		return;
++
+ 	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
+ 	if (!entry) {
+ 		integrity_audit_msg(AUDIT_INTEGRITY_PCR, inode, filename,
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+new file mode 100644
+index 0000000..fbbbfcb
+--- /dev/null
++++ b/security/integrity/ima/ima_appraise.c
+@@ -0,0 +1,167 @@
++/*
++ * Copyright (C) 2011 IBM Corporation
++ *
++ * Author:
++ * Mimi Zohar <zohar@us.ibm.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, version 2 of the License.
++ */
++#include <linux/module.h>
++#include <linux/file.h>
++#include <linux/fs.h>
++#include <linux/xattr.h>
++#include <linux/magic.h>
++#include <linux/ima.h>
++#include <linux/evm.h>
++
++#include "ima.h"
++
++static int __init default_appraise_setup(char *str)
++{
++	if (strncmp(str, "off", 3) == 0)
++		ima_appraise = 0;
++	else if (strncmp(str, "log", 3) == 0)
++		ima_appraise = IMA_APPRAISE_ENABLED | IMA_APPRAISE_LOG;
++	else if (strncmp(str, "fix", 3) == 0)
++		ima_appraise = IMA_APPRAISE_ENABLED | IMA_APPRAISE_FIX;
++	return 1;
++}
++
++__setup("ima_appraise=", default_appraise_setup);
++
++/*
++ * ima_must_appraise - set appraise flag
++ *
++ * Return 1 to appraise
++ */
++int ima_must_appraise(struct inode *inode, enum ima_hooks func, int mask)
++{
++	return 0;
++}
++
++static void ima_fix_xattr(struct dentry *dentry,
++			  struct integrity_iint_cache *iint)
++{
++	iint->digest[0] = IMA_XATTR_DIGEST;
++	__vfs_setxattr_noperm(dentry, XATTR_NAME_IMA,
++			      iint->digest, IMA_DIGEST_SIZE + 1, 0);
++}
++
++/*
++ * ima_appraise_measurement - appraise file measurement
++ *
++ * Call evm_verifyxattr() to verify the integrity of 'security.ima'.
++ * Assuming success, compare the xattr hash with the collected measurement.
++ *
++ * Return 0 on success, error code otherwise
++ */
++int ima_appraise_measurement(struct integrity_iint_cache *iint,
++			     struct file *file, const unsigned char *filename)
++{
++	struct dentry *dentry = file->f_dentry;
++	struct inode *inode = dentry->d_inode;
++	u8 xattr_value[IMA_DIGEST_SIZE];
++	enum integrity_status status = INTEGRITY_UNKNOWN;
++	const char *op = "appraise_data";
++	char *cause = "unknown";
++	int rc;
++
++	if (!ima_appraise || !inode->i_op->getxattr)
++		return 0;
++	if (iint->flags & IMA_APPRAISED)
++		return iint->ima_status;
++
++	rc = inode->i_op->getxattr(dentry, XATTR_NAME_IMA, xattr_value,
++				   IMA_DIGEST_SIZE);
++	if (rc <= 0) {
++		if (rc && rc != -ENODATA)
++			goto out;
++
++		cause = "missing-hash";
++		status =
++		    (inode->i_size == 0) ? INTEGRITY_PASS : INTEGRITY_NOLABEL;
++		goto out;
++	}
++
++	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
++	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
++		if ((status == INTEGRITY_NOLABEL)
++		    || (status == INTEGRITY_NOXATTRS))
++			cause = "missing-HMAC";
++		else if (status == INTEGRITY_FAIL)
++			cause = "invalid-HMAC";
++		goto out;
++	}
++
++	rc = memcmp(xattr_value, iint->digest, IMA_DIGEST_SIZE);
++	if (rc) {
++		status = INTEGRITY_FAIL;
++		cause = "invalid-hash";
++		print_hex_dump_bytes("security.ima: ", DUMP_PREFIX_NONE,
++				     xattr_value, IMA_DIGEST_SIZE);
++		print_hex_dump_bytes("collected: ", DUMP_PREFIX_NONE,
++				     iint->digest, IMA_DIGEST_SIZE);
++		goto out;
++	}
++	status = INTEGRITY_PASS;
++	iint->flags |= IMA_APPRAISED;
++out:
++	if (status != INTEGRITY_PASS) {
++		if (ima_appraise & IMA_APPRAISE_FIX) {
++			ima_fix_xattr(dentry, iint);
++			status = INTEGRITY_PASS;
++		}
++		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode, filename,
++				    op, cause, 1, 0);
++	}
++	iint->ima_status = status;
++	return status;
++}
++
++/*
++ * ima_update_xattr - update 'security.ima' hash value
++ */
++void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file)
++{
++	struct dentry *dentry = file->f_dentry;
++	int rc = 0;
++
++	rc = ima_collect_measurement(iint, file);
++	if (rc < 0)
++		return;
++	ima_fix_xattr(dentry, iint);
++}
++
++/**
++ * ima_inode_post_setattr - reflect file metadata changes
++ * @dentry: pointer to the affected dentry
++ *
++ * Changes to a dentry's metadata might result in needing to appraise.
++ *
++ * This function is called from notify_change(), which expects the caller
++ * to lock the inode's i_mutex.
++ */
++void ima_inode_post_setattr(struct dentry *dentry)
++{
++	struct inode *inode = dentry->d_inode;
++	struct integrity_iint_cache *iint;
++	int must_appraise, rc;
++
++	if (!ima_initialized || !ima_appraise || !S_ISREG(inode->i_mode)
++	    || !inode->i_op->removexattr)
++		return;
++
++	must_appraise = ima_must_appraise(inode, MAY_ACCESS, POST_SETATTR);
++	iint = integrity_iint_find(inode);
++	if (iint) {
++		if (must_appraise)
++			iint->flags |= IMA_APPRAISE;
++		else
++			iint->flags &= ~(IMA_APPRAISE | IMA_APPRAISED);
++	}
++	if (!must_appraise)
++		rc = inode->i_op->removexattr(dentry, XATTR_NAME_IMA);
++	return;
++}
+diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
+index 9b3ade7..dcf6b02 100644
+--- a/security/integrity/ima/ima_crypto.c
++++ b/security/integrity/ima/ima_crypto.c
+@@ -48,7 +48,7 @@ int ima_calc_hash(struct file *file, char *digest)
+ 	struct scatterlist sg[1];
+ 	loff_t i_size, offset = 0;
+ 	char *rbuf;
+-	int rc;
++	int rc, read = 0;
+ 
+ 	rc = init_desc(&desc);
+ 	if (rc != 0)
+@@ -65,6 +65,11 @@ int ima_calc_hash(struct file *file, char *digest)
+ 
+ 		rbuf_len = kernel_read(file, offset, rbuf, PAGE_SIZE);
+ 		if (rbuf_len < 0) {
++			if (!(file->f_mode & FMODE_READ)) {
++				file->f_mode |= FMODE_READ;
++				read = 1;
++				continue;
++			}
+ 			rc = rbuf_len;
+ 			break;
+ 		}
+@@ -80,6 +85,8 @@ int ima_calc_hash(struct file *file, char *digest)
+ 	kfree(rbuf);
+ 	if (!rc)
+ 		rc = crypto_hash_final(&desc, digest);
++	if (read)
++		file->f_mode &= ~FMODE_READ;
+ out:
+ 	crypto_free_hash(desc.tfm);
+ 	return rc;
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 5b222eb..f5d7f28 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -22,12 +22,19 @@
+ #include <linux/mount.h>
+ #include <linux/mman.h>
+ #include <linux/slab.h>
++#include <linux/xattr.h>
+ #include <linux/ima.h>
+ 
+ #include "ima.h"
+ 
+ int ima_initialized;
+ 
++#ifdef CONFIG_IMA_APPRAISE
++int ima_appraise = IMA_APPRAISE_ENABLED | IMA_APPRAISE_ENFORCE;
++#else
++int ima_appraise;
++#endif
++
+ char *ima_hash = "sha1";
+ static int __init hash_setup(char *str)
+ {
+@@ -52,7 +59,7 @@ static void ima_rdwr_violation_check(struct file *file)
+ 	struct dentry *dentry = file->f_path.dentry;
+ 	struct inode *inode = dentry->d_inode;
+ 	fmode_t mode = file->f_mode;
+-	int rc;
++	int must_measure;
+ 	bool send_tomtou = false, send_writers = false;
+ 
+ 	if (!S_ISREG(inode->i_mode) || !ima_initialized)
+@@ -66,8 +73,8 @@ static void ima_rdwr_violation_check(struct file *file)
+ 		goto out;
+ 	}
+ 
+-	rc = ima_must_measure(inode, MAY_READ, FILE_CHECK);
+-	if (rc < 0)
++	must_measure = ima_must_measure(inode, MAY_READ, FILE_CHECK);
++	if (!must_measure)
+ 		goto out;
+ 
+ 	if (atomic_read(&inode->i_writecount) > 0)
+@@ -84,17 +91,21 @@ out:
+ }
+ 
+ static void ima_check_last_writer(struct integrity_iint_cache *iint,
+-				  struct inode *inode,
+-				  struct file *file)
++				  struct inode *inode, struct file *file)
+ {
+ 	fmode_t mode = file->f_mode;
+ 
+-	mutex_lock(&iint->mutex);
+-	if (mode & FMODE_WRITE &&
+-	    atomic_read(&inode->i_writecount) == 1 &&
+-	    iint->version != inode->i_version)
+-		iint->flags &= ~IMA_MEASURED;
+-	mutex_unlock(&iint->mutex);
++	if (!(mode & FMODE_WRITE))
++		return;
++
++	mutex_lock(&inode->i_mutex);
++	if (atomic_read(&inode->i_writecount) == 1 &&
++	    iint->version != inode->i_version) {
++		iint->flags &= ~(IMA_COLLECTED | IMA_APPRAISED | IMA_MEASURED);
++		if (iint->flags & IMA_APPRAISE)
++			ima_update_xattr(iint, file);
++	}
++	mutex_unlock(&inode->i_mutex);
+ }
+ 
+ /**
+@@ -123,14 +134,17 @@ static int process_measurement(struct file *file, const unsigned char *filename,
+ {
+ 	struct inode *inode = file->f_dentry->d_inode;
+ 	struct integrity_iint_cache *iint;
+-	int rc = 0;
++	int rc = -ENOMEM, action, must_appraise;
+ 
+ 	if (!ima_initialized || !S_ISREG(inode->i_mode))
+ 		return 0;
+ 
+-	rc = ima_must_measure(inode, mask, function);
+-	if (rc != 0)
+-		return rc;
++	/* Determine if in appraise/measurement policy,
++	 * returns IMA_MEASURE, IMA_APPRAISE bitmask.  */
++	action = ima_must_appraise_or_measure(inode, mask, function);
++	if (!action)
++		return 0;
++
+ retry:
+ 	iint = integrity_iint_find(inode);
+ 	if (!iint) {
+@@ -140,18 +154,32 @@ retry:
+ 		return rc;
+ 	}
+ 
+-	mutex_lock(&iint->mutex);
++	must_appraise = action & IMA_APPRAISE;
+ 
+-	rc = iint->flags & IMA_MEASURED ? 1 : 0;
+-	if (rc != 0)
++	mutex_lock(&inode->i_mutex);
++
++	/* Determine if already appraised/measured based on bitmask
++	 * (IMA_MEASURE, IMA_MEASURED, IMA_APPRAISE, IMA_APPRAISED) */
++	iint->flags |= action;
++	action &= ~((iint->flags & (IMA_MEASURED | IMA_APPRAISED)) >> 1);
++
++	/* Nothing to do, just return existing appraised status */
++	if (!action) {
++		if (iint->flags & IMA_APPRAISED)
++			rc = iint->ima_status;
+ 		goto out;
++	}
+ 
+ 	rc = ima_collect_measurement(iint, file);
+-	if (!rc)
++	if (rc != 0)
++		goto out;
++	if (action & IMA_MEASURE)
+ 		ima_store_measurement(iint, file, filename);
++	if (action & IMA_APPRAISE)
++		rc = ima_appraise_measurement(iint, file, filename);
+ out:
+-	mutex_unlock(&iint->mutex);
+-	return rc;
++	mutex_unlock(&inode->i_mutex);
++	return (rc && must_appraise) ? -EACCES : 0;
+ }
+ 
+ /**
+@@ -167,14 +195,14 @@ out:
+  */
+ int ima_file_mmap(struct file *file, unsigned long prot)
+ {
+-	int rc;
++	int rc = 0;
+ 
+ 	if (!file)
+ 		return 0;
+ 	if (prot & PROT_EXEC)
+ 		rc = process_measurement(file, file->f_dentry->d_name.name,
+ 					 MAY_EXEC, FILE_MMAP);
+-	return 0;
++	return (ima_appraise & IMA_APPRAISE_ENFORCE) ? rc : 0;
+ }
+ EXPORT_SYMBOL_GPL(ima_file_mmap);
+ 
+@@ -197,7 +225,7 @@ int ima_bprm_check(struct linux_binprm *bprm)
+ 
+ 	rc = process_measurement(bprm->file, bprm->filename,
+ 				 MAY_EXEC, BPRM_CHECK);
+-	return 0;
++	return (ima_appraise & IMA_APPRAISE_ENFORCE) ? rc : 0;
+ }
+ 
+ /**
+@@ -218,7 +246,7 @@ int ima_file_check(struct file *file, int mask)
+ 	rc = process_measurement(file, file->f_dentry->d_name.name,
+ 				 mask & (MAY_READ | MAY_WRITE | MAY_EXEC),
+ 				 FILE_CHECK);
+-	return 0;
++	return (ima_appraise & IMA_APPRAISE_ENFORCE) ? rc : 0;
+ }
+ EXPORT_SYMBOL_GPL(ima_file_check);
+ 
 diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 37367a4..9e71014 100644
+index 0fb643a..37367a4 100644
 --- a/security/integrity/ima/ima_policy.c
 +++ b/security/integrity/ima/ima_policy.c
-@@ -24,6 +24,7 @@
- #define IMA_MASK 	0x0002
+@@ -25,7 +25,13 @@
  #define IMA_FSMAGIC	0x0004
  #define IMA_UID		0x0008
-+#define IMA_FOWNER	0x0010
  
- #define UNKNOWN			0
- #define MEASURE			1	/* same as IMA_MEASURE */
-@@ -46,6 +47,7 @@ struct ima_measure_rule_entry {
+-enum ima_action { UNKNOWN = -1, DONT_MEASURE = 0, MEASURE };
++#define UNKNOWN			0
++#define MEASURE			1	/* same as IMA_MEASURE */
++#define DONT_MEASURE		2
++#define MEASURE_MASK		3
++#define APPRAISE		4	/* same as IMA_APPRAISE */
++#define DONT_APPRAISE		8
++#define APPRAISE_MASK		12
+ 
+ #define MAX_LSM_RULES 6
+ enum lsm_rule_types { LSM_OBJ_USER, LSM_OBJ_ROLE, LSM_OBJ_TYPE,
+@@ -34,7 +40,7 @@ enum lsm_rule_types { LSM_OBJ_USER, LSM_OBJ_ROLE, LSM_OBJ_TYPE,
+ 
+ struct ima_measure_rule_entry {
+ 	struct list_head list;
+-	enum ima_action action;
++	int action;
+ 	unsigned int flags;
+ 	enum ima_hooks func;
  	int mask;
- 	unsigned long fsmagic;
- 	uid_t uid;
-+	uid_t fowner;
- 	struct {
- 		void *rule;	/* LSM file metadata specific */
- 		int type;	/* audit type */
-@@ -54,7 +56,7 @@ struct ima_measure_rule_entry {
- 
- /*
-  * Without LSM specific knowledge, the default policy can only be
-- * written in terms of .action, .func, .mask, .fsmagic, and .uid
-+ * written in terms of .action, .func, .mask, .fsmagic, .uid, and .fowner
+@@ -161,18 +167,28 @@ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
+  * as elements in the list are never deleted, nor does the list
+  * change.)
   */
+-int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask)
++int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask,
++		     int flags)
+ {
+ 	struct ima_measure_rule_entry *entry;
++	int action = 0, actmask = flags | (flags << 1);
  
- /*
-@@ -77,6 +79,14 @@ static struct ima_measure_rule_entry default_rules[] = {
- 	 .flags = IMA_FUNC | IMA_MASK},
- 	{.action = MEASURE,.func = FILE_CHECK,.mask = MAY_READ,.uid = 0,
- 	 .flags = IMA_FUNC | IMA_MASK | IMA_UID},
-+	{.action = DONT_APPRAISE,.fsmagic = PROC_SUPER_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = SELINUX_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = APPRAISE,.fowner = 0,.flags = IMA_FOWNER},
+ 	list_for_each_entry(entry, ima_measure, list) {
+-		bool rc;
+ 
+-		rc = ima_match_rules(entry, inode, func, mask);
+-		if (rc)
+-			return entry->action;
++		if (!(entry->action & actmask))
++			continue;
++
++		if (!ima_match_rules(entry, inode, func, mask))
++			continue;
++
++		action |= (entry->action & (IMA_APPRAISE | IMA_MEASURE));
++		actmask &= (entry->action & APPRAISE_MASK) ?
++		    ~APPRAISE_MASK : ~MEASURE_MASK;
++		if (!actmask)
++			break;
+ 	}
+-	return 0;
++
++	return action;
+ }
+ 
+ /**
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 7a25ece..295702d 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -16,7 +16,11 @@
+ #include <crypto/sha.h>
+ 
+ /* iint cache flags */
+-#define IMA_MEASURED		0x01
++#define IMA_MEASURE		1
++#define IMA_MEASURED		2
++#define IMA_APPRAISE		4
++#define IMA_APPRAISED		8
++#define IMA_COLLECTED		16
+ 
+ enum evm_ima_xattr_type {
+ 	IMA_XATTR_DIGEST = 0x01,
+@@ -36,7 +40,7 @@ struct integrity_iint_cache {
+ 	u64 version;		/* track inode changes */
+ 	unsigned char flags;
+ 	u8 digest[SHA1_DIGEST_SIZE];
+-	struct mutex mutex;	/* protects: version, flags, digest */
++	enum integrity_status ima_status;
+ 	enum integrity_status evm_status;
  };
  
- static LIST_HEAD(measure_default_rules);
-@@ -118,6 +128,8 @@ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
- 		return false;
- 	if ((rule->flags & IMA_UID) && rule->uid != cred->uid)
- 		return false;
-+	if ((rule->flags & IMA_FOWNER) && rule->fowner != inode->i_uid)
-+		return false;
- 	for (i = 0; i < MAX_LSM_RULES; i++) {
- 		int rc = 0;
- 		u32 osid, sid;
-@@ -238,14 +250,17 @@ void ima_update_policy(void)
- enum {
- 	Opt_err = -1,
- 	Opt_measure = 1, Opt_dont_measure,
-+	Opt_appraise, Opt_dont_appraise,
- 	Opt_obj_user, Opt_obj_role, Opt_obj_type,
- 	Opt_subj_user, Opt_subj_role, Opt_subj_type,
--	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid
-+	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner
- };
- 
- static match_table_t policy_tokens = {
- 	{Opt_measure, "measure"},
- 	{Opt_dont_measure, "dont_measure"},
-+	{Opt_appraise, "appraise"},
-+	{Opt_dont_appraise, "dont_appraise"},
- 	{Opt_obj_user, "obj_user=%s"},
- 	{Opt_obj_role, "obj_role=%s"},
- 	{Opt_obj_type, "obj_type=%s"},
-@@ -256,6 +271,7 @@ static match_table_t policy_tokens = {
- 	{Opt_mask, "mask=%s"},
- 	{Opt_fsmagic, "fsmagic=%s"},
- 	{Opt_uid, "uid=%s"},
-+	{Opt_fowner, "fowner=%s"},
- 	{Opt_err, NULL}
- };
- 
-@@ -292,6 +308,7 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_INTEGRITY_RULE);
- 
- 	entry->uid = -1;
-+	entry->fowner = -1;
- 	entry->action = UNKNOWN;
- 	while ((p = strsep(&rule, " \t")) != NULL) {
- 		substring_t args[MAX_OPT_ARGS];
-@@ -320,11 +337,27 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
- 
- 			entry->action = DONT_MEASURE;
- 			break;
-+		case Opt_appraise:
-+			ima_log_string(ab, "action", "appraise");
-+
-+			if (entry->action != UNKNOWN)
-+				result = -EINVAL;
-+
-+			entry->action = APPRAISE;
-+			break;
-+		case Opt_dont_appraise:
-+			ima_log_string(ab, "action", "dont_appraise");
-+
-+			if (entry->action != UNKNOWN)
-+				result = -EINVAL;
-+
-+			entry->action = DONT_APPRAISE;
-+			break;
- 		case Opt_func:
- 			ima_log_string(ab, "func", args[0].from);
- 
- 			if (entry->func)
--				result  = -EINVAL;
-+				result = -EINVAL;
- 
- 			if (strcmp(args[0].from, "FILE_CHECK") == 0)
- 				entry->func = FILE_CHECK;
-@@ -389,6 +422,23 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
- 					entry->flags |= IMA_UID;
- 			}
- 			break;
-+		case Opt_fowner:
-+			ima_log_string(ab, "fowner", args[0].from);
-+
-+			if (entry->fowner != -1) {
-+				result = -EINVAL;
-+				break;
-+			}
-+
-+			result = strict_strtoul(args[0].from, 10, &lnum);
-+			if (!result) {
-+				entry->fowner = (uid_t) lnum;
-+				if (entry->fowner != lnum)
-+					result = -EINVAL;
-+				else
-+					entry->flags |= IMA_FOWNER;
-+			}
-+			break;
- 		case Opt_obj_user:
- 			ima_log_string(ab, "obj_user", args[0].from);
- 			result = ima_lsm_rule_init(entry, args[0].from,
 -- 
 1.7.6.5
 
