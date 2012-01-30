@@ -1,41 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab2A3Tco (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 14:32:44 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46511 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2A3Tcn (ORCPT
+	id S1753497Ab2A3Tg2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 14:36:28 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49557 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752232Ab2A3Tg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 14:32:43 -0500
-Date: Mon, 30 Jan 2012 19:32:38 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] um: Use generic io.h
-Message-ID: <20120130193238.GM23916@ZenIV.linux.org.uk>
-References: <1327512234-22578-1-git-send-email-richard@nod.at>
- <20120130182333.GK23916@ZenIV.linux.org.uk>
- <20120130192552.GL23916@ZenIV.linux.org.uk>
+	Mon, 30 Jan 2012 14:36:26 -0500
+X-Sasl-enc: rIROHq/q9iz2VQmhHiHCwL3w7iC84F4RCXJ7hpfbbvfh 1327952185
+Date: Mon, 30 Jan 2012 11:36:21 -0800
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB bug fixes for 3.3-rc1
+Message-ID: <20120130193621.GA8082@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120130192552.GL23916@ZenIV.linux.org.uk>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 07:25:52PM +0000, Al Viro wrote:
+Here are a bunch of USB patches for 3.3-rc1.
 
-> While we are at it, param.h and pci.h appear to be candidates for the
-> same treatment, along with delay.h and auxvec.h.  mutex.h as well...
-> BTW, we probably can kill arch/um/include/asm/asm-offsets.h - everything
-> in there is using generated/asm-offsets.h directly.
-> 
-> FWIW, I'd probably kill current.h as well - replace get_current() in
-> arch/um/kernel/process.c with get_current_pid() (i.e. task_pid_nr(current)),
-> kill HOST_TASK_PID and switch arch/x86/um/bugs_32.c to use of get_current_pid()
-> and we can switch to asm-generic/current.h just fine.
+Nothing major, largest thing here is the removal of some drivers that
+did not work at all.  Other than that, the normal collection of bugfixes
+and new device ids.
 
-BTW, while looking at those headers - why do we need asm/user.h pulled from
-arch/um/include/asm/ptrace-generic.h? 
+Please pull from:
+	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ usb-3.3-rc1
+
+(usb-3.3-rc1 is a signed tag, I need to figure out how to build git
+1.7.9 for openSUSE to properly generate this pull message...)
+
+All of these patches have been in the -next and -mm releases for a
+while, and will be sent to the linux-usb list for those that wish to see
+them.
+
+thanks,
+
+greg k-h
+
+------------
+
+ drivers/usb/class/cdc-wdm.c            |   59 +-
+ drivers/usb/dwc3/ep0.c                 |   15 +-
+ drivers/usb/dwc3/gadget.c              |    2 +-
+ drivers/usb/gadget/composite.c         |    7 +-
+ drivers/usb/gadget/epautoconf.c        |    2 +-
+ drivers/usb/gadget/f_mass_storage.c    |   10 +-
+ drivers/usb/gadget/fsl_udc_core.c      |    4 +-
+ drivers/usb/gadget/langwell_udc.c      |  107 +--
+ drivers/usb/gadget/langwell_udc.h      |    1 -
+ drivers/usb/gadget/storage_common.c    |    6 +-
+ drivers/usb/host/ehci-fsl.c            |    2 +-
+ drivers/usb/host/ehci-pci.c            |    6 +
+ drivers/usb/host/ohci-dbg.c            |   12 +-
+ drivers/usb/host/ohci-pci.c            |    4 +
+ drivers/usb/host/xhci-ring.c           |    6 +-
+ drivers/usb/misc/emi26.c               |    3 -
+ drivers/usb/misc/emi62.c               |    3 -
+ drivers/usb/misc/usbsevseg.c           |    2 +-
+ drivers/usb/musb/davinci.c             |    3 -
+ drivers/usb/musb/musb_core.c           |    5 +-
+ drivers/usb/musb/omap2430.c            |    4 +-
+ drivers/usb/otg/Kconfig                |   18 +-
+ drivers/usb/otg/Makefile               |    1 -
+ drivers/usb/otg/langwell_otg.c         | 2347 --------------------------------
+ drivers/usb/otg/mv_otg.c               |    2 +
+ drivers/usb/renesas_usbhs/mod_gadget.c |    2 +-
+ drivers/usb/serial/cp210x.c            |  105 +-
+ drivers/usb/serial/ftdi_sio.c          |   14 +-
+ drivers/usb/serial/ftdi_sio_ids.h      |   19 +
+ drivers/usb/serial/io_ti.c             |   10 +-
+ drivers/usb/serial/kobil_sct.c         |    2 +-
+ drivers/usb/serial/option.c            |    5 +
+ drivers/usb/serial/qcaux.c             |    7 +-
+ drivers/usb/storage/realtek_cr.c       |    2 +-
+ drivers/usb/usb-skeleton.c             |   18 +-
+ drivers/usb/wusbcore/Kconfig           |    2 +-
+ include/linux/usb.h                    |    1 +
+ include/linux/usb/langwell_otg.h       |  139 --
+ 38 files changed, 225 insertions(+), 2732 deletions(-)
+ delete mode 100644 drivers/usb/otg/langwell_otg.c
+ delete mode 100644 include/linux/usb/langwell_otg.h
+
+---------------
+
+Alan Cox (1):
+      USB: ftdi_sio: Add more identifiers
+
+Alan Stern (1):
+      USB: OHCI: fix new compiler warnings
+
+Alessandro Rubini (1):
+      usb: add support for STA2X11 host driver
+
+Alexander Shishkin (3):
+      usb: otg: kill langwell_otg driver
+      usb: gadget: langwell: drop langwell_otg support
+      usb: gadget: langwell: don't call gadget's disconnect()
+
+Andiry Xu (2):
+      usb: gadget: storage: endian fix
+      xHCI: Cleanup isoc transfer ring when TD length mismatch found
+
+Andrew Morton (1):
+      drivers/usb/misc/emi26.c & emi62.c: fix warnings
+
+Bjørn Mork (5):
+      USB: cdc-wdm: updating desc->length must be protected by spin_lock
+      USB: cdc-wdm: use two mutexes to allow simultaneous read and write
+      USB: cdc-wdm: call wake_up_all to allow driver to shutdown on device removal
+      USB: cdc-wdm: better allocate a buffer that is at least as big as we tell the USB core
+      USB: cdc-wdm: Avoid hanging on interface with no USB_CDC_DMM_TYPE
+
+Dan Williams (1):
+      qcaux: add more Pantech UML190 and UML290 ports
+
+Eric W. Biederman (1):
+      usb: io_ti: Make edge_remove_sysfs_attrs the port_remove method.
+
+Fabio Estevam (3):
+      drivers: usb: otg: Fix dependencies for some OTG drivers
+      usb: gadget: f_mass_storage: Use "bool" instead of "int" in fsg_module_parameters
+      drivers: usb: Fix dependency for USB_HWA_HCD
+
+Felipe Balbi (3):
+      usb: dwc3: ep0: tidy up Pending Request handling
+      usb: dwc3: ep0: fix compile warning
+      usb: serial: kobil_sct: fix compile warning:
+
+Geert Uytterhoeven (1):
+      usb: mv-otg - Fix build if CONFIG_USB is not set
+
+Grazvydas Ignotas (1):
+      usb: musb: fix shutdown while usb gadget is in use
+
+Greg Kroah-Hartman (2):
+      Revert "USB: usb-skeleton.c: fix open/disconnect race"
+      Revert "drivers: usb: Fix dependency for USB_HWA_HCD"
+
+Harrison Metzger (1):
+      USB: usbsevseg: fix max length
+
+Jesper Juhl (1):
+      usb: renesas: silence uninitialized variable report in usbhsg_recip_run_handle()
+
+Johan Hovold (8):
+      USB: ftdi_sio: fix TIOCSSERIAL baud_base handling
+      USB: ftdi_sio: fix initial baud rate
+      USB: cp210x: call generic open last in open
+      USB: cp210x: fix up set_termios variables
+      USB: cp210x: do not map baud rates to B0
+      USB: cp210x: clean up, refactor and document speed handling
+      USB: cp210x: initialise baud rate at open
+      USB: cp210x: allow more baud rates above 1Mbaud
+
+Julia Lawall (1):
+      drivers/usb/host/ehci-fsl.c: add missing iounmap
+
+Kentaro Matsuyama (1):
+      USB: option: Add LG docomo L-02C
+
+NeilBrown (1):
+      usb: musb: omap2430: minor cleanups.
+
+Paul Zimmerman (1):
+      usb: gadget: SS Isoc endpoints use comp_desc->bMaxBurst too
+
+Peter Chen (1):
+      usb: gadget: fsl_udc: fix the usage of udc->max_ep
+
+Peter Korsgaard (1):
+      USB: ftdi_sio: add PID for TI XDS100v2 / BeagleBone A3
+
+Peter Naulls (1):
+      USB: serial: ftdi additional IDs
+
+Preston Fick (1):
+      USB: cp210x: fix CP2104 baudrate usage
+
+Randy Dunlap (2):
+      kernel-doc: fix new warning in usb.h
+      uwb & wusb: fix kconfig error
+
+Renato Caldas (1):
+      USB: serial: CP210x: Added USB-ID for the Link Instruments MSO-19
+
+Sarah Sharp (1):
+      xhci: Fix USB 3.0 device restart on resume.
+
+Sebastian Andrzej Siewior (2):
+      usb: gadget: check for streams only for SS udcs
+      usb: dwc3: unmap the proper number of sg entries
+
+Sekhar Nori (1):
+      usb: musb: davinci: fix build breakage
+
+Stanislaw Gruszka (1):
+      USB: Realtek cr: fix autopm scheduling while atomic
+
