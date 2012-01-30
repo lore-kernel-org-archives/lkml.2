@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab2A3Po2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 10:44:28 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53434 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888Ab2A3PoZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 10:44:25 -0500
+	id S1753489Ab2A3Pto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 10:49:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753196Ab2A3Ptn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 10:49:43 -0500
+Date: Mon, 30 Jan 2012 10:49:35 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Phillip Susi <psusi@ubuntu.com>
+Cc: Maxim Patlasov <maxim.patlasov@gmail.com>, joe@perches.com,
+        kzak@redhat.com, linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
+Message-ID: <20120130154935.GC30245@redhat.com>
+References: <CA+X1aCQRpJ_NwJBSBp+vDN37p+oipJNz=6T5LdJdqzxTiSWWWA@mail.gmail.com>
+ <4EFD012D.7040602@cfl.rr.com>
+ <20120126190114.GG1891@redhat.com>
+ <4F21B91E.90106@ubuntu.com>
+ <20120126210456.GC11297@redhat.com>
+ <4F21CA16.3020002@ubuntu.com>
 MIME-Version: 1.0
-In-Reply-To: <1327718971-9598-7-git-send-email-yinghai@kernel.org>
-References: <1327718971-9598-1-git-send-email-yinghai@kernel.org> <1327718971-9598-7-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 30 Jan 2012 07:44:04 -0800
-Message-ID: <CAErSpo44qjFk5SQ+VWD=Y+Fg_xyykmh-ZOdFsfN-nELE29YP-A@mail.gmail.com>
-Subject: Re: [PATCH 06/13] PCI, powerpc: Register busn_res for root buses
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F21CA16.3020002@ubuntu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 6:49 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: linuxppc-dev@lists.ozlabs.org
-> ---
->  arch/powerpc/kernel/pci-common.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
-> index cce98d7..501f29b 100644
-> --- a/arch/powerpc/kernel/pci-common.c
-> +++ b/arch/powerpc/kernel/pci-common.c
-> @@ -1732,6 +1732,8 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
->        bus->secondary = hose->first_busno;
->        hose->bus = bus;
->
-> +       pci_bus_insert_busn_res(bus, hose->first_busno, hose->last_busno);
+On Thu, Jan 26, 2012 at 04:48:06PM -0500, Phillip Susi wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> On 1/26/2012 4:04 PM, Vivek Goyal wrote:
+> >> Another idea that I had but have not yet checked to see if it is
+> >>  actually feasible is to copy the struct genhd, change the size
+> >> of the copy, and replace the existing one since updating the
+> >> pointer will be atomic.
+> > 
+> > You will run into issues if somebody has a pointer stored to 
+> > genhd.
+> 
+> They are already kept in an RCU list which has the same problem.
 
-The pci_create_root_bus() call is a few lines above this.  So this is
-a case of "create the root bus" followed by "fix something that's
-wrong with the bus we just created."  I'm trying to get rid of that
-pattern because it's just an opportunity for bugs.  I'd rather create
-the root bus with all the information it needs up front.
+Yes, using rcu is one option.
 
-And pci_bus_insert_busn_res() is not really architecture-specific, so
-I'd like this better if that call were done in the PCI core somewhere.
+> Doesn't that deal with it by using reference counters, so the reader
+> can keep and use the pointer to the old structure just fine, and it
+> will be cleaned up when they release the reference.
 
->        /* Get probe mode and perform scan */
->        mode = PCI_PROBE_NORMAL;
->        if (node && ppc_md.pci_probe_mode)
-> @@ -1742,8 +1744,11 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
->                of_scan_bus(node, bus);
->        }
->
-> -       if (mode == PCI_PROBE_NORMAL)
-> +       if (mode == PCI_PROBE_NORMAL) {
-> +               pci_bus_update_busn_res_end(bus, 255);
->                hose->last_busno = bus->subordinate = pci_scan_child_bus(bus);
-> +               pci_bus_update_busn_res_end(bus, bus->subordinate);
-> +       }
->
->        /* Platform gets a chance to do some global fixups before
->         * we proceed to resource allocation
-> --
-> 1.7.7
->
+Then reader needs to take reference count before every read and that
+makes it heavy weight solution for reader.
+
+Sequence counter keeps it lightweight for reader in fast path.
+
+> 
+> > I think simpler thing would be to stick with sequence counter 
+> > approach which keeps read side lockless. We can fix other writers 
+> > of nr_sects over a period of time. If nobody has complained so
+> > far, that means we don't run into issues frequently and it is not a
+> > huge concern.
+> 
+> So you think the patch is fine the way it is?
+
+If you can fix other use cases now, it would be good. Otherwise, I think
+we can leave a big fat comment in the code and if somebody runs into
+issues, we can go fix the individiual cases then.
+
+As we are not introducing any new races, I will not be too concerned
+about that.
+
+Thanks
+Vivek
