@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab2A3HgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 02:36:24 -0500
-Received: from MAIL.13thfloor.at ([213.145.232.33]:57176 "EHLO
-	MAIL.13thfloor.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698Ab2A3HgX (ORCPT
+	id S1753972Ab2A3HoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 02:44:04 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:65372 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab2A3HoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 02:36:23 -0500
-Date: Mon, 30 Jan 2012 08:36:21 +0100
-From: Herbert Poetzl <herbert@13thfloor.at>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Wu Fengguang <wfg@linux.intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: Bad SSD performance with recent kernels
-Message-ID: <20120130073621.GN29272@MAIL.13thfloor.at>
-Mail-Followup-To: Shaohua Li <shaohua.li@intel.com>,
-	Wu Fengguang <wfg@linux.intel.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-	Tejun Heo <tj@kernel.org>
-References: <20120128125108.GA9661@localhost> <1327757611.7199.6.camel@edumazet-laptop> <20120129055917.GB8513@localhost> <1327831380.14602.6.camel@edumazet-laptop> <20120129111645.GA5839@localhost> <1327842831.2718.2.camel@edumazet-laptop> <20120129161058.GA13156@localhost> <CANejiEW86b7btiOcVFF3qVhqU1t6FRosvgfiydWwU5zgeDFOqw@mail.gmail.com> <20120130071346.GM29272@MAIL.13thfloor.at> <1327908158.21268.3.camel@sli10-conroe>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1327908158.21268.3.camel@sli10-conroe>
-User-Agent: Mutt/1.5.11
+	Mon, 30 Jan 2012 02:44:02 -0500
+Date: Mon, 30 Jan 2012 08:43:55 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [Linaro-mm-sig] [PATCH 12/15] drivers: add Contiguous Memory
+ Allocator
+In-reply-to: <CAK=WgbY3L7u0AC1c=iNvoMXX+LSJoz1W-xb=S6gmhqcse5CKaA@mail.gmail.com>
+To: "'Ohad Ben-Cohen'" <ohad@wizery.com>
+Cc: "'Clark, Rob'" <rob@ti.com>, "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Message-id: <014101ccdf22$eb610d30$c2232790$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: Aczd7rSrErMaQJiMTruMIKnZ/6ImqwBLOIdg
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+ <1327568457-27734-13-git-send-email-m.szyprowski@samsung.com>
+ <CADMYwHw1B4RNV_9BqAg_M70da=g69Z3kyo5Cr6izCMwJ9LAtvA@mail.gmail.com>
+ <00de01ccdce1$e7c8a360$b759ea20$%szyprowski@samsung.com>
+ <CAO8GWqnQg-W=TEc+CUc8hs=GrdCa9XCCWcedQx34cqURhNwNwA@mail.gmail.com>
+ <010301ccdd03$1ad15ab0$50741010$%szyprowski@samsung.com>
+ <CAK=WgbZWHBKNQwcoY9OiXXH-r1n3XxB=ZODZJN-3vZopU2yhJA@mail.gmail.com>
+ <010501ccdd06$b9844f20$2c8ced60$%szyprowski@samsung.com>
+ <CAK=WgbY3L7u0AC1c=iNvoMXX+LSJoz1W-xb=S6gmhqcse5CKaA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 03:22:38PM +0800, Shaohua Li wrote:
-> On Mon, 2012-01-30 at 08:13 +0100, Herbert Poetzl wrote:
->> On Mon, Jan 30, 2012 at 11:17:38AM +0800, Shaohua Li wrote:
->>> 2012/1/30 Wu Fengguang <wfg@linux.intel.com>:
->>>> On Sun, Jan 29, 2012 at 02:13:51PM +0100, Eric Dumazet wrote:
->>>>> Le dimanche 29 janvier 2012 à 19:16 +0800, Wu Fengguang a écrit :
+Hello,
 
->>>>>> Note that as long as buffered read(2) is used, it makes almost no
->>>>>> difference (well, at least for now) to do "dd bs=128k" or "dd bs=2MB":
->>>>>> the 128kb readahead size will be used underneath to submit read IO.
+On Saturday, January 28, 2012 7:57 PM Ohad Ben-Cohen wrote:
 
->>>>> Hmm...
+> On Fri, Jan 27, 2012 at 5:17 PM, Marek Szyprowski
+> <m.szyprowski@samsung.com> wrote:
+> > There have been some vmalloc layout changes merged to v3.3-rc1.
+> 
+> That was dead-on, thanks a lot!
 
->>>>> # echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=128k count=32768
->>>>> 32768+0 enregistrements lus
->>>>> 32768+0 enregistrements écrits
->>>>> 4294967296 octets (4,3 GB) copiés, 20,7718 s, 207 MB/s
+Did you managed to fix this issue?
+
+> 
+> I did then bump into a different allocation failure which happened
+> because dma_alloc_from_contiguous() computes 'mask' before capping the
+> 'align' argument.
+> 
+> The early 'mask' computation was added in v18 (and therefore exists in
+> v19 too) and I was actually testing v17 previously, so I didn't notice
+> it before.
+
+Right, thanks for spotting it, I will squash it to the next release.
+
+> You may want to squash something like this:
+> 
+> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+> index f41e699..8455cb7 100644
+> --- a/drivers/base/dma-contiguous.c
+> +++ b/drivers/base/dma-contiguous.c
+> @@ -319,8 +319,7 @@ struct page *dma_alloc_from_contiguous(struct device *dev, i
+>                                        unsigned int align)
+>  {
+>         struct cma *cma = dev_get_cma_area(dev);
+> -       unsigned long pfn, pageno, start = 0;
+> -       unsigned long mask = (1 << align) - 1;
+> +       unsigned long mask, pfn, pageno, start = 0;
+>         int ret;
+> 
+>         if (!cma || !cma->count)
+> @@ -329,6 +328,8 @@ struct page *dma_alloc_from_contiguous(struct device *dev, i
+>         if (align > CONFIG_CMA_ALIGNMENT)
+>                 align = CONFIG_CMA_ALIGNMENT;
+> 
+> +       mask = (1 << align) - 1;
+> +
+>         pr_debug("%s(cma %p, count %d, align %d)\n", __func__, (void *)cma,
+>                  count, align);
+> 
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
 
->>>>> # echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=2M count=2048
->>>>> 2048+0 enregistrements lus
->>>>> 2048+0 enregistrements écrits
->>>>> 4294967296 octets (4,3 GB) copiés, 27,7824 s, 155 MB/s
-
->>>> Interesting. Here are my test results:
-
->>>> root@lkp-nex04 /home/wfg# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=128k count=32768
->>>> 32768+0 records in
->>>> 32768+0 records out
->>>> 4294967296 bytes (4.3 GB) copied, 19.0121 s, 226 MB/s
->>>> root@lkp-nex04 /home/wfg# echo 3 >/proc/sys/vm/drop_caches ;dd if=/dev/sda of=/dev/null bs=2M count=2048
->>>> 2048+0 records in
->>>> 2048+0 records out
->>>> 4294967296 bytes (4.3 GB) copied, 19.0214 s, 226 MB/s
-
->>>> Maybe the /dev/sda performance bug on your machine is sensitive to timing?
->>> I got similar result:
->>> 128k: 224M/s
->>> 1M: 182M/s
-
->>> 1M block size is slow, I guess it's CPU related.
-
->>> And as for the big regression with newer kernel than 2.6.38,
->>> please check if idle=poll helps. CPU idle dramatically impacts
->>> disk performance and even latest cpuidle governor doesn't help
->>> for some CPUs.
-
->> here are the tests with idle=poll and after switching to 128k
->> (instead of 1M) blocksize (same amount of data transferred)
-
->> kernel    ------------ read /dev/sda -------------
->>           --- noop ---  - deadline -  ---- cfs ---
->>           [MB/s]  %CPU  [MB/s]  %CPU  [MB/s]  %CPU
->> --------------------------------------------------
->> 3.2.2      45.82   3.7   44.85   3.6   45.04   3.4
->> 3.2.2i     45.59   2.3   51.78   2.6   46.03   2.2
->> 3.2.2i128 250.24  20.9  252.68  21.3  250.00  21.6
-
->> kernel    -- write ---  ------------------read -----------------
->>           --- noop ---  --- noop ---  - deadline -  ---- cfs ---
->>           [MB/s]  %CPU  [MB/s]  %CPU  [MB/s]  %CPU  [MB/s]  %CPU
->> ----------------------------------------------------------------
->> 3.2.2     270.95  42.6  162.36   9.9  162.63   9.9  162.65  10.1
->> 3.2.2i    269.10  41.4  170.82   6.6  171.20   6.6  170.91   6.7
->> 3.2.2i128 270.38  67.7  162.35  10.2  163.01  10.3  162.34  10.7
-
-> What's 3.2.2i and 3.2.2i128? 
-
-3.2.2 ...... kernel with default options (bs=1M)
-3.2.2i ..... kernel with idle=poll (bs=1M)
-3.2.2i128 .. kernel with idle=poll (bs=128k)
-
-> does idle=poll help?
-
-doesn't look like, at least to me ...
-
-HTC,
-Herbert
