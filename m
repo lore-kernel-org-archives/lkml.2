@@ -1,113 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab2A3V2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 16:28:48 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59653 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab2A3V2o (ORCPT
+	id S1753951Ab2A3V3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 16:29:18 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27361 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab2A3V3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 16:28:44 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.236.117.231 as permitted sender) smtp.mail=glikely@secretlab.ca
-Date: Mon, 30 Jan 2012 12:58:42 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v3 22/25] irq_domain/x86: Convert x86 (embedded) to use
- common irq_domain
-Message-ID: <20120130195842.GT28397@ponder.secretlab.ca>
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
- <1327700179-17454-23-git-send-email-grant.likely@secretlab.ca>
- <20120128164405.GA20763@linutronix.de>
+	Mon, 30 Jan 2012 16:29:15 -0500
+Date: Mon, 30 Jan 2012 22:29:31 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Autif Khan <autifk@gmail.com>
+cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        edwin_rong <edwin_rong@realsil.com.cn>,
+        Devendra Naga <devendra.aaru@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Autif Khan <autfk@gmail.com>
+Subject: Re: [PATCH 1/1] staging: rts5139: Fixed coding style issues
+In-Reply-To: <1327958754-10284-1-git-send-email-autfk@gmail.com>
+Message-ID: <alpine.LNX.2.00.1201302228340.31586@swampdragon.chaosbits.net>
+References: <1327958754-10284-1-git-send-email-autfk@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120128164405.GA20763@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 28, 2012 at 05:44:05PM +0100, Sebastian Andrzej Siewior wrote:
-> * Grant Likely | 2012-01-27 14:36:16 [-0700]:
-> 
-> >This patch removes the x86-specific definition of irq_domain and replaces
-> >it with the common implementation.
-> 
-> I pulled your devicetree/next tree. After this patch I get:
-> 
-> |Hierarchical RCU implementation.
-> |NR_IRQS:2304 nr_irqs:256 16
-> |------------[ cut here ]------------
-> |WARNING: at /home/bigeasy/work/shiva/git/linux-2.6-tip/kernel/irq/irqdomain.c:114 irq_domain_add_legacy+0x75/0x150()
-> |Modules linked in:
-> |Pid: 0, comm: swapper/0 Not tainted 3.3.0-rc1+ #65
-> |Call Trace:
-> | [<c15044e0>] ? printk+0x18/0x1a
-> | [<c102cdbd>] warn_slowpath_common+0x6d/0xa0
-> | [<c1095575>] ? irq_domain_add_legacy+0x75/0x150
-> | [<c1095575>] ? irq_domain_add_legacy+0x75/0x150
-> | [<c102ce0d>] warn_slowpath_null+0x1d/0x20
-> | [<c1095575>] irq_domain_add_legacy+0x75/0x150
-> | [<c1714824>] x86_add_irq_domains+0x96/0xd6
-> | [<c1708df2>] init_IRQ+0x8/0x33
-> | [<c170557f>] start_kernel+0x191/0x2e1
-> | [<c170517f>] ? loglevel+0x2b/0x2b
-> | [<c1705081>] i386_start_kernel+0x81/0x86
-> |---[ end trace 4eaa2a86a8e2da22 ]---
-> |------------[ cut here ]------------
-> |kernel BUG at /home/bigeasy/work/shiva/git/linux-2.6-tip/arch/x86/kernel/devicetree.c:367!
-> 
-> The warning is comming from this piece in irq_domain_add_legacy()
-> |for (i = 0; i < size; i++) {
-> |                 int irq = first_irq + i;
-> |                 struct irq_data *irq_data = irq_get_irq_data(irq);
-> | 
-> |                 if (WARN_ON(!irq_data || irq_data->domain)) {
-> 
-> irq_data is NULL here.
-> 
-> |                         mutex_unlock(&irq_domain_mutex);
-> |                         of_node_put(domain->of_node);
-> |                         kfree(domain);
-> |                         return NULL;
-> |                 }
-> |         }
-> | 
-> 
-> This is not always the case. arch_early_irq_init() in [0] sets up the
-> first 16 entries. The reminaing few (there is a toal of 24 irqs for
-> first ioapic and a second ioapic) are not initialized. This happens
-> later via ->xlate, ioapic_xlate() => io_apic_setup_irq_pin() =>
-> alloc_irq_and_cfg_at() calls irq_set_chip_data() on demand.
-> 
-> [0] arch/x86/kernel/apic/io_apic.c
+On Mon, 30 Jan 2012, Autif Khan wrote:
 
-Ugh.  This isn't easy.  The legacy mapping really needs all the
-irq_desc structures to be allocated.  You could call irq_alloc_descs()
-before calling irq_domain_add_legacy(), but that causes all the
-irq_descs to be allocated (regardless of whether they are used), and
-it will break io_apic_setup_irq_pin() which also wants to call
-irq_alloc_desc().
+> 
+> Signed-off-by: Autif Khan <autfk@gmail.com>
 
-Ideally irq_domain support would be rolled directly into ioapic.
-That's more work though, and a greater change of breaking x86 on
-non-embedded.  Looking at the ioapic code, it seems to me that it
-could be simplified quite a bit by switching to irq_domain instead of
-using the custom irq_cfg linked list.  Faster too since it could use
-the irq_data->hwirq to go from linux irq to the hw irq number.  It
-doesn't look like it would be even that hard, but of course the devil
-is in the details and I don't have sufficient time right now to dig
-into the guts of the ioapic.  Maybe after connect, but it would help
-if you can find time to look at it.
+Yeah, looks OK.
 
-If integrated into the ioapic code, then the irq_domain linear map is
-probably the type of irq_domain to use.
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
-g.
+
+> ---
+>  drivers/staging/rts5139/ms.h               |    4 ++--
+>  drivers/staging/rts5139/rts51x_chip.h      |    6 +++---
+>  drivers/staging/rts5139/rts51x_fop.h       |    2 +-
+>  drivers/staging/rts5139/rts51x_transport.c |    2 +-
+>  drivers/staging/rts5139/rts51x_transport.h |    2 +-
+>  drivers/staging/rts5139/sd_cprm.c          |    2 +-
+>  6 files changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/staging/rts5139/ms.h b/drivers/staging/rts5139/ms.h
+> index f9d46d2..3ce1dc9 100644
+> --- a/drivers/staging/rts5139/ms.h
+> +++ b/drivers/staging/rts5139/ms.h
+> @@ -249,9 +249,9 @@ int ms_delay_write(struct rts51x_chip *chip);
+>  #ifdef SUPPORT_MAGIC_GATE
+>  
+>  int ms_switch_clock(struct rts51x_chip *chip);
+> -int ms_write_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 * data,
+> +int ms_write_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 *data,
+>  		   int data_len);
+> -int ms_read_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 * data,
+> +int ms_read_bytes(struct rts51x_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 *data,
+>  		  int data_len);
+>  int ms_set_rw_reg_addr(struct rts51x_chip *chip, u8 read_start, u8 read_cnt,
+>  		       u8 write_start, u8 write_cnt);
+> diff --git a/drivers/staging/rts5139/rts51x_chip.h b/drivers/staging/rts5139/rts51x_chip.h
+> index 321ece7..13fc2a4 100644
+> --- a/drivers/staging/rts5139/rts51x_chip.h
+> +++ b/drivers/staging/rts5139/rts51x_chip.h
+> @@ -857,12 +857,12 @@ static inline u8 *rts51x_get_rsp_data(struct rts51x_chip *chip)
+>  	return chip->rsp_buf;
+>  }
+>  
+> -int rts51x_get_card_status(struct rts51x_chip *chip, u16 * status);
+> +int rts51x_get_card_status(struct rts51x_chip *chip, u16 *status);
+>  int rts51x_write_register(struct rts51x_chip *chip, u16 addr, u8 mask, u8 data);
+> -int rts51x_read_register(struct rts51x_chip *chip, u16 addr, u8 * data);
+> +int rts51x_read_register(struct rts51x_chip *chip, u16 addr, u8 *data);
+>  int rts51x_ep0_write_register(struct rts51x_chip *chip, u16 addr, u8 mask,
+>  			      u8 data);
+> -int rts51x_ep0_read_register(struct rts51x_chip *chip, u16 addr, u8 * data);
+> +int rts51x_ep0_read_register(struct rts51x_chip *chip, u16 addr, u8 *data);
+>  int rts51x_seq_write_register(struct rts51x_chip *chip, u16 addr, u16 len,
+>  			      u8 *data);
+>  int rts51x_seq_read_register(struct rts51x_chip *chip, u16 addr, u16 len,
+> diff --git a/drivers/staging/rts5139/rts51x_fop.h b/drivers/staging/rts5139/rts51x_fop.h
+> index 0453f57..94d75f0 100644
+> --- a/drivers/staging/rts5139/rts51x_fop.h
+> +++ b/drivers/staging/rts5139/rts51x_fop.h
+> @@ -48,7 +48,7 @@ int rts51x_open(struct inode *inode, struct file *filp);
+>  int rts51x_release(struct inode *inode, struct file *filp);
+>  ssize_t rts51x_read(struct file *filp, char __user *buf, size_t count,
+>  		    loff_t *f_pos);
+> -ssize_t rts51x_write(struct file *filp, const char __user * buf, size_t count,
+> +ssize_t rts51x_write(struct file *filp, const char __user *buf, size_t count,
+>  		     loff_t *f_pos);
+>  #if 0 /* LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 36) */
+>  int rts51x_ioctl(struct inode *inode, struct file *filp, unsigned int cmd,
+> diff --git a/drivers/staging/rts5139/rts51x_transport.c b/drivers/staging/rts5139/rts51x_transport.c
+> index e11467a..da9c83b 100644
+> --- a/drivers/staging/rts5139/rts51x_transport.c
+> +++ b/drivers/staging/rts5139/rts51x_transport.c
+> @@ -883,7 +883,7 @@ int rts51x_transfer_data_partial(struct rts51x_chip *chip, unsigned int pipe,
+>  	return result;
+>  }
+>  
+> -int rts51x_get_epc_status(struct rts51x_chip *chip, u16 * status)
+> +int rts51x_get_epc_status(struct rts51x_chip *chip, u16 *status)
+>  {
+>  	unsigned int pipe = RCV_INTR_PIPE(chip);
+>  	struct usb_host_endpoint *ep;
+> diff --git a/drivers/staging/rts5139/rts51x_transport.h b/drivers/staging/rts5139/rts51x_transport.h
+> index 8464c48..9dd556e 100644
+> --- a/drivers/staging/rts5139/rts51x_transport.h
+> +++ b/drivers/staging/rts5139/rts51x_transport.h
+> @@ -73,7 +73,7 @@ int rts51x_start_epc_transfer(struct rts51x_chip *chip);
+>  void rts51x_cancel_epc_transfer(struct rts51x_chip *chip);
+>  #endif
+>  
+> -int rts51x_get_epc_status(struct rts51x_chip *chip, u16 * status);
+> +int rts51x_get_epc_status(struct rts51x_chip *chip, u16 *status);
+>  void rts51x_invoke_transport(struct scsi_cmnd *srb, struct rts51x_chip *chip);
+>  
+>  #endif /* __RTS51X_TRANSPORT_H */
+> diff --git a/drivers/staging/rts5139/sd_cprm.c b/drivers/staging/rts5139/sd_cprm.c
+> index 407cd43..d5969d9 100644
+> --- a/drivers/staging/rts5139/sd_cprm.c
+> +++ b/drivers/staging/rts5139/sd_cprm.c
+> @@ -233,7 +233,7 @@ RTY_SEND_CMD:
+>  	return STATUS_SUCCESS;
+>  }
+>  
+> -int ext_sd_get_rsp(struct rts51x_chip *chip, int len, u8 * rsp, u8 rsp_type)
+> +int ext_sd_get_rsp(struct rts51x_chip *chip, int len, u8 *rsp, u8 rsp_type)
+>  {
+>  	int retval, rsp_len;
+>  	u16 reg_addr;
+> 
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
