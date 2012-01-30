@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab2A3Qit (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 11:38:49 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:34375 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753272Ab2A3Qir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 11:38:47 -0500
-Date: Mon, 30 Jan 2012 08:38:43 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: Re: Regression in skge that started around acb42a3 (so past
- v3.3-rc1)
-Message-ID: <20120130083843.160ffe5e@nehalam.linuxnetplumber.net>
-In-Reply-To: <20120130155816.GA1400@phenom.dumpdata.com>
-References: <20120130155816.GA1400@phenom.dumpdata.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+	id S1753813Ab2A3Qjo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 11:39:44 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:50480 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab2A3Qjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 11:39:43 -0500
+Date: Mon, 30 Jan 2012 11:39:25 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: checkpatch.pl: WxV false positive
+Message-ID: <20120130113925.5830f89d@v0nbox>
+In-Reply-To: <20120130111817.GA18810@localhost>
+References: <20120122214834.6414592c@lenov0n>
+	<20120130111817.GA18810@localhost>
+Organization: Savoir-faire Linux Inc.
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; i386-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -24,69 +25,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jan 2012 10:58:16 -0500
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+Hi Andy,
 
-> I hadn't done any git bisection yet, but with acb42a3 I started getting this:
+On Mon, 30 Jan 2012 11:18:17 +0000,
+Andy Whitcroft <apw@canonical.com> wrote:
+
+> On Sun, Jan 22, 2012 at 09:48:34PM -0500, Vivien Didelot wrote:
 > 
-> (and only on i686 - x86_64 does not show these):
+> > In the code below, checkpatch thinks that the asterisk is a
+> > multiplication, so it is complaining about coding style.
+> > 
+> >     ERROR: need consistent spacing around '*' (ctx:WxV)
+> >     #304: FILE: x86/platform/ts5500/ts5500_adc.c:304:
+> >     +	.attrs = (struct attribute *[]) {
 > 
-> (This is with Xen, the other one is without)
-> [   28.602121] eth2: no IPv6 routers present
-> [   70.457712] eth2: hw csum failure.
-> [   70.458695] Pid: 0, comm: swapper/0 Not tainted 3.3.0-rc1-00287-gacb42a3 #1
-> [   70.
-> [   70.458695]  [<c140942b>] __skb_checksum_complete+0xb/0x10
-> [   70.458695]  [<c148e3b0>] nf_ip_checksum+0x60/0x120
-> [   70.458695]  [<c143ee6b>] udp_error+0xbb/0x1f0
-> [   70.458695]  [<c103c1e4>] ? check_events+0x8/0xc
-> [   70.458695]  [<c103c1db>] ? xen_restore_fl_direct_reloc+0x4/0x4
-> [   70.458695]  [<c11497ee>] ? put_cpu_partial+0x9e/0xb0
-> [   70.458695]  [<c143edb0>] ? udp_pkt_to_tuple+0x60/0x60
-> [   70.458695]  [<c143a2b6>] nf_conntrack_in+0xc6/0x5c0
-> [   70.458695]  [<c14751f8>] ? __udp4_lib_rcv+0x428/0x630
-> [   70.458695]  [<c1149dd0>] ? kfree+0xf0/0x120
-> [   70.458695]  [<c1405b60>] ? skb_release_data+0x90/0xb0
-> [   70.458695]  [<c1405b60>] ? skb_release_data+0x90/0xb0
-> [   70.458695]  [<c14057d8>] ? __kfree_skb+0x38/0x90
-> [   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
-> [   70.458695]  [<c148f41e>] ipv4_conntrack_in+0x1e/0x30
-> [   70.458695]  [<c14360d3>] nf_iterate+0x63/0x90
-> [   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
-> [   70.458695]  [<c1436292>] nf_hook_slow+0x62/0x140
-> [   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
-> [   70.458695]  [<c144dbb5>] ip_rcv+0x235/0x310
-> [   70.458695]  [<c144d510>] ? inet_del_protocol+0x30/0x30
-> [   70.458695]  [<c1412c36>] __netif_receive_skb+0x1d6/0x550
-> [   70.458695]  [<c147c6a9>] ? inet_gro_receive+0x59/0x1f0
-> [   70.458695]  [<c1413312>] netif_receive_skb+0x22/0x90
-> [   70.458695]  [<c1413487>] napi_skb_finish+0x37/0x50
-> [   70.458695]  [<c14139e3>] napi_gro_receive+0xe3/0xf0
-> [   70.458695]  [<c12ff4c0>] ? xen_swiotlb_map_sg+0x20/0x20
-> [   70.458695]  [<c12ff4d9>] ? xen_swiotlb_unmap_page+0x19/0x20
-> [   70.458695]  [<f7983d6c>] skge_poll+0x34c/0x6f4 [skge]
-> [   70.458695]  [<c141431a>] net_rx_action+0xfa/0x2a0
-> [   70.458695]  [<c107cecf>] __do_softirq+0x9f/0x210
-> [   70.458695]  [<c107ce30>] ? irq_exit+0xd0/0xd0
-> [   70.458695]  <IRQ>  [<c107ce15>] ? irq_exit+0xb5/0xd0
+> C types are the pits.  How does the version below handle for you:
+> 
+>     http://people.canonical.com/~apw/checkpatch/checkpatch-next.pl
+> 
 
-The skge driver uses hardware receive checksum where it computes the sum
-of the packet (but does not check it). This kind of problem happens when some
-part of the call chain above it updates the packet but does not update the checksum.
-A fix like the following is presumably needed for some part of this path.
+This version works for me!
 
-commit fa2da8cdae1dd64f78fc915ca1d1a4a93c71e7cb
-Author: stephen hemminger <shemminger@vyatta.com>
-Date:   Tue Nov 15 08:09:14 2011 +0000
+> Relative patch below.
+> 
+> -apw
+> 
+> commit f8a73045dcaac70f9be770cca06f21c762a13878
+> Author: Andy Whitcroft <apw@canonical.com>
+> Date:   Sun Jan 29 21:46:04 2012 +0000
+> 
+>     checkpatch: add [] to type extensions
+>     
+>     Add [] to a type extensions.  Fixes false positives on:
+>     
+>         .attrs = (struct attribute *[]) {
+>     
+>     Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index d1dd544..64de1bd 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -323,7 +323,7 @@ sub build_types {
+>  		  }x;
+>  	$Type	= qr{
+>  			$NonptrType
+> -			(?:[\s\*]+\s*const|[\s\*]+|(?:\s*\[\s*\])+)?
+> +
+> (?:(?:\s|\*|\[\])+\s*const|(?:\s|\*|\[\])+|(?:\s*\[\s*\])+)?
+> (?:\s+$Inline|\s+$Modifier)* }x;
+>  	$Declare	= qr{(?:$Storage\s+)?$Type};
 
-    bridge: correct IPv6 checksum after pull
-    
-    Bridge multicast snooping of ICMPv6 would incorrectly report a checksum prob
-    when used with Ethernet devices like sky2 that use CHECKSUM_COMPLETE.
-    When bytes are removed from skb, the computed checksum needs to be adjusted.
-    
-    Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-    Tested-by: Martin Volf <martin.volf.42@gmail.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+Thanks,
+Vivien
 
-
+-- 
+Vivien Didelot
+Savoir-faire Linux Inc.
+Tel: (514) 276-5468 #149
