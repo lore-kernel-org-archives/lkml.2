@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab2A3UFE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 15:05:04 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:63041 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab2A3UFB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 15:05:01 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH 1/3] lib: add NO_GENERIC_PCI_IOPORT_MAP
-Date: Mon, 30 Jan 2012 20:04:32 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <jmorris@namei.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Michael Witten <mfwitten@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arch@vger.kernel.org
-References: <cover.1327877053.git.mst@redhat.com> <201201301551.46907.arnd@arndb.de> <20120130161818.GA9345@redhat.com>
-In-Reply-To: <20120130161818.GA9345@redhat.com>
+	id S1753379Ab2A3UJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 15:09:20 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49109 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753179Ab2A3UJT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 15:09:19 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201302004.33083.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZNS912xatw+iD7ZLS287Q+NKxYf+kk+kMcCGVS81KSq
- wi9DOEBYVVloDKXEFGDv0RhA1yuMgB3Ot0m75Y8aynC/BPnIlQ
- yrDEqVE8kbqoV+ZbBijJ5vbhJ67xHzebv+Eoen9iODbyQv/Pak
- hMWqI6Yzt9tTZU/8owt/TQ2bYuD9KgrHJU6G0oXnt5sB/8cKkR
- rbzJb2EMH7D5Omd9fVVvZo9Uhep7m7Yw6fJvtO+fb9N+0gc41n
- AtPE5Fg4Y1s9rJYq6dYwaUl9rZOaah/sVWQbCEHxhftG+1D5Bx
- GIC93MoyUw2RIC3xnUiFwNPQEGRG4YQ8byVanFX+lr66athX3w
- 2HohRC9RBsKHDtIFneTI=
+In-Reply-To: <20120130200432.GC5797@infradead.org>
+References: <20120113144731.GA5458@quad>
+	<20120113165315.GA24387@infradead.org>
+	<CABPqkBTe1uqiLm02fijYE2bwF=rWWu=V0mjZQbEzW0TUKa4-+Q@mail.gmail.com>
+	<CABPqkBS50jYOHepmAqOzGYY8m+4SCJQuhrMV2yLXRYfdFpE70g@mail.gmail.com>
+	<20120130190008.GA5797@infradead.org>
+	<CABPqkBSzgc7WSbuS4L1gtCf+3u_q3fx002byArsMjKSxd5zw-g@mail.gmail.com>
+	<20120130200432.GC5797@infradead.org>
+Date: Mon, 30 Jan 2012 21:09:17 +0100
+Message-ID: <CABPqkBQu=82igQV2O_UmJsuDOHh8_VyRQCUGmrGqTBvnEdyN+Q@mail.gmail.com>
+Subject: Re: [PATCH] perf: fix broken perf inject -b
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        robert.richter@amd.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 January 2012, Michael S. Tsirkin wrote:
-> > 
-> > +/*
-> > + * Create a virtual mapping cookie for a port on a given PCI device.
-> > + * Do not call this directly, it exists to make it easier for architectures
-> > + * to override.
-> > + */
-> > +#ifdef CONFIG_NO_GENERIC_PCI_IOPORT_MAP
-> > +extern void __iomem *__pci_ioport_map(struct pci_dev *dev, unsigned long port,
-> > +                                     unsigned int nr);
-> > +#else
-> > +static inline void __iomem *__pci_ioport_map(struct pci_dev *dev,
-> > +                              unsigned long port, unsigned int nr)
-> > +{
-> > +       return ioport_map(port, nr);
-> > +}
-> > +#endif
-> > 
-> >       Arnd
-> 
-> It would be nicer in that it would
-> make the kernel a bit smaller for generic architectures
-> but this would need to go into a separate header:
-> it depends on io.h and io.h depends on pci_iomap.h.
-
-Adding extra dependencies is not good here, I agree.
-Maybe  a better solution is to use a macro instead of an inline
-function then:
-
-#define  __pci_ioport_map(dev, port, nr) ioport_map(port, nr)
-
-In general, macros should be avoided, but I think it's the
-best tradeoff in this case.
-
-	Arnd
+On Mon, Jan 30, 2012 at 9:04 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Mon, Jan 30, 2012 at 08:53:26PM +0100, Stephane Eranian escreveu:
+>> On Mon, Jan 30, 2012 at 8:00 PM, Arnaldo Carvalho de Melo
+>> <acme@redhat.com> wrote:
+>> >
+>> > Em Mon, Jan 16, 2012 at 07:53:28PM +0100, Stephane Eranian escreveu:
+>> > > On Fri, Jan 13, 2012 at 5:54 PM, Stephane Eranian <eranian@google.com> wrote:
+>> > > > On Fri, Jan 13, 2012 at 5:53 PM, Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+>> > > >> Em Fri, Jan 13, 2012 at 03:47:31PM +0100, Stephane Eranian escreveu:
+>> > > >>> perf inject -b was broken. It would not inject any build_ids
+>> > > >>> into the stream. Furthermore, it would strip samples from the
+>> > > >>> stream.
+>> > <SNIP>
+>> > > >>> @@ -173,6 +178,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+>> > > >>>               goto repipe;
+>> > > >>>       }
+>> > > >>> +     machine->pid = event->ip.pid;
+>> >
+>> > > I noticed that this statement conflicts with perf buildid-list (which
+>> > > I am also fixing for pipe mode).
+>> >
+>> > > I don't quite understand why, though.
+>> >
+>> > Have you reached any conclusion about this problem? I haven't looked at
+>> > it in detail, could you please elaborate more?
+>> >
+>>
+>> I ended up removing it. But I am not sure this is correct.
+>> Is the pid used in any way when processing buildids?
+>
+> I can't think of any.
+>
+> The same DSO could conceivably be present in the virtual machine, the
+> host, and in the workstation used for perf report.  We just use the
+> build-id in the perf.data file to find the right symtab.
+>
+Right, so I don't know why it's there...
