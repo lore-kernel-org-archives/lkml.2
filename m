@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab2AaIv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:51:29 -0500
-Received: from MAIL.13thfloor.at ([213.145.232.33]:35454 "EHLO
-	MAIL.13thfloor.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880Ab2AaIu7 (ORCPT
+	id S1753022Ab2AaIxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:53:21 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35352 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab2AaIxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:50:59 -0500
-Date: Tue, 31 Jan 2012 09:50:57 +0100
-From: Herbert Poetzl <herbert@13thfloor.at>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        Wu Fengguang <wfg@linux.intel.com>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-Message-ID: <20120131085057.GS29272@MAIL.13thfloor.at>
-Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
-	Shaohua Li <shaohua.li@intel.com>,
-	lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-	Wu Fengguang <wfg@linux.intel.com>
-References: <1327996780.21268.42.camel@sli10-conroe> <1327999722.2422.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	Tue, 31 Jan 2012 03:53:19 -0500
+Date: Tue, 31 Jan 2012 11:53:17 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] HPFS: remove PRINTK() macro
+Message-ID: <20120131085313.GC22039@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1327999722.2422.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Mutt/1.5.11
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090204.4F27ABF6.0055,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 09:48:42AM +0100, Eric Dumazet wrote:
-> Le mardi 31 janvier 2012 à 15:59 +0800, Shaohua Li a écrit :
->> Herbert Poetzl reported a performance regression since 2.6.39. The test
->> is a simple dd read, but with big block size. The reason is:
+The PRINTK() macro isn't really used.  Let's just remove it because it
+is ugly and out of date.
 
->> T1: ra (A, A+128k), (A+128k, A+256k)
->> T2: lock_page for page A, submit the 256k
->> T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
->> because of plug and there isn't any lock_page till we hit page A+256k
->> because all pages from A to A+256k is in memory
->> T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
->> submitted again.
->> T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
->> waitting for (A+256k, A+512k) finish.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
->> There is no request to disk in T3 and T4, so readahead pipeline breaks.
-
->> We really don't need block plug for generic_file_aio_read() for buffered
->> I/O. The readahead already has plug and has fine grained control when I/O
->> should be submitted. Deleting plug for buffered I/O fixes the regression.
-
->> One side effect is plug makes the request size 256k, the size is 128k
->> without it. This is because default ra size is 128k and not a reason we
->> need plug here.
-
->> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
->> Tested-by: Herbert Poetzl <herbert@13thfloor.at>
->> Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-
-> Hmm, this is not exactly the patch I tested from Wu Fengguang 
-
-> I'll test this one before adding my "Tested-by: ..."
-
-second that
-
->> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-
->> diff --git a/mm/filemap.c b/mm/filemap.c
->> index 97f49ed..b662757 100644
->> --- a/mm/filemap.c
->> +++ b/mm/filemap.c
->> @@ -1400,15 +1400,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
->>  	unsigned long seg = 0;
->>  	size_t count;
->>  	loff_t *ppos = &iocb->ki_pos;
->> -	struct blk_plug plug;
-
->>  	count = 0;
->>  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
->>  	if (retval)
->>  		return retval;
-
->> -	blk_start_plug(&plug);
->> -
->>  	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
->>  	if (filp->f_flags & O_DIRECT) {
->>  		loff_t size;
->> @@ -1424,8 +1421,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
->>  			retval = filemap_write_and_wait_range(mapping, pos,
->>  					pos + iov_length(iov, nr_segs) - 1);
->>  			if (!retval) {
->> +				struct blk_plug plug;
->> +
->> +				blk_start_plug(&plug);
-
-> This part was not on the tested patch yesterday.
-
-yep, will test this one tonight ...
-
->>  				retval = mapping->a_ops->direct_IO(READ, iocb,
->>  							iov, pos, nr_segs);
->> +				blk_finish_plug(&plug);
->>  			}
->>  			if (retval > 0) {
->>  				*ppos = pos + retval;
->> @@ -1481,7 +1482,6 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
->>  			break;
->>  	}
->>  out:
->> -	blk_finish_plug(&plug);
->>  	return retval;
->>  }
->>  EXPORT_SYMBOL(generic_file_aio_read);
-
+diff --git a/fs/hpfs/buffer.c b/fs/hpfs/buffer.c
+index 9ecde27..f49d149 100644
+--- a/fs/hpfs/buffer.c
++++ b/fs/hpfs/buffer.c
+@@ -156,7 +156,6 @@ void hpfs_brelse4(struct quad_buffer_head *qbh)
+ 
+ void hpfs_mark_4buffers_dirty(struct quad_buffer_head *qbh)
+ {
+-	PRINTK(("hpfs_mark_4buffers_dirty\n"));
+ 	memcpy(qbh->bh[0]->b_data, qbh->data, 512);
+ 	memcpy(qbh->bh[1]->b_data, qbh->data + 512, 512);
+ 	memcpy(qbh->bh[2]->b_data, qbh->data + 2 * 512, 512);
+diff --git a/fs/hpfs/hpfs_fn.h b/fs/hpfs/hpfs_fn.h
+index de94617..6d2d500 100644
+--- a/fs/hpfs/hpfs_fn.h
++++ b/fs/hpfs/hpfs_fn.h
+@@ -35,13 +35,6 @@
+ 
+ #define CHKCOND(x,y) if (!(x)) printk y
+ 
+-#ifdef DBG
+-#define PRINTK(x) printk x
+-#else
+-#undef PRINTK
+-#define PRINTK(x)
+-#endif
+-
+ struct hpfs_inode_info {
+ 	loff_t mmu_private;
+ 	ino_t i_parent_dir;	/* (directories) gives fnode of parent dir */
