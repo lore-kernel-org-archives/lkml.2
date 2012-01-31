@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab2AaLIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:08:21 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:4122 "EHLO relay.sw.ru"
+	id S1753092Ab2AaLIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:08:13 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:14664 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754138Ab2AaLIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:08:17 -0500
-Subject: [PATCH 4/6] LockD: make nlm hosts network namespace aware
+	id S1752695Ab2AaLIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 06:08:09 -0500
+Subject: [PATCH 3/6] Lockd: per-net up and down routines introduced
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Tue, 31 Jan 2012 15:08:13 +0400
-Message-ID: <20120131110813.14364.89303.stgit@localhost6.localdomain6>
+Date: Tue, 31 Jan 2012 15:08:05 +0400
+Message-ID: <20120131110805.14364.95729.stgit@localhost6.localdomain6>
 In-Reply-To: <20120131105712.14364.88911.stgit@localhost6.localdomain6>
 References: <20120131105712.14364.88911.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -25,167 +25,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This object depends on RPC client, and thus on network namespace.
-So let's make it's allocation and lookup in network namespace context.
+This patch introduces per-net Lockd initialization and destruction routines.
+The logic is the same as in global Lockd up and down routines. Probably the
+solution is not the best one. But at least it looks clear.
+So per-net "up" routine are called only in case of lockd is running already. If
+per-net resources are not allocated yet, then service is being registered with
+local portmapper and lockd sockets created.
+Per-net "down" routine is called on every lockd_down() call in case of global
+users counter is not zero.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/lockd/clntlock.c         |    3 ++-
- fs/lockd/host.c             |   16 ++++++++++++++--
- fs/nfs/client.c             |    1 +
- include/linux/lockd/bind.h  |    1 +
- include/linux/lockd/lockd.h |    4 +++-
- 5 files changed, 21 insertions(+), 4 deletions(-)
+ fs/lockd/svc.c             |   47 ++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/sunrpc/svc.h |    2 ++
+ net/sunrpc/svc.c           |    3 ++-
+ 3 files changed, 49 insertions(+), 3 deletions(-)
 
-diff --git a/fs/lockd/clntlock.c b/fs/lockd/clntlock.c
-index 8d4ea83..ba1dc2e 100644
---- a/fs/lockd/clntlock.c
-+++ b/fs/lockd/clntlock.c
-@@ -62,7 +62,8 @@ struct nlm_host *nlmclnt_init(const struct nlmclnt_initdata *nlm_init)
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index b461733..86e17e8 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -251,6 +251,45 @@ out_err:
+ 	return err;
+ }
  
- 	host = nlmclnt_lookup_host(nlm_init->address, nlm_init->addrlen,
- 				   nlm_init->protocol, nlm_version,
--				   nlm_init->hostname, nlm_init->noresvport);
-+				   nlm_init->hostname, nlm_init->noresvport,
-+				   nlm_init->net);
- 	if (host == NULL) {
- 		lockd_down();
- 		return ERR_PTR(-ENOLCK);
-diff --git a/fs/lockd/host.c b/fs/lockd/host.c
-index 6f29836..9ebd91d 100644
---- a/fs/lockd/host.c
-+++ b/fs/lockd/host.c
-@@ -17,6 +17,8 @@
- #include <linux/lockd/lockd.h>
- #include <linux/mutex.h>
- 
-+#include <linux/sunrpc/svc_xprt.h>
++static int lockd_up_net(struct net *net)
++{
++	struct lockd_net *ln = net_generic(net, lockd_net_id);
++	struct svc_serv *serv = nlmsvc_rqst->rq_server;
++	int error;
 +
- #include <net/ipv6.h>
- 
- #define NLMDBG_FACILITY		NLMDBG_HOSTCACHE
-@@ -54,6 +56,7 @@ struct nlm_lookup_host_info {
- 	const char		*hostname;	/* remote's hostname */
- 	const size_t		hostname_len;	/* it's length */
- 	const int		noresvport;	/* use non-priv port */
-+	struct net		*net;		/* network namespace to bind */
- };
- 
++	if (ln->nlmsvc_users)
++		return 0;
++
++	error = svc_rpcb_setup(serv, net);
++	if (error)
++		goto err_rpcb;
++
++	error = make_socks(serv, net);
++	if (error < 0)
++		goto err_socks;
++	return 0;
++
++err_socks:
++	svc_rpcb_cleanup(serv, net);
++err_rpcb:
++	return error;
++}
++
++static void lockd_down_net(struct net *net)
++{
++	struct lockd_net *ln = net_generic(net, lockd_net_id);
++	struct svc_serv *serv = nlmsvc_rqst->rq_server;
++
++	if (ln->nlmsvc_users) {
++		if (--ln->nlmsvc_users == 0)
++			svc_shutdown_net(serv, net);
++	} else {
++		printk(KERN_ERR "lockd_down_net: no users! task=%p, net=%p\n",
++				nlmsvc_task, net);
++		BUG();
++	}
++}
++
  /*
-@@ -155,6 +158,7 @@ static struct nlm_host *nlm_alloc_host(struct nlm_lookup_host_info *ni,
- 	INIT_LIST_HEAD(&host->h_reclaim);
- 	host->h_nsmhandle  = nsm;
- 	host->h_addrbuf    = nsm->sm_addrbuf;
-+	host->net	   = ni->net;
+  * Bring up the lockd process if it's not already up.
+  */
+@@ -264,8 +303,10 @@ int lockd_up(void)
+ 	/*
+ 	 * Check whether we're already up and running.
+ 	 */
+-	if (nlmsvc_rqst)
++	if (nlmsvc_rqst) {
++		error = lockd_up_net(net);
+ 		goto out;
++	}
  
- out:
- 	return host;
-@@ -206,7 +210,8 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
- 				     const unsigned short protocol,
- 				     const u32 version,
- 				     const char *hostname,
--				     int noresvport)
-+				     int noresvport,
-+				     struct net *net)
+ 	/*
+ 	 * Sanity check: if there's no pid,
+@@ -338,8 +379,10 @@ lockd_down(void)
  {
- 	struct nlm_lookup_host_info ni = {
- 		.server		= 0,
-@@ -217,6 +222,7 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
- 		.hostname	= hostname,
- 		.hostname_len	= strlen(hostname),
- 		.noresvport	= noresvport,
-+		.net		= net,
- 	};
- 	struct hlist_head *chain;
- 	struct hlist_node *pos;
-@@ -231,6 +237,8 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
- 
- 	chain = &nlm_client_hosts[nlm_hash_address(sap)];
- 	hlist_for_each_entry(host, pos, chain, h_hash) {
-+		if (host->net != net)
-+			continue;
- 		if (!rpc_cmp_addr(nlm_addr(host), sap))
- 			continue;
- 
-@@ -318,6 +326,7 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
- 	struct nsm_handle *nsm = NULL;
- 	struct sockaddr *src_sap = svc_daddr(rqstp);
- 	size_t src_len = rqstp->rq_daddrlen;
-+	struct net *net = rqstp->rq_xprt->xpt_net;
- 	struct nlm_lookup_host_info ni = {
- 		.server		= 1,
- 		.sap		= svc_addr(rqstp),
-@@ -326,6 +335,7 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
- 		.version	= rqstp->rq_vers,
- 		.hostname	= hostname,
- 		.hostname_len	= hostname_len,
-+		.net		= net,
- 	};
- 
- 	dprintk("lockd: %s(host='%*s', vers=%u, proto=%s)\n", __func__,
-@@ -339,6 +349,8 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
- 
- 	chain = &nlm_server_hosts[nlm_hash_address(ni.sap)];
- 	hlist_for_each_entry(host, pos, chain, h_hash) {
-+		if (host->net != net)
-+			continue;
- 		if (!rpc_cmp_addr(nlm_addr(host), ni.sap))
- 			continue;
- 
-@@ -431,7 +443,7 @@ nlm_bind_host(struct nlm_host *host)
- 			.to_retries	= 5U,
- 		};
- 		struct rpc_create_args args = {
--			.net		= &init_net,
-+			.net		= host->net,
- 			.protocol	= host->h_proto,
- 			.address	= nlm_addr(host),
- 			.addrsize	= host->h_addrlen,
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 2328dcb..1a5cd49 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -707,6 +707,7 @@ static int nfs_start_lockd(struct nfs_server *server)
- 		.nfs_version	= clp->rpc_ops->version,
- 		.noresvport	= server->flags & NFS_MOUNT_NORESVPORT ?
- 					1 : 0,
-+		.net		= clp->net,
- 	};
- 
- 	if (nlm_init.nfs_version > 3)
-diff --git a/include/linux/lockd/bind.h b/include/linux/lockd/bind.h
-index fbc48f8..11a966e 100644
---- a/include/linux/lockd/bind.h
-+++ b/include/linux/lockd/bind.h
-@@ -42,6 +42,7 @@ struct nlmclnt_initdata {
- 	unsigned short		protocol;
- 	u32			nfs_version;
- 	int			noresvport;
-+	struct net		*net;
- };
- 
+ 	mutex_lock(&nlmsvc_mutex);
+ 	if (nlmsvc_users) {
+-		if (--nlmsvc_users)
++		if (--nlmsvc_users) {
++			lockd_down_net(current->nsproxy->net_ns);
+ 			goto out;
++		}
+ 	} else {
+ 		printk(KERN_ERR "lockd_down: no users! task=%p\n",
+ 			nlmsvc_task);
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 7b65495..51b29ac 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -414,6 +414,7 @@ struct svc_procedure {
  /*
-diff --git a/include/linux/lockd/lockd.h b/include/linux/lockd/lockd.h
-index 8949167..94b3d13 100644
---- a/include/linux/lockd/lockd.h
-+++ b/include/linux/lockd/lockd.h
-@@ -67,6 +67,7 @@ struct nlm_host {
- 	struct list_head	h_reclaim;	/* Locks in RECLAIM state */
- 	struct nsm_handle	*h_nsmhandle;	/* NSM status handle */
- 	char			*h_addrbuf;	/* address eyecatcher */
-+	struct net		*net;		/* host net */
- };
+  * Function prototypes.
+  */
++int svc_rpcb_setup(struct svc_serv *serv, struct net *net);
+ void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
+ struct svc_serv *svc_create(struct svc_program *, unsigned int,
+ 			    void (*shutdown)(struct svc_serv *, struct net *net));
+@@ -426,6 +427,7 @@ struct svc_serv *  svc_create_pooled(struct svc_program *, unsigned int,
+ int		   svc_set_num_threads(struct svc_serv *, struct svc_pool *, int);
+ int		   svc_pool_stats_open(struct svc_serv *serv, struct file *file);
+ void		   svc_destroy(struct svc_serv *);
++void		   svc_shutdown_net(struct svc_serv *, struct net *);
+ int		   svc_process(struct svc_rqst *);
+ int		   bc_svc_process(struct svc_serv *, struct rpc_rqst *,
+ 			struct svc_rqst *);
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 78abac4..4153846 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -369,7 +369,7 @@ svc_pool_for_cpu(struct svc_serv *serv, int cpu)
+ 	return &serv->sv_pools[pidx % serv->sv_nrpools];
+ }
  
- /*
-@@ -222,7 +223,8 @@ struct nlm_host  *nlmclnt_lookup_host(const struct sockaddr *sap,
- 					const unsigned short protocol,
- 					const u32 version,
- 					const char *hostname,
--					int noresvport);
-+					int noresvport,
-+					struct net *net);
- void		  nlmclnt_release_host(struct nlm_host *);
- struct nlm_host  *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
- 					const char *hostname,
+-static int svc_rpcb_setup(struct svc_serv *serv, struct net *net)
++int svc_rpcb_setup(struct svc_serv *serv, struct net *net)
+ {
+ 	int err;
+ 
+@@ -381,6 +381,7 @@ static int svc_rpcb_setup(struct svc_serv *serv, struct net *net)
+ 	svc_unregister(serv, net);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(svc_rpcb_setup);
+ 
+ void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net)
+ {
 
