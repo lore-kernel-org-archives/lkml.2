@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2AaJht (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 04:37:49 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51705 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab2AaJhr (ORCPT
+	id S1753134Ab2AaJju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 04:39:50 -0500
+Received: from mta3.uth.tmc.edu ([129.106.148.58]:31665 "EHLO mta3.uth.tmc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752307Ab2AaJjs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 04:37:47 -0500
-From: Chinmay V S <chinmay.v.s@pathpartnertech.com>
-To: linux-kernel@vger.kernel.org
-Cc: cvs268@gmail.com, tglx@linutronix.de, sebastian@breakpoint.cc,
-        arjan@linux.intel.com, jeff.chua.linux@gmail.com,
-        Chinmay V S <chinmay.v.s@pathpartnertech.com>
-Subject: [RFC] [PATCH] [timer] Optimise apply_slack() for size and speed.
-Date: Tue, 31 Jan 2012 15:07:32 +0530
-Message-Id: <1328002652-7700-1-git-send-email-chinmay.v.s@pathpartnertech.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 31 Jan 2012 04:39:48 -0500
+X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Jan 2012 04:39:48 EST
+X-Sendergroup: Exchange_Sender_Group
+X-SBRS: 2.9
+X-IronPort-AV: E=Sophos;i="4.71,595,1320645600"; 
+   d="scan'208";a="117565125"
+From: "Ali, Vaseem" <Vaseem.Ali@uth.tmc.edu>
+To: "info@undp.co.uk" <info@undp.co.uk>
+Date: Tue, 31 Jan 2012 03:29:57 -0600
+Subject: 
+Thread-Index: AQHM3/rlvOxOGr6jCEOx+fIgfbLzDA==
+Message-ID: <EFB70DA1F305E34A81EFE369D821F5EC0EBFD9B858@UTHCMS3.uthouston.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To apply proper slack, the original algorithm used to prepare a mask and
-then apply the mask to obtain the appropriately rounded-off absolute
-time the timer expires.
+You have been selected by the UN for a Humanitarian Development Cash Grant
+program to enhance and develop the standard of living geared towards poverty
+eradication as targeted by the year 2020. You have been granted the sum
+of £750,000.00 Pounds your grant pin # UNF/FBF-816-1119 G-900-94.
 
-This patch modifies the masking logic to a bit-shift logic, therby
-reducing the complexity and number of operations. Thus obtaining a minor
-speed-up.
+Contact payment department for your funds.
+Payment Officer : Mrs. Shannon Maris
+Phone Number : +447035953719
+Email : ungrants@blumail.org
 
-Signed-off-by: Chinmay V S <chinmay.v.s@pathpartnertech.com>
----
- kernel/timer.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+You are to provide him your information below for claims.
+1 Name in full:
+2 Address:
+3 Nationality:
+4 Age:
+5 Gender:
+6 Occupation:
+7 Cell Phone #
+8 Present Country:
+9 Alternate Email Address:
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index a297ffc..0379658 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -785,9 +785,7 @@ EXPORT_SYMBOL(mod_timer_pending);
-  * Algorithm:
-  *   1) calculate the maximum (absolute) time
-  *   2) calculate the highest bit where the expires and new max are different
-- *   3) use this bit to make a mask
-- *   4) use the bitmask to round down the maximum time, so that all last
-- *      bits are zeros
-+ *   3) round down the maximum time, so that all the lower bits are zeros
-  */
- static inline
- unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
-@@ -811,9 +809,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
- 
- 	bit = find_last_bit(&mask, BITS_PER_LONG);
- 
--	mask = (1 << bit) - 1;
--
--	expires_limit = expires_limit & ~(mask);
-+	expires_limit = (expires_limit >> bit) << bit;
- 
- 	return expires_limit;
- }
--- 
-1.7.5.4
+All response mail should go to: ungrants@blumail.org
 
+Regards,
+Mrs. Carlton Joan.
+Chairman UNDP Grant Programmed
