@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab2AaHIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 02:08:45 -0500
-Received: from mail2.kccc.gov.tw ([163.29.243.53]:58024 "EHLO
-	mail2.kccc.gov.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab2AaHIo (ORCPT
+	id S1752603Ab2AaHMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 02:12:05 -0500
+Received: from mail-yw0-f42.google.com ([209.85.213.42]:61006 "EHLO
+	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab2AaHMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 02:08:44 -0500
-X-Greylist: delayed 27463 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Jan 2012 02:08:44 EST
-From: "Shankiki Spiritual Temple" <yanchao@mail.kccc.gov.tw>
-Reply-To: lordshankaishankiki01@gmail.com
-Subject: 100% SPIRITUAL ASSISTANCE
-Date: Tue, 31 Jan 2012 06:48:49 +0800
-Message-Id: <20120130224849.M27206@mail.kccc.gov.tw>
-X-Mailer: Open WebMail 2.51 20050627
-X-OriginatingIP: 65.49.2.152 (yanchao)
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=iso-8859-1
-To: undisclosed-recipients:;
-X-MAIL: mail2.kccc.gov.tw q0UMfGcu079552
+	Tue, 31 Jan 2012 02:12:03 -0500
+X-Greylist: delayed 2556 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Jan 2012 02:12:02 EST
+From: "Devendra.Naga" <devendra.aaru@gmail.com>
+To: <Larry.Finger@lwfinger.net>, <chaoming_li@realsil.com.cn>,
+        <linville@tuxdriver.com>, <paul.gortmaker@windriver.com>,
+        <joe@perches.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "Devendra.Naga" <devendra.aaru@gmail.com>
+Subject: [PATCH] rtlwifi/rtl8192c: in _rtl92c_phy_calculate_bit_shift remove comparing bitmask against 1
+Date: Tue, 31 Jan 2012 02:11:03 -0500
+Message-Id: <1327993863-6810-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SHANKIKI!!!
-    
-    Highly Spirited Greetings from High Priest Lord Shankai Shankiki of the 
-Great Shankiki Spiritual Temple Of Nigeria(Head Quarters). We are specialist 
-in solving different spiritual problems that you feel is unsolvable. We give 
-you 100% guarantee in any of our spiritual products and works as this has 
-helped us to maintain a highly spirited reputation in the field of Spiritual 
-Matters. We specialize in the following areas;
+From: "Devendra.Naga" <devendra.aaru@gmail.com>
 
-1. LOVE BINDING
-2. WINNING OF LOTTO
-3. SPIRITUAL FORTIFYING
-4. MONEY BAG WITHOUT EMPTINESS
-5. MONEY INVOCATIONS WITHOUT RITUALS
-6. PENIS ENLARGEMENT
-7. BURST ENLARGEMENT
-8. WEIGHT LOSS
-9. WEIGHT GAIN
-10.PILE
-11.ARTHRITIS
-12.RHEUMATISM
-13.SPIRITUAL RINGS FOR DIFFERENT PURPOSES
-14.POWER TO CONTROL
-15.AND MANY MORE.
+in _rtl92c_phy_calculate_bit_shift everytime the right shifted bitmask
+is AND with 1 and compared against 1. i.e.
+       if ((bitmask >> i) & 0x1 == 1)
+               break;
+which in the if condition is anyway becomes a 1 or 0.
 
-NOTE: Membership is open to individuals with interest.
+Signed-off-by: Devendra.Naga <devendra.aaru@gmail.com>
+---
+ drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-For your spiritual assistance, contact High Priest Lord Shankiki via 
-Email:lordshankaishankiki@hotmail.co.uk
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
+index 22e998d..a76b223 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
+@@ -177,7 +177,7 @@ u32 _rtl92c_phy_calculate_bit_shift(u32 bitmask)
+ 	u32 i;
+ 
+ 	for (i = 0; i <= 31; i++) {
+-		if (((bitmask >> i) & 0x1) == 1)
++		if ((bitmask >> i) & 0x1)
+ 			break;
+ 	}
+ 	return i;
+-- 
+1.7.5.4
+
