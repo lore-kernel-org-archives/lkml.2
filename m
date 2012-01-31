@@ -1,85 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab2AaWvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 17:51:14 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37488 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab2AaWvN (ORCPT
+	id S1755477Ab2AaW6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 17:58:42 -0500
+Received: from mga01.intel.com ([192.55.52.88]:59538 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753256Ab2AaW6l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 17:51:13 -0500
-Date: Tue, 31 Jan 2012 22:50:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/8] ARM: tegra: rework Tegra secondary CPU core
-	bringup
-Message-ID: <20120131225045.GE8338@n2100.arm.linux.org.uk>
-References: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com> <1328028051-24271-4-git-send-email-pdeschrijver@nvidia.com>
+	Tue, 31 Jan 2012 17:58:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="118786039"
+From: "Rose, Gregory V" <gregory.v.rose@intel.com>
+To: David Ahern <daahern@cisco.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: RE: VFs go missing with latest kernel
+Thread-Topic: VFs go missing with latest kernel
+Thread-Index: AQHM4Gs6ffY5XbLoAUGa1L3askdwe5YnFpYA
+Date: Tue, 31 Jan 2012 22:58:39 +0000
+Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A0702F6489B@ORSMSX106.amr.corp.intel.com>
+References: <4F287102.3060600@cisco.com>
+In-Reply-To: <4F287102.3060600@cisco.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328028051-24271-4-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 06:40:41PM +0200, Peter De Schrijver wrote:
-> +ENTRY(__tegra_cpu_reset_handler_start)
-> +
-> +/*
-> + * __tegra_cpu_reset_handler:
-> + *
-> + * Common handler for all CPU reset events.
-> + *
-> + * Register usage within the reset handler:
-> + *
-> + *      R7  = CPU present (to the OS) mask
-> + *      R8  = CPU in LP1 state mask
-> + *      R9  = CPU in LP2 state mask
-> + *      R10 = CPU number
-> + *      R11 = CPU mask
-> + *      R12 = pointer to reset handler data
-> + *
-> + * NOTE: This code is copied to IRAM. All code and data accesses
-> + *       must be position-independent.
-> + */
-> +
-> +	.align L1_CACHE_SHIFT
-> +ENTRY(__tegra_cpu_reset_handler)
-> +
-> +#if DEBUG_CPU_RESET_HANDLER
-> +	enable_coresight r0
-> +	b	.
-> +#endif
-> +	cpsid	aif, 0x13			@ SVC mode, interrupts disabled
-> +	mrc	p15, 0, r0, c0, c0, 0		@ read main ID register
-> +	and	r5, r0, #0x00f00000		@ variant
-> +	and	r6, r0, #0x0000000f		@ revision
-> +	orr	r6, r6, r5, lsr #20-4		@ combine variant and revision
-> +#ifdef CONFIG_ARM_ERRATA_743622
-> +	teq	r6, #0x20			@ present in r2p0
-> +	teqne	r6, #0x21			@ present in r2p1
-> +	teqne	r6, #0x22			@ present in r2p2
-> +	teqne	r6, #0x27			@ present in r2p7
-> +	teqne	r6, #0x29			@ present in r2p9
+> -----Original Message-----
+> From: David Ahern [mailto:daahern@cisco.com]
+> Sent: Tuesday, January 31, 2012 2:54 PM
+> To: Rose, Gregory V
+> Cc: LKML
+> Subject: VFs go missing with latest kernel
+> 
+> Hi
+> 
+> I built the kernel.git tree (3.3-rc1) and noticed that even numbered VFs
+> go missing for the last 2 ports of a quad nic card.
+> 
+> This is the relevant output from lspci for the stock Fedora 14 kernel
+> (2.6.35.14-106):
+> 
+> 07:00.0 Ethernet controller: Intel Corporation 82576 Gigabit Network
+> Connection (rev 01)
+> 07:00.1 Ethernet controller: Intel Corporation 82576 Gigabit Network
+> Connection (rev 01)
+> 08:10.0 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.1 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.2 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.3 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.4 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.5 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.6 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.7 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:11.0 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:11.1 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:11.2 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:11.3 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:11.4 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:11.5 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 
+> 
+> For the 3.3.0-rc1 kernel I get:
+> 
+> 07:00.0 Ethernet controller: Intel Corporation 82576 Gigabit Network
+> Connection (rev 01)
+> 07:00.1 Ethernet controller: Intel Corporation 82576 Gigabit Network
+> Connection (rev 01)
+> 08:10.1 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.3 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.5 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:10.7 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:11.1 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:11.3 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 08:11.5 Ethernet controller: Intel Corporation 82576 Virtual Function
+> (rev 01)
+> 
+> Note that all of the even numbered VFs have disappeared. Accordingly,
+> trying to launch the VM to which the VFs are assigned fails. git bisect
+> pointed to this commit:
+> 
+> 0224d663063d542b3d829706f3fcbd0f640f19b3 is the first bad commit
+> commit 0224d663063d542b3d829706f3fcbd0f640f19b3
+> Author: Greg Rose <gregory.v.rose@intel.com>
+> Date:   Fri Oct 14 02:57:14 2011 +0000
+> 
+>     igb: Check if subordinate VFs are assigned to virtual machines
+> 
+>     Kvm and the Xen pci-back driver will set a flag in the virtual
+> function
+>     pci device dev_flags when the VF is assigned to a guest VM.  Before
+>     destroying subordinate VFs check to see if the flag is set and if so
+>     skip the call to pci_disable_sriov() to avoid system crashes.
+> 
+>     Copy the maintainer for the Xen pci-back driver.  Also CC'ing
+>     maintainers of all drivers found to call pci_disable_sriov().
+> 
+> 
+> Sure enough reverting the patch on 3.3.0-rc1 makes the VFs visible again.
+> 
+> I am hitting some other problem trying to use the VF on 3.3.0-rc1 -- KVM
+> fails the KVM_CAP_IOMMU check though the server has one (works fine with
+> the older kernel) and it is built into the kernel. Debugging that
+> problem now.
 
-Okay, so we have this errata in proc-v7.S, but only for p0..p2.  If
-it's also p7 and p9, then it shows that the errata in the kernel aren't
-being actively maintained, and brings into question their worth.
+I'll see if I can reproduce that.  Is this all after a fresh boot with no unloading/reloading of the PF driver?
 
-Plus, of course, we don't want platforms re-implementing the errata
-in their own code if we're already implementing it somewhere in the
-kernel.  So, that's something which needs to be thought about.
+- Greg
 
-That's something that needs considering along side the whole 'what
-to do about errata when running in non-secure mode' problem which
-OMAP suffers from.
-
-> +	mrceq	p15, 0, r10, c15, c0, 1		@ read diagnostic register
-> +	orreq	r10, r10, #1 << 6		@ set bit #6
-> +	mcreq	p15, 0, r10, c15, c0, 1		@ write diagnostic register
-> +#endif
+> 
+> David
