@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab2AaQgZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:36:25 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:64085 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013Ab2AaQgX convert rfc822-to-8bit (ORCPT
+	id S1754809Ab2AaQi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:38:59 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:48553 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab2AaQi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:36:23 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Subject: Re: [PATCH] Fix KDFONTOP 32bit compatibility layer
-Date: Tue, 31 Jan 2012 16:35:36 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arthur Taylor <art@ified.ca>, Jiri Slaby <jslaby@suse.cz>,
-        Jiri Olsa <jolsa@redhat.com>
-References: <20120128232858.GA18484@type.famille.thibault.fr>
-In-Reply-To: <20120128232858.GA18484@type.famille.thibault.fr>
+	Tue, 31 Jan 2012 11:38:58 -0500
+X-IronPort-AV: E=Sophos;i="4.71,596,1320624000"; 
+   d="scan'208";a="10397603"
+Date: Tue, 31 Jan 2012 16:40:26 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen pvhvm: do not remap pirqs onto evtchns if
+ !xen_have_vector_callback
+In-Reply-To: <20120131162759.GA18248@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1201311636380.3196@kaball-desktop>
+References: <alpine.DEB.2.00.1201301429530.3196@kaball-desktop> <20120131162759.GA18248@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201201311635.36367.arnd@arndb.de>
-X-Provags-ID: V02:K0:jFJd5KTVAiGk308LTO6UjhRODEL4lMOEoGZUpcA7HRE
- RGyphc0BZMmvgb0SoNUq2W26KEwu0JZPiZQfWUPerKIp4ksT+W
- Aw9qktUyxQVfms+HsU0SGYBuiPBwvji9ZqAEilvrC+JFkevl3A
- 0hGbfMIZyoRkH/MwQHCo5KNmGRuYJ+MXrqgpECM5DZjh3Bgv9L
- 2OOjziMD4AtDftCDIkkJV82IHrFulam/vMD6j9QDhxVw1FsRkb
- +l3eFOEE4lgRPJxAGGQbBDDfsrD+E+ruHuZA9wj5IZvh1M9p/1
- XO2yQ2SPE9/vopGq/5E3L/kdHvEFgSxr8S/UUocty+dmTPl2Uh
- Ql7llWd+y0PGBZ7p5Mi8=
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 28 January 2012, Samuel Thibault wrote:
-> KDFONTOP(GET) currently fails with EIO when being run in a 32bit
-> userland with a 64bit kernel if the font width is not 8. This is because
-> the compatibility layer introduced by e9216651 forces the addition of
-> the KD_FONT_FLAG_OLD flag, which makes con_font_get return EIO in such
-> case.  This flag should not be set for KDFONTOP, since it's actually
-> the whole point of this flag (see comment in con_font_set for instance).
+On Tue, 31 Jan 2012, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jan 30, 2012 at 02:31:46PM +0000, Stefano Stabellini wrote:
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > 
-> Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+> So the xen_have_vector_callback looks to be only set by
+> 
+> 1398         if (xen_feature(XENFEAT_hvm_callback_vector))
+> 1399                 xen_have_vector_callback = 1;
+> 
+> So could this be just done via a check for that instead?
+> 
 
-Hmm, this flag was not introduced in the patch you cite, it used to
-live in fs/compat_ioctl.c before that, since before the start of the
-git history. It seems to date back on the original sparc64 implementation
-of do_kdfontop_ioctl that was written by Eddie Dost in 1998.
-
-> diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-> index 5e096f4..65447c5 100644
-> --- a/drivers/tty/vt/vt_ioctl.c
-> +++ b/drivers/tty/vt/vt_ioctl.c
-> @@ -1463,7 +1463,6 @@ compat_kdfontop_ioctl(struct compat_console_font_op __user *fontop,
->         if (!perm && op->op != KD_FONT_OP_GET)
->                 return -EPERM;
->         op->data = compat_ptr(((struct compat_console_font_op *)op)->data);
-> -       op->flags |= KD_FONT_FLAG_OLD;
->         i = con_font_op(vc, op);
->         if (i)
->                 return i;
-
->From all I can tell, the patch looks correct, but please update the
-description so you don't blame my innocent patch ;-)
-
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Sure, but I don't think it would be better: using
+xen_have_vector_callback is more consistent and give us the flexibility
+of allowing users to manually override it in the future.
