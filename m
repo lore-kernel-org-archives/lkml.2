@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab2AaKJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:09:16 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:47090 "EHLO relay.sw.ru"
+	id S1754039Ab2AaKKA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:10:00 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:14907 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152Ab2AaKJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:09:13 -0500
-Subject: [PATCH v2 2/4] SUNRPC: clear svc transports lists helper introduced
+	id S1753360Ab2AaKJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 05:09:29 -0500
+Subject: [PATCH v2 4/4] SUNRPC: service shutdown function in network namespace
+ context introduced
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Tue, 31 Jan 2012 14:09:08 +0400
-Message-ID: <20120131100908.4342.86129.stgit@localhost6.localdomain6>
+Date: Tue, 31 Jan 2012 14:09:25 +0400
+Message-ID: <20120131100925.4342.34740.stgit@localhost6.localdomain6>
 In-Reply-To: <20120131100625.4342.34539.stgit@localhost6.localdomain6>
 References: <20120131100625.4342.34539.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -25,56 +26,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves service transports deletion from service sockets lists to
-separated function.
-This is a precursor patch, which would be usefull with service shutdown in
-network namespace context, introduced later in the series.
+This function is enough for releasing resources, allocated for network
+namespace context, in case of sharing service between them.
+IOW, each service "user" (LockD, NFSd, etc), which wants to share service
+between network namespaces, have to release related resources by the function,
+introduced in this patch, instead of performing service shutdown (of course in
+case the service is shared already to the moment of release).
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- net/sunrpc/svc_xprt.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+ net/sunrpc/svc.c |   33 ++++++++++++++++++++-------------
+ 1 files changed, 20 insertions(+), 13 deletions(-)
 
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index 50bf7c1..493e70b 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -950,11 +950,19 @@ static void svc_clear_pools(struct svc_serv *serv)
- 	}
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 6cc0ea3..78abac4 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -510,6 +510,24 @@ svc_create_pooled(struct svc_program *prog, unsigned int bufsize,
  }
+ EXPORT_SYMBOL_GPL(svc_create_pooled);
  
--void svc_close_all(struct svc_serv *serv)
-+static void svc_clear_list(struct list_head *xprt_list)
- {
- 	struct svc_xprt *xprt;
- 	struct svc_xprt *tmp;
- 
-+	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
-+		svc_delete_xprt(xprt);
-+	}
-+	BUG_ON(!list_empty(xprt_list));
-+}
-+
-+void svc_close_all(struct svc_serv *serv)
++void svc_shutdown_net(struct svc_serv *serv, struct net *net)
 +{
- 	svc_close_list(&serv->sv_tempsocks);
- 	svc_close_list(&serv->sv_permsocks);
- 
-@@ -964,13 +972,8 @@ void svc_close_all(struct svc_serv *serv)
- 	 * svc_enqueue will not add new entries without taking the
- 	 * sp_lock and checking XPT_BUSY.
- 	 */
--	list_for_each_entry_safe(xprt, tmp, &serv->sv_tempsocks, xpt_list)
--		svc_delete_xprt(xprt);
--	list_for_each_entry_safe(xprt, tmp, &serv->sv_permsocks, xpt_list)
--		svc_delete_xprt(xprt);
--
--	BUG_ON(!list_empty(&serv->sv_permsocks));
--	BUG_ON(!list_empty(&serv->sv_tempsocks));
-+	svc_clear_list(&serv->sv_tempsocks);
-+	svc_clear_list(&serv->sv_permsocks);
- }
- 
++	/*
++	 * The set of xprts (contained in the sv_tempsocks and
++	 * sv_permsocks lists) is now constant, since it is modified
++	 * only by accepting new sockets (done by service threads in
++	 * svc_recv) or aging old ones (done by sv_temptimer), or
++	 * configuration changes (excluded by whatever locking the
++	 * caller is using--nfsd_mutex in the case of nfsd).  So it's
++	 * safe to traverse those lists and shut everything down:
++	 */
++	svc_close_net(serv, net);
++
++	if (serv->sv_shutdown)
++		serv->sv_shutdown(serv, net);
++}
++EXPORT_SYMBOL_GPL(svc_shutdown_net);
++
  /*
+  * Destroy an RPC service. Should be called with appropriate locking to
+  * protect the sv_nrthreads, sv_permsocks and sv_tempsocks.
+@@ -532,16 +550,8 @@ svc_destroy(struct svc_serv *serv)
+ 		printk("svc_destroy: no threads for serv=%p!\n", serv);
+ 
+ 	del_timer_sync(&serv->sv_temptimer);
+-	/*
+-	 * The set of xprts (contained in the sv_tempsocks and
+-	 * sv_permsocks lists) is now constant, since it is modified
+-	 * only by accepting new sockets (done by service threads in
+-	 * svc_recv) or aging old ones (done by sv_temptimer), or
+-	 * configuration changes (excluded by whatever locking the
+-	 * caller is using--nfsd_mutex in the case of nfsd).  So it's
+-	 * safe to traverse those lists and shut everything down:
+-	 */
+-	svc_close_net(serv, net);
++
++	svc_shutdown_net(serv, net);
+ 
+ 	/*
+ 	 * The last user is gone and thus all sockets have to be destroyed to
+@@ -550,9 +560,6 @@ svc_destroy(struct svc_serv *serv)
+ 	BUG_ON(!list_empty(&serv->sv_permsocks));
+ 	BUG_ON(!list_empty(&serv->sv_tempsocks));
+ 
+-	if (serv->sv_shutdown)
+-		serv->sv_shutdown(serv, net);
+-
+ 	cache_clean_deferred(serv);
+ 
+ 	if (svc_serv_is_pooled(serv))
 
