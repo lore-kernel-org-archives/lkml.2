@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab2AaENN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 23:13:13 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48720 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156Ab2AaENG (ORCPT
+	id S1754284Ab2AaEWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 23:22:25 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54977 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451Ab2AaEWY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 23:13:06 -0500
-Message-ID: <1327983188.6697.9.camel@lappy>
-Subject: Re: [PATCH] module: Remove module size limit
-From: Sasha Levin <levinsasha928@gmail.com>
-To: rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
-        Tim Abbott <tim.abbott@oracle.com>, stable@vger.kernel.org
-Date: Mon, 30 Jan 2012 23:13:08 -0500
-In-Reply-To: <1327982842-13898-1-git-send-email-sasha.levin@oracle.com>
-References: <1327982842-13898-1-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 30 Jan 2012 23:22:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <1327963304-24828-1-git-send-email-asharma@fb.com>
+References: <1327963304-24828-1-git-send-email-asharma@fb.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 30 Jan 2012 20:22:03 -0800
+Message-ID: <CAErSpo54KRJbWEQ0fB_kuGx0qRQKWpH9d3mN=dPdiNfWH+Dhww@mail.gmail.com>
+Subject: Re: [PATCH] net: Disambiguate kernel message
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Glauber Costa <glommer@parallels.com>, Ingo Molnar <mingo@elte.hu>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty,
+On Mon, Jan 30, 2012 at 2:41 PM, Arun Sharma <asharma@fb.com> wrote:
+> Some of our machines were reporting:
+>
+> TCP: too many of orphaned sockets
+>
+> even when the number of orphaned sockets was well below the
+> limit.
+>
+> We print a different message depending on whether we're out
+> of TCP memory or there are too many orphan sockets.
 
-I'm not sure why git forgot to add the 'From' line, but if you do merge
-it please add:
+This patch mentions pairs of messages that are almost the same, but
+not quite.  If they're supposed to be different, I'd suggest making
+them clearly different.  As it is, the differences look like careless
+mistakes:
 
-From: Sasha Levin <sasha.levin@oracle.com>
+>                                printk(KERN_INFO "TCP: too many of orphaned "
+>                                       "sockets\n");
+> +                       printk(KERN_INFO "TCP: too many orphaned sockets\n");
 
-Thanks!
+> +                               printk(KERN_INFO "TCP: out of memory. "
+> +                                      "Consider tuning tcp_mem\n");
+>                        printk(KERN_INFO "Out of socket memory\n");
 
-On Mon, 2012-01-30 at 23:07 -0500, Sasha Levin wrote:
-> Module size was limited to 64MB, this was legacy limitation due to vmalloc()
-> which was removed a while ago.
-> 
-> Limiting module size to 64MB is both pointless and affects real world use
-> cases.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Tim Abbott <tim.abbott@oracle.com>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  kernel/module.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 2c93276..3d56b6f 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2380,8 +2380,7 @@ static int copy_and_check(struct load_info *info,
->  		return -ENOEXEC;
->  
->  	/* Suck in entire file: we'll want most of it. */
-> -	/* vmalloc barfs on "unusual" numbers.  Check here */
-> -	if (len > 64 * 1024 * 1024 || (hdr = vmalloc(len)) == NULL)
-> +	if ((hdr = vmalloc(len)) == NULL)
->  		return -ENOMEM;
->  
->  	if (copy_from_user(hdr, umod, len) != 0) {
+"too many orphaned sockets" is better English usage than "too many of ..."
 
-
--- 
-
-Sasha.
-
+Bjorn
