@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab2AaUJA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 15:09:00 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53028 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755095Ab2AaUI7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 15:08:59 -0500
-Date: Tue, 31 Jan 2012 13:08:52 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Mark Grosen <mgrosen@ti.com>
-Subject: Re: [PATCH 2/2] remoteproc: s/big switch/lookup table/
-Message-ID: <20120131200852.GC22611@ponder.secretlab.ca>
-References: <1328028762-28352-1-git-send-email-ohad@wizery.com>
- <1328028762-28352-2-git-send-email-ohad@wizery.com>
- <4F282BB2.6080604@fastmail.fm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F282BB2.6080604@fastmail.fm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755227Ab2AaUJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 15:09:25 -0500
+Received: from [206.117.179.246] ([206.117.179.246]:60213 "EHLO labridge.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753832Ab2AaUJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 15:09:23 -0500
+Message-ID: <1328040546.8012.6.camel@joe2Laptop>
+Subject: Re: [PATCH] net: Disambiguate kernel message
+From: Joe Perches <joe@perches.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Glauber Costa <glommer@parallels.com>, Ingo Molnar <mingo@elte.hu>,
+        christoph.paasch@uclouvain.be
+Date: Tue, 31 Jan 2012 12:09:06 -0800
+In-Reply-To: <20120131194718.GA9834@dev3310.snc6.facebook.com>
+References: <1327963304-24828-1-git-send-email-asharma@fb.com>
+	 <CAErSpo54KRJbWEQ0fB_kuGx0qRQKWpH9d3mN=dPdiNfWH+Dhww@mail.gmail.com>
+	 <20120131181554.GA24397@dev3310.snc6.facebook.com>
+	 <1328035857.6911.8.camel@joe2Laptop>
+	 <20120131194718.GA9834@dev3310.snc6.facebook.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 05:58:10PM +0000, Jack Stone wrote:
-> On 31/01/12 16:52, Ohad Ben-Cohen wrote:
-> > +/*
-> > + * A lookup table for resource handlers. Always keep in sync with
-> > + * enum fw_resource_type.
-> > + */
-> > +static rproc_handle_resource_t rproc_handle_rsc[] = {
-> > +	rproc_handle_carveout,	/* RSC_CARVEOUT */
-> > +	rproc_handle_devmem,	/* RSC_DEVMEM */
-> > +	rproc_handle_trace,	/* RSC_TRACE */
-> > +	rproc_handle_vring,	/* RSC_VRING */
-> > +	NULL, /* RSC_VIRTIO_DEV is handled early upon registration */
-> > +};
-> > +
-> 
-> You could change this to
-> 
-> [RSC_CARVEOUT] = rproc_handle_carveout,
-> 
-> Then you would be safe against renumbering and would only need to worry
-> about addition (which your RSC_LAST check copes with).
+On Tue, 2012-01-31 at 11:47 -0800, Arun Sharma wrote:
+> On Tue, Jan 31, 2012 at 10:50:57AM -0800, Joe Perches wrote:
+> > It might be useful to use a generic routine.
+[]
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+[]
+> @@ -2014,11 +2014,14 @@ adjudge_to_death:
+[]
+> +		too_many_orphans = tcp_too_many_orphans(sk, 0);
+> +		out_of_socket_memory = tcp_out_of_memory(sk);
+> +		tcp_log_oom(too_many_orphans, out_of_socket_memory);
+[]
+> diff --git a/net/ipv4/tcp_timer.c b/net/ipv4/tcp_timer.c
+[]
+> @@ -77,10 +78,10 @@ static int tcp_out_of_resources(struct sock *sk, int do_reset)
+[]
+> +	too_many_orphans = tcp_too_many_orphans(sk, shift);
+> +	out_of_socket_memory = tcp_out_of_memory(sk);
+> +	tcp_log_oom(too_many_orphans, out_of_socket_memory);
+> +	if (too_many_orphans || out_of_socket_memory) {
 
-Yes, that is the right thing to do.  Then the compiler can catch ordering
-issues for you.
+Perhaps these repeated three lines should be a routine like:
 
-g.
+bool tcp_check_oom(struct sock *sk, int shift)
+{
+	bool tcp_orphans = tcp_too_many_orphans(sk, shift);
+	bool tcp_oom = tcp_out_of_memory(sk);
+
+	printks...
+
+	return tcp_orphans || tcp_oom;
+}
 
