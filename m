@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab2AaHnV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 02:43:21 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:59549 "EHLO
+	id S1753717Ab2AaHoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 02:44:17 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:59650 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab2AaHnT (ORCPT
+	with ESMTP id S1753042Ab2AaHna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 02:43:19 -0500
+	Tue, 31 Jan 2012 02:43:30 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -16,72 +16,85 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 01/14] Make %pR could handle bus resource with domain
-Date: Mon, 30 Jan 2012 23:42:39 -0800
-Message-Id: <1327995772-11388-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 09/14] PCI: Add pci_bus_extend/shrink_top()
+Date: Mon, 30 Jan 2012 23:42:47 -0800
+Message-Id: <1327995772-11388-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1327995772-11388-1-git-send-email-yinghai@kernel.org>
 References: <1327995772-11388-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4F279B8E.00A6,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4F279B9D.0035,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So could use %pR for busn_res with domain nr in start/end
+extend or shrink bus and parent buses top (subordinate)
+
+extended range is verified safe range, and stop at recorded parent_res.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- lib/vsprintf.c |   28 ++++++++++++++++++++++++----
- 1 files changed, 24 insertions(+), 4 deletions(-)
+ drivers/pci/probe.c |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 46 insertions(+), 0 deletions(-)
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 8e75003..b34eeea 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -451,6 +451,12 @@ char *resource_string(char *buf, char *end, struct resource *res,
- 		.precision = -1,
- 		.flags = SPECIAL | SMALL | ZEROPAD,
- 	};
-+	static const struct printf_spec domain_spec = {
-+		.base = 16,
-+		.field_width = 4,
-+		.precision = -1,
-+		.flags = SMALL | ZEROPAD,
-+	};
- 	static const struct printf_spec bus_spec = {
- 		.base = 16,
- 		.field_width = 2,
-@@ -507,11 +513,25 @@ char *resource_string(char *buf, char *end, struct resource *res,
- 		specp = &mem_spec;
- 		decode = 0;
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 79de0dd..91fdaec 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -624,6 +624,52 @@ static void pci_fixup_parent_subordinate_busnr(struct pci_bus *child, int max)
  	}
--	p = number(p, pend, res->start, *specp);
--	if (res->start != res->end) {
--		*p++ = '-';
--		p = number(p, pend, res->end, *specp);
+ }
+ 
++static void __devinit pci_bus_extend_top(struct pci_bus *parent,
++		 resource_size_t size, struct resource *parent_res)
++{
++	struct resource *res;
 +
-+	if (res->flags & IORESOURCE_BUS && res->end >> 8) {
-+		p = number(p, pend, res->start >> 8, domain_spec);
-+		*p++ = ':';
-+		p = number(p, pend, res->start & 0xff, *specp);
-+		if (res->start != res->end) {
-+			*p++ = '-';
-+			p = number(p, pend, res->end >> 8, domain_spec);
-+			*p++ = ':';
-+			p = number(p, pend, res->end & 0xff, *specp);
-+		}
-+	} else {
-+		p = number(p, pend, res->start, *specp);
-+		if (res->start != res->end) {
-+			*p++ = '-';
-+			p = number(p, pend, res->end, *specp);
-+		}
- 	}
++	if (!size)
++		return;
 +
- 	if (decode) {
- 		if (res->flags & IORESOURCE_MEM_64)
- 			p = string(p, pend, " 64bit", str_spec);
++	while (parent) {
++		res = &parent->busn_res;
++		if (res == parent_res)
++			break;
++		res->end += size;
++		parent->subordinate += size;
++		pci_write_config_byte(parent->self, PCI_SUBORDINATE_BUS,
++					 parent->subordinate);
++		dev_printk(KERN_DEBUG, &parent->dev,
++				"busn_res: extended %02llx to %pR\n",
++				(unsigned long long)size, res);
++		parent = parent->parent;
++	}
++}
++
++static void __devinit pci_bus_shrink_top(struct pci_bus *parent,
++		 resource_size_t size, struct resource *parent_res)
++{
++	struct resource *res;
++
++	if (!size)
++		return;
++
++	while (parent) {
++		res = &parent->busn_res;
++		if (res == parent_res)
++			break;
++		res->end -= size;
++		parent->subordinate -= size;
++		pci_write_config_byte(parent->self, PCI_SUBORDINATE_BUS,
++					 parent->subordinate);
++		dev_printk(KERN_DEBUG, &parent->dev,
++				"busn_res: shrunk %02llx to %pR\n",
++				(unsigned long long)size, res);
++		parent = parent->parent;
++	}
++}
++
+ /*
+  * If it's a bridge, configure it and scan the bus behind it.
+  * For CardBus bridges, we don't scan behind as the devices will
 -- 
 1.7.7
 
