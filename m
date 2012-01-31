@@ -1,66 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab2AaMue (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 07:50:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41819 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2AaMuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 07:50:32 -0500
-X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=0LOP1KteNnsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=aIr8HDLft-_tD_DwsGIA:9 a=XQkh1KdNiMvYsTn6tz4A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328014230.5882.29.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH] tracing/module: Move tracepoint out of module.h
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Date: Tue, 31 Jan 2012 07:50:30 -0500
-In-Reply-To: <20120131122016.GF32010@elte.hu>
-References: <1327545664.22710.78.camel@gandalf.stny.rr.com>
-	 <20120126102836.GD3853@elte.hu>
-	 <1327585945.22710.87.camel@gandalf.stny.rr.com>
-	 <20120126135504.GA13107@elte.hu>
-	 <1327586669.22710.89.camel@gandalf.stny.rr.com>
-	 <1327588606.22710.100.camel@gandalf.stny.rr.com>
-	 <20120126183946.GA14709@elte.hu> <87ehuldf0m.fsf@rustcorp.com.au>
-	 <1327924333.22710.157.camel@gandalf.stny.rr.com>
-	 <87sjiwjzew.fsf@rustcorp.com.au> <20120131122016.GF32010@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754215Ab2AaMws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 07:52:48 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47762 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752243Ab2AaMwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 07:52:47 -0500
+Date: Tue, 31 Jan 2012 13:52:32 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Milton Miller <miltonm@bga.com>,
+        Andrew Morton <akpm@linux-foundation.org>, arjanvandeven@gmail.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: smp: Start up non-boot CPUs asynchronously
+Message-ID: <20120131125232.GD4408@elte.hu>
+References: <20120130205444.22f5e26a@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120130205444.22f5e26a@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 13:20 +0100, Ingo Molnar wrote:
 
-> > Saves only 400 bytes of text here, but I don't do preempt or 
-> > tracepoints.
+* Arjan van de Ven <arjan@infradead.org> wrote:
+
+> >From 3700e391ab2841a9f9241e4e31a6281aa59be5f1 Mon Sep 17 00:00:00 2001
+> From: Arjan van de Ven <arjan@linux.intel.com>
+> Date: Mon, 30 Jan 2012 20:44:51 -0800
+> Subject: [PATCH] smp: Start up non-boot CPUs asynchronously
 > 
-> Most distro kernels do tracepoints so I guess that's where the 
-> size delta comes from :-) In any case:
+> The starting of the "not first" CPUs actually takes a lot of 
+> boot time of the kernel... upto "minutes" on some of the 
+> bigger SGI boxes. Right now, this is a fully sequential 
+> operation with the rest of the kernel boot.
 
-Yes, having tracepoints inlined causes a lot of bloat. But I still did
-get a 1799 bytes savings between moving the tracepoint out of line but
-keeping the if, and totally moving the entire functions out of line. Not
-sure what the discrepancy was there.
+Yeah.
 
-My last set of numbers came from the default 3.0.0 Debian config, which
-probably adds more things that call these functions into the kernel
-proper?
+> This patch turns this bringup of the other cpus into an 
+> asynchronous operation, saving significant kernel boot time 
+> (40% on my laptop!!). Basically now CPUs get brought up in 
+> parallel to disk enumeration, graphic mode bringup etc etc 
+> etc.
 
-But anway, I think this bike shed is complete ;-)
+Very nice!
 
-> 
-> Acked-by: Ingo Molnar <mingo@elte.hu>
+> Note that the implementation in this patch still waits for all 
+> CPUs to be brought up before starting userspace; I would love 
+> to remove that restriction over time (technically that is 
+> simple), but that becomes then a change in behavior... I'd 
+> like to see more discussion on that being a good idea before I 
+> write that patch.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Yeah, it's a good idea to be conservative with that - most of 
+the silent assumptions will be on the kernel init side anyway 
+and we want to map those out first, without any userspace 
+variance mixed in.
 
--- Steve
+I'd expect this patch to eventually break stuff in the kernel - 
+we'll fix any kernel bugs that get uncovered, and we can move on 
+to make things more parallel once that process has stabilized.
 
+> Second note: We add a small delay between the bring up of 
+> cpus, this is needed to actually get a boot time improvement. 
+> If we bring up CPUs straight back-to-back, we hog the cpu 
+> hotplug lock for write, and that lock is used everywhere 
+> during initialization for read. By adding a small delay, we 
+> allow those tasks to make progress.
 
+> +void __init async_cpu_up(void *data, async_cookie_t cookie)
+> +{
+> +	unsigned long nr = (unsigned long) data;
+> +	/*
+> +	 * we can only up one cpu at a time, due to the hotplug lock;
+> +	 * it's better to wait for all earlier CPUs to be done before
+> +	 * us so that the bring up order is predictable.
+> +	 */
+> +	async_synchronize_cookie(cookie);
+> +	/*
+> +	 * wait a little bit of time between cpus, to allow
+> +	 * the kernel boot to not get stuck for a long time
+> +	 * on the hotplug lock. We wait longer for the first
+> +	 * CPU since many of the early kernel init code is
+> +	 * of the hotplug-lock using type.
+> +	 */
+> +	if (nr < 2)
+> +		msleep(100);
+> +	else
+> +		msleep(5);
+
+Hm, the limits here seem way too ad-hoc and rigid to me.
+
+The bigger worry is that it makes the asynchronity of the boot 
+process very timing dependent, 'hiding' a lot of early code on 
+faster boxes and only interleaving the execution on slower 
+boxes. But slower boxes are harder to debug!
+
+The real fix would be to make the init code depend less on each 
+other, i.e. have less hotplug lock dependencies. Or, if it's 
+such a hot lock for a good reason, why does spinning on it slow 
+down the boot process? It really shouldnt.
+
+So i think this bit is not a good idea. Lets just be fully 
+parallel and profile early execution via 'perf kvm' or so and 
+figure out where the hotplug lock overhead comes from?
+
+Thanks,
+
+	Ingo
