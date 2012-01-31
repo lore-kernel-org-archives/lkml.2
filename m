@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab2AaOYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 09:24:19 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:36670
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754424Ab2AaOYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 09:24:17 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: samuel.ortiz@intel.com, ilw@linux.intel.com,
-        linux-wireless@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] iwmc3200wifi: Fix typo in trace.h
-Date: Tue, 31 Jan 2012 23:23:45 +0900
-Message-Id: <1328019825-2067-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1754615Ab2AaO03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 09:26:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752193Ab2AaO02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 09:26:28 -0500
+Date: Tue, 31 Jan 2012 09:26:22 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org, midgoon@gmail.com
+Subject: Re: 3.2.1 Unable to reset IRR messages on boot
+Message-ID: <20120131142621.GA2136@zod.bos.redhat.com>
+References: <20120125000434.GC13655@zod.bos.redhat.com>
+ <1327454651.27983.7.camel@sbsiddha-desk.sc.intel.com>
+ <20120125134947.GF13655@zod.bos.redhat.com>
+ <1327529048.2327.17.camel@sbsiddha-mobl2>
+ <20120125231534.GL13655@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120125231534.GL13655@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "embeded" to "embedded" in
-drivers/net/wireless/iwmc3200wifi/trace.h
+On Wed, Jan 25, 2012 at 06:15:35PM -0500, Josh Boyer wrote:
+> On Wed, Jan 25, 2012 at 02:04:08PM -0800, Suresh Siddha wrote:
+> > On Wed, 2012-01-25 at 08:49 -0500, Josh Boyer wrote:
+> > > [    0.000000] IOAPIC[1]: apic_id 2, version 255, address 0xfec28000, GSI 24-279
+> > 
+> > This looks indeed like a bogus entry probably returning all 1's for
+> > RTE's etc. Can you please send me a dmesg with "apic=verbose" boot
+> > parameter?
+> 
+> Here you go:
+> 
+> https://bugzilla.redhat.com/attachment.cgi?id=557552
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/net/wireless/iwmc3200wifi/trace.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Was this helpful at all?  I've been watching lkml for a related patch
+in case I was missed on CC but haven't seen anything as of yet.
 
-diff --git a/drivers/net/wireless/iwmc3200wifi/trace.h b/drivers/net/wireless/iwmc3200wifi/trace.h
-index abb4805..f5f7070 100644
---- a/drivers/net/wireless/iwmc3200wifi/trace.h
-+++ b/drivers/net/wireless/iwmc3200wifi/trace.h
-@@ -144,7 +144,7 @@ TRACE_EVENT(iwm_tx_packets,
- 
- 	TP_printk(
- 		IWM_PR_FMT " Tx %spacket: eot %d, seq 0x%x, sta_color 0x%x, "
--		"ra_tid 0x%x, credit_group 0x%x, embeded_packets %d, %d bytes",
-+		"ra_tid 0x%x, credit_group 0x%x, embedded_packets %d, %d bytes",
- 		IWM_PR_ARG, !__entry->eot ? "concatenated " : "",
- 		__entry->eot, __entry->seq, __entry->color, __entry->ra_tid,
- 		__entry->credit_group, __entry->npkt, __entry->bytes
--- 
-1.7.6.5
-
+josh
