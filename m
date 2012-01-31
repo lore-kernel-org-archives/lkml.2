@@ -1,163 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab2AaPfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 10:35:50 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:52520 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753237Ab2AaPfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 10:35:39 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4 V11] Add functions to check if the host has stopped the vm
-Date: Tue, 31 Jan 2012 10:35:30 -0500
-Message-Id: <1328024132-7687-3-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1328024132-7687-1-git-send-email-emunson@mgebm.net>
-References: <1328024132-7687-1-git-send-email-emunson@mgebm.net>
+	id S1754854Ab2AaPgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 10:36:07 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:55374 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab2AaPgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 10:36:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Subject: Re: [Patch] lkdtm: avoid calling lkdtm_do_action() with spin lock held
+Date: Tue, 31 Jan 2012 15:35:53 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Prarit Bhargava <prarit@redhat.com>,
+        "Greg Kroah-Hartman" <greg@kroah.com>
+References: <1327755168-12240-1-git-send-email-xiyou.wangcong@gmail.com> <20120130125429.56f6f7d0.akpm@linux-foundation.org> <4F27EBBF.6040103@gmail.com>
+In-Reply-To: <4F27EBBF.6040103@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201311535.53526.arnd@arndb.de>
+X-Provags-ID: V02:K0:eU6K2LfY0GjaZdaQ669JT05ZfCmeVdytWdttZsW3QWc
+ O9VoFkIb9iNjOSRFEznt1A94TgyXQjbRDVrhIis7cDobbekfMd
+ aRt4LBXWehPk+ZcP8L4zD+EmzixI5bVfJl1AMNMtU1to/my98t
+ PJWtZLdPMpnVRGEKjePYd1JHHKaNPmCACRvCvpK8JELFWpf+Wj
+ B3uHD29B+q9UcbdttHGKpWEzqyrvUo3UqzG1M2Rk6n2w+gIAgF
+ jsPiXqJTsshT55Y5oPGpUU4FRWS6YBlnGqCKfuA+A+KbNo8NKo
+ F4n9dkoi4jiwd64VPbgQZNZiETonxnc9c2pEBNByWOBr43Bjrd
+ 7zBwwaXxvHFKKd4LGkWg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a host stops or suspends a VM it will set a flag to show this.  The
-watchdog will use these functions to determine if a softlockup is real, or the
-result of a suspended VM.
+On Tuesday 31 January 2012, Cong Wang wrote:
+> @@ -323,14 +323,16 @@ static void lkdtm_do_action(enum ctype which)
+>         }
+>         case CT_WRITE_AFTER_FREE: {
+>                 size_t len = 1024;
+> -               u32 *data = kmalloc(len, GFP_KERNEL);
+> +               u32 *data = kmalloc(len, GFP_ATOMIC);
+>  
+>                 kfree(data);
+> -               schedule();
+> +               udelay(100);
+>                 memset(data, 0x78, len);
+>                 break;
+>         }
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
-asm-generic changes Acked-by: Arnd Bergmann <arnd@arndb.de>
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: ryanh@linux.vnet.ibm.com
-Cc: aliguori@us.ibm.com
-Cc: mtosatti@redhat.com
-Cc: kvm@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
----
-Changes from V6:
- Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
-Changes from V5:
- Collapse generic stubs into this patch
- check_and_clear_guest_stopped() takes no args and uses __get_cpu_var()
- Include individual definitions in ia64, s390, and powerpc
+I can't think of why the udelay would have any positive effect here,
+if the idea of the schedule was to let some other process allocate and
+use the memory.
 
- arch/ia64/include/asm/kvm_para.h    |    5 +++++
- arch/powerpc/include/asm/kvm_para.h |    5 +++++
- arch/s390/include/asm/kvm_para.h    |    5 +++++
- arch/x86/include/asm/kvm_para.h     |    8 ++++++++
- arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
- 5 files changed, 44 insertions(+), 0 deletions(-)
+Can't you just get rid of the count_lock if you use an atomic_t for the
+count and use appropriate accesses on it?
 
-diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
-index 1588aee..2019cb9 100644
---- a/arch/ia64/include/asm/kvm_para.h
-+++ b/arch/ia64/include/asm/kvm_para.h
-@@ -26,6 +26,11 @@ static inline unsigned int kvm_arch_para_features(void)
- 	return 0;
- }
- 
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
- #endif
- 
- #endif
-diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
-index 50533f9..1f80293 100644
---- a/arch/powerpc/include/asm/kvm_para.h
-+++ b/arch/powerpc/include/asm/kvm_para.h
-@@ -169,6 +169,11 @@ static inline unsigned int kvm_arch_para_features(void)
- 	return r;
- }
- 
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
- #endif /* __KERNEL__ */
- 
- #endif /* __POWERPC_KVM_PARA_H__ */
-diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
-index 6964db2..a988329 100644
---- a/arch/s390/include/asm/kvm_para.h
-+++ b/arch/s390/include/asm/kvm_para.h
-@@ -149,6 +149,11 @@ static inline unsigned int kvm_arch_para_features(void)
- 	return 0;
- }
- 
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
- #endif
- 
- #endif /* __S390_KVM_PARA_H */
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 734c376..99c4bbe 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -95,6 +95,14 @@ struct kvm_vcpu_pv_apf_data {
- extern void kvmclock_init(void);
- extern int kvm_register_clock(char *txt);
- 
-+#ifdef CONFIG_KVM_CLOCK
-+bool kvm_check_and_clear_guest_paused(void);
-+#else
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+#endif /* CONFIG_KVMCLOCK */
- 
- /* This instruction is vmcall.  On non-VT architectures, it will generate a
-  * trap that we will then rewrite to the appropriate instruction.
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index 44842d7..bdf6423 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -22,6 +22,7 @@
- #include <asm/msr.h>
- #include <asm/apic.h>
- #include <linux/percpu.h>
-+#include <linux/hardirq.h>
- 
- #include <asm/x86_init.h>
- #include <asm/reboot.h>
-@@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
- 	preset_lpj = lpj;
- }
- 
-+bool kvm_check_and_clear_guest_paused(void)
-+{
-+	bool ret = false;
-+	struct pvclock_vcpu_time_info *src;
-+
-+	/*
-+	 * per_cpu() is safe here because this function is only called from
-+	 * timer functions where preemption is already disabled.
-+	 */
-+	WARN_ON(!in_atomic());
-+	src = &__get_cpu_var(hv_clock);
-+	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
-+		__this_cpu_and(hv_clock.flags, ~PVCLOCK_GUEST_STOPPED);
-+		ret = true;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
-+
- static struct clocksource kvm_clock = {
- 	.name = "kvm-clock",
- 	.read = kvm_clock_get_cycles,
--- 
-1.7.5.4
-
+	Arnd
