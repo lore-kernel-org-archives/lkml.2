@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab2AaHhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 02:37:38 -0500
-Received: from [206.117.179.246] ([206.117.179.246]:57731 "EHLO labridge.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752015Ab2AaHhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 02:37:36 -0500
-Message-ID: <1327995440.1804.16.camel@joe2Laptop>
-Subject: Re: [PATCH] rtlwifi/rtl8192c: in _rtl92c_phy_calculate_bit_shift
- remove comparing bitmask against 1
-From: Joe Perches <joe@perches.com>
-To: "Devendra.Naga" <devendra.aaru@gmail.com>
-Cc: Larry.Finger@lwfinger.net, chaoming_li@realsil.com.cn,
-        linville@tuxdriver.com, paul.gortmaker@windriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 30 Jan 2012 23:37:20 -0800
-In-Reply-To: <1327993863-6810-1-git-send-email-devendra.aaru@gmail.com>
-References: <1327993863-6810-1-git-send-email-devendra.aaru@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752866Ab2AaHnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 02:43:21 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:59549 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab2AaHnT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 02:43:19 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 01/14] Make %pR could handle bus resource with domain
+Date: Mon, 30 Jan 2012 23:42:39 -0800
+Message-Id: <1327995772-11388-2-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1327995772-11388-1-git-send-email-yinghai@kernel.org>
+References: <1327995772-11388-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090205.4F279B8E.00A6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 02:11 -0500, Devendra.Naga wrote:
-> From: "Devendra.Naga" <devendra.aaru@gmail.com>
-[]
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-[]
-> @@ -177,7 +177,7 @@ u32 _rtl92c_phy_calculate_bit_shift(u32 bitmask)
->  	u32 i;
->  
->  	for (i = 0; i <= 31; i++) {
-> -		if (((bitmask >> i) & 0x1) == 1)
-> +		if ((bitmask >> i) & 0x1)
->  			break;
->  	}
->  	return i;
+So could use %pR for busn_res with domain nr in start/end
 
-Perhaps this is simpler and faster:
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ lib/vsprintf.c |   28 ++++++++++++++++++++++++----
+ 1 files changed, 24 insertions(+), 4 deletions(-)
 
-{
-	u32 rtn = (u32)ffs((int)bitmask);
-	if (rtn)
-		return rtn - 1;
-	return 32;
-}
-
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 8e75003..b34eeea 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -451,6 +451,12 @@ char *resource_string(char *buf, char *end, struct resource *res,
+ 		.precision = -1,
+ 		.flags = SPECIAL | SMALL | ZEROPAD,
+ 	};
++	static const struct printf_spec domain_spec = {
++		.base = 16,
++		.field_width = 4,
++		.precision = -1,
++		.flags = SMALL | ZEROPAD,
++	};
+ 	static const struct printf_spec bus_spec = {
+ 		.base = 16,
+ 		.field_width = 2,
+@@ -507,11 +513,25 @@ char *resource_string(char *buf, char *end, struct resource *res,
+ 		specp = &mem_spec;
+ 		decode = 0;
+ 	}
+-	p = number(p, pend, res->start, *specp);
+-	if (res->start != res->end) {
+-		*p++ = '-';
+-		p = number(p, pend, res->end, *specp);
++
++	if (res->flags & IORESOURCE_BUS && res->end >> 8) {
++		p = number(p, pend, res->start >> 8, domain_spec);
++		*p++ = ':';
++		p = number(p, pend, res->start & 0xff, *specp);
++		if (res->start != res->end) {
++			*p++ = '-';
++			p = number(p, pend, res->end >> 8, domain_spec);
++			*p++ = ':';
++			p = number(p, pend, res->end & 0xff, *specp);
++		}
++	} else {
++		p = number(p, pend, res->start, *specp);
++		if (res->start != res->end) {
++			*p++ = '-';
++			p = number(p, pend, res->end, *specp);
++		}
+ 	}
++
+ 	if (decode) {
+ 		if (res->flags & IORESOURCE_MEM_64)
+ 			p = string(p, pend, " 64bit", str_spec);
+-- 
+1.7.7
 
