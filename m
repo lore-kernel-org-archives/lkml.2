@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab2AaUQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 15:16:03 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37909 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab2AaUQA (ORCPT
+	id S1755056Ab2AaUQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 15:16:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57823 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab2AaUQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 15:16:00 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: Re: Hang deconfiguring network interface (in shutdown) on 3.3-rc1
-Date: Tue, 31 Jan 2012 21:15:53 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: Parisc List <linux-parisc@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Michael Chan <mchan@broadcom.com>,
-        Paul McKenny <paulmck@linux.vnet.ibm.com>
-References: <1327780565.2924.24.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1327780565.2924.24.camel@dabdike.int.hansenpartnership.com>
+	Tue, 31 Jan 2012 15:16:41 -0500
+Date: Tue, 31 Jan 2012 12:16:22 -0800
+From: tip-bot for He Chunhui <hchunhui@mail.ustc.edu.cn>
+Message-ID: <tip-35f1790e6c6a7e4cae57b616cf36444d27fa6b28@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com, hchunhui@mail.ustc.edu.cn
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, hchunhui@mail.ustc.edu.cn
+In-Reply-To: <32892299.2931391328028508117.JavaMail.coremail@mailweb>
+References: <32892299.2931391328028508117.JavaMail.coremail@mailweb>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/boot] x86, boot: Fix port argument to inl() function
+Git-Commit-ID: 35f1790e6c6a7e4cae57b616cf36444d27fa6b28
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201312115.53700.maciej.rutecki@gmail.com>
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jan 2012 12:16:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On sobota, 28 stycznia 2012 o 20:56:05 James Bottomley wrote:
-> It looks like it might be a tg3 or RCU issue.  When I shut down my
-> parisc SMP 4 way system, I get an immediate hang here
-> 
-> Deconfiguring network interfaces...Internet Systems Consortium DHCP
-> Client 4.1.1-P1
-> Copyright 2004-2010 Internet Systems Consortium.
-> All rights reserved.
-> For info, please visit https://www.isc.org/software/dhcp/
-> 
-> Listening on LPF/eth0/00:30:6e:4b:15:59
-> Sending on   LPF/eth0/00:30:6e:4b:15:59
-> Sending on   Socket/fallback
-> DHCPRELEASE on eth0 to 153.66.140.171 port 67
-> 
-> Followed some seconds later by
-> 
-> [ 5714.268000] INFO: rcu_sched detected stall on CPU 3 (t=15000 jiffies)
-> [ 5714.268000] Backtrace:
-> [ 5714.268000]  [<000000004011fdd4>] show_stack+0x14/0x20
-> [ 5714.268000]  [<000000004011fdf8>] dump_stack+0x18/0x28
-> [ 5714.268000]  [<00000000401c1fec>] __rcu_pending+0xcc/0x5c8
-> [ 5714.276000]  [<00000000401c2d60>] rcu_check_callbacks+0x80/0xf8
-> [ 5714.276000] INFO: rcu_sched detected stalls on CPUs/tasks: { 3}
-> (detected by 2, t=15002 jiffies)
-> [ 5714.276000] Backtrace:
-> [ 5714.276000]  [<000000004011fdd4>] show_stack+0x14/0x20
-> [ 5714.276000]  [<000000004011fdf8>] dump_stack+0x18/0x28
-> [ 5714.276000]  [<00000000401c2484>] __rcu_pending+0x564/0x5c8
-> [ 5714.276000]  [<00000000401c2d60>] rcu_check_callbacks+0x80/0xf8
-> [ 5714.276000]  [<0000000040155dc8>] update_process_times+0x68/0xd8
-> [ 5714.276000]  [<0000000040121378>] timer_interrupt+0x1c0/0x220
-> [ 5714.276000]  [<00000000401b9cfc>] handle_irq_event_percpu+0xa4/0x2a0
-> [ 5714.276000]  [<00000000401be58c>] handle_percpu_irq+0x9c/0xd0
-> [ 5714.276000]  [<00000000401b9500>] generic_handle_irq+0x48/0x60
-> [ 5714.276000]  [<0000000040121a50>] do_cpu_irq_mask+0x1b8/0x2a8
-> [ 5714.276000]  [<0000000040105074>] intr_return+0x0/0x4
-> [ 5714.276000]  [<0000000040105074>] intr_return+0x0/0x4
-> [ 5714.276000]  [<00000000401296dc>] cpu_idle+0x74/0x80
-> [ 5714.276000]  [<000000004078e1d0>] smp_callin+0x150/0x1a0
-> [ 5714.276000]
-> [ 5714.348000]  [<0000000040155dc8>] update_process_times+0x68/0xd8
-> [ 5714.348000]  [<0000000040121378>] timer_interrupt+0x1c0/0x220
-> [ 5714.356000]  [<00000000401b9cfc>] handle_irq_event_percpu+0xa4/0x2a0
-> [ 5714.364000]  [<00000000401be58c>] handle_percpu_irq+0x9c/0xd0
-> [ 5714.364000]  [<00000000401b9500>] generic_handle_irq+0x48/0x60
-> [ 5714.372000]  [<0000000040121a50>] do_cpu_irq_mask+0x1b8/0x2a8
-> [ 5714.372000]  [<0000000040105074>] intr_return+0x0/0x4
-> [ 5714.380000]
-> 
-> This didn't happen in 3.2
-> 
-> Sysrq still works and sysrq-T shows ifconfig stuck:
-> 
-> 
-> [ 6030.376000] ifconfig        R  running task        0  1470   1452
-> 0x00000014
-> [ 6030.376000] Backtrace:
-> [ 6030.376000]  [<000000004017c6c8>] scheduler_tick+0x180/0x1a0
-> [ 6030.376000]  [<0000000040155e1c>] update_process_times+0xbc/0xd8
-> [ 6030.376000]  [<0000000040121378>] timer_interrupt+0x1c0/0x220
-> [ 6030.376000]  [<00000000401b9d54>] handle_irq_event_percpu+0xfc/0x2a0
-> [ 6030.376000]  [<0000000040105074>] intr_return+0x0/0x4
-> [ 6030.376000]  [<000000004011c638>] _raw_spin_lock_bh+0x30/0x40
-> [ 6030.376000]  [<000000004011c620>] _raw_spin_lock_bh+0x18/0x40
-> [ 6030.376000]  [<000000001c6e3a64>] tg3_chip_reset+0x9c4/0x1328 [tg3]
-> [ 6030.376000]  [<000000001c6eca9c>] tg3_halt+0xdc/0x1d8 [tg3]
-> [ 6030.376000]  [<000000001c6f9964>] tg3_close+0x194/0x3f0 [tg3]
-> [ 6030.376000]  [<0000000040411518>] __dev_close_many+0x100/0x178
-> [ 6030.376000]  [<0000000040415130>] __dev_close+0x30/0x50
-> [ 6030.376000]  [<000000004040ebf8>] __dev_change_flags+0xb0/0x1d0
-> [ 6030.376000]  [<00000000404113b0>] dev_change_flags+0x28/0x90
-> [ 6030.376000]  [<0000000040488d70>] devinet_ioctl+0x748/0x898
-> [ 6030.376000]  [<000000004048a5f4>] inet_ioctl+0x204/0x228
-> 
-> James
+Commit-ID:  35f1790e6c6a7e4cae57b616cf36444d27fa6b28
+Gitweb:     http://git.kernel.org/tip/35f1790e6c6a7e4cae57b616cf36444d27fa6b28
+Author:     He Chunhui <hchunhui@mail.ustc.edu.cn>
+AuthorDate: Wed, 1 Feb 2012 00:48:28 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 31 Jan 2012 12:05:54 -0800
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=42707
-for your bug report, please add your address to the CC list in there, thanks!
+x86, boot: Fix port argument to inl() function
 
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+"u32 port" in inl() should be "u16 port".
+
+[ hpa: it's a bug, but it doesn't produce incorrect code, so no need
+  to put this into urgent or stable. ]
+
+Signed-off-by: He Chunhui <hchunhui@mail.ustc.edu.cn>
+Link: http://lkml.kernel.org/r/32892299.2931391328028508117.JavaMail.coremail@mailweb
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/boot/boot.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+index c7093bd..18997e5 100644
+--- a/arch/x86/boot/boot.h
++++ b/arch/x86/boot/boot.h
+@@ -67,7 +67,7 @@ static inline void outl(u32 v, u16 port)
+ {
+ 	asm volatile("outl %0,%1" : : "a" (v), "dN" (port));
+ }
+-static inline u32 inl(u32 port)
++static inline u32 inl(u16 port)
+ {
+ 	u32 v;
+ 	asm volatile("inl %1,%0" : "=a" (v) : "dN" (port));
