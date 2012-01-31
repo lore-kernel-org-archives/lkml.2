@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab2AaD15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 22:27:57 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:56330 "EHLO smtps.tip.net.au"
+	id S1753545Ab2AaDdq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 22:33:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32542 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760Ab2AaD14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 22:27:56 -0500
-Date: Tue, 31 Jan 2012 14:27:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: linux-next: manual merge of the kmap_atomic tree with the
- staging.current tree
-Message-Id: <20120131142747.a2dd139403833a50939dbd17@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__31_Jan_2012_14_27_47_+1100_ef3dSH0lNoSS=XGU"
+	id S1752554Ab2AaDdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 22:33:46 -0500
+Message-ID: <4F2761B2.7080207@redhat.com>
+Date: Tue, 31 Jan 2012 11:36:18 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add kernel parameter to disable module load
+References: <20120128033450.GA2138@darkstar> <87vcnvbab1.fsf@rustcorp.com.au> <4F2755A2.5040108@redhat.com> <871uqglgpf.fsf@rustcorp.com.au>
+In-Reply-To: <871uqglgpf.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__31_Jan_2012_14_27_47_+1100_ef3dSH0lNoSS=XGU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/31/2012 10:59 AM, Rusty Russell wrote:
 
-Hi Cong,
+> On Tue, 31 Jan 2012 10:44:50 +0800, Dave Young <dyoung@redhat.com> wrote:
+>> On 01/29/2012 08:51 AM, Rusty Russell wrote:
+>>
+>>> On Sat, 28 Jan 2012 11:34:50 +0800, Dave Young <dyoung@redhat.com> wrote:
+>>>> Sometimes we need to test a kernel of same version with code or config
+>>>> option changes.
+>>>>
+>>>> We already have sysctl to disable module load, but add a kernel
+>>>> parameter will be more convenient.
+>>>
+>>>
+>>>> +static int __init module_load_disable(char *str)
+>>>> +{
+>>>> +	modules_disabled = 1;
+>>>> +	return 1;
+>>>> +}
+>>>> +__setup("nomodule", module_load_disable);
+>>>
+>>> You misspelled core_param here :)
+>>>
+>>
+>>
+>> Hello Rusty, If use core_param I'd better to change modules_disabled
+>> from int to bool or we must pass nomodule=1 instead of simply pass
+>> nomodule. But I think I can firstly post the core_param patch with
+>> current int type, then work on the transition patch for the variable
+>> type changes, what do you think?
+> 
+> You could code your set function, but "bint" is what you want.  Cleaning
+> it up to be a bool is a good idea too.
 
-Today's linux-next merge of the kmap_atomic tree got a conflict in
-drivers/staging/gma500/mmu.c between commit 344bc24c2947 ("staging:
-delete gma500 driver") from the staging.current tree and commit
-cb422c115787 ("gma500: remove the second argument of k[un]map_atomic()")
-from the kmap_atomic tree.
 
-The former removes this file (as the driver has migrated out of staging),
-so I did that.
+Thanks. I will try bint. Will consider to make it bool later because
+sysctl also need some changes.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+>> Another do you think we need to expose this to sysfs via core_param?
+>> According to the sysctl code looks like we should not add sysfs
+>> interface to allow transition from "1" to "0"
+> 
+> If you want it writable, you definitely want to code your own set
+> function so it's one way.  But perm 0 or 0444 make sense, too.
 
---Signature=_Tue__31_Jan_2012_14_27_47_+1100_ef3dSH0lNoSS=XGU
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I like 'perm 0' :)
 
-iQIcBAEBCAAGBQJPJ1+zAAoJEECxmPOUX5FEnYMQAI4Q05nWk9PuW1rQgsUOf4oP
-v5dumtFA/gnaNT8juUquheJpPpaklUq99DTwZhbdX8WA+H030kjHE1NX8hQROf7c
-N0G5FGXNECxEbRGAUMt9kdVpUqnA9tN7zbMYpIeZfCeyykPWa8FEp2CaulP/qVh8
-u3xRyb2VlHDk1J8Yw3ZZRjGZWBm/V4NKDexRBrpige3rMNON3Cdh9g5/Fre3hU4M
-9VrfLE4UYiJhgx5g7nzDRm3GxGErWCVG5f8XVXwvh+THaXtVsY0xMLPcnHh5lX4F
-q7sni8MohscyPG8aoV26VSxA1VVoS4K/HXL643ue0fCT3EG8AW57yxJMmTGlolon
-pYosT+HhlrpvT2gCBYmL2AXOXUAL+UK3COxYoorYjY3Er+sVzzXS+jW557dv3Lmz
-jKJD/UXS7d1AMqY0vcW3cLrZaNHGBtean9awwR9GW71EPg74au1S5Q4FA7LUFLgI
-i7l+KSYpdAc5Pkb3mlloL+s1gpnZmO7JGdNbGVfTeKPm/Yt0kuSDkPXfJYa19bIK
-/hbxzifweNY29jP77oyVK1No9VYFqLMwN2JUKFLalekD2nND7XUA8HUQgGdeK+fT
-exZ6g3XgqywDxsmvzHeto0spVF8CypZ1sMYLNEnYgev9EE7kaTQrOJfY3Zl14EiX
-Yfxp+L9DF/IsIv1/8fET
-=uZhk
------END PGP SIGNATURE-----
+> 
+> Cheers,
+> Rusty.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
---Signature=_Tue__31_Jan_2012_14_27_47_+1100_ef3dSH0lNoSS=XGU--
+
+
+-- 
+Thanks
+Dave
