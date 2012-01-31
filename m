@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab2AaCJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 21:09:03 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:47169 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab2AaCJB (ORCPT
+	id S1753639Ab2AaCKQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 21:10:16 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:37250 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752860Ab2AaCKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 21:09:01 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Dave Jones <davej@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        netdev@vger.kernel.org,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Damien Millescamps <damien.millescamps@6wind.com>
-Subject: Re: [PATCH 24/29] sysctl: Replace root_list with links between sysctl_table_sets.
-References: <m1pqe5ah3z.fsf@fess.ebiederm.org>
-	<1327639925-12920-24-git-send-email-ebiederm@xmission.com>
-	<20120130175112.GA20380@redhat.com>
-Date: Mon, 30 Jan 2012 18:11:40 -0800
-In-Reply-To: <20120130175112.GA20380@redhat.com> (Dave Jones's message of
-	"Mon, 30 Jan 2012 12:51:13 -0500")
-Message-ID: <m1d3a0fwo3.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Mon, 30 Jan 2012 21:10:14 -0500
+Message-ID: <4F275B20.6010105@xenotime.net>
+Date: Mon, 30 Jan 2012 19:08:16 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+VvpJcywOl9y8ojuTX/HuH3Fd5pM4/Ma4=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] mtd: fix nand/docg4.c printk format warnings
+References: <20120130144102.8d202c7d8eccd503a86b3053@canb.auug.org.au>
+In-Reply-To: <20120130144102.8d202c7d8eccd503a86b3053@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Jones <davej@redhat.com> writes:
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-> On Thu, Jan 26, 2012 at 08:52:00PM -0800, Eric W. Biederman wrote:
->
->  > +	memset(set, sizeof(*set), 0);
->
-> checkpatch should warn you about this mistake.
+Fix printk format warnings for resource_size_t:
 
-Is there a way to tie checkpatch into git.  Perhaps into git commit?
+drivers/mtd/nand/docg4.c:1277:4: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'resource_size_t'
+drivers/mtd/nand/docg4.c:1277:4: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'resource_size_t'
 
-Having something that would catch this before I embarrassed myself
-certainly sounds nice.  However my overall impression of checkpatch
-is that it catches newbie mistakes so unless it is trivial to run
-checkpatch I don't expect I will run it because I don't expect to
-tell me anything useful.
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	David Woodhouse <dwmw2@infradead.org>
+Cc:	linux-mtd@lists.infradead.org
+---
+ drivers/mtd/nand/docg4.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Eric
+--- linux-next-20120130.orig/drivers/mtd/nand/docg4.c
++++ linux-next-20120130/drivers/mtd/nand/docg4.c
+@@ -1273,8 +1273,9 @@ static int __init probe_docg4(struct pla
+ 	virtadr = ioremap(r->start, resource_size(r));
+ 	if (!virtadr) {
+ 		dev_err(dev, "Diskonchip ioremap failed: "
+-			"0x%x bytes at 0x%x\n",
+-			resource_size(r), r->start);
++			"0x%llx bytes at 0x%llx\n",
++			(unsigned long long)resource_size(r),
++			(unsigned long long)r->start);
+ 		return -EIO;
+ 	}
+ 
