@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab2AaJ1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 04:27:52 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53052
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752292Ab2AaJ1t (ORCPT
+	id S1752905Ab2AaJht (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 04:37:49 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51705 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab2AaJhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 04:27:49 -0500
-Date: Tue, 31 Jan 2012 04:27:48 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Kelbel Junior <jymmyjr@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: XFS problem
-Message-ID: <20120131092748.GA22999@infradead.org>
-References: <CAAA8XhOXuszcyCaMOcVWb-erGAJQdhBHCX-gsJ4KpH+Td7+bPQ@mail.gmail.com>
- <20120124213936.GA1505@infradead.org>
- <CAAA8XhMf9BhZP5csLfGVVbQxN7Uqh-+R6aqCLfezdiTECaRRjg@mail.gmail.com>
- <20120127105859.GC23335@infradead.org>
- <CAAA8XhOoF_AN_-1PsYQ+hp7adc08YuYqvA_3Bv9nqtuOzO1kOg@mail.gmail.com>
- <20120127191532.GA25529@infradead.org>
- <CAAA8XhMJeoUSMmcCizHqoFLrymbs7Hz216+7d445u6tV+ZC=fg@mail.gmail.com>
- <CAAA8XhPTnj+d1CzmpDvrYLRuZ3=p6A0sN1z-=yswezxA+MkF+A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAA8XhPTnj+d1CzmpDvrYLRuZ3=p6A0sN1z-=yswezxA+MkF+A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 31 Jan 2012 04:37:47 -0500
+From: Chinmay V S <chinmay.v.s@pathpartnertech.com>
+To: linux-kernel@vger.kernel.org
+Cc: cvs268@gmail.com, tglx@linutronix.de, sebastian@breakpoint.cc,
+        arjan@linux.intel.com, jeff.chua.linux@gmail.com,
+        Chinmay V S <chinmay.v.s@pathpartnertech.com>
+Subject: [RFC] [PATCH] [timer] Optimise apply_slack() for size and speed.
+Date: Tue, 31 Jan 2012 15:07:32 +0530
+Message-Id: <1328002652-7700-1-git-send-email-chinmay.v.s@pathpartnertech.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 06:34:52PM -0200, Kelbel Junior wrote:
-> How you prefer to pre allocate space?
-> xfs I/O or by 'dd' to do it?
->
-> What other information you would like to better understand and manage
-> to solve this problem?
+To apply proper slack, the original algorithm used to prepare a mask and
+then apply the mask to obtain the appropriately rounded-off absolute
+time the timer expires.
 
-Do you expect to fill most of the file with data?  In that case
-preallocating the file before starting I/O is the best way to do it.
+This patch modifies the masking logic to a bit-shift logic, therby
+reducing the complexity and number of operations. Thus obtaining a minor
+speed-up.
 
->From the shell you can do it using the xfs_io 'resvsp' command, and
-from C code using the fallocate system call, or if it's not present
-the xfs RESVSP ioctl, as documented by the xfsctl manpage when
-you have the xfsprogs development libraries installed.
+Signed-off-by: Chinmay V S <chinmay.v.s@pathpartnertech.com>
+---
+ kernel/timer.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-If you actually want to keep the file sparse it's much harder.  You
-could try larger I/O sized, or trying using the xfs extent size hint
-which is set using the XFS_IOC_FSSETXATTR ioctl, again documented in
-the xfsctl man page.
+diff --git a/kernel/timer.c b/kernel/timer.c
+index a297ffc..0379658 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -785,9 +785,7 @@ EXPORT_SYMBOL(mod_timer_pending);
+  * Algorithm:
+  *   1) calculate the maximum (absolute) time
+  *   2) calculate the highest bit where the expires and new max are different
+- *   3) use this bit to make a mask
+- *   4) use the bitmask to round down the maximum time, so that all last
+- *      bits are zeros
++ *   3) round down the maximum time, so that all the lower bits are zeros
+  */
+ static inline
+ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+@@ -811,9 +809,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+ 
+ 	bit = find_last_bit(&mask, BITS_PER_LONG);
+ 
+-	mask = (1 << bit) - 1;
+-
+-	expires_limit = expires_limit & ~(mask);
++	expires_limit = (expires_limit >> bit) << bit;
+ 
+ 	return expires_limit;
+ }
+-- 
+1.7.5.4
 
