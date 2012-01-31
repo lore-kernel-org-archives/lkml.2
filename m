@@ -1,116 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab2AaCNB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 21:13:01 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34624 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab2AaCNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 21:13:00 -0500
-Message-ID: <4F274E28.2010200@gmail.com>
-Date: Mon, 30 Jan 2012 20:12:56 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Chris Palmer <chris.palmer@pobox.com>
-CC: torvalds@linux-foundation.org, Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>, ghost3k@ghost3k.net,
-        linux-kernel@vger.kernel.org, edward.donovan@numble.net, keve@irb.hu
-Subject: Re: ASM1083 PCIx-PCI bridge interrupts - widespread problems
-References: <4E68A6E8.9020700@pobox.com> <20110908165155.f661a738.akpm@linux-foundation.org> <4F26B162.4050000@pobox.com>
-In-Reply-To: <4F26B162.4050000@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754059Ab2AaCNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 21:13:48 -0500
+Received: from [206.117.179.246] ([206.117.179.246]:46209 "EHLO labridge.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752788Ab2AaCNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 21:13:46 -0500
+Message-ID: <1327976007.5730.8.camel@joe2Laptop>
+Subject: Re: [PATCH 24/29] sysctl: Replace root_list with links between
+ sysctl_table_sets.
+From: Joe Perches <joe@perches.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, netdev@vger.kernel.org,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Damien Millescamps <damien.millescamps@6wind.com>
+Date: Mon, 30 Jan 2012 18:13:27 -0800
+In-Reply-To: <m1d3a0fwo3.fsf@fess.ebiederm.org>
+References: <m1pqe5ah3z.fsf@fess.ebiederm.org>
+	 <1327639925-12920-24-git-send-email-ebiederm@xmission.com>
+	 <20120130175112.GA20380@redhat.com> <m1d3a0fwo3.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 09:04 AM, Chris Palmer wrote:
-> Linus et al
->
->
-> For about 6 months many users have been having interrupt problems with PCI boards, but it hasn't been
-> easy trying to find where the problem may be. However, it is now looking likely that the problem lies
-> in the ASM1083 PCIe-PCI bridge chipset, as used by Asus in many Sandybridge and AMD boards.
->
-> My original bug report is:
->      https://bugzilla.kernel.org/show_bug.cgi?id=38632  (Sandybridge)
->
-> and there several other similar ones. However there is also extensive investigation in the following thread:
->      http://www.gossamer-threads.com/lists/linux/kernel/1466185  (AMD)
->
-> There have also been reports of Windows users having similar problems.
->
-> This problem prevents use of PCI boards in any motherboard with that bridge chipset - including most
-> ASUS boards. At the moment though we don't know whether the chipset or drivers are faulty, and if a
-> workaround is possible.
->
-> At the moment my bug is assigned to drivers_network, but this doesn't look appropriate.
->
-> Hoping someone can help...
+On Mon, 2012-01-30 at 18:11 -0800, Eric W. Biederman wrote:
+> Is there a way to tie checkpatch into git.  Perhaps into git commit?
 
-If the analysis posted in the "Unhandled IRQs on AMD E-450" thread is 
-correct, then it sounds like the bridge chip is delaying PCIe INTx 
-deassert messages. In that case there isn't much the kernel is likely to 
-be able to fix it properly, at least not without input from ASMedia or 
-someone else with detailed knowledge of the chip.
+$ git log --format=email -p -1 $commit | \
+  ./scripts/checkpatch.pl -
 
-The workaround posted in that thread (switching to IRQ polling mode on 
-the interrupt for some period of time after a screaming IRQ is detected) 
-might be a workaround, but definitely would be considered a hack.
+or maybe a front-end script prior to git commit
 
-Do you have a source/link for people having issues with this on Windows? 
-I wouldn't be surprised though - I doubt Windows has any special 
-handling for unhandled IRQs so likely it just hammers the IRQ handler 
-until the IRQ gets deasserted. In that case the only thing a user might 
-notice would be poor performance whenever the devices behind that bridge 
-raise interrupts.
+$ git diff --stat -p <paths> | \
+  ./scripts.checkpatch.pl -
 
->
->
->
->
-> On 09/09/2011 00:51, Andrew Morton wrote:
->
->> On Thu, 08 Sep 2011 12:28:40 +0100
->> Chris Palmer<chris.palmer@pobox.com>  wrote:
->>
->>> Andrew
->>>
->>> I'm writing to ask if you could cast a quick eye over the following
->>> bugs, to give an opinion on where they should be assigned. Mine has been
->>> reassigned to Network Drivers but I'm not convinced that is right, and I
->>> think the problem is wider than that.
->>>
->>> In summary, interrupt handling for *PCI boards with ASUS Sandybridge
->>> motherboards* seems to be broken.
->>>
->>> It has been seen with network and non-network PCI boards. PCIx network
->>> boards work OK. And all reports are for ASUS motherboards.
->>>
->>> My bug report is
->>>
->>> https://bugzilla.kernel.org/show_bug.cgi?id=38632
->>>
->>> Others that I know of are:
->>>
->>> https://bugzilla.redhat.com/show_bug.cgi?id=713351
->>> https://bugzilla.kernel.org/show_bug.cgi?id=35332
->>> https://bugzilla.kernel.org/show_bug.cgi?id=34242
->>> https://bugzilla.kernel.org/show_bug.cgi?id=32242
->>> https://bugzilla.kernel.org/show_bug.cgi?id=39122
->>>
->>>
->>> I'm now on kernel 3.0.4 with the problem still there. The only thing
->>> that seems to make a difference is acpi=off (although one person
->>> reported that it merely changed it from minutes to days before occurring).
->>>
->>> I'd appreciate anything you could do to move this in the right direction...
->>>
->>
->> Most likely ACPI, I expect.  I think that's
->> acpi-config-interrupts@bugzilla.kernel.org.  kernel.org DNS is dead at
->> present and I can't check.
->>
->> Len, can you suggest how to triage these please?
 
