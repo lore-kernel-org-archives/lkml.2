@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab2AaKlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:41:25 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60620 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697Ab2AaKlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:41:23 -0500
-Message-ID: <4F27C54F.1010107@suse.cz>
-Date: Tue, 31 Jan 2012 11:41:19 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120124 Thunderbird/10.0
-MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>,
+	id S1753658Ab2AaKmq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:42:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23298 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752274Ab2AaKmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 05:42:44 -0500
+Date: Tue, 31 Jan 2012 05:42:31 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>,
-        ML netdev <netdev@vger.kernel.org>
-Subject: network regression: cannot rename netdev twice
-References: <4F27120A.4040106@suse.cz> <CAPXgP12Sr2KzGJ9RA13QBOCkctb-z3O4+1uHOjANgMDDv2pxaQ@mail.gmail.com>
-In-Reply-To: <CAPXgP12Sr2KzGJ9RA13QBOCkctb-z3O4+1uHOjANgMDDv2pxaQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
+Subject: Re: [PATCH -next] cifs: fix printk format warnings
+Message-ID: <20120131054231.66669e41@tlielax.poochiereds.net>
+In-Reply-To: <4F2764E9.4010506@xenotime.net>
+References: <20120130144102.8d202c7d8eccd503a86b3053@canb.auug.org.au>
+	<4F2764E9.4010506@xenotime.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 11:52 PM, Kay Sievers wrote:
-> 2012/1/30 Jiri Slaby <jslaby@suse.cz>:
->> I cannot boot properly with this commit:
->> commit 524b6c5b39b931311dfe5a2f5abae2f5c9731676
->> Author: Eric W. Biederman <ebiederm@xmission.com>
->> Date:   Sun Dec 18 20:09:31 2011 -0800
->>
->>    sysfs: Kill nlink counting.
->>
->>
->> 1) network systemd rule doesn't start network
+On Mon, 30 Jan 2012 19:50:01 -0800
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+
+> From: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> What does that mean? What's a network systemd rule?
+> Fix printk format warnings for ssize_t variables:
+> 
+> fs/cifs/connect.c:2145:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
+> fs/cifs/connect.c:2152:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
+> fs/cifs/connect.c:2160:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
+> fs/cifs/connect.c:2170:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc:	Steve French <sfrench@samba.org>
+> Cc:	linux-cifs@vger.kernel.org
+> ---
+>  fs/cifs/connect.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> --- linux-next-20120130.orig/fs/cifs/connect.c
+> +++ linux-next-20120130/fs/cifs/connect.c
+> @@ -2142,14 +2142,14 @@ cifs_set_cifscreds(struct smb_vol *vol,
+>  
+>  	len = delim - payload;
+>  	if (len > MAX_USERNAME_SIZE || len <= 0) {
+> -		cFYI(1, "Bad value from username search (len=%ld)", len);
+> +		cFYI(1, "Bad value from username search (len=%zd)", len);
+>  		rc = -EINVAL;
+>  		goto out_key_put;
+>  	}
+>  
+>  	vol->username = kstrndup(payload, len, GFP_KERNEL);
+>  	if (!vol->username) {
+> -		cFYI(1, "Unable to allocate %ld bytes for username", len);
+> +		cFYI(1, "Unable to allocate %zd bytes for username", len);
+>  		rc = -ENOMEM;
+>  		goto out_key_put;
+>  	}
+> @@ -2157,7 +2157,7 @@ cifs_set_cifscreds(struct smb_vol *vol,
+>  
+>  	len = key->datalen - (len + 1);
+>  	if (len > MAX_PASSWORD_SIZE || len <= 0) {
+> -		cFYI(1, "Bad len for password search (len=%ld)", len);
+> +		cFYI(1, "Bad len for password search (len=%zd)", len);
+>  		rc = -EINVAL;
+>  		kfree(vol->username);
+>  		vol->username = NULL;
+> @@ -2167,7 +2167,7 @@ cifs_set_cifscreds(struct smb_vol *vol,
+>  	++delim;
+>  	vol->password = kstrndup(delim, len, GFP_KERNEL);
+>  	if (!vol->password) {
+> -		cFYI(1, "Unable to allocate %ld bytes for password", len);
+> +		cFYI(1, "Unable to allocate %zd bytes for password", len);
+>  		rc = -ENOMEM;
+>  		kfree(vol->username);
+>  		vol->username = NULL;
 
-Oh, perhaps you call it a service file, not rule file?
+Looks correct.
 
-Anyway this is a different bug. Revert of the patch above does not help.
-
-The bug lays in the network layer. udev is unable to perform persistent
-eth naming:
-# ip link set eth0 name eth1    -- this one is OK
-# ip link set eth1 name eth0
-RTNETLINK answers: No such file or directory
-
-thanks,
--- 
-js
-suse labs
+Acked-by: Jeff Layton <jlayton@redhat.com>
