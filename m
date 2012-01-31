@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab2AaKOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:14:12 -0500
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:40608 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752132Ab2AaKOK (ORCPT
+	id S1752980Ab2AaKRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:17:41 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56000 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab2AaKRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:14:10 -0500
-Subject: Re: [PATCH 05/16] cx18: fix handling of 'radio' module parameter
-From: Andy Walls <awalls@md.metrocast.net>
-To: Danny Kukawka <danny.kukawka@bisect.de>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, mchehab@redhat.com,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 31 Jan 2012 05:13:22 -0500
-In-Reply-To: <1328004120.2821.8.camel@palomino.walls.org>
-References: <1327952458-7424-1-git-send-email-danny.kukawka@bisect.de>
-	 <1327952458-7424-6-git-send-email-danny.kukawka@bisect.de>
-	 <1328004120.2821.8.camel@palomino.walls.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 8bit
-Message-ID: <1328004803.2821.15.camel@palomino.walls.org>
-Mime-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.211,0.0.0000
- definitions=2012-01-31_04:2012-01-31,2012-01-31,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=2
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1012030000 definitions=main-1201310024
+	Tue, 31 Jan 2012 05:17:39 -0500
+Date: Tue, 31 Jan 2012 11:17:34 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Barry Song <Barry.Song@csr.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>, workgroup.linux@csr.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-mtd@lists.infradead.org, Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
+        Barry Song <Baohua.Song@csr.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Erik Gilling <konkers@google.com>
+Subject: Re: [PATCH 1/3] platform: add common resource requesting and
+ mapping helper
+Message-ID: <20120131101734.GE2471@pengutronix.de>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+ <1328004002-24646-2-git-send-email-Barry.Song@csr.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Lb0e7rgc7IsuDeGj"
+Content-Disposition: inline
+In-Reply-To: <1328004002-24646-2-git-send-email-Barry.Song@csr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 05:01 -0500, Andy Walls wrote:
-> On Mon, 2012-01-30 at 20:40 +0100, Danny Kukawka wrote:
-> > Fixed handling of 'radio' module parameter from module_param_array
-> > to module_param_named to fix these compiler warnings in cx18-driver.c:
-> 
-> NACK.
-> 
-> "radio" is an array of tristate values (-1, 0, 1) per installed card:
-> 
-> 	static int radio[CX18_MAX_CARDS] = { -1, -1,
-> 
-> and must remain an array or you will break the driver.
-> 
-> Calling "radio_c" a module parameter named "radio" is wrong.
-> 
-> The correct fix is to reverse Rusty Russel's patch to the driver in
-> commit  90ab5ee94171b3e28de6bb42ee30b527014e0be7
-> to change the "bool" back to an "int" as it should be in
-                      ^^^^
-Sorry, a typo here.  Disregard the word "back".
 
-Regards,
-Andy
+--Lb0e7rgc7IsuDeGj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> "module_param_array(radio, ...)"
-> 
-> Regards,
-> Andy
-> 
-> > In function ‘__check_radio’:
-> > 113:1: warning: return from incompatible pointer type [enabled by default]
-> > At top level:
-> > 113:1: warning: initialization from incompatible pointer type [enabled by default]
-> > 113:1: warning: (near initialization for ‘__param_arr_radio.num’) [enabled by default]
-> > 
-> > Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-> > ---
-> >  drivers/media/video/cx18/cx18-driver.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
-> > index 349bd9c..27b5330 100644
-> > --- a/drivers/media/video/cx18/cx18-driver.c
-> > +++ b/drivers/media/video/cx18/cx18-driver.c
-> > @@ -110,7 +110,7 @@ static int retry_mmio = 1;
-> >  int cx18_debug;
-> >  
-> >  module_param_array(tuner, int, &tuner_c, 0644);
-> > -module_param_array(radio, bool, &radio_c, 0644);
-> > +module_param_named(radio, radio_c, bool, 0644);
-> >  module_param_array(cardtype, int, &cardtype_c, 0644);
-> >  module_param_string(pal, pal, sizeof(pal), 0644);
-> >  module_param_string(secam, secam, sizeof(secam), 0644);
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Tue, Jan 31, 2012 at 06:00:00PM +0800, Barry Song wrote:
+> From: Barry Song <Baohua.Song@csr.com>
+>=20
+> this patch helps to move the common pattern from
+>=20
+> "
+> res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> if (!res) {
+> 	ret =3D -ENODEV;
+> 	goto err;
+> }
 
+You don't need to do the error checking for 'res'. You can simply do
 
+res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+base =3D devm_request_and_ioremap(&dev->dev, res);
+
+devm_request_and_ioremap() will check res. Given that, I don't think
+we can save a lot with another wrapper.
+
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--Lb0e7rgc7IsuDeGj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk8nv74ACgkQD27XaX1/VRuQggCdHAespvwk6e/7522qKFDAMN7W
+udkAn13V9tMmxDyZ1ldeBIG0U8eQ3Igk
+=akgm
+-----END PGP SIGNATURE-----
+
+--Lb0e7rgc7IsuDeGj--
