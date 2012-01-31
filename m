@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab2AaAf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 19:35:28 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54232 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab2AaAf0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 19:35:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120130.125219.2077768183344205118.davem@davemloft.net>
-References: <1327643159-1302-1-git-send-email-tomoya.rohm@gmail.com>
-	<20120130.125219.2077768183344205118.davem@davemloft.net>
-Date: Tue, 31 Jan 2012 09:35:26 +0900
-Message-ID: <CANKRQniQs95kUhyDeP2V7cyOFE1gyi-ihZufmNoi_SGSXm3MGQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] ethernet/pch_gbe: Change company name OKI
- SEMICONDUCTOR to LAPIS Semiconductor
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: jeffrey.t.kirsher@intel.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752755Ab2AaAvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 19:51:38 -0500
+Received: from mga01.intel.com ([192.55.52.88]:34684 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003Ab2AaAvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 19:51:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="118293448"
+Subject: Re: [patch v2 0/8]block: An IOPS based ioscheduler
+From: Shaohua Li <shaohua.li@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, david@fromorbit.com,
+        jack@suse.cz, zhu.yanhai@gmail.com, namhyung.kim@lge.com
+In-Reply-To: <20120130153009.GB30245@redhat.com>
+References: <20120130070213.793690895@sli10-conroe.sh.intel.com>
+	 <20120130153009.GB30245@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Jan 2012 08:50:40 +0800
+Message-ID: <1327971040.21268.24.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David
+On Mon, 2012-01-30 at 10:30 -0500, Vivek Goyal wrote:
+> On Mon, Jan 30, 2012 at 03:02:13PM +0800, Shaohua Li wrote:
+> > An IOPS based I/O scheduler
+> > 
+> > Flash based storage has some different characteristics against rotate disk.
+> > 1. no I/O seek.
+> > 2. read and write I/O cost usually is much different.
+> > 3. Time which a request takes depends on request size.
+> > 4. High throughput and IOPS, low latency.
+> 
+> Hi Shaohua,
+> 
+> Last time we agreed that you will try to extend CFQ iops mode to take care
+> of this case. I was wondering that if that idea is out of the window?
+I felt there is complexity to do the merge and mess code even with
+wrapping some functions as you suggested. Another thing is I want to
+avoid complexity of CFQ, for example allocating queue and sharing it
+between tasks. cfq_set_request is one source that queue_lock gets
+contented, making the code simple can avoid such contention.
 
-I can understand your saying.
+> Also what's the real workload where this is going to benefit us. I had
+> struggled to run something which drove constantly deep queue depths to
+> get the fairness without idling.
+To be honest, I don't have real workload. Our test environment runs some
+micro benchmarks, which has some problems. I thought we all agreed CFQ
+has some limitations. Hoping somebody having real workload can have a
+look.
 
-If I post like below, is this patch acceptable for you ?
-+       tristate "OKI/LAPIS SEMICONDUCTOR IOH(ML7223/ML7831) GbE"
+Thanks,
+Shaohua
 
-BTW, I think need consistency for "Change company/product name" as a
-whole of linux.
-Because other patches for the same series "change company name" I
-posted have already accepted.
-e.g.(GPIO, USB device, DMA, UART, I2C)
-
-thanks,
-tomoya
-
-2012/1/31 David Miller <davem@davemloft.net>:
->
-> Sorry, we're not going to get into this pattern where we move drivers
-> around in the tree every time the company that produces the chip
-> changes it's name.
->
-> If we did this then certain drivers will have moved 5 or more times
-> since the beginning of the Linux kernel, and there is nothing to be
-> gained from that except confusion.
->
-> In fact more valuable thing to do is to refer to both the old and the
-> new name, rather than just the new one or just the old one.  Because
-> you now have two sets of users, one very large set which is familiar
-> with the old name and a smaller set which will only know about the new
-> name.
->
-> Frankly, I would just leave everything alone except perhaps adding a
-> mention of the new name (and not deleting the old name) in the Kconfig
-> help text.
