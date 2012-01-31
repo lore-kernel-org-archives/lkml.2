@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab2AaAvi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 19:51:38 -0500
-Received: from mga01.intel.com ([192.55.52.88]:34684 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab2AaAvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 19:51:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="118293448"
-Subject: Re: [patch v2 0/8]block: An IOPS based ioscheduler
-From: Shaohua Li <shaohua.li@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, david@fromorbit.com,
-        jack@suse.cz, zhu.yanhai@gmail.com, namhyung.kim@lge.com
-In-Reply-To: <20120130153009.GB30245@redhat.com>
-References: <20120130070213.793690895@sli10-conroe.sh.intel.com>
-	 <20120130153009.GB30245@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Jan 2012 08:50:40 +0800
-Message-ID: <1327971040.21268.24.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753477Ab2AaAy6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 19:54:58 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37330 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab2AaAy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 19:54:57 -0500
+Date: Tue, 31 Jan 2012 09:07:11 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Dong Aisheng <dongas86@gmail.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Pinmux bindings proposal V2
+Message-ID: <20120131010708.GA24681@S2101-09.ap.freescale.net>
+References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
+ <20120123210052.GS22818@atomide.com>
+ <20120126093610.GD2287@S2101-09.ap.freescale.net>
+ <20120126175122.GX22818@atomide.com>
+ <20120127071944.GC32740@S2101-09.ap.freescale.net>
+ <20120127171653.GI13504@atomide.com>
+ <20120130021041.GB10470@S2101-09.ap.freescale.net>
+ <20120130174323.GF9339@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120130174323.GF9339@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 10:30 -0500, Vivek Goyal wrote:
-> On Mon, Jan 30, 2012 at 03:02:13PM +0800, Shaohua Li wrote:
-> > An IOPS based I/O scheduler
-> > 
-> > Flash based storage has some different characteristics against rotate disk.
-> > 1. no I/O seek.
-> > 2. read and write I/O cost usually is much different.
-> > 3. Time which a request takes depends on request size.
-> > 4. High throughput and IOPS, low latency.
+On Mon, Jan 30, 2012 at 09:43:23AM -0800, Tony Lindgren wrote:
+> * Shawn Guo <shawn.guo@linaro.org> [120129 17:27]:
+> > On Fri, Jan 27, 2012 at 09:16:53AM -0800, Tony Lindgren wrote:
+> > ...
+> > > I guess the analog we should follow here is clk_get and clk_set_rate,
+> > > except we would have pinconf_set_state with predefined states.
+> > > 
+> > It seems working for cases that we only change pinconf but never pinmux
+> > for different configuration states.  But how would that work for cases
+> > that require mux change for different configuration states?
 > 
-> Hi Shaohua,
+> I don't see why we should not allow changing the mux state with pinconf
+> too, after all it's the mux/pin that's locked, not the functionality of
+> the pin.
 > 
-> Last time we agreed that you will try to extend CFQ iops mode to take care
-> of this case. I was wondering that if that idea is out of the window?
-I felt there is complexity to do the merge and mess code even with
-wrapping some functions as you suggested. Another thing is I want to
-avoid complexity of CFQ, for example allocating queue and sharing it
-between tasks. cfq_set_request is one source that queue_lock gets
-contented, making the code simple can avoid such contention.
+My point is I do not see how we can use the current pinmux APIs design
+to change mux in the way how clk_get and clk_set_rate work.  Or you
+have a pinmux APIs reconstruction on your mind?
 
-> Also what's the real workload where this is going to benefit us. I had
-> struggled to run something which drove constantly deep queue depths to
-> get the fairness without idling.
-To be honest, I don't have real workload. Our test environment runs some
-micro benchmarks, which has some problems. I thought we all agreed CFQ
-has some limitations. Hoping somebody having real workload can have a
-look.
+Regards,
+Shawn
 
-Thanks,
-Shaohua
-
+> An example of this would be remuxing a shared UART line between rx and
+> tx. Those kind of cases could be defined as PMX_DIRECTION_INPUT and
+> PMX_DIRECTION_OUTPUT so driver could call Linux generic functions for
+> those if implemented.
+> 
