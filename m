@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab2AaLKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:10:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35813 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752904Ab2AaLK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:10:26 -0500
-Message-ID: <4F27CC20.4020403@suse.cz>
-Date: Tue, 31 Jan 2012 12:10:24 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        maximilian attems <max@stro.at>
-Subject: Re: [PATCH] kbuild: Fix link to headers in 'make deb-pkg'
-References: <1327318828-12984-1-git-send-email-joerg.roedel@amd.com> <4F1D8810.1040501@suse.cz> <20120131110522.GA2191@amd.com>
-In-Reply-To: <20120131110522.GA2191@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754041Ab2AaLMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:12:23 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59698 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225Ab2AaLMV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 06:12:21 -0500
+Message-ID: <1328008455.956.30.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 0/3] platform: add platform_devm_request_and_ioremap()
+ common API
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Barry Song <Barry.Song@csr.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, workgroup.linux@csr.com
+Date: Tue, 31 Jan 2012 13:14:15 +0200
+In-Reply-To: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-FMh3AKwSqszx+f6QOdCL"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.1.2012 12:05, Joerg Roedel wrote:
-> Hi,
-> 
-> any news on this?
 
-I know nothing about deb packaging, so I was hoping Max would comment.
-But I'll try the patch myself later this week (I'm quite busy atm).
+--=-FMh3AKwSqszx+f6QOdCL
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Michal
-> 
-> On Mon, Jan 23, 2012 at 05:17:20PM +0100, Michal Marek wrote:
->> (adding max to CC)
->>
->> On 23.1.2012 12:40, Joerg Roedel wrote:
->>> The Link to the kernel header files in the debian packages
->>> point to the original build directory. This is a bad choice
->>> if the packages were installed on a different machine. Fix
->>> this in by manually re-creating the link in the builddeb
->>> script.
->>> With this patch applied the lib/modules/$version dir always
->>> exists, so move the "$ARCH = um" check out of the modules
->>> check too.
->>>
->>> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
->>> ---
->>>  scripts/package/builddeb |   13 +++++++++----
->>>  1 files changed, 9 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
->>> index f6cbc3d..46f63dc 100644
->>> --- a/scripts/package/builddeb
->>> +++ b/scripts/package/builddeb
->>> @@ -91,6 +91,7 @@ fi
->>>  rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
->>>  mkdir -m 755 -p "$tmpdir/DEBIAN"
->>>  mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
->>> +mkdir -p  "$tmpdir/lib/modules/$version"
->>>  mkdir -m 755 -p "$fwdir/DEBIAN"
->>>  mkdir -p "$fwdir/lib" "$fwdir/usr/share/doc/$fwpackagename"
->>>  mkdir -m 755 -p "$libc_headers_dir/DEBIAN"
->>> @@ -121,10 +122,14 @@ fi
->>>  
->>>  if grep -q '^CONFIG_MODULES=y' .config ; then
->>>  	INSTALL_MOD_PATH="$tmpdir" make KBUILD_SRC= modules_install
->>> -	if [ "$ARCH" = "um" ] ; then
->>> -		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
->>> -		rmdir "$tmpdir/lib/modules/$version"
->>> -	fi
->>> +fi
->>> +
->>> +# Make sure link to the headers is correct
->>> +ln -snf "/usr/src/$kernel_headers_packagename" "$tmpdir/lib/modules/$version/build"
->>> +
->>> +if [ "$ARCH" = "um" ] ; then
->>> +	mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
->>> +	rmdir "$tmpdir/lib/modules/$version"
->>>  fi
->>>  
->>>  make headers_check
->>
-> 
+On Tue, 2012-01-31 at 17:59 +0800, Barry Song wrote:
+> these patches move the common pattern from
+>=20
+> "
+> res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);=20
+> if (!res) {
+> 	        ret =3D -ENODEV;
+> 		        goto err;
+> }
+>=20
+> base =3D devm_request_and_ioremap(&dev->dev, mem_res);
+> if (!base) {
+> 	        ret =3D -ENODEV;
+> 		        goto err;
+> }
+> "
+
+Am I right that these patches have been generated using the
+coccinelle/api/devm_request_and_ioremap.cocci script?
+
+If yes, I think it would be nice of you to give a credit to coccinelle
+and its authors for developing this awesome tool in every commit
+message.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-FMh3AKwSqszx+f6QOdCL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPJ80HAAoJECmIfjd9wqK0iQwP/1sZGw0kf297MdZKYjz5INT6
+aathplkk6+3QejuECiUI+0epeIrjMpIIR+M0NKIGFEqhWzH7SduWVLCEkNzlhA7X
+4kkxz0qypKK3clVF+cu7aZJ8OovOVeiIhpBW3ZWfazjVfxKgDRwmV1btoJnAGggx
+HqCo+cy0uj5P1Fn2lPFNQ34x3DD5IEAqDRQpHPvJ+zjN4h5qnRCIJYMVhMQl/M6E
+cDirzBcanQuvDhjX+XHa4KIuecmzI4KTOEETElBTe2emYjOJyQ7/A9eLNiTCPtKY
+zqHvxDkwclW5ZrI1kkH9sLF6fVjunKWiBRoCwHQeY0RVgAhKqv/JixmSwS4iXkRN
+FHtw0/j+JOATUv78nw3YyedeWdAQ94aUiM826zNTpoC0wXst5HVkzxS1QIW25juP
+tf1SR9FSb3kHtsPxCaGOdBbjWQcTtJwdB8tQnphjtj807g/QnoOszmBRhVxPas1T
+yg1az17KmEIx8tSayee+s9b0x1v4rnw0oBUdGxlaF4f6wFzJ2a7OCKdz+Q8lhN8O
+59yNPmOghz2DybYDr+UMK0GZ4Lo3TYm/Y8AmtoaEl7wNWr/t1ycd6UKfFqja8cno
+TTILiMxLGmrnQ4KuXyavDsNoQ5IJMBdT2PedQ9H8l9Tx9s8JBjk2SAxy0QHfSx6J
+S/6rv+EIKeXGCo0jPNfH
+=G+0s
+-----END PGP SIGNATURE-----
+
+--=-FMh3AKwSqszx+f6QOdCL--
 
