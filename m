@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab2AaQmH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:42:07 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7992 "EHLO
+	id S1754945Ab2AaQmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:42:23 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8031 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab2AaQmD (ORCPT
+	with ESMTP id S1754878Ab2AaQmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:42:03 -0500
+	Tue, 31 Jan 2012 11:42:19 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 31 Jan 2012 08:41:57 -0800
+	by hqnvupgp07.nvidia.com on Tue, 31 Jan 2012 08:42:13 -0800
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
@@ -16,9 +16,9 @@ Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
         Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
         Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/8] ARM: tegra: export tegra_powergate_is_powered()
-Date: Tue, 31 Jan 2012 18:40:43 +0200
-Message-Id: <1328028051-24271-6-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v2 7/8] ARM: tegra: support for Tegra30 CPU powerdomains
+Date: Tue, 31 Jan 2012 18:40:45 +0200
+Message-Id: <1328028051-24271-8-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
@@ -27,39 +27,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export tegra_powergate_is_powered(). This function will be used by the Tegra30
-code to bringup secondary CPU cores.
+Secondary CPU powerdomains can be powergated on Tegra30. Add the necessary
+functions to do this. This will be used to boot the secondary CPUs later on.
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- arch/arm/mach-tegra/include/mach/powergate.h |    1 +
- arch/arm/mach-tegra/powergate.c              |    2 +-
- 2 files changed, 2 insertions(+), 1 deletions(-)
+ arch/arm/mach-tegra/common.c                 |    3 +++
+ arch/arm/mach-tegra/include/mach/powergate.h |    3 +++
+ arch/arm/mach-tegra/powergate.c              |   19 ++++++++++++++++++-
+ 3 files changed, 24 insertions(+), 1 deletions(-)
 
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index 51dcbdff..0ad5c23 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -28,6 +28,7 @@
+ 
+ #include <mach/iomap.h>
+ #include <mach/system.h>
++#include <mach/powergate.h>
+ 
+ #include "board.h"
+ #include "clock.h"
+@@ -117,6 +118,7 @@ void __init tegra20_init_early(void)
+ 	tegra2_init_clocks();
+ 	tegra_clk_init_from_table(tegra20_clk_init_table);
+ 	tegra_init_cache(0x331, 0x441);
++	tegra_powergate_init();
+ }
+ #endif
+ #ifdef CONFIG_ARCH_TEGRA_3x_SOC
+@@ -125,5 +127,6 @@ void __init tegra30_init_early(void)
+ 	tegra_init_fuse();
+ 	tegra30_init_clocks();
+ 	tegra_init_cache(0x441, 0x551);
++	tegra_powergate_init();
+ }
+ #endif
 diff --git a/arch/arm/mach-tegra/include/mach/powergate.h b/arch/arm/mach-tegra/include/mach/powergate.h
-index 36846dc..0ec8ce1 100644
+index ca41186..4752b1a 100644
 --- a/arch/arm/mach-tegra/include/mach/powergate.h
 +++ b/arch/arm/mach-tegra/include/mach/powergate.h
-@@ -28,6 +28,7 @@
- #define TEGRA_POWERGATE_L2	5
- #define TEGRA_POWERGATE_MPE	6
+@@ -38,6 +38,9 @@
+ #define TEGRA_POWERGATE_CPU0	TEGRA_POWERGATE_CPU
+ #define TEGRA_POWERGATE_3D0	TEGRA_POWERGATE_3D
  
-+int tegra_powergate_is_powered(int id);
++int  __init tegra_powergate_init(void);
++
++int tegra_cpu_powergate_id(int cpuid);
+ int tegra_powergate_is_powered(int id);
  int tegra_powergate_power_on(int id);
  int tegra_powergate_power_off(int id);
- int tegra_powergate_remove_clamping(int id);
 diff --git a/arch/arm/mach-tegra/powergate.c b/arch/arm/mach-tegra/powergate.c
-index 9b828f2..984bbdf 100644
+index 7120ad7..c238699 100644
 --- a/arch/arm/mach-tegra/powergate.c
 +++ b/arch/arm/mach-tegra/powergate.c
-@@ -93,7 +93,7 @@ int tegra_powergate_power_off(int id)
- 	return tegra_powergate_set(id, false);
+@@ -41,6 +41,14 @@
+ #define PWRGATE_STATUS		0x38
+ 
+ static int tegra_num_powerdomains;
++static int tegra_num_cpu_domains;
++static u8 *tegra_cpu_domains;
++static u8 tegra30_cpu_domains[] = {
++	TEGRA_POWERGATE_CPU0,
++	TEGRA_POWERGATE_CPU1,
++	TEGRA_POWERGATE_CPU2,
++	TEGRA_POWERGATE_CPU3,
++};
+ 
+ static DEFINE_SPINLOCK(tegra_powergate_lock);
+ 
+@@ -161,6 +169,14 @@ err_power:
+ 	return ret;
  }
  
--static int tegra_powergate_is_powered(int id)
-+int tegra_powergate_is_powered(int id)
++int tegra_cpu_powergate_id(int cpuid)
++{
++	if (cpuid > 0 && cpuid < tegra_num_cpu_domains)
++		return tegra_cpu_domains[cpuid];
++
++	return -EINVAL;
++}
++
+ int __init tegra_powergate_init(void)
  {
- 	u32 status;
+ 	switch (tegra_chip_id) {
+@@ -169,6 +185,8 @@ int __init tegra_powergate_init(void)
+ 		break;
+ 	case TEGRA30:
+ 		tegra_num_powerdomains = 14;
++		tegra_num_cpu_domains = 4;
++		tegra_cpu_domains = tegra30_cpu_domains;
+ 		break;
+ 	default:
+ 		/* Unknown Tegra variant. Disable powergating */
+@@ -178,7 +196,6 @@ int __init tegra_powergate_init(void)
+ 
+ 	return 0;
+ }
+-arch_initcall(tegra_powergate_init);
+ 
+ #ifdef CONFIG_DEBUG_FS
  
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
