@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab2AaLFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:05:33 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:22703 "EHLO
-	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752804Ab2AaLFb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:05:31 -0500
-X-SpamScore: -19
-X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4R8275bhz2dhc1bhc31hc1ah668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LYNTH0-02-3SG-02
-X-M-MSG: 
-Date: Tue, 31 Jan 2012 12:05:22 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Michal Marek <mmarek@suse.cz>
-CC: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        maximilian attems <max@stro.at>
-Subject: Re: [PATCH] kbuild: Fix link to headers in 'make deb-pkg'
-Message-ID: <20120131110522.GA2191@amd.com>
-References: <1327318828-12984-1-git-send-email-joerg.roedel@amd.com>
- <4F1D8810.1040501@suse.cz>
+	id S1753525Ab2AaLHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:07:46 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:25899 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752274Ab2AaLHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 06:07:45 -0500
+Subject: [PATCH 0/6] Lockd: make it network namespace aware
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Tue, 31 Jan 2012 15:07:38 +0400
+Message-ID: <20120131105712.14364.88911.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F1D8810.1040501@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+With this patch set Lockd will be able to handle lock requests from different
+network namespaces separately.
 
-any news on this?
+Main ideas of the patch set are:
 
-On Mon, Jan 23, 2012 at 05:17:20PM +0100, Michal Marek wrote:
-> (adding max to CC)
-> 
-> On 23.1.2012 12:40, Joerg Roedel wrote:
-> > The Link to the kernel header files in the debian packages
-> > point to the original build directory. This is a bad choice
-> > if the packages were installed on a different machine. Fix
-> > this in by manually re-creating the link in the builddeb
-> > script.
-> > With this patch applied the lib/modules/$version dir always
-> > exists, so move the "$ARCH = um" check out of the modules
-> > check too.
-> > 
-> > Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> > ---
-> >  scripts/package/builddeb |   13 +++++++++----
-> >  1 files changed, 9 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> > index f6cbc3d..46f63dc 100644
-> > --- a/scripts/package/builddeb
-> > +++ b/scripts/package/builddeb
-> > @@ -91,6 +91,7 @@ fi
-> >  rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
-> >  mkdir -m 755 -p "$tmpdir/DEBIAN"
-> >  mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
-> > +mkdir -p  "$tmpdir/lib/modules/$version"
-> >  mkdir -m 755 -p "$fwdir/DEBIAN"
-> >  mkdir -p "$fwdir/lib" "$fwdir/usr/share/doc/$fwpackagename"
-> >  mkdir -m 755 -p "$libc_headers_dir/DEBIAN"
-> > @@ -121,10 +122,14 @@ fi
-> >  
-> >  if grep -q '^CONFIG_MODULES=y' .config ; then
-> >  	INSTALL_MOD_PATH="$tmpdir" make KBUILD_SRC= modules_install
-> > -	if [ "$ARCH" = "um" ] ; then
-> > -		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
-> > -		rmdir "$tmpdir/lib/modules/$version"
-> > -	fi
-> > +fi
-> > +
-> > +# Make sure link to the headers is correct
-> > +ln -snf "/usr/src/$kernel_headers_packagename" "$tmpdir/lib/modules/$version/build"
-> > +
-> > +if [ "$ARCH" = "um" ] ; then
-> > +	mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
-> > +	rmdir "$tmpdir/lib/modules/$version"
-> >  fi
-> >  
-> >  make headers_check
-> 
+1) per-net Lockd users counter and resources.
 
--- 
-AMD Operating System Research Center
+2) nlmsvc_users counter become global one (equal to sum of all per-net
+counters).
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+3) On lockd_up() call:
+a) if nlmsvc_users if equal to 0, then lockd thread is started.
+b) if current per-net counter equal to 0, then per-net resources are allocated
+(lockd_up_net() function).
+c) global and current net users counters are increased by one.
+
+4) On lockd_down() call:
+a) global and current net users counters are decreased by one.
+b) if current per-net counter become equal to 0, then per-net resources are
+allocated (lockd_down_net() function).
+c) if nlmsvc_users become equal to 0, then lockd thread is stopped.
+
+The following series consists of:
+
+---
+
+Stanislav Kinsbursky (6):
+      Lockd: create permanent lockd sockets in current network namespace
+      Lockd: pernet usage counter introduced
+      Lockd: per-net up and down routines introduced
+      LockD: make nlm hosts network namespace aware
+      LockD: make NSM network namespace aware
+      Lockd: shutdown NLM hosts in network namespace context
+
+
+ fs/lockd/clntlock.c         |    3 +
+ fs/lockd/host.c             |   42 ++++++++++++---
+ fs/lockd/mon.c              |   13 +++--
+ fs/lockd/netns.h            |   12 ++++
+ fs/lockd/svc.c              |  117 +++++++++++++++++++++++++++++++++++++------
+ fs/nfs/client.c             |    1 
+ include/linux/lockd/bind.h  |    1 
+ include/linux/lockd/lockd.h |    5 +-
+ include/linux/sunrpc/svc.h  |    2 +
+ net/sunrpc/svc.c            |    3 +
+ 10 files changed, 166 insertions(+), 33 deletions(-)
+ create mode 100644 fs/lockd/netns.h
 
