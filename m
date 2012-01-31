@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab2AaIAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:00:41 -0500
-Received: from mga14.intel.com ([143.182.124.37]:1415 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751932Ab2AaIAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:00:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="61562592"
-Subject: [PATCH] fix readahead pipeline break caused by block plug
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        Herbert Poetzl <herbert@13thfloor.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Wu Fengguang <wfg@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Jan 2012 15:59:40 +0800
-Message-ID: <1327996780.21268.42.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1752500Ab2AaIDt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:03:49 -0500
+Received: from hades.mikemestnik.net ([184.106.158.151]:37596 "EHLO
+	hades.mikemestnik.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652Ab2AaIDs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 03:03:48 -0500
+Message-ID: <4F27A062.8080106@mikemestnik.net>
+Date: Tue, 31 Jan 2012 02:03:46 -0600
+From: Mike Mestnik <cheako@mikemestnik.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20120127 Thunderbird/10.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Re: Tiered swap for zram.
+References: <4F207AA5.2080309@mikemestnik.net>
+In-Reply-To: <4F207AA5.2080309@mikemestnik.net>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Herbert Poetzl reported a performance regression since 2.6.39. The test
-is a simple dd read, but with big block size. The reason is:
+On 01/25/12 15:56, Mike Mestnik wrote:
+> zram is great, but it can fill up easily and when it does new/fresh
+> pages get pushed out to disk swap.  I've written a small bash script
+> that will flush zram swap to disk every five min.  However this is
+> better done with the VM subsystem and I suggest that swap mounts have a
+> tier as well as the current priority.
+>
+> ( while sleep 300; do for ech in /dev/zram?; do swapoff $ech& done; for
+> ech in /dev/zram?; do wait; done; for ech in /dev/zram?; do swapon -p 5
+> $ech& done; done; )& disown
+After running this for five days I've concluded that it does indeed
+help.  It clearly flushes the swap every five minutes and the system can
+go unavailable(mouse is unable to track/move) during that time.  However
+the system is responsive most all of the rest of the time, so I call
+that a win.  Vary poor performance some of the time over sluggish
+performance practically all the time.
 
-T1: ra (A, A+128k), (A+128k, A+256k)
-T2: lock_page for page A, submit the 256k
-T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
-because of plug and there isn't any lock_page till we hit page A+256k
-because all pages from A to A+256k is in memory
-T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
-submitted again.
-T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
-waitting for (A+256k, A+512k) finish.
-
-There is no request to disk in T3 and T4, so readahead pipeline breaks.
-
-We really don't need block plug for generic_file_aio_read() for buffered
-I/O. The readahead already has plug and has fine grained control when I/O
-should be submitted. Deleting plug for buffered I/O fixes the regression.
-
-One side effect is plug makes the request size 256k, the size is 128k
-without it. This is because default ra size is 128k and not a reason we
-need plug here.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Tested-by: Herbert Poetzl <herbert@13thfloor.at>
-Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 97f49ed..b662757 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1400,15 +1400,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	unsigned long seg = 0;
- 	size_t count;
- 	loff_t *ppos = &iocb->ki_pos;
--	struct blk_plug plug;
- 
- 	count = 0;
- 	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
- 	if (retval)
- 		return retval;
- 
--	blk_start_plug(&plug);
--
- 	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
- 	if (filp->f_flags & O_DIRECT) {
- 		loff_t size;
-@@ -1424,8 +1421,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 			retval = filemap_write_and_wait_range(mapping, pos,
- 					pos + iov_length(iov, nr_segs) - 1);
- 			if (!retval) {
-+				struct blk_plug plug;
-+
-+				blk_start_plug(&plug);
- 				retval = mapping->a_ops->direct_IO(READ, iocb,
- 							iov, pos, nr_segs);
-+				blk_finish_plug(&plug);
- 			}
- 			if (retval > 0) {
- 				*ppos = pos + retval;
-@@ -1481,7 +1482,6 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 			break;
- 	}
- out:
--	blk_finish_plug(&plug);
- 	return retval;
- }
- EXPORT_SYMBOL(generic_file_aio_read);
-
+> The idea is that after a page has been in swap tier X for, say five min,
+> it will graduate to swap tier Y.  This keeps swap tier X free from any
+> long standing pages that are just taking up valuable realestate.
+>
+> This script seams to do what I'm asking for, but at a heavy cost.
+>
+>
+>
+> My second suggestion may take a while longer to implement.  It involves
+> adding a new bit-field to the record for each page.  This bitfield would
+> indicate the compression level/type of the contents of a page.  For
+> example zram would set the bit corresponding to the compresion it's
+> configured to use.
+>
+> This would allow zram to refuse requests to swap pages that are already
+> compressed.  Thus further allow it to swap it's self.  When a swap mount
+> refuses a page this would be equivalent to that swap space being full
+> and the next swap mount would be used.
+>
+> Future advancements of this bit-field may indicate the contents of
+> userspace pages, zram and others can mark a page as not vary well
+> compressible.  As such it's clear that this bit-field should be cleared
+> or marked dirty if the page is ever written to.
+>
+> Thank you for a few moments of your time.  I hope that these could be
+> implemented.
+>
 
