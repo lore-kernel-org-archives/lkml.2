@@ -1,156 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab2AaOcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 09:32:33 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50810 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab2AaOcc (ORCPT
+	id S1754635Ab2AaOdT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 09:33:19 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:33630 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab2AaOdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 09:32:32 -0500
-Message-ID: <4F27FB7D.9030003@gmail.com>
-Date: Tue, 31 Jan 2012 08:32:29 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, b-cousson@ti.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v3 1/2] irq: add irq_domain support to generic-chip
-References: <1327944699-29882-1-git-send-email-robherring2@gmail.com> <1327944699-29882-2-git-send-email-robherring2@gmail.com> <CAAQ0ZWSVgcv2+jD9C=4-JFyuAZEr+DYL=BO=4kmYn1t=AAXn_A@mail.gmail.com>
-In-Reply-To: <CAAQ0ZWSVgcv2+jD9C=4-JFyuAZEr+DYL=BO=4kmYn1t=AAXn_A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 31 Jan 2012 09:33:17 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 31 Jan 2012 15:32:53 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire fixes post v3.3-rc1
+Message-ID: <20120131153253.5fdd43ce@stein>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2012 08:13 AM, Shawn Guo wrote:
-> On Mon, Jan 30, 2012 at 11:31:38AM -0600, Rob Herring wrote:
-> ...
->> +#ifdef CONFIG_IRQ_DOMAIN
->> +static int irq_gc_irq_domain_match(struct irq_domain *d, struct device_node *np)
->> +{
->> +	struct irq_chip_generic *gc;
->> +
->> +	if (d->of_node != NULL && d->of_node == np) {
->> +		list_for_each_entry(gc, &gc_list, list) {
->> +			if ((gc == d->host_data) && (d == gc->domain))
->> +				return 1;
->> +		}
->> +	}
-> 
-> IIRC, we talked about this a little bit, but I'm still unsure how this
-> works for imx5 tzic case, where we have the same one tzic device_node
-> for 4 irqdomains representing 128 irq lines.  It seems to me the match
-> function here will always find the first irqdomain of the 4 for any
-> of those 128 tzic irqs.
-> 
-> The following is my code change against your branch for testing.  Am I
-> missing anything?
+Linus,
 
-The irq domain code is a bit different now, so it's matching differently
-than before. See the match function. The host_data ptr for a domain is
-set to the gc ptr. I then check that the gc->domain matches the domain
-passed in. So the fact that 4 domains point to 1 device_node doesn't matter.
+please pull from the tag "firewire-fixes" at
 
-> 
-> 8<---
-> diff --git a/arch/arm/mach-imx/imx51-dt.c b/arch/arm/mach-imx/imx51-dt.c
-> index e1b5edf..45abf11 100644
-> --- a/arch/arm/mach-imx/imx51-dt.c
-> +++ b/arch/arm/mach-imx/imx51-dt.c
-> @@ -44,13 +44,6 @@ static const struct of_dev_auxdata
-> imx51_auxdata_lookup[] __initconst = {
->         { /* sentinel */ }
->  };
-> 
-> -static int __init imx51_tzic_add_irq_domain(struct device_node *np,
-> -                               struct device_node *interrupt_parent)
-> -{
-> -       irq_domain_add_legacy(np, 32, 0, 0, &irq_domain_simple_ops, NULL);
-> -       return 0;
-> -}
-> -
->  static int __init imx51_gpio_add_irq_domain(struct device_node *np,
->                                 struct device_node *interrupt_parent)
->  {
-> @@ -63,7 +56,6 @@ static int __init imx51_gpio_add_irq_domain(struct
-> device_node *np,
->  }
-> 
->  static const struct of_device_id imx51_irq_match[] __initconst = {
-> -       { .compatible = "fsl,imx51-tzic", .data = imx51_tzic_add_irq_domain, },
->         { .compatible = "fsl,imx51-gpio", .data = imx51_gpio_add_irq_domain, },
->         { /* sentinel */ }
->  };
-> 
-> diff --git a/arch/arm/plat-mxc/tzic.c b/arch/arm/plat-mxc/tzic.c
-> index 98308ec..ffb615d 100644
-> --- a/arch/arm/plat-mxc/tzic.c
-> +++ b/arch/arm/plat-mxc/tzic.c
-> @@ -122,7 +122,9 @@ static __init void tzic_init_gc(unsigned int irq_start)
->         ct->regs.disable = TZIC_ENCLEAR0(idx);
->         ct->regs.enable = TZIC_ENSET0(idx);
-> 
-> -       irq_setup_generic_chip(gc, IRQ_MSK(32), 0, IRQ_NOREQUEST, 0);
-> +       irq_setup_generic_chip_domain(gc,
-> +               of_find_compatible_node(NULL, NULL, "fsl,tzic"),
-> +               IRQ_MSK(32), 0, IRQ_NOREQUEST, 0);
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-fixes
 
-Looks right, but I wouldn't lookup the node ptr every time.
+to receive workarounds table entries for hardware bugs in
+  - FireWire part of Sound Blaster Audigy cards,
+  - Ricoh PCIe 1394 controllers.
+Without these, several protocols, e.g. AV/C, do not work on the
+Audigy, and the Ricoh PCIe controllers wouldn't work at all.
+This does not concern the older Ricoh PCI controllers.
 
->  }
-> 
->  asmlinkage void __exception_irq_entry tzic_handle_irq(struct pt_regs *regs)
-> --->8
-> 
->> +	return 0;
->> +}
->> +
-> ...
->> +void irq_setup_generic_chip_domain(struct irq_chip_generic *gc,
->> +			    struct device_node *node, u32 msk,
->> +			    enum irq_gc_flags flags, unsigned int clr,
->> +			    unsigned int set)
->> +{
->> +	struct irq_chip_type *ct = gc->chip_types;
->> +
->> +	if (!node) {
->> +		irq_setup_generic_chip(gc, msk, flags, clr, set);
->> +		return;
->> +	}
->> +
->> +	raw_spin_lock(&gc_lock);
->> +	list_add_tail(&gc->list, &gc_list);
->> +	raw_spin_unlock(&gc_lock);
->> +
->> +	/* Init mask cache ? */
->> +	if (flags & IRQ_GC_INIT_MASK_CACHE)
->> +		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
->> +
->> +	gc->flags = flags;
->> +	gc->irq_clr = clr;
->> +	gc->irq_set = set;
->> +
->> +	/* Users of domains should not use irq_base */
->> +	if ((int)gc->irq_base > 0)
->> +		gc->domain = irq_domain_add_legacy(node, fls(msk),
->> +						   gc->irq_base, 0,
->> +						   &irq_gc_irq_domain_ops, gc);
->> +	else {
->> +		gc->irq_base = 0;
->> +		gc->domain = irq_domain_add_linear(node, fls(msk),
->> +						   &irq_gc_irq_domain_ops, gc);
->> +	}
-> 
-> We have 4 generic_chips for tzic with irq_base as 0, 32, 64, 96.  In
-> this case, we end up with having the first domain as the linear, and
-> the other 3 as the legacy?
+Clemens Ladisch (1):
+      firewire: ohci: add reset packet quirk for SB Audigy
 
-Umm, yes. So it should be '>= 0' instead until we stop using IRQ0. I
-could base it on NULL node ptr instead...
+Stefan Richter (1):
+      firewire: ohci: disable MSI on Ricoh controllers
 
-For the DT case, you want irq_base to be -1.
+ drivers/firewire/ohci.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Rob
+
+commit 320cfa6ce0b3dc794fedfa4bae54c0f65077234d
+Author: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Date:   Sun Jan 29 12:41:15 2012 +0100
+
+    firewire: ohci: disable MSI on Ricoh controllers
+    
+    The PCIe device
+    
+        FireWire (IEEE 1394) [0c00]: Ricoh Co Ltd FireWire Host Controller
+        [1180:e832] (prog-if 10 [OHCI])
+    
+    is unable to access attached FireWire devices when MSI is enabled but
+    works if MSI is disabled.
+    http://www.mail-archive.com/alsa-user@lists.sourceforge.net/msg28251.html
+    
+    Hence add the "disable MSI" quirks flag for this device, or in fact for
+    safety and simplicity for all current (R5U230, R5U231, R5U240) and
+    future Ricoh PCIe 1394 controllers.
+    
+    Reported-by: Stefan Thomas <kontrapunktstefan@googlemail.com>
+    Cc: 2.6.36+ <stable@vger.kernel.org>
+    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+
+diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+index 21250ec..7f5f0da 100644
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -303,7 +303,7 @@ static const struct {
+ 		QUIRK_NO_MSI},
+ 
+ 	{PCI_VENDOR_ID_RICOH, PCI_ANY_ID, PCI_ANY_ID,
+-		QUIRK_CYCLE_TIMER},
++		QUIRK_CYCLE_TIMER | QUIRK_NO_MSI},
+ 
+ 	{PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_TSB12LV22, PCI_ANY_ID,
+ 		QUIRK_CYCLE_TIMER | QUIRK_RESET_PACKET | QUIRK_NO_1394A},
+
+commit d1bb399ad03c11e792f6dea198d3b1e23061f094
+Author: Clemens Ladisch <clemens@ladisch.de>
+Date:   Thu Jan 26 22:05:58 2012 +0100
+
+    firewire: ohci: add reset packet quirk for SB Audigy
+    
+    The Audigy's SB1394 controller is actually from Texas Instruments
+    and has the same bus reset packet generation bug, so it needs the
+    same quirk entry.
+    
+    Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+    Cc: 2.6.36+ <stable@vger.kernel.org>
+    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+
+diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+index 6628fea..21250ec 100644
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -263,6 +263,7 @@ static inline struct fw_ohci *fw_ohci(struct fw_card *card)
+ static char ohci_driver_name[] = KBUILD_MODNAME;
+ 
+ #define PCI_DEVICE_ID_AGERE_FW643	0x5901
++#define PCI_DEVICE_ID_CREATIVE_SB1394	0x4001
+ #define PCI_DEVICE_ID_JMICRON_JMB38X_FW	0x2380
+ #define PCI_DEVICE_ID_TI_TSB12LV22	0x8009
+ #define PCI_DEVICE_ID_TI_TSB12LV26	0x8020
+@@ -289,6 +290,9 @@ static const struct {
+ 	{PCI_VENDOR_ID_ATT, PCI_DEVICE_ID_AGERE_FW643, 6,
+ 		QUIRK_NO_MSI},
+ 
++	{PCI_VENDOR_ID_CREATIVE, PCI_DEVICE_ID_CREATIVE_SB1394, PCI_ANY_ID,
++		QUIRK_RESET_PACKET},
++
+ 	{PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB38X_FW, PCI_ANY_ID,
+ 		QUIRK_NO_MSI},
+ 
+
+-- 
+Stefan Richter
+-=====-===-- ---= =====
+http://arcgraph.de/sr/
