@@ -1,284 +1,697 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab2AaIco (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:32:44 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:53148 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab2AaIcm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:32:42 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Len Brown <len.brown@intel.com>
-Cc: linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH -v2] x86, acpi: Handle xapic/x2apic entries in MADT at same time
-Date: Tue, 31 Jan 2012 00:31:41 -0800
-Message-Id: <1327998701-2946-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4F27A701.0046,ss=1,re=-2.300,fgs=0
+	id S1752640Ab2AaIfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:35:08 -0500
+Received: from mail.itcs.ro ([86.35.2.10]:44212 "EHLO enigma.wired-net.gr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751973Ab2AaIfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 03:35:05 -0500
+Message-ID: <14821.194.177.215.120.1327998888.squirrel@www.wired-net.gr>
+In-Reply-To: <alpine.LNX.2.00.1201292251500.27749@swampdragon.chaosbits.net>
+References: <20120129175057.GA4699@dinofilaria.home>
+    <alpine.LNX.2.00.1201292251500.27749@swampdragon.chaosbits.net>
+Date: Tue, 31 Jan 2012 10:34:48 +0200 (EET)
+Subject: Re: Ext4 Kernel Crash
+From: "Nanakos V. Chrysostomos" <nanakos@wired-net.gr>
+To: "Jesper Juhl" <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        "Andreas Dilger" <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Reply-To: nanakos@wired-net.gr
+User-Agent: SquirrelMail/1.4.6
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One system have mixing xapic and x2apic entries in MADT and SRAT.
-BIOS guys insist that ACPI 4.0 SPEC said so, if apic id < 255, even
-the cpus are with x2apic mode pre-enabled, still need to use xapic entries
-instead of x2apic entries.
+Jesper thanks very much for your answer.
+Is there anyone else that wants to elaborate a bit more?
 
-on 8 socket system with x2apic pre-enabled, will get out of order sequence:
-CPU0: socket0, core0, thread0.
-CPU1 - CPU 40: socket 4 - socket 7, thread 0
-CPU41 - CPU 80: socket 4 - socket 7, thread 1
-CPU81 - CPU 119: socket 0 - socket 3, thread 0
-CPU120 - CPU 159: socket 0 - socket 3, thread 1
+Kind regards,
+Chris.
 
-so max_cpus=80 will not get all thread0 now.
 
-Need to handle every entry in MADT at same time with xapic and x2apic.
-so we can honor sequence in MADT.
+> On Sun, 29 Jan 2012, Nanakos Chrysostomos wrote:
+>
+>> Dear Linux Kernel Developers,
+>> I am writing to report a kernel or ext4 bug.
+>> I have two servers populated with 2 LUNs from the main storage facility,
+>> each server has one LUN which is about 1.2TB. On top of that I am
+>> utilizing glusterfs and samba to mount the 2.4TB created space to a
+>> Windows server and other Linux machines (via glusterfs native client).
+>> Yesterday I tried to copy to the new storage glusterfs space about 788GB
+>> and in the morning I got from both machines the attached kernel
+>> messages.
+>> I have to mention that the first machine runs samba and mounts the
+>> allocated glusterfs space with the help of FUSE glusterfs driver. The
+>> second machine doesn't mount/export anything and simply runs the
+>> glusterfs
+>> service.
+>> I have to also add that similar problems have happened to another system
+>> which is used as a TIF to JP2 converter. The conversion path starts from
+>> the conversion of a pdf file to png and then to jp2. As you can imagine
+>> this process produces hundreds of thousands of files. Similarly the
+>> machine crashes and I get similar kernel messages concerning ext4. I
+>> can't
+>> give you more information on that because the machine crashes, I have to
+>> take a photo and send it back to you next time.
+>> What do you believe about the kernel messages? Is this a ext4 bug when
+>> thousands of files are created? How can I help resolve that?
+>>
+>> Please Cc me because I am not in the list.
+>>
+>> With kind regards,
+>> Chris.
+>>
+>
+> 1. Adding ext4 people to CC.
+>
+> 2. Took a quick look (without knowing much about ext4, mind you), and I
+> noticed something that is, probably unrelated, but just in case it is not:
+>
+> In ext4_new_inode(), at the 'got:' label we have this code:
+>
+> [...]
+> got:
+>         /* We may have to initialize the block bitmap if it isn't already
+> */
+>         if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
+> EXT4_FEATURE_RO_COMPAT_GDT_CSUM) &&
+>             gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
+>                 struct buffer_head *block_bitmap_bh;
+>
+>                 block_bitmap_bh = ext4_read_block_bitmap(sb, group);
+>                 BUFFER_TRACE(block_bitmap_bh, "get block bitmap access");
+>                 err = ext4_journal_get_write_access(handle,
+> block_bitmap_bh);
+>                 if (err) {
+>                         brelse(block_bitmap_bh);
+>                         goto fail;
+>                 }
+>
+>                 BUFFER_TRACE(block_bitmap_bh, "dirty block bitmap");
+>                 err = ext4_handle_dirty_metadata(handle, NULL,
+> block_bitmap_bh);
+> [...]
+>
+> In the above, ext4_read_block_bitmap() may return NULL. If it does, then
+> the calls to ext4_journal_get_write_access() and
+> ext4_handle_dirty_metadata() are not safe, since both those functions may
+> call other functions that may end up dereferencing their argument (the
+> ext4_read_block_bitmap() return value).
+>
+> Whether or not that will ever actually happen and whether or not it's
+> related to your problem, I don't know.
+> But I thought I'd share the info.
+>
+>>
+>> PS: Are there any ext4 kernel optimization's for avoiding that or
+>> narrowing down the problem if this is not so obvious?
+>>
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  2070      1 0x00000000
+>>  ffff88003daa5c68 0000000000000082 0000000000000000 000000010000000b
+>>  ffff88003daa5d18 ffff88003daa5c98 ffff88003daa5bf8 ffffffff81090957
+>>  ffff88003a912638 ffff88003daa5fd8 000000000000f4e8 ffff88003a912638
+>> Call Trace:
+>>  [<ffffffff81090957>] ? bit_waitqueue+0x17/0xd0
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa013293b>] ? __ext4_handle_dirty_metadata+0x7b/0x100 [ext4]
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa0114fb9>] ext4_orphan_add+0xb9/0x1f0 [ext4]
+>>  [<ffffffffa01146b9>] ? ext4_delete_entry+0xf9/0x110 [ext4]
+>>  [<ffffffffa0116a8b>] ext4_unlink+0x29b/0x2b0 [ext4]
+>>  [<ffffffff81183edf>] vfs_unlink+0x9f/0xe0
+>>  [<ffffffff81182c2a>] ? lookup_hash+0x3a/0x50
+>>  [<ffffffff81186463>] do_unlinkat+0x183/0x1c0
+>>  [<ffffffff81183601>] ? path_put+0x31/0x40
+>>  [<ffffffff8119ad11>] ? sys_lgetxattr+0x61/0x80
+>>  [<ffffffff811864b6>] sys_unlink+0x16/0x20
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:2322 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  2322      1 0x00000000
+>>  ffff88003c70dc48 0000000000000082 0000000000000000 00000001810949db
+>>  0000000000000000 0000000000000000 ffff88003c70dcb0 0000000000000000
+>>  ffff88003b18baf8 ffff88003c70dfd8 000000000000f4e8 ffff88003b18baf8
+>> Call Trace:
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa010e253>] ext4_reserve_inode_write+0x73/0xa0 [ext4]
+>>  [<ffffffffa0107158>] ? call_filldir+0x78/0xe0 [ext4]
+>>  [<ffffffffa010e2cc>] ext4_mark_inode_dirty+0x4c/0x1d0 [ext4]
+>>  [<ffffffffa010e5c0>] ext4_dirty_inode+0x40/0x60 [ext4]
+>>  [<ffffffff8119fceb>] __mark_inode_dirty+0x3b/0x160
+>>  [<ffffffff8119040d>] touch_atime+0x12d/0x170
+>>  [<ffffffff8118a290>] ? filldir+0x0/0xe0
+>>  [<ffffffff8118a526>] vfs_readdir+0xd6/0xe0
+>>  [<ffffffff8118a699>] sys_getdents+0x89/0xf0
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task smbd:2585 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> smbd          D 0000000000000000     0  2585   1998 0x00000000
+>>  ffff88003b299bb8 0000000000000082 000000000000007a 0000000000000286
+>>  ffff88003b23b8c0 000000000000007e ffff88003b299b98 ffff88003b23b8c0
+>>  ffff88003a913ab8 ffff88003b299fd8 000000000000f4e8 ffff88003a913ab8
+>> Call Trace:
+>>  [<ffffffff814ee01e>] __mutex_lock_slowpath+0x13e/0x180
+>>  [<ffffffff8118d11f>] ? d_free+0x3f/0x60
+>>  [<ffffffff814edebb>] mutex_lock+0x2b/0x50
+>>  [<ffffffff811848af>] do_lookup+0xef/0x1e0
+>>  [<ffffffff811851d4>] __link_path_walk+0x734/0x1030
+>>  [<ffffffff81183795>] ? path_to_nameidata+0x45/0x60
+>>  [<ffffffff81185d5a>] path_walk+0x6a/0xe0
+>>  [<ffffffff81185f2b>] do_path_lookup+0x5b/0xa0
+>>  [<ffffffff81186b97>] user_path_at+0x57/0xa0
+>>  [<ffffffff81042c24>] ? __do_page_fault+0x1e4/0x480
+>>  [<ffffffff81182fc5>] ? putname+0x35/0x50
+>>  [<ffffffff81186ba2>] ? user_path_at+0x62/0xa0
+>>  [<ffffffff8117b786>] vfs_fstatat+0x46/0x80
+>>  [<ffffffff81195630>] ? mntput_no_expire+0x30/0x110
+>>  [<ffffffff8117b8eb>] vfs_stat+0x1b/0x20
+>>  [<ffffffff8117b914>] sys_newstat+0x24/0x50
+>>  [<ffffffff814f23fe>] ? do_page_fault+0x3e/0xa0
+>>  [<ffffffff814ef7b5>] ? page_fault+0x25/0x30
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task smbd:2586 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> smbd          D 0000000000000000     0  2586   1998 0x00000000
+>>  ffff88003b1e7bb8 0000000000000082 0000000000000088 0000000000000286
+>>  ffff88003b619380 000000000000008c ffff88003b1e7b98 ffff88003b619380
+>>  ffff880037a59af8 ffff88003b1e7fd8 000000000000f4e8 ffff880037a59af8
+>> Call Trace:
+>>  [<ffffffff8141ccde>] ? release_sock+0xce/0xe0
+>>  [<ffffffff814ee01e>] __mutex_lock_slowpath+0x13e/0x180
+>>  [<ffffffff814edebb>] mutex_lock+0x2b/0x50
+>>  [<ffffffff811848af>] do_lookup+0xef/0x1e0
+>>  [<ffffffff811851d4>] __link_path_walk+0x734/0x1030
+>>  [<ffffffff81183795>] ? path_to_nameidata+0x45/0x60
+>>  [<ffffffff81185d5a>] path_walk+0x6a/0xe0
+>>  [<ffffffff81185f2b>] do_path_lookup+0x5b/0xa0
+>>  [<ffffffff81186b97>] user_path_at+0x57/0xa0
+>>  [<ffffffff81042c24>] ? __do_page_fault+0x1e4/0x480
+>>  [<ffffffff81182fc5>] ? putname+0x35/0x50
+>>  [<ffffffff81186ba2>] ? user_path_at+0x62/0xa0
+>>  [<ffffffff8117b786>] vfs_fstatat+0x46/0x80
+>>  [<ffffffff81195630>] ? mntput_no_expire+0x30/0x110
+>>  [<ffffffff8117b8eb>] vfs_stat+0x1b/0x20
+>>  [<ffffffff8117b914>] sys_newstat+0x24/0x50
+>>  [<ffffffff814f23fe>] ? do_page_fault+0x3e/0xa0
+>>  [<ffffffff814ef7b5>] ? page_fault+0x25/0x30
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task smbd:2587 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> smbd          D 0000000000000001     0  2587   1998 0x00000000
+>>  ffff88003d5efbb8 0000000000000086 0000000000000000 0000000000000286
+>>  ffff880037047cc0 000000000000007e ffff88003d5efb98 ffff880037047cc0
+>>  ffff88003b04f038 ffff88003d5effd8 000000000000f4e8 ffff88003b04f038
+>> Call Trace:
+>>  [<ffffffff814ee01e>] __mutex_lock_slowpath+0x13e/0x180
+>>  [<ffffffff814edebb>] mutex_lock+0x2b/0x50
+>>  [<ffffffff811848af>] do_lookup+0xef/0x1e0
+>>  [<ffffffff811851d4>] __link_path_walk+0x734/0x1030
+>>  [<ffffffff81183795>] ? path_to_nameidata+0x45/0x60
+>>  [<ffffffff81185d5a>] path_walk+0x6a/0xe0
+>>  [<ffffffff81185f2b>] do_path_lookup+0x5b/0xa0
+>>  [<ffffffff81186b97>] user_path_at+0x57/0xa0
+>>  [<ffffffff81042c24>] ? __do_page_fault+0x1e4/0x480
+>>  [<ffffffff81182fc5>] ? putname+0x35/0x50
+>>  [<ffffffff81186ba2>] ? user_path_at+0x62/0xa0
+>>  [<ffffffff8117b786>] vfs_fstatat+0x46/0x80
+>>  [<ffffffff81195630>] ? mntput_no_expire+0x30/0x110
+>>  [<ffffffff8117b8eb>] vfs_stat+0x1b/0x20
+>>  [<ffffffff8117b914>] sys_newstat+0x24/0x50
+>>  [<ffffffff814f23fe>] ? do_page_fault+0x3e/0xa0
+>>  [<ffffffff814ef7b5>] ? page_fault+0x25/0x30
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task smbd:2588 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> smbd          D 0000000000000001     0  2588   1998 0x00000000
+>>  ffff88003b093bb8 0000000000000082 0000000000000000 0000000000000286
+>>  ffff88003a9e69c0 000000000000007e ffff88003b093b98 ffff88003a9e69c0
+>>  ffff8800376f9b38 ffff88003b093fd8 000000000000f4e8 ffff8800376f9b38
+>> Call Trace:
+>>  [<ffffffff814ee01e>] __mutex_lock_slowpath+0x13e/0x180
+>>  [<ffffffff814edebb>] mutex_lock+0x2b/0x50
+>>  [<ffffffff811848af>] do_lookup+0xef/0x1e0
+>>  [<ffffffff811851d4>] __link_path_walk+0x734/0x1030
+>>  [<ffffffff81183795>] ? path_to_nameidata+0x45/0x60
+>>  [<ffffffff81185d5a>] path_walk+0x6a/0xe0
+>>  [<ffffffff81185f2b>] do_path_lookup+0x5b/0xa0
+>>  [<ffffffff81186b97>] user_path_at+0x57/0xa0
+>>  [<ffffffff81042c24>] ? __do_page_fault+0x1e4/0x480
+>>  [<ffffffff81182fc5>] ? putname+0x35/0x50
+>>  [<ffffffff81186ba2>] ? user_path_at+0x62/0xa0
+>>  [<ffffffff8117b786>] vfs_fstatat+0x46/0x80
+>>  [<ffffffff81195630>] ? mntput_no_expire+0x30/0x110
+>>  [<ffffffff8117b8eb>] vfs_stat+0x1b/0x20
+>>  [<ffffffff8117b914>] sys_newstat+0x24/0x50
+>>  [<ffffffff814f23fe>] ? do_page_fault+0x3e/0xa0
+>>  [<ffffffff814ef7b5>] ? page_fault+0x25/0x30
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task smbd:2589 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> smbd          D 0000000000000001     0  2589   1998 0x00000000
+>>  ffff8800374c1bb8 0000000000000086 0000000000000088 0000000000000286
+>>  ffff880037bf50c0 000000000000008c ffff8800374c1b98 ffff880037bf50c0
+>>  ffff88003b18a678 ffff8800374c1fd8 000000000000f4e8 ffff88003b18a678
+>> Call Trace:
+>>  [<ffffffff8141ccde>] ? release_sock+0xce/0xe0
+>>  [<ffffffff814ee01e>] __mutex_lock_slowpath+0x13e/0x180
+>>  [<ffffffff814edebb>] mutex_lock+0x2b/0x50
+>>  [<ffffffff811848af>] do_lookup+0xef/0x1e0
+>>  [<ffffffff811851d4>] __link_path_walk+0x734/0x1030
+>>  [<ffffffff81183795>] ? path_to_nameidata+0x45/0x60
+>>  [<ffffffff81185d5a>] path_walk+0x6a/0xe0
+>>  [<ffffffff81185f2b>] do_path_lookup+0x5b/0xa0
+>>  [<ffffffff81186b97>] user_path_at+0x57/0xa0
+>>  [<ffffffff81042c24>] ? __do_page_fault+0x1e4/0x480
+>>  [<ffffffff81182fc5>] ? putname+0x35/0x50
+>>  [<ffffffff81186ba2>] ? user_path_at+0x62/0xa0
+>>  [<ffffffff8117b786>] vfs_fstatat+0x46/0x80
+>>  [<ffffffff81195630>] ? mntput_no_expire+0x30/0x110
+>>  [<ffffffff8117b8eb>] vfs_stat+0x1b/0x20
+>>  [<ffffffff8117b914>] sys_newstat+0x24/0x50
+>>  [<ffffffff814f23fe>] ? do_page_fault+0x3e/0xa0
+>>  [<ffffffff814ef7b5>] ? page_fault+0x25/0x30
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:2322 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000001     0  2322      1 0x00000000
+>>  ffff88003c70da28 0000000000000082 ffff880000020f58 ffff88003b8615a8
+>>  ffff88003c70d9a8 ffffffff81467515 ffff88003b8615a8 ffff88003b8615a8
+>>  ffff88003b18baf8 ffff88003c70dfd8 000000000000f4e8 ffff88003b18baf8
+>> Call Trace:
+>>  [<ffffffff81467515>] ? ip_local_out+0x25/0x30
+>>  [<ffffffff81090d7e>] ? prepare_to_wait+0x4e/0x80
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa010e253>] ext4_reserve_inode_write+0x73/0xa0 [ext4]
+>>  [<ffffffffa010e2cc>] ext4_mark_inode_dirty+0x4c/0x1d0 [ext4]
+>>  [<ffffffffa0141ccd>] ? ext4_init_security+0x2d/0x296 [ext4]
+>>  [<ffffffffa012d73e>] ext4_ext_tree_init+0x3e/0x60 [ext4]
+>>  [<ffffffffa010a500>] ext4_new_inode+0x1150/0x1190 [ext4]
+>>  [<ffffffffa0117c90>] ext4_create+0xc0/0x150 [ext4]
+>>  [<ffffffff811822a3>] ? generic_permission+0x23/0xb0
+>>  [<ffffffff81183c84>] vfs_create+0xb4/0xe0
+>>  [<ffffffff8118788f>] do_filp_open+0xb2f/0xd60
+>>  [<ffffffff81193482>] ? alloc_fd+0x92/0x160
+>>  [<ffffffff81173a49>] do_sys_open+0x69/0x140
+>>  [<ffffffff8119ad11>] ? sys_lgetxattr+0x61/0x80
+>>  [<ffffffff81173b60>] sys_open+0x20/0x30
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task smbd:2614 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> smbd          D 0000000000000001     0  2614   1998 0x00000000
+>>  ffff88003c63dbb8 0000000000000086 0000000000000000 0000000000000286
+>>  ffff88003b6014c0 000000000000007c ffff88003c63db98 ffff88003b6014c0
+>>  ffff88003a913ab8 ffff88003c63dfd8 000000000000f4e8 ffff88003a913ab8
+>> Call Trace:
+>>  [<ffffffff814ee01e>] __mutex_lock_slowpath+0x13e/0x180
+>>  [<ffffffff8118e957>] ? __d_lookup+0xa7/0x150
+>>  [<ffffffff814edebb>] mutex_lock+0x2b/0x50
+>>  [<ffffffff811848af>] do_lookup+0xef/0x1e0
+>>  [<ffffffff811851d4>] __link_path_walk+0x734/0x1030
+>>  [<ffffffff81183795>] ? path_to_nameidata+0x45/0x60
+>>  [<ffffffff81185d5a>] path_walk+0x6a/0xe0
+>>  [<ffffffff81185f2b>] do_path_lookup+0x5b/0xa0
+>>  [<ffffffff81186b97>] user_path_at+0x57/0xa0
+>>  [<ffffffff81042c24>] ? __do_page_fault+0x1e4/0x480
+>>  [<ffffffff81182fc5>] ? putname+0x35/0x50
+>>  [<ffffffff81186ba2>] ? user_path_at+0x62/0xa0
+>>  [<ffffffff8117b786>] vfs_fstatat+0x46/0x80
+>>  [<ffffffff81195630>] ? mntput_no_expire+0x30/0x110
+>>  [<ffffffff8117b8eb>] vfs_stat+0x1b/0x20
+>>  [<ffffffff8117b914>] sys_newstat+0x24/0x50
+>>  [<ffffffff814f23fe>] ? do_page_fault+0x3e/0xa0
+>>  [<ffffffff814ef7b5>] ? page_fault+0x25/0x30
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task smbd:2615 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> smbd          D 0000000000000001     0  2615   1998 0x00000000
+>>  ffff88003d9bbbb8 0000000000000086 0000000000000000 0000000000000286
+>>  ffff88003720f580 000000000000008a ffff88003d9bbb98 ffff88003720f580
+>>  ffff880037a59af8 ffff88003d9bbfd8 000000000000f4e8 ffff880037a59af8
+>> Call Trace:
+>>  [<ffffffff814ee01e>] __mutex_lock_slowpath+0x13e/0x180
+>>  [<ffffffff814edebb>] mutex_lock+0x2b/0x50
+>>  [<ffffffff811848af>] do_lookup+0xef/0x1e0
+>>  [<ffffffff811851d4>] __link_path_walk+0x734/0x1030
+>>  [<ffffffff81183795>] ? path_to_nameidata+0x45/0x60
+>>  [<ffffffff81185d5a>] path_walk+0x6a/0xe0
+>>  [<ffffffff81185f2b>] do_path_lookup+0x5b/0xa0
+>>  [<ffffffff81186b97>] user_path_at+0x57/0xa0
+>>  [<ffffffff81042c24>] ? __do_page_fault+0x1e4/0x480
+>>  [<ffffffff81182fc5>] ? putname+0x35/0x50
+>>  [<ffffffff81186ba2>] ? user_path_at+0x62/0xa0
+>>  [<ffffffff8117b786>] vfs_fstatat+0x46/0x80
+>>  [<ffffffff81195630>] ? mntput_no_expire+0x30/0x110
+>>  [<ffffffff8117b8eb>] vfs_stat+0x1b/0x20
+>>  [<ffffffff8117b914>] sys_newstat+0x24/0x50
+>>  [<ffffffff814f23fe>] ? do_page_fault+0x3e/0xa0
+>>  [<ffffffff814ef7b5>] ? page_fault+0x25/0x30
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> [root@gluster00 ~]#
+>>
+>>
+>> [root@gluster00 ~]# mount
+>> /dev/sda3 on / type ext4 (rw)
+>> proc on /proc type proc (rw)
+>> sysfs on /sys type sysfs (rw)
+>> devpts on /dev/pts type devpts (rw,gid=5,mode=620)
+>> tmpfs on /dev/shm type tmpfs (rw)
+>> /dev/sda1 on /boot type ext4 (rw)
+>> /dev/sdb1 on /GLUSTER00 type ext4 (rw)
+>> none on /proc/sys/fs/binfmt_misc type binfmt_misc (rw)
+>> sunrpc on /var/lib/nfs/rpc_pipefs type rpc_pipefs (rw)
+>> gluster00:/mm-volume on /mmvolume type fuse.glusterfs
+>> (rw,allow_other,default_permissions,max_read=131072)
+>>
+>> [root@gluster00 ~]# df -h
+>> Filesystem            Size  Used Avail Use% Mounted on
+>> /dev/sda3              18G  2.0G   15G  13% /
+>> tmpfs                 499M     0  499M   0% /dev/shm
+>> /dev/sda1             248M  103M  133M  44% /boot
+>> /dev/sdb1             960G  200M  911G   1% /GLUSTER00
+>> gluster00:/mm-volume  2.4T  397M  2.2T   1% /mmvolume
+>>
+>>
+>> [root@gluster00 ~]# gluster -V
+>> glusterfs 3.2.5 built on Dec  7 2011 18:41:39
+>> Repository revision: git://git.gluster.com/glusterfs.git
+>> Copyright (c) 2006-2011 Gluster Inc. <http://www.gluster.com>
+>> GlusterFS comes with ABSOLUTELY NO WARRANTY.
+>> You may redistribute copies of GlusterFS under the terms of the GNU
+>> General Public License.
+>>
+>> [root@gluster00 ~]# uname -a
+>> Linux gluster00.prod 2.6.32-220.4.1.el6.x86_64 #1 SMP Tue Jan 24
+>> 02:13:44 GMT 2012 x86_64 x86_64 x86_64 GNU/Linux
+>>
+>> [root@gluster00 ~]# smbd -V
+>> Version 3.5.10-114.el6
+>>
+>>
+>> THE MACHINE RUNS CENTOS 6.2
+>>
+>> INFO: task glusterfsd:1878 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1878      1 0x00000000
+>>  ffff88003b683c68 0000000000000086 0000000000000000 000000010000000b
+>>  ffff88003b683d18 ffff88003b683c98 ffff88003b683bf8 ffffffff81090957
+>>  ffff880037a9e6b8 ffff88003b683fd8 000000000000f4e8 ffff880037a9e6b8
+>> Call Trace:
+>>  [<ffffffff81090957>] ? bit_waitqueue+0x17/0xd0
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa013293b>] ? __ext4_handle_dirty_metadata+0x7b/0x100 [ext4]
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa0114fb9>] ext4_orphan_add+0xb9/0x1f0 [ext4]
+>>  [<ffffffffa01146b9>] ? ext4_delete_entry+0xf9/0x110 [ext4]
+>>  [<ffffffffa0116a8b>] ext4_unlink+0x29b/0x2b0 [ext4]
+>>  [<ffffffff81183edf>] vfs_unlink+0x9f/0xe0
+>>  [<ffffffff81182c2a>] ? lookup_hash+0x3a/0x50
+>>  [<ffffffff81186463>] do_unlinkat+0x183/0x1c0
+>>  [<ffffffff81183601>] ? path_put+0x31/0x40
+>>  [<ffffffff8119ad11>] ? sys_lgetxattr+0x61/0x80
+>>  [<ffffffff811864b6>] sys_unlink+0x16/0x20
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:1878 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1878      1 0x00000000
+>>  ffff88003b683c68 0000000000000086 0000000000000000 000000010000000b
+>>  ffff88003b683d18 ffff88003b683c98 ffff88003b683bf8 ffffffff81090957
+>>  ffff880037a9e6b8 ffff88003b683fd8 000000000000f4e8 ffff880037a9e6b8
+>> Call Trace:
+>>  [<ffffffff81090957>] ? bit_waitqueue+0x17/0xd0
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa013293b>] ? __ext4_handle_dirty_metadata+0x7b/0x100 [ext4]
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa0114fb9>] ext4_orphan_add+0xb9/0x1f0 [ext4]
+>>  [<ffffffffa01146b9>] ? ext4_delete_entry+0xf9/0x110 [ext4]
+>>  [<ffffffffa0116a8b>] ext4_unlink+0x29b/0x2b0 [ext4]
+>>  [<ffffffff81183edf>] vfs_unlink+0x9f/0xe0
+>>  [<ffffffff81182c2a>] ? lookup_hash+0x3a/0x50
+>>  [<ffffffff81186463>] do_unlinkat+0x183/0x1c0
+>>  [<ffffffff81183601>] ? path_put+0x31/0x40
+>>  [<ffffffff8119ad11>] ? sys_lgetxattr+0x61/0x80
+>>  [<ffffffff811864b6>] sys_unlink+0x16/0x20
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:1878 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1878      1 0x00000000
+>>  ffff88003b683c68 0000000000000086 0000000000000000 000000010000000b
+>>  ffff88003b683d18 ffff88003b683c98 ffff88003b683bf8 ffffffff81090957
+>>  ffff880037a9e6b8 ffff88003b683fd8 000000000000f4e8 ffff880037a9e6b8
+>> Call Trace:
+>>  [<ffffffff81090957>] ? bit_waitqueue+0x17/0xd0
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa013293b>] ? __ext4_handle_dirty_metadata+0x7b/0x100 [ext4]
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa0114fb9>] ext4_orphan_add+0xb9/0x1f0 [ext4]
+>>  [<ffffffffa01146b9>] ? ext4_delete_entry+0xf9/0x110 [ext4]
+>>  [<ffffffffa0116a8b>] ext4_unlink+0x29b/0x2b0 [ext4]
+>>  [<ffffffff81183edf>] vfs_unlink+0x9f/0xe0
+>>  [<ffffffff81182c2a>] ? lookup_hash+0x3a/0x50
+>>  [<ffffffff81186463>] do_unlinkat+0x183/0x1c0
+>>  [<ffffffff81183601>] ? path_put+0x31/0x40
+>>  [<ffffffff8119ad11>] ? sys_lgetxattr+0x61/0x80
+>>  [<ffffffff811864b6>] sys_unlink+0x16/0x20
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:1878 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1878      1 0x00000000
+>>  ffff88003b683c68 0000000000000086 0000000000000000 000000010000000b
+>>  ffff88003b683d18 ffff88003b683c98 ffff88003b683bf8 ffffffff81090957
+>>  ffff880037a9e6b8 ffff88003b683fd8 000000000000f4e8 ffff880037a9e6b8
+>> Call Trace:
+>>  [<ffffffff81090957>] ? bit_waitqueue+0x17/0xd0
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa013293b>] ? __ext4_handle_dirty_metadata+0x7b/0x100 [ext4]
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa0114fb9>] ext4_orphan_add+0xb9/0x1f0 [ext4]
+>>  [<ffffffffa01146b9>] ? ext4_delete_entry+0xf9/0x110 [ext4]
+>>  [<ffffffffa0116a8b>] ext4_unlink+0x29b/0x2b0 [ext4]
+>>  [<ffffffff81183edf>] vfs_unlink+0x9f/0xe0
+>>  [<ffffffff81182c2a>] ? lookup_hash+0x3a/0x50
+>>  [<ffffffff81186463>] do_unlinkat+0x183/0x1c0
+>>  [<ffffffff81183601>] ? path_put+0x31/0x40
+>>  [<ffffffff8119ad11>] ? sys_lgetxattr+0x61/0x80
+>>  [<ffffffff811864b6>] sys_unlink+0x16/0x20
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:1754 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1754      1 0x00000000
+>>  ffff88003b479c48 0000000000000086 ffff880000000001 000000013712d580
+>>  0000000000000000 ffff88003f810080 ffff88003faacc00 ffff88003f8224c0
+>>  ffff88003712db38 ffff88003b479fd8 000000000000f4e8 ffff88003712db38
+>> Call Trace:
+>>  [<ffffffff81090d7e>] ? prepare_to_wait+0x4e/0x80
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa010e253>] ext4_reserve_inode_write+0x73/0xa0 [ext4]
+>>  [<ffffffffa0107158>] ? call_filldir+0x78/0xe0 [ext4]
+>>  [<ffffffffa010e2cc>] ext4_mark_inode_dirty+0x4c/0x1d0 [ext4]
+>>  [<ffffffffa010e5c0>] ext4_dirty_inode+0x40/0x60 [ext4]
+>>  [<ffffffff8119fceb>] __mark_inode_dirty+0x3b/0x160
+>>  [<ffffffff8119040d>] touch_atime+0x12d/0x170
+>>  [<ffffffff8118a290>] ? filldir+0x0/0xe0
+>>  [<ffffffff8118a526>] vfs_readdir+0xd6/0xe0
+>>  [<ffffffff8118a699>] sys_getdents+0x89/0xf0
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:1754 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1754      1 0x00000000
+>>  ffff88003b479c48 0000000000000086 ffff880000000001 000000013712d580
+>>  0000000000000000 ffff88003f810080 ffff88003faacc00 ffff88003f8224c0
+>>  ffff88003712db38 ffff88003b479fd8 000000000000f4e8 ffff88003712db38
+>> Call Trace:
+>>  [<ffffffff81090d7e>] ? prepare_to_wait+0x4e/0x80
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa010e253>] ext4_reserve_inode_write+0x73/0xa0 [ext4]
+>>  [<ffffffffa0107158>] ? call_filldir+0x78/0xe0 [ext4]
+>>  [<ffffffffa010e2cc>] ext4_mark_inode_dirty+0x4c/0x1d0 [ext4]
+>>  [<ffffffffa010e5c0>] ext4_dirty_inode+0x40/0x60 [ext4]
+>>  [<ffffffff8119fceb>] __mark_inode_dirty+0x3b/0x160
+>>  [<ffffffff8119040d>] touch_atime+0x12d/0x170
+>>  [<ffffffff8118a290>] ? filldir+0x0/0xe0
+>>  [<ffffffff8118a526>] vfs_readdir+0xd6/0xe0
+>>  [<ffffffff8118a699>] sys_getdents+0x89/0xf0
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:1754 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1754      1 0x00000000
+>>  ffff88003b479c48 0000000000000086 ffff880000000001 000000013712d580
+>>  0000000000000000 ffff88003f810080 ffff88003faacc00 ffff88003f8224c0
+>>  ffff88003712db38 ffff88003b479fd8 000000000000f4e8 ffff88003712db38
+>> Call Trace:
+>>  [<ffffffff81090d7e>] ? prepare_to_wait+0x4e/0x80
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa010e253>] ext4_reserve_inode_write+0x73/0xa0 [ext4]
+>>  [<ffffffffa0107158>] ? call_filldir+0x78/0xe0 [ext4]
+>>  [<ffffffffa010e2cc>] ext4_mark_inode_dirty+0x4c/0x1d0 [ext4]
+>>  [<ffffffffa010e5c0>] ext4_dirty_inode+0x40/0x60 [ext4]
+>>  [<ffffffff8119fceb>] __mark_inode_dirty+0x3b/0x160
+>>  [<ffffffff8119040d>] touch_atime+0x12d/0x170
+>>  [<ffffffff8118a290>] ? filldir+0x0/0xe0
+>>  [<ffffffff8118a526>] vfs_readdir+0xd6/0xe0
+>>  [<ffffffff8118a699>] sys_getdents+0x89/0xf0
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:1878 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1878      1 0x00000000
+>>  ffff88003b683c48 0000000000000086 0000000000000000 00000001810949db
+>>  0000000000000000 0000000000000000 ffff88003b683cb0 0000000000000000
+>>  ffff880037a9e6b8 ffff88003b683fd8 000000000000f4e8 ffff880037a9e6b8
+>> Call Trace:
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa010e253>] ext4_reserve_inode_write+0x73/0xa0 [ext4]
+>>  [<ffffffffa0107158>] ? call_filldir+0x78/0xe0 [ext4]
+>>  [<ffffffffa010e2cc>] ext4_mark_inode_dirty+0x4c/0x1d0 [ext4]
+>>  [<ffffffffa010e5c0>] ext4_dirty_inode+0x40/0x60 [ext4]
+>>  [<ffffffff8119fceb>] __mark_inode_dirty+0x3b/0x160
+>>  [<ffffffff8119040d>] touch_atime+0x12d/0x170
+>>  [<ffffffff8118a290>] ? filldir+0x0/0xe0
+>>  [<ffffffff8118a526>] vfs_readdir+0xd6/0xe0
+>>  [<ffffffff8118a699>] sys_getdents+0x89/0xf0
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:1878 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1878      1 0x00000000
+>>  ffff88003b683c48 0000000000000086 0000000000000000 00000001810949db
+>>  0000000000000000 0000000000000000 ffff88003b683cb0 0000000000000000
+>>  ffff880037a9e6b8 ffff88003b683fd8 000000000000f4e8 ffff880037a9e6b8
+>> Call Trace:
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa010e253>] ext4_reserve_inode_write+0x73/0xa0 [ext4]
+>>  [<ffffffffa0107158>] ? call_filldir+0x78/0xe0 [ext4]
+>>  [<ffffffffa010e2cc>] ext4_mark_inode_dirty+0x4c/0x1d0 [ext4]
+>>  [<ffffffffa010e5c0>] ext4_dirty_inode+0x40/0x60 [ext4]
+>>  [<ffffffff8119fceb>] __mark_inode_dirty+0x3b/0x160
+>>  [<ffffffff8119040d>] touch_atime+0x12d/0x170
+>>  [<ffffffff8118a290>] ? filldir+0x0/0xe0
+>>  [<ffffffff8118a526>] vfs_readdir+0xd6/0xe0
+>>  [<ffffffff8118a699>] sys_getdents+0x89/0xf0
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> INFO: task glusterfsd:1878 blocked for more than 120 seconds.
+>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+>> message.
+>> glusterfsd    D 0000000000000000     0  1878      1 0x00000000
+>>  ffff88003b683c48 0000000000000086 0000000000000000 00000001810949db
+>>  0000000000000000 0000000000000000 ffff88003b683cb0 0000000000000000
+>>  ffff880037a9e6b8 ffff88003b683fd8 000000000000f4e8 ffff880037a9e6b8
+>> Call Trace:
+>>  [<ffffffffa00de09d>] do_get_write_access+0x29d/0x520 [jbd2]
+>>  [<ffffffff81090ad0>] ? wake_bit_function+0x0/0x50
+>>  [<ffffffffa00de471>] jbd2_journal_get_write_access+0x31/0x50 [jbd2]
+>>  [<ffffffffa0132b78>] __ext4_journal_get_write_access+0x38/0x80 [ext4]
+>>  [<ffffffffa010e253>] ext4_reserve_inode_write+0x73/0xa0 [ext4]
+>>  [<ffffffffa0107158>] ? call_filldir+0x78/0xe0 [ext4]
+>>  [<ffffffffa010e2cc>] ext4_mark_inode_dirty+0x4c/0x1d0 [ext4]
+>>  [<ffffffffa010e5c0>] ext4_dirty_inode+0x40/0x60 [ext4]
+>>  [<ffffffff8119fceb>] __mark_inode_dirty+0x3b/0x160
+>>  [<ffffffff8119040d>] touch_atime+0x12d/0x170
+>>  [<ffffffff8118a290>] ? filldir+0x0/0xe0
+>>  [<ffffffff8118a526>] vfs_readdir+0xd6/0xe0
+>>  [<ffffffff8118a699>] sys_getdents+0x89/0xf0
+>>  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>> [root@gluster01 ~]#
+>>
+>>
+>> [root@gluster01 ~]# mount
+>> /dev/sda3 on / type ext4 (rw)
+>> proc on /proc type proc (rw)
+>> sysfs on /sys type sysfs (rw)
+>> devpts on /dev/pts type devpts (rw,gid=5,mode=620)
+>> tmpfs on /dev/shm type tmpfs (rw)
+>> /dev/sda1 on /boot type ext4 (rw)
+>> /dev/sdb1 on /GLUSTER01 type ext4 (rw)
+>> none on /proc/sys/fs/binfmt_misc type binfmt_misc (rw)
+>> sunrpc on /var/lib/nfs/rpc_pipefs type rpc_pipefs (rw)
+>>
+>> [root@gluster01 ~]# df -h
+>> Filesystem            Size  Used Avail Use% Mounted on
+>> /dev/sda3              18G  1.8G   15G  11% /
+>> tmpfs                 499M     0  499M   0% /dev/shm
+>> /dev/sda1             248M  103M  133M  44% /boot
+>> /dev/sdb1             1.4T  198M  1.4T   1% /GLUSTER01
+>>
+>> [root@gluster01 ~]# gluster -V
+>> glusterfs 3.2.5 built on Dec  7 2011 18:41:39
+>> Repository revision: git://git.gluster.com/glusterfs.git
+>> Copyright (c) 2006-2011 Gluster Inc. <http://www.gluster.com>
+>> GlusterFS comes with ABSOLUTELY NO WARRANTY.
+>> You may redistribute copies of GlusterFS under the terms of the GNU
+>> General Public License.
+>>
+>> [root@gluster01 ~]# uname -a
+>> Linux gluster01.prod 2.6.32-220.4.1.el6.x86_64 #1 SMP Tue Jan 24
+>> 02:13:44 GMT 2012 x86_64 x86_64 x86_64 GNU/Linux
+>>
+>>
+>> THE MACHINE RUNS CENTOS 6.2
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> --
+> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+> Plain text mails only, please.
+>
 
-We can use max_cpus= command line to use thread0 in every core,
-because recent MADT always have all thread0 at first.
-Also it could make the cpu to node mapping more sane.
 
-after patch will get
-CPU0 - CPU 79: socket 0 - socket 7, thread 0
-CPU80 - CPU 159: socket 0 - socket 7, thread 1
-
--v2: update some comments, and change to pass array pointer.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-
----
- arch/x86/kernel/acpi/boot.c |   30 ++++++++++++++++-------
- drivers/acpi/numa.c         |   16 +++++++++---
- drivers/acpi/tables.c       |   57 +++++++++++++++++++++++++++++++++-----------
- include/linux/acpi.h        |    9 ++++++
- 4 files changed, 86 insertions(+), 26 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/acpi/boot.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
-+++ linux-2.6/arch/x86/kernel/acpi/boot.c
-@@ -889,6 +889,7 @@ static int __init acpi_parse_madt_lapic_
- {
- 	int count;
- 	int x2count = 0;
-+	struct acpi_subtable_proc madt_proc[2];
- 
- 	if (!cpu_has_apic)
- 		return -ENODEV;
-@@ -913,10 +914,16 @@ static int __init acpi_parse_madt_lapic_
- 				      acpi_parse_sapic, MAX_LOCAL_APIC);
- 
- 	if (!count) {
--		x2count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC,
--					acpi_parse_x2apic, MAX_LOCAL_APIC);
--		count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC,
--					acpi_parse_lapic, MAX_LOCAL_APIC);
-+		memset(madt_proc, 0, sizeof(madt_proc));
-+		madt_proc[0].id = ACPI_MADT_TYPE_LOCAL_APIC;
-+		madt_proc[0].handler = acpi_parse_lapic;
-+		madt_proc[1].id = ACPI_MADT_TYPE_LOCAL_X2APIC;
-+		madt_proc[1].handler = acpi_parse_x2apic;
-+		acpi_table_parse_entries_array(ACPI_SIG_MADT,
-+					    sizeof(struct acpi_table_madt),
-+			    madt_proc, ARRAY_SIZE(madt_proc), MAX_LOCAL_APIC);
-+		count = madt_proc[0].count;
-+		x2count = madt_proc[1].count;
- 	}
- 	if (!count && !x2count) {
- 		printk(KERN_ERR PREFIX "No LAPIC entries present\n");
-@@ -928,11 +935,16 @@ static int __init acpi_parse_madt_lapic_
- 		return count;
- 	}
- 
--	x2count =
--	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC_NMI,
--				  acpi_parse_x2apic_nmi, 0);
--	count =
--	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_NMI, acpi_parse_lapic_nmi, 0);
-+	memset(madt_proc, 0, sizeof(madt_proc));
-+	madt_proc[0].id = ACPI_MADT_TYPE_LOCAL_APIC_NMI;
-+	madt_proc[0].handler = acpi_parse_lapic_nmi;
-+	madt_proc[1].id = ACPI_MADT_TYPE_LOCAL_X2APIC_NMI;
-+	madt_proc[1].handler = acpi_parse_x2apic_nmi;
-+	acpi_table_parse_entries_array(ACPI_SIG_MADT,
-+				    sizeof(struct acpi_table_madt),
-+				    madt_proc, ARRAY_SIZE(madt_proc), 0);
-+	count = madt_proc[0].count;
-+	x2count = madt_proc[1].count;
- 	if (count < 0 || x2count < 0) {
- 		printk(KERN_ERR PREFIX "Error parsing LAPIC NMI entry\n");
- 		/* TBD: Cleanup to allow fallback to MPS */
-Index: linux-2.6/drivers/acpi/numa.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/numa.c
-+++ linux-2.6/drivers/acpi/numa.c
-@@ -290,10 +290,18 @@ int __init acpi_numa_init(void)
- 
- 	/* SRAT: Static Resource Affinity Table */
- 	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
--		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
--				     acpi_parse_x2apic_affinity, 0);
--		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
--				     acpi_parse_processor_affinity, 0);
-+		struct acpi_subtable_proc srat_proc[2];
-+
-+		memset(srat_proc, 0, sizeof(srat_proc));
-+		srat_proc[0].id = ACPI_SRAT_TYPE_CPU_AFFINITY;
-+		srat_proc[0].handler = acpi_parse_processor_affinity;
-+		srat_proc[1].id = ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY;
-+		srat_proc[1].handler = acpi_parse_x2apic_affinity;
-+
-+		acpi_table_parse_entries_array(ACPI_SIG_SRAT,
-+					   sizeof(struct acpi_table_srat),
-+					   srat_proc, ARRAY_SIZE(srat_proc), 0);
-+
- 		ret = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
- 					    acpi_parse_memory_affinity,
- 					    NR_NODE_MEMBLKS);
-Index: linux-2.6/drivers/acpi/tables.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/tables.c
-+++ linux-2.6/drivers/acpi/tables.c
-@@ -201,10 +201,9 @@ void acpi_table_print_madt_entry(struct
- 
- 
- int __init
--acpi_table_parse_entries(char *id,
-+acpi_table_parse_entries_array(char *id,
- 			     unsigned long table_size,
--			     int entry_id,
--			     acpi_table_entry_handler handler,
-+			     struct acpi_subtable_proc *proc, int proc_num,
- 			     unsigned int max_entries)
- {
- 	struct acpi_table_header *table_header = NULL;
-@@ -212,12 +211,12 @@ acpi_table_parse_entries(char *id,
- 	unsigned int count = 0;
- 	unsigned long table_end;
- 	acpi_size tbl_size;
-+	int i;
- 
--	if (acpi_disabled)
-+	if (acpi_disabled) {
-+		proc[0].count = -ENODEV;
- 		return -ENODEV;
--
--	if (!handler)
--		return -EINVAL;
-+	}
- 
- 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
- 		acpi_get_table_with_size(id, acpi_apic_instance, &table_header, &tbl_size);
-@@ -226,6 +225,7 @@ acpi_table_parse_entries(char *id,
- 
- 	if (!table_header) {
- 		printk(KERN_WARNING PREFIX "%4.4s not present\n", id);
-+		proc[0].count = -ENODEV;
- 		return -ENODEV;
- 	}
- 
-@@ -238,19 +238,30 @@ acpi_table_parse_entries(char *id,
- 
- 	while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
- 	       table_end) {
--		if (entry->type == entry_id
--		    && (!max_entries || count++ < max_entries))
--			if (handler(entry, table_end)) {
--				early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-+		for (i = 0; i < proc_num; i++) {
-+			if (entry->type != proc[i].id)
-+				continue;
-+			if (max_entries && count++ >= max_entries)
-+				continue;
-+			if (proc[i].handler(entry, table_end)) {
-+				early_acpi_os_unmap_memory((char *)table_header,
-+								 tbl_size);
-+				proc[i].count = -EINVAL;
- 				return -EINVAL;
- 			}
-+			proc[i].count++;
-+			break;
-+		}
- 
- 		entry = (struct acpi_subtable_header *)
- 		    ((unsigned long)entry + entry->length);
- 	}
- 	if (max_entries && count > max_entries) {
--		printk(KERN_WARNING PREFIX "[%4.4s:0x%02x] ignored %i entries of "
--		       "%i found\n", id, entry_id, count - max_entries, count);
-+		printk(KERN_WARNING PREFIX "[%4.4s:0x%02x ", id, proc[0].id);
-+		for (i = 1; i < proc_num; i++)
-+			printk(KERN_CONT " 0x%02x", proc[i].id);
-+		printk(KERN_CONT "] ignored %i entries of %i found\n",
-+		       count-max_entries, count);
- 	}
- 
- 	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-@@ -258,6 +269,26 @@ acpi_table_parse_entries(char *id,
- }
- 
- int __init
-+acpi_table_parse_entries(char *id,
-+			     unsigned long table_size,
-+			     int entry_id,
-+			     acpi_table_entry_handler handler,
-+			     unsigned int max_entries)
-+{
-+	struct acpi_subtable_proc proc[1];
-+
-+	if (!handler)
-+		return -EINVAL;
-+
-+	memset(proc, 0, sizeof(proc));
-+	proc[0].id = entry_id;
-+	proc[0].handler = handler;
-+
-+	return acpi_table_parse_entries_array(id, table_size, proc, 1,
-+						 max_entries);
-+}
-+
-+int __init
- acpi_table_parse_madt(enum acpi_madt_type id,
- 		      acpi_table_entry_handler handler, unsigned int max_entries)
- {
-Index: linux-2.6/include/linux/acpi.h
-===================================================================
---- linux-2.6.orig/include/linux/acpi.h
-+++ linux-2.6/include/linux/acpi.h
-@@ -76,6 +76,12 @@ typedef int (*acpi_table_handler) (struc
- 
- typedef int (*acpi_table_entry_handler) (struct acpi_subtable_header *header, const unsigned long end);
- 
-+struct acpi_subtable_proc {
-+	int id;
-+	acpi_table_entry_handler handler;
-+	int count;
-+};
-+
- char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
- void __acpi_unmap_table(char *map, unsigned long size);
- int early_acpi_boot_init(void);
-@@ -86,6 +92,9 @@ int acpi_numa_init (void);
- 
- int acpi_table_init (void);
- int acpi_table_parse (char *id, acpi_table_handler handler);
-+int acpi_table_parse_entries_array(char *id, unsigned long table_size,
-+	struct acpi_subtable_proc *proc, int proc_num,
-+	unsigned int max_entries);
- int __init acpi_table_parse_entries(char *id, unsigned long table_size,
- 	int entry_id, acpi_table_entry_handler handler, unsigned int max_entries);
- int acpi_table_parse_madt (enum acpi_madt_type id, acpi_table_entry_handler handler, unsigned int max_entries);
