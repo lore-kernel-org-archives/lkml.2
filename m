@@ -1,92 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab2AaGdG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 01:33:06 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62401 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819Ab2AaGdD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753857Ab2AaGdD (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 31 Jan 2012 01:33:03 -0500
-MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <20120130135201.7bb5f173.akpm@linux-foundation.org>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
-	<1327572121-13673-2-git-send-email-gilad@benyossef.com>
-	<CAOtvUMc3XJ_SqpWAZnhyi6Anjd6rEGQTK_iAWJox-5Y4n4Z8hQ@mail.gmail.com>
-	<20120130135201.7bb5f173.akpm@linux-foundation.org>
-Date: Tue, 31 Jan 2012 08:33:03 +0200
-Message-ID: <CAOtvUMef-8p8WVL1uZEuMTOyiM+HTUDPjexw4jhL=0-xodta5w@mail.gmail.com>
-Subject: Re: [v7 1/8] smp: introduce a generic on_each_cpu_mask function
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Received: from [206.117.179.246] ([206.117.179.246]:57014 "EHLO labridge.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752429Ab2AaGdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 01:33:02 -0500
+Message-ID: <1327991565.1804.2.camel@joe2Laptop>
+Subject: RE: [PATCH] serial: samsung: Add support serial for EXYNOS4212 and
+ EXYNOS4412
+From: Joe Perches <joe@perches.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Greg KH'" <gregkh@suse.de>
+Date: Mon, 30 Jan 2012 22:32:45 -0800
+In-Reply-To: <042101ccdfe1$11ec0d60$35c42820$%kim@samsung.com>
+References: <042101ccdfe1$11ec0d60$35c42820$%kim@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 11:52 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sun, 29 Jan 2012 14:24:16 +0200
-> Gilad Ben-Yossef <gilad@benyossef.com> wrote:
->
->> On Thu, Jan 26, 2012 at 12:01 PM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
->> > on_each_cpu_mask calls a function on processors specified by
->> > cpumask, which may or may not include the local processor.
->> >
->> > You must not call this function with disabled interrupts or
->> > from a hardware interrupt handler or from a bottom half handler.
->> >
->> > Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
->> > Reviewed-by: Christoph Lameter <cl@linux.com>
->> > CC: Chris Metcalf <cmetcalf@tilera.com>
->> ...
->> > ---
->> > __include/linux/smp.h | __ 22 ++++++++++++++++++++++
->> > __kernel/smp.c __ __ __ __| __ 29 +++++++++++++++++++++++++++++
->> > __2 files changed, 51 insertions(+), 0 deletions(-)
->> >
->>
->>
->> Milton made the very sensible comment that while adding on_each_cpu() in the
->> arch generic code and removing the two arch specific instances from tile and arm
->> in separate patches is good for review, it will break bisect.
->>
->> He suggested I squash  them into a single commit when it goes in.
->>
->> Since you picked the patch set into linux-mm, will now be a good time for that?
->
-> I can fold the patches together - I do that all the time.
->
-> Please identify exactly whcih patches you're referring to here.
->
-> arm-move-arm-over-to-generic-on_each_cpu_mask and
-> tile-move-tile-to-use-generic-on_each_cpu_mask should be folded into
-> smp-introduce-a-generic-on_each_cpu_mask-function, yes?
+On Tue, 2012-01-31 at 15:25 +0900, Kukjin Kim wrote:
+> Kukjin Kim wrote:
+> > This should be added for EXYNOS4212 and EXYNOS4412 SoCs.
+> > 
+> > Cc: Thomas Abraham <thomas.abraham@linaro.org>
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > Cc: stable@kerne.org
+> 
+> Oops, should be 'Cc: stable@kernel.org'
 
-Yes. Thank you.
+You mean it should be 'cc: stable@vger.kernel.org'
 
-Gilad
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
