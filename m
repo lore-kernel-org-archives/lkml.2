@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab2AaUQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 15:16:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57823 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab2AaUQl (ORCPT
+	id S1754510Ab2AaUTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 15:19:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33971 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab2AaUTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 15:16:41 -0500
-Date: Tue, 31 Jan 2012 12:16:22 -0800
-From: tip-bot for He Chunhui <hchunhui@mail.ustc.edu.cn>
-Message-ID: <tip-35f1790e6c6a7e4cae57b616cf36444d27fa6b28@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com, hchunhui@mail.ustc.edu.cn
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, hchunhui@mail.ustc.edu.cn
-In-Reply-To: <32892299.2931391328028508117.JavaMail.coremail@mailweb>
-References: <32892299.2931391328028508117.JavaMail.coremail@mailweb>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/boot] x86, boot: Fix port argument to inl() function
-Git-Commit-ID: 35f1790e6c6a7e4cae57b616cf36444d27fa6b28
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jan 2012 12:16:29 -0800 (PST)
+	Tue, 31 Jan 2012 15:19:31 -0500
+Date: Tue, 31 Jan 2012 12:19:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "Linus Walleij" <linus.walleij@linaro.org>,
+        "shreshthakumar.sahu@stericsson.com" 
+	<shreshthakumar.sahu@stericsson.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/6] leds-lm3530: add lm3530_mode_get() in the
+ dev_attr
+Message-Id: <20120131121930.4cb1a05a.akpm@linux-foundation.org>
+In-Reply-To: <B567DBAB974C0544994013492B949F8E3812DEC933@EXMAIL03.scwf.nsc.com>
+References: <B567DBAB974C0544994013492B949F8E3812DEC933@EXMAIL03.scwf.nsc.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  35f1790e6c6a7e4cae57b616cf36444d27fa6b28
-Gitweb:     http://git.kernel.org/tip/35f1790e6c6a7e4cae57b616cf36444d27fa6b28
-Author:     He Chunhui <hchunhui@mail.ustc.edu.cn>
-AuthorDate: Wed, 1 Feb 2012 00:48:28 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 31 Jan 2012 12:05:54 -0800
+On Mon, 30 Jan 2012 23:33:44 -0800
+"Kim, Milo" <Milo.Kim@ti.com> wrote:
 
-x86, boot: Fix port argument to inl() function
+> To get information about brightness control mode, lm3530_mode_get() is added.
 
-"u32 port" in inl() should be "u16 port".
+drivers/leds/leds-lm3530.c already has an implementation of
+lm3530_mode_get().  I assume these patches were prepared against some
+old kernel.  Please don't do that!
 
-[ hpa: it's a bug, but it doesn't produce incorrect code, so no need
-  to put this into urgent or stable. ]
 
-Signed-off-by: He Chunhui <hchunhui@mail.ustc.edu.cn>
-Link: http://lkml.kernel.org/r/32892299.2931391328028508117.JavaMail.coremail@mailweb
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/boot.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index c7093bd..18997e5 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -67,7 +67,7 @@ static inline void outl(u32 v, u16 port)
- {
- 	asm volatile("outl %0,%1" : : "a" (v), "dN" (port));
- }
--static inline u32 inl(u32 port)
-+static inline u32 inl(u16 port)
- {
- 	u32 v;
- 	asm volatile("inl %1,%0" : "=a" (v) : "dN" (port));
