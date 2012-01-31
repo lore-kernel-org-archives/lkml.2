@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab2AaNqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 08:46:17 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:56345 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753237Ab2AaNqM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 08:46:12 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Andy Walls <awalls@md.metrocast.net>
-Subject: Re: [PATCH v2 08/16] ivtv-driver: fix handling of 'radio' module parameter
-Date: Tue, 31 Jan 2012 14:45:25 +0100
-User-Agent: KMail/1.9.10
-Cc: ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mchehab@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de> <1327960820-11867-9-git-send-email-danny.kukawka@bisect.de>
-In-Reply-To: <1327960820-11867-9-git-send-email-danny.kukawka@bisect.de>
+	id S1754568Ab2AaNrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 08:47:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753368Ab2AaNrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 08:47:32 -0500
+Message-ID: <4F27F0E6.1040309@redhat.com>
+Date: Tue, 31 Jan 2012 15:47:18 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201201311445.27230.danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328017572;820e0861;
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Paul E. McKenney" <paulmck@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] srcu: Implement call_srcu()
+References: <1328016724.2446.229.camel@twins>
+In-Reply-To: <1328016724.2446.229.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dienstag, 31. Januar 2012, Andy Walls wrote:
-> On Mon, 2012-01-30 at 20:40 +0100, Danny Kukawka wrote:
-> > Fixed handling of 'radio' module parameter from module_param_array
-> > to module_param_named to fix these compiler warnings in ivtv-driver.c:
-> >
-> > In function ‘__check_radio’:
-> > 113:1: warning: return from incompatible pointer type [enabled by
-> > default] At top level:
-> > 113:1: warning: initialization from incompatible pointer type [enabled by
-> > default] 113:1: warning: (near initialization for
-> > ‘__param_arr_radio.num’) [enabled by default]
-> >
-> > Set initial state of radio_c to true instead of 1.
+On 01/31/2012 03:32 PM, Peter Zijlstra wrote:
+> Subject: srcu: Implement call_srcu()
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Mon Jan 30 23:20:49 CET 2012
 >
-> NACK.
+> Implement call_srcu() by using a state machine driven by
+> call_rcu_sched() and timer callbacks.
 >
-> "radio" is an array of tristate values (-1, 0, 1) per installed card:
+> The state machine is a direct derivation of the existing
+> synchronize_srcu() code and replaces synchronize_sched() calls with a
+> call_rcu_sched() callback and the schedule_timeout() calls with simple
+> timer callbacks.
 >
-> 	static int radio[IVTV_MAX_CARDS] = { -1, -1,
+> It then re-implements synchronize_srcu() using a completion where we
+> send the complete through call_srcu().
 >
-> and must remain an array or you will break the driver.
->
-> Calling "radio_c" a module parameter named "radio" is wrong.
->
-> The correct fix is to reverse Rusty Russel's patch to the driver in
-> commit  90ab5ee94171b3e28de6bb42ee30b527014e0be7
-> to change the "bool" to an "int" as it should be in
-> "module_param_array(radio, ...)"
+> It completely wrecks synchronize_srcu_expedited() which is only used
+> by KVM. 3 of the 5 
 
-Overseen this. But wouldn't be the correct fix in this case to:
-a) reverse the part of 90ab5ee94171b3e28de6bb42ee30b527014e0be7 to get:
-   static unsigned int radio_c = 1;
+2 of the 5
 
-b) change the following line:
-   module_param_array(radio, bool, &radio_c, 0644);
-   to:
-   module_param_array(radio, int, &radio_c, 0644);
+> use cases look like they really want to use
+> call_srcu() instead, the remaining 2 I don't know but hope they can,
+> which would let us remove it.
 
-Without b) you would get a warning from the compiler again.
+They really need to return quickly to userspace, and they really need to
+perform some operation between rcu_assign_pointer() and returning, so no.
 
-Danny 
+>
+> Compile tested only!! :-)
+>
+
+How much did synchronize_srcu_expedited() regress?  Presumably your
+compiler didn't tell you that.
+
+Can we get it back to speed by scheduling a work function on all cpus? 
+wouldn't that force a quiescent state and allow call_srcu() to fire?
+
+In kvm's use case synchronize_srcu_expedited() is usually called when no
+thread is in a critical section, so we don't have to wait for anything
+except the srcu machinery.
+
+-- 
+error compiling committee.c: too many arguments to function
+
