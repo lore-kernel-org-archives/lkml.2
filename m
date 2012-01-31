@@ -1,149 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab2AaQXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:23:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54195 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660Ab2AaQXd convert rfc822-to-8bit (ORCPT
+	id S1754814Ab2AaQYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:24:06 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:52029 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab2AaQYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:23:33 -0500
-Date: Tue, 31 Jan 2012 08:24:39 -0800
-From: Arjan van de Ven <arjan@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Milton Miller <miltonm@bga.com>,
-        Andrew Morton <akpm@linux-foundation.org>, arjanvandeven@gmail.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: smp: Start up non-boot CPUs asynchronously
-Message-ID: <20120131082439.575978c0@infradead.org>
-In-Reply-To: <20120131161207.GA18357@elte.hu>
-References: <20120130205444.22f5e26a@infradead.org>
-	<20120131125232.GD4408@elte.hu>
-	<20120131054155.371e8307@infradead.org>
-	<20120131143130.GF13676@elte.hu>
-	<20120131072216.1ce78e50@infradead.org>
-	<20120131161207.GA18357@elte.hu>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 31 Jan 2012 11:24:04 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Tue, 31 Jan 2012 17:23:59 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 02/15] mm: page_alloc: update migrate type of pages on pcp
+ when isolating
+In-reply-to: <20120130161447.GU25268@csn.ul.ie>
+To: "'Mel Gorman'" <mel@csn.ul.ie>, "'Michal Nazarewicz'" <mina86@mina86.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>
+Message-id: <022e01cce034$bc6cf440$3546dcc0$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: AczfalMQsVwSB2jzSjWpMEeUW3EHdwAw5PLg
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+ <1327568457-27734-3-git-send-email-m.szyprowski@samsung.com>
+ <20120130111522.GE25268@csn.ul.ie> <op.v8wlu8ws3l0zgt@mpn-glaptop>
+ <20120130161447.GU25268@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jan 2012 17:12:07 +0100
-Ingo Molnar <mingo@elte.hu> wrote:
-> > it's not really a performance problem as it is an obvious "we 
-> > have a ton of back-to-back writers on a read-write lock that 
-> > we have quite a few readers for". Unless the writers back off 
-> > a little, the readers are going to get starved.
+Hello,
+
+On Monday, January 30, 2012 5:15 PM Mel Gorman wrote:
+
+> On Mon, Jan 30, 2012 at 04:41:22PM +0100, Michal Nazarewicz wrote:
+> > On Mon, 30 Jan 2012 12:15:22 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
+
+(snipped)
+
+> > >>+		page = pfn_to_page(pfn);
+> > >>+		if (PageBuddy(page)) {
+> > >>+			pfn += 1 << page_order(page);
+> > >>+		} else if (page_count(page) == 0) {
+> > >>+			set_page_private(page, MIGRATE_ISOLATE);
+> > >>+			++pfn;
+> > >
+> > >This is dangerous for two reasons. If the page_count is 0, it could
+> > >be because the page is in the process of being freed and is not
+> > >necessarily on the per-cpu lists yet and you cannot be sure if the
+> > >contents of page->private are important. Second, there is nothing to
+> > >prevent another CPU allocating this page from its per-cpu list while
+> > >the private field is getting updated from here which might lead to
+> > >some interesting races.
+> > >
+> > >I recognise that what you are trying to do is respond to Gilad's
+> > >request that you really check if an IPI here is necessary. I think what
+> > >you need to do is check if a page with a count of 0 is encountered
+> > >and if it is, then a draining of the per-cpu lists is necessary. To
+> > >address Gilad's concerns, be sure to only this this once per attempt at
+> > >CMA rather than for every page encountered with a count of 0 to avoid a
+> > >storm of IPIs.
+> >
+> > It's actually more then that.
+> >
+> > This is the same issue that I first fixed with a change to free_pcppages_bulk()
+> > function[1].  At the time of positing, you said you'd like me to try and find
+> > a different solution which would not involve paying the price of calling
+> > get_pageblock_migratetype().  Later I also realised that this solution is
+> > not enough.
+> >
+> > [1] http://article.gmane.org/gmane.linux.kernel.mm/70314
+> >
 > 
-> I didn't think I'd ever quote Bush, but my reaction to that is: 
-> 'Bring it on!' ;-)
+> Yes. I had forgotten the history but looking at that patch again,
+> I would reach the conclusion that this was adding a new call to
+> get_pageblock_migratetype() in the bulk free path. That would affect
+> everybody whether they were using CMA or not.
 
-You ask and you shall receive....
-In this patch are "No New Taxis"
+This will be a bit ugly, but we can also use that code and compile it conditionally
+when CMA has been enabled. Pages, which have incorrect migrate type on free finally
+causes pageblock migration type change from MIGRATE_CMA to MIGRATE_MOVABLE. This is
+not a problem for non-CMA case where only pageblocks with MIGRATE_MOVABLE migration
+type are being isolated.
 
-I do have a request: do run with this patch, and make a bootchart.pl
-of the result, and you'll see what I meant....
-
-
->From ee65be59057c920042747d46dc174c5a5a56c744 Mon Sep 17 00:00:00 2001
-From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Mon, 30 Jan 2012 20:44:51 -0800
-Subject: [PATCH] smp: Start up non-boot CPUs asynchronously
-
-The starting of the "not first" CPUs actually takes a lot of boot time
-of the kernel... upto "minutes" on some of the bigger SGI boxes.
-Right now, this is a fully sequential operation with the rest of the kernel
-boot.
-
-This patch turns this bringup of the other cpus into an asynchronous operation.
-With some other changes (not in this patch) this can save significant kernel
-boot time (upto 40% on my laptop!!).
-Basically now CPUs could get brought up in parallel to disk enumeration, graphic
-mode bringup etc etc etc.
-
-Note that the implementation in this patch still waits for all CPUs to
-be brought up before starting userspace; I would love to remove that
-restriction over time (technically that is simple), but that becomes
-then a change in behavior... I'd like to see more discussion on that
-being a good idea before I write that patch.
-
-Second note on version 2 of the patch:
-This patch does currently not save any boot time, due to a situation
-where the cpu hotplug lock gets taken for write by the cpu bringup code,
-which starves out readers of this lock throughout the kernel.
-Ingo specifically requested this behavior to expose this lock problem.
-
-CC: Milton Miller <miltonm@bga.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>
-
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
----
- kernel/smp.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/smp.c b/kernel/smp.c
-index db197d6..ea48418 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -12,6 +12,8 @@
- #include <linux/gfp.h>
- #include <linux/smp.h>
- #include <linux/cpu.h>
-+#include <linux/async.h>
-+#include <linux/delay.h>
- 
- #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
- static struct {
-@@ -664,17 +666,34 @@ void __init setup_nr_cpu_ids(void)
- 	nr_cpu_ids = find_last_bit(cpumask_bits(cpu_possible_mask),NR_CPUS) + 1;
- }
- 
-+void __init async_cpu_up(void *data, async_cookie_t cookie)
-+{
-+	unsigned long nr = (unsigned long) data;
-+	/*
-+	 * we can only up one cpu at a time, as enforced by the hotplug
-+	 * lock; it's better to wait for all earlier CPUs to be done before
-+	 * we bring up ours, so that the bring up order is predictable.
-+	 */
-+	async_synchronize_cookie(cookie);
-+	cpu_up(nr);
-+}
-+
- /* Called by boot processor to activate the rest. */
- void __init smp_init(void)
- {
- 	unsigned int cpu;
- 
- 	/* FIXME: This should be done in userspace --RR */
-+
-+	/*
-+	 * But until we do this in userspace, we're going to do this
-+	 * in parallel to the rest of the kernel boot up.-- Arjan
-+	 */
- 	for_each_present_cpu(cpu) {
- 		if (num_online_cpus() >= setup_max_cpus)
- 			break;
- 		if (!cpu_online(cpu))
--			cpu_up(cpu);
-+			async_schedule(async_cpu_up, (void *) cpu);
- 	}
- 
- 	/* Any cleanup work */
+Best regards
 -- 
-1.7.6.4
+Marek Szyprowski
+Samsung Poland R&D Center
 
 
 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
