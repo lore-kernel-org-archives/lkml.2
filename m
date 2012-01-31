@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab2AaDZc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 22:25:32 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57512 "EHLO smtps.tip.net.au"
+	id S1754185Ab2AaDZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 22:25:36 -0500
+Received: from mga03.intel.com ([143.182.124.21]:5191 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753161Ab2AaDZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 22:25:31 -0500
-Date: Tue, 31 Jan 2012 14:25:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Allyn <mark.a.allyn@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: linux-next: build warnings after merge of the staging tree
-Message-Id: <20120131142521.852ecb04b07f7174c179b3c8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	id S1753161Ab2AaDZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 22:25:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="61503578"
+Subject: Re: [PATCH v2 3/5] drivers/dma/amba-pl08x.c: adjust double test
+From: Vinod Koul <vinod.koul@intel.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Dan Williams <dan.j.williams@intel.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1326404970-1084-4-git-send-email-Julia.Lawall@lip6.fr>
+References: <1326404970-1084-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1326404970-1084-4-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Jan 2012 08:56:39 +0530
+Message-ID: <1327980399.1527.54.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__31_Jan_2012_14_25_21_+1100_Pz9Fci8mZrb.+VqJ"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__31_Jan_2012_14_25_21_+1100_Pz9Fci8mZrb.+VqJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2012-01-12 at 22:49 +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Rewrite a duplicated test to test the correct value
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression E;
+> @@
+> 
+> (
+> * E
+>   || ... || E
+> |
+> * E
+>   && ... && E
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+> There is a dstbus field, so it is my guess that that should be tested
+> instead of testing the srcbus field again.
+> 
+>  drivers/dma/amba-pl08x.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+> index 8a28158..840c6c0 100644
+> --- a/drivers/dma/amba-pl08x.c
+> +++ b/drivers/dma/amba-pl08x.c
+> @@ -649,7 +649,7 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
+>  			}
+>  
+>  			if ((bd.srcbus.addr % bd.srcbus.buswidth) ||
+> -					(bd.srcbus.addr % bd.srcbus.buswidth)) {
+> +					(bd.dstbus.addr % bd.dstbus.buswidth)) {
+>  				dev_err(&pl08x->adev->dev,
+>  					"%s src & dst address must be aligned to src"
+>  					" & dst width if peripheral is flow controller",
+> 
+Applied thanks
 
-Hi Greg,
+-- 
+~Vinod
 
-After merging the staging tree, today's linux-next build (x86_64
-allmodconfig) produced these warnings:
-
-drivers/staging/sep/sep_main.c: In function 'sep_allocate_dmatables_region':
-drivers/staging/sep/sep_main.c:217:2: warning: format '%X' expects argument=
- of type 'unsigned int', but argument 5 has type 'size_t' [-Wformat]
-drivers/staging/sep/sep_main.c: In function 'sep_activate_msgarea_context':
-drivers/staging/sep/sep_main.c:3348:5: warning: format '%X' expects argumen=
-t of type 'unsigned int', but argument 4 has type 'size_t' [-Wformat]
-drivers/staging/sep/sep_main.c: In function 'sep_create_msgarea_context':
-drivers/staging/sep/sep_main.c:3380:5: warning: format '%X' expects argumen=
-t of type 'unsigned int', but argument 4 has type 'size_t' [-Wformat]
-drivers/staging/sep/sep_main.c: In function 'sep_read':
-drivers/staging/sep/sep_main.c:3466:2: warning: format '%X' expects argumen=
-t of type 'unsigned int', but argument 5 has type 'size_t' [-Wformat]
-drivers/staging/sep/sep_main.c: In function 'sep_fastcall_args_get':
-drivers/staging/sep/sep_main.c:3526:5: warning: format '%X' expects argumen=
-t of type 'unsigned int', but argument 4 has type 'size_t' [-Wformat]
-drivers/staging/sep/sep_main.c:3567:5: warning: format '%X' expects argumen=
-t of type 'unsigned int', but argument 4 has type 'size_t' [-Wformat]
-drivers/staging/sep/sep_main.c:3567:5: warning: format '%X' expects argumen=
-t of type 'unsigned int', but argument 5 has type 'size_t' [-Wformat]
-
-Introduced by commit ff3d9c3c90c6 ("staging: sep: SEP update").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__31_Jan_2012_14_25_21_+1100_Pz9Fci8mZrb.+VqJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPJ18hAAoJEECxmPOUX5FEWucP/ReTXZgdvThIwegeKscKi6Qn
-fdkiL4DrlShChtV1cSaW7hv/bm+p7R3jU0ccDul/E3grFB+yU2nYwvQOFXtM+C2k
-5rID4VrSxBaUIbKyRQ1KzHjOF9qMZEudJpfnnlr33YqRMkH5fJH6ko0x8YIGPD3s
-q+TRgcJxnREWWgwwnLuw8yhfvOCobsYxNKxlS0EemjyHjyXPMzQg5LgIxRapz3/T
-hdot+TNR7JKgC5DBdoTdHEtSaEP3CNYaK+yzQHC1XsLpD9si/HOOO0WBK+u0KcdU
-zasoic3TtD0z3fnOuRKhfu1igzJ7sMRM3dwnErtUnWCbkPyALlv6FvksmruWlTfu
-gnZPZfbB2VW/kXsgg3uyDTMSEEzZP8G0j6FRft9RCMrr2xLhvlYN2TDhq99KvCGv
-LQICSAAdfUJFvYtJjzDMbAXH+Vp36qvUkiLHC3ddgvChVcpHHenL4h+2gEwaVFSm
-9l0Zh0vxHSpFKYTGzs2ZbGpAVSfRsy73Aph9x0G02Zp3cNuhUWUx4mAPPQa/YRyG
-M8SQA/9a2sMyDIbioNvAzwrL/RcdlnM+DC99dCXvPVRZkjK8YhKWvoc9ILYrFW4Q
-E8z2fNlDKkmZqypkSUtmjU3PnO+cvN9UTN3mh8dEV5ktpMK9dwWS7lQhvT0Aa9+E
-4Tvsu/xJoj5IyEaSsnOG
-=1ECR
------END PGP SIGNATURE-----
-
---Signature=_Tue__31_Jan_2012_14_25_21_+1100_Pz9Fci8mZrb.+VqJ--
