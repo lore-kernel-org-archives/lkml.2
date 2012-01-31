@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab2AaQak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:30:40 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:43522 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab2AaQaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:30:39 -0500
-Date: Tue, 31 Jan 2012 11:27:59 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xen pvhvm: do not remap pirqs onto evtchns if
- !xen_have_vector_callback
-Message-ID: <20120131162759.GA18248@phenom.dumpdata.com>
-References: <alpine.DEB.2.00.1201301429530.3196@kaball-desktop>
+	id S1754770Ab2AaQfd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:35:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58129 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753727Ab2AaQfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 11:35:31 -0500
+Date: Tue, 31 Jan 2012 16:35:28 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Herbert van den Bergh <herbert.van.den.bergh@oracle.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: compaction: Check pfn_valid when entering a new
+ MAX_ORDER_NR_PAGES block during isolation for migration
+Message-ID: <20120131163528.GR4065@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1201301429530.3196@kaball-desktop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090206.4F28172A.0048,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 02:31:46PM +0000, Stefano Stabellini wrote:
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+When isolating for migration, migration starts at the start of a zone
+which is not necessarily pageblock aligned. Further, it stops isolating
+when COMPACT_CLUSTER_MAX pages are isolated so migrate_pfn is generally
+not aligned.
 
-So the xen_have_vector_callback looks to be only set by
+The problem is that pfn_valid is only called on the first PFN being
+checked. Lets say we have a case like this
 
-1398         if (xen_feature(XENFEAT_hvm_callback_vector))
-1399                 xen_have_vector_callback = 1;
+H = MAX_ORDER_NR_PAGES boundary
+| = pageblock boundary
+m = cc->migrate_pfn
+f = cc->free_pfn
+o = memory hole
 
-So could this be just done via a check for that instead?
+H------|------H------|----m-Hoooooo|ooooooH-f----|------H
 
+The migrate_pfn is just below a memory hole and the free scanner is
+beyond the hole. When isolate_migratepages started, it scans from
+migrate_pfn to migrate_pfn+pageblock_nr_pages which is now in a memory
+hole. It checks pfn_valid() on the first PFN but then scans into the
+hole where there are not necessarily valid struct pages.
 
-> 
-> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-> index 492ade8..d99346e 100644
-> --- a/arch/x86/pci/xen.c
-> +++ b/arch/x86/pci/xen.c
-> @@ -374,7 +374,7 @@ int __init pci_xen_init(void)
->  
->  int __init pci_xen_hvm_init(void)
->  {
-> -	if (!xen_feature(XENFEAT_hvm_pirqs))
-> +	if (!xen_have_vector_callback || !xen_feature(XENFEAT_hvm_pirqs))
->  		return 0;
->  
->  #ifdef CONFIG_ACPI
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This patch ensures that isolate_migratepages calls pfn_valid when
+necessary.
+
+Reported-and-tested-by: Herbert van den Bergh <herbert.van.den.bergh@oracle.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: stable@kernel.org
+---
+ mm/compaction.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 899d956..edc1e26 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -313,6 +313,19 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 		} else if (!locked)
+ 			spin_lock_irq(&zone->lru_lock);
+ 
++		/*
++		 * migrate_pfn does not necessarily start aligned to a
++		 * pageblock. Ensure that pfn_valid is called when moving
++		 * into a new MAX_ORDER_NR_PAGES range in case of large
++		 * memory holes within the zone
++		 */
++		if ((low_pfn & (MAX_ORDER_NR_PAGES - 1)) == 0) {
++			if (!pfn_valid(low_pfn)) {
++				low_pfn += MAX_ORDER_NR_PAGES - 1;
++				continue;
++			}
++		}
++
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+ 		nr_scanned++;
