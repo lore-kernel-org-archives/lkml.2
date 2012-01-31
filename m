@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2AaBYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 20:24:30 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:52280 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab2AaBY3 (ORCPT
+	id S1753597Ab2AaBYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 20:24:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54861 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379Ab2AaBYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 20:24:29 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Greg KH <greg@kroah.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        systemd-devel@lists.freedesktop.org
-Subject: Re: sysfs regression: wrong link counts
-References: <4F27120A.4040106@suse.cz> <20120130220611.GA26655@kroah.com>
-	<20120130221059.26ab5edf@pyramind.ukuu.org.uk>
-	<20120130222717.GA6393@kroah.com>
-Date: Mon, 30 Jan 2012 17:27:06 -0800
-In-Reply-To: <20120130222717.GA6393@kroah.com> (Greg KH's message of "Mon, 30
-	Jan 2012 14:27:17 -0800")
-Message-ID: <m18vkoirv9.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX195tOmovP+N3niQrjMxWTeYsiSWM3dmdkY=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	Mon, 30 Jan 2012 20:24:48 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, trivial@kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/9] perf evsel: Fix spelling typo
+Date: Mon, 30 Jan 2012 23:24:31 -0200
+Message-Id: <1327973079-29426-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.rc2.1.g69204
+In-Reply-To: <1327973079-29426-1-git-send-email-acme@infradead.org>
+References: <1327973079-29426-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <greg@kroah.com> writes:
+From: Masanari Iida <standby24x7@gmail.com>
 
-> On Mon, Jan 30, 2012 at 10:10:59PM +0000, Alan Cox wrote:
->> > Isn't there some other "proper" way of doing this in userspace, or is
->> > this really the correct way?
->> 
->> You can look at the S_IFMT bits and stuff however link count indicating
->> number of subdirectories is a standard Unix thing and used by many quite
->> mundane tools as an optimisation.
->
-> Ah, yeah, that is easier.
->
-> Eric, care to fix this or want me to revert it?
+Correct spelling "unsuported" to "unsupported" in
+tools/peft/util/evsel.c
 
-With respect to sensors the conversation has already been had, and I fix
-is already queued and should come out in the sensors release due out in
-a week or so.  So sensors should be fixed before this code is merged
-into Linus's kernel.
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: standby24x7@gmail.com
+Cc: trivial@kernel.org
+Link: http://lkml.kernel.org/r/1327500312-9520-1-git-send-email-standby24x7@gmail.com
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evsel.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Now why something minor like sensors that nothing seems to depend
-strongly on should stop a system from booting is a huge question.
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 667f3b7..dcfefab 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -535,7 +535,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_READ) {
+-		fprintf(stderr, "PERF_SAMPLE_READ is unsuported for now\n");
++		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
+ 		return -1;
+ 	}
+ 
+-- 
+1.7.9.rc2.1.g69204
 
-So I am going to have the conversation to triage what is up with
-systemd.  That seems totally unexpected.
-
-Eric
