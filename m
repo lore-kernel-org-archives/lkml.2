@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab2AaKgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:36:45 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:17749 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab2AaKgm (ORCPT
+	id S1753440Ab2AaKi2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:38:28 -0500
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:54616 "EHLO
+	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab2AaKi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:36:42 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Tue, 31 Jan 2012 11:36:33 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH 2/2] ARM: Exynos4: Convert exynos4-dt to
- CONFIG_MULTI_IRQ_HANDLER
-In-reply-to: <1328006193-13902-1-git-send-email-k.lewandowsk@samsung.com>
-To: thomas.abraham@linaro.org
-Cc: m.szyprowski@samsung.com, linux-samsung-soc@vger.kernel.org,
-        marc.zyngier@arm.com, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com,
-        Karol Lewandowski <k.lewandowsk@samsung.com>
-Message-id: <1328006193-13902-3-git-send-email-k.lewandowsk@samsung.com>
-X-Mailer: git-send-email 1.7.8.3
-References: <1328006193-13902-1-git-send-email-k.lewandowsk@samsung.com>
+	Tue, 31 Jan 2012 05:38:27 -0500
+X-Greylist: delayed 2260 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Jan 2012 05:38:27 EST
+From: Barry Song <Barry.Song@csr.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+CC: <workgroup.linux@csr.com>, <linux-mtd@lists.infradead.org>,
+        Barry Song <Barry.Song@csr.com>
+Subject: [PATCH 0/3] platform: add platform_devm_request_and_ioremap() common API
+Date: Tue, 31 Jan 2012 17:59:59 +0800
+Message-ID: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.125.36.70]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4e44d2cb95bd ("ARM: exynos4: convert to CONFIG_MULTI_IRQ_HANDLER")
-converted all exynos boards but exynos4-dt.c.
+these patches move the common pattern from
 
-This commit fixes that omission.
+"
+res = platform_get_resource(pdev, IORESOURCE_MEM, 0); 
+if (!res) {
+	        ret = -ENODEV;
+		        goto err;
+}
 
-Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
----
- arch/arm/mach-exynos/mach-exynos4-dt.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+base = devm_request_and_ioremap(&dev->dev, mem_res);
+if (!base) {
+	        ret = -ENODEV;
+		        goto err;
+}
+"
 
-diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
-index 98e79c9..8aef6aa 100644
---- a/arch/arm/mach-exynos/mach-exynos4-dt.c
-+++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
-@@ -15,6 +15,7 @@
- #include <linux/serial_core.h>
- 
- #include <asm/mach/arch.h>
-+#include <asm/hardware/gic.h>
- #include <mach/map.h>
- 
- #include <plat/cpu.h>
-@@ -83,4 +84,5 @@ DT_MACHINE_START(EXYNOS4210_DT, "Samsung Exynos4 (Flattened Device Tree)")
- 	.init_machine	= exynos4210_dt_machine_init,
- 	.timer		= &exynos4_timer,
- 	.dt_compat	= exynos4210_dt_compat,
-+	.handle_irq	= gic_handle_irq,
- MACHINE_END
--- 
-1.7.8.3
+to
 
+"
+base = platform_devm_request_and_ioremap(pdev, 0); 
+if (!base) {
+	        ret = -ENODEV;
+		        goto err;
+}
+"
+
+
+Barry Song (3):
+  platform: add common resource requesting and mapping helper
+  GPIO: TEGRA: move to use platform_devm_request_and_ioremap() helper
+  MTD: NAND: txx9ndfmc: move to use platform_devm_request_and_ioremap()
+    helper
+
+ drivers/base/platform.c         |   19 +++++++++++++++++++
+ drivers/gpio/gpio-tegra.c       |    8 +-------
+ drivers/mtd/nand/txx9ndfmc.c    |    6 +-----
+ include/linux/platform_device.h |    1 +
+ 4 files changed, 22 insertions(+), 12 deletions(-)
+
+
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
