@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab2AaUed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 15:34:33 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57572 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab2AaUec convert rfc822-to-8bit (ORCPT
+	id S1755207Ab2AaUfK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 15:35:10 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54646 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753569Ab2AaUfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 15:34:32 -0500
-Message-ID: <1328042063.2446.250.camel@twins>
-Subject: Re: [PATCH] backing-dev: use synchronize_rcu_expedited instead of
- synchronize_rcu
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: axboe@kernel.dk, "Alasdair G. Kergon" <agk@redhat.com>,
-        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Tue, 31 Jan 2012 21:34:23 +0100
-In-Reply-To: <Pine.LNX.4.64.1107202019420.26781@hs20-bc2-1.build.redhat.com>
-References: <Pine.LNX.4.64.1107202019420.26781@hs20-bc2-1.build.redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 31 Jan 2012 15:35:08 -0500
+Date: Tue, 31 Jan 2012 13:34:55 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Barry Song <21cnbao@gmail.com>, Barry Song <Barry.Song@csr.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Erik Gilling <konkers@google.com>,
+        linux-mtd@lists.infradead.org, Barry Song <Baohua.Song@csr.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+Subject: Re: [PATCH 1/3] platform: add common resource requesting and mapping
+ helper
+Message-ID: <20120131203455.GG22611@ponder.secretlab.ca>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+ <1328004002-24646-2-git-send-email-Barry.Song@csr.com>
+ <20120131101734.GE2471@pengutronix.de>
+ <CAGsJ_4wyJ6Wymy4AWoW1eHubZX=W7GT_Fbow9ofXoY1RrcHzgA@mail.gmail.com>
+ <20120131113358.GM2471@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120131113358.GM2471@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-20 at 20:29 -0400, Mikulas Patocka wrote:
-> Hi Jens
+On Tue, Jan 31, 2012 at 12:33:58PM +0100, Wolfram Sang wrote:
+> Barry,
 > 
-> Please would you consider taking this into the block tree? It seems to 
-> speed up device deletion enormously.
+> > > You don't need to do the error checking for 'res'. You can simply do
+> > >
+> > > res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > > base = devm_request_and_ioremap(&dev->dev, res);
+> > 
+> > i do know  devm_request_and_ioremap() does res checking. but that is
+> > implicit, confused and not a smart way actually.
 > 
-> Mikulas
+> I agree about the implicit thing (keep in mind the function is new). But
+> calling a function "not smart" because it checks its arguments? I do
+> like the NULL check of kfree() for example.
 > 
-> ---
+> > actually, no people by now really use the implicit checking. that
+> > shows people don't really think that is a good programming way.
 > 
-> backing-dev: use synchronize_rcu_expedited instead of synchronize_rcu
+> I'd think most people just copy&paste and don't have an opinion either
+> way, so the quantity doesn't show much.
 > 
-> synchronize_rcu sleeps several timer ticks. synchronize_rcu_expedited is 
-> much faster.
+> > > devm_request_and_ioremap() will check res. Given that, I don't think
+> > > we can save a lot with another wrapper.
+> > 
+> > i think we can save some.
+> > The story begins from Grant's feedback in:
+> > http://www.spinics.net/lists/arm-kernel/msg157644.html
 > 
-> With 100Hz timer frequency, when we remove 10000 block devices with 
-> "dmsetup remove_all" command, it takes 27 minutes. With this patch, 
-> removing 10000 block devices takes only 15 seconds.
-> 
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> 
-> ---
->  mm/backing-dev.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-3.0-rc7-fast/mm/backing-dev.c
-> ===================================================================
-> --- linux-3.0-rc7-fast.orig/mm/backing-dev.c	2011-07-19 18:01:00.000000000 +0200
-> +++ linux-3.0-rc7-fast/mm/backing-dev.c	2011-07-19 18:01:07.000000000 +0200
-> @@ -505,7 +505,7 @@ static void bdi_remove_from_list(struct 
->  	list_del_rcu(&bdi->bdi_list);
->  	spin_unlock_bh(&bdi_lock);
->  
-> -	synchronize_rcu();
-> +	synchronize_rcu_expedited();
->  }
->  
+> I am not sure using 'platform_devm_request_and_ioremap' and later using
+> plain 'devm_*' functions (without platform_-prefix) is less confusing.
+> The alternative would be to check which helper functions also use
+> 'struct resource' and if they do checks on that. If all do that, you
+> would have the simple rule, that you only need to check yourself if you
+> access it yourself.
 
-Urgh, I just noticed this crap in my tree.. You realize that what you're
-effectively hammering a global sync primitive this way? Depending on
-what RCU flavour you have any SMP variant will at least do a machine
-wide IPI broadcast for every sync_rcu_exp(), some do significantly more.
+The reason I suggested the wrapper is that then the driver code doesn't need
+to fart around with the res pointer at all.  It reduces boilerplate in platform
+drivers which I think is a good thing.
 
-The much better solution would've been to batch your block-dev removals
-and use a single sync_rcu as barrier.
+g.
 
-This is not cool.
