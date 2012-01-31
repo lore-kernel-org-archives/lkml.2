@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab2AaLIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:08:13 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:14664 "EHLO relay.sw.ru"
+	id S1754219Ab2AaLI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:08:28 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:42699 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab2AaLIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:08:09 -0500
-Subject: [PATCH 3/6] Lockd: per-net up and down routines introduced
+	id S1754152Ab2AaLIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 06:08:25 -0500
+Subject: [PATCH 5/6] LockD: make NSM network namespace aware
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Tue, 31 Jan 2012 15:08:05 +0400
-Message-ID: <20120131110805.14364.95729.stgit@localhost6.localdomain6>
+Date: Tue, 31 Jan 2012 15:08:21 +0400
+Message-ID: <20120131110821.14364.57585.stgit@localhost6.localdomain6>
 In-Reply-To: <20120131105712.14364.88911.stgit@localhost6.localdomain6>
 References: <20120131105712.14364.88911.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -25,136 +25,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces per-net Lockd initialization and destruction routines.
-The logic is the same as in global Lockd up and down routines. Probably the
-solution is not the best one. But at least it looks clear.
-So per-net "up" routine are called only in case of lockd is running already. If
-per-net resources are not allocated yet, then service is being registered with
-local portmapper and lockd sockets created.
-Per-net "down" routine is called on every lockd_down() call in case of global
-users counter is not zero.
+NLM host is network namespace aware now.
+So NSM have to take it into account.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/lockd/svc.c             |   47 ++++++++++++++++++++++++++++++++++++++++++--
- include/linux/sunrpc/svc.h |    2 ++
- net/sunrpc/svc.c           |    3 ++-
- 3 files changed, 49 insertions(+), 3 deletions(-)
+ fs/lockd/mon.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index b461733..86e17e8 100644
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -251,6 +251,45 @@ out_err:
- 	return err;
+diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+index c196030..7ef14b3 100644
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -62,14 +62,14 @@ static inline struct sockaddr *nsm_addr(const struct nsm_handle *nsm)
+ 	return (struct sockaddr *)&nsm->sm_addr;
  }
  
-+static int lockd_up_net(struct net *net)
-+{
-+	struct lockd_net *ln = net_generic(net, lockd_net_id);
-+	struct svc_serv *serv = nlmsvc_rqst->rq_server;
-+	int error;
-+
-+	if (ln->nlmsvc_users)
-+		return 0;
-+
-+	error = svc_rpcb_setup(serv, net);
-+	if (error)
-+		goto err_rpcb;
-+
-+	error = make_socks(serv, net);
-+	if (error < 0)
-+		goto err_socks;
-+	return 0;
-+
-+err_socks:
-+	svc_rpcb_cleanup(serv, net);
-+err_rpcb:
-+	return error;
-+}
-+
-+static void lockd_down_net(struct net *net)
-+{
-+	struct lockd_net *ln = net_generic(net, lockd_net_id);
-+	struct svc_serv *serv = nlmsvc_rqst->rq_server;
-+
-+	if (ln->nlmsvc_users) {
-+		if (--ln->nlmsvc_users == 0)
-+			svc_shutdown_net(serv, net);
-+	} else {
-+		printk(KERN_ERR "lockd_down_net: no users! task=%p, net=%p\n",
-+				nlmsvc_task, net);
-+		BUG();
-+	}
-+}
-+
- /*
-  * Bring up the lockd process if it's not already up.
-  */
-@@ -264,8 +303,10 @@ int lockd_up(void)
- 	/*
- 	 * Check whether we're already up and running.
+-static struct rpc_clnt *nsm_create(void)
++static struct rpc_clnt *nsm_create(struct net *net)
+ {
+ 	struct sockaddr_in sin = {
+ 		.sin_family		= AF_INET,
+ 		.sin_addr.s_addr	= htonl(INADDR_LOOPBACK),
+ 	};
+ 	struct rpc_create_args args = {
+-		.net			= &init_net,
++		.net			= net,
+ 		.protocol		= XPRT_TRANSPORT_UDP,
+ 		.address		= (struct sockaddr *)&sin,
+ 		.addrsize		= sizeof(sin),
+@@ -83,7 +83,8 @@ static struct rpc_clnt *nsm_create(void)
+ 	return rpc_create(&args);
+ }
+ 
+-static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res)
++static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
++			 struct net *net)
+ {
+ 	struct rpc_clnt	*clnt;
+ 	int		status;
+@@ -99,7 +100,7 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res)
+ 		.rpc_resp	= res,
+ 	};
+ 
+-	clnt = nsm_create();
++	clnt = nsm_create(net);
+ 	if (IS_ERR(clnt)) {
+ 		status = PTR_ERR(clnt);
+ 		dprintk("lockd: failed to create NSM upcall transport, "
+@@ -149,7 +150,7 @@ int nsm_monitor(const struct nlm_host *host)
  	 */
--	if (nlmsvc_rqst)
-+	if (nlmsvc_rqst) {
-+		error = lockd_up_net(net);
- 		goto out;
-+	}
+ 	nsm->sm_mon_name = nsm_use_hostnames ? nsm->sm_name : nsm->sm_addrbuf;
  
- 	/*
- 	 * Sanity check: if there's no pid,
-@@ -338,8 +379,10 @@ lockd_down(void)
- {
- 	mutex_lock(&nlmsvc_mutex);
- 	if (nlmsvc_users) {
--		if (--nlmsvc_users)
-+		if (--nlmsvc_users) {
-+			lockd_down_net(current->nsproxy->net_ns);
- 			goto out;
-+		}
- 	} else {
- 		printk(KERN_ERR "lockd_down: no users! task=%p\n",
- 			nlmsvc_task);
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 7b65495..51b29ac 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -414,6 +414,7 @@ struct svc_procedure {
- /*
-  * Function prototypes.
-  */
-+int svc_rpcb_setup(struct svc_serv *serv, struct net *net);
- void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
- struct svc_serv *svc_create(struct svc_program *, unsigned int,
- 			    void (*shutdown)(struct svc_serv *, struct net *net));
-@@ -426,6 +427,7 @@ struct svc_serv *  svc_create_pooled(struct svc_program *, unsigned int,
- int		   svc_set_num_threads(struct svc_serv *, struct svc_pool *, int);
- int		   svc_pool_stats_open(struct svc_serv *serv, struct file *file);
- void		   svc_destroy(struct svc_serv *);
-+void		   svc_shutdown_net(struct svc_serv *, struct net *);
- int		   svc_process(struct svc_rqst *);
- int		   bc_svc_process(struct svc_serv *, struct rpc_rqst *,
- 			struct svc_rqst *);
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 78abac4..4153846 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -369,7 +369,7 @@ svc_pool_for_cpu(struct svc_serv *serv, int cpu)
- 	return &serv->sv_pools[pidx % serv->sv_nrpools];
- }
+-	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res);
++	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res, host->net);
+ 	if (unlikely(res.status != 0))
+ 		status = -EIO;
+ 	if (unlikely(status < 0)) {
+@@ -183,7 +184,7 @@ void nsm_unmonitor(const struct nlm_host *host)
+ 	 && nsm->sm_monitored && !nsm->sm_sticky) {
+ 		dprintk("lockd: nsm_unmonitor(%s)\n", nsm->sm_name);
  
--static int svc_rpcb_setup(struct svc_serv *serv, struct net *net)
-+int svc_rpcb_setup(struct svc_serv *serv, struct net *net)
- {
- 	int err;
- 
-@@ -381,6 +381,7 @@ static int svc_rpcb_setup(struct svc_serv *serv, struct net *net)
- 	svc_unregister(serv, net);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(svc_rpcb_setup);
- 
- void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net)
- {
+-		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res);
++		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, host->net);
+ 		if (res.status != 0)
+ 			status = -EIO;
+ 		if (status < 0)
 
