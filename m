@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab2AaMPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 07:15:50 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36341 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119Ab2AaMPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 07:15:24 -0500
-Date: Tue, 31 Jan 2012 13:15:13 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-        KVM devel mailing list <kvm@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [VT-d reboot problems] Re: [PATCH] x86 / reboot: Blacklist Dell
- OptiPlex 990 known to require PCI reboot
-Message-ID: <20120131121513.GE32010@elte.hu>
-References: <201111160019.51303.rjw@sisk.pl>
- <201201091700.09318.roucaries.bastien@gmail.com>
- <20120116004110.GA21240@srcf.ucam.org>
- <CAE2SPAZH9vQ=7mTxaCGY6DHdf5Yvv-0SWCwUobUY3tTD5caLow@mail.gmail.com>
- <4F1478B0.6080200@zytor.com>
- <CAE2SPAak9xnN8Tbjru3eLN79_JGTGaPWi7w+t=7peN-Nd9f+Bw@mail.gmail.com>
- <CAE2SPAbHxjQm3-z+LRXYBJAVnrwjMn=u=9RFLmZ6hkc8XtNy+w@mail.gmail.com>
+	id S1753837Ab2AaMQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 07:16:43 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:42118 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752742Ab2AaMQm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 07:16:42 -0500
+Message-ID: <4F27DB7B.4010103@stericsson.com>
+Date: Tue, 31 Jan 2012 13:15:55 +0100
+From: Maxime Coquelin <maxime.coquelin@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111110 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE2SPAbHxjQm3-z+LRXYBJAVnrwjMn=u=9RFLmZ6hkc8XtNy+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Andrea GALLO <andrea.gallo@stericsson.com>,
+        Vincent GUITTOT <vincent.guittot@stericsson.com>,
+        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
+        Loic PALLARDY <loic.pallardy@stericsson.com>
+Subject: Re: [RFCv1 3/6] PASR: mm: Integrate PASR in Buddy allocator
+References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com> <1327930436-10263-4-git-send-email-maxime.coquelin@stericsson.com> <20120130152237.GS25268@csn.ul.ie> <4F26CAD1.2000209@stericsson.com>
+In-Reply-To: <4F26CAD1.2000209@stericsson.com>
+Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Mel,
+On 01/30/2012 05:52 PM, Maxime Coquelin wrote:
+>
+> On 01/30/2012 04:22 PM, Mel Gorman wrote:
+>
+>> You may be able to use the existing arch_alloc_page() hook and
+>> call PASR on architectures that support it if and only if PASR is
+>> present and enabled by the administrator but even this is likely to be
+>> unpopular as it'll have a measurable performance impact on platforms
+>> with PASR (not to mention the PASR lock will be even heavier as it'll
+>> now be also used for per-cpu page allocations). To get the hook you
+>> want, you'd need to show significant benefit before they were happy with
+>> the hook.
+> Your proposal sounds good.
+> AFAIK, per-cpu allocation maximum size is 32KB. Please correct me if 
+> I'm wrong.
+> Since pasr_kget/kput() calls the PASR framework only on MAX_ORDER 
+> allocations, we wouldn't add any locking risks nor contention compared 
+> to current patch.
+> I will update the patch set using  arch_alloc/free_page().
+>
+I just had a deeper look at when arch_alloc_page() is called. I think it 
+does not fit with PASR framework needs.
+pasr_kget() calls pasr_get() only for max order pages (same for 
+pasr_kput()) to avoid overhead.
 
-(added KVM folks to the Cc:)
+In current patch set, pasr_kget() is called when pages are removed from 
+the free lists, and pasr_kput() when pages are inserted in the free lists.
+So, pasr_get() is called in case of :
+     - allocation of a max order page
+     - split of a max order page into lower order pages to fulfill 
+allocation of pages smaller than max order
+And pasr_put() is called in case of:
+     - release of a max order page
+     - coalescence of two "max order -1" pages when smaller pages are 
+released
 
-* Bastien ROUCARIES <roucaries.bastien@gmail.com> wrote:
+If we call the PASR framework in arch_alloc_page(), we have two 
+possibilities:
+     1) using pasr_kget(): the PASR framework will only be notified of 
+max order allocations, so the coalesce/split of free pages case will not 
+be taken into account.
+     2) using pasr_get(): the PASR framework will be called for every 
+orders of page allocation/release. The induced overhead is not acceptable.
 
-> Ping^2
-> 
-> Bastien
-> On Mon, Jan 23, 2012 at 11:28 AM, Bastien ROUCARIES
-> <roucaries.bastien@gmail.com> wrote:
-> > On Mon, Jan 16, 2012 at 8:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> >> On 01/16/2012 03:27 AM, Bastien ROUCARIES wrote:
-> >>>>
-> >>>> Does it work if you disable VT-d in the firmware? If so, then adding it
-> >>>> to the reboot method blacklist is the wrong fix - we need to figure out
-> >>>> why VT-d interferes with Dell's reboot code.
-> >>>
-> >>> Yes it work
-> >>>
-> >>
-> >> This is particularly so since we are very close to having a full Dell
-> >> model catalogue in the kernel...
-> >
-> > Ping ? Do you need some dump ? testing ?
+To avoid calling pasr_kget/kput() directly in page_alloc.c, do you think 
+adding some arch specific hooks when a page is inserted or removed from 
+the free lists could be acceptable?
+Something like arch_insert_freepage(struct page *page, int order) and 
+arch_remove_freepage(struct page *page, int order).
 
-So disabling VT-d in the BIOS fixes the reboot problem and 
-Matthew Garrett suggests we should figure out why and how VT-d 
-on this Dell box interferes with the reboot method.
-
-Thanks,
-
-	Ingo
+Regards,
+Maxime
