@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab2AaRBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 12:01:49 -0500
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:45816 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab2AaRBr (ORCPT
+	id S1753568Ab2AaRFJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 12:05:09 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:53239 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752477Ab2AaRFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 12:01:47 -0500
-X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Jan 2012 12:01:47 EST
-Message-ID: <4F281D36.3080604@redhat.com>
-Date: Tue, 31 Jan 2012 17:56:22 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Tue, 31 Jan 2012 12:05:07 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Karsten Keil <kkeil@linux-pingi.de>
+Subject: Re: [PATCH 01/16] eicon: fix -Warray-bounds warning
+Date: Tue, 31 Jan 2012 18:04:19 +0100
+User-Agent: KMail/1.9.10
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Armin Schindler <mac@melware.de>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>
+References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de> <1327964972.2595.31.camel@bwh-desktop> <20120131152534.GA14825@gw.linux-pingi.de>
+In-Reply-To: <20120131152534.GA14825@gw.linux-pingi.de>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Brian Swetland <swetland@google.com>
-Subject: Re: Linux 3.3-1 out - merge window closed
-References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com> <CADMYwHxhyExw8jzAVT6PEdfXT-vCSLxg_eGbbqCwRNh0q3Q6eQ@mail.gmail.com> <20120123131808.GC23571@ponder.secretlab.ca> <201201231518.26158.arnd@arndb.de> <87y5sydjpb.fsf@rustcorp.com.au>
-In-Reply-To: <87y5sydjpb.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201201311804.20464.danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328029507;fd021f6f;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2012 01:32 AM, Rusty Russell wrote:
->> >  >  >
->> >  >  >  * The code is completely self contained, and the only few external
->> >  >  >  places it changes amount to grabbing a new virtio id (which is
->> >  >  >  Acked-by Rusty) and some OMAP init platform code (which is Acked-by
->> >  >  >  Tony). People who aren't explicitly using it won't notice it's there;
->> >  >  >  even its Kconfig entries get selected automatically when relevant
->> >  >  >  (i.e. only on OMAP4 at this point) and would never show up otherwise.
->>  >
->>  >  Hi Linus,
->>  >
->>  >  I'd also like to see this merged.  Rather than going off and inventing
->>  >  something completely new, Ohad has built on the existing virtio
->>  >  infrastructure to implement IPC between CPUs and DSPs running
->>  >  different operating environments.  This is a strong step in the
->>  >  RightDirection(tm) in my opinion and such behaviour should be
->>  >  encouraged.:-)
+On Dienstag, 31. Januar 2012, Karsten Keil wrote:
+> On Mon, Jan 30, 2012 at 11:09:32PM +0000, Ben Hutchings wrote:
+> > On Mon, 2012-01-30 at 23:00 +0100, Danny Kukawka wrote:
+> > > Fix for a -Warray-bounds warning. mixer_notify_update() tries to
+> > > write to ((CAPI_MSG *) msg)->info.facility_req.structs[3] while
+> > > structs is defined as byte structs[1], define structs[1] as
+> > > structs[4].
+> >
+> > I suspect that all the 'byte structs[1];' fields defined in that header
+> > are actually variable-length arrays.  In that case, there may be no
+> > reasonable bound you can specify.
+>
+> Yes, exactely, the structs is a ASN1 coded message so it can have any len.
 
-I didn't see any virtio spec patches for rpmsg, with the result that 
-virtio id 7 is being used also by the virtio-scsi patches.  I can 
-certainly push virtio-scsi to 8, but perhaps there's something to 
-improve on the communication side...
+So, how can we get rid of the compiler warning then?
 
-The code for both drivers seems more or less at the same stage ("wait 
-for someone to pull", respectively Linus and James Bottomley).
+Danny
 
-Paolo
+> Karsten
