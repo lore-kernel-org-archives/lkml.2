@@ -1,91 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab2AaWDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 17:03:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753379Ab2AaWDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 17:03:45 -0500
-Date: Tue, 31 Jan 2012 17:03:33 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Wu Fengguang <wfg@linux.intel.com>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-Message-ID: <20120131220333.GD4378@redhat.com>
-References: <1327996780.21268.42.camel@sli10-conroe>
+	id S1755411Ab2AaWF0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 17:05:26 -0500
+Received: from outmail018.snc4.facebook.com ([66.220.144.152]:49840 "EHLO
+	intmgw003.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755341Ab2AaWFZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 17:05:25 -0500
+Date: Tue, 31 Jan 2012 14:05:22 -0800
+From: Arun Sharma <asharma@fb.com>
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, asharma@fb.com, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        glommer@parallels.com, mingo@elte.hu, christoph.paasch@uclouvain.be
+Subject: Re: [PATCH] net: Disambiguate kernel message
+Message-ID: <20120131220521.GA1505@dev3310.snc6.facebook.com>
+References: <1328040546.8012.6.camel@joe2Laptop>
+ <4F285310.5060104@fb.com>
+ <1328043341.8702.3.camel@joe2Laptop>
+ <20120131.161535.422381201029777577.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327996780.21268.42.camel@sli10-conroe>
+In-Reply-To: <20120131.161535.422381201029777577.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 03:59:40PM +0800, Shaohua Li wrote:
-> Herbert Poetzl reported a performance regression since 2.6.39. The test
-> is a simple dd read, but with big block size. The reason is:
+On Tue, Jan 31, 2012 at 04:15:35PM -0500, David Miller wrote:
+> > 
+> > shrug. That isn't currently used and 
+> > tcp_too_many_orphans and tcp_out_of_memory
+> > could still be checked.
+> > 
+> > I think the routine could be moved out-of-line.
 > 
-> T1: ra (A, A+128k), (A+128k, A+256k)
-> T2: lock_page for page A, submit the 256k
-> T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
-> because of plug and there isn't any lock_page till we hit page A+256k
-> because all pages from A to A+256k is in memory
-> T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
-> submitted again.
-> T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
-> waitting for (A+256k, A+512k) finish.
-> 
-> There is no request to disk in T3 and T4, so readahead pipeline breaks.
-> 
-> We really don't need block plug for generic_file_aio_read() for buffered
-> I/O. The readahead already has plug and has fine grained control when I/O
-> should be submitted. Deleting plug for buffered I/O fixes the regression.
-> 
-> One side effect is plug makes the request size 256k, the size is 128k
-> without it. This is because default ra size is 128k and not a reason we
-> need plug here.
+> Indeed, and make the out-of-line combined routine (that does the test
+> as well as the conditional logging) return a boolean that determines
+> if the "if (too_many_orphans || out_of_socket_memory)" test should
+> pass.
 
-For me, this patch helps only so much and does not get back all the
-performance lost in case of raw disk read. It does improve the throughput
-from around 85-90 MB/s to 110-120 MB/s but running the same dd with
-iflag=direct, gets me more than 250MB/s.
+Updated patch below. No change in the size of .text
+.rodata is a bit larger.
 
-# echo 3 > /proc/sys/vm/drop_caches 
-# dd if=/dev/sdb of=/dev/null bs=1M count=1K
-1024+0 records in
-1024+0 records out
-1073741824 bytes (1.1 GB) copied, 9.03305 s, 119 MB/s
+ -Arun
 
-echo 3 > /proc/sys/vm/drop_caches 
-# dd if=/dev/sdb of=/dev/null bs=1M count=1K iflag=direct
-1024+0 records in
-1024+0 records out
-1073741824 bytes (1.1 GB) copied, 4.07426 s, 264 MB/s
+>From f4a973dfbc9c624c9b93d2662f77eeae04e84497 Mon Sep 17 00:00:00 2001
+From: Arun Sharma <asharma@fb.com>
+Date: Mon, 30 Jan 2012 14:16:06 -0800
+Subject: [PATCH] net: Disambiguate kernel message
 
-I think it is happening because in case of raw read we are submitting
-one page at a time to request queue and by the time all the pages
-are submitted and one big merged request is formed it wates lot of time.
+Some of our machines were reporting:
 
-In case of direct IO, we are getting bigger IOs at request queue so
-less cpu overhead, less idling on queue.
+TCP: too many of orphaned sockets
 
-I created ext4 filesystem on same SSD and did the buffered read and
-that seems to work just fine. Now I am getting bigger requests at
-the request queue. (128K, 256 sectors).
+even when the number of orphaned sockets was well below the
+limit.
 
-[root@chilli common]# echo 3 > /proc/sys/vm/drop_caches 
-[root@chilli common]# dd if=zerofile-4G of=/dev/null bs=1M count=1K
-1024+0 records in
-1024+0 records out
-1073741824 bytes (1.1 GB) copied, 4.09186 s, 262 MB/s
+We print a different message depending on whether we're out
+of TCP memory or there are too many orphaned sockets.
 
-Anyway, remvoing top level plug in case of buffered reads sounds
-reasonable.
+Also move the check out of line and cleanup the messages
+that were printed.
 
-Thanks
-Vivek
+Signed-off-by: Arun Sharma <asharma@fb.com>
+Suggested-by: Mohan Srinivasan <mohan@fb.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>
+Cc: Glauber Costa <glommer@parallels.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Joe Perches <joe@perches.com>
+---
+ include/net/tcp.h    |   14 ++++++++++----
+ net/ipv4/tcp.c       |   19 +++++++++++++++----
+ net/ipv4/tcp_timer.c |    5 +----
+ 3 files changed, 26 insertions(+), 12 deletions(-)
+
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 0118ea9..9e158f1 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -273,6 +273,14 @@ static inline int between(__u32 seq1, __u32 seq2, __u32 seq3)
+ 	return seq3 - seq2 >= seq1 - seq2;
+ }
+ 
++static inline bool tcp_out_of_memory(struct sock *sk)
++{
++	if (sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
++	    sk_memory_allocated(sk) > sk_prot_mem_limits(sk, 2))
++		return true;
++	return false;
++}
++
+ static inline bool tcp_too_many_orphans(struct sock *sk, int shift)
+ {
+ 	struct percpu_counter *ocp = sk->sk_prot->orphan_count;
+@@ -283,13 +291,11 @@ static inline bool tcp_too_many_orphans(struct sock *sk, int shift)
+ 		if (orphans << shift > sysctl_tcp_max_orphans)
+ 			return true;
+ 	}
+-
+-	if (sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
+-	    sk_memory_allocated(sk) > sk_prot_mem_limits(sk, 2))
+-		return true;
+ 	return false;
+ }
+ 
++extern bool tcp_check_oom(struct sock *sk, int shift);
++
+ /* syncookies: remember time of last synqueue overflow */
+ static inline void tcp_synq_overflow(struct sock *sk)
+ {
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 9bcdec3..5c1cb35 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1876,6 +1876,20 @@ void tcp_shutdown(struct sock *sk, int how)
+ }
+ EXPORT_SYMBOL(tcp_shutdown);
+ 
++bool tcp_check_oom(struct sock *sk, int shift)
++{
++	bool too_many_orphans, out_of_socket_memory;
++
++	too_many_orphans = tcp_too_many_orphans(sk, shift);
++	out_of_socket_memory = tcp_out_of_memory(sk);
++
++	if (too_many_orphans && net_ratelimit())
++		pr_info("TCP: too many orphaned sockets\n");
++	if (out_of_socket_memory && net_ratelimit())
++		pr_info("TCP: out of memory -- consider tuning tcp_mem\n");
++	return too_many_orphans || out_of_socket_memory;
++}
++
+ void tcp_close(struct sock *sk, long timeout)
+ {
+ 	struct sk_buff *skb;
+@@ -2015,10 +2029,7 @@ adjudge_to_death:
+ 	}
+ 	if (sk->sk_state != TCP_CLOSE) {
+ 		sk_mem_reclaim(sk);
+-		if (tcp_too_many_orphans(sk, 0)) {
+-			if (net_ratelimit())
+-				printk(KERN_INFO "TCP: too many of orphaned "
+-				       "sockets\n");
++		if (tcp_check_oom(sk, 0)) {
+ 			tcp_set_state(sk, TCP_CLOSE);
+ 			tcp_send_active_reset(sk, GFP_ATOMIC);
+ 			NET_INC_STATS_BH(sock_net(sk),
+diff --git a/net/ipv4/tcp_timer.c b/net/ipv4/tcp_timer.c
+index a516d1e..cd2e072 100644
+--- a/net/ipv4/tcp_timer.c
++++ b/net/ipv4/tcp_timer.c
+@@ -77,10 +77,7 @@ static int tcp_out_of_resources(struct sock *sk, int do_reset)
+ 	if (sk->sk_err_soft)
+ 		shift++;
+ 
+-	if (tcp_too_many_orphans(sk, shift)) {
+-		if (net_ratelimit())
+-			printk(KERN_INFO "Out of socket memory\n");
+-
++	if (tcp_check_oom(sk, shift)) {
+ 		/* Catch exceptional cases, when connection requires reset.
+ 		 *      1. Last segment was sent recently. */
+ 		if ((s32)(tcp_time_stamp - tp->lsndtime) <= TCP_TIMEWAIT_LEN ||
+-- 
+1.7.4
+
