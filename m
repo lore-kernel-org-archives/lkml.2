@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab2AaMQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 07:16:43 -0500
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:42118 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752742Ab2AaMQm (ORCPT
+	id S1754158Ab2AaMRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 07:17:22 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38321 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab2AaMRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 07:16:42 -0500
-Message-ID: <4F27DB7B.4010103@stericsson.com>
-Date: Tue, 31 Jan 2012 13:15:55 +0100
-From: Maxime Coquelin <maxime.coquelin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111110 Thunderbird/8.0
-MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Andrea GALLO <andrea.gallo@stericsson.com>,
-        Vincent GUITTOT <vincent.guittot@stericsson.com>,
-        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
-        Loic PALLARDY <loic.pallardy@stericsson.com>
-Subject: Re: [RFCv1 3/6] PASR: mm: Integrate PASR in Buddy allocator
-References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com> <1327930436-10263-4-git-send-email-maxime.coquelin@stericsson.com> <20120130152237.GS25268@csn.ul.ie> <4F26CAD1.2000209@stericsson.com>
-In-Reply-To: <4F26CAD1.2000209@stericsson.com>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+	Tue, 31 Jan 2012 07:17:20 -0500
+Date: Tue, 31 Jan 2012 12:18:20 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hitoshi Mitake <h.mitake@gmail.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        linux-kernel@vger.kernel.org, hpa@linux.intel.com
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without
+ readq/writeq
+Message-ID: <20120131121820.58a1db97@pyramind.ukuu.org.uk>
+In-Reply-To: <20120131120922.GD32010@elte.hu>
+References: <1327021265-22184-1-git-send-email-matthew.r.wilcox@intel.com>
+	<CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
+	<20120121082857.GC32134@elte.hu>
+	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+	<20120121165830.GA9216@elte.hu>
+	<CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+	<CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
+	<CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
+	<CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
+	<20120131115855.5861bad7@pyramind.ukuu.org.uk>
+	<20120131120922.GD32010@elte.hu>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mel,
-On 01/30/2012 05:52 PM, Maxime Coquelin wrote:
->
-> On 01/30/2012 04:22 PM, Mel Gorman wrote:
->
->> You may be able to use the existing arch_alloc_page() hook and
->> call PASR on architectures that support it if and only if PASR is
->> present and enabled by the administrator but even this is likely to be
->> unpopular as it'll have a measurable performance impact on platforms
->> with PASR (not to mention the PASR lock will be even heavier as it'll
->> now be also used for per-cpu page allocations). To get the hook you
->> want, you'd need to show significant benefit before they were happy with
->> the hook.
-> Your proposal sounds good.
-> AFAIK, per-cpu allocation maximum size is 32KB. Please correct me if 
-> I'm wrong.
-> Since pasr_kget/kput() calls the PASR framework only on MAX_ORDER 
-> allocations, we wouldn't add any locking risks nor contention compared 
-> to current patch.
-> I will update the patch set using  arch_alloc/free_page().
->
-I just had a deeper look at when arch_alloc_page() is called. I think it 
-does not fit with PASR framework needs.
-pasr_kget() calls pasr_get() only for max order pages (same for 
-pasr_kput()) to avoid overhead.
+On Tue, 31 Jan 2012 13:09:22 +0100
+Ingo Molnar <mingo@elte.hu> wrote:
 
-In current patch set, pasr_kget() is called when pages are removed from 
-the free lists, and pasr_kput() when pages are inserted in the free lists.
-So, pasr_get() is called in case of :
-     - allocation of a max order page
-     - split of a max order page into lower order pages to fulfill 
-allocation of pages smaller than max order
-And pasr_put() is called in case of:
-     - release of a max order page
-     - coalescence of two "max order -1" pages when smaller pages are 
-released
+> 
+> * Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> 
+> > >   u64 val;
+> > >   val = readl(addr);
+> > >   val |= readl(addr+4) << 32;
+> > > 
+> > > is well-defined and must read the low word first - both at the C level
+> > > *and* at the CPU level. Anything else would be a bug in the
+> > > architecture "readl()" implementation or the hardware.
+> > 
+> > That doesn't make the access atomic to hardware however as a true 64bit
+> > readq/writeq would be ?
+> > 
+> > It seems to me the two are not quite the same semantically
+> 
+> Correct, and that's what the:
+> 
+> 	#include <asm/io-inatomic.h>
+> 
+> line in the driver would express.
 
-If we call the PASR framework in arch_alloc_page(), we have two 
-possibilities:
-     1) using pasr_kget(): the PASR framework will only be notified of 
-max order allocations, so the coalesce/split of free pages case will not 
-be taken into account.
-     2) using pasr_get(): the PASR framework will be called for every 
-orders of page allocation/release. The induced overhead is not acceptable.
+Why would "inatomic" indicate that - I'm confused. It would imply to me
+they were extra specially atomic ?  
 
-To avoid calling pasr_kget/kput() directly in page_alloc.c, do you think 
-adding some arch specific hooks when a page is inserted or removed from 
-the free lists could be acceptable?
-Something like arch_insert_freepage(struct page *page, int order) and 
-arch_remove_freepage(struct page *page, int order).
+(atomos if from the Greek so in- as a prefix isn't the same in- as in
+many other words, welcome to English hell - who needs perl)
 
-Regards,
-Maxime
+non-atomic.h might be better, or 'un-atomic' or 'multi-read' or
+something ?
+
+Alan
