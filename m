@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab2AaL5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:57:21 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53853
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752758Ab2AaL5U (ORCPT
+	id S1754079Ab2AaL5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:57:55 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52098 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031Ab2AaL5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:57:20 -0500
-Date: Tue, 31 Jan 2012 06:57:16 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Wu Fengguang <wfg@linux.intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+	Tue, 31 Jan 2012 06:57:53 -0500
+Date: Tue, 31 Jan 2012 11:58:55 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hitoshi Mitake <h.mitake@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-Message-ID: <20120131115716.GA19829@infradead.org>
-References: <1327996780.21268.42.camel@sli10-conroe>
- <20120131103416.GA1661@localhost>
- <20120131104621.GA27003@infradead.org>
- <20120131105754.GA3867@localhost>
- <20120131113452.GA3235@infradead.org>
- <20120131114256.GA8796@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120131114256.GA8796@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+        James Bottomley <James.Bottomley@parallels.com>,
+        linux-kernel@vger.kernel.org, hpa@linux.intel.com
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without
+ readq/writeq
+Message-ID: <20120131115855.5861bad7@pyramind.ukuu.org.uk>
+In-Reply-To: <CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
+References: <1327021265-22184-1-git-send-email-matthew.r.wilcox@intel.com>
+	<CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
+	<20120121082857.GC32134@elte.hu>
+	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+	<20120121165830.GA9216@elte.hu>
+	<CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+	<CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
+	<CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
+	<CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 07:42:56PM +0800, Wu Fengguang wrote:
-> > So what?  Better do a bit more work now and keep the damn thing
-> > maintainable.
+>   u64 val;
+>   val = readl(addr);
+>   val |= readl(addr+4) << 32;
 > 
-> What if we add a wrapper function for doing
-> 
->         blk_start_plug(&plug);
->         ->direct_IO()
->         blk_finish_plug(&plug);
+> is well-defined and must read the low word first - both at the C level
+> *and* at the CPU level. Anything else would be a bug in the
+> architecture "readl()" implementation or the hardware.
 
-No.  Just put it into __blockdev_direct_IO - a quick 2 minute audit of
-the kernel source shows that is in fact the only ->direct_IO instance
-which ever submits block I/O anyway.
+That doesn't make the access atomic to hardware however as a true 64bit
+readq/writeq would be ?
 
+It seems to me the two are not quite the same semantically
