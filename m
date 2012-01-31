@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab2AaQi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:38:59 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:48553 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab2AaQi6 (ORCPT
+	id S1754836Ab2AaQlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:41:17 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7830 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754627Ab2AaQlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:38:58 -0500
-X-IronPort-AV: E=Sophos;i="4.71,596,1320624000"; 
-   d="scan'208";a="10397603"
-Date: Tue, 31 Jan 2012 16:40:26 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen pvhvm: do not remap pirqs onto evtchns if
- !xen_have_vector_callback
-In-Reply-To: <20120131162759.GA18248@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1201311636380.3196@kaball-desktop>
-References: <alpine.DEB.2.00.1201301429530.3196@kaball-desktop> <20120131162759.GA18248@phenom.dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 31 Jan 2012 11:41:15 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 31 Jan 2012 08:41:15 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/8] Add tegra30 support for secondary cores
+Date: Tue, 31 Jan 2012 18:40:38 +0200
+Message-Id: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jan 2012, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jan 30, 2012 at 02:31:46PM +0000, Stefano Stabellini wrote:
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> So the xen_have_vector_callback looks to be only set by
-> 
-> 1398         if (xen_feature(XENFEAT_hvm_callback_vector))
-> 1399                 xen_have_vector_callback = 1;
-> 
-> So could this be just done via a check for that instead?
-> 
+This patchset introduces support for secondary cores on tegra30. It also
+introduces some functions for the flowcontroller and adds basic support for
+tegra30 powerdomains.
 
-Sure, but I don't think it would be better: using
-xen_have_vector_callback is more consistent and give us the flexibility
-of allowing users to manually override it in the future.
+Peter De Schrijver (8):
+  ARM: tegra: export the chipid
+  ARM: tegra: functions to access the flowcontroller
+  ARM: tegra: rework Tegra secondary CPU core bringup
+  ARM: tegra: prepare powergate.c for multiple variants
+  ARM: tegra: export tegra_powergate_is_powered()
+  ARM: tegra: add support for Tegra30 powerdomains
+  ARM: tegra: support for Tegra30 CPU powerdomains
+  ARM: tegra: support for secondary cores on Tegra30
+
+ arch/arm/mach-tegra/Makefile                 |    2 +
+ arch/arm/mach-tegra/common.c                 |    4 +
+ arch/arm/mach-tegra/flowctrl.c               |   62 ++++++++
+ arch/arm/mach-tegra/flowctrl.h               |    5 +
+ arch/arm/mach-tegra/fuse.c                   |   18 ++-
+ arch/arm/mach-tegra/fuse.h                   |    4 +
+ arch/arm/mach-tegra/headsmp.S                |  192 ++++++++++++++++++++++++-
+ arch/arm/mach-tegra/include/mach/iomap.h     |    3 +
+ arch/arm/mach-tegra/include/mach/powergate.h |   15 ++-
+ arch/arm/mach-tegra/platsmp.c                |  139 +++++++++++++------
+ arch/arm/mach-tegra/powergate.c              |   53 +++++++-
+ arch/arm/mach-tegra/reset.c                  |   84 +++++++++++
+ arch/arm/mach-tegra/reset.h                  |   50 +++++++
+ 13 files changed, 568 insertions(+), 63 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/flowctrl.c
+ create mode 100644 arch/arm/mach-tegra/reset.c
+ create mode 100644 arch/arm/mach-tegra/reset.h
+
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
