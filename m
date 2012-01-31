@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab2AaOll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 09:41:41 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40532 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904Ab2AaOlk (ORCPT
+	id S1754480Ab2AaOnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 09:43:11 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47056 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783Ab2AaOnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 09:41:40 -0500
-Message-ID: <4F27FDA0.6090806@suse.cz>
-Date: Tue, 31 Jan 2012 15:41:36 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120124 Thunderbird/10.0
+	Tue, 31 Jan 2012 09:43:09 -0500
+Message-ID: <4F27FDF7.8070008@samsung.com>
+Date: Tue, 31 Jan 2012 23:43:03 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Greg KH <greg@kroah.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ML netdev <netdev@vger.kernel.org>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH] sysfs:  Update the name hash when renaming sysfs entries
-References: <4F27120A.4040106@suse.cz> <CAPXgP12Sr2KzGJ9RA13QBOCkctb-z3O4+1uHOjANgMDDv2pxaQ@mail.gmail.com> <4F27C54F.1010107@suse.cz> <CAPXgP11=U_Y3LvJB2LRnXQ53y1WQQTqc0j1c7iva6ZXvF97wEw@mail.gmail.com> <4F27C9D4.3040105@suse.cz> <CAPXgP12pj6esZVmN-PYTVgJ+_MaAfmpa9hKoKKQZ+Y=Y-Kb4eA@mail.gmail.com> <4F27CDBC.5020201@suse.cz> <CAPXgP1371fgmaP3ecxsDJ2BmJrOS6kUP95G1BHe6deBPk5FVCQ@mail.gmail.com> <m18vko6jmv.fsf@fess.ebiederm.org> <m1zkd45411.fsf_-_@fess.ebiederm.org>
-In-Reply-To: <m1zkd45411.fsf_-_@fess.ebiederm.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+CC: thomas.abraham@linaro.org, m.szyprowski@samsung.com,
+        linux-samsung-soc@vger.kernel.org, marc.zyngier@arm.com,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        kyungmin.park@samsung.com
+Subject: Re: [PATCH 1/2] ARM: Exynos4: Make exynos4-dt compile again
+References: <1328006193-13902-1-git-send-email-k.lewandowsk@samsung.com> <1328006193-13902-2-git-send-email-k.lewandowsk@samsung.com>
+In-Reply-To: <1328006193-13902-2-git-send-email-k.lewandowsk@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2012 03:40 PM, Eric W. Biederman wrote:
-> 
-> This fixes a bug introduced with sysfs name hashes where renaming a
-> network device appears to succeed but silently makes the sysfs files for
-> that network device inaccessible.
-> 
-> In at least one configuration this bug has stopped networking from
-> coming up during boot.
-> 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-
-It works for me. Thanks.
-
-Tested-by: Jiri Slaby <jslaby@suse.cz>
-
+On 01/31/12 19:36, Karol Lewandowski wrote:
+> Commit cc511b8d84d8 ("ARM: 7257/1: EXYNOS: introduce
+> arch/arm/mach-exynos/common.[ch]") replaced plat/exynos4.h with
+> common.h, requiring all boards to be adjusted appropriately.
+>
+> This commit fixes exynos4-dt.c, missed out in original patch.
+>
+> Signed-off-by: Karol Lewandowski<k.lewandowsk@samsung.com>
+> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
+> Cc: Thomas Abraham<thomas.abraham@linaro.org>
+> Cc: Kukjin Kim<kgene.kim@samsung.com>
 > ---
->  fs/sysfs/dir.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-> index ea64d01..dd3779c 100644
-> --- a/fs/sysfs/dir.c
-> +++ b/fs/sysfs/dir.c
-> @@ -872,6 +872,7 @@ int sysfs_rename(struct sysfs_dirent *sd,
->  
->  		dup_name = sd->s_name;
->  		sd->s_name = new_name;
-> +		sd->s_hash = sysfs_name_hash(sd->s_ns, sd->s_name);
->  	}
->  
->  	/* Move to the appropriate place in the appropriate directories rbtree. */
+>   arch/arm/mach-exynos/mach-exynos4-dt.c |    5 +++--
+>   1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
+> index 85fa027..98e79c9 100644
+> --- a/arch/arm/mach-exynos/mach-exynos4-dt.c
+> +++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+> @@ -19,7 +19,8 @@
+>
+>   #include<plat/cpu.h>
+>   #include<plat/regs-serial.h>
+> -#include<plat/exynos4.h>
+> +
+> +#include "common.h"
+>
+>   /*
+>    * The following lookup table is used to override device names when devices
+> @@ -60,7 +61,7 @@ static const struct of_dev_auxdata exynos4210_auxdata_lookup[] __initconst = {
+>
+>   static void __init exynos4210_dt_map_io(void)
+>   {
+> -	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
+> +	exynos_init_io(NULL, 0);
+>   	s3c24xx_init_clocks(24000000);
+>   }
+>
+Looks ok to me, will apply.
 
+Thanks.
 
--- 
-js
-suse labs
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
