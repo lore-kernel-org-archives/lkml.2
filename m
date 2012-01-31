@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab2AaKeW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:34:22 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54545 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab2AaKeV (ORCPT
+	id S1752885Ab2AaKgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:36:36 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:55921 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab2AaKgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:34:21 -0500
-Date: Tue, 31 Jan 2012 11:34:01 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
-        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 6/7] LPC32xx: clock.c: USB PLL fix
-Message-ID: <20120131103401.GJ2471@pengutronix.de>
-References: <1327939327-7799-1-git-send-email-stigge@antcom.de>
- <1327939327-7799-6-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VIOdPewhitSMo36n"
-Content-Disposition: inline
-In-Reply-To: <1327939327-7799-6-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 31 Jan 2012 05:36:35 -0500
+Date: Tue, 31 Jan 2012 11:36:31 +0100
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: [PATCH 0/2] EXYNOS4_DT fixes for 3.3-rc1+ kernels
+To: thomas.abraham@linaro.org
+Cc: m.szyprowski@samsung.com, linux-samsung-soc@vger.kernel.org,
+        marc.zyngier@arm.com, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com,
+        Karol Lewandowski <k.lewandowsk@samsung.com>
+Message-id: <1328006193-13902-1-git-send-email-k.lewandowsk@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.8.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Device Tree-based Exynos4 machine prepared by Thomas Abraham and
+included in 3.3-rc1 hasn't been adjusted to changes that have happened
+to mach-exynos during 3.3 merge window.
 
---VIOdPewhitSMo36n
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Following patch series fixes one build and one boot error making it
+possible to boot system with SMP disabled.
 
-On Mon, Jan 30, 2012 at 05:02:05PM +0100, Roland Stigge wrote:
-> This patch fixes and updates the USB PLL handling. With the old driver ve=
-rsion,
-> the USB clock was sometimes not started correctly. The update reflects the
-> driver changes in this regard from Kevin Wells.
->=20
-> See also git.lpclinux.com
->=20
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+SMP support is still broken for unknown reason, though.
 
-I remember we needed that fix back then as well, so I am tempted to ack
-it. However, I'd like to test it but USB is currently not available. Do
-you happen to have a USB fixing commit just to test (can be hackish)?
+[ To use it it's also required to cherry-pick "ARM: EXYNOS: fix
+  non-SMP builds for EXYNOS4" already found in kgene's
+  linux-samsung.git (branch v3.3-samsung-fixes-2) ]
 
-Thanks,
 
-   Wolfram
+Karol Lewandowski (2):
+  ARM: Exynos4: Make exynos4-dt compile again
+  ARM: Exynos4: Convert exynos4-dt to CONFIG_MULTI_IRQ_HANDLER
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+ arch/arm/mach-exynos/mach-exynos4-dt.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+-- 
+1.7.8.3
 
---VIOdPewhitSMo36n
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk8nw5kACgkQD27XaX1/VRv+xACgsAXrnCFg3gn8T4MBNZdgbRDn
-PG8AniLNAw/UiNEOUxDsZUdFbM6kFHX7
-=cpEf
------END PGP SIGNATURE-----
-
---VIOdPewhitSMo36n--
