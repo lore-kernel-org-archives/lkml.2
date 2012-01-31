@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab2AaHdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 02:33:50 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:55663 "EHLO sc-mailgw05.nsc.com"
+	id S1753018Ab2AaHd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 02:33:59 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:55688 "EHLO sc-mailgw05.nsc.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752482Ab2AaHds convert rfc822-to-8bit (ORCPT
+	id S1752709Ab2AaHd5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 02:33:48 -0500
-X-WSS-ID: 0LYNJO7-0A-MM7-02
+	Tue, 31 Jan 2012 02:33:57 -0500
+X-WSS-ID: 0LYNJOG-0A-MMD-02
 X-M-MSG: 
 X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
 From: "Kim, Milo" <Milo.Kim@ti.com>
@@ -17,19 +17,20 @@ cc: "Linus Walleij" <linus.walleij@linaro.org>,
 	<shreshthakumar.sahu@stericsson.com>,
         "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 30 Jan 2012 23:33:28 -0800
-Subject: [PATCH v3 2/6] leds-lm3530: add 'name' in lm3530_platform_data
-Thread-Topic: [PATCH v3 2/6] leds-lm3530: add 'name' in
- lm3530_platform_data
-Thread-Index: Aczf6p+dJTb7+I07QsqVEsP5pnJewQ==
-Message-ID: <B567DBAB974C0544994013492B949F8E3812DEC931@EXMAIL03.scwf.nsc.com>
+Date: Mon, 30 Jan 2012 23:33:44 -0800
+Subject: [PATCH v3 3/6] leds-lm3530: add lm3530_mode_get() in the
+ dev_attr
+Thread-Topic: [PATCH v3 3/6] leds-lm3530: add lm3530_mode_get() in the
+ dev_attr
+Thread-Index: Aczf6qmBv4QKpm0ATDm/dz4QS7ZaEw==
+Message-ID: <B567DBAB974C0544994013492B949F8E3812DEC933@EXMAIL03.scwf.nsc.com>
 Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-X-WSS-ID: 633946C01LS10038277-01-01
+X-WSS-ID: 633946D01LS10038281-01-01
 Content-Type: text/plain;
  charset=us-ascii
 Content-Transfer-Encoding: 8BIT
@@ -37,50 +38,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The led device name can be configurable.
-For the compatibility, the name is set to default value(LM3530_LED_DEV)
-when 'name' is not defined.
+To get information about brightness control mode, lm3530_mode_get() is added.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/leds/leds-lm3530.c |    2 +-
- include/linux/led-lm3530.h |    2 ++
- 2 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/leds/leds-lm3530.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
-index 3135734..963a1db 100644
+index 963a1db..b2fd545 100644
 --- a/drivers/leds/leds-lm3530.c
 +++ b/drivers/leds/leds-lm3530.c
-@@ -341,7 +341,7 @@ static int __devinit lm3530_probe(struct i2c_client *client,
- 	drvdata->pdata = pdata;
- 	drvdata->brightness = LED_OFF;
- 	drvdata->enable = false;
--	drvdata->led_dev.name = LM3530_LED_DEV;
-+	drvdata->led_dev.name = pdata->name ? pdata->name : LM3530_LED_DEV;
- 	drvdata->led_dev.brightness_set = lm3530_brightness_set;
+@@ -275,6 +275,17 @@ static void lm3530_brightness_set(struct led_classdev *led_cdev,
+ 	}
+ }
  
- 	i2c_set_clientdata(client, drvdata);
-diff --git a/include/linux/led-lm3530.h b/include/linux/led-lm3530.h
-index 5534d1e..513e9c3 100644
---- a/include/linux/led-lm3530.h
-+++ b/include/linux/led-lm3530.h
-@@ -91,6 +91,7 @@ struct lm3530_pwm_data {
-  * @als1_resistor_sel: internal resistance from ALS1 input to ground
-  * @als2_resistor_sel: internal resistance from ALS2 input to ground
-  * @brt_val: brightness value (0-255)
-+ * @name: led device name
-  * @pwm_data: PWM control functions. only valid when the mode is PWM.
-  */
- struct lm3530_platform_data {
-@@ -110,6 +111,7 @@ struct lm3530_platform_data {
++static ssize_t lm3530_mode_get(struct device *dev,
++			struct device_attribute *attr,
++			char *buf)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct lm3530_data *drvdata =
++	    container_of(led_cdev, struct lm3530_data, led_dev);
++	enum lm3530_mode m = drvdata->mode;
++
++	return sprintf(buf, "%s\n", mode_map[m].mode);
++}
  
- 	u8 brt_val;
+ static ssize_t lm3530_mode_set(struct device *dev, struct device_attribute
+ 				   *attr, const char *buf, size_t size)
+@@ -302,7 +313,7 @@ static ssize_t lm3530_mode_set(struct device *dev, struct device_attribute
+ 	return sizeof(drvdata->mode);
+ }
  
-+	const char *name;
- 	struct lm3530_pwm_data pwm_data;
- };
+-static DEVICE_ATTR(mode, 0644, NULL, lm3530_mode_set);
++static DEVICE_ATTR(mode, 0644, lm3530_mode_get, lm3530_mode_set);
  
+ static int __devinit lm3530_probe(struct i2c_client *client,
+ 			   const struct i2c_device_id *id)
 -- 
 1.7.4.1
 
