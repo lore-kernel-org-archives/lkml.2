@@ -1,101 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab2AaL2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:28:55 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:45837 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab2AaL2y (ORCPT
+	id S1753740Ab2AaLeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:34:10 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53242 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab2AaLeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:28:54 -0500
-Date: Tue, 31 Jan 2012 14:29:59 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: =?iso-8859-1?Q?V=EDctor_M=2E_J=E1quez_L=2E?= <vjaquez@igalia.com>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Armando Uribe <x0095078@ti.com>,
-        devel@driverdev.osuosl.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/8] staging: tidspbridge: silence the compiler
-Message-ID: <20120131112959.GJ3356@mwanda>
-References: <cover.1327964066.git.vjaquez@igalia.com>
- <d25cfe1b88f2b749cb31887d551a1c9b0fcde42e.1327964066.git.vjaquez@igalia.com>
- <20120131080543.GA3294@mwanda>
- <20120131111952.GB19973@lit.local.igalia.com>
+	Tue, 31 Jan 2012 06:34:08 -0500
+Date: Tue, 31 Jan 2012 12:33:58 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Barry Song <21cnbao@gmail.com>
+Cc: Barry Song <Barry.Song@csr.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Erik Gilling <konkers@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-mtd@lists.infradead.org, Barry Song <Baohua.Song@csr.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+Subject: Re: [PATCH 1/3] platform: add common resource requesting and
+ mapping helper
+Message-ID: <20120131113358.GM2471@pengutronix.de>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+ <1328004002-24646-2-git-send-email-Barry.Song@csr.com>
+ <20120131101734.GE2471@pengutronix.de>
+ <CAGsJ_4wyJ6Wymy4AWoW1eHubZX=W7GT_Fbow9ofXoY1RrcHzgA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+QmoJrblcRudFCJH"
+	protocol="application/pgp-signature"; boundary="gw4vLALk08fVJy3V"
 Content-Disposition: inline
-In-Reply-To: <20120131111952.GB19973@lit.local.igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F27D05A.011C,ss=1,re=0.000,fgs=0
+In-Reply-To: <CAGsJ_4wyJ6Wymy4AWoW1eHubZX=W7GT_Fbow9ofXoY1RrcHzgA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---+QmoJrblcRudFCJH
-Content-Type: text/plain; charset=iso-8859-1
+--gw4vLALk08fVJy3V
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jan 31, 2012 at 12:19:52PM +0100, V=EDctor M. J=E1quez L. wrote:
-> On Tue, Jan 31, 2012 at 11:05:43AM +0300, Dan Carpenter wrote:
-> > On Tue, Jan 31, 2012 at 12:12:20AM +0100, V=EDctor Manuel J=E1quez Leal=
- wrote:
-> > > Silence the warning when compiling drv_interface.c
-> > >=20
-> > > Signed-off-by: V=EDctor Manuel J=E1quez Leal <vjaquez@igalia.com>
-> >=20
-> > What does the compiler warn about here?  Normally you would cut and
-> > paste the warning into the commit message.  But at least give us a
-> > hint.
-> >=20
-> > You could also reformat that printk so the message is on one line.
-> >=20
-> > 	dev_dbg(bridge,
-> > 	        "%s: vm filp %p offset %x start %lx end %lx page_prot %ulx fla=
-gs %lx\n",
-> > 		__func__, filp, offset, vma->vm_start, vma->vm_end,
-> > 		vma->vm_page_prot, vma->vm_flags);
+Barry,
+
+> > You don't need to do the error checking for 'res'. You can simply do
+> >
+> > res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > base =3D devm_request_and_ioremap(&dev->dev, res);
 >=20
-> Ok. I'll do it.
+> i do know  devm_request_and_ioremap() does res checking. but that is
+> implicit, confused and not a smart way actually.
+
+I agree about the implicit thing (keep in mind the function is new). But
+calling a function "not smart" because it checks its arguments? I do
+like the NULL check of kfree() for example.
+
+> actually, no people by now really use the implicit checking. that
+> shows people don't really think that is a good programming way.
+
+I'd think most people just copy&paste and don't have an opinion either
+way, so the quantity doesn't show much.
+
+> > devm_request_and_ioremap() will check res. Given that, I don't think
+> > we can save a lot with another wrapper.
 >=20
-> I have a doubt about the process in this case: if this is the only
-> modification request, should I resend all the patch set, or just this one?
->=20
+> i think we can save some.
+> The story begins from Grant's feedback in:
+> http://www.spinics.net/lists/arm-kernel/msg157644.html
 
-If you sent just the one, and you redid the printk() then it would
-make the later patches not apply.
+I am not sure using 'platform_devm_request_and_ioremap' and later using
+plain 'devm_*' functions (without platform_-prefix) is less confusing.
+The alternative would be to check which helper functions also use
+'struct resource' and if they do checks on that. If all do that, you
+would have the simple rule, that you only need to check yourself if you
+access it yourself.
 
-Maybe just send the one, with a fixed changelog and leave the patch
-as is.  The problems in the printk() were not introduced in this
-patch so I can't really complain about that.  A couple people have
-already volunteered to fix that in a later patch.
+Regards,
 
-regards,
-dan carpenter
+   Wolfram
 
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---+QmoJrblcRudFCJH
+--gw4vLALk08fVJy3V
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
+Content-Disposition: inline
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPJ9C2AAoJEOnZkXI/YHqRRgQQAJAE5MTlW1lbqDP643ENA+30
-f3wdGX3DkAobsiGZhOYM44u/n7nCUUeFSysCCLH2sBS+tZ4Ai2488k36y5tp348G
-YDhB8h/wUytIVrdggc7jcFrbbRVsmDUyE9acuk6/LrAdtzn4aHvKYY0TfcoYUYQv
-yylP8aIfxQ4T72j5H/JcSRxe2C64BOdCS4FjmPtxnHSfTnW1NgdYxvhYhSZ+h9Fk
-/DNjFR8mvxerMB4V4WEGqSjhpil3rsfeh4kMRH1FmAXNF3hyV+71i7WP1bw5aspj
-Eh7vN9yNLmd/RtUqsE7qE048EVLtGTwCA1fTShKB23WmNZvToPYztgBWUuY9SNcl
-JJ8pID2fLYwjuGuCoVMrAhvMdzDANGwNxodbRx6gzVN3O9O1Dc/AHIMkJFKF1Edy
-rIGZl7+/E8PS81hDdhQj2l05GPQKkkOJgqIqABvn2zhirrTauoHZa5A3FGE9uHK5
-R2ANDY7OZfVKKoOx1KopYR+NUBLP1SgVtfemRUioatLx2PhVBcPkLvRnCcyUVscm
-8pb1IUVt9zL1n57KZWch9aNBBNdEIZFv9ELZ+vZYpxT5/mj20cmHDVD8ZO/NzjBV
-ATWEWKEzbjKsrmcaoIE1PU86EeaD/oNAgw+aiDihJYxJFYmHY6DmZP6UKO5kcNkd
-tVWMWbgtI+9w7mASqzfR
-=Ke5/
+iEYEARECAAYFAk8n0aYACgkQD27XaX1/VRvQQwCfc4uFzEsLurU0rb6k0ZC3H0OI
+jEoAn1OUBDFgco5RfLLPt6oGT05UvGl/
+=UQLr
 -----END PGP SIGNATURE-----
 
---+QmoJrblcRudFCJH--
+--gw4vLALk08fVJy3V--
