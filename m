@@ -1,169 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2AaKJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:09:31 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:14039 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753861Ab2AaKJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:09:21 -0500
-Subject: [PATCH v2 3/4] SUNRPC: service destruction in network namespace
- context
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Tue, 31 Jan 2012 14:09:17 +0400
-Message-ID: <20120131100917.4342.17047.stgit@localhost6.localdomain6>
-In-Reply-To: <20120131100625.4342.34539.stgit@localhost6.localdomain6>
-References: <20120131100625.4342.34539.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753038Ab2AaKOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:14:12 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:40608 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752132Ab2AaKOK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 05:14:10 -0500
+Subject: Re: [PATCH 05/16] cx18: fix handling of 'radio' module parameter
+From: Andy Walls <awalls@md.metrocast.net>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, mchehab@redhat.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 31 Jan 2012 05:13:22 -0500
+In-Reply-To: <1328004120.2821.8.camel@palomino.walls.org>
+References: <1327952458-7424-1-git-send-email-danny.kukawka@bisect.de>
+	 <1327952458-7424-6-git-send-email-danny.kukawka@bisect.de>
+	 <1328004120.2821.8.camel@palomino.walls.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1328004803.2821.15.camel@palomino.walls.org>
+Mime-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.211,0.0.0000
+ definitions=2012-01-31_04:2012-01-31,2012-01-31,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=2
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1012030000 definitions=main-1201310024
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2: Added comment to BUG_ON's in svc_destroy() to make code looks clearer.
+On Tue, 2012-01-31 at 05:01 -0500, Andy Walls wrote:
+> On Mon, 2012-01-30 at 20:40 +0100, Danny Kukawka wrote:
+> > Fixed handling of 'radio' module parameter from module_param_array
+> > to module_param_named to fix these compiler warnings in cx18-driver.c:
+> 
+> NACK.
+> 
+> "radio" is an array of tristate values (-1, 0, 1) per installed card:
+> 
+> 	static int radio[CX18_MAX_CARDS] = { -1, -1,
+> 
+> and must remain an array or you will break the driver.
+> 
+> Calling "radio_c" a module parameter named "radio" is wrong.
+> 
+> The correct fix is to reverse Rusty Russel's patch to the driver in
+> commit  90ab5ee94171b3e28de6bb42ee30b527014e0be7
+> to change the "bool" back to an "int" as it should be in
+                      ^^^^
+Sorry, a typo here.  Disregard the word "back".
 
-This patch introduces network namespace filter for service destruction
-function.
-Nothing special here - just do exactly the same operations, but only for
-tranports in passed networks namespace context.
-BTW, BUG_ON() checks for empty service transports lists were returned into
-svc_destroy() function. This is because of swithing generic svc_close_all() to
-networks namespace dependable svc_close_net().
+Regards,
+Andy
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> "module_param_array(radio, ...)"
+> 
+> Regards,
+> Andy
+> 
+> > In function ‘__check_radio’:
+> > 113:1: warning: return from incompatible pointer type [enabled by default]
+> > At top level:
+> > 113:1: warning: initialization from incompatible pointer type [enabled by default]
+> > 113:1: warning: (near initialization for ‘__param_arr_radio.num’) [enabled by default]
+> > 
+> > Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> > ---
+> >  drivers/media/video/cx18/cx18-driver.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
+> > index 349bd9c..27b5330 100644
+> > --- a/drivers/media/video/cx18/cx18-driver.c
+> > +++ b/drivers/media/video/cx18/cx18-driver.c
+> > @@ -110,7 +110,7 @@ static int retry_mmio = 1;
+> >  int cx18_debug;
+> >  
+> >  module_param_array(tuner, int, &tuner_c, 0644);
+> > -module_param_array(radio, bool, &radio_c, 0644);
+> > +module_param_named(radio, radio_c, bool, 0644);
+> >  module_param_array(cardtype, int, &cardtype_c, 0644);
+> >  module_param_string(pal, pal, sizeof(pal), 0644);
+> >  module_param_string(secam, secam, sizeof(secam), 0644);
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
----
- include/linux/sunrpc/svcsock.h |    2 +-
- net/sunrpc/svc.c               |   13 +++++++++++--
- net/sunrpc/svc_xprt.c          |   27 +++++++++++++++++----------
- 3 files changed, 29 insertions(+), 13 deletions(-)
-
-diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
-index c84e974..cb4ac69 100644
---- a/include/linux/sunrpc/svcsock.h
-+++ b/include/linux/sunrpc/svcsock.h
-@@ -34,7 +34,7 @@ struct svc_sock {
- /*
-  * Function prototypes.
-  */
--void		svc_close_all(struct svc_serv *);
-+void		svc_close_net(struct svc_serv *, struct net *);
- int		svc_recv(struct svc_rqst *, long);
- int		svc_send(struct svc_rqst *);
- void		svc_drop(struct svc_rqst *);
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index a8b49a0..6cc0ea3 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -517,6 +517,8 @@ EXPORT_SYMBOL_GPL(svc_create_pooled);
- void
- svc_destroy(struct svc_serv *serv)
- {
-+	struct net *net = current->nsproxy->net_ns;
-+
- 	dprintk("svc: svc_destroy(%s, %d)\n",
- 				serv->sv_program->pg_name,
- 				serv->sv_nrthreads);
-@@ -539,10 +541,17 @@ svc_destroy(struct svc_serv *serv)
- 	 * caller is using--nfsd_mutex in the case of nfsd).  So it's
- 	 * safe to traverse those lists and shut everything down:
- 	 */
--	svc_close_all(serv);
-+	svc_close_net(serv, net);
-+
-+	/*
-+	 * The last user is gone and thus all sockets have to be destroyed to
-+	 * the point. Check this.
-+	 */
-+	BUG_ON(!list_empty(&serv->sv_permsocks));
-+	BUG_ON(!list_empty(&serv->sv_tempsocks));
- 
- 	if (serv->sv_shutdown)
--		serv->sv_shutdown(serv, current->nsproxy->net_ns);
-+		serv->sv_shutdown(serv, net);
- 
- 	cache_clean_deferred(serv);
- 
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index 493e70b..4bda09d 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -922,17 +922,19 @@ void svc_close_xprt(struct svc_xprt *xprt)
- }
- EXPORT_SYMBOL_GPL(svc_close_xprt);
- 
--static void svc_close_list(struct list_head *xprt_list)
-+static void svc_close_list(struct list_head *xprt_list, struct net *net)
- {
- 	struct svc_xprt *xprt;
- 
- 	list_for_each_entry(xprt, xprt_list, xpt_list) {
-+		if (xprt->xpt_net != net)
-+			continue;
- 		set_bit(XPT_CLOSE, &xprt->xpt_flags);
- 		set_bit(XPT_BUSY, &xprt->xpt_flags);
- 	}
- }
- 
--static void svc_clear_pools(struct svc_serv *serv)
-+static void svc_clear_pools(struct svc_serv *serv, struct net *net)
- {
- 	struct svc_pool *pool;
- 	struct svc_xprt *xprt;
-@@ -944,36 +946,41 @@ static void svc_clear_pools(struct svc_serv *serv)
- 
- 		spin_lock_bh(&pool->sp_lock);
- 		list_for_each_entry_safe(xprt, tmp, &pool->sp_sockets, xpt_ready) {
-+			if (xprt->xpt_net != net)
-+				continue;
- 			list_del_init(&xprt->xpt_ready);
- 		}
- 		spin_unlock_bh(&pool->sp_lock);
- 	}
- }
- 
--static void svc_clear_list(struct list_head *xprt_list)
-+static void svc_clear_list(struct list_head *xprt_list, struct net *net)
- {
- 	struct svc_xprt *xprt;
- 	struct svc_xprt *tmp;
- 
- 	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
-+		if (xprt->xpt_net != net)
-+			continue;
- 		svc_delete_xprt(xprt);
- 	}
--	BUG_ON(!list_empty(xprt_list));
-+	list_for_each_entry(xprt, xprt_list, xpt_list)
-+		BUG_ON(xprt->xpt_net == net);
- }
- 
--void svc_close_all(struct svc_serv *serv)
-+void svc_close_net(struct svc_serv *serv, struct net *net)
- {
--	svc_close_list(&serv->sv_tempsocks);
--	svc_close_list(&serv->sv_permsocks);
-+	svc_close_list(&serv->sv_tempsocks, net);
-+	svc_close_list(&serv->sv_permsocks, net);
- 
--	svc_clear_pools(serv);
-+	svc_clear_pools(serv, net);
- 	/*
- 	 * At this point the sp_sockets lists will stay empty, since
- 	 * svc_enqueue will not add new entries without taking the
- 	 * sp_lock and checking XPT_BUSY.
- 	 */
--	svc_clear_list(&serv->sv_tempsocks);
--	svc_clear_list(&serv->sv_permsocks);
-+	svc_clear_list(&serv->sv_tempsocks, net);
-+	svc_clear_list(&serv->sv_permsocks, net);
- }
- 
- /*
 
