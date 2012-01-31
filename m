@@ -1,89 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab2AaKof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:44:35 -0500
-Received: from mga14.intel.com ([143.182.124.37]:40596 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793Ab2AaKoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:44:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101476656"
-Date: Tue, 31 Jan 2012 18:34:16 +0800
-From: Wu Fengguang <wfg@linux.intel.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-Message-ID: <20120131103416.GA1661@localhost>
-References: <1327996780.21268.42.camel@sli10-conroe>
+	id S1754022Ab2AaKom (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:44:42 -0500
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:33300 "EHLO
+	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab2AaKoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 05:44:39 -0500
+From: Barry Song <Barry.Song@csr.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+CC: <workgroup.linux@csr.com>, <linux-mtd@lists.infradead.org>,
+        Barry Song <Baohua.Song@csr.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Erik Gilling <konkers@google.com>,
+        Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH 1/3] platform: add common resource requesting and mapping helper
+Date: Tue, 31 Jan 2012 18:00:00 +0800
+Message-ID: <1328004002-24646-2-git-send-email-Barry.Song@csr.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327996780.21268.42.camel@sli10-conroe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Originating-IP: [10.125.36.70]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd like to propose a sister patch on the write part. It may not be
-as easy to measure any performance impacts of it, but I'll try.
+From: Barry Song <Baohua.Song@csr.com>
 
+this patch helps to move the common pattern from
+
+"
+res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+if (!res) {
+	ret = -ENODEV;
+	goto err;
+}
+
+base = devm_request_and_ioremap(&dev->dev, mem_res);
+if (!base) {
+	ret = -ENODEV;
+	goto err;
+}
+"
+
+to
+
+"
+base = platform_devm_request_and_ioremap(pdev, 0);
+if (!base) {
+	ret = -ENODEV;
+	goto err;
+}
+"
+
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Erik Gilling <konkers@google.com>
+Cc: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+Cc: David Woodhouse <dwmw2@infradead.org>
 ---
-Subject: remove plugging at buffered write time 
-Date: Tue Jan 31 18:25:48 CST 2012
+ drivers/base/platform.c         |   19 +++++++++++++++++++
+ include/linux/platform_device.h |    1 +
+ 2 files changed, 20 insertions(+), 0 deletions(-)
 
-Buffered write(2) is not directly tied to IO, so no need to handle plug
-in generic_file_aio_write().
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index f0c605e..39ca0ab 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -72,6 +72,25 @@ struct resource *platform_get_resource(struct platform_device *dev,
+ EXPORT_SYMBOL_GPL(platform_get_resource);
+ 
+ /**
++ * platform_devm_request_and_ioremap() - get resource, check, request region,
++ * and ioremap resource
++ * @dev: platform device
++ * @num: IOMEM resource index
++ */
++void __iomem *platform_devm_request_and_ioremap(struct platform_device *dev,
++	unsigned int num)
++{
++	struct resource *res;
++
++	res = platform_get_resource(dev, IORESOURCE_MEM, num);
++	if (!res)
++		return NULL;
++
++	return devm_request_and_ioremap(&dev->dev, res);
++}
++EXPORT_SYMBOL_GPL(platform_devm_request_and_ioremap);
++
++/**
+  * platform_get_irq - get an IRQ for a device
+  * @dev: platform device
+  * @num: IRQ number index
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index 60e9994..768c0d7 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -44,6 +44,7 @@ extern struct device platform_bus;
+ 
+ extern void arch_setup_pdev_archdata(struct platform_device *);
+ extern struct resource *platform_get_resource(struct platform_device *, unsigned int, unsigned int);
++extern void __iomem *platform_devm_request_and_ioremap(struct platform_device *, unsigned int);
+ extern int platform_get_irq(struct platform_device *, unsigned int);
+ extern struct resource *platform_get_resource_byname(struct platform_device *, unsigned int, const char *);
+ extern int platform_get_irq_byname(struct platform_device *, const char *);
+-- 
+1.7.1
 
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Li Shaohua <shaohua.li@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/filemap.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- linux-next.orig/mm/filemap.c	2012-01-31 18:23:52.000000000 +0800
-+++ linux-next/mm/filemap.c	2012-01-31 18:25:38.000000000 +0800
-@@ -2267,6 +2267,7 @@ generic_file_direct_write(struct kiocb *
- 	struct file	*file = iocb->ki_filp;
- 	struct address_space *mapping = file->f_mapping;
- 	struct inode	*inode = mapping->host;
-+	struct blk_plug plug;
- 	ssize_t		written;
- 	size_t		write_len;
- 	pgoff_t		end;
-@@ -2301,7 +2302,9 @@ generic_file_direct_write(struct kiocb *
- 		}
- 	}
- 
-+	blk_start_plug(&plug);
- 	written = mapping->a_ops->direct_IO(WRITE, iocb, iov, pos, *nr_segs);
-+	blk_finish_plug(&plug);
- 
- 	/*
- 	 * Finally, try again to invalidate clean pages which might have been
-@@ -2610,13 +2613,11 @@ ssize_t generic_file_aio_write(struct ki
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
--	struct blk_plug plug;
- 	ssize_t ret;
- 
- 	BUG_ON(iocb->ki_pos != pos);
- 
- 	mutex_lock(&inode->i_mutex);
--	blk_start_plug(&plug);
- 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
- 	mutex_unlock(&inode->i_mutex);
- 
-@@ -2627,7 +2628,6 @@ ssize_t generic_file_aio_write(struct ki
- 		if (err < 0 && ret > 0)
- 			ret = err;
- 	}
--	blk_finish_plug(&plug);
- 	return ret;
- }
- EXPORT_SYMBOL(generic_file_aio_write);
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
