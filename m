@@ -1,126 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab2AaAUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 19:20:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203Ab2AaAUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 19:20:09 -0500
-Date: Tue, 31 Jan 2012 02:22:05 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <jmorris@namei.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Michael Witten <mfwitten@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 1/3] lib: add NO_GENERIC_PCI_IOPORT_MAP
-Message-ID: <20120131002203.GA14344@redhat.com>
-References: <cover.1327877053.git.mst@redhat.com>
- <201201301551.46907.arnd@arndb.de>
- <20120130161818.GA9345@redhat.com>
- <201201302004.33083.arnd@arndb.de>
+	id S1754257Ab2AaA1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 19:27:44 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:50987 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab2AaA1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 19:27:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201201302004.33083.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120131001308.GB20588@suse.de>
+References: <20120130211241.GA12941@kroah.com> <CA+55aFxFtsOj+9RYQGj+WEk3ovg4+d_syn8TooKjvBq2_B463Q@mail.gmail.com>
+ <CA+55aFxGf8-Bv8Jrhm1dbTg6AkTi37Vfuw5OOC7hDokKRa4hjw@mail.gmail.com> <20120131001308.GB20588@suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 30 Jan 2012 16:27:22 -0800
+X-Google-Sender-Auth: 9bHR0bpHtWNfudv-r_wOt8e3-I0
+Message-ID: <CA+55aFxXwZmhC4USJSOk_itatwkg1m8gkQRTqKHNRGDWD8MCOw@mail.gmail.com>
+Subject: Re: [GIT PATCH] TTY/serial patches for 3.3-rc1
+To: Greg KH <gregkh@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 08:04:32PM +0000, Arnd Bergmann wrote:
-> On Monday 30 January 2012, Michael S. Tsirkin wrote:
-> > > 
-> > > +/*
-> > > + * Create a virtual mapping cookie for a port on a given PCI device.
-> > > + * Do not call this directly, it exists to make it easier for architectures
-> > > + * to override.
-> > > + */
-> > > +#ifdef CONFIG_NO_GENERIC_PCI_IOPORT_MAP
-> > > +extern void __iomem *__pci_ioport_map(struct pci_dev *dev, unsigned long port,
-> > > +                                     unsigned int nr);
-> > > +#else
-> > > +static inline void __iomem *__pci_ioport_map(struct pci_dev *dev,
-> > > +                              unsigned long port, unsigned int nr)
-> > > +{
-> > > +       return ioport_map(port, nr);
-> > > +}
-> > > +#endif
-> > > 
-> > >       Arnd
-> > 
-> > It would be nicer in that it would
-> > make the kernel a bit smaller for generic architectures
-> > but this would need to go into a separate header:
-> > it depends on io.h and io.h depends on pci_iomap.h.
-> 
-> Adding extra dependencies is not good here, I agree.
-> Maybe  a better solution is to use a macro instead of an inline
-> function then:
-> 
-> #define  __pci_ioport_map(dev, port, nr) ioport_map(port, nr)
-> 
-> In general, macros should be avoided, but I think it's the
-> best tradeoff in this case.
-> 
-> 	Arnd
+On Mon, Jan 30, 2012 at 4:13 PM, Greg KH <gregkh@suse.de> wrote:
+>
+> Or I can spend the time to get the new version of git installed.
+> Wrestling with my scripts or rpm, I don't know which is worse...
 
-I have an idea: we can make the generic one inline
-if we keep it in the .c file. So something like
-the below on top of my patch will probably work.
-Ack?
+Why do either?
 
-diff --git a/include/asm-generic/pci_iomap.h b/include/asm-generic/pci_iomap.h
-index 2aff58e..2ec1bdb 100644
---- a/include/asm-generic/pci_iomap.h
-+++ b/include/asm-generic/pci_iomap.h
-@@ -15,11 +15,6 @@ struct pci_dev;
- #ifdef CONFIG_PCI
- /* Create a virtual mapping cookie for a PCI BAR (memory or IO) */
- extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
--/* Create a virtual mapping cookie for a port on a given PCI device.
-- * Do not call this directly, it exists to make it easier for architectures
-- * to override. */
--extern void __iomem *__pci_ioport_map(struct pci_dev *dev, unsigned long port,
--				      unsigned int nr);
- #else
- static inline void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max)
- {
-@@ -27,4 +22,12 @@ static inline void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned lon
- }
- #endif
- 
-+#ifdef CONFIG_NO_GENERIC_PCI_IOPORT_MAP
-+/* Create a virtual mapping cookie for a port on a given PCI device.
-+ * Do not call this directly, it exists to make it easier for architectures
-+ * to override. */
-+extern void __iomem *__pci_ioport_map(struct pci_dev *dev, unsigned long port,
-+				      unsigned int nr);
-+#endif
-+
- #endif /* __ASM_GENERIC_IO_H */
-diff --git a/lib/pci_iomap.c b/lib/pci_iomap.c
-index 1dfda29..8102f28 100644
---- a/lib/pci_iomap.c
-+++ b/lib/pci_iomap.c
-@@ -12,9 +12,9 @@
- #ifndef CONFIG_NO_GENERIC_PCI_IOPORT_MAP
- /* Architectures can override ioport mapping while
-  * still using the rest of the generic infrastructure. */
--void __iomem *__pci_ioport_map(struct pci_dev *dev,
--			       unsigned long port,
--			       unsigned int nr)
-+static inline void __iomem *__pci_ioport_map(struct pci_dev *dev,
-+					     unsigned long port,
-+					     unsigned int nr)
- {
- 	return ioport_map(port, nr);
- }
+The sane way to do things is to just
+
+    cd
+    mkdir src
+    cd src
+    git clone git://github.com/gitster/git
+    cd git
+    make
+    make install
+
+all as a regular user. It will install in your $(HOME)/bin, so just
+put that first in the path. No need to fight rpm, no need to fight
+your scripts, you should be pretty much all done.
+
+                 Linus
