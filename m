@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab2AaTOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 14:14:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57445 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462Ab2AaTOR (ORCPT
+	id S1754893Ab2AaTPd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 14:15:33 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12810 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab2AaTPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 14:14:17 -0500
-Date: Tue, 31 Jan 2012 11:13:36 -0800
-From: "tip-bot for hchunhui@mail.ustc.edu.cn" <hchunhui@mail.ustc.edu.cn>
-Message-ID: <tip-b19c3206aa872e0562d67ad46bf3b3a59be956a7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com, hchunhui@mail.ustc.edu.cn
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, hchunhui@mail.ustc.edu.cn
-In-Reply-To: <32892299.2931391328028508117.JavaMail.coremail@mailweb>
-References: <32892299.2931391328028508117.JavaMail.coremail@mailweb>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/boot] x86, boot: Fix port argument to inl() function
-Git-Commit-ID: b19c3206aa872e0562d67ad46bf3b3a59be956a7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 31 Jan 2012 14:15:31 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 31 Jan 2012 11:15:19 -0800
+From: Diwakar Tundlam <dtundlam@nvidia.com>
+To: "'Mike Galbraith'" <efault@gmx.de>
+CC: "'Ingo Molnar'" <mingo@elte.hu>, "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Antti Miettinen <amiettinen@nvidia.com>
+Date: Tue, 31 Jan 2012 11:15:19 -0800
+Subject: RE: Fix bug: Scheduler's idle-load-balancer not running in first 5
+ mins after bootup
+Thread-Topic: Fix bug: Scheduler's idle-load-balancer not running in first 5
+ mins after bootup
+Thread-Index: Aczfy1W+PepzhZ+6Twq5w8+hpQfPsgAgNigA
+Message-ID: <1DD7BFEDD3147247B1355BEFEFE466523791832BE7@HQMAIL04.nvidia.com>
+References: <1DD7BFEDD3147247B1355BEFEFE466523791832BD5@HQMAIL04.nvidia.com>
+ <1327981751.11541.2.camel@marge.simson.net>
+In-Reply-To: <1327981751.11541.2.camel@marge.simson.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jan 2012 11:13:43 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0VJFfTC013337
 
-Commit-ID:  b19c3206aa872e0562d67ad46bf3b3a59be956a7
-Gitweb:     http://git.kernel.org/tip/b19c3206aa872e0562d67ad46bf3b3a59be956a7
-Author:     hchunhui@mail.ustc.edu.cn <hchunhui@mail.ustc.edu.cn>
-AuthorDate: Wed, 1 Feb 2012 00:48:28 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 31 Jan 2012 10:08:17 -0800
+>> Shouldn't that really be INITIAL_JIFFIES + HZ?
+That may work as well. I was modeling the change after similar initialization of the 'next_balance' field in each rq which is done a few lines earlier. And nohz.next_balance follows rq->next_balance.
 
-x86, boot: Fix port argument to inl() function
+-----Original Message-----
+From: Mike Galbraith [mailto:efault@gmx.de] 
+Sent: Monday, January 30, 2012 7:49 PM
+To: Diwakar Tundlam
+Cc: 'Ingo Molnar'; 'Peter Zijlstra'; 'linux-kernel@vger.kernel.org'; Peter De Schrijver; Antti Miettinen; Matthew Longnecker; Kevin Kranzusch
+Subject: Re: Fix bug: Scheduler's idle-load-balancer not running in first 5 mins after bootup
 
-"u32 port" in inl() should be "u16 port".
+On Mon, 2012-01-30 at 10:14 -0800, Diwakar Tundlam wrote:
+> We ran into this at Nvidia. QA filed a bug saying coremark_4pthreads scores lower (as if running on 3 cores) when run shortly after bootup. But later its score increases to expected values on 4 cores.
+> 
+> This patch is relevant to linux-2.6.39 but I noticed this fix is not made in linux-3.0, 3.1, 3.2 or 3.3 also.
+> 
+> Please see commit log for more details of the problem and fix.
+> 
+> Thanks,
+>   Diwakar.
+>   Tegra Android Kernel SW Engg.
+>   NVIDIA.
+>   Santa Clara, CA
+> 
+> commit d04d7ef0e3f8c70bd6cd5abb2abc0236aa8d1f7c
+> Author: Diwakar Tundlam <dtundlam@nvidia.com>
+> Date:   Wed Jan 18 18:58:57 2012 -0800
+> 
+>     scheduler: domain: init next_balance in nohz_idle_balancer with jiffies
+>     
+>     The next_balance parameter of nohz_idle_balancer should be initialized
+>     to jiffies since jiffies itself is initialized to 300 seconds shy of
+>     overflow. Otherwise, nohz_idle_balancer does not run for the first 5
+>     mins after bootup.
+>     
+>     Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
+>     Reviewed-by: Aleksandr Frid <afrid@nvidia.com>
+>     Reviewed-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
+>     Reviewed-by: Satya Popuri <spopuri@nvidia.com>
+> 
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c index c5b09f7..506c5da 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -8288,6 +8288,7 @@ void __init sched_init(void)
+>         atomic_set(&nohz.load_balancer, nr_cpu_ids);
+>         atomic_set(&nohz.first_pick_cpu, nr_cpu_ids);
+>         atomic_set(&nohz.second_pick_cpu, nr_cpu_ids);
+> +       nohz.next_balance = jiffies;
+>  #endif
+>         /* May be allocated at isolcpus cmdline parse time */
+>         if (cpu_isolated_map == NULL)
 
-[ hpa: it's a bug, but it doesn't produce incorrect code, so no need
-  to put this into urgent or stable. ]
+Shouldn't that really be INITIAL_JIFFIES + HZ?
 
-Signed-off-by: He Chunhui <hchunhui@mail.ustc.edu.cn>
-Link: http://lkml.kernel.org/r/32892299.2931391328028508117.JavaMail.coremail@mailweb
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/boot.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+	-Mike
 
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index c7093bd..18997e5 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -67,7 +67,7 @@ static inline void outl(u32 v, u16 port)
- {
- 	asm volatile("outl %0,%1" : : "a" (v), "dN" (port));
- }
--static inline u32 inl(u32 port)
-+static inline u32 inl(u16 port)
- {
- 	u32 v;
- 	asm volatile("inl %1,%0" : "=a" (v) : "dN" (port));
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
