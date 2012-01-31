@@ -1,51 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab2AaNuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 08:50:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51914 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab2AaNuQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 08:50:16 -0500
-Message-ID: <1328017807.2446.230.camel@twins>
-Subject: Re: [RFC][PATCH] srcu: Implement call_srcu()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Date: Tue, 31 Jan 2012 14:50:07 +0100
-In-Reply-To: <4F27F0E6.1040309@redhat.com>
-References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1754355Ab2AaOBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 09:01:52 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:55470 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717Ab2AaOBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 09:01:51 -0500
+Date: Tue, 31 Jan 2012 14:01:43 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Maxime Coquelin <maxime.coquelin@stericsson.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Andrea GALLO <andrea.gallo@stericsson.com>,
+        Vincent GUITTOT <vincent.guittot@stericsson.com>,
+        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
+        Loic PALLARDY <loic.pallardy@stericsson.com>
+Subject: Re: [RFCv1 3/6] PASR: mm: Integrate PASR in Buddy allocator
+Message-ID: <20120131140143.GW25268@csn.ul.ie>
+References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com>
+ <1327930436-10263-4-git-send-email-maxime.coquelin@stericsson.com>
+ <20120130152237.GS25268@csn.ul.ie>
+ <4F26CAD1.2000209@stericsson.com>
+ <4F27DB7B.4010103@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4F27DB7B.4010103@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 15:47 +0200, Avi Kivity wrote:
-
-> They really need to return quickly to userspace, and they really need to
-> perform some operation between rcu_assign_pointer() and returning, so no.
-
-Bugger :/
-
+On Tue, Jan 31, 2012 at 01:15:55PM +0100, Maxime Coquelin wrote:
+> Hello Mel,
+> On 01/30/2012 05:52 PM, Maxime Coquelin wrote:
 > >
-> > Compile tested only!! :-)
+> >On 01/30/2012 04:22 PM, Mel Gorman wrote:
 > >
+> >>You may be able to use the existing arch_alloc_page() hook and
+> >>call PASR on architectures that support it if and only if PASR is
+> >>present and enabled by the administrator but even this is likely to be
+> >>unpopular as it'll have a measurable performance impact on platforms
+> >>with PASR (not to mention the PASR lock will be even heavier as it'll
+> >>now be also used for per-cpu page allocations). To get the hook you
+> >>want, you'd need to show significant benefit before they were happy with
+> >>the hook.
+> >Your proposal sounds good.
+> >AFAIK, per-cpu allocation maximum size is 32KB. Please correct me
+> >if I'm wrong.
+> >Since pasr_kget/kput() calls the PASR framework only on MAX_ORDER
+> >allocations, we wouldn't add any locking risks nor contention
+> >compared to current patch.
+> >I will update the patch set using  arch_alloc/free_page().
+> >
+> I just had a deeper look at when arch_alloc_page() is called. I
+> think it does not fit with PASR framework needs.
+> pasr_kget() calls pasr_get() only for max order pages (same for
+> pasr_kput()) to avoid overhead.
 > 
-> How much did synchronize_srcu_expedited() regress?  Presumably your
-> compiler didn't tell you that.
 
-Nope, quite a lot I figure.
+I see. My bad.
 
-> Can we get it back to speed by scheduling a work function on all cpus? 
-> wouldn't that force a quiescent state and allow call_srcu() to fire?
+> In current patch set, pasr_kget() is called when pages are removed
+> from the free lists, and pasr_kput() when pages are inserted in the
+> free lists.
+> So, pasr_get() is called in case of :
+>     - allocation of a max order page
+>     - split of a max order page into lower order pages to fulfill
+> allocation of pages smaller than max order
+> And pasr_put() is called in case of:
+>     - release of a max order page
+>     - coalescence of two "max order -1" pages when smaller pages are
+> released
 > 
-> In kvm's use case synchronize_srcu_expedited() is usually called when no
-> thread is in a critical section, so we don't have to wait for anything
-> except the srcu machinery.
+> If we call the PASR framework in arch_alloc_page(), we have two
+> possibilities:
+>     1) using pasr_kget(): the PASR framework will only be notified
+> of max order allocations, so the coalesce/split of free pages case
+> will not be taken into account.
+>     2) using pasr_get(): the PASR framework will be called for every
+> orders of page allocation/release. The induced overhead is not
+> acceptable.
+> 
+> To avoid calling pasr_kget/kput() directly in page_alloc.c, do you
+> think adding some arch specific hooks when a page is inserted or
+> removed from the free lists could be acceptable?
 
-OK, I'll try and come up with means of making it go fast again ;-)
+It's not the name that is the problem, I'm strongly against any hook
+that can delay the page allocator for arbitrary lengths of time like
+this. I am open to being convinced otherwise but for me PASR would
+need to demonstrate large savings for a wide variety of machines and
+the alternatives would have to be considered and explained why they
+would be far inferior or unsuitable.
+
+For example - it seems like this could be also be done with a
+balloon driver instead of page allocator hooks. A governer would
+identify when the machine was under no memory pressure or triggered
+from userspace. To power down memory, it would use page reclaim and
+page migration to allocate large contiguous ranges of memory - CMA
+could potentially be adapted when it gets merged to save a lot of
+implementation work. The governer should register a slab shrinker
+so that under memory pressure it gets called so it can shrink the
+ballon, power the DIMMS back up and free the memory back to the
+buddy allocator. This would keep all the cost out of the allocator
+paths and move the cost to when the machine is either idle (in the
+case of powering down) or under memory pressure (where the cost of
+powering up will be small in comparison to the overall cost of the
+page reclaim operation).
+
+-- 
+Mel Gorman
+SUSE Labs
