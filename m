@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab2AaEWZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 23:22:25 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54977 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451Ab2AaEWY convert rfc822-to-8bit (ORCPT
+	id S1754255Ab2AaElk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 23:41:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38702 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753648Ab2AaElj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 23:22:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <1327963304-24828-1-git-send-email-asharma@fb.com>
-References: <1327963304-24828-1-git-send-email-asharma@fb.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 30 Jan 2012 20:22:03 -0800
-Message-ID: <CAErSpo54KRJbWEQ0fB_kuGx0qRQKWpH9d3mN=dPdiNfWH+Dhww@mail.gmail.com>
-Subject: Re: [PATCH] net: Disambiguate kernel message
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Glauber Costa <glommer@parallels.com>, Ingo Molnar <mingo@elte.hu>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 30 Jan 2012 23:41:39 -0500
+From: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Pasupathy, Visuvanadan" <vichu@ti.com>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: RE: RFC: usb: musb: Changes proposed for adding CPPI4.1 DMA
+Thread-Topic: RFC: usb: musb: Changes proposed for adding CPPI4.1 DMA
+Thread-Index: AczbdSds1n6amVVGTfqCj870KpG3gwBasnSAALx8WYA=
+Date: Tue, 31 Jan 2012 04:41:31 +0000
+Message-ID: <47CEF8C4B26E8C44B22B028A650E0EA9317D2B9D@DBDE01.ent.ti.com>
+References: <47CEF8C4B26E8C44B22B028A650E0EA9317C5B92@DBDE01.ent.ti.com>
+ <4F22CC37.8010307@mvista.com>
+In-Reply-To: <4F22CC37.8010307@mvista.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.227]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 2:41 PM, Arun Sharma <asharma@fb.com> wrote:
-> Some of our machines were reporting:
->
-> TCP: too many of orphaned sockets
->
-> even when the number of orphaned sockets was well below the
-> limit.
->
-> We print a different message depending on whether we're out
-> of TCP memory or there are too many orphan sockets.
+Hi Sergei,
+> On 01/25/2012 06:22 PM, Gupta, Ajay Kumar wrote:
+> 
+> > As a next step to dma-engine based cppi4.1 driver implementation
+> > this RFC has the overview of changes in the musb driver.
+> > RFC on CPPI slave driver changes will follow next.
+> 
+> > Overview of changes in the musb driver
+> > ======================================
+> 
+> > 1)Add a dma-engine.c file in the drivers/usb/musb folder
+> > 2)This file will host the current musb dma APIs and translates them to
+> >    dmaengine APIs.
+> > 3)This will help to keep the changes in drivers/usb/musb/musb* files
+> >    minimal and also to retain compatibility other DMA (Mentor etc.)
+> >    drivers which are yet to be moved to drivers/dma
+> > 4)drivers/usb/musb/dma-engine.c, will wrap the dmaengine APIs to
+> >    make existing musb APIs compatible.
+> > 5)drivers/usb/musb/dma-engine.c file will implement the filter
+> >    functions and also implement .dma_controller_create (allocates
+> >    &  provides "dma_controller" object) and .dma_controller_delete
+> > 6)CPPI4.1 DMA specific queue and buffer management will be internal
+> >    to slave CPPI DMA driver implementation.
+> 
+>     You mean drivers/dma/ driver?
+yes.
 
-This patch mentions pairs of messages that are almost the same, but
-not quite.  If they're supposed to be different, I'd suggest making
-them clearly different.  As it is, the differences look like careless
-mistakes:
+> I think you are forgotting that CPPI 4.1 MUSB
+> has some registers controlling DMA/interrupts beside those of CPPI 4.1
+> controller and MUSB core itself. How do they fit in your scheme?
 
->                                printk(KERN_INFO "TCP: too many of orphaned "
->                                       "sockets\n");
-> +                       printk(KERN_INFO "TCP: too many orphaned sockets\n");
+We have been discussing on how to handle these in slave driver and
+would post our proposal in RFC for slave driver design. Do you have
+any proposal?
 
-> +                               printk(KERN_INFO "TCP: out of memory. "
-> +                                      "Consider tuning tcp_mem\n");
->                        printk(KERN_INFO "Out of socket memory\n");
-
-"too many orphaned sockets" is better English usage than "too many of ..."
-
-Bjorn
+Regards,
+Ajay
+> 
+> WBR, Sergei
