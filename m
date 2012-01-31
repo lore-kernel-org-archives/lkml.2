@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab2AaPUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 10:20:39 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40297 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab2AaPUg convert rfc822-to-8bit (ORCPT
+	id S1754742Ab2AaPUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 10:20:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53085 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab2AaPUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 10:20:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120131141302.GA25443@bluepex.com>
-References: <1327788715-24076-1-git-send-email-wad@chromium.org>
-	<1327788715-24076-2-git-send-email-wad@chromium.org>
-	<20120131141302.GA25443@bluepex.com>
-Date: Tue, 31 Jan 2012 08:20:34 -0700
-Message-ID: <CABqD9haZNpdisxupBptN9t7DKFFL0Oo2jSDW7QUU=KSP37UT0w@mail.gmail.com>
-Subject: Re: [PATCH v6 2/3] seccomp_filters: system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: Eduardo Otubo <otubo@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk, indan@nul.nu,
-        mcgrathr@chromium.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Tue, 31 Jan 2012 10:20:47 -0500
+Date: Tue, 31 Jan 2012 07:22:16 -0800
+From: Arjan van de Ven <arjan@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Milton Miller <miltonm@bga.com>,
+        Andrew Morton <akpm@linux-foundation.org>, arjanvandeven@gmail.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: smp: Start up non-boot CPUs asynchronously
+Message-ID: <20120131072216.1ce78e50@infradead.org>
+In-Reply-To: <20120131143130.GF13676@elte.hu>
+References: <20120130205444.22f5e26a@infradead.org>
+	<20120131125232.GD4408@elte.hu>
+	<20120131054155.371e8307@infradead.org>
+	<20120131143130.GF13676@elte.hu>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 7:13 AM, Eduardo Otubo <otubo@linux.vnet.ibm.com> wrote:
-> On Sat, Jan 28, 2012 at 04:11:54PM -0600, Will Drewry wrote:
->> [This patch depends on luto@mit.edu's no_new_privs patch:
->>  https://lkml.org/lkml/2012/1/12/446
->> ]
->
-> Will,
->
-> I know you clearly pointed to use luto@mit.edu's first no_new_privs
-> patch, but I couldn't avoid to test it with the latest (and 3rd) version
-> of the patch [0]. Which defines PR_GET_NO_NEW_PRIVS as 37 as you can see
-> here [1]. The compilation then would break here:
->
->     CC      kernel/sys.o
->   kernel/sys.c: In function ‘sys_prctl’:
->   kernel/sys.c:1975: error: duplicate case value
->   kernel/sys.c:1904: error: previously used here
->   make[1]: *** [kernel/sys.o] Error 1
->   make: *** [kernel] Error 2
->
-> I just changed the value of PR_ATTACH_SECCOMP_FILTER to 38 and
-> everything went fine. Do you see any problems on changing this value?
+On Tue, 31 Jan 2012 15:31:31 +0100
+Ingo Molnar <mingo@elte.hu> wrote:
 
-Should be fine -- in the next version, I won't be adding a new PR_
-define at all.  Feel free to change it to whatever compiles -- the
-code only uses the define name for access.  Sorry for the collision -
-I posted the last rev without the latest from luto.
+> > 
+> > by inspection, anything that calls 
+> > get_online_cpus()/put_online_cpus() will block while a CPU is 
+> > coming up. This is used in things like kmem_cache_create()... 
+> > which is used about everywhere. (there's various other 
+> > places... more or less it's a requirement for using the 
+> > for_each_online_cpu() api correctly)
+> 
+> Still magic delays are not acceptable - we want to face any 
+> remaining performance problems head on, we want to understand 
+> and fix them correctly.
 
-Cheers!
-will
+it's not really a performance problem as it is an obvious "we have a
+ton of back-to-back writers on a read-write lock that we have quite a
+few readers for". Unless the writers back off a little, the readers are
+going to get starved.
 
-> Regards,
->
-> [0] - https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=heads
-> [1] -
-> https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=blobdiff;f=include/linux/prctl.h;h=a6b5ac9cfe560eeb277646fbe338ae2b14c46caf;hp=7ddc7f1b480fd41318d94c0a39c8e2ff80f9c5f8;hb=7102b0e278af50d27b5d61d1be5faaba1b0a091e;hpb=acb42a3b611d7ad4cb173c3b37674b549df2ffeb
->
-> --
-> Eduardo Otubo
-> Software Engineer
-> Linux Technology Center
-> IBM Systems & Technology Group
-> Mobile: +55 19 8135 0885
-> eotubo@linux.vnet.ibm.com
->
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
