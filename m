@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab2AaR52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 12:57:28 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45688 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab2AaR51 convert rfc822-to-8bit (ORCPT
+	id S1754131Ab2AaR6O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 12:58:14 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58437 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752672Ab2AaR6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 12:57:27 -0500
+	Tue, 31 Jan 2012 12:58:13 -0500
+X-Sasl-enc: dMOsp3LnwLIMjQNhfbRS70MCZbGKKvRZbz4SMu/yWLDr 1328032692
+Message-ID: <4F282BB2.6080604@fastmail.fm>
+Date: Tue, 31 Jan 2012 17:58:10 +0000
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <CAC5umyh6H-0JXyQ9V97FH_Cp7Y2swbRMJptXJwnE0cK6HqbkGQ@mail.gmail.com>
-References: <1327674295-3700-1-git-send-email-akinobu.mita@gmail.com>
-	<1327674295-3700-2-git-send-email-akinobu.mita@gmail.com>
-	<1327684589.12089.22.camel@joe2Laptop>
-	<CAN8TOE8Hq8f3ipQFxBAHXK5ArSH6wNc8GA5CbYr_xORBa5gAWw@mail.gmail.com>
-	<CAC5umyh6H-0JXyQ9V97FH_Cp7Y2swbRMJptXJwnE0cK6HqbkGQ@mail.gmail.com>
-Date: Tue, 31 Jan 2012 09:57:26 -0800
-Message-ID: <CAN8TOE_e8FkTTABRTyrXr5EW3wsJeXaODE4Wpud4ype=tcRFFQ@mail.gmail.com>
-Subject: Re: [PATCH] mtd/nand: use string library
-From: Brian Norris <computersforpeace@gmail.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Scott Branden <sbranden@broadcom.com>,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        Jiandong Zheng <jdzheng@broadcom.com>, akpm@linux-foundation.org,
-        David Woodhouse <dwmw2@infradead.org>, eric.dumazet@gmail.com
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>, Mark Grosen <mgrosen@ti.com>
+Subject: Re: [PATCH 2/2] remoteproc: s/big switch/lookup table/
+References: <1328028762-28352-1-git-send-email-ohad@wizery.com> <1328028762-28352-2-git-send-email-ohad@wizery.com>
+In-Reply-To: <1328028762-28352-2-git-send-email-ohad@wizery.com>
+X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 3:52 PM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> 2012/1/28 Brian Norris <computersforpeace@gmail.com>:
->> On Fri, Jan 27, 2012 at 9:16 AM, Joe Perches <joe@perches.com> wrote:
->>> On Fri, 2012-01-27 at 23:24 +0900, Akinobu Mita wrote:
->>>> - Use memchr_inv to check if the data contains all 0xFF bytes.
->>>>   It is faster than looping for each byte.
->>>
->>> Stupid question:
->>>
->>> Are there any mtd devices modified that are slower
->>> at 64 bit accesses than repeated 8 bit accesses?
->>
->> I believe this patch deals with kernel buffers, not any kind of direct
->> access to the MTD, so the question (which is not stupid IMO) should be
->> regarding CPU architectures. And my educated guess is that 64-bit
->> access should not be any slower. I do know that 8-bit access *is*
->> slower for some relevant architectures.
->
-> It could be slower when the number of bytes scanned is very small
-> (found a unmatched character immediately, or the size of the area
-> is very small), because memchr_inv() needs to generate a 64bit pattern
-> to compare before starting the loop.  I recalled that Eric Dumazet
-> pointed out it could generate the 64bit pattern more efficiently.
-> (https://lkml.org/lkml/2011/8/8/480)
->
-> Even if that small scanning is slower, this change can be assumed cleanup
-> patch that simplifies the code.
+On 31/01/12 16:52, Ohad Ben-Cohen wrote:
+> +/*
+> + * A lookup table for resource handlers. Always keep in sync with
+> + * enum fw_resource_type.
+> + */
+> +static rproc_handle_resource_t rproc_handle_rsc[] = {
+> +	rproc_handle_carveout,	/* RSC_CARVEOUT */
+> +	rproc_handle_devmem,	/* RSC_DEVMEM */
+> +	rproc_handle_trace,	/* RSC_TRACE */
+> +	rproc_handle_vring,	/* RSC_VRING */
+> +	NULL, /* RSC_VIRTIO_DEV is handled early upon registration */
+> +};
+> +
 
-Well, I agree that it qualifies as cleanup as well, but we should at
-least make an attempt not to cause performance regression...
+You could change this to
 
-So by my understanding, the use of memchr_inv() is on buffers of
-minimum length of 10 in this patch, so we're likely to have decent
-results. And memcmp() usage looks fine to me.
+[RSC_CARVEOUT] = rproc_handle_carveout,
 
-So unless other concerns arise:
+Then you would be safe against renumbering and would only need to worry
+about addition (which your RSC_LAST check copes with).
 
-Acked-by: Brian Norris <computersforpeace@gmail.com>
+Thanks,
+
+Jack
