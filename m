@@ -1,117 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab2AaMjV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 07:39:21 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33217 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243Ab2AaMjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 07:39:20 -0500
-Date: Tue, 31 Jan 2012 13:39:03 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Maxime Coquelin <maxime.coquelin@stericsson.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Andrea GALLO <andrea.gallo@stericsson.com>,
-        Vincent GUITTOT <vincent.guittot@stericsson.com>,
-        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
-        Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1754126Ab2AaMli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 07:41:38 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:33482 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab2AaMlh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 07:41:37 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        systemd-devel@lists.freedesktop.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFCv1 0/6] PASR: Partial Array Self-Refresh Framework
-Message-ID: <20120131123903.GB4408@elte.hu>
-References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com>
- <20120130135341.GA3720@elte.hu>
- <4F26A701.3090006@stericsson.com>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: sysfs regression: wrong link counts
+References: <4F27120A.4040106@suse.cz> <20120130220611.GA26655@kroah.com>
+	<20120130221059.26ab5edf@pyramind.ukuu.org.uk>
+	<20120130222717.GA6393@kroah.com> <m18vkoirv9.fsf@fess.ebiederm.org>
+	<4F27C6EB.2070305@suse.cz>
+Date: Tue, 31 Jan 2012 04:44:11 -0800
+In-Reply-To: <4F27C6EB.2070305@suse.cz> (Jiri Slaby's message of "Tue, 31 Jan
+	2012 11:48:11 +0100")
+Message-ID: <m14nvc82jo.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F26A701.3090006@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/0KIQBZOEWMuTKVquZK1MWJ4aXgY7JP3E=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jiri Slaby <jslaby@suse.cz> writes:
 
-* Maxime Coquelin <maxime.coquelin@stericsson.com> wrote:
+> Oh, we are not going to break userspace with 3.3, are we? 
 
-> Dear Ingo,
-> 
-> On 01/30/2012 02:53 PM, Ingo Molnar wrote:
-> >* Maxime Coquelin<maxime.coquelin@stericsson.com>  wrote:
-> >
-> >>The role of this framework is to stop the refresh of unused
-> >>memory to enhance DDR power consumption.
-> >I'm wondering in what scenarios this is useful, and how
-> >consistently it is useful.
-> >
-> >The primary concern I can see is that on most Linux systems with
-> >an uptime more than a couple of minutes RAM gets used up by the
-> >Linux page-cache:
-> >
-> >  $ uptime
-> >   14:46:39 up 11 days,  2:04, 19 users,  load average: 0.11, 0.29, 0.80
-> >  $ free
-> >               total       used       free     shared    buffers     cached
-> >  Mem:      12255096   12030152     224944          0     651560    6000452
-> >  -/+ buffers/cache:    5378140    6876956
-> >
-> > Even mobile phones easily have days of uptime - quite often 
-> > weeks of uptime. I'd expect the page-cache to fill up RAM on 
-> > such systems.
-> >
-> > So how will this actually end up saving power consistently? 
-> > Does it have to be combined with a VM policy that more 
-> > aggressively flushes cached pages from the page-cache?
+No.  This code is currently scheduled for 3.4.
+
+> I understand
+> that what sensors do is nothing but sh*t. But this change should wait
+> until everybody has a chance to have fixed sensors package in their
+> distribution.
 >
-> You're right Ingo, page-cache fills up the RAM. This framework 
-> is to be used in combination with a page-cache flush governor. 
-> In the case of a mobile phone, we can imagine dropping the 
-> cache when system's screen is off for a while, in order to 
-> preserve user's experience.
+> To be clear, what I'm suggesting is to postpone the change and schedule
+> it for something like 3.7.
 
-Is this "page-cache flush governor" some existing code?
-How does it work and does it need upstream patches?
+The sensors update with the fix is scheduled for about a week out, well
+before 3.3 ships.
 
-> > A secondary concern is fragmentation: right now we fragment 
-> > memory rather significantly.
->
-> Yes, I think fragmentation is the main challenge. This is the 
-> same problem faced for Memory Hotplug feature. The solution I 
-> see is to add a significant Movable zone in the system and use 
-> the Compaction feature from Mel Gorman. The problem of course 
-> remains for the Normal zone.
+The code in next for 3.4 is perhaps 4-6 months out from a kernel
+release.  That seems like plenty of time for distros to get an update
+package for sensors together.
 
-Ok. I guess phones/appliances can generally live with a 
-relatively large movable zone as they don't have serious
-memory pressure issues.
-
-> > For the Ux500 PASR driver you've implemented the section 
-> > size is 64 MB. Do I interpret the code correctly in that a 
-> > continuous, 64MB physical block of RAM has to be 100% free 
-> > for us to be able to turn off refresh and power for this 
-> > block of RAM?
->
-> Current DDR (2Gb/4Gb dies) used in mobile platform have 64MB 
-> banks and segments. This is the lower granularity for Partial 
-> Array Self-refresh.
-
-Ok, so do you see real, consistent power savings with a large 
-movable zone, with page cache governor patches applied (assuming 
-it's a kernel mechanism) and CONFIG_COMPACTION=y enabled, on an 
-upstream kernel with all these patches applied?
-
-Thanks,
-
-	Ingo
+Eric
