@@ -1,69 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab2AaGb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 01:31:27 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:34938 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866Ab2AaGbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 01:31:25 -0500
-From: Gene Heskett <gene.heskett@gmail.com>
-To: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
-        emc-users@lists.sourceforge.net
-Subject: Re: isolcpus question
-Date: Tue, 31 Jan 2012 01:31:19 -0500
-User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos2.pae.bfs; KDE/4.6.5; i686; ; )
-References: <201201302213.39672.gene.heskett@gmail.com> <1327985246.6667.8.camel@marge.simson.net>
-In-Reply-To: <1327985246.6667.8.camel@marge.simson.net>
+	id S1753728Ab2AaGcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 01:32:23 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56070 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab2AaGcW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 01:32:22 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201310131.20239.gene.heskett@gmail.com>
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <20120130134933.39779c48.akpm@linux-foundation.org>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	<1327572121-13673-8-git-send-email-gilad@benyossef.com>
+	<20120127161236.ff1e7e7e.akpm@linux-foundation.org>
+	<CAOtvUMfAd_f=248PTEW6=fqkBxtEB6oahsiqdUC_i2yjfN9m8w@mail.gmail.com>
+	<20120130134933.39779c48.akpm@linux-foundation.org>
+Date: Tue, 31 Jan 2012 08:32:21 +0200
+Message-ID: <CAOtvUMfNFt4KYZP0DceWP1M+=r1_tXzOa8qMKXm2wE4XzsYkyQ@mail.gmail.com>
+Subject: Re: [v7 7/8] mm: only IPI CPUs to drain local pages if they exist
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Milton Miller <miltonm@bga.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 30, 2012, Mike Galbraith wrote:
->On Mon, 2012-01-30 at 22:13 -0500, Gene Heskett wrote:
->> Which is, is there a isolcpus troubleshooting tool?
->> 
->> I have an app that is supposed to use the 2nd cpu on a 2 core atom
->> system all by itself, and its insisting on using cpu0 when the boot
->> command line has "isolcpus=1" appended to it, and apparently I am the
->> only one with the problem, its working for about 200-500 others
->> running the same software.
+On Mon, Jan 30, 2012 at 11:49 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sun, 29 Jan 2012 14:18:32 +0200
+> Gilad Ben-Yossef <gilad@benyossef.com> wrote:
 >
->isolcpus=1 isolates CPU1 so no task will automatically end up using it,
->but it's up to your task (or you) to move to the isolated CPU.  Pin your
->task to CPU1 with taskset, and all should work fine.
+>> On Sat, Jan 28, 2012 at 2:12 AM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Thu, 26 Jan 2012 12:02:00 +0200
+>> > Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+>> >
+>> >> Calculate a cpumask of CPUs with per-cpu pages in any zone
+>> >> and only send an IPI requesting CPUs to drain these pages
+>> >> to the buddy allocator if they actually have pages when
+>> >> asked to flush.
+>> >>
+>>
+>> ...
+>>
+>> > Can we end up sending an IPI to a now-unplugged CPU? __That won't work
+>> > very well if that CPU is now sitting on its sysadmin's desk.
+>>
+>> Nope. on_each_cpu_mask() disables preemption and calls smp_call_function_many()
+>> which then checks the mask against the cpu_online_mask
 >
->	-Mike
+> OK.
+>
+> General rule of thumb: if a reviewer asked something then it is likely
+> that others will wonder the same thing when reading the code later on.
+> So consider reviewer questions as a sign that the code needs additional
+> comments!
 
-Cross-posted back to the emc-users list, others might find it useful also.
+Right, point taken.
 
-Mike, you're a genius. The man page for taskset is a bit obtuse but the 
-first stab at a '/usr/bin/lcnc' script:
--------------
-#!/bin/bash
-taskset 0x00000002 emc -l
-exit 0
--------------
-Seems to launch this application and I believe its now working better than 
-ever before.  Now I need to do some experimenting to see just how fast I 
-can make linuxcnc's base_thread run without the rest of the box getting 
-laggy.  The faster I can make that thread run, the faster and smoother my 
-steppers driving my milling machine will run.  I have already cut it down 
-to 30 u-secs from 65 u-secs and it is still only using about 26% of the 
-target cpu1.  Amazing IMO.
+>
+>> > There's also the case of CPU online. __We could end up failing to IPI a
+>> > CPU which now has some percpu pages. __That's not at all serious - 90%
+>> > is good enough in page reclaim. __But this thinking merits a mention in
+>> > the comment. __Or we simply make this code hotplug-safe.
+>>
+>> hmm.. I'm probably daft but I don't see how to make the code hotplug safe for
+>> CPU online case. I mean, let's say we disable preemption throughout the
+>> entire ordeal and then the CPU goes online and gets itself some percpu pages
+>> *after* we've calculated the masks, sent the IPIs and waiting for the
+>> whole thing
+>> to finish but before we've returned...
+>
+> This is inherent to the whole drain-pages design - it's only a
+> best-effort thing and there's nothing to prevent other CPUs from
+> undoing your work 2 nanoseconds later.
+>
+> The exception to this is the case of suspend, which drains the queues
+> when all tasks (and, hopefully, IRQs) have been frozen.  This is the
+> only way to make draining 100% "reliable".
+>
+>> I might be missing something here, but I think that unless you have some other
+>> means to stop newly hotplugged CPUs to grab per cpus pages there is nothing
+>> you can do in this code to stop it. Maybe make the race window
+>> shorter, that's all.
+>>
+>> Would adding a comment such as the following OK?
+>>
+>> "This code is protected against sending  an IPI to an offline CPU but does not
+>> guarantee sending an IPI to newly hotplugged CPUs"
+>
+> Looks OK.  I'd mention *how* this protection comes about:
+> on_each_cpu_mask() blocks hotplug and won't talk to offlined CPUs.
 
-Thank you very much Mike.
+Good. I'll send an updated patch set.
 
-Cheers, Gene
+Thanks :-)
+Gilad
+
+
+
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-My web page: <http://coyoteden.dyndns-free.com:85/gene>
-When a lion meets another with a louder roar,
-the first lion thinks the last a bore.
-		-- G.B. Shaw
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
