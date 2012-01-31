@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab2AaK47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:56:59 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:24693 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab2AaK46 (ORCPT
+	id S1753298Ab2AaLAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:00:43 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53510 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab2AaLAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:56:58 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Date: Tue, 31 Jan 2012 11:57:10 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH 2/2] ARM: Exynos4: Convert exynos4-dt to
- CONFIG_MULTI_IRQ_HANDLER
-In-reply-to: <CAH9JG2VgaSHyTMHxD7xSgu+Ugez9tD3ucDH_XC_n2VDfH+hxfw@mail.gmail.com>
-To: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: thomas.abraham@linaro.org, m.szyprowski@samsung.com,
-        linux-samsung-soc@vger.kernel.org, marc.zyngier@arm.com,
-        linux-kernel@vger.kernel.org, kgene.kim@samsung.com
-Message-id: <4F27C906.6060800@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1328006193-13902-1-git-send-email-k.lewandowsk@samsung.com>
- <1328006193-13902-3-git-send-email-k.lewandowsk@samsung.com>
- <CAH9JG2VgaSHyTMHxD7xSgu+Ugez9tD3ucDH_XC_n2VDfH+hxfw@mail.gmail.com>
+	Tue, 31 Jan 2012 06:00:41 -0500
+Message-ID: <4F27C9D4.3040105@suse.cz>
+Date: Tue, 31 Jan 2012 12:00:36 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120124 Thunderbird/10.0
+MIME-Version: 1.0
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ML netdev <netdev@vger.kernel.org>
+Subject: Re: network regression: cannot rename netdev twice
+References: <4F27120A.4040106@suse.cz> <CAPXgP12Sr2KzGJ9RA13QBOCkctb-z3O4+1uHOjANgMDDv2pxaQ@mail.gmail.com> <4F27C54F.1010107@suse.cz> <CAPXgP11=U_Y3LvJB2LRnXQ53y1WQQTqc0j1c7iva6ZXvF97wEw@mail.gmail.com>
+In-Reply-To: <CAPXgP11=U_Y3LvJB2LRnXQ53y1WQQTqc0j1c7iva6ZXvF97wEw@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.01.2012 11:39, Kyungmin Park wrote:
-
-Dear Mr Park
-
-> restart is also required.
-
-Thanks for this catching this omission. I'll add it in next patch.
-
-Regards,
-
-> On 1/31/12, Karol Lewandowski<k.lewandowsk@samsung.com>  wrote:
->> Commit 4e44d2cb95bd ("ARM: exynos4: convert to CONFIG_MULTI_IRQ_HANDLER")
->> converted all exynos boards but exynos4-dt.c.
+On 01/31/2012 11:52 AM, Kay Sievers wrote:
+> On Tue, Jan 31, 2012 at 11:41, Jiri Slaby <jslaby@suse.cz> wrote:
+>> On 01/30/2012 11:52 PM, Kay Sievers wrote:
+>>> 2012/1/30 Jiri Slaby <jslaby@suse.cz>:
+>>>> I cannot boot properly with this commit:
+>>>> commit 524b6c5b39b931311dfe5a2f5abae2f5c9731676
+>>>> Author: Eric W. Biederman <ebiederm@xmission.com>
+>>>> Date:   Sun Dec 18 20:09:31 2011 -0800
+>>>>
+>>>>    sysfs: Kill nlink counting.
+>>>>
+>>>> 1) network systemd rule doesn't start network
+>>>
+>>> What does that mean? What's a network systemd rule?
 >>
->> This commit fixes that omission.
+>> Oh, perhaps you call it a service file, not rule file?
 >>
->> Signed-off-by: Karol Lewandowski<k.lewandowsk@samsung.com>
->> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
->> Cc: Thomas Abraham<thomas.abraham@linaro.org>
->> Cc: Kukjin Kim<kgene.kim@samsung.com>
->> Cc: Marc Zyngier<marc.zyngier@arm.com>
->> ---
->>   arch/arm/mach-exynos/mach-exynos4-dt.c |    2 ++
->>   1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c
->> b/arch/arm/mach-exynos/mach-exynos4-dt.c
->> index 98e79c9..8aef6aa 100644
->> --- a/arch/arm/mach-exynos/mach-exynos4-dt.c
->> +++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
->> @@ -15,6 +15,7 @@
->>   #include<linux/serial_core.h>
->>
->>   #include<asm/mach/arch.h>
->> +#include<asm/hardware/gic.h>
->>   #include<mach/map.h>
->>
->>   #include<plat/cpu.h>
->> @@ -83,4 +84,5 @@ DT_MACHINE_START(EXYNOS4210_DT, "Samsung Exynos4
->> (Flattened Device Tree)")
->>   	.init_machine	= exynos4210_dt_machine_init,
->>   	.timer		=&exynos4_timer,
->>   	.dt_compat	= exynos4210_dt_compat,
->> +	.handle_irq	= gic_handle_irq,
->>   MACHINE_END
->> --
->> 1.7.8.3
+>> Anyway this is a different bug. Revert of the patch above does not help.
+> 
+> Ok, fine. I checked too, and systemd does not play any silly games
+> with link counts.
+> 
+>> The bug lays in the network layer. udev is unable to perform persistent
+>> eth naming:
+>> # ip link set eth0 name eth1    -- this one is OK
+>> # ip link set eth1 name eth0
+>> RTNETLINK answers: No such file or directory
+> 
+> Please make sure nothing tries to swap netif names in userspace. We
+> have given up that approach, because it is far too fragile to
+> temporary rename devices to be able to swap the names, and race
+> against the loading of new kernel network drivers at the same time.
+> 
+> This might be a new kernel problem here, but in general that approach
+> is just broken, we have have given up fiddling around here. Udev does
+> not do that anymore, and also the code that currently *can* be used to
+> do this, will be removed from udev in the future.
+> 
+> Network devices can only be renamed to a namespace that isn't ethX,
+> and which does not race against kernel names.
 
+I have two eth interfaces. The one on the motherboard is named eth0, an
+added PCI card is eth1. But kernel enumerates them in the opposite order.
+
+So udev does this sequence:
+eth1 -> rename3
+eth0 -> eth1
+rename3 -> eth0
+
+How it can do it differently? (This is openSUSE factory.)
+
+> Does is work, if you rename the devices to something else than ethX?
+
+Negative:
+# ip link set eth0 name krtek
+# ip link set krtek name jezek
+RTNETLINK answers: No such file or directory
+
+thanks,
 -- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
+js
+suse labs
