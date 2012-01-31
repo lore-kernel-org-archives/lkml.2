@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab2AaLMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:12:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59698 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225Ab2AaLMV (ORCPT
+	id S1754086Ab2AaLMb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:12:31 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48220 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752695Ab2AaLM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:12:21 -0500
-Message-ID: <1328008455.956.30.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 0/3] platform: add platform_devm_request_and_ioremap()
- common API
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Barry Song <Barry.Song@csr.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, workgroup.linux@csr.com
-Date: Tue, 31 Jan 2012 13:14:15 +0200
-In-Reply-To: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
-References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-FMh3AKwSqszx+f6QOdCL"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	Tue, 31 Jan 2012 06:12:29 -0500
+Date: Tue, 31 Jan 2012 11:12:26 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the regmap tree with Linus' tree
+Message-ID: <20120131111226.GB18444@opensource.wolfsonmicro.com>
+References: <20120131135950.0da0eb3e0da92b9a3b658354@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s/l3CgOIzMHHjg/5"
+Content-Disposition: inline
+In-Reply-To: <20120131135950.0da0eb3e0da92b9a3b658354@canb.auug.org.au>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-FMh3AKwSqszx+f6QOdCL
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+--s/l3CgOIzMHHjg/5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Tue, 2012-01-31 at 17:59 +0800, Barry Song wrote:
-> these patches move the common pattern from
->=20
-> "
-> res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);=20
-> if (!res) {
-> 	        ret =3D -ENODEV;
-> 		        goto err;
-> }
->=20
-> base =3D devm_request_and_ioremap(&dev->dev, mem_res);
-> if (!base) {
-> 	        ret =3D -ENODEV;
-> 		        goto err;
-> }
-> "
+On Tue, Jan 31, 2012 at 01:59:50PM +1100, Stephen Rothwell wrote:
 
-Am I right that these patches have been generated using the
-coccinelle/api/devm_request_and_ioremap.cocci script?
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-If yes, I think it would be nice of you to give a credit to coccinelle
-and its authors for developing this awesome tool in every commit
-message.
+Yes, that's the fix I've got.  I'm kind of surprised git didn't figure
+this out for itself, the tag I sent to Linus should be pre-merged into
+my -next branch as it was sitting in -next for a while.  I'll probably
+merge Linus' tree up at some point when he tags a new -rc.  Thanks.
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-FMh3AKwSqszx+f6QOdCL
+--s/l3CgOIzMHHjg/5
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPJ80HAAoJECmIfjd9wqK0iQwP/1sZGw0kf297MdZKYjz5INT6
-aathplkk6+3QejuECiUI+0epeIrjMpIIR+M0NKIGFEqhWzH7SduWVLCEkNzlhA7X
-4kkxz0qypKK3clVF+cu7aZJ8OovOVeiIhpBW3ZWfazjVfxKgDRwmV1btoJnAGggx
-HqCo+cy0uj5P1Fn2lPFNQ34x3DD5IEAqDRQpHPvJ+zjN4h5qnRCIJYMVhMQl/M6E
-cDirzBcanQuvDhjX+XHa4KIuecmzI4KTOEETElBTe2emYjOJyQ7/A9eLNiTCPtKY
-zqHvxDkwclW5ZrI1kkH9sLF6fVjunKWiBRoCwHQeY0RVgAhKqv/JixmSwS4iXkRN
-FHtw0/j+JOATUv78nw3YyedeWdAQ94aUiM826zNTpoC0wXst5HVkzxS1QIW25juP
-tf1SR9FSb3kHtsPxCaGOdBbjWQcTtJwdB8tQnphjtj807g/QnoOszmBRhVxPas1T
-yg1az17KmEIx8tSayee+s9b0x1v4rnw0oBUdGxlaF4f6wFzJ2a7OCKdz+Q8lhN8O
-59yNPmOghz2DybYDr+UMK0GZ4Lo3TYm/Y8AmtoaEl7wNWr/t1ycd6UKfFqja8cno
-TTILiMxLGmrnQ4KuXyavDsNoQ5IJMBdT2PedQ9H8l9Tx9s8JBjk2SAxy0QHfSx6J
-S/6rv+EIKeXGCo0jPNfH
-=G+0s
+iQIcBAEBAgAGBQJPJ8yTAAoJEBus8iNuMP3d4S4P/2L1kUmfJ49/jwsI8NuhLQZe
+Z6qHHp3gciPf8N8Jbtm9lc9WKj9YiDs9Ha0jXJeZY40auwcivqwYsyfFOkfwHFxq
+lRr0hWPvvQ0kk1tfkzrkNhMN3EjhMEzBjcQ4CmCZfdKtbKhZgoUvEEc2a13bla72
+EMM6ASOZdZVeIsT2878SGzPU2F5gr0s9nnZKU7WHReURWNNSzH4dMdnkMrGKwdST
+tHaMuT9YLQowq04QOQsUEV+YoWithonhiG+d9Wp0UK27ZPhNyW7ZNX+YxmH4c4nt
+idxYhOOzI9Su9nkWFkRiAMyCujXEmWUTF0PIfgDb9UxKzJhIFxw1Ara+JQtCuVGZ
+r6NJ2/ESCjTNGRxnXtogbjt6XJ6o7OCPCvIY4Wtnbl8Kg0qqCuEoO2NxB7mRQeQV
+vF/usphT/9QlihyiHOfkI6M1KBKv2ojoYoiu6MCYJ3PUuJU7MHaFTKplUF43ecj9
+7xddsLLSSN7pjE8D8OtkJBsr0jV8i3NkmHyWEMFVA/Ea2LpOPnnnfMDwyc2Mhk3p
+/Sg0DszaVaFACrMoqJGJubV9c1HG8ThmBZRxcqP3Y4svkDG699Szck/ptgrLGIU4
+qb46qASKnNGCg8SEEMq2RahaZTgfcNxZeAI26Mv31EZr31SH8aLpa3uSAqZUXLEi
+5aNDY8AzsSjHqFeCbawi
+=0H8a
 -----END PGP SIGNATURE-----
 
---=-FMh3AKwSqszx+f6QOdCL--
-
+--s/l3CgOIzMHHjg/5--
