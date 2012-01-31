@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab2AaWCx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 17:02:53 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:58411 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab2AaWCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 17:02:52 -0500
-Message-ID: <4F286508.8000904@candelatech.com>
-Date: Tue, 31 Jan 2012 14:02:48 -0800
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: FlorianSchandinat@gmx.de,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Bisected boot hang introduced in 3.0 (2e336b326, "add VIA slapping
- capability")
-References: <4F2833B5.5050608@candelatech.com>
-In-Reply-To: <4F2833B5.5050608@candelatech.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755397Ab2AaWDn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 17:03:43 -0500
+Received: from plane.gmane.org ([80.91.229.3]:34802 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753379Ab2AaWDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 17:03:42 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: walt <w41ter@gmail.com>
+Subject: cfq bug still not fixed on x86
+Date: Tue, 31 Jan 2012 14:03:21 -0800
+Message-ID: <4F286529.1060407@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
+X-Gmane-NNTP-Posting-Host: adsl-69-234-188-161.dsl.irvnca.pacbell.net
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20120106 Thunderbird/9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2012 10:32 AM, Ben Greear wrote:
-> I have an embedded VIA system (FWA-7304) that fails to boot on
-> 3.0 and higher kernels (tried top-of-tree yesterday, it fails as well).
+Hi guys.  Linus recently commited this bugfix from Jens:
 
-Ahh, seems I just needed to enable the CONFIG_FB_VIA_X_COMPATIBILITY
-logic.  With that, it boots properly.
+commit 54b466e44b1c7809144bbd8cd6be3f85877ca46f
+Author: Jens Axboe
+Date:   Tue Jan 17 21:26:11 2012 +0100
 
-Thanks,
-Ben
+    cfq-iosched: fix use-after-free of cfqq
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+That fixed the problem on my amd64x2 machine, but my old UP x86 amd
+machine is still producing the same backtrace when udevd segfaults
+during bootup.
+
+I'm wondering if the patch neglects some 32-bit or non-SMP code?
+
+Thanks for all your hard work on open-source :)
 
