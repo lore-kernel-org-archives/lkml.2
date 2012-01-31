@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab2AaOoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 09:44:24 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:58331 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab2AaOoW (ORCPT
+	id S1754662Ab2AaOpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 09:45:39 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64228 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab2AaOpi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 09:44:22 -0500
-Message-ID: <4F27FE43.7090503@gmail.com>
-Date: Tue, 31 Jan 2012 08:44:19 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	Tue, 31 Jan 2012 09:45:38 -0500
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, b-cousson@ti.com,
-        Linus Walleij <linus.ml.walleij@gmail.com>
-Subject: Re: [PATCH v3 2/2] gpio: pl061: enable interrupts with DT style binding
-References: <1327944699-29882-1-git-send-email-robherring2@gmail.com> <1327944699-29882-3-git-send-email-robherring2@gmail.com> <20120131143609.GA26436@S2101-09.ap.freescale.net>
-In-Reply-To: <20120131143609.GA26436@S2101-09.ap.freescale.net>
+In-Reply-To: <1328006193-13902-2-git-send-email-k.lewandowsk@samsung.com>
+References: <1328006193-13902-1-git-send-email-k.lewandowsk@samsung.com>
+	<1328006193-13902-2-git-send-email-k.lewandowsk@samsung.com>
+Date: Tue, 31 Jan 2012 20:15:36 +0530
+Message-ID: <CAJuYYwSVs4iRULAt5ARUC=yx2X1EVVLAogJNqAv9u_U9G_eVCA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: Exynos4: Make exynos4-dt compile again
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: m.szyprowski@samsung.com, linux-samsung-soc@vger.kernel.org,
+        marc.zyngier@arm.com, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2012 08:36 AM, Shawn Guo wrote:
-> On Mon, Jan 30, 2012 at 11:31:39AM -0600, Rob Herring wrote:
-> ...
->> -static void __init pl061_init_gc(struct pl061_gpio *chip, int irq_base)
->> +static void __init pl061_init_gc(struct pl061_gpio *chip,
->> +				 struct device_node *node, int irq_base)
->>  {
->>  	struct irq_chip_type *ct;
->>  
->> @@ -212,15 +212,17 @@ static void __init pl061_init_gc(struct pl061_gpio *chip, int irq_base)
->>  	ct->chip.irq_set_wake = irq_gc_set_wake;
->>  	ct->regs.mask = GPIOIE;
->>  
->> -	irq_setup_generic_chip(chip->irq_gc, IRQ_MSK(PL061_GPIO_NR),
->> -			       IRQ_GC_INIT_NESTED_LOCK, IRQ_NOREQUEST, 0);
->> +	irq_setup_generic_chip_domain(chip->irq_gc, node,
->> +				      IRQ_MSK(PL061_GPIO_NR),
->> +				      IRQ_GC_INIT_NESTED_LOCK,
->> +				      IRQ_NOREQUEST, 0);
->>  }
-> 
-> The function irq_setup_generic_chip_domain() is wrapped by
-> #ifdef CONFIG_IRQ_DOMAIN in patch #1.  Is it true that pl061 driver
-> will never work with !IRQ_DOMAIN case?
+On 31 January 2012 16:06, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
+> Commit cc511b8d84d8 ("ARM: 7257/1: EXYNOS: introduce
+> arch/arm/mach-exynos/common.[ch]") replaced plat/exynos4.h with
+> common.h, requiring all boards to be adjusted appropriately.
+>
+> This commit fixes exynos4-dt.c, missed out in original patch.
+>
+> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Thomas Abraham <thomas.abraham@linaro.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> ---
+>  arch/arm/mach-exynos/mach-exynos4-dt.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
+> index 85fa027..98e79c9 100644
+> --- a/arch/arm/mach-exynos/mach-exynos4-dt.c
+> +++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+> @@ -19,7 +19,8 @@
+>
+>  #include <plat/cpu.h>
+>  #include <plat/regs-serial.h>
+> -#include <plat/exynos4.h>
+> +
+> +#include "common.h"
+>
+>  /*
+>  * The following lookup table is used to override device names when devices
+> @@ -60,7 +61,7 @@ static const struct of_dev_auxdata exynos4210_auxdata_lookup[] __initconst = {
+>
+>  static void __init exynos4210_dt_map_io(void)
+>  {
+> -       s5p_init_io(NULL, 0, S5P_VA_CHIPID);
+> +       exynos_init_io(NULL, 0);
+>        s3c24xx_init_clocks(24000000);
+>  }
 
-You're right unless Grant thinks IRQ_DOMAIN should always be enabled for
-ARM? Otherwise, I'll add something like this for !IRQ_DOMAIN:
+Tested-by: Thomas Abraham <thomas.abraham@linaro.org>
 
-static inline void irq_setup_generic_chip_domain(
-			   struct irq_chip_generic *gc,
-                           struct device_node *node, u32 msk,
-                           enum irq_gc_flags flags, unsigned int clr,
-                           unsigned int set)
-{
-	irq_setup_generic_chip(gc, msk, flags, clr, set);
-}
+Thanks,
+Thomas.
 
-Rob
+>
+> --
+> 1.7.8.3
+>
