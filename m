@@ -1,203 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab2AaIvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:51:12 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64111 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752397Ab2AaIs4 (ORCPT
+	id S1753367Ab2AaIv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:51:29 -0500
+Received: from MAIL.13thfloor.at ([213.145.232.33]:35454 "EHLO
+	MAIL.13thfloor.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab2AaIu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:48:56 -0500
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
-        sjurbren@gmail.com,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RESEND PATCHv5 01/11] modem_shm: Shared Memory layout for ST-E M7400 driver.
-Date: Tue, 31 Jan 2012 09:48:36 +0100
-Message-Id: <1327999726-8774-2-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 31 Jan 2012 03:50:59 -0500
+Date: Tue, 31 Jan 2012 09:50:57 +0100
+From: Herbert Poetzl <herbert@13thfloor.at>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        Wu Fengguang <wfg@linux.intel.com>
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+Message-ID: <20120131085057.GS29272@MAIL.13thfloor.at>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	Shaohua Li <shaohua.li@intel.com>,
+	lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+	Wu Fengguang <wfg@linux.intel.com>
+References: <1327996780.21268.42.camel@sli10-conroe> <1327999722.2422.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1327999722.2422.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Mutt/1.5.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add data structures defining the channel configuration and the shared
-memory layout used for ST-Ericsson's M7400 modem. These data
-structures are shared between the Linux host and the M7400 modem.
+On Tue, Jan 31, 2012 at 09:48:42AM +0100, Eric Dumazet wrote:
+> Le mardi 31 janvier 2012 ‡ 15:59 +0800, Shaohua Li a Ècrit :
+>> Herbert Poetzl reported a performance regression since 2.6.39. The test
+>> is a simple dd read, but with big block size. The reason is:
 
-The data structures contains table of content, channel configuration,
-and ring-buffer indexes for read and write pointers.
+>> T1: ra (A, A+128k), (A+128k, A+256k)
+>> T2: lock_page for page A, submit the 256k
+>> T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
+>> because of plug and there isn't any lock_page till we hit page A+256k
+>> because all pages from A to A+256k is in memory
+>> T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
+>> submitted again.
+>> T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
+>> waitting for (A+256k, A+512k) finish.
 
-Signed-off-by: Sjur Br√¶ndeland <sjur.brandeland@stericsson.com>
----
- drivers/modem_shm/shm_ipctoc.h |  154 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 154 insertions(+), 0 deletions(-)
- create mode 100644 drivers/modem_shm/shm_ipctoc.h
+>> There is no request to disk in T3 and T4, so readahead pipeline breaks.
 
-diff --git a/drivers/modem_shm/shm_ipctoc.h b/drivers/modem_shm/shm_ipctoc.h
-new file mode 100644
-index 0000000..1a9b072
---- /dev/null
-+++ b/drivers/modem_shm/shm_ipctoc.h
-@@ -0,0 +1,154 @@
-+/*
-+ * Copyright (C) ST-Ericsson AB 2012
-+ * Author: Sjur Br√¶ndeland / sjur.brandeland@stericsson.com
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#ifndef SHM_TOC
-+#define SHM_TOC
-+
-+/**
-+ * DOC: SHM Shared Memory Layout
-+ *
-+ * SHM defines a set of structures describing the memory layout used
-+ * for the Shared Memory IPC. In short &toc_entry points out &ipc_toc,
-+ * which points out the &shm_ipctoc_channel. &shm_ipctoc_channel defines
-+ * the channels used to communicate between host and external device (modem).
-+ *
-+ *  &shm_ipctoc_channel can be used in packet-mode or stream-mode,
-+ *  and points out &shm_bufidx holding information about cirular
-+ *  buffers, andtheir read/write indices etc.
-+ */
-+
-+struct _shm_offsets {
-+	__le32 tx;
-+	__le32 rx;
-+};
-+
-+/**
-+ * struct shm_ipctoc - Table Of Content definition for IPC.
-+ *
-+ * @subver:	Sub version of the TOC header.
-+ * @version:	Main version of the TOC header.
-+ * @magic:	Magic shall always be set to Ascii coded string "TC" (2 bytes)
-+ * @channel_offsets: Offset to both rx and tx direction must be set.
-+ *			The array must be terminated by a zero value.
-+ *
-+ * This struct is stored at the start of the External Shared memory, and
-+ * serves as a extended table of contents defining the channel configurations
-+ * for the external shared memory protocol between a modem and host.
-+ *
-+ * This extended table of content (ipctoc) is written to a predefine memory
-+ * location and the modem will read this ipctoc during start-up and use this
-+ * for setting up the IPC channels and it's buffers.
-+ *
-+ */
-+
-+struct shm_ipctoc {
-+	__u8 subver;
-+	__u8 version;
-+	__u8 magic[2];
-+	struct _shm_offsets channel_offsets[8];
-+};
-+
-+#define SHM_IPCTOC_MAGIC1 'T'
-+#define SHM_IPCTOC_MAGIC2 'C'
-+
-+/**
-+ * struct shm_ipctoc_channel - Channel descriptor for External Shared memory.
-+ *
-+ * @offset: Relative address to channel data area.
-+ * @size: Total size of a SHM channel area partition.
-+ * @mode: Mode of channel: Packet mode=1, Stream mode (shm_channel_mode = 2).
-+ * @buffers: Number of buffers for the channel.
-+ * @ipc: Offset to IPC message location (of type struct shm_bufidx).
-+ * @read_bit: GENI/O bit used to indicate update of the read pointer for
-+ *	this channel (at offset ipc).
-+ * @write_bit: GENI/O bit used to indicate update of the write pointer for
-+ *	this channel (at offset ipc).
-+ * @alignment: Protocol specific options for the protocol,
-+ *	e.g. packet alignment.
-+ * @packets: Maximum Number of packets in a buffer (packet mode).
-+ * @mtu: Maximum Transfer Unit for packets in a buffer (packet mode).
-+ *
-+ * This struct defines the channel configuration for a single direction.
-+ *
-+ * This structure is pointed out by the &shm_toc and is written by
-+ * host during start-up and read by modem at firmware boot.
-+ *
-+ */
-+
-+struct shm_ipctoc_channel {
-+	__le32 offset;
-+	__le32 size;
-+	__u8 mode;
-+/* private: */
-+	__u8 unused[3];
-+/* public: */
-+	__le32 buffers;
-+	__le32 ipc;
-+	__le16 read_bit;
-+	__le16 write_bit;
-+	__u8 alignment;
-+	__u8 packets;
-+	__u16 mtu;
-+};
-+
-+/**
-+ * struct shm_bufidx - Indices's for a uni-directional shm channel.
-+ *
-+ * @read_index: Specify the read index for a channel. This field can
-+ *	have value in range of [0.. shm_ipctoc_channel.buffers -1].
-+ *	In stream mode - this is the read index in the ringbuffer.
-+ *	In packet mode - this index will at any time refer to the next
-+ *	buffer available for read.
-+ *
-+ * @write_index: Specify the write index for a channel.
-+ *	This field can have value in range of [0.. buffers -1].
-+ *	In stream mode - this is the write index in the ringbuffer.
-+ *	In packet mode - this index will at any time refer to the next
-+ *	buffer available for write.
-+ *
-+ * @size: The actual number of bytes for a buffer at each index.
-+ *	  This array has shm_ipctoc_channel.buffers slots, one for each buffer.
-+ *	  The size is updated every time data is written to the buffer.
-+ *
-+ * @state: The state of the channel, 0 - Closed, 1 - Open
-+ *
-+ *
-+ * This structure contains data for the ring-buffer used in packet and stream
-+ * mode, for the external shared memory protocol.
-+ * Note that the read_buf_index and the write_buf_index
-+ * refer to two different channels. So for a ring buffer used to communicate
-+ * from modem, the modem will update the write_buf_index while Linux host
-+ * will update read_buf_index.
-+ */
-+struct shm_bufidx {
-+	__le32 state;
-+	__le32 read_index;
-+	__le32 write_index;
-+	__le32 size[0];
-+};
-+
-+/**
-+ * struct toc_entry - Points out the boot imiages
-+ *
-+ * @start: Offset counting from start of memory area to the image data.
-+ * @size:  Size of the images in bytes.
-+ * @flags: Use 0 if no flags are in use.
-+ * @entry: Where to jump to start exeuting. Only applicable
-+ *		when using SDRAM. Set to 0xffffffff if unused.
-+ * @load_addr: Location in SDRAM to move image. Set to 0xffffffff if
-+ *		not applicable.
-+ * @name: Name of image.
-+ */
-+struct toc_entry {
-+	__le32 start;
-+	__le32 size;
-+	__le32 flags;
-+	__le32 entry_point;
-+	__le32 load_addr;
-+	char name[12];
-+};
-+
-+#endif
--- 
-1.7.0.4
+>> We really don't need block plug for generic_file_aio_read() for buffered
+>> I/O. The readahead already has plug and has fine grained control when I/O
+>> should be submitted. Deleting plug for buffered I/O fixes the regression.
+
+>> One side effect is plug makes the request size 256k, the size is 128k
+>> without it. This is because default ra size is 128k and not a reason we
+>> need plug here.
+
+>> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+>> Tested-by: Herbert Poetzl <herbert@13thfloor.at>
+>> Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+
+> Hmm, this is not exactly the patch I tested from Wu Fengguang 
+
+> I'll test this one before adding my "Tested-by: ..."
+
+second that
+
+>> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+
+>> diff --git a/mm/filemap.c b/mm/filemap.c
+>> index 97f49ed..b662757 100644
+>> --- a/mm/filemap.c
+>> +++ b/mm/filemap.c
+>> @@ -1400,15 +1400,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>>  	unsigned long seg = 0;
+>>  	size_t count;
+>>  	loff_t *ppos = &iocb->ki_pos;
+>> -	struct blk_plug plug;
+
+>>  	count = 0;
+>>  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+>>  	if (retval)
+>>  		return retval;
+
+>> -	blk_start_plug(&plug);
+>> -
+>>  	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
+>>  	if (filp->f_flags & O_DIRECT) {
+>>  		loff_t size;
+>> @@ -1424,8 +1421,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>>  			retval = filemap_write_and_wait_range(mapping, pos,
+>>  					pos + iov_length(iov, nr_segs) - 1);
+>>  			if (!retval) {
+>> +				struct blk_plug plug;
+>> +
+>> +				blk_start_plug(&plug);
+
+> This part was not on the tested patch yesterday.
+
+yep, will test this one tonight ...
+
+>>  				retval = mapping->a_ops->direct_IO(READ, iocb,
+>>  							iov, pos, nr_segs);
+>> +				blk_finish_plug(&plug);
+>>  			}
+>>  			if (retval > 0) {
+>>  				*ppos = pos + retval;
+>> @@ -1481,7 +1482,6 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>>  			break;
+>>  	}
+>>  out:
+>> -	blk_finish_plug(&plug);
+>>  	return retval;
+>>  }
+>>  EXPORT_SYMBOL(generic_file_aio_read);
 
