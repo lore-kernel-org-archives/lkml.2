@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab2AaKi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:38:28 -0500
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:54616 "EHLO
+	id S1753602Ab2AaKij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:38:39 -0500
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:55055 "EHLO
 	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab2AaKi1 (ORCPT
+	with ESMTP id S1752635Ab2AaKih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:38:27 -0500
-X-Greylist: delayed 2260 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Jan 2012 05:38:27 EST
+	Tue, 31 Jan 2012 05:38:37 -0500
 From: Barry Song <Barry.Song@csr.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
 CC: <workgroup.linux@csr.com>, <linux-mtd@lists.infradead.org>,
-        Barry Song <Barry.Song@csr.com>
-Subject: [PATCH 0/3] platform: add platform_devm_request_and_ioremap() common API
-Date: Tue, 31 Jan 2012 17:59:59 +0800
-Message-ID: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+        Barry Song <Baohua.Song@csr.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Erik Gilling <konkers@google.com>
+Subject: [PATCH 2/3] GPIO: TEGRA: move to use platform_devm_request_and_ioremap() helper
+Date: Tue, 31 Jan 2012 18:00:01 +0800
+Message-ID: <1328004002-24646-3-git-send-email-Barry.Song@csr.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.125.36.70]
@@ -23,44 +27,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-these patches move the common pattern from
+From: Barry Song <Baohua.Song@csr.com>
 
-"
-res = platform_get_resource(pdev, IORESOURCE_MEM, 0); 
-if (!res) {
-	        ret = -ENODEV;
-		        goto err;
-}
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Erik Gilling <konkers@google.com>
+---
+ drivers/gpio/gpio-tegra.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-base = devm_request_and_ioremap(&dev->dev, mem_res);
-if (!base) {
-	        ret = -ENODEV;
-		        goto err;
-}
-"
-
-to
-
-"
-base = platform_devm_request_and_ioremap(pdev, 0); 
-if (!base) {
-	        ret = -ENODEV;
-		        goto err;
-}
-"
-
-
-Barry Song (3):
-  platform: add common resource requesting and mapping helper
-  GPIO: TEGRA: move to use platform_devm_request_and_ioremap() helper
-  MTD: NAND: txx9ndfmc: move to use platform_devm_request_and_ioremap()
-    helper
-
- drivers/base/platform.c         |   19 +++++++++++++++++++
- drivers/gpio/gpio-tegra.c       |    8 +-------
- drivers/mtd/nand/txx9ndfmc.c    |    6 +-----
- include/linux/platform_device.h |    1 +
- 4 files changed, 22 insertions(+), 12 deletions(-)
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index bdc2937..118e367 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -355,13 +355,7 @@ static int __devinit tegra_gpio_probe(struct platform_device *pdev)
+ 		bank->irq = res->start;
+ 	}
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "Missing MEM resource\n");
+-		return -ENODEV;
+-	}
+-
+-	regs = devm_request_and_ioremap(&pdev->dev, res);
++	regs = platform_devm_request_and_ioremap(pdev, 0);
+ 	if (!regs) {
+ 		dev_err(&pdev->dev, "Couldn't ioremap regs\n");
+ 		return -ENODEV;
+-- 
+1.7.1
 
 
 
