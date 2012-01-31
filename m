@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab2AaNnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 08:43:40 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:50150 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492Ab2AaNni convert rfc822-to-8bit (ORCPT
+	id S1754592Ab2AaNqJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 08:46:09 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:56337 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753237Ab2AaNqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 08:43:38 -0500
+	Tue, 31 Jan 2012 08:46:07 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Andy Walls <awalls@md.metrocast.net>
+Subject: Re: [PATCH 05/16] cx18: fix handling of 'radio' module parameter
+Date: Tue, 31 Jan 2012 14:45:18 +0100
+User-Agent: KMail/1.9.10
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, mchehab@redhat.com
+References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de> <1327960820-11867-6-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1327960820-11867-6-git-send-email-danny.kukawka@bisect.de>
 MIME-Version: 1.0
-In-Reply-To: <20120131054231.66669e41@tlielax.poochiereds.net>
-References: <20120130144102.8d202c7d8eccd503a86b3053@canb.auug.org.au>
-	<4F2764E9.4010506@xenotime.net>
-	<20120131054231.66669e41@tlielax.poochiereds.net>
-Date: Tue, 31 Jan 2012 07:43:37 -0600
-Message-ID: <CAH2r5mu2VXWkP49RzPuedN9hY6G-WcbyYB3WMJSf2NkRe2VO7Q@mail.gmail.com>
-Subject: Re: [PATCH -next] cifs: fix printk format warnings
-From: Steve French <smfrench@gmail.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201311445.20095.danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328017567;6b7c41b3;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merged to cifs-2.6.git
-
-On Tue, Jan 31, 2012 at 4:42 AM, Jeff Layton <jlayton@redhat.com> wrote:
-> On Mon, 30 Jan 2012 19:50:01 -0800
-> Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Dienstag, 31. Januar 2012, Andy Walls wrote:
+> On Tue, 2012-01-31 at 05:01 -0500, Andy Walls wrote:
+> > On Mon, 2012-01-30 at 20:40 +0100, Danny Kukawka wrote:
+> > > Fixed handling of 'radio' module parameter from module_param_array
+> > > to module_param_named to fix these compiler warnings in cx18-driver.c:
+> >
+> > NACK.
+> >
+> > "radio" is an array of tristate values (-1, 0, 1) per installed card:
+> >
+> > 	static int radio[CX18_MAX_CARDS] = { -1, -1,
+> >
+> > and must remain an array or you will break the driver.
+> >
+> > Calling "radio_c" a module parameter named "radio" is wrong.
+> >
+> > The correct fix is to reverse Rusty Russel's patch to the driver in
+> > commit  90ab5ee94171b3e28de6bb42ee30b527014e0be7
+> > to change the "bool" back to an "int" as it should be in
 >
->> From: Randy Dunlap <rdunlap@xenotime.net>
->>
->> Fix printk format warnings for ssize_t variables:
->>
->> fs/cifs/connect.c:2145:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
->> fs/cifs/connect.c:2152:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
->> fs/cifs/connect.c:2160:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
->> fs/cifs/connect.c:2170:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
->>
->> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
->> Cc:   Steve French <sfrench@samba.org>
->> Cc:   linux-cifs@vger.kernel.org
->> ---
->>  fs/cifs/connect.c |    8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> --- linux-next-20120130.orig/fs/cifs/connect.c
->> +++ linux-next-20120130/fs/cifs/connect.c
->> @@ -2142,14 +2142,14 @@ cifs_set_cifscreds(struct smb_vol *vol,
->>
->>       len = delim - payload;
->>       if (len > MAX_USERNAME_SIZE || len <= 0) {
->> -             cFYI(1, "Bad value from username search (len=%ld)", len);
->> +             cFYI(1, "Bad value from username search (len=%zd)", len);
->>               rc = -EINVAL;
->>               goto out_key_put;
->>       }
->>
->>       vol->username = kstrndup(payload, len, GFP_KERNEL);
->>       if (!vol->username) {
->> -             cFYI(1, "Unable to allocate %ld bytes for username", len);
->> +             cFYI(1, "Unable to allocate %zd bytes for username", len);
->>               rc = -ENOMEM;
->>               goto out_key_put;
->>       }
->> @@ -2157,7 +2157,7 @@ cifs_set_cifscreds(struct smb_vol *vol,
->>
->>       len = key->datalen - (len + 1);
->>       if (len > MAX_PASSWORD_SIZE || len <= 0) {
->> -             cFYI(1, "Bad len for password search (len=%ld)", len);
->> +             cFYI(1, "Bad len for password search (len=%zd)", len);
->>               rc = -EINVAL;
->>               kfree(vol->username);
->>               vol->username = NULL;
->> @@ -2167,7 +2167,7 @@ cifs_set_cifscreds(struct smb_vol *vol,
->>       ++delim;
->>       vol->password = kstrndup(delim, len, GFP_KERNEL);
->>       if (!vol->password) {
->> -             cFYI(1, "Unable to allocate %ld bytes for password", len);
->> +             cFYI(1, "Unable to allocate %zd bytes for password", len);
->>               rc = -ENOMEM;
->>               kfree(vol->username);
->>               vol->username = NULL;
->
-> Looks correct.
->
-> Acked-by: Jeff Layton <jlayton@redhat.com>
+>                       ^^^^
+> Sorry, a typo here.  Disregard the word "back".
 
+Overseen this. But wouldn't be the correct fix in this case to:
+a) reverse the part of 90ab5ee94171b3e28de6bb42ee30b527014e0be7 to:
+   get: 
+   static unsigned radio_c = 1;
+   
+b) change the following line:
+   module_param_array(radio, bool, &radio_c, 0644);
+   to:
+   module_param_array(radio, int, &radio_c, 0644);
 
+Without b) you would get a warning from the compiler again.
 
--- 
-Thanks,
-
-Steve
+Danny 
