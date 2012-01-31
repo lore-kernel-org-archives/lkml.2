@@ -1,108 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab2AaVbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 16:31:11 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57725 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab2AaVbJ convert rfc822-to-8bit (ORCPT
+	id S1755325Ab2AaVfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 16:35:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34849 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab2AaVfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 16:31:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <1327999512-4935-1-git-send-email-ldewangan@nvidia.com>
-References: <1327999512-4935-1-git-send-email-ldewangan@nvidia.com>
-Date: Tue, 31 Jan 2012 22:31:08 +0100
-Message-ID: <CACRpkdZ-1VBkZN71eFqaxVi5dakP4Dt3yXLa9TTdrKE=dGq__w@mail.gmail.com>
-Subject: Re: [PATCH V1] gpio: tps65910: Add sleep control support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        jedu@slimlogic.co.uk, lrg@slimlogic.co.uk,
-        broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
-        gg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 31 Jan 2012 16:35:12 -0500
+Date: Tue, 31 Jan 2012 13:35:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
+Subject: Re: [PATCH] kprobes: fix a memory leak in function
+ pre_handler_kretprobe()
+Message-Id: <20120131133510.c53cb790.akpm@linux-foundation.org>
+In-Reply-To: <1327939812-17157-1-git-send-email-jiang.liu@huawei.com>
+References: <1327939812-17157-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 9:45 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+On Tue, 31 Jan 2012 00:10:12 +0800
+Jiang Liu <liuj97@gmail.com> wrote:
 
-> The device tps65910/tps65911 supports the sleep
-> functionality in some of gpios. If gpio is configured
-> in output mode and sleep is enabled then during device
-> sleep state, the output of gpio becomes LOW regardless
-> of non-sleep output value.
-> Such gpio can be used to control regulator switch such
-> that output of regulator is off in device sleep state.
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> In function pre_handler_kretprobe(), the allocated kretprobe_instance object
+> will get leaked if the entry_handler callback returns non-zero. This may cause
+> all the preallocated kretprobe_instance objects exhausted. This issue could be
+> reproduced by changing samples/kprobes/kretprobe_example.c to probe
+> "mutex_unlock". And the fix is straight forward, just put the allocated
+> kretprobe_instance object back onto the free_instances list.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Acked-by: Jim Keniston <jkenisto@us.ibm.com>
+> Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> CC: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+> CC: "David S. Miller" <davem@davemloft.net>
+> CC: stable@vger.kernel.org
+> ---
+>  kernel/kprobes.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index e5d8464..2423295 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1673,8 +1673,12 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+>  		ri->rp = rp;
+>  		ri->task = current;
+>  
+> -		if (rp->entry_handler && rp->entry_handler(ri, regs))
+> +		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
+> +			spin_lock_irqsave(&rp->lock, flags);
+> +			hlist_add_head(&ri->hlist, &rp->free_instances);
+> +			spin_unlock_irqrestore(&rp->lock, flags);
+>  			return 0;
+> +		}
+>  
 
-Strictly speaking this is pin control business, but since it is already
-doing other stuff like this from platform data why not...
+kernel/kprobes.c: In function 'pre_handler_kretprobe':
+kernel/kprobes.c:1677: warning: passing argument 1 of 'spinlock_check' from incompatible pointer type
+include/linux/spinlock.h:272: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
+kernel/kprobes.c:1679: warning: passing argument 1 of 'spin_unlock_irqrestore' from incompatible pointer type
+include/linux/spinlock.h:338: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
 
-Comments:
+--- a/kernel/kprobes.c~kprobes-fix-a-memory-leak-in-function-pre_handler_kretprobe-fix
++++ a/kernel/kprobes.c
+@@ -1674,9 +1674,9 @@ static int __kprobes pre_handler_kretpro
+ 		ri->task = current;
+ 
+ 		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
+-			spin_lock_irqsave(&rp->lock, flags);
++			raw_spin_lock_irqsave(&rp->lock, flags);
+ 			hlist_add_head(&ri->hlist, &rp->free_instances);
+-			spin_unlock_irqrestore(&rp->lock, flags);
++			raw_spin_unlock_irqrestore(&rp->lock, flags);
+ 			return 0;
+ 		}
+ 
 
-> diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-> index fa6c6bf..b641690 100644
-> --- a/include/linux/mfd/tps65910.h
-> +++ b/include/linux/mfd/tps65910.h
-> @@ -657,6 +657,8 @@
->
->
->  /*Register GPIO  (0x80) register.RegisterDescription */
-> +#define GPIO_SLEEP_MASK                         0x80
-> +#define GPIO_SLEEP_SHIFT                        7
->  #define GPIO_DEB_MASK                           0x10
->  #define GPIO_DEB_SHIFT                          4
->  #define GPIO_PUEN_MASK                          0x08
-> @@ -740,6 +742,9 @@
->  #define TPS65910_GPIO_STS                              BIT(1)
->  #define TPS65910_GPIO_SET                              BIT(0)
->
-> +/* Max number of TPS65910/11 GPIOs */
-> +#define TPS65911_NUM_GPIO                              9
+I'm surprised you didn't notice the warning spew.  How well tested is
+this code?
 
-Then name it TPS_6591X_MAX_NUM_GPIO
-
-I would write:
-
-#define TPS65910_NUM_GPIO 6
-#define TPS65911_NUM_GPIO 9
-#define TPS6591X_MAX_NUM_GPIO 9
-
-And then also refactor this code in the driver:
-
-        switch(tps65910_chip_id(tps65910)) {
-        case TPS65910:
-                tps65910->gpio.ngpio    = 6;
-                break;
-        case TPS65911:
-                tps65910->gpio.ngpio    = 9;
-                break;
-        default:
-                return;
-
-to use the new defines instead of magic numbers while
-you're at it.
-
-> +
->  /* Regulator Index Definitions */
->  #define TPS65910_REG_VRTC                              0
->  #define TPS65910_REG_VIO                               1
-> @@ -786,6 +791,7 @@ struct tps65910_board {
->        int irq_base;
->        int vmbch_threshold;
->        int vmbch2_threshold;
-> +       int en_gpio_sleep[TPS65911_NUM_GPIO];
-
-This is used as a bool so use bool.
-
->        unsigned long regulator_ext_sleep_control[TPS65910_NUM_REGS];
->        struct regulator_init_data *tps65910_pmic_init_data[TPS65910_NUM_REGS];
->  };
-> --
-> 1.7.1.1
-
-Thanks,
-Linus Walleij
