@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab2AaThw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 14:37:52 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55722
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755056Ab2AaThv (ORCPT
+	id S1755090Ab2AaTjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 14:39:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45775 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876Ab2AaTjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 14:37:51 -0500
-Date: Tue, 31 Jan 2012 14:37:48 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Niels de Vos <ndevos@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Mikulas Patocka <mpatocka@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        "Bryn M. Reeves" <bmr@redhat.com>
-Subject: Re: [PATCH v3] fs: Invalidate the cache for a parent block-device if
- fsync() is called for a partition
-Message-ID: <20120131193748.GA10093@infradead.org>
-References: <4F213E1A.4060808@redhat.com>
- <1327584802-14298-1-git-send-email-ndevos@redhat.com>
- <20120126134051.6add3cd2.akpm@linux-foundation.org>
- <20120126214534.GA9319@infradead.org>
- <4F28102C.1070207@redhat.com>
- <20120131105824.c48351b6.akpm@linux-foundation.org>
- <20120131190425.GA10533@infradead.org>
- <20120131113250.816ee772.akpm@linux-foundation.org>
+	Tue, 31 Jan 2012 14:39:53 -0500
+Message-ID: <4F2843B8.90209@canonical.com>
+Date: Tue, 31 Jan 2012 20:40:40 +0100
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120119 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120131113250.816ee772.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jussi Pakkanen <jussi.pakkanen@canonical.com>
+Subject: Re: [PATCH v2] Input: Document the device properties
+References: <1328036111-2780-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1328036111-2780-1-git-send-email-rydberg@euromail.se>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 11:32:50AM -0800, Andrew Morton wrote:
-> I didn't say the kernel would support this as-is.
+On 01/31/2012 07:55 PM, Henrik Rydberg wrote:
+> Add a section which defines the input device properties and provides
+> guidelines on how to use them.
 > 
-> If the partitioning scheme requires writing to the individual
-> partitions then something would need to be done, such as a simple
-> offsetting DM driver.
+> Cc: Jussi Pakkanen <jussi.pakkanen@canonical.com>
+> Cc: Chase Douglas <chase.douglas@canonical.com>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
-Writing partition tables requires writing to them main block device.
+Looks good to me :). Thanks!
 
-Seriously - if people want to support block devices nodes > 16TB dealing
-with this isn't the problem.  They'll need to find a way to do buffered
-I/O without using the pagecache to get it right, at which point
-blkdev_get_block in either form will simply go away.
+Reviewed-by: Chase Douglas <chase.douglas@canonical.com>
