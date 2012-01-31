@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab2AaTQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 14:16:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33323 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab2AaTQA (ORCPT
+	id S1754912Ab2AaTSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 14:18:41 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14373 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab2AaTSk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 14:16:00 -0500
-Date: Tue, 31 Jan 2012 11:15:53 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Arthur Taylor <art@ified.ca>, Jiri Slaby <jslaby@suse.cz>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] Fix KDFONTOP 32bit compatibility layer
-Message-Id: <20120131111553.e69ab58b.akpm@linux-foundation.org>
-In-Reply-To: <201201311635.36367.arnd@arndb.de>
-References: <20120128232858.GA18484@type.famille.thibault.fr>
-	<201201311635.36367.arnd@arndb.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 31 Jan 2012 14:18:40 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 31 Jan 2012 11:18:32 -0800
+From: Diwakar Tundlam <dtundlam@nvidia.com>
+To: "'Peter Zijlstra'" <peterz@infradead.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Kamalesh Babulal'" <kamalesh@linux.vnet.ibm.com>
+Date: Tue, 31 Jan 2012 11:18:31 -0800
+Subject: RE: [PATCH] scheduler: domain: init next_balance in
+ nohz_idle_balancer with jiffies
+Thread-Topic: [PATCH] scheduler: domain: init next_balance in
+ nohz_idle_balancer with jiffies
+Thread-Index: AczgL0YuPoHFDcoKRF2zO7IjjkvzqQAHXZpw
+Message-ID: <1DD7BFEDD3147247B1355BEFEFE466523791832BE8@HQMAIL04.nvidia.com>
+References: <1327927463-4165-1-git-send-email-pdeschrijver@nvidia.com>
+ <1328024684.2446.234.camel@twins>
+In-Reply-To: <1328024684.2446.234.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jan 2012 16:35:36 +0000
-Arnd Bergmann <arnd@arndb.de> wrote:
+Yes, the change should be ported to kernel/sched/fair.c under init_sched_fair_class(). But that's for 3.3. I will send a separate patch for 3.3 shortly.
 
-> On Saturday 28 January 2012, Samuel Thibault wrote:
-> > KDFONTOP(GET) currently fails with EIO when being run in a 32bit
-> > userland with a 64bit kernel if the font width is not 8. This is because
-> > the compatibility layer introduced by e9216651 forces the addition of
-> > the KD_FONT_FLAG_OLD flag, which makes con_font_get return EIO in such
-> > case.  This flag should not be set for KDFONTOP, since it's actually
-> > the whole point of this flag (see comment in con_font_set for instance).
-> > 
-> > Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+All previous kernels have the old structure where the patch can be applied as it is.
+
+--Diwakar.
+
+-----Original Message-----
+From: Peter Zijlstra [mailto:peterz@infradead.org] 
+Sent: Tuesday, January 31, 2012 7:45 AM
+To: Peter De Schrijver
+Cc: Diwakar Tundlam; Ingo Molnar; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scheduler: domain: init next_balance in nohz_idle_balancer with jiffies
+
+On Mon, 2012-01-30 at 14:44 +0200, Peter De Schrijver wrote:
+> From: Diwakar Tundlam <dtundlam@nvidia.com>
 > 
-> Hmm, this flag was not introduced in the patch you cite, it used to
-> live in fs/compat_ioctl.c before that, since before the start of the
-> git history. It seems to date back on the original sparc64 implementation
-> of do_kdfontop_ioctl that was written by Eddie Dost in 1998.
+> The next_balance parameter of nohz_idle_balancer should be initialized 
+> to jiffies since jiffies itself is initialized to 300 seconds shy of 
+> overflow. Otherwise, nohz_idle_balancer does not run for the first 5 
+> mins after bootup.
 > 
-> > diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-> > index 5e096f4..65447c5 100644
-> > --- a/drivers/tty/vt/vt_ioctl.c
-> > +++ b/drivers/tty/vt/vt_ioctl.c
-> > @@ -1463,7 +1463,6 @@ compat_kdfontop_ioctl(struct compat_console_font_op __user *fontop,
-> >         if (!perm && op->op != KD_FONT_OP_GET)
-> >                 return -EPERM;
-> >         op->data = compat_ptr(((struct compat_console_font_op *)op)->data);
-> > -       op->flags |= KD_FONT_FLAG_OLD;
-> >         i = con_font_op(vc, op);
-> >         if (i)
-> >                 return i;
-> 
-> From all I can tell, the patch looks correct, but please update the
-> description so you don't blame my innocent patch ;-)
-> 
-> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
+> Reviewed-by: Aleksandr Frid <afrid@nvidia.com>
+> Reviewed-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
+> Reviewed-by: Satya Popuri <spopuri@nvidia.com>
+> ---
+>  kernel/sched.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 
-Yes, we should note the fact that at least one kernel bug isn't your
-fault ;)
+You'll find that this file no longer exists...
 
-I changed the changelog to
+> diff --git a/kernel/sched.c b/kernel/sched.c index b5efd6c..d3f291f 
+> 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -8383,6 +8383,7 @@ void __init sched_init(void)
+>  	atomic_set(&nohz.load_balancer, nr_cpu_ids);
+>  	atomic_set(&nohz.first_pick_cpu, nr_cpu_ids);
+>  	atomic_set(&nohz.second_pick_cpu, nr_cpu_ids);
+> +	nohz.next_balance = jiffies;
+>  #endif
+>  	/* May be allocated at isolcpus cmdline parse time */
+>  	if (cpu_isolated_map == NULL)
 
-: KDFONTOP(GET) currently fails with EIO when being run in a 32bit userland
-: with a 64bit kernel if the font width is not 8.
-: 
-: This is because of the setting of the KD_FONT_FLAG_OLD flag, which makes
-: con_font_get return EIO in such case.  
-: 
-: This flag should *not* be set for KDFONTOP, since it's actually the whole
-: point of this flag (see comment in con_font_set for instance).
-: 
-: Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
-: Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-: Cc: Greg Kroah-Hartman <gregkh@suse.de>
-: Cc: Arthur Taylor <art@ified.ca>
-: Cc: Jiri Slaby <jslaby@suse.cz>
-: Cc: Jiri Olsa <jolsa@redhat.com>
-: Cc: <stable@vger.kernel.org>
-
-
+Not does this code section..
