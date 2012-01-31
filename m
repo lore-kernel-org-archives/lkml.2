@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab2AaK1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:27:44 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50456 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab2AaK1n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:27:43 -0500
-Date: Tue, 31 Jan 2012 11:27:40 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
-        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 7/7] LPC32xx: clock.c: Fix mutex lock issues
-Message-ID: <20120131102740.GI2471@pengutronix.de>
-References: <1327939327-7799-1-git-send-email-stigge@antcom.de>
- <1327939327-7799-7-git-send-email-stigge@antcom.de>
+	id S1753021Ab2AaKar (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:30:47 -0500
+Received: from mga14.intel.com ([143.182.124.37]:28287 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752292Ab2AaKaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 05:30:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="101474153"
+Date: Tue, 31 Jan 2012 18:20:39 +0800
+From: Wu Fengguang <wfg@linux.intel.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+Message-ID: <20120131102039.GA27668@localhost>
+References: <1327996780.21268.42.camel@sli10-conroe>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7SrMUQONj8Rl9QNG"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1327939327-7799-7-git-send-email-stigge@antcom.de>
+In-Reply-To: <1327996780.21268.42.camel@sli10-conroe>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 31, 2012 at 03:59:40PM +0800, Li, Shaohua wrote:
+> Herbert Poetzl reported a performance regression since 2.6.39.
 
---7SrMUQONj8Rl9QNG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It helps to point out the exact commit that caused the regression.
 
-On Mon, Jan 30, 2012 at 05:02:06PM +0100, Roland Stigge wrote:
-> This patch fixes the mutex issue in clock.c, as done in Kevin Wells' orig=
-inal
-> driver update:
->=20
-> In some cases, the clock drivers could grab a mutex twice in an improper
-> context. This patch changes the mutex mechanism to a simple irq lock/unlo=
-ck
-> mechanism and removes un-needed locks from some functions.
->=20
-> (See also git.lpclinux.com)
->=20
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+ commit 55602dd66f535 ("fs: make generic file read/write functions plug")
 
-Tested-by: Wolfram Sang <w.sang@pengutronix.de>
+> The test
+> is a simple dd read, but with big block size. The reason is:
+> 
+> T1: ra (A, A+128k), (A+128k, A+256k)
+> T2: lock_page for page A, submit the 256k
+> T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
+> because of plug and there isn't any lock_page till we hit page A+256k
+> because all pages from A to A+256k is in memory
+> T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
+> submitted again.
+> T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
+> waitting for (A+256k, A+512k) finish.
+> 
+> There is no request to disk in T3 and T4, so readahead pipeline breaks.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+s/in/between/
 
---7SrMUQONj8Rl9QNG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+> We really don't need block plug for generic_file_aio_read() for buffered
+> I/O. The readahead already has plug and has fine grained control when I/O
+> should be submitted. Deleting plug for buffered I/O fixes the regression.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Eric and Herbert have good performance numbers and blktrace data, it
+would be good to include some of them for demonstrating this patch's
+impact on both behavior and throughput :)
 
-iEYEARECAAYFAk8nwhwACgkQD27XaX1/VRvV7wCfeOAiQN2CAQmKoMzL+JoGA//K
-2usAniqHR3h9tbHtqvJ9z8ln/9FHkJiW
-=rMVq
------END PGP SIGNATURE-----
+Thanks,
+Fengguang
 
---7SrMUQONj8Rl9QNG--
+> One side effect is plug makes the request size 256k, the size is 128k
+> without it. This is because default ra size is 128k and not a reason we
+> need plug here.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> Tested-by: Herbert Poetzl <herbert@13thfloor.at>
+> Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> 
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 97f49ed..b662757 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1400,15 +1400,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  	unsigned long seg = 0;
+>  	size_t count;
+>  	loff_t *ppos = &iocb->ki_pos;
+> -	struct blk_plug plug;
+>  
+>  	count = 0;
+>  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+>  	if (retval)
+>  		return retval;
+>  
+> -	blk_start_plug(&plug);
+> -
+>  	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
+>  	if (filp->f_flags & O_DIRECT) {
+>  		loff_t size;
+> @@ -1424,8 +1421,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  			retval = filemap_write_and_wait_range(mapping, pos,
+>  					pos + iov_length(iov, nr_segs) - 1);
+>  			if (!retval) {
+> +				struct blk_plug plug;
+> +
+> +				blk_start_plug(&plug);
+>  				retval = mapping->a_ops->direct_IO(READ, iocb,
+>  							iov, pos, nr_segs);
+> +				blk_finish_plug(&plug);
+>  			}
+>  			if (retval > 0) {
+>  				*ppos = pos + retval;
+> @@ -1481,7 +1482,6 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  			break;
+>  	}
+>  out:
+> -	blk_finish_plug(&plug);
+>  	return retval;
+>  }
+>  EXPORT_SYMBOL(generic_file_aio_read);
+> 
