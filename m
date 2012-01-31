@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab2AaGgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 01:36:55 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61706 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab2AaGgy (ORCPT
+	id S1752946Ab2AaGhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 01:37:22 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42277 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968Ab2AaGhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 01:36:54 -0500
-X-AuditID: 9c930179-b7bf0ae00000132b-f0-4f278c04d1f9
-Message-ID: <4F278C02.7040008@gmail.com>
-Date: Tue, 31 Jan 2012 15:36:50 +0900
-From: Namhyung Kim <namhyung@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.samsung-soc,gmane.linux.kernel
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Greg KH'" <gregkh@suse.de>
-Subject: Re: [PATCH] serial: samsung: Add support serial for EXYNOS4212 and
- EXYNOS4412
-References: <042101ccdfe1$11ec0d60$35c42820$%kim@samsung.com>
-In-Reply-To: <042101ccdfe1$11ec0d60$35c42820$%kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 31 Jan 2012 01:37:19 -0500
+From: "Devendra.Naga" <devendra.aaru@gmail.com>
+To: <Larry.Finger@lwfinger.net>, <chaoming_li@realsil.com.cn>,
+        <linville@tuxdriver.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "Devendra.Naga" <devendra.aaru@gmail.com>
+Subject: [PATCH] rtlwifi: remove return in _rtl_pci_switch_clk_req
+Date: Tue, 31 Jan 2012 01:28:15 -0500
+Message-Id: <1327991295-6258-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: "Devendra.Naga" <devendra.aaru@gmail.com>
 
-2012-01-31 3:25 PM, Kukjin Kim wrote:
-> Kukjin Kim wrote:
->>
->>
->> This should be added for EXYNOS4212 and EXYNOS4412 SoCs.
->>
->> Cc: Thomas Abraham<thomas.abraham@linaro.org>
->> Cc: Greg Kroah-Hartman<gregkh@suse.de>
->> Cc: stable@kerne.org
->
-> Oops, should be 'Cc: stable@kernel.org'
->
+the return value from _rtl_pci_switch_clk_req is not used by any of its callers.
 
-No, it should be 'Cc: stable@vger.kernel.org' :)
-Please see below:
+Signed-off-by: Devendra.Naga <devendra.aaru@gmail.com>
+---
+ drivers/net/wireless/rtlwifi/pci.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-https://lkml.org/lkml/2012/1/9/418
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 5cb2199..9a01909 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -198,7 +198,7 @@ static bool _rtl_pci_platform_switch_device_pci_aspm(
+ }
+ 
+ /*When we set 0x01 to enable clk request. Set 0x0 to disable clk req.*/
+-static bool _rtl_pci_switch_clk_req(struct ieee80211_hw *hw, u8 value)
++static void _rtl_pci_switch_clk_req(struct ieee80211_hw *hw, u8 value)
+ {
+ 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+ 	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
+@@ -207,8 +207,6 @@ static bool _rtl_pci_switch_clk_req(struct ieee80211_hw *hw, u8 value)
+ 
+ 	if (rtlhal->hw_type == HARDWARE_TYPE_RTL8192SE)
+ 		udelay(100);
+-
+-	return true;
+ }
+ 
+ /*Disable RTL8192SE ASPM & Disable Pci Bridge ASPM*/
+-- 
+1.7.5.4
 
-Thanks,
-Namhyung
