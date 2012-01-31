@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab2AaOrs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 09:47:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280Ab2AaOrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 09:47:47 -0500
-Date: Tue, 31 Jan 2012 09:47:34 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Wu Fengguang <wfg@linux.intel.com>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-Message-ID: <20120131144734.GA4378@redhat.com>
-References: <1327996780.21268.42.camel@sli10-conroe>
+	id S1754711Ab2AaOsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 09:48:08 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61658 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab2AaOsG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 09:48:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327996780.21268.42.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328006193-13902-1-git-send-email-k.lewandowsk@samsung.com>
+References: <1328006193-13902-1-git-send-email-k.lewandowsk@samsung.com>
+Date: Tue, 31 Jan 2012 20:18:05 +0530
+Message-ID: <CAJuYYwQepKi+TG1tOaZ=X9WEi3cwbwsoofuZBSqSiBb4LA_YoA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] EXYNOS4_DT fixes for 3.3-rc1+ kernels
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: m.szyprowski@samsung.com, linux-samsung-soc@vger.kernel.org,
+        marc.zyngier@arm.com, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 03:59:40PM +0800, Shaohua Li wrote:
-> Herbert Poetzl reported a performance regression since 2.6.39. The test
-> is a simple dd read, but with big block size. The reason is:
-> 
-> T1: ra (A, A+128k), (A+128k, A+256k)
-> T2: lock_page for page A, submit the 256k
-> T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
-> because of plug and there isn't any lock_page till we hit page A+256k
-> because all pages from A to A+256k is in memory
-> T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
-> submitted again.
+Hi Karol,
 
-Why IO is not submitted because of plug? Doesn't task now get scheduled
-out causing an unplug? IOW, are we now busy waiting somewhere preventing
-unplug?
+On 31 January 2012 16:06, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
+> Device Tree-based Exynos4 machine prepared by Thomas Abraham and
+> included in 3.3-rc1 hasn't been adjusted to changes that have happened
+> to mach-exynos during 3.3 merge window.
+>
+> Following patch series fixes one build and one boot error making it
+> possible to boot system with SMP disabled.
+>
+> SMP support is still broken for unknown reason, though.
+>
+> [ To use it it's also required to cherry-pick "ARM: EXYNOS: fix
+>  non-SMP builds for EXYNOS4" already found in kgene's
+>  linux-samsung.git (branch v3.3-samsung-fixes-2) ]
+>
+>
+> Karol Lewandowski (2):
+>  ARM: Exynos4: Make exynos4-dt compile again
+>  ARM: Exynos4: Convert exynos4-dt to CONFIG_MULTI_IRQ_HANDLER
+>
+>  arch/arm/mach-exynos/mach-exynos4-dt.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
 
-Thanks
-Vivek
+Thanks for these patches and identifying the issue.
+
+Regards,
+Thomas.
+
+> --
+> 1.7.8.3
+>
