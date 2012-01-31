@@ -1,42 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab2AaKoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:44:25 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65019 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab2AaKoW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:44:22 -0500
+	id S1753916Ab2AaKof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:44:35 -0500
+Received: from mga14.intel.com ([143.182.124.37]:40596 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753793Ab2AaKoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 05:44:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="101476656"
+Date: Tue, 31 Jan 2012 18:34:16 +0800
+From: Wu Fengguang <wfg@linux.intel.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+Message-ID: <20120131103416.GA1661@localhost>
+References: <1327996780.21268.42.camel@sli10-conroe>
 MIME-Version: 1.0
-In-Reply-To: <1327992241.9257.1.camel@phoenix>
-References: <1327992241.9257.1.camel@phoenix>
-Date: Tue, 31 Jan 2012 02:44:21 -0800
-X-Google-Sender-Auth: xZA_gc9P5GSp5RZalC55Kk2XuVU
-Message-ID: <CAOS58YMNBLFJtYRPBXSFtat4wJb_jMGhKa1OnxFP=wqGpz0kdg@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: devres: add devm_regulator_* to the list
- of managed interfaces
-From: Tejun Heo <tj@kernel.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327996780.21268.42.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 10:44 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> Add devm_regulator_put() and devm_regulator_bulk_get() to the list of managed
-> interfaces.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+I'd like to propose a sister patch on the write part. It may not be
+as easy to measure any performance impacts of it, but I'll try.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+---
+Subject: remove plugging at buffered write time 
+Date: Tue Jan 31 18:25:48 CST 2012
 
-Thank you.
+Buffered write(2) is not directly tied to IO, so no need to handle plug
+in generic_file_aio_write().
 
--- 
-tejun
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Li Shaohua <shaohua.li@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/filemap.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- linux-next.orig/mm/filemap.c	2012-01-31 18:23:52.000000000 +0800
++++ linux-next/mm/filemap.c	2012-01-31 18:25:38.000000000 +0800
+@@ -2267,6 +2267,7 @@ generic_file_direct_write(struct kiocb *
+ 	struct file	*file = iocb->ki_filp;
+ 	struct address_space *mapping = file->f_mapping;
+ 	struct inode	*inode = mapping->host;
++	struct blk_plug plug;
+ 	ssize_t		written;
+ 	size_t		write_len;
+ 	pgoff_t		end;
+@@ -2301,7 +2302,9 @@ generic_file_direct_write(struct kiocb *
+ 		}
+ 	}
+ 
++	blk_start_plug(&plug);
+ 	written = mapping->a_ops->direct_IO(WRITE, iocb, iov, pos, *nr_segs);
++	blk_finish_plug(&plug);
+ 
+ 	/*
+ 	 * Finally, try again to invalidate clean pages which might have been
+@@ -2610,13 +2613,11 @@ ssize_t generic_file_aio_write(struct ki
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
+-	struct blk_plug plug;
+ 	ssize_t ret;
+ 
+ 	BUG_ON(iocb->ki_pos != pos);
+ 
+ 	mutex_lock(&inode->i_mutex);
+-	blk_start_plug(&plug);
+ 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+ 	mutex_unlock(&inode->i_mutex);
+ 
+@@ -2627,7 +2628,6 @@ ssize_t generic_file_aio_write(struct ki
+ 		if (err < 0 && ret > 0)
+ 			ret = err;
+ 	}
+-	blk_finish_plug(&plug);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(generic_file_aio_write);
