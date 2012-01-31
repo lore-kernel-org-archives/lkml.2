@@ -1,60 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab2AaCfa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 21:35:30 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35572 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2AaCf3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 21:35:29 -0500
+	id S1752290Ab2AaCmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 21:42:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8171 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003Ab2AaCmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 21:42:12 -0500
+Date: Mon, 30 Jan 2012 21:41:43 -0500
+From: Dave Jones <davej@redhat.com>
+To: Emmanuel Grumbach <egrumbach@gmail.com>
+Cc: Norbert Preining <preining@logic.at>, linux-kernel@vger.kernel.org,
+        ipw3945-devel@lists.sourceforge.net,
+        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>
+Subject: Re: iwlagn is getting even worse with 3.3-rc1
+Message-ID: <20120131024143.GA10418@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Emmanuel Grumbach <egrumbach@gmail.com>,
+	Norbert Preining <preining@logic.at>, linux-kernel@vger.kernel.org,
+	ipw3945-devel@lists.sourceforge.net,
+	"Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+	Johannes Berg <johannes@sipsolutions.net>,
+	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+	"ilw@linux.intel.com" <ilw@linux.intel.com>
+References: <20120124013625.GB18436@gamma.logic.tuwien.ac.at>
+ <CANUX_P3er0orBy8OhDuY1DfgD810UD-_HB_ukJnCA+W8e-VazQ@mail.gmail.com>
+ <20120125002250.GA20431@gamma.logic.tuwien.ac.at>
+ <CANUX_P0UREz_jZABu+Y_QYOh9tx_sKZSSkZpYHBEVtcU4QQdSA@mail.gmail.com>
+ <20120126003735.GA2346@gamma.logic.tuwien.ac.at>
+ <CANUX_P0H_WaWwnpjoBcMpZQY4xH=cbVhAKxWKXmz-HwFMcWS6w@mail.gmail.com>
+ <CANUX_P3XSCsWUJ9M55qeaK-DuPEMXODFPJiNk+BgnHN-=WECqw@mail.gmail.com>
+ <20120126232555.GB16330@gamma.logic.tuwien.ac.at>
+ <CANUX_P0z2800ip=yfW15zELqhDNFrHbTvDY3OF59PuxizN=XSA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <0BA3FCBA62E2DC44AF3030971E174FB307C8C0@HASMSX103.ger.corp.intel.com>
-References: <CAHFgRy-1519kkWwBxfe8UZMcOHqrbiq34dTX-wN5a+pd_4GPSA@mail.gmail.com>
-	<5D69FF551B764E40A8245E579F3F73E602114ABC@ORSMSX102.amr.corp.intel.com>
-	<0BA3FCBA62E2DC44AF3030971E174FB307C8C0@HASMSX103.ger.corp.intel.com>
-Date: Mon, 30 Jan 2012 21:35:27 -0500
-Message-ID: <CAHFgRy-4bJdShGSRe4ijcjREgtwcWvAa-EhOfhGFSrCwUL=7Tg@mail.gmail.com>
-Subject: Re: 3.3.0-rc1+ (Linus GIT) - iwlwifi losing connection regularly.
-From: Miles Lane <miles.lane@gmail.com>
-To: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-Cc: "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANUX_P0z2800ip=yfW15zELqhDNFrHbTvDY3OF59PuxizN=XSA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 3:38 PM, Grumbach, Emmanuel
-<emmanuel.grumbach@intel.com> wrote:
-> Hi Miles,
->
-> Thanks for the detailed bug description.
->
->>
->> I find that with builds of Linus GIT over the last week or so I need
->> to rmmod and insmod the iwlwifi driver about once every ten minutes.
->> When the connection stops working, networkmanager still shows the
->> connection as active, but no data is getting through (Web, pings,
->> etc).
->> I enabled full debug output and here is a sample of kern.log that
->> stretches from a point in time when the connection was working through
->> past when it failed.
->> Please let me know if I can help debug this further.  I don't have
->> time to do a bisection, unfortunately.
->>
->
-> Quite a few people reported an issue that I think can be solved by the patch attached.
-> Would you mind try and report ?
-> Thanks
-> ---------------------------------------------------------------------
-> Intel Israel (74) Limited
+On Thu, Jan 26, 2012 at 04:06:36PM -0800, Emmanuel Grumbach wrote:
+ > On Thu, Jan 26, 2012 at 15:25, Norbert Preining <preining@logic.at> wrote:
+ > > Hi Emmanuel,
+ > >
+ > > On Do, 26 Jan 2012, Emmanuel Grumbach wrote:
+ > >> are suffering from the same issue. I am merging the mail threads here.
+ > >
+ > > First tests are promising, after reboot it was working immediately
+ > > without need to rfkill block/unblock. lso after suspend and resume.
+ > >
+ > > Will test more the next days and report back.
+ > >
+ > > dmesg output without debugging still the same, but connection
+ > > continues without any problem:
+ > > [   62.437916] Open BA session requested for 00:0a:79:eb:56:10 tid 0
+ > > [   62.456184] activated addBA response timer on tid 0
+ > > [   63.456042] addBA response timer expired on tid 0
+ > > [   63.456063] Tx BA session stop requested for 00:0a:79:eb:56:10 tid 0
+ > > [   67.008297] switched off addBA timer for tid 0
+ > > [   67.008305] got addBA resp for tid 0 but we already gave up
+ > > [   67.008340] Stopping Tx BA session for 00:0a:79:eb:56:10 tid 0
+ > > [   67.015503] Open BA session requested for 00:0a:79:eb:56:10 tid 0
+ > > [   67.031648] activated addBA response timer on tid 0
+ > > [   67.129907] switched off addBA timer for tid 0
+ > > [   67.129914] Aggregation is on for tid 0
+ > > [   67.130076] iwlwifi 0000:06:00.0: Tx aggregation enabled on ra = 00:0a:79:eb:56:10 tid = 0
+ > > [  100.288018] tx session timer expired on tid 0
+ > > [  100.288032] Tx BA session stop requested for 00:0a:79:eb:56:10 tid 0
+ > > [  106.347302] Stopping Tx BA session for 00:0a:79:eb:56:10 tid 0
+ > > [  106.374760] Open BA session requested for 00:0a:79:eb:56:10 tid 0
+ > > [  106.388178] activated addBA response timer on tid 0
+ > > [  106.390041] switched off addBA timer for tid 0
+ > > [  106.390044] Aggregation is on for tid 0
+ > > [  106.390193] iwlwifi 0000:06:00.0: Tx aggregation enabled on ra = 00:0a:79:eb:56:10 tid = 0
+ > > [  135.786765] Open BA session requested for 00:0a:79:eb:56:10 tid 6
+ > > [  135.804164] activated addBA response timer on tid 6
+ > > [  135.806088] switched off addBA timer for tid 6
+ > > [  135.806092] Aggregation is on for tid 6
+ > > [  135.806241] iwlwifi 0000:06:00.0: Tx aggregation enabled on ra = 00:0a:79:eb:56:10 tid = 6
+ > > [  146.912031] tx session timer expired on tid 6
+ > > [  146.912071] Tx BA session stop requested for 00:0a:79:eb:56:10 tid 6
+ > > [  146.924187] Stopping Tx BA session for 00:0a:79:eb:56:10 tid 6
+ > > [  256.560100] tx session timer expired on tid 0
+ > > [  256.560132] Tx BA session stop requested for 00:0a:79:eb:56:10 tid 0
+ > > [  256.584379] Stopping Tx BA session for 00:0a:79:eb:56:10 tid 0
+ > > [  258.477345] Open BA session requested for 00:0a:79:eb:56:10 tid 0
+ > > [  258.500189] activated addBA response timer on tid 0
+ > > [  258.502148] switched off addBA timer for tid 0
+ > > [  258.502151] Aggregation is on for tid 0
+ > > [  258.502340] iwlwifi 0000:06:00.0: Tx aggregation enabled on ra = 00:0a:79:eb:56:10 tid = 0
+ > >
+ > > Later on after resume I got a few hickups but the connection just
+ > > hang for a shor ttime, then came back:
+ > > [  589.895086] delba from 00:0a:79:eb:56:10 (initiator) tid 0 reason code 39
+ > > [  589.895095] Rx BA session stop requested for 00:0a:79:eb:56:10 tid 0 inititator reason: 0
+ > > [  589.900879] Rx A-MPDU request on tid 0 result 0
+ > > [  589.900950] unexpected AddBA Req from 00:0a:79:eb:56:10 on tid 0
+ > > [  589.900958] Rx BA session stop requested for 00:0a:79:eb:56:10 tid 0 recipient reason: 32
+ > > [  589.902649] Rx A-MPDU request on tid 0 result 0
+ > > [  589.902690] unexpected AddBA Req from 00:0a:79:eb:56:10 on tid 0
+ > > [  589.902698] Rx BA session stop requested for 00:0a:79:eb:56:10 tid 0 recipient reason: 32
+ > > [  589.903732] Rx A-MPDU request on tid 0 result 0
+ > > [  589.903810] unexpected AddBA Req from 00:0a:79:eb:56:10 on tid 0
+ > > [  589.903817] Rx BA session stop requested for 00:0a:79:eb:56:10 tid 0 recipient reason: 32
+ > > [  589.904965] Rx A-MPDU request on tid 0 result 0
+ > > [  589.905045] unexpected AddBA Req from 00:0a:79:eb:56:10 on tid 0
+ > > [  589.905053] Rx BA session stop requested for 00:0a:79:eb:56:10 tid 0 recipient reason: 32
+ > > [  589.906510] Rx A-MPDU request on tid 0 result 0
+ > > [  590.456062] ieee80211 phy0: release an RX reorder frame due to timeout on earlier frames
+ > > [  590.456075] ieee80211 phy0: release an RX reorder frame due to timeout on earlier frames
+ > > [  590.456083] ieee80211 phy0: release an RX reorder frame due to timeout on earlier frames
+ > > [  594.413810] delba from 00:0a:79:eb:56:10 (initiator) tid 0 reason code 39
+ > > [  594.413822] Rx BA session stop requested for 00:0a:79:eb:56:10 tid 0 inititator reason: 0
+ > > [  594.428073] Rx A-MPDU request on tid 0 result 0
+ > >
+ > >
+ > > Generally fine.
+ > >
+ > > Thanks, more reports later.
+ > >
+ > 
+ > Dave ?
 
-Thanks!  This patch works great for me.  It did not apply cleanly to
-the latest GIT pull from the Linus' tree:
+after running with it all evening, it seems to be working fine so far.
 
-# patch -p1 < ~/Downloads/tid.patch
-patching file drivers/net/wireless/iwlwifi/iwl-agn-tx.c
-patching file drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-Hunk #1 succeeded at 1261 (offset -290 lines).
+(Sorry for delay, been on vacation for a week)
+
+	Dave
+
