@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab2AaVhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 16:37:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754971Ab2AaVhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 16:37:19 -0500
-Date: Tue, 31 Jan 2012 16:37:13 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>, ebiederm@xmission.com,
-        kexec-list <kexec@lists.infradead.org>
-Subject: Re: [PATCH] x86, kdump, ioapic: Fix kdump race with migrating irq
-Message-ID: <20120131213713.GC4378@redhat.com>
-References: <1328045114-4489-1-git-send-email-dzickus@redhat.com>
+	id S1755360Ab2AaVkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 16:40:45 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38091 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755248Ab2AaVkn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 16:40:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328045114-4489-1-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201201312224.46360.heiko@sntech.de>
+References: <201201312224.46360.heiko@sntech.de>
+Date: Tue, 31 Jan 2012 13:40:42 -0800
+X-Google-Sender-Auth: _idmCVu_vEn_JQbmaWklbGNgVHw
+Message-ID: <CAPz4a6DDwt2uEX1o3ULSESjnVqMA1gBWoFP27XCviaOXd1-fpw@mail.gmail.com>
+Subject: Re: [PATCH] Input: evdev - fix variable initialisation
+From: Dima Zavin <dima@android.com>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 04:25:14PM -0500, Don Zickus wrote:
-> A customer of ours noticed when their machine crashed, kdump did not
-> work but hung instead.  Using their firmware dumping solution they
-> grabbed a vmcore and decoded the stacks on the cpus.  What they
-> noticed seemed to be a rare deadlock with the ioapic_lock.
-> 
->  CPU4:
->  machine_crash_shutdown
->  -> machine_ops.crash_shutdown
->     -> native_machine_crash_shutdown
->        -> kdump_nmi_shootdown_cpus ------> Send NMI to other CPUs
->        -> disable_IO_APIC
->           -> clear_IO_APIC
->              -> clear_IO_APIC_pin
->                 -> ioapic_read_entry
->                    -> spin_lock_irqsave(&ioapic_lock, flags)
->                    ---Infinite loop here---
-> 
->  CPU0:
->  do_IRQ
->  -> handle_irq
->     -> handle_edge_irq
->         -> ack_apic_edge
->            -> move_native_irq
->                -> mask_IO_APIC_irq
->                   -> mask_IO_APIC_irq_desc
->                      -> spin_lock_irqsave(&ioapic_lock, flags)
->                      ---Receive NMI here after getting spinlock---
->                         -> nmi
->                            -> do_nmi
->                               -> crash_nmi_callback
->                               ---Infinite loop here---
-> 
-> The problem is that although kdump tries to shutdown minimal hardware,
-> it still needs to disable the IO APIC.  This requires spinlocks which
-> may be held by another cpu.  This other cpu is being held infinitely in
-> an NMI context by kdump in order to serialize the crashing path.  Instant
-> deadlock.
-> 
-> I attempted to resolve this by busting the spinlock in the kdump case only.
-> My justification was that kdump has already stopped the other cpus and it
-> is only clearing the io apic which shouldn't cause harm when overwriting
-> what the other cpu was doing.
-> 
-> I tested this by loading a dummy module that grabs the ioapic_lock and then
-> on another cpu, run 'echo c > /proc/sysrq-trigger'.  The deadlock was detected
-> and fixed with the patch below.
-> 
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
+ugh, thanks for fixing this.
 
-Sounds reasonable to me. 
+On Tue, Jan 31, 2012 at 1:24 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Commit 509f87c5f564 (evdev - do not block waiting for an event if fd
+> is nonblock) created a code path were it was possible to use retval
+> uninitialized.
+>
+> This could lead to the xorg evdev input driver getting corrupt data
+> and refusing to work with log messages like
+>        AUO-Pixcir touchscreen: Read error: Success
+>        sg060_keys: Read error: Success
+>        AUO-Pixcir touchscreen: Read error: Success
+>        sg060_keys: Read error: Success
+> (for drivers auo-pixcir-ts and gpio-keys).
+>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Acked-by: Dima Zavin <dima@android.com>
 
-Thanks
-Vivek
+> ---
+> This is obviously meant as a fix for 3.3
+>
+>  drivers/input/evdev.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> index 76457d5..afc166f 100644
+> --- a/drivers/input/evdev.c
+> +++ b/drivers/input/evdev.c
+> @@ -386,7 +386,7 @@ static ssize_t evdev_read(struct file *file, char __user *buffer,
+>        struct evdev_client *client = file->private_data;
+>        struct evdev *evdev = client->evdev;
+>        struct input_event event;
+> -       int retval;
+> +       int retval = 0;
+>
+>        if (count < input_event_size())
+>                return -EINVAL;
+> --
+> 1.7.2.3
