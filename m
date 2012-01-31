@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab2AaTpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 14:45:11 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47770 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754190Ab2AaTpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 14:45:09 -0500
-Date: Tue, 31 Jan 2012 20:44:50 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arun Sharma <asharma@fb.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Glauber Costa <glommer@parallels.com>, christoph.paasch@uclouvain.be
-Subject: Re: [PATCH] net: Disambiguate kernel message
-Message-ID: <20120131194450.GA8020@elte.hu>
-References: <1327963304-24828-1-git-send-email-asharma@fb.com>
- <CAErSpo54KRJbWEQ0fB_kuGx0qRQKWpH9d3mN=dPdiNfWH+Dhww@mail.gmail.com>
- <20120131181554.GA24397@dev3310.snc6.facebook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120131181554.GA24397@dev3310.snc6.facebook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1755121Ab2AaTqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 14:46:20 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:52099 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab2AaTqT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 14:46:19 -0500
+Date: Tue, 31 Jan 2012 14:45:58 -0500 (EST)
+Message-Id: <20120131.144558.1534275761422552896.davem@davemloft.net>
+To: danny.kukawka@bisect.de
+Cc: alan@lxorguk.ukuu.org.uk, netdev@vger.kernel.org, gregkh@suse.de,
+        steve.glendinning@smsc.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] smsc95xx: add macaddr module parameter
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201201311917.12534.danny.kukawka@bisect.de>
+References: <1328030433-12524-1-git-send-email-danny.kukawka@bisect.de>
+	<20120131172731.03df5704@pyramind.ukuu.org.uk>
+	<201201311917.12534.danny.kukawka@bisect.de>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 31 Jan 2012 11:46:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Danny Kukawka <danny.kukawka@bisect.de>
+Date: Tue, 31 Jan 2012 19:17:11 +0100
 
-* Arun Sharma <asharma@fb.com> wrote:
+> On Dienstag, 31. Januar 2012, Alan Cox wrote:
+>> On Tue, 31 Jan 2012 18:20:33 +0100
+>>
+>> Danny Kukawka <danny.kukawka@bisect.de> wrote:
+>> > Added smsc95xx.macaddr module parameter to allow the user to
+>> > change the MAC address on boot if there was no MAC on the EEPROM.
+>>
+>> NAK. Please see the discussion on this and ifconfig hw for other devices.
+>>
+>> In summary - make the device refuse to ifconfig up without a valid
+>> address, allow it to come into existance without a valid address and then
+>> use ifconfig.
+>>
+>>
+>> Your patch also seems to break if there are several attached to a board.
+> 
+> There are already other kernel driver which allow to override the (hw) MAC 
+> address via a module parameter (macaddr): 
 
-> +				printk(KERN_INFO "TCP: too many orphaned "
->  				       "sockets\n");
+Too bad, it's bad precendence and just because we mistakenly let other
+drivers do it in the past, it's not an excuse to allow you to make this
+mistake too.
 
-> +				printk(KERN_INFO "TCP: out of memory. "
-> +				       "Consider tuning tcp_mem\n");
-
-> +			printk(KERN_INFO "TCP: out of memory. "
-> +					 "Consider tuning tcp_mem\n");
-> +		if (too_many_orphans && net_ratelimit())
-> +			printk(KERN_INFO "TCP: too many orphaned sockets\n");
-
-A small detail: please don't line break user-visible strings in 
-mid sentence. Just keep the line long. Makes it much easier to 
-search for the source of a kernel message:
-
-   git grep "TCP: too many orphaned sockets"
-
-Thanks,
-
-	Ingo
+This patch will not be applied.
