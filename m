@@ -1,112 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab2AaWn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 17:43:27 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753613Ab2AaWn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 17:43:26 -0500
-Message-ID: <4F286F29.2010605@nod.at>
-Date: Tue, 31 Jan 2012 23:46:01 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S1755472Ab2AaWvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 17:51:14 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37488 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753613Ab2AaWvN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 17:51:13 -0500
+Date: Tue, 31 Jan 2012 22:50:45 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>, Gary King <gking@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/8] ARM: tegra: rework Tegra secondary CPU core
+	bringup
+Message-ID: <20120131225045.GE8338@n2100.arm.linux.org.uk>
+References: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com> <1328028051-24271-4-git-send-email-pdeschrijver@nvidia.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: dwmw2@infradead.org, kyungmin.park@samsung.com,
-        artem.bityutskiy@linux.intel.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MTD: Refine HAS_IOMEM dependency
-References: <1327512102-22447-1-git-send-email-richard@nod.at>
-In-Reply-To: <1327512102-22447-1-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328028051-24271-4-git-send-email-pdeschrijver@nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.01.2012 18:21, schrieb Richard Weinberger:
-> Making the entire mtd subsystem depend on HAS_IOMEM is a bit overkill.
-> HAS_IOMEM is only needed for real devices drivers.
-> nandsim and friends are perfectly usable on systems without IO memory.
->
-> I'm my case I'm using nandsim on UML to do some UBI and JFFS2 development.
->
-> Signed-off-by: Richard Weinberger<richard@nod.at>
-> ---
->   drivers/mtd/Kconfig         |    1 -
->   drivers/mtd/devices/Kconfig |    1 +
->   drivers/mtd/maps/Kconfig    |    1 +
->   drivers/mtd/nand/Kconfig    |    2 ++
->   drivers/mtd/onenand/Kconfig |    1 +
->   5 files changed, 5 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
-> index 1be6218..bfbd62c 100644
-> --- a/drivers/mtd/Kconfig
-> +++ b/drivers/mtd/Kconfig
-> @@ -1,6 +1,5 @@
->   menuconfig MTD
->   	tristate "Memory Technology Device (MTD) support"
-> -	depends on HAS_IOMEM
->   	help
->   	  Memory Technology Devices are flash, RAM and similar chips, often
->   	  used for solid state file systems on embedded devices. This option
-> diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-> index 37b05c3..8d3dac4 100644
-> --- a/drivers/mtd/devices/Kconfig
-> +++ b/drivers/mtd/devices/Kconfig
-> @@ -1,5 +1,6 @@
->   menu "Self-contained MTD device drivers"
->   	depends on MTD!=n
-> +	depends on HAS_IOMEM
->
->   config MTD_PMC551
->   	tristate "Ramix PMC551 PCI Mezzanine RAM card support"
-> diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
-> index 6c5c431..8af67cf 100644
-> --- a/drivers/mtd/maps/Kconfig
-> +++ b/drivers/mtd/maps/Kconfig
-> @@ -1,5 +1,6 @@
->   menu "Mapping drivers for chip access"
->   	depends on MTD!=n
-> +	depends on HAS_IOMEM
->
->   config MTD_COMPLEX_MAPPINGS
->   	bool "Support non-linear mappings of flash chips"
-> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-> index 31b034b..80de7b3 100644
-> --- a/drivers/mtd/nand/Kconfig
-> +++ b/drivers/mtd/nand/Kconfig
-> @@ -246,6 +246,7 @@ config MTD_NAND_BCM_UMI_HWCS
->   config MTD_NAND_DISKONCHIP
->   	tristate "DiskOnChip 2000, Millennium and Millennium Plus (NAND reimplementation) (EXPERIMENTAL)"
->   	depends on EXPERIMENTAL
-> +	depends on HAS_IOMEM
->   	select REED_SOLOMON
->   	select REED_SOLOMON_DEC16
->   	help
-> @@ -431,6 +432,7 @@ config MTD_NAND_GPMI_NAND
->
->   config MTD_NAND_PLATFORM
->   	tristate "Support for generic platform NAND driver"
-> +	depends on HAS_IOMEM
->   	help
->   	  This implements a generic NAND driver for on-SOC platform
->   	  devices. You will need to provide platform-specific functions
-> diff --git a/drivers/mtd/onenand/Kconfig b/drivers/mtd/onenand/Kconfig
-> index 772ad29..91467bb 100644
-> --- a/drivers/mtd/onenand/Kconfig
-> +++ b/drivers/mtd/onenand/Kconfig
-> @@ -1,6 +1,7 @@
->   menuconfig MTD_ONENAND
->   	tristate "OneNAND Device Support"
->   	depends on MTD
-> +	depends on HAS_IOMEM
->   	help
->   	  This enables support for accessing all type of OneNAND flash
->   	  devices. For further information see
+On Tue, Jan 31, 2012 at 06:40:41PM +0200, Peter De Schrijver wrote:
+> +ENTRY(__tegra_cpu_reset_handler_start)
+> +
+> +/*
+> + * __tegra_cpu_reset_handler:
+> + *
+> + * Common handler for all CPU reset events.
+> + *
+> + * Register usage within the reset handler:
+> + *
+> + *      R7  = CPU present (to the OS) mask
+> + *      R8  = CPU in LP1 state mask
+> + *      R9  = CPU in LP2 state mask
+> + *      R10 = CPU number
+> + *      R11 = CPU mask
+> + *      R12 = pointer to reset handler data
+> + *
+> + * NOTE: This code is copied to IRAM. All code and data accesses
+> + *       must be position-independent.
+> + */
+> +
+> +	.align L1_CACHE_SHIFT
+> +ENTRY(__tegra_cpu_reset_handler)
+> +
+> +#if DEBUG_CPU_RESET_HANDLER
+> +	enable_coresight r0
+> +	b	.
+> +#endif
+> +	cpsid	aif, 0x13			@ SVC mode, interrupts disabled
+> +	mrc	p15, 0, r0, c0, c0, 0		@ read main ID register
+> +	and	r5, r0, #0x00f00000		@ variant
+> +	and	r6, r0, #0x0000000f		@ revision
+> +	orr	r6, r6, r5, lsr #20-4		@ combine variant and revision
+> +#ifdef CONFIG_ARM_ERRATA_743622
+> +	teq	r6, #0x20			@ present in r2p0
+> +	teqne	r6, #0x21			@ present in r2p1
+> +	teqne	r6, #0x22			@ present in r2p2
+> +	teqne	r6, #0x27			@ present in r2p7
+> +	teqne	r6, #0x29			@ present in r2p9
 
-Ping?
+Okay, so we have this errata in proc-v7.S, but only for p0..p2.  If
+it's also p7 and p9, then it shows that the errata in the kernel aren't
+being actively maintained, and brings into question their worth.
 
-Thanks,
-//richard
+Plus, of course, we don't want platforms re-implementing the errata
+in their own code if we're already implementing it somewhere in the
+kernel.  So, that's something which needs to be thought about.
+
+That's something that needs considering along side the whole 'what
+to do about errata when running in non-secure mode' problem which
+OMAP suffers from.
+
+> +	mrceq	p15, 0, r10, c15, c0, 1		@ read diagnostic register
+> +	orreq	r10, r10, #1 << 6		@ set bit #6
+> +	mcreq	p15, 0, r10, c15, c0, 1		@ write diagnostic register
+> +#endif
