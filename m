@@ -1,127 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab2AaM7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 07:59:54 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54814 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab2AaM7w (ORCPT
+	id S1754239Ab2AaNCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 08:02:11 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50646 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab2AaNCK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 07:59:52 -0500
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] proc: clean up /proc/<pid>/environ handling
-Date: Tue, 31 Jan 2012 20:50:44 +0800
-Message-Id: <1328014247-16461-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Tue, 31 Jan 2012 08:02:10 -0500
+Message-ID: <1328014916.2446.217.camel@twins>
+Subject: Re: x86: clean up smpboot.c's use of udelay+schedule
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, arjanvandeven@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 31 Jan 2012 14:01:56 +0100
+In-Reply-To: <20120131125331.GE4408@elte.hu>
+References: <20120130205304.0e10b05e@infradead.org>
+	 <20120131124341.GC4408@elte.hu> <1328014076.2446.210.camel@twins>
+	 <20120131125331.GE4408@elte.hu>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Similar to commit e268337dfe26dfc7efd422a804dbb27977a3cccc
-(proc: clean up and fix /proc/<pid>/mem handling), move the
-check of permission to open(), this will simplify read() code.
+On Tue, 2012-01-31 at 13:53 +0100, Ingo Molnar wrote:
+> Wanna give a short TODO list to anyone wanting to work on that?
 
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+I paged out most details again, but it goes something like:
 
----
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 9cde9edf..3d30eb4 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -835,28 +835,38 @@ static const struct file_operations proc_mem_operations = {
- 	.release	= mem_release,
- };
- 
-+static int environ_open(struct inode *inode, struct file *file)
-+{
-+	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
-+	struct mm_struct *mm;
-+
-+	if (!task)
-+		return -ESRCH;
-+
-+	mm = mm_for_maps(task);
-+	put_task_struct(task);
-+
-+	if (!mm)
-+		return -ENOENT;
-+	if (IS_ERR(mm))
-+		return PTR_ERR(mm);
-+
-+	file->private_data = mm;
-+
-+	return 0;
-+}
-+
- static ssize_t environ_read(struct file *file, char __user *buf,
- 			size_t count, loff_t *ppos)
- {
--	struct task_struct *task = get_proc_task(file->f_dentry->d_inode);
- 	char *page;
- 	unsigned long src = *ppos;
--	int ret = -ESRCH;
--	struct mm_struct *mm;
--
--	if (!task)
--		goto out_no_task;
-+	int ret = 0;
-+	struct mm_struct *mm = file->private_data;
- 
--	ret = -ENOMEM;
- 	page = (char *)__get_free_page(GFP_TEMPORARY);
- 	if (!page)
--		goto out;
--
--
--	mm = mm_for_maps(task);
--	ret = PTR_ERR(mm);
--	if (!mm || IS_ERR(mm))
--		goto out_free;
-+		return -ENOMEM;
- 
- 	ret = 0;
- 	while (count > 0) {
-@@ -870,7 +880,7 @@ static ssize_t environ_read(struct file *file, char __user *buf,
- 		max_len = (count > PAGE_SIZE) ? PAGE_SIZE : count;
- 		this_len = (this_len > max_len) ? max_len : this_len;
- 
--		retval = access_process_vm(task, (mm->env_start + src),
-+		retval = access_remote_vm(mm, (mm->env_start + src),
- 			page, this_len, 0);
- 
- 		if (retval <= 0) {
-@@ -890,18 +900,23 @@ static ssize_t environ_read(struct file *file, char __user *buf,
- 	}
- 	*ppos = src;
- 
--	mmput(mm);
--out_free:
- 	free_page((unsigned long) page);
--out:
--	put_task_struct(task);
--out_no_task:
- 	return ret;
- }
- 
-+static int environ_release(struct inode *inode, struct file *file)
-+{
-+	struct mm_struct *mm = file->private_data;
-+
-+	mmput(mm);
-+	return 0;
-+}
-+
- static const struct file_operations proc_environ_operations = {
-+	.open		= environ_open,
- 	.read		= environ_read,
- 	.llseek		= generic_file_llseek,
-+	.release	= environ_release,
- };
- 
- static ssize_t oom_adjust_read(struct file *file, char __user *buf,
+ - read and understand the current generic code
+
+ - and all architecture code, at which point you'll probably boggle
+   at all the similarities that are all subtly different (there's
+   about 3 actually different ways in the arch code).
+
+ - pick one, preferably one that keeps additional state and doesn't
+   fully rely on the online bits and pull it into generic code and
+   provide a small vector of arch specific functions.
+
+ - convert all archs over.
+
+
+Also related:
+
+ - figure out why cpu_down needs kstopmachine, I'm not sure it does..
+   we should be able to tear down a cpu using synchronize_sched() and a
+   single stop_one_cpu(). (someday when there's time I might actually
+   try to implement this).
