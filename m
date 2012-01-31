@@ -1,241 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab2AaIzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:55:25 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56797 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab2AaIzY (ORCPT
+	id S1753233Ab2AaI4o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:56:44 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38462 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752479Ab2AaI4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:55:24 -0500
-Message-ID: <4F27AC61.7020008@linux.vnet.ibm.com>
-Date: Tue, 31 Jan 2012 14:24:57 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Tue, 31 Jan 2012 03:56:43 -0500
+From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
+        sjurbren@gmail.com,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [RESEND PATCHv5 02/11] modem_shm: Channel config definitions for ST-E M7400 driver.
+Date: Tue, 31 Jan 2012 09:48:37 +0100
+Message-Id: <1327999726-8774-3-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
-        vweaver1@eecs.utk.edu, dsahern@gmail.com
-Subject: Re: [PATCH v4 18/18] perf: make perf able to read file from older
- ABIs
-References: <1327697778-18515-1-git-send-email-eranian@google.com> <1327697778-18515-19-git-send-email-eranian@google.com>
-In-Reply-To: <1327697778-18515-19-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-x-cbid: 12013022-0260-0000-0000-00000077C5C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 28 January 2012 02:26 AM, Stephane Eranian wrote:
-> This patches provides a way to handle legacy perf.data
-> files.  Legacy files are those using the older PERFFILE
-> signature.
-> 
-> For those, it is still necessary to detect endianness but
-> without comparing their header->attr_size with the
-> tool's own version as it may be different. Instead, we use
-> a reference table for all known sizes from the legacy era.
-> 
-> We try all the combinations for sizes and endianness. If we find
-> a match, we proceed, otherwise we return: "incompatible file format".
-> This is also done for the pipe-mode file format.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->  tools/perf/util/header.c |  126 +++++++++++++++++++++++++++++++++++----------
->  1 files changed, 98 insertions(+), 28 deletions(-)
-> 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 1fb365d..a15f451 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -1630,35 +1630,102 @@ int perf_header__process_sections(struct perf_header *header, int fd,
->  	return err;
->  }
-> 
-> -static int check_magic_endian(u64 *magic, struct perf_file_header *header,
-> -			      struct perf_header *ph)
-> +static const int attr_file_abi_sizes[] = {
-> +	[0] = PERF_ATTR_SIZE_VER0,
-> +	[1] = PERF_ATTR_SIZE_VER1,
-> +	0,
-> +};
-> +
-> +/*
-> + * In the legacy file format, the magic number is not used to encode endianness.
-> + * hdr_sz was used to encode endianness. But given that hdr_sz can vary based
-> + * on ABI revisions, we need to try all combinations for all endianness to
-> + * detect the endianness.
-> + */
-> +static int try_all_file_abis(uint64_t hdr_sz, struct perf_header *ph)
->  {
-> -	int ret;
-> +	uint64_t ref_size, attr_size;
-> +	int i;
-> 
-> -	/* check for legacy format */
-> -	ret = memcmp(magic, __perf_magic1, sizeof(*magic));
-> -	if (ret == 0) {
-> -		pr_debug("legacy perf.data format\n");
-> -		if (!header)
-> -			return -1;
-> +	for (i = 0 ; attr_file_abi_sizes[i]; i++) {
-> +		ref_size = attr_file_abi_sizes[i]
-> +			 + sizeof(struct perf_file_section);
-> +		if (hdr_sz != ref_size) {
-> +			attr_size = bswap_64(hdr_sz);
-> +			if (attr_size != ref_size)
-> +				continue;
-> 
-> -		if (header->attr_size != sizeof(struct perf_file_attr)) {
-> -			u64 attr_size = bswap_64(header->attr_size);
-> +			ph->needs_swap = true;
-> +		}
-> +		pr_debug("ABI%d perf.data file detected, need_swap=%d\n",
-> +			 i,
-> +			 ph->needs_swap);
-> +		return 0;
-> +	}
-> +	/* could not determine endianness */
-> +	return -1;
-> +}
-> 
-> -			if (attr_size != sizeof(struct perf_file_attr))
-> -				return -1;
-> +#define PERF_PIPE_HDR_VER0	16
-> +
-> +static const size_t attr_pipe_abi_sizes[] = {
-> +	[0] = PERF_PIPE_HDR_VER0,
-> +	0,
-> +};
-> +
-> +/*
-> + * In the legacy pipe format, there is an implicit assumption that endiannesss
-> + * between host recording the samples, and host parsing the samples is the
-> + * same. This is not always the case given that the pipe output may always be
-> + * redirected into a file and analyzed on a different machine with possibly a
-> + * different endianness and perf_event ABI revsions in the perf tool itself.
-> + */
-> +static int try_all_pipe_abis(uint64_t hdr_sz, struct perf_header *ph)
-> +{
-> +	uint64_t ref_size;
-> +	int i;
-> +
-> +	for (i = 0 ; attr_pipe_abi_sizes[i]; i++) {
-> +		if (hdr_sz != attr_pipe_abi_sizes[i]) {
-> +			u64 attr_size = bswap_64(hdr_sz);
-> +
-> +			if (attr_size != ref_size)
+Add definitions of netlink commands for setting the channel
+configuration and shared memory layout for ST-Ericsson M7400.
+The netlink commands are use to configure channels, reset configuration,
+making channel configuration available to modem, etc.
 
-'ref_size' never got a value here but being checked against. This statement hits a compilation
-failure. 
+Signed-off-by: Sjur Br√¶ndeland <sjur.brandeland@stericsson.com>
+---
+ include/linux/Kbuild                        |    1 +
+ include/linux/modem_shm/Kbuild              |    1 +
+ include/linux/modem_shm/modem_shm_netlink.h |   95 +++++++++++++++++++++++++++
+ 3 files changed, 97 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/modem_shm/Kbuild
+ create mode 100644 include/linux/modem_shm/modem_shm_netlink.h
 
-cc1: warnings being treated as errors
-util/header.c: In function ëtry_all_pipe_abisí:
-util/header.c:1692: error: ëref_sizeí may be used uninitialized in this function
-make: *** [util/header.o] Error 1
-
-> +				continue;
-> 
->  			ph->needs_swap = true;
->  		}
-> +		pr_debug("Pipe ABI%d perf.data file detected\n", i);
->  		return 0;
->  	}
-> +	return -1;
-> +}
-> 
-> -	/* check magic number with same endianness */
-> -	if (*magic == __perf_magic2)
-> +static int check_magic_endian(u64 magic, uint64_t hdr_sz,
-> +			      bool is_pipe, struct perf_header *ph)
-> +{
-> +	int ret;
-> +
-> +	/* check for legacy format */
-> +	ret = memcmp(&magic, __perf_magic1, sizeof(magic));
-> +	if (ret == 0) {
-> +		pr_debug("legacy perf.data format\n");
-> +		if (is_pipe)
-> +			return try_all_pipe_abis(hdr_sz, ph);
-> +
-> +		return try_all_file_abis(hdr_sz, ph);
-> +	}
-> +	/*
-> +	 * the new magic number serves two purposes:
-> +	 * - unique number to identify actual perf.data files
-> +	 * - encode endianness of file
-> +	 */
-> +
-> +	/* check magic number with one endianness */
-> +	if (magic == __perf_magic2)
->  		return 0;
-> 
-> -	/* check magic number but opposite endianness */
-> -	if (*magic != __perf_magic2_sw)
-> +	/* check magic number with opposite endianness */
-> +	if (magic != __perf_magic2_sw)
->  		return -1;
-> 
->  	ph->needs_swap = true;
-> @@ -1677,8 +1744,11 @@ int perf_file_header__read(struct perf_file_header *header,
->  	if (ret <= 0)
->  		return -1;
-> 
-> -	if (check_magic_endian(&header->magic, header, ph) < 0)
-> +	if (check_magic_endian(header->magic,
-> +			       header->attr_size, false, ph) < 0) {
-> +		pr_debug("magic/endian check failed\n");
->  		return -1;
-> +	}
-> 
->  	if (ph->needs_swap) {
->  		mem_bswap_64(header, offsetof(struct perf_file_header,
-> @@ -1924,21 +1994,17 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
->  	if (ret <= 0)
->  		return -1;
-> 
-> -	 if (check_magic_endian(&header->magic, NULL, ph) < 0)
-> +	if (check_magic_endian(header->magic, header->size, true, ph) < 0) {
-> +		pr_debug("endian/magic failed\n");
->  		return -1;
-> +	}
-> +
-> +	if (ph->needs_swap)
-> +		header->size = bswap_64(header->size);
-> 
->  	if (repipe && do_write(STDOUT_FILENO, header, sizeof(*header)) < 0)
->  		return -1;
-> 
-> -	if (header->size != sizeof(*header)) {
-> -		u64 size = bswap_64(header->size);
-> -
-> -		if (size != sizeof(*header))
-> -			return -1;
-> -
-> -		ph->needs_swap = true;
-> -	}
-> -
->  	return 0;
->  }
-> 
-> @@ -1975,6 +2041,10 @@ static int read_attr(int fd, struct perf_header *ph,
-> 
->  	/* on file perf_event_attr size */
->  	sz = attr->size;
-> +	if (sz != our_sz)
-> +		pr_debug("on file attr=%zu vs. %zu bytes,"
-> +			 " ignoring extra fields\n", sz, our_sz);
-> +
->  	if (ph->needs_swap)
->  		sz = bswap_32(sz);
-> 
-
-
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index c94e717..2ddddd3 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -17,6 +17,7 @@ header-y += netfilter_bridge/
+ header-y += netfilter_ipv4/
+ header-y += netfilter_ipv6/
+ header-y += usb/
++header-y += shm/
+ header-y += wimax/
+ 
+ objhdr-y += version.h
+diff --git a/include/linux/modem_shm/Kbuild b/include/linux/modem_shm/Kbuild
+new file mode 100644
+index 0000000..165b66c
+--- /dev/null
++++ b/include/linux/modem_shm/Kbuild
+@@ -0,0 +1 @@
++header-y += modem_shm_netlink.h
+diff --git a/include/linux/modem_shm/modem_shm_netlink.h b/include/linux/modem_shm/modem_shm_netlink.h
+new file mode 100644
+index 0000000..fedeab5
+--- /dev/null
++++ b/include/linux/modem_shm/modem_shm_netlink.h
+@@ -0,0 +1,95 @@
++/*
++ * Copyright (C) ST-Ericsson AB 2012
++ * Author: Sjur Br√¶ndeland / sjur.brandeland@stericsson.com
++ * License terms: GNU General Public License (GPL) version 2
++ */
++
++#ifndef SHM_NL_H_
++#define SHM_NL_H_
++
++#define SHM_PROTO_VERSION 1
++#define SHM_PROTO_SUB_VERSION 0
++#define SHM_NETLINK_VERSION 1
++/**
++ * enum SHM_COMMANDS - Attributes used for configuring SHM device.
++ *
++ * @SHM_C_ADD_STREAM_CHANNEL: Adds a Stream Channel.
++ * This will cause an instance of SHM-CHR to be created.
++ * @SHM_C_ADD_PACKET_CHANNEL: Adds a Packet Channel.
++ * This will cause an instance of CAIF-SHM to be created.
++ * @SHM_C_COMMIT: formats and write Channel configuration data to
++ *	Shared Memory.
++ * @SHM_C_SET_ADDR: Writes the TOC address to GENO register.
++ * @SHM_C_REGISTER:  Initiates registration of the channel devices.
++ *	This will cause shm - character devices or
++ *	CAIF network instances to be created.
++ * @SHM_C_RESET:  Reset the configuration data and removes the
++ *	platform devices and their associated channel configuration.
++ *	ipc_ready and caif_ready is set to false.
++ *
++ * A normal sequence of events is: [SHM_C_RESET], [SHM_C_ADD_X_CHANNEL],
++ *	SHM_C_COMMIT, SHM_C_REGISTER, SHM_C_SET_ADDR.
++ */
++enum SHM_COMMANDS {
++	SHM_C_ADD_STREAM_CHANNEL = 1,
++	SHM_C_ADD_PACKET_CHANNEL,
++	SHM_C_RESET,
++	SHM_C_SET_ADDR,
++	SHM_C_COMMIT,
++	SHM_C_REGISTER,
++	__SHM_C_VERIFY,
++	__SHM_C_MAX
++};
++
++/**
++ * enum SHM_ATTRIBUTES - Attributes used for configuring SHM device.
++ * @SHM_A_VERSION: Version of SHM netlink protocol. Type NLA_U8
++ * @SHM_A_SUB_VERSION: Sub-version of SHM netlink protocol. Type NLA_U8
++ * @SHM_A_NAME: Name of the channel, max 15 characters. Type NLA_NUL_STRING
++ * @SHM_A_EXCL_GROUP: Devices may be part of a group. Devices from the
++ *	same group are allowed to be open simultaneously,
++ *	but devices from different groups cannot be opened
++ *	at the same time. Type NLA_U8.
++ * @SHM_A_RX_CHANNEL: The RX direction attributes. Type NLA_NESTED.
++ *	Each channel may contain the attributes - SHM_A_CHANNEL_SIZE,
++ *	SHM_A_CHANNEL_BUFFERS, SHM_A_ALIGNMENT, SHM_A_MTU.
++ *
++ * @SHM_A_TX_CHANNEL: The TX direction attributes. Type NLA_NESTED.
++ *
++ * @SHM_A_CHANNEL_SIZE: Size of the data area for a channel. Specified
++ *	for RX, TX. Type NLA_U32,
++ * @SHM_A_CHANNEL_BUFFERS: Numer of buffers for a packet channel.
++ *	This attribute is only used for packet channels.  Specified for RX, TX.
++ *	Type NLA_U32,
++ * @SHM_A_ALIGNMENT: Alignment for each packet in a buffer. This attribute
++ *	 is only used for packet channels.  Specified for RX, TX.Type NLA_U8,
++ * @SHM_A_MTU: Maximum Transfer Unit for packets in a buffer.
++ *	This is only appplicable for packet channels.
++ *	Specified for RX, TX.Type NLA_U16,
++ * @SHM_A_PACKETS: Maximum number of packets in a buffer. Type NLA_U8
++ * @SHM_A_PRIORITY: Priority of the channel, legal range is 0-7 where
++ *	0 is lowest priority. Type NLA_U8.
++ * @SHM_A_LATENCY: Latency for channel, value:0 means low latency
++ *	 and low bandwidth,
++ *	 value 1 means high latency and high bandwidth. Type NLA_U8.
++ */
++enum SHM_ATTRIBUTES {
++	__SHM_A_FLAGS = 1,		/* Test flags: NLA_U32 */
++	SHM_A_VERSION,
++	SHM_A_SUB_VERSION,
++	SHM_A_NAME,
++	SHM_A_EXCL_GROUP,
++	SHM_A_RX_CHANNEL,
++	SHM_A_TX_CHANNEL,
++	SHM_A_CHANNEL_SIZE,
++	SHM_A_CHANNEL_BUFFERS,
++	SHM_A_ALIGNMENT,
++	SHM_A_MTU,
++	SHM_A_PACKETS,
++	SHM_A_PRIORITY,
++	SHM_A_LATENCY,
++	__SHM_A_MAX,
++};
++#define SHM_A_MAX (__SHM_A_MAX - 1)
++
++#endif /* SHM_NL_H_ */
 -- 
-Anshuman Khandual
-Linux Technology Centre
-IBM Systems and Technology Group
+1.7.0.4
 
