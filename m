@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab2AaHoC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 02:44:02 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:59556 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015Ab2AaHnT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 02:43:19 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 02/14] PCI: Add iobusn_resource
-Date: Mon, 30 Jan 2012 23:42:40 -0800
-Message-Id: <1327995772-11388-3-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1327995772-11388-1-git-send-email-yinghai@kernel.org>
-References: <1327995772-11388-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4F279B90.0026,ss=1,re=0.000,fgs=0
+	id S1752588Ab2AaIAl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:00:41 -0500
+Received: from mga14.intel.com ([143.182.124.37]:1415 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751932Ab2AaIAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 03:00:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="61562592"
+Subject: [PATCH] fix readahead pipeline break caused by block plug
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Wu Fengguang <wfg@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Jan 2012 15:59:40 +0800
+Message-ID: <1327996780.21268.42.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-also add busn_res into struct pci_bus.
+Herbert Poetzl reported a performance regression since 2.6.39. The test
+is a simple dd read, but with big block size. The reason is:
 
-will use them to have bus number resource tree.
+T1: ra (A, A+128k), (A+128k, A+256k)
+T2: lock_page for page A, submit the 256k
+T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
+because of plug and there isn't any lock_page till we hit page A+256k
+because all pages from A to A+256k is in memory
+T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
+submitted again.
+T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
+waitting for (A+256k, A+512k) finish.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- include/linux/ioport.h |    1 +
- include/linux/pci.h    |    1 +
- kernel/resource.c      |    8 ++++++++
- 3 files changed, 10 insertions(+), 0 deletions(-)
+There is no request to disk in T3 and T4, so readahead pipeline breaks.
 
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index e885ba2..6fe9e19 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -136,6 +136,7 @@ struct resource {
- /* PC/ISA/whatever - the normal PC address spaces: IO and memory */
- extern struct resource ioport_resource;
- extern struct resource iomem_resource;
-+extern struct resource iobusn_resource;
+We really don't need block plug for generic_file_aio_read() for buffered
+I/O. The readahead already has plug and has fine grained control when I/O
+should be submitted. Deleting plug for buffered I/O fixes the regression.
+
+One side effect is plug makes the request size 256k, the size is 128k
+without it. This is because default ra size is 128k and not a reason we
+need plug here.
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Tested-by: Herbert Poetzl <herbert@13thfloor.at>
+Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 97f49ed..b662757 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1400,15 +1400,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 	unsigned long seg = 0;
+ 	size_t count;
+ 	loff_t *ppos = &iocb->ki_pos;
+-	struct blk_plug plug;
  
- extern struct resource *request_resource_conflict(struct resource *root, struct resource *new);
- extern int request_resource(struct resource *root, struct resource *new);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index f8caaab..94ad468 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -419,6 +419,7 @@ struct pci_bus {
- 	struct list_head slots;		/* list of slots on this bus */
- 	struct resource *resource[PCI_BRIDGE_RESOURCE_NUM];
- 	struct list_head resources;	/* address space routed to this bus */
-+	struct resource busn_res;	/* track registered bus num range */
+ 	count = 0;
+ 	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+ 	if (retval)
+ 		return retval;
  
- 	struct pci_ops	*ops;		/* configuration access functions */
- 	void		*sysdata;	/* hook for sys-specific extension */
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 7640b3a..53b42f0 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -38,6 +38,14 @@ struct resource iomem_resource = {
- };
- EXPORT_SYMBOL(iomem_resource);
- 
-+struct resource iobusn_resource = {
-+	.name	= "PCI busn",
-+	.start	= 0,
-+	.end	= 0xffffff,
-+	.flags	= IORESOURCE_BUS,
-+};
-+EXPORT_SYMBOL(iobusn_resource);
+-	blk_start_plug(&plug);
+-
+ 	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
+ 	if (filp->f_flags & O_DIRECT) {
+ 		loff_t size;
+@@ -1424,8 +1421,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 			retval = filemap_write_and_wait_range(mapping, pos,
+ 					pos + iov_length(iov, nr_segs) - 1);
+ 			if (!retval) {
++				struct blk_plug plug;
 +
- /* constraints to be met while allocating resources */
- struct resource_constraint {
- 	resource_size_t min, max, align;
--- 
-1.7.7
++				blk_start_plug(&plug);
+ 				retval = mapping->a_ops->direct_IO(READ, iocb,
+ 							iov, pos, nr_segs);
++				blk_finish_plug(&plug);
+ 			}
+ 			if (retval > 0) {
+ 				*ppos = pos + retval;
+@@ -1481,7 +1482,6 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 			break;
+ 	}
+ out:
+-	blk_finish_plug(&plug);
+ 	return retval;
+ }
+ EXPORT_SYMBOL(generic_file_aio_read);
+
 
