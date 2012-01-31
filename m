@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab2AaMJl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 07:09:41 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55720 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab2AaMJk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 07:09:40 -0500
+	id S1754189Ab2AaMJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 07:09:46 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58712 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753167Ab2AaMJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 07:09:44 -0500
+Date: Tue, 31 Jan 2012 13:09:22 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hitoshi Mitake <h.mitake@gmail.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        linux-kernel@vger.kernel.org, hpa@linux.intel.com
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without
+ readq/writeq
+Message-ID: <20120131120922.GD32010@elte.hu>
+References: <1327021265-22184-1-git-send-email-matthew.r.wilcox@intel.com>
+ <CA+55aFwmDbDm5+12Nc0wnu7J8dsOKW0tCd_tVf-3pwQOq9MF3w@mail.gmail.com>
+ <20120121082857.GC32134@elte.hu>
+ <CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+ <20120121165830.GA9216@elte.hu>
+ <CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+ <CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
+ <CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
+ <CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
+ <20120131115855.5861bad7@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120131113358.GM2471@pengutronix.de>
-References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
- <1328004002-24646-2-git-send-email-Barry.Song@csr.com> <20120131101734.GE2471@pengutronix.de>
- <CAGsJ_4wyJ6Wymy4AWoW1eHubZX=W7GT_Fbow9ofXoY1RrcHzgA@mail.gmail.com> <20120131113358.GM2471@pengutronix.de>
-From: Barry Song <21cnbao@gmail.com>
-Date: Tue, 31 Jan 2012 20:09:19 +0800
-Message-ID: <CAGsJ_4zM=6ivn0uCtP4wsS67U77uHd5nVZQ-LP1vS07AE3dMxQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] platform: add common resource requesting and mapping helper
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Barry Song <Barry.Song@csr.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, Erik Gilling <konkers@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linux-mtd@lists.infradead.org, Barry Song <Baohua.Song@csr.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120131115855.5861bad7@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Wolfram,
 
-2012/1/31 Wolfram Sang <w.sang@pengutronix.de>:
-> Barry,
->
->> > You don't need to do the error checking for 'res'. You can simply do
->> >
->> > res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> > base = devm_request_and_ioremap(&dev->dev, res);
->>
->> i do know  devm_request_and_ioremap() does res checking. but that is
->> implicit, confused and not a smart way actually.
->
-> I agree about the implicit thing (keep in mind the function is new). But
-> calling a function "not smart" because it checks its arguments? I do
-> like the NULL check of kfree() for example.
+* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-i didn't mean it is not smart for devm_request_and_ioremap() to check
-its param. that is definitely ok.
-i mean it is not smart for people to depend on another function to do
-implicit check on what they should check by themselves.
->
->> actually, no people by now really use the implicit checking. that
->> shows people don't really think that is a good programming way.
->
-> I'd think most people just copy&paste and don't have an opinion either
-> way, so the quantity doesn't show much.
->
->> > devm_request_and_ioremap() will check res. Given that, I don't think
->> > we can save a lot with another wrapper.
->>
->> i think we can save some.
->> The story begins from Grant's feedback in:
->> http://www.spinics.net/lists/arm-kernel/msg157644.html
->
-> I am not sure using 'platform_devm_request_and_ioremap' and later using
-> plain 'devm_*' functions (without platform_-prefix) is less confusing.
-> The alternative would be to check which helper functions also use
-> 'struct resource' and if they do checks on that. If all do that, you
-> would have the simple rule, that you only need to check yourself if you
-> access it yourself.
+> >   u64 val;
+> >   val = readl(addr);
+> >   val |= readl(addr+4) << 32;
+> > 
+> > is well-defined and must read the low word first - both at the C level
+> > *and* at the CPU level. Anything else would be a bug in the
+> > architecture "readl()" implementation or the hardware.
+> 
+> That doesn't make the access atomic to hardware however as a true 64bit
+> readq/writeq would be ?
+> 
+> It seems to me the two are not quite the same semantically
 
-it is just a helper, just like clk_disable_unprepare() which do
-clk_disable() + clk_unprepare().
+Correct, and that's what the:
 
->
-> Regards,
->
->   Wolfram
->
-> --
-> Pengutronix e.K.                           | Wolfram Sang                |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
--barry
+	#include <asm/io-inatomic.h>
+
+line in the driver would express.
+
+Thanks,
+
+	Ingo
