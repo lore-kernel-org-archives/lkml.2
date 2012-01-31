@@ -1,87 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab2AaWTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 17:19:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35123 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab2AaWTK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 17:19:10 -0500
-Date: Tue, 31 Jan 2012 14:19:08 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Philip Prindeville <philipp@redfish-solutions.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] net5501: platform driver for Soekris Engineering
- net5501 single-board computer
-Message-Id: <20120131141908.2c4c8b13.akpm@linux-foundation.org>
-In-Reply-To: <1327726939-20845-1-git-send-email-philipp@redfish-solutions.com>
-References: <1325323722-25930-1-git-send-email-philipp@redfish-solutions.com>
-	<1327726939-20845-1-git-send-email-philipp@redfish-solutions.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755403Ab2AaWUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 17:20:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21791 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752959Ab2AaWUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 17:20:38 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
+        ebiederm@xmission.com, kexec-list <kexec@lists.infradead.org>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH v2] x86, kdump, ioapic: Fix kdump race with migrating irq
+Date: Tue, 31 Jan 2012 17:20:27 -0500
+Message-Id: <1328048427-20838-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jan 2012 22:02:19 -0700
-Philip Prindeville <philipp@redfish-solutions.com> wrote:
+A customer of ours noticed when their machine crashed, kdump did not
+work but hung instead.  Using their firmware dumping solution they
+grabbed a vmcore and decoded the stacks on the cpus.  What they
+noticed seemed to be a rare deadlock with the ioapic_lock.
 
-> ---
-> Trivial platform driver for Soekris Engineering net5501 single-board
-> computer. Probes well-known locations in ROM for BIOS signature to
-> confirm correct platform. Registers 1 LED and 1 GPIO-based button
-> (typically used for soft reset).
-> 
-> ...
->
->  arch/x86/Kconfig                  |    6 ++
->  arch/x86/platform/geode/Makefile  |    1 +
->  arch/x86/platform/geode/net5501.c |  154 +++++++++++++++++++++++++++++++++++++
->  drivers/leds/leds-net5501.c       |   97 -----------------------
+ CPU4:
+ machine_crash_shutdown
+ -> machine_ops.crash_shutdown
+    -> native_machine_crash_shutdown
+       -> kdump_nmi_shootdown_cpus ------> Send NMI to other CPUs
+       -> disable_IO_APIC
+          -> clear_IO_APIC
+             -> clear_IO_APIC_pin
+                -> ioapic_read_entry
+                   -> spin_lock_irqsave(&ioapic_lock, flags)
+                   ---Infinite loop here---
 
-Forgot to clean up the leftovers:
+ CPU0:
+ do_IRQ
+ -> handle_irq
+    -> handle_edge_irq
+        -> ack_apic_edge
+           -> move_native_irq
+               -> mask_IO_APIC_irq
+                  -> mask_IO_APIC_irq_desc
+                     -> spin_lock_irqsave(&ioapic_lock, flags)
+                     ---Receive NMI here after getting spinlock---
+                        -> nmi
+                           -> do_nmi
+                              -> crash_nmi_callback
+                              ---Infinite loop here---
 
-make[2]: *** No rule to make target `drivers/leds/leds-net5501.c', needed by `drivers/leds/leds-net5501.o'.  Stop.
+The problem is that although kdump tries to shutdown minimal hardware,
+it still needs to disable the IO APIC.  This requires spinlocks which
+may be held by another cpu.  This other cpu is being held infinitely in
+an NMI context by kdump in order to serialize the crashing path.  Instant
+deadlock.
 
-Also, are you sure that the new Kconfig entry is sufficient?  The old
-driver had more dependencies (GPIO_CS5535 and LEDS_TRIGGERS) and
-selects LEDS_TRIGGER_DEFAULT_ON.  Should the new driver be doing such
-things?
+I attempted to resolve this by busting the spinlock in the kdump case only.
+My justification was that kdump has already stopped the other cpus and it
+is only clearing the io apic which shouldn't cause harm when overwriting
+what the other cpu was doing.
 
+I tested this by loading a dummy module that grabs the ioapic_lock and then
+on another cpu, run 'echo c > /proc/sysrq-trigger'.  The deadlock was detected
+and fixed with the patch below.
 
---- a/drivers/leds/Kconfig~net5501-platform-driver-for-soekris-engineering-net5501-single-board-computer-fix
-+++ a/drivers/leds/Kconfig
-@@ -89,16 +89,6 @@ config LEDS_NET48XX
- 	  This option enables support for the Soekris net4801 and net4826 error
- 	  LED.
+v2:
+In my haste, I somehow cut out hw_irq.h from the original patch
+Compiling against latest tree with raw_spin_lock
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/include/asm/hw_irq.h      |    2 +-
+ arch/x86/kernel/apic/io_apic.c     |   18 +++++++++++++++++-
+ arch/x86/kernel/crash.c            |    2 +-
+ arch/x86/kernel/machine_kexec_32.c |    2 +-
+ arch/x86/kernel/machine_kexec_64.c |    2 +-
+ arch/x86/kernel/reboot.c           |    2 +-
+ 6 files changed, 22 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index eb92a6e..1741f7a 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -82,7 +82,7 @@ extern unsigned long io_apic_irqs;
  
--config LEDS_NET5501
--	tristate "LED Support for Soekris net5501 series Error LED"
--	depends on LEDS_TRIGGERS
--	depends on X86 && GPIO_CS5535
--	select LEDS_TRIGGER_DEFAULT_ON
--	default n
--	help
--	  Add support for the Soekris net5501 board (detection, error led
--	  and GPIO).
--
- config LEDS_FSG
- 	tristate "LED Support for the Freecom FSG-3"
- 	depends on LEDS_CLASS
---- a/drivers/leds/Makefile~net5501-platform-driver-for-soekris-engineering-net5501-single-board-computer-fix
-+++ a/drivers/leds/Makefile
-@@ -14,7 +14,6 @@ obj-$(CONFIG_LEDS_MIKROTIK_RB532)	+= led
- obj-$(CONFIG_LEDS_S3C24XX)		+= leds-s3c24xx.o
- obj-$(CONFIG_LEDS_AMS_DELTA)		+= leds-ams-delta.o
- obj-$(CONFIG_LEDS_NET48XX)		+= leds-net48xx.o
--obj-$(CONFIG_LEDS_NET5501)		+= leds-net5501.o
- obj-$(CONFIG_LEDS_WRAP)			+= leds-wrap.o
- obj-$(CONFIG_LEDS_COBALT_QUBE)		+= leds-cobalt-qube.o
- obj-$(CONFIG_LEDS_COBALT_RAQ)		+= leds-cobalt-raq.o
-_
-
-
+ extern void init_VISWS_APIC_irqs(void);
+ extern void setup_IO_APIC(void);
+-extern void disable_IO_APIC(void);
++extern void disable_IO_APIC(int);
+ 
+ struct io_apic_irq_attr {
+ 	int ioapic;
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index fb07275..96f1d46 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1991,9 +1991,25 @@ void __init enable_IO_APIC(void)
+ /*
+  * Not an __init, needed by the reboot code
+  */
+-void disable_IO_APIC(void)
++void disable_IO_APIC(int force)
+ {
+ 	/*
++	 * Use force to bust the io_apic spinlock
++	 *
++	 * There is a case where kdump can race with irq
++	 * migration such that kdump will inject an NMI
++	 * while another cpu holds the ioapic_lock to
++	 * migrate the irq.  This would cause a deadlock.
++	 *
++	 * Because kdump stops all the cpus, we can safely
++	 * bust the spinlock as we are just clearing the
++	 * io apic anyway.
++	 */
++	if (force && raw_spin_is_locked(&ioapic_lock))
++		/* only one cpu should be running now */
++		raw_spin_lock_init(&ioapic_lock);
++
++	/*
+ 	 * Clear the IO-APIC before rebooting:
+ 	 */
+ 	clear_IO_APIC();
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index 13ad899..c8383b0 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -97,7 +97,7 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
+ 
+ 	lapic_shutdown();
+ #if defined(CONFIG_X86_IO_APIC)
+-	disable_IO_APIC();
++	disable_IO_APIC(1);
+ #endif
+ #ifdef CONFIG_HPET_TIMER
+ 	hpet_disable();
+diff --git a/arch/x86/kernel/machine_kexec_32.c b/arch/x86/kernel/machine_kexec_32.c
+index a3fa43b..3c60005 100644
+--- a/arch/x86/kernel/machine_kexec_32.c
++++ b/arch/x86/kernel/machine_kexec_32.c
+@@ -212,7 +212,7 @@ void machine_kexec(struct kimage *image)
+ 		 * one form or other. kexec jump path also need
+ 		 * one.
+ 		 */
+-		disable_IO_APIC();
++		disable_IO_APIC(0);
+ #endif
+ 	}
+ 
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index b3ea9db..ed94a6a 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -295,7 +295,7 @@ void machine_kexec(struct kimage *image)
+ 		 * one form or other. kexec jump path also need
+ 		 * one.
+ 		 */
+-		disable_IO_APIC();
++		disable_IO_APIC(0);
+ #endif
+ 	}
+ 
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 37a458b..766795c 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -652,7 +652,7 @@ void native_machine_shutdown(void)
+ 	lapic_shutdown();
+ 
+ #ifdef CONFIG_X86_IO_APIC
+-	disable_IO_APIC();
++	disable_IO_APIC(0);
+ #endif
+ 
+ #ifdef CONFIG_HPET_TIMER
+-- 
+1.7.7.5
 
