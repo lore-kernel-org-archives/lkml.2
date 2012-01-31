@@ -1,110 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab2AaIsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:48:50 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63603 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab2AaIss (ORCPT
+	id S1753294Ab2AaIs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:48:57 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46561 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752742Ab2AaIsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:48:48 -0500
-Message-ID: <1327999722.2422.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
-        Vivek Goyal <vgoyal@redhat.com>, Wu Fengguang <wfg@linux.intel.com>
-Date: Tue, 31 Jan 2012 09:48:42 +0100
-In-Reply-To: <1327996780.21268.42.camel@sli10-conroe>
-References: <1327996780.21268.42.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Tue, 31 Jan 2012 03:48:55 -0500
+From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
+        sjurbren@gmail.com,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [RESEND PATCHv5 00/11] modem_shm: Driver for ST-E Thor M7400 LTE modem
+Date: Tue, 31 Jan 2012 09:48:35 +0100
+Message-Id: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 31 janvier 2012 à 15:59 +0800, Shaohua Li a écrit :
-> Herbert Poetzl reported a performance regression since 2.6.39. The test
-> is a simple dd read, but with big block size. The reason is:
-> 
-> T1: ra (A, A+128k), (A+128k, A+256k)
-> T2: lock_page for page A, submit the 256k
-> T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
-> because of plug and there isn't any lock_page till we hit page A+256k
-> because all pages from A to A+256k is in memory
-> T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
-> submitted again.
-> T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
-> waitting for (A+256k, A+512k) finish.
-> 
-> There is no request to disk in T3 and T4, so readahead pipeline breaks.
-> 
-> We really don't need block plug for generic_file_aio_read() for buffered
-> I/O. The readahead already has plug and has fine grained control when I/O
-> should be submitted. Deleting plug for buffered I/O fixes the regression.
-> 
-> One side effect is plug makes the request size 256k, the size is 128k
-> without it. This is because default ra size is 128k and not a reason we
-> need plug here.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> Tested-by: Herbert Poetzl <herbert@13thfloor.at>
-> Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+This patch-set implements a shared memory interface for ST-Ericsson modem
+M7400. Review comments and feedback are welcome.
 
-Hmm, this is not exactly the patch I tested from Wu Fengguang 
+Patches are available at: git://github.com/sjurbren/modem-ipc.git for-next.
 
-I'll test this one before adding my "Tested-by: ..."
 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> 
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 97f49ed..b662757 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -1400,15 +1400,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
->  	unsigned long seg = 0;
->  	size_t count;
->  	loff_t *ppos = &iocb->ki_pos;
-> -	struct blk_plug plug;
->  
->  	count = 0;
->  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
->  	if (retval)
->  		return retval;
->  
-> -	blk_start_plug(&plug);
-> -
->  	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
->  	if (filp->f_flags & O_DIRECT) {
->  		loff_t size;
-> @@ -1424,8 +1421,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
->  			retval = filemap_write_and_wait_range(mapping, pos,
->  					pos + iov_length(iov, nr_segs) - 1);
->  			if (!retval) {
-> +				struct blk_plug plug;
-> +
-> +				blk_start_plug(&plug);
+Introduction:
+~~~~~~~~~~~~~
+This patch-set introduces the Shared Memory Driver for ST-Ericsson's
+Thor M7400 LTE modem.
+The shared memory model is implemented for Chip-to-chip and
+uses a reserved memory area and a number of bi-directional
+channels. Each channel has it's own designated data area where payload
+data is copied into.
 
-This part was not on the tested patch yesterday.
+Two different channel types are defined, one stream channel which is
+implemented as a traditional ring-buffer, and a packet channel which
+is a ring-buffer of fix sized buffers where each buffer contains
+an array of CAIF frames.
 
->  				retval = mapping->a_ops->direct_IO(READ, iocb,
->  							iov, pos, nr_segs);
-> +				blk_finish_plug(&plug);
->  			}
->  			if (retval > 0) {
->  				*ppos = pos + retval;
-> @@ -1481,7 +1482,6 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
->  			break;
->  	}
->  out:
-> -	blk_finish_plug(&plug);
->  	return retval;
->  }
->  EXPORT_SYMBOL(generic_file_aio_read);
-> 
-> 
+The notification of read and write index updates are handled in a
+separate driver called c2c_genio. This driver will be contributed separately,
+but the API is included in this patch-set.
 
+The channel configuration is stored in shared memory, each channel
+has a designated area in shared memory for configuration data,
+read and write indexes and a data area.
+
+Configuration
+~~~~~~~~~~~~~~~
+
+        IPC-TOC
+        +--------------------+	   Index Area
+        | Channel Descr 0    | -----> +------------+
+	|                    | -+     |	Read Index |
+	|--------------------|	|     |------------|
+	| Channel Descr 1    | 	|     |	Write Index|
+	|                    |	|     +------------+
+	|--------------------|	|   Data Area
+	|       ...    	     |	|     +------------+
+	|                    |	+---> |            |
+	+--------------------+	      |	       	   |
+				      |	       	   |
+				      +------------+
+
+A IPC-TOC (table of content) is used for holding configuration data
+for the channels (struct shm_ipctoc). It contains an array of
+channel descriptors (struct shm_ipctoc_channel). The channel
+descriptors points out the data area and the location of
+read and write indexes.
+
+The configuration is provided from user-space using gen-netlink.
+The gen-netlink format is defined in modem_shm_netlink.h and and handled
+in shm_boot.c
+
+Packet data
+~~~~~~~~~~~
+The packet channel is set up to minimize interrupts needed to
+transfer a packet and to allow efficient DMA operations on the modem.
+
+Ring Buffer Indexes:
+    +------------+
+  +-| Read Index |
+  | |------------|
+  | | Write Index|------------------------+
+  | +------------+   		 	  |
+  |    		    			  |
+  V    	  				  |
+Buffer-0:				  V Buffer-1:
+ +----------------------------------------+---------------+---
+ |ofs,len|ofs,len| ....| frm-0|frm-1| ... | ofs,len | ....|...
+ +----------------------------------------+---------------+--
+   |      |              ^      ^
+   +---------------------+      |
+	  +---------------------+
+
+Packet data is organized in a channel containing a number of fixed-
+size buffers. The channel has a read and write pointer to a buffer in a normal
+ring-buffer fashion.
+
+Each buffer holds an array of CAIF-frames, and starts with an descriptor array
+containing pointers to the data frames in the buffer. The descriptor array
+contains offset and length of each frame.
+
+The packet device (caif_shm.c) is implemented as a network interface of
+type ARPHRD_CAIF.
+
+Stream data
+~~~~~~~~~~~
+The driver for the stream channel is implemented as a character device
+interface to user space. The character device implements non-blocking open
+and non-blocking IO in general. The character device is implementing
+a traditional circular buffer directly in the shared memory region for
+the channel.
+
+
+Driver model
+~~~~~~~~~~~~~~
+A SHM bus is implemented, the example below shows one device
+of each type (stream and packet):
+
+/sys/bus/modem_shm
+|-- devices
+|   |-- shm0 -> ../../../devices/modem_shm/shm0
+|   `-- shm1 -> ../../../devices/modem_shm/shm1
+|-- drivers
+|   |-- caif_shm
+|   |   |-- bind
+|   |   |-- module -> ../../../../module/caif_shm
+|   |   |-- uevent
+|   |   |-- unbind
+|   |   `-- shm1 -> ../../../../devices/shm/shm1
+|   `-- shm_chr
+|       |-- bind
+|       |-- module -> ../../../../module/shm_chr
+|       |-- uevent
+|       |-- unbind
+|       `-- shm0 -> ../../../../devices/shm/shm0
+|-- drivers_autoprobe
+|-- drivers_probe
+`-- uevent
+
+
+/sys/devices/modem_shm/
+|-- bootimg
+|-- caif_ready
+|-- ipc_ready
+|-- uevent
+|-- shm0
+|   |-- driver -> ../../../bus/shm/drivers/modem_shm_chr
+|   |-- misc
+|   |   `-- shm0
+|   |       |-- dev
+|   |       |-- device -> ../../../shm0
+|   |       |-- subsystem -> ../../../../../class/misc
+|   |       `-- uevent
+|   |-- subsystem -> ../../../bus/shm
+|   `-- uevent
+`-- shm1
+    |-- driver -> ../../../bus/shm/drivers/caif_shm
+    |-- subsystem -> ../../../bus/shm
+    `-- uevent
+
+
+Sjur Brændeland (11):
+  modem_shm: Shared Memory layout for ST-E M7400 driver.
+  modem_shm: Channel config definitions for ST-E M7400 driver.
+  modem_shm: Configuration for SHM Channel an devices.
+  modem_shm: geni/geno driver interface.
+  modem_shm: genio dummy driver
+  modem_shm: Add SHM device bus.
+  modem_shm: Add shm device implementation
+  modem_shm: SHM Configuration data handling
+  modem_shm: Character device for SHM channel access.
+  modem_shm: Makefile and Kconfig for M7400 Shared Memory Drivers
+  caif_shm: Add CAIF driver for Shared memory for M7400
+
+ drivers/Kconfig                             |    2 +
+ drivers/Makefile                            |    1 +
+ drivers/modem_shm/Kconfig                   |   62 ++
+ drivers/modem_shm/Makefile                  |    5 +
+ drivers/modem_shm/dummy_c2c_genio.c         |   76 ++
+ drivers/modem_shm/shm_boot.c                | 1208 ++++++++++++++++++++++++++
+ drivers/modem_shm/shm_bus.c                 |  113 +++
+ drivers/modem_shm/shm_chr.c                 | 1242 +++++++++++++++++++++++++++
+ drivers/modem_shm/shm_dev.c                 |  527 ++++++++++++
+ drivers/modem_shm/shm_ipctoc.h              |  154 ++++
+ drivers/net/caif/Kconfig                    |   12 +-
+ drivers/net/caif/Makefile                   |    3 +-
+ drivers/net/caif/caif_shm.c                 |  900 +++++++++++++++++++
+ include/linux/Kbuild                        |    1 +
+ include/linux/c2c_genio.h                   |  195 +++++
+ include/linux/modem_shm/Kbuild              |    1 +
+ include/linux/modem_shm/modem_shm_netlink.h |   95 ++
+ include/linux/modem_shm/shm_dev.h           |  245 ++++++
+ 18 files changed, 4840 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/modem_shm/Kconfig
+ create mode 100644 drivers/modem_shm/Makefile
+ create mode 100644 drivers/modem_shm/dummy_c2c_genio.c
+ create mode 100644 drivers/modem_shm/shm_boot.c
+ create mode 100644 drivers/modem_shm/shm_bus.c
+ create mode 100644 drivers/modem_shm/shm_chr.c
+ create mode 100644 drivers/modem_shm/shm_dev.c
+ create mode 100644 drivers/modem_shm/shm_ipctoc.h
+ create mode 100644 drivers/net/caif/caif_shm.c
+ create mode 100644 include/linux/c2c_genio.h
+ create mode 100644 include/linux/modem_shm/Kbuild
+ create mode 100644 include/linux/modem_shm/modem_shm_netlink.h
+ create mode 100644 include/linux/modem_shm/shm_dev.h
 
