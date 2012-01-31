@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2AaS6a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 13:58:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33140 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab2AaS60 (ORCPT
+	id S1754794Ab2AaS63 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 13:58:29 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34893 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754522Ab2AaS60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 Jan 2012 13:58:26 -0500
-Date: Tue, 31 Jan 2012 10:58:24 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Niels de Vos <ndevos@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Mikulas Patocka <mpatocka@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        "Bryn M. Reeves" <bmr@redhat.com>
-Subject: Re: [PATCH v3] fs: Invalidate the cache for a parent block-device
- if fsync() is called for a partition
-Message-Id: <20120131105824.c48351b6.akpm@linux-foundation.org>
-In-Reply-To: <4F28102C.1070207@redhat.com>
-References: <4F213E1A.4060808@redhat.com>
-	<1327584802-14298-1-git-send-email-ndevos@redhat.com>
-	<20120126134051.6add3cd2.akpm@linux-foundation.org>
-	<20120126214534.GA9319@infradead.org>
-	<4F28102C.1070207@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Sasl-enc: aCKPDt1dPF88Az6eOXz/AMFexLDI6R4aUXhTYdiLepqD 1328036306
+Date: Tue, 31 Jan 2012 10:52:28 -0800
+From: Greg KH <greg@kroah.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
+Cc: devel@driverdev.osuosl.org,
+        Christopher Lais <chris+android@zenthought.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH 1/2] Staging: android: binder: Add some error checks
+Message-ID: <20120131185228.GA21481@kroah.com>
+References: <1327118181-3542-1-git-send-email-arve@android.com>
+ <1327118181-3542-2-git-send-email-arve@android.com>
+ <20120121082208.GL3294@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120121082208.GL3294@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jan 2012 16:00:44 +0000
-Niels de Vos <ndevos@redhat.com> wrote:
-
-> On 01/26/2012 09:45 PM, Christoph Hellwig wrote:
-> > On Thu, Jan 26, 2012 at 01:40:51PM -0800, Andrew Morton wrote:
-> >> The Right Thing To Do here is to make the kernel behave logically and
-> >> predictably, then modify the userspace tools.  But if we're modifying
-> >> the userspace tools then we would just change userspace to issue a
-> >> BLKFLSBUF to /dev/sda and leave the kernel alone.
-> > 
-> > The right fix is to make partition and whole disk access coherent,
-> > which is fairly simply:
-> > 
-> >  - create the block device inode/mapping per gendisk, and only reference
-> >    count it per block_device
-> >  - make sure blkdev_get_block(s) applies the correct offset if used on
-> >    partitions
-> > 
+On Sat, Jan 21, 2012 at 11:22:08AM +0300, Dan Carpenter wrote:
+> On Fri, Jan 20, 2012 at 07:56:20PM -0800, Arve Hjønnevåg wrote:
+> > - Add a mutex to protect against two processes mmapping the
+> >   same binder_proc.
+> > - After locking mmap_sem, check that the vma we want to access
+> >   (still) points to the same mm_struct.
+> > - Use proc->tsk instead of current to get the files struct since
+> >   this is where we get the rlimit from.
 > 
-> This surely looks like a better way to fix this issue. I am not sure yet
-> how much work that would involve and if I am the right person to fix
-> this. If nobody beats me to it, I might send a patch for review some
-> (undefined) time later.
+> This doesn't seem related to the locking change at all.  Probably
+> this patch should be split into three patches, one bugfix per
+> patch, unless they are very closely related.
 
-One concern I have with the proposal is that it would forever rule out
-support of >16T devices on 32-bit machines.
+I agree.  Arve, is this all fixing one problem, or multiple ones?  If
+multiple ones, we need this split up into multiple patches.
 
-At present with 64-bit sector_t and 32-bit pgoff_t, I think we'd have a
-reasonable chance of supporting, say, four 8T partitions on a 32T
-device.  But if we were to switch the kernel from using four 4T
-address_spaces (sda1-4) over to using a single 32T address_space (sda)
-then we can rule it all out.
+thanks,
 
+greg k-h
