@@ -1,52 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab2AaKta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:49:30 -0500
-Received: from mga01.intel.com ([192.55.52.88]:42805 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753895Ab2AaKtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:49:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="118484396"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 1/2] dmaengine: intel_mid_dma: fix error status mask
-Date: Tue, 31 Jan 2012 12:48:59 +0200
-Message-Id: <1328006940-9101-2-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1328006940-9101-1-git-send-email-adrian.hunter@intel.com>
-References: <1328006940-9101-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1753951Ab2AaKtz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:49:55 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41450 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab2AaKty convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 05:49:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <1328006840-7345-1-git-send-email-javier.martin@vista-silicon.com>
+References: <1328006840-7345-1-git-send-email-javier.martin@vista-silicon.com>
+Date: Tue, 31 Jan 2012 11:49:52 +0100
+Message-ID: <CACKLOr0_k2WW_qG4fRLORWTbZBjZVY=CGns2A2asGOvNub2vvw@mail.gmail.com>
+Subject: Re: [PATCH v3] dmaengine: Add support for MEMCPY for imx-dma.
+From: javier Martin <javier.martin@vista-silicon.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, dan.j.williams@intel.com,
+        s.hauer@pengutronix.de, vinod.koul@intel.com,
+        Javier Martin <javier.martin@vista-silicon.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The error status mask (MASK_ERR) has the same format as the other
-masks (MASK_TFR, MASK_BLOCK etc) and must be cleared the same way.
+On 31 January 2012 11:47, Javier Martin <javier.martin@vista-silicon.com> wrote:
+> MEMCPY transfers allow DMA copies from memory to
+> memory. This patch has been tested with dmatest
+> device driver.
+>
+> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+> ---
+>  drivers/dma/imx-dma.c |   36 +++++++++++++++++++++++++++++++++++-
+>  1 files changed, 35 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+> index 3296a73..9aa6e85 100644
+> --- a/drivers/dma/imx-dma.c
+> +++ b/drivers/dma/imx-dma.c
+> @@ -196,7 +196,8 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
+>        struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+>        struct imx_dma_data *data = chan->private;
+>
+> -       imxdmac->dma_request = data->dma_request;
+> +       if (data != NULL)
+> +               imxdmac->dma_request = data->dma_request;
+>
+>        dma_async_tx_descriptor_init(&imxdmac->desc, chan);
+>        imxdmac->desc.tx_submit = imxdma_tx_submit;
+> @@ -328,6 +329,36 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+>        return &imxdmac->desc;
+>  }
+>
+> +static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
+> +       struct dma_chan *chan, dma_addr_t dest,
+> +       dma_addr_t src, size_t len, unsigned long flags)
+> +{
+> +       struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+> +       struct imxdma_engine *imxdma = imxdmac->imxdma;
+> +       int ret;
+> +
+> +       dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
+> +                       __func__, imxdmac->channel, src, dest, len);
+> +
+> +       if (imxdmac->status == DMA_IN_PROGRESS)
+> +               return NULL;
+> +       imxdmac->status = DMA_IN_PROGRESS;
+> +
+> +       ret = imx_dma_config_channel(imxdmac->imxdma_channel,
+> +                              IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
+> +                              IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
+> +                              0, 0);
+> +       if (ret)
+> +               return NULL;
+> +
+> +       ret = imx_dma_setup_single(imxdmac->imxdma_channel, src, len,
+> +                                  dest, DMA_MODE_WRITE);
+> +       if (ret)
+> +               return NULL;
+> +
+> +       return &imxdmac->desc;
+> +}
+> +
+>  static void imxdma_issue_pending(struct dma_chan *chan)
+>  {
+>        struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+> @@ -349,6 +380,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
+>
+>        dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
+>        dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
+> +       dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
+>
+>        /* Initialize channel parameters */
+>        for (i = 0; i < MAX_DMA_CHANNELS; i++) {
+> @@ -382,11 +414,13 @@ static int __init imxdma_probe(struct platform_device *pdev)
+>        imxdma->dma_device.device_tx_status = imxdma_tx_status;
+>        imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
+>        imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
+> +       imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
+>        imxdma->dma_device.device_control = imxdma_control;
+>        imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
+>
+>        platform_set_drvdata(pdev, imxdma);
+>
+> +       imxdma->dma_device.copy_align = 2; /* 2^2 = 4 bytes alignment */
+>        imxdma->dma_device.dev->dma_parms = &imxdma->dma_parms;
+>        dma_set_max_seg_size(imxdma->dma_device.dev, 0xffffff);
+>
+> --
+> 1.7.0.4
+>
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- drivers/dma/intel_mid_dma.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Hi Vinod,
+now that you have merged Sascha's latest patches you can apply this
+patch which has been tested against the latest commit of your 'next'
+branch ( ba7932334fbede4bb6a4ff4e635391ca7833203f).
 
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index 74f70aa..512e2ab 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -1056,7 +1056,8 @@ static irqreturn_t intel_mid_dma_interrupt(int irq, void *data)
- 	}
- 	err_status &= mid->intr_mask;
- 	if (err_status) {
--		iowrite32(MASK_INTR_REG(err_status), mid->dma_base + MASK_ERR);
-+		iowrite32((err_status << INT_MASK_WE),
-+			  mid->dma_base + MASK_ERR);
- 		call_tasklet = 1;
- 	}
- 	if (call_tasklet)
+Thank you.
 -- 
-1.7.6.4
-
+Javier Martin
+Vista Silicon S.L.
+CDTUC - FASE C - Oficina S-345
+Avda de los Castros s/n
+39005- Santander. Cantabria. Spain
++34 942 25 32 60
+www.vista-silicon.com
