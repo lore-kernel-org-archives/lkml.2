@@ -1,107 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab2AaQYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:24:06 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:52029 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368Ab2AaQYE (ORCPT
+	id S1754810Ab2AaQZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:25:09 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:53520 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752270Ab2AaQZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:24:04 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Tue, 31 Jan 2012 17:23:59 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH 02/15] mm: page_alloc: update migrate type of pages on pcp
- when isolating
-In-reply-to: <20120130161447.GU25268@csn.ul.ie>
-To: "'Mel Gorman'" <mel@csn.ul.ie>, "'Michal Nazarewicz'" <mina86@mina86.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>
-Message-id: <022e01cce034$bc6cf440$3546dcc0$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: AczfalMQsVwSB2jzSjWpMEeUW3EHdwAw5PLg
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
- <1327568457-27734-3-git-send-email-m.szyprowski@samsung.com>
- <20120130111522.GE25268@csn.ul.ie> <op.v8wlu8ws3l0zgt@mpn-glaptop>
- <20120130161447.GU25268@csn.ul.ie>
+	Tue, 31 Jan 2012 11:25:08 -0500
+Date: Tue, 31 Jan 2012 11:25:05 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
+        Greg Kroah-Hartman <greg@kroah.com>, linux-kernel@vger.kernel.org
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] char random: fix boot id uniqueness race
+Message-ID: <20120131162505.GA8298@Krystal>
+References: <20120130044012.GA31966@Krystal> <20120131155955.GA24356@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120131155955.GA24356@thunk.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:00:24 up 433 days, 21:03,  6 users,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+* Ted Ts'o (tytso@mit.edu) wrote:
+> On Sun, Jan 29, 2012 at 11:40:12PM -0500, Mathieu Desnoyers wrote:
+> > Index: linux-2.6-lttng/drivers/char/random.c
+> > ===================================================================
+> > --- linux-2.6-lttng.orig/drivers/char/random.c
+> > +++ linux-2.6-lttng/drivers/char/random.c
+> > @@ -1231,6 +1231,8 @@ static int min_read_thresh = 8, min_writ
+> >  static int max_read_thresh = INPUT_POOL_WORDS * 32;
+> >  static int max_write_thresh = INPUT_POOL_WORDS * 32;
+> >  static char sysctl_bootid[16];
+> > +static int boot_id_generated;
+> > +static DEFINE_MUTEX(boot_id_mutex);
 
-On Monday, January 30, 2012 5:15 PM Mel Gorman wrote:
+Hi Ted,
 
-> On Mon, Jan 30, 2012 at 04:41:22PM +0100, Michal Nazarewicz wrote:
-> > On Mon, 30 Jan 2012 12:15:22 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-
-(snipped)
-
-> > >>+		page = pfn_to_page(pfn);
-> > >>+		if (PageBuddy(page)) {
-> > >>+			pfn += 1 << page_order(page);
-> > >>+		} else if (page_count(page) == 0) {
-> > >>+			set_page_private(page, MIGRATE_ISOLATE);
-> > >>+			++pfn;
-> > >
-> > >This is dangerous for two reasons. If the page_count is 0, it could
-> > >be because the page is in the process of being freed and is not
-> > >necessarily on the per-cpu lists yet and you cannot be sure if the
-> > >contents of page->private are important. Second, there is nothing to
-> > >prevent another CPU allocating this page from its per-cpu list while
-> > >the private field is getting updated from here which might lead to
-> > >some interesting races.
-> > >
-> > >I recognise that what you are trying to do is respond to Gilad's
-> > >request that you really check if an IPI here is necessary. I think what
-> > >you need to do is check if a page with a count of 0 is encountered
-> > >and if it is, then a draining of the per-cpu lists is necessary. To
-> > >address Gilad's concerns, be sure to only this this once per attempt at
-> > >CMA rather than for every page encountered with a count of 0 to avoid a
-> > >storm of IPIs.
-> >
-> > It's actually more then that.
-> >
-> > This is the same issue that I first fixed with a change to free_pcppages_bulk()
-> > function[1].  At the time of positing, you said you'd like me to try and find
-> > a different solution which would not involve paying the price of calling
-> > get_pageblock_migratetype().  Later I also realised that this solution is
-> > not enough.
-> >
-> > [1] http://article.gmane.org/gmane.linux.kernel.mm/70314
-> >
 > 
-> Yes. I had forgotten the history but looking at that patch again,
-> I would reach the conclusion that this was adding a new call to
-> get_pageblock_migratetype() in the bulk free path. That would affect
-> everybody whether they were using CMA or not.
+> My preference would be to put these statics in proc_do_uuid(), but
+> that's arguably a nit.
 
-This will be a bit ugly, but we can also use that code and compile it conditionally
-when CMA has been enabled. Pages, which have incorrect migrate type on free finally
-causes pageblock migration type change from MIGRATE_CMA to MIGRATE_MOVABLE. This is
-not a problem for non-CMA case where only pageblocks with MIGRATE_MOVABLE migration
-type are being isolated.
+No problem, can do.
 
-Best regards
+> 
+> > +	} else {
+> > +		if (unlikely(!ACCESS_ONCE(boot_id_generated))) {
+> > +			mutex_lock(&boot_id_mutex);
+> > +			if (!boot_id_generated) {
+> > +				generate_random_uuid(uuid);
+> > +				/* Store uuid before boot_id_generated. */
+> > +				smp_wmb();
+> > +				boot_id_generated = 1;
+> > +			}
+> > +			mutex_unlock(&boot_id_mutex);
+> > +		} else {
+> > +			/* Load boot_id_generated before uuid */
+> > +			smp_rmb();
+> > +		}
+> > +	}
+> 
+> I don't believe the smp_wmb() and smp_rmb() are necessary here; the
+> mutex_lock() and mutex_unlock() should put the necessary memory
+> barriers in place.
+
+The need for memory barriers is a consequence of letting the fast-path
+run without holding this mutex.
+
+Here is the race dealt with by the smp_rmb()/smp_wmb(). I'm showing the
+result of reversed write order here:
+
+CPU A                             CPU B
+
+Load boot_id_generated            
+  (test -> false)
+mutex_lock(&boot_id_mutex)
+  (implied memory barrier
+   with acquire semantic)
+Load boot_id_generated again
+  (test -> false)
+boot_id_generated = 1
+  (both the compiler and
+   CPU are free to reorder
+   the boot_id_generated
+   store before uuid stores)
+                                  Load boot_id_generated
+                                    (test -> true)
+                                  Load uuid content
+                                    (races with generate_random_uuid:
+                                     result either 0 or corrupted)
+                                  Return corrupted uuid.
+generate_random_uuid(uuid)
+mutex_unlock(&boot_id_mutex)
+
+I prefer not requiring the fast-path to take a mutex, because this
+would transform a read-mostly operation into an operation that
+requires cache-line exchanges (the mutex). However, if we want the
+fast-path to be mutex-free, we need to enforce order with
+memory barriers: smp_rmb on the read-side, smp_wmb on the
+update-side. Failure to do so leads to the race shown above,
+where a corrupted boot_id can be returned.
+
+Please let me know if there are aspects of your question I can
+address better,
+
+Thanks,
+
+Mathieu
+
+> 
+> Regards,
+> 
+> 						- Ted
+
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
