@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab2AaVTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 16:19:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753159Ab2AaVTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 16:19:40 -0500
-Date: Tue, 31 Jan 2012 23:18:54 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <jmorris@namei.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Michael Witten <mfwitten@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 1/3] lib: add NO_GENERIC_PCI_IOPORT_MAP
-Message-ID: <20120131211853.GC6843@redhat.com>
-References: <cover.1327877053.git.mst@redhat.com>
- <201201301551.46907.arnd@arndb.de>
- <20120130161818.GA9345@redhat.com>
- <201201302004.33083.arnd@arndb.de>
+	id S1755347Ab2AaVUD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 16:20:03 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57959 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab2AaVUB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 16:20:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201201302004.33083.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328004002-24646-2-git-send-email-Barry.Song@csr.com>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+	<1328004002-24646-2-git-send-email-Barry.Song@csr.com>
+Date: Tue, 31 Jan 2012 22:20:00 +0100
+Message-ID: <CACRpkdaLekGTdkpfr_Zf5PXAZ16dZsXrwnFHjBe+aEvGb5zYjg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] platform: add common resource requesting and mapping helper
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Barry Song <Barry.Song@csr.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, linux-mtd@lists.infradead.org,
+        Barry Song <Baohua.Song@csr.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Erik Gilling <konkers@google.com>,
+        Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 08:04:32PM +0000, Arnd Bergmann wrote:
-> On Monday 30 January 2012, Michael S. Tsirkin wrote:
-> > > 
-> > > +/*
-> > > + * Create a virtual mapping cookie for a port on a given PCI device.
-> > > + * Do not call this directly, it exists to make it easier for architectures
-> > > + * to override.
-> > > + */
-> > > +#ifdef CONFIG_NO_GENERIC_PCI_IOPORT_MAP
-> > > +extern void __iomem *__pci_ioport_map(struct pci_dev *dev, unsigned long port,
-> > > +                                     unsigned int nr);
-> > > +#else
-> > > +static inline void __iomem *__pci_ioport_map(struct pci_dev *dev,
-> > > +                              unsigned long port, unsigned int nr)
-> > > +{
-> > > +       return ioport_map(port, nr);
-> > > +}
-> > > +#endif
-> > > 
-> > >       Arnd
-> > 
-> > It would be nicer in that it would
-> > make the kernel a bit smaller for generic architectures
-> > but this would need to go into a separate header:
-> > it depends on io.h and io.h depends on pci_iomap.h.
-> 
-> Adding extra dependencies is not good here, I agree.
-> Maybe  a better solution is to use a macro instead of an inline
-> function then:
-> 
-> #define  __pci_ioport_map(dev, port, nr) ioport_map(port, nr)
-> 
-> In general, macros should be avoided, but I think it's the
-> best tradeoff in this case.
-> 
-> 	Arnd
+On Tue, Jan 31, 2012 at 11:00 AM, Barry Song <Barry.Song@csr.com> wrote:
 
-OK, I did exactly that. Thanks!
+> From: Barry Song <Baohua.Song@csr.com>
+>
+> this patch helps to move the common pattern from
+
+Good idea!
+
+> @@ -44,6 +44,7 @@ extern struct device platform_bus;
+>
+>  extern void arch_setup_pdev_archdata(struct platform_device *);
+>  extern struct resource *platform_get_resource(struct platform_device *, unsigned int, unsigned int);
+> +extern void __iomem *platform_devm_request_and_ioremap(struct platform_device *, unsigned int);
+
+But don't you want a reverse call for the module remove() function?
+
+Like:
+
+extern void __iomem *platform_devm_iounmap_and_free(struct
+platform_device *, unsigned int);
+
+?
+
+Yours,
+Linus Walleij
