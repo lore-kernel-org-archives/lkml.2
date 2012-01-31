@@ -1,111 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab2AaF6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 00:58:25 -0500
-Received: from mga14.intel.com ([143.182.124.37]:37677 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754Ab2AaF6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 00:58:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101405946"
-Subject: Re: [PATCH] perf: fix broken perf inject -b
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@elte.hu, robert.richter@amd.com,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <20120130203653.GD5797@infradead.org>
-References: <20120113144731.GA5458@quad>
-	 <20120113165315.GA24387@infradead.org>
-	 <CABPqkBTe1uqiLm02fijYE2bwF=rWWu=V0mjZQbEzW0TUKa4-+Q@mail.gmail.com>
-	 <CABPqkBS50jYOHepmAqOzGYY8m+4SCJQuhrMV2yLXRYfdFpE70g@mail.gmail.com>
-	 <20120130190008.GA5797@infradead.org>
-	 <CABPqkBSzgc7WSbuS4L1gtCf+3u_q3fx002byArsMjKSxd5zw-g@mail.gmail.com>
-	 <20120130200432.GC5797@infradead.org>
-	 <CABPqkBQu=82igQV2O_UmJsuDOHh8_VyRQCUGmrGqTBvnEdyN+Q@mail.gmail.com>
-	 <20120130203653.GD5797@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: UMG
-Date: Tue, 31 Jan 2012 13:58:19 +0800
-Message-ID: <1327989499.14415.230.camel@ymzhang>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752888Ab2AaF7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 00:59:41 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:42380 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050Ab2AaF7j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 00:59:39 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6605"; a="156889355"
+Message-ID: <4F278341.4020600@codeaurora.org>
+Date: Tue, 31 Jan 2012 11:29:29 +0530
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+CC: linux-arch@vger.kernel.org, tsoni@codeaurora.org, linux@arm.linux.org.uk,
+        arnd@arndb.de, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bryanh@codeaurora.org,
+        johlstei@codeaurora.org, Daniel Walker <dwalker@fifo99.com>,
+        dan.j.williams@intel.com, davidb@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/2] Add Qualcomm MSM ADM DMAEngine driver
+References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org> <1326807902.1540.116.camel@vkoul-udesk3> <4F195E4C.6080805@codeaurora.org> <1327066287.517.4.camel@vkoul-udesk3> <4F1D4052.3070701@codeaurora.org> <1327326713.517.32.camel@vkoul-udesk3> <4F1FFF7E.3000802@codeaurora.org> <1327911315.1527.8.camel@vkoul-udesk3>
+In-Reply-To: <1327911315.1527.8.camel@vkoul-udesk3>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 18:36 -0200, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Jan 30, 2012 at 09:09:17PM +0100, Stephane Eranian escreveu:
-> > On Mon, Jan 30, 2012 at 9:04 PM, Arnaldo Carvalho de Melo
-> > <acme@redhat.com> wrote:
-> > > Em Mon, Jan 30, 2012 at 08:53:26PM +0100, Stephane Eranian escreveu:
-> > >> On Mon, Jan 30, 2012 at 8:00 PM, Arnaldo Carvalho de Melo
-> > >> <acme@redhat.com> wrote:
-> > >> > > >>> @@ -173,6 +178,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
-> > >> > > >>>               goto repipe;
-> > >> > > >>>       }
-> > >> > > >>> +     machine->pid = event->ip.pid;
-> > >> >
-> > >> > > I noticed that this statement conflicts with perf buildid-list (which
-> > >> > > I am also fixing for pipe mode).
-> 
-> > >> > > I don't quite understand why, though.
-> 
-> > >> > Have you reached any conclusion about this problem? I haven't looked at
-> > >> > it in detail, could you please elaborate more?
-> 
-> > >> I ended up removing it. But I am not sure this is correct.
-> > >> Is the pid used in any way when processing buildids?
-> > >
-> > > I can't think of any.
-> > >
-> > > The same DSO could conceivably be present in the virtual machine, the
-> > > host, and in the workstation used for perf report.  We just use the
-> > > build-id in the perf.data file to find the right symtab.
-> 
-> > Right, so I don't know why it's there...
-> 
-> This comes from a1645ce1:
-> 
-> commit a1645ce12adb6c9cc9e19d7695466204e3f017fe
-> Author: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
-> Date:   Mon Apr 19 13:32:50 2010 +0800
-> 
->     perf: 'perf kvm' tool for monitoring guest performance from host
->     
->     Here is the patch of userspace perf tool.
->     
->     Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
->     Signed-off-by: Avi Kivity <avi@redhat.com>
-> 
-> 
-> 
-> Zhang, what was the thinking about that pid in the buildid event?
-I didn't work on it for a long time because of some special reasons.
-I check it quickly and below are some explanation.
+On 1/30/2012 1:45 PM, Vinod Koul wrote:
+> On Wed, 2012-01-25 at 18:41 +0530, Ravi Kumar V wrote:
+>> On 1/23/2012 7:21 PM, Vinod Koul wrote:
+>>> On Mon, 2012-01-23 at 16:41 +0530, Ravi Kumar V wrote:
+>>>>
+>>>> If some changes are made in interleave API then it can support our BOX
+>>>> mode. Here in interleaved template he is assuming destination pattern as
+>>>> can be contiguous or same as source pattern, but in our case destination
+>>>> pattern is different from source pattern.
+>>>> So if a new parameter destination data chunk is added in "struct
+>>>> dma_interleaved_template" structure then it can support different
+>>>> destination pattern.
+>>> do you mean you have cases where you are doing a "memcpy" from one
+>>> interleaved memory to another?
+>>> Can you provide me with a scenario where this maybe helpful?
+>>
+>> Presently we are transferring data from interleaved memory tho
+>> contagious memory and vice-verse.
+>> We can use the interleaved API for present scenario, but it will
+>> restrict the HW capability of transferring data from one interleaved
+>> pattern to other interleaved pattern.
+> That's interesting capability.
+> My question still unanswered is whats the real work usage of this
+> capability. Helps to understand what this would be used for and
+> providing optimal solution
+>>
+>>>
+>>> The reason why the API was designed like this was to give ability to
+>>> take these kind of interleaved memory and copy them to peripheral
+>>> (constant addr) or memory (typically contagious).
+>>>
+>>> In case it is just a pattern I wonder why it cannot be described in
+>>> standard scatter gather definitions as you can split the block further
+>>> down to copy from one respective block to somewhere else in memory.
+>>
+>> We can use scatter gather but it will be extra burden on software to
+>> create those many SG list unlike in box mode just a single command
+>> serves the purpose.
+>>
+>>>> Also it will good if you can provide another parameter for passing
+>>>> private data to dma driver.
+>>> 1. what does this parameter do?
+>>
+>> Private parameter in our case will be command configuration parameter
+>> where we are passing information to HW like endianness, synchronization
+>> &  acknowledge mechanism between DMA HW and peripherals running with
+>> different clock than DMA.
+> This is a separate discussion. We had similar talk on need to pass
+> controller/subsystem specific parameters [1] sometime back during RIO
+> patches. Alexandre has posted a new RFC [2] which should be extended to
+> whatever API you finally end up using
+>
+> [1]: https://lkml.org/lkml/2011/10/24/275
+> [2]: https://lkml.org/lkml/2012/1/26/405
+>
 
-machine->pid is to support KVM multiple guest os kernels.
-1) The guest os kernels might be different version of kernels from host's;
-2) The guest os might be Windows.
+Yes if we follow the above RFC and add extra context parameter also in 
+device_prep_dma_sg() & device_prep_interleaved_dma() then it supports 
+our hardware and our work will be completed.
 
-At host side, every guest os is a process of host although it's multi-threaded.
-machine->pid is to save its pid. The pid of host itself is HOST_KERNEL_ID.
+can we follow above RFC and implement our driver.
+Is above RFC finalized and included in mainline?
 
-In guest os, there are many processes. host os doesn't know them. So currently or
-when I enhanced perf to support KVM, perf filters out guest os user space
-detailed event samples while still keeping guest os user space simple counters.
+Thanks,
+Ravi Kumar
 
-event->ip.pid is equal to machine->pid only when 
-((event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK) == PERF_RECORD_MISC_GUEST_KERNEL).
-
-In function perf_event__inject_buildid, we shouldn't reset machine->pid to
-event->ip.pid. They are equal to each other if it's a guest os event. Isn't it?
-If the event is host event, event->ip.pid points to a real process at host
-and it shouldn't be equal to machine->pid (HOST_KERNEL_ID).
-
-Yanmin
-
-
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
