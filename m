@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab2AaBTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 20:19:36 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:44184 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab2AaBTf (ORCPT
+	id S1753310Ab2AaBUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 20:20:13 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58289 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab2AaBUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 20:19:35 -0500
-Date: Mon, 30 Jan 2012 20:19:29 -0500 (EST)
-Message-Id: <20120130.201929.1758603770664566022.davem@davemloft.net>
-To: tomoya.rohm@gmail.com
-Cc: jeffrey.t.kirsher@intel.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH 1/3] ethernet/pch_gbe: Change company name OKI
- SEMICONDUCTOR to LAPIS Semiconductor
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CANKRQniQs95kUhyDeP2V7cyOFE1gyi-ihZufmNoi_SGSXm3MGQ@mail.gmail.com>
-References: <1327643159-1302-1-git-send-email-tomoya.rohm@gmail.com>
-	<20120130.125219.2077768183344205118.davem@davemloft.net>
-	<CANKRQniQs95kUhyDeP2V7cyOFE1gyi-ihZufmNoi_SGSXm3MGQ@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 30 Jan 2012 17:19:33 -0800 (PST)
+	Mon, 30 Jan 2012 20:20:10 -0500
+Date: Tue, 31 Jan 2012 09:32:22 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Pinmux bindings proposal V2
+Message-ID: <20120131013215.GB24681@S2101-09.ap.freescale.net>
+References: <74CDBE0F657A3D45AFBB94109FB122FF178CB81C0D@HQMAIL01.nvidia.com>
+ <20120124012038.GT22818@atomide.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF178CB81EDB@HQMAIL01.nvidia.com>
+ <20120125000407.GU22818@atomide.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF178CB82433@HQMAIL01.nvidia.com>
+ <20120127020832.GJ29812@atomide.com>
+ <20120127065752.GB32740@S2101-09.ap.freescale.net>
+ <20120127170545.GH13504@atomide.com>
+ <20120130015607.GA10470@S2101-09.ap.freescale.net>
+ <20120130172042.GE9339@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120130172042.GE9339@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Date: Tue, 31 Jan 2012 09:35:26 +0900
-
-> I can understand your saying.
+On Mon, Jan 30, 2012 at 09:20:42AM -0800, Tony Lindgren wrote:
+> * Shawn Guo <shawn.guo@linaro.org> [120129 17:13]:
+> > On Fri, Jan 27, 2012 at 09:05:45AM -0800, Tony Lindgren wrote:
+...
+> > > Wouldn't it be cleaner to just clk_get esdhc_clk during init, then
+> > > do clk_set_rate on it to toggle the rates?
+> > >  
+> > It's not an init-time switch but run-time one.  That said,
+> > sdhci_ops.set_clock will be called during run-time.
 > 
-> If I post like below, is this patch acceptable for you ?
-> +       tristate "OKI/LAPIS SEMICONDUCTOR IOH(ML7223/ML7831) GbE"
+> Right, basically you don't want to do clk_get or pinmux_get during
+> runtime, you do that once one during init. Then do clk_set_rate or
+> whaterver during runtime.
 > 
-> BTW, I think need consistency for "Change company/product name" as a
-> whole of linux.
-> Because other patches for the same series "change company name" I
-> posted have already accepted.
-> e.g.(GPIO, USB device, DMA, UART, I2C)
+> Is there anything stopping from implementing sdhci_ops.set_rate
+> using clock framework and clk_set_rate in this case BTW?
+>  
+We are doing this exactly for clk, and trying to figure out how to
+handle pinctrl here.  I do not see how we can do pinmux_get at
+init-time and pinmux_set_whatever at run-time.  The pinmux API does
+not work that way.
 
-I mainly object to moving the driver around, and failing to retain
-the old name especially in user visible contexts such as Kconfig
-variables, help text, and module parameters.
+> > > > > So I'd rather stay out of random named states for
+> > > > > the pins coming from device tree; If we still need them, they should
+> > > > > be common bindings rather than things like "xyz_clock_hack".
+> > > > > 
+> > > > The binding defines the syntax, and I do not see the necessity to
+> > > > force the particular state name, which is really pinctrl client
+> > > > device specific.
+> > > 
+> > > Do you have some other custom pin state example other than the
+> > > clock rate change example above?
+> > > 
+> > I have another case PM related.  To aggressively save power, the pins
+> > configured for particular function during active mode need to be
+> > muxed on gpio mode and output 0 in low-power mode.
+> 
+> OK, but basically only a small subset of pins of the total pins?
+> 
+Actually, all pins used by the block.
+
+-- 
+Regards,
+Shawn
