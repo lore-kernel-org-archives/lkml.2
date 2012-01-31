@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab2AaJup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 04:50:45 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59448 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752419Ab2AaJun convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 04:50:43 -0500
+	id S1753823Ab2AaJ7P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 04:59:15 -0500
+Received: from ozlabs.org ([203.10.76.45]:53577 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753604Ab2AaJ7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 04:59:09 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>
+Cc: Dmitry Antipov <dmitry.antipov@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: [PATCH 1/3] percpu: use ZERO_SIZE_PTR / ZERO_OR_NULL_PTR
+In-Reply-To: <20120130181639.GJ3355@google.com>
+References: <1327912654-8738-1-git-send-email-dmitry.antipov@linaro.org> <20120130171558.GB3355@google.com> <alpine.DEB.2.00.1201301121330.28693@router.home> <20120130174256.GF3355@google.com> <alpine.DEB.2.00.1201301145570.28693@router.home> <20120130175434.GG3355@google.com> <alpine.DEB.2.00.1201301156530.28693@router.home> <20120130180224.GH3355@google.com> <alpine.DEB.2.00.1201301206080.28693@router.home> <20120130181639.GJ3355@google.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 31 Jan 2012 15:18:54 +1030
+Message-ID: <87obtkjx3d.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <CAE2SPAbYQnoc8CGzQizFq6tCvuks57z2tLCwTjPLhxmViJeBLw@mail.gmail.com>
-References: <4DE6264A.2040901@gmail.com>
-	<CAKA=qzbHnqiz=CuxM1n55EDnvQpqMw42eY8FuLJrGPYN3KWgVA@mail.gmail.com>
-	<CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
-	<201112211325.53648.roucaries.bastien@gmail.com>
-	<CAE2SPAbYQnoc8CGzQizFq6tCvuks57z2tLCwTjPLhxmViJeBLw@mail.gmail.com>
-Date: Tue, 31 Jan 2012 10:50:42 +0100
-Message-ID: <CAE2SPAbx3hJfn_fMU24sEfg6_UFXmRrk1AGznkHZN7YTNiGwCQ@mail.gmail.com>
-Subject: Re: Kerneloops.org defunct?
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Josh Hunt <joshhunt00@gmail.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Arjan van de Ven <arjan@linux.intel.com>,
-        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping**4
+On Mon, 30 Jan 2012 10:16:39 -0800, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Jan 30, 2012 at 12:12:18PM -0600, Christoph Lameter wrote:
+> > > I thought it didn't.  I rememer thinking about this and determining
+> > > that NULL can't be allocated for dynamic addresses.  Maybe I'm
+> > > imagining things.  Anyways, if it can return NULL for valid
+> > > allocation, it is a bug and should be fixed.
+> > 
+> > I dont see anything that would hinder an arbitrary value to be returned.
+> > NULL is also used for the failure case. Definitely a bug.
+> 
+> Given the address translation we do and kernel image layout, I don't
+> think this can happen on x86.  It may theoretically possible on other
+> archs tho.  Anyways, yeah, this one needs improving.
 
-Any news of this ?
+I tried setting the lower bit on all percpu ptrs, but since non-dynamic
+percpu vars could have odd alignments, that fails in general.
 
-Can we access to code ? (public git)
+> > > We don't have returned addr >= PAGE_SIZE guarantee yet but I'm fairly
+> > > sure that's the only acceptable direction if we want any improvement
+> > > in this area.
+> > 
+> > The ZERO_SIZE_PTR patch would not make the situation that much worse.
+> 
+> I'm not objecting to marking zero-sized allocations per-se.  I'm
+> saying the patch is pointless at this point.  It doesn't contribute
+> anything while giving the illusion of better error checking than we
+> actually do.  Let's do it when it can actually work.
 
-On Wed, Jan 18, 2012 at 7:20 PM, Bastien ROUCARIES
-<roucaries.bastien@gmail.com> wrote:
-> Ping**3
->
-> On Wed, Dec 21, 2011 at 1:25 PM, bastien ROUCARIES
-> <roucaries.bastien@gmail.com> wrote:
->> Le Wednesday 12 October 2011 14:35:44, Bastien ROUCARIES a écrit :
->>> Any news now that the fiasco is going to be resolved.
->>>
->>> Bastien
->>>
->>> On Wed, Sep 28, 2011 at 10:51 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
->>> > On Wed, Sep 28, 2011 at 3:37 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->>
->>> >> On 08/26/2011 08:48 PM, Arjan van de Ven wrote:
->>> >>> On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
->>> >>>> Is the code available somewhere, or will it need to be rewritten ?
->>> >>>
->>> >>> we have the code on the server/etc... if someone signs up to help he
->>> >>> will be on the server of course
->>> >>
->>> >> It looks like there are some volunteers. Did you have a chance to talk
->>> >> to each other and make any progress?
->>> >>
->>> >> If not, may we have at least a backup of the database published, please?
->>> >> There are very valuable data you collected over time and I'm sure there
->>> >> are more people than me who would appreciate that.
->>
->> Any news of this ?
->>
->> Can we access to code ? (public git)
->>
->> Bastien
->>
->>> >> thanks,
->>> >> --
->>> >> js
->>> >> --
->>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->>> >> in the body of a message to majordomo@vger.kernel.org
->>> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> >> Please read the FAQ at  http://www.tux.org/lkml/
->>> >
->>> > Apparently kerneoops.org is hosted by kernel.org so there will be no
->>> > progress until that fiasco is resolved. I'm still up for working on it
->>> > if and when the site is back online.
->>> >
->>> > --
->>> > Josh
+Disagree: This patch works.  It allows zero-size per-cpu allocs, like
+the other allocators.  Nor does it fail in practice.
+
+We should do better, but the perfect is the enemy of the good.
+
+Cheers,
+Rusty.
