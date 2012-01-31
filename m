@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab2AaO03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 09:26:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32106 "EHLO mx1.redhat.com"
+	id S1754469Ab2AaOam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 09:30:42 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33296 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab2AaO02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 09:26:28 -0500
-Date: Tue, 31 Jan 2012 09:26:22 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org, midgoon@gmail.com
-Subject: Re: 3.2.1 Unable to reset IRR messages on boot
-Message-ID: <20120131142621.GA2136@zod.bos.redhat.com>
-References: <20120125000434.GC13655@zod.bos.redhat.com>
- <1327454651.27983.7.camel@sbsiddha-desk.sc.intel.com>
- <20120125134947.GF13655@zod.bos.redhat.com>
- <1327529048.2327.17.camel@sbsiddha-mobl2>
- <20120125231534.GL13655@zod.bos.redhat.com>
+	id S1752193Ab2AaOal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 09:30:41 -0500
+Date: Tue, 31 Jan 2012 15:30:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, arjanvandeven@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: x86: clean up smpboot.c's use of udelay+schedule
+Message-ID: <20120131143022.GE13676@elte.hu>
+References: <20120130205304.0e10b05e@infradead.org>
+ <20120131124341.GC4408@elte.hu>
+ <20120131053236.3f120f11@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120125231534.GL13655@zod.bos.redhat.com>
+In-Reply-To: <20120131053236.3f120f11@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 25, 2012 at 06:15:35PM -0500, Josh Boyer wrote:
-> On Wed, Jan 25, 2012 at 02:04:08PM -0800, Suresh Siddha wrote:
-> > On Wed, 2012-01-25 at 08:49 -0500, Josh Boyer wrote:
-> > > [    0.000000] IOAPIC[1]: apic_id 2, version 255, address 0xfec28000, GSI 24-279
+
+* Arjan van de Ven <arjan@infradead.org> wrote:
+
+> On Tue, 31 Jan 2012 13:43:41 +0100
+> Ingo Molnar <mingo@elte.hu> wrote:
+> > > +			usleep_range(100, 200);
 > > 
-> > This looks indeed like a bogus entry probably returning all 1's for
-> > RTE's etc. Can you please send me a dmesg with "apic=verbose" boot
-> > parameter?
+> > I'm wondering whether we could shorten this delay to say 10 
+> > usecs and thus save 0.1 msecs (or more) from a typical SMP 
+> > bootup?
 > 
-> Here you go:
-> 
-> https://bugzilla.redhat.com/attachment.cgi?id=557552
+> doesn't matter really; [...]
 
-Was this helpful at all?  I've been watching lkml for a related patch
-in case I was missed on CC but haven't seen anything as of yet.
+It matters somewhat, especially if PeterZ's suggestion is used, 
+which is far more clean as well. The magic delays are not really 
+justified anymore.
 
-josh
+> [...] bringing up a cpu is several orders more expensive (> 
+> 100msec in 3.2, in 3.3 this got optimized to maybe 30 msec) 
+> 0.1 msec is the least of anyone's worries at this point ;-)
+
+It's 3% of the 30 msecs overhead.
+
+> ( would be nice if this was a completion, but this is rather 
+> fragile code in general... at least not making it spin is an 
+> incremental improvement )
+
+Completions arent hard to use and the scheduler should be up and 
+running at this stage already.
+
+Thanks,
+
+	Ingo
