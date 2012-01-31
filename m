@@ -1,147 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab2AaQx2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:53:28 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:58364 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab2AaQx1 (ORCPT
+	id S1753057Ab2AaQzk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:55:40 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10026 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab2AaQzi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:53:27 -0500
-From: Ohad Ben-Cohen <ohad@wizery.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Mark Grosen <mgrosen@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH 2/2] remoteproc: s/big switch/lookup table/
-Date: Tue, 31 Jan 2012 18:52:42 +0200
-Message-Id: <1328028762-28352-2-git-send-email-ohad@wizery.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1328028762-28352-1-git-send-email-ohad@wizery.com>
-References: <1328028762-28352-1-git-send-email-ohad@wizery.com>
+	Tue, 31 Jan 2012 11:55:38 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 31 Jan 2012 08:55:29 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Barry Song <Barry.Song@csr.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Barry Song <Baohua.Song@csr.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Erik Gilling <konkers@google.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Tue, 31 Jan 2012 08:55:28 -0800
+Subject: RE: [PATCH 2/3] GPIO: TEGRA: move to use
+ platform_devm_request_and_ioremap() helper
+Thread-Topic: [PATCH 2/3] GPIO: TEGRA: move to use
+ platform_devm_request_and_ioremap() helper
+Thread-Index: AczgBIkn1GBr9ss/RF63MUXCtSc+twANG7WQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E12440C@HQMAIL01.nvidia.com>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+ <1328004002-24646-3-git-send-email-Barry.Song@csr.com>
+In-Reply-To: <1328004002-24646-3-git-send-email-Barry.Song@csr.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A lookup table would be easier to extend, and the resulting
-code is a bit cleaner.
+Barry Song wrote at Tuesday, January 31, 2012 3:00 AM:
+> [no description]
+> Signed-off-by: Barry Song <Baohua.Song@csr.com>
 
-Reported-by: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
----
- drivers/remoteproc/remoteproc_core.c |   45 +++++++++++++++++----------------
- include/linux/remoteproc.h           |    7 +++++
- 2 files changed, 30 insertions(+), 22 deletions(-)
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 567a3c5..94473bd 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -64,6 +64,8 @@ static DEFINE_KLIST(rprocs, klist_rproc_get, klist_rproc_put);
- 
- typedef int (*rproc_handle_resources_t)(struct rproc *rproc,
- 				struct fw_resource *rsc, int len);
-+typedef int (*rproc_handle_resource_t)(struct rproc *rproc,
-+				struct fw_resource *rsc);
- 
- /*
-  * This is the IOMMU fault handler we register with the IOMMU API
-@@ -658,44 +660,43 @@ free_mapping:
- 	return ret;
- }
- 
-+/*
-+ * A lookup table for resource handlers. Always keep in sync with
-+ * enum fw_resource_type.
-+ */
-+static rproc_handle_resource_t rproc_handle_rsc[] = {
-+	rproc_handle_carveout,	/* RSC_CARVEOUT */
-+	rproc_handle_devmem,	/* RSC_DEVMEM */
-+	rproc_handle_trace,	/* RSC_TRACE */
-+	rproc_handle_vring,	/* RSC_VRING */
-+	NULL, /* RSC_VIRTIO_DEV is handled early upon registration */
-+};
-+
- /* handle firmware resource entries before booting the remote processor */
- static int
- rproc_handle_boot_rsc(struct rproc *rproc, struct fw_resource *rsc, int len)
- {
- 	struct device *dev = rproc->dev;
-+	rproc_handle_resource_t handler;
- 	int ret = 0;
- 
--	while (len >= sizeof(*rsc)) {
-+	for (; len >= sizeof(*rsc); rsc++, len -= sizeof(*rsc)) {
- 		dev_dbg(dev, "rsc: type %d, da 0x%llx, pa 0x%llx, len 0x%x, "
- 			"id %d, name %s, flags %x\n", rsc->type, rsc->da,
- 			rsc->pa, rsc->len, rsc->id, rsc->name, rsc->flags);
- 
--		switch (rsc->type) {
--		case RSC_CARVEOUT:
--			ret = rproc_handle_carveout(rproc, rsc);
--			break;
--		case RSC_DEVMEM:
--			ret = rproc_handle_devmem(rproc, rsc);
--			break;
--		case RSC_TRACE:
--			ret = rproc_handle_trace(rproc, rsc);
--			break;
--		case RSC_VRING:
--			ret = rproc_handle_vring(rproc, rsc);
--			break;
--		case RSC_VIRTIO_DEV:
--			/* this one is handled early upon registration */
--			break;
--		default:
-+		if (rsc->type >= RSC_LAST) {
- 			dev_warn(dev, "unsupported resource %d\n", rsc->type);
--			break;
-+			continue;
- 		}
- 
-+		handler = rproc_handle_rsc[rsc->type];
-+		if (!handler)
-+			continue;
-+
-+		ret = handler(rproc, rsc);
- 		if (ret)
- 			break;
--
--		rsc++;
--		len -= sizeof(*rsc);
- 	}
- 
- 	return ret;
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index b52f784..2544d2e 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -103,6 +103,7 @@ struct fw_resource {
-  *		    the virtio device features, 'pa' holds the virtio guest
-  *		    features, 'len' holds the virtio status, and 'flags' holds
-  *		    the virtio id (currently only VIRTIO_ID_RPMSG is supported).
-+ * @RSC_LAST:       just keep this one at the end
-  *
-  * Most of the resource entries share the basic idea of address/length
-  * negotiation with the host: the firmware usually asks (on behalf of the
-@@ -115,6 +116,11 @@ struct fw_resource {
-  * will contain the expected device addresses (today we actually only support
-  * this scheme, as there aren't yet any use cases for dynamically allocated
-  * device addresses).
-+ *
-+ * Please note that these values are used as indices to the
-+ * rproc_handle_rsc lookup table, so please keep the two synchronized.
-+ * @RSC_LAST is used to check the validity of an index before the lookup table
-+ * is accessed, so please update it as needed too.
-  */
- enum fw_resource_type {
- 	RSC_CARVEOUT	= 0,
-@@ -122,6 +128,7 @@ enum fw_resource_type {
- 	RSC_TRACE	= 2,
- 	RSC_VRING	= 3,
- 	RSC_VIRTIO_DEV	= 4,
-+	RSC_LAST	= 5,
- };
- 
- /**
 -- 
-1.7.5.4
+nvpublic
 
