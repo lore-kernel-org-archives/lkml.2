@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab2AaN2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 08:28:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55257 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab2AaN2j (ORCPT
+	id S1754388Ab2AaNbF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 08:31:05 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51633 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab2AaNbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 08:28:39 -0500
-Date: Tue, 31 Jan 2012 05:28:08 -0800
-From: tip-bot for Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Message-ID: <tip-ed387b781ea6e14b78f449aa2ee4f270b60b01ac@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, h-shimamoto@ct.jp.nec.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, vincent.guittot@linaro.org,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, h-shimamoto@ct.jp.nec.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        vincent.guittot@linaro.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4F2754A0.9090306@ct.jp.nec.com>
-References: <4F2754A0.9090306@ct.jp.nec.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Move SMP-only variable into the SMP section
-Git-Commit-ID: ed387b781ea6e14b78f449aa2ee4f270b60b01ac
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jan 2012 05:28:15 -0800 (PST)
+	Tue, 31 Jan 2012 08:31:03 -0500
+Date: Tue, 31 Jan 2012 05:32:36 -0800
+From: Arjan van de Ven <arjan@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, arjanvandeven@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: x86: clean up smpboot.c's use of udelay+schedule
+Message-ID: <20120131053236.3f120f11@infradead.org>
+In-Reply-To: <20120131124341.GC4408@elte.hu>
+References: <20120130205304.0e10b05e@infradead.org>
+	<20120131124341.GC4408@elte.hu>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ed387b781ea6e14b78f449aa2ee4f270b60b01ac
-Gitweb:     http://git.kernel.org/tip/ed387b781ea6e14b78f449aa2ee4f270b60b01ac
-Author:     Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-AuthorDate: Tue, 31 Jan 2012 11:40:32 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 31 Jan 2012 13:40:59 +0100
+On Tue, 31 Jan 2012 13:43:41 +0100
+Ingo Molnar <mingo@elte.hu> wrote:
+> > +			usleep_range(100, 200);
+> 
+> I'm wondering whether we could shorten this delay to say 10 
+> usecs and thus save 0.1 msecs (or more) from a typical SMP 
+> bootup?
 
-sched: Move SMP-only variable into the SMP section
+doesn't matter really; bringing up a cpu is several orders more
+expensive (> 100msec in 3.2, in 3.3 this got optimized to maybe 30 msec)
+0.1 msec is the least of anyone's worries at this point ;-)
 
-This also fixes the following compilation warning on !SMP:
+(would be nice if this was a completion, but this is rather fragile
+code in general... at least not making it spin is an incremental
+improvement)
 
-  CC kernel/sched/fair.o
-  kernel/sched/fair.c:218:36: warning: 'max_load_balance_interval' defined but not used [-Wunused-variable]
-
-Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Reviewed-by: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/4F2754A0.9090306@ct.jp.nec.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched/fair.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8e77a6b..4ab60a2 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -215,8 +215,6 @@ calc_delta_mine(unsigned long delta_exec, unsigned long weight,
- 
- const struct sched_class fair_sched_class;
- 
--static unsigned long __read_mostly max_load_balance_interval = HZ/10;
--
- /**************************************************************
-  * CFS operations on generic schedulable entities:
-  */
-@@ -3086,6 +3084,8 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
-  * Fair scheduling class load-balancing methods:
-  */
- 
-+static unsigned long __read_mostly max_load_balance_interval = HZ/10;
-+
- /*
-  * pull_task - move a task from a remote runqueue to the local runqueue.
-  * Both runqueues must be locked.
