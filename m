@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab2AaN0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 08:26:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55217 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab2AaN0H (ORCPT
+	id S1754479Ab2AaN1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 08:27:40 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52552 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab2AaN1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 08:26:07 -0500
-Date: Tue, 31 Jan 2012 05:25:41 -0800
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-509605dbe9395ce1abbfac1dba375f074ff57a53@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20120130105037.GA5160@quad>
-References: <20120130105037.GA5160@quad>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top: Fix number of samples displayed
-Git-Commit-ID: 509605dbe9395ce1abbfac1dba375f074ff57a53
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 31 Jan 2012 08:27:39 -0500
+Date: Tue, 31 Jan 2012 14:27:20 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Barry Song <21cnbao@gmail.com>, Barry Song <Barry.Song@csr.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, workgroup.linux@csr.com
+Subject: Re: [PATCH 0/3] platform: add platform_devm_request_and_ioremap()
+ common API
+Message-ID: <20120131132720.GP2471@pengutronix.de>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+ <1328008455.956.30.camel@sauron.fi.intel.com>
+ <CAGsJ_4yVTaZQOE2dB4A3L6WCLE78b4eBPaOcDDJ7RH+0LN=R_A@mail.gmail.com>
+ <1328015763.28171.2.camel@sauron.fi.intel.com>
+ <1328016225.28171.7.camel@sauron.fi.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/NwG7NuG0/W8LcLh"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jan 2012 05:25:47 -0800 (PST)
+In-Reply-To: <1328016225.28171.7.camel@sauron.fi.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  509605dbe9395ce1abbfac1dba375f074ff57a53
-Gitweb:     http://git.kernel.org/tip/509605dbe9395ce1abbfac1dba375f074ff57a53
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Mon, 30 Jan 2012 11:50:37 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 30 Jan 2012 22:29:49 -0200
 
-perf top: Fix number of samples displayed
+--/NwG7NuG0/W8LcLh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In recent versions of perf top, pressing the 'e' key to change the
-number of displayed samples had no effect.
 
-The number of samples was still dictated by the size of the terminal
-(stdio mode). That was quite annoying because typically only the first
-dozen samples really matter.
+> To promote the idea further. If you manage to create a semantic patch
+> for this, then you will just generate your patches automatically. You
+> will also be able to make it more probable that people will use this new
+> api by adding your semantic patch to scripts/coccinelle/api.
 
-This patch fixes this.
+I'd think Julia is already at it [1], but the same issue has come up
+there, too [2].
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120130105037.GA5160@quad
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+Regards,
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 8f80df8..dd162aa 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -89,8 +89,6 @@ void get_term_dimensions(struct winsize *ws)
- 
- static void perf_top__update_print_entries(struct perf_top *top)
- {
--	top->print_entries = top->winsize.ws_row;
--
- 	if (top->print_entries > 9)
- 		top->print_entries -= 9;
- }
-@@ -100,6 +98,13 @@ static void perf_top__sig_winch(int sig __used, siginfo_t *info __used, void *ar
- 	struct perf_top *top = arg;
- 
- 	get_term_dimensions(&top->winsize);
-+	if (!top->print_entries
-+	    || (top->print_entries+4) > top->winsize.ws_row) {
-+		top->print_entries = top->winsize.ws_row;
-+	} else {
-+		top->print_entries += 4;
-+		top->winsize.ws_row = top->print_entries;
-+	}
- 	perf_top__update_print_entries(top);
- }
- 
-@@ -453,8 +458,10 @@ static void perf_top__handle_keypress(struct perf_top *top, int c)
- 				};
- 				perf_top__sig_winch(SIGWINCH, NULL, top);
- 				sigaction(SIGWINCH, &act, NULL);
--			} else
-+			} else {
-+				perf_top__sig_winch(SIGWINCH, NULL, top);
- 				signal(SIGWINCH, SIG_DFL);
-+			}
- 			break;
- 		case 'E':
- 			if (top->evlist->nr_entries > 1) {
+   Wolfram
+
+[1] http://lkml.org/lkml/2012/1/26/169
+[2] http://lkml.org/lkml/2012/1/28/10
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--/NwG7NuG0/W8LcLh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk8n7DgACgkQD27XaX1/VRt3XwCfQ+egjVYitwN3nezvDCpbqj1Y
+2IUAni6IBt+SY+K80WjAl+ozwy6dLRbu
+=erOA
+-----END PGP SIGNATURE-----
+
+--/NwG7NuG0/W8LcLh--
