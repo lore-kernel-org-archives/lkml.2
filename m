@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab2AaQfd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:35:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58129 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753727Ab2AaQfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:35:31 -0500
-Date: Tue, 31 Jan 2012 16:35:28 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Herbert van den Bergh <herbert.van.den.bergh@oracle.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: compaction: Check pfn_valid when entering a new
- MAX_ORDER_NR_PAGES block during isolation for migration
-Message-ID: <20120131163528.GR4065@suse.de>
+	id S1754702Ab2AaQgZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:36:25 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:64085 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754013Ab2AaQgX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 11:36:23 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Subject: Re: [PATCH] Fix KDFONTOP 32bit compatibility layer
+Date: Tue, 31 Jan 2012 16:35:36 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arthur Taylor <art@ified.ca>, Jiri Slaby <jslaby@suse.cz>,
+        Jiri Olsa <jolsa@redhat.com>
+References: <20120128232858.GA18484@type.famille.thibault.fr>
+In-Reply-To: <20120128232858.GA18484@type.famille.thibault.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201201311635.36367.arnd@arndb.de>
+X-Provags-ID: V02:K0:jFJd5KTVAiGk308LTO6UjhRODEL4lMOEoGZUpcA7HRE
+ RGyphc0BZMmvgb0SoNUq2W26KEwu0JZPiZQfWUPerKIp4ksT+W
+ Aw9qktUyxQVfms+HsU0SGYBuiPBwvji9ZqAEilvrC+JFkevl3A
+ 0hGbfMIZyoRkH/MwQHCo5KNmGRuYJ+MXrqgpECM5DZjh3Bgv9L
+ 2OOjziMD4AtDftCDIkkJV82IHrFulam/vMD6j9QDhxVw1FsRkb
+ +l3eFOEE4lgRPJxAGGQbBDDfsrD+E+ruHuZA9wj5IZvh1M9p/1
+ XO2yQ2SPE9/vopGq/5E3L/kdHvEFgSxr8S/UUocty+dmTPl2Uh
+ Ql7llWd+y0PGBZ7p5Mi8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When isolating for migration, migration starts at the start of a zone
-which is not necessarily pageblock aligned. Further, it stops isolating
-when COMPACT_CLUSTER_MAX pages are isolated so migrate_pfn is generally
-not aligned.
+On Saturday 28 January 2012, Samuel Thibault wrote:
+> KDFONTOP(GET) currently fails with EIO when being run in a 32bit
+> userland with a 64bit kernel if the font width is not 8. This is because
+> the compatibility layer introduced by e9216651 forces the addition of
+> the KD_FONT_FLAG_OLD flag, which makes con_font_get return EIO in such
+> case.  This flag should not be set for KDFONTOP, since it's actually
+> the whole point of this flag (see comment in con_font_set for instance).
+> 
+> Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
-The problem is that pfn_valid is only called on the first PFN being
-checked. Lets say we have a case like this
+Hmm, this flag was not introduced in the patch you cite, it used to
+live in fs/compat_ioctl.c before that, since before the start of the
+git history. It seems to date back on the original sparc64 implementation
+of do_kdfontop_ioctl that was written by Eddie Dost in 1998.
 
-H = MAX_ORDER_NR_PAGES boundary
-| = pageblock boundary
-m = cc->migrate_pfn
-f = cc->free_pfn
-o = memory hole
+> diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
+> index 5e096f4..65447c5 100644
+> --- a/drivers/tty/vt/vt_ioctl.c
+> +++ b/drivers/tty/vt/vt_ioctl.c
+> @@ -1463,7 +1463,6 @@ compat_kdfontop_ioctl(struct compat_console_font_op __user *fontop,
+>         if (!perm && op->op != KD_FONT_OP_GET)
+>                 return -EPERM;
+>         op->data = compat_ptr(((struct compat_console_font_op *)op)->data);
+> -       op->flags |= KD_FONT_FLAG_OLD;
+>         i = con_font_op(vc, op);
+>         if (i)
+>                 return i;
 
-H------|------H------|----m-Hoooooo|ooooooH-f----|------H
+>From all I can tell, the patch looks correct, but please update the
+description so you don't blame my innocent patch ;-)
 
-The migrate_pfn is just below a memory hole and the free scanner is
-beyond the hole. When isolate_migratepages started, it scans from
-migrate_pfn to migrate_pfn+pageblock_nr_pages which is now in a memory
-hole. It checks pfn_valid() on the first PFN but then scans into the
-hole where there are not necessarily valid struct pages.
-
-This patch ensures that isolate_migratepages calls pfn_valid when
-necessary.
-
-Reported-and-tested-by: Herbert van den Bergh <herbert.van.den.bergh@oracle.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Cc: stable@kernel.org
----
- mm/compaction.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 899d956..edc1e26 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -313,6 +313,19 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 		} else if (!locked)
- 			spin_lock_irq(&zone->lru_lock);
- 
-+		/*
-+		 * migrate_pfn does not necessarily start aligned to a
-+		 * pageblock. Ensure that pfn_valid is called when moving
-+		 * into a new MAX_ORDER_NR_PAGES range in case of large
-+		 * memory holes within the zone
-+		 */
-+		if ((low_pfn & (MAX_ORDER_NR_PAGES - 1)) == 0) {
-+			if (!pfn_valid(low_pfn)) {
-+				low_pfn += MAX_ORDER_NR_PAGES - 1;
-+				continue;
-+			}
-+		}
-+
- 		if (!pfn_valid_within(low_pfn))
- 			continue;
- 		nr_scanned++;
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
