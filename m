@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab2AaLMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:12:31 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48220 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752695Ab2AaLM3 (ORCPT
+	id S1753990Ab2AaLOE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:14:04 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56693 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab2AaLOC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:12:29 -0500
-Date: Tue, 31 Jan 2012 11:12:26 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the regmap tree with Linus' tree
-Message-ID: <20120131111226.GB18444@opensource.wolfsonmicro.com>
-References: <20120131135950.0da0eb3e0da92b9a3b658354@canb.auug.org.au>
+	Tue, 31 Jan 2012 06:14:02 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s/l3CgOIzMHHjg/5"
-Content-Disposition: inline
-In-Reply-To: <20120131135950.0da0eb3e0da92b9a3b658354@canb.auug.org.au>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F27C9D4.3040105@suse.cz>
+References: <4F27120A.4040106@suse.cz> <CAPXgP12Sr2KzGJ9RA13QBOCkctb-z3O4+1uHOjANgMDDv2pxaQ@mail.gmail.com>
+ <4F27C54F.1010107@suse.cz> <CAPXgP11=U_Y3LvJB2LRnXQ53y1WQQTqc0j1c7iva6ZXvF97wEw@mail.gmail.com>
+ <4F27C9D4.3040105@suse.cz>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 31 Jan 2012 12:13:41 +0100
+Message-ID: <CAPXgP12pj6esZVmN-PYTVgJ+_MaAfmpa9hKoKKQZ+Y=Y-Kb4eA@mail.gmail.com>
+Subject: Re: network regression: cannot rename netdev twice
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ML netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 31, 2012 at 12:00, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 01/31/2012 11:52 AM, Kay Sievers wrote:
+>> On Tue, Jan 31, 2012 at 11:41, Jiri Slaby <jslaby@suse.cz> wrote:
+>>> On 01/30/2012 11:52 PM, Kay Sievers wrote:
+>>>> 2012/1/30 Jiri Slaby <jslaby@suse.cz>:
+>>>>> I cannot boot properly with this commit:
+>>>>> commit 524b6c5b39b931311dfe5a2f5abae2f5c9731676
+>>>>> Author: Eric W. Biederman <ebiederm@xmission.com>
+>>>>> Date:   Sun Dec 18 20:09:31 2011 -0800
+>>>>>
+>>>>>    sysfs: Kill nlink counting.
+>>>>>
+>>>>> 1) network systemd rule doesn't start network
+>>>>
+>>>> What does that mean? What's a network systemd rule?
+>>>
+>>> Oh, perhaps you call it a service file, not rule file?
+>>>
+>>> Anyway this is a different bug. Revert of the patch above does not help.
+>>
+>> Ok, fine. I checked too, and systemd does not play any silly games
+>> with link counts.
+>>
+>>> The bug lays in the network layer. udev is unable to perform persistent
+>>> eth naming:
+>>> # ip link set eth0 name eth1    -- this one is OK
+>>> # ip link set eth1 name eth0
+>>> RTNETLINK answers: No such file or directory
+>>
+>> Please make sure nothing tries to swap netif names in userspace. We
+>> have given up that approach, because it is far too fragile to
+>> temporary rename devices to be able to swap the names, and race
+>> against the loading of new kernel network drivers at the same time.
+>>
+>> This might be a new kernel problem here, but in general that approach
+>> is just broken, we have have given up fiddling around here. Udev does
+>> not do that anymore, and also the code that currently *can* be used to
+>> do this, will be removed from udev in the future.
+>>
+>> Network devices can only be renamed to a namespace that isn't ethX,
+>> and which does not race against kernel names.
+>
+> I have two eth interfaces. The one on the motherboard is named eth0, an
+> added PCI card is eth1. But kernel enumerates them in the opposite order.
+>
+> So udev does this sequence:
+> eth1 -> rename3
+> eth0 -> eth1
+> rename3 -> eth0
+>
+> How it can do it differently? (This is openSUSE factory.)
 
---s/l3CgOIzMHHjg/5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+A future udev will not help you doing that. We have given up
+supporting this approach. Renaming is done during booting, at the same
+time we load new kernel drivers, and all breaks in non-interesting
+ways. Apart from all the other unsolvable problems with this model.
 
-On Tue, Jan 31, 2012 at 01:59:50PM +1100, Stephen Rothwell wrote:
+Pretending we are able to rename netif names in the same namespace the
+kernel is allocating new names is just plain wrong. There are races
+you can't control. The entire approach creates far more problems than
+it solves. We just have to admit it was wrong to do that.
+Custom/to-rename netif names can just not be ethX.
 
-> I fixed it up (I think - see below) and can carry the fix as necessary.
+>> Does is work, if you rename the devices to something else than ethX?
+>
+> Negative:
+> # ip link set eth0 name krtek
+> # ip link set krtek name jezek
+> RTNETLINK answers: No such file or directory
 
-Yes, that's the fix I've got.  I'm kind of surprised git didn't figure
-this out for itself, the tag I sent to Linus should be pre-merged into
-my -next branch as it was sitting in -next for a while.  I'll probably
-merge Linus' tree up at some point when he tags a new -rc.  Thanks.
+This is a command sequence you type manually?
 
---s/l3CgOIzMHHjg/5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+You are sure that userspace is not working in the background,
+triggered by uevents, and comes into your way here?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPJ8yTAAoJEBus8iNuMP3d4S4P/2L1kUmfJ49/jwsI8NuhLQZe
-Z6qHHp3gciPf8N8Jbtm9lc9WKj9YiDs9Ha0jXJeZY40auwcivqwYsyfFOkfwHFxq
-lRr0hWPvvQ0kk1tfkzrkNhMN3EjhMEzBjcQ4CmCZfdKtbKhZgoUvEEc2a13bla72
-EMM6ASOZdZVeIsT2878SGzPU2F5gr0s9nnZKU7WHReURWNNSzH4dMdnkMrGKwdST
-tHaMuT9YLQowq04QOQsUEV+YoWithonhiG+d9Wp0UK27ZPhNyW7ZNX+YxmH4c4nt
-idxYhOOzI9Su9nkWFkRiAMyCujXEmWUTF0PIfgDb9UxKzJhIFxw1Ara+JQtCuVGZ
-r6NJ2/ESCjTNGRxnXtogbjt6XJ6o7OCPCvIY4Wtnbl8Kg0qqCuEoO2NxB7mRQeQV
-vF/usphT/9QlihyiHOfkI6M1KBKv2ojoYoiu6MCYJ3PUuJU7MHaFTKplUF43ecj9
-7xddsLLSSN7pjE8D8OtkJBsr0jV8i3NkmHyWEMFVA/Ea2LpOPnnnfMDwyc2Mhk3p
-/Sg0DszaVaFACrMoqJGJubV9c1HG8ThmBZRxcqP3Y4svkDG699Szck/ptgrLGIU4
-qb46qASKnNGCg8SEEMq2RahaZTgfcNxZeAI26Mv31EZr31SH8aLpa3uSAqZUXLEi
-5aNDY8AzsSjHqFeCbawi
-=0H8a
------END PGP SIGNATURE-----
-
---s/l3CgOIzMHHjg/5--
+Kay
