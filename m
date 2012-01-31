@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2AaTvp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 14:51:45 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17752 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab2AaTvn convert rfc822-to-8bit (ORCPT
+	id S1755194Ab2AaUCh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 15:02:37 -0500
+Received: from casper.infradead.org ([85.118.1.10]:57191 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab2AaUCg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 14:51:43 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 31 Jan 2012 11:51:38 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Shridhar Rasal <srasal@nvidia.com>,
-        "rydberg@euromail.se" <rydberg@euromail.se>,
-        Rakesh Iyer <riyer@nvidia.com>,
+	Tue, 31 Jan 2012 15:02:36 -0500
+Message-ID: <1328040137.2446.242.camel@twins>
+Subject: RE: [PATCH] scheduler: domain: init next_balance in
+ nohz_idle_balancer with jiffies
+From: Peter Zijlstra <peterz@infradead.org>
+To: Diwakar Tundlam <dtundlam@nvidia.com>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>, Ingo Molnar <mingo@elte.hu>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Tue, 31 Jan 2012 11:51:36 -0800
-Subject: RE: [PATCH 1/1] input: keyboard: Set configuration registers
-Thread-Topic: [PATCH 1/1] input: keyboard: Set configuration registers
-Thread-Index: AczgUTN7l86POhHZSOS/GJYt5VoN6gAAFZPg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E1244B3@HQMAIL01.nvidia.com>
-References: <1323415758-16822-1-git-send-email-srasal@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1751860550@HQMAIL01.nvidia.com>
- <3849551.l2KNPKMSmh@dtor-d630.eng.vmware.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17518605E5@HQMAIL01.nvidia.com>
- <20111230032559.GB17850@core.coreip.homeip.net>
- <20120131190904.GA20672@core.coreip.homeip.net>
- <74CDBE0F657A3D45AFBB94109FB122FF178E1244A2@HQMAIL01.nvidia.com>
- <20120131194735.GA22872@core.coreip.homeip.net>
-In-Reply-To: <20120131194735.GA22872@core.coreip.homeip.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+        "'Kamalesh Babulal'" <kamalesh@linux.vnet.ibm.com>
+Date: Tue, 31 Jan 2012 21:02:17 +0100
+In-Reply-To: <1DD7BFEDD3147247B1355BEFEFE466523791832BE9@HQMAIL04.nvidia.com>
+References: <1327927463-4165-1-git-send-email-pdeschrijver@nvidia.com>
+	 <1328024684.2446.234.camel@twins>
+	 <1DD7BFEDD3147247B1355BEFEFE466523791832BE9@HQMAIL04.nvidia.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote at Tuesday, January 31, 2012 12:48 PM:
-> On Tue, Jan 31, 2012 at 11:29:35AM -0800, Stephen Warren wrote:
-> > Dmitry Torokhov wrote at Tuesday, January 31, 2012 12:09 PM:
-> > > On Thu, Dec 29, 2011 at 07:25:59PM -0800, Dmitry Torokhov wrote:
-> > > > On Fri, Dec 09, 2011 at 03:17:54PM -0800, Stephen Warren wrote:
-...
-> > > > > However, I suppose if we were to change the structure of the pdata to be:
-> > > > >
-> > > > > struct tegra_kbc_pin_cfg {
-> > > > >     bool is_row;
-> > > > >     u8 row_col_id;
-> > > > >     u8 pin_id;
-> > > > > };
-> > > > >
-> > > > > Then struct tegra_kbc_platform_data could indeed have a pointer to a
-> > > > > variable-sized array of these, which would avoid the "en" member.
-> > > > >
-> > > >
-> > > > How about we change bool to enum instead, like in the patch below?
-...
-> > I'd rather PIN_CFG_IGNORE was the first enum, so it gets value 0, or this
-> > probably won't solve the original issue?
+On Tue, 2012-01-31 at 11:23 -0800, Diwakar Tundlam wrote:
+> Here's the patch for kernel 3.3-rc1:
 > 
-> The benefit of current definition is that it is compatible with old
-> ones using bool...
+> ** kernel/sched/fair.c	2012-01-31 11:19:52.032421593 -0800
+> ***************
+> *** 5585,5597 ****
+>   
+>   __init void init_sched_fair_class(void)
+>   {
+>   #ifdef CONFIG_SMP
+>   	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
+>   
+>   #ifdef CONFIG_NO_HZ
+>   	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
+> + 	nohz.next_balance = jiffies;
+>   #endif
+>   #endif /* SMP */
+>   
+>   }
 
-There are no in-tree users of this type yet, so compatibility isn't
-really an issue. And if we don't make that change, anyone who does start
-to use it is going to have to initialize every element of the array even
-when they aren't used.
-
--- 
-nvpublic
-
+This is not something I can apply, please see
+Documentation/SubmittingPatches.
