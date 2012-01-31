@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab2AaMli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 07:41:38 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:33482 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2AaMlh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 07:41:37 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        systemd-devel@lists.freedesktop.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: sysfs regression: wrong link counts
-References: <4F27120A.4040106@suse.cz> <20120130220611.GA26655@kroah.com>
-	<20120130221059.26ab5edf@pyramind.ukuu.org.uk>
-	<20120130222717.GA6393@kroah.com> <m18vkoirv9.fsf@fess.ebiederm.org>
-	<4F27C6EB.2070305@suse.cz>
-Date: Tue, 31 Jan 2012 04:44:11 -0800
-In-Reply-To: <4F27C6EB.2070305@suse.cz> (Jiri Slaby's message of "Tue, 31 Jan
-	2012 11:48:11 +0100")
-Message-ID: <m14nvc82jo.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1754200Ab2AaMny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 07:43:54 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:49204 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753024Ab2AaMnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 07:43:53 -0500
+Date: Tue, 31 Jan 2012 13:43:41 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, arjanvandeven@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: x86: clean up smpboot.c's use of udelay+schedule
+Message-ID: <20120131124341.GC4408@elte.hu>
+References: <20120130205304.0e10b05e@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/0KIQBZOEWMuTKVquZK1MWJ4aXgY7JP3E=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Disposition: inline
+In-Reply-To: <20120130205304.0e10b05e@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Slaby <jslaby@suse.cz> writes:
 
-> Oh, we are not going to break userspace with 3.3, are we? 
+* Arjan van de Ven <arjan@infradead.org> wrote:
 
-No.  This code is currently scheduled for 3.4.
+> >From 9f8dd2b15ff19ad73ee0eb235b4fdde9277185e8 Mon Sep 17 00:00:00 2001
+> From: Arjan van de Ven <arjan@linux.intel.com>
+> Date: Mon, 30 Jan 2012 20:38:09 -0800
+> Subject: [PATCH] x86: clean up smpboot.c's use of udelay+schedule
+> 
+> smpboot.c does a udelay() followed by a schedule(); to yield
+> the CPU to other threads. This comes from the time when the kernel
+> did not yet have usleep_*() style APIs...
+> 
+> ... nowadays, the kernel can do better than this, and this
+> patch replaces this code sequence with a usleep_range(),
+> so that the CPU is actually yielded for some real time.
+> 
+> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+> ---
+>  arch/x86/kernel/smpboot.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 66d250c..0b794c6 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -781,14 +781,13 @@ do_rest:
+>  		for (timeout = 0; timeout < 50000; timeout++) {
+>  			if (cpumask_test_cpu(cpu, cpu_callin_mask))
+>  				break;	/* It has booted */
+> -			udelay(100);
+>  			/*
+>  			 * Allow other tasks to run while we wait for the
+>  			 * AP to come online. This also gives a chance
+>  			 * for the MTRR work(triggered by the AP coming online)
+>  			 * to be completed in the stop machine context.
+>  			 */
+> -			schedule();
+> +			usleep_range(100, 200);
 
-> I understand
-> that what sensors do is nothing but sh*t. But this change should wait
-> until everybody has a chance to have fixed sensors package in their
-> distribution.
->
-> To be clear, what I'm suggesting is to postpone the change and schedule
-> it for something like 3.7.
+I'm wondering whether we could shorten this delay to say 10 
+usecs and thus save 0.1 msecs (or more) from a typical SMP 
+bootup?
 
-The sensors update with the fix is scheduled for about a week out, well
-before 3.3 ships.
+Thanks,
 
-The code in next for 3.4 is perhaps 4-6 months out from a kernel
-release.  That seems like plenty of time for distros to get an update
-package for sensors together.
-
-Eric
+	Ingo
