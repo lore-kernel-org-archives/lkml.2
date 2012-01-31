@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab2AaTTb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 14:19:31 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:50407 "EHLO relay.sgi.com"
+	id S1754020Ab2AaTVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 14:21:41 -0500
+Received: from inx.pm.waw.pl ([195.116.170.130]:42179 "EHLO inx.pm.waw.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753184Ab2AaTTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 14:19:30 -0500
-Date: Tue, 31 Jan 2012 13:19:28 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@lst.de>,
-        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, xfs-masters@oss.sgi.com,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH] xfs: show uuid when mount fails due to duplicate uuid
-Message-ID: <20120131191928.GH7762@sgi.com>
-References: <20120113055839.12919.98763.stgit@ltc219.sdl.hitachi.co.jp>
+	id S1752803Ab2AaTVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 14:21:39 -0500
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Andrea Shepard <andrea@persephoneslair.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        mmarek@suse.cz, jkosina@suse.cz, joe@perches.com,
+        justinmattock@gmail.com, gregkh@suse.de, alan@linux.intel.com,
+        jdmason@kudzu.us
+Subject: Re: [00/22] Cyclades PC300 driver: summary of patch series
+References: <20120130024243.GA10262@cronus.persephoneslair.org>
+Date: Tue, 31 Jan 2012 20:20:30 +0100
+In-Reply-To: <20120130024243.GA10262@cronus.persephoneslair.org> (Andrea
+	Shepard's message of "Sun, 29 Jan 2012 18:42:43 -0800")
+Message-ID: <m3d39z3cht.fsf@intrepid.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120113055839.12919.98763.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 02:58:39PM +0900, Mitsuo Hayasaka wrote:
-> When a system tries to mount a filesystem (FS) using UUID, the xfs
-> returns -EINVAL and shows a message if a FS with the same UUID has
-> been already mounted. It is useful to output the duplicate UUID
-> with it.
-> 
-> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-> Reviewed-by: Christoph Hellwig <hch@lst.de>
-> Cc: Ben Myers <bpm@sgi.com>
-> Cc: Alex Elder <elder@kernel.org>
-> Cc: Christoph Hellwig <hch@lst.de>
+Andrea Shepard <andrea@persephoneslair.org> writes:
 
-Looks good.
+> The Cyclades PC-300 is a line of PCI synchronous serial cards, which was
+> produced in single and dual port models with either T1/E1 or V.35 ports.
+> It used a Hitachi HD64572 (SCA-II) synchronous serial chip, and in the
+> T1/E1 models an Infineon FALC-LH line interface/framing chip.  Copies
+> of the hardware documentation may be found at [1].
 
-Reviewed-by: Ben Myers <bpm@sgi.com>
+BTW the V.35/V.24/X.21 version (i.e. non-T1/E1) are supported by the
+pc300too.c driver. Or at least they're supposed to, I admit I haven't
+used this kind of hw for several years (but can still test and fix, when
+time permits).
+
+Perhaps, just perhaps, merging T1/E1 support into pc300too.c would be
+a better idea than dealing with Cyclades' old code.
+
+The pc300too shares common SCA-II code with a driver for another hw,
+pci200syn. I think it's been verified to work on non-x86-32 systems.
+
+Esp. given this:
+
+>  * Patches 01 through 16 merge in version 4.1.0, and fix build, portability
+>    and style problems.  As of patch 16, the driver will build cleanly and
+>    will detect hardware, but not operate reliably.
+-- 
+Krzysztof Halasa
