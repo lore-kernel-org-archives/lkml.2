@@ -1,127 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab2AaKtz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:49:55 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41450 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751932Ab2AaKty convert rfc822-to-8bit (ORCPT
+	id S1753758Ab2AaKxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:53:18 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40164 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab2AaKxR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:49:54 -0500
+	Tue, 31 Jan 2012 05:53:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <1328006840-7345-1-git-send-email-javier.martin@vista-silicon.com>
-References: <1328006840-7345-1-git-send-email-javier.martin@vista-silicon.com>
-Date: Tue, 31 Jan 2012 11:49:52 +0100
-Message-ID: <CACKLOr0_k2WW_qG4fRLORWTbZBjZVY=CGns2A2asGOvNub2vvw@mail.gmail.com>
-Subject: Re: [PATCH v3] dmaengine: Add support for MEMCPY for imx-dma.
-From: javier Martin <javier.martin@vista-silicon.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, dan.j.williams@intel.com,
-        s.hauer@pengutronix.de, vinod.koul@intel.com,
-        Javier Martin <javier.martin@vista-silicon.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4F27C54F.1010107@suse.cz>
+References: <4F27120A.4040106@suse.cz> <CAPXgP12Sr2KzGJ9RA13QBOCkctb-z3O4+1uHOjANgMDDv2pxaQ@mail.gmail.com>
+ <4F27C54F.1010107@suse.cz>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 31 Jan 2012 11:52:53 +0100
+Message-ID: <CAPXgP11=U_Y3LvJB2LRnXQ53y1WQQTqc0j1c7iva6ZXvF97wEw@mail.gmail.com>
+Subject: Re: network regression: cannot rename netdev twice
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ML netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 January 2012 11:47, Javier Martin <javier.martin@vista-silicon.com> wrote:
-> MEMCPY transfers allow DMA copies from memory to
-> memory. This patch has been tested with dmatest
-> device driver.
+On Tue, Jan 31, 2012 at 11:41, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 01/30/2012 11:52 PM, Kay Sievers wrote:
+>> 2012/1/30 Jiri Slaby <jslaby@suse.cz>:
+>>> I cannot boot properly with this commit:
+>>> commit 524b6c5b39b931311dfe5a2f5abae2f5c9731676
+>>> Author: Eric W. Biederman <ebiederm@xmission.com>
+>>> Date: Â  Sun Dec 18 20:09:31 2011 -0800
+>>>
+>>> Â  Â sysfs: Kill nlink counting.
+>>>
+>>> 1) network systemd rule doesn't start network
+>>
+>> What does that mean? What's a network systemd rule?
 >
-> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
-> ---
->  drivers/dma/imx-dma.c |   36 +++++++++++++++++++++++++++++++++++-
->  1 files changed, 35 insertions(+), 1 deletions(-)
+> Oh, perhaps you call it a service file, not rule file?
 >
-> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> index 3296a73..9aa6e85 100644
-> --- a/drivers/dma/imx-dma.c
-> +++ b/drivers/dma/imx-dma.c
-> @@ -196,7 +196,8 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
->        struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
->        struct imx_dma_data *data = chan->private;
->
-> -       imxdmac->dma_request = data->dma_request;
-> +       if (data != NULL)
-> +               imxdmac->dma_request = data->dma_request;
->
->        dma_async_tx_descriptor_init(&imxdmac->desc, chan);
->        imxdmac->desc.tx_submit = imxdma_tx_submit;
-> @@ -328,6 +329,36 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
->        return &imxdmac->desc;
->  }
->
-> +static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
-> +       struct dma_chan *chan, dma_addr_t dest,
-> +       dma_addr_t src, size_t len, unsigned long flags)
-> +{
-> +       struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-> +       struct imxdma_engine *imxdma = imxdmac->imxdma;
-> +       int ret;
-> +
-> +       dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
-> +                       __func__, imxdmac->channel, src, dest, len);
-> +
-> +       if (imxdmac->status == DMA_IN_PROGRESS)
-> +               return NULL;
-> +       imxdmac->status = DMA_IN_PROGRESS;
-> +
-> +       ret = imx_dma_config_channel(imxdmac->imxdma_channel,
-> +                              IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
-> +                              IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
-> +                              0, 0);
-> +       if (ret)
-> +               return NULL;
-> +
-> +       ret = imx_dma_setup_single(imxdmac->imxdma_channel, src, len,
-> +                                  dest, DMA_MODE_WRITE);
-> +       if (ret)
-> +               return NULL;
-> +
-> +       return &imxdmac->desc;
-> +}
-> +
->  static void imxdma_issue_pending(struct dma_chan *chan)
->  {
->        struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-> @@ -349,6 +380,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
->
->        dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
->        dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
-> +       dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
->
->        /* Initialize channel parameters */
->        for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-> @@ -382,11 +414,13 @@ static int __init imxdma_probe(struct platform_device *pdev)
->        imxdma->dma_device.device_tx_status = imxdma_tx_status;
->        imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
->        imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
-> +       imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
->        imxdma->dma_device.device_control = imxdma_control;
->        imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
->
->        platform_set_drvdata(pdev, imxdma);
->
-> +       imxdma->dma_device.copy_align = 2; /* 2^2 = 4 bytes alignment */
->        imxdma->dma_device.dev->dma_parms = &imxdma->dma_parms;
->        dma_set_max_seg_size(imxdma->dma_device.dev, 0xffffff);
->
-> --
-> 1.7.0.4
->
+> Anyway this is a different bug. Revert of the patch above does not help.
 
-Hi Vinod,
-now that you have merged Sascha's latest patches you can apply this
-patch which has been tested against the latest commit of your 'next'
-branch ( ba7932334fbede4bb6a4ff4e635391ca7833203f).
+Ok, fine. I checked too, and systemd does not play any silly games
+with link counts.
 
-Thank you.
--- 
-Javier Martin
-Vista Silicon S.L.
-CDTUC - FASE C - Oficina S-345
-Avda de los Castros s/n
-39005- Santander. Cantabria. Spain
-+34 942 25 32 60
-www.vista-silicon.com
+> The bug lays in the network layer. udev is unable to perform persistent
+> eth naming:
+> # ip link set eth0 name eth1 Â  Â -- this one is OK
+> # ip link set eth1 name eth0
+> RTNETLINK answers: No such file or directory
+
+Please make sure nothing tries to swap netif names in userspace. We
+have given up that approach, because it is far too fragile to
+temporary rename devices to be able to swap the names, and race
+against the loading of new kernel network drivers at the same time.
+
+This might be a new kernel problem here, but in general that approach
+is just broken, we have have given up fiddling around here. Udev does
+not do that anymore, and also the code that currently *can* be used to
+do this, will be removed from udev in the future.
+
+Network devices can only be renamed to a namespace that isn't ethX,
+and which does not race against kernel names.
+
+Does is work, if you rename the devices to something else than ethX?
+
+Kay
