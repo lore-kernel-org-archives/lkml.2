@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2AaRu6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 12:50:58 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:53590 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753372Ab2AaRu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 12:50:57 -0500
-Date: Tue, 31 Jan 2012 11:50:53 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@lst.de>,
-        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, xfs-masters@oss.sgi.com,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH] xfs: pass KM_SLEEP flag to kmem_realloc() in
-	xlog_recover_add_to_cnt_trans()
-Message-ID: <20120131175053.GG7762@sgi.com>
-References: <20120127063726.16227.681.stgit@ltc219.sdl.hitachi.co.jp>
+	id S1754108Ab2AaR52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 12:57:28 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45688 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab2AaR51 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 12:57:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120127063726.16227.681.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAC5umyh6H-0JXyQ9V97FH_Cp7Y2swbRMJptXJwnE0cK6HqbkGQ@mail.gmail.com>
+References: <1327674295-3700-1-git-send-email-akinobu.mita@gmail.com>
+	<1327674295-3700-2-git-send-email-akinobu.mita@gmail.com>
+	<1327684589.12089.22.camel@joe2Laptop>
+	<CAN8TOE8Hq8f3ipQFxBAHXK5ArSH6wNc8GA5CbYr_xORBa5gAWw@mail.gmail.com>
+	<CAC5umyh6H-0JXyQ9V97FH_Cp7Y2swbRMJptXJwnE0cK6HqbkGQ@mail.gmail.com>
+Date: Tue, 31 Jan 2012 09:57:26 -0800
+Message-ID: <CAN8TOE_e8FkTTABRTyrXr5EW3wsJeXaODE4Wpud4ype=tcRFFQ@mail.gmail.com>
+Subject: Re: [PATCH] mtd/nand: use string library
+From: Brian Norris <computersforpeace@gmail.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Scott Branden <sbranden@broadcom.com>,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        Jiandong Zheng <jdzheng@broadcom.com>, akpm@linux-foundation.org,
+        David Woodhouse <dwmw2@infradead.org>, eric.dumazet@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 03:37:26PM +0900, Mitsuo Hayasaka wrote:
-> The kmem_realloc() in xfs is given KM_* memory allocation flags. And it
-> allocates memory using kmalloc() after they are converted to gfp_mask
-> flags. In xlog_recover_add_to_cont_trans(), 0u is passed to kmem_realloc(),
-> instead of them. I guess it is preferred to use them, and here memory must
-> be allocated but don't have to be done with GFP_ATOMIC. So, this patch
-> changes it to KM_SLEEP.
-> 
-> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-> Cc: Ben Myers <bpm@sgi.com>
-> Cc: Alex Elder <elder@kernel.org>
-> Cc: Christoph Hellwig <hch@lst.de>
+On Fri, Jan 27, 2012 at 3:52 PM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+> 2012/1/28 Brian Norris <computersforpeace@gmail.com>:
+>> On Fri, Jan 27, 2012 at 9:16 AM, Joe Perches <joe@perches.com> wrote:
+>>> On Fri, 2012-01-27 at 23:24 +0900, Akinobu Mita wrote:
+>>>> - Use memchr_inv to check if the data contains all 0xFF bytes.
+>>>>   It is faster than looping for each byte.
+>>>
+>>> Stupid question:
+>>>
+>>> Are there any mtd devices modified that are slower
+>>> at 64 bit accesses than repeated 8 bit accesses?
+>>
+>> I believe this patch deals with kernel buffers, not any kind of direct
+>> access to the MTD, so the question (which is not stupid IMO) should be
+>> regarding CPU architectures. And my educated guess is that 64-bit
+>> access should not be any slower. I do know that 8-bit access *is*
+>> slower for some relevant architectures.
+>
+> It could be slower when the number of bytes scanned is very small
+> (found a unmatched character immediately, or the size of the area
+> is very small), because memchr_inv() needs to generate a 64bit pattern
+> to compare before starting the loop.  I recalled that Eric Dumazet
+> pointed out it could generate the 64bit pattern more efficiently.
+> (https://lkml.org/lkml/2011/8/8/480)
+>
+> Even if that small scanning is slower, this change can be assumed cleanup
+> patch that simplifies the code.
 
-Looks good.  Consistent with other kmem_*alloc in log recovery.
+Well, I agree that it qualifies as cleanup as well, but we should at
+least make an attempt not to cause performance regression...
 
-Reviewed-by: Ben Myers <bpm@sgi.com>
+So by my understanding, the use of memchr_inv() is on buffers of
+minimum length of 10 in this patch, so we're likely to have decent
+results. And memcmp() usage looks fine to me.
+
+So unless other concerns arise:
+
+Acked-by: Brian Norris <computersforpeace@gmail.com>
