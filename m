@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab2AaPwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 10:52:40 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:43371 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754510Ab2AaPwi (ORCPT
+	id S1754728Ab2AaP7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 10:59:50 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:50076 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab2AaP7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 10:52:38 -0500
-Date: Tue, 31 Jan 2012 21:22:28 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Diwakar Tundlam <dtundlam@nvidia.com>
-Cc: "'Ingo Molnar'" <mingo@elte.hu>, "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Antti Miettinen <amiettinen@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Kevin Kranzusch <KKranzusch@nvidia.com>
-Subject: Re: Fix bug: Scheduler's idle-load-balancer not running in first 5
- mins after bootup
-Message-ID: <20120131155228.GB22077@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <1DD7BFEDD3147247B1355BEFEFE466523791832BD5@HQMAIL04.nvidia.com>
+	Tue, 31 Jan 2012 10:59:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 1/3] lib: add NO_GENERIC_PCI_IOPORT_MAP
+Date: Tue, 31 Jan 2012 15:59:25 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Kevin Cernekee <cernekee@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        James Morris <jmorris@namei.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Michael Witten <mfwitten@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arch@vger.kernel.org
+References: <cover.1327877053.git.mst@redhat.com> <201201302004.33083.arnd@arndb.de> <20120131002203.GA14344@redhat.com>
+In-Reply-To: <20120131002203.GA14344@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1DD7BFEDD3147247B1355BEFEFE466523791832BD5@HQMAIL04.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12013105-7014-0000-0000-000000807F71
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201311559.26050.arnd@arndb.de>
+X-Provags-ID: V02:K0:5unnTK8DY+pSXKJjyVKmUK1M6m9dlrxePP5EZqGBVFx
+ QV18CtY7T6d+IeJJJCq+wVShQDnjlxVKGldTEfJ6eC1v9TFKmP
+ o2FeUeWbWWqp3OZsOc2o4RxadowXInGyAfwtalJ45rdjt2m2WH
+ A+KS3h1YHN1dSObRrAJBpwLYM0Ru8Y0JXVpzQfy83dzm+fvFhX
+ Qtd0djvLe8cCqYjsvEw3XY93Mqn6q23+1WXSCgZ54sexf5RZ+o
+ /T1A3ia82jgv68qmhofYwcvAryFZeX4lk5oNTxH7aAAzybFbhv
+ 1N10cSAbaaZ1UimrWldnaKIEahh5JKXKPPfHtSEg1dJXn5z3+6
+ N4aDMWITUjtA2IreCvdk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Diwakar Tundlam <dtundlam@nvidia.com> [2012-01-30 10:14:23]:
+On Tuesday 31 January 2012, Michael S. Tsirkin wrote:
+> I have an idea: we can make the generic one inline
+> if we keep it in the .c file. So something like
+> the below on top of my patch will probably work.
+> Ack?
 
-> We ran into this at Nvidia. QA filed a bug saying coremark_4pthreads scores lower (as if running on 3 cores) when run shortly after bootup. But later its score increases to expected values on 4 cores.
-> 
-> This patch is relevant to linux-2.6.39 but I noticed this fix is not made in linux-3.0, 3.1, 3.2 or 3.3 also.
-> 
-> Please see commit log for more details of the problem and fix.
-> 
-> Thanks,
->   Diwakar.
->   Tegra Android Kernel SW Engg.
->   NVIDIA.
->   Santa Clara, CA
-> 
-> commit d04d7ef0e3f8c70bd6cd5abb2abc0236aa8d1f7c
-> Author: Diwakar Tundlam <dtundlam@nvidia.com>
-> Date:   Wed Jan 18 18:58:57 2012 -0800
-> 
->     scheduler: domain: init next_balance in nohz_idle_balancer with jiffies
->     
->     The next_balance parameter of nohz_idle_balancer should be initialized
->     to jiffies since jiffies itself is initialized to 300 seconds shy of
->     overflow. Otherwise, nohz_idle_balancer does not run for the first 5
->     mins after bootup.
->     
->     Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
->     Reviewed-by: Aleksandr Frid <afrid@nvidia.com>
->     Reviewed-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
->     Reviewed-by: Satya Popuri <spopuri@nvidia.com>
-> 
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c index c5b09f7..506c5da 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
+IMHO this is still worse than the macro, because it breaks common practice.
+The common way to do this is #ifdef/#else/#endif in the header file to
+provide either an extern or a macro/inline definition, while having the
+inline definition in a separate place makes it harder to understand
+what's going on. E.g. a frequent review comment is to not put extern
+declarations inside of #ifdef, but if someone tries that here, it would
+break.
 
-Can you rebase the patch against tip. kernel/sched* has been
-moved to kernel/sched/.
+You also still need the #ifdef in the implementation file, which we
+try to avoid normally just like we try to avoid macros where possible.
 
-> @@ -8288,6 +8288,7 @@ void __init sched_init(void)
->         atomic_set(&nohz.load_balancer, nr_cpu_ids);
->         atomic_set(&nohz.first_pick_cpu, nr_cpu_ids);
->         atomic_set(&nohz.second_pick_cpu, nr_cpu_ids);
-
-above lines are removed by 0b005cf54eac
-
-> +       nohz.next_balance = jiffies;
->  #endif
->         /* May be allocated at isolcpus cmdline parse time */
->         if (cpu_isolated_map == NULL)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+	Arnd
