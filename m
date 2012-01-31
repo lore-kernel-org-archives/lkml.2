@@ -1,80 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab2AaAES (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 19:04:18 -0500
-Received: from mail.df.lth.se ([194.47.250.12]:53427 "EHLO mail.df.lth.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752832Ab2AaAER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 19:04:17 -0500
-From: "Linus Walleij" <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: =?UTF-8?q?=5BGIT=20PULL=5D=20pinctrl=20fixes=20as=20of=203=2E3-rc1?=
-Date: Tue, 31 Jan 2012 01:04:03 +0100
-Message-Id: <1327968243-2128-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1754393Ab2AaAH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 19:07:56 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:33161 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752984Ab2AaAHx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 19:07:53 -0500
+X-WSS-ID: 0LYMZ10-0A-IBN-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Andrew Morton" <akpm@linux-foundation.org>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        "Arun MURTHY" <arun.murthy@stericsson.com>,
+        "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>,
+        "Richard Purdie" <rpurdie@rpsys.net>
+Date: Mon, 30 Jan 2012 16:07:30 -0800
+Subject: [PATCH v2 1/4] leds-lp5521: add 'name' in the lp5521_led_config
+Thread-Topic: [PATCH v2 1/4] leds-lp5521: add 'name' in the
+ lp5521_led_config
+Thread-Index: AczfrFLAxduHlIVESSC2EUPTcHwmcQ==
+Message-ID: <B567DBAB974C0544994013492B949F8E3812DEC6A4@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-WSS-ID: 6339EF4F1LS10031853-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The name of each led channel can be configurable.
+For the compatibility, the name is set to default value(xx:channelN)
+when 'name' is not defined.
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+* kernel patch based on 3.0.1
 
-Hi Linus,
+* PATCH v2 : Just 'Acked-by' and 'Cc' are added. Same source files as previous version.
 
-here are some fixes to the pin control system that has accumulated
-since -rc1. Mainly Tony Lindgren fixed the module load/unload logic
-and the rest are minor fixes and documentation.
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: Arun MURTHY <arun.murthy@stericsson.com>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+---
+ Documentation/leds/leds-lp5521.txt |    6 ++++++
+ drivers/leds/leds-lp5521.c         |   11 ++++++++---
+ include/linux/leds-lp5521.h        |    1 +
+ 3 files changed, 15 insertions(+), 3 deletions(-)
 
-Yours,
-Linus Walleij
+diff --git a/Documentation/leds/leds-lp5521.txt b/Documentation/leds/leds-lp5521.txt
+index c4d8d15..f48ab75 100644
+--- a/Documentation/leds/leds-lp5521.txt
++++ b/Documentation/leds/leds-lp5521.txt
+@@ -43,17 +43,23 @@ Format: 10x mA i.e 10 means 1.0 mA
+ example platform data:
+ 
+ Note: chan_nr can have values between 0 and 2.
++The name of each channel can be configurable.
++If the name field is not defined, the default name will be set to 'xxxx:channelN'
++(XXXX : pdata->label or i2c client name, N : channel number)
+ 
+ static struct lp5521_led_config lp5521_led_config[] = {
+         {
++		.name = "red",
+                 .chan_nr        = 0,
+                 .led_current    = 50,
+ 		.max_current    = 130,
+         }, {
++		.name = "green",
+                 .chan_nr        = 1,
+                 .led_current    = 0,
+ 		.max_current    = 130,
+         }, {
++		.name = "blue",
+                 .chan_nr        = 2,
+                 .led_current    = 0,
+ 		.max_current    = 130,
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index cc1dc48..c0e7c10 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -617,10 +617,15 @@ static int __devinit lp5521_init_led(struct lp5521_led *led,
+ 		return -EINVAL;
+ 	}
+ 
+-	snprintf(name, sizeof(name), "%s:channel%d",
+-			pdata->label ?: client->name, chan);
+ 	led->cdev.brightness_set = lp5521_set_brightness;
+-	led->cdev.name = name;
++	if (pdata->led_config[chan].name) {
++		led->cdev.name = pdata->led_config[chan].name;
++	} else {
++		snprintf(name, sizeof(name), "%s:channel%d",
++			pdata->label ?: client->name, chan);
++		led->cdev.name = name;
++	}
++
+ 	res = led_classdev_register(dev, &led->cdev);
+ 	if (res < 0) {
+ 		dev_err(dev, "couldn't register led on channel %d\n", chan);
+diff --git a/include/linux/leds-lp5521.h b/include/linux/leds-lp5521.h
+index fd548d2..e675b8d 100644
+--- a/include/linux/leds-lp5521.h
++++ b/include/linux/leds-lp5521.h
+@@ -26,6 +26,7 @@
+ /* See Documentation/leds/leds-lp5521.txt */
+ 
+ struct lp5521_led_config {
++	char		*name;
+ 	u8		chan_nr;
+ 	u8		led_current; /* mA x10, 0 if led is not connected */
+ 	u8		max_current;
+-- 
+1.7.4.1
 
-The following changes since commit dcd6c92267155e70a94b3927bce681ce74b80d1f:
 
-  Linux 3.3-rc1 (2012-01-19 15:04:48 -0800)
+Best Regards,
+Milo (Woogyom) Kim
+Texas Instruments Incorporated
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git for-torvalds
 
-Stephen Warren (1):
-      pinctrl: fix pinconf_pins_show iteration
 
-Tony Lindgren (4):
-      pinctrl: free debugfs entries when unloading a pinmux driver
-      pinctrl: fix some pinmux typos
-      pinctrl: fix pinmux_hog_maps when ctrl_dev_name is not set
-      pinctrl: add checks for empty function names
 
-Uwe Kleine-König (2):
-      Documentation/pinctrl: fix a few syntax errors in code examples
-      pinctrl: unbreak error messages
-
- Documentation/pinctrl.txt |   17 ++++-----
- drivers/pinctrl/core.c    |   50 +++++++++++++++++----------
- drivers/pinctrl/core.h    |    3 ++
- drivers/pinctrl/pinconf.c |    6 ++-
- drivers/pinctrl/pinconf.h |    4 +-
- drivers/pinctrl/pinmux.c  |   81 ++++++++++++++++++++++++---------------------
- drivers/pinctrl/pinmux.h  |    4 +-
- 7 files changed, 93 insertions(+), 72 deletions(-)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPJy8GAAoJEEEQszewGV1zZyoP/3OwFtvP2BRJ2LsBNTzUYXec
-z2hs8QP9i1XozkGoqP5jjkmEpflunU6JyzxmbtD9heT/Xz6PnXw2x/MhhTRQtgA5
-fQd/V33ctL/Nqw9tqsWGFzwzDxA1wIz+MoBTVFfMhmF5rdumHdpE5VD7hi8/polG
-epAJCIjEM/CqQu58PETcPNevwCR2ruWl/Jze35DJY5kfHg9ewHbvgROqjukKkoIj
-1LdU847+0gCEEaOEiQk42IWZZg190yADTSwbepaVjx6JHfYlYZzbq5dE7Cp9BKjh
-vU/LLRvOJqLY2YPHKfv2a3EwqZ9LEbvrRC0bH9CCcnK9mzObrUeFrPBE05OevXu3
-Nu2oyWOUsmQhM/69EBkKc5odLkm84MvonCSix1+rQAvs21YfGZsBEom1+Q0Y+Q9x
-uWZov/uLq0/EzGVwus6lEWSmvL35Q2Vy5hH2wpDb7pMGxICKCCCBpxq6cC7wXZXB
-KlXSIojqTRx9Otq6wvu5T/Ud0OyNXcWgyM9NUJ9H7BwH1g0l/H9olOUo33DcUZ1I
-QpFlNI1TA5yFCqTlj3almF//zUvBpMf/u4Szl53r3uq4phL4EeM93IaFFI2ZIH+o
-hLlKz93XGtQV+knPKdIlq7Hh4nIETrWKRhKeA2UghRCFFIwe4q21zQb7qfDVr+ON
-w2YCOJRnURuNY3dC/s2x
-=8V1Y
------END PGP SIGNATURE-----
