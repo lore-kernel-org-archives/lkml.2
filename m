@@ -1,130 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab2AaOt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 09:49:27 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:58645 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753280Ab2AaOt0 (ORCPT
+	id S1754560Ab2AaOyO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 09:54:14 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46418 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab2AaOyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 09:49:26 -0500
-Message-ID: <4F27FF3C.5050000@stericsson.com>
-Date: Tue, 31 Jan 2012 15:48:28 +0100
-From: Maxime Coquelin <maxime.coquelin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111110 Thunderbird/8.0
+	Tue, 31 Jan 2012 09:54:12 -0500
+Date: Tue, 31 Jan 2012 23:06:30 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>, b-cousson@ti.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v3 1/2] irq: add irq_domain support to generic-chip
+Message-ID: <20120131150627.GB26436@S2101-09.ap.freescale.net>
+References: <1327944699-29882-1-git-send-email-robherring2@gmail.com>
+ <1327944699-29882-2-git-send-email-robherring2@gmail.com>
+ <CAAQ0ZWSVgcv2+jD9C=4-JFyuAZEr+DYL=BO=4kmYn1t=AAXn_A@mail.gmail.com>
+ <4F27FB7D.9030003@gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Andrea GALLO <andrea.gallo@stericsson.com>,
-        Vincent GUITTOT <vincent.guittot@stericsson.com>,
-        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
-        Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFCv1 0/6] PASR: Partial Array Self-Refresh Framework
-References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com> <20120130135341.GA3720@elte.hu> <4F26A701.3090006@stericsson.com> <20120131123903.GB4408@elte.hu>
-In-Reply-To: <20120131123903.GB4408@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F27FB7D.9030003@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2012 01:39 PM, Ingo Molnar wrote:
-> * Maxime Coquelin<maxime.coquelin@stericsson.com>  wrote:
->
->> Dear Ingo,
->>
->> On 01/30/2012 02:53 PM, Ingo Molnar wrote:
->>> * Maxime Coquelin<maxime.coquelin@stericsson.com>   wrote:
->>>
->>>> The role of this framework is to stop the refresh of unused
->>>> memory to enhance DDR power consumption.
->>> I'm wondering in what scenarios this is useful, and how
->>> consistently it is useful.
->>>
->>> The primary concern I can see is that on most Linux systems with
->>> an uptime more than a couple of minutes RAM gets used up by the
->>> Linux page-cache:
->>>
->>>   $ uptime
->>>    14:46:39 up 11 days,  2:04, 19 users,  load average: 0.11, 0.29, 0.80
->>>   $ free
->>>                total       used       free     shared    buffers     cached
->>>   Mem:      12255096   12030152     224944          0     651560    6000452
->>>   -/+ buffers/cache:    5378140    6876956
->>>
->>> Even mobile phones easily have days of uptime - quite often
->>> weeks of uptime. I'd expect the page-cache to fill up RAM on
->>> such systems.
->>>
->>> So how will this actually end up saving power consistently?
->>> Does it have to be combined with a VM policy that more
->>> aggressively flushes cached pages from the page-cache?
->> You're right Ingo, page-cache fills up the RAM. This framework
->> is to be used in combination with a page-cache flush governor.
->> In the case of a mobile phone, we can imagine dropping the
->> cache when system's screen is off for a while, in order to
->> preserve user's experience.
-> Is this "page-cache flush governor" some existing code?
-> How does it work and does it need upstream patches?
-For now, such a governor has not been implemented.
-I use the dedicated ProcFS interface to test the framework (echo 3 > 
-/proc/sys/vm/drop_caches).
+On Tue, Jan 31, 2012 at 08:32:29AM -0600, Rob Herring wrote:
+> On 01/31/2012 08:13 AM, Shawn Guo wrote:
+> > On Mon, Jan 30, 2012 at 11:31:38AM -0600, Rob Herring wrote:
+> > ...
+> >> +#ifdef CONFIG_IRQ_DOMAIN
+> >> +static int irq_gc_irq_domain_match(struct irq_domain *d, struct device_node *np)
+> >> +{
+> >> +	struct irq_chip_generic *gc;
+> >> +
+> >> +	if (d->of_node != NULL && d->of_node == np) {
+> >> +		list_for_each_entry(gc, &gc_list, list) {
+> >> +			if ((gc == d->host_data) && (d == gc->domain))
+> >> +				return 1;
+> >> +		}
+> >> +	}
+> > 
+> > IIRC, we talked about this a little bit, but I'm still unsure how this
+> > works for imx5 tzic case, where we have the same one tzic device_node
+> > for 4 irqdomains representing 128 irq lines.  It seems to me the match
+> > function here will always find the first irqdomain of the 4 for any
+> > of those 128 tzic irqs.
+> > 
+> > The following is my code change against your branch for testing.  Am I
+> > missing anything?
+> 
+> The irq domain code is a bit different now, so it's matching differently
+> than before. See the match function. The host_data ptr for a domain is
+> set to the gc ptr. I then check that the gc->domain matches the domain
+> passed in. So the fact that 4 domains point to 1 device_node doesn't matter.
+> 
+I do not quite follow on that.  The gc->domain always matches the
+domain passed in anyway for those 4 pairs of domain/gc.  That said,
+the condition is all true for any of those 4 tzic domains.
 
+	if ((gc == d->host_data) && (d == gc->domain))
 
->>> A secondary concern is fragmentation: right now we fragment
->>> memory rather significantly.
->> Yes, I think fragmentation is the main challenge. This is the
->> same problem faced for Memory Hotplug feature. The solution I
->> see is to add a significant Movable zone in the system and use
->> the Compaction feature from Mel Gorman. The problem of course
->> remains for the Normal zone.
-> Ok. I guess phones/appliances can generally live with a
-> relatively large movable zone as they don't have serious
-> memory pressure issues.
-Actually, current high-end smartphones and tablets have 1GB DDR.
-Smartphones and tablets arriving later this year should have up to 2GB DDR.
-For example, my Android phone running for 2 days has only 230MB are used 
-in idle once the page-caches dropped.
-So I think having a 1GB movable zone on a 2GB DDR phone is conceivable.
+It does not help on identifying the correct domain from those 4 with
+given device_node, which is exactly same for those 4 domains.
 
->>> For the Ux500 PASR driver you've implemented the section
->>> size is 64 MB. Do I interpret the code correctly in that a
->>> continuous, 64MB physical block of RAM has to be 100% free
->>> for us to be able to turn off refresh and power for this
->>> block of RAM?
->> Current DDR (2Gb/4Gb dies) used in mobile platform have 64MB
->> banks and segments. This is the lower granularity for Partial
->> Array Self-refresh.
-> Ok, so do you see real, consistent power savings with a large
-> movable zone, with page cache governor patches applied (assuming
-> it's a kernel mechanism) and CONFIG_COMPACTION=y enabled, on an
-> upstream kernel with all these patches applied?
-I don't have consistent figures for now as it is being prototyped.
- From the DDR datasheet I gathered, the DDR power savings is about 33% 
-when half of the die is in self-refresh, compared to the full die in 
-self-refresh.
+> > 
+> > 8<---
+> > diff --git a/arch/arm/mach-imx/imx51-dt.c b/arch/arm/mach-imx/imx51-dt.c
+> > index e1b5edf..45abf11 100644
+> > --- a/arch/arm/mach-imx/imx51-dt.c
+> > +++ b/arch/arm/mach-imx/imx51-dt.c
+> > @@ -44,13 +44,6 @@ static const struct of_dev_auxdata
+> > imx51_auxdata_lookup[] __initconst = {
+> >         { /* sentinel */ }
+> >  };
+> > 
+> > -static int __init imx51_tzic_add_irq_domain(struct device_node *np,
+> > -                               struct device_node *interrupt_parent)
+> > -{
+> > -       irq_domain_add_legacy(np, 32, 0, 0, &irq_domain_simple_ops, NULL);
+> > -       return 0;
+> > -}
+> > -
+> >  static int __init imx51_gpio_add_irq_domain(struct device_node *np,
+> >                                 struct device_node *interrupt_parent)
+> >  {
+> > @@ -63,7 +56,6 @@ static int __init imx51_gpio_add_irq_domain(struct
+> > device_node *np,
+> >  }
+> > 
+> >  static const struct of_device_id imx51_irq_match[] __initconst = {
+> > -       { .compatible = "fsl,imx51-tzic", .data = imx51_tzic_add_irq_domain, },
+> >         { .compatible = "fsl,imx51-gpio", .data = imx51_gpio_add_irq_domain, },
+> >         { /* sentinel */ }
+> >  };
+> > 
+> > diff --git a/arch/arm/plat-mxc/tzic.c b/arch/arm/plat-mxc/tzic.c
+> > index 98308ec..ffb615d 100644
+> > --- a/arch/arm/plat-mxc/tzic.c
+> > +++ b/arch/arm/plat-mxc/tzic.c
+> > @@ -122,7 +122,9 @@ static __init void tzic_init_gc(unsigned int irq_start)
+> >         ct->regs.disable = TZIC_ENCLEAR0(idx);
+> >         ct->regs.enable = TZIC_ENSET0(idx);
+> > 
+> > -       irq_setup_generic_chip(gc, IRQ_MSK(32), 0, IRQ_NOREQUEST, 0);
+> > +       irq_setup_generic_chip_domain(gc,
+> > +               of_find_compatible_node(NULL, NULL, "fsl,tzic"),
+> > +               IRQ_MSK(32), 0, IRQ_NOREQUEST, 0);
+> 
+> Looks right, but I wouldn't lookup the node ptr every time.
+> 
+Yeah, will avoid it in the final patch.
 
+> >  }
+> > 
+> >  asmlinkage void __exception_irq_entry tzic_handle_irq(struct pt_regs *regs)
+> > --->8
+> > 
+> >> +	return 0;
+> >> +}
+> >> +
+> > ...
+> >> +void irq_setup_generic_chip_domain(struct irq_chip_generic *gc,
+> >> +			    struct device_node *node, u32 msk,
+> >> +			    enum irq_gc_flags flags, unsigned int clr,
+> >> +			    unsigned int set)
+> >> +{
+> >> +	struct irq_chip_type *ct = gc->chip_types;
+> >> +
+> >> +	if (!node) {
+> >> +		irq_setup_generic_chip(gc, msk, flags, clr, set);
+> >> +		return;
+> >> +	}
+> >> +
+> >> +	raw_spin_lock(&gc_lock);
+> >> +	list_add_tail(&gc->list, &gc_list);
+> >> +	raw_spin_unlock(&gc_lock);
+> >> +
+> >> +	/* Init mask cache ? */
+> >> +	if (flags & IRQ_GC_INIT_MASK_CACHE)
+> >> +		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
+> >> +
+> >> +	gc->flags = flags;
+> >> +	gc->irq_clr = clr;
+> >> +	gc->irq_set = set;
+> >> +
+> >> +	/* Users of domains should not use irq_base */
+> >> +	if ((int)gc->irq_base > 0)
+> >> +		gc->domain = irq_domain_add_legacy(node, fls(msk),
+> >> +						   gc->irq_base, 0,
+> >> +						   &irq_gc_irq_domain_ops, gc);
+> >> +	else {
+> >> +		gc->irq_base = 0;
+> >> +		gc->domain = irq_domain_add_linear(node, fls(msk),
+> >> +						   &irq_gc_irq_domain_ops, gc);
+> >> +	}
+> > 
+> > We have 4 generic_chips for tzic with irq_base as 0, 32, 64, 96.  In
+> > this case, we end up with having the first domain as the linear, and
+> > the other 3 as the legacy?
+> 
+> Umm, yes. So it should be '>= 0' instead until we stop using IRQ0. I
+> could base it on NULL node ptr instead...
+> 
+> For the DT case, you want irq_base to be -1.
+> 
+Unless we have to, I would keep the same tzic code for dt and non-dt
+to save #ifdef CONFIG_OF.
 
-
-Thanks for your comments,
-Maxime
-
->
-> Thanks,
->
-> 	Ingo
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
-
+-- 
+Regards,
+Shawn
