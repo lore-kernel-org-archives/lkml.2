@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab2AaVfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 16:35:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34849 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab2AaVfM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 16:35:12 -0500
-Date: Tue, 31 Jan 2012 13:35:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jim Keniston <jkenisto@us.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
-Subject: Re: [PATCH] kprobes: fix a memory leak in function
- pre_handler_kretprobe()
-Message-Id: <20120131133510.c53cb790.akpm@linux-foundation.org>
-In-Reply-To: <1327939812-17157-1-git-send-email-jiang.liu@huawei.com>
-References: <1327939812-17157-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755356Ab2AaVhV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 16:37:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40736 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754971Ab2AaVhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 16:37:19 -0500
+Date: Tue, 31 Jan 2012 16:37:13 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>, ebiederm@xmission.com,
+        kexec-list <kexec@lists.infradead.org>
+Subject: Re: [PATCH] x86, kdump, ioapic: Fix kdump race with migrating irq
+Message-ID: <20120131213713.GC4378@redhat.com>
+References: <1328045114-4489-1-git-send-email-dzickus@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328045114-4489-1-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jan 2012 00:10:12 +0800
-Jiang Liu <liuj97@gmail.com> wrote:
-
-> In function pre_handler_kretprobe(), the allocated kretprobe_instance object
-> will get leaked if the entry_handler callback returns non-zero. This may cause
-> all the preallocated kretprobe_instance objects exhausted. This issue could be
-> reproduced by changing samples/kprobes/kretprobe_example.c to probe
-> "mutex_unlock". And the fix is straight forward, just put the allocated
-> kretprobe_instance object back onto the free_instances list.
+On Tue, Jan 31, 2012 at 04:25:14PM -0500, Don Zickus wrote:
+> A customer of ours noticed when their machine crashed, kdump did not
+> work but hung instead.  Using their firmware dumping solution they
+> grabbed a vmcore and decoded the stacks on the cpus.  What they
+> noticed seemed to be a rare deadlock with the ioapic_lock.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Acked-by: Jim Keniston <jkenisto@us.ibm.com>
-> Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> CC: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
-> CC: "David S. Miller" <davem@davemloft.net>
-> CC: stable@vger.kernel.org
-> ---
->  kernel/kprobes.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
+>  CPU4:
+>  machine_crash_shutdown
+>  -> machine_ops.crash_shutdown
+>     -> native_machine_crash_shutdown
+>        -> kdump_nmi_shootdown_cpus ------> Send NMI to other CPUs
+>        -> disable_IO_APIC
+>           -> clear_IO_APIC
+>              -> clear_IO_APIC_pin
+>                 -> ioapic_read_entry
+>                    -> spin_lock_irqsave(&ioapic_lock, flags)
+>                    ---Infinite loop here---
 > 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index e5d8464..2423295 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1673,8 +1673,12 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
->  		ri->rp = rp;
->  		ri->task = current;
->  
-> -		if (rp->entry_handler && rp->entry_handler(ri, regs))
-> +		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
-> +			spin_lock_irqsave(&rp->lock, flags);
-> +			hlist_add_head(&ri->hlist, &rp->free_instances);
-> +			spin_unlock_irqrestore(&rp->lock, flags);
->  			return 0;
-> +		}
->  
+>  CPU0:
+>  do_IRQ
+>  -> handle_irq
+>     -> handle_edge_irq
+>         -> ack_apic_edge
+>            -> move_native_irq
+>                -> mask_IO_APIC_irq
+>                   -> mask_IO_APIC_irq_desc
+>                      -> spin_lock_irqsave(&ioapic_lock, flags)
+>                      ---Receive NMI here after getting spinlock---
+>                         -> nmi
+>                            -> do_nmi
+>                               -> crash_nmi_callback
+>                               ---Infinite loop here---
+> 
+> The problem is that although kdump tries to shutdown minimal hardware,
+> it still needs to disable the IO APIC.  This requires spinlocks which
+> may be held by another cpu.  This other cpu is being held infinitely in
+> an NMI context by kdump in order to serialize the crashing path.  Instant
+> deadlock.
+> 
+> I attempted to resolve this by busting the spinlock in the kdump case only.
+> My justification was that kdump has already stopped the other cpus and it
+> is only clearing the io apic which shouldn't cause harm when overwriting
+> what the other cpu was doing.
+> 
+> I tested this by loading a dummy module that grabs the ioapic_lock and then
+> on another cpu, run 'echo c > /proc/sysrq-trigger'.  The deadlock was detected
+> and fixed with the patch below.
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 
-kernel/kprobes.c: In function 'pre_handler_kretprobe':
-kernel/kprobes.c:1677: warning: passing argument 1 of 'spinlock_check' from incompatible pointer type
-include/linux/spinlock.h:272: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
-kernel/kprobes.c:1679: warning: passing argument 1 of 'spin_unlock_irqrestore' from incompatible pointer type
-include/linux/spinlock.h:338: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
+Sounds reasonable to me. 
 
---- a/kernel/kprobes.c~kprobes-fix-a-memory-leak-in-function-pre_handler_kretprobe-fix
-+++ a/kernel/kprobes.c
-@@ -1674,9 +1674,9 @@ static int __kprobes pre_handler_kretpro
- 		ri->task = current;
- 
- 		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
--			spin_lock_irqsave(&rp->lock, flags);
-+			raw_spin_lock_irqsave(&rp->lock, flags);
- 			hlist_add_head(&ri->hlist, &rp->free_instances);
--			spin_unlock_irqrestore(&rp->lock, flags);
-+			raw_spin_unlock_irqrestore(&rp->lock, flags);
- 			return 0;
- 		}
- 
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-I'm surprised you didn't notice the warning spew.  How well tested is
-this code?
-
+Thanks
+Vivek
