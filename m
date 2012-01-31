@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab2AaL20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:28:26 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59644 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804Ab2AaL2Y (ORCPT
+	id S1754004Ab2AaL2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:28:55 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:45837 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab2AaL2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:28:24 -0500
-Message-ID: <4F27D011.8060203@mvista.com>
-Date: Tue, 31 Jan 2012 15:27:13 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Tue, 31 Jan 2012 06:28:54 -0500
+Date: Tue, 31 Jan 2012 14:29:59 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: =?iso-8859-1?Q?V=EDctor_M=2E_J=E1quez_L=2E?= <vjaquez@igalia.com>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Armando Uribe <x0095078@ti.com>,
+        devel@driverdev.osuosl.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/8] staging: tidspbridge: silence the compiler
+Message-ID: <20120131112959.GJ3356@mwanda>
+References: <cover.1327964066.git.vjaquez@igalia.com>
+ <d25cfe1b88f2b749cb31887d551a1c9b0fcde42e.1327964066.git.vjaquez@igalia.com>
+ <20120131080543.GA3294@mwanda>
+ <20120131111952.GB19973@lit.local.igalia.com>
 MIME-Version: 1.0
-To: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Pasupathy, Visuvanadan" <vichu@ti.com>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: Re: RFC: usb: musb: Changes proposed for adding CPPI4.1 DMA
-References: <47CEF8C4B26E8C44B22B028A650E0EA9317C5B92@DBDE01.ent.ti.com> <4F22CC37.8010307@mvista.com> <47CEF8C4B26E8C44B22B028A650E0EA9317D2B9D@DBDE01.ent.ti.com>
-In-Reply-To: <47CEF8C4B26E8C44B22B028A650E0EA9317D2B9D@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+QmoJrblcRudFCJH"
+Content-Disposition: inline
+In-Reply-To: <20120131111952.GB19973@lit.local.igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090201.4F27D05A.011C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 31-01-2012 8:41, Gupta, Ajay Kumar wrote:
+--+QmoJrblcRudFCJH
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>> As a next step to dma-engine based cppi4.1 driver implementation
->>> this RFC has the overview of changes in the musb driver.
->>> RFC on CPPI slave driver changes will follow next.
+On Tue, Jan 31, 2012 at 12:19:52PM +0100, V=EDctor M. J=E1quez L. wrote:
+> On Tue, Jan 31, 2012 at 11:05:43AM +0300, Dan Carpenter wrote:
+> > On Tue, Jan 31, 2012 at 12:12:20AM +0100, V=EDctor Manuel J=E1quez Leal=
+ wrote:
+> > > Silence the warning when compiling drv_interface.c
+> > >=20
+> > > Signed-off-by: V=EDctor Manuel J=E1quez Leal <vjaquez@igalia.com>
+> >=20
+> > What does the compiler warn about here?  Normally you would cut and
+> > paste the warning into the commit message.  But at least give us a
+> > hint.
+> >=20
+> > You could also reformat that printk so the message is on one line.
+> >=20
+> > 	dev_dbg(bridge,
+> > 	        "%s: vm filp %p offset %x start %lx end %lx page_prot %ulx fla=
+gs %lx\n",
+> > 		__func__, filp, offset, vma->vm_start, vma->vm_end,
+> > 		vma->vm_page_prot, vma->vm_flags);
+>=20
+> Ok. I'll do it.
+>=20
+> I have a doubt about the process in this case: if this is the only
+> modification request, should I resend all the patch set, or just this one?
+>=20
 
->>> Overview of changes in the musb driver
->>> ======================================
+If you sent just the one, and you redid the printk() then it would
+make the later patches not apply.
 
->>> 1)Add a dma-engine.c file in the drivers/usb/musb folder
->>> 2)This file will host the current musb dma APIs and translates them to
->>>     dmaengine APIs.
->>> 3)This will help to keep the changes in drivers/usb/musb/musb* files
->>>     minimal and also to retain compatibility other DMA (Mentor etc.)
->>>     drivers which are yet to be moved to drivers/dma
->>> 4)drivers/usb/musb/dma-engine.c, will wrap the dmaengine APIs to
->>>     make existing musb APIs compatible.
->>> 5)drivers/usb/musb/dma-engine.c file will implement the filter
->>>     functions and also implement .dma_controller_create (allocates
->>>     &   provides "dma_controller" object) and .dma_controller_delete
->>> 6)CPPI4.1 DMA specific queue and buffer management will be internal
->>>     to slave CPPI DMA driver implementation.
+Maybe just send the one, with a fixed changelog and leave the patch
+as is.  The problems in the printk() were not introduced in this
+patch so I can't really complain about that.  A couple people have
+already volunteered to fix that in a later patch.
 
->>      You mean drivers/dma/ driver?
+regards,
+dan carpenter
 
-> yes.
 
->> I think you are forgotting that CPPI 4.1 MUSB
->> has some registers controlling DMA/interrupts beside those of CPPI 4.1
->> controller and MUSB core itself. How do they fit in your scheme?
+--+QmoJrblcRudFCJH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> We have been discussing on how to handle these in slave driver and
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-    These certainly cannot be handled in the slave driver because the 
-registers are different for every controller implementation and, the main 
-thing, they don't belong to CPPI 4.1 as such.
+iQIcBAEBAgAGBQJPJ9C2AAoJEOnZkXI/YHqRRgQQAJAE5MTlW1lbqDP643ENA+30
+f3wdGX3DkAobsiGZhOYM44u/n7nCUUeFSysCCLH2sBS+tZ4Ai2488k36y5tp348G
+YDhB8h/wUytIVrdggc7jcFrbbRVsmDUyE9acuk6/LrAdtzn4aHvKYY0TfcoYUYQv
+yylP8aIfxQ4T72j5H/JcSRxe2C64BOdCS4FjmPtxnHSfTnW1NgdYxvhYhSZ+h9Fk
+/DNjFR8mvxerMB4V4WEGqSjhpil3rsfeh4kMRH1FmAXNF3hyV+71i7WP1bw5aspj
+Eh7vN9yNLmd/RtUqsE7qE048EVLtGTwCA1fTShKB23WmNZvToPYztgBWUuY9SNcl
+JJ8pID2fLYwjuGuCoVMrAhvMdzDANGwNxodbRx6gzVN3O9O1Dc/AHIMkJFKF1Edy
+rIGZl7+/E8PS81hDdhQj2l05GPQKkkOJgqIqABvn2zhirrTauoHZa5A3FGE9uHK5
+R2ANDY7OZfVKKoOx1KopYR+NUBLP1SgVtfemRUioatLx2PhVBcPkLvRnCcyUVscm
+8pb1IUVt9zL1n57KZWch9aNBBNdEIZFv9ELZ+vZYpxT5/mj20cmHDVD8ZO/NzjBV
+ATWEWKEzbjKsrmcaoIE1PU86EeaD/oNAgw+aiDihJYxJFYmHY6DmZP6UKO5kcNkd
+tVWMWbgtI+9w7mASqzfR
+=Ke5/
+-----END PGP SIGNATURE-----
 
-> would post our proposal in RFC for slave driver design. Do you have
-> any proposal?
-
-    I think this will need hooks from dma-engine.c to the glue layers. I was 
-going to implement such in my version of MUSB CPPI 4.1 driver (in order to 
-also support AM35x) but lacked time.
-
-> Regards,
-> Ajay
-
-WBR, Sergei
+--+QmoJrblcRudFCJH--
