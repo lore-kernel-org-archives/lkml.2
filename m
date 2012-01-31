@@ -1,153 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab2AaRPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 12:15:12 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:35681 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab2AaRPK (ORCPT
+	id S1753849Ab2AaRU6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 12:20:58 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:40509 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752672Ab2AaRU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 12:15:10 -0500
-Date: Tue, 31 Jan 2012 18:15:04 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH 11/15] mm: trigger page reclaim in alloc_contig_range() to
- stabilize watermarks
-In-reply-to: <20120130130540.GN25268@csn.ul.ie>
-To: "'Mel Gorman'" <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>
-Message-id: <023001cce03b$dfddf760$9f99e620$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: AczfT+JcOfLnQUF6R9Kt7d3ySBxxqQA6hxEw
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
- <1327568457-27734-12-git-send-email-m.szyprowski@samsung.com>
- <20120130130540.GN25268@csn.ul.ie>
+	Tue, 31 Jan 2012 12:20:56 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: netdev@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Steve Glendinning <steve.glendinning@smsc.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Danny Kukawka <dkukawka@suse.de>
+Subject: [PATCH] smsc95xx: add macaddr module parameter
+Date: Tue, 31 Jan 2012 18:20:33 +0100
+Message-Id: <1328030433-12524-1-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328030456;eee3cce2;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Added smsc95xx.macaddr module parameter to allow the user to
+change the MAC address on boot if there was no MAC on the EEPROM.
 
-On Monday, January 30, 2012 2:06 PM Mel Gorman wrote:
+The parameter take the MAC address in 01:23:45:67:89:ab format and
+needs to be locally assigned. The MAC get assigned to the first
+smsc95xx device with no MAC on EEPROM (which resulted in a random
+MAC before). If there is more than one device without MAC on
+EEPROM and the user needs set the MAC to a specific device, it
+can be done by attaching the netdev name (e.g. eth0) to the
+smsc95xx.macaddr parameter seperated by a ';' as e.g. in
+'01:23:45:67:89:ab;eth0'
 
-> On Thu, Jan 26, 2012 at 10:00:53AM +0100, Marek Szyprowski wrote:
-> > alloc_contig_range() performs memory allocation so it also should keep
-> > track on keeping the correct level of memory watermarks. This commit adds
-> > a call to *_slowpath style reclaim to grab enough pages to make sure that
-> > the final collection of contiguous pages from freelists will not starve
-> > the system.
-> >
-> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > CC: Michal Nazarewicz <mina86@mina86.com>
-> > ---
-> >  mm/page_alloc.c |   36 ++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 36 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index e35d06b..05eaa82 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -5613,6 +5613,34 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned
-> long end)
-> >  	return ret;
-> >  }
-> >
-> > +/*
-> > + * Trigger memory pressure bump to reclaim some pages in order to be able to
-> > + * allocate 'count' pages in single page units. Does similar work as
-> > + *__alloc_pages_slowpath() function.
-> > + */
-> > +static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
-> > +{
-> > +	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
-> > +	struct zonelist *zonelist = node_zonelist(0, gfp_mask);
-> > +	int did_some_progress = 0;
-> > +	int order = 1;
-> > +	unsigned long watermark;
-> > +
-> > +	/* Obey watermarks as if the page was being allocated */
-> > +	watermark = low_wmark_pages(zone) + count;
-> > +	while (!zone_watermark_ok(zone, 0, watermark, 0, 0)) {
-> > +		wake_all_kswapd(order, zonelist, high_zoneidx, zone_idx(zone));
-> > +
-> > +		did_some_progress = __perform_reclaim(gfp_mask, order, zonelist,
-> > +						      NULL);
-> > +		if (!did_some_progress) {
-> > +			/* Exhausted what can be done so it's blamo time */
-> > +			out_of_memory(zonelist, gfp_mask, order, NULL);
-> > +		}
-> 
-> There are three problems here
-> 
-> 1. CMA can trigger the OOM killer.
-> 
-> That seems like overkill to me but as I do not know the consequences
-> of CMA failing, it's your call.
+This allows e.g. u-boot to pass on PandaBoard or BeagleBoard
+the by u-boot generated static MAC address to the kernel device
+to ensure the MAC stays the same during the whole boot process.
 
-This behavior is intended, we agreed that the contiguous allocations should
-have higher priority than others.
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/net/usb/smsc95xx.c |   85 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 82 insertions(+), 3 deletions(-)
 
-> 2. You cannot guarantee that try_to_free_pages will free pages from the
->    zone you care about or that kswapd will do anything
-> 
-> You check the watermarks and take into account the size of the pending
-> CMA allocation. kswapd in vmscan.c on the other hand will simply check
-> the watermarks and probably go back to sleep. You should be aware of
-> this in case you ever get bugs that CMA takes too long and that it
-> appears to be stuck in this loop with kswapd staying asleep.
-
-Right, I experienced this problem today. The simplest workaround I've 
-found is to adjust watermark before calling kswapd, but I'm not sure 
-that increasing min_free_kbytes and calling setup_per_zone_wmarks() is
-the nicest approach for it.
-
-> 3. You reclaim from zones other than your target zone
-> 
-> try_to_free_pages is not necessarily going to free pages in the
-> zone you are checking for. It'll work on ARM in many cases because
-> there will be only one zone but on other arches, this logic will
-> be problematic and will potentially livelock. You need to pass in
-> a zonelist that only contains the zone that CMA cares about. If it
-> cannot reclaim, did_some_progress == 0 and it'll exit. Otherwise
-> there is a possibility that this will loop forever reclaiming pages
-> from the wrong zones.
-
-Right. I tested it on a system with only one zone, so I never experienced 
-such problem. For the first version I think we might assume that the buffer
-allocated by alloc_contig_range() must fit the single zone. I will add some
-comments about it. Later we can extend it for more advanced cases. 
-
-> I won't ack this particular patch but I am not going to insist that
-> you fix these prior to merging either. If you leave problem 3 as it
-> is, I would really like to see a comment explaning the problem for
-> future users of CMA on other arches (if they exist).
-
-I will add more comments about the issues You have pointed out to make
-the life easier for other arch developers.
-
-Best regards
+diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
+index d45520e..3198c7d 100644
+--- a/drivers/net/usb/smsc95xx.c
++++ b/drivers/net/usb/smsc95xx.c
+@@ -52,6 +52,8 @@ struct smsc95xx_priv {
+ 	u32 hash_hi;
+ 	u32 hash_lo;
+ 	spinlock_t mac_cr_lock;
++	bool mac_set_from_param;
++	bool mac_is_random;
+ };
+ 
+ struct usb_context {
+@@ -63,6 +65,11 @@ static bool turbo_mode = true;
+ module_param(turbo_mode, bool, 0644);
+ MODULE_PARM_DESC(turbo_mode, "Enable multiple frames per Rx transaction");
+ 
++static char *macaddr = ":";
++static bool set_macaddr = false;
++module_param(macaddr, charp, 0);
++MODULE_PARM_DESC(macaddr, " macaddr=macaddr;[tgt-netdevname] (Set MAC only if there is a device without MAC on EEPROM)");
++
+ static int smsc95xx_read_reg(struct usbnet *dev, u32 index, u32 *data)
+ {
+ 	u32 *buf = kmalloc(4, GFP_KERNEL);
+@@ -601,8 +608,71 @@ static int smsc95xx_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
+ 	return generic_mii_ioctl(&dev->mii, if_mii(rq), cmd, NULL);
+ }
+ 
++/* set mac address from the macaddr module parameter */
++static int smsc95xx_init_mac_address_from_param(struct usbnet *dev)
++{
++	struct smsc95xx_priv *pdata = (struct smsc95xx_priv *)(dev->data[0]);
++	int i, parsed, ret;
++	u8 mtbl[ETH_ALEN];
++	char *input = NULL;
++	char *config_param = NULL;
++	char *netdev_name = NULL;	
++
++	parsed = 0;
++	ret = 0;
++
++	input = kstrdup(macaddr, GFP_KERNEL);
++
++	if (!input)
++		return -ENOMEM;
++
++	if (strlen(input) >= 17) {
++		while ((config_param = strsep(&input, ";"))) {
++			if (parsed == 0) {
++				if (!mac_pton(config_param, mtbl)) {
++					ret = 1;
++					goto parse_err;
++				}
++			} else {
++				netdev_name = config_param;				
++			}
++			parsed ++;
++		}
++
++		if (parsed && is_valid_ether_addr(mtbl)) {
++			if (netdev_name && strlen(netdev_name)) {
++				if (strcmp(netdev_name, dev->net->name) != 0) {
++					netif_dbg(dev, ifup, dev->net, "requested devname (%s) didn't match (%s)\n", netdev_name, dev->net->name);
++					ret = 1;
++					goto out;
++				}
++			}
++
++			for (i = 0; i < ETH_ALEN; i++) {
++				dev->net->dev_addr[i] = mtbl[i];
++			}
++
++			netif_dbg(dev, ifup, dev->net, "set valid MAC address from smsc95xx.macaddr\n");
++			set_macaddr = true;
++			pdata->mac_set_from_param = true;
++			pdata->mac_is_random = false;
++			goto out;
++		}
++	} 
++
++parse_err:
++	netif_dbg(dev, ifup, dev->net, "failed to parse (valid) MAC from smsc95xx.macaddr\n");
++	set_macaddr = true;
++out:
++	if (input)
++		kfree(input);
++	return ret;
++}
++
+ static void smsc95xx_init_mac_address(struct usbnet *dev)
+ {
++	struct smsc95xx_priv *pdata = (struct smsc95xx_priv *)(dev->data[0]);	
++
+ 	/* try reading mac address from EEPROM */
+ 	if (smsc95xx_read_eeprom(dev, EEPROM_MAC_OFFSET, ETH_ALEN,
+ 			dev->net->dev_addr) == 0) {
+@@ -615,16 +685,25 @@ static void smsc95xx_init_mac_address(struct usbnet *dev)
+ 
+ 	/* no eeprom, or eeprom values are invalid. generate random MAC */
+ 	random_ether_addr(dev->net->dev_addr);
++	pdata->mac_is_random = true;
+ 	netif_dbg(dev, ifup, dev->net, "MAC address set to random_ether_addr\n");
+ }
+ 
+ static int smsc95xx_set_mac_address(struct usbnet *dev)
+ {
+-	u32 addr_lo = dev->net->dev_addr[0] | dev->net->dev_addr[1] << 8 |
+-		dev->net->dev_addr[2] << 16 | dev->net->dev_addr[3] << 24;
+-	u32 addr_hi = dev->net->dev_addr[4] | dev->net->dev_addr[5] << 8;
++	struct smsc95xx_priv *pdata = (struct smsc95xx_priv *)(dev->data[0]);
++	u32 addr_lo, addr_hi;
+ 	int ret;
+ 
++	if (pdata->mac_is_random && !pdata->mac_set_from_param && !set_macaddr) {
++		netif_dbg(dev, ifup, dev->net, "random MAC address, not yet set from smsc95xx.macaddr, try to set it ...\n");
++		smsc95xx_init_mac_address_from_param(dev);
++	}
++
++	addr_lo = dev->net->dev_addr[0] | dev->net->dev_addr[1] << 8 |
++		dev->net->dev_addr[2] << 16 | dev->net->dev_addr[3] << 24;
++	addr_hi = dev->net->dev_addr[4] | dev->net->dev_addr[5] << 8;
++
+ 	ret = smsc95xx_write_reg(dev, ADDRL, addr_lo);
+ 	if (ret < 0) {
+ 		netdev_warn(dev->net, "Failed to write ADDRL: %d\n", ret);
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+1.7.7.3
 
