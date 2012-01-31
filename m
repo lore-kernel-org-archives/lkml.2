@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab2AaMsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 07:48:10 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51088 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab2AaMsJ convert rfc822-to-8bit (ORCPT
+	id S1753429Ab2AaMue (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 07:50:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41819 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab2AaMuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 07:48:09 -0500
-Message-ID: <1328014076.2446.210.camel@twins>
-Subject: Re: x86: clean up smpboot.c's use of udelay+schedule
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Tue, 31 Jan 2012 07:50:32 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=0LOP1KteNnsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=aIr8HDLft-_tD_DwsGIA:9 a=XQkh1KdNiMvYsTn6tz4A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328014230.5882.29.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH] tracing/module: Move tracepoint out of module.h
+From: Steven Rostedt <rostedt@goodmis.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, arjanvandeven@gmail.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 31 Jan 2012 13:47:56 +0100
-In-Reply-To: <20120131124341.GC4408@elte.hu>
-References: <20120130205304.0e10b05e@infradead.org>
-	 <20120131124341.GC4408@elte.hu>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Date: Tue, 31 Jan 2012 07:50:30 -0500
+In-Reply-To: <20120131122016.GF32010@elte.hu>
+References: <1327545664.22710.78.camel@gandalf.stny.rr.com>
+	 <20120126102836.GD3853@elte.hu>
+	 <1327585945.22710.87.camel@gandalf.stny.rr.com>
+	 <20120126135504.GA13107@elte.hu>
+	 <1327586669.22710.89.camel@gandalf.stny.rr.com>
+	 <1327588606.22710.100.camel@gandalf.stny.rr.com>
+	 <20120126183946.GA14709@elte.hu> <87ehuldf0m.fsf@rustcorp.com.au>
+	 <1327924333.22710.157.camel@gandalf.stny.rr.com>
+	 <87sjiwjzew.fsf@rustcorp.com.au> <20120131122016.GF32010@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 13:43 +0100, Ingo Molnar wrote:
-> * Arjan van de Ven <arjan@infradead.org> wrote:
-> 
-> > >From 9f8dd2b15ff19ad73ee0eb235b4fdde9277185e8 Mon Sep 17 00:00:00 2001
-> > From: Arjan van de Ven <arjan@linux.intel.com>
-> > Date: Mon, 30 Jan 2012 20:38:09 -0800
-> > Subject: [PATCH] x86: clean up smpboot.c's use of udelay+schedule
-> > 
-> > smpboot.c does a udelay() followed by a schedule(); to yield
-> > the CPU to other threads. This comes from the time when the kernel
-> > did not yet have usleep_*() style APIs...
-> > 
-> > ... nowadays, the kernel can do better than this, and this
-> > patch replaces this code sequence with a usleep_range(),
-> > so that the CPU is actually yielded for some real time.
-> > 
-> > Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-> > ---
-> >  arch/x86/kernel/smpboot.c |    3 +--
-> >  1 files changed, 1 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> > index 66d250c..0b794c6 100644
-> > --- a/arch/x86/kernel/smpboot.c
-> > +++ b/arch/x86/kernel/smpboot.c
-> > @@ -781,14 +781,13 @@ do_rest:
-> >  		for (timeout = 0; timeout < 50000; timeout++) {
-> >  			if (cpumask_test_cpu(cpu, cpu_callin_mask))
-> >  				break;	/* It has booted */
-> > -			udelay(100);
-> >  			/*
-> >  			 * Allow other tasks to run while we wait for the
-> >  			 * AP to come online. This also gives a chance
-> >  			 * for the MTRR work(triggered by the AP coming online)
-> >  			 * to be completed in the stop machine context.
-> >  			 */
-> > -			schedule();
-> > +			usleep_range(100, 200);
-> 
-> I'm wondering whether we could shorten this delay to say 10 
-> usecs and thus save 0.1 msecs (or more) from a typical SMP 
-> bootup?
+On Tue, 2012-01-31 at 13:20 +0100, Ingo Molnar wrote:
 
-wait_on_completion_timeout() and have the fresh cpu do a wakeup when its
-done. That way there's no need for a minimal wait time.
+> > Saves only 400 bytes of text here, but I don't do preempt or 
+> > tracepoints.
+> 
+> Most distro kernels do tracepoints so I guess that's where the 
+> size delta comes from :-) In any case:
 
-Anyway, all the cpu hotplug code is a friggin trainwreck and needs a
-complete rewrite across all archs.
+Yes, having tracepoints inlined causes a lot of bloat. But I still did
+get a 1799 bytes savings between moving the tracepoint out of line but
+keeping the if, and totally moving the entire functions out of line. Not
+sure what the discrepancy was there.
+
+My last set of numbers came from the default 3.0.0 Debian config, which
+probably adds more things that call these functions into the kernel
+proper?
+
+But anway, I think this bike shed is complete ;-)
+
+> 
+> Acked-by: Ingo Molnar <mingo@elte.hu>
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+
