@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab2AaWff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 17:35:35 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:58960 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab2AaWfe (ORCPT
+	id S1755458Ab2AaWjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 17:39:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46375 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753613Ab2AaWjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 17:35:34 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
-        kexec-list <kexec@lists.infradead.org>
-Subject: Re: [PATCH] x86, kdump, ioapic: Fix kdump race with migrating irq
-References: <1328045114-4489-1-git-send-email-dzickus@redhat.com>
-	<m1ipjr4jaa.fsf@fess.ebiederm.org> <20120131222751.GE5650@redhat.com>
-Date: Tue, 31 Jan 2012 14:38:15 -0800
-In-Reply-To: <20120131222751.GE5650@redhat.com> (Don Zickus's message of "Tue,
-	31 Jan 2012 17:27:51 -0500")
-Message-ID: <m1vcnr33c8.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Tue, 31 Jan 2012 17:39:37 -0500
+Message-ID: <4F286DA1.6060404@canonical.com>
+Date: Tue, 31 Jan 2012 17:39:29 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120113 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+wSOlBUZiLS9Tk/T4ILluGebFuQdd7sdk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+To: Keith Packard <keithp@keithp.com>
+CC: Lubos Kolouch <lubos.kolouch@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: i915 wakes from suspend to RAM with blank screen after commit
+ cd9dde44f47501394b9f0715b6a36a92aa74c0d0
+References: <jfe47e$5dn$1@dough.gmane.org> <86mx9gkjlv.fsf@sumi.keithp.com> <20120121184453.GA2698@nbgentoo> <86hazokcb7.fsf@sumi.keithp.com> <20120122102912.GA2123@nbgentoo> <867h0j83vx.fsf@sumi.keithp.com> <20120123063313.GA2113@nbgentoo> <86vcnyc3t3.fsf@sumi.keithp.com> <20120127101403.GA2213@nbgentoo.nlcz.cz> <86liot9dod.fsf@sumi.keithp.com>
+In-Reply-To: <86liot9dod.fsf@sumi.keithp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don Zickus <dzickus@redhat.com> writes:
-
-> On Tue, Jan 31, 2012 at 02:08:29PM -0800, Eric W. Biederman wrote:
->> > The problem is that although kdump tries to shutdown minimal hardware,
->> > it still needs to disable the IO APIC.  This requires spinlocks which
->> > may be held by another cpu.  This other cpu is being held infinitely in
->> > an NMI context by kdump in order to serialize the crashing path.  Instant
->> > deadlock.
->> 
->> Can you test to see if kexec on panic still needs to disable the IO
->> APIC.  Last I looked we were close if not all of the way there to not
->> needing to boot the kernel in pic mode?
+On 01/27/2012 01:57 PM, Keith Packard wrote:
+> On Fri, 27 Jan 2012 11:14:03 +0100, Lubos Kolouch<lubos.kolouch@gmail.com>  wrote:
+>> On Wed, Jan 25, 2012, 23:37:28, Keith Packard wrote:
+>>> On Mon, 23 Jan 2012 07:33:14 +0100, Lubos Kolouch<lubos.kolouch@gmail.com>  wrote:
+>>>
+>>>> dmesg after boot - http://paste.pocoo.org/show/539115/
+>>>> dmesg after OK resume - http://paste.pocoo.org/show/539117/
+>>>
+>>> I've posted a couple of more comprehensive patches that you should have
+>>> received; I'd like to know if you can test them to see if they resolve
+>>> the issue as well.
+>>
+>> 1) applied the first patch, resume works OK
+>> dmesg after boot : http://paste.pocoo.org/show/541205/
+>> dmesg after resume : http://paste.pocoo.org/show/541206/
+>>
+>> 2) applied second patch on top, resume works OK
+>> dmesg after boot: http://paste.pocoo.org/show/541477/
+>> dmesg after resume : http://paste.pocoo.org/show/541479/
 >
-> Ok, so you just blindly remove disable_IO_APIC from
-> native_machine_crash_shutdown and re-run some panic tests on various
-> machines?  What about the disable_IO_APIC path in native_machine_shutdown?
+> Thanks!
 >
+> I'll append a 'Tested-by: Lubos Kolouch<lubos.kolouch@gmail.com>'
+>
+> to these patches when they go into the kernel.
+>
+Hi Keith,
 
-Yes.  Just native_machine_crash_shutdown.
+Do you plan on submitting a request to have these patches go in to the 
+3.2 stable kernel as well?
 
-native_machine_shutdown is the case when all is good and we attempt to
-put the hardware back the way we found it.
+Thanks,
 
-Any normal x86 machine that the kernel runs in ioapic mode should be
-enough to get a first approximation.
-
-> Also, where could I look to see if that work was done?  Is that in the
-> ioapic setup code?
-
-The primary question is do we call the ioapic setup code without calling
-the pic setup code first.  On some embedded x86 platforms we certainly
-do.  I don't know if that code has been generalized.
-
-Historically the problem is that we started the pit timer in pic mode
-and used that to calibrate the delay loop.
-
-So what we are looking to verify is that the linux kernel boot skip
-pic mode entirely.
-
-Eric
+Joe
