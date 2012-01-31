@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2AaLZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 06:25:25 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42621 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752699Ab2AaLZY (ORCPT
+	id S1753908Ab2AaL2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 06:28:00 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:40545 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752695Ab2AaL17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 06:25:24 -0500
-Date: Tue, 31 Jan 2012 11:25:22 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] regmap: Remove incorrect unreachable comment in
- regcache_set_val()
-Message-ID: <20120131112522.GD18444@opensource.wolfsonmicro.com>
-References: <1327981698.2975.1.camel@phoenix>
+	Tue, 31 Jan 2012 06:27:59 -0500
+X-SpamScore: -19
+X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4Rz2dhc1bhc31hc1ah668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LYNUII-02-4MX-02
+X-M-MSG: 
+Date: Tue, 31 Jan 2012 12:27:52 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Michal Marek <mmarek@suse.cz>
+CC: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        maximilian attems <max@stro.at>
+Subject: Re: [PATCH] kbuild: Fix link to headers in 'make deb-pkg'
+Message-ID: <20120131112752.GB2191@amd.com>
+References: <1327318828-12984-1-git-send-email-joerg.roedel@amd.com>
+ <4F1D8810.1040501@suse.cz>
+ <20120131110522.GA2191@amd.com>
+ <4F27CC20.4020403@suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DiL7RhKs8rK9YGuF"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1327981698.2975.1.camel@phoenix>
-X-Cookie: You dialed 5483.
+In-Reply-To: <4F27CC20.4020403@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 31, 2012 at 12:10:24PM +0100, Michal Marek wrote:
+> On 31.1.2012 12:05, Joerg Roedel wrote:
+> > Hi,
+> > 
+> > any news on this?
+> 
+> I know nothing about deb packaging, so I was hoping Max would comment.
+> But I'll try the patch myself later this week (I'm quite busy atm).
 
---DiL7RhKs8rK9YGuF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Okay, thanks.
 
-On Tue, Jan 31, 2012 at 11:48:18AM +0800, Axel Lin wrote:
-> regcache_set_val() returns false if cache[idx] != val.
-> Thus it actually is not unreachable.
 
-Applied, thanks.
+	Joerg
 
---DiL7RhKs8rK9YGuF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+AMD Operating System Research Center
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-iQIcBAEBAgAGBQJPJ8+bAAoJEBus8iNuMP3dRTAP/3ksqOtF4SmOGWZlZslX6sh4
-eZ+mTuJIrw0rLOgzImHFZX58L73kRAZSGoRS2PU92vf+dpZ+coF4pmgoIuxdz/QX
-VlGluMYVJv2VLoN4w0y0GqQw5yCIFK1qiJdc3RuMnz2clGE+LMz8vcAXhOoWEFYT
-mJWxjrXarizEK5MpqD2/hqHDWOF1pr5foX232eqTAT3zcjM0bDFYyxDaQtcvvRld
-dRFk8EA8Rr1ozj9KVhSBu33hd+w47bF2uI4GkKkn5Sec4E+UpSWmb+3qnfcteH4S
-fuPUD5aHWOvBIhgUquSY5Ubq2PQ0B8ACvh6atgGfzXbDQHo+iJP+MaxhOcj+Jl/M
-bUJfc50MCpyjN5kTq0b6sEQXdzSbLGbzqNOYE08zZtA+NI/CYexDwzv3LIQljqe/
-nuaOdnzv1sgIrWEWaKuG2O/MQgFiKFquZc8reNhV8rDj1oUpGAUQDWzINimVDQqn
-62THNYvEV6GyJgnsN9zY4xd2/GSCBKaAe4UiMpKEZO5vZJtsVH/QMBB0mAA/iJ7e
-1Kll7oS6Bfy2JuhtYjp4UNrWIjRhcOoMUSthIm/K0DproNY8N8Lc3PrU3XqlOntl
-Hb5HJevG0qfpGE9thPVq0tuXNPq3H0yt1uuHVePXZdieEoy1rxCGY652WxIKq81/
-beJ6rU2iAyqzTz8S2zYc
-=GxTz
------END PGP SIGNATURE-----
-
---DiL7RhKs8rK9YGuF--
