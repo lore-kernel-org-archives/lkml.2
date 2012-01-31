@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab2AaPZm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 10:25:42 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:57107 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab2AaPZl (ORCPT
+	id S1754781Ab2AaP1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 10:27:39 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:37558 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753685Ab2AaP1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 10:25:41 -0500
-Date: Tue, 31 Jan 2012 16:25:34 +0100
-From: Karsten Keil <kkeil@linux-pingi.de>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Danny Kukawka <danny.kukawka@bisect.de>, Armin Schindler <mac@melware.de>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Karsten Keil <isdn@linux-pingi.de>
-Subject: Re: [PATCH 01/16] eicon: fix -Warray-bounds warning
-Message-ID: <20120131152534.GA14825@gw.linux-pingi.de>
-Mail-Followup-To: Ben Hutchings <bhutchings@solarflare.com>,
-	Danny Kukawka <danny.kukawka@bisect.de>,
-	Armin Schindler <mac@melware.de>, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>
-References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de>
- <1327960820-11867-2-git-send-email-danny.kukawka@bisect.de>
- <1327964972.2595.31.camel@bwh-desktop>
+	Tue, 31 Jan 2012 10:27:35 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, mchehab@redhat.com
+Subject: [PATCH v2 1/2] cx18-driver: fix handling of 'radio' module parameter
+Date: Tue, 31 Jan 2012 16:27:07 +0100
+Message-Id: <1328023628-15097-2-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1328023628-15097-1-git-send-email-danny.kukawka@bisect.de>
+References: <1328023628-15097-1-git-send-email-danny.kukawka@bisect.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327964972.2595.31.camel@bwh-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:4C8JEwuTDgqdwDw7YqxOP9kKFQBK8Q52qX8HkBMO2Ia
- NrIpf7THSVdd3Zf3nUcPy4d6heGELAMo++1mZAb1qXYJMgq7Ig
- lksjKjuhTeTjxJO7NnfqTnFIKljuiMf5M+Nl9clvwou+vjM1pj
- xfxi4szHtV+znO2cuPssYYmAEvqYwa79U7YanOV2lVcxwsURNB
- fEj6qDl4CipC5IqWRIyIvdIEljzZd2F4wI1rUkS6ttezjmBu3T
- kRMeMHkxDZW/56zYjHOTbW1040E7cwcekOubf16dP3dn6h+/8j
- 3g+ZoBse26YKmCmoHFU/untFFmQ0Mq8ILvytugura7XkblL7r8
- KW8G5Xc93mhNzXYDnsewWPKa9xKMEv35Nxbmse28e65WOwVE4S
- swd3TPT4nct2w==
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328023655;c4c8f8f3;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 11:09:32PM +0000, Ben Hutchings wrote:
-> On Mon, 2012-01-30 at 23:00 +0100, Danny Kukawka wrote:
-> > Fix for a -Warray-bounds warning. mixer_notify_update() tries to
-> > write to ((CAPI_MSG *) msg)->info.facility_req.structs[3] while
-> > structs is defined as byte structs[1], define structs[1] as
-> > structs[4].
-> 
-> I suspect that all the 'byte structs[1];' fields defined in that header
-> are actually variable-length arrays.  In that case, there may be no
-> reasonable bound you can specify.
+Reverse cx18-driver part of commit
+90ab5ee94171b3e28de6bb42ee30b527014e0be7 and change
+module_param_array() type from bool to int to fix
+compiler warning:
 
-Yes, exactely, the structs is a ASN1 coded message so it can have any len.
+In function ‘__check_radio’:
+113:1: warning: return from incompatible pointer type [enabled by default]
+At top level:
+113:1: warning: initialization from incompatible pointer type [enabled by default]
+113:1: warning: (near initialization for ‘__param_arr_radio.num’) [enabled by default]
 
-Karsten
+v2: corrected version, don't change to module_param_named(), change
+    all to int/uint
 
-> 
-> Ben.
-> 
-> > Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-> > ---
-> >  drivers/isdn/hardware/eicon/capi20.h |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/isdn/hardware/eicon/capi20.h b/drivers/isdn/hardware/eicon/capi20.h
-> > index 7ebcccd..f9170ad 100644
-> > --- a/drivers/isdn/hardware/eicon/capi20.h
-> > +++ b/drivers/isdn/hardware/eicon/capi20.h
-> > @@ -226,7 +226,7 @@ typedef struct {
-> >          /* FACILITY-REQUEST */
-> >  typedef struct {
-> >    word Selector;
-> > -  byte structs[1];      /* Facility parameters */
-> > +  byte structs[4];      /* Facility parameters */
-> >  } _FAC_REQP;
-> >          /* FACILITY-CONFIRM STRUCT FOR SUPPLEMENT. SERVICES */
-> >  typedef struct {
-> 
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/media/video/cx18/cx18-driver.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
+index 349bd9c..9355745 100644
+--- a/drivers/media/video/cx18/cx18-driver.c
++++ b/drivers/media/video/cx18/cx18-driver.c
+@@ -75,7 +75,7 @@ static int radio[CX18_MAX_CARDS] = { -1, -1, -1, -1, -1, -1, -1, -1,
+ 				     -1, -1, -1, -1, -1, -1, -1, -1 };
+ static unsigned cardtype_c = 1;
+ static unsigned tuner_c = 1;
+-static bool radio_c = 1;
++static unsigned radio_c = 1;
+ static char pal[] = "--";
+ static char secam[] = "--";
+ static char ntsc[] = "-";
+@@ -110,7 +110,7 @@ static int retry_mmio = 1;
+ int cx18_debug;
+ 
+ module_param_array(tuner, int, &tuner_c, 0644);
+-module_param_array(radio, bool, &radio_c, 0644);
++module_param_array(radio, int, &radio_c, 0644);
+ module_param_array(cardtype, int, &cardtype_c, 0644);
+ module_param_string(pal, pal, sizeof(pal), 0644);
+ module_param_string(secam, secam, sizeof(secam), 0644);
+-- 
+1.7.7.3
+
