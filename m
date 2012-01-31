@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab2AaN1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 08:27:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52552 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab2AaN1j (ORCPT
+	id S1754397Ab2AaN2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 08:28:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55257 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab2AaN2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 08:27:39 -0500
-Date: Tue, 31 Jan 2012 14:27:20 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Barry Song <21cnbao@gmail.com>, Barry Song <Barry.Song@csr.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, workgroup.linux@csr.com
-Subject: Re: [PATCH 0/3] platform: add platform_devm_request_and_ioremap()
- common API
-Message-ID: <20120131132720.GP2471@pengutronix.de>
-References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
- <1328008455.956.30.camel@sauron.fi.intel.com>
- <CAGsJ_4yVTaZQOE2dB4A3L6WCLE78b4eBPaOcDDJ7RH+0LN=R_A@mail.gmail.com>
- <1328015763.28171.2.camel@sauron.fi.intel.com>
- <1328016225.28171.7.camel@sauron.fi.intel.com>
+	Tue, 31 Jan 2012 08:28:39 -0500
+Date: Tue, 31 Jan 2012 05:28:08 -0800
+From: tip-bot for Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Message-ID: <tip-ed387b781ea6e14b78f449aa2ee4f270b60b01ac@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, h-shimamoto@ct.jp.nec.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, vincent.guittot@linaro.org,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, h-shimamoto@ct.jp.nec.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        vincent.guittot@linaro.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4F2754A0.9090306@ct.jp.nec.com>
+References: <4F2754A0.9090306@ct.jp.nec.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched:
+  Move SMP-only variable into the SMP section
+Git-Commit-ID: ed387b781ea6e14b78f449aa2ee4f270b60b01ac
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/NwG7NuG0/W8LcLh"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1328016225.28171.7.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 31 Jan 2012 05:28:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  ed387b781ea6e14b78f449aa2ee4f270b60b01ac
+Gitweb:     http://git.kernel.org/tip/ed387b781ea6e14b78f449aa2ee4f270b60b01ac
+Author:     Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+AuthorDate: Tue, 31 Jan 2012 11:40:32 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 31 Jan 2012 13:40:59 +0100
 
---/NwG7NuG0/W8LcLh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+sched: Move SMP-only variable into the SMP section
 
+This also fixes the following compilation warning on !SMP:
 
-> To promote the idea further. If you manage to create a semantic patch
-> for this, then you will just generate your patches automatically. You
-> will also be able to make it more probable that people will use this new
-> api by adding your semantic patch to scripts/coccinelle/api.
+  CC kernel/sched/fair.o
+  kernel/sched/fair.c:218:36: warning: 'max_load_balance_interval' defined but not used [-Wunused-variable]
 
-I'd think Julia is already at it [1], but the same issue has come up
-there, too [2].
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Reviewed-by: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/4F2754A0.9090306@ct.jp.nec.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched/fair.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Regards,
-
-   Wolfram
-
-[1] http://lkml.org/lkml/2012/1/26/169
-[2] http://lkml.org/lkml/2012/1/28/10
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---/NwG7NuG0/W8LcLh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk8n7DgACgkQD27XaX1/VRt3XwCfQ+egjVYitwN3nezvDCpbqj1Y
-2IUAni6IBt+SY+K80WjAl+ozwy6dLRbu
-=erOA
------END PGP SIGNATURE-----
-
---/NwG7NuG0/W8LcLh--
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8e77a6b..4ab60a2 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -215,8 +215,6 @@ calc_delta_mine(unsigned long delta_exec, unsigned long weight,
+ 
+ const struct sched_class fair_sched_class;
+ 
+-static unsigned long __read_mostly max_load_balance_interval = HZ/10;
+-
+ /**************************************************************
+  * CFS operations on generic schedulable entities:
+  */
+@@ -3086,6 +3084,8 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
+  * Fair scheduling class load-balancing methods:
+  */
+ 
++static unsigned long __read_mostly max_load_balance_interval = HZ/10;
++
+ /*
+  * pull_task - move a task from a remote runqueue to the local runqueue.
+  * Both runqueues must be locked.
