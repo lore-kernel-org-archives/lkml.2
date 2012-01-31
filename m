@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab2AaCvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 21:51:13 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:41949 "HELO
+	id S1753559Ab2AaCwC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 21:52:02 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:42847 "HELO
 	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752385Ab2AaCvL (ORCPT
+	with SMTP id S1752385Ab2AaCv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 21:51:11 -0500
-Message-ID: <4F2764B9.6000402@xenotime.net>
-Date: Mon, 30 Jan 2012 19:49:13 -0800
+	Mon, 30 Jan 2012 21:51:59 -0500
+Message-ID: <4F2764E9.4010506@xenotime.net>
+Date: Mon, 30 Jan 2012 19:50:01 -0800
 From: Randy Dunlap <rdunlap@xenotime.net>
 Organization: YPO4
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
 To: Stephen Rothwell <sfr@canb.auug.org.au>
 CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH -next] ramoops: fix printk format warnings
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
+Subject: [PATCH -next] cifs: fix printk format warnings
 References: <20120130144102.8d202c7d8eccd503a86b3053@canb.auug.org.au>
 In-Reply-To: <20120130144102.8d202c7d8eccd503a86b3053@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-2022-JP
@@ -28,35 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <rdunlap@xenotime.net>
 
-Fix printk format warnings for phys_addr_t type variables:
+Fix printk format warnings for ssize_t variables:
 
-drivers/char/ramoops.c:246:3: warning: format '%llx' expects type 'long long unsigned int', but argument 3 has type 'phys_addr_t'
-drivers/char/ramoops.c:273:2: warning: format '%llx' expects type 'long long unsigned int', but argument 3 has type 'phys_addr_t'
+fs/cifs/connect.c:2145:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
+fs/cifs/connect.c:2152:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
+fs/cifs/connect.c:2160:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
+fs/cifs/connect.c:2170:3: warning: format '%ld' expects type 'long int', but argument 3 has type 'ssize_t'
 
 Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg K-H <gregkh@suse.de>
+Cc:	Steve French <sfrench@samba.org>
+Cc:	linux-cifs@vger.kernel.org
 ---
- drivers/char/ramoops.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/cifs/connect.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- linux-next-20120130.orig/drivers/char/ramoops.c
-+++ linux-next-20120130/drivers/char/ramoops.c
-@@ -244,7 +244,7 @@ static int __init ramoops_probe(struct p
+--- linux-next-20120130.orig/fs/cifs/connect.c
++++ linux-next-20120130/fs/cifs/connect.c
+@@ -2142,14 +2142,14 @@ cifs_set_cifscreds(struct smb_vol *vol,
  
- 	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
- 		pr_err("request mem region (0x%lx@0x%llx) failed\n",
--			cxt->size, cxt->phys_addr);
-+			cxt->size, (unsigned long long)cxt->phys_addr);
- 		err = -EINVAL;
- 		goto fail_buf;
+ 	len = delim - payload;
+ 	if (len > MAX_USERNAME_SIZE || len <= 0) {
+-		cFYI(1, "Bad value from username search (len=%ld)", len);
++		cFYI(1, "Bad value from username search (len=%zd)", len);
+ 		rc = -EINVAL;
+ 		goto out_key_put;
  	}
-@@ -271,7 +271,8 @@ static int __init ramoops_probe(struct p
- 	dump_oops = pdata->dump_oops;
  
- 	pr_info("attached 0x%lx@0x%llx (%ux0x%zx)\n",
--		cxt->size, cxt->phys_addr, cxt->max_count, cxt->record_size);
-+		cxt->size, (unsigned long long)cxt->phys_addr,
-+		cxt->max_count, cxt->record_size);
+ 	vol->username = kstrndup(payload, len, GFP_KERNEL);
+ 	if (!vol->username) {
+-		cFYI(1, "Unable to allocate %ld bytes for username", len);
++		cFYI(1, "Unable to allocate %zd bytes for username", len);
+ 		rc = -ENOMEM;
+ 		goto out_key_put;
+ 	}
+@@ -2157,7 +2157,7 @@ cifs_set_cifscreds(struct smb_vol *vol,
  
- 	return 0;
- 
+ 	len = key->datalen - (len + 1);
+ 	if (len > MAX_PASSWORD_SIZE || len <= 0) {
+-		cFYI(1, "Bad len for password search (len=%ld)", len);
++		cFYI(1, "Bad len for password search (len=%zd)", len);
+ 		rc = -EINVAL;
+ 		kfree(vol->username);
+ 		vol->username = NULL;
+@@ -2167,7 +2167,7 @@ cifs_set_cifscreds(struct smb_vol *vol,
+ 	++delim;
+ 	vol->password = kstrndup(delim, len, GFP_KERNEL);
+ 	if (!vol->password) {
+-		cFYI(1, "Unable to allocate %ld bytes for password", len);
++		cFYI(1, "Unable to allocate %zd bytes for password", len);
+ 		rc = -ENOMEM;
+ 		kfree(vol->username);
+ 		vol->username = NULL;
