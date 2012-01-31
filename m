@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab2AaNOa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 08:14:30 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61120 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab2AaNOa (ORCPT
+	id S1754128Ab2AaNPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 08:15:31 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:40787 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752242Ab2AaNPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 08:14:30 -0500
-Message-ID: <1328015763.28171.2.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 0/3] platform: add platform_devm_request_and_ioremap()
- common API
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Barry Song <21cnbao@gmail.com>
-Cc: Barry Song <Barry.Song@csr.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com
-Date: Tue, 31 Jan 2012 15:16:03 +0200
-In-Reply-To: <CAGsJ_4yVTaZQOE2dB4A3L6WCLE78b4eBPaOcDDJ7RH+0LN=R_A@mail.gmail.com>
-References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
-	 <1328008455.956.30.camel@sauron.fi.intel.com>
-	 <CAGsJ_4yVTaZQOE2dB4A3L6WCLE78b4eBPaOcDDJ7RH+0LN=R_A@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-5YXVZEynsY7kl5lhKV7v"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	Tue, 31 Jan 2012 08:15:30 -0500
+Message-ID: <4F27E96E.9010204@gmail.com>
+Date: Tue, 31 Jan 2012 07:15:26 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v3 14/25] irq_domain: Remove irq_domain_add_simple()
+References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca> <1327700179-17454-15-git-send-email-grant.likely@secretlab.ca> <20120131124500.GA28571@S2101-09.ap.freescale.net>
+In-Reply-To: <20120131124500.GA28571@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Shawn,
 
---=-5YXVZEynsY7kl5lhKV7v
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 01/31/2012 06:45 AM, Shawn Guo wrote:
+> On Fri, Jan 27, 2012 at 02:36:08PM -0700, Grant Likely wrote:
+>> irq_domain_add_simple() was a stop-gap measure until complete irq_domain
+>> support was complete.  This patch removes the irq_domain_add_simple()
+>> interface.
+>>
+>> v2: Updated to pass in host_data pointer on irq_domain allocation.
+>>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Milton Miller <miltonm@bga.com>
+>> ---
+>>  arch/arm/mach-imx/mach-imx6q.c      |    3 ++-
+>>  arch/arm/mach-msm/board-msm8x60.c   |    8 ++------
+>>  arch/arm/mach-mx5/imx51-dt.c        |    4 ++--
+>>  arch/arm/mach-mx5/imx53-dt.c        |    4 ++--
+>>  arch/arm/mach-omap2/board-generic.c |    2 +-
+>>  arch/arm/mach-prima2/irq.c          |    2 +-
+>>  drivers/mfd/twl-core.c              |    2 +-
+>>  include/linux/irqdomain.h           |    1 -
+>>  kernel/irq/irqdomain.c              |   10 ++--------
+>>  9 files changed, 13 insertions(+), 23 deletions(-)
+>>
+> ...
+>> --- a/arch/arm/mach-mx5/imx51-dt.c
+>> +++ b/arch/arm/mach-mx5/imx51-dt.c
+>> @@ -47,7 +47,7 @@ static const struct of_dev_auxdata imx51_auxdata_lookup[] __initconst = {
+>>  static int __init imx51_tzic_add_irq_domain(struct device_node *np,
+>>  				struct device_node *interrupt_parent)
+>>  {
+>> -	irq_domain_add_simple(np, 0);
+>> +	irq_domain_add_legacy(np, 32, 0, 0, &irq_domain_simple_ops, NULL);
+>>  	return 0;
+>>  }
+>>  
+>> @@ -57,7 +57,7 @@ static int __init imx51_gpio_add_irq_domain(struct device_node *np,
+>>  	static int gpio_irq_base = MXC_GPIO_IRQ_START + ARCH_NR_GPIOS;
+>>  
+>>  	gpio_irq_base -= 32;
+>> -	irq_domain_add_simple(np, gpio_irq_base);
+>> +	irq_domain_add_legacy(np, 32, gpio_irq_base, 0, &irq_domain_simple_ops, NULL);
+> 
+> The tzic on imx5 gets 128 irq lines rather than 32 here.  The current
+> code will make any hwirq that is > 32 hit the WARN_ON below in
+> irq_domain_legacy_revmap().
 
-On Tue, 2012-01-31 at 20:57 +0800, Barry Song wrote:
-> > If yes, I think it would be nice of you to give a credit to coccinelle
-> > and its authors for developing this awesome tool in every commit
-> > message.
->=20
-> devm_request_and_ioremap() is still something new by commit
+But this is the gpio controller code? Really this should be 4 domains,
+but this temp fix is probably fine until you use my generic irq chip
+support.
 
-Ah, ok. But it would be cool if you could create a coccinell semantic
-patch for this, although I should admit this is not very easy, but a lot
-of fun.
+Rob
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-5YXVZEynsY7kl5lhKV7v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPJ+mTAAoJECmIfjd9wqK0XNsQAJ35UJFcm7hjzUfAouJhXEy8
-NlG0keuOUgucZ8pgJg8ujbyn+NXzjjuVgr10JgvGycYwlyCf/VQcapcI1Hgc0V2l
-+LitNRS9BJ+uttzJddkFJ86/91fgOAXa4/h1Lqe1BdqfCx8kmic0WFUq6syW1uHL
-R9ijv4eBJCnEe16EQtwDkJg9gkLQzJs490pjyKF3RXna90Jft6A8OKVRdKgf741P
-VVSuvKrL0yK+vwqV/InV3XzeIzLHOMKaezEyHHRAeiipOprQhdYgcV3rQSdiuTbA
-1hE31pYnOXktRm/UAT7iXfcPgZHAl6g3frIakQCnpNzeh0EXIeyKV7s/nOrz6TWW
-0hSLnHinoFLy1xuQVQVScNayz8h5HWQW7MvdB1Wx0DxOH/ujn+LFWEo12V0mRaYM
-/bG0KAFPSYx2bCdlbwAA6ZRiXWKcu5kdlygSZqKj0ZeZWS0ak3sbsbFzBKmjJjSs
-kXdUuR3ljKm0sJn2kQn0UV0j1ibDTc9t2hVayoMc5Ct4Po01Rr3dRTFqDjoFnNRn
-PMSOQMkQ8d1OPi5pYsscnNJCnlxCqwASO5XVL9W/fRLC0ZCOsqoymzxVrOIcU6mR
-4MAKgPs6FTIIHccp7x9iUbuzAkKGgEu/vNP6+vFefS5TZ59zWpUEuGyOKT5/LRPb
-JyxJNUbMkSzIuYz0mZwK
-=F0QH
------END PGP SIGNATURE-----
-
---=-5YXVZEynsY7kl5lhKV7v--
-
+> 
+> 	WARN_ON(hwirq < first_hwirq || hwirq >= first_hwirq + size)
+> 
+> The first_hwirq is 0 and size is 32 in this case.
+> 
+> Changing 32 to 128 seems fixing the problem.
+> 
