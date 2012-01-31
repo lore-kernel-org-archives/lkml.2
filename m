@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab2AaBC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 20:02:59 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63527 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab2AaBC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 20:02:57 -0500
-X-AuditID: 9c93016f-b7c20ae000005067-83-4f273dbfd301
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH v2 2/2] perf: Add error message for EMFILE
-Date: Tue, 31 Jan 2012 10:15:16 +0900
-Message-Id: <1327972517-5055-2-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.rc1.dirty
-In-Reply-To: <1327972517-5055-1-git-send-email-namhyung.kim@lge.com>
-References: <1327972517-5055-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1752937Ab2AaBNa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 20:13:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38794 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752166Ab2AaBN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jan 2012 20:13:28 -0500
+Date: Mon, 30 Jan 2012 17:11:01 -0800
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [GIT PATCH] TTY/serial patches for 3.3-rc1
+Message-ID: <20120131011101.GA31748@suse.de>
+References: <20120130211241.GA12941@kroah.com>
+ <CA+55aFxFtsOj+9RYQGj+WEk3ovg4+d_syn8TooKjvBq2_B463Q@mail.gmail.com>
+ <CA+55aFxGf8-Bv8Jrhm1dbTg6AkTi37Vfuw5OOC7hDokKRa4hjw@mail.gmail.com>
+ <20120131001308.GB20588@suse.de>
+ <CA+55aFxXwZmhC4USJSOk_itatwkg1m8gkQRTqKHNRGDWD8MCOw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxXwZmhC4USJSOk_itatwkg1m8gkQRTqKHNRGDWD8MCOw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a user tries to open so many event on multiple tasks/cpus,
-perf_event_open syscall may fail with EMFILE. Provide an advice
-for that case.
+On Mon, Jan 30, 2012 at 04:27:22PM -0800, Linus Torvalds wrote:
+> On Mon, Jan 30, 2012 at 4:13 PM, Greg KH <gregkh@suse.de> wrote:
+> >
+> > Or I can spend the time to get the new version of git installed.
+> > Wrestling with my scripts or rpm, I don't know which is worse...
+> 
+> Why do either?
+> 
+> The sane way to do things is to just
+> 
+>     cd
+>     mkdir src
+>     cd src
+>     git clone git://github.com/gitster/git
+>     cd git
+>     make
+>     make install
+> 
+> all as a regular user. It will install in your $(HOME)/bin, so just
+> put that first in the path. No need to fight rpm, no need to fight
+> your scripts, you should be pretty much all done.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Cc: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-record.c |    5 +++++
- tools/perf/builtin-stat.c   |    4 ++++
- tools/perf/builtin-top.c    |    3 ++-
- 3 files changed, 11 insertions(+), 1 deletions(-)
+Nice, for some reason I thought it would do the horrible /usr/local/
+thing, and get all messed up with the installed version.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 32870eef952f..a334008a1853 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -249,6 +249,11 @@ try_again:
- 				ui__warning("The %s event is not supported.\n",
- 					    event_name(pos));
- 				exit(EXIT_FAILURE);
-+			} else if (err == EMFILE) {
-+				ui__warning("Too many events are opened.\n"
-+					    "Try again after reducing the number of events,\n"
-+					    "tasks and/or cpus.\n");
-+				exit(EXIT_FAILURE);
- 			}
- 
- 			printf("\n");
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 459b8620a5d9..7c5421c7af06 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -477,6 +477,10 @@ static int run_perf_stat(int argc __used, const char **argv)
- 				      "\t Consider tweaking"
- 				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
- 				      system_wide ? "system-wide " : "");
-+			} else if (errno == EMFILE) {
-+				error("Too many events are opened.\n"
-+				      "\t Try again after reducing the number of events,\n"
-+				      "\t tasks and/or cpus.");
- 			} else {
- 				error("open_counter returned with %d (%s). "
- 				      "/bin/dmesg may provide additional information.\n",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e8b033c074f9..987af3695218 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -899,7 +899,8 @@ try_again:
- 				goto out_err;
- 			} else if (err == EMFILE) {
- 				ui__warning("Too many events are opened.\n"
--					    "Try again after reducing the number of events\n");
-+					    "Try again after reducing the number of events,\n"
-+					    "tasks and/or cpus.\n");
- 				goto out_err;
- 			}
- 
--- 
-1.7.9.rc1.dirty
+Ok, now done, so much for fighting with rpm, thanks, that made my day.
 
+greg k-h
