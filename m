@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab2AaCpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 21:45:04 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:54169 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab2AaCpC (ORCPT
+	id S1752954Ab2AaCvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 21:51:13 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:41949 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752385Ab2AaCvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 21:45:02 -0500
-Message-ID: <4F2754A0.9090306@ct.jp.nec.com>
-Date: Tue, 31 Jan 2012 11:40:32 +0900
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Mon, 30 Jan 2012 21:51:11 -0500
+Message-ID: <4F2764B9.6000402@xenotime.net>
+Date: Mon, 30 Jan 2012 19:49:13 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: sched: fix compilation warning on !SMP
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] ramoops: fix printk format warnings
+References: <20120130144102.8d202c7d8eccd503a86b3053@canb.auug.org.au>
+In-Reply-To: <20120130144102.8d202c7d8eccd503a86b3053@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-  CC      kernel/sched/fair.o
-kernel/sched/fair.c:218:36: warning: 'max_load_balance_interval' defined but not used [-Wunused-variable]
+Fix printk format warnings for phys_addr_t type variables:
 
-Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Vincent Guittot <vincent.guittot@linaro.org>
+drivers/char/ramoops.c:246:3: warning: format '%llx' expects type 'long long unsigned int', but argument 3 has type 'phys_addr_t'
+drivers/char/ramoops.c:273:2: warning: format '%llx' expects type 'long long unsigned int', but argument 3 has type 'phys_addr_t'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Greg K-H <gregkh@suse.de>
 ---
- kernel/sched/fair.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/char/ramoops.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8e77a6b..4ab60a2 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -215,8 +215,6 @@ calc_delta_mine(unsigned long delta_exec, unsigned long weight,
+--- linux-next-20120130.orig/drivers/char/ramoops.c
++++ linux-next-20120130/drivers/char/ramoops.c
+@@ -244,7 +244,7 @@ static int __init ramoops_probe(struct p
  
- const struct sched_class fair_sched_class;
+ 	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
+ 		pr_err("request mem region (0x%lx@0x%llx) failed\n",
+-			cxt->size, cxt->phys_addr);
++			cxt->size, (unsigned long long)cxt->phys_addr);
+ 		err = -EINVAL;
+ 		goto fail_buf;
+ 	}
+@@ -271,7 +271,8 @@ static int __init ramoops_probe(struct p
+ 	dump_oops = pdata->dump_oops;
  
--static unsigned long __read_mostly max_load_balance_interval = HZ/10;
--
- /**************************************************************
-  * CFS operations on generic schedulable entities:
-  */
-@@ -3086,6 +3084,8 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
-  * Fair scheduling class load-balancing methods:
-  */
+ 	pr_info("attached 0x%lx@0x%llx (%ux0x%zx)\n",
+-		cxt->size, cxt->phys_addr, cxt->max_count, cxt->record_size);
++		cxt->size, (unsigned long long)cxt->phys_addr,
++		cxt->max_count, cxt->record_size);
  
-+static unsigned long __read_mostly max_load_balance_interval = HZ/10;
-+
- /*
-  * pull_task - move a task from a remote runqueue to the local runqueue.
-  * Both runqueues must be locked.
--- 
-1.7.7.6
-
+ 	return 0;
+ 
