@@ -1,66 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab2AaQx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:53:26 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33372 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab2AaQxZ (ORCPT
+	id S1753376Ab2AaQx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:53:28 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:58364 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab2AaQx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:53:25 -0500
+	Tue, 31 Jan 2012 11:53:27 -0500
 From: Ohad Ben-Cohen <ohad@wizery.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 Cc: Grant Likely <grant.likely@secretlab.ca>, Mark Grosen <mgrosen@ti.com>,
         Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH 1/2] remoteproc: bail out if firmware has different endianess
-Date: Tue, 31 Jan 2012 18:52:41 +0200
-Message-Id: <1328028762-28352-1-git-send-email-ohad@wizery.com>
+Subject: [PATCH 2/2] remoteproc: s/big switch/lookup table/
+Date: Tue, 31 Jan 2012 18:52:42 +0200
+Message-Id: <1328028762-28352-2-git-send-email-ohad@wizery.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1328028762-28352-1-git-send-email-ohad@wizery.com>
+References: <1328028762-28352-1-git-send-email-ohad@wizery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At this point we don't support remote processors that have
-a different endianess than the host.
-
-Look out for these unsupported scenarios, and bail out if
-encountered.
+A lookup table would be easier to extend, and the resulting
+code is a bit cleaner.
 
 Reported-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Mark Grosen <mgrosen@ti.com>
 ---
- drivers/remoteproc/remoteproc_core.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ drivers/remoteproc/remoteproc_core.c |   45 +++++++++++++++++----------------
+ include/linux/remoteproc.h           |    7 +++++
+ 2 files changed, 30 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 6212b82..567a3c5 100644
+index 567a3c5..94473bd 100644
 --- a/drivers/remoteproc/remoteproc_core.c
 +++ b/drivers/remoteproc/remoteproc_core.c
-@@ -39,6 +39,7 @@
- #include <linux/elf.h>
- #include <linux/virtio_ids.h>
- #include <linux/virtio_ring.h>
-+#include <asm/byteorder.h>
+@@ -64,6 +64,8 @@ static DEFINE_KLIST(rprocs, klist_rproc_get, klist_rproc_put);
  
- #include "remoteproc_internal.h"
+ typedef int (*rproc_handle_resources_t)(struct rproc *rproc,
+ 				struct fw_resource *rsc, int len);
++typedef int (*rproc_handle_resource_t)(struct rproc *rproc,
++				struct fw_resource *rsc);
  
-@@ -851,6 +852,16 @@ static int rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw)
+ /*
+  * This is the IOMMU fault handler we register with the IOMMU API
+@@ -658,44 +660,43 @@ free_mapping:
+ 	return ret;
+ }
  
- 	ehdr = (struct elf32_hdr *)fw->data;
- 
-+	/* We assume the firmware has the same endianess as the host */
-+# ifdef __LITTLE_ENDIAN
-+	if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {
-+# else /* BIG ENDIAN */
-+	if (ehdr->e_ident[EI_DATA] != ELFDATA2MSB) {
-+# endif
-+		dev_err(dev, "Unsupported firmware endianess\n");
-+		return -EINVAL;
-+	}
++/*
++ * A lookup table for resource handlers. Always keep in sync with
++ * enum fw_resource_type.
++ */
++static rproc_handle_resource_t rproc_handle_rsc[] = {
++	rproc_handle_carveout,	/* RSC_CARVEOUT */
++	rproc_handle_devmem,	/* RSC_DEVMEM */
++	rproc_handle_trace,	/* RSC_TRACE */
++	rproc_handle_vring,	/* RSC_VRING */
++	NULL, /* RSC_VIRTIO_DEV is handled early upon registration */
++};
 +
- 	if (fw->size < ehdr->e_shoff + sizeof(struct elf32_shdr)) {
- 		dev_err(dev, "Image is too small\n");
- 		return -EINVAL;
+ /* handle firmware resource entries before booting the remote processor */
+ static int
+ rproc_handle_boot_rsc(struct rproc *rproc, struct fw_resource *rsc, int len)
+ {
+ 	struct device *dev = rproc->dev;
++	rproc_handle_resource_t handler;
+ 	int ret = 0;
+ 
+-	while (len >= sizeof(*rsc)) {
++	for (; len >= sizeof(*rsc); rsc++, len -= sizeof(*rsc)) {
+ 		dev_dbg(dev, "rsc: type %d, da 0x%llx, pa 0x%llx, len 0x%x, "
+ 			"id %d, name %s, flags %x\n", rsc->type, rsc->da,
+ 			rsc->pa, rsc->len, rsc->id, rsc->name, rsc->flags);
+ 
+-		switch (rsc->type) {
+-		case RSC_CARVEOUT:
+-			ret = rproc_handle_carveout(rproc, rsc);
+-			break;
+-		case RSC_DEVMEM:
+-			ret = rproc_handle_devmem(rproc, rsc);
+-			break;
+-		case RSC_TRACE:
+-			ret = rproc_handle_trace(rproc, rsc);
+-			break;
+-		case RSC_VRING:
+-			ret = rproc_handle_vring(rproc, rsc);
+-			break;
+-		case RSC_VIRTIO_DEV:
+-			/* this one is handled early upon registration */
+-			break;
+-		default:
++		if (rsc->type >= RSC_LAST) {
+ 			dev_warn(dev, "unsupported resource %d\n", rsc->type);
+-			break;
++			continue;
+ 		}
+ 
++		handler = rproc_handle_rsc[rsc->type];
++		if (!handler)
++			continue;
++
++		ret = handler(rproc, rsc);
+ 		if (ret)
+ 			break;
+-
+-		rsc++;
+-		len -= sizeof(*rsc);
+ 	}
+ 
+ 	return ret;
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index b52f784..2544d2e 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -103,6 +103,7 @@ struct fw_resource {
+  *		    the virtio device features, 'pa' holds the virtio guest
+  *		    features, 'len' holds the virtio status, and 'flags' holds
+  *		    the virtio id (currently only VIRTIO_ID_RPMSG is supported).
++ * @RSC_LAST:       just keep this one at the end
+  *
+  * Most of the resource entries share the basic idea of address/length
+  * negotiation with the host: the firmware usually asks (on behalf of the
+@@ -115,6 +116,11 @@ struct fw_resource {
+  * will contain the expected device addresses (today we actually only support
+  * this scheme, as there aren't yet any use cases for dynamically allocated
+  * device addresses).
++ *
++ * Please note that these values are used as indices to the
++ * rproc_handle_rsc lookup table, so please keep the two synchronized.
++ * @RSC_LAST is used to check the validity of an index before the lookup table
++ * is accessed, so please update it as needed too.
+  */
+ enum fw_resource_type {
+ 	RSC_CARVEOUT	= 0,
+@@ -122,6 +128,7 @@ enum fw_resource_type {
+ 	RSC_TRACE	= 2,
+ 	RSC_VRING	= 3,
+ 	RSC_VIRTIO_DEV	= 4,
++	RSC_LAST	= 5,
+ };
+ 
+ /**
 -- 
 1.7.5.4
 
