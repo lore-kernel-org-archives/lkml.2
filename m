@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2AaBsm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jan 2012 20:48:42 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:44707 "EHLO
+	id S1753562Ab2AaCJD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jan 2012 21:09:03 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:47169 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab2AaBsl (ORCPT
+	with ESMTP id S1752526Ab2AaCJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jan 2012 20:48:41 -0500
+	Mon, 30 Jan 2012 21:09:01 -0500
 From: ebiederm@xmission.com (Eric W. Biederman)
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, San Mehat <san@google.com>,
-        Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        kernel-team@android.com, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 1/3] procfs: Export next_tgid(), move it to kernel/pid.c
-References: <20120130011323.GA30274@oksana.dev.rtsoft.ru>
-	<20120130134312.GA14110@redhat.com>
-	<20120130204920.GA27812@oksana.dev.rtsoft.ru>
-Date: Mon, 30 Jan 2012 17:51:20 -0800
-In-Reply-To: <20120130204920.GA27812@oksana.dev.rtsoft.ru> (Anton Vorontsov's
-	message of "Tue, 31 Jan 2012 00:49:20 +0400")
-Message-ID: <m1r4ygfxlz.fsf@fess.ebiederm.org>
+To: Dave Jones <davej@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        netdev@vger.kernel.org,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Damien Millescamps <damien.millescamps@6wind.com>
+Subject: Re: [PATCH 24/29] sysctl: Replace root_list with links between sysctl_table_sets.
+References: <m1pqe5ah3z.fsf@fess.ebiederm.org>
+	<1327639925-12920-24-git-send-email-ebiederm@xmission.com>
+	<20120130175112.GA20380@redhat.com>
+Date: Mon, 30 Jan 2012 18:11:40 -0800
+In-Reply-To: <20120130175112.GA20380@redhat.com> (Dave Jones's message of
+	"Mon, 30 Jan 2012 12:51:13 -0500")
+Message-ID: <m1d3a0fwo3.fsf@fess.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/WSdTPQpl+aCCvgF3pFR7ePKmCjbFMGzg=
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+VvpJcywOl9y8ojuTX/HuH3Fd5pM4/Ma4=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anton Vorontsov <anton.vorontsov@linaro.org> writes:
+Dave Jones <davej@redhat.com> writes:
 
-> On Mon, Jan 30, 2012 at 02:43:12PM +0100, Oleg Nesterov wrote:
->> On 01/30, Anton Vorontsov wrote:
->> >
->> > We'd like to use this function in the android low memory killer driver, so
->> > let's export it.
->> 
->> I guess you mean 3/3.
->> 
->> If lowmem_shrink() can use next_tid() which is not really accurate,
->> then why tou can't simply change it to use rcu_read_lock ?
+> On Thu, Jan 26, 2012 at 08:52:00PM -0800, Eric W. Biederman wrote:
 >
-> Yes, in LMK driver we don't need to be accurate. I probably could use
-> rcu_read_lock, but the plan was in not holding any global locks (in
-> this case the rcu) at all, instead I'd like to hold just a reference
-> of the task, which the driver is analyzing at this time. Once we decide
-> (to kill or not to kill the task), we either send a signal (and drop
-> the reference) or just drop the reference.
+>  > +	memset(set, sizeof(*set), 0);
+>
+> checkpatch should warn you about this mistake.
 
-rcu_read_lock unless it is implemented wrong is free from a lock
-perspective.  rcu_read_lock only touches local state.
+Is there a way to tie checkpatch into git.  Perhaps into git commit?
 
->From the look of your loop it already does a walk through the entire
-process list so it looks to me like playing games with get_task_struct
-and put_task_struct are going to be much more expensive.
-
-proc grabs task references because we can't hold the rcu_read_lock
-over a copy_to_user because that is a sleeping function.
-
-You don't call anything that sleeps so rcu_read_lock should be
-sufficient.
+Having something that would catch this before I embarrassed myself
+certainly sounds nice.  However my overall impression of checkpatch
+is that it catches newbie mistakes so unless it is trivial to run
+checkpatch I don't expect I will run it because I don't expect to
+tell me anything useful.
 
 Eric
