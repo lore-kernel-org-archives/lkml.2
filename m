@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab2AaKr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 05:47:29 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44306 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092Ab2AaKr2 (ORCPT
+	id S1753906Ab2AaKsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 05:48:16 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33963 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab2AaKsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 05:47:28 -0500
-From: Javier Martin <javier.martin@vista-silicon.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, dan.j.williams@intel.com,
-        s.hauer@pengutronix.de, vinod.koul@intel.com,
-        Javier Martin <javier.martin@vista-silicon.com>
-Subject: [PATCH v3] dmaengine: Add support for MEMCPY for imx-dma.
-Date: Tue, 31 Jan 2012 11:47:20 +0100
-Message-Id: <1328006840-7345-1-git-send-email-javier.martin@vista-silicon.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 31 Jan 2012 05:48:15 -0500
+Message-ID: <4F27C6EB.2070305@suse.cz>
+Date: Tue, 31 Jan 2012 11:48:11 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120124 Thunderbird/10.0
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        systemd-devel@lists.freedesktop.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: sysfs regression: wrong link counts
+References: <4F27120A.4040106@suse.cz> <20120130220611.GA26655@kroah.com> <20120130221059.26ab5edf@pyramind.ukuu.org.uk> <20120130222717.GA6393@kroah.com> <m18vkoirv9.fsf@fess.ebiederm.org>
+In-Reply-To: <m18vkoirv9.fsf@fess.ebiederm.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MEMCPY transfers allow DMA copies from memory to
-memory. This patch has been tested with dmatest
-device driver.
+On 01/31/2012 02:27 AM, Eric W. Biederman wrote:
+> Greg KH <greg@kroah.com> writes:
+> 
+>> On Mon, Jan 30, 2012 at 10:10:59PM +0000, Alan Cox wrote:
+>>>> Isn't there some other "proper" way of doing this in userspace, or is
+>>>> this really the correct way?
+>>>
+>>> You can look at the S_IFMT bits and stuff however link count indicating
+>>> number of subdirectories is a standard Unix thing and used by many quite
+>>> mundane tools as an optimisation.
+>>
+>> Ah, yeah, that is easier.
+>>
+>> Eric, care to fix this or want me to revert it?
+> 
+> With respect to sensors the conversation has already been had, and I fix
+> is already queued and should come out in the sensors release due out in
+> a week or so.  So sensors should be fixed before this code is merged
+> into Linus's kernel.
 
-Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
----
- drivers/dma/imx-dma.c |   36 +++++++++++++++++++++++++++++++++++-
- 1 files changed, 35 insertions(+), 1 deletions(-)
+Oh, we are not going to break userspace with 3.3, are we? I understand
+that what sensors do is nothing but sh*t. But this change should wait
+until everybody has a chance to have fixed sensors package in their
+distribution.
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 3296a73..9aa6e85 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -196,7 +196,8 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
- 	struct imx_dma_data *data = chan->private;
- 
--	imxdmac->dma_request = data->dma_request;
-+	if (data != NULL)
-+		imxdmac->dma_request = data->dma_request;
- 
- 	dma_async_tx_descriptor_init(&imxdmac->desc, chan);
- 	imxdmac->desc.tx_submit = imxdma_tx_submit;
-@@ -328,6 +329,36 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
- 	return &imxdmac->desc;
- }
- 
-+static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
-+	struct dma_chan *chan, dma_addr_t dest,
-+	dma_addr_t src, size_t len, unsigned long flags)
-+{
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-+	struct imxdma_engine *imxdma = imxdmac->imxdma;
-+	int ret;
-+
-+	dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
-+			__func__, imxdmac->channel, src, dest, len);
-+
-+	if (imxdmac->status == DMA_IN_PROGRESS)
-+		return NULL;
-+	imxdmac->status = DMA_IN_PROGRESS;
-+
-+	ret = imx_dma_config_channel(imxdmac->imxdma_channel,
-+			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
-+			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
-+			       0, 0);
-+	if (ret)
-+		return NULL;
-+
-+	ret = imx_dma_setup_single(imxdmac->imxdma_channel, src, len,
-+				   dest, DMA_MODE_WRITE);
-+	if (ret)
-+		return NULL;
-+
-+	return &imxdmac->desc;
-+}
-+
- static void imxdma_issue_pending(struct dma_chan *chan)
- {
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-@@ -349,6 +380,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 
- 	dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
- 	dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
-+	dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
- 
- 	/* Initialize channel parameters */
- 	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-@@ -382,11 +414,13 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	imxdma->dma_device.device_tx_status = imxdma_tx_status;
- 	imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
- 	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
-+	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
- 	imxdma->dma_device.device_control = imxdma_control;
- 	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
- 
- 	platform_set_drvdata(pdev, imxdma);
- 
-+	imxdma->dma_device.copy_align = 2; /* 2^2 = 4 bytes alignment */
- 	imxdma->dma_device.dev->dma_parms = &imxdma->dma_parms;
- 	dma_set_max_seg_size(imxdma->dma_device.dev, 0xffffff);
- 
+To be clear, what I'm suggesting is to postpone the change and schedule
+it for something like 3.7.
+
+> Now why something minor like sensors that nothing seems to depend
+> strongly on should stop a system from booting is a huge question.
+
+sensors do not prevent boot at all, of course. The other
+cannot-start-network bug does.
+
+> So I am going to have the conversation to triage what is up with
+> systemd.  That seems totally unexpected.
+
+Looks like netdev renaming problem, see my other mail.
+
+thanks,
 -- 
-1.7.0.4
-
+js
+suse labs
+.
