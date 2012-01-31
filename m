@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab2AaTVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 14:21:41 -0500
-Received: from inx.pm.waw.pl ([195.116.170.130]:42179 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803Ab2AaTVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 14:21:39 -0500
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Andrea Shepard <andrea@persephoneslair.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        mmarek@suse.cz, jkosina@suse.cz, joe@perches.com,
-        justinmattock@gmail.com, gregkh@suse.de, alan@linux.intel.com,
-        jdmason@kudzu.us
-Subject: Re: [00/22] Cyclades PC300 driver: summary of patch series
-References: <20120130024243.GA10262@cronus.persephoneslair.org>
-Date: Tue, 31 Jan 2012 20:20:30 +0100
-In-Reply-To: <20120130024243.GA10262@cronus.persephoneslair.org> (Andrea
-	Shepard's message of "Sun, 29 Jan 2012 18:42:43 -0800")
-Message-ID: <m3d39z3cht.fsf@intrepid.localdomain>
+	id S1754905Ab2AaTWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 14:22:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47866 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab2AaTWm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 14:22:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120124115104.GA5743@albatros>
+References: <20120123212115.GA29641@www.outflux.net>
+	<20120124110332.GA4770@albatros>
+	<CACVxJT95OjBkqh01AGVLVXDEw3YNaEcCNptgM9kbb47AG5C7zg@mail.gmail.com>
+	<20120124115104.GA5743@albatros>
+Date: Tue, 31 Jan 2012 11:22:42 -0800
+X-Google-Sender-Auth: XC3tGKIG5-OG71JavzrLaiIS_bo
+Message-ID: <CAGXu5jJMRRXFKi9XH9BBupxYYjq0SoxUxrmyYiB2H8h0QbN=UA@mail.gmail.com>
+Subject: Re: [PATCH v3] sysctl: control functionality of /proc/pid/mem
+From: Kees Cook <keescook@chromium.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Borislav Petkov <bp@alien8.de>,
+        Dan Ballard <dan@mindstab.net>, Jiri Kosina <jkosina@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, Stephen Wilson <wilsons@start.ca>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrea Shepard <andrea@persephoneslair.org> writes:
+On Tue, Jan 24, 2012 at 3:51 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> On Tue, Jan 24, 2012 at 13:12 +0200, Alexey Dobriyan wrote:
+>> On 1/24/12, Vasiliy Kulikov <segoon@openwall.com> wrote:
+>> >> +          .procname       = "proc_pid_mem",
+>> >> +          .data           = &sysctl_proc_pid_mem,
+>> >> +          .maxlen         = sizeof(int),
+>> >> +          .mode           = 0644,
+>> >> +          .proc_handler   = proc_dointvec_minmax,
+>> >> +          .extra1         = &zero,
+>> >> +          .extra2         = &two,
+>> >> +  },
+>>
+>> >E.g. moving all such stuff to some sysctl group, not bloating
+>> > kernel.*.
+>>
+>> Ehh.
+>> How bloat is measured in this case?
+>
+> Do we want to add such sort of sysctls "from time to time" when we
+> consider one or another feature as deprecated?  If yes, I'd group them
+> somehow, e.g. by introducing subdirectory inside of kernel.
+>
+> Btw, kernel sysctl dir contains all sort of stuff which goes to "kernel"
+> as if it is "etc".  It already contains ftrace, perf, printk, scheduler,
+> ipc.  IMHO plain kernel hierarchy is not profitable in the long term.
 
-> The Cyclades PC-300 is a line of PCI synchronous serial cards, which was
-> produced in single and dual port models with either T1/E1 or V.35 ports.
-> It used a Hitachi HD64572 (SCA-II) synchronous serial chip, and in the
-> T1/E1 models an Infineon FALC-LH line interface/framing chip.  Copies
-> of the hardware documentation may be found at [1].
+Yeah, after reconsidering this, this sysctl is not the right approach.
 
-BTW the V.35/V.24/X.21 version (i.e. non-T1/E1) are supported by the
-pc300too.c driver. Or at least they're supposed to, I admit I haven't
-used this kind of hw for several years (but can still test and fix, when
-time permits).
+-Kees
 
-Perhaps, just perhaps, merging T1/E1 support into pc300too.c would be
-a better idea than dealing with Cyclades' old code.
-
-The pc300too shares common SCA-II code with a driver for another hw,
-pci200syn. I think it's been verified to work on non-x86-32 systems.
-
-Esp. given this:
-
->  * Patches 01 through 16 merge in version 4.1.0, and fix build, portability
->    and style problems.  As of patch 16, the driver will build cleanly and
->    will detect hardware, but not operate reliably.
 -- 
-Krzysztof Halasa
+Kees Cook
+ChromeOS Security
