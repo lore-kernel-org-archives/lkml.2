@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab2AaIgr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:36:47 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52838
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751973Ab2AaIgr (ORCPT
+	id S1752912Ab2AaIqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:46:15 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40797 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab2AaIqN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:36:47 -0500
-Date: Tue, 31 Jan 2012 03:36:40 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Wu Fengguang <wfg@linux.intel.com>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-Message-ID: <20120131083640.GA13556@infradead.org>
-References: <1327996780.21268.42.camel@sli10-conroe>
+	Tue, 31 Jan 2012 03:46:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327996780.21268.42.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <4F2754A0.9090306@ct.jp.nec.com>
+References: <4F2754A0.9090306@ct.jp.nec.com>
+Date: Tue, 31 Jan 2012 09:46:12 +0100
+Message-ID: <CAKfTPtDNmSXmeQD_2TJ6r4rsiH-s8VY-pjSf5=dfA6zMt9s_pg@mail.gmail.com>
+Subject: Re: sched: fix compilation warning on !SMP
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 03:59:40PM +0800, Shaohua Li wrote:
-> Herbert Poetzl reported a performance regression since 2.6.39. The test
-> is a simple dd read, but with big block size. The reason is:
-> 
-> T1: ra (A, A+128k), (A+128k, A+256k)
-> T2: lock_page for page A, submit the 256k
-> T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
-> because of plug and there isn't any lock_page till we hit page A+256k
-> because all pages from A to A+256k is in memory
-> T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
-> submitted again.
-> T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
-> waitting for (A+256k, A+512k) finish.
-> 
-> There is no request to disk in T3 and T4, so readahead pipeline breaks.
-> 
-> We really don't need block plug for generic_file_aio_read() for buffered
-> I/O. The readahead already has plug and has fine grained control when I/O
-> should be submitted. Deleting plug for buffered I/O fixes the regression.
-> 
-> One side effect is plug makes the request size 256k, the size is 128k
-> without it. This is because default ra size is 128k and not a reason we
-> need plug here.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> Tested-by: Herbert Poetzl <herbert@13thfloor.at>
-> Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+2012/1/31 Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>:
+> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+>
+>  CC      kernel/sched/fair.o
+> kernel/sched/fair.c:218:36: warning: 'max_load_balance_interval' defined but not used [-Wunused-variable]
+>
+> Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  kernel/sched/fair.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 8e77a6b..4ab60a2 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -215,8 +215,6 @@ calc_delta_mine(unsigned long delta_exec, unsigned long weight,
+>
+>  const struct sched_class fair_sched_class;
+>
+> -static unsigned long __read_mostly max_load_balance_interval = HZ/10;
+> -
+>  /**************************************************************
+>  * CFS operations on generic schedulable entities:
+>  */
+> @@ -3086,6 +3084,8 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
+>  * Fair scheduling class load-balancing methods:
+>  */
+>
+> +static unsigned long __read_mostly max_load_balance_interval = HZ/10;
+> +
 
-Please also CC -stable on this.
+Sorry for moving it out of SMP. Thanks for fixing this
 
+>  /*
+>  * pull_task - move a task from a remote runqueue to the local runqueue.
+>  * Both runqueues must be locked.
+> --
+> 1.7.7.6
+>
