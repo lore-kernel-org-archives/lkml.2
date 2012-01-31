@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab2AaWIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 17:08:12 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62853 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127Ab2AaWIK convert rfc822-to-8bit (ORCPT
+	id S1755416Ab2AaWNE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 17:13:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35096 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab2AaWNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 17:08:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAA6KcBB95Egv5nv=ew_pO9wXDN8zE3Sp0aATGQ7-nNz4eRfwNw@mail.gmail.com>
-References: <CADY4qd+d=_nYkFq86QyfcC8JxgK17F9foN3UZS-iLYKR=t2-BA@mail.gmail.com>
-	<CAA6KcBB95Egv5nv=ew_pO9wXDN8zE3Sp0aATGQ7-nNz4eRfwNw@mail.gmail.com>
-Date: Wed, 1 Feb 2012 08:08:09 +1000
-X-Google-Sender-Auth: KWT7_2kDNl5IuSBT7L9KQQRHS9g
-Message-ID: <CADY4qdLn9zo87qug=9SbXCLqf46exA3HEBa3Usxxxyymiuk0Xw@mail.gmail.com>
-Subject: Re: USB storage quirk
-From: Russell Strong <russell@strong.id.au>
-To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Cc: linux-kernel@vger.kernel.org,
-        USB Mass Storage on Linux 
-	<usb-storage@lists.one-eyed-alien.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 31 Jan 2012 17:13:02 -0500
+Date: Tue, 31 Jan 2012 14:13:01 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Jens Axboe <axboe@kernel.dk>,
+        Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Wu Fengguang <wfg@linux.intel.com>
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+Message-Id: <20120131141301.ba35ffe0.akpm@linux-foundation.org>
+In-Reply-To: <20120131220333.GD4378@redhat.com>
+References: <1327996780.21268.42.camel@sli10-conroe>
+	<20120131220333.GD4378@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've tried it again and only w is needed.  Previously I was not
-resetting the MP3 player between tests ( as I did this time )
+On Tue, 31 Jan 2012 17:03:33 -0500
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-Russell
+> On Tue, Jan 31, 2012 at 03:59:40PM +0800, Shaohua Li wrote:
+> > Herbert Poetzl reported a performance regression since 2.6.39. The test
+> > is a simple dd read, but with big block size. The reason is:
+> > 
+> > T1: ra (A, A+128k), (A+128k, A+256k)
+> > T2: lock_page for page A, submit the 256k
+> > T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
+> > because of plug and there isn't any lock_page till we hit page A+256k
+> > because all pages from A to A+256k is in memory
+> > T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
+> > submitted again.
+> > T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
+> > waitting for (A+256k, A+512k) finish.
+> > 
+> > There is no request to disk in T3 and T4, so readahead pipeline breaks.
+> > 
+> > We really don't need block plug for generic_file_aio_read() for buffered
+> > I/O. The readahead already has plug and has fine grained control when I/O
+> > should be submitted. Deleting plug for buffered I/O fixes the regression.
+> > 
+> > One side effect is plug makes the request size 256k, the size is 128k
+> > without it. This is because default ra size is 128k and not a reason we
+> > need plug here.
+> 
+> For me, this patch helps only so much and does not get back all the
+> performance lost in case of raw disk read. It does improve the throughput
+> from around 85-90 MB/s to 110-120 MB/s but running the same dd with
+> iflag=direct, gets me more than 250MB/s.
+> 
+> # echo 3 > /proc/sys/vm/drop_caches 
+> # dd if=/dev/sdb of=/dev/null bs=1M count=1K
+> 1024+0 records in
+> 1024+0 records out
+> 1073741824 bytes (1.1 GB) copied, 9.03305 s, 119 MB/s
+> 
+> echo 3 > /proc/sys/vm/drop_caches 
+> # dd if=/dev/sdb of=/dev/null bs=1M count=1K iflag=direct
+> 1024+0 records in
+> 1024+0 records out
+> 1073741824 bytes (1.1 GB) copied, 4.07426 s, 264 MB/s
 
-On Wed, Feb 1, 2012 at 4:22 AM, Matthew Dharm
-<mdharm-usb@one-eyed-alien.net> wrote:
-> The 'rw' sets the flags to "ignore residue" and "skip write-protect
-> checking".  Are both flags really needed?
->
-> Matt
->
-> On Tue, Jan 31, 2012 at 2:44 AM, Russell Strong <russell@strong.id.au> wrote:
->> Hi Matthew,
->>
->> I pulled you name from the kernel maintainers file to let someone know
->> about a quirk that I discovered with an MP3 player that connects as
->> usb-storage.  Hope I've got this right.
->>
->> When I connected it to my fedora 8/14/16 machine ( sorry not the
->> latest kernel ) it didn't work.  The following is the dmesg output:
->>
->> [ 1703.287204] usb 2-1: new high speed USB device using ehci_hcd and address 4
->> [ 1703.402018] usb 2-1: New USB device found, idVendor=1e74, idProduct=4641
->> [ 1703.402025] usb 2-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
->> [ 1703.402030] usb 2-1: Product: USB
->> [ 1703.402034] usb 2-1: Manufacturer:
->> [ 1703.402037] usb 2-1: SerialNumber: USBV1.00
->> [ 1703.402840] scsi5 : usb-storage 2-1:1.0
->> [ 1704.403915] scsi 5:0:0:0: Direct-Access              USB DISK
->>   1.00 PQ: 0 ANSI: 0
->> [ 1704.409525] sd 5:0:0:0: Attached scsi generic sg3 type 0
->> [ 1704.411604] sd 5:0:0:0: [sdc] 15958016 512-byte logical blocks:
->> (8.17 GB/7.60 GiB)
->> [ 1704.514300] usb 2-1: reset high speed USB device using ehci_hcd and address 4
->> [ 1709.628307] usb 2-1: device descriptor read/all, error -110
->> [ 1709.730154] usb 2-1: reset high speed USB device using ehci_hcd and address 4
->> ....
->>
->> So I played around with the usb-storage parameter quirks, and found
->> that 1e74:4641:rw worked a treat.  Hope this is helpful.
->>
->> For all the others googling for this :
->> Dick Smith Electronics MP3 player 8GB
->> DSE
->> A8705
->> add kernel command line parameter usb-storage.quirks=1e74:4641:rw
->>
->> Regards,
->> Russell
->
->
->
-> --
-> Matthew Dharm
-> Maintainer, USB Mass Storage driver for Linux
+Buffered I/O against the block device has a tradition of doing Weird
+Things.  Do you see the same behavior when reading from a regular file?
+
+> I think it is happening because in case of raw read we are submitting
+> one page at a time to request queue
+
+(That's not a raw read - it's using pagecache.  Please get the terms right!)
+
+We've never really bothered making the /dev/sda[X] I/O very efficient
+for large I/O's under the (probably wrong) assumption that it isn't a
+very interesting case.  Regular files will (or should) use the mpage
+functions, via address_space_operations.readpages().  fs/blockdev.c
+doesn't even implement it.
+
+> and by the time all the pages
+> are submitted and one big merged request is formed it wates lot of time.
+
+But that was the case in eariler kernels too.  Why did it change?
+
+
