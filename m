@@ -1,71 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab2AaIy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:54:56 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55827 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015Ab2AaIyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:54:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="104472348"
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-From: Shaohua Li <shaohua.li@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
-        Vivek Goyal <vgoyal@redhat.com>, Wu Fengguang <wfg@linux.intel.com>
-In-Reply-To: <1327999722.2422.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <1327996780.21268.42.camel@sli10-conroe>
-	 <1327999722.2422.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Jan 2012 16:53:56 +0800
-Message-ID: <1328000036.21268.52.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1753314Ab2AaIzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:55:25 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56797 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab2AaIzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 03:55:24 -0500
+Message-ID: <4F27AC61.7020008@linux.vnet.ibm.com>
+Date: Tue, 31 Jan 2012 14:24:57 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
+        vweaver1@eecs.utk.edu, dsahern@gmail.com
+Subject: Re: [PATCH v4 18/18] perf: make perf able to read file from older
+ ABIs
+References: <1327697778-18515-1-git-send-email-eranian@google.com> <1327697778-18515-19-git-send-email-eranian@google.com>
+In-Reply-To: <1327697778-18515-19-git-send-email-eranian@google.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
+x-cbid: 12013022-0260-0000-0000-00000077C5C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 09:48 +0100, Eric Dumazet wrote:
-> Le mardi 31 janvier 2012 Ã  15:59 +0800, Shaohua Li a Ã©crit :
-> > Herbert Poetzl reported a performance regression since 2.6.39. The test
-> > is a simple dd read, but with big block size. The reason is:
-> > 
-> > T1: ra (A, A+128k), (A+128k, A+256k)
-> > T2: lock_page for page A, submit the 256k
-> > T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
-> > because of plug and there isn't any lock_page till we hit page A+256k
-> > because all pages from A to A+256k is in memory
-> > T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
-> > submitted again.
-> > T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
-> > waitting for (A+256k, A+512k) finish.
-> > 
-> > There is no request to disk in T3 and T4, so readahead pipeline breaks.
-> > 
-> > We really don't need block plug for generic_file_aio_read() for buffered
-> > I/O. The readahead already has plug and has fine grained control when I/O
-> > should be submitted. Deleting plug for buffered I/O fixes the regression.
-> > 
-> > One side effect is plug makes the request size 256k, the size is 128k
-> > without it. This is because default ra size is 128k and not a reason we
-> > need plug here.
-> > 
-> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> > Tested-by: Herbert Poetzl <herbert@13thfloor.at>
-> > Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+On Saturday 28 January 2012 02:26 AM, Stephane Eranian wrote:
+> This patches provides a way to handle legacy perf.data
+> files.  Legacy files are those using the older PERFFILE
+> signature.
 > 
-> Hmm, this is not exactly the patch I tested from Wu Fengguang 
+> For those, it is still necessary to detect endianness but
+> without comparing their header->attr_size with the
+> tool's own version as it may be different. Instead, we use
+> a reference table for all known sizes from the legacy era.
 > 
-> I'll test this one before adding my "Tested-by: ..."
-That added lines should not matter. We still need plug for direct-io
-case.
-Really sorry for this, I should ask you test it before adding the
-Tested-by.
+> We try all the combinations for sizes and endianness. If we find
+> a match, we proceed, otherwise we return: "incompatible file format".
+> This is also done for the pipe-mode file format.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  tools/perf/util/header.c |  126 +++++++++++++++++++++++++++++++++++----------
+>  1 files changed, 98 insertions(+), 28 deletions(-)
+> 
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index 1fb365d..a15f451 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -1630,35 +1630,102 @@ int perf_header__process_sections(struct perf_header *header, int fd,
+>  	return err;
+>  }
+> 
+> -static int check_magic_endian(u64 *magic, struct perf_file_header *header,
+> -			      struct perf_header *ph)
+> +static const int attr_file_abi_sizes[] = {
+> +	[0] = PERF_ATTR_SIZE_VER0,
+> +	[1] = PERF_ATTR_SIZE_VER1,
+> +	0,
+> +};
+> +
+> +/*
+> + * In the legacy file format, the magic number is not used to encode endianness.
+> + * hdr_sz was used to encode endianness. But given that hdr_sz can vary based
+> + * on ABI revisions, we need to try all combinations for all endianness to
+> + * detect the endianness.
+> + */
+> +static int try_all_file_abis(uint64_t hdr_sz, struct perf_header *ph)
+>  {
+> -	int ret;
+> +	uint64_t ref_size, attr_size;
+> +	int i;
+> 
+> -	/* check for legacy format */
+> -	ret = memcmp(magic, __perf_magic1, sizeof(*magic));
+> -	if (ret == 0) {
+> -		pr_debug("legacy perf.data format\n");
+> -		if (!header)
+> -			return -1;
+> +	for (i = 0 ; attr_file_abi_sizes[i]; i++) {
+> +		ref_size = attr_file_abi_sizes[i]
+> +			 + sizeof(struct perf_file_section);
+> +		if (hdr_sz != ref_size) {
+> +			attr_size = bswap_64(hdr_sz);
+> +			if (attr_size != ref_size)
+> +				continue;
+> 
+> -		if (header->attr_size != sizeof(struct perf_file_attr)) {
+> -			u64 attr_size = bswap_64(header->attr_size);
+> +			ph->needs_swap = true;
+> +		}
+> +		pr_debug("ABI%d perf.data file detected, need_swap=%d\n",
+> +			 i,
+> +			 ph->needs_swap);
+> +		return 0;
+> +	}
+> +	/* could not determine endianness */
+> +	return -1;
+> +}
+> 
+> -			if (attr_size != sizeof(struct perf_file_attr))
+> -				return -1;
+> +#define PERF_PIPE_HDR_VER0	16
+> +
+> +static const size_t attr_pipe_abi_sizes[] = {
+> +	[0] = PERF_PIPE_HDR_VER0,
+> +	0,
+> +};
+> +
+> +/*
+> + * In the legacy pipe format, there is an implicit assumption that endiannesss
+> + * between host recording the samples, and host parsing the samples is the
+> + * same. This is not always the case given that the pipe output may always be
+> + * redirected into a file and analyzed on a different machine with possibly a
+> + * different endianness and perf_event ABI revsions in the perf tool itself.
+> + */
+> +static int try_all_pipe_abis(uint64_t hdr_sz, struct perf_header *ph)
+> +{
+> +	uint64_t ref_size;
+> +	int i;
+> +
+> +	for (i = 0 ; attr_pipe_abi_sizes[i]; i++) {
+> +		if (hdr_sz != attr_pipe_abi_sizes[i]) {
+> +			u64 attr_size = bswap_64(hdr_sz);
+> +
+> +			if (attr_size != ref_size)
 
-Thanks,
-Shaohua
+'ref_size' never got a value here but being checked against. This statement hits a compilation
+failure. 
+
+cc1: warnings being treated as errors
+util/header.c: In function ‘try_all_pipe_abis’:
+util/header.c:1692: error: ‘ref_size’ may be used uninitialized in this function
+make: *** [util/header.o] Error 1
+
+> +				continue;
+> 
+>  			ph->needs_swap = true;
+>  		}
+> +		pr_debug("Pipe ABI%d perf.data file detected\n", i);
+>  		return 0;
+>  	}
+> +	return -1;
+> +}
+> 
+> -	/* check magic number with same endianness */
+> -	if (*magic == __perf_magic2)
+> +static int check_magic_endian(u64 magic, uint64_t hdr_sz,
+> +			      bool is_pipe, struct perf_header *ph)
+> +{
+> +	int ret;
+> +
+> +	/* check for legacy format */
+> +	ret = memcmp(&magic, __perf_magic1, sizeof(magic));
+> +	if (ret == 0) {
+> +		pr_debug("legacy perf.data format\n");
+> +		if (is_pipe)
+> +			return try_all_pipe_abis(hdr_sz, ph);
+> +
+> +		return try_all_file_abis(hdr_sz, ph);
+> +	}
+> +	/*
+> +	 * the new magic number serves two purposes:
+> +	 * - unique number to identify actual perf.data files
+> +	 * - encode endianness of file
+> +	 */
+> +
+> +	/* check magic number with one endianness */
+> +	if (magic == __perf_magic2)
+>  		return 0;
+> 
+> -	/* check magic number but opposite endianness */
+> -	if (*magic != __perf_magic2_sw)
+> +	/* check magic number with opposite endianness */
+> +	if (magic != __perf_magic2_sw)
+>  		return -1;
+> 
+>  	ph->needs_swap = true;
+> @@ -1677,8 +1744,11 @@ int perf_file_header__read(struct perf_file_header *header,
+>  	if (ret <= 0)
+>  		return -1;
+> 
+> -	if (check_magic_endian(&header->magic, header, ph) < 0)
+> +	if (check_magic_endian(header->magic,
+> +			       header->attr_size, false, ph) < 0) {
+> +		pr_debug("magic/endian check failed\n");
+>  		return -1;
+> +	}
+> 
+>  	if (ph->needs_swap) {
+>  		mem_bswap_64(header, offsetof(struct perf_file_header,
+> @@ -1924,21 +1994,17 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
+>  	if (ret <= 0)
+>  		return -1;
+> 
+> -	 if (check_magic_endian(&header->magic, NULL, ph) < 0)
+> +	if (check_magic_endian(header->magic, header->size, true, ph) < 0) {
+> +		pr_debug("endian/magic failed\n");
+>  		return -1;
+> +	}
+> +
+> +	if (ph->needs_swap)
+> +		header->size = bswap_64(header->size);
+> 
+>  	if (repipe && do_write(STDOUT_FILENO, header, sizeof(*header)) < 0)
+>  		return -1;
+> 
+> -	if (header->size != sizeof(*header)) {
+> -		u64 size = bswap_64(header->size);
+> -
+> -		if (size != sizeof(*header))
+> -			return -1;
+> -
+> -		ph->needs_swap = true;
+> -	}
+> -
+>  	return 0;
+>  }
+> 
+> @@ -1975,6 +2041,10 @@ static int read_attr(int fd, struct perf_header *ph,
+> 
+>  	/* on file perf_event_attr size */
+>  	sz = attr->size;
+> +	if (sz != our_sz)
+> +		pr_debug("on file attr=%zu vs. %zu bytes,"
+> +			 " ignoring extra fields\n", sz, our_sz);
+> +
+>  	if (ph->needs_swap)
+>  		sz = bswap_32(sz);
+> 
+
+
+-- 
+Anshuman Khandual
+Linux Technology Centre
+IBM Systems and Technology Group
 
