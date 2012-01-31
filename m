@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab2AaIs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:48:57 -0500
+	id S1753489Ab2AaItK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:49:10 -0500
 Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46561 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752742Ab2AaIsz (ORCPT
+	by vger.kernel.org with ESMTP id S1752742Ab2AaItG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:48:55 -0500
+	Tue, 31 Jan 2012 03:49:06 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
         sjurbren@gmail.com,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RESEND PATCHv5 00/11] modem_shm: Driver for ST-E Thor M7400 LTE modem
-Date: Tue, 31 Jan 2012 09:48:35 +0100
-Message-Id: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [RESEND PATCHv5 07/11] modem_shm: Add shm device implementation
+Date: Tue, 31 Jan 2012 09:48:42 +0100
+Message-Id: <1327999726-8774-8-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1327999726-8774-1-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -23,193 +25,549 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set implements a shared memory interface for ST-Ericsson modem
-M7400. Review comments and feedback are welcome.
+Add implementation for modem shared memory device. The device handles
+modem start-up synchronization, channel management such as open/close,
+C2C power-on request and low power request upon inactivity timeout.
 
-Patches are available at: git://github.com/sjurbren/modem-ipc.git for-next.
-
-
-Introduction:
-~~~~~~~~~~~~~
-This patch-set introduces the Shared Memory Driver for ST-Ericsson's
-Thor M7400 LTE modem.
-The shared memory model is implemented for Chip-to-chip and
-uses a reserved memory area and a number of bi-directional
-channels. Each channel has it's own designated data area where payload
-data is copied into.
-
-Two different channel types are defined, one stream channel which is
-implemented as a traditional ring-buffer, and a packet channel which
-is a ring-buffer of fix sized buffers where each buffer contains
-an array of CAIF frames.
-
-The notification of read and write index updates are handled in a
-separate driver called c2c_genio. This driver will be contributed separately,
-but the API is included in this patch-set.
-
-The channel configuration is stored in shared memory, each channel
-has a designated area in shared memory for configuration data,
-read and write indexes and a data area.
-
-Configuration
-~~~~~~~~~~~~~~~
-
-        IPC-TOC
-        +--------------------+	   Index Area
-        | Channel Descr 0    | -----> +------------+
-	|                    | -+     |	Read Index |
-	|--------------------|	|     |------------|
-	| Channel Descr 1    | 	|     |	Write Index|
-	|                    |	|     +------------+
-	|--------------------|	|   Data Area
-	|       ...    	     |	|     +------------+
-	|                    |	+---> |            |
-	+--------------------+	      |	       	   |
-				      |	       	   |
-				      +------------+
-
-A IPC-TOC (table of content) is used for holding configuration data
-for the channels (struct shm_ipctoc). It contains an array of
-channel descriptors (struct shm_ipctoc_channel). The channel
-descriptors points out the data area and the location of
-read and write indexes.
-
-The configuration is provided from user-space using gen-netlink.
-The gen-netlink format is defined in modem_shm_netlink.h and and handled
-in shm_boot.c
-
-Packet data
-~~~~~~~~~~~
-The packet channel is set up to minimize interrupts needed to
-transfer a packet and to allow efficient DMA operations on the modem.
-
-Ring Buffer Indexes:
-    +------------+
-  +-| Read Index |
-  | |------------|
-  | | Write Index|------------------------+
-  | +------------+   		 	  |
-  |    		    			  |
-  V    	  				  |
-Buffer-0:				  V Buffer-1:
- +----------------------------------------+---------------+---
- |ofs,len|ofs,len| ....| frm-0|frm-1| ... | ofs,len | ....|...
- +----------------------------------------+---------------+--
-   |      |              ^      ^
-   +---------------------+      |
-	  +---------------------+
-
-Packet data is organized in a channel containing a number of fixed-
-size buffers. The channel has a read and write pointer to a buffer in a normal
-ring-buffer fashion.
-
-Each buffer holds an array of CAIF-frames, and starts with an descriptor array
-containing pointers to the data frames in the buffer. The descriptor array
-contains offset and length of each frame.
-
-The packet device (caif_shm.c) is implemented as a network interface of
-type ARPHRD_CAIF.
-
-Stream data
-~~~~~~~~~~~
-The driver for the stream channel is implemented as a character device
-interface to user space. The character device implements non-blocking open
-and non-blocking IO in general. The character device is implementing
-a traditional circular buffer directly in the shared memory region for
-the channel.
-
-
-Driver model
-~~~~~~~~~~~~~~
-A SHM bus is implemented, the example below shows one device
-of each type (stream and packet):
-
-/sys/bus/modem_shm
-|-- devices
-|   |-- shm0 -> ../../../devices/modem_shm/shm0
-|   `-- shm1 -> ../../../devices/modem_shm/shm1
-|-- drivers
-|   |-- caif_shm
-|   |   |-- bind
-|   |   |-- module -> ../../../../module/caif_shm
-|   |   |-- uevent
-|   |   |-- unbind
-|   |   `-- shm1 -> ../../../../devices/shm/shm1
-|   `-- shm_chr
-|       |-- bind
-|       |-- module -> ../../../../module/shm_chr
-|       |-- uevent
-|       |-- unbind
-|       `-- shm0 -> ../../../../devices/shm/shm0
-|-- drivers_autoprobe
-|-- drivers_probe
-`-- uevent
-
-
-/sys/devices/modem_shm/
-|-- bootimg
-|-- caif_ready
-|-- ipc_ready
-|-- uevent
-|-- shm0
-|   |-- driver -> ../../../bus/shm/drivers/modem_shm_chr
-|   |-- misc
-|   |   `-- shm0
-|   |       |-- dev
-|   |       |-- device -> ../../../shm0
-|   |       |-- subsystem -> ../../../../../class/misc
-|   |       `-- uevent
-|   |-- subsystem -> ../../../bus/shm
-|   `-- uevent
-`-- shm1
-    |-- driver -> ../../../bus/shm/drivers/caif_shm
-    |-- subsystem -> ../../../bus/shm
-    `-- uevent
-
-
-Sjur Brændeland (11):
-  modem_shm: Shared Memory layout for ST-E M7400 driver.
-  modem_shm: Channel config definitions for ST-E M7400 driver.
-  modem_shm: Configuration for SHM Channel an devices.
-  modem_shm: geni/geno driver interface.
-  modem_shm: genio dummy driver
-  modem_shm: Add SHM device bus.
-  modem_shm: Add shm device implementation
-  modem_shm: SHM Configuration data handling
-  modem_shm: Character device for SHM channel access.
-  modem_shm: Makefile and Kconfig for M7400 Shared Memory Drivers
-  caif_shm: Add CAIF driver for Shared memory for M7400
-
- drivers/Kconfig                             |    2 +
- drivers/Makefile                            |    1 +
- drivers/modem_shm/Kconfig                   |   62 ++
- drivers/modem_shm/Makefile                  |    5 +
- drivers/modem_shm/dummy_c2c_genio.c         |   76 ++
- drivers/modem_shm/shm_boot.c                | 1208 ++++++++++++++++++++++++++
- drivers/modem_shm/shm_bus.c                 |  113 +++
- drivers/modem_shm/shm_chr.c                 | 1242 +++++++++++++++++++++++++++
- drivers/modem_shm/shm_dev.c                 |  527 ++++++++++++
- drivers/modem_shm/shm_ipctoc.h              |  154 ++++
- drivers/net/caif/Kconfig                    |   12 +-
- drivers/net/caif/Makefile                   |    3 +-
- drivers/net/caif/caif_shm.c                 |  900 +++++++++++++++++++
- include/linux/Kbuild                        |    1 +
- include/linux/c2c_genio.h                   |  195 +++++
- include/linux/modem_shm/Kbuild              |    1 +
- include/linux/modem_shm/modem_shm_netlink.h |   95 ++
- include/linux/modem_shm/shm_dev.h           |  245 ++++++
- 18 files changed, 4840 insertions(+), 2 deletions(-)
- create mode 100644 drivers/modem_shm/Kconfig
- create mode 100644 drivers/modem_shm/Makefile
- create mode 100644 drivers/modem_shm/dummy_c2c_genio.c
- create mode 100644 drivers/modem_shm/shm_boot.c
- create mode 100644 drivers/modem_shm/shm_bus.c
- create mode 100644 drivers/modem_shm/shm_chr.c
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+---
+ drivers/modem_shm/shm_dev.c |  527 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 527 insertions(+), 0 deletions(-)
  create mode 100644 drivers/modem_shm/shm_dev.c
- create mode 100644 drivers/modem_shm/shm_ipctoc.h
- create mode 100644 drivers/net/caif/caif_shm.c
- create mode 100644 include/linux/c2c_genio.h
- create mode 100644 include/linux/modem_shm/Kbuild
- create mode 100644 include/linux/modem_shm/modem_shm_netlink.h
- create mode 100644 include/linux/modem_shm/shm_dev.h
+
+diff --git a/drivers/modem_shm/shm_dev.c b/drivers/modem_shm/shm_dev.c
+new file mode 100644
+index 0000000..e1a77eb
+--- /dev/null
++++ b/drivers/modem_shm/shm_dev.c
+@@ -0,0 +1,527 @@
++/*
++ * Copyright (C) ST-Ericsson AB 2012
++ * Author: Sjur Brændeland / sjur.brandeland@stericsson.com
++ * License terms: GNU General Public License (GPL) version 2
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ":" fmt
++#include <linux/version.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/netdevice.h>
++#include <linux/firmware.h>
++#include <linux/c2c_genio.h>
++#include <linux/modem_shm/shm_dev.h>
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Sjur Brændland <sjur.brandeland@stericsson.com>");
++
++static int shm_inactivity_timeout = 1000;
++module_param(shm_inactivity_timeout, int, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(shm_inactivity_timeout, "Inactivity timeout, ms.");
++
++struct shm_parent {
++	struct device dev;
++	bool ready_for_ipc;
++	bool ready_for_caif;
++	spinlock_t timer_lock;
++	int inactivity_timeout;
++	struct timer_list inactivity_timer;
++	bool power_on;
++};
++
++struct shm_parent *parent_dev;
++
++#define mdev_dbg(dev, fmt, arg...) dev_dbg(&dev->dev, pr_fmt(fmt), ##arg)
++#define mdev_vdbg(dev, fmt, arg...) dev_vdbg(&dev->dev, pr_fmt(fmt), ##arg)
++
++static void inactivity_tout(unsigned long arg)
++{
++	unsigned long flags;
++	pr_devel("enter\n");
++	spin_lock_irqsave(&parent_dev->timer_lock, flags);
++	/*
++	 * This is paranoia, but if timer is reactivated
++	 * before this tout function is scheduled,
++	 * we just ignore this timeout.
++	 */
++	if (timer_pending(&parent_dev->inactivity_timer))
++		goto out;
++
++	if (parent_dev->power_on) {
++		pr_devel("genio power req(off)\n");
++		genio_power_req(false);
++		parent_dev->power_on = false;
++	}
++out:
++	spin_unlock_irqrestore(&parent_dev->timer_lock, flags);
++}
++
++static void activity(void)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&parent_dev->timer_lock, flags);
++	if (!parent_dev->power_on) {
++		pr_devel("genio power req(on)\n");
++		genio_power_req(true);
++		parent_dev->power_on = true;
++	}
++	mod_timer(&parent_dev->inactivity_timer,
++			jiffies + parent_dev->inactivity_timeout);
++	spin_unlock_irqrestore(&parent_dev->timer_lock, flags);
++}
++
++static void reset_activity_tout(void)
++{
++	unsigned long flags;
++	pr_devel("enter\n");
++	spin_lock_irqsave(&parent_dev->timer_lock, flags);
++	if (parent_dev->power_on) {
++		genio_power_req(false);
++		parent_dev->power_on = false;
++	}
++	del_timer_sync(&parent_dev->inactivity_timer);
++	spin_unlock_irqrestore(&parent_dev->timer_lock, flags);
++}
++
++static int shmdev_ipc_tx(struct shm_dev *dev)
++{
++	mdev_vdbg(dev, "call genio_set_bit(%d)\n", dev->cfg.tx.xfer_bit);
++	activity();
++	return genio_set_bit(dev->cfg.tx.xfer_bit);
++}
++
++static int shmdev_ipc_rx_release(struct shm_dev *dev, bool more)
++{
++	mdev_vdbg(dev, "call genio_set_bit(%d)\n", dev->cfg.tx.xfer_bit);
++	activity();
++	return genio_set_bit(dev->cfg.rx.xfer_done_bit);
++}
++
++static int do_open(struct shm_dev *dev)
++{
++	int err;
++
++	err = dev->open_cb(dev->driver_data);
++	if (err < 0) {
++		mdev_dbg(dev, "Error - open_cb failed\n");
++
++		/* Make sure ring-buffer is empty i RX and TX direction */
++		*dev->cfg.rx.read = *dev->cfg.rx.write;
++		*dev->cfg.tx.write = *dev->cfg.tx.read;
++		*dev->cfg.tx.state = cpu_to_le32(SHM_CLOSED);
++		mdev_vdbg(dev, "set state = SHM_DEV_CLOSED\n");
++		dev->state = SHM_DEV_CLOSED;
++		return err;
++	}
++
++	/* Check is we already have any data in the pipe */
++	if (*dev->cfg.rx.write != *dev->cfg.rx.read) {
++		mdev_vdbg(dev, "Received data during opening\n");
++		dev->ipc_rx_cb(dev->driver_data);
++	}
++
++	return err;
++}
++
++static void genio_rx_cb(void *data)
++{
++	struct shm_dev *dev = data;
++
++	if (likely(dev->state == SHM_DEV_OPEN)) {
++		if (unlikely(!parent_dev->ready_for_ipc)) {
++			mdev_vdbg(dev, "ready_for_ipc is not yet set\n");
++			return;
++		}
++
++		if (dev->ipc_rx_cb) {
++			int err = dev->ipc_rx_cb(dev->driver_data);
++			if (unlikely(err < 0))
++				goto remote_close;
++		}
++
++	} else if (*dev->cfg.rx.state == cpu_to_le32(SHM_OPEN)) {
++		dev->state = SHM_DEV_OPEN;
++		if (!parent_dev->ready_for_ipc) {
++			mdev_vdbg(dev, "ready_for_ipc is not yet set\n");
++			return;
++		}
++		if (do_open(dev) < 0)
++			goto open_fail;
++	}
++	return;
++open_fail:
++	/* Make sure ring-buffer is empty i RX and TX direction */
++	*dev->cfg.rx.read = *dev->cfg.rx.write;
++	*dev->cfg.tx.write = *dev->cfg.tx.read;
++remote_close:
++	*dev->cfg.tx.state = cpu_to_le32(SHM_CLOSED);
++	dev->state = SHM_DEV_CLOSED;
++	dev->close_cb(dev->driver_data);
++}
++
++static void genio_tx_release_cb(void *data)
++{
++	struct shm_dev *dev = data;
++
++	if (!parent_dev->ready_for_ipc) {
++		mdev_vdbg(dev, "not ready_for_ipc\n");
++		return;
++	}
++	if (dev->ipc_tx_release_cb)
++		dev->ipc_tx_release_cb(dev->driver_data);
++}
++
++struct shm_xgroup {
++	bool prohibit;
++	u32 group;
++};
++
++static void check_exclgroup(struct shm_dev *dev, void *data)
++{
++	struct shm_xgroup *x = data;
++	if (dev->state == SHM_DEV_OPEN &&
++		dev->cfg.excl_group != x->group) {
++		x->prohibit = true;
++		mdev_dbg(dev, "Exclusive group "
++				"prohibits device open\n");
++	}
++}
++
++static int shmdev_open(struct shm_dev *dev)
++{
++	int err = -EINVAL;
++	struct shm_xgroup x = {
++		.prohibit = false,
++		.group = dev->cfg.excl_group
++	};
++
++
++	if (WARN_ON(dev->ipc_rx_cb == NULL) ||
++			WARN_ON(dev->ipc_tx_release_cb == NULL) ||
++			WARN_ON(dev->open_cb == NULL) ||
++			WARN_ON(dev->close_cb == NULL))
++		goto err;
++
++	modem_shm_foreach_dev(check_exclgroup, &x);
++	if (x.prohibit) {
++		mdev_dbg(dev, "Exclusive group prohibits device open\n");
++		err = -EPERM;
++		goto err;
++	}
++
++	mdev_vdbg(dev, "call genio_subscribe(%d)\n", dev->cfg.rx.xfer_bit);
++	err = genio_subscribe(dev->cfg.rx.xfer_bit, genio_rx_cb, dev);
++	if (err)
++		goto err;
++
++	mdev_vdbg(dev, "call genio_subscribe(%d)\n", dev->cfg.tx.xfer_done_bit);
++	err = genio_subscribe(dev->cfg.tx.xfer_done_bit,
++			genio_tx_release_cb, dev);
++	if (err)
++		goto err;
++
++	/* Indicate that our side is open and ready for action */
++	*dev->cfg.rx.read = *dev->cfg.rx.write;
++	*dev->cfg.tx.write = *dev->cfg.tx.read;
++	*dev->cfg.tx.state = cpu_to_le32(SHM_OPEN);
++
++	if (parent_dev->ready_for_ipc)
++		err = shmdev_ipc_tx(dev);
++
++	if (err < 0) {
++		mdev_dbg(dev, "can't update geno\n");
++		goto err;
++	}
++	/* If other side is ready as well we're ready to role */
++	if (*dev->cfg.rx.state == cpu_to_le32(SHM_OPEN) &&
++			parent_dev->ready_for_ipc) {
++
++		if (do_open(dev) < 0)
++			goto err;
++		dev->state = SHM_DEV_OPEN;
++	}
++
++	return 0;
++err:
++	*dev->cfg.rx.read = *dev->cfg.rx.write;
++	*dev->cfg.tx.write = *dev->cfg.tx.read;
++	*dev->cfg.tx.state = cpu_to_le32(SHM_CLOSED);
++	return err;
++}
++
++static void shmdev_close(struct shm_dev *dev)
++{
++	dev->state = SHM_DEV_CLOSED;
++	*dev->cfg.rx.read = *dev->cfg.rx.write;
++	*dev->cfg.tx.state = cpu_to_le32(SHM_CLOSED);
++	shmdev_ipc_tx(dev);
++	if (dev->close_cb)
++		dev->close_cb(dev->driver_data);
++
++	mdev_vdbg(dev, "call genio_unsubscribe(%d)\n", dev->cfg.rx.xfer_bit);
++	genio_unsubscribe(dev->cfg.rx.xfer_bit);
++	mdev_vdbg(dev, "call genio_unsubscribe(%d)\n",
++			dev->cfg.tx.xfer_done_bit);
++	genio_unsubscribe(dev->cfg.tx.xfer_done_bit);
++}
++
++static void shmdev_release(struct device *dev)
++{
++	struct shm_dev *shm = container_of(dev, struct shm_dev, dev);
++	kfree(shm);
++}
++
++int modem_shm_register_devices(struct shm_channel *channel[], int channels)
++{
++
++	int i, err;
++	struct shm_dev *dev;
++
++	for (i = 0; i < channels; i++) {
++		dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++		if (dev == NULL)
++			return -ENOMEM;
++		dev_set_name(&dev->dev, "shm%u", i);
++		dev->dev.release = shmdev_release;
++
++		dev->state = SHM_DEV_CLOSED;
++		dev->open = shmdev_open;
++		dev->close = shmdev_close;
++		dev->ipc_rx_release = shmdev_ipc_rx_release;
++		dev->ipc_tx = shmdev_ipc_tx;
++		mdev_vdbg(dev, "register SHM device %s\n",
++				dev_name(&dev->dev));
++		dev->dev.parent = &parent_dev->dev;
++		dev->cfg = *channel[i];
++
++		err = modem_shm_register_device(dev);
++		if (err) {
++			mdev_dbg(dev, "registration failed (%d)\n", err);
++			return err;
++		}
++	}
++	return 0;
++}
++EXPORT_SYMBOL(modem_shm_register_devices);
++
++/* sysfs: ipc_ready file */
++static ssize_t caif_ready_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", parent_dev->ready_for_caif);
++}
++
++static DEVICE_ATTR(caif_ready, S_IRUSR | S_IRUGO, caif_ready_show, NULL);
++
++/* sysfs: notification on change of caif_ready to user space */
++void shm_caif_ready(void)
++{
++	sysfs_notify(&parent_dev->dev.kobj, NULL,
++			dev_attr_caif_ready.attr.name);
++}
++
++/* sysfs: ipc_ready file */
++static ssize_t ipc_ready_show(struct device *dev, struct device_attribute *attr,
++				char *buf)
++{
++	return sprintf(buf, "%d\n", parent_dev->ready_for_ipc);
++}
++
++static DEVICE_ATTR(ipc_ready, S_IRUSR | S_IRUGO, ipc_ready_show, NULL);
++
++/* sysfs: notification on change of ipc_ready to user space */
++void shm_ipc_ready(void)
++{
++	sysfs_notify(&parent_dev->dev.kobj, NULL, dev_attr_ipc_ready.attr.name);
++}
++
++static void genio_caif_ready_cb(bool ready)
++{
++	pr_devel("enter\n");
++	/* Set global variable ready_for_caif true */
++	if (parent_dev->ready_for_caif != ready) {
++		parent_dev->ready_for_caif = ready;
++		shm_caif_ready();
++	}
++}
++
++static void genio_errhandler(int errno)
++{
++	/* Fake CAIF_READY low to trigger modem restart */
++	pr_warn("Driver reported error:%d\n", errno);
++	parent_dev->ready_for_caif = 0;
++	shm_caif_ready();
++}
++
++struct shm_bits {
++	u32 setter;
++	u32 getter;
++};
++
++static void collect_bits(struct shm_dev *dev, void *data)
++{
++	struct shm_bits *bits = data;
++	bits->setter |= 1 << dev->cfg.tx.xfer_bit;
++	bits->setter |= 1 << dev->cfg.rx.xfer_done_bit;
++	bits->getter |= 1 << dev->cfg.rx.xfer_bit;
++	bits->getter |= 1 << dev->cfg.tx.xfer_done_bit;
++}
++
++static void handle_open(struct shm_dev *dev, void *data)
++{
++		if (dev->cfg.rx.state != NULL && dev->cfg.tx.state != NULL &&
++				*dev->cfg.rx.state == cpu_to_le32(SHM_OPEN) &&
++				*dev->cfg.tx.state == cpu_to_le32(SHM_OPEN)) {
++			dev->state = SHM_DEV_OPEN;
++			do_open(dev);
++		}
++}
++
++void genio_ipc_ready_cb(void)
++{
++	int err;
++	struct shm_bits bits = {0, 0};
++
++	pr_devel("enter\n");
++	/* Set global variable ready_for_ipc true */
++#ifdef DEBUG
++	/*
++	 * In real life ready_for_ipc doesn't change, but it's
++	 * convenient for testing.
++	 */
++	parent_dev->ready_for_ipc = !parent_dev->ready_for_ipc;
++#else
++	parent_dev->ready_for_ipc = true;
++#endif
++
++	shm_ipc_ready();
++
++	genio_register_errhandler(genio_errhandler);
++
++	pr_devel("call genio_subscribe_caif_ready()\n");
++	err = genio_subscribe_caif_ready(genio_caif_ready_cb);
++	if (err < 0)
++		pr_debug("genio_subscribe_caif_ready failed:%d\n", err);
++
++	/* Collect the bit-mask for GENIO bits */
++	modem_shm_foreach_dev(collect_bits, &bits);
++	pr_devel("call genio_bit_alloc(%x,%x)\n", bits.setter, bits.getter);
++	err = genio_bit_alloc(bits.setter, bits.getter);
++	if (err < 0)
++		pr_debug("genio_bit_alloc failed:%d\n", err);
++	modem_shm_foreach_dev(handle_open, NULL);
++}
++EXPORT_SYMBOL(genio_ipc_ready_cb);
++
++int modem_shm_request_firmware(void *context, struct module *mod,
++		const char *img_name,
++		void (*cb)(const struct firmware *, void *))
++{
++	pr_debug("firmware request\n");
++	return request_firmware_nowait(mod,
++			FW_ACTION_NOHOTPLUG,
++			img_name,
++			&parent_dev->dev,
++			GFP_KERNEL,
++			context,
++			cb);
++}
++EXPORT_SYMBOL(modem_shm_request_firmware);
++
++static void parent_release(struct device *dev)
++{
++	struct shm_parent *parent = container_of(dev, struct shm_parent, dev);
++	WARN_ON(parent_dev != parent);
++	kfree(parent);
++	parent_dev = NULL;
++}
++
++static int __init shm_init(void)
++{
++	int err;
++
++	pr_devel("Initializing\n");
++
++	parent_dev = kzalloc(sizeof(*parent_dev), GFP_KERNEL);
++	if (parent_dev  == NULL)
++		return -ENOMEM;
++
++	dev_set_name(&parent_dev->dev, "modem_shm");
++	parent_dev->dev.release = parent_release;
++
++	/* Pre-calculate inactivity timeout. */
++	if (shm_inactivity_timeout != -1) {
++		parent_dev->inactivity_timeout =
++				shm_inactivity_timeout * HZ / 1000;
++		if (parent_dev->inactivity_timeout == 0)
++			parent_dev->inactivity_timeout = 1;
++		else if (parent_dev->inactivity_timeout > NEXT_TIMER_MAX_DELTA)
++			parent_dev->inactivity_timeout = NEXT_TIMER_MAX_DELTA;
++	} else
++		parent_dev->inactivity_timeout = NEXT_TIMER_MAX_DELTA;
++
++	spin_lock_init(&parent_dev->timer_lock);
++	init_timer(&parent_dev->inactivity_timer);
++	parent_dev->inactivity_timer.data = 0L;
++	parent_dev->inactivity_timer.function = inactivity_tout;
++
++	err = device_register(&parent_dev->dev);
++	if (err)
++		goto err;
++
++	err = device_create_file(&parent_dev->dev, &dev_attr_ipc_ready);
++	if (err)
++		goto err_unreg;
++	err = device_create_file(&parent_dev->dev, &dev_attr_caif_ready);
++	if (err)
++		goto err_unreg;
++
++	return err;
++err_unreg:
++	pr_debug("initialization failed\n");
++	device_unregister(&parent_dev->dev);
++err:
++	return err;
++}
++
++static void handle_close(struct shm_dev *dev, void *data)
++{
++	if (dev->close_cb)
++		dev->close_cb(dev->driver_data);
++}
++
++void close_devices(void)
++{
++	modem_shm_foreach_dev(handle_close, NULL);
++}
++
++static void handle_reset(struct shm_dev *dev, void *data)
++{
++	if (dev->close_cb)
++		dev->close_cb(dev->driver_data);
++	modem_shm_unregister_device(dev);
++}
++
++void modem_shm_reset(void)
++{
++	parent_dev->ready_for_ipc = false;
++	parent_dev->ready_for_caif = false;
++	modem_shm_foreach_dev(handle_reset, NULL);
++	reset_activity_tout();
++	genio_reset();
++}
++EXPORT_SYMBOL(modem_shm_reset);
++
++static void __exit shm_exit(void)
++{
++	modem_shm_reset();
++	device_unregister(&parent_dev->dev);
++	genio_unsubscribe(READY_FOR_IPC_BIT);
++	genio_unsubscribe(READY_FOR_CAIF_BIT);
++}
++
++module_init(shm_init);
++module_exit(shm_exit);
+-- 
+1.7.0.4
 
