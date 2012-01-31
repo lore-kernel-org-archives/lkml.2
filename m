@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab2AaIsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 03:48:45 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:51479 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015Ab2AaIsn (ORCPT
+	id S1753133Ab2AaIsu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 03:48:50 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63603 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab2AaIss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 03:48:43 -0500
-Date: Tue, 31 Jan 2012 14:18:30 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: At sched_fork use __set_task_cpu().
-Message-ID: <20120131084830.GA22077@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <1327854877.8504.3.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1327854877.8504.3.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12013108-2674-0000-0000-0000032D1E2E
+	Tue, 31 Jan 2012 03:48:48 -0500
+Message-ID: <1327999722.2422.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
+        Vivek Goyal <vgoyal@redhat.com>, Wu Fengguang <wfg@linux.intel.com>
+Date: Tue, 31 Jan 2012 09:48:42 +0100
+In-Reply-To: <1327996780.21268.42.camel@sli10-conroe>
+References: <1327996780.21268.42.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rakib Mullick <rakib.mullick@gmail.com> [2012-01-29 22:34:37]:
+Le mardi 31 janvier 2012 à 15:59 +0800, Shaohua Li a écrit :
+> Herbert Poetzl reported a performance regression since 2.6.39. The test
+> is a simple dd read, but with big block size. The reason is:
+> 
+> T1: ra (A, A+128k), (A+128k, A+256k)
+> T2: lock_page for page A, submit the 256k
+> T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
+> because of plug and there isn't any lock_page till we hit page A+256k
+> because all pages from A to A+256k is in memory
+> T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
+> submitted again.
+> T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
+> waitting for (A+256k, A+512k) finish.
+> 
+> There is no request to disk in T3 and T4, so readahead pipeline breaks.
+> 
+> We really don't need block plug for generic_file_aio_read() for buffered
+> I/O. The readahead already has plug and has fine grained control when I/O
+> should be submitted. Deleting plug for buffered I/O fixes the regression.
+> 
+> One side effect is plug makes the request size 256k, the size is 128k
+> without it. This is because default ra size is 128k and not a reason we
+> need plug here.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> Tested-by: Herbert Poetzl <herbert@13thfloor.at>
+> Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
 
->  We don't use select_task_rq() from sched_fork() anymore and no chance of task gets migrated at
-> this point. Therefore, we can avoid task migration related checking/accounting, so use
-> __set_task_cpu() instead of set_task_cpu().
+Hmm, this is not exactly the patch I tested from Wu Fengguang 
+
+I'll test this one before adding my "Tested-by: ..."
+
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 > 
-> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-  Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-> ---
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 97f49ed..b662757 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1400,15 +1400,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  	unsigned long seg = 0;
+>  	size_t count;
+>  	loff_t *ppos = &iocb->ki_pos;
+> -	struct blk_plug plug;
+>  
+>  	count = 0;
+>  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+>  	if (retval)
+>  		return retval;
+>  
+> -	blk_start_plug(&plug);
+> -
+>  	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
+>  	if (filp->f_flags & O_DIRECT) {
+>  		loff_t size;
+> @@ -1424,8 +1421,12 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  			retval = filemap_write_and_wait_range(mapping, pos,
+>  					pos + iov_length(iov, nr_segs) - 1);
+>  			if (!retval) {
+> +				struct blk_plug plug;
+> +
+> +				blk_start_plug(&plug);
+
+This part was not on the tested patch yesterday.
+
+>  				retval = mapping->a_ops->direct_IO(READ, iocb,
+>  							iov, pos, nr_segs);
+> +				blk_finish_plug(&plug);
+>  			}
+>  			if (retval > 0) {
+>  				*ppos = pos + retval;
+> @@ -1481,7 +1482,6 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  			break;
+>  	}
+>  out:
+> -	blk_finish_plug(&plug);
+>  	return retval;
+>  }
+>  EXPORT_SYMBOL(generic_file_aio_read);
 > 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index df00cb0..a38026e 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1755,7 +1755,7 @@ void sched_fork(struct task_struct *p)
->  	 * Silence PROVE_RCU.
->  	 */
->  	raw_spin_lock_irqsave(&p->pi_lock, flags);
-> -	set_task_cpu(p, cpu);
-> +	__set_task_cpu(p, cpu);
->  	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
 > 
->  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-> 
-> 
-> --
+
 
