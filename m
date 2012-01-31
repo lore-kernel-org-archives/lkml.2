@@ -1,171 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab2AaWF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 17:05:26 -0500
-Received: from outmail018.snc4.facebook.com ([66.220.144.152]:49840 "EHLO
-	intmgw003.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755341Ab2AaWFZ (ORCPT
+	id S1755430Ab2AaWFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 17:05:50 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:48021 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755383Ab2AaWFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 17:05:25 -0500
-Date: Tue, 31 Jan 2012 14:05:22 -0800
-From: Arun Sharma <asharma@fb.com>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, asharma@fb.com, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        glommer@parallels.com, mingo@elte.hu, christoph.paasch@uclouvain.be
-Subject: Re: [PATCH] net: Disambiguate kernel message
-Message-ID: <20120131220521.GA1505@dev3310.snc6.facebook.com>
-References: <1328040546.8012.6.camel@joe2Laptop>
- <4F285310.5060104@fb.com>
- <1328043341.8702.3.camel@joe2Laptop>
- <20120131.161535.422381201029777577.davem@davemloft.net>
+	Tue, 31 Jan 2012 17:05:49 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Don Zickus <dzickus@redhat.com>
+Cc: <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
+        kexec-list <kexec@lists.infradead.org>
+Subject: Re: [PATCH] x86, kdump, ioapic: Fix kdump race with migrating irq
+References: <1328045114-4489-1-git-send-email-dzickus@redhat.com>
+Date: Tue, 31 Jan 2012 14:08:29 -0800
+In-Reply-To: <1328045114-4489-1-git-send-email-dzickus@redhat.com> (Don
+	Zickus's message of "Tue, 31 Jan 2012 16:25:14 -0500")
+Message-ID: <m1ipjr4jaa.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120131.161535.422381201029777577.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18WRVjg8Fgp0UECM1bA4lT4qA3sp/NJX8E=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 04:15:35PM -0500, David Miller wrote:
-> > 
-> > shrug. That isn't currently used and 
-> > tcp_too_many_orphans and tcp_out_of_memory
-> > could still be checked.
-> > 
-> > I think the routine could be moved out-of-line.
-> 
-> Indeed, and make the out-of-line combined routine (that does the test
-> as well as the conditional logging) return a boolean that determines
-> if the "if (too_many_orphans || out_of_socket_memory)" test should
-> pass.
+Don Zickus <dzickus@redhat.com> writes:
 
-Updated patch below. No change in the size of .text
-.rodata is a bit larger.
+> A customer of ours noticed when their machine crashed, kdump did not
+> work but hung instead.  Using their firmware dumping solution they
+> grabbed a vmcore and decoded the stacks on the cpus.  What they
+> noticed seemed to be a rare deadlock with the ioapic_lock.
+>
+>  CPU4:
+>  machine_crash_shutdown
+>  -> machine_ops.crash_shutdown
+>     -> native_machine_crash_shutdown
+>        -> kdump_nmi_shootdown_cpus ------> Send NMI to other CPUs
+>        -> disable_IO_APIC
+>           -> clear_IO_APIC
+>              -> clear_IO_APIC_pin
+>                 -> ioapic_read_entry
+>                    -> spin_lock_irqsave(&ioapic_lock, flags)
+>                    ---Infinite loop here---
+>
+>  CPU0:
+>  do_IRQ
+>  -> handle_irq
+>     -> handle_edge_irq
+>         -> ack_apic_edge
+>            -> move_native_irq
+>                -> mask_IO_APIC_irq
+>                   -> mask_IO_APIC_irq_desc
+>                      -> spin_lock_irqsave(&ioapic_lock, flags)
+>                      ---Receive NMI here after getting spinlock---
+>                         -> nmi
+>                            -> do_nmi
+>                               -> crash_nmi_callback
+>                               ---Infinite loop here---
+>
+> The problem is that although kdump tries to shutdown minimal hardware,
+> it still needs to disable the IO APIC.  This requires spinlocks which
+> may be held by another cpu.  This other cpu is being held infinitely in
+> an NMI context by kdump in order to serialize the crashing path.  Instant
+> deadlock.
 
- -Arun
+Can you test to see if kexec on panic still needs to disable the IO
+APIC.  Last I looked we were close if not all of the way there to not
+needing to boot the kernel in pic mode?
 
->From f4a973dfbc9c624c9b93d2662f77eeae04e84497 Mon Sep 17 00:00:00 2001
-From: Arun Sharma <asharma@fb.com>
-Date: Mon, 30 Jan 2012 14:16:06 -0800
-Subject: [PATCH] net: Disambiguate kernel message
+If we can skip the ioapic disable entirely we should be much more
+robust.
 
-Some of our machines were reporting:
-
-TCP: too many of orphaned sockets
-
-even when the number of orphaned sockets was well below the
-limit.
-
-We print a different message depending on whether we're out
-of TCP memory or there are too many orphaned sockets.
-
-Also move the check out of line and cleanup the messages
-that were printed.
-
-Signed-off-by: Arun Sharma <asharma@fb.com>
-Suggested-by: Mohan Srinivasan <mohan@fb.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>
-Cc: Glauber Costa <glommer@parallels.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Joe Perches <joe@perches.com>
----
- include/net/tcp.h    |   14 ++++++++++----
- net/ipv4/tcp.c       |   19 +++++++++++++++----
- net/ipv4/tcp_timer.c |    5 +----
- 3 files changed, 26 insertions(+), 12 deletions(-)
-
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 0118ea9..9e158f1 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -273,6 +273,14 @@ static inline int between(__u32 seq1, __u32 seq2, __u32 seq3)
- 	return seq3 - seq2 >= seq1 - seq2;
- }
- 
-+static inline bool tcp_out_of_memory(struct sock *sk)
-+{
-+	if (sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
-+	    sk_memory_allocated(sk) > sk_prot_mem_limits(sk, 2))
-+		return true;
-+	return false;
-+}
-+
- static inline bool tcp_too_many_orphans(struct sock *sk, int shift)
- {
- 	struct percpu_counter *ocp = sk->sk_prot->orphan_count;
-@@ -283,13 +291,11 @@ static inline bool tcp_too_many_orphans(struct sock *sk, int shift)
- 		if (orphans << shift > sysctl_tcp_max_orphans)
- 			return true;
- 	}
--
--	if (sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
--	    sk_memory_allocated(sk) > sk_prot_mem_limits(sk, 2))
--		return true;
- 	return false;
- }
- 
-+extern bool tcp_check_oom(struct sock *sk, int shift);
-+
- /* syncookies: remember time of last synqueue overflow */
- static inline void tcp_synq_overflow(struct sock *sk)
- {
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 9bcdec3..5c1cb35 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1876,6 +1876,20 @@ void tcp_shutdown(struct sock *sk, int how)
- }
- EXPORT_SYMBOL(tcp_shutdown);
- 
-+bool tcp_check_oom(struct sock *sk, int shift)
-+{
-+	bool too_many_orphans, out_of_socket_memory;
-+
-+	too_many_orphans = tcp_too_many_orphans(sk, shift);
-+	out_of_socket_memory = tcp_out_of_memory(sk);
-+
-+	if (too_many_orphans && net_ratelimit())
-+		pr_info("TCP: too many orphaned sockets\n");
-+	if (out_of_socket_memory && net_ratelimit())
-+		pr_info("TCP: out of memory -- consider tuning tcp_mem\n");
-+	return too_many_orphans || out_of_socket_memory;
-+}
-+
- void tcp_close(struct sock *sk, long timeout)
- {
- 	struct sk_buff *skb;
-@@ -2015,10 +2029,7 @@ adjudge_to_death:
- 	}
- 	if (sk->sk_state != TCP_CLOSE) {
- 		sk_mem_reclaim(sk);
--		if (tcp_too_many_orphans(sk, 0)) {
--			if (net_ratelimit())
--				printk(KERN_INFO "TCP: too many of orphaned "
--				       "sockets\n");
-+		if (tcp_check_oom(sk, 0)) {
- 			tcp_set_state(sk, TCP_CLOSE);
- 			tcp_send_active_reset(sk, GFP_ATOMIC);
- 			NET_INC_STATS_BH(sock_net(sk),
-diff --git a/net/ipv4/tcp_timer.c b/net/ipv4/tcp_timer.c
-index a516d1e..cd2e072 100644
---- a/net/ipv4/tcp_timer.c
-+++ b/net/ipv4/tcp_timer.c
-@@ -77,10 +77,7 @@ static int tcp_out_of_resources(struct sock *sk, int do_reset)
- 	if (sk->sk_err_soft)
- 		shift++;
- 
--	if (tcp_too_many_orphans(sk, shift)) {
--		if (net_ratelimit())
--			printk(KERN_INFO "Out of socket memory\n");
--
-+	if (tcp_check_oom(sk, shift)) {
- 		/* Catch exceptional cases, when connection requires reset.
- 		 *      1. Last segment was sent recently. */
- 		if ((s32)(tcp_time_stamp - tp->lsndtime) <= TCP_TIMEWAIT_LEN ||
--- 
-1.7.4
-
+Eric
