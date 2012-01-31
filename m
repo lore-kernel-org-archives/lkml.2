@@ -1,182 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab2AaQmb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 11:42:31 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8058 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754888Ab2AaQm0 (ORCPT
+	id S1753682Ab2AaQqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 11:46:20 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:32824 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab2AaQqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 11:42:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 31 Jan 2012 08:42:21 -0800
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 8/8] ARM: tegra: support for secondary cores on Tegra30
-Date: Tue, 31 Jan 2012 18:40:46 +0200
-Message-Id: <1328028051-24271-9-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	Tue, 31 Jan 2012 11:46:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <m14nvc82jo.fsf@fess.ebiederm.org>
+References: <4F27120A.4040106@suse.cz> <20120130220611.GA26655@kroah.com>
+ <20120130221059.26ab5edf@pyramind.ukuu.org.uk> <20120130222717.GA6393@kroah.com>
+ <m18vkoirv9.fsf@fess.ebiederm.org> <4F27C6EB.2070305@suse.cz> <m14nvc82jo.fsf@fess.ebiederm.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 31 Jan 2012 08:45:58 -0800
+X-Google-Sender-Auth: -xcYyc4YkyDSg2fLDbQDmq3MsdQ
+Message-ID: <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
+Subject: Re: sysfs regression: wrong link counts
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        systemd-devel@lists.freedesktop.org, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for bringing up secondary cores on Tegra30. On Tegra30 secondary
-CPU cores are powergated, so we need to turn on the domains before we can bring
-the CPU cores online. Bringing secondary cores online happens early during the
-sytem boot, so we call powergating initialization from platform early_init
-function.
+On Tue, Jan 31, 2012 at 4:44 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> The sensors update with the fix is scheduled for about a week out, well
+> before 3.3 ships.
 
-Based on work by:
+That's almost certainly *not* going to help.
 
-Scott Williams <scwilliams@nvidia.com>
-Colin Cross <ccross@android.com>
-Alex Frid <afrid@nvidia.com>
+Guys, people don't update their user space. Some people run modern
+kernels on the enterprise distros - and those can be *years* out of
+date.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/mach-tegra/headsmp.S |   32 +++++++++++++++++++++++++
- arch/arm/mach-tegra/platsmp.c |   52 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 83 insertions(+), 1 deletions(-)
+If people report problems, we revert things. It's that simple. It
+really doesn't matter if you call it a user space bug or not - if user
+space depends on what we used to do, then we continue to do it.
 
-diff --git a/arch/arm/mach-tegra/headsmp.S b/arch/arm/mach-tegra/headsmp.S
-index bb13e22..925c4a0 100644
---- a/arch/arm/mach-tegra/headsmp.S
-+++ b/arch/arm/mach-tegra/headsmp.S
-@@ -188,6 +188,38 @@ __die:
- 	str	r1, [r7, #0x340]		@ CLK_RST_CPU_CMPLX_SET
- #endif
- 1:
-+#ifdef CONFIG_ARCH_TEGRA_3x_SOC
-+	mov32	r6, TEGRA_FLOW_CTRL_BASE
-+
-+	cmp	r10, #0
-+	moveq	r1, #FLOW_CTRL_HALT_CPU0_EVENTS
-+	moveq	r2, #FLOW_CTRL_CPU0_CSR
-+	movne	r1, r10, lsl #3
-+	addne	r2, r1, #(FLOW_CTRL_CPU1_CSR-8)
-+	addne	r1, r1, #(FLOW_CTRL_HALT_CPU1_EVENTS-8)
-+
-+	/* Clear CPU "event" and "interrupt" flags and power gate
-+	   it when halting but not before it is in the "WFI" state. */
-+	ldr	r0, [r6, +r2]
-+	orr	r0, r0, #FLOW_CTRL_CSR_INTR_FLAG | FLOW_CTRL_CSR_EVENT_FLAG
-+	orr	r0, r0, #FLOW_CTRL_CSR_ENABLE
-+	str	r0, [r6, +r2]
-+
-+	/* Unconditionally halt this CPU */
-+	mov	r0, #FLOW_CTRL_WAITEVENT
-+	str	r0, [r6, +r1]
-+	ldr	r0, [r6, +r1]			@ memory barrier
-+
-+	dsb
-+	isb
-+	wfi					@ CPU should be power gated here
-+
-+	/* If the CPU didn't power gate above just kill it's clock. */
-+
-+	mov	r0, r11, lsl #8
-+	str	r0, [r7, #348]			@ CLK_CPU_CMPLX_SET
-+#endif
-+
- 	/* If the CPU still isn't dead, just spin here. */
- 	b	.
- ENDPROC(__tegra_cpu_reset_handler)
-diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-index 79a241a..1fe3f58 100644
---- a/arch/arm/mach-tegra/platsmp.c
-+++ b/arch/arm/mach-tegra/platsmp.c
-@@ -24,7 +24,9 @@
- #include <asm/mach-types.h>
- #include <asm/smp_scu.h>
- 
-+#include <mach/clk.h>
- #include <mach/iomap.h>
-+#include <mach/powergate.h>
- 
- #include "fuse.h"
- #include "flowctrl.h"
-@@ -42,6 +44,8 @@ static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
- 	(IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x340)
- #define CLK_RST_CONTROLLER_RST_CPU_CMPLX_CLR \
- 	(IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x344)
-+#define CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR \
-+	(IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x34c)
- 
- #define CPU_CLOCK(cpu)	(0x1<<(8+cpu))
- #define CPU_RESET(cpu)	(0x1111ul<<(cpu))
-@@ -73,11 +77,54 @@ static int tegra20_power_up_cpu(unsigned int cpu)
- 	return 0;
- }
- 
-+static int tegra30_power_up_cpu(unsigned int cpu)
-+{
-+	u32 reg;
-+	int ret, pwrgateid;
-+	unsigned long timeout;
-+
-+	pwrgateid = tegra_cpu_powergate_id(cpu);
-+	if (pwrgateid < 0)
-+		return pwrgateid;
-+
-+	/* If this is the first boot, toggle powergates directly. */
-+	if (!tegra_powergate_is_powered(pwrgateid)) {
-+		ret = tegra_powergate_power_on(pwrgateid);
-+		if (ret)
-+			return ret;
-+
-+		/* Wait for the power to come up. */
-+		timeout = jiffies + 10*HZ;
-+		do {
-+			if (tegra_powergate_is_powered(pwrgateid))
-+				goto remove_clamps;
-+			udelay(10);
-+		} while (time_before(jiffies, timeout));
-+		return -ETIMEDOUT;
-+	}
-+
-+remove_clamps:
-+	/* CPU partition is powered. Enable the CPU clock. */
-+	writel(CPU_CLOCK(cpu), CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
-+	reg = readl(CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
-+	udelay(10);
-+
-+	/* Remove I/O clamps. */
-+	ret = tegra_powergate_remove_clamping(pwrgateid);
-+	udelay(10);
-+
-+	/* Clear flow controller CSR. */
-+	flowctrl_write_cpu_csr(cpu, 0);
-+
-+	return 0;
-+}
-+
- int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
- {
- 	int status;
- 
--	/* Force the CPU into reset. The CPU must remain in reset when the
-+	/*
-+	 * Force the CPU into reset. The CPU must remain in reset when the
- 	 * flow controller state is cleared (which will cause the flow
- 	 * controller to stop driving reset if the CPU has been power-gated
- 	 * via the flow controller). This will have no effect on first boot
-@@ -98,6 +145,9 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
- 	case TEGRA20:
- 		status = tegra20_power_up_cpu(cpu);
- 		break;
-+	case TEGRA30:
-+		status = tegra30_power_up_cpu(cpu);
-+		break;
- 	default:
- 		status = -EINVAL;
- 		break;
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+We can *try* the kernel change, but I can already tell you that
+anybody who thinks that "sensors will be fixed by all users by the
+time the kernel comes out" is likely totally full of shit. Not to
+mention that it apparently *already* causes problems for people who
+want to test -next, and this breaks those peoples setup, and thus
+means that -next gets less testing.
 
+Really. "It's a bug in user space" is *NOT* an excuse for breaking
+things. Never was. Never is. There are (other) excuses for breaking
+things, but "user space did something I didn't expect it to do, and I
+consider it a bug" is absolutely not one of them.
+
+                       Linus
