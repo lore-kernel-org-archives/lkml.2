@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab2BAVKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:10:30 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42567 "EHLO
+	id S932695Ab2BAVPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:15:00 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49189 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932585Ab2BAVKX (ORCPT
+	by vger.kernel.org with ESMTP id S932618Ab2BAVKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:23 -0500
-X-Sasl-enc: vBArb1AJFeWhNAUd1UgwCEOdI0K5jX+uo1mTpaCxtrTv 1328130620
+	Wed, 1 Feb 2012 16:10:30 -0500
+X-Sasl-enc: 1NHsq8Sa4gh6lfIaHvBlkFe05rfbAvQ4YI80CUIz01yu 1328130629
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:48 2012
-Message-Id: <20120201210048.214159802@clark.kroah.org>
+Message-Id: <20120201210048.737815908@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:13 -0800
+Date: Wed, 01 Feb 2012 13:00:19 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Wolfgang Frisch <wfpub@roembden.net>
-Subject: [49/89] usb: io_ti: Make edge_remove_sysfs_attrs the port_remove method.
+        alan@lxorguk.ukuu.org.uk, Francis Moreau <francis.moro@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: [55/89] USB: Realtek cr: fix autopm scheduling while atomic
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,57 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 6d443d8499e4e59ffb949759cdded32730f8d2f6 upstream.
+commit b3ef051db763b640d1ff724b616ffba940896b44 upstream.
 
-Calling edge_remove_sysfs_attrs from edge_disconnect is too late
-as the device has already been removed from sysfs.
+Resolves:
+https://bugzilla.redhat.com/show_bug.cgi?id=784345
 
-Do the simple and obvious thing and make edge_remove_sysfs_attrs
-the port_remove method.
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Reported-by: Wolfgang Frisch <wfpub@roembden.net>
+Reported-by: Francis Moreau <francis.moro@gmail.com>
+Reported-and-tested-by: Christian D <chrisudeussen@gmail.com>
+Reported-and-tested-by: Jimmy Dorff <jdorff@phy.duke.edu>
+Reported-and-tested-by: collura@ieee.org
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_ti.c |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ drivers/usb/storage/realtek_cr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -2677,15 +2677,7 @@ cleanup:
- 
- static void edge_disconnect(struct usb_serial *serial)
- {
--	int i;
--	struct edgeport_port *edge_port;
--
- 	dbg("%s", __func__);
--
--	for (i = 0; i < serial->num_ports; ++i) {
--		edge_port = usb_get_serial_port_data(serial->port[i]);
--		edge_remove_sysfs_attrs(edge_port->port);
--	}
- }
- 
- static void edge_release(struct usb_serial *serial)
-@@ -2764,6 +2756,7 @@ static struct usb_serial_driver edgeport
- 	.disconnect		= edge_disconnect,
- 	.release		= edge_release,
- 	.port_probe		= edge_create_sysfs_attrs,
-+	.port_remove		= edge_remove_sysfs_attrs,
- 	.ioctl			= edge_ioctl,
- 	.set_termios		= edge_set_termios,
- 	.tiocmget		= edge_tiocmget,
-@@ -2795,6 +2788,7 @@ static struct usb_serial_driver edgeport
- 	.disconnect		= edge_disconnect,
- 	.release		= edge_release,
- 	.port_probe		= edge_create_sysfs_attrs,
-+	.port_remove		= edge_remove_sysfs_attrs,
- 	.ioctl			= edge_ioctl,
- 	.set_termios		= edge_set_termios,
- 	.tiocmget		= edge_tiocmget,
+--- a/drivers/usb/storage/realtek_cr.c
++++ b/drivers/usb/storage/realtek_cr.c
+@@ -791,7 +791,7 @@ static void rts51x_suspend_timer_fn(unsi
+ 			rts51x_set_stat(chip, RTS51X_STAT_SS);
+ 			/* ignore mass storage interface's children */
+ 			pm_suspend_ignore_children(&us->pusb_intf->dev, true);
+-			usb_autopm_put_interface(us->pusb_intf);
++			usb_autopm_put_interface_async(us->pusb_intf);
+ 			US_DEBUGP("%s: RTS51X_STAT_SS 01,"
+ 				"intf->pm_usage_cnt:%d, power.usage:%d\n",
+ 				__func__,
 
 
