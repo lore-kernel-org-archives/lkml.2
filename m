@@ -1,130 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab2BASH5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 13:07:57 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:35255 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab2BASHb convert rfc822-to-8bit (ORCPT
+	id S1754534Ab2BASI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 13:08:26 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34175 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752907Ab2BASIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 13:07:31 -0500
-Date: Wed, 1 Feb 2012 18:07:05 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Colin Cross <ccross@android.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kevin Hilman <khilman@ti.com>, Len Brown <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [linux-pm] [PATCH 0/3] coupled cpuidle state support
-Message-ID: <20120201180705.GA20936@e102568-lin.cambridge.arm.com>
-References: <1324426147-16735-1-git-send-email-ccross@android.com>
- <4F1929E9.7070707@linaro.org>
- <CAMbhsRTbVqV6p0py9NGZrpFPf2yvp-B0dr+o-m7qbdja_-Lfzw@mail.gmail.com>
- <CAKfTPtAsO8z_8AnR8zSGZ9cm_7orDNxB3r09JAFk+2jdezUVmQ@mail.gmail.com>
- <CAMbhsRQYVXTZ2pX4mBrM6=SyGTqn_GY8xsW4rt_e21zerEzctA@mail.gmail.com>
- <CAKfTPtB3Kcy41H9g9u3u81kEHJeypi=GvOfOjcpdztzqN991nA@mail.gmail.com>
- <20120201145934.GA20421@e102568-lin.cambridge.arm.com>
- <CAMbhsRTFzc8aGsSGUs2==4FiqBb7zOit4cO=6U698k+RCE+kqQ@mail.gmail.com>
+	Wed, 1 Feb 2012 13:08:24 -0500
+Date: Wed, 1 Feb 2012 19:08:15 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: rcu warnings cause stack overflow
+Message-ID: <20120201180813.GF6731@somewhere.redhat.com>
+References: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
+ <20120201151445.GA6731@somewhere.redhat.com>
+ <20120201171856.GC2382@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMbhsRTFzc8aGsSGUs2==4FiqBb7zOit4cO=6U698k+RCE+kqQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 01 Feb 2012 18:07:08.0967 (UTC) FILETIME=[50483B70:01CCE10C]
-X-MC-Unique: 112020118071400401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120201171856.GC2382@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 05:30:15PM +0000, Colin Cross wrote:
-> On Wed, Feb 1, 2012 at 6:59 AM, Lorenzo Pieralisi
-> <lorenzo.pieralisi@arm.com> wrote:
-> > On Wed, Feb 01, 2012 at 12:13:26PM +0000, Vincent Guittot wrote:
-> >
-> > [...]
-> >
-> >> >> In your patch, you put in safe state (WFI for most of platform) the
-> >> >> cpus that become idle and these cpus are woken up each time a new cpu
-> >> >> of the cluster becomes idle. Then, the cluster state is chosen and the
-> >> >> cpus enter the selected C-state. On ux500, we are using another
-> >> >> behavior for synchronizing  the cpus. The cpus are prepared to enter
-> >> >> the c-state that has been chosen by the governor and the last cpu,
-> >> >> that enters idle, chooses the final cluster state (according to cpus'
-> >> >> C-state). The main advantage of this solution is that you don't need
-> >> >> to wake other cpus to enter the C-state of a cluster. This can be
-> >> >> quite worth full when tasks mainly run on one cpu. Have you also think
-> >> >> about such behavior when developing the coupled cpuidle driver ? It
-> >> >> could be interesting to add such behavior.
-> >> >
-> >> > Waking up the cpus that are in the safe state is not done just to
-> >> > choose the target state, it's done to allow the cpus to take
-> >> > themselves to the target low power state.  On ux500, are you saying
-> >> > you take the cpus directly from the safe state to a lower power state
-> >> > without ever going back to the active state?  I once implemented Tegra
-> >>
-> >> yes it is
-> >
-> > But if there is a single power rail for the entire cluster, when a CPU
-> > is "prepared" for shutdown this means that you have to save the context and
-> > clean L1, maybe for nothing since if other CPUs are up and running the
-> > CPU going idle can just enter a simple standby wfi (clock-gated but power on).
-> >
-> > With Colin's approach, context is saved and L1 cleaned only when it is
-> > almost certain the cluster is powered off (so the CPUs).
-> >
-> > It is a trade-off, I am not saying one approach is better than the
-> > other; we just have to make sure that preparing the CPU for "possible" shutdown
-> > is better than sending IPIs to take CPUs out of wfi and synchronize
-> > them (this happens if and only if CPUs enter coupled C-states).
-> >
-> > As usual this will depend on use cases (and silicon implementations :) )
-> >
-> > It is definitely worth benchmarking them.
-> >
+On Wed, Feb 01, 2012 at 09:18:56AM -0800, Paul E. McKenney wrote:
+> On Wed, Feb 01, 2012 at 04:14:48PM +0100, Frederic Weisbecker wrote:
+> > On Wed, Feb 01, 2012 at 11:06:52AM +0100, Heiko Carstens wrote:
+> > > Hi Frederic,
+> > > 
+> > > your patch 00f49e5729 "rcu: Warn when rcu_read_lock() is used in extended
+> > > quiescent state" adds a WARN_ON_ONCE to rcu_lock_acquire().
+> > > Actually this found a bug on s390 (thanks!) but it probably didn't work
+> > > as expected.
+> > > On architectures which implement WARN_ON_ONCE with an exception this
+> > > additional warning will lead to a stack overflow (if it triggers):
+> > > 
+> > > [   55.746956] Kernel stack overflow.
+> > > [   55.746966] Modules linked in: qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod qeth vmur ccwgroup [last unloaded: scsi_wait_
+> > > scan]
+> > > [   55.746999] CPU: 0 Not tainted 3.3.0-rc1-00167-gf8275f9 #90
+> > > [   55.747005] Process swapper/0 (pid: 0, task: 0000000000911100, ksp: 0000000000907d50)
+> > > [   55.747013] Krnl PSW : 0404000180000000 00000000005d5728 (illegal_op+0x1c/0x134)
+> > > [   55.747034]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:0 CC:0 PM:0 EA:3
+> > > [   55.747043] Krnl GPRS: 0000000000000001 00000000005d570c 00000000009040e8 0000000000000002
+> > > [   55.747054]            00000000005d83dc ffffffffffffffff 0000000000000000 0400000000907cc8
+> > > [   55.747064]            0404100180000000 00000000005d8478 0000000000000008 00000000009040e8
+> > > [   55.747074]            0000000000904000 00000000005dc550 0000000000904048 0000000000904048
+> > > [   55.747096] Krnl Code: 00000000005d571c: b90400ef            lgr     %r14,%r15
+> > > [   55.747118]            00000000005d5720: b90400b2            lgr     %r11,%r2
+> > > [   55.747194]           #00000000005d5724: a7840001            brc     8,5d5726
+> > > [   55.747205]           >00000000005d5728: a7fbff18            aghi    %r15,-232
+> > > [   55.747216]            00000000005d572c: e3e0f0980024        stg     %r14,152(%r15)
+> > > [   55.747228]            00000000005d5732: e31020100004        lg      %r1,16(%r2)
+> > > [   55.747242]            00000000005d5738: 58c020a0            l       %r12,160(%r2)
+> > > [   55.747257]            00000000005d573c: 91012009            tm      9(%r2),1
+> > > [   55.747276] Call Trace:
+> > > [   55.747282] ([<00000000005d60b4>] pgm_check_handler+0x154/0x158)
+> > > [   55.747296]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
+> > > [   55.747309] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
+> > > [   55.747322]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
+> > > [   55.747335]  [<00000000005d852a>] notify_die+0x52/0x60
+> > > [   55.747349]  [<00000000005d57da>] illegal_op+0xce/0x134
+> > > [   55.747364]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
+> > > 
+> > > [...lots more of the same...] 
+> > > 
+> > > [   55.747379]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
+> > > [   55.747425] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
+> > > [   55.747432]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
+> > > [   55.747440]  [<00000000005d852a>] notify_die+0x52/0x60
+> > > [   55.747448]  [<00000000005d57da>] illegal_op+0xce/0x134
+> > > [   55.747457]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
+> > > [   55.747797]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
+> > > [   55.747806] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
+> > > [   55.747816]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
+> > > [   55.747826]  [<00000000005d852a>] notify_die+0x52/0x60
+> > > [   55.748456]  [<00000000005d57da>] illegal_op+0xce/0x134
+> > > [   55.748463]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
+> > > [   55.748472]  [<000000000017afa0>] select_task_rq_fair+0x1478/0x14b4
+> > > [   55.748483] ([<0000000000179bb8>] select_task_rq_fair+0x90/0x14b4)
+> > > [   55.748493]  [<0000000000170702>] try_to_wake_up+0x136/0x47c
+> > > [   55.748506]  [<000000000015b446>] autoremove_wake_function+0x26/0x58
+> > > [   55.748518]  [<000000000016693a>] __wake_up_common+0x76/0xb4
+> > > [   55.748530]  [<000000000016aed0>] __wake_up+0x4c/0x60
+> > > [   55.748541]  [<0000000000109ee0>] s390_handle_mcck+0x194/0x1f8
+> > > [   55.748557]  [<000000000010486a>] cpu_idle+0x192/0x1c0
+> > > [   55.748570]  [<0000000000977916>] start_kernel+0x402/0x410
+> > > [   55.748588]  [<0000000000100020>] _stext+0x20/0x80
+> > > [   55.748603] 2 locks held by swapper/0/0:
+> > > [   55.748612]  #0:  (crw_handler_wait_q.lock){......}, at: [<000000000016aeb6>] __wake_up+0x32/0x60
+> > > [   55.748648]  #1:  (&p->pi_lock){-.-.-.}, at: [<000000000017060c>] try_to_wake_up+0x40/0x47c
+> > > [   55.748663] Last Breaking-Event-Address:
+> > > [   55.748667]  [<0000000000000000>] 0x0
+> > > 
+> > > This simply happens because WARN_ON_ONCE causes an exception, the excpetion
+> > > handler wants to call a notifier call chain (notify_die), which again uses
+> > > rcu_read_lock(), which again causes an exception and so on...
+> > > Unfortunately WARN_ON_ONCE first causes an exception and only afterwards sets
+> > > the flag that the warning already happened. Seems to be quite some effort to
+> > > change this behaviour.
+> > > 
+> > > Removing the WARN_ON_ONCE will fix this and, if lockdep is turned on, still
+> > > will find illegal uses. But it won't work for lockdep off configs...
+> > > So we probably want something better than the patch below.
+> > 
+> > Ah ok. Hmm, but why are you using an exception to implement WARN_ON()
+> > in s390? Is it to have a whole new stack for the warning path in order
+> > to avoid stack overflow from the place that called the WARN_ON() ?
+> > 
+> > Anyway perhaps we need a recursion protection on WARN_ON_ONCE(), such
+> > as:
 > 
-> I'm less worried about performance, and more worried about race
-> conditions.  How do you deal with the following situation:
-> CPU0 goes to WFI, and saves its state
-> CPU1 goes idle, and selects a deep idle state that powers down CPU0
-> CPU1 saves is state, and is about to trigger the power down
-> CPU0 gets an interrupt, restores its state, and modifies state (maybe
-> takes a spinlock during boot)
-> CPU1 cuts the power to CPU0
+> This makes sense to me, but I am also taking Heiko's patch
+> removing the WARN_ON()s in favor of the lockdep checks now in
+> rcu_read_lock_held().  After all, the rcu_lock_acquire() WARN_ON_ONCE()
+> only appears if PROVE_LOCKING=y, so the added requirement is not a
+> big deal.  Also, CONFIG_PROVE_RCU is in the testing requirements in
+> Documentation/SubmitChecklist.
 > 
-> On OMAP4, the race is handled in hardware.  When CPU1 tries to cut the
-> power to the blocks shared by CPU0 the hardware will ignore the
-> request if CPU0 is not in WFI.  On Tegra2, there is no hardware
-> support and I had to handle it with a spinlock implemented in scratch
-> registers because CPU0 is out of coherency when it starts booting and
-> ldrex/strex don't work.  I'm not convinced my implementation is
-> correct, and I'd be curious to see any other implementations.
+> 							Thanx, Paul
 
-That's a problem you solved with coupled C-states (ie your example in
-the cover letter), where the primary waits for other CPUs to be reset
-before issuing the power down command, right ? At that point in time 
-secondaries cannot wake up (?) and if wfi (ie power down) aborts you just
-take the secondaries out of reset and restart executing simultaneously,
-correct ? It mirrors the suspend behaviour, which is easier to deal with
-than completely random idle paths.
+I think if we do this, we lose the debugging coverage on places that
+make use of rcu_read_lock{_sched,_bh}() without using rcu_dereference{_sched,_bh}().
 
-It is true that this should be managed by the PM HW; if HW is not
-capable of managing these situations things get nasty as you highlighted.
+It seems walking the task list with list_for_each_entry_rcu() under rcu_read_lock() is
+one such example because rcu lists are using rcu_dereference_raw().
 
-And it is also true ldrex/strex on cacheable memory might not be available in
-those early warm-boot stages. I came up with a locking algorithm on
-strongly ordered memory to deal with that, but I am still not sure it is
-something we really really need.
+Also I realize a problem with my below patch. The exception will call rcu_read_lock()
+from another callsite so we are still going to recurse. Only of one level but we will
+recurse. This could mess up the warning output, although it prevents from the
+stack overflow. If we still go that direction, we probably need a more global, or per
+cpu, recursion protection of these RCU warnings.
 
-I will test coupled C-state code ASAP, and come back with feedback.
-
-Thanks,
-Lorenzo
-
+> 
+> > diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+> > index 84458b0..f76635f 100644
+> > --- a/include/asm-generic/bug.h
+> > +++ b/include/asm-generic/bug.h
+> > @@ -137,9 +137,13 @@ extern void warn_slowpath_null(const char *file, const int line);
+> >  	static bool __warned;					\
+> >  	int __ret_warn_once = !!(condition);			\
+> >  								\
+> > -	if (unlikely(__ret_warn_once))				\
+> > -		if (WARN_ON(!__warned)) 			\
+> > +	if (unlikely(__ret_warn_once)) {			\
+> > +		if (!__warned) {				\
+> >  			__warned = true;			\
+> > +			barrier();				\
+> > +			WARN_ON(1);				\
+> > +		}						\
+> > +	}							\
+> >  	unlikely(__ret_warn_once);				\
+> >  })
+> > 
+> > 
+> 
