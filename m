@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560Ab2BAV2t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:28:49 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:57579 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757470Ab2BAVTW (ORCPT
+	id S1757526Ab2BAV2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:28:47 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:63465 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757472Ab2BAVTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Feb 2012 16:19:22 -0500
-X-Sasl-enc: TVpz5Rxq3kOprup0XlhgbiUNbFxKDFOPWy9WQ9AKc2Sv 1328131161
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:49 2012
-Message-Id: <20120201210049.001562700@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:22 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andiry Xu <andiry.xu@amd.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [58/89] usb: gadget: storage: endian fix
-In-Reply-To: <20120201210505.GA26028@kroah.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/2] xen/bootup: During bootup suppress XENBUS: Unable to read cpu state
+Date: Wed,  1 Feb 2012 16:16:40 -0500
+Message-Id: <1328131000-13485-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+In-Reply-To: <1328131000-13485-1-git-send-email-konrad.wilk@oracle.com>
+References: <1328131000-13485-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090207.4F29AC58.0052,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+When the initial domain starts, it prints (depending on the
+amount of CPUs) a slew of
+XENBUS: Unable to read cpu state
+XENBUS: Unable to read cpu state
+XENBUS: Unable to read cpu state
+XENBUS: Unable to read cpu state
 
-------------------
+which provide no useful information - as the error is a valid
+issue - but not on the initial domain. The reason is that the
+XenStore is not accessible at that time (it is after all the
+first guest) so the CPU hotplug watch cannot parse "availability/cpu"
+attribute.
 
-From: Andiry Xu <andiry.xu@amd.com>
-
-commit a85016390135d577c457876d0e905095600751de upstream.
-
-Fix some endian issues for storage gadgets.
-
-Signed-off-by: Andiry Xu <andiry.xu@amd.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/usb/gadget/storage_common.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/xen/cpu_hotplug.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -598,16 +598,16 @@ static __maybe_unused struct usb_ss_cap_
- 		| USB_5GBPS_OPERATION),
- 	.bFunctionalitySupport = USB_LOW_SPEED_OPERATION,
- 	.bU1devExitLat =	USB_DEFAULT_U1_DEV_EXIT_LAT,
--	.bU2DevExitLat =	USB_DEFAULT_U2_DEV_EXIT_LAT,
-+	.bU2DevExitLat =	cpu_to_le16(USB_DEFAULT_U2_DEV_EXIT_LAT),
- };
+diff --git a/drivers/xen/cpu_hotplug.c b/drivers/xen/cpu_hotplug.c
+index 14e2d99..4dcfced 100644
+--- a/drivers/xen/cpu_hotplug.c
++++ b/drivers/xen/cpu_hotplug.c
+@@ -30,7 +30,8 @@ static int vcpu_online(unsigned int cpu)
+ 	sprintf(dir, "cpu/%u", cpu);
+ 	err = xenbus_scanf(XBT_NIL, dir, "availability", "%s", state);
+ 	if (err != 1) {
+-		printk(KERN_ERR "XENBUS: Unable to read cpu state\n");
++		if (!xen_initial_domain())
++			printk(KERN_ERR "XENBUS: Unable to read cpu state\n");
+ 		return err;
+ 	}
  
- static __maybe_unused struct usb_bos_descriptor fsg_bos_desc = {
- 	.bLength =		USB_DT_BOS_SIZE,
- 	.bDescriptorType =	USB_DT_BOS,
- 
--	.wTotalLength =		USB_DT_BOS_SIZE
-+	.wTotalLength =		cpu_to_le16(USB_DT_BOS_SIZE
- 				+ USB_DT_USB_EXT_CAP_SIZE
--				+ USB_DT_USB_SS_CAP_SIZE,
-+				+ USB_DT_USB_SS_CAP_SIZE),
- 
- 	.bNumDeviceCaps =	2,
- };
-
+-- 
+1.7.7.5
 
