@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab2BAVQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:16:35 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56575 "EHLO
+	id S1757346Ab2BAVQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:16:58 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59085 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932587Ab2BAVKY (ORCPT
+	by vger.kernel.org with ESMTP id S932571Ab2BAVKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:24 -0500
-X-Sasl-enc: YZaj5Pus8PW7DHfaC2GheUizMVkmZxAejlo/6Beh3dvO 1328130622
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:48 2012
-Message-Id: <20120201210048.299953262@clark.kroah.org>
+	Wed, 1 Feb 2012 16:10:20 -0500
+X-Sasl-enc: YBdxVcUYGXXptFV2Sd5xlql+dRmxHmZX94oIGMrE/AJ4 1328130619
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:46 2012
+Message-Id: <20120201210046.568187743@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:14 -0800
+Date: Wed, 01 Feb 2012 12:59:54 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiri Slaby <jslaby@suse.cz>
-Subject: [50/89] TTY: fix UV serial console regression
+        alan@lxorguk.ukuu.org.uk, Eric Anholt <eric@anholt.net>,
+        Kenneth Graunke <kenneth@whitecape.org>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Keith Packard <keithp@keithp.com>
+Subject: [30/89] drm/i915: paper over missed irq issues with force wake voodoo
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,70 +30,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 0eee50af5b13e00b3fb7a5fe8480419a71b8235d upstream.
+commit 4cd53c0c8b01fc05c3ad5b2acdad02e37d3c2f55 upstream.
 
-Commit 74c2107759d (serial: Use block_til_ready helper) and its fixup
-3f582b8c110 (serial: fix termios settings in open) introduced a
-regression on UV systems. The serial eventually freezes while being
-used. It's completely unpredictable and sometimes needs a heap of
-traffic to happen first.
+Two things seem to do the trick on my ivb machine here:
+- prevent the gt from powering down while waiting for seqno
+  notification interrupts by grabbing the force_wake in get_irq (and
+  dropping it in put_irq again).
+- ordering writes from the ring's CS by reading a CS register, ACTHD
+  seems to work.
 
-To reproduce this, yast installation was used as it turned out to be
-pretty reliable in reproducing. Especially during installation process
-where one doesn't have an SSH daemon running. And no monitor as the HW
-is completely headless. So this was fun to find. Given the machine
-doesn't boot on vanilla before 2.6.36 final. (And the commits above
-are older.)
+Only the blt&bsd ring on ivb seem to be massively affected by this,
+but for paranoia do this dance also on the render ring and on snb
+(i.e. all gpus with forcewake).
 
-Unless there is some bad race in the code, the hardware seems to be
-pretty broken. Otherwise pure MSR read should not cause such a bug,
-or?
+Tested with Eric's glCopyPixels loop which without this patch scores a
+missed irq every few seconds.
 
-So to prevent the bug, revert to the old behavior. I.e. read modem
-status only if we really have to -- for non-CLOCAL set serials.
-Non-CLOCAL works on this hardware OK, I tried. See? I don't.
+This patch needs my forcewake rework to use a spinlock instead of
+dev->struct_mutex.
 
-And document that shit.
+After crawling through docs a lot I've found the following nugget:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-References: https://lkml.org/lkml/2011/12/6/573
-References: https://bugzilla.novell.com/show_bug.cgi?id=718518
+Internal doc "SNB GT PM Programming Guide", Section 4.3.1:
+
+"GT does not generate interrupts while in RC6 (by design)"
+
+So it looks like rc6 and irq generation are indeed related.
+
+v2: Improve the comment per Eugeni Dodonov's suggestion.
+
+v3: Add the documentation snipped. Also restrict the w/a to ivb only
+for -fixes, as suggested by Keith Packard.
+
+Cc: Eric Anholt <eric@anholt.net>
+Cc: Kenneth Graunke <kenneth@whitecape.org>
+Cc: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_port.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   27 +++++++++++++++++++++++++--
+ 1 file changed, 25 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/tty_port.c
-+++ b/drivers/tty/tty_port.c
-@@ -227,7 +227,6 @@ int tty_port_block_til_ready(struct tty_
- 	int do_clocal = 0, retval;
- 	unsigned long flags;
- 	DEFINE_WAIT(wait);
--	int cd;
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -631,6 +631,19 @@ render_ring_add_request(struct intel_rin
+ }
  
- 	/* block if port is in the process of being closed */
- 	if (tty_hung_up_p(filp) || port->flags & ASYNC_CLOSING) {
-@@ -284,11 +283,14 @@ int tty_port_block_til_ready(struct tty_
- 				retval = -ERESTARTSYS;
- 			break;
- 		}
--		/* Probe the carrier. For devices with no carrier detect this
--		   will always return true */
--		cd = tty_port_carrier_raised(port);
-+		/*
-+		 * Probe the carrier. For devices with no carrier detect
-+		 * tty_port_carrier_raised will always return true.
-+		 * Never ask drivers if CLOCAL is set, this causes troubles
-+		 * on some hardware.
-+		 */
- 		if (!(port->flags & ASYNC_CLOSING) &&
--				(do_clocal || cd))
-+				(do_clocal || tty_port_carrier_raised(port)))
- 			break;
- 		if (signal_pending(current)) {
- 			retval = -ERESTARTSYS;
+ static u32
++gen6_ring_get_seqno(struct intel_ring_buffer *ring)
++{
++	struct drm_device *dev = ring->dev;
++
++	/* Workaround to force correct ordering between irq and seqno writes on
++	 * ivb (and maybe also on snb) by reading from a CS register (like
++	 * ACTHD) before reading the status page. */
++	if (IS_GEN7(dev))
++		intel_ring_get_active_head(ring);
++	return intel_read_status_page(ring, I915_GEM_HWS_INDEX);
++}
++
++static u32
+ ring_get_seqno(struct intel_ring_buffer *ring)
+ {
+ 	return intel_read_status_page(ring, I915_GEM_HWS_INDEX);
+@@ -795,6 +808,12 @@ gen6_ring_get_irq(struct intel_ring_buff
+ 	if (!dev->irq_enabled)
+ 	       return false;
+ 
++	/* It looks like we need to prevent the gt from suspending while waiting
++	 * for an notifiy irq, otherwise irqs seem to get lost on at least the
++	 * blt/bsd rings on ivb. */
++	if (IS_GEN7(dev))
++		gen6_gt_force_wake_get(dev_priv);
++
+ 	spin_lock(&ring->irq_lock);
+ 	if (ring->irq_refcount++ == 0) {
+ 		ring->irq_mask &= ~rflag;
+@@ -819,6 +838,9 @@ gen6_ring_put_irq(struct intel_ring_buff
+ 		ironlake_disable_irq(dev_priv, gflag);
+ 	}
+ 	spin_unlock(&ring->irq_lock);
++
++	if (IS_GEN7(dev))
++		gen6_gt_force_wake_put(dev_priv);
+ }
+ 
+ static bool
+@@ -1316,7 +1338,7 @@ static const struct intel_ring_buffer ge
+ 	.write_tail		= gen6_bsd_ring_write_tail,
+ 	.flush			= gen6_ring_flush,
+ 	.add_request		= gen6_add_request,
+-	.get_seqno		= ring_get_seqno,
++	.get_seqno		= gen6_ring_get_seqno,
+ 	.irq_get		= gen6_bsd_ring_get_irq,
+ 	.irq_put		= gen6_bsd_ring_put_irq,
+ 	.dispatch_execbuffer	= gen6_ring_dispatch_execbuffer,
+@@ -1451,7 +1473,7 @@ static const struct intel_ring_buffer ge
+ 	.write_tail		= ring_write_tail,
+ 	.flush			= blt_ring_flush,
+ 	.add_request		= gen6_add_request,
+-	.get_seqno		= ring_get_seqno,
++	.get_seqno		= gen6_ring_get_seqno,
+ 	.irq_get		= blt_ring_get_irq,
+ 	.irq_put		= blt_ring_put_irq,
+ 	.dispatch_execbuffer	= gen6_ring_dispatch_execbuffer,
+@@ -1474,6 +1496,7 @@ int intel_init_render_ring_buffer(struct
+ 		ring->flush = gen6_render_ring_flush;
+ 		ring->irq_get = gen6_render_ring_get_irq;
+ 		ring->irq_put = gen6_render_ring_put_irq;
++		ring->get_seqno = gen6_ring_get_seqno;
+ 	} else if (IS_GEN5(dev)) {
+ 		ring->add_request = pc_render_add_request;
+ 		ring->get_seqno = pc_render_get_seqno;
 
 
