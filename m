@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705Ab2BACSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 21:18:39 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48389 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755689Ab2BACSi (ORCPT
+	id S1755680Ab2BACTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 21:19:54 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:21571 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752987Ab2BACTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 21:18:38 -0500
-X-AuditID: 9c93016f-b7c20ae000005067-9e-4f28a0fbc497
-Message-ID: <4F28A0F9.9070603@gmail.com>
-Date: Wed, 01 Feb 2012 11:18:33 +0900
-From: Namhyung Kim <namhyung@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Tue, 31 Jan 2012 21:19:53 -0500
+X-SpamScore: -3
+X-BigFish: VS-3(zz1432Nzz1202h1082kzzz2dhc1bhc31hc1ah2a8h668h839h941h35h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4F28A1AF.8040402@freescale.com>
+Date: Wed, 1 Feb 2012 10:21:35 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.kernel.device-mapper.devel
-To: Tejun Heo <tj@kernel.org>
-CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, dm-devel@redhat.com
-Subject: Re: [PATCH] block: add missing block_bio_complete() tracepoint
-References: <1327830093-12130-1-git-send-email-namhyung@gmail.com> <4F263B01.4050103@gmail.com> <20120130170548.GA3355@google.com> <4F278A78.8080300@gmail.com> <CAOS58YP1F6_yBxRArcP4oyzAJVArLJB-ckjdXU35U1SNwi75XQ@mail.gmail.com>
-In-Reply-To: <CAOS58YP1F6_yBxRArcP4oyzAJVArLJB-ckjdXU35U1SNwi75XQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Huang Shijie <b32955@freescale.com>
+CC: <vinod.koul@intel.com>, <shawn.guo@linaro.org>,
+        <artem.bityutskiy@intel.com>, <shijie8@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <w.sang@pengutronix.de>,
+        <LW@KARO-electronics.de>, <alsa-devel@alsa-project.org>,
+        <b29396@freescale.com>
+Subject: Re: [PATCH v2 0/2] patch set about the MXS-DMA
+References: <1327044818-4464-1-git-send-email-b32955@freescale.com>
+In-Reply-To: <1327044818-4464-1-git-send-email-b32955@freescale.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-2012-01-31 7:39 PM, Tejun Heo wrote:
-> Hello,
+hi,
+> patch 1: move the mxs dma header to a more common place.
+> 	Beside the mx23/mx28, the apbh-dma is also used by MX50 and MX6Q.
+> 	So move the mxs dma header file to a more common place, and rename
+> 	it to mxs-dma.h
 >
-> On Mon, Jan 30, 2012 at 10:30 PM, Namhyung Kim<namhyung@gmail.com>  wrote:
->> Right, but the point is it could make a NULL pointer dereference during
->> evaluation of the argument of the TP AFAICS. I'm not sure about the TP
->> implementation though, I think I was wrong - T_E_C() cannot protect us from
->> it because it happens just before jumping to the TP, right?
->>
->> So I think we need a conditional jump (with the "likely" annotation) for
->> this even when the TP is disabled.
+> patch 2: rewrite the last parameter of mxs_dma_prep_slave_sg().
+> 	In the new GPMI version, some hardware behavior changes.
+> 	The WAIT4END bit should be set in the middle one of the ECC READ page DMA chain.
+> 	The DMA chain should be set like this:
 >
-> Hmmm... still not following. Where the said NULL dereference happen?
-> TEC conditional is equivalent to "if (COND) TP;".  If you don't use
-> TEC, it'll be "if (COND) if (TP enabled) TP;".  With TEC, it will be
-> "if (TP enabled) if (COND) TP;".  There's no other difference.
+>           +-----+               +-----+                      +-----+
+>           | cmd | ------------> | cmd | ------------------>  | cmd |
+>           +-----+               +-----+                      +-----+
+>                                    ^                            ^
+>                                    |                            |
+>                                    |                            |
+>                               set WAIT4END here too        set WAIT4END here
 >
-> Thanks.
+>         So rewrite the last parameter of mxs_dma_prep_slave_sg(), use the
+> 	dma_ctrl_flags to set the proper DMA bit for DMA Command Structure.
+> 	And change the relative drivers with the dma_ctrl_flags.
 >
-
-I've made a quick investigation on TP implementation, and finally 
-figured out what I was wrong - I thought the COND would be checkd in a 
-probe, but it's not. Thanks for pointing it out.
-
-However, for some reason, it seems gcc generated code that evaluates the 
-arguments - bdev_get_queue() in this case - before checking the COND. 
-Simple test module below caused a NULL pointer dereference when I used 
-TRACE_EVENT_CONDITION(), but not for conditional jump:
-
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/bio.h>
-
-static int __init init_mod(void)
-{
-         struct bio *bio = bio_alloc(GFP_KERNEL, 0);
-         bio_endio(bio, 0);
-         bio_put(bio);
-         return 0;
-}
-
-static void __exit exit_mod(void)
-{
-}
-
-module_init(init_mod);
-module_exit(exit_mod);
+> TEST:
+> 	Tested the mxs-mmc driver and gpmi-nand drive with the two patches
+> 	in MX28 board.
+>
+> v1 --> v2:
+> 	[1] squash the trial patches into single patch.
+> 	[2] use the dma_ctrl_flags.
+>
+> Huang Shijie (2):
+>   mxs-dma : move the mxs dma.h to a more common place
+>   mxs-dma : rewrite the last parameter of mxs_dma_prep_slave_sg()
+>
+>  drivers/dma/mxs-dma.c                              |   34 +++++++++++++++++---
+>  drivers/mmc/host/mxs-mmc.c                         |   12 +++---
+>  drivers/mtd/nand/gpmi-nand/gpmi-lib.c              |   28 +++++++++++++---
+>  drivers/mtd/nand/gpmi-nand/gpmi-nand.h             |    6 +++-
+>  drivers/mtd/nand/gpmi-nand/gpmi-regs.h             |    2 +
+>  .../include/mach/dma.h => include/linux/mxs-dma.h  |    0
+>  sound/soc/mxs/mxs-pcm.c                            |    2 +-
+>  sound/soc/mxs/mxs-pcm.h                            |    2 +-
+>  sound/soc/mxs/mxs-saif.c                           |    2 +-
+>  9 files changed, 67 insertions(+), 21 deletions(-)
+>  rename arch/arm/mach-mxs/include/mach/dma.h => include/linux/mxs-dma.h (100%)
+>
+ping.
 
 
-Thanks,
-Namhyung
+Could these two patches ok ?
+
+My following patches depend upon them.
+
+
+BR
+Huang Shijie
+
