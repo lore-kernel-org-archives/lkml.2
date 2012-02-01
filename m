@@ -1,288 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab2BASmZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 13:42:25 -0500
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:50474 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754123Ab2BASmY (ORCPT
+	id S1755395Ab2BASmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 13:42:55 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48199 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab2BASmx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 13:42:24 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2] pinctrl: delete raw device pointers in pinmux maps
-Date: Wed, 1 Feb 2012 19:42:01 +0100
-Message-ID: <1328121721-3438-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
+	Wed, 1 Feb 2012 13:42:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CADnq5_PhFi1p9D2wOXwfwvtwZMccD8RFb2qqgaxyJSz+0Mb-ug@mail.gmail.com>
+References: <20120122184325.74528207@garik>
+	<CADnq5_PhFi1p9D2wOXwfwvtwZMccD8RFb2qqgaxyJSz+0Mb-ug@mail.gmail.com>
+Date: Wed, 1 Feb 2012 18:42:52 +0000
+Message-ID: <CAPM=9txoXXwXvSRrDqzpZ6Utz4er-Dt+=_PCTnnUxqu4LaN8ZQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] drm/radeon: fix invalid memory access in radeon_atrm_get_bios()
+From: Dave Airlie <airlied@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Igor Murzov <intergalactic.anonymous@gmail.com>,
+        David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+        Igor Murzov <e-mail@date.by>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Sergey V <sftp.mtuci@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Tue, Jan 24, 2012 at 2:10 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> On Sun, Jan 22, 2012 at 9:43 AM, Igor Murzov
+> <intergalactic.anonymous@gmail.com> wrote:
+>> From 77c912ea1eca50a93a34d5be69f9dc96a8bef0d8 Mon Sep 17 00:00:00 2001
+>> From: Igor Murzov <e-mail@date.by>
+>> Date: Sun, 22 Jan 2012 19:02:27 +0400
+>> Subject: [PATCH 1/2] drm/radeon: fix invalid memory access in radeon_atrm_get_bios()
+>>
+>> At a boot time I observed following bug:
+>>
+>>  BUG: unable to handle kernel paging request at ffff8800a4244000
+>>  IP: [<ffffffff81275b5b>] memcpy+0xb/0x120
+>>  PGD 1816063 PUD 1fe7d067 PMD 1ff9f067 PTE 80000000a4244160
+>>  Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+>>  CPU 0
+>>  Modules linked in: btusb bluetooth brcmsmac brcmutil crc8 cordic b43 radeon(+)
+>>  mac80211 cfg80211 ttm ohci_hcd drm_kms_helper rfkill drm ssb agpgart mmc_core
+>>  sp5100_tco video battery ac thermal processor rtc_cmos thermal_sys snd_hda_codec_hdmi
+>>  joydev snd_hda_codec_conexant button bcma pcmcia snd_hda_intel snd_hda_codec
+>>  snd_hwdep snd_pcm shpchp pcmcia_core k8temp snd_timer atl1c snd psmouse hwmon
+>>  i2c_piix4 i2c_algo_bit soundcore evdev i2c_core ehci_hcd sg serio_raw snd_page_alloc
+>>  loop btrfs
+>>
+>>  Pid: 1008, comm: modprobe Not tainted 3.3.0-rc1 #21 LENOVO 20046                           /AMD CRB
+>>  RIP: 0010:[<ffffffff81275b5b>]  [<ffffffff81275b5b>] memcpy+0xb/0x120
+>>  RSP: 0018:ffff8800aa72db00  EFLAGS: 00010246
+>>  RAX: ffff8800a4150000 RBX: 0000000000001000 RCX: 0000000000000087
+>>  RDX: 0000000000000000 RSI: ffff8800a4244000 RDI: ffff8800a4150bc8
+>>  RBP: ffff8800aa72db78 R08: 0000000000000010 R09: ffffffff8174bbec
+>>  R10: ffffffff812ee010 R11: 0000000000000001 R12: 0000000000001000
+>>  R13: 0000000000010000 R14: ffff8800a4140000 R15: ffff8800aaba1800
+>>  FS:  00007ff9a3bd4720(0000) GS:ffff8800afa00000(0000) knlGS:0000000000000000
+>>  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>>  CR2: ffff8800a4244000 CR3: 00000000a9c18000 CR4: 00000000000006f0
+>>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>>  Process modprobe (pid: 1008, threadinfo ffff8800aa72c000, task ffff8800aa0e4000)
+>>  Stack:
+>>  ffffffffa04e7c7b 0000000000000001 0000000000010000 ffff8800aa72db28
+>>  ffffffff00000001 0000000000001000 ffffffff8113cbef 0000000000000020
+>>  ffff8800a4243420 ffff880000000002 ffff8800aa72db08 ffff8800a9d42000
+>>  Call Trace:
+>>  [<ffffffffa04e7c7b>] ? radeon_atrm_get_bios_chunk+0x8b/0xd0 [radeon]
+>>  [<ffffffff8113cbef>] ? kmalloc_order_trace+0x3f/0xb0
+>>  [<ffffffffa04a9298>] radeon_get_bios+0x68/0x2f0 [radeon]
+>>  [<ffffffffa04c7a30>] rv770_init+0x40/0x280 [radeon]
+>>  [<ffffffffa047d740>] radeon_device_init+0x560/0x600 [radeon]
+>>  [<ffffffffa047ef4f>] radeon_driver_load_kms+0xaf/0x170 [radeon]
+>>  [<ffffffffa043cdde>] drm_get_pci_dev+0x18e/0x2c0 [drm]
+>>  [<ffffffffa04e7e95>] radeon_pci_probe+0xad/0xb5 [radeon]
+>>  [<ffffffff81296c5f>] local_pci_probe+0x5f/0xd0
+>>  [<ffffffff81297418>] pci_device_probe+0x88/0xb0
+>>  [<ffffffff813417aa>] ? driver_sysfs_add+0x7a/0xb0
+>>  [<ffffffff813418d8>] really_probe+0x68/0x180
+>>  [<ffffffff81341be5>] driver_probe_device+0x45/0x70
+>>  [<ffffffff81341cb3>] __driver_attach+0xa3/0xb0
+>>  [<ffffffff81341c10>] ? driver_probe_device+0x70/0x70
+>>  [<ffffffff813400ce>] bus_for_each_dev+0x5e/0x90
+>>  [<ffffffff8134172e>] driver_attach+0x1e/0x20
+>>  [<ffffffff81341298>] bus_add_driver+0xc8/0x280
+>>  [<ffffffff813422c6>] driver_register+0x76/0x140
+>>  [<ffffffff812976d6>] __pci_register_driver+0x66/0xe0
+>>  [<ffffffffa043d021>] drm_pci_init+0x111/0x120 [drm]
+>>  [<ffffffff8133c67a>] ? vga_switcheroo_register_handler+0x3a/0x60
+>>  [<ffffffffa0229000>] ? 0xffffffffa0228fff
+>>  [<ffffffffa02290ec>] radeon_init+0xec/0xee [radeon]
+>>  [<ffffffff810002f2>] do_one_initcall+0x42/0x180
+>>  [<ffffffff8109d8d2>] sys_init_module+0x92/0x1e0
+>>  [<ffffffff815407a9>] system_call_fastpath+0x16/0x1b
+>>  Code: 58 2a 43 50 88 43 4e 48 83 c4 08 5b c9 c3 66 90 e8 cb fd ff ff eb
+>>  e6 90 90 90 90 90 90 90 90 90 48 89 f8 89 d1 c1 e9 03 83 e2 07 <f3> 48
+>>  a5 89 d1 f3 a4 c3 20 48 83 ea 20 4c 8b 06 4c 8b 4e 08 4c
+>>  RIP  [<ffffffff81275b5b>] memcpy+0xb/0x120
+>>  RSP <ffff8800aa72db00>
+>>  CR2: ffff8800a4244000
+>>  ---[ end trace fcffa1599cf56382 ]---
+>>
+>> Call to acpi_evaluate_object() not always returns 4096 bytes chunks,
+>> on my system it can return 2048 bytes chunk, so pass the length of
+>> retrieved chunk to memcpy(), not the length of the recieving buffer.
+>>
+>> Signed-off-by: Igor Murzov <e-mail@date.by>
 
-After discussion with Mark Brown in an unrelated thread about
-ADC lookups, it came to my knowledge that the ability to pass
-a struct device * in the regulator consumers is just a
-historical artifact, and not really recommended. Since there
-are no in-kernel users of these pointers, we just kill them
-right now, before someone starts to use them.
+Hi Igor,
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- Documentation/pinctrl.txt       |    5 +----
- drivers/pinctrl/core.c          |   22 +++++++---------------
- drivers/pinctrl/core.h          |    3 +--
- drivers/pinctrl/pinconf.c       |    8 ++++----
- drivers/pinctrl/pinmux.c        |   27 ++++++++-------------------
- include/linux/pinctrl/machine.h |   12 ++----------
- 6 files changed, 23 insertions(+), 54 deletions(-)
+I'm not sure I understand, does your BIOS return 2K chunks always or
+just for the last chunks?
 
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index 366e605..0fb4912 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -825,10 +825,7 @@ must match a function provided by the pinmux driver handling this pin range.
- 
- As you can see we may have several pin controllers on the system and thus
- we need to specify which one of them that contain the functions we wish
--to map. The map can also use struct device * directly, so there is no
--inherent need to use strings to specify .dev_name or .ctrl_dev_name, these
--are for the situation where you do not have a handle to the struct device *,
--for example if they are not yet instantiated or cumbersome to obtain.
-+to map.
- 
- You register this pinmux mapping to the pinmux subsystem by simply:
- 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 894cd5e..4f10476 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -48,31 +48,23 @@ void *pinctrl_dev_get_drvdata(struct pinctrl_dev *pctldev)
- EXPORT_SYMBOL_GPL(pinctrl_dev_get_drvdata);
- 
- /**
-- * get_pinctrl_dev_from_dev() - look up pin controller device
-- * @dev: a device pointer, this may be NULL but then devname needs to be
-- *	defined instead
-- * @devname: the name of a device instance, as returned by dev_name(), this
-- *	may be NULL but then dev needs to be defined instead
-+ * get_pinctrl_dev_from_devname() - look up pin controller device
-+ * @devname: the name of a device instance, as returned by dev_name()
-  *
-  * Looks up a pin control device matching a certain device name or pure device
-  * pointer, the pure device pointer will take precedence.
-  */
--struct pinctrl_dev *get_pinctrl_dev_from_dev(struct device *dev,
--					     const char *devname)
-+struct pinctrl_dev *get_pinctrl_dev_from_devname(const char *devname)
- {
- 	struct pinctrl_dev *pctldev = NULL;
- 	bool found = false;
- 
-+	if (!devname)
-+		return NULL;
-+
- 	mutex_lock(&pinctrldev_list_mutex);
- 	list_for_each_entry(pctldev, &pinctrldev_list, node) {
--		if (dev && pctldev->dev == dev) {
--			/* Matched on device pointer */
--			found = true;
--			break;
--		}
--
--		if (devname &&
--		    !strcmp(dev_name(pctldev->dev), devname)) {
-+		if (!strcmp(dev_name(pctldev->dev), devname)) {
- 			/* Matched on device name */
- 			found = true;
- 			break;
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index cfa86da..8a8b02e 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -72,8 +72,7 @@ struct pin_desc {
- #endif
- };
- 
--struct pinctrl_dev *get_pinctrl_dev_from_dev(struct device *dev,
--					     const char *dev_name);
-+struct pinctrl_dev *get_pinctrl_dev_from_devname(const char *dev_name);
- struct pin_desc *pin_desc_get(struct pinctrl_dev *pctldev, unsigned int pin);
- int pin_get_from_name(struct pinctrl_dev *pctldev, const char *name);
- int pinctrl_get_device_gpio_range(unsigned gpio,
-diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
-index e7adde4..0309bce 100644
---- a/drivers/pinctrl/pinconf.c
-+++ b/drivers/pinctrl/pinconf.c
-@@ -51,7 +51,7 @@ int pin_config_get(const char *dev_name, const char *name,
- 	struct pinctrl_dev *pctldev;
- 	int pin;
- 
--	pctldev = get_pinctrl_dev_from_dev(NULL, dev_name);
-+	pctldev = get_pinctrl_dev_from_devname(dev_name);
- 	if (!pctldev)
- 		return -EINVAL;
- 
-@@ -99,7 +99,7 @@ int pin_config_set(const char *dev_name, const char *name,
- 	struct pinctrl_dev *pctldev;
- 	int pin;
- 
--	pctldev = get_pinctrl_dev_from_dev(NULL, dev_name);
-+	pctldev = get_pinctrl_dev_from_devname(dev_name);
- 	if (!pctldev)
- 		return -EINVAL;
- 
-@@ -118,7 +118,7 @@ int pin_config_group_get(const char *dev_name, const char *pin_group,
- 	const struct pinconf_ops *ops;
- 	int selector;
- 
--	pctldev = get_pinctrl_dev_from_dev(NULL, dev_name);
-+	pctldev = get_pinctrl_dev_from_devname(dev_name);
- 	if (!pctldev)
- 		return -EINVAL;
- 	ops = pctldev->desc->confops;
-@@ -151,7 +151,7 @@ int pin_config_group_set(const char *dev_name, const char *pin_group,
- 	int ret;
- 	int i;
- 
--	pctldev = get_pinctrl_dev_from_dev(NULL, dev_name);
-+	pctldev = get_pinctrl_dev_from_devname(dev_name);
- 	if (!pctldev)
- 		return -EINVAL;
- 	ops = pctldev->desc->confops;
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 7c3193f..1311f1d 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -354,7 +354,7 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
- 			return -EINVAL;
- 		}
- 
--		if (!maps[i].ctrl_dev && !maps[i].ctrl_dev_name) {
-+		if (!maps[i].ctrl_dev_name) {
- 			pr_err("failed to register map %s (%d): no pin control device given\n",
- 			       maps[i].name, i);
- 			return -EINVAL;
-@@ -366,7 +366,7 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
- 			return -EINVAL;
- 		}
- 
--		if (!maps[i].dev && !maps[i].dev_name)
-+		if (!maps[i].dev_name)
- 			pr_debug("add system map %s function %s with no device\n",
- 				 maps[i].name,
- 				 maps[i].function);
-@@ -721,20 +721,12 @@ struct pinmux *pinmux_get(struct device *dev, const char *name)
- 		/*
- 		 * First, try to find the pctldev given in the map
- 		 */
--		pctldev = get_pinctrl_dev_from_dev(map->ctrl_dev,
--						   map->ctrl_dev_name);
-+		pctldev = get_pinctrl_dev_from_devname(map->ctrl_dev_name);
- 		if (!pctldev) {
--			const char *devname = NULL;
--
--			if (map->ctrl_dev)
--				devname = dev_name(map->ctrl_dev);
--			else if (map->ctrl_dev_name)
--				devname = map->ctrl_dev_name;
--
- 			pr_warning("could not find a pinctrl device for pinmux function %s, fishy, they shall all have one\n",
- 				   map->function);
- 			pr_warning("given pinctrl device name: %s",
--				   devname ? devname : "UNDEFINED");
-+				   map->ctrl_dev_name);
- 
- 			/* Continue to check the other mappings anyway... */
- 			continue;
-@@ -925,7 +917,7 @@ static int pinmux_hog_map(struct pinctrl_dev *pctldev,
- 	struct pinmux *pmx;
- 	int ret;
- 
--	if (map->dev || map->dev_name) {
-+	if (map->dev_name) {
- 		/*
- 		 * TODO: the day we have device tree support, we can
- 		 * traverse the device tree and hog to specific device nodes
-@@ -996,9 +988,8 @@ int pinmux_hog_maps(struct pinctrl_dev *pctldev)
- 		if (!map->hog_on_boot)
- 			continue;
- 
--		if ((map->ctrl_dev == dev) ||
--			(map->ctrl_dev_name &&
--				!strcmp(map->ctrl_dev_name, devname))) {
-+		if (map->ctrl_dev_name &&
-+		    !strcmp(map->ctrl_dev_name, devname)) {
- 			/* OK time to hog! */
- 			ret = pinmux_hog_map(pctldev, map);
- 			if (ret)
-@@ -1156,14 +1147,12 @@ static int pinmux_maps_show(struct seq_file *s, void *what)
- 		struct pinmux_map const *map = &pinmux_maps[i];
- 
- 		seq_printf(s, "%s:\n", map->name);
--		if (map->dev || map->dev_name)
-+		if (map->dev_name)
- 			seq_printf(s, "  device: %s\n",
--				   map->dev ? dev_name(map->dev) :
- 				   map->dev_name);
- 		else
- 			seq_printf(s, "  SYSTEM MUX\n");
- 		seq_printf(s, "  controlling device %s\n",
--			   map->ctrl_dev ? dev_name(map->ctrl_dev) :
- 			   map->ctrl_dev_name);
- 		seq_printf(s, "  function: %s\n", map->function);
- 		seq_printf(s, "  group: %s\n", map->group ? map->group :
-diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
-index d0aecb7..f8593fd 100644
---- a/include/linux/pinctrl/machine.h
-+++ b/include/linux/pinctrl/machine.h
-@@ -17,22 +17,16 @@
-  * @name: the name of this specific map entry for the particular machine.
-  *	This is the second parameter passed to pinmux_get() when you want
-  *	to have several mappings to the same device
-- * @ctrl_dev: the pin control device to be used by this mapping, may be NULL
-- *	if you provide .ctrl_dev_name instead (this is more common)
-  * @ctrl_dev_name: the name of the device controlling this specific mapping,
-- *	the name must be the same as in your struct device*, may be NULL if
-- *	you provide .ctrl_dev instead
-+ *	the name must be the same as in your struct device*
-  * @function: a function in the driver to use for this mapping, the driver
-  *	will lookup the function referenced by this ID on the specified
-  *	pin control device
-  * @group: sometimes a function can map to different pin groups, so this
-  *	selects a certain specific pin group to activate for the function, if
-  *	left as NULL, the first applicable group will be used
-- * @dev: the device using this specific mapping, may be NULL if you provide
-- *	.dev_name instead (this is more common)
-  * @dev_name: the name of the device using this specific mapping, the name
-- *	must be the same as in your struct device*, may be NULL if you
-- *	provide .dev instead
-+ *	must be the same as in your struct device*
-  * @hog_on_boot: if this is set to true, the pin control subsystem will itself
-  *	hog the mappings as the pinmux device drivers are attached, so this is
-  *	typically used with system maps (mux mappings without an assigned
-@@ -42,11 +36,9 @@
-  */
- struct pinmux_map {
- 	const char *name;
--	struct device *ctrl_dev;
- 	const char *ctrl_dev_name;
- 	const char *function;
- 	const char *group;
--	struct device *dev;
- 	const char *dev_name;
- 	bool hog_on_boot;
- };
--- 
-1.7.8
+since if it returns 2K always, won't your next patch break stuff?
 
+we have a regression report against the second patch, just wondering
+what it might be.
+
+Dave.
