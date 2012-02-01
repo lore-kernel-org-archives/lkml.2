@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab2BAVrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:47:49 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43355 "EHLO
+	id S1755959Ab2BAVIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:08:43 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41102 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756131Ab2BAVIq (ORCPT
+	by vger.kernel.org with ESMTP id S1756088Ab2BAVIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:46 -0500
-X-Sasl-enc: K16Xo0HiL+s5WQzU92yoqmF/gL6mCqf9Rz9iX7BSL0Sz 1328130525
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:38 2012
-Message-Id: <20120201205738.721739735@clark.kroah.org>
+	Wed, 1 Feb 2012 16:08:37 -0500
+X-Sasl-enc: zG82SUpjY0ECusDQL8Epeho4nVI3F0QWu7T1DMmJnh13 1328130516
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:40 2012
+Message-Id: <20120201205740.617324998@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:54 -0800
+Date: Wed, 01 Feb 2012 12:56:16 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiri Olsa <jolsa@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [14/65] ftrace: Fix unregister ftrace_ops accounting
+        alan@lxorguk.ukuu.org.uk, Rabin Vincent <rabin.vincent@stericsson.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Bibek Basu <bibek.basu@stericsson.com>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [36/65] serial: amba-pl011: lock console writes against interrupts
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,225 +30,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-commit 30fb6aa74011dcf595f306ca2727254d708b786e upstream.
+commit ef605fdb33883d687cff5ba75095a91b313b4966 upstream.
 
-Multiple users of the function tracer can register their functions
-with the ftrace_ops structure. The accounting within ftrace will
-update the counter on each function record that is being traced.
-When the ftrace_ops filtering adds or removes functions, the
-function records will be updated accordingly if the ftrace_ops is
-still registered.
+Protect against pl011_console_write() and the interrupt for
+the console UART running concurrently on different CPUs.
 
-When a ftrace_ops is removed, the counter of the function records,
-that the ftrace_ops traces, are decremented. When they reach zero
-the functions that they represent are modified to stop calling the
-mcount code.
+Otherwise the console_write could spin for a long time
+waiting for the UART to become not busy, while the other
+CPU continuously services UART interrupts and keeps the
+UART busy.
 
-When changes are made, the code is updated via stop_machine() with
-a command passed to the function to tell it what to do. There is an
-ENABLE and DISABLE command that tells the called function to enable
-or disable the functions. But the ENABLE is really a misnomer as it
-should just update the records, as records that have been enabled
-and now have a count of zero should be disabled.
+The checks for sysrq and oops_in_progress are taken
+from 8250.c.
 
-The DISABLE command is used to disable all functions regardless of
-their counter values. This is the big off switch and is not the
-complement of the ENABLE command.
-
-To make matters worse, when a ftrace_ops is unregistered and there
-is another ftrace_ops registered, neither the DISABLE nor the
-ENABLE command are set when calling into the stop_machine() function
-and the records will not be updated to match their counter. A command
-is passed to that function that will update the mcount code to call
-the registered callback directly if it is the only one left. This
-means that the ftrace_ops that is still registered will have its callback
-called by all functions that have been set for it as well as the ftrace_ops
-that was just unregistered.
-
-Here's a way to trigger this bug. Compile the kernel with
-CONFIG_FUNCTION_PROFILER set and with CONFIG_FUNCTION_GRAPH not set:
-
- CONFIG_FUNCTION_PROFILER=y
- # CONFIG_FUNCTION_GRAPH is not set
-
-This will force the function profiler to use the function tracer instead
-of the function graph tracer.
-
-  # cd /sys/kernel/debug/tracing
-  # echo schedule > set_ftrace_filter
-  # echo function > current_tracer
-  # cat set_ftrace_filter
- schedule
-  # cat trace
- # tracer: nop
- #
- # entries-in-buffer/entries-written: 692/68108025   #P:4
- #
- #                              _-----=> irqs-off
- #                             / _----=> need-resched
- #                            | / _---=> hardirq/softirq
- #                            || / _--=> preempt-depth
- #                            ||| /     delay
- #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
- #              | |       |   ||||       |         |
-      kworker/0:2-909   [000] ....   531.235574: schedule <-worker_thread
-           <idle>-0     [001] .N..   531.235575: schedule <-cpu_idle
-      kworker/0:2-909   [000] ....   531.235597: schedule <-worker_thread
-             sshd-2563  [001] ....   531.235647: schedule <-schedule_hrtimeout_range_clock
-
-  # echo 1 > function_profile_enabled
-  # echo 0 > function_porfile_enabled
-  # cat set_ftrace_filter
- schedule
-  # cat trace
- # tracer: function
- #
- # entries-in-buffer/entries-written: 159701/118821262   #P:4
- #
- #                              _-----=> irqs-off
- #                             / _----=> need-resched
- #                            | / _---=> hardirq/softirq
- #                            || / _--=> preempt-depth
- #                            ||| /     delay
- #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
- #              | |       |   ||||       |         |
-           <idle>-0     [002] ...1   604.870655: local_touch_nmi <-cpu_idle
-           <idle>-0     [002] d..1   604.870655: enter_idle <-cpu_idle
-           <idle>-0     [002] d..1   604.870656: atomic_notifier_call_chain <-enter_idle
-           <idle>-0     [002] d..1   604.870656: __atomic_notifier_call_chain <-atomic_notifier_call_chain
-
-The same problem could have happened with the trace_probe_ops,
-but they are modified with the set_frace_filter file which does the
-update at closure of the file.
-
-The simple solution is to change ENABLE to UPDATE and call it every
-time an ftrace_ops is unregistered.
-
-Link: http://lkml.kernel.org/r/1323105776-26961-3-git-send-email-jolsa@redhat.com
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Reviewed-by: Bibek Basu <bibek.basu@stericsson.com>
+Reviewed-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |   27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
+ drivers/tty/serial/amba-pl011.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -952,7 +952,7 @@ struct ftrace_func_probe {
- };
- 
- enum {
--	FTRACE_ENABLE_CALLS		= (1 << 0),
-+	FTRACE_UPDATE_CALLS		= (1 << 0),
- 	FTRACE_DISABLE_CALLS		= (1 << 1),
- 	FTRACE_UPDATE_TRACE_FUNC	= (1 << 2),
- 	FTRACE_START_FUNC_RET		= (1 << 3),
-@@ -1521,7 +1521,7 @@ int ftrace_text_reserved(void *start, vo
- 
- 
- static int
--__ftrace_replace_code(struct dyn_ftrace *rec, int enable)
-+__ftrace_replace_code(struct dyn_ftrace *rec, int update)
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1733,9 +1733,19 @@ pl011_console_write(struct console *co,
  {
- 	unsigned long ftrace_addr;
- 	unsigned long flag = 0UL;
-@@ -1529,17 +1529,17 @@ __ftrace_replace_code(struct dyn_ftrace
- 	ftrace_addr = (unsigned long)FTRACE_ADDR;
+ 	struct uart_amba_port *uap = amba_ports[co->index];
+ 	unsigned int status, old_cr, new_cr;
++	unsigned long flags;
++	int locked = 1;
  
+ 	clk_enable(uap->clk);
+ 
++	local_irq_save(flags);
++	if (uap->port.sysrq)
++		locked = 0;
++	else if (oops_in_progress)
++		locked = spin_trylock(&uap->port.lock);
++	else
++		spin_lock(&uap->port.lock);
++
  	/*
--	 * If we are enabling tracing:
-+	 * If we are updating calls:
- 	 *
- 	 *   If the record has a ref count, then we need to enable it
- 	 *   because someone is using it.
- 	 *
- 	 *   Otherwise we make sure its disabled.
- 	 *
--	 * If we are disabling tracing, then disable all records that
-+	 * If we are disabling calls, then disable all records that
- 	 * are enabled.
+ 	 *	First save the CR then disable the interrupts
  	 */
--	if (enable && (rec->flags & ~FTRACE_FL_MASK))
-+	if (update && (rec->flags & ~FTRACE_FL_MASK))
- 		flag = FTRACE_FL_ENABLED;
+@@ -1755,6 +1765,10 @@ pl011_console_write(struct console *co,
+ 	} while (status & UART01x_FR_BUSY);
+ 	writew(old_cr, uap->port.membase + UART011_CR);
  
- 	/* If the state of this record hasn't changed, then do nothing */
-@@ -1555,7 +1555,7 @@ __ftrace_replace_code(struct dyn_ftrace
- 	return ftrace_make_nop(NULL, rec, ftrace_addr);
++	if (locked)
++		spin_unlock(&uap->port.lock);
++	local_irq_restore(flags);
++
+ 	clk_disable(uap->clk);
  }
  
--static void ftrace_replace_code(int enable)
-+static void ftrace_replace_code(int update)
- {
- 	struct dyn_ftrace *rec;
- 	struct ftrace_page *pg;
-@@ -1569,7 +1569,7 @@ static void ftrace_replace_code(int enab
- 		if (rec->flags & FTRACE_FL_FREE)
- 			continue;
- 
--		failed = __ftrace_replace_code(rec, enable);
-+		failed = __ftrace_replace_code(rec, update);
- 		if (failed) {
- 			ftrace_bug(failed, rec->ip);
- 			/* Stop processing */
-@@ -1619,7 +1619,7 @@ static int __ftrace_modify_code(void *da
- {
- 	int *command = data;
- 
--	if (*command & FTRACE_ENABLE_CALLS)
-+	if (*command & FTRACE_UPDATE_CALLS)
- 		ftrace_replace_code(1);
- 	else if (*command & FTRACE_DISABLE_CALLS)
- 		ftrace_replace_code(0);
-@@ -1675,7 +1675,7 @@ static int ftrace_startup(struct ftrace_
- 		return -ENODEV;
- 
- 	ftrace_start_up++;
--	command |= FTRACE_ENABLE_CALLS;
-+	command |= FTRACE_UPDATE_CALLS;
- 
- 	/* ops marked global share the filter hashes */
- 	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
-@@ -1727,8 +1727,7 @@ static void ftrace_shutdown(struct ftrac
- 	if (ops != &global_ops || !global_start_up)
- 		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
- 
--	if (!ftrace_start_up)
--		command |= FTRACE_DISABLE_CALLS;
-+	command |= FTRACE_UPDATE_CALLS;
- 
- 	if (saved_ftrace_func != ftrace_trace_function) {
- 		saved_ftrace_func = ftrace_trace_function;
-@@ -1750,7 +1749,7 @@ static void ftrace_startup_sysctl(void)
- 	saved_ftrace_func = NULL;
- 	/* ftrace_start_up is true if we want ftrace running */
- 	if (ftrace_start_up)
--		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
-+		ftrace_run_update_code(FTRACE_UPDATE_CALLS);
- }
- 
- static void ftrace_shutdown_sysctl(void)
-@@ -2903,7 +2902,7 @@ ftrace_set_regex(struct ftrace_ops *ops,
- 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
- 	if (!ret && ops->flags & FTRACE_OPS_FL_ENABLED
- 	    && ftrace_enabled)
--		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
-+		ftrace_run_update_code(FTRACE_UPDATE_CALLS);
- 
- 	mutex_unlock(&ftrace_lock);
- 
-@@ -3091,7 +3090,7 @@ ftrace_regex_release(struct inode *inode
- 				       orig_hash, iter->hash);
- 		if (!ret && (iter->ops->flags & FTRACE_OPS_FL_ENABLED)
- 		    && ftrace_enabled)
--			ftrace_run_update_code(FTRACE_ENABLE_CALLS);
-+			ftrace_run_update_code(FTRACE_UPDATE_CALLS);
- 
- 		mutex_unlock(&ftrace_lock);
- 	}
 
 
