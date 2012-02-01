@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab2BAVI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:08:26 -0500
+	id S1756972Ab2BAVIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:08:30 -0500
 Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48105 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757012Ab2BAVIU (ORCPT
+	by vger.kernel.org with ESMTP id S1756028Ab2BAVI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:20 -0500
-X-Sasl-enc: deG7dAmm3QjtmBm2rrZkNCVZBGIq5VaW7lyyOpTQKeHj 1328130499
+	Wed, 1 Feb 2012 16:08:27 -0500
+X-Sasl-enc: mtb4v3jemye5OLXUdw2yquQfYZJsy6ccQagkG3vl5E+X 1328130506
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:39 2012
-Message-Id: <20120201205739.135843106@clark.kroah.org>
+Message-Id: <20120201205739.581973780@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:59 -0800
+Date: Wed, 01 Feb 2012 12:56:04 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [19/65] ALSA: hda - Fix silent output on ASUS A6Rp
+        alan@lxorguk.ukuu.org.uk, Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [24/65] ARM: 7296/1: proc-v7.S: remove HARVARD_CACHE preprocessor guards
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 3b25eb690e8c7424eecffe1458c02b87b32aa001 upstream.
+commit 612539e81f655f6ac73c7af1da8701c1ee618aee upstream.
 
-The refactoring of Realtek codec driver in 3.2 kernel caused a
-regression for ASUS A6Rp laptop; it doesn't give any output.
-The reason was that this machine has a secret master mute (or EAPD)
-control via NID 0x0f VREF.  Setting VREF50 on this node makes the
-sound working again.
+On v7, we use the same cache maintenance instructions for data lines
+as for unified lines. This was not the case for v6, where HARVARD_CACHE
+was defined to indicate the L1 cache topology.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42588
+This patch removes the erroneous compile-time check for HARVARD_CACHE in
+proc-v7.S, ensuring that we perform I-side invalidation at boot.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-and-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+
+Acked-by: Catalin Marinas <Catalin.Marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm/mm/proc-v7.S |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -16419,6 +16419,7 @@ static const struct alc_config_preset al
- /* Pin config fixes */
- enum {
- 	PINFIX_FSC_AMILO_PI1505,
-+	PINFIX_ASUS_A6RP,
- };
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -270,10 +270,6 @@ cpu_resume_l1_flags:
+  *	Initialise TLB, Caches, and MMU state ready to switch the MMU
+  *	on.  Return in r0 the new CP15 C1 control register setting.
+  *
+- *	We automatically detect if we have a Harvard cache, and use the
+- *	Harvard cache control instructions insead of the unified cache
+- *	control instructions.
+- *
+  *	This should be able to cover all ARMv7 cores.
+  *
+  *	It is assumed that:
+@@ -363,9 +359,7 @@ __v7_setup:
+ #endif
  
- static const struct alc_fixup alc861_fixups[] = {
-@@ -16430,9 +16431,18 @@ static const struct alc_fixup alc861_fix
- 			{ }
- 		}
- 	},
-+	[PINFIX_ASUS_A6RP] = {
-+		.type = ALC_FIXUP_VERBS,
-+		.v.verbs = (const struct hda_verb[]) {
-+			/* node 0x0f VREF seems controlling the master output */
-+			{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_VREF50 },
-+			{ }
-+		},
-+	},
- };
- 
- static const struct snd_pci_quirk alc861_fixup_tbl[] = {
-+	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", PINFIX_ASUS_A6RP),
- 	SND_PCI_QUIRK(0x1734, 0x10c7, "FSC Amilo Pi1505", PINFIX_FSC_AMILO_PI1505),
- 	{}
- };
+ 3:	mov	r10, #0
+-#ifdef HARVARD_CACHE
+ 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
+-#endif
+ 	dsb
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
 
 
