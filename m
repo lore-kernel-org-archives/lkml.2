@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932856Ab2BAVeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:34:37 -0500
+	id S932861Ab2BAVev (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:34:51 -0500
 Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58504 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932533Ab2BAVKK (ORCPT
+	by vger.kernel.org with ESMTP id S932524Ab2BAVKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:10 -0500
-X-Sasl-enc: Ms+Nwhp7Ulq8kahVXVyKFEsZCCXlyKAaSXPE/hxVRs6Z 1328130609
+	Wed, 1 Feb 2012 16:10:08 -0500
+X-Sasl-enc: xFXdBeM9SyRK48lsmFWtOFji7vm/iwAtbcJgTHG+Cgat 1328130607
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:47 2012
-Message-Id: <20120201210047.599402528@clark.kroah.org>
+Message-Id: <20120201210047.519619161@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:06 -0800
+Date: Wed, 01 Feb 2012 13:00:05 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Korsgaard <jacmet@sunsite.dk>
-Subject: [42/89] USB: ftdi_sio: add PID for TI XDS100v2 / BeagleBone A3
+        alan@lxorguk.ukuu.org.uk, Roland Ramthun <mail@roland-ramthun.de>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [41/89] USB: ftdi_sio: fix initial baud rate
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Korsgaard <jacmet@sunsite.dk>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 55f13aeae0346f0c89bfface91ad9a97653dc433 upstream.
+commit 108e02b12921078a59dcacd048079ece48a4a983 upstream.
 
-Port A for JTAG, port B for serial.
+Fix regression introduced by commit b1ffb4c851f1 ("USB: Fix Corruption
+issue in USB ftdi driver ftdi_sio.c") which caused the termios settings
+to no longer be initialised at open. Consequently it was no longer
+possible to set the port to the default speed of 9600 baud without first
+changing to another baud rate and back again.
 
-Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+Reported-by: Roland Ramthun <mail@roland-ramthun.de>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Tested-by: Roland Ramthun <mail@roland-ramthun.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
- 2 files changed, 9 insertions(+)
+ drivers/usb/serial/ftdi_sio.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 --- a/drivers/usb/serial/ftdi_sio.c
 +++ b/drivers/usb/serial/ftdi_sio.c
-@@ -805,6 +805,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, TI_XDS100V2_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(FTDI_VID, HAMEG_HO820_PID) },
- 	{ USB_DEVICE(FTDI_VID, HAMEG_HO720_PID) },
- 	{ USB_DEVICE(FTDI_VID, HAMEG_HO730_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -39,6 +39,13 @@
- /* www.candapter.com Ewert Energy Systems CANdapter device */
- #define FTDI_CANDAPTER_PID 0x9F80 /* Product Id */
+@@ -1823,6 +1823,7 @@ static int ftdi_sio_port_remove(struct u
  
-+/*
-+ * Texas Instruments XDS100v2 JTAG / BeagleBone A3
-+ * http://processors.wiki.ti.com/index.php/XDS100
-+ * http://beagleboard.org/bone
-+ */
-+#define TI_XDS100V2_PID		0xa6d0
-+
- #define FTDI_NXTCAM_PID		0xABB8 /* NXTCam for Mindstorms NXT */
+ static int ftdi_open(struct tty_struct *tty, struct usb_serial_port *port)
+ {
++	struct ktermios dummy;
+ 	struct usb_device *dev = port->serial->dev;
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+ 	int result;
+@@ -1841,8 +1842,10 @@ static int ftdi_open(struct tty_struct *
+ 	   This is same behaviour as serial.c/rs_open() - Kuba */
  
- /* US Interface Navigator (http://www.usinterface.com/) */
+ 	/* ftdi_set_termios  will send usb control messages */
+-	if (tty)
+-		ftdi_set_termios(tty, port, tty->termios);
++	if (tty) {
++		memset(&dummy, 0, sizeof(dummy));
++		ftdi_set_termios(tty, port, &dummy);
++	}
+ 
+ 	/* Start reading from the device */
+ 	result = usb_serial_generic_open(tty, port);
 
 
