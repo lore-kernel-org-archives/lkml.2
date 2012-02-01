@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668Ab2BAW1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:27:37 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46902 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756150Ab2BAW1f convert rfc822-to-8bit (ORCPT
+	id S1755987Ab2BAW3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:29:38 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:33083 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab2BAW3h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:27:35 -0500
+	Wed, 1 Feb 2012 17:29:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <A3E67C2071F49C4CBC4F17E6D77CDDD232754183@G4W3299.americas.hpqcorp.net>
-References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
- <1328118174.15992.6206.camel@triegel.csb> <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
- <1328128874.15992.6430.camel@triegel.csb> <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
- <A3E67C2071F49C4CBC4F17E6D77CDDD232754183@G4W3299.americas.hpqcorp.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Feb 2012 14:27:15 -0800
-X-Google-Sender-Auth: RfGH4P_bZQcnVNeW3z5ODYDPHRE
-Message-ID: <CA+55aFyfD_AEotpx=7-pyiCp1Ph5_1QSmnd2_-fS=UH8vZfj1A@mail.gmail.com>
-Subject: Re: Memory corruption due to word sharing
-To: "Boehm, Hans" <hans.boehm@hp.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "dsterba@suse.cz" <dsterba@suse.cz>,
-        "ptesarik@suse.cz" <ptesarik@suse.cz>,
-        "rguenther@suse.de" <rguenther@suse.de>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20120201065322.GA24652@mwanda>
+References: <1327118181-3542-1-git-send-email-arve@android.com>
+	<1327118181-3542-2-git-send-email-arve@android.com>
+	<20120121082208.GL3294@mwanda>
+	<20120131185228.GA21481@kroah.com>
+	<CAMP5XgedsSDtYa-bZCW--+Hj41sN94tDXQ8_d7c4=fT5bJ7mTQ@mail.gmail.com>
+	<20120201065322.GA24652@mwanda>
+Date: Wed, 1 Feb 2012 14:29:36 -0800
+Message-ID: <CAMP5XgeV7R4JfRG+9qqkUN_BC0MvADKOngVXqK9mvmXcxisqYA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Staging: android: binder: Add some error checks
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
+        Christopher Lais <chris+android@zenthought.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 1:25 PM, Boehm, Hans <hans.boehm@hp.com> wrote:
+2012/1/31 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Tue, Jan 31, 2012 at 03:20:30PM -0800, Arve Hjønnevåg wrote:
+>> 2012/1/31 Greg KH <greg@kroah.com>:
+>> > On Sat, Jan 21, 2012 at 11:22:08AM +0300, Dan Carpenter wrote:
+>> >> On Fri, Jan 20, 2012 at 07:56:20PM -0800, Arve Hjønnevåg wrote:
+>> >> > - Add a mutex to protect against two processes mmapping the
+>> >> >   same binder_proc.
+>> >> > - After locking mmap_sem, check that the vma we want to access
+>> >> >   (still) points to the same mm_struct.
+>> >> > - Use proc->tsk instead of current to get the files struct since
+>> >> >   this is where we get the rlimit from.
+>> >>
+>> >> This doesn't seem related to the locking change at all.  Probably
+>> >> this patch should be split into three patches, one bugfix per
+>> >> patch, unless they are very closely related.
+>> >
+>> > I agree.  Arve, is this all fixing one problem, or multiple ones?  If
+>> > multiple ones, we need this split up into multiple patches.
+>> >
+>>
+>> That depend on your point of view. It fixes crashes if you use the
+>> same binder file pointer from multiple processes. It seemed excessive
+>> to have three patches for this.
 >
-> Here are some more interesting ones that illustrate the issues (all declarations are non-local, unless stated otherwise):
+> It would have helped you to write a better changelog.  The subject
+> says "[patch] android: grab bag of random fixes" and the the
+> description matches that.  You have no idea how annoyed I get at
+> grab bag patches.
 >
-> struct { char a; int b:9; int c:7; char d} x;
->
-> Is x.b = 1 allowed to overwrite x.a?  C11 says no, essentially requiring two byte stores.  Gcc currently does so.  I'm not sure I understand Linus' position here.
 
-So I like the fact that the C11 stance seems very strict. But honestly
-I also think it sounds like C11 is actually more strict than I would
-necessarily be.
+Would the following be a better change description (or do you still
+want three patches):
 
-I really do think that bitfields imply "int", both historically and
-technically. So I would not see the problem with treating the
-bitfields as part of an 'int' and thus overwriting a (and d) when
-writing to b. That's how bitfields work! They are fields of an int.
+Staging: android: binder: Fix crashes when sharing a binder file
+between processes
 
-It would be good if it perhaps caused a *warning*, and gave a good way
-to avoid it. For example, while I think using any other base type than
-'int' is technically an extension of the C bitfield rules (but
-whatever, I don't have any specs in front of me), I think a warning
-together with alowing the user to rewrite it as
+Opening the binder driver and sharing the file returned with
+other processes (e.g. by calling fork) can crash the kernel.
+Prevent these crashes with the following changes:
+- Add a mutex to protect against two processes mmapping the
+  same binder_proc.
+- After locking mmap_sem, check that the vma we want to access
+  (still) points to the same mm_struct.
+- Use proc->tsk instead of current to get the files struct since
+  this is where we get the rlimit from.
 
-  struct { char a; char d; short b:9; short c:7; } x;
 
-would make it clear that now a write to 'b' cannot validly overwrite
-'a' or 'd'.
 
-But forcing the compiler to do two (and sometimes three!) byte
-accesses sounds excessive.
-
-The reason I think the
-
-   int flag:1;
-   int othervariable;
-
-overwriting of "othervariable" is so *obviously* a bug is exactly that
-bitfields are historically about 'int', and no 'long' was there
-anywhere, so using a 64-bit access is clearly not sane in any way,
-shape or form.
-
-I dunno.
-
-                 Linus
+-- 
+Arve Hjønnevåg
