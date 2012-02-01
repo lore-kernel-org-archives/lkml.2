@@ -1,95 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab2BAVHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:07:41 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33309 "EHLO
+	id S933144Ab2BAV6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:58:53 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45791 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752926Ab2BAVHg (ORCPT
+	by vger.kernel.org with ESMTP id S1754539Ab2BAVHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:07:36 -0500
-X-Sasl-enc: W6q45SC9SoOsAKKp/ga3sAnbbpxYJ/8G7r8kLeOffZf4 1328130454
-Date: Wed, 1 Feb 2012 13:02:36 -0800
+	Wed, 1 Feb 2012 16:07:43 -0500
+X-Sasl-enc: NSVViVD//dLAGg1Qab8JEn6HE87bwJ2JC3wTrtrNINPb 1328130462
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:15:31 2012
+Message-Id: <20120201201531.200570434@clark.kroah.org>
+User-Agent: quilt/0.51-14.1
+Date: Wed, 01 Feb 2012 12:14:03 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [00/65] 3.0.19-stable review
-Message-ID: <20120201210236.GA25966@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [01/20] eCryptfs: Sanitize write counts of /dev/ecryptfs
+In-Reply-To: <20120201210055.GA25374@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.19 release.
-There are @num@ patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Friday, February 3, 2012, 20:00:00 UTC
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.19-rc1.gz
-and the diffstat can be found below.
+From: Tyler Hicks <tyhicks@canonical.com>
 
-thanks,
+commit db10e556518eb9d21ee92ff944530d84349684f4 upstream.
 
-greg k-h
+A malicious count value specified when writing to /dev/ecryptfs may
+result in a a very large kernel memory allocation.
+
+This patch peeks at the specified packet payload size, adds that to the
+size of the packet headers and compares the result with the write count
+value. The resulting maximum memory allocation size is approximately 532
+bytes.
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ecryptfs/miscdev.c |   56 +++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 38 insertions(+), 18 deletions(-)
+
+--- a/fs/ecryptfs/miscdev.c
++++ b/fs/ecryptfs/miscdev.c
+@@ -408,11 +408,47 @@ ecryptfs_miscdev_write(struct file *file
+ 	ssize_t sz = 0;
+ 	char *data;
+ 	uid_t euid = current_euid();
++	unsigned char packet_size_peek[3];
+ 	int rc;
+ 
+-	if (count == 0)
++	if (count == 0) {
+ 		goto out;
++	} else if (count == (1 + 4)) {
++		/* Likely a harmless MSG_HELO or MSG_QUIT - no packet length */
++		goto memdup;
++	} else if (count < (1 + 4 + 1)
++		   || count > (1 + 4 + 2 + sizeof(struct ecryptfs_message) + 4
++			       + ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES)) {
++		printk(KERN_WARNING "%s: Acceptable packet size range is "
++		       "[%d-%lu], but amount of data written is [%zu].",
++		       __func__, (1 + 4 + 1),
++		       (1 + 4 + 2 + sizeof(struct ecryptfs_message) + 4
++			+ ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES), count);
++		return -EINVAL;
++	}
++
++	if (copy_from_user(packet_size_peek, (buf + 1 + 4),
++			   sizeof(packet_size_peek))) {
++		printk(KERN_WARNING "%s: Error while inspecting packet size\n",
++		       __func__);
++		return -EFAULT;
++	}
+ 
++	rc = ecryptfs_parse_packet_length(packet_size_peek, &packet_size,
++					  &packet_size_length);
++	if (rc) {
++		printk(KERN_WARNING "%s: Error parsing packet length; "
++		       "rc = [%d]\n", __func__, rc);
++		return rc;
++	}
++
++	if ((1 + 4 + packet_size_length + packet_size) != count) {
++		printk(KERN_WARNING "%s: Invalid packet size [%zu]\n", __func__,
++		       packet_size);
++		return -EINVAL;
++	}
++
++memdup:
+ 	data = memdup_user(buf, count);
+ 	if (IS_ERR(data)) {
+ 		printk(KERN_ERR "%s: memdup_user returned error [%ld]\n",
+@@ -434,23 +470,7 @@ ecryptfs_miscdev_write(struct file *file
+ 		}
+ 		memcpy(&counter_nbo, &data[i], 4);
+ 		seq = be32_to_cpu(counter_nbo);
+-		i += 4;
+-		rc = ecryptfs_parse_packet_length(&data[i], &packet_size,
+-						  &packet_size_length);
+-		if (rc) {
+-			printk(KERN_WARNING "%s: Error parsing packet length; "
+-			       "rc = [%d]\n", __func__, rc);
+-			goto out_free;
+-		}
+-		i += packet_size_length;
+-		if ((1 + 4 + packet_size_length + packet_size) != count) {
+-			printk(KERN_WARNING "%s: (1 + packet_size_length([%zd])"
+-			       " + packet_size([%zd]))([%zd]) != "
+-			       "count([%zd]). Invalid packet format.\n",
+-			       __func__, packet_size_length, packet_size,
+-			       (1 + packet_size_length + packet_size), count);
+-			goto out_free;
+-		}
++		i += 4 + packet_size_length;
+ 		rc = ecryptfs_miscdev_response(&data[i], packet_size,
+ 					       euid, current_user_ns(),
+ 					       task_pid(current), seq);
 
 
- Makefile                                |    4 +-
- arch/arm/mach-ux500/Kconfig             |    1 +
- arch/arm/mm/proc-v7.S                   |    6 --
- arch/x86/include/asm/uv/uv_hub.h        |    4 +-
- arch/x86/kernel/microcode_amd.c         |   24 ++++++-
- arch/x86/net/bpf_jit_comp.c             |   36 ++++++----
- crypto/sha512_generic.c                 |   62 ++++++++++--------
- drivers/gpu/drm/drm_auth.c              |    6 ++-
- drivers/gpu/drm/drm_fops.c              |    5 ++
- drivers/gpu/drm/i915/intel_sdvo.c       |    8 +--
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    6 ++
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c     |    2 +-
- drivers/hwmon/f71805f.c                 |   10 ++--
- drivers/hwmon/sht15.c                   |    3 +-
- drivers/hwmon/w83627ehf.c               |    6 ++
- drivers/net/bonding/bond_alb.c          |   27 +++-----
- drivers/tty/serial/amba-pl011.c         |   14 ++++
- drivers/tty/serial/jsm/jsm_driver.c     |    1 +
- drivers/tty/tty_port.c                  |   12 ++--
- drivers/usb/class/cdc-wdm.c             |   59 +++++++++++------
- drivers/usb/host/ehci-fsl.c             |    2 +-
- drivers/usb/host/xhci-ring.c            |    6 +-
- drivers/usb/misc/usbsevseg.c            |    2 +-
- drivers/usb/serial/cp210x.c             |  107 +++++++++++++++++++++---------
- drivers/usb/serial/ftdi_sio.c           |   14 +++-
- drivers/usb/serial/ftdi_sio_ids.h       |   19 ++++++
- drivers/usb/serial/io_ti.c              |   10 +--
- drivers/usb/serial/option.c             |    5 ++
- drivers/usb/serial/qcaux.c              |    7 ++-
- fs/ecryptfs/crypto.c                    |   49 ++------------
- fs/ecryptfs/inode.c                     |   48 ++++++++++----
- fs/ecryptfs/miscdev.c                   |   56 +++++++++++-----
- fs/ecryptfs/read_write.c                |   19 ++++--
- fs/xfs/linux-2.6/xfs_discard.c          |    4 +-
- fs/xfs/xfs_vnodeops.c                   |    3 +-
- include/drm/drmP.h                      |    1 +
- include/net/netns/generic.h             |    1 +
- kernel/printk.c                         |    6 +-
- kernel/trace/ftrace.c                   |   76 ++++++++++++++--------
- net/caif/caif_dev.c                     |   11 +--
- net/caif/cfcnfg.c                       |    1 -
- net/core/net_namespace.c                |   31 +++++----
- net/ipv4/ah4.c                          |    2 -
- net/ipv4/tcp_ipv4.c                     |    2 +-
- net/ipv4/tcp_output.c                   |    6 +-
- net/ipv6/ah6.c                          |    2 -
- net/ipv6/tcp_ipv6.c                     |    2 +-
- net/l2tp/l2tp_ip.c                      |    5 --
- net/rds/af_rds.c                        |   20 ++----
- sound/pci/hda/patch_realtek.c           |   11 +++
- sound/pci/hda/patch_sigmatel.c          |    8 ++-
- 51 files changed, 508 insertions(+), 324 deletions(-)
