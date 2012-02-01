@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab2BAKwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 05:52:30 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:49313 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756154Ab2BAKw2 (ORCPT
+	id S1756279Ab2BAKwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 05:52:41 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:57206 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756183Ab2BAKwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 05:52:28 -0500
+	Wed, 1 Feb 2012 05:52:34 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
 Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
@@ -21,9 +21,9 @@ Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
         <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
-Subject: [PATCH V3 05/12] dmaengine/dw_dmac: Don't use magic number for total number of channels
-Date: Wed, 1 Feb 2012 16:12:21 +0530
-Message-ID: <42b0936c114afb25ae50b34ecd3302ef86ea4190.1328091915.git.viresh.kumar@st.com>
+Subject: [PATCH V3 06/12] dmaengine/dw_dmac: Use dev_get_platdata() instead of accessing dev directly
+Date: Wed, 1 Feb 2012 16:12:22 +0530
+Message-ID: <abc12d2a65b2b4f7b49ca6811e241ad05ce8b240.1328091915.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.8.110.g4cb5d
 In-Reply-To: <cover.1328091915.git.viresh.kumar@st.com>
 References: <cover.1328091915.git.viresh.kumar@st.com>
@@ -33,8 +33,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Total number of channels is passed in pdata->nr_channels variable, thus we must
-not use magic number '7' for total number of channels.
+Use already defined function dev_get_platdata() instead of accessing
+pdev->dev.data.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
@@ -42,17 +42,17 @@ Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 3a3d7ed..1577394 100644
+index 1577394..f3aecb3 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -1432,7 +1432,7 @@ static int __init dw_probe(struct platform_device *pdev)
+@@ -1369,7 +1369,7 @@ static int __init dw_probe(struct platform_device *pdev)
+ 	int			err;
+ 	int			i;
  
- 		/* 7 is highest priority & 0 is lowest. */
- 		if (pdata->chan_priority == CHAN_PRIORITY_ASCENDING)
--			dwc->priority = 7 - i;
-+			dwc->priority = pdata->nr_channels - i - 1;
- 		else
- 			dwc->priority = i;
+-	pdata = pdev->dev.platform_data;
++	pdata = dev_get_platdata(&pdev->dev);
+ 	if (!pdata || pdata->nr_channels > DW_DMA_MAX_NR_CHANNELS)
+ 		return -EINVAL;
  
 -- 
 1.7.8.110.g4cb5d
