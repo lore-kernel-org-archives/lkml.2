@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab2BALKk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 06:10:40 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:48658 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756135Ab2BALKi (ORCPT
+	id S1756199Ab2BALRB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 06:17:01 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:59302 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205Ab2BALRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 06:10:38 -0500
-Message-ID: <4F291E1F.3030505@oss.ntt.co.jp>
-Date: Wed, 01 Feb 2012 20:12:31 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+	Wed, 1 Feb 2012 06:17:00 -0500
+X-IronPort-AV: E=Sophos;i="4.71,601,1320624000"; 
+   d="scan'208";a="10411983"
+Date: Wed, 1 Feb 2012 11:18:51 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH v3] hvc_xen: implement multiconsole support
+In-Reply-To: <20120201011318.GE32295@andromeda.dapyr.net>
+Message-ID: <alpine.DEB.2.00.1202011110180.3196@kaball-desktop>
+References: <1327939351-22111-1-git-send-email-stefano.stabellini@eu.citrix.com> <20120201011318.GE32295@andromeda.dapyr.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
-        Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [RFC][PATCH] srcu: Implement call_srcu()
-References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com>  <1328017807.2446.230.camel@twins>  <20120131222447.GH2391@linux.vnet.ibm.com> <1328091749.2760.34.camel@laptop> <4F29178A.1090306@redhat.com> <4F2918D5.4050104@redhat.com> <4F291B56.30600@oss.ntt.co.jp> <4F291B92.8070402@redhat.com>
-In-Reply-To: <4F291B92.8070402@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/02/01 20:01), Avi Kivity wrote:
-> On 02/01/2012 01:00 PM, Takuya Yoshikawa wrote:
+On Wed, 1 Feb 2012, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jan 30, 2012 at 04:02:31PM +0000, Stefano Stabellini wrote:
+> > This patch implements support for multiple consoles:
+> > consoles other than the first one are setup using the traditional xenbus
+> > and grant-table based mechanism.
+> > We use a list to keep track of the allocated consoles, we don't
+> > expect too many of them anyway.
+> >
+> 
+> So looks good. applied to #testing. How do I test "multiple" consoles?
 
->> How about just doing:
->>
->> take a spin_lock
->> copy the entire (or some portions of) bitmap locally
->> clear the bitmap
->> unlock
->>
->
-> That means that vcpus dirtying memory also have to take that lock, and
-> spin while the bitmap is being copied.  So kvm_vm_ioctl_get_dirty_log()
-> will become faster, at the expense of vcpus, which I think is a bad
-> tradeoff.
+Interesting question :)
 
-Almost every caller is already holding the mmu_lock.
+First of all testing a pv console alongside an emulated serial is easy:
+by default xl creates a pv console for all hvm guests. So you just need
+to start using it (something like console=ttyS0 console=hvc0 on a PV on
+HVM guest).
+You can connect to the pv console with the following command:
 
-Isn't it possible to make others hold the lock only for the case of
-marking to the bitmap? (I will check myself too.)
+xl console -t pv <domain_name>
 
 
->> write protect the dirty pages based on the copied dirty data
->>
->> copy_to_user
->>
->>
->>
->> I can show you some performance numbers, this weekend, if you like.
->
-> That'll be great, numbers are better than speculation.
->
+Then, in order to test multiple pv consoles, you need the toolstack to
+create more than one for you (see appended patch that creates 2 pv
+consoles for PV on HVM guests). If you create two pv consoles, you can
+connect to the second one with the following command:
 
-Yes, I already have some good numbers to show (and some patches).
+xl console -t pv -n 1 <domain_name>
 
-	Takuya
+BTW in the patch below I am seeting QEMU as console backend because it
+is the only one that can handle multiple pv consoles.
+
+
+8<----
+
+diff --git a/tools/libxl/libxl_create.c b/tools/libxl/libxl_create.c
+index e1c615f..ec2c362 100644
+--- a/tools/libxl/libxl_create.c
++++ b/tools/libxl/libxl_create.c
+@@ -554,14 +554,21 @@ static int do_domain_create(libxl__gc *gc, libxl_domain_config *d_config,
+     switch (d_config->c_info.type) {
+     case LIBXL_DOMAIN_TYPE_HVM:
+     {
+-        libxl_device_console console;
++        libxl_device_console console, console2;
+         libxl_device_vkb vkb;
+ 
+         ret = init_console_info(&console, 0);
+         if ( ret )
+             goto error_out;
++        console.consback = LIBXL_CONSOLE_BACKEND_IOEMU;
+         libxl__device_console_add(gc, domid, &console, &state);
+         libxl_device_console_dispose(&console);
++        ret = init_console_info(&console2, 1);
++        if ( ret )
++            goto error_out;
++        console2.consback = LIBXL_CONSOLE_BACKEND_IOEMU;
++        libxl__device_console_add(gc, domid, &console2, NULL);
++        libxl_device_console_dispose(&console2);
+ 
+         ret = libxl_device_vkb_init(ctx, &vkb);
+         if ( ret )
