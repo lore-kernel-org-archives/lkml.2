@@ -1,139 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933268Ab2BAWtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:49:09 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:33777 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab2BAWob (ORCPT
+	id S933170Ab2BAWnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:43:45 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32928 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757682Ab2BAWnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:44:31 -0500
+	Wed, 1 Feb 2012 17:43:42 -0500
 From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        "Cc: Dominik Brodowski" <linux@dominikbrodowski.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 04/15] PCI: Add busn_res tracking in core
-Date: Wed,  1 Feb 2012 14:43:51 -0800
-Message-Id: <1328136242-17725-5-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 0/7] PCI : bridge resource reallocation patchset -- followup
+Date: Wed,  1 Feb 2012 14:42:43 -0800
+Message-Id: <1328136170-17613-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
-References: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090209.4F29C048.0028,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090202.4F29BFF8.00BC,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-update pci_scan_root_bus, and pci_scan_bus to insert root bus busn into
-iobusn_resource tree.
+e4afda7: PCI: only enable pci realloc when SRIOV bar is not assigned
+fee4a1e: PCI: print out suggestion about using pci=realloc
+83f0fb3: PCI: Make pci bridge reallocating enabled/disabled
+3ede49c: PCI: Retry on type IORESOURCE_IO allocation.
+6becd43: PCI: Skip reset cardbus assigned resource during pci bus rescan
+51f1186: PCI: Fix cardbus bridge resources as optional size handling
+aa85d79: PCI: Disable cardbus bridge MEM1 pref CTL
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c  |   30 ++++++++++++++++++++++++++----
- drivers/pci/remove.c |    1 +
- include/linux/pci.h  |    4 ++++
- 3 files changed, 31 insertions(+), 4 deletions(-)
+are left over after Jesse pickup more of them.
+it will try to auto detect if need to use pci=realloc, and print out suggestion.
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 957c2bc..79de0dd 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1658,8 +1658,9 @@ void pci_bus_release_busn_res(struct pci_bus *b)
- 	release_resource(&b->busn_res);
- }
- 
--struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
--		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-+struct pci_bus * __devinit pci_scan_root_bus_max(struct device *parent, int bus,
-+		int bus_max, struct pci_ops *ops, void *sysdata,
-+		struct list_head *resources)
- {
- 	struct pci_bus *b;
- 
-@@ -1667,10 +1668,26 @@ struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
- 	if (!b)
- 		return NULL;
- 
-+	pci_bus_insert_busn_res(b, bus, bus_max);
- 	b->subordinate = pci_scan_child_bus(b);
- 	pci_bus_add_devices(b);
- 	return b;
- }
-+EXPORT_SYMBOL(pci_scan_root_bus_max);
-+
-+struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
-+		struct pci_ops *ops, void *sysdata,
-+		struct list_head *resources)
-+{
-+	struct pci_bus *b;
-+
-+	b = pci_scan_root_bus_max(parent, bus, 255, ops, sysdata, resources);
-+
-+	if (b)
-+		pci_bus_update_busn_res_end(b, b->subordinate);
-+
-+	return b;
-+}
- EXPORT_SYMBOL(pci_scan_root_bus);
- 
- /* Deprecated; use pci_scan_root_bus() instead */
-@@ -1683,9 +1700,11 @@ struct pci_bus * __devinit pci_scan_bus_parented(struct device *parent,
- 	pci_add_resource(&resources, &ioport_resource);
- 	pci_add_resource(&resources, &iomem_resource);
- 	b = pci_create_root_bus(parent, bus, ops, sysdata, &resources);
--	if (b)
-+	if (b) {
-+		pci_bus_insert_busn_res(b, bus, 255);
- 		b->subordinate = pci_scan_child_bus(b);
--	else
-+		pci_bus_update_busn_res_end(b, b->subordinate);
-+	} else
- 		pci_free_resource_list(&resources);
- 	return b;
- }
-@@ -1701,7 +1720,10 @@ struct pci_bus * __devinit pci_scan_bus(int bus, struct pci_ops *ops,
- 	pci_add_resource(&resources, &iomem_resource);
- 	b = pci_create_root_bus(NULL, bus, ops, sysdata, &resources);
- 	if (b) {
-+		pci_bus_insert_busn_res(b, bus, 255);
- 		b->subordinate = pci_scan_child_bus(b);
-+		pci_bus_update_busn_res_end(b, b->subordinate);
-+
- 		pci_bus_add_devices(b);
- 	} else {
- 		pci_free_resource_list(&resources);
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index bd70f23..8056e6a 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -68,6 +68,7 @@ void pci_remove_bus(struct pci_bus *pci_bus)
- 
- 	down_write(&pci_bus_sem);
- 	list_del(&pci_bus->node);
-+	pci_bus_release_busn_res(pci_bus);
- 	up_write(&pci_bus_sem);
- 	if (!pci_bus->is_added)
- 		return;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 3da935c..d5b6786 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -668,6 +668,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- void pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
- void pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
- void pci_bus_release_busn_res(struct pci_bus *b);
-+struct pci_bus * __devinit pci_scan_root_bus_max(struct device *parent, int bus,
-+					     int busmax, struct pci_ops *ops,
-+					     void *sysdata,
-+					     struct list_head *resources);
- struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
- 					     struct pci_ops *ops, void *sysdata,
- 					     struct list_head *resources);
--- 
-1.7.7
+including fixing some pci carbus handling.
+
+could get from
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci3
+
+Thanks
+
+Yinghai
+
+ Documentation/kernel-parameters.txt |    8 ++-
+ drivers/pci/pci.c                   |    4 +-
+ drivers/pci/pci.h                   |    2 +-
+ drivers/pci/setup-bus.c             |  159 +++++++++++++++++++++++++----------
+ 4 files changed, 125 insertions(+), 48 deletions(-)
+
+
+
 
