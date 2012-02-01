@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab2BAVNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:13:47 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40019 "EHLO
+	id S1757316Ab2BAVOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:14:17 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45010 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932585Ab2BAVKl (ORCPT
+	by vger.kernel.org with ESMTP id S932644Ab2BAVKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:41 -0500
-X-Sasl-enc: A3W2RVUZsH844bYOCC7iMLR46w8hKl0LLSGK0vzbTZnp 1328130640
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:50 2012
-Message-Id: <20120201210049.944253743@clark.kroah.org>
+	Wed, 1 Feb 2012 16:10:37 -0500
+X-Sasl-enc: qIkXyaJm5y68FEM1E+dkBDYxabvyMXFAejeCJIK0Oah8 1328130635
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:47 2012
+Message-Id: <20120201210047.161892629@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:33 -0800
+Date: Wed, 01 Feb 2012 13:00:01 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?UTF-8?q?Sjur=20Br=E6ndeland?= <sjur.brandeland@stericsson.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [69/89] netns: fix net_alloc_generic()
+        alan@lxorguk.ukuu.org.uk, David Vrabel <david.vrabel@citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [37/89] x86: xen: size struct xen_spinlock to always fit in arch_spinlock_t
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,115 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: David Vrabel <david.vrabel@citrix.com>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 7a7546b377bdaa25ac77f33d9433c59f259b9688 upstream.
 
-[ Upstream commit 073862ba5d249c20bd5c49fc6d904ff0e1f6a672 ]
+If NR_CPUS < 256 then arch_spinlock_t is only 16 bits wide but struct
+xen_spinlock is 32 bits.  When a spin lock is contended and
+xl->spinners is modified the two bytes immediately after the spin lock
+would be corrupted.
 
-When a new net namespace is created, we should attach to it a "struct
-net_generic" with enough slots (even empty), or we can hit the following
-BUG_ON() :
+This is a regression caused by 84eb950db13ca40a0572ce9957e14723500943d6
+(x86, ticketlock: Clean up types and accessors) which reduced the size
+of arch_spinlock_t.
 
-[  200.752016] kernel BUG at include/net/netns/generic.h:40!
-...
-[  200.752016]  [<ffffffff825c3cea>] ? get_cfcnfg+0x3a/0x180
-[  200.752016]  [<ffffffff821cf0b0>] ? lockdep_rtnl_is_held+0x10/0x20
-[  200.752016]  [<ffffffff825c41be>] caif_device_notify+0x2e/0x530
-[  200.752016]  [<ffffffff810d61b7>] notifier_call_chain+0x67/0x110
-[  200.752016]  [<ffffffff810d67c1>] raw_notifier_call_chain+0x11/0x20
-[  200.752016]  [<ffffffff821bae82>] call_netdevice_notifiers+0x32/0x60
-[  200.752016]  [<ffffffff821c2b26>] register_netdevice+0x196/0x300
-[  200.752016]  [<ffffffff821c2ca9>] register_netdev+0x19/0x30
-[  200.752016]  [<ffffffff81c1c67a>] loopback_net_init+0x4a/0xa0
-[  200.752016]  [<ffffffff821b5e62>] ops_init+0x42/0x180
-[  200.752016]  [<ffffffff821b600b>] setup_net+0x6b/0x100
-[  200.752016]  [<ffffffff821b6466>] copy_net_ns+0x86/0x110
-[  200.752016]  [<ffffffff810d5789>] create_new_namespaces+0xd9/0x190
+Fix this by making xl->spinners a u8 if NR_CPUS < 256.  A
+BUILD_BUG_ON() is also added to check the sizes of the two structures
+are compatible.
 
-net_alloc_generic() should take into account the maximum index into the
-ptr array, as a subsystem might use net_generic() anytime.
+In many cases this was not noticable as there would often be padding
+bytes after the lock (e.g., if any of CONFIG_GENERIC_LOCKBREAK,
+CONFIG_DEBUG_SPINLOCK, or CONFIG_DEBUG_LOCK_ALLOC were enabled).
 
-This also reduces number of reallocations in net_assign_generic()
+The bnx2 driver is affected. In struct bnx2, phy_lock and
+indirect_lock may have no padding after them.  Contention on phy_lock
+would corrupt indirect_lock making it appear locked and the driver
+would deadlock.
 
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Sjur Brændeland <sjur.brandeland@stericsson.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Pavel Emelyanov <xemul@openvz.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/net_namespace.c |   31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
 
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -30,6 +30,20 @@ EXPORT_SYMBOL(init_net);
- 
- #define INITIAL_NET_GEN_PTRS	13 /* +1 for len +2 for rcu_head */
- 
-+static unsigned int max_gen_ptrs = INITIAL_NET_GEN_PTRS;
-+
-+static struct net_generic *net_alloc_generic(void)
-+{
-+	struct net_generic *ng;
-+	size_t generic_size = offsetof(struct net_generic, ptr[max_gen_ptrs]);
-+
-+	ng = kzalloc(generic_size, GFP_KERNEL);
-+	if (ng)
-+		ng->len = max_gen_ptrs;
-+
-+	return ng;
-+}
-+
- static int net_assign_generic(struct net *net, int id, void *data)
- {
- 	struct net_generic *ng, *old_ng;
-@@ -43,8 +57,7 @@ static int net_assign_generic(struct net
- 	if (old_ng->len >= id)
- 		goto assign;
- 
--	ng = kzalloc(sizeof(struct net_generic) +
--			id * sizeof(void *), GFP_KERNEL);
-+	ng = net_alloc_generic();
- 	if (ng == NULL)
- 		return -ENOMEM;
- 
-@@ -59,7 +72,6 @@ static int net_assign_generic(struct net
- 	 * the old copy for kfree after a grace period.
- 	 */
- 
--	ng->len = id;
- 	memcpy(&ng->ptr, &old_ng->ptr, old_ng->len * sizeof(void*));
- 
- 	rcu_assign_pointer(net->gen, ng);
-@@ -161,18 +173,6 @@ out_undo:
- 	goto out;
+---
+ arch/x86/xen/spinlock.c |   27 ++++++++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 5 deletions(-)
+
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -116,9 +116,26 @@ static inline void spin_time_accum_block
  }
+ #endif  /* CONFIG_XEN_DEBUG_FS */
  
--static struct net_generic *net_alloc_generic(void)
--{
--	struct net_generic *ng;
--	size_t generic_size = sizeof(struct net_generic) +
--		INITIAL_NET_GEN_PTRS * sizeof(void *);
--
--	ng = kzalloc(generic_size, GFP_KERNEL);
--	if (ng)
--		ng->len = INITIAL_NET_GEN_PTRS;
--
--	return ng;
--}
++/*
++ * Size struct xen_spinlock so it's the same as arch_spinlock_t.
++ */
++#if NR_CPUS < 256
++typedef u8 xen_spinners_t;
++# define inc_spinners(xl) \
++	asm(LOCK_PREFIX " incb %0" : "+m" ((xl)->spinners) : : "memory");
++# define dec_spinners(xl) \
++	asm(LOCK_PREFIX " decb %0" : "+m" ((xl)->spinners) : : "memory");
++#else
++typedef u16 xen_spinners_t;
++# define inc_spinners(xl) \
++	asm(LOCK_PREFIX " incw %0" : "+m" ((xl)->spinners) : : "memory");
++# define dec_spinners(xl) \
++	asm(LOCK_PREFIX " decw %0" : "+m" ((xl)->spinners) : : "memory");
++#endif
++
+ struct xen_spinlock {
+ 	unsigned char lock;		/* 0 -> free; 1 -> locked */
+-	unsigned short spinners;	/* count of waiting cpus */
++	xen_spinners_t spinners;	/* count of waiting cpus */
+ };
  
- #ifdef CONFIG_NET_NS
- static struct kmem_cache *net_cachep;
-@@ -483,6 +483,7 @@ again:
- 			}
- 			return error;
- 		}
-+		max_gen_ptrs = max_t(unsigned int, max_gen_ptrs, *ops->id);
- 	}
- 	error = __register_pernet_operations(list, ops);
- 	if (error) {
+ static int xen_spin_is_locked(struct arch_spinlock *lock)
+@@ -164,8 +181,7 @@ static inline struct xen_spinlock *spinn
+ 
+ 	wmb();			/* set lock of interest before count */
+ 
+-	asm(LOCK_PREFIX " incw %0"
+-	    : "+m" (xl->spinners) : : "memory");
++	inc_spinners(xl);
+ 
+ 	return prev;
+ }
+@@ -176,8 +192,7 @@ static inline struct xen_spinlock *spinn
+  */
+ static inline void unspinning_lock(struct xen_spinlock *xl, struct xen_spinlock *prev)
+ {
+-	asm(LOCK_PREFIX " decw %0"
+-	    : "+m" (xl->spinners) : : "memory");
++	dec_spinners(xl);
+ 	wmb();			/* decrement count before restoring lock */
+ 	__this_cpu_write(lock_spinners, prev);
+ }
+@@ -373,6 +388,8 @@ void xen_uninit_lock_cpu(int cpu)
+ 
+ void __init xen_init_spinlocks(void)
+ {
++	BUILD_BUG_ON(sizeof(struct xen_spinlock) > sizeof(arch_spinlock_t));
++
+ 	pv_lock_ops.spin_is_locked = xen_spin_is_locked;
+ 	pv_lock_ops.spin_is_contended = xen_spin_is_contended;
+ 	pv_lock_ops.spin_lock = xen_spin_lock;
 
 
