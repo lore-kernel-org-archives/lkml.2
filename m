@@ -1,59 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026Ab2BAVtf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:49:35 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38089 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756067Ab2BAVtc (ORCPT
+	id S933033Ab2BAVuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:50:04 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37494 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756028Ab2BAVIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:49:32 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <CACRpkdZ76PamNGOuhuqNvMx9k6hRR2MD2L7sJnv7nU_A45Yypg@mail.gmail.com>
-References: <1327083746-31430-1-git-send-email-swarren@nvidia.com>
-	<1327083746-31430-3-git-send-email-swarren@nvidia.com>
-	<CACRpkdZ_hBviswq7pXoLozC8gjzvowCBrj9yjw1xJT79b5rtwQ@mail.gmail.com>
-	<20120201082011.GK7399@quad.lixom.net>
-	<CACRpkdZ76PamNGOuhuqNvMx9k6hRR2MD2L7sJnv7nU_A45Yypg@mail.gmail.com>
-Date: Wed, 1 Feb 2012 13:49:32 -0800
-Message-ID: <CAOesGMjrj-+kpj9YL+_fAP_91VZEyuCc8prkSHgut8-0xES9Nw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] ARM: tegra: Switch to new pinctrl driver
-From: Olof Johansson <olof@lixom.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 1 Feb 2012 16:08:31 -0500
+X-Sasl-enc: d/jpz2hTbD3iAMMhdq/h+pI4OlGFxRwHp3xYnym8RkUI 1328130510
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:38 2012
+Message-Id: <20120201205738.185470776@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Wed, 01 Feb 2012 12:55:48 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Thomas Hellstrom <thellstrom@vmware.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [08/65] drm: Fix authentication kernel crash
+In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 12:11 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Feb 1, 2012 at 9:20 AM, Olof Johansson <olof@lixom.net> wrote:
->
->> This series is:
->> Acked-by: Olof Johansson <olof@lixom.net>
->
-> OK that's great!
->
->> can you land this series in a stable branch in
->> your tree that you promise not to rebase between now and upstream
->> submission?
->
-> I thinkso, I rebased to some fixes from -rc2 today but no need to
-> do that again, there is one bug fix which may end up in both
-> mainline and my tree but whatever, git will cope.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Ok, yeah that should be fine. Alternatively, applying only these
-patches on a separate branch that you pull into your main for-3.4
-branch means that if you have to rebase the rest of for-3.4 you can
-get away with it as long as you yet again only pull in this branch
-instead of include it in the rebase.
+------------------
 
-> However I am waiting for Stephen to do some fixes and arrive
-> at a final version first.
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-Sounds good.
+commit 598781d71119827b454fd75d46f84755bca6f0c6 upstream.
+
+If the master tries to authenticate a client using drm_authmagic and
+that client has already closed its drm file descriptor,
+either wilfully or because it was terminated, the
+call to drm_authmagic will dereference a stale pointer into kmalloc'ed memory
+and corrupt it.
+
+Typically this results in a hard system hang.
+
+This patch fixes that problem by removing any authentication tokens
+(struct drm_magic_entry) open for a file descriptor when that file
+descriptor is closed.
+
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/drm_auth.c |    6 +++++-
+ drivers/gpu/drm/drm_fops.c |    5 +++++
+ include/drm/drmP.h         |    1 +
+ 3 files changed, 11 insertions(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/drm_auth.c
++++ b/drivers/gpu/drm/drm_auth.c
+@@ -101,7 +101,7 @@ static int drm_add_magic(struct drm_mast
+  * Searches and unlinks the entry in drm_device::magiclist with the magic
+  * number hash key, while holding the drm_device::struct_mutex lock.
+  */
+-static int drm_remove_magic(struct drm_master *master, drm_magic_t magic)
++int drm_remove_magic(struct drm_master *master, drm_magic_t magic)
+ {
+ 	struct drm_magic_entry *pt;
+ 	struct drm_hash_item *hash;
+@@ -136,6 +136,8 @@ static int drm_remove_magic(struct drm_m
+  * If there is a magic number in drm_file::magic then use it, otherwise
+  * searches an unique non-zero magic number and add it associating it with \p
+  * file_priv.
++ * This ioctl needs protection by the drm_global_mutex, which protects
++ * struct drm_file::magic and struct drm_magic_entry::priv.
+  */
+ int drm_getmagic(struct drm_device *dev, void *data, struct drm_file *file_priv)
+ {
+@@ -173,6 +175,8 @@ int drm_getmagic(struct drm_device *dev,
+  * \return zero if authentication successed, or a negative number otherwise.
+  *
+  * Checks if \p file_priv is associated with the magic number passed in \arg.
++ * This ioctl needs protection by the drm_global_mutex, which protects
++ * struct drm_file::magic and struct drm_magic_entry::priv.
+  */
+ int drm_authmagic(struct drm_device *dev, void *data,
+ 		  struct drm_file *file_priv)
+--- a/drivers/gpu/drm/drm_fops.c
++++ b/drivers/gpu/drm/drm_fops.c
+@@ -486,6 +486,11 @@ int drm_release(struct inode *inode, str
+ 		  (long)old_encode_dev(file_priv->minor->device),
+ 		  dev->open_count);
+ 
++	/* Release any auth tokens that might point to this file_priv,
++	   (do that under the drm_global_mutex) */
++	if (file_priv->magic)
++		(void) drm_remove_magic(file_priv->master, file_priv->magic);
++
+ 	/* if the master has gone away we can't do anything with the lock */
+ 	if (file_priv->minor->master)
+ 		drm_master_release(dev, filp);
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1323,6 +1323,7 @@ extern int drm_getmagic(struct drm_devic
+ 			struct drm_file *file_priv);
+ extern int drm_authmagic(struct drm_device *dev, void *data,
+ 			 struct drm_file *file_priv);
++extern int drm_remove_magic(struct drm_master *master, drm_magic_t magic);
+ 
+ /* Cache management (drm_cache.c) */
+ void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
 
 
--Olof
