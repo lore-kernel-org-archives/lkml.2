@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab2BAHLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 02:11:17 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:56238 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab2BAHLP (ORCPT
+	id S1755832Ab2BAHLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 02:11:51 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:57195 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab2BAHLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 02:11:15 -0500
-Date: Wed, 01 Feb 2012 02:10:02 -0500 (EST)
-Message-Id: <20120201.021002.1399660597996401402.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: lizf@cn.fujitsu.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, nhorman@tuxdriver.com
-Subject: Re: [PATCH 6/6] cls_cgroup: remove redundant rcu_read_lock/unlock
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1328080039.22641.2.camel@edumazet-laptop>
-References: <4F28E1D1.900@cn.fujitsu.com>
-	<4F28E22A.703@cn.fujitsu.com>
-	<1328080039.22641.2.camel@edumazet-laptop>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 1 Feb 2012 02:11:50 -0500
+X-Greylist: delayed 1228 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 02:11:50 EST
+Message-ID: <20264.57575.421403.709428@ipc1.ka-ro>
+Date: Wed, 1 Feb 2012 07:51:19 +0100
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 31 Jan 2012 23:10:04 -0800 (PST)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: [3.3-rc2] Race condition in ONESHOT IRQ handler disabling IRQ forever
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 01 Feb 2012 08:07:19 +0100
+Hi,
 
-> Then, I wonder why we do the "if (classid && classid != sk->sk_classid)"
-> 
-> before the :
-> 
-> 	sk->sk_classid = classid;
-> 
-> This seems unnecessary checks.
-> 
+there is a race condition in the threaded IRQ handler code for oneshot
+interrupts that may lead to disabling an IRQ indefinitely. IRQs are
+masked before calling the hard-irq handler and are unmasked only after
+the soft-irq handler has been run. Thus if the hard-irq handler
+returns IRQ_HANDLED instead of IRQ_WAKE_THREAD, meaning the soft-irq
+will not be called, the interrupt will remain masked forever.
 
-Avoiding dirtying the sk->sk_classid cache line unnecessarily?
+This can happen due to a short pulse on the interrupt line, that
+triggers the interrupt logic, but goes undetected by the hard-irq
+handler. The problem can be reproduced with the TSC2007 touch
+controller driver that uses ONESHOT interrupts.
 
-I actually have no idea actually how often this routine can get
-invoked in real world scenerios.
+The problem arises also with interrupt controllers that latch a level
+triggered IRQ until it is acknowledged (like the i.MX28 does).
+In this case the IRQ status bit will remain asserted after the
+soft-irq finishes and retrigger the interrupt while the interrupt line
+is already deasserted.
+
+The following patch would solve the problem, but I'm not sure whether
+it's the Right Thing(TM) to do. Especially wrt. shared interrupts.
+
+diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+index 470d08c..93beadb 100644
+--- a/kernel/irq/handle.c
++++ b/kernel/irq/handle.c
+@@ -146,6 +146,11 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ 			/* Fall through to add to randomness */
+ 		case IRQ_HANDLED:
+ 			random |= action->flags;
++			/* unmask the IRQ that has been left masked
++			 * due to race condition
++			 */
++			if (res == IRQ_HANDLED && (action->flags & IRQF_ONESHOT))
++				unmask_irq(desc);
+ 			break;
+ 
+ 		default:
+
+Best regards,
+
+Lothar Wassmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
