@@ -1,267 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab2BAPEa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:04:30 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51007 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754904Ab2BAPE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:04:29 -0500
-Date: Wed, 01 Feb 2012 10:05:00 -0500
-Message-Id: <87bopi7fxf.fsf@gmail.com>
-From: Michael D Labriola <michael.d.labriola@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Michael D Labriola <mlabriol@gdeb.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] x86/reboot: reduce to a single DMI table for reboot quirks
+	id S1756551Ab2BAPIs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:08:48 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:59842 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754714Ab2BAPIr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 10:08:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.01.1202011523590.18699@frira.zrqbmnf.qr>
+References: <1327269381-20748-1-git-send-email-richard@nod.at>
+	<1327269381-20748-2-git-send-email-richard@nod.at>
+	<CAFLxGvzLvdyyaBvh7LCM2+tTmKobK6n8jTRoH8NXd=MVmN4ocA@mail.gmail.com>
+	<alpine.LNX.2.01.1201310208370.7433@frira.zrqbmnf.qr>
+	<CAFLxGvwh5J=CR6OzST7ok6cEuHPWTziDN5TSbGxAiJOpANpAAQ@mail.gmail.com>
+	<alpine.LNX.2.01.1202011523590.18699@frira.zrqbmnf.qr>
+Date: Wed, 1 Feb 2012 16:08:46 +0100
+Message-ID: <CAFLxGvzgvvfkKQ7r2WWD6jOr+nLCTOE0MvXaMxfCR3HPAHivxg@mail.gmail.com>
+Subject: Re: [PATCH 1/6] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Netfilter Developer Mailing List 
+	<netfilter-devel@vger.kernel.org>,
+        Linux Networking Developer Mailing List 
+	<netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, Pablo Neira Ayuso <pablo@netfilter.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit reduces the X86_32 reboot_dmi_table and the X86_64
-pci_reboot_dmi_table into a single table with a single set of functions
-(e.g., only 1 call to core_initcall).
+On Wed, Feb 1, 2012 at 3:47 PM, Jan Engelhardt <jengelh@medozas.de> wrote:
+>
+> On Wednesday 2012-02-01 10:14, richard -rw- weinberger wrote:
+>>>
+>>> Do you have the patchset as a retrievable git tree, btw?
+>>
+>>Only for kernel stuff:
+>>git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git xt_LOG
+>>
+>>If you want it for the user space part too, I can setup something...
+>
+> That would be welcome.
 
-The table entries that use set_bios_reboot are grouped together inside a
-#define CONFIG_X86_32 block.
+Okay, will do!
 
-Note that there's a single entry that uses set_kbd_reboot, which used to be
-available only on X86_32.  This commit moves that entry outside the X86_32
-block because it seems it never should have been in there.  There's
-multiple places in reboot.c that assume KBD is valid regardless of
-X86_32/X86_64.
+>>>>[PATCH 6/6] iptables: xt_LOG: Add ring buffer support
+>>>>
+>>>>in libxt_LOG.c:
+>>>>+.size = XT_ALIGN(sizeof(struct xt_log_info_v1) + sizeof(void *)),
+>>>
+>>> Why the extra void*?
+>>
+>>The kernel space part of  xt_log_info_v1 differs from the user space struct,
+>>it contains an extra pointer to the ring buffer context.
+>>Iptables must not see this extra pointer because the kernel writes to it.
+>
+> I don't see that extra pointer (outside xt_log_info_v1) that you talk about.
+>
+> +struct xt_log_info_v1 {
+> +       unsigned char level;
+> +       unsigned char logflags;
+> +       char prefix[30];
+> +
+> +       char ring_name[30];
+> +       unsigned long ring_size;
+> +       struct xt_LOG_ring_ctx *rctx;
+> +};
+>
+> This is the struct as you defined it. First, you must not use
+> unsigned long (due to its flexible size, which is an ABI breaker; cf.
+> "Writing Netfilter Modules" PDF), and the pointer must be tagged for
+> 8-alignment as well for the same reason.
 
-Signed-off-by: Michael D Labriola <michael.d.labriola@gmail.com>
----
- arch/x86/kernel/reboot.c |  176 ++++++++++++++++++++++------------------------
- 1 files changed, 83 insertions(+), 93 deletions(-)
+See:
+include/linux/netfilter/xt_LOG.h (user space part).
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index d840e69..e739737 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -150,6 +150,80 @@ static int __init set_bios_reboot(const struct dmi_system_id *d)
- 	return 0;
- }
- 
-+extern const unsigned char machine_real_restart_asm[];
-+extern const u64 machine_real_restart_gdt[3];
++struct xt_log_info_v1 {
++       unsigned char level;
++       unsigned char logflags;
++       char prefix[30];
 +
-+void machine_real_restart(unsigned int type)
-+{
-+	void *restart_va;
-+	unsigned long restart_pa;
-+	void (*restart_lowmem)(unsigned int);
-+	u64 *lowmem_gdt;
-+
-+	local_irq_disable();
-+
-+	/* Write zero to CMOS register number 0x0f, which the BIOS POST
-+	   routine will recognize as telling it to do a proper reboot.  (Well
-+	   that's what this book in front of me says -- it may only apply to
-+	   the Phoenix BIOS though, it's not clear).  At the same time,
-+	   disable NMIs by setting the top bit in the CMOS address register,
-+	   as we're about to do peculiar things to the CPU.  I'm not sure if
-+	   `outb_p' is needed instead of just `outb'.  Use it to be on the
-+	   safe side.  (Yes, CMOS_WRITE does outb_p's. -  Paul G.)
-+	 */
-+	spin_lock(&rtc_lock);
-+	CMOS_WRITE(0x00, 0x8f);
-+	spin_unlock(&rtc_lock);
-+
-+	/*
-+	 * Switch back to the initial page table.
-+	 */
-+	load_cr3(initial_page_table);
-+
-+	/* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
-+	   this on booting to tell it to "Bypass memory test (also warm
-+	   boot)".  This seems like a fairly standard thing that gets set by
-+	   REBOOT.COM programs, and the previous reset routine did this
-+	   too. */
-+	*((unsigned short *)0x472) = reboot_mode;
-+
-+	/* Patch the GDT in the low memory trampoline */
-+	lowmem_gdt = TRAMPOLINE_SYM(machine_real_restart_gdt);
-+
-+	restart_va = TRAMPOLINE_SYM(machine_real_restart_asm);
-+	restart_pa = virt_to_phys(restart_va);
-+	restart_lowmem = (void (*)(unsigned int))restart_pa;
-+
-+	/* GDT[0]: GDT self-pointer */
-+	lowmem_gdt[0] =
-+		(u64)(sizeof(machine_real_restart_gdt) - 1) +
-+		((u64)virt_to_phys(lowmem_gdt) << 16);
-+	/* GDT[1]: 64K real mode code segment */
-+	lowmem_gdt[1] =
-+		GDT_ENTRY(0x009b, restart_pa, 0xffff);
-+
-+	/* Jump to the identity-mapped low memory code */
-+	restart_lowmem(type);
-+}
-+#ifdef CONFIG_APM_MODULE
-+EXPORT_SYMBOL(machine_real_restart);
-+#endif
-+
-+#endif /* CONFIG_X86_32 */
-+
-+/*
-+ * Some Apple MacBook and MacBookPro's needs reboot=p to be able to reboot
-+ */
-+static int __init set_pci_reboot(const struct dmi_system_id *d)
-+{
-+	if (reboot_type != BOOT_CF9) {
-+		reboot_type = BOOT_CF9;
-+		printk(KERN_INFO "%s series board detected. "
-+		       "Selecting PCI-method for reboots.\n", d->ident);
-+	}
-+	return 0;
-+}
-+
- static int __init set_kbd_reboot(const struct dmi_system_id *d)
- {
- 	if (reboot_type != BOOT_KBD) {
-@@ -159,7 +233,11 @@ static int __init set_kbd_reboot(const struct dmi_system_id *d)
- 	return 0;
- }
- 
-+/* This is a single dmi_table handling all reboot quirks.  Note that
-+ * REBOOT_BIOS is only available for 32bit
-+ */
- static struct dmi_system_id __initdata reboot_dmi_table[] = {
-+#ifdef CONFIG_X86_32
- 	{	/* Handle problems with rebooting on Dell E520's */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell E520",
-@@ -309,6 +387,8 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
- 		},
- 	},
-+#endif /* CONFIG_X86_32 */
-+
- 	{ /* Handle reboot issue on Acer Aspire one */
- 		.callback = set_kbd_reboot,
- 		.ident = "Acer Aspire One A110",
-@@ -317,96 +397,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "AOA110"),
- 		},
- 	},
--	{ }
--};
--
--static int __init reboot_init(void)
--{
--	/* Only do the DMI check if reboot_type hasn't been overridden
--	 * on the command line
--	 */
--	if (reboot_default) {
--		dmi_check_system(reboot_dmi_table);
--	}
--	return 0;
--}
--core_initcall(reboot_init);
--
--extern const unsigned char machine_real_restart_asm[];
--extern const u64 machine_real_restart_gdt[3];
--
--void machine_real_restart(unsigned int type)
--{
--	void *restart_va;
--	unsigned long restart_pa;
--	void (*restart_lowmem)(unsigned int);
--	u64 *lowmem_gdt;
--
--	local_irq_disable();
--
--	/* Write zero to CMOS register number 0x0f, which the BIOS POST
--	   routine will recognize as telling it to do a proper reboot.  (Well
--	   that's what this book in front of me says -- it may only apply to
--	   the Phoenix BIOS though, it's not clear).  At the same time,
--	   disable NMIs by setting the top bit in the CMOS address register,
--	   as we're about to do peculiar things to the CPU.  I'm not sure if
--	   `outb_p' is needed instead of just `outb'.  Use it to be on the
--	   safe side.  (Yes, CMOS_WRITE does outb_p's. -  Paul G.)
--	 */
--	spin_lock(&rtc_lock);
--	CMOS_WRITE(0x00, 0x8f);
--	spin_unlock(&rtc_lock);
--
--	/*
--	 * Switch back to the initial page table.
--	 */
--	load_cr3(initial_page_table);
--
--	/* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
--	   this on booting to tell it to "Bypass memory test (also warm
--	   boot)".  This seems like a fairly standard thing that gets set by
--	   REBOOT.COM programs, and the previous reset routine did this
--	   too. */
--	*((unsigned short *)0x472) = reboot_mode;
--
--	/* Patch the GDT in the low memory trampoline */
--	lowmem_gdt = TRAMPOLINE_SYM(machine_real_restart_gdt);
--
--	restart_va = TRAMPOLINE_SYM(machine_real_restart_asm);
--	restart_pa = virt_to_phys(restart_va);
--	restart_lowmem = (void (*)(unsigned int))restart_pa;
--
--	/* GDT[0]: GDT self-pointer */
--	lowmem_gdt[0] =
--		(u64)(sizeof(machine_real_restart_gdt) - 1) +
--		((u64)virt_to_phys(lowmem_gdt) << 16);
--	/* GDT[1]: 64K real mode code segment */
--	lowmem_gdt[1] =
--		GDT_ENTRY(0x009b, restart_pa, 0xffff);
--
--	/* Jump to the identity-mapped low memory code */
--	restart_lowmem(type);
--}
--#ifdef CONFIG_APM_MODULE
--EXPORT_SYMBOL(machine_real_restart);
--#endif
--
--#endif /* CONFIG_X86_32 */
--
--/*
-- * Some Apple MacBook and MacBookPro's needs reboot=p to be able to reboot
-- */
--static int __init set_pci_reboot(const struct dmi_system_id *d)
--{
--	if (reboot_type != BOOT_CF9) {
--		reboot_type = BOOT_CF9;
--		printk(KERN_INFO "%s series board detected. "
--		       "Selecting PCI-method for reboots.\n", d->ident);
--	}
--	return 0;
--}
--
--static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
- 	{	/* Handle problems with rebooting on Apple MacBook5 */
- 		.callback = set_pci_reboot,
- 		.ident = "Apple MacBook5",
-@@ -474,17 +464,17 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
- 	{ }
- };
- 
--static int __init pci_reboot_init(void)
-+static int __init reboot_init(void)
- {
- 	/* Only do the DMI check if reboot_type hasn't been overridden
- 	 * on the command line
- 	 */
- 	if (reboot_default) {
--		dmi_check_system(pci_reboot_dmi_table);
-+		dmi_check_system(reboot_dmi_table);
- 	}
- 	return 0;
- }
--core_initcall(pci_reboot_init);
-+core_initcall(reboot_init);
- 
- static inline void kb_wait(void)
- {
++       char ring_name[30];
++       unsigned long ring_siVs.ze;
++};
+
+Here is no context pointer.
+
+I'll fix the unsigned long issue.
+
+> Second, the kernel will reject a ruleset if (kernel) .targetsize != (user)
+> .size. This is likely to occur, since you essentially have
+> .targetsize=72 in xt_LOG.c and .size=72+sizeof(void*)
+> in libxt_LOG.
+>
+>
+>
+> Check commit 8a252e8941cd50e4390e6fedf280ba1c7ff9ac43 for
+> trailing whitespace, git log -p shows them.
+>
+> +       if (par->family == NFPROTO_IPV4)
+> +               m = ipt_log_packet(NFPROTO_IPV4, par->hooknum, skb, par->in,
+> +                                  par->out, &li, loginfo->prefix);
+> +#if IS_ENABLED(CONFIG_IPV6)
+> +       else if (par->family == NFPROTO_IPV6)
+> +               m = ip6t_log_packet(NFPROTO_IPV6, par->hooknum, skb, par->in,
+> +                                   par->out, &li, loginfo->prefix);
+> +#endif
+> +       else
+> +               BUG();
+>
+> Please avoid BUG. Either do nothing in the 'else' case, or print
+> a courtesy message with some unkn_log_packet() or
+> WARN_ON_ONCE(). The same goes for xt_LOG_ring_exit, which I vote
+> for being reduced to WARN_ON as well. If the condition triggers,
+> one will have a little memory leak, but at least the machine
+> still runs.
+
+Will fix!
+
 -- 
-1.7.1.1
-
+Thanks,
+//richard
