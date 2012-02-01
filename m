@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab2BAUCK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:02:10 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60054 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755190Ab2BAUCH convert rfc822-to-8bit (ORCPT
+	id S1756743Ab2BAUGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:06:16 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:38012 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756722Ab2BAUGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:02:07 -0500
+	Wed, 1 Feb 2012 15:06:14 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: h1Qxum8VM1nngVj3zL9ehltE47Xt3aJ1LGQUc1vl835oI_c
+ 3nbRjvgqE2rRGRSmvni98loxaITou9FJ1aQRiQ4Pql9TJOSaOLvTGFp_kNKa
+ qrGiEzPJiPbuNXEa_z1DAp6C9xbaEYYHWPNHfgnwwZsJgMb7SzTZIq7148n.
+ psb2bxYYqrUk1AB7X720ZYK3x_.ENzd1I8zbAbUYZCNvtyQN4SG2gUIxMV85
+ T22Ml9xxo5ZhTW.pUTU3hD84wX1uQHjjlIYJ7yhD4UTtI32diu5TunUduVSX
+ oRGQOqyuc47r01O5_ClB41ePeJArrh.ORlzui7PuX8CIKlyvnzqaLrrJlzLW
+ my17.akYxYSF1kILEb_dyUsRLDDP06vpKFgKik84L9yt5wN4vT0s2PV8GKPg
+ mqxHLSRUhBQXsoxh47UEObuV4Qsk5pzFhSmKKSL1Nm3a3OVf6wBXCfd_M4CG
+ 1j.BYE.3tq01Llm51q53z1GpKDtDzJfxCZosFdyz9dWL3s3UU4gwa2mtSMoI
+ K.LqiSOGLZjUJXY9A4tWeDjtyRNL6_t1MOwDB030Y3LFTxjLGKfDDHynl
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 1 Feb 2012 14:06:07 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+In-Reply-To: <20120201184045.GG2382@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1202011404500.2074@router.home>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327591185.2446.102.camel@twins> <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <1328117722.2446.262.camel@twins> <20120201184045.GG2382@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
-References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
- <1328118174.15992.6206.camel@triegel.csb> <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Feb 2012 12:01:46 -0800
-X-Google-Sender-Auth: xv1WKrg4klAtQxXBUlWLEfnXiiY
-Message-ID: <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
-Subject: Re: Memory corruption due to word sharing
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 11:40 AM, Jakub Jelinek <jakub@redhat.com> wrote:
+On Wed, 1 Feb 2012, Paul E. McKenney wrote:
+
+> On Wed, Feb 01, 2012 at 06:35:22PM +0100, Peter Zijlstra wrote:
+> > On Sun, 2012-01-29 at 10:25 +0200, Gilad Ben-Yossef wrote:
+> > >
+> > > If this is of interest, I keep a list tracking global IPI and global
+> > > task schedulers sources in the core kernel here:
+> > > https://github.com/gby/linux/wiki.
+> >
+> > You can add synchronize_.*_expedited() to the list, it does its best to
+> > bash the entire machine in order to try and make RCU grace periods
+> > happen fast.
 >
-> Well, the C++11/C11 model doesn't allow to use the underlying type
-> for accesses, consider e.g.
+> I have duly added "Make synchronize_sched_expedited() avoid IPIing idle
+> CPUs" to http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html.
 >
-> struct S { long s1; unsigned int s2 : 5; unsigned int s3 : 19; unsigned char s4; unsigned int s5; };
-> struct T { long s1 : 16; unsigned int s2; };
->
-> on e.g. x86_64-linux, S is 16 byte long, field s4 is packed together into
-> the same 32 bits as s2 and s3.  While the memory model allows s2 to be
-> changed when storing s3 (i.e. use a RMW cycle on it), it doesn't allow s4
-> to be changed, as it isn't a bitfield (you'd need s4 : 8 for that).
-> T is 8 bytes long, again, s2 is packed into the same 64 bits as s1,
-> and the memory model doesn't allow s2 to be modified.
->
-> Not sure what the kernel would expect in such a case.
+> This should not be hard once I have built up some trust in the new
+> RCU idle-detection code.  It would also automatically apply to
+> Frederic's dyntick-idle userspace work.
 
-So the kernel really doesn't care what you do to things *within* the bitfield.
+Could we also apply the same approach to processors busy doing
+computational work? In that case the OS is also not needed. Interrupting
+these activities is impacting on performance and latency.
 
-Sure, we do have some expectations of packing, but basically we never
-expect bitfields to be 'atomic'. You really don't need to worry about
-that.
-
->From a correctness standpoint, I really don't think the kernel cares
-if gcc does bitfield reads and writes one bit at a time. Seriously.
-
-The bug is that the bitfield write wrote *outside* the bitfield.
-That's *WRONG*. It's completely wrong, even if you write back the same
-value you read. It's *always* wrong. It's simply not acceptable.
-
-If gcc does that kind of crap, then gcc needs to align bitfields
-sufficiently that the accesses that are outside the bitfields never
-touch any other fields.
-
-So what I would suggest:
-
- - use the *smallest* aligned access you can use to access the
-bitfield. This will be 'correct', but it may perform badly.
-
-   This is apparently what x86 does. So on x86, if you have a one-bit
-bitfield within a bitfield that is really 32 bits wide, it looks like
-gcc will generally generate a byte load/store to set that bit. I don't
-know exactly what the rules are, but this is fine from a *correctness*
-point.
-
- - However, while using the *smallest* possible access may generate
-correct code, it often generates really *crappy* code. Which is
-exactly the bug that I reported in
-
-   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48696
-
-So quite frankly, my suggestion is to just try to use the base type.
-
-But *whatever* you do, using a type *larger* than the whole bitfield
-itself is a bug.
-
-And dammit, the people who continue to bring up C11 as if this was a
-new issue, and only needs to be worried about if you support C11 (ie
-gcc-4.7 and up) are just in denial.
-
-The 'volatile'  example makes it entirely clear that the bug has
-nothing what-so-ever to do with C11.
-
-                    Linus
