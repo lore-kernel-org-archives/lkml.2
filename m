@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab2BAVUo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:20:44 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:46830 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757498Ab2BAVTq (ORCPT
+	id S932729Ab2BAVVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:21:15 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53596 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932699Ab2BAVVM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:46 -0500
-X-Sasl-enc: oJsgpjpdEg9BzyJcgZa/1oo2qVZi0zrUohTE7Oup2V0Z 1328131186
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:49 2012
-Message-Id: <20120201210049.869369826@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:32 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [68/89] USB: cdc-wdm: Avoid hanging on interface with no USB_CDC_DMM_TYPE
-In-Reply-To: <20120201210505.GA26028@kroah.com>
+	Wed, 1 Feb 2012 16:21:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <1328129620.15992.6453.camel@triegel.csb>
+References: <20120201151918.GC16714@quack.suse.cz> <1328116137.15992.6146.camel@triegel.csb>
+ <CA+55aFyG3EifFPapU6SFYXCjrP+wQOF65hJGs3yyMxCgde5vdg@mail.gmail.com> <1328129620.15992.6453.camel@triegel.csb>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Feb 2012 13:20:51 -0800
+X-Google-Sender-Auth: G2gm2-xlD_rhltMvLlwYRW1ovsY
+Message-ID: <CA+55aFx=4AhdFEgjY3b=85__mGYX8BKcaXpFC=1XZzoFFjeTrw@mail.gmail.com>
+Subject: Re: Memory corruption due to word sharing
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
+        rguenther@suse.de, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Feb 1, 2012 at 12:53 PM, Torvald Riegel <triegel@redhat.com> wrote:
+>
+> For volatile, I agree.
+>
+> However, the original btrfs example was *without* a volatile, and that's
+> why I raised the memory model point. �This triggered an error in a
+> concurrent execution, so that's memory model land, at least in C
+> language standard.
 
-------------------
+Sure. The thing is, if you fix the volatile problem, you'll almost
+certainly fix our problem too.
 
-From: Bjørn Mork <bjorn@mork.no>
+The whole "compilers actually do reasonable things" approach really
+does work in reality. It in fact works a lot better than reading some
+spec and trying to figure out if something is "valid" or not, and
+having fifteen different compiler writers and users disagree about
+what the meaning of the word "is" is in some part of it.
 
-commit 15699e6fafc3a90e5fdc2ef30555a04dee62286f upstream.
-
-The probe does not strictly require the USB_CDC_DMM_TYPE
-descriptor, which is a good thing as it makes the driver
-usable on non-conforming interfaces.  A user could e.g.
-bind to it to a CDC ECM interface by using the new_id and
-bind sysfs files.  But this would fail with a 0 buffer length
-due to the missing descriptor.
-
-Fix by defining a reasonable fallback size: The minimum
-device receive buffer size required by the CDC WMC standard,
-revision 1.1
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/class/cdc-wdm.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -57,6 +57,8 @@ MODULE_DEVICE_TABLE (usb, wdm_ids);
- 
- #define WDM_MAX			16
- 
-+/* CDC-WMC r1.1 requires wMaxCommand to be "at least 256 decimal (0x100)" */
-+#define WDM_DEFAULT_BUFSIZE	256
- 
- static DEFINE_MUTEX(wdm_mutex);
- 
-@@ -636,7 +638,7 @@ static int wdm_probe(struct usb_interfac
- 	struct usb_cdc_dmm_desc *dmhd;
- 	u8 *buffer = intf->altsetting->extra;
- 	int buflen = intf->altsetting->extralen;
--	u16 maxcom = 0;
-+	u16 maxcom = WDM_DEFAULT_BUFSIZE;
- 
- 	if (!buffer)
- 		goto out;
+I'm not kidding. With specs, there really *are* people who spend years
+discussing what the meaning of the word "access" is or similar.
+Combine that with a big spec that is 500+ pages in size and then try
+to apply that all to a project that is 15 million lines of code and
+sometimes *knowingly* has to do things that it simply knows are
+outside the spec, and the discussion about these kinds of details is
+just mental masturbation.
 
 
+>> We do end up doing
+>> much more aggressive threading, with models that C11 simply doesn't
+>> cover.
+>
+> Any specific examples for that would be interesting.
+
+Oh, one of my favorite (NOT!) pieces of code in the kernel is the
+implementation of the
+
+   smp_read_barrier_depends()
+
+macro, which on every single architecture except for one (alpha) is a no-op.
+
+We have basically 30 or so empty definitions for it, and I think we
+have something like five uses of it. One of them, I think, is
+performance crticial, and the reason for that macro existing.
+
+What does it do? The semantics is that it's a read barrier between two
+different reads that we want to happen in order wrt two writes on the
+writing side (the writing side also has to have a "smp_wmb()" to order
+those writes). But the reason it isn't a simple read barrier is that
+the reads are actually causally *dependent*, ie we have code like
+
+   first_read = read_pointer;
+   smp_read_barrier_depends();
+   second_read = *first_read;
+
+and it turns out that on pretty much all architectures (except for
+alpha), the *data*dependency* will already guarantee that the CPU
+reads the thing in order. And because a read barrier can actually be
+quite expensive, we don't want to have a read barrier for this case.
+
+But alpha? Its memory consistency is so broken that even the data
+dependency doesn't actually guarantee cache access order. It's
+strange, yes. No, it's not that alpha does some magic value prediction
+and can do the second read without having even done the first read
+first to get the address. What's actually going on is that the cache
+itself is unordered, and without the read barrier, you may get a stale
+version from the cache even if the writes were forced (by the write
+barrier in the writer) to happen in the right order.
+
+You really want to try to describe issues like this in your memory
+consistency model? No you don't. Nobody will ever really care, except
+for crazy kernel people. And quite frankly, not even kernel people
+care: we have a fairly big kernel developer community, and the people
+who actually talk about memory ordering issues can be counted on one
+hand. There's the "RCU guy" who writes the RCU helper functions, and
+hides the proper serializing code into those helpers, so that normal
+mortal kernel people don't have to care, and don't even have to *know*
+how ignorant they are about the things.
+
+And that's also why the compiler shouldn't have to care. It's a really
+small esoteric detail, and it can be hidden in a header file and a set
+of library routines. Teaching the compiler about crazy memory ordering
+would just not be worth it. 99.99% of all programmers will never need
+to understand any of it, they'll use the locking primitives and follow
+the rules, and the code that makes it all work is basically invisible
+to them.
+
+                        Linus
