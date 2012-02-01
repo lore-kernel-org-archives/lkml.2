@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757092Ab2BAV5U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:57:20 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55124 "EHLO
+	id S1757391Ab2BAV5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:57:18 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46742 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755037Ab2BAVHx (ORCPT
+	by vger.kernel.org with ESMTP id S1756918Ab2BAVHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:07:53 -0500
-X-Sasl-enc: 91YpC7j0cvJpQK7Qpkyw6ufmvPtZKup2xnlYEbK/hRrq 1328130471
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:15:32 2012
-Message-Id: <20120201201532.705858642@clark.kroah.org>
+	Wed, 1 Feb 2012 16:07:54 -0500
+X-Sasl-enc: a6eyPoyZ4VD3s7n6ErRgYkyVr/SQsaWuMu4H/LLOdRjT 1328130472
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:15:31 2012
+Message-Id: <20120201201531.599621544@clark.kroah.org>
 User-Agent: quilt/0.51-14.1
-Date: Wed, 01 Feb 2012 12:14:22 -0800
+Date: Wed, 01 Feb 2012 12:14:08 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
-        Preston Fick <preston.fick@silabs.com>
-Subject: [20/20] USB: cp210x: do not map baud rates to B0
+        alan@lxorguk.ukuu.org.uk, Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [06/20] crypto: sha512 - reduce stack usage to safe number
 In-Reply-To: <20120201210055.GA25374@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +27,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Alexey Dobriyan <adobriyan@gmail.com>
 
-commit be125d9c8d59560e7cc2d6e2b65c8fd233498ab7 upstream.
+commit 51fc6dc8f948047364f7d42a4ed89b416c6cc0a3 upstream.
 
-We do not implement B0 hangup yet so map low baudrates to 300bps.
+For rounds 16--79, W[i] only depends on W[i - 2], W[i - 7], W[i - 15] and W[i - 16].
+Consequently, keeping all W[80] array on stack is unnecessary,
+only 16 values are really needed.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Cc: Preston Fick <preston.fick@silabs.com>
+Using W[16] instead of W[80] greatly reduces stack usage
+(~750 bytes to ~340 bytes on x86_64).
+
+Line by line explanation:
+* BLEND_OP
+  array is "circular" now, all indexes have to be modulo 16.
+  Round number is positive, so remainder operation should be
+  without surprises.
+
+* initial full message scheduling is trimmed to first 16 values which
+  come from data block, the rest is calculated before it's needed.
+
+* original loop body is unrolled version of new SHA512_0_15 and
+  SHA512_16_79 macros, unrolling was done to not do explicit variable
+  renaming. Otherwise it's the very same code after preprocessing.
+  See sha1_transform() code which does the same trick.
+
+Patch survives in-tree crypto test and original bugreport test
+(ping flood with hmac(sha512).
+
+See FIPS 180-2 for SHA-512 definition
+http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf
+
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ crypto/sha512_generic.c |   58 ++++++++++++++++++++++++++++--------------------
+ 1 file changed, 34 insertions(+), 24 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -361,8 +361,8 @@ static inline int cp210x_set_config_sing
-  * Quantises the baud rate as per AN205 Table 1
-  */
- static unsigned int cp210x_quantise_baudrate(unsigned int baud) {
--	if      (baud <= 56)       baud = 0;
--	else if (baud <= 300)      baud = 300;
-+	if (baud <= 300)
-+		baud = 300;
- 	else if (baud <= 600)      baud = 600;
- 	else if (baud <= 1200)     baud = 1200;
- 	else if (baud <= 1800)     baud = 1800;
+--- a/crypto/sha512_generic.c
++++ b/crypto/sha512_generic.c
+@@ -78,7 +78,7 @@ static inline void LOAD_OP(int I, u64 *W
+ 
+ static inline void BLEND_OP(int I, u64 *W)
+ {
+-	W[I] = s1(W[I-2]) + W[I-7] + s0(W[I-15]) + W[I-16];
++	W[I % 16] += s1(W[(I-2) % 16]) + W[(I-7) % 16] + s0(W[(I-15) % 16]);
+ }
+ 
+ static void
+@@ -87,38 +87,48 @@ sha512_transform(u64 *state, const u8 *i
+ 	u64 a, b, c, d, e, f, g, h, t1, t2;
+ 
+ 	int i;
+-	u64 W[80];
++	u64 W[16];
+ 
+ 	/* load the input */
+         for (i = 0; i < 16; i++)
+                 LOAD_OP(i, W, input);
+ 
+-        for (i = 16; i < 80; i++) {
+-                BLEND_OP(i, W);
+-        }
+-
+ 	/* load the state into our registers */
+ 	a=state[0];   b=state[1];   c=state[2];   d=state[3];
+ 	e=state[4];   f=state[5];   g=state[6];   h=state[7];
+ 
+-	/* now iterate */
+-	for (i=0; i<80; i+=8) {
+-		t1 = h + e1(e) + Ch(e,f,g) + sha512_K[i  ] + W[i  ];
+-		t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
+-		t1 = g + e1(d) + Ch(d,e,f) + sha512_K[i+1] + W[i+1];
+-		t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
+-		t1 = f + e1(c) + Ch(c,d,e) + sha512_K[i+2] + W[i+2];
+-		t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
+-		t1 = e + e1(b) + Ch(b,c,d) + sha512_K[i+3] + W[i+3];
+-		t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
+-		t1 = d + e1(a) + Ch(a,b,c) + sha512_K[i+4] + W[i+4];
+-		t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
+-		t1 = c + e1(h) + Ch(h,a,b) + sha512_K[i+5] + W[i+5];
+-		t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
+-		t1 = b + e1(g) + Ch(g,h,a) + sha512_K[i+6] + W[i+6];
+-		t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
+-		t1 = a + e1(f) + Ch(f,g,h) + sha512_K[i+7] + W[i+7];
+-		t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
++#define SHA512_0_15(i, a, b, c, d, e, f, g, h)			\
++	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[i];	\
++	t2 = e0(a) + Maj(a, b, c);				\
++	d += t1;						\
++	h = t1 + t2
++
++#define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
++	BLEND_OP(i, W);						\
++	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)%16];	\
++	t2 = e0(a) + Maj(a, b, c);				\
++	d += t1;						\
++	h = t1 + t2
++
++	for (i = 0; i < 16; i += 8) {
++		SHA512_0_15(i, a, b, c, d, e, f, g, h);
++		SHA512_0_15(i + 1, h, a, b, c, d, e, f, g);
++		SHA512_0_15(i + 2, g, h, a, b, c, d, e, f);
++		SHA512_0_15(i + 3, f, g, h, a, b, c, d, e);
++		SHA512_0_15(i + 4, e, f, g, h, a, b, c, d);
++		SHA512_0_15(i + 5, d, e, f, g, h, a, b, c);
++		SHA512_0_15(i + 6, c, d, e, f, g, h, a, b);
++		SHA512_0_15(i + 7, b, c, d, e, f, g, h, a);
++	}
++	for (i = 16; i < 80; i += 8) {
++		SHA512_16_79(i, a, b, c, d, e, f, g, h);
++		SHA512_16_79(i + 1, h, a, b, c, d, e, f, g);
++		SHA512_16_79(i + 2, g, h, a, b, c, d, e, f);
++		SHA512_16_79(i + 3, f, g, h, a, b, c, d, e);
++		SHA512_16_79(i + 4, e, f, g, h, a, b, c, d);
++		SHA512_16_79(i + 5, d, e, f, g, h, a, b, c);
++		SHA512_16_79(i + 6, c, d, e, f, g, h, a, b);
++		SHA512_16_79(i + 7, b, c, d, e, f, g, h, a);
+ 	}
+ 
+ 	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
 
 
