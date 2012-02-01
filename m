@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab2BAVoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:44:14 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54255 "EHLO
+	id S1757169Ab2BAVoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:44:12 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42927 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932474Ab2BAVJK (ORCPT
+	by vger.kernel.org with ESMTP id S932128Ab2BAVJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:10 -0500
-X-Sasl-enc: Duh2qkNepheUbf6hv3B9tG64oH/OtsN/fTft69ntjrgJ 1328130549
+	Wed, 1 Feb 2012 16:09:12 -0500
+X-Sasl-enc: wEnaMRSw8JcFC3Qk9hYb3RA5HVfKjwI2BchhZUMkIcBp 1328130550
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:42 2012
-Message-Id: <20120201205742.553628569@clark.kroah.org>
+Message-Id: <20120201205742.639212253@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:38 -0800
+Date: Wed, 01 Feb 2012 12:56:39 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Renato Caldas <rmsc@fe.up.pt>
-Subject: [58/65] USB: serial: CP210x: Added USB-ID for the Link Instruments MSO-19
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
+Subject: [59/65] USB: cp210x: call generic open last in open
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,29 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Renato Caldas <rmsc@fe.up.pt>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 791b7d7cf69de11275e4dccec2f538eec02cbff6 upstream.
+commit 55b2afbb92ad92e9f6b0aa4354eb1c94589280c3 upstream.
 
-This device is a Oscilloscope/Logic Analizer/Pattern Generator/TDR,
-using a Silabs CP2103 USB to UART Bridge.
+Make sure port is fully initialised before calling generic open.
 
-Signed-off-by: Renato Caldas <rmsc@fe.up.pt>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/cp210x.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
 --- a/drivers/usb/serial/cp210x.c
 +++ b/drivers/usb/serial/cp210x.c
-@@ -138,6 +138,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
-+	{ USB_DEVICE(0x3195, 0xF190) }, /* Link Instruments MSO-19 */
- 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
- 	{ } /* Terminating Entry */
- };
+@@ -393,8 +393,6 @@ static unsigned int cp210x_quantise_baud
+ 
+ static int cp210x_open(struct tty_struct *tty, struct usb_serial_port *port)
+ {
+-	int result;
+-
+ 	dbg("%s - port %d", __func__, port->number);
+ 
+ 	if (cp210x_set_config_single(port, CP210X_IFC_ENABLE, UART_ENABLE)) {
+@@ -403,13 +401,10 @@ static int cp210x_open(struct tty_struct
+ 		return -EPROTO;
+ 	}
+ 
+-	result = usb_serial_generic_open(tty, port);
+-	if (result)
+-		return result;
+-
+ 	/* Configure the termios structure */
+ 	cp210x_get_termios(tty, port);
+-	return 0;
++
++	return usb_serial_generic_open(tty, port);
+ }
+ 
+ static void cp210x_close(struct usb_serial_port *port)
 
 
