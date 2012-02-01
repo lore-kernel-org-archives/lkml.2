@@ -1,153 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab2BAV5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:57:18 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46742 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756918Ab2BAVHy (ORCPT
+	id S933129Ab2BAV5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:57:51 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:54138 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756986Ab2BAVHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:07:54 -0500
-X-Sasl-enc: a6eyPoyZ4VD3s7n6ErRgYkyVr/SQsaWuMu4H/LLOdRjT 1328130472
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:15:31 2012
-Message-Id: <20120201201531.599621544@clark.kroah.org>
-User-Agent: quilt/0.51-14.1
-Date: Wed, 01 Feb 2012 12:14:08 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alexey Dobriyan <adobriyan@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [06/20] crypto: sha512 - reduce stack usage to safe number
-In-Reply-To: <20120201210055.GA25374@kroah.com>
+	Wed, 1 Feb 2012 16:07:51 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=N2ve4nofkM0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=MA52xtb9-Uuirsbol8UA:9 a=sjGGFmIMOnKwWfekzrMA:7 a=jeBq3FmKZ4MA:10 a=7bviIstB30lKi304:21 a=gR-uop0DBZmdet-y:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120201210748.697788563@goodmis.org>
+User-Agent: quilt/0.50-1
+Date: Wed, 01 Feb 2012 16:06:14 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Andi Kleen <ak@linux.intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Luis Goncalves <lgoncalv@redhat.com>
+Subject: [PATCH RT 2/2 v3] preempt-rt/x86: Delay calling signals in int3
+References: <20120201210612.730595791@goodmis.org>
+Content-Disposition: inline; filename=fix-rt-int3_x86_64-3.2-rt.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On x86_64 we must disable preemption before we enable interrupts
+for int3 and debugging, because the current task is using a per CPU
+debug stack defined by the IST. If we schedule out, another task
+can come in and use the same stack and cause the stack to be corrupted
+and crash the kernel on return.
 
-------------------
+When CONFIG_PREEMPT_RT_FULL is enabled, spin_locks become mutexes, and
+one of these is the spin lock used in signal handling.
 
-From: Alexey Dobriyan <adobriyan@gmail.com>
+Some of the debug code (int3) causes do_trap() to send a signal.
+This function calls a spin lock that has been converted to a mutex
+and has the possibility to sleep. If this happens, the above issues with
+the corrupted stack is possible.
 
-commit 51fc6dc8f948047364f7d42a4ed89b416c6cc0a3 upstream.
+Instead of calling the signal right away, for PREEMPT_RT and x86_64,
+the signal information is stored on the stacks task_struct and a
+new TIF flag is set (TIF_FORCE_SIG_TRAP). On exit of the exception,
+in paranoid_exit, if NEED_RESCHED is set, the task stack is switched
+back to the kernel stack and interrupts is enabled. In this code
+the TIF_FORCE_SIG_TRAP is also checked and a function is called to
+do the force_sig() in a context that may schedule.
 
-For rounds 16--79, W[i] only depends on W[i - 2], W[i - 7], W[i - 15] and W[i - 16].
-Consequently, keeping all W[80] array on stack is unnecessary,
-only 16 values are really needed.
+Note, to get into this path, the NEED_RESCHED flag is also set.
+But as this only happens in debug context, an extra schedule should not
+be an issue.
 
-Using W[16] instead of W[80] greatly reduces stack usage
-(~750 bytes to ~340 bytes on x86_64).
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Line by line explanation:
-* BLEND_OP
-  array is "circular" now, all indexes have to be modulo 16.
-  Round number is positive, so remainder operation should be
-  without surprises.
-
-* initial full message scheduling is trimmed to first 16 values which
-  come from data block, the rest is calculated before it's needed.
-
-* original loop body is unrolled version of new SHA512_0_15 and
-  SHA512_16_79 macros, unrolling was done to not do explicit variable
-  renaming. Otherwise it's the very same code after preprocessing.
-  See sha1_transform() code which does the same trick.
-
-Patch survives in-tree crypto test and original bugreport test
-(ping flood with hmac(sha512).
-
-See FIPS 180-2 for SHA-512 definition
-http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf
-
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- crypto/sha512_generic.c |   58 ++++++++++++++++++++++++++++--------------------
- 1 file changed, 34 insertions(+), 24 deletions(-)
-
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -78,7 +78,7 @@ static inline void LOAD_OP(int I, u64 *W
+Index: linux-rt.git/arch/x86/include/asm/thread_info.h
+===================================================================
+--- linux-rt.git.orig/arch/x86/include/asm/thread_info.h
++++ linux-rt.git/arch/x86/include/asm/thread_info.h
+@@ -95,6 +95,7 @@ struct thread_info {
+ #define TIF_BLOCKSTEP		25	/* set when we want DEBUGCTLMSR_BTF */
+ #define TIF_LAZY_MMU_UPDATES	27	/* task is updating the mmu lazily */
+ #define TIF_SYSCALL_TRACEPOINT	28	/* syscall tracepoint instrumentation */
++#define TIF_FORCE_SIG_TRAP	29	/* force a signal coming back from trap */
  
- static inline void BLEND_OP(int I, u64 *W)
- {
--	W[I] = s1(W[I-2]) + W[I-7] + s0(W[I-15]) + W[I-16];
-+	W[I % 16] += s1(W[(I-2) % 16]) + W[(I-7) % 16] + s0(W[(I-15) % 16]);
+ #define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
+ #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
+@@ -117,6 +118,7 @@ struct thread_info {
+ #define _TIF_BLOCKSTEP		(1 << TIF_BLOCKSTEP)
+ #define _TIF_LAZY_MMU_UPDATES	(1 << TIF_LAZY_MMU_UPDATES)
+ #define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
++#define _TIF_FORCE_SIG_TRAP	(1 << TIF_FORCE_SIG_TRAP)
+ 
+ /* work to do in syscall_trace_enter() */
+ #define _TIF_WORK_SYSCALL_ENTRY	\
+@@ -266,5 +268,14 @@ extern void arch_task_cache_init(void);
+ extern void free_thread_info(struct thread_info *ti);
+ extern int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src);
+ #define arch_task_cache_init arch_task_cache_init
++
++struct siginfo;
++/*
++ * Hacks for RT to get around signal processing with int3 and do_debug.
++ */
++void
++force_sig_info_rt(int sig, struct siginfo *info, struct task_struct *p, int rt);
++void send_sigtrap_rt(struct task_struct *tsk, struct pt_regs *regs,
++		     int error_code, int si_code);
+ #endif
+ #endif /* _ASM_X86_THREAD_INFO_H */
+Index: linux-rt.git/arch/x86/kernel/entry_64.S
+===================================================================
+--- linux-rt.git.orig/arch/x86/kernel/entry_64.S
++++ linux-rt.git/arch/x86/kernel/entry_64.S
+@@ -1391,6 +1391,13 @@ paranoid_userspace:
+ paranoid_schedule:
+ 	TRACE_IRQS_ON
+ 	ENABLE_INTERRUPTS(CLBR_ANY)
++#ifdef CONFIG_PREEMPT_RT_FULL
++	movl TI_flags(%rcx),%ebx
++	testl $_TIF_FORCE_SIG_TRAP,%ebx
++	jz paranoid_do_schedule
++	call do_force_sig_trap
++paranoid_do_schedule:
++#endif
+ 	call schedule
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_OFF
+Index: linux-rt.git/arch/x86/kernel/ptrace.c
+===================================================================
+--- linux-rt.git.orig/arch/x86/kernel/ptrace.c
++++ linux-rt.git/arch/x86/kernel/ptrace.c
+@@ -1341,14 +1341,31 @@ void user_single_step_siginfo(struct tas
+ 	fill_sigtrap_info(tsk, regs, 0, TRAP_BRKPT, info);
  }
  
- static void
-@@ -87,38 +87,48 @@ sha512_transform(u64 *state, const u8 *i
- 	u64 a, b, c, d, e, f, g, h, t1, t2;
+-void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
+-					 int error_code, int si_code)
++static void __send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
++		  int error_code, int si_code, int rt)
+ {
+ 	struct siginfo info;
  
- 	int i;
--	u64 W[80];
-+	u64 W[16];
- 
- 	/* load the input */
-         for (i = 0; i < 16; i++)
-                 LOAD_OP(i, W, input);
- 
--        for (i = 16; i < 80; i++) {
--                BLEND_OP(i, W);
--        }
--
- 	/* load the state into our registers */
- 	a=state[0];   b=state[1];   c=state[2];   d=state[3];
- 	e=state[4];   f=state[5];   g=state[6];   h=state[7];
- 
--	/* now iterate */
--	for (i=0; i<80; i+=8) {
--		t1 = h + e1(e) + Ch(e,f,g) + sha512_K[i  ] + W[i  ];
--		t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
--		t1 = g + e1(d) + Ch(d,e,f) + sha512_K[i+1] + W[i+1];
--		t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
--		t1 = f + e1(c) + Ch(c,d,e) + sha512_K[i+2] + W[i+2];
--		t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
--		t1 = e + e1(b) + Ch(b,c,d) + sha512_K[i+3] + W[i+3];
--		t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
--		t1 = d + e1(a) + Ch(a,b,c) + sha512_K[i+4] + W[i+4];
--		t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
--		t1 = c + e1(h) + Ch(h,a,b) + sha512_K[i+5] + W[i+5];
--		t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
--		t1 = b + e1(g) + Ch(g,h,a) + sha512_K[i+6] + W[i+6];
--		t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
--		t1 = a + e1(f) + Ch(f,g,h) + sha512_K[i+7] + W[i+7];
--		t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
-+#define SHA512_0_15(i, a, b, c, d, e, f, g, h)			\
-+	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[i];	\
-+	t2 = e0(a) + Maj(a, b, c);				\
-+	d += t1;						\
-+	h = t1 + t2
+ 	fill_sigtrap_info(tsk, regs, error_code, si_code, &info);
+ 	/* Send us the fake SIGTRAP */
+-	force_sig_info(SIGTRAP, &info, tsk);
++	force_sig_info_rt(SIGTRAP, &info, tsk, rt);
++}
 +
-+#define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
-+	BLEND_OP(i, W);						\
-+	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)%16];	\
-+	t2 = e0(a) + Maj(a, b, c);				\
-+	d += t1;						\
-+	h = t1 + t2
++void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
++		  int error_code, int si_code)
++{
++	__send_sigtrap(tsk, regs, error_code, si_code, 0);
++}
 +
-+	for (i = 0; i < 16; i += 8) {
-+		SHA512_0_15(i, a, b, c, d, e, f, g, h);
-+		SHA512_0_15(i + 1, h, a, b, c, d, e, f, g);
-+		SHA512_0_15(i + 2, g, h, a, b, c, d, e, f);
-+		SHA512_0_15(i + 3, f, g, h, a, b, c, d, e);
-+		SHA512_0_15(i + 4, e, f, g, h, a, b, c, d);
-+		SHA512_0_15(i + 5, d, e, f, g, h, a, b, c);
-+		SHA512_0_15(i + 6, c, d, e, f, g, h, a, b);
-+		SHA512_0_15(i + 7, b, c, d, e, f, g, h, a);
++void send_sigtrap_rt(struct task_struct *tsk, struct pt_regs *regs,
++		  int error_code, int si_code)
++{
++#if defined(CONFIG_X86_64) && defined(CONFIG_PREEMPT_RT_FULL)
++	int rt = 1;
++#else
++	int rt = 0;
++#endif
++	__send_sigtrap(tsk, regs, error_code, si_code, rt);
+ }
+ 
+ 
+Index: linux-rt.git/arch/x86/kernel/traps.c
+===================================================================
+--- linux-rt.git.orig/arch/x86/kernel/traps.c
++++ linux-rt.git/arch/x86/kernel/traps.c
+@@ -121,9 +121,83 @@ static inline void conditional_cli_ist(s
+ #endif
+ }
+ 
++#if defined(CONFIG_X86_64) && defined(CONFIG_PREEMPT_RT_FULL)
++/*
++ * In PREEMP_RT_FULL, the signal spinlocks are mutexes. But if
++ * do_int3 calls do_trap, we are running on the debug stack, and
++ * not the task struct stack. We must keep preemption disabled
++ * because the current stack is per CPU not per task.
++ *
++ * Instead, we set the
++
++ */
++void
++__force_sig_info_rt(int sig, struct siginfo *info, struct task_struct *p, int rt)
++{
++	if (!rt) {
++		/* simple case */
++		if (info)
++			force_sig_info(sig, info, p);
++		else
++			force_sig(sig, p);
++		return;
 +	}
-+	for (i = 16; i < 80; i += 8) {
-+		SHA512_16_79(i, a, b, c, d, e, f, g, h);
-+		SHA512_16_79(i + 1, h, a, b, c, d, e, f, g);
-+		SHA512_16_79(i + 2, g, h, a, b, c, d, e, f);
-+		SHA512_16_79(i + 3, f, g, h, a, b, c, d, e);
-+		SHA512_16_79(i + 4, e, f, g, h, a, b, c, d);
-+		SHA512_16_79(i + 5, d, e, f, g, h, a, b, c);
-+		SHA512_16_79(i + 6, c, d, e, f, g, h, a, b);
-+		SHA512_16_79(i + 7, b, c, d, e, f, g, h, a);
- 	}
++	trace_printk("doing delayed force_sig info=%p\n", info);
++	/*
++	 * Sad, but to make things easier we set need resched,
++	 * this forces the paranoid exit in traps to swap out
++	 * of the debug stack and back to the users stack.
++	 * Then there we call do_force_sig_trap() which does
++	 * the delayed force_sig() with interrupts enabled and
++	 * a thread stack that we can schedule on.
++	 */
++	set_need_resched();
++	set_thread_flag(TIF_FORCE_SIG_TRAP);
++	if (info) {
++		memcpy(&p->stored_info, info, sizeof(p->stored_info));
++		p->stored_info_set = 1;
++	} else
++		p->stored_info_set = 0;
++
++}
++
++void force_sig_rt(int sig, struct task_struct *p, int rt)
++{
++	__force_sig_info_rt(sig, NULL, p, rt);
++}
++
++void
++force_sig_info_rt(int sig, struct siginfo *info, struct task_struct *p, int rt)
++{
++	__force_sig_info_rt(sig, info, p, rt);
++}
++
++void do_force_sig_trap(void)
++{
++	struct task_struct *p = current;
++
++	trace_printk("forced sig! (set=%d)\n", p->stored_info_set);
++	if (p->stored_info_set)
++		force_sig_info(SIGTRAP, &p->stored_info, p);
++	else
++		force_sig(SIGTRAP, p);
++	p->stored_info_set = 0;
++	clear_thread_flag(TIF_FORCE_SIG_TRAP);
++}
++#else
++void force_sig_rt(int sig, struct task_struct *p, int rt)
++{
++	force_sig(sig, p);
++}
++void force_sig_info_rt(int sig, struct siginfo *info, struct task_struct *p, int rt)
++{
++	force_sig_info(sig, info, p);
++}
++#endif
++
+ static void __kprobes
+-do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
+-	long error_code, siginfo_t *info)
++__do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
++	  long error_code, siginfo_t *info, int rt)
+ {
+ 	struct task_struct *tsk = current;
  
- 	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
-
+@@ -172,7 +246,7 @@ trap_signal:
+ 	if (info)
+ 		force_sig_info(signr, info, tsk);
+ 	else
+-		force_sig(signr, tsk);
++		force_sig_rt(signr, tsk, rt);
+ 	return;
+ 
+ kernel_trap:
+@@ -192,6 +266,20 @@ vm86_trap:
+ #endif
+ }
+ 
++static void __kprobes
++do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
++	long error_code, siginfo_t *info)
++{
++	__do_trap(trapnr, signr, str, regs, error_code, info, 0);
++}
++
++static void __kprobes
++do_trap_rt(int trapnr, int signr, char *str, struct pt_regs *regs,
++	long error_code, siginfo_t *info)
++{
++	__do_trap(trapnr, signr, str, regs, error_code, info, 1);
++}
++
+ #define DO_ERROR(trapnr, signr, str, name)				\
+ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
+ {									\
+@@ -331,7 +419,7 @@ dotraplinkage void __kprobes do_int3(str
+ #endif
+ 
+ 	conditional_sti_ist(regs);
+-	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
++	do_trap_rt(3, SIGTRAP, "int3", regs, error_code, NULL);
+ 	conditional_cli_ist(regs);
+ }
+ 
+@@ -449,7 +537,7 @@ dotraplinkage void __kprobes do_debug(st
+ 	}
+ 	si_code = get_si_code(tsk->thread.debugreg6);
+ 	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS) || user_icebp)
+-		send_sigtrap(tsk, regs, error_code, si_code);
++		send_sigtrap_rt(tsk, regs, error_code, si_code);
+ 	conditional_cli_ist(regs);
+ 
+ 	return;
+Index: linux-rt.git/include/linux/sched.h
+===================================================================
+--- linux-rt.git.orig/include/linux/sched.h
++++ linux-rt.git/include/linux/sched.h
+@@ -1600,10 +1600,16 @@ struct task_struct {
+ 	struct rcu_head put_rcu;
+ 	int softirq_nestcnt;
+ #endif
+-#if defined CONFIG_PREEMPT_RT_FULL && defined CONFIG_HIGHMEM
++#if defined CONFIG_PREEMPT_RT_FULL
++#ifdef CONFIG_X86_64
++	struct siginfo stored_info;
++	int stored_info_set;
++#endif
++#ifdef CONFIG_HIGHMEM
+ 	int kmap_idx;
+ 	pte_t kmap_pte[KM_TYPE_NR];
+ #endif
++#endif /* CONFIG_PREEMPT_RT_FULL */
+ };
+ 
+ #ifdef CONFIG_PREEMPT_RT_FULL
 
