@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab2BANYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 08:24:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18748 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab2BANYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 08:24:45 -0500
-Message-ID: <4F293D14.5030008@redhat.com>
-Date: Wed, 01 Feb 2012 15:24:36 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
-        Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [RFC][PATCH] srcu: Implement call_srcu()
-References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com>  <1328017807.2446.230.camel@twins>  <20120131222447.GH2391@linux.vnet.ibm.com> <1328091749.2760.34.camel@laptop> <4F29178A.1090306@redhat.com> <4F2918D5.4050104@redhat.com> <4F291B56.30600@oss.ntt.co.jp> <4F291B92.8070402@redhat.com> <4F291E1F.3030505@oss.ntt.co.jp>
-In-Reply-To: <4F291E1F.3030505@oss.ntt.co.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754724Ab2BAN0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 08:26:55 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55321 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630Ab2BAN0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 08:26:54 -0500
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        linux-i2c@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, kernel@pengutronix.de
+Subject: [RESEND] Congatec CGEB base, i2c and watchdog driver support
+Date: Wed,  1 Feb 2012 14:26:30 +0100
+Message-Id: <1328102793-4313-1-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.5
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:219:66ff:fe5b:d076
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2012 01:12 PM, Takuya Yoshikawa wrote:
-> (2012/02/01 20:01), Avi Kivity wrote:
->> On 02/01/2012 01:00 PM, Takuya Yoshikawa wrote:
->
->>> How about just doing:
->>>
->>> take a spin_lock
->>> copy the entire (or some portions of) bitmap locally
->>> clear the bitmap
->>> unlock
->>>
->>
->> That means that vcpus dirtying memory also have to take that lock, and
->> spin while the bitmap is being copied.  So kvm_vm_ioctl_get_dirty_log()
->> will become faster, at the expense of vcpus, which I think is a bad
->> tradeoff.
->
-> Almost every caller is already holding the mmu_lock.
+This is a resend of the series I posted in january, only difference
+is that this time I have included the i2c and watchdog lists. To
+minimize dependencies I suggest pushing this via the mfd tree, given
+I get acks on the I2C and watchdog part.
 
-True.  But let's not add more locks.
+The following series adds support for the Congatec CGEB interface
+found on some Congatec x86 boards. The CGEB interface is a BIOS
+interface which provides access to onboard peripherals like I2C
+busses and watchdogs. It works by mapping BIOS code and searching
+for magic values which specify the entry points to the CGEB call.
+The CGEB call is an API provided by the BIOS which provides access
+to the functions in an ioctl like fashion.
 
->
-> Isn't it possible to make others hold the lock only for the case of
-> marking to the bitmap? (I will check myself too.)
+For more information about the CGEB API have a look at:
 
-Yes, in walk_addr(), while setting accessed and dirty bits in guest
-PTEs, or while emulating instructions and writing to guest memory.
+http://www.congatec.com/single_news+M5d58c9cd155.html
 
->> That'll be great, numbers are better than speculation.
->>
->
->
-> Yes, I already have some good numbers to show (and some patches).
+This document only describes the C API, unfortunately not the
+underlying BIOS interface.
 
-Looking forward.
+Comments very appreciated.
 
--- 
-error compiling committee.c: too many arguments to function
+Sascha
+
+Sascha Hauer (3):
+      mfd: Add basic support for the Congatec CGEB BIOS interface
+      i2c: Add Congatec CGEB I2C driver
+      watchdog: Add Congatec CGEB watchdog driver
+
+ drivers/i2c/busses/Kconfig                |    7 +
+ drivers/i2c/busses/Makefile               |    1 +
+ drivers/i2c/busses/i2c-congatec-cgeb.c    |  206 ++++++++++
+ drivers/mfd/Kconfig                       |   10 +
+ drivers/mfd/Makefile                      |    1 +
+ drivers/mfd/congatec-cgeb.c               |  590 +++++++++++++++++++++++++++++
+ drivers/watchdog/Kconfig                  |    9 +
+ drivers/watchdog/Makefile                 |    1 +
+ drivers/watchdog/congatec_cgeb_watchdog.c |  181 +++++++++
+ include/linux/mfd/congatec-cgeb.h         |  105 +++++
+ 10 files changed, 1111 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/i2c/busses/i2c-congatec-cgeb.c
+ create mode 100644 drivers/mfd/congatec-cgeb.c
+ create mode 100644 drivers/watchdog/congatec_cgeb_watchdog.c
+ create mode 100644 include/linux/mfd/congatec-cgeb.h
 
