@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab2BAWW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:22:57 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33554 "EHLO
+	id S933159Ab2BAWZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:25:25 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33795 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756124Ab2BAWWz (ORCPT
+	by vger.kernel.org with ESMTP id S932069Ab2BAWZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:22:55 -0500
-X-Sasl-enc: 4odZveX+FgxsDLVCscFxhYmIRHKFVTcq8OzAQpiPv7vX 1328134974
-Date: Wed, 1 Feb 2012 14:22:50 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, bp@amd64.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        lenb@kernel.org, xen-devel@lists.xensource.com
-Subject: Re: WARN... Device 'cpu1' does not have a release() function, it is
- broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
-Message-ID: <20120201222250.GA3854@kroah.com>
-References: <20120123180601.GA24553@phenom.dumpdata.com>
+	Wed, 1 Feb 2012 17:25:23 -0500
+X-Sasl-enc: qav2zsmPO4dg0MqS27xLEO2UJ3ZVKv++uCWeU/M1usRC 1328135122
+Date: Wed, 1 Feb 2012 14:24:41 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] sysfs:  Optionally count subdirectories to support buggy
+ applications
+Message-ID: <20120201222441.GB2333@kroah.com>
+References: <4F27120A.4040106@suse.cz>
+ <20120130220611.GA26655@kroah.com>
+ <20120130221059.26ab5edf@pyramind.ukuu.org.uk>
+ <20120130222717.GA6393@kroah.com>
+ <m18vkoirv9.fsf@fess.ebiederm.org>
+ <4F27C6EB.2070305@suse.cz>
+ <m14nvc82jo.fsf@fess.ebiederm.org>
+ <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
+ <m1wr87ywex.fsf@fess.ebiederm.org>
+ <m1ehueyz20.fsf_-_@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120123180601.GA24553@phenom.dumpdata.com>
+In-Reply-To: <m1ehueyz20.fsf_-_@fess.ebiederm.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 23, 2012 at 01:06:01PM -0500, Konrad Rzeszutek Wilk wrote:
-> When I bring a CPU down in a guest (which should be the same as bringing a
-> CPU down using the ACPI framework), I get this:
+On Wed, Feb 01, 2012 at 02:21:59PM -0800, Eric W. Biederman wrote:
 > 
-> [   14.484206] SMP alternatives: switching to UP code
-> [   14.514287] ------------[ cut here ]------------
-> [   14.514318] WARNING: at /home/konrad/linux-linus/drivers/base/core.c:194 device_release+0x82/0x90()
-> [   14.514354] Device 'cpu1' does not have a release() function, it is broken and must be fixed.
-> [   14.514386] Modules linked in: radeon fbcon tileblit font ttm bitblit softcursor drm_kms_helper xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea xen_kbdfront xenfs xen_privcmd
-> [   14.514557] Pid: 22, comm: xenwatch Not tainted 3.3.0-rc1 #1
-> [   14.514586] Call Trace:
-> [   14.515094]  [<ffffffff810897fa>] warn_slowpath_common+0x7a/0xb0
-> [   14.515094]  [<ffffffff810898d1>] warn_slowpath_fmt+0x41/0x50
-> [   14.515094]  [<ffffffff813dea02>] device_release+0x82/0x90
-> [   14.515094]  [<ffffffff812dfb85>] kobject_release+0x45/0x90
-> [   14.515094]  [<ffffffff812dfa4c>] kobject_put+0x2c/0x60
-> [   14.515094]  [<ffffffff813de6a2>] put_device+0x12/0x20
-> [   14.515094]  [<ffffffff813df409>] device_unregister+0x19/0x20
-> [   14.515094]  [<ffffffff813e4edf>] unregister_cpu+0x4f/0x80
-> [   14.515094]  [<ffffffff81052c7c>] arch_unregister_cpu+0x1c/0x20
-> [   14.515094]  [<ffffffff8137f787>] handle_vcpu_hotplug_event+0xc7/0xd0
-> [   14.515094]  [<ffffffff8137b900>] xenwatch_thread+0xb0/0x180
-> [   14.515094]  [<ffffffff810ad3f0>] ? wake_up_bit+0x40/0x40
-> [   14.515094]  [<ffffffff8137b850>] ? split+0xf0/0xf0
-> [   14.515094]  [<ffffffff810acd16>] kthread+0x96/0xa0
-> [   14.515094]  [<ffffffff816151e4>] kernel_thread_helper+0x4/0x10
-> [   14.515094]  [<ffffffff8160cc80>] ? retint_restore_args+0x5/0x6
-> [   14.515094]  [<ffffffff816151e0>] ? gs_change+0x13/0x13
-> [   14.515094] ---[ end trace 8f70af51a2e2611f ]---
+> lm_sensors and possibly other applications get confused if all sysfs
+> directories return nlink == 1.  The lm_sensors code that got confused
+> was just wrong and a fixed version of lm_sensors should be released
+> shortly.
 > 
-> Looking at "commit e032d80774315869aa2285b217fdbbfed86c0b49
-> Author: Greg Kroah-Hartman <gregkh@suse.de>
-> Date:   Mon Jan 16 14:40:28 2012 -0800
+> There may be other applications that have problems with sysfs return
+> nlink == 1 for directories.  To allow people to continue to use old
+> versions of userspace with new kernels add to sysfs a compile time
+> option to maintain mostly precise directory counts for those people who
+> don't mind the cost.
 > 
->     mce: fix warning messages about static struct mce_device
-> "
+> I have moved where we keep nlink in sysfs_dirent as compared to previous
+> versions of subdirectory counting to a location that packs better.
 > 
-> it looks like the corret fix is to make the 'cpu_devices' in
-> arch/x86/kernel/topology.c to be changed to be more dynamic
-> (or perhaps have an empty release function)?
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  fs/sysfs/Kconfig |   15 +++++++++++++++
+>  fs/sysfs/dir.c   |    8 ++++++++
+>  fs/sysfs/inode.c |    2 ++
+>  fs/sysfs/sysfs.h |   38 ++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 63 insertions(+), 0 deletions(-)
 > 
-> Is anybody else hitting this with ACPI CPU hot-unplug? Or do I have
-> the privilige of being the first? Oh, I hadn't done a full bisection
-> but v3.2 does not have this.
+> diff --git a/fs/sysfs/Kconfig b/fs/sysfs/Kconfig
+> index 8c41fea..9b403e9 100644
+> --- a/fs/sysfs/Kconfig
+> +++ b/fs/sysfs/Kconfig
+> @@ -21,3 +21,18 @@ config SYSFS
+>  	example, "root=03:01" for /dev/hda1.
+>  
+>  	Designers of embedded systems may wish to say N here to conserve space.
+> +
+> +config SYSFS_COUNT_LINKS
+> +	bool "sysfs count subdirectoires to support buggy applications"
+> +	default n
 
-Does the patch below solve the problem for you?
+As we don't want to break things, this should be default y, right?
+
+Also, should we list this in the feature_removal list as well so that we
+can get rid of it in a year or so?
 
 thanks,
 
 greg k-h
-
-
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index db87e78..23f2c4c 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -208,6 +208,25 @@ static ssize_t print_cpus_offline(struct device *dev,
- }
- static DEVICE_ATTR(offline, 0444, print_cpus_offline, NULL);
- 
-+static void cpu_device_release(struct device *dev)
-+{
-+	/*
-+	 * This is an empty function to prevent the driver core from spitting a
-+	 * warning at us.  Yes, I know this is directly opposite of what the
-+	 * documentation for the driver core and kobjects say, and the author
-+	 * of this code has already been publically ridiculed for doing
-+	 * something as foolish as this.  However, at this point in time, it is
-+	 * the only way to handle the issue of statically allocated cpu
-+	 * devices.  The different architectures will have their cpu device
-+	 * code reworked to properly handle this in the near future, so this
-+	 * function will then be changed to correctly free up the memory held
-+	 * by the cpu device.
-+	 *
-+	 * Never copy this way of doing things, or you too will be made fun of
-+	 * on the linux-kerenl list, you have been warned.
-+	 */
-+}
-+
- /*
-  * register_cpu - Setup a sysfs device for a CPU.
-  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
-@@ -223,6 +242,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
- 	cpu->node_id = cpu_to_node(num);
- 	cpu->dev.id = num;
- 	cpu->dev.bus = &cpu_subsys;
-+	cpu->dev.release = cpu_device_release;
- 	error = device_register(&cpu->dev);
- 	if (!error && cpu->hotpluggable)
- 		register_cpu_control(cpu);
