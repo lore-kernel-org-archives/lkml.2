@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab2BAPTW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:19:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46042 "EHLO mx2.suse.de"
+	id S932181Ab2BAPT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:19:58 -0500
+Received: from seven.medozas.de ([188.40.89.202]:35593 "EHLO seven.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754860Ab2BAPTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:19:20 -0500
-Date: Wed, 1 Feb 2012 16:19:18 +0100
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-ia64@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Memory corruption due to word sharing
-Message-ID: <20120201151918.GC16714@quack.suse.cz>
+	id S932122Ab2BAPT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 10:19:56 -0500
+Date: Wed, 1 Feb 2012 16:19:55 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+cc: Netfilter Developer Mailing List 
+	<netfilter-devel@vger.kernel.org>,
+        Linux Networking Developer Mailing List 
+	<netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: Re: [PATCH 1/6] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
+In-Reply-To: <CAFLxGvzgvvfkKQ7r2WWD6jOr+nLCTOE0MvXaMxfCR3HPAHivxg@mail.gmail.com>
+Message-ID: <alpine.LNX.2.01.1202011616280.26332@frira.zrqbmnf.qr>
+References: <1327269381-20748-1-git-send-email-richard@nod.at> <1327269381-20748-2-git-send-email-richard@nod.at> <CAFLxGvzLvdyyaBvh7LCM2+tTmKobK6n8jTRoH8NXd=MVmN4ocA@mail.gmail.com> <alpine.LNX.2.01.1201310208370.7433@frira.zrqbmnf.qr>
+ <CAFLxGvwh5J=CR6OzST7ok6cEuHPWTziDN5TSbGxAiJOpANpAAQ@mail.gmail.com> <alpine.LNX.2.01.1202011523590.18699@frira.zrqbmnf.qr> <CAFLxGvzgvvfkKQ7r2WWD6jOr+nLCTOE0MvXaMxfCR3HPAHivxg@mail.gmail.com>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
 
-  we've spotted the following mismatch between what kernel folks expect
-from a compiler and what GCC really does, resulting in memory corruption on
-some architectures. Consider the following structure:
-struct x {
-    long a;
-    unsigned int b1;
-    unsigned int b2:1;
-};
+On Wednesday 2012-02-01 16:08, richard -rw- weinberger wrote:
+>> I don't see that extra pointer (outside xt_log_info_v1) that you talk about.
+>> +struct xt_log_info_v1 {
+>> +       unsigned char level;
+>> +       unsigned char logflags;
+>> +       char prefix[30];
+>> +
+>> +       char ring_name[30];
+>> +       unsigned long ring_size;
+>> +       struct xt_LOG_ring_ctx *rctx;
+>> +};
+>
+>See:
+>include/linux/netfilter/xt_LOG.h (user space part).
+>
+>+struct xt_log_info_v1 {
+>+       unsigned char level;
+>+       unsigned char logflags;
+>+       char prefix[30];
+>+
+>+       char ring_name[30];
+>+       unsigned long ring_siVs.ze;
+>+};
+>
+>Here is no context pointer.
 
-We have two processes P1 and P2 where P1 updates field b1 and P2 updates
-bitfield b2. The code GCC generates for b2 = 1 e.g. on ia64 is:
-   0:   09 00 21 40 00 21       [MMI]       adds r32=8,r32
-   6:   00 00 00 02 00 e0                   nop.m 0x0
-   c:   11 00 00 90                         mov r15=1;;
-  10:   0b 70 00 40 18 10       [MMI]       ld8 r14=[r32];;
-  16:   00 00 00 02 00 c0                   nop.m 0x0
-  1c:   f1 70 c0 47                         dep r14=r15,r14,32,1;;
-  20:   11 00 38 40 98 11       [MIB]       st8 [r32]=r14
-  26:   00 00 00 02 00 80                   nop.i 0x0
-  2c:   08 00 84 00                         br.ret.sptk.many b0;;
+Aw don't do that. That is not maintainer-friendly (since headers
+are more or less regularly updated by copying from kernel sources).
+Keep the structs the same on each side.
 
-Note that gcc used 64-bit read-modify-write cycle to update b2. Thus if P1
-races with P2, update of b1 can get lost. BTW: I've just checked on x86_64
-and there GCC uses 8-bit bitop to modify the bitfield.
+That's why we have .userspacesize in the first place.
+See libxt_quota.c on how it's done.
 
-We actually spotted this race in practice in btrfs on structure
-fs/btrfs/ctree.h:struct btrfs_block_rsv where spinlock content got
-corrupted due to update of following bitfield and there seem to be other
-places in kernel where this could happen.
-
-I've raised the issue with our GCC guys and they said to me that: "C does
-not provide such guarantee, nor can you reliably lock different
-structure fields with different locks if they share naturally aligned
-word-size memory regions.  The C++11 memory model would guarantee this,
-but that's not implemented nor do you build the kernel with a C++11
-compiler."
-
-So it seems what C/GCC promises does not quite match with what kernel
-expects. I'm not really an expert in this area so I wanted to report it
-here so that more knowledgeable people can decide how to solve the issue...
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+	.size = XT_ALIGN(sizeof(struct xt_log_info_v1)),
+	.userspacesize = offsetof(struct xt_log_info_v1, firstkernelmember),
