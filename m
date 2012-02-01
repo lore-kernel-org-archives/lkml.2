@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab2BAJOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 04:14:50 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:52219 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753188Ab2BAJOr (ORCPT
+	id S1756054Ab2BAJSR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 04:18:17 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58285
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753949Ab2BAJSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 04:14:47 -0500
+	Wed, 1 Feb 2012 04:18:14 -0500
+Date: Wed, 1 Feb 2012 04:18:07 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Jens Axboe <axboe@kernel.dk>,
+        Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Wu Fengguang <wfg@linux.intel.com>
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+Message-ID: <20120201091807.GA7451@infradead.org>
+References: <1327996780.21268.42.camel@sli10-conroe>
+ <20120131220333.GD4378@redhat.com>
+ <20120131141301.ba35ffe0.akpm@linux-foundation.org>
+ <20120131222217.GE4378@redhat.com>
+ <20120201033653.GA12092@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.01.1201310208370.7433@frira.zrqbmnf.qr>
-References: <1327269381-20748-1-git-send-email-richard@nod.at>
-	<1327269381-20748-2-git-send-email-richard@nod.at>
-	<CAFLxGvzLvdyyaBvh7LCM2+tTmKobK6n8jTRoH8NXd=MVmN4ocA@mail.gmail.com>
-	<alpine.LNX.2.01.1201310208370.7433@frira.zrqbmnf.qr>
-Date: Wed, 1 Feb 2012 10:14:46 +0100
-Message-ID: <CAFLxGvwh5J=CR6OzST7ok6cEuHPWTziDN5TSbGxAiJOpANpAAQ@mail.gmail.com>
-Subject: Re: [PATCH 1/6] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Netfilter Developer Mailing List 
-	<netfilter-devel@vger.kernel.org>,
-        Linux Networking Developer Mailing List 
-	<netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, Pablo Neira Ayuso <pablo@netfilter.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120201033653.GA12092@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 2:24 AM, Jan Engelhardt <jengelh@medozas.de> wrote:
-> On Monday 2012-01-30 10:01, richard -rw- weinberger wrote:
->
->>On Sun, Jan 22, 2012 at 10:56 PM, Richard Weinberger <richard@nod.at> wrote:
->>> ipt_LOG and ip6_LOG have a lot of common code, merge them
->>> to reduce duplicate code.
->>>
->>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>
->>No comments?
->
-> Adding Pablo to Cc.
->
->
-> Do you have the patchset as a retrievable git tree, btw?
+On Tue, Jan 31, 2012 at 10:36:53PM -0500, Vivek Goyal wrote:
+> I still see that IO is being submitted one page at a time. The only
+> real difference seems to be that queue unplug happening at random times
+> and many a times we are submitting much smaller requests (40 sectors, 48
+> sectors etc).
 
-Only for kernel stuff:
-git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git xt_LOG
-
-If you want it for the user space part too, I can setup something...
-
->
->>[PATCH 6/6] iptables: xt_LOG: Add ring buffer support
->>
->>in libxt_LOG.c:
->>+.size = XT_ALIGN(sizeof(struct xt_log_info_v1) + sizeof(void *)),
->
-> Why the extra void*?
-
-The kernel space part of  xt_log_info_v1 differs from the user space struct,
-it contains an extra pointer to the ring buffer context.
-
-Iptables must not see this extra pointer because the kernel writes to it.
-
--- 
-Thanks,
-//richard
+This is expected given that the block device node uses
+block_read_full_page, and not mpage_readpage(s).
