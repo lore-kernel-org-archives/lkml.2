@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab2BAXmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 18:42:17 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58566 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab2BAXmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 18:42:16 -0500
-Date: Thu, 2 Feb 2012 02:42:08 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [06/20] crypto: sha512 - reduce stack usage to safe number
-Message-ID: <20120201234208.GA28700@p183.telecom.by>
-References: <20120201210055.GA25374@kroah.com>
- <20120201201531.599621544@clark.kroah.org>
+	id S1753222Ab2BAXrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 18:47:05 -0500
+Received: from tundra.namei.org ([65.99.196.166]:56796 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753018Ab2BAXrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 18:47:03 -0500
+Date: Thu, 2 Feb 2012 10:47:00 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] Fixes for MPI library (updated)
+In-Reply-To: <alpine.LRH.2.00.1202020037340.20463@tundra.namei.org>
+Message-ID: <alpine.LRH.2.00.1202021045210.24321@tundra.namei.org>
+References: <alpine.LRH.2.00.1202020037340.20463@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120201201531.599621544@clark.kroah.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 12:14:08PM -0800, Greg KH wrote:
-> @@ -87,38 +87,48 @@ sha512_transform(u64 *state, const u8 *i
->  	u64 a, b, c, d, e, f, g, h, t1, t2;
->  
->  	int i;
-> -	u64 W[80];
-> +	u64 W[16];
+Please pull from for-linus2 instead of per the previous request.  Since 
+then, I've applied DaveM's patches, too.
 
-This needs 3rd companion patch which does stack reduction even on i386.
-Patch which removes excessive loop unrolling and thus fixes the problem
-has been posted. Maybe there is some other way to maintain low stack
-space on i386 but I haven't found it.
 
-http://marc.info/?l=linux-netdev&m=132768692525017&w=4
+The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
+  Linus Torvalds (1):
+        Linux 3.3-rc2
 
-If you apply only 2, original bug will be fixed, but on at least i386
-stack usage could go in 900-byte region.
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus2
+
+David Miller (2):
+      lib: Fix multiple definitions of clz_tab
+      lib: Fix 32-bit sparc udiv_qrnnd() definition in mpilib's longlong.h
+
+Dmitry Kasatkin (11):
+      lib/mpi: added missing NULL check
+      lib/mpi: replaced MPI_NULL with normal NULL
+      lib/mpi: return error code on dividing by zero
+      lib/mpi: checks for zero divisor length
+      lib/mpi: removed unused functions
+      lib/digsig: additional sanity checks against badly formated key payload
+      lib/digsig: pkcs_1_v1_5_decode_emsa cleanup
+      lib/mpi: check for possible zero length
+      lib/mpi: added comment on divide by 0 case
+      lib/mpi: added missing NULL check
+      lib/digsig: checks for NULL return value
+
+ arch/sparc/Kconfig      |    1 +
+ arch/sparc/lib/divdi3.S |   16 +--------
+ include/linux/mpi.h     |    2 -
+ lib/Kconfig             |    4 ++
+ lib/Makefile            |    2 +
+ lib/clz_tab.c           |   18 +++++++++
+ lib/digsig.c            |   52 ++++++++++++---------------
+ lib/mpi/longlong.h      |   44 +++++++++++++++++------
+ lib/mpi/mpi-bit.c       |   19 ----------
+ lib/mpi/mpi-div.c       |    5 +++
+ lib/mpi/mpi-pow.c       |    2 +-
+ lib/mpi/mpicoder.c      |   91 +---------------------------------------------
+ lib/mpi/mpih-div.c      |    4 ++
+ lib/mpi/mpiutil.c       |    5 ++-
+ 14 files changed, 98 insertions(+), 167 deletions(-)
+ create mode 100644 lib/clz_tab.c
