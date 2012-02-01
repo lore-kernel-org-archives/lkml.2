@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab2BAWnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:43:16 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32799 "EHLO
+	id S933142Ab2BAWuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:50:52 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32808 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab2BAWnO (ORCPT
+	with ESMTP id S1754254Ab2BAWnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:43:14 -0500
+	Wed, 1 Feb 2012 17:43:16 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Ram Pai <linuxram@us.ibm.com>,
@@ -14,81 +14,127 @@ Cc: Ram Pai <linuxram@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 7/7] PCI: only enable pci realloc when SRIOV bar is not assigned
-Date: Wed,  1 Feb 2012 14:42:50 -0800
-Message-Id: <1328136170-17613-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 2/7] PCI: Fix cardbus bridge resources as optional size handling
+Date: Wed,  1 Feb 2012 14:42:45 -0800
+Message-Id: <1328136170-17613-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1328136170-17613-1-git-send-email-yinghai@kernel.org>
 References: <1328136170-17613-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4F29BFFC.003E,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F29BFF8.00DA,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If bios does not assign those BAR or wrong address, then kernel will
-try to do pci realloc.
+We should not set the requested size to -2.
 
-in that case, user still can use pci=realloc=off to override it.
+that will confuse the resource list sorting with align when SIZEALIGN is used.
+
+Change to STARTALIGN and pass align from start.
+
+We are safe to do that just as we do that regular pci bridge.
+
+In the long run, we should just treat cardbus like regular pci bridge.
+
+Also fix when realloc is not passed, should keep the requested size.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/setup-bus.c |   28 ++++++++++++++++++++++++++++
- 1 files changed, 28 insertions(+), 0 deletions(-)
+ drivers/pci/setup-bus.c |   63 ++++++++++++++++++++++++++--------------------
+ 1 files changed, 36 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 9526038..520f256 100644
+index d5897c3..3b3932a 100644
 --- a/drivers/pci/setup-bus.c
 +++ b/drivers/pci/setup-bus.c
-@@ -1293,6 +1293,31 @@ static bool __init pci_realloc_enabled(void)
- 	return pci_realloc_enable >= enable_yes_user;
+@@ -898,21 +898,30 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+ {
+ 	struct pci_dev *bridge = bus->self;
+ 	struct resource *b_res = &bridge->resource[PCI_BRIDGE_RESOURCES];
++	resource_size_t b_res_3_size = pci_cardbus_mem_size * 2;
+ 	u16 ctrl;
+ 
+ 	/*
+ 	 * Reserve some resources for CardBus.  We reserve
+ 	 * a fixed amount of bus space for CardBus bridges.
+ 	 */
+-	b_res[0].start = 0;
+-	b_res[0].flags |= IORESOURCE_IO | IORESOURCE_SIZEALIGN;
+-	if (realloc_head)
+-		add_to_list(realloc_head, bridge, b_res, pci_cardbus_io_size, 0 /* dont care */);
++	b_res[0].start = pci_cardbus_io_size;
++	b_res[0].end = b_res[0].start + pci_cardbus_io_size - 1;
++	b_res[0].flags |= IORESOURCE_IO | IORESOURCE_STARTALIGN;
++	if (realloc_head) {
++		b_res[0].end -= pci_cardbus_io_size;
++		add_to_list(realloc_head, bridge, b_res, pci_cardbus_io_size,
++				pci_cardbus_io_size);
++	}
+ 
+-	b_res[1].start = 0;
+-	b_res[1].flags |= IORESOURCE_IO | IORESOURCE_SIZEALIGN;
+-	if (realloc_head)
+-		add_to_list(realloc_head, bridge, b_res+1, pci_cardbus_io_size, 0 /* dont care */);
++	b_res[1].start = pci_cardbus_io_size;
++	b_res[1].end = b_res[1].start + pci_cardbus_io_size - 1;
++	b_res[1].flags |= IORESOURCE_IO | IORESOURCE_STARTALIGN;
++	if (realloc_head) {
++		b_res[1].end -= pci_cardbus_io_size;
++		add_to_list(realloc_head, bridge, b_res+1, pci_cardbus_io_size,
++				 pci_cardbus_io_size);
++	}
+ 
+ 	/* MEM1 must not be pref mmio */
+ 	pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
+@@ -939,28 +948,28 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+ 	 * twice the size.
+ 	 */
+ 	if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM0) {
+-		b_res[2].start = 0;
+-		b_res[2].flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH | IORESOURCE_SIZEALIGN;
+-		if (realloc_head)
+-			add_to_list(realloc_head, bridge, b_res+2, pci_cardbus_mem_size, 0 /* dont care */);
++		b_res[2].start = pci_cardbus_mem_size;
++		b_res[2].end = b_res[2].start + pci_cardbus_mem_size - 1;
++		b_res[2].flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH |
++				  IORESOURCE_STARTALIGN;
++		if (realloc_head) {
++			b_res[2].end -= pci_cardbus_mem_size;
++			add_to_list(realloc_head, bridge, b_res+2,
++				 pci_cardbus_mem_size, pci_cardbus_mem_size);
++		}
+ 
+-		b_res[3].start = 0;
+-		b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
+-		if (realloc_head)
+-			add_to_list(realloc_head, bridge, b_res+3, pci_cardbus_mem_size, 0 /* dont care */);
+-	} else {
+-		b_res[3].start = 0;
+-		b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
+-		if (realloc_head)
+-			add_to_list(realloc_head, bridge, b_res+3, pci_cardbus_mem_size * 2, 0 /* dont care */);
++		/* reduce that to half */
++		b_res_3_size = pci_cardbus_mem_size;
+ 	}
+ 
+-	/* set the size of the resource to zero, so that the resource does not
+-	 * get assigned during required-resource allocation cycle but gets assigned
+-	 * during the optional-resource allocation cycle.
+- 	 */
+-	b_res[0].start = b_res[1].start = b_res[2].start = b_res[3].start = 1;
+-	b_res[0].end = b_res[1].end = b_res[2].end = b_res[3].end = 0;
++	b_res[3].start = pci_cardbus_mem_size;
++	b_res[3].end = b_res[3].start + b_res_3_size - 1;
++	b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_STARTALIGN;
++	if (realloc_head) {
++		b_res[3].end -= b_res_3_size;
++		add_to_list(realloc_head, bridge, b_res+3, b_res_3_size,
++				 pci_cardbus_mem_size);
++	}
  }
  
-+static void __init pci_realloc_detect(void)
-+{
-+	struct pci_dev *dev = NULL;
-+
-+	if (pci_realloc_enable != enable_not_set)
-+		return;
-+
-+#ifdef CONFIG_PCI_IOV
-+	for_each_pci_dev(dev) {
-+		int i;
-+
-+		for (i = PCI_IOV_RESOURCES; i <= PCI_IOV_RESOURCE_END; i++) {
-+			struct resource *r = &dev->resource[i];
-+
-+			/* Not assigned, or rejected by kernel */
-+			if (r->flags && !r->start) {
-+				pci_realloc_enable = enable_yes_detected;
-+
-+				return;
-+			}
-+		}
-+	}
-+#endif
-+}
-+
- /*
-  * first try will not touch pci bridge res
-  * second  and later try will clear small leaf bridge res
-@@ -1314,6 +1339,7 @@ pci_assign_unassigned_resources(void)
- 	int pci_try_num = 1;
- 
- 	/* don't realloc if asked to do so */
-+	pci_realloc_detect();
- 	if (pci_realloc_enabled()) {
- 		int max_depth = pci_get_max_depth();
- 
-@@ -1348,6 +1374,8 @@ again:
- 	if (tried_times >= pci_try_num) {
- 		if (pci_realloc_enable == enable_not_set)
- 			printk(KERN_INFO "Some pci devices resources are not assigned, please try to boot with pci=realloc\n");
-+		else if (pci_realloc_enable == enable_yes_detected)
-+			printk(KERN_INFO "Automatically enabled pci realloc, if you have problem, please try to boot with pci=realloc=off\n");
- 
- 		free_list(&fail_head);
- 		goto enable_and_dump;
+ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
 -- 
 1.7.7
 
