@@ -1,83 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab2BATvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:51:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50482 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813Ab2BATvJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:51:09 -0500
-Date: Wed, 1 Feb 2012 11:51:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <paul@paulmenage.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Tim Hockin <thockin@hockin.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
-        Daniel J Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Max Kellermann <mk@cm4all.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
-Message-Id: <20120201115107.93e11471.akpm@linux-foundation.org>
-In-Reply-To: <20120201184959.GH6731@somewhere.redhat.com>
-References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
-	<20120201163126.GA19837@google.com>
-	<20120201184959.GH6731@somewhere.redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932410Ab2BATvf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:51:35 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:42059 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756813Ab2BATvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:51:33 -0500
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 16/41] rcu: Don't make callbacks go through second full grace period
+Date: Wed,  1 Feb 2012 11:41:34 -0800
+Message-Id: <1328125319-5205-16-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120201194131.GA10028@linux.vnet.ibm.com>
+ <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020119-3534-0000-0000-0000051ACA77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Feb 2012 19:50:01 +0100
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-> On Wed, Feb 01, 2012 at 08:31:26AM -0800, Tejun Heo wrote:
-> > On Wed, Feb 01, 2012 at 04:37:40AM +0100, Frederic Weisbecker wrote:
-> > > Changes In this version:
-> > > 
-> > > - Split 32/64 bits version of res_counter_write_u64() [1/10]
-> > >   Courtesy of Kirill A. Shutemov
-> > > 
-> > > - Added Kirill's ack [8/10]
-> > > 
-> > > - Added selftests [9/10], [10/10]
-> > > 
-> > > Please consider for merging. At least two users want this feature:
-> > 
-> > Has there been further discussion about this approach?  IIRC, we
-> > weren't sure whether this should be merged.
-> 
-> The doubts I have noticed were:
-> 
-> Q: Can't we rather focus on a global solution to fight forkbombs?
-> 
-> If we can find a reliable solution that works in any case and that
-> prevent from any forkbomb to impact the rest of the system then it
-> may be an acceptable solution. But I'm not aware of such feature.
-> 
-> Besides, another point in having this task counter is that we
-> have a per container limit. Assuming all containers are running under
-> the same user, we can protect against a container starving all others
-> with a massive amount of processes close to the NR_PROC rlimit.
-> 
-> Q: Can/should we implement a limitation on the number of "fork" as well?
->    (as in https://lkml.org/lkml/2011/11/3/233 )
-> 
-> I'm still not sure about why such a thing is needed. Is it really something we
-> want? Why can't the task counter be used instead?
-> 
-> I need more details from the author of this patch. But I doubt we can merge
-> both subsystems, they have pretty different semantics.
+RCU's current CPU-offline code path dumps all of the outgoing CPU's
+callbacks onto the RCU_NEXT_TAIL portion of the surviving CPU's
+callback list.  This means that all the ready-to-invoke callbacks from
+the outgoing CPU must wait for another full RCU grace period.  This was
+just fine when CPU-hotplug events were rare, but there is increasing
+evidence that users are planning to make increasing use of CPU hotplug.
 
-What I struggle with is "is this feature useful enough to warrant
-merging it"?
+Therefore, this commit changes the callback-dumping procedure so that
+callbacks that are ready to invoke are moved to the RCU_DONE_TAIL
+portion of the surviving CPU's callback list.  This avoids running
+these callbacks through a second unnecessary grace period.
+
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 46 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 03c0d5f..ee2009d 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1270,24 +1270,64 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+ 	struct rcu_data *receive_rdp = per_cpu_ptr(rsp->rda, receive_cpu);
+ 	struct rcu_node *rnp = rdp->mynode; /* For dying CPU. */
+ 
+-	/* Move callbacks to some other CPU. */
++	/* First, adjust the counts. */
++	if (rdp->nxtlist != NULL) {
++		receive_rdp->qlen_lazy += rdp->qlen_lazy;
++		receive_rdp->qlen += rdp->qlen;
++		rdp->qlen_lazy = 0;
++		rdp->qlen = 0;
++	}
++
++	/*
++	 * Next, move ready-to-invoke callbacks to be invoked on some
++	 * other CPU.  These will not be required to pass through another
++	 * grace period:  They are done, regardless of CPU.
++	 */
++	if (rdp->nxtlist != NULL &&
++	    rdp->nxttail[RCU_DONE_TAIL] != &rdp->nxtlist) {
++		struct rcu_head *oldhead;
++		struct rcu_head **oldtail;
++		struct rcu_head **newtail;
++
++		oldhead = rdp->nxtlist;
++		oldtail = receive_rdp->nxttail[RCU_DONE_TAIL];
++		rdp->nxtlist = *rdp->nxttail[RCU_DONE_TAIL];
++		*rdp->nxttail[RCU_DONE_TAIL] = *oldtail;
++		*receive_rdp->nxttail[RCU_DONE_TAIL] = oldhead;
++		newtail = rdp->nxttail[RCU_DONE_TAIL];
++		for (i = RCU_DONE_TAIL; i < RCU_NEXT_SIZE; i++) {
++			if (receive_rdp->nxttail[i] == oldtail)
++				receive_rdp->nxttail[i] = newtail;
++			if (rdp->nxttail[i] == newtail)
++				rdp->nxttail[i] = &rdp->nxtlist;
++		}
++	}
++
++	/*
++	 * Finally, put the rest of the callbacks at the end of the list.
++	 * The ones that made it partway through get to start over:  We
++	 * cannot assume that grace periods are synchronized across CPUs.
++	 * (We could splice RCU_WAIT_TAIL into RCU_NEXT_READY_TAIL, but
++	 * this does not seem compelling.  Not yet, anyway.)
++	 */
+ 	if (rdp->nxtlist != NULL) {
+ 		*receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
+ 		receive_rdp->nxttail[RCU_NEXT_TAIL] =
+ 				rdp->nxttail[RCU_NEXT_TAIL];
+-		receive_rdp->qlen_lazy += rdp->qlen_lazy;
+-		receive_rdp->qlen += rdp->qlen;
+ 		receive_rdp->n_cbs_adopted += rdp->qlen;
+ 		rdp->n_cbs_orphaned += rdp->qlen;
+ 
+ 		rdp->nxtlist = NULL;
+ 		for (i = 0; i < RCU_NEXT_SIZE; i++)
+ 			rdp->nxttail[i] = &rdp->nxtlist;
+-		rdp->qlen_lazy = 0;
+-		rdp->qlen = 0;
+ 	}
+ 
+-	/* Record a quiescent state for the dying CPU. */
++	/*
++	 * Record a quiescent state for the dying CPU.  This is safe
++	 * only because we have already cleared out the callbacks.
++	 * (Otherwise, the RCU core might try to schedule the invocation
++	 * of callbacks on this now-offline CPU, which would be bad.)
++	 */
+ 	mask = rdp->grpmask;	/* rnp->grplo is constant. */
+ 	trace_rcu_grace_period(rsp->name,
+ 			       rnp->gpnum + 1 - !!(rnp->qsmask & mask),
+-- 
+1.7.8
+
