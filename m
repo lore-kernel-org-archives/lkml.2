@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab2BAVIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:08:52 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43355 "EHLO
+	id S932116Ab2BAVJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:09:09 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40428 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757133Ab2BAVIs (ORCPT
+	by vger.kernel.org with ESMTP id S932453Ab2BAVJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:48 -0500
-X-Sasl-enc: c9s4dcB3MDaxH+4vvk628KWDpGG8kHryLqpEElbouTYp 1328130527
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:38 2012
-Message-Id: <20120201205738.802311246@clark.kroah.org>
+	Wed, 1 Feb 2012 16:09:04 -0500
+X-Sasl-enc: S1GODrD3WWcM7Xt/sDwjbseYz0MiNN1mcvpoRwrVCGnB 1328130543
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:42 2012
+Message-Id: <20120201205742.301942470@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:55 -0800
+Date: Wed, 01 Feb 2012 12:56:35 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nick Bowler <nbowler@elliptictech.com>,
+        alan@lxorguk.ukuu.org.uk, Kumar Sanghvi <kumaras@chelsio.com>,
+        Josh Boyer <jwboyer@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [15/65] ah: Dont return NET_XMIT_DROP on input.
+Subject: [55/65] rds: Make rds_sock_lock BH rather than IRQ safe.
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,47 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nick Bowler <nbowler@elliptictech.com>
 
-commit 4b90a603a1b21d63cf743cc833680cb195a729f6 upstream.
+From: "David S. Miller" <davem@davemloft.net>
 
-When the ahash driver returns -EBUSY, AH4/6 input functions return
-NET_XMIT_DROP, presumably copied from the output code path.  But
-returning transmit codes on input doesn't make a lot of sense.
-Since NET_XMIT_DROP is a positive int, this gets interpreted as
-the next header type (i.e., success).  As that can only end badly,
-remove the check.
+[ Upstream commit efc3dbc37412c027e363736b4f4c74ee5e8ecffc ]
 
-Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+rds_sock_info() triggers locking warnings because we try to perform a
+local_bh_enable() (via sock_i_ino()) while hardware interrupts are
+disabled (via taking rds_sock_lock).
+
+There is no reason for rds_sock_lock to be a hardware IRQ disabling
+lock, none of these access paths run in hardware interrupt context.
+
+Therefore making it a BH disabling lock is safe and sufficient to
+fix this bug.
+
+Reported-by: Kumar Sanghvi <kumaras@chelsio.com>
+Reported-by: Josh Boyer <jwboyer@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/ipv4/ah4.c |    2 --
- net/ipv6/ah6.c |    2 --
- 2 files changed, 4 deletions(-)
+ net/rds/af_rds.c |   20 ++++++++------------
+ 1 file changed, 8 insertions(+), 12 deletions(-)
 
---- a/net/ipv4/ah4.c
-+++ b/net/ipv4/ah4.c
-@@ -369,8 +369,6 @@ static int ah_input(struct xfrm_state *x
- 		if (err == -EINPROGRESS)
- 			goto out;
+--- a/net/rds/af_rds.c
++++ b/net/rds/af_rds.c
+@@ -68,7 +68,6 @@ static int rds_release(struct socket *so
+ {
+ 	struct sock *sk = sock->sk;
+ 	struct rds_sock *rs;
+-	unsigned long flags;
  
--		if (err == -EBUSY)
--			err = NET_XMIT_DROP;
- 		goto out_free;
+ 	if (!sk)
+ 		goto out;
+@@ -94,10 +93,10 @@ static int rds_release(struct socket *so
+ 	rds_rdma_drop_keys(rs);
+ 	rds_notify_queue_get(rs, NULL);
+ 
+-	spin_lock_irqsave(&rds_sock_lock, flags);
++	spin_lock_bh(&rds_sock_lock);
+ 	list_del_init(&rs->rs_item);
+ 	rds_sock_count--;
+-	spin_unlock_irqrestore(&rds_sock_lock, flags);
++	spin_unlock_bh(&rds_sock_lock);
+ 
+ 	rds_trans_put(rs->rs_transport);
+ 
+@@ -409,7 +408,6 @@ static const struct proto_ops rds_proto_
+ 
+ static int __rds_create(struct socket *sock, struct sock *sk, int protocol)
+ {
+-	unsigned long flags;
+ 	struct rds_sock *rs;
+ 
+ 	sock_init_data(sock, sk);
+@@ -426,10 +424,10 @@ static int __rds_create(struct socket *s
+ 	spin_lock_init(&rs->rs_rdma_lock);
+ 	rs->rs_rdma_keys = RB_ROOT;
+ 
+-	spin_lock_irqsave(&rds_sock_lock, flags);
++	spin_lock_bh(&rds_sock_lock);
+ 	list_add_tail(&rs->rs_item, &rds_sock_list);
+ 	rds_sock_count++;
+-	spin_unlock_irqrestore(&rds_sock_lock, flags);
++	spin_unlock_bh(&rds_sock_lock);
+ 
+ 	return 0;
+ }
+@@ -471,12 +469,11 @@ static void rds_sock_inc_info(struct soc
+ {
+ 	struct rds_sock *rs;
+ 	struct rds_incoming *inc;
+-	unsigned long flags;
+ 	unsigned int total = 0;
+ 
+ 	len /= sizeof(struct rds_info_message);
+ 
+-	spin_lock_irqsave(&rds_sock_lock, flags);
++	spin_lock_bh(&rds_sock_lock);
+ 
+ 	list_for_each_entry(rs, &rds_sock_list, rs_item) {
+ 		read_lock(&rs->rs_recv_lock);
+@@ -492,7 +489,7 @@ static void rds_sock_inc_info(struct soc
+ 		read_unlock(&rs->rs_recv_lock);
  	}
  
---- a/net/ipv6/ah6.c
-+++ b/net/ipv6/ah6.c
-@@ -581,8 +581,6 @@ static int ah6_input(struct xfrm_state *
- 		if (err == -EINPROGRESS)
- 			goto out;
+-	spin_unlock_irqrestore(&rds_sock_lock, flags);
++	spin_unlock_bh(&rds_sock_lock);
  
--		if (err == -EBUSY)
--			err = NET_XMIT_DROP;
- 		goto out_free;
- 	}
+ 	lens->nr = total;
+ 	lens->each = sizeof(struct rds_info_message);
+@@ -504,11 +501,10 @@ static void rds_sock_info(struct socket
+ {
+ 	struct rds_info_socket sinfo;
+ 	struct rds_sock *rs;
+-	unsigned long flags;
  
+ 	len /= sizeof(struct rds_info_socket);
+ 
+-	spin_lock_irqsave(&rds_sock_lock, flags);
++	spin_lock_bh(&rds_sock_lock);
+ 
+ 	if (len < rds_sock_count)
+ 		goto out;
+@@ -529,7 +525,7 @@ out:
+ 	lens->nr = rds_sock_count;
+ 	lens->each = sizeof(struct rds_info_socket);
+ 
+-	spin_unlock_irqrestore(&rds_sock_lock, flags);
++	spin_unlock_bh(&rds_sock_lock);
+ }
+ 
+ static void rds_exit(void)
 
 
