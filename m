@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab2BAP1c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:27:32 -0500
-Received: from mail.yuiop.co.uk ([89.145.97.74]:46282 "EHLO mail.yuiop.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753664Ab2BAP1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:27:31 -0500
-Message-ID: <4F2959FA.70101@anonymous.org.uk>
-Date: Wed, 01 Feb 2012 15:27:54 +0000
-From: John Robinson <john.robinson@anonymous.org.uk>
-Organization: None; Disorganization: Total
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1756624Ab2BAP1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:27:42 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:61108 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756610Ab2BAP1k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 10:27:40 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH 1/2] lkdtm: use atomic_t to replace count_lock
+Date: Wed, 1 Feb 2012 15:27:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "Greg Kroah-Hartman" <greg@kroah.com>, Dave Young <dyoung@redhat.com>
+References: <1328079501-24746-1-git-send-email-xiyou.wangcong@gmail.com>
+In-Reply-To: <1328079501-24746-1-git-send-email-xiyou.wangcong@gmail.com>
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: thomas@fjellstrom.ca, linux-raid <linux-raid@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: GRUB doesn't like ServeRAID M1015/LSI 9220-8i (was Re: mvsas
- with 3.1)
-References: <201201131144.58044.thomas@fjellstrom.ca> <201202010703.09833.thomas@fjellstrom.ca> <4F294E64.10204@anonymous.org.uk> <201202010742.07818.thomas@fjellstrom.ca> <4F295769.6070003@suse.de>
-In-Reply-To: <4F295769.6070003@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201202011527.35366.arnd@arndb.de>
+X-Provags-ID: V02:K0:xllbs2gTGc+agR/LJkUuKpJzBHuwcqWh3ygc+QVcqeS
+ xHfATCV76Zu8jodb0b9H9tmvPNRyqBr5PBISKEccQwEQNuiDT7
+ 0a1GcB7P+B9HUOmfSr3etO2ymnIHCj3b05IsIwZQwQv1HrJrCv
+ 5Zf7+8EaDQIfi4WbrEune7RGBLz1DVLl4A5bd9kYKTiukN9RJa
+ 0UVQ6kmqPJ/cH/WfIBp2Q4ejmlxSlry/KfaWA8hjhUSpFZjLoI
+ HJwi8WekNHSCEkzsTgKsZMfUANq92zc0MT5BtNbPvTRwCL72WY
+ NgvfA2eeDVk8n5P3mi8G3pi+MZHViLxD30sea2wjM0fQ8d1se8
+ IAeSyli2IUT25TSfFsec=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2012 15:16, Hannes Reinecke wrote:
-> On 02/01/2012 03:42 PM, Thomas Fjellstrom wrote:
->> On Wed Feb 1, 2012, John Robinson wrote:
->>> On 01/02/2012 14:03, Thomas Fjellstrom wrote:
->>> [...]
->>>>  I picked up a refurb IBM
->>>> ServeRaid M1015 (aka: LSI 9220-8i) card. It arrived yesterday. Just have
->>>> to wait and see why grub doesn't like it.
->>>
->>> When you find out, please let me know - I bought one via ebay, its
->>> firmware was elderly and wouldn't let me put it in JBOD mode, after a
->>> bit of googling I flashed it with IBM's latest firmware, then GRUB
->>> thought my machine had no RAM in it.
-[...]
->
-> From my experience the BIOS wouldn't present any disks in JBOD mode.
-> So you'd be needing to switch to RAID mode first.
+On Wednesday 01 February 2012, Cong Wang wrote:
+>  static void lkdtm_handler(void)
+>  {
+> -       unsigned long flags;
+> -
+> -       spin_lock_irqsave(&count_lock, flags);
+> -       count--;
+>         printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
+> -                       cp_name_to_str(cpoint), cp_type_to_str(cptype), count);
+> +                       cp_name_to_str(cpoint), cp_type_to_str(cptype), atomic_dec_return(&count));
+>  
+> -       if (count == 0) {
+> +       if (!atomic_cmpxchg(&count, 0, cpoint_count))
+>                 lkdtm_do_action(cptype);
+> -               count = cpoint_count;
+> -       }
+> -       spin_unlock_irqrestore(&count_lock, flags);
+>  }
 
-The firmware my card came with didn't have a JBOD mode, which is why I 
-flashed the newer firmware. Then I could boot in JBOD mode from a rescue 
-CD and see some drives, though not those that had had RAID-mode metadata 
-written to them, but I couldn't boot the system with GRUB (from drives 
-on another controller).
+This use is not atomic, you could have two threads doing atomic_dec_return
+at the same time, and after that the value will be -1 so the atomic_cmpxchg
+does not trigger.
 
-Cheers,
+In order to have an atomic here, you have to use a loop around
+atomic_cmpxchg, like
 
-John.
+
+	int old, new;
+	old = atomic_read(&count);
+	do {
+		new = old ? old - 1 : cpoint_count;
+		old = cmpxchg(&count, old, new);
+	} while (old != new);
+
+I suppose you could also just keep the spinlock and move lkdtm_do_action()
+outside of it?
+
+	Arnd
