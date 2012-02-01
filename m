@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab2BAOrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 09:47:49 -0500
-Received: from seven.medozas.de ([188.40.89.202]:35109 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab2BAOrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 09:47:48 -0500
-Date: Wed, 1 Feb 2012 15:47:44 +0100 (CET)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-cc: Netfilter Developer Mailing List 
-	<netfilter-devel@vger.kernel.org>,
-        Linux Networking Developer Mailing List 
-	<netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: Re: [PATCH 1/6] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
-In-Reply-To: <CAFLxGvwh5J=CR6OzST7ok6cEuHPWTziDN5TSbGxAiJOpANpAAQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.01.1202011523590.18699@frira.zrqbmnf.qr>
-References: <1327269381-20748-1-git-send-email-richard@nod.at> <1327269381-20748-2-git-send-email-richard@nod.at> <CAFLxGvzLvdyyaBvh7LCM2+tTmKobK6n8jTRoH8NXd=MVmN4ocA@mail.gmail.com> <alpine.LNX.2.01.1201310208370.7433@frira.zrqbmnf.qr>
- <CAFLxGvwh5J=CR6OzST7ok6cEuHPWTziDN5TSbGxAiJOpANpAAQ@mail.gmail.com>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1756470Ab2BAOt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 09:49:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45078 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754695Ab2BAOt2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 09:49:28 -0500
+Date: Wed, 1 Feb 2012 14:49:25 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Michel Jaouen <michel.jaouen@stericsson.com>,
+        Maxime Coquelin <maxime.coquelin@st-ericsson.com>,
+        Alex Macro <alex.macro@stericsson.com>
+Subject: Re: [PATCH] mfd/ab8500: support AB9540 variant
+Message-ID: <20120201144925.GE17170@opensource.wolfsonmicro.com>
+References: <1328094155-3320-1-git-send-email-linus.walleij@stericsson.com>
+ <20120201113154.GA13723@sirena.org.uk>
+ <CACRpkdZjh6J_=DG58DkWO0bnj2Np3ujagcdOgNtYq2GfN30uRQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JBi0ZxuS5uaEhkUZ"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZjh6J_=DG58DkWO0bnj2Np3ujagcdOgNtYq2GfN30uRQ@mail.gmail.com>
+X-Cookie: You may be recognized soon.  Hide.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Wednesday 2012-02-01 10:14, richard -rw- weinberger wrote:
->>
->> Do you have the patchset as a retrievable git tree, btw?
->
->Only for kernel stuff:
->git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git xt_LOG
->
->If you want it for the user space part too, I can setup something...
+--JBi0ZxuS5uaEhkUZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That would be welcome.
+On Wed, Feb 01, 2012 at 03:42:59PM +0100, Linus Walleij wrote:
 
->>>[PATCH 6/6] iptables: xt_LOG: Add ring buffer support
->>>
->>>in libxt_LOG.c:
->>>+.size = XT_ALIGN(sizeof(struct xt_log_info_v1) + sizeof(void *)),
->>
->> Why the extra void*?
->
->The kernel space part of  xt_log_info_v1 differs from the user space struct,
->it contains an extra pointer to the ring buffer context.
->Iptables must not see this extra pointer because the kernel writes to it.
+> For newer ASICs we solve it by not providing platform data
+> and instead fall back to reading chip revision.
 
-I don't see that extra pointer (outside xt_log_info_v1) that you talk about.
+Given all that it sounds like it'd be more accurate to say that for old
+chips we fall back on platform data - fall back sounds like it's a
+failure mode but it seems like the opposite is true.
 
-+struct xt_log_info_v1 {
-+       unsigned char level;
-+       unsigned char logflags;
-+       char prefix[30];
-+
-+       char ring_name[30];
-+       unsigned long ring_size;
-+       struct xt_LOG_ring_ctx *rctx;
-+};
+A more idiomatic way of doing this would be to register the device with
+the appropriate name and then use driver data in the i2c_device_id to
+pick the appropriate variant data up - this has the added bonus of
+getting you a free device tree binding.
 
-This is the struct as you defined it. First, you must not use
-unsigned long (due to its flexible size, which is an ABI breaker; cf.
-"Writing Netfilter Modules" PDF), and the pointer must be tagged for
-8-alignment as well for the same reason.
+--JBi0ZxuS5uaEhkUZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Second, the kernel will reject a ruleset if (kernel) .targetsize != (user)
-.size. This is likely to occur, since you essentially have
-.targetsize=72 in xt_LOG.c and .size=72+sizeof(void*)
-in libxt_LOG.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPKVDtAAoJEBus8iNuMP3diqYQAIAAf40VpIk8lCX0H0nZ0Ipx
+Sqzt2il1lT9O5GRzZy9o9QX0izOKIdqFBgJ1bu4kReEZFaxn4Kyxe25BHe/aKnt+
+2iIukz5h3Z2kC/lbXoGuOCp5Qlp8HFVYkRXhkfT/7v1PiGmJ9xqC6DgdiXiXAdTP
+b4GgugmjPQNi9tf8J2R5JyNf3wte4lETunU8PMVRhZXtKph2okeVvRJdC0U/IMav
+EvwpgoOM6STUx5z4oXpIQfJRgELMz0jB5F8kMXdjP6AenanA0qm9+E8l5w+AwJYW
+fpjcOEjg9/mea9Tvy8Gsxw4HrY9H5n8nXFdFDxxx305QHTXwbArNaMRxhtQ2sv8X
+XZ6RID9HuANRo8aVWaJq3xKvlqX3wrtge6lh8q87eWsvN0/uB8PU0rMl+kSOWJqA
+qfVK0I6WaLax7qtuK4coO7qMduIgW+ZziioQHCW9FdWfmYFLWTR/rW3BGtqK7Ad6
+h/vzaVC5jSWHJVqIVizQX9RBzNZlL7mgLJ7/hig6+kM9H2oBuy8rPY0yTKp5RpU2
+D7NNf33z+n2u5MfNV4EE5S0GHT3dM9AbG5+nT1ZuZPJo3IM5gE4ot7N4OQXoRZlj
+OAeRMb6BCQ85z3To1k+bNWK7Jb087Guyy76mymySRoxEBSf1Iq6oYCEVveAxE+pA
+C8FZcvdJVdR/hxV8R4Az
+=0NjT
+-----END PGP SIGNATURE-----
 
-
-Check commit 8a252e8941cd50e4390e6fedf280ba1c7ff9ac43 for
-trailing whitespace, git log -p shows them.
-
-+       if (par->family == NFPROTO_IPV4)
-+               m = ipt_log_packet(NFPROTO_IPV4, par->hooknum, skb, par->in,
-+                                  par->out, &li, loginfo->prefix);
-+#if IS_ENABLED(CONFIG_IPV6)
-+       else if (par->family == NFPROTO_IPV6)
-+               m = ip6t_log_packet(NFPROTO_IPV6, par->hooknum, skb, par->in,
-+                                   par->out, &li, loginfo->prefix);
-+#endif
-+       else
-+               BUG();
-
-Please avoid BUG. Either do nothing in the 'else' case, or print
-a courtesy message with some unkn_log_packet() or
-WARN_ON_ONCE(). The same goes for xt_LOG_ring_exit, which I vote
-for being reduced to WARN_ON as well. If the condition triggers,
-one will have a little memory leak, but at least the machine
-still runs.
+--JBi0ZxuS5uaEhkUZ--
