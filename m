@@ -1,37 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab2BAHMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 02:12:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33408 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755128Ab2BAHMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 02:12:07 -0500
+	id S1755854Ab2BAHMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 02:12:55 -0500
+Received: from mga14.intel.com ([143.182.124.37]:6140 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753650Ab2BAHMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 02:12:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="101854826"
+Date: Wed, 1 Feb 2012 15:02:47 +0800
+From: Wu Fengguang <wfg@linux.intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+Message-ID: <20120201070247.GA29083@localhost>
+References: <1327996780.21268.42.camel@sli10-conroe>
+ <20120131220333.GD4378@redhat.com>
 MIME-Version: 1.0
-Date: Wed, 1 Feb 2012 15:12:06 +0800
-Message-ID: <CANudz+snKSchS6yY8+w9GyogcwstEEAopmESJbLs=hkCSJo5XA@mail.gmail.com>
-Subject: Some question about "security context of a task"
-From: loody <miloody@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, kernelnewbies@kernelnewbies.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120131220333.GD4378@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi all:
-I found there is a user_struct, user, located at struct cred.
-is it possible be null?
-My platform sometimes panic when using kernel_thread to creating a
-thread for running.
+On Tue, Jan 31, 2012 at 05:03:33PM -0500, Vivek Goyal wrote:
+> On Tue, Jan 31, 2012 at 03:59:40PM +0800, Shaohua Li wrote:
+> > Herbert Poetzl reported a performance regression since 2.6.39. The test
+> > is a simple dd read, but with big block size. The reason is:
+> > 
+> > T1: ra (A, A+128k), (A+128k, A+256k)
+> > T2: lock_page for page A, submit the 256k
+> > T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
+> > because of plug and there isn't any lock_page till we hit page A+256k
+> > because all pages from A to A+256k is in memory
+> > T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
+> > submitted again.
+> > T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
+> > waitting for (A+256k, A+512k) finish.
+> > 
+> > There is no request to disk in T3 and T4, so readahead pipeline breaks.
+> > 
+> > We really don't need block plug for generic_file_aio_read() for buffered
+> > I/O. The readahead already has plug and has fine grained control when I/O
+> > should be submitted. Deleting plug for buffered I/O fixes the regression.
+> > 
+> > One side effect is plug makes the request size 256k, the size is 128k
+> > without it. This is because default ra size is 128k and not a reason we
+> > need plug here.
+> 
+> For me, this patch helps only so much and does not get back all the
+> performance lost in case of raw disk read. It does improve the throughput
+> from around 85-90 MB/s to 110-120 MB/s but running the same dd with
+> iflag=direct, gets me more than 250MB/s.
+> 
+> # echo 3 > /proc/sys/vm/drop_caches 
+> # dd if=/dev/sdb of=/dev/null bs=1M count=1K
+> 1024+0 records in
+> 1024+0 records out
+> 1073741824 bytes (1.1 GB) copied, 9.03305 s, 119 MB/s
+> 
+> echo 3 > /proc/sys/vm/drop_caches 
+> # dd if=/dev/sdb of=/dev/null bs=1M count=1K iflag=direct
+> 1024+0 records in
+> 1024+0 records out
+> 1073741824 bytes (1.1 GB) copied, 4.07426 s, 264 MB/s
+> 
+> I think it is happening because in case of raw read we are submitting
+> one page at a time to request queue and by the time all the pages
+> are submitted and one big merged request is formed it wates lot of time.
+> 
+> In case of direct IO, we are getting bigger IOs at request queue so
+> less cpu overhead, less idling on queue.
 
-below is the place it happen
+Note that "dd bs=1M" will result in 128KB readahead IO. The buffered
+dd reads may perform much better if 1MB readahead size is used:
 
-if (atomic_read(&p->real_cred->user->processes) >=
-             p->signal->rlim[RLIMIT_NPROC].rlim_cur) {
-after checking the parameter, I found p->real_cred->user is NULL.
+blockdev --setra 2048 /dev/sda
 
-When and how we allocate/destroy this parameter?
-Does that mean we should some basic check before calling kernel_thread?
+> I created ext4 filesystem on same SSD and did the buffered read and
+> that seems to work just fine. Now I am getting bigger requests at
+> the request queue. (128K, 256 sectors).
+> 
+> [root@chilli common]# echo 3 > /proc/sys/vm/drop_caches 
+> [root@chilli common]# dd if=zerofile-4G of=/dev/null bs=1M count=1K
+> 1024+0 records in
+> 1024+0 records out
+> 1073741824 bytes (1.1 GB) copied, 4.09186 s, 262 MB/s
 
--- 
-Regards,
+So the raw sda reads have some performance problems. What's the exact
+blktrace sequence for sda reads? And the block size?
+
+blockdev --getbsz /dev/sda               
+
+> Anyway, remvoing top level plug in case of buffered reads sounds
+> reasonable.
+
+Yup.
+
+Thanks,
+Fengguang
