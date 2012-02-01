@@ -1,66 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab2BAVNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:13:15 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46740 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932657Ab2BAVKn (ORCPT
+	id S932623Ab2BAVN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:13:28 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:43200 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757303Ab2BAVNY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:43 -0500
-X-Sasl-enc: 7r8AaCzknUsYz9Z787g4zfKNUaVSw/HV1j2lXm31yXjA 1328130641
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:50 2012
-Message-Id: <20120201210050.032645006@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:34 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [70/89] netns: Fail conspicously if someone uses net_generic at an inappropriate time.
-In-Reply-To: <20120201210505.GA26028@kroah.com>
+	Wed, 1 Feb 2012 16:13:24 -0500
+X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 16:13:24 EST
+From: "Boehm, Hans" <hans.boehm@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Torvald Riegel <triegel@redhat.com>
+CC: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "dsterba@suse.cz" <dsterba@suse.cz>,
+        "ptesarik@suse.cz" <ptesarik@suse.cz>,
+        "rguenther@suse.de" <rguenther@suse.de>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: RE: Memory corruption due to word sharing
+Thread-Topic: Memory corruption due to word sharing
+Thread-Index: AQHM4PTrUuQzu7yZv0OOPDwQnxvuBZYoPuuAgAARBQCAACK6AIAABWeA
+Date: Wed, 1 Feb 2012 21:04:07 +0000
+Message-ID: <A3E67C2071F49C4CBC4F17E6D77CDDD232754151@G4W3299.americas.hpqcorp.net>
+References: <20120201151918.GC16714@quack.suse.cz>
+ <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb>
+ <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
+In-Reply-To: <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.216.12.11]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+> From: Linus Torvalds
+> >
+> > We need a proper memory model.
+> 
+> Not really.
+> 
+> The fact is, the kernel will happily take the memory model of the
+> underlying hardware. Trying to impose some compiler description of the
+> memory model is actually horribly bad, because it automatically also
+> involves compiler synchronization points - which will try to be
+> portable and easy to understand, and quite frankly, that will
+> automatically result in what is technically known as a "shitload of
+> crap".
+The C11 memory model potentially adds overhead in only two cases:
 
-------------------
+1. When current code involves touching a field that wouldn't otherwise be touched.  There are odd cases in which this measurably slows down code, but I think all agree that we need it.  In addition to bitfields, it can affect speculatively promoting a value to a register in a loop, which at least older versions of gcc also do.
 
+2. When you use atomic operations for racing accesses.  And in that case, if you really want it, you get a lot of control over memory ordering.  Atomic operations that specify "memory_order_relaxed" should only have three kinds of impact:
+	- They ensure the access is indivisible.
+	- They tell the compiler that the location may be concurrently modified and it should refrain from optimizations that will break if it is.
+	- They enforce cache coherence, i.e. single-variable ordering.  This is implicit on most architectures, but requires ld.acq on Itanium.  IIRC, Paul McKenney argued convincingly that this was essential for preserving programmer sanity.
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+> 
+> Now, a strict memory model is fine for portability, and to make it
+> simple for programmers. I actually largely approve of the Java memory
+> model approach, even if it has been horribly problematic and has some
+> serious problems. But it's not something that is acceptable for the
+> kernel - we absolutely do *not* want the compiler to introduce some
+> memory model, because we are very much working together with whatever
+> the hardware memory model is, and we do our own serialization
+> primitives.
+I think you are somewhat misinterpreting the C11 memory model.  Aside from the minor cache coherence issues on one or two architectures, you can still do that, if you like.  But I suspect you can also do better in places.
 
-[ Upstream commit 5ee4433efe99b9f39f6eff5052a177bbcfe72cea ]
+> 
+> > No vague assumptions with lots of hand-waving.
+> 
+> So here's basically what the kernel needs:
+> 
+>  - if we don't touch a field, the compiler doesn't touch it.
+> 
+>    This is the rule that gcc now violates with bitfields.
+And in other more subtle cases.  At least until very recently.
 
-By definition net_generic should never be called when it can return
-NULL.  Fail conspicously with a BUG_ON to make it clear when people mess
-up that a NULL return should never happen.
+> 
+>    This is a gcc bug. End of story. The "volatile" example proves it -
+> anybody who argues otherwise is simply wrong, and is just trying to
+> make excuses.
+Agreed.
 
-Recently there was a bug in the CAIF subsystem where it was registered
-with register_pernet_device instead of register_pernet_subsys.  It was
-erroneously concluded that net_generic could validly return NULL and
-that net_assign_generic was buggy (when it was just inefficient).
-Hopefully this BUG_ON will prevent people to coming to similar erroneous
-conclusions in the futrue.
+> 
+>  - if we need to touch something only once, or care about something
+> that is touched only conditionally, and we actually need to make sure
+> that it is touched *only* under that condition, we already go to quite
+> extreme lengths to tell the compiler so.
+> 
+>    We usually use an access with a "volatile" cast on it or tricks
+> like that. Or we do the whole "magic asm that says it modified memory
+> to let the compiler know not to try anything clever"
+> 
+>  - The kernel IS NOT GOING TO MARK DATA STRUCTURES.
+> 
+> Marking data structures is seriously stupid and wrong. It's not the
+> *data* that has access rules, it's the *code* that has rules of
+> access.
+> 
+> The traditional C "volatile" is misdesigned and wrong. We don't
+> generally mark data volatile, we really mark *code* volatile - which
+> is why our "volatiles" are in the casts, not on the data structures.
+> 
+> Stuff that is "volatile" in one context is not volatile in another. If
+> you hold a RCU write lock, it may well be entirely stable, and marking
+> it volatile is *wrong*, and generating code as if it was volatile is
+> pure and utter shit.
+> 
+> On the other hand, if you are touching *the*very*same* field while you
+> are only read-locked for RCU, it may well be one of those "this has to
+> be read by accessing it exactly once".
+> 
+> And we do all this correctly in the kernel.  Modulo bugs, of course,
+> but the fundamental rule really is: "atomicity or volatility is about
+> CODE, not DATA".
+The preferred C11 model is clearly to mark data that potentially participates in unprotected concurrent accesses, and then to annotate accesses that require less care, e.g. because we know they can't occur concurrently with other accesses.  Maybe this is the wrong approach for the kernel, but to me that seems like a safer approach.  We did consider the alternative model, and tried to ensure that casts to atomic could also work on as many platforms as possible, though we can't guarantee that.  (There is currently no specification for atomic accesses that says "not concurrently accessed".  We've thought about it.  I would argue for adding it if there were important cases in which memory_order_relaxed is demonstrably not close enough.)
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/netns/generic.h |    1 +
- 1 file changed, 1 insertion(+)
+> 
+> And no, C11 does *not* do it correctly. The whole "_Atomic" crap is
+> exactly the same mistake as "volatile" was. It's wrong. Marking data
+> _Atomic is a sure sign that whoever designed it didn't understand
+> things.
+> 
+> > The only candidate that I see is the C++11/C11 model.  Any other
+> > suggestions?
+> 
+> The C11 model addresses the wrong thing, and addresses it badly.
+> 
+> You might as well ignore it as far as the kernel is concerned. I'm
+> sure it helps some *other* problem, but it's not the kernel problem.
+But it seems to me that the core of the C11 model consists largely of the rules you're asking for.  Even if you continue to use volatile and ignore atomic, it seems to me that you're far ahead, though still on needlessly thin ice, with the C11 model.
 
---- a/include/net/netns/generic.h
-+++ b/include/net/netns/generic.h
-@@ -41,6 +41,7 @@ static inline void *net_generic(const st
- 	ptr = ng->ptr[id - 1];
- 	rcu_read_unlock();
- 
-+	BUG_ON(!ptr);
- 	return ptr;
- }
- #endif
+> 
+> The rules really are very simple, and the kernel already does
+> everything to make it easy for the compiler.
+> 
+> When we do something that the compiler cannot re-order around, we do
+> an asm() and mark it as modifying memory so that the compiler won't
+> screw things up. In addition, we will do whatever that the CPU
+> requires for memory ordering, and quite frankly, the compiler will
+> never have sufficient locking primitives to satisfy us, and there is
+> no real point in even trying. If you try to do locking in the
+> compiler, you *will* do it wrong.
+Which is one reason C11 gives you fine control over atomics that can be used to implement locks.
 
+> 
+> If you add random flags on data structures ("_Atomic" or "volatile" or
+> whatever), you *will* do it wrong. It's simply a fundamentally broken
+> model.
+> 
+> So the *only* memory model we want from the compiler really is: "don't
+> write to fields that the source code didn't write to".
+> 
+> It's really is that simple.
+You clearly also need to say something about adjacent bitfields.  Nor would it be usable outside the kernel, because the programmer needs to understand the esoteric fence semantics etc. on every architecture in order to really use it.  (It also isn't exactly a language specification, but that's OK here.)  But again I think the C11 spec implies exactly what you want here.
 
+> 
+> > So, would it be okay to tell the compiler which part of the state is
+> > accessed concurrently (ie, locks, atomics, ...)?
+> 
+> Seriously, no.
+> 
+> See above: it's not the "state" that is accessed concurrently. It's
+> the code. If you ever try to mark state, you've already lost. The same
+> "state" can be atomic or not depending on context. It's not about the
+> state or the data structures, and it never will be.
+I think we have no disagreement that in the end it's the access whose properties you need to specify.  The question is what constitutes the most convenient and robust way to do so.  Clearly we specify other attributes of accesses (length, alignment) using the type, and perhaps override it when necessary.  C11 atomics arguably use the same approach.
+
+Hans
+
+> 
+>                         Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ia64"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
