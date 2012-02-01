@@ -1,123 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab2BAKHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 05:07:03 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:37424 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab2BAKHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 05:07:01 -0500
-Date: Wed, 1 Feb 2012 11:06:52 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: rcu warnings cause stack overflow
-Message-ID: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
+	id S1756120Ab2BAKKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 05:10:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53354 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753819Ab2BAKKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 05:10:09 -0500
+Date: Wed, 1 Feb 2012 10:10:05 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Herbert van den Bergh <herbert.van.den.bergh@oracle.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: compaction: Check pfn_valid when entering a new
+ MAX_ORDER_NR_PAGES block during isolation for migration
+Message-ID: <20120201101005.GA4065@suse.de>
+References: <20120131163528.GR4065@suse.de>
+ <20120131124026.15c0f495.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <20120131124026.15c0f495.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12020110-2966-0000-0000-0000031652EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+On Tue, Jan 31, 2012 at 12:40:26PM -0800, Andrew Morton wrote:
+> On Tue, 31 Jan 2012 16:35:28 +0000
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > When isolating for migration, migration starts at the start of a zone
+> > which is not necessarily pageblock aligned. Further, it stops isolating
+> > when COMPACT_CLUSTER_MAX pages are isolated so migrate_pfn is generally
+> > not aligned.
+> > 
+> > The problem is that pfn_valid is only called on the first PFN being
+> > checked. Lets say we have a case like this
+> > 
+> > H = MAX_ORDER_NR_PAGES boundary
+> > | = pageblock boundary
+> > m = cc->migrate_pfn
+> > f = cc->free_pfn
+> > o = memory hole
+> > 
+> > H------|------H------|----m-Hoooooo|ooooooH-f----|------H
+> > 
+> > The migrate_pfn is just below a memory hole and the free scanner is
+> > beyond the hole. When isolate_migratepages started, it scans from
+> > migrate_pfn to migrate_pfn+pageblock_nr_pages which is now in a memory
+> > hole. It checks pfn_valid() on the first PFN but then scans into the
+> > hole where there are not necessarily valid struct pages.
+> > 
+> > This patch ensures that isolate_migratepages calls pfn_valid when
+> > necessary.
+> > 
+> > Reported-and-tested-by: Herbert van den Bergh <herbert.van.den.bergh@oracle.com>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> 
+> The changelog forgot to describe the user-visible effects of the bug.
+> 
 
-your patch 00f49e5729 "rcu: Warn when rcu_read_lock() is used in extended
-quiescent state" adds a WARN_ON_ONCE to rcu_lock_acquire().
-Actually this found a bug on s390 (thanks!) but it probably didn't work
-as expected.
-On architectures which implement WARN_ON_ONCE with an exception this
-additional warning will lead to a stack overflow (if it triggers):
+My bad. This changelog originally had a bugzilla number which I cut
+out when reposting. Here is the same patch with a better changelog
 
-[   55.746956] Kernel stack overflow.
-[   55.746966] Modules linked in: qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod qeth vmur ccwgroup [last unloaded: scsi_wait_
-scan]
-[   55.746999] CPU: 0 Not tainted 3.3.0-rc1-00167-gf8275f9 #90
-[   55.747005] Process swapper/0 (pid: 0, task: 0000000000911100, ksp: 0000000000907d50)
-[   55.747013] Krnl PSW : 0404000180000000 00000000005d5728 (illegal_op+0x1c/0x134)
-[   55.747034]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:0 CC:0 PM:0 EA:3
-[   55.747043] Krnl GPRS: 0000000000000001 00000000005d570c 00000000009040e8 0000000000000002
-[   55.747054]            00000000005d83dc ffffffffffffffff 0000000000000000 0400000000907cc8
-[   55.747064]            0404100180000000 00000000005d8478 0000000000000008 00000000009040e8
-[   55.747074]            0000000000904000 00000000005dc550 0000000000904048 0000000000904048
-[   55.747096] Krnl Code: 00000000005d571c: b90400ef            lgr     %r14,%r15
-[   55.747118]            00000000005d5720: b90400b2            lgr     %r11,%r2
-[   55.747194]           #00000000005d5724: a7840001            brc     8,5d5726
-[   55.747205]           >00000000005d5728: a7fbff18            aghi    %r15,-232
-[   55.747216]            00000000005d572c: e3e0f0980024        stg     %r14,152(%r15)
-[   55.747228]            00000000005d5732: e31020100004        lg      %r1,16(%r2)
-[   55.747242]            00000000005d5738: 58c020a0            l       %r12,160(%r2)
-[   55.747257]            00000000005d573c: 91012009            tm      9(%r2),1
-[   55.747276] Call Trace:
-[   55.747282] ([<00000000005d60b4>] pgm_check_handler+0x154/0x158)
-[   55.747296]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
-[   55.747309] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
-[   55.747322]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
-[   55.747335]  [<00000000005d852a>] notify_die+0x52/0x60
-[   55.747349]  [<00000000005d57da>] illegal_op+0xce/0x134
-[   55.747364]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
+=== CUT HERE ===
+mm: compaction: Check pfn_valid when entering a new MAX_ORDER_NR_PAGES block during isolation for migration
 
-[...lots more of the same...] 
+When isolating for migration, migration starts at the start of a
+zone which is not necessarily pageblock aligned. Further, it stops
+isolating when COMPACT_CLUSTER_MAX pages are isolated so migrate_pfn
+is generally not aligned. This allows isolate_migratepages() to call
+pfn_to_page() on an invalid PFN which can result in a crash. This
+was originally reported against a 3.0-based kernel with the following
+trace in a crash dump.
 
-[   55.747379]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
-[   55.747425] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
-[   55.747432]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
-[   55.747440]  [<00000000005d852a>] notify_die+0x52/0x60
-[   55.747448]  [<00000000005d57da>] illegal_op+0xce/0x134
-[   55.747457]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
-[   55.747797]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
-[   55.747806] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
-[   55.747816]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
-[   55.747826]  [<00000000005d852a>] notify_die+0x52/0x60
-[   55.748456]  [<00000000005d57da>] illegal_op+0xce/0x134
-[   55.748463]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
-[   55.748472]  [<000000000017afa0>] select_task_rq_fair+0x1478/0x14b4
-[   55.748483] ([<0000000000179bb8>] select_task_rq_fair+0x90/0x14b4)
-[   55.748493]  [<0000000000170702>] try_to_wake_up+0x136/0x47c
-[   55.748506]  [<000000000015b446>] autoremove_wake_function+0x26/0x58
-[   55.748518]  [<000000000016693a>] __wake_up_common+0x76/0xb4
-[   55.748530]  [<000000000016aed0>] __wake_up+0x4c/0x60
-[   55.748541]  [<0000000000109ee0>] s390_handle_mcck+0x194/0x1f8
-[   55.748557]  [<000000000010486a>] cpu_idle+0x192/0x1c0
-[   55.748570]  [<0000000000977916>] start_kernel+0x402/0x410
-[   55.748588]  [<0000000000100020>] _stext+0x20/0x80
-[   55.748603] 2 locks held by swapper/0/0:
-[   55.748612]  #0:  (crw_handler_wait_q.lock){......}, at: [<000000000016aeb6>] __wake_up+0x32/0x60
-[   55.748648]  #1:  (&p->pi_lock){-.-.-.}, at: [<000000000017060c>] try_to_wake_up+0x40/0x47c
-[   55.748663] Last Breaking-Event-Address:
-[   55.748667]  [<0000000000000000>] 0x0
+PID: 9902   TASK: d47aecd0  CPU: 0   COMMAND: "memcg_process_s"
+ #0 [d72d3ad0] crash_kexec at c028cfdb
+ #1 [d72d3b24] oops_end at c05c5322
+ #2 [d72d3b38] __bad_area_nosemaphore at c0227e60
+ #3 [d72d3bec] bad_area at c0227fb6
+ #4 [d72d3c00] do_page_fault at c05c72ec
+ #5 [d72d3c80] error_code (via page_fault) at c05c47a4
+    EAX: 00000000  EBX: 000c0000  ECX: 00000001  EDX: 00000807  EBP: 000c0000 
+    DS:  007b      ESI: 00000001  ES:  007b      EDI: f3000a80  GS:  6f50
+    CS:  0060      EIP: c030b15a  ERR: ffffffff  EFLAGS: 00010002 
+ #6 [d72d3cb4] isolate_migratepages at c030b15a
+ #7 [d72d3d14] zone_watermark_ok at c02d26cb
+ #8 [d72d3d2c] compact_zone at c030b8de
+ #9 [d72d3d68] compact_zone_order at c030bba1
+#10 [d72d3db4] try_to_compact_pages at c030bc84
+#11 [d72d3ddc] __alloc_pages_direct_compact at c02d61e7
+#12 [d72d3e08] __alloc_pages_slowpath at c02d66c7
+#13 [d72d3e78] __alloc_pages_nodemask at c02d6a97
+#14 [d72d3eb8] alloc_pages_vma at c030a845
+#15 [d72d3ed4] do_huge_pmd_anonymous_page at c03178eb
+#16 [d72d3f00] handle_mm_fault at c02f36c6
+#17 [d72d3f30] do_page_fault at c05c70ed
+#18 [d72d3fb0] error_code (via page_fault) at c05c47a4
+    EAX: b71ff000  EBX: 00000001  ECX: 00001600  EDX: 00000431 
+    DS:  007b      ESI: 08048950  ES:  007b      EDI: bfaa3788
+    SS:  007b      ESP: bfaa36e0  EBP: bfaa3828  GS:  6f50
+    CS:  0073      EIP: 080487c8  ERR: ffffffff  EFLAGS: 00010202 
 
-This simply happens because WARN_ON_ONCE causes an exception, the excpetion
-handler wants to call a notifier call chain (notify_die), which again uses
-rcu_read_lock(), which again causes an exception and so on...
-Unfortunately WARN_ON_ONCE first causes an exception and only afterwards sets
-the flag that the warning already happened. Seems to be quite some effort to
-change this behaviour.
+It was also reported by Herbert van den Bergh against 3.1-based kernel
+with the following snippit from the console log.
 
-Removing the WARN_ON_ONCE will fix this and, if lockdep is turned on, still
-will find illegal uses. But it won't work for lockdep off configs...
-So we probably want something better than the patch below.
+BUG: unable to handle kernel paging request at 01c00008
+IP: [<c0522399>] isolate_migratepages+0x119/0x390
+*pdpt = 000000002f7ce001 *pde = 0000000000000000
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 81c04f4..6da8ca4 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -239,13 +239,11 @@ static inline int rcu_is_cpu_idle(void)
+It is expected that it also affects 3.2.x and current mainline.
+
+The problem is that pfn_valid is only called on the first PFN being
+checked and that PFN is not necessarily aligned. Lets say we have a
+case like this
+
+H = MAX_ORDER_NR_PAGES boundary
+| = pageblock boundary
+m = cc->migrate_pfn
+f = cc->free_pfn
+o = memory hole
+
+H------|------H------|----m-Hoooooo|ooooooH-f----|------H
+
+The migrate_pfn is just below a memory hole and the free scanner is
+beyond the hole. When isolate_migratepages started, it scans from
+migrate_pfn to migrate_pfn+pageblock_nr_pages which is now in a memory
+hole. It checks pfn_valid() on the first PFN but then scans into the
+hole where there are not necessarily valid struct pages.
+
+This patch ensures that isolate_migratepages calls pfn_valid when
+necessary.
+
+Reported-and-tested-by: Herbert van den Bergh <herbert.van.den.bergh@oracle.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: stable <stable@vger.kernel.org>
+---
+ mm/compaction.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 899d956..edc1e26 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -313,6 +313,19 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 		} else if (!locked)
+ 			spin_lock_irq(&zone->lru_lock);
  
- static inline void rcu_lock_acquire(struct lockdep_map *map)
- {
--	WARN_ON_ONCE(rcu_is_cpu_idle());
- 	lock_acquire(map, 0, 0, 2, 1, NULL, _THIS_IP_);
- }
- 
- static inline void rcu_lock_release(struct lockdep_map *map)
- {
--	WARN_ON_ONCE(rcu_is_cpu_idle());
- 	lock_release(map, 1, _THIS_IP_);
- }
- 
++		/*
++		 * migrate_pfn does not necessarily start aligned to a
++		 * pageblock. Ensure that pfn_valid is called when moving
++		 * into a new MAX_ORDER_NR_PAGES range in case of large
++		 * memory holes within the zone
++		 */
++		if ((low_pfn & (MAX_ORDER_NR_PAGES - 1)) == 0) {
++			if (!pfn_valid(low_pfn)) {
++				low_pfn += MAX_ORDER_NR_PAGES - 1;
++				continue;
++			}
++		}
++
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+ 		nr_scanned++;
 
+-- 
+Mel Gorman
+SUSE Labs
