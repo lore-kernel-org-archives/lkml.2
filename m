@@ -1,36 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2BAHcx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 02:32:53 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:44359 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753044Ab2BAHcw (ORCPT
+	id S1755905Ab2BAHfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 02:35:14 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49212 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab2BAHfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 02:32:52 -0500
+	Wed, 1 Feb 2012 02:35:12 -0500
+Date: Tue, 31 Jan 2012 23:35:10 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 3/3] ARM: tegra: cpuidle driver for tegra
+Message-ID: <20120201073510.GE7399@quad.lixom.net>
+References: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
+ <1327594923-21822-4-git-send-email-pdeschrijver@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20120201063420.GA10204@darkstar.nay.redhat.com>
-References: <20120201063420.GA10204@darkstar.nay.redhat.com>
-Date: Wed, 1 Feb 2012 09:32:52 +0200
-X-Google-Sender-Auth: GFL_0ZPEFxg7Eqpl1dIR767tHU4
-Message-ID: <CAOJsxLGVS3bK=hiKJu4NwTv-Nf8TCSAEL4reSZoY4=44hPt8rA@mail.gmail.com>
-Subject: Re: [PATCH] move vm tools from Documentation/vm/ to tools/
-From: Pekka Enberg <penberg@kernel.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327594923-21822-4-git-send-email-pdeschrijver@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 8:34 AM, Dave Young <dyoung@redhat.com> wrote:
-> tools/ is the better place for vm tools which are used by many people.
-> Moving them to tools also make them open to more users instead of hide in
-> Documentation folder.
+On Thu, Jan 26, 2012 at 06:22:03PM +0200, Peter De Schrijver wrote:
+> CPUidle driver for tegra. In this version only LP3 (clockgating) is supported.
+> 
+> Based on work by:
+> 
+> Colin Cross <ccross@android.com>
+> Gary King <gking@nvidia.com>
+> 
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> ---
+>  arch/arm/mach-tegra/Makefile  |    2 +
+>  arch/arm/mach-tegra/cpuidle.c |  107 +++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 109 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/mach-tegra/cpuidle.c
+> 
+> diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+> index b78bda8..c06c280 100644
+> --- a/arch/arm/mach-tegra/Makefile
+> +++ b/arch/arm/mach-tegra/Makefile
+> @@ -6,6 +6,8 @@ obj-y                                   += irq.o
+>  obj-y                                   += clock.o
+>  obj-y                                   += timer.o
+>  obj-y					+= fuse.o
+> +obj-y					+= cpuidle.o
+> +obj-y					+= sleep.o
 
-For moving the code:
+Nit: Not much use in building this if CONFIG_CPU_IDLE is off. Feel free to fix
+that up in a new patch.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
 
-> Also fixed several coding style problem.
-
-Can you please make that a separate patch?
+-Olof
