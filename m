@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab2BAR5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:57:01 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:27484 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753026Ab2BAR47 (ORCPT
+	id S1754175Ab2BAR57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:57:59 -0500
+Received: from mtv-iport-3.cisco.com ([173.36.130.14]:49319 "EHLO
+	mtv-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752907Ab2BAR56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:56:59 -0500
-Date: Wed, 1 Feb 2012 12:56:51 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Keith Packard <keithp@keithp.com>
-Subject: Re: Linux 3.3-rc2
-Message-ID: <20120201175651.GA3300@elliptictech.com>
-References: <CA+55aFye5iedspjus4YLi+r77Xq74bCq+MqU0HrTmDC5Dveivg@mail.gmail.com>
+	Wed, 1 Feb 2012 12:57:58 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EACB8KU+rRDoI/2dsb2JhbABDrFWCKYEFgXIBAQEEEgFlARALGAkWDwkDAgECAUUGDQEHAQEeoVIBnl6LMgEEAgECAgkCAgEGBwMTAQgFAwMJHAMBgnEZBAMMAxQFVw0BBAQMAgoCgz0EiEGMYIVXjR0
+X-IronPort-AV: E=Sophos;i="4.71,603,1320624000"; 
+   d="scan'208";a="28245135"
+Message-ID: <4F297D25.7090902@cisco.com>
+Date: Wed, 01 Feb 2012 10:57:57 -0700
+From: David Ahern <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFye5iedspjus4YLi+r77Xq74bCq+MqU0HrTmDC5Dveivg@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rose, Gregory V" <gregory.v.rose@intel.com>
+CC: "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: VFs go missing with latest kernel
+References: <4F287102.3060600@cisco.com> <C5551D9AAB213A418B7FD5E4A6F30A0702F6489B@ORSMSX106.amr.corp.intel.com> <4F2887AB.8070005@cisco.com> <C5551D9AAB213A418B7FD5E4A6F30A0702F64AF6@ORSMSX106.amr.corp.intel.com> <4F288C4A.3070509@cisco.com> <C5551D9AAB213A418B7FD5E4A6F30A0702F64B7F@ORSMSX106.amr.corp.intel.com> <C5551D9AAB213A418B7FD5E4A6F30A0702F66ADF@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <C5551D9AAB213A418B7FD5E4A6F30A0702F66ADF@ORSMSX106.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-01-31 13:59 -0800, Linus Torvalds wrote:
-> Ok, so for no real reason at all - except me being disorganized and
-> just not thinking about it - rc2 is several days delayed. It's closer
-> to two weeks rather than the standard one week I try to have between
-> rc's.
-[...]
-> Go forth and test.
+On 02/01/2012 10:47 AM, Rose, Gregory V wrote:
+> I found this in the log file you sent me.  I had missed it yesterday.
+> 
+> [   15.835223] igb 0000:07:00.0: 7 pre-allocated VFs found - override max_vfs setting of 7
+> [   15.835393] igb 0000:07:00.0: 7 VFs allocated
+> 
+> I think that must be a bug in the code that searches for VFs already allocated and is the source of your problem.  I'll keep you updated on what I find but it has to be a bug in the VF device lookups.
 
-So, the HDMI log spam I reported against 3.2-rc1 in this thread:
+Confused. What is pre-allocating the VFs during boot? Looking at my
+rc-scripts I am only set MAC addresses at boot. No VMs have been started
+yet. This setup has worked fine with Fedora 14 and 3.0 kernels; it's
+really the move to 3.3-rc that I hit the problem.
 
-  http://permalink.gmane.org/gmane.linux.kernel/1212638
-
-is actually slightly worse now (see below), despite the fact that it was
-eliminated by the patch I tested.  Looking at the git log, I see a patch
-similar to the one sent to me was merged as part of a larger series:
-
-  3a9627f4fbb0 ("drm/i915: dont trigger hotplug events on unchanged ELD")
-
-and indeed, by building the tree after checking out that specific commit
-there is no spam.  However, the _very next commit_:
-
-  2deed761188d ("drm/i915: HDMI hot remove notification to audio driver")
-
-reintroduces the log spam every mode change, with two additional lines
-printed each time (the lines prefixed with an asterisk are new):
-
-* HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=0 ELD_Valid=1
-* HDMI status: Codec=3 Pin=3 Presence_Detect=0 ELD_Valid=0
-  HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
-  HDMI status: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
-  HDMI: detected monitor W2253 at connection type HDMI
-  HDMI: available speakers: FL/FR
-  HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
-
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
-
+David
