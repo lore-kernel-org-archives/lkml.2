@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab2BAVM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:12:57 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47387 "EHLO
+	id S1757297Ab2BAVNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:13:15 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46740 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932667Ab2BAVKp (ORCPT
+	by vger.kernel.org with ESMTP id S932657Ab2BAVKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:45 -0500
-X-Sasl-enc: Zl2bEzHs0utXfE8ikLzRXvH5wOK6/xZDkObaiNv/D2Rr 1328130643
+	Wed, 1 Feb 2012 16:10:43 -0500
+X-Sasl-enc: 7r8AaCzknUsYz9Z787g4zfKNUaVSw/HV1j2lXm31yXjA 1328130641
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:50 2012
-Message-Id: <20120201210050.129900357@clark.kroah.org>
+Message-Id: <20120201210050.032645006@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:35 -0800
+Date: Wed, 01 Feb 2012 13:00:34 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
-        =?UTF-8?q?Sjur=20Br=E6ndeland?= <sjur.brandeland@stericsson.com>,
         Sasha Levin <levinsasha928@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [71/89] net caif: Register properly as a pernet subsystem.
+Subject: [70/89] netns: Fail conspicously if someone uses net_generic at an inappropriate time.
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,107 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit 8a8ee9aff6c3077dd9c2c7a77478e8ed362b96c6 ]
+[ Upstream commit 5ee4433efe99b9f39f6eff5052a177bbcfe72cea ]
 
-caif is a subsystem and as such it needs to register with
-register_pernet_subsys instead of register_pernet_device.
+By definition net_generic should never be called when it can return
+NULL.  Fail conspicously with a BUG_ON to make it clear when people mess
+up that a NULL return should never happen.
 
-Among other problems using register_pernet_device was resulting in
-net_generic being called before the caif_net structure was allocated.
-Which has been causing net_generic to fail with either BUG_ON's or by
-return NULL pointers.
-
-A more ugly problem that could be caused is packets in flight why the
-subsystem is shutting down.
-
-To remove confusion also remove the cruft cause by inappropriately
-trying to fix this bug.
-
-With the aid of the previous patch I have tested this patch and
-confirmed that using register_pernet_subsys makes the failure go away as
-it should.
+Recently there was a bug in the CAIF subsystem where it was registered
+with register_pernet_device instead of register_pernet_subsys.  It was
+erroneously concluded that net_generic could validly return NULL and
+that net_assign_generic was buggy (when it was just inefficient).
+Hopefully this BUG_ON will prevent people to coming to similar erroneous
+conclusions in the futrue.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 Tested-by: Sasha Levin <levinsasha928@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/caif/caif_dev.c |   11 ++++-------
- net/caif/cfcnfg.c   |    1 -
- 2 files changed, 4 insertions(+), 8 deletions(-)
+ include/net/netns/generic.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/caif/caif_dev.c
-+++ b/net/caif/caif_dev.c
-@@ -53,7 +53,6 @@ struct cfcnfg *get_cfcnfg(struct net *ne
- 	struct caif_net *caifn;
- 	BUG_ON(!net);
- 	caifn = net_generic(net, caif_net_id);
--	BUG_ON(!caifn);
- 	return caifn->cfg;
+--- a/include/net/netns/generic.h
++++ b/include/net/netns/generic.h
+@@ -41,6 +41,7 @@ static inline void *net_generic(const st
+ 	ptr = ng->ptr[id - 1];
+ 	rcu_read_unlock();
+ 
++	BUG_ON(!ptr);
+ 	return ptr;
  }
- EXPORT_SYMBOL(get_cfcnfg);
-@@ -63,7 +62,6 @@ static struct caif_device_entry_list *ca
- 	struct caif_net *caifn;
- 	BUG_ON(!net);
- 	caifn = net_generic(net, caif_net_id);
--	BUG_ON(!caifn);
- 	return &caifn->caifdevs;
- }
- 
-@@ -92,7 +90,6 @@ static struct caif_device_entry *caif_de
- 	struct caif_device_entry *caifd;
- 
- 	caifdevs = caif_device_list(dev_net(dev));
--	BUG_ON(!caifdevs);
- 
- 	caifd = kzalloc(sizeof(*caifd), GFP_KERNEL);
- 	if (!caifd)
-@@ -112,7 +109,7 @@ static struct caif_device_entry *caif_ge
- 	struct caif_device_entry_list *caifdevs =
- 	    caif_device_list(dev_net(dev));
- 	struct caif_device_entry *caifd;
--	BUG_ON(!caifdevs);
-+
- 	list_for_each_entry_rcu(caifd, &caifdevs->list, list) {
- 		if (caifd->netdev == dev)
- 			return caifd;
-@@ -353,7 +350,7 @@ static struct notifier_block caif_device
- static int caif_init_net(struct net *net)
- {
- 	struct caif_net *caifn = net_generic(net, caif_net_id);
--	BUG_ON(!caifn);
-+
- 	INIT_LIST_HEAD(&caifn->caifdevs.list);
- 	mutex_init(&caifn->caifdevs.lock);
- 
-@@ -418,7 +415,7 @@ static int __init caif_device_init(void)
- {
- 	int result;
- 
--	result = register_pernet_device(&caif_net_ops);
-+	result = register_pernet_subsys(&caif_net_ops);
- 
- 	if (result)
- 		return result;
-@@ -431,7 +428,7 @@ static int __init caif_device_init(void)
- 
- static void __exit caif_device_exit(void)
- {
--	unregister_pernet_device(&caif_net_ops);
-+	unregister_pernet_subsys(&caif_net_ops);
- 	unregister_netdevice_notifier(&caif_device_notifier);
- 	dev_remove_pack(&caif_packet_type);
- }
---- a/net/caif/cfcnfg.c
-+++ b/net/caif/cfcnfg.c
-@@ -309,7 +309,6 @@ int caif_connect_client(struct net *net,
- 	int err;
- 	struct cfctrl_link_param param;
- 	struct cfcnfg *cfg = get_cfcnfg(net);
--	caif_assert(cfg != NULL);
- 
- 	rcu_read_lock();
- 	err = caif_connect_req_to_link_param(cfg, conn_req, &param);
+ #endif
 
 
