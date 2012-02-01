@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812Ab2BAVYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:24:06 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48945 "EHLO
+	id S1757520Ab2BAVTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:19:36 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:57579 "EHLO
 	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757527Ab2BAVTi (ORCPT
+	by vger.kernel.org with ESMTP id S1757418Ab2BAVTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:38 -0500
-X-Sasl-enc: /jUY6+QYklH1LHCBBE/7jkln2c9X36fo6oXqGzwNpBdm 1328131177
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:51 2012
-Message-Id: <20120201210051.173360911@clark.kroah.org>
+	Wed, 1 Feb 2012 16:19:30 -0500
+X-Sasl-enc: +5u6bb33nB9LzEwIpv4k8ztw5/44Qii7wPwhQn+HrZTU 1328131170
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:47 2012
+Message-Id: <20120201210047.071272253@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:47 -0800
+Date: Wed, 01 Feb 2012 13:00:00 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Preston Fick <preston.fick@silabs.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [83/89] USB: cp210x: fix CP2104 baudrate usage
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Wolfgang Frisch <wfpub@roembden.net>
+Subject: [36/89] sysfs: Complain bitterly about attempts to remove files from nonexistent directories.
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,76 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Preston Fick <preston.fick@silabs.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 7f482fc88ac47662228d6b1f05759797c8936a30 upstream.
+commit ce597919361dcec97341151690e780eade2a9cf4 upstream.
 
-This fix changes the way baudrates are set on the CP210x devices from
-Silicon Labs. The CP2101/2/3 will respond to both a GET/SET_BAUDDIV
-command, and GET/SET_BAUDRATE command, while CP2104 and higher devices
-only respond to GET/SET_BAUDRATE. The current cp210x.ko driver in
-kernel version 3.2.0 only implements the GET/SET_BAUDDIV command.
+Recently an OOPS was observed from the usb serial io_ti driver when it tried to remove
+sysfs directories.  Upon investigation it turns out this driver was always buggy
+and that a recent sysfs change had stopped guarding itself against removing attributes
+from sysfs directories that had already been removed. :(
 
-This patch implements the two new codes for the GET/SET_BAUDRATE
-commands. Then there is a change in the way that the baudrate is
-assigned or retrieved. This is done according to the CP210x USB
-specification in AN571. This document can be found here:
-http://www.silabs.com/pages/DownloadDoc.aspx?FILEURL=Support%20Documents/TechnicalDocs/AN571.pdf&src=DocumentationWebPart
+Historically we have been silent about attempting to files from nonexistent sysfs
+directories and have politely returned error codes.  That has resulted in people writing
+broken code that ignores the error codes.
 
-Sections 5.3/5.4 describe the USB packets for the old baudrate method.
-Sections 5.5/5.6 describe the USB packets for the new method. This
-patch also implements the new request scheme, and eliminates the
-unnecessary baudrate calculations since it uses the "actual baudrate"
-method.
+Issue a kernel WARNING and a stack backtrace to make it clear in no uncertain
+terms that abusing sysfs is not ok, and the callers need to fix their code.
 
-This patch solves the problem reported for the CP2104 in bug 42586,
-and also keeps support for all other devices (CP2101/2/3).
+This change transforms the io_ti OOPS into a more comprehensible error message
+and stack backtrace.
 
-This patchfile is also attached to the bug report on
-bugzilla.kernel.org. This patch has been developed and test on the
-3.2.0 mainline kernel version under Ubuntu 10.11.
-
-Signed-off-by: Preston Fick <preston.fick@silabs.com>
-[duplicate patch also sent by Johan - gregkh]
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Reported-by: Wolfgang Frisch <wfpub@roembden.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ fs/sysfs/file.c  |    6 ++++++
+ fs/sysfs/inode.c |    5 ++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -202,6 +202,8 @@ static struct usb_serial_driver cp210x_d
- #define CP210X_EMBED_EVENTS	0x15
- #define CP210X_GET_EVENTSTATE	0x16
- #define CP210X_SET_CHARS	0x19
-+#define CP210X_GET_BAUDRATE	0x1D
-+#define CP210X_SET_BAUDRATE	0x1E
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -493,6 +493,12 @@ int sysfs_attr_ns(struct kobject *kobj,
+ 	const void *ns = NULL;
+ 	int err;
  
- /* CP210X_IFC_ENABLE */
- #define UART_ENABLE		0x0001
-@@ -456,10 +458,7 @@ static void cp210x_get_termios_port(stru
++	if (!dir_sd) {
++		WARN(1, KERN_ERR "sysfs: kobject %s without dirent\n",
++			kobject_name(kobj));
++		return -ENOENT;
++	}
++
+ 	err = 0;
+ 	if (!sysfs_ns_type(dir_sd))
+ 		goto out;
+--- a/fs/sysfs/inode.c
++++ b/fs/sysfs/inode.c
+@@ -318,8 +318,11 @@ int sysfs_hash_and_remove(struct sysfs_d
+ 	struct sysfs_addrm_cxt acxt;
+ 	struct sysfs_dirent *sd;
  
- 	dbg("%s - port %d", __func__, port->number);
+-	if (!dir_sd)
++	if (!dir_sd) {
++		WARN(1, KERN_WARNING "sysfs: can not remove '%s', no directory\n",
++			name);
+ 		return -ENOENT;
++	}
  
--	cp210x_get_config(port, CP210X_GET_BAUDDIV, &baud, 2);
--	/* Convert to baudrate */
--	if (baud)
--		baud = cp210x_quantise_baudrate((BAUD_RATE_GEN_FREQ + baud/2)/ baud);
-+	cp210x_get_config(port, CP210X_GET_BAUDRATE, &baud, 4);
+ 	sysfs_addrm_start(&acxt, dir_sd);
  
- 	dbg("%s - baud rate = %d", __func__, baud);
- 	*baudp = baud;
-@@ -594,8 +593,7 @@ static void cp210x_set_termios(struct tt
- 	if (baud != tty_termios_baud_rate(old_termios) && baud != 0) {
- 		dbg("%s - Setting baud rate to %d baud", __func__,
- 				baud);
--		if (cp210x_set_config_single(port, CP210X_SET_BAUDDIV,
--					((BAUD_RATE_GEN_FREQ + baud/2) / baud))) {
-+		if (cp210x_set_config(port, CP210X_SET_BAUDRATE, &baud, 4)) {
- 			dbg("Baud rate requested not supported by device");
- 			baud = tty_termios_baud_rate(old_termios);
- 		}
 
 
