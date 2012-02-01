@@ -1,213 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab2BAUfz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:35:55 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19841 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab2BAUfx (ORCPT
+	id S932198Ab2BAUgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:36:11 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53612 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682Ab2BAUfy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:35:53 -0500
-Date: Wed, 1 Feb 2012 21:36:13 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Subject: Re: [PATCH] In crypto_add_alg(), 'exact' wants to be initialized to
- 0
-In-Reply-To: <alpine.LNX.2.00.1202012050390.8577@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1202012134410.8577@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201292337390.27749@swampdragon.chaosbits.net> <CAHdPZaP4aArSh7G15KhP2ombW8Zs2L4osQ0xi0W829oBZSuTtg@mail.gmail.com> <alpine.LNX.2.00.1202012050390.8577@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 1 Feb 2012 15:35:54 -0500
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1028546279-1328128573=:8577"
+In-Reply-To: <CAGXu5jK-4DaUVofwy3aqKnQTbyQGsLVmNNfAc1pjkJHt2Kfwww@mail.gmail.com>
+References: <cover.1327858005.git.luto@amacapital.net> <9a520b74ad5dc14a3d6950b6d63a64714adbdd7d.1327858005.git.luto@amacapital.net>
+ <CAGXu5jK-4DaUVofwy3aqKnQTbyQGsLVmNNfAc1pjkJHt2Kfwww@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 1 Feb 2012 12:35:33 -0800
+Message-ID: <CALCETrV6eMYGsw-AS+ZwLpTfdzbinJT_3or0hN+R=7PKmai4mg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/4] Allow unprivileged CLONE_NEWUTS and CLONE_NEWIPC
+ with no_new_privs
+To: Kees Cook <keescook@chromium.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jamie Lokier <jamie@shareable.org>, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Feb 1, 2012 at 11:02 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Jan 30, 2012 at 8:17 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> They are normally disallowed because they could be used to subvert
+>> setuid programs.  But if setuid is disabled, then they are safe.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>  kernel/nsproxy.c |    8 +++++++-
+>>  1 files changed, 7 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+>> index b576f7f..47cf873 100644
+>> --- a/kernel/nsproxy.c
+>> +++ b/kernel/nsproxy.c
+>> @@ -191,7 +191,13 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+>>                               CLONE_NEWNET)))
+>>                return 0;
+>>
+>> -       if (!capable(CAP_SYS_ADMIN))
+>> +       /* We require either no_new_privs or CAP_SYS_ADMIN for all modes */
+>> +       if (!current->no_new_privs && !capable(CAP_SYS_ADMIN))
+>> +               return -EPERM;
+>> +
+>> +       /* NEWNS and NEWNET always require CAP_SYS_ADMIN. */
+>> +       if ((unshare_flags & (CLONE_NEWNS | CLONE_NEWNET)) &&
+>> +           !capable(CAP_SYS_ADMIN))
+>>                return -EPERM;
+>>
+>>        *new_nsp = create_new_namespaces(unshare_flags, current,
+>
+> While I think it's unlikely that the list handled by
+> unshare_nsproxy_namespaces() is going to change, I'd still prefer that
+> the logic of this test be reversed so that the nnp-allowed flags are
+> listed instead of the CAP_SYS_ADMIN-required ones so that it will
+> default to disallowing new flags. It's a little less readable, but
+> maybe something like this (untested):
+>
+> unsigned long handled_mask = (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
+>                                 CLONE_NEWNET);
+> unsigned long npp_mask = (CLONE_NEWUTS | CLONE_NEWIPC);
+>
+> if (!(unshare_flags & handled_mask))
+>        return 0;
+>
+> if (  !(current->no_new_privs &&
+>        !(unshare_flags & (handled_mask ^ npp_mask))) &&
+>      !capable(CAP_SYS_ADMIN))
+>        return -EPERM;
+> ...
+>
+> This also has the side-effect of removing the double-check of
+> capable() in some cases.
 
---8323328-1028546279-1328128573=:8577
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Agreed -- will fix.
 
-On Wed, 1 Feb 2012, Jesper Juhl wrote:
+This patch is also missing the corresponding change for clone.  I'll add that.
 
-> On Wed, 1 Feb 2012, devendra.aaru wrote:
-> 
-> > On Sun, Jan 29, 2012 at 5:39 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > > We declare 'exact' without initializing it and then do:
-> > >
-> > > [...]
-> > >        if (strlen(p->cru_driver_name))
-> > >                exact = 1;
-> > >
-> > >        if (priority && !exact)
-> > >                return -EINVAL;
-> > >
-> > > [...]
-> > >
-> > > If the first 'if' is not true, then the second will test an
-> > > uninitialized 'exact'.
-> > 
-> > not needed . as the cru_driver_name will always be present :).
-> 
-> If that is indeed the case, and we are guaranteed that, then it would seem 
-> that a patch like the following would be what we want instead??
-> 
-> Please note that this patch is intended just for discussion, nothing else 
-> (which is why I left out a Signed-off-by on purpose), since I've not 
-> tested it beyond checking that it compiles, nor have I verified your claim 
-> that cru_driver_name will always be present.
-> 
-> Herbert, David, any input?
-> 
-> 
-> Subject: [PATCH] Simplify crypto_add_alg() and crypto_alg_match()
-> 
-> Since cru_driver_name will always be present, the test
-> 
-> 	if (strlen(p->cru_driver_name))
-> 		exact = 1;
-> 
-> will always be true. So there's no need to have the test at all, we
-> can just unconditionally assign 1 to 'exact'.
-> 
-> And if 'exact' is always 1, then we'll never take the true branch of
-> 
-> 	if (priority && !exact)
-> 		return -EINVAL;
-> 
-> so we may as well just remove those two lines completely.
-> 
-> At this point we may as well just remove 'exact' entirely and just use
-> a hardcoded 1 in the call to crypto_alg_match().
-> 
-> The 'name' variable is also entirely redundant since with
-> cru_driver_name always being present we'll always take the first
-> branch in
-> 
-> 	if (strlen(p->cru_driver_name))
-> 		name = p->cru_driver_name;
-> 	else
-> 		name = p->cru_name;
-> 
-> and then we may as well just use 'p->cru_driver_name' itself the one
-> place where it is needed in the call to crypto_alg_mod_lookup().
-> 
-> At this point all calls to the static crypto_alg crypto_alg_match()
-> function pass 1 as the second argument, so there's not really any
-> point any more in that function having that argument, so let's remove
-> it and the code that tests it.
-> 
-> And since strlen(p->cru_driver_name) will also always be true in that
-> function, we can simplify the assignment to 'match'.
-> 
-> ---
->  crypto/crypto_user.c |   33 ++++++++-------------------------
->  1 files changed, 8 insertions(+), 25 deletions(-)
-> 
-> diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
-> index 16f8693..7760c22 100644
-> --- a/crypto/crypto_user.c
-> +++ b/crypto/crypto_user.c
-> @@ -38,23 +38,19 @@ struct crypto_dump_info {
->  	u16 nlmsg_flags;
->  };
->  
-> -static struct crypto_alg *crypto_alg_match(struct crypto_user_alg *p, int exact)
-> +static struct crypto_alg *crypto_alg_match(struct crypto_user_alg *p)
->  {
->  	struct crypto_alg *q, *alg = NULL;
->  
->  	down_read(&crypto_alg_sem);
->  
->  	list_for_each_entry(q, &crypto_alg_list, cra_list) {
-> -		int match = 0;
-> +		int match;
->  
->  		if ((q->cra_flags ^ p->cru_type) & p->cru_mask)
->  			continue;
->  
-> -		if (strlen(p->cru_driver_name))
-> -			match = !strcmp(q->cra_driver_name,
-> -					p->cru_driver_name);
-> -		else if (!exact)
-> -			match = !strcmp(q->cra_name, p->cru_name);
-> +		match = !strcmp(q->cra_driver_name, p->cru_driver_name);
->  
->  		if (match) {
+I'm tempted to add CLONE_NEWPID as well (it's _useful_), but there's
+an unresolved issue with SCM_CREDENTIALS.
 
-Actually, we could just get rid of 'match' entirely as well and just do
-
-                if (!strcmp(q->cra_driver_name, p->cru_driver_name)) {
-
->  			alg = q;
-> @@ -195,7 +191,7 @@ static int crypto_report(struct sk_buff *in_skb, struct nlmsghdr *in_nlh,
->  	if (!p->cru_driver_name)
->  		return -EINVAL;
->  
-> -	alg = crypto_alg_match(p, 1);
-> +	alg = crypto_alg_match(p);
->  	if (!alg)
->  		return -ENOENT;
->  
-> @@ -259,7 +255,7 @@ static int crypto_update_alg(struct sk_buff *skb, struct nlmsghdr *nlh,
->  	if (priority && !strlen(p->cru_driver_name))
->  		return -EINVAL;
->  
-> -	alg = crypto_alg_match(p, 1);
-> +	alg = crypto_alg_match(p);
->  	if (!alg)
->  		return -ENOENT;
->  
-> @@ -283,7 +279,7 @@ static int crypto_del_alg(struct sk_buff *skb, struct nlmsghdr *nlh,
->  	struct crypto_alg *alg;
->  	struct crypto_user_alg *p = nlmsg_data(nlh);
->  
-> -	alg = crypto_alg_match(p, 1);
-> +	alg = crypto_alg_match(p);
->  	if (!alg)
->  		return -ENOENT;
->  
-> @@ -304,28 +300,15 @@ static int crypto_del_alg(struct sk_buff *skb, struct nlmsghdr *nlh,
->  static int crypto_add_alg(struct sk_buff *skb, struct nlmsghdr *nlh,
->  			  struct nlattr **attrs)
->  {
-> -	int exact;
-> -	const char *name;
->  	struct crypto_alg *alg;
->  	struct crypto_user_alg *p = nlmsg_data(nlh);
->  	struct nlattr *priority = attrs[CRYPTOCFGA_PRIORITY_VAL];
->  
-> -	if (strlen(p->cru_driver_name))
-> -		exact = 1;
-> -
-> -	if (priority && !exact)
-> -		return -EINVAL;
-> -
-> -	alg = crypto_alg_match(p, exact);
-> +	alg = crypto_alg_match(p);
->  	if (alg)
->  		return -EEXIST;
->  
-> -	if (strlen(p->cru_driver_name))
-> -		name = p->cru_driver_name;
-> -	else
-> -		name = p->cru_name;
-> -
-> -	alg = crypto_alg_mod_lookup(name, p->cru_type, p->cru_mask);
-> +	alg = crypto_alg_mod_lookup(p->cru_driver_name, p->cru_type, p->cru_mask);
->  	if (IS_ERR(alg))
->  		return PTR_ERR(alg);
->  
-> 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-1028546279-1328128573=:8577--
+--Andy
