@@ -1,138 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab2BAXwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 18:52:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53724 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2BAXwg (ORCPT
+	id S1753291Ab2BAXzH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 18:55:07 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44154 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752954Ab2BAXzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 18:52:36 -0500
-Date: Wed, 1 Feb 2012 15:52:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: rtc-linux@googlegroups.com
-Cc: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        Ivan Kuten <ivan.kuten@promwad.com>
-Subject: Re: [rtc-linux] [PATCH] RTC: Add driver for NXP PCF8523 RTC chip
-Message-Id: <20120201155235.044d77dc.akpm@linux-foundation.org>
-In-Reply-To: <1317815823-27297-1-git-send-email-yauhen.kharuzhy@promwad.com>
-References: <1317815823-27297-1-git-send-email-yauhen.kharuzhy@promwad.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Feb 2012 18:55:05 -0500
+X-Sasl-enc: LSdllrUbR0XlWoUQjy3RhnvVA08DfcTsOuddO+o0/etR 1328140504
+Date: Wed, 1 Feb 2012 15:52:04 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [06/20] crypto: sha512 - reduce stack usage to safe number
+Message-ID: <20120201235204.GA18950@kroah.com>
+References: <20120201210055.GA25374@kroah.com>
+ <20120201201531.599621544@clark.kroah.org>
+ <20120201234208.GA28700@p183.telecom.by>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120201234208.GA28700@p183.telecom.by>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(sorry, catching up on rtc things whcih I wasn't cc'ed on)
-
-On Wed,  5 Oct 2011 14:57:03 +0300
-Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com> wrote:
-
-> This driver is based on PCF8563 driver and supports only base functions
-> now: read/write date & time.
+On Thu, Feb 02, 2012 at 02:42:08AM +0300, Alexey Dobriyan wrote:
+> On Wed, Feb 01, 2012 at 12:14:08PM -0800, Greg KH wrote:
+> > @@ -87,38 +87,48 @@ sha512_transform(u64 *state, const u8 *i
+> >  	u64 a, b, c, d, e, f, g, h, t1, t2;
+> >  
+> >  	int i;
+> > -	u64 W[80];
+> > +	u64 W[16];
 > 
->
-> ...
->
-> --- /dev/null
-> +++ b/drivers/rtc/rtc-pcf8523.c
-> @@ -0,0 +1,246 @@
-> +/*
-> + * An I2C driver for the NXP PCF8523 RTC
-> + * Copyright 2011 Promwad Innovation Company
-> + *
-> + * Author: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
-> + *	Promwad Innovation Company, http://promwad.com/
-> + *
-> + * based on the pcf8563 driver
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/i2c.h>
+> This needs 3rd companion patch which does stack reduction even on i386.
+> Patch which removes excessive loop unrolling and thus fixes the problem
+> has been posted. Maybe there is some other way to maintain low stack
+> space on i386 but I haven't found it.
+> 
+> http://marc.info/?l=linux-netdev&m=132768692525017&w=4
+> 
+> If you apply only 2, original bug will be fixed, but on at least i386
+> stack usage could go in 900-byte region.
 
-Should this driver have a "depends on I2C" in Kconfig?
+But this patch isn't in Linus's tree yet, right?
 
->
-> ...
->
-> +/*
-> + * In the routines that deal directly with the pcf8523 hardware, we use
-> + * rtc_time -- month 0-11, hour 0-23, yr = calendar year-epoch.
-> + */
-> +static int pcf8523_get_datetime(struct i2c_client *client, struct rtc_time *tm)
-> +{
-> +	struct pcf8523 *pcf8523 = i2c_get_clientdata(client);
-> +	unsigned char buf[14] = { PCF8523_REG_CTL1 };
+So, should I just drop this one for now (well both of them) or just wait
+for the above referenced patch to hit Linus's tree and handle it then?
 
-Please try to make local arrays such as the above "static const". 
-Because the above code can needlessly cause the kernel to assemble and
-evaluate the array on the stack each time this function is called.
+thanks,
 
-> +	struct i2c_msg msgs[] = {
-> +		{ client->addr, 0, 1, buf },	/* setup read ptr */
-> +		{ client->addr, I2C_M_RD, 14, buf },	/* read status + date */
-> +	};
-> +
-> +	/* read registers */
-> +	if ((i2c_transfer(client->adapter, msgs, 2)) != 2) {
-> +		dev_err(&client->dev, "%s: read error\n", __func__);
-> +		return -EIO;
-> +	}
-> +
-> +	if (buf[PCF8523_REG_CTL3] & PCF8523_CTL3_BLF)
-
-"buf" wasn't a very good choice of name.  Is there something more
-descriptive whcih we can use?
-
-> +		dev_info(&client->dev,
-> +			"low voltage detected, date/time is not reliable.\n");
-> +
-> +	dev_dbg(&client->dev,
-> +		"%s: raw data is ctl1=%02x, ctl2=%02x, ctl3=%02x, "
-> +		"sec=%02x, min=%02x, hr=%02x, "
-> +		"mday=%02x, wday=%02x, mon=%02x, year=%02x\n",
-> +		__func__,
-> +		buf[0], buf[1], buf[2], buf[3],
-> +		buf[4], buf[5], buf[6], buf[7],
-> +		buf[8], buf[9]);
-> +
-> +
-> +	tm->tm_sec = bcd2bin(buf[PCF8523_REG_SC] & 0x7F);
-> +	tm->tm_min = bcd2bin(buf[PCF8523_REG_MN] & 0x7F);
-> +	tm->tm_hour = bcd2bin(buf[PCF8523_REG_HR] & 0x3F); /* rtc hr 0-23 */
-> +	tm->tm_mday = bcd2bin(buf[PCF8523_REG_DM] & 0x3F);
-> +	tm->tm_wday = buf[PCF8523_REG_DW] & 0x07;
-> +	tm->tm_mon = bcd2bin(buf[PCF8523_REG_MO] & 0x1F) - 1; /* rtc mn 1-12 */
-> +	tm->tm_year = bcd2bin(buf[PCF8523_REG_YR]);
-> +	if (tm->tm_year < 70)
-> +		tm->tm_year += 100;	/* assume we are in 1970...2069 */
-> +
-> +	dev_dbg(&client->dev, "%s: tm is secs=%d, mins=%d, hours=%d, "
-> +		"mday=%d, mon=%d, year=%d, wday=%d\n",
-> +		__func__,
-> +		tm->tm_sec, tm->tm_min, tm->tm_hour,
-> +		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
-> +
-> +	/* the clock can give out invalid datetime, but we cannot return
-> +	 * -EINVAL otherwise hwclock will refuse to set the time on bootup.
-> +	 */
-
-This comment seems to imply that the driver allows hwclock to set the
-time to something which we know is incorrect?  If so, wouldn't it be
-better to leave the time at something obviously wrong, such as 1 Jan
-1970?
-
-> +	if (rtc_valid_tm(tm) < 0)
-> +		dev_err(&client->dev, "retrieved date/time is not valid.\n");
-> +
-> +	return 0;
-> +}
-> +
->
-> ...
->
+greg k-h
