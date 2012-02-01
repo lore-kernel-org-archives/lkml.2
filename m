@@ -1,177 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab2BACrj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 21:47:39 -0500
-Received: from relmlor4.renesas.com ([210.160.252.174]:48665 "EHLO
-	relmlor4.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753207Ab2BACrh (ORCPT
+	id S1755712Ab2BACuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 21:50:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64674 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207Ab2BACuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 21:47:37 -0500
-X-IronPort-AV: E=Sophos;i="4.71,599,1320591600";   d="scan'208";a="65846860"
-Message-id: <4F28A7C7.8060500@renesas.com>
-Date: Wed, 01 Feb 2012 11:47:35 +0900
-From: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0) Gecko/20120129
- Thunderbird/10.0
-MIME-version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 1/7 v2] dmaengine: add a simple dma library
-References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
- <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de>
- <4F22624E.2090201@renesas.com>
- <Pine.LNX.4.64.1201270946150.32661@axis700.grange> <4F27CA7D.601@renesas.com>
- <Pine.LNX.4.64.1202010145510.31226@axis700.grange>
-In-reply-to: <Pine.LNX.4.64.1202010145510.31226@axis700.grange>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
+	Tue, 31 Jan 2012 21:50:15 -0500
+Message-ID: <1328064605.3533.1.camel@phoenix>
+Subject: [PATCH 1/2 RESEND] gpio: Add missing spin_lock_init in gpio-ml-ioh
+ driver
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Date: Wed, 01 Feb 2012 10:50:05 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi-san,
+This bug was introduced by commit 54be5663
+"gpio-ml-ioh: Support interrupt function" which adds a spinlock to struct
+ioh_gpio but never init the spinlock.
 
-2012/02/01 9:52, Guennadi Liakhovetski wrote:
-> Hi Shimoda-san
-> 
-> On Tue, 31 Jan 2012, Shimoda, Yoshihiro wrote:
-[ snip ]
->> I investigaed the issue. I found out the renesas_usbhs driver may
->> call tx_submit() in the callback()
-> 
-> Well, actually, this is not something, that shdma officially supports ATM. 
-> Originally it was prohibited by the API, but later a correction has been 
-> added to Documentation/dmaengine.txt, explicitly allowing this. So, good, 
-> if this works for you, but watch out for possible issues.
->
->> of the dma-simple finally.
->> In this case, the value of power_up in the simple_tx_submit is 0,
->> the start_xfer() is not called. And then, even if the ld_queue is
->> not empty, the DMA doesn't start.
-> 
-> This is correct. As soon as all the transfers, currently queued in the 
-> shdma driver, has been processed and completed, to restart DMA you need to 
-> call dma_async_issue_pending().
-> 
->> So, if I add codes like the following in the dma-simple.c,
->> the renesas_usbhs driver can work correctly without the driver changes.
->> If you think the code is good, would you merge it to your code?
->> ======= chan_irqt() =======
->> 	simple_chan_ld_cleanup(schan, false);
->>
->> +	spin_lock_irq(&schan->chan_lock);
->> +	/* Next desc */
->> +	simple_chan_xfer_ld_queue(schan);
->> +	spin_unlock_irq(&schan->chan_lock);
->>
->> 	return IRQ_HANDLED;
->> ==============
-> 
-> Therefore, no, this shouldn't be needed.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpio/gpio-ml-ioh.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thank you very much for your comment.
-I understood it. I will investigate the renesas_usbhs driver more.
-
-Best regards,
-Yoshihiro Shimoda
-
-> Thanks
-> Guennadi
-> 
->>
->> Best regards,
->> Yoshihiro Shimoda
->>
->>> Thanks
->>> Guennadi
->>>
->>>> For reference, if I changed the threaded IRQ to tasklet,
->>>> the 2 environment worked correctly:
->>>> ==============
->>>> diff --git a/drivers/dma/dma-simple.c b/drivers/dma/dma-simple.c
->>>> index 49d8f7d..65a5170 100644
->>>> --- a/drivers/dma/dma-simple.c
->>>> +++ b/drivers/dma/dma-simple.c
->>>> @@ -715,16 +715,18 @@ static irqreturn_t chan_irq(int irq, void *dev)
->>>>
->>>>  	spin_lock(&schan->chan_lock);
->>>>
->>>> -	ret = ops->chan_irq(schan, irq) ? IRQ_WAKE_THREAD : IRQ_NONE;
->>>> +	ret = ops->chan_irq(schan, irq) ? IRQ_HANDLED : IRQ_NONE;
->>>> +	if (ret == IRQ_HANDLED)
->>>> +		tasklet_schedule(&schan->tasklet);
->>>>
->>>>  	spin_unlock(&schan->chan_lock);
->>>>
->>>>  	return ret;
->>>>  }
->>>>
->>>> -static irqreturn_t chan_irqt(int irq, void *dev)
->>>> +static void chan_irqt(unsigned long dev)
->>>>  {
->>>> -	struct dma_simple_chan *schan = dev;
->>>> +	struct dma_simple_chan *schan = (struct dma_simple_chan *)dev;
->>>>  	const struct dma_simple_ops *ops =
->>>>  		to_simple_dev(schan->dma_chan.device)->ops;
->>>>  	struct dma_simple_desc *sdesc;
->>>> @@ -744,15 +746,13 @@ static irqreturn_t chan_irqt(int irq, void *dev)
->>>>  	spin_unlock_irq(&schan->chan_lock);
->>>>
->>>>  	simple_chan_ld_cleanup(schan, false);
->>>> -
->>>> -	return IRQ_HANDLED;
->>>>  }
->>>>
->>>>  int dma_simple_request_irq(struct dma_simple_chan *schan, int irq,
->>>>  			   unsigned long flags, const char *name)
->>>>  {
->>>> -	int ret = request_threaded_irq(irq, chan_irq, chan_irqt,
->>>> -				       flags, name, schan);
->>>> +	int ret = request_irq(irq, chan_irq, flags, name, schan);
->>>> +	tasklet_init(&schan->tasklet, chan_irqt, (unsigned long)schan);
->>>>
->>>>  	schan->irq = ret < 0 ? ret : irq;
->>>>
->>>> diff --git a/include/linux/dma-simple.h b/include/linux/dma-simple.h
->>>> index 5336674..beb1489 100644
->>>> --- a/include/linux/dma-simple.h
->>>> +++ b/include/linux/dma-simple.h
->>>> @@ -68,6 +68,7 @@ struct dma_simple_chan {
->>>>  	int id;				/* Raw id of this channel */
->>>>  	int irq;			/* Channel IRQ */
->>>>  	enum dma_simple_pm_state pm_state;
->>>> +	struct tasklet_struct tasklet;
->>>>  };
->>>>
->>>>  /**
->>>> ==============
->>>>
->>>> Best regards,
->>>> Yoshihiro Shimoda
->>>>
->>>
->>> ---
->>> Guennadi Liakhovetski, Ph.D.
->>> Freelance Open-Source Software Developer
->>> http://www.open-technology.de/
->>>
->>
->>
->> -- 
->> Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
->> EC No.
->>
-> 
-> ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
-> 
-
-
+diff --git a/drivers/gpio/gpio-ml-ioh.c b/drivers/gpio/gpio-ml-ioh.c
+index 461958f..271fd49 100644
+--- a/drivers/gpio/gpio-ml-ioh.c
++++ b/drivers/gpio/gpio-ml-ioh.c
+@@ -448,6 +448,7 @@ static int __devinit ioh_gpio_probe(struct pci_dev *pdev,
+ 		chip->reg = chip->base;
+ 		chip->ch = i;
+ 		mutex_init(&chip->lock);
++		spin_lock_init(&chip->spinlock);
+ 		ioh_gpio_setup(chip, num_ports[i]);
+ 		ret = gpiochip_add(&chip->gpio);
+ 		if (ret) {
 -- 
-Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-EC No.
+1.7.5.4
+
+
+
