@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932999Ab2BAWqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:46:49 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:33868 "EHLO
+	id S933230Ab2BAWoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:44:34 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:33752 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757715Ab2BAWom (ORCPT
+	with ESMTP id S1756315Ab2BAWo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:44:42 -0500
+	Wed, 1 Feb 2012 17:44:29 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -17,156 +17,73 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 10/15] PCI: Probe safe range that we can use for unassigned bridge.
-Date: Wed,  1 Feb 2012 14:43:57 -0800
-Message-Id: <1328136242-17725-11-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 01/15] Make %pR could handle bus resource with domain
+Date: Wed,  1 Feb 2012 14:43:48 -0800
+Message-Id: <1328136242-17725-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
 References: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4F29C04D.0021,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090207.4F29C046.008E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try to allocate from parent bus busn_res. if can not find any big enough, will try
-to extend parent bus top. even the extending is through allocating, after allocating
-will pad the range to parent buses top.
-
-When extending happens, We will record the parent_res, so could use it as stopper
-for really extend/shrink top later.
+So could use %pR for busn_res with domain nr in start/end
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/pci/probe.c |  114 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 114 insertions(+), 0 deletions(-)
+ lib/vsprintf.c |   28 ++++++++++++++++++++++++----
+ 1 files changed, 24 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 91fdaec..10aa6d1 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -670,6 +670,120 @@ static void __devinit pci_bus_shrink_top(struct pci_bus *parent,
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 8e75003..b34eeea 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -451,6 +451,12 @@ char *resource_string(char *buf, char *end, struct resource *res,
+ 		.precision = -1,
+ 		.flags = SPECIAL | SMALL | ZEROPAD,
+ 	};
++	static const struct printf_spec domain_spec = {
++		.base = 16,
++		.field_width = 4,
++		.precision = -1,
++		.flags = SMALL | ZEROPAD,
++	};
+ 	static const struct printf_spec bus_spec = {
+ 		.base = 16,
+ 		.field_width = 2,
+@@ -507,11 +513,25 @@ char *resource_string(char *buf, char *end, struct resource *res,
+ 		specp = &mem_spec;
+ 		decode = 0;
  	}
- }
- 
-+static resource_size_t __devinit find_res_top_free_size(struct resource *res)
-+{
-+	int ret = -ENOMEM;
-+	resource_size_t n_size;
-+	struct resource tmp_res;
+-	p = number(p, pend, res->start, *specp);
+-	if (res->start != res->end) {
+-		*p++ = '-';
+-		p = number(p, pend, res->end, *specp);
 +
-+	/*
-+	 *   find out number below res->end, that we can use at first
-+	 *	res->start can not be used.
-+	 */
-+	n_size = resource_size(res) - 1;
-+	memset(&tmp_res, 0, sizeof(struct resource));
-+	while (n_size > 0) {
-+		ret = allocate_resource(res, &tmp_res, n_size,
-+			res->end - n_size + 1, res->end,
-+			1, NULL, NULL);
-+		if (ret == 0) {
-+			/* release busn_res */
-+			release_resource(&tmp_res);
-+			break;
++	if (res->flags & IORESOURCE_BUS && res->end >> 8) {
++		p = number(p, pend, res->start >> 8, domain_spec);
++		*p++ = ':';
++		p = number(p, pend, res->start & 0xff, *specp);
++		if (res->start != res->end) {
++			*p++ = '-';
++			p = number(p, pend, res->end >> 8, domain_spec);
++			*p++ = ':';
++			p = number(p, pend, res->end & 0xff, *specp);
 +		}
-+		n_size--;
-+	}
-+
-+	return n_size;
-+}
-+
-+static int __devinit pci_bridge_probe_busn_res(struct pci_bus *bus,
-+			 struct pci_dev *dev, struct resource *busn_res,
-+			 resource_size_t needed_size, struct resource **p)
-+{
-+	int ret = -ENOMEM;
-+	resource_size_t n_size;
-+	struct pci_bus *parent;
-+	struct resource *parent_res;
-+	resource_size_t tmp = bus->busn_res.end + 1;
-+	int free_sz = -1;
-+
-+	parent_res = NULL;
-+
-+again:
-+	/*
-+	 * find bigest range in bus->busn_res that we can use in the middle
-+	 *  and we can not use bus->busn_res.start.
-+	 */
-+	n_size = resource_size(&bus->busn_res) - 1;
-+	memset(busn_res, 0, sizeof(struct resource));
-+	dev_printk(KERN_DEBUG, &dev->dev,
-+			"find free busn in busn_res: %pR\n", &bus->busn_res);
-+	while (n_size >= needed_size) {
-+		ret = allocate_resource(&bus->busn_res, busn_res, n_size,
-+				bus->busn_res.start + 1, bus->busn_res.end,
-+				1, NULL, NULL);
-+		if (ret == 0) {
-+			/* found one, prepare to return */
-+			release_resource(busn_res);
-+
-+			return ret;
++	} else {
++		p = number(p, pend, res->start, *specp);
++		if (res->start != res->end) {
++			*p++ = '-';
++			p = number(p, pend, res->end, *specp);
 +		}
-+		n_size--;
-+	}
+ 	}
 +
-+	/* try extend the top of parent buss */
-+	if (free_sz < 0) {
-+		free_sz = find_res_top_free_size(&bus->busn_res);
-+		dev_printk(KERN_DEBUG, &dev->dev,
-+			"found free busn %d in busn_res: %pR top\n",
-+				free_sz, &bus->busn_res);
-+	}
-+	n_size = free_sz;
-+
-+	/* check if extend could cross domain boundary */
-+	if ((bus->busn_res.end & 0xff) == 0xff)
-+		goto reduce_needed_size;
-+	if ((0x100 - (tmp & 0xff)) < (needed_size - n_size))
-+		goto reduce_needed_size;
-+
-+	/* find exteded range */
-+	memset(busn_res, 0, sizeof(struct resource));
-+	parent = bus->parent;
-+	while (parent) {
-+		ret = allocate_resource(&parent->busn_res, busn_res,
-+			 needed_size - n_size,
-+			 tmp, tmp + needed_size - n_size - 1,
-+			 1, NULL, NULL);
-+		if (ret == 0)
-+			break;
-+		parent = parent->parent;
-+	}
-+
-+reduce_needed_size:
-+	if (ret != 0) {
-+		needed_size--;
-+		if (!needed_size)
-+			return ret;
-+
-+		goto again;
-+	}
-+
-+	/* save parent_res, we need it as stopper later */
-+	parent_res = busn_res->parent;
-+
-+	/* prepare busn_res for return */
-+	release_resource(busn_res);
-+	busn_res->start -= n_size;
-+
-+	/* extend parent bus top*/
-+	pci_bus_extend_top(bus, needed_size - n_size, parent_res);
-+
-+	*p = parent_res;
-+
-+	return ret;
-+}
-+
- /*
-  * If it's a bridge, configure it and scan the bus behind it.
-  * For CardBus bridges, we don't scan behind as the devices will
+ 	if (decode) {
+ 		if (res->flags & IORESOURCE_MEM_64)
+ 			p = string(p, pend, " 64bit", str_spec);
 -- 
 1.7.7
 
