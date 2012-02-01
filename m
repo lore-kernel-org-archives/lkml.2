@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab2BAVMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:12:43 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34933 "EHLO
+	id S932694Ab2BAVM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:12:57 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47387 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932669Ab2BAVKq (ORCPT
+	by vger.kernel.org with ESMTP id S932667Ab2BAVKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:46 -0500
-X-Sasl-enc: ErDK0wz1u8RuFhnC9TuQfvIe821mLk1wjwbGjoe3c6we 1328130644
+	Wed, 1 Feb 2012 16:10:45 -0500
+X-Sasl-enc: Zl2bEzHs0utXfE8ikLzRXvH5wOK6/xZDkObaiNv/D2Rr 1328130643
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:50 2012
-Message-Id: <20120201210050.210614371@clark.kroah.org>
+Message-Id: <20120201210050.129900357@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:36 -0800
+Date: Wed, 01 Feb 2012 13:00:35 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nick Mathewson <nickm@freehaven.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Moiseytsev <himeraster@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
+        =?UTF-8?q?Sjur=20Br=E6ndeland?= <sjur.brandeland@stericsson.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [72/89] af_unix: fix EPOLLET regression for stream sockets
+Subject: [71/89] net caif: Register properly as a pernet subsystem.
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,93 +30,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit 6f01fd6e6f6809061b56e78f1e8d143099716d70 ]
+[ Upstream commit 8a8ee9aff6c3077dd9c2c7a77478e8ed362b96c6 ]
 
-Commit 0884d7aa24 (AF_UNIX: Fix poll blocking problem when reading from
-a stream socket) added a regression for epoll() in Edge Triggered mode
-(EPOLLET)
+caif is a subsystem and as such it needs to register with
+register_pernet_subsys instead of register_pernet_device.
 
-Appropriate fix is to use skb_peek()/skb_unlink() instead of
-skb_dequeue(), and only call skb_unlink() when skb is fully consumed.
+Among other problems using register_pernet_device was resulting in
+net_generic being called before the caif_net structure was allocated.
+Which has been causing net_generic to fail with either BUG_ON's or by
+return NULL pointers.
 
-This remove the need to requeue a partial skb into sk_receive_queue head
-and the extra sk->sk_data_ready() calls that added the regression.
+A more ugly problem that could be caused is packets in flight why the
+subsystem is shutting down.
 
-This is safe because once skb is given to sk_receive_queue, it is not
-modified by a writer, and readers are serialized by u->readlock mutex.
+To remove confusion also remove the cruft cause by inappropriately
+trying to fix this bug.
 
-This also reduce number of spinlock acquisition for small reads or
-MSG_PEEK users so should improve overall performance.
+With the aid of the previous patch I have tested this patch and
+confirmed that using register_pernet_subsys makes the failure go away as
+it should.
 
-Reported-by: Nick Mathewson <nickm@freehaven.net>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Alexey Moiseytsev <himeraster@gmail.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/unix/af_unix.c |   19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
+ net/caif/caif_dev.c |   11 ++++-------
+ net/caif/cfcnfg.c   |    1 -
+ 2 files changed, 4 insertions(+), 8 deletions(-)
 
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1915,7 +1915,7 @@ static int unix_stream_recvmsg(struct ki
- 		struct sk_buff *skb;
+--- a/net/caif/caif_dev.c
++++ b/net/caif/caif_dev.c
+@@ -53,7 +53,6 @@ struct cfcnfg *get_cfcnfg(struct net *ne
+ 	struct caif_net *caifn;
+ 	BUG_ON(!net);
+ 	caifn = net_generic(net, caif_net_id);
+-	BUG_ON(!caifn);
+ 	return caifn->cfg;
+ }
+ EXPORT_SYMBOL(get_cfcnfg);
+@@ -63,7 +62,6 @@ static struct caif_device_entry_list *ca
+ 	struct caif_net *caifn;
+ 	BUG_ON(!net);
+ 	caifn = net_generic(net, caif_net_id);
+-	BUG_ON(!caifn);
+ 	return &caifn->caifdevs;
+ }
  
- 		unix_state_lock(sk);
--		skb = skb_dequeue(&sk->sk_receive_queue);
-+		skb = skb_peek(&sk->sk_receive_queue);
- 		if (skb == NULL) {
- 			unix_sk(sk)->recursion_level = 0;
- 			if (copied >= target)
-@@ -1955,11 +1955,8 @@ static int unix_stream_recvmsg(struct ki
- 		if (check_creds) {
- 			/* Never glue messages from different writers */
- 			if ((UNIXCB(skb).pid  != siocb->scm->pid) ||
--			    (UNIXCB(skb).cred != siocb->scm->cred)) {
--				skb_queue_head(&sk->sk_receive_queue, skb);
--				sk->sk_data_ready(sk, skb->len);
-+			    (UNIXCB(skb).cred != siocb->scm->cred))
- 				break;
--			}
- 		} else {
- 			/* Copy credentials */
- 			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
-@@ -1974,8 +1971,6 @@ static int unix_stream_recvmsg(struct ki
+@@ -92,7 +90,6 @@ static struct caif_device_entry *caif_de
+ 	struct caif_device_entry *caifd;
  
- 		chunk = min_t(unsigned int, skb->len, size);
- 		if (memcpy_toiovec(msg->msg_iov, skb->data, chunk)) {
--			skb_queue_head(&sk->sk_receive_queue, skb);
--			sk->sk_data_ready(sk, skb->len);
- 			if (copied == 0)
- 				copied = -EFAULT;
- 			break;
-@@ -1990,13 +1985,10 @@ static int unix_stream_recvmsg(struct ki
- 			if (UNIXCB(skb).fp)
- 				unix_detach_fds(siocb->scm, skb);
+ 	caifdevs = caif_device_list(dev_net(dev));
+-	BUG_ON(!caifdevs);
  
--			/* put the skb back if we didn't use it up.. */
--			if (skb->len) {
--				skb_queue_head(&sk->sk_receive_queue, skb);
--				sk->sk_data_ready(sk, skb->len);
-+			if (skb->len)
- 				break;
--			}
+ 	caifd = kzalloc(sizeof(*caifd), GFP_KERNEL);
+ 	if (!caifd)
+@@ -112,7 +109,7 @@ static struct caif_device_entry *caif_ge
+ 	struct caif_device_entry_list *caifdevs =
+ 	    caif_device_list(dev_net(dev));
+ 	struct caif_device_entry *caifd;
+-	BUG_ON(!caifdevs);
++
+ 	list_for_each_entry_rcu(caifd, &caifdevs->list, list) {
+ 		if (caifd->netdev == dev)
+ 			return caifd;
+@@ -353,7 +350,7 @@ static struct notifier_block caif_device
+ static int caif_init_net(struct net *net)
+ {
+ 	struct caif_net *caifn = net_generic(net, caif_net_id);
+-	BUG_ON(!caifn);
++
+ 	INIT_LIST_HEAD(&caifn->caifdevs.list);
+ 	mutex_init(&caifn->caifdevs.lock);
  
-+			skb_unlink(skb, &sk->sk_receive_queue);
- 			consume_skb(skb);
+@@ -418,7 +415,7 @@ static int __init caif_device_init(void)
+ {
+ 	int result;
  
- 			if (siocb->scm->fp)
-@@ -2007,9 +1999,6 @@ static int unix_stream_recvmsg(struct ki
- 			if (UNIXCB(skb).fp)
- 				siocb->scm->fp = scm_fp_dup(UNIXCB(skb).fp);
+-	result = register_pernet_device(&caif_net_ops);
++	result = register_pernet_subsys(&caif_net_ops);
  
--			/* put message back and return */
--			skb_queue_head(&sk->sk_receive_queue, skb);
--			sk->sk_data_ready(sk, skb->len);
- 			break;
- 		}
- 	} while (size);
+ 	if (result)
+ 		return result;
+@@ -431,7 +428,7 @@ static int __init caif_device_init(void)
+ 
+ static void __exit caif_device_exit(void)
+ {
+-	unregister_pernet_device(&caif_net_ops);
++	unregister_pernet_subsys(&caif_net_ops);
+ 	unregister_netdevice_notifier(&caif_device_notifier);
+ 	dev_remove_pack(&caif_packet_type);
+ }
+--- a/net/caif/cfcnfg.c
++++ b/net/caif/cfcnfg.c
+@@ -309,7 +309,6 @@ int caif_connect_client(struct net *net,
+ 	int err;
+ 	struct cfctrl_link_param param;
+ 	struct cfcnfg *cfg = get_cfcnfg(net);
+-	caif_assert(cfg != NULL);
+ 
+ 	rcu_read_lock();
+ 	err = caif_connect_req_to_link_param(cfg, conn_req, &param);
 
 
