@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab2BAGKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 01:10:04 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37824 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab2BAGKB (ORCPT
+	id S1754993Ab2BAGKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 01:10:35 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51669 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab2BAGKe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 01:10:01 -0500
-Message-ID: <4F28D72F.8060505@gmail.com>
-Date: Wed, 01 Feb 2012 14:09:51 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Wed, 1 Feb 2012 01:10:34 -0500
 MIME-Version: 1.0
-To: Christopher Yeoh <cyeoh@au1.ibm.com>
-CC: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] Fix race in process_vm_rw_core
-References: <20120130124406.1567af7a@Gantu.yeoh.info> <20120130150922.GA17643@redhat.com> <20120201162330.43d421d3@Gantu.yeoh.info>
 In-Reply-To: <20120201162330.43d421d3@Gantu.yeoh.info>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+References: <20120130124406.1567af7a@Gantu.yeoh.info> <20120130150922.GA17643@redhat.com>
+ <20120201162330.43d421d3@Gantu.yeoh.info>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 31 Jan 2012 22:10:13 -0800
+X-Google-Sender-Auth: Mu1rVWR9Emp8BiSsD8wmsT2yoVA
+Message-ID: <CA+55aFxstU98L64xgoUiacsV0zwX5ioNv3cT5CH2rvBrUGaovw@mail.gmail.com>
+Subject: Re: [PATCH RESEND] Fix race in process_vm_rw_core
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2012 01:53 PM, Christopher Yeoh wrote:
-> +	mm = mm_access(task, PTRACE_MODE_ATTACH);
-> +	if (!mm || IS_ERR(mm)) {
-> +		if (!mm)
-> +			rc = -EINVAL;
-> +		else
-> +			rc = -EPERM;
->   		goto put_task_struct;
+On Tue, Jan 31, 2012 at 9:53 PM, Christopher Yeoh <cyeoh@au1.ibm.com> wrote:
+> +       mm = mm_access(task, PTRACE_MODE_ATTACH);
+> +       if (!mm || IS_ERR(mm)) {
+> +               if (!mm)
+> +                       rc = -EINVAL;
+> +               else
+> +                       rc = -EPERM;
+>                goto put_task_struct;
 
-If IS_ERR(mm), you need to return PTR_ERR(mm), rather than -EPERM.
+Btw, do you really want to throw away the error code?
 
-And, is -EINVAL proper for !mm case? For me, -ENOENT is better.
+IOW, maybe it should be
+
+   rc = IS_ERR(mm) ? PTR_ERR(mm) : -EINVAL;
+
+or something? Instead of forcing the EPERM? And the -EINVAL might be
+better off as an ESRCH? I dunno.
+
+Right now mm_access() returns EACCES for a permission problem, not
+EPERM. EACCES is the normal filesystem access "Permission denied",
+while EPERM is "Operation not permitted". I do agree that EPERM tends
+to go with non-filesystem system calls (like ptrace() or sending
+signals to a process that you aren't allowed to), so I do agree that
+EPERM makes perfect sense within the context of process_vm_rw().
+
+HOWEVER.
+
+mm_access() can actually also return EINTR. Now, admittedly it only
+returns that for killable signals, so user applications should never
+*see* that, but it's a special-case example of other errors at least
+being possible. What if we ever have some situation where we end up
+needing a temporary memory allocation and could return ENOMEM?
+
+Right now you turn all errors into EPERM, whether they were really
+about permission problems or not. And that just makes be a bit
+nervous. I wonder if we wouldn't be better off just returning EACCES
+(and any possible future problem) than try so hard to always return
+EPERM?
+
+I dunno. I don't have any really *strong* opinion and I see why you do
+it, but my gut feel is still that the error number change really does
+seem a bit arbitrary.
+
+                    Linus
