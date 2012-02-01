@@ -1,58 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab2BAVTR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:19:17 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:60308 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757455Ab2BAVTE (ORCPT
+	id S1757495Ab2BAVT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:19:27 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:63444 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757466Ab2BAVTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:04 -0500
-X-Sasl-enc: uAT6gutRm+yhreha6VPg14WwzvtCMGiXwJeH4hOHgc76 1328131143
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:40 2012
-Message-Id: <20120201205740.203986229@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:11 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [31/65] USB: cdc-wdm: updating desc->length must be protected by spin_lock
-In-Reply-To: <20120201210236.GA25966@kroah.com>
+	Wed, 1 Feb 2012 16:19:21 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: [PATCH] small fixes to 3.3 (and 3.2) CPU hotplug code. (v1)
+Date: Wed,  1 Feb 2012 16:16:38 -0500
+Message-Id: <1328131000-13485-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4F29AC56.00BC,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+While I was playing with 'xm vcpu-set X N' I realized that the VCPU hotplug
+code in 3.2 spews tons of messages. Found out that we were missing an preempt_*
+call. While at it, I fixed also an annoying message ("XENBUS: Unable to ..")
+that shows up during bootup.
 
-------------------
-
-From: Bjørn Mork <bjorn@mork.no>
-
-commit c428b70c1e115c5649707a602742e34130d19428 upstream.
-
-wdm_in_callback() will also touch this field, so we cannot change it without locking
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/class/cdc-wdm.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -467,7 +467,9 @@ retry:
- 	for (i = 0; i < desc->length - cntr; i++)
- 		desc->ubuf[i] = desc->ubuf[i + cntr];
- 
-+	spin_lock_irq(&desc->iuspin);
- 	desc->length -= cntr;
-+	spin_unlock_irq(&desc->iuspin);
- 	/* in case we had outstanding data */
- 	if (!desc->length)
- 		clear_bit(WDM_READ, &desc->flags);
-
+Anyhow, these are going for 3.3 and CC-ing stable on the:
+ [PATCH 1/2] xen/smp: Fix CPU online/offline bug triggering a BUG:
 
