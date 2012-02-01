@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab2BATrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:47:43 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:57370 "EHLO e6.ny.us.ibm.com"
+	id S932277Ab2BATn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:43:27 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:40816 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932285Ab2BATrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:47:41 -0500
+	id S1756783Ab2BATnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:43:24 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,88 +16,46 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 23/41] rcu: Clean up straggling rcu_preempt_needs_cpu() name
-Date: Wed,  1 Feb 2012 11:41:41 -0800
-Message-Id: <1328125319-5205-23-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 04/41] rcu: Add diagnostic for misaligned rcu_head structures
+Date: Wed,  1 Feb 2012 11:41:22 -0800
+Message-Id: <1328125319-5205-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120201194131.GA10028@linux.vnet.ibm.com>
  <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020119-1976-0000-0000-00000A09B4E2
+x-cbid: 12020119-1976-0000-0000-00000A09ADD1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-The recent updates to RCU_CPU_FAST_NO_HZ have an rcu_needs_cpu() that
-does more than just check for callbacks, so get the name for
-rcu_preempt_needs_cpu() consistent with that change, now calling it
-rcu_preempt_cpu_has_callbacks().
+The push for energy efficiency will require that RCU tag rcu_head
+structures to indicate whether or not their invocation is time critical.
+This tagging is best carried out in the bottom bits of the ->next
+pointers in the rcu_head structures.  This tagging requires that the
+rcu_head structures be properly aligned, so this commit adds the required
+diagnostics.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c        |    2 +-
- kernel/rcutree.h        |    2 +-
- kernel/rcutree_plugin.h |    8 ++++----
- 3 files changed, 6 insertions(+), 6 deletions(-)
+ kernel/rcutree.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 38d143b..6168153 100644
+index d0f8e64..4655f3e 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -1956,7 +1956,7 @@ static int rcu_cpu_has_callbacks(int cpu)
- 	/* RCU callbacks either ready or pending? */
- 	return per_cpu(rcu_sched_data, cpu).nxtlist ||
- 	       per_cpu(rcu_bh_data, cpu).nxtlist ||
--	       rcu_preempt_needs_cpu(cpu);
-+	       rcu_preempt_cpu_has_callbacks(cpu);
- }
+@@ -1707,6 +1707,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	unsigned long flags;
+ 	struct rcu_data *rdp;
  
- static DEFINE_PER_CPU(struct rcu_head, rcu_barrier_head) = {NULL};
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 05e0367..58c9fc3 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -449,7 +449,7 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp,
- 			       bool wake);
- #endif /* #if defined(CONFIG_HOTPLUG_CPU) || defined(CONFIG_TREE_PREEMPT_RCU) */
- static int rcu_preempt_pending(int cpu);
--static int rcu_preempt_needs_cpu(int cpu);
-+static int rcu_preempt_cpu_has_callbacks(int cpu);
- static void __cpuinit rcu_preempt_init_percpu_data(int cpu);
- static void rcu_preempt_cleanup_dying_cpu(void);
- static void __init __rcu_init_preempt(void);
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 2fde647..25bd9c1 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -886,9 +886,9 @@ static int rcu_preempt_pending(int cpu)
- }
- 
- /*
-- * Does preemptible RCU need the CPU to stay out of dynticks mode?
-+ * Does preemptible RCU have callbacks on this CPU?
-  */
--static int rcu_preempt_needs_cpu(int cpu)
-+static int rcu_preempt_cpu_has_callbacks(int cpu)
- {
- 	return !!per_cpu(rcu_preempt_data, cpu).nxtlist;
- }
-@@ -1127,9 +1127,9 @@ static int rcu_preempt_pending(int cpu)
- }
- 
- /*
-- * Because preemptible RCU does not exist, it never needs any CPU.
-+ * Because preemptible RCU does not exist, it never has callbacks
-  */
--static int rcu_preempt_needs_cpu(int cpu)
-+static int rcu_preempt_cpu_has_callbacks(int cpu)
- {
- 	return 0;
- }
++	WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
+ 	debug_rcu_head_queue(head);
+ 	head->func = func;
+ 	head->next = NULL;
 -- 
 1.7.8
 
