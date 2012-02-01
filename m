@@ -1,182 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164Ab2BAWUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:20:21 -0500
-Received: from mga07.intel.com ([143.182.124.22]:15892 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933113Ab2BAWUP (ORCPT
+	id S1757671Ab2BAWW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:22:57 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33554 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756124Ab2BAWWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:20:15 -0500
-Message-ID: <4F29B9A1.3090504@intel.com>
-Date: Thu, 02 Feb 2012 00:16:01 +0200
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Organization: Intel Finland Oy, Helsinki, Finland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Wed, 1 Feb 2012 17:22:55 -0500
+X-Sasl-enc: 4odZveX+FgxsDLVCscFxhYmIRHKFVTcq8OzAQpiPv7vX 1328134974
+Date: Wed, 1 Feb 2012 14:22:50 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, bp@amd64.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        lenb@kernel.org, xen-devel@lists.xensource.com
+Subject: Re: WARN... Device 'cpu1' does not have a release() function, it is
+ broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
+Message-ID: <20120201222250.GA3854@kroah.com>
+References: <20120123180601.GA24553@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-CC: sparclinux@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Fix the sparc32 mpilib build mess.
-References: <20120126.173202.2207050843577467461.davem@davemloft.net>
-In-Reply-To: <20120126.173202.2207050843577467461.davem@davemloft.net>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms020900020706070005030908"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120123180601.GA24553@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Mon, Jan 23, 2012 at 01:06:01PM -0500, Konrad Rzeszutek Wilk wrote:
+> When I bring a CPU down in a guest (which should be the same as bringing a
+> CPU down using the ACPI framework), I get this:
+> 
+> [   14.484206] SMP alternatives: switching to UP code
+> [   14.514287] ------------[ cut here ]------------
+> [   14.514318] WARNING: at /home/konrad/linux-linus/drivers/base/core.c:194 device_release+0x82/0x90()
+> [   14.514354] Device 'cpu1' does not have a release() function, it is broken and must be fixed.
+> [   14.514386] Modules linked in: radeon fbcon tileblit font ttm bitblit softcursor drm_kms_helper xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea xen_kbdfront xenfs xen_privcmd
+> [   14.514557] Pid: 22, comm: xenwatch Not tainted 3.3.0-rc1 #1
+> [   14.514586] Call Trace:
+> [   14.515094]  [<ffffffff810897fa>] warn_slowpath_common+0x7a/0xb0
+> [   14.515094]  [<ffffffff810898d1>] warn_slowpath_fmt+0x41/0x50
+> [   14.515094]  [<ffffffff813dea02>] device_release+0x82/0x90
+> [   14.515094]  [<ffffffff812dfb85>] kobject_release+0x45/0x90
+> [   14.515094]  [<ffffffff812dfa4c>] kobject_put+0x2c/0x60
+> [   14.515094]  [<ffffffff813de6a2>] put_device+0x12/0x20
+> [   14.515094]  [<ffffffff813df409>] device_unregister+0x19/0x20
+> [   14.515094]  [<ffffffff813e4edf>] unregister_cpu+0x4f/0x80
+> [   14.515094]  [<ffffffff81052c7c>] arch_unregister_cpu+0x1c/0x20
+> [   14.515094]  [<ffffffff8137f787>] handle_vcpu_hotplug_event+0xc7/0xd0
+> [   14.515094]  [<ffffffff8137b900>] xenwatch_thread+0xb0/0x180
+> [   14.515094]  [<ffffffff810ad3f0>] ? wake_up_bit+0x40/0x40
+> [   14.515094]  [<ffffffff8137b850>] ? split+0xf0/0xf0
+> [   14.515094]  [<ffffffff810acd16>] kthread+0x96/0xa0
+> [   14.515094]  [<ffffffff816151e4>] kernel_thread_helper+0x4/0x10
+> [   14.515094]  [<ffffffff8160cc80>] ? retint_restore_args+0x5/0x6
+> [   14.515094]  [<ffffffff816151e0>] ? gs_change+0x13/0x13
+> [   14.515094] ---[ end trace 8f70af51a2e2611f ]---
+> 
+> Looking at "commit e032d80774315869aa2285b217fdbbfed86c0b49
+> Author: Greg Kroah-Hartman <gregkh@suse.de>
+> Date:   Mon Jan 16 14:40:28 2012 -0800
+> 
+>     mce: fix warning messages about static struct mce_device
+> "
+> 
+> it looks like the corret fix is to make the 'cpu_devices' in
+> arch/x86/kernel/topology.c to be changed to be more dynamic
+> (or perhaps have an empty release function)?
+> 
+> Is anybody else hitting this with ACPI CPU hot-unplug? Or do I have
+> the privilige of being the first? Oh, I hadn't done a full bisection
+> but v3.2 does not have this.
 
---------------ms020900020706070005030908
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
+Does the patch below solve the problem for you?
 
-I am very sorry...
-I was trying to test-forward saved patch mails, but it did work not like =
+thanks,
 
-I expected...
-Try to find out how to forward email without TO and CC lists..
-
-- Dmitry
-
-On 02/02/2012 12:12 AM, Dmitry Kasatkin wrote:
-> From: David Miller<davem@davemloft.net>
->
->
-> The long and short of it is that the longlong.h header added by
-> the mpilib code is quite old and out of date.
->
-> Here I've solved the clz_tab[] multiple definition problem as
-> well as the outdated udiv_qrnnd() definition, but long term
-> we should probably have a more uptodate longlong.h header
-> provides at include/linux/longlong.h to avoid this kind of
-> stuff in the future.
->
-> It's a part of the libgcc interface and therefore has no
-> business being tucked down deep under lib/foo/ somewhere.
+greg k-h
 
 
---------------ms020900020706070005030908
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIVTDCC
-Az0wggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UE
-ChMHRXF1aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9y
-aXR5MB4XDTA2MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAY
-BgNVBAoTEUludGVsIENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNp
-YyBQb2xpY3kgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ
-8mQ1042TdOIq3ATDIsV2xDyt30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLG
-IKeNNG97dqyc30FElEUjZzTZFq2N4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+Cif
-ozexHLb/hEZj+yISCU61kRZvuSQ0E11yYL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1
-Ppk965XQAKsHfnyT7C4S50T4lVn4lz36wOdNZn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6Kb
-gJCKLovnujGuohquBNfdXKpZkvz6pGv+iC1HawJdAgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQD
-AgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0Vgaj7TdUDDA6BgNVHR8EMzAxMC+gLaArhilo
-dHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3NlY3VyZWNhLmNybDAfBgNVHSMEGDAWgBRI
-5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBBQUAA4GB
-ABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69tOkIP4SgDJOfsxyobIrPLe75
-kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3jMfr900fXZKj5XeqCJ+JP
-0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYR6AtwAAAAAABzANBgkqhkiG
-9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xJzAl
-BgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI1MTNa
-Fw0xNTA1MTUxOTM1MTNaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3Jh
-dGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTCCASIw
-DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMGPgGLnOO5IOzlHRfr1XfCVb97V4BR2QVpP
-Z7CrcIQ+FGa2KHD/6dPjwxOIrtFTdfW4BYikdFmxUZVBWRWZ5Vye2cCdGzFWqIEOE1e17nNx
-1jM8Z6GZEqbDUS+vBuPlBFHKQoVm5BaNIHpyn2XZxqwjV9j5/crIfPrCGstk+2ztUhVS8OHE
-gzO784PgD9pOgBnnAbZHmEM1FYYmQ6ibS+gVCHzobDYG+YReRiHpFKWBxpUuP+X0WYFw/Ja1
-JW7N8pELAFDw0UFBWFgiv1QIusdLvSy8mcsLJ5wy050OVcxShqoUxhw/wvyuuoQxvmEPjhRa
-1C2oSCmGN0003GMhQWMCAwEAAaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYE
-FKoWZq+3PVZTYK4Nwu3z7gfLUWB+MAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQAB
-MCMGCSsGAQQBgjcVAgQWBBTCKwhTx+hdMsKCgOmWwLgjQsAV+TAZBgkrBgEEAYI3FAIEDB4K
-AFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1
-MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRl
-bCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZp
-Y2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNp
-YyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYIKwYBBQUHMAKGV2h0
-dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0
-ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZgaHR0cDovL2Nl
-cnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBF
-eHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IBAQCU
-Y/1d0MS6VPTlIcOho1XWh193PD5kJDJSPdphLHQdM1oKA+whMdIBoY1VzTDDK+C+Ey4Jcyna
-7fpC8uVmn/Rz/i9MZtyc7qezPtZTn9UyORvJmddH+Ox/RycGwe3ags8jUdspECorYOkJyZks
-nDIlTVUvbR7wyY+gGJYqxWXqrcVFEiMsWu8/OIlf7F2gAYMBw1kZ55dn4lWBIM0WqvReWpPv
-hYeN7Y+3MKEdSMkQ7TZiNbfdZ5D/8KfWNMTJ4VHltOgCL1lA5tx/F4R1920skpL5eu3Sj650
-RUe3rOXsaV5NyJzBwB31+1zsmleVdFD0k/Fw9HxXbAQE35ucN/7CMIIGFzCCBP+gAwIBAgIK
-YaZA0gABAABqcjANBgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50
-ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3Vpbmcg
-Q0EgM0EwHhcNMTEwODEwMTE0MDIxWhcNMTQwNzI1MTE0MDIxWjBFMRkwFwYDVQQDExBLYXNh
-dGtpbiwgRG1pdHJ5MSgwJgYJKoZIhvcNAQkBFhlkbWl0cnkua2FzYXRraW5AaW50ZWwuY29t
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0hsbgILRCTXVBTBfuYE/LIWY0YC1
-RavODNFGOuz5v2mTgHVmvyyTV2KhVmOjiLkYD20SMAA2F6qk+WdyQKdyrxcl08XlMf529EZ6
-WNfdtHUjznDnXqjrOce8J85/qX1cwxMHCQZwlMBnacqm4hPnLO6cpXR2wiWa6h8kXc9wMg/n
-fMzeRiSljnDevvz/gtZMPWEhy4nzjIMjn4o3lm4Bn0H9zggk9ritbfMmMZQnZU82T5qslRYX
-EXQOCZVEK9hdQzyAEw2wCikTYzsZHosLurK74ThBlOOmaHGUsNoP2uj6ca2YHEJImd7fY+HD
-BcymHiOUGdF87AZlwIzP6aU35wIDAQABo4IC9jCCAvIwCwYDVR0PBAQDAgeAMDwGCSsGAQQB
-gjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4HevTmV8EMCAWQCAQgw
-HQYDVR0OBBYEFOHXj1xKICzYacJ+Wt9esZs8PVxGMB8GA1UdIwQYMBaAFKoWZq+3PVZTYK4N
-wu3z7gfLUWB+MIHPBgNVHR8EgccwgcQwgcGggb6ggbuGV2h0dHA6Ly93d3cuaW50ZWwuY29t
-L3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBD
-QSUyMDNBKDEpLmNybIZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9y
-eS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwM0EoMSku
-Y3JsMIH1BggrBgEFBQcBAQSB6DCB5TBsBggrBgEFBQcwAoZgaHR0cDovL3d3dy5pbnRlbC5j
-b20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIw
-SXNzdWluZyUyMENBJTIwM0EoMSkuY3J0MHUGCCsGAQUFBzAChmlodHRwOi8vY2VydGlmaWNh
-dGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFs
-JTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQSgxKS5jcnQwHwYDVR0lBBgwFgYIKwYBBQUH
-AwQGCisGAQQBgjcKAwwwKQYJKwYBBAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3
-CgMMME8GA1UdEQRIMEagKQYKKwYBBAGCNxQCA6AbDBlkbWl0cnkua2FzYXRraW5AaW50ZWwu
-Y29tgRlkbWl0cnkua2FzYXRraW5AaW50ZWwuY29tMA0GCSqGSIb3DQEBBQUAA4IBAQAp2uSP
-L6GMJIyxc4SJsJbCZ3BtU58vJ0u9VthsidMvo3kTsj/ExFuh9OJ40Z9fDgMAZF7DMx1GbjpH
-/agiSRWhV1GlqVmv3STiSJKIeZw9XypbVbHanQ/rAgSHd633VLA8ZQLPFGDSNUVAS/OB4SwO
-iA+tXHzgNDQBqMSmIQmQuV2l+hFDV8vte0LmDi+81K2KpdCFMSyBNUTCQ8IhTRr06WiV5blV
-vo3TASVaKNMFt9CLEfOAFQJjML7nkIhJnSVEzezfwsm/t1G8wHfP0+dkgkuskm3diyvfx/in
-HodZphAw9G/XYbCW0cAY8pa0CMaCd4KB4yjy95S3RM9nGMDGMIIGXjCCBUagAwIBAgIKbdof
-NwABAAB1cjANBgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwg
-Q29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0Eg
-M0IwHhcNMTEwODEwMTEzODUyWhcNMTQwNzI1MTEzODUyWjBFMRkwFwYDVQQDExBLYXNhdGtp
-biwgRG1pdHJ5MSgwJgYJKoZIhvcNAQkBFhlkbWl0cnkua2FzYXRraW5AaW50ZWwuY29tMIIB
-IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4VC2dDFZA7qND1Pgz6MY+Sb834DUe7ye
-wApKecEM+0iY01safCwDBcn9k/WeazWNzYmMb1K18752POXRlS9p+IRdenZ9cWwXJrrCWjg4
-IAB6XFvSOMNYRuMfKh7bPibJIEszk8aCH09g1+Fy8BE0xYDlxDLLY2BYxQzSGEfUOy8OjgBD
-bjDljoRGtbqkc1oWbLAF+nsBkqZJ06gNpfudGLDdw9ON03cySFcBAt3qNDIK3q3tcSG5+AeS
-wT/MqUw5ltyK4LV0SdnsK4d/uKp3wdQjJf+X3Qs1anWkhRX9/1d9M248/kfTWfkdJOIGW23h
-2wlAZOCNcQzIINlPubUk1wIDAQABo4IDPTCCAzkwCwYDVR0PBAQDAgQwMD0GCSsGAQQBgjcV
-BwQwMC4GJisGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4S52UGHhP9OAgFkAgEMMEQG
-CSqGSIb3DQEJDwQ3MDUwDgYIKoZIhvcNAwICAgCAMA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMC
-BzAKBggqhkiG9w0DBzAdBgNVHQ4EFgQUWl/BAgkqJlaxJNdkhBggeqZpiU8wHwYDVR0jBBgw
-FoAUDsYq91myCBCQJW/D3f2KZjEwK8Uwgc8GA1UdHwSBxzCBxDCBwaCBvqCBu4ZXaHR0cDov
-L3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2lj
-JTIwSXNzdWluZyUyMENBJTIwM0IoMSkuY3JshmBodHRwOi8vY2VydGlmaWNhdGVzLmludGVs
-LmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5n
-JTIwQ0ElMjAzQigxKS5jcmwwgfUGCCsGAQUFBwEBBIHoMIHlMGwGCCsGAQUFBzAChmBodHRw
-Oi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVy
-bmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5jcnQwdQYIKwYBBQUHMAKGaWh0
-dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0lu
-dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNydDAfBgNV
-HSUEGDAWBggrBgEFBQcDBAYKKwYBBAGCNwoDBDApBgkrBgEEAYI3FQoEHDAaMAoGCCsGAQUF
-BwMEMAwGCisGAQQBgjcKAwQwTwYDVR0RBEgwRqApBgorBgEEAYI3FAIDoBsMGWRtaXRyeS5r
-YXNhdGtpbkBpbnRlbC5jb22BGWRtaXRyeS5rYXNhdGtpbkBpbnRlbC5jb20wDQYJKoZIhvcN
-AQEFBQADggEBAAqn6eoP43/82qfmPxnYBLHjPrq/23Vx6ZcMU8aCnTP3OzSPl3vu7w1ESat3
-Gt06gsOCvE6bqEYotm7AflNu/QTb8JaX4pQOTxnaj9EidJkHNbDOM58QUCNVJLH02sYVjDYg
-gCI/Ef48juH1HcKRSm6eZpuBbekt+d75eVaKikFOHjrluqpxrLrAlgkGWc7UAvqy4w50A3XI
-MhsBZ1wX2upbJnoKtON+DliXmQ6XgkBGjCzdgtSzaaCuKfF0bvhuYwM1O0SZgZcZ71x1lHAZ
-LoHTtTkyrRTLFWXEU2dH3yH0cibj61+uVrYbqgqRK5LgTsZTmBOoEof1W8ZWLzUAF0wxggM5
-MIIDNQIBATBkMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlvbjEr
-MCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQQIKYaZA0gABAABq
-cjAJBgUrDgMCGgUAoIIBqjAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJ
-BTEPFw0xMjAyMDEyMjE2MDFaMCMGCSqGSIb3DQEJBDEWBBScMknoC2OUGURqAkrL7vd8klav
-RTBfBgkqhkiG9w0BCQ8xUjBQMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0D
-AgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwcwYJKwYBBAGC
-NxAEMWYwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzAp
-BgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0ICCm3aHzcAAQAAdXIw
-dQYLKoZIhvcNAQkQAgsxZqBkMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jw
-b3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQgIK
-bdofNwABAAB1cjANBgkqhkiG9w0BAQEFAASCAQDCs0IX/slkzYY7qbx2vInTaFTcQC+5hAsV
-eCySQr8mrJTlej4hhCTZNyJcjff/1H5nrn0UZjV9GoXC6ENqFGxIVfiKcguN9PCQsw4WAlWn
-7DG6kt0Z1oO/CHxxA+gEPKXjQNjqoXr96tHimqga31PBUJhT02rolmsKJEv5M4W5v9xeZzhU
-vaEDuDc8DJ85V0myxc6km25p/1ICHhJpBiaoIP1YWP9xIyO5/mESqb/Rp6fvXqVqaemHQ0ly
-CLDxkkFt8s/yfPZ7iXPdP5BWh6ezta2V3FOBJAKr1cI9Ev28SqzJ4/BmjRVisUYaWnHoa1s7
-jfk3by7Rz4kzCc/+hBqyAAAAAAAA
---------------ms020900020706070005030908--
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index db87e78..23f2c4c 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -208,6 +208,25 @@ static ssize_t print_cpus_offline(struct device *dev,
+ }
+ static DEVICE_ATTR(offline, 0444, print_cpus_offline, NULL);
+ 
++static void cpu_device_release(struct device *dev)
++{
++	/*
++	 * This is an empty function to prevent the driver core from spitting a
++	 * warning at us.  Yes, I know this is directly opposite of what the
++	 * documentation for the driver core and kobjects say, and the author
++	 * of this code has already been publically ridiculed for doing
++	 * something as foolish as this.  However, at this point in time, it is
++	 * the only way to handle the issue of statically allocated cpu
++	 * devices.  The different architectures will have their cpu device
++	 * code reworked to properly handle this in the near future, so this
++	 * function will then be changed to correctly free up the memory held
++	 * by the cpu device.
++	 *
++	 * Never copy this way of doing things, or you too will be made fun of
++	 * on the linux-kerenl list, you have been warned.
++	 */
++}
++
+ /*
+  * register_cpu - Setup a sysfs device for a CPU.
+  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
+@@ -223,6 +242,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ 	cpu->node_id = cpu_to_node(num);
+ 	cpu->dev.id = num;
+ 	cpu->dev.bus = &cpu_subsys;
++	cpu->dev.release = cpu_device_release;
+ 	error = device_register(&cpu->dev);
+ 	if (!error && cpu->hotpluggable)
+ 		register_cpu_control(cpu);
