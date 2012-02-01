@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab2BATzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:55:55 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:34052 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756650Ab2BATzx (ORCPT
+	id S932175Ab2BAT5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:57:25 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54010 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755201Ab2BAT5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:55:53 -0500
-Date: Wed, 01 Feb 2012 14:50:29 -0500 (EST)
-Message-Id: <20120201.145029.1873008611296502262.davem@davemloft.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org,
-        paul.mckenney@linaro.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org
-Subject: Re: [PATCH RFC tip/core/rcu 10/41] ipv4: Convert call_rcu() to
- kfree_rcu()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1328125319-5205-10-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
-	<1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1328125319-5205-10-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 1 Feb 2012 14:57:24 -0500
+Date: Wed, 1 Feb 2012 19:58:19 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+Message-ID: <20120201195819.76357d79@pyramind.ukuu.org.uk>
+In-Reply-To: <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
+References: <20120201151918.GC16714@quack.suse.cz>
+	<CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+	<1328118174.15992.6206.camel@triegel.csb>
+	<CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 01 Feb 2012 11:50:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Wed,  1 Feb 2012 11:41:28 -0800
-
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> So here's basically what the kernel needs:
 > 
-> The call_rcu() in do_ip_setsockopt() invokes opt_kfree_rcu(), which just
-> calls kfree().  So convert the call_rcu() to kfree_rcu(), which allows
-> opt_kfree_rcu() to be eliminated.
+>  - if we don't touch a field, the compiler doesn't touch it.
 > 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>    This is the rule that gcc now violates with bitfields.
+> 
+>    This is a gcc bug. End of story. The "volatile" example proves it -
+> anybody who argues otherwise is simply wrong, and is just trying to
+> make excuses.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+C historically didn't make this guarantee because a lot of processors
+couldn't make it because they didn't have things like byte accessors (In
+fact I suspect early ARM cannot make it for example).
+
+Not meeting it for types where you can do is a bit rude however and
+really ought to be an option (speed v sanity).
+
+> See above: it's not the "state" that is accessed concurrently. It's
+> the code. If you ever try to mark state, you've already lost. The same
+> "state" can be atomic or not depending on context. It's not about the
+> state or the data structures, and it never will be.
+
+There are optimisation cases - where you can prove access properties are
+safe (eg local variables some times) but they should be exactly that -
+optimisations.
+
+Alan
