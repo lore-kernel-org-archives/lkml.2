@@ -1,160 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab2BAV0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:26:18 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34095 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502Ab2BAVTb (ORCPT
+	id S932839Ab2BAV0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:26:16 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:43271 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757503Ab2BAVTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:31 -0500
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, vgoyal@redhat.com
-Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/11] blkcg: clear all request_queues on blkcg policy [un]registrations
-Date: Wed,  1 Feb 2012 13:19:09 -0800
-Message-Id: <1328131156-13290-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1328131156-13290-1-git-send-email-tj@kernel.org>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
+	Wed, 1 Feb 2012 16:19:32 -0500
+X-Sasl-enc: NWIblwqzQy4A5FJzRX9s63XMsAi/LPDT/FLno3E8J7c9 1328131171
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:50 2012
+Message-Id: <20120201210050.821593243@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Wed, 01 Feb 2012 13:00:43 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
+        Nandita Dukkipati <nanditad@google.com>,
+        =?UTF-8?q?Ilpo=20J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [79/89] tcp: fix tcp_trim_head() to adjust segment count with skb MSS
+In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keep track of all request_queues which have blkcg initialized and turn
-on bypass and invoke blkcg_clear_queue() on all before making changes
-to blkcg policies.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-This is to prepare for moving blkg management into blkcg core.  Note
-that this uses more brute force than necessary.  Finer grained shoot
-down will be implemented later and given that policy [un]registration
-almost never happens on running systems (blk-throtl can't be built as
-a module and cfq usually is the builtin default iosched), this
-shouldn't be a problem for the time being.
+------------------
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
+
+From: Neal Cardwell <ncardwell@google.com>
+
+[ Upstream commit 5b35e1e6e9ca651e6b291c96d1106043c9af314a ]
+
+This commit fixes tcp_trim_head() to recalculate the number of
+segments in the skb with the skb's existing MSS, so trimming the head
+causes the skb segment count to be monotonically non-increasing - it
+should stay the same or go down, but not increase.
+
+Previously tcp_trim_head() used the current MSS of the connection. But
+if there was a decrease in MSS between original transmission and ACK
+(e.g. due to PMTUD), this could cause tcp_trim_head() to
+counter-intuitively increase the segment count when trimming bytes off
+the head of an skb. This violated assumptions in tcp_tso_acked() that
+tcp_trim_head() only decreases the packet count, so that packets_acked
+in tcp_tso_acked() could underflow, leading tcp_clean_rtx_queue() to
+pass u32 pkts_acked values as large as 0xffffffff to
+ca_ops->pkts_acked().
+
+As an aside, if tcp_trim_head() had really wanted the skb to reflect
+the current MSS, it should have called tcp_set_skb_tso_segs()
+unconditionally, since a decrease in MSS would mean that a
+single-packet skb should now be sliced into multiple segments.
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Acked-by: Nandita Dukkipati <nanditad@google.com>
+Acked-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- block/blk-cgroup.c     |   48 +++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/blkdev.h |    3 +++
- 2 files changed, 50 insertions(+), 1 deletions(-)
+ net/ipv4/tcp_output.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 15264d0..10878a4 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -27,6 +27,9 @@
- static DEFINE_SPINLOCK(blkio_list_lock);
- static LIST_HEAD(blkio_list);
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1138,11 +1138,9 @@ int tcp_trim_head(struct sock *sk, struc
+ 	sk_mem_uncharge(sk, len);
+ 	sock_set_flag(sk, SOCK_QUEUE_SHRUNK);
  
-+static DEFINE_MUTEX(all_q_mutex);
-+static LIST_HEAD(all_q_list);
-+
- struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
- EXPORT_SYMBOL_GPL(blkio_root_cgroup);
+-	/* Any change of skb->len requires recalculation of tso
+-	 * factor and mss.
+-	 */
++	/* Any change of skb->len requires recalculation of tso factor. */
+ 	if (tcp_skb_pcount(skb) > 1)
+-		tcp_set_skb_tso_segs(sk, skb, tcp_current_mss(sk));
++		tcp_set_skb_tso_segs(sk, skb, tcp_skb_mss(skb));
  
-@@ -1461,9 +1464,20 @@ done:
-  */
- int blkcg_init_queue(struct request_queue *q)
- {
-+	int ret;
-+
- 	might_sleep();
- 
--	return blk_throtl_init(q);
-+	ret = blk_throtl_init(q);
-+	if (ret)
-+		return ret;
-+
-+	mutex_lock(&all_q_mutex);
-+	INIT_LIST_HEAD(&q->all_q_node);
-+	list_add_tail(&q->all_q_node, &all_q_list);
-+	mutex_unlock(&all_q_mutex);
-+
-+	return 0;
+ 	return 0;
  }
- 
- /**
-@@ -1487,6 +1501,10 @@ void blkcg_drain_queue(struct request_queue *q)
-  */
- void blkcg_exit_queue(struct request_queue *q)
- {
-+	mutex_lock(&all_q_mutex);
-+	list_del_init(&q->all_q_node);
-+	mutex_unlock(&all_q_mutex);
-+
- 	blk_throtl_exit(q);
- }
- 
-@@ -1532,8 +1550,33 @@ static void blkiocg_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 	}
- }
- 
-+static void blkcg_bypass_start(void)
-+	__acquires(&all_q_mutex)
-+{
-+	struct request_queue *q;
-+
-+	mutex_lock(&all_q_mutex);
-+
-+	list_for_each_entry(q, &all_q_list, all_q_node) {
-+		blk_queue_bypass_start(q);
-+		blkg_destroy_all(q);
-+	}
-+}
-+
-+static void blkcg_bypass_end(void)
-+	__releases(&all_q_mutex)
-+{
-+	struct request_queue *q;
-+
-+	list_for_each_entry(q, &all_q_list, all_q_node)
-+		blk_queue_bypass_end(q);
-+
-+	mutex_unlock(&all_q_mutex);
-+}
-+
- void blkio_policy_register(struct blkio_policy_type *blkiop)
- {
-+	blkcg_bypass_start();
- 	spin_lock(&blkio_list_lock);
- 
- 	BUG_ON(blkio_policy[blkiop->plid]);
-@@ -1541,11 +1584,13 @@ void blkio_policy_register(struct blkio_policy_type *blkiop)
- 	list_add_tail(&blkiop->list, &blkio_list);
- 
- 	spin_unlock(&blkio_list_lock);
-+	blkcg_bypass_end();
- }
- EXPORT_SYMBOL_GPL(blkio_policy_register);
- 
- void blkio_policy_unregister(struct blkio_policy_type *blkiop)
- {
-+	blkcg_bypass_start();
- 	spin_lock(&blkio_list_lock);
- 
- 	BUG_ON(blkio_policy[blkiop->plid] != blkiop);
-@@ -1553,5 +1598,6 @@ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
- 	list_del_init(&blkiop->list);
- 
- 	spin_unlock(&blkio_list_lock);
-+	blkcg_bypass_end();
- }
- EXPORT_SYMBOL_GPL(blkio_policy_unregister);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index f10958b..e38e4d0 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -397,6 +397,9 @@ struct request_queue {
- 	struct bsg_class_device bsg_dev;
- #endif
- 
-+#ifdef CONFIG_BLK_CGROUP
-+	struct list_head	all_q_node;
-+#endif
- #ifdef CONFIG_BLK_DEV_THROTTLING
- 	/* Throttle data */
- 	struct throtl_data *td;
--- 
-1.7.7.3
+
 
