@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278Ab2BAFAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 00:00:22 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:48369 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab2BAFAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 00:00:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=FDwpeLxyXbPSz2h4Sg74Y3or7jrBDdN4
-	Zam1kx7MdYa6xuTSzWprLP80oVKY5cgJanOx0BrYfp7sLkiYnt2azP5Sojbect+z
-	YXjWqBd5vrEoCEclduChFY6X5F6MoFfBv5pTde+B10Sq4uIZ5ikrVRvyAXg+4oFT
-	7iT2JOP4uCk=
-From: Junio C Hamano <gitster@pobox.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: Regulator update for 3.3
-References: <20120130134223.GG4882@opensource.wolfsonmicro.com>
- <CA+55aFyoTP3G_x9KzN_cdDYUxRGTBBdoRVT56nFODkqukog7aQ@mail.gmail.com>
- <20120130174345.GN4882@opensource.wolfsonmicro.com>
- <CA+55aFxPivRzaKaNnTseyWmRhfvxV1=gWSTzgmSZx5Nm8XK=zg@mail.gmail.com>
- <20120130185150.GA6684@opensource.wolfsonmicro.com>
-Date: Tue, 31 Jan 2012 21:00:16 -0800
-In-Reply-To: <20120130185150.GA6684@opensource.wolfsonmicro.com> (Mark
- Brown's message of "Mon, 30 Jan 2012 18:51:50 +0000")
-Message-ID: <7vfwev5esf.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: A3011A76-4C91-11E1-9DEA-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	id S1751585Ab2BAFBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 00:01:12 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:48569 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab2BAFBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 00:01:10 -0500
+Date: Wed, 1 Feb 2012 16:00:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?B?IlNqdXIgQnLDpm5k?= =?UTF-8?B?ZWxhbmQi?= 
+	<sjur.brandeland@stericsson.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the modem-shm tree
+Message-Id: <20120201160057.7be520d38bf5d0dd6d29024d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__1_Feb_2012_16_00_57_+1100_P553fb2kmhI.npPi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
+--Signature=_Wed__1_Feb_2012_16_00_57_+1100_P553fb2kmhI.npPi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Yes, indeed - so probably git request-pull ought to just do that when
-> working with a tag (which I guess it knows it's doing because it managed
-> to add the information it pulled from the tag into the pull request)
-> since it'll help with old versions and avoids confusions like this.
+Hi all,
 
-I heard you.
+After merging the modem-shm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-I'd appreciate it if you could Bc: either myself or git@vger.kernel.org
-next time you have improvement suggestions to Git.
+scripts/Makefile.headersinst:18: include/linux/shm/Kbuild: No such file or =
+directory
 
-Thanks.
+Caused by commit fdefb6d63aa1 ("modem_shm: Channel config definitions for
+ST-E M7400 driver").
+
+I have used the xshm tree from next-20120131 instead for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__1_Feb_2012_16_00_57_+1100_P553fb2kmhI.npPi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPKMcJAAoJEECxmPOUX5FEwucQAKdDkC1xod360aQLPnnuioJ5
+fG6Aryld4W8IThwoHeiPflaUXE9uwp3luQo3xMuZ7F2zJSUWc7SwdmbWbRweKVzb
+iVL8Cy/gt0N/V7QD9XhsbldBqO9oZPa1XaaXiyyyOLzqu5L973PJ5SGGT4WMARxo
+5Oj6hyJor1xVmB8SwTxYFiVDn2RN/UrO8G4zIdF42ppxfX3cgxZM0sZ3EA0DJN33
+qSC0InuFgUWhNhmYVrTO1jpFiTtH1PthUD9Be1dydFekApEbFTtmaTKa2ZiklO3O
+gpZ1CAzlo2GWIQKVDBimy7r5in2+QZHMPPP4/8LPq5a5K3zGCt5lMaKXdbYYh7HU
+ddJ5/XpHmm/Uysp6jiMlI/eiASArbMcQMHziXXOCe4sRVO5U54BqXT9g3PR0AbhX
+x6+VWvX7vpIuiCzPzJuMjFTSFpa8drkdOS4QBokfhktWDnGSUoqekEDyFAG5yqTc
+ypxSRd0slS4gZVcXsQlOUHisnkmkhByLUHYAuMBP+Nr7E6RxWhU5SlkHWgKP8LwK
+d25h5COT8UH4kC3wLUoQnGTbs84833uCr2U4y2beFxN73vFt4mapFUjLpJARSLSs
+OjA/o/Y1ybPdK9BBJcPOyGv+MwLfCukwlharQ2Rs37EV+pxcxRSyJ9mypnXgoPuH
+5e7JcsqBppRKekMUE7h6
+=ES08
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__1_Feb_2012_16_00_57_+1100_P553fb2kmhI.npPi--
