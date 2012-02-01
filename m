@@ -1,71 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab2BAHAS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 02:00:18 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45979 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472Ab2BAHAQ (ORCPT
+	id S1755163Ab2BAHBO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 02:01:14 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:56138 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899Ab2BAHBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 02:00:16 -0500
-From: Geunsik Lim <geunsik.lim@gmail.com>
-To: Karsten Keil <isdn@linux-pingi.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Keep kernel coding style rule of hfs-s+/sp source
-Date: Wed,  1 Feb 2012 15:59:53 +0900
-Message-Id: <1328079593-19197-1-git-send-email-geunsik.lim@gmail.com>
-X-Mailer: git-send-email 1.7.8.1
+	Wed, 1 Feb 2012 02:01:12 -0500
+Date: Wed, 01 Feb 2012 01:59:54 -0500 (EST)
+Message-Id: <20120201.015954.2098592611164231843.davem@davemloft.net>
+To: lizf@cn.fujitsu.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, nhorman@tuxdriver.com
+Subject: Re: [PATCH 4/6] netprio_cgroup: use IS_ENABLED() and family
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F28E203.10502@cn.fujitsu.com>
+References: <4F28E1D1.900@cn.fujitsu.com>
+	<4F28E203.10502@cn.fujitsu.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 31 Jan 2012 22:59:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modified for kernel coding style rule of hfs-s+/sp device driver .
-. reference: ./Documentation/CodingStyle
 
-ex)
-60 Don't put multiple statements on a single line unless you have
-61 something to hide:
-62
-63         if (condition) do_this;
-64           do_something_everytime;
+Do not mix genuine bug fixes and cleanups.
 
-Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
----
- drivers/isdn/hisax/hfc_sx.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Otherwise I cannot apply your bug fixes to the 'net' tree.
 
-diff --git a/drivers/isdn/hisax/hfc_sx.c b/drivers/isdn/hisax/hfc_sx.c
-index 156d7c6..7c41bd8 100644
---- a/drivers/isdn/hisax/hfc_sx.c
-+++ b/drivers/isdn/hisax/hfc_sx.c
-@@ -381,7 +381,7 @@ reset_hfcsx(struct IsdnCardState *cs)
- 	Write_hfc(cs, HFCSX_INT_M1, cs->hw.hfcsx.int_m1);
- 
- 	/* Clear already pending ints */
--	if (Read_hfc(cs, HFCSX_INT_S1));
-+	Read_hfc(cs, HFCSX_INT_S1);
- 
- 	Write_hfc(cs, HFCSX_STATES, HFCSX_LOAD_STATE | 2);	/* HFC ST 2 */
- 	udelay(10);
-@@ -411,7 +411,7 @@ reset_hfcsx(struct IsdnCardState *cs)
- 	/* Finally enable IRQ output */
- 	cs->hw.hfcsx.int_m2 = HFCSX_IRQ_ENABLE;
- 	Write_hfc(cs, HFCSX_INT_M2, cs->hw.hfcsx.int_m2);
--	if (Read_hfc(cs, HFCSX_INT_S2));
-+	Read_hfc(cs, HFCSX_INT_S2);
- }
- 
- /***************************************************/
-@@ -1286,7 +1286,7 @@ hfcsx_bh(struct work_struct *work)
- 						cs->hw.hfcsx.int_m1 &= ~HFCSX_INTS_TIMER;
- 						Write_hfc(cs, HFCSX_INT_M1, cs->hw.hfcsx.int_m1);
- 						/* Clear already pending ints */
--						if (Read_hfc(cs, HFCSX_INT_S1));
-+						Read_hfc(cs, HFCSX_INT_S1);
- 
- 						Write_hfc(cs, HFCSX_STATES, 4 | HFCSX_LOAD_STATE);
- 						udelay(10);
--- 
-1.7.8.1
-
+Seperate things out, submit only pure bug fixes first, then
+later once those changes propagate you can submit the cleanups.
