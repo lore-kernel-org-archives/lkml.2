@@ -1,47 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab2BARKf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:10:35 -0500
-Received: from claw.goop.org ([74.207.240.146]:34430 "EHLO claw.goop.org"
+	id S1754826Ab2BARML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:12:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54526 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986Ab2BARKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:10:34 -0500
-Message-ID: <4F297206.4070900@goop.org>
-Date: Wed, 01 Feb 2012 09:10:30 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1752519Ab2BARMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 12:12:09 -0500
+Date: Wed, 1 Feb 2012 18:11:29 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Colin Walters <walters@verbum.org>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+In-Reply-To: <CA+55aFxmdskUXX1iBaPx7rUGD95UqNJxhe1BLeVtZjqHjBpsPA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1202011808240.22725@twin.jikos.cz>
+References: <20120201151918.GC16714@quack.suse.cz> <1328114266.5355.44.camel@lenny> <CA+55aFxmdskUXX1iBaPx7rUGD95UqNJxhe1BLeVtZjqHjBpsPA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] HID
-References: <alpine.LNX.2.00.1201052218200.24984@pobox.suse.cz> <4F098C29.9010101@goop.org> <alpine.LNX.2.00.1201081739360.24984@pobox.suse.cz> <4F1132B3.3000909@goop.org> <alpine.LNX.2.00.1202011247550.18918@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1202011247550.18918@pobox.suse.cz>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2012 03:48 AM, Jiri Kosina wrote:
-> On Sat, 14 Jan 2012, Jeremy Fitzhardinge wrote:
->
->>> which is based on the power supply scope changes in the battery.git tree; I'm not quite
->>> sure how to sequence that into mainline.
->>> I will look into it.
->> The power changes are in now, so you could try pushing them as a late push.
->>
->> (Linus: I had some changes that depended on both the HID and
->> power_supply subsystems, so they needed to wait until you'd pulled both.)
-> Jeremy,
->
-> I have been completely offline for ~20 days, and am slowly getting back on 
-> track now, so I will process those shortly. Sorry for late response.
+On Wed, 1 Feb 2012, Linus Torvalds wrote:
 
-No problem, they're not urgent or anything.  It would be nice to get
-them into the next release if at all possible so powerd can start using
-them, but it has lasted this long wthout...
+> But the compiler turns the access to the bitfield (in a 32-bit aligned
+> word) into a 64-bit access that accesses the word *next* to it.
+> 
+> That word next to it might *be* the lock, for example.
+> 
+> So we could literally have this kind of situation:
+> 
+>    struct {
+>       atomic_t counter;
+>       unsigned int val:4, other:4, data:24;
+>    };
+> 
+> and if we write code like this:
+> 
+>     spin_lock(&somelock);
+>     s->data++;
+>     spin_unlock(&somelock);
+> 
+> and on another CPU we might do
+> 
+>    atomic_inc(&counter);
+> 
+> and the access to the bitfield will *corrupt* the atomic counter, even
+> though both of them are perfectly fine!
+> 
+> Quite frankly, if the bug is simply because gcc doesn't actually know
+> or care about the underlying size of the bitmask, it is possible that
+> we can find a case where gcc clearly is buggy even according to the
+> original C rules.
+> 
+> Honza - since you have access to the compiler in question, try
+> compiling this trivial test-program:
+> 
+> 
+>    struct example {
+>       volatile int a;
+>       int b:1;
+>    };
+> 
+>    ..
+>      s->b = 1;
+>    ..
+> 
+> and if that bitfield access actually does a 64-bit access that also
+> touches 's->a', then dammit, that's a clear violation of even the
+> *old* C standard, and the gcc people cannot just wave away their bugs
+> by saying "we've got standads, pttthththt".
+> 
+> And I suspect it really is a generic bug that can be shown even with
+> the above trivial example.
 
-Thanks,
-    J
+I have actually tried exactly this earlier today (because while looking at 
+this, I had an idea that putting volatile in place could be a workaround, 
+causing gcc to generate a saner code), but it doesn't work either:
+
+# cat x.c
+struct x {
+    long a;
+    volatile unsigned int lock;
+    unsigned int full:1;
+};
+
+void
+wrong(struct x *ptr)
+{
+        ptr->full = 1;
+}
+
+int main()
+{
+        wrong(0);
+}
+# gcc -O2 x.c
+# gdb -q ./a.out 
+Reading symbols from /root/a.out...done.
+(gdb) disassemble wrong
+Dump of assembler code for function wrong:
+   0x40000000000005c0 <+0>:     [MMI]       adds r32=8,r32
+   0x40000000000005c1 <+1>:                 nop.m 0x0
+   0x40000000000005c2 <+2>:                 mov r15=1;;
+   0x40000000000005d0 <+16>:    [MMI]       ld8 r14=[r32];;
+   0x40000000000005d1 <+17>:                nop.m 0x0
+   0x40000000000005d2 <+18>:                dep r14=r15,r14,32,1;;
+   0x40000000000005e0 <+32>:    [MIB]       st8 [r32]=r14
+   0x40000000000005e1 <+33>:                nop.i 0x0
+   0x40000000000005e2 <+34>:                br.ret.sptk.many b0;;
+
+In my opinion, this is a clear bug in gcc (while the original problem, 
+without explitict volatile, is not a C spec violation per se, it's just 
+very inconvenient :) ).
+
+-- 
+Jiri Kosina
+SUSE Labs
