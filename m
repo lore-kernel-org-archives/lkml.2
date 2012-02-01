@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab2BAKwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 05:52:13 -0500
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:48940 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756143Ab2BAKwL (ORCPT
+	id S1756201Ab2BAKwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 05:52:30 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:49313 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756154Ab2BAKw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 05:52:11 -0500
+	Wed, 1 Feb 2012 05:52:28 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
 Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
@@ -21,99 +21,39 @@ Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
         <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
-Subject: [PATCH V3 00/12] dmaengine: Pl08x and dw_dmac updates
-Date: Wed, 1 Feb 2012 16:12:16 +0530
-Message-ID: <cover.1328091915.git.viresh.kumar@st.com>
+Subject: [PATCH V3 05/12] dmaengine/dw_dmac: Don't use magic number for total number of channels
+Date: Wed, 1 Feb 2012 16:12:21 +0530
+Message-ID: <42b0936c114afb25ae50b34ecd3302ef86ea4190.1328091915.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.8.110.g4cb5d
+In-Reply-To: <cover.1328091915.git.viresh.kumar@st.com>
+References: <cover.1328091915.git.viresh.kumar@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod/Dan,
+Total number of channels is passed in pdata->nr_channels variable, thus we must
+not use magic number '7' for total number of channels.
 
-   This patchset does following:
-   - Includes earlier patchset sent by Rajeev for cleanly applying this patchset
-   - Adds device_fc (device flow control) field in struct DMA_SLAVE_CONFIG
-   - Fixes existing users of DMAENGINE for device_fc.
-   - Updates pl08x driver according to that
-   - Fixes few issues/bugs in dw_dmac driver
-   - Adds DMA_SLAVE_CONFIG for dw_dmac driver
-   - Fixes existing users of dw_dmac driver
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ drivers/dma/dw_dmac.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Change History:
-Since V2:
- - fix code comment in 2/12
- - fix commit log in 8/12
-
-Since V1:
-   - used dev_get_platdata() instead of platform_get_drvdata(), as
-   that was
-   incorrect
-   - Lots of fixes in: dmaengine/dw_dmac: Add support for
-   DMA_SLAVE_CONFIG
-   - Additional patches:
-   - dmaengine/dw_dmac: Add 64 bit access width support for
-   slave xfers on
-   mem side
-   - Fix other kernel driver for device_fc
-   and dw_dmac changes.
-
-   Rebased-on:
-
-   commit
-   3506c0d507144d9b0f19efd5a56d289f70611179
-   Author: Tushar Behera
-   <tushar.behera@linaro.org>
-   Date:   Tue Dec 6 16:15:54 2011 +0530
-
-   DMA: PL330: Remove pm_runtime_xxx
-   calls from pl330 probe/remove
-
-
-Rajeev KUMAR (1):
-  dmaengine/dw_dmac: Hibernation support in dw_dmac
-
-Viresh Kumar (11):
-  dmaengine: Add flow controller information to dma_slave_config
-  dmaengine: Pass dma_slave_config .device_fc = NULL for all existing
-    users
-  dmaengine/amba-pl08x: Take flow controller info from DMA_SLAVE_CONFIG
-  dmaengine/dw_dmac: Don't use magic number for total number of
-    channels
-  dmaengine/dw_dmac: Use dev_get_platdata() instead of accessing dev
-    directly
-  dmaengine/dw_dmac: Don't handle block interrupts
-  dmaengine/dw_dmac: Unmap all memory buffers after completion of
-    non-slave transfers
-  dmaengine/dw_dmac: Add 64 bit access width support for slave xfers on
-    mem side
-  dmaengine/dw_dmac: Add support for DMA_SLAVE_CONFIG
-  dmaengine/dw_dmac: Fix dw_dmac user drivers to adapt to slave_config
-    changes
-  dmaengine/dw_dmac: Remove unused fields in struct dw_dma_slave
-
- arch/avr32/mach-at32ap/at32ap700x.c             |   13 --
- arch/avr32/mach-at32ap/include/mach/atmel-mci.h |    7 -
- drivers/dma/amba-pl08x.c                        |    4 +-
- drivers/dma/dw_dmac.c                           |  232 +++++++++++++++--------
- drivers/dma/dw_dmac_regs.h                      |   15 ++
- drivers/mmc/host/atmel-mci.c                    |   24 ++-
- drivers/mmc/host/mmci.c                         |    2 +
- drivers/mmc/host/mxcmmc.c                       |    2 +
- drivers/spi/spi-dw-mid.c                        |    3 +
- drivers/spi/spi-pl022.c                         |    2 +
- drivers/tty/serial/amba-pl011.c                 |    3 +
- drivers/usb/musb/ux500_dma.c                    |    1 +
- include/linux/amba/pl08x.h                      |    8 +-
- include/linux/dmaengine.h                       |    5 +
- include/linux/dw_dmac.h                         |   38 ----
- sound/atmel/abdac.c                             |   18 ++-
- sound/atmel/ac97c.c                             |   41 ++++-
- sound/soc/imx/imx-pcm-dma-mx2.c                 |    3 +
- 18 files changed, 255 insertions(+), 166 deletions(-)
-
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 3a3d7ed..1577394 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1432,7 +1432,7 @@ static int __init dw_probe(struct platform_device *pdev)
+ 
+ 		/* 7 is highest priority & 0 is lowest. */
+ 		if (pdata->chan_priority == CHAN_PRIORITY_ASCENDING)
+-			dwc->priority = 7 - i;
++			dwc->priority = pdata->nr_channels - i - 1;
+ 		else
+ 			dwc->priority = i;
+ 
 -- 
 1.7.8.110.g4cb5d
 
