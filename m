@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab2BAVJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:09:35 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59192 "EHLO
+	id S932497Ab2BAVKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:10:05 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50780 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757061Ab2BAVJT (ORCPT
+	by vger.kernel.org with ESMTP id S1757295Ab2BAVKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:19 -0500
-X-Sasl-enc: 4ajF1j92vsxxAbaSz/qja8LuyymUBACJLjQEv705MB0C 1328130558
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:43 2012
-Message-Id: <20120201205743.074116436@clark.kroah.org>
+	Wed, 1 Feb 2012 16:10:00 -0500
+X-Sasl-enc: SsAeuZx6biZGTPJ+0LVl1LUkYfwqjQT0lrb5jKeAfK+B 1328130598
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:44 2012
+Message-Id: <20120201210044.600174584@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:44 -0800
+Date: Wed, 01 Feb 2012 12:59:32 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
-        Preston Fick <preston.fick@silabs.com>
-Subject: [64/65] USB: cp210x: initialise baud rate at open
-In-Reply-To: <20120201210236.GA25966@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Dmitry Podgorny <pasis.uax@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [08/89] drm/radeon/kms: Add an MSI quirk for Dell RS690
+In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit cdc32fd6f7b2b2580d7f1b74563f888e4dd9eb8a upstream.
+commit 44517c44496062180a6376cc704b33129441ce60 upstream.
 
-The newer cp2104 devices require the baud rate to be initialised after
-power on. Make sure it is set when port is opened.
+Interrupts only work with MSIs.
+https://bugs.freedesktop.org/show_bug.cgi?id=37679
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Cc: Preston Fick <preston.fick@silabs.com>
+Reported-by: Dmitry Podgorny <pasis.uax@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/radeon/radeon_irq_kms.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -408,6 +408,10 @@ static int cp210x_open(struct tty_struct
- 	/* Configure the termios structure */
- 	cp210x_get_termios(tty, port);
- 
-+	/* The baud rate must be initialised on cp2104 */
-+	if (tty)
-+		cp210x_change_speed(tty, port, NULL);
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -134,6 +134,12 @@ static bool radeon_msi_ok(struct radeon_
+ 	/* Dell RS690 only seems to work with MSIs. */
+ 	if ((rdev->pdev->device == 0x791f) &&
+ 	    (rdev->pdev->subsystem_vendor == 0x1028) &&
++	    (rdev->pdev->subsystem_device == 0x01fc))
++		return true;
 +
- 	return usb_serial_generic_open(tty, port);
- }
++	/* Dell RS690 only seems to work with MSIs. */
++	if ((rdev->pdev->device == 0x791f) &&
++	    (rdev->pdev->subsystem_vendor == 0x1028) &&
+ 	    (rdev->pdev->subsystem_device == 0x01fd))
+ 		return true;
  
 
 
