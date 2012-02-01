@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab2BAVcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:32:31 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:54418 "EHLO
+	id S1757464Ab2BAVcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:32:55 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:38935 "EHLO
 	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932531Ab2BAVTJ (ORCPT
+	by vger.kernel.org with ESMTP id S1757434Ab2BAVTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:09 -0500
-X-Sasl-enc: NAddLE7M1aSEH+n+HBNdoFv76wnS6UTUkdODzG+XoRPo 1328131148
+	Wed, 1 Feb 2012 16:19:03 -0500
+X-Sasl-enc: CNu0iA97UgGdDfjnXHA+q63HR/qBi0yA0FSKLUapAYJK 1328131142
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:40 2012
-Message-Id: <20120201205740.710568597@clark.kroah.org>
+Message-Id: <20120201205740.122901097@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:17 -0800
+Date: Wed, 01 Feb 2012 12:56:10 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>,
-        Breno Leitao <brenohl@br.ibm.com>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [37/65] jsm: Fixed EEH recovery error
+        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
+Subject: [30/65] USB: ftdi_sio: Add more identifiers
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,51 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 26aa38cafae0dbef3b2fe75ea487c83313c36d45 upstream.
+commit 2353f806c97020d4c7709f15eebb49b591f7306d upstream.
 
-There was an error on the jsm driver that would cause it to be unable to
-recover after a second error is detected.
+0x04d8, 0x000a: Hornby Elite
 
-At the first error, the device recovers properly:
-
-[72521.485691] EEH: Detected PCI bus error on device 0003:02:00.0
-[72521.485695] EEH: This PCI device has failed 1 times in the last hour:
-...
-[72532.035693] ttyn3 at MMIO 0x0 (irq = 49) is a jsm
-[72532.105689] jsm: Port 3 added
-
-However, at the second error, it cascades until EEH disables the device:
-
-[72631.229549] Call Trace:
-...
-[72641.725687] jsm: Port 3 added
-[72641.725695] EEH: Detected PCI bus error on device 0003:02:00.0
-[72641.725698] EEH: This PCI device has failed 3 times in the last hour:
-
-It was caused because the PCI state was not being saved after the first
-restore. Therefore, at the second recovery the PCI state would not be
-restored.
-
-Signed-off-by: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
-Signed-off-by: Breno Leitao <brenohl@br.ibm.com>
-Acked-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/jsm/jsm_driver.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/tty/serial/jsm/jsm_driver.c
-+++ b/drivers/tty/serial/jsm/jsm_driver.c
-@@ -269,6 +269,7 @@ static void jsm_io_resume(struct pci_dev
- 	struct jsm_board *brd = pci_get_drvdata(pdev);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -796,6 +796,7 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(ADI_VID, ADI_GNICEPLUS_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(HORNBY_VID, HORNBY_ELITE_PID) },
+ 	{ USB_DEVICE(JETI_VID, JETI_SPC1201_PID) },
+ 	{ USB_DEVICE(MARVELL_VID, MARVELL_SHEEVAPLUG_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -532,6 +532,12 @@
+ #define ADI_GNICEPLUS_PID	0xF001
  
- 	pci_restore_state(pdev);
-+	pci_save_state(pdev);
- 
- 	jsm_uart_port_init(brd);
- }
+ /*
++ * Hornby Elite
++ */
++#define HORNBY_VID		0x04D8
++#define HORNBY_ELITE_PID	0x000A
++
++/*
+  * RATOC REX-USB60F
+  */
+ #define RATOC_VENDOR_ID		0x0584
 
 
