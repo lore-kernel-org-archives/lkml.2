@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab2BACKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 21:10:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47722 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab2BACKB (ORCPT
+	id S1755662Ab2BACLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 21:11:32 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37292 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752850Ab2BACLb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 21:10:01 -0500
-X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=JI1lpQ6egjYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=cNnv_w7zcwIUaCsOutwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328062199.5882.54.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] ARM: Wire up HAVE_SYSCALL_TRACEPOINTS
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: takuo.koguchi.sw@hitachi.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, linux@arm.linux.org.uk,
-        fweisbec@gmail.com, mingo@redhat.com, jbaron@redhat.com,
-        yrl.pp-manager.tt@hitachi.com, mcgrathr@google.com
-Date: Tue, 31 Jan 2012 21:09:59 -0500
-In-Reply-To: <3743fd16323370925cf37c279f85d94a.squirrel@webmail.greenhost.nl>
-References: <XNM1$5$0$1$$3$9$0$A$8005107U4ed75e6e@hitachi.com>
-	 <3743fd16323370925cf37c279f85d94a.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 31 Jan 2012 21:11:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120131211554.GA28105@pengutronix.de>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+ <1328004002-24646-2-git-send-email-Barry.Song@csr.com> <20120131101734.GE2471@pengutronix.de>
+ <CAGsJ_4wyJ6Wymy4AWoW1eHubZX=W7GT_Fbow9ofXoY1RrcHzgA@mail.gmail.com>
+ <20120131113358.GM2471@pengutronix.de> <20120131203455.GG22611@ponder.secretlab.ca>
+ <20120131211554.GA28105@pengutronix.de>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 1 Feb 2012 10:11:10 +0800
+Message-ID: <CAGsJ_4yJZYHUzr9YerdM5o8grGd6iP51ra4nJkMuOo5Khn95RQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] platform: add common resource requesting and mapping helper
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Barry Song <Barry.Song@csr.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Erik Gilling <konkers@google.com>,
+        linux-mtd@lists.infradead.org, Barry Song <Baohua.Song@csr.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 02:47 +0100, Indan Zupancic wrote:
-> > +#define _TIF_SYSCALL_T_OR_A  (_TIF_SYSCALL_TRACE |
-> _TIF_SYSCALL_TRACEPOINT)
-> 
-> What does 'A' stand for?
-> 
-Maybe he meant it to be TIF_SYSCALL_T_AND_A?
+hi Wolfram,
 
-;-)
+2012/2/1 Wolfram Sang <w.sang@pengutronix.de>:
+>
+>> > I am not sure using 'platform_devm_request_and_ioremap' and later using
+>> > plain 'devm_*' functions (without platform_-prefix) is less confusing.
+>> > The alternative would be to check which helper functions also use
+>> > 'struct resource' and if they do checks on that. If all do that, you
+>> > would have the simple rule, that you only need to check yourself if you
+>> > access it yourself.
+>>
+>> The reason I suggested the wrapper is that then the driver code doesn't need
+>> to fart around with the res pointer at all.  It reduces boilerplate in platform
+>> drivers which I think is a good thing.
+>
+> I do understand your motivation and fully agree with what you are aiming for
+> (that's exactly why I implemented devm_request_and_ioremap()).
+>
+> This patch is a micro-optimization, though, and won't cut it IMHO. I still have
+> issues with only one platform_devm_* and all the rest being devm_* (without
+> platform_). Things might look better, if we'd for example also have
+> platform_devm_request_irq() or something similar. That might be an approach
+> where we can play around with and see what is left to do. Or, if other
+> approaches might be more elegant.
+>
+> To discuss that, try things, etc, I'd simply like to have a bit more time. If
+> we are accepting the first iteration right away, and people let run their
+> coccinelle-scripts based on that, it might get annoying to change that a second
+> time, I'd think.
+>
 
--- Steve
+i think it makes sense for us to have platform_devm_request_irq() and
+similar things. i'll take care.
 
+PS:  as the man maintaining embedded systems of the i2c subsystem,
+would you comment the CSR i2c driver which has been there waiting for
+a long time?
+http://www.spinics.net/lists/linux-i2c/msg07081.html
 
+> Regards,
+>
+>   Wolfram
+>
+> --
+> Pengutronix e.K.                           | Wolfram Sang                |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+Thanks
+barry
