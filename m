@@ -1,85 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339Ab2BAWrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:47:36 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:45190 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933271Ab2BAWrd (ORCPT
+	id S932999Ab2BAWqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:46:49 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:33868 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757715Ab2BAWom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:47:33 -0500
-X-Sasl-enc: qHlx37DZwnd83H4bAaVRvsY/PkHNaQwsa7yGsi9A1vCe 1328136452
-Date: Wed, 1 Feb 2012 14:47:08 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        Christopher Lais <chris+android@zenthought.org>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/2] Staging: android: binder: Add some error checks
-Message-ID: <20120201224708.GA2643@kroah.com>
-References: <1327118181-3542-1-git-send-email-arve@android.com>
- <1327118181-3542-2-git-send-email-arve@android.com>
- <20120121082208.GL3294@mwanda>
- <20120131185228.GA21481@kroah.com>
- <CAMP5XgedsSDtYa-bZCW--+Hj41sN94tDXQ8_d7c4=fT5bJ7mTQ@mail.gmail.com>
- <20120201065322.GA24652@mwanda>
- <CAMP5XgeV7R4JfRG+9qqkUN_BC0MvADKOngVXqK9mvmXcxisqYA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP5XgeV7R4JfRG+9qqkUN_BC0MvADKOngVXqK9mvmXcxisqYA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 1 Feb 2012 17:44:42 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 10/15] PCI: Probe safe range that we can use for unassigned bridge.
+Date: Wed,  1 Feb 2012 14:43:57 -0800
+Message-Id: <1328136242-17725-11-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
+References: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4F29C04D.0021,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 02:29:36PM -0800, Arve Hjønnevåg wrote:
-> 2012/1/31 Dan Carpenter <dan.carpenter@oracle.com>:
-> > On Tue, Jan 31, 2012 at 03:20:30PM -0800, Arve Hjønnevåg wrote:
-> >> 2012/1/31 Greg KH <greg@kroah.com>:
-> >> > On Sat, Jan 21, 2012 at 11:22:08AM +0300, Dan Carpenter wrote:
-> >> >> On Fri, Jan 20, 2012 at 07:56:20PM -0800, Arve Hjønnevåg wrote:
-> >> >> > - Add a mutex to protect against two processes mmapping the
-> >> >> >   same binder_proc.
-> >> >> > - After locking mmap_sem, check that the vma we want to access
-> >> >> >   (still) points to the same mm_struct.
-> >> >> > - Use proc->tsk instead of current to get the files struct since
-> >> >> >   this is where we get the rlimit from.
-> >> >>
-> >> >> This doesn't seem related to the locking change at all.  Probably
-> >> >> this patch should be split into three patches, one bugfix per
-> >> >> patch, unless they are very closely related.
-> >> >
-> >> > I agree.  Arve, is this all fixing one problem, or multiple ones?  If
-> >> > multiple ones, we need this split up into multiple patches.
-> >> >
-> >>
-> >> That depend on your point of view. It fixes crashes if you use the
-> >> same binder file pointer from multiple processes. It seemed excessive
-> >> to have three patches for this.
-> >
-> > It would have helped you to write a better changelog.  The subject
-> > says "[patch] android: grab bag of random fixes" and the the
-> > description matches that.  You have no idea how annoyed I get at
-> > grab bag patches.
-> >
-> 
-> Would the following be a better change description (or do you still
-> want three patches):
-> 
-> Staging: android: binder: Fix crashes when sharing a binder file
-> between processes
-> 
-> Opening the binder driver and sharing the file returned with
-> other processes (e.g. by calling fork) can crash the kernel.
-> Prevent these crashes with the following changes:
-> - Add a mutex to protect against two processes mmapping the
->   same binder_proc.
-> - After locking mmap_sem, check that the vma we want to access
->   (still) points to the same mm_struct.
-> - Use proc->tsk instead of current to get the files struct since
->   this is where we get the rlimit from.
+Try to allocate from parent bus busn_res. if can not find any big enough, will try
+to extend parent bus top. even the extending is through allocating, after allocating
+will pad the range to parent buses top.
 
-That looks good to me, as one patch, Dan?
+When extending happens, We will record the parent_res, so could use it as stopper
+for really extend/shrink top later.
 
-greg k-h
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c |  114 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 114 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 91fdaec..10aa6d1 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -670,6 +670,120 @@ static void __devinit pci_bus_shrink_top(struct pci_bus *parent,
+ 	}
+ }
+ 
++static resource_size_t __devinit find_res_top_free_size(struct resource *res)
++{
++	int ret = -ENOMEM;
++	resource_size_t n_size;
++	struct resource tmp_res;
++
++	/*
++	 *   find out number below res->end, that we can use at first
++	 *	res->start can not be used.
++	 */
++	n_size = resource_size(res) - 1;
++	memset(&tmp_res, 0, sizeof(struct resource));
++	while (n_size > 0) {
++		ret = allocate_resource(res, &tmp_res, n_size,
++			res->end - n_size + 1, res->end,
++			1, NULL, NULL);
++		if (ret == 0) {
++			/* release busn_res */
++			release_resource(&tmp_res);
++			break;
++		}
++		n_size--;
++	}
++
++	return n_size;
++}
++
++static int __devinit pci_bridge_probe_busn_res(struct pci_bus *bus,
++			 struct pci_dev *dev, struct resource *busn_res,
++			 resource_size_t needed_size, struct resource **p)
++{
++	int ret = -ENOMEM;
++	resource_size_t n_size;
++	struct pci_bus *parent;
++	struct resource *parent_res;
++	resource_size_t tmp = bus->busn_res.end + 1;
++	int free_sz = -1;
++
++	parent_res = NULL;
++
++again:
++	/*
++	 * find bigest range in bus->busn_res that we can use in the middle
++	 *  and we can not use bus->busn_res.start.
++	 */
++	n_size = resource_size(&bus->busn_res) - 1;
++	memset(busn_res, 0, sizeof(struct resource));
++	dev_printk(KERN_DEBUG, &dev->dev,
++			"find free busn in busn_res: %pR\n", &bus->busn_res);
++	while (n_size >= needed_size) {
++		ret = allocate_resource(&bus->busn_res, busn_res, n_size,
++				bus->busn_res.start + 1, bus->busn_res.end,
++				1, NULL, NULL);
++		if (ret == 0) {
++			/* found one, prepare to return */
++			release_resource(busn_res);
++
++			return ret;
++		}
++		n_size--;
++	}
++
++	/* try extend the top of parent buss */
++	if (free_sz < 0) {
++		free_sz = find_res_top_free_size(&bus->busn_res);
++		dev_printk(KERN_DEBUG, &dev->dev,
++			"found free busn %d in busn_res: %pR top\n",
++				free_sz, &bus->busn_res);
++	}
++	n_size = free_sz;
++
++	/* check if extend could cross domain boundary */
++	if ((bus->busn_res.end & 0xff) == 0xff)
++		goto reduce_needed_size;
++	if ((0x100 - (tmp & 0xff)) < (needed_size - n_size))
++		goto reduce_needed_size;
++
++	/* find exteded range */
++	memset(busn_res, 0, sizeof(struct resource));
++	parent = bus->parent;
++	while (parent) {
++		ret = allocate_resource(&parent->busn_res, busn_res,
++			 needed_size - n_size,
++			 tmp, tmp + needed_size - n_size - 1,
++			 1, NULL, NULL);
++		if (ret == 0)
++			break;
++		parent = parent->parent;
++	}
++
++reduce_needed_size:
++	if (ret != 0) {
++		needed_size--;
++		if (!needed_size)
++			return ret;
++
++		goto again;
++	}
++
++	/* save parent_res, we need it as stopper later */
++	parent_res = busn_res->parent;
++
++	/* prepare busn_res for return */
++	release_resource(busn_res);
++	busn_res->start -= n_size;
++
++	/* extend parent bus top*/
++	pci_bus_extend_top(bus, needed_size - n_size, parent_res);
++
++	*p = parent_res;
++
++	return ret;
++}
++
+ /*
+  * If it's a bridge, configure it and scan the bus behind it.
+  * For CardBus bridges, we don't scan behind as the devices will
+-- 
+1.7.7
+
