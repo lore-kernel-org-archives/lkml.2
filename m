@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab2BADiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 22:38:06 -0500
+	id S1755828Ab2BADiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 22:38:09 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:60762 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab2BADiC (ORCPT
+	with ESMTP id S1755812Ab2BADiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 22:38:02 -0500
+	Tue, 31 Jan 2012 22:38:06 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Li Zefan <lizf@cn.fujitsu.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Menage <paul@paulmenage.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
         Tim Hockin <thockin@hockin.org>, Tejun Heo <htejun@gmail.com>,
@@ -21,11 +22,10 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         "Daniel P. Berrange" <berrange@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Max Kellermann <mk@cm4all.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH 01/10] cgroups: add res_counter_write_u64() API
-Date: Wed,  1 Feb 2012 04:37:41 +0100
-Message-Id: <1328067470-5980-2-git-send-email-fweisbec@gmail.com>
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: [PATCH 02/10] cgroups: new resource counter inheritance API
+Date: Wed,  1 Feb 2012 04:37:42 +0100
+Message-Id: <1328067470-5980-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
 References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
@@ -33,14 +33,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend the resource counter API with a mirror of res_counter_read_u64() to
-make it handy to update a resource counter value from a cgroup subsystem
-u64 value file.
+Provide an API to inherit a counter value from a parent.  This can be
+useful to implement cgroup.clone_children on a resource counter.
 
-[kirill@shutemov.name: Separate 32 bits and 64 bits versions]
+Still the resources of the children are limited by those of the parent, so
+this is only to provide a default setting behaviour when clone_children is
+set.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Paul Menage <paul@paulmenage.org>
+Cc: Paul Menage <paul@paulmenage.org>
 Cc: Li Zefan <lizf@cn.fujitsu.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Aditya Kali <adityakali@google.com>
@@ -55,78 +56,52 @@ Cc: "Daniel P. Berrange" <berrange@redhat.com>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: Max Kellermann <mk@cm4all.com>
 Cc: Mandeep Singh Baines <msb@chromium.org>
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 ---
  include/linux/res_counter.h |    2 ++
- kernel/res_counter.c        |   31 +++++++++++++++++++++++++------
- 2 files changed, 27 insertions(+), 6 deletions(-)
+ kernel/res_counter.c        |   18 ++++++++++++++++++
+ 2 files changed, 20 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index c9d625c..1b3fe05 100644
+index 1b3fe05..109d118 100644
 --- a/include/linux/res_counter.h
 +++ b/include/linux/res_counter.h
-@@ -82,6 +82,8 @@ int res_counter_memparse_write_strategy(const char *buf,
- int res_counter_write(struct res_counter *counter, int member,
- 		      const char *buffer, write_strategy_fn write_strategy);
+@@ -84,6 +84,8 @@ int res_counter_write(struct res_counter *counter, int member,
  
-+void res_counter_write_u64(struct res_counter *counter, int member, u64 val);
+ void res_counter_write_u64(struct res_counter *counter, int member, u64 val);
+ 
++void res_counter_inherit(struct res_counter *counter, int member);
 +
  /*
   * the field descriptors. one for each member of res_counter
   */
 diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-index 6d269cc..c46465c 100644
+index c46465c..3a93a82 100644
 --- a/kernel/res_counter.c
 +++ b/kernel/res_counter.c
-@@ -167,12 +167,32 @@ int res_counter_memparse_write_strategy(const char *buf,
+@@ -207,3 +207,21 @@ int res_counter_write(struct res_counter *counter, int member,
+ 
  	return 0;
  }
- 
-+#if BITS_PER_LONG == 32
-+void res_counter_write_u64(struct res_counter *counter, int member, u64 val)
++
++/*
++ * Simple inheritance implementation to get the same value
++ * than a parent. However this doesn't enforce the child value
++ * to be always below the one of the parent. But the child is
++ * subject to its parent limitation anyway.
++ */
++void res_counter_inherit(struct res_counter *counter, int member)
 +{
-+	unsigned long long *target;
-+	unsigned long flags;
++	struct res_counter *parent;
++	unsigned long long val;
 +
-+	spin_lock_irqsave(&counter->lock, flags);
-+	target = res_counter_member(counter, member);
-+	*target = val;
-+	spin_unlock_irqrestore(&counter->lock, flags);
++	parent = counter->parent;
++	if (parent) {
++		val = res_counter_read_u64(parent, member);
++		res_counter_write_u64(counter, member, val);
++	}
 +}
-+#else
-+void res_counter_write_u64(struct res_counter *counter, int member, u64 val)
-+{
-+	unsigned long long *target;
-+
-+	target = res_counter_member(counter, member);
-+	*target = val;
-+}
-+#endif
-+
- int res_counter_write(struct res_counter *counter, int member,
- 		      const char *buf, write_strategy_fn write_strategy)
- {
- 	char *end;
--	unsigned long flags;
--	unsigned long long tmp, *val;
-+	unsigned long long tmp;
- 
- 	if (write_strategy) {
- 		if (write_strategy(buf, &tmp))
-@@ -182,9 +202,8 @@ int res_counter_write(struct res_counter *counter, int member,
- 		if (*end != '\0')
- 			return -EINVAL;
- 	}
--	spin_lock_irqsave(&counter->lock, flags);
--	val = res_counter_member(counter, member);
--	*val = tmp;
--	spin_unlock_irqrestore(&counter->lock, flags);
-+
-+	res_counter_write_u64(counter, member, tmp);
-+
- 	return 0;
- }
 -- 
 1.7.5.4
 
