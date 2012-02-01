@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab2BAGKf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 01:10:35 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51669 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab2BAGKe convert rfc822-to-8bit (ORCPT
+	id S1754326Ab2BAGQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 01:16:12 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:63358 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab2BAGQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 01:10:34 -0500
+	Wed, 1 Feb 2012 01:16:10 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6606"; a="159551475"
+Message-ID: <4F28D8A2.9050605@codeaurora.org>
+Date: Wed, 01 Feb 2012 11:46:02 +0530
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120201162330.43d421d3@Gantu.yeoh.info>
-References: <20120130124406.1567af7a@Gantu.yeoh.info> <20120130150922.GA17643@redhat.com>
- <20120201162330.43d421d3@Gantu.yeoh.info>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 31 Jan 2012 22:10:13 -0800
-X-Google-Sender-Auth: Mu1rVWR9Emp8BiSsD8wmsT2yoVA
-Message-ID: <CA+55aFxstU98L64xgoUiacsV0zwX5ioNv3cT5CH2rvBrUGaovw@mail.gmail.com>
-Subject: Re: [PATCH RESEND] Fix race in process_vm_rw_core
-To: Christopher Yeoh <cyeoh@au1.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Vinod Koul <vinod.koul@intel.com>
+CC: linux-arch@vger.kernel.org, tsoni@codeaurora.org, linux@arm.linux.org.uk,
+        arnd@arndb.de, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bryanh@codeaurora.org,
+        johlstei@codeaurora.org, Daniel Walker <dwalker@fifo99.com>,
+        dan.j.williams@intel.com, davidb@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/2] Add Qualcomm MSM ADM DMAEngine driver
+References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org>  <1326807902.1540.116.camel@vkoul-udesk3> <4F195E4C.6080805@codeaurora.org>  <1327066287.517.4.camel@vkoul-udesk3> <4F1D4052.3070701@codeaurora.org>  <1327326713.517.32.camel@vkoul-udesk3> <4F1FFF7E.3000802@codeaurora.org>  <1327911315.1527.8.camel@vkoul-udesk3>  <4F278341.4020600@codeaurora.org> <1327990151.1527.80.camel@vkoul-udesk3>
+In-Reply-To: <1327990151.1527.80.camel@vkoul-udesk3>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 9:53 PM, Christopher Yeoh <cyeoh@au1.ibm.com> wrote:
-> +       mm = mm_access(task, PTRACE_MODE_ATTACH);
-> +       if (!mm || IS_ERR(mm)) {
-> +               if (!mm)
-> +                       rc = -EINVAL;
-> +               else
-> +                       rc = -EPERM;
->                goto put_task_struct;
+On 1/31/2012 11:39 AM, Vinod Koul wrote:
+> On Tue, 2012-01-31 at 11:29 +0530, Ravi Kumar V wrote:
+>>> [1]: https://lkml.org/lkml/2011/10/24/275
+>>> [2]: https://lkml.org/lkml/2012/1/26/405
+>>>
+>>
+>> Yes if we follow the above RFC and add extra context parameter also
+>> in
+>> device_prep_dma_sg()&  device_prep_interleaved_dma() then it supports
+>> our hardware and our work will be completed.
+>>
+>> can we follow above RFC and implement our driver.
+>> Is above RFC finalized and included in mainline?
+> Alexandre will post an updated one soon, but the idea is same
+>
 
-Btw, do you really want to throw away the error code?
+Can we add extra parameter context to device_prep_dma_sg() & 
+device_prep_interleaved_dma() API's and implement our driver.
 
-IOW, maybe it should be
-
-   rc = IS_ERR(mm) ? PTR_ERR(mm) : -EINVAL;
-
-or something? Instead of forcing the EPERM? And the -EINVAL might be
-better off as an ESRCH? I dunno.
-
-Right now mm_access() returns EACCES for a permission problem, not
-EPERM. EACCES is the normal filesystem access "Permission denied",
-while EPERM is "Operation not permitted". I do agree that EPERM tends
-to go with non-filesystem system calls (like ptrace() or sending
-signals to a process that you aren't allowed to), so I do agree that
-EPERM makes perfect sense within the context of process_vm_rw().
-
-HOWEVER.
-
-mm_access() can actually also return EINTR. Now, admittedly it only
-returns that for killable signals, so user applications should never
-*see* that, but it's a special-case example of other errors at least
-being possible. What if we ever have some situation where we end up
-needing a temporary memory allocation and could return ENOMEM?
-
-Right now you turn all errors into EPERM, whether they were really
-about permission problems or not. And that just makes be a bit
-nervous. I wonder if we wouldn't be better off just returning EACCES
-(and any possible future problem) than try so hard to always return
-EPERM?
-
-I dunno. I don't have any really *strong* opinion and I see why you do
-it, but my gut feel is still that the error number change really does
-seem a bit arbitrary.
-
-                    Linus
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
