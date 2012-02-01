@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab2BAVj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:39:26 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42608 "EHLO
+	id S1757232Ab2BAVJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:09:42 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36182 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757150Ab2BAVJn (ORCPT
+	by vger.kernel.org with ESMTP id S1757150Ab2BAVJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:43 -0500
-X-Sasl-enc: 5ZD+QT/YvJUM63wiSDSEda/iV3TYT51Bvoi3fvbx9ADc 1328130582
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:46 2012
-Message-Id: <20120201210045.920845136@clark.kroah.org>
+	Wed, 1 Feb 2012 16:09:39 -0500
+X-Sasl-enc: y/a+guezwaTedip9n/xPX3e2nuF+dXo/vTYs+HSY12HY 1328130577
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:44 2012
+Message-Id: <20120201210044.061535636@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:59:47 -0800
+Date: Wed, 01 Feb 2012 12:59:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Cliff Wickman <cpw@sgi.com>,
-        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [23/89] x86/uv: Fix uninitialized spinlocks
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [02/89] ALSA: hda - Fix silent outputs from docking-station jacks of Dell laptops
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cliff Wickman <cpw@sgi.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit d2ebc71d472020bc30e29afe8c4d2a85a5b41f56 upstream.
+commit b4ead019afc201f71c39cd0dfcaafed4a97b3dd2 upstream.
 
-Initialize two spinlocks in tlb_uv.c and also properly define/initialize
-the uv_irq_lock.
+The recent change of the power-widget handling for IDT codecs caused
+the silent output from the docking-station line-out jack.  This was
+partially fixed by the commit f2cbba7602383cd9cdd21f0a5d0b8bd1aad47b33
+"ALSA: hda - Fix the lost power-setup of seconary pins after PM resume".
+But the line-out on the docking-station is still silent when booted
+with the jack plugged even by this fix.
 
-The lack of explicit initialization seems to be functionally
-harmless, but it is diagnosed when these are turned on:
+The remainig bug is that the power-widget is set off in stac92xx_init()
+because the pins in cfg->line_out_pins[] aren't checked there properly
+but only hp_pins[] are checked in is_nid_hp_pin().
 
-        CONFIG_DEBUG_SPINLOCK=y
-        CONFIG_DEBUG_MUTEXES=y
-        CONFIG_DEBUG_LOCK_ALLOC=y
-        CONFIG_LOCKDEP=y
+This patch fixes the problem by checking both HP and line-out pins
+and leaving the power-map correctly.
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Link: http://lkml.kernel.org/r/E1RnXd1-0003wU-PM@eag09.americas.sgi.com
-[ Added the uv_irq_lock initialization fix by Dimitri Sivanich ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42637
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/platform/uv/tlb_uv.c |    2 ++
- arch/x86/platform/uv/uv_irq.c |    2 +-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1860,6 +1860,8 @@ static void __init init_per_cpu_tunables
- 		bcp->cong_reps			= congested_reps;
- 		bcp->cong_period		= congested_period;
- 		bcp->clocks_per_100_usec =	usec_2_cycles(100);
-+		spin_lock_init(&bcp->queue_lock);
-+		spin_lock_init(&bcp->uvhub_lock);
- 	}
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -4253,13 +4253,15 @@ static int enable_pin_detect(struct hda_
+ 	return 1;
  }
  
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -25,7 +25,7 @@ struct uv_irq_2_mmr_pnode{
- 	int			irq;
+-static int is_nid_hp_pin(struct auto_pin_cfg *cfg, hda_nid_t nid)
++static int is_nid_out_jack_pin(struct auto_pin_cfg *cfg, hda_nid_t nid)
+ {
+ 	int i;
+ 	for (i = 0; i < cfg->hp_outs; i++)
+ 		if (cfg->hp_pins[i] == nid)
+ 			return 1; /* nid is a HP-Out */
+-
++	for (i = 0; i < cfg->line_outs; i++)
++		if (cfg->line_out_pins[i] == nid)
++			return 1; /* nid is a line-Out */
+ 	return 0; /* nid is not a HP-Out */
  };
  
--static spinlock_t		uv_irq_lock;
-+static DEFINE_SPINLOCK(uv_irq_lock);
- static struct rb_root		uv_irq_root;
+@@ -4465,7 +4467,7 @@ static int stac92xx_init(struct hda_code
+ 			continue;
+ 		}
  
- static int uv_set_irq_affinity(struct irq_data *, const struct cpumask *, bool);
+-		if (is_nid_hp_pin(cfg, nid))
++		if (is_nid_out_jack_pin(cfg, nid))
+ 			continue; /* already has an unsol event */
+ 
+ 		pinctl = snd_hda_codec_read(codec, nid, 0,
 
 
