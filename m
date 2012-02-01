@@ -1,126 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2BAOca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 09:32:30 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52179 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab2BAOc2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 09:32:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120201010625.GK23667@ubuntu-macmini>
-References: <20120119171808.GB23144@ubuntu-macmini>
-	<CADnq5_MiLE0XSpbrd66003DVxdR9c4MgQav3BD+bWtrKvbf+7Q@mail.gmail.com>
-	<20120119205317.GC23144@ubuntu-macmini>
-	<20120120155318.GA8162@ubuntu-macmini>
-	<CADnq5_NNpwsPoEP0_fzSJ9LQKfaHPJx90yObXKYHO39xLWM6sQ@mail.gmail.com>
-	<20120120211214.GC8162@ubuntu-macmini>
-	<CADnq5_NcZacne-VH-N7FQ5GQo8EbWNgi7WjeHxnJHciyaSeBvg@mail.gmail.com>
-	<20120120230831.GA2292@ubuntu-macmini>
-	<20120201010625.GK23667@ubuntu-macmini>
-Date: Wed, 1 Feb 2012 09:32:27 -0500
-Message-ID: <CADnq5_ONYoZzPW47O4+d=7fX04n=nCyBJqGNmVHTHs6V1Y+Cyw@mail.gmail.com>
-Subject: Re: radeon issues on MacBook Pro 8,2
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754806Ab2BAOip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 09:38:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:15866 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754375Ab2BAOio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 09:38:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="102697872"
+Subject: Re: [RFC] dmaengine/dma_slave: add context parameter to
+ prep_slave_sg callback
+From: Vinod Koul <vinod.koul@intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        dan.j.williams@intel.com, Jassi Brar <jaswinder.singh@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
+In-Reply-To: <Pine.LNX.4.64.1202011234180.24739@axis700.grange>
+References: <1327612946-29397-1-git-send-email-alexandre.bounine@idt.com>
+	 <1327915849.1527.17.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1202010022310.31226@axis700.grange>
+	 <1328075003.1610.6.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1202011234180.24739@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Feb 2012 20:09:35 +0530
+Message-ID: <1328107175.1610.32.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 8:06 PM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> On Fri, Jan 20, 2012 at 05:08:31PM -0600, Seth Forshee wrote:
->> > Can you track down who is calling the connector->detect() callbacks
->> > during suspend and resume?
->>
->> I got two different stack traces, see below.
->>
->> And to slightly amend my statement above, I'm only seeing the wrong
->> status returned on the suspend side of things. The status during resume
->> always seems to be correct.
->>
->>  Pid: 49, comm: kworker/0:2 Tainted: G         C O 3.2.0-10-generic #17-Ubuntu
->>  Call Trace:
->>   [<ffffffffa03f5e1e>] radeon_dp_detect+0x1de/0x230 [radeon]
->>   [<ffffffffa014ac6d>] output_poll_execute+0xbd/0x1a0 [drm_kms_helper]
->>   [<ffffffffa014abb0>] ? drm_helper_mode_fill_fb_struct+0x30/0x30 [drm_kms_helper]
->>   [<ffffffff81083dca>] process_one_work+0x11a/0x480
->>   [<ffffffff81084b74>] worker_thread+0x164/0x370
->>   [<ffffffff81084a10>] ? manage_workers.isra.30+0x130/0x130
->>   [<ffffffff810893cc>] kthread+0x8c/0xa0
->>   [<ffffffff81660674>] kernel_thread_helper+0x4/0x10
->>   [<ffffffff81089340>] ? flush_kthread_worker+0xa0/0xa0
->>   [<ffffffff81660670>] ? gs_change+0x13/0x13
->>
->>  Pid: 49, comm: kworker/0:2 Tainted: G         C O 3.2.0-10-generic #17-Ubuntu
->>  Call Trace:
->>   [<ffffffffa03f5e1e>] radeon_dp_detect+0x1de/0x230 [radeon]
->>   [<ffffffffa014b6b3>] drm_helper_probe_single_connector_modes+0x2c3/0x380 [drm_kms_helper]
->>   [<ffffffffa0149d42>] drm_fb_helper_hotplug_event+0xf2/0x150 [drm_kms_helper]
->>   [<ffffffffa03fe8d5>] radeon_fb_output_poll_changed+0x15/0x20 [radeon]
->>   [<ffffffffa03f7b65>] radeon_output_poll_changed+0x15/0x20 [radeon]
->>   [<ffffffffa014ad40>] output_poll_execute+0x190/0x1a0 [drm_kms_helper]
->>   [<ffffffffa014abb0>] ? drm_helper_mode_fill_fb_struct+0x30/0x30 [drm_kms_helper]
->>   [<ffffffff81083dca>] process_one_work+0x11a/0x480
->>   [<ffffffff81084b74>] worker_thread+0x164/0x370
->>   [<ffffffff81084a10>] ? manage_workers.isra.30+0x130/0x130
->>   [<ffffffff810893cc>] kthread+0x8c/0xa0
->>   [<ffffffff81660674>] kernel_thread_helper+0x4/0x10
->>   [<ffffffff81089340>] ? flush_kthread_worker+0xa0/0xa0
->>   [<ffffffff81660670>] ? gs_change+0x13/0x13
->
-> From these traces it looks like all that really needs to happen is to
-> disable the output polling during suspend. The following patch seems to
-> get rid of the problems I'm seeing. Does this look okay to you?
->
+On Wed, 2012-02-01 at 12:58 +0100, Guennadi Liakhovetski wrote:
+> > The two things are completely orthogonal and shouldn't be clubbed.
+> > For your issue we need a separate debate on how to solve this... I am
+> > open to ideas...
+> 
+> Well, I'm not sure whether they are necessarily always orthogonal, they 
+> don't seem so in my case at least. We definitely can use our approach - 
+> configure the channel during allocation. I _think_ we could also perform 
+> the configuration on a per-transfer basis, during the prepare stage, as 
+> this RFC is suggesting, but that definitely would require reworking the 
+> driver somewhat and changing the concept. The current concept is a fixed 
+> DMA channel allocation to slaves for as long as the slave is using DMA. 
+> This is simpler, avoids some overhead during operation and fits well with 
+> the dmaengine PRIVATE channel concept. So, given the choice, we would 
+> prefer to perform the configuration during channel allocation.
+> 
+> Maybe there are cases, where the driver absolutely needs this additional 
+> information during allocation, in which case my proposal would be the only 
+> way to go for them.
+what are you trying to address, sending controller specific information
+at allocation or the channel allocation itself. I kind of sense both.
+But apprach here is discussed is to pass paramters which are required
+for each transfer, not static for a channel, hence the additional
+controller specific parameter in respective prepare. 
+> 
+> I'll post an RFC soon - stay tuned:-) 
+Patch is always the best idea :-)
 
-Looks great.  Thanks for tracking this down.  We should probably cc
-stable as well when this gets committed.
+-- 
+~Vinod
 
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-
->
-> From 0c01950f248c541198b7560793cf57c59b2c11f8 Mon Sep 17 00:00:00 2001
-> From: Seth Forshee <seth.forshee@canonical.com>
-> Date: Tue, 31 Jan 2012 15:37:02 -0600
-> Subject: [PATCH 1/1] drm/radeon/kms: disable output polling when suspended
->
-> Polling the outputs when the device is suspended can result in erroneous
-> status updates. Disable output polling during suspend to prevent this
-> from happening.
->
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> ---
->  drivers/gpu/drm/radeon/radeon_device.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-> index cec51a5..49f7cb7 100644
-> --- a/drivers/gpu/drm/radeon/radeon_device.c
-> +++ b/drivers/gpu/drm/radeon/radeon_device.c
-> @@ -883,6 +883,8 @@ int radeon_suspend_kms(struct drm_device *dev, pm_message_t state)
->        if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
->                return 0;
->
-> +       drm_kms_helper_poll_disable(dev);
-> +
->        /* turn off display hw */
->        list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
->                drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
-> @@ -972,6 +974,8 @@ int radeon_resume_kms(struct drm_device *dev)
->        list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
->                drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
->        }
-> +
-> +       drm_kms_helper_poll_enable(dev);
->        return 0;
->  }
->
-> --
-> 1.7.8.3
->
