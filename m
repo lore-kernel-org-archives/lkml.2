@@ -1,41 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757709Ab2BAWnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:43:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52902 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679Ab2BAWnm (ORCPT
+	id S933266Ab2BAWos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:44:48 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:48676 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757697Ab2BAWop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:43:42 -0500
-Date: Wed, 1 Feb 2012 14:43:40 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] hugetlbfs: fix hugetlb_get_unmapped_area
-Message-Id: <20120201144340.01b3d050.akpm@linux-foundation.org>
-In-Reply-To: <4F2784BE.9090600@linux.vnet.ibm.com>
-References: <4F101904.8090405@linux.vnet.ibm.com>
-	<4F2784BE.9090600@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Feb 2012 17:44:45 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 12/15] PCI: Allocate bus range instead of use max blindly
+Date: Wed,  1 Feb 2012 14:43:59 -0800
+Message-Id: <1328136242-17725-13-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
+References: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F29C050.001B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jan 2012 14:05:50 +0800
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+every bus have extra busn_res, and linked them toghter to iobusn_resource.
 
-> On 01/13/2012 07:44 PM, Xiao Guangrong wrote:
-> 
-> > Using/updating cached_hole_size and free_area_cache properly to speedup
-> > find free region
-> > 
-> 
-> 
-> Ping...???
+when need to find usable bus number range, try probe from iobusn_resource tree.
 
-I'd saved the patches away, hoping that someone who works on hugetlb
-would comment.  They didn't.  We haven't heard from wli in a long time.
+To avoid falling to small hole in the middle, we try from 8 spare bus.
+if can not find 8 or more in the middle, will try to append 8 on top later.
+then if can not append, will try to find 7 from the middle, then will try to append 7 on top.
+then if can not append, will try to find 6 from the middle...
+
+for cardbus will only find 4 spare.
+
+if extend from top, at last will shrink back to really needed range...
+
+-v4: fix checking with pci rescan. Found by Bjorn.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c |  101 ++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 60 insertions(+), 41 deletions(-)
+
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index b9459c5..97100a9 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -823,10 +823,11 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+ {
+ 	struct pci_bus *child;
+ 	int is_cardbus = (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS);
+-	u32 buses, i, j = 0;
++	u32 buses;
+ 	u16 bctl;
+ 	u8 primary, secondary, subordinate;
+ 	int broken = 0;
++	struct resource *parent_res = NULL;
+ 
+ 	pci_read_config_dword(dev, PCI_PRIMARY_BUS, &buses);
+ 	primary = buses & 0xFF;
+@@ -838,10 +839,16 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+ 
+ 	/* Check if setup is sensible at all */
+ 	if (!pass &&
+-	    (primary != bus->number || secondary <= bus->number)) {
+-		dev_dbg(&dev->dev, "bus configuration invalid, reconfiguring\n");
++	    (primary != bus->number || secondary <= bus->number))
+ 		broken = 1;
+-	}
++
++	/* more strict checking */
++	if (!pass && !broken && !dev->subordinate)
++		broken = pci_bridge_check_busn_broken(bus, dev,
++						   secondary, subordinate);
++
++	if (broken)
++		dev_dbg(&dev->dev, "bus configuration invalid, reconfiguring\n");
+ 
+ 	/* Disable MasterAbortMode during probing to avoid reporting
+ 	   of bus errors (in some architectures) */ 
+@@ -874,6 +881,8 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+ 			child->primary = primary;
+ 			child->subordinate = subordinate;
+ 			child->bridge_ctl = bctl;
++
++			pci_bus_insert_busn_res(child, secondary, subordinate);
+ 		}
+ 
+ 		cmax = pci_scan_child_bus(child);
+@@ -886,6 +895,11 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+ 		 * We need to assign a number to this bus which we always
+ 		 * do in the second pass.
+ 		 */
++		resource_size_t shrink_size;
++		struct resource busn_res;
++		int ret = -ENOMEM;
++		int old_max = max;
++
+ 		if (!pass) {
+ 			if (pcibios_assign_all_busses() || broken)
+ 				/* Temporarily disable forwarding of the
+@@ -902,20 +916,44 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+ 		/* Clear errors */
+ 		pci_write_config_word(dev, PCI_STATUS, 0xffff);
+ 
+-		/* Prevent assigning a bus number that already exists.
+-		 * This can happen when a bridge is hot-plugged, so in
+-		 * this case we only re-scan this bus. */
+-		child = pci_find_bus(pci_domain_nr(bus), max+1);
+-		if (!child) {
+-			child = pci_add_new_bus(bus, dev, ++max);
+-			if (!child)
+-				goto out;
++		if (dev->subordinate) {
++			/* We get here only for cardbus */
++			child = dev->subordinate;
++			if  (!is_cardbus)
++				dev_warn(&dev->dev,
++				 "rescan scaned bridge as broken one again ?");
++
++			goto out;
+ 		}
++		/*
++		 * For CardBus bridges, we leave 4 bus numbers
++		 * as cards with a PCI-to-PCI bridge can be
++		 * inserted later.
++		 * other just allocate 8 bus to avoid we fall into
++		 *  small hole in the middle.
++		 */
++		ret = pci_bridge_probe_busn_res(bus, dev, &busn_res,
++				is_cardbus ? (CARDBUS_RESERVE_BUSNR + 1) : 8,
++				&parent_res);
++
++		if (ret != 0)
++			goto out;
++
++		child = pci_add_new_bus(bus, dev, busn_res.start & 0xff);
++		if (!child)
++			goto out;
++
++		child->subordinate = busn_res.end & 0xff;
++		pci_bus_insert_busn_res(child, busn_res.start & 0xff,
++					busn_res.end & 0xff);
++
+ 		buses = (buses & 0xff000000)
+ 		      | ((unsigned int)(child->primary)     <<  0)
+ 		      | ((unsigned int)(child->secondary)   <<  8)
+ 		      | ((unsigned int)(child->subordinate) << 16);
+ 
++		max = child->subordinate;
++
+ 		/*
+ 		 * yenta.c forces a secondary latency timer of 176.
+ 		 * Copy that behaviour here.
+@@ -946,43 +984,24 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+ 			 * the real value of max.
+ 			 */
+ 			pci_fixup_parent_subordinate_busnr(child, max);
++
+ 		} else {
+-			/*
+-			 * For CardBus bridges, we leave 4 bus numbers
+-			 * as cards with a PCI-to-PCI bridge can be
+-			 * inserted later.
+-			 */
+-			for (i=0; i<CARDBUS_RESERVE_BUSNR; i++) {
+-				struct pci_bus *parent = bus;
+-				if (pci_find_bus(pci_domain_nr(bus),
+-							max+i+1))
+-					break;
+-				while (parent->parent) {
+-					if ((!pcibios_assign_all_busses()) &&
+-					    (parent->subordinate > max) &&
+-					    (parent->subordinate <= max+i)) {
+-						j = 1;
+-					}
+-					parent = parent->parent;
+-				}
+-				if (j) {
+-					/*
+-					 * Often, there are two cardbus bridges
+-					 * -- try to leave one valid bus number
+-					 * for each one.
+-					 */
+-					i /= 2;
+-					break;
+-				}
+-			}
+-			max += i;
+ 			pci_fixup_parent_subordinate_busnr(child, max);
+ 		}
+ 		/*
+ 		 * Set the subordinate bus number to its real value.
+ 		 */
++		shrink_size = child->subordinate - max;
+ 		child->subordinate = max;
+ 		pci_write_config_byte(dev, PCI_SUBORDINATE_BUS, max);
++		pci_bus_update_busn_res_end(child, max);
++
++		/* shrink some back, if we extend top before */
++		if (!is_cardbus && (shrink_size > 0) && parent_res)
++			pci_bus_shrink_top(bus, shrink_size, parent_res);
++
++		if (old_max > max)
++			max = old_max;
+ 	}
+ 
+ 	sprintf(child->name,
+-- 
+1.7.7
+
