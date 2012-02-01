@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab2BAOne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 09:43:34 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:60806 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab2BAOnc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 09:43:32 -0500
-Date: Wed, 1 Feb 2012 17:42:31 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] hwmon: (mc13xxx-adc) make name buffer larger
-Message-ID: <20120201144231.GB5397@elgon.mountain>
+	id S932151Ab2BAOrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 09:47:49 -0500
+Received: from seven.medozas.de ([188.40.89.202]:35109 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752978Ab2BAOrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 09:47:48 -0500
+Date: Wed, 1 Feb 2012 15:47:44 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+cc: Netfilter Developer Mailing List 
+	<netfilter-devel@vger.kernel.org>,
+        Linux Networking Developer Mailing List 
+	<netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: Re: [PATCH 1/6] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
+In-Reply-To: <CAFLxGvwh5J=CR6OzST7ok6cEuHPWTziDN5TSbGxAiJOpANpAAQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.01.1202011523590.18699@frira.zrqbmnf.qr>
+References: <1327269381-20748-1-git-send-email-richard@nod.at> <1327269381-20748-2-git-send-email-richard@nod.at> <CAFLxGvzLvdyyaBvh7LCM2+tTmKobK6n8jTRoH8NXd=MVmN4ocA@mail.gmail.com> <alpine.LNX.2.01.1201310208370.7433@frira.zrqbmnf.qr>
+ <CAFLxGvwh5J=CR6OzST7ok6cEuHPWTziDN5TSbGxAiJOpANpAAQ@mail.gmail.com>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F294F63.002B,ss=1,re=0.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is doesn't change how the code works, it's just a thing to make the
-static checkers happy.  We transfer a 12 character string from a 20
-character buffer to a 10 character buffer using snprintf().  The static
-checkers complain that that lops off the last couple characters.
 
-The static checkers are right, but it turns out we don't care because
-later on we truncate the name at the '-' character.  Oh well, let's
-change it so they don't complain.
+On Wednesday 2012-02-01 10:14, richard -rw- weinberger wrote:
+>>
+>> Do you have the patchset as a retrievable git tree, btw?
+>
+>Only for kernel stuff:
+>git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git xt_LOG
+>
+>If you want it for the user space part too, I can setup something...
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+That would be welcome.
 
-diff --git a/drivers/hwmon/mc13783-adc.c b/drivers/hwmon/mc13783-adc.c
-index e9a7659d..282aaf5 100644
---- a/drivers/hwmon/mc13783-adc.c
-+++ b/drivers/hwmon/mc13783-adc.c
-@@ -37,7 +37,7 @@
- struct mc13783_adc_priv {
- 	struct mc13xxx *mc13xxx;
- 	struct device *hwmon_dev;
--	char name[10];
-+	char name[PLATFORM_NAME_SIZE];
- };
- 
- static ssize_t mc13783_adc_show_name(struct device *dev, struct device_attribute
+>>>[PATCH 6/6] iptables: xt_LOG: Add ring buffer support
+>>>
+>>>in libxt_LOG.c:
+>>>+.size = XT_ALIGN(sizeof(struct xt_log_info_v1) + sizeof(void *)),
+>>
+>> Why the extra void*?
+>
+>The kernel space part of  xt_log_info_v1 differs from the user space struct,
+>it contains an extra pointer to the ring buffer context.
+>Iptables must not see this extra pointer because the kernel writes to it.
+
+I don't see that extra pointer (outside xt_log_info_v1) that you talk about.
+
++struct xt_log_info_v1 {
++       unsigned char level;
++       unsigned char logflags;
++       char prefix[30];
++
++       char ring_name[30];
++       unsigned long ring_size;
++       struct xt_LOG_ring_ctx *rctx;
++};
+
+This is the struct as you defined it. First, you must not use
+unsigned long (due to its flexible size, which is an ABI breaker; cf.
+"Writing Netfilter Modules" PDF), and the pointer must be tagged for
+8-alignment as well for the same reason.
+
+Second, the kernel will reject a ruleset if (kernel) .targetsize != (user)
+.size. This is likely to occur, since you essentially have
+.targetsize=72 in xt_LOG.c and .size=72+sizeof(void*)
+in libxt_LOG.
+
+
+
+Check commit 8a252e8941cd50e4390e6fedf280ba1c7ff9ac43 for
+trailing whitespace, git log -p shows them.
+
++       if (par->family == NFPROTO_IPV4)
++               m = ipt_log_packet(NFPROTO_IPV4, par->hooknum, skb, par->in,
++                                  par->out, &li, loginfo->prefix);
++#if IS_ENABLED(CONFIG_IPV6)
++       else if (par->family == NFPROTO_IPV6)
++               m = ip6t_log_packet(NFPROTO_IPV6, par->hooknum, skb, par->in,
++                                   par->out, &li, loginfo->prefix);
++#endif
++       else
++               BUG();
+
+Please avoid BUG. Either do nothing in the 'else' case, or print
+a courtesy message with some unkn_log_packet() or
+WARN_ON_ONCE(). The same goes for xt_LOG_ring_exit, which I vote
+for being reduced to WARN_ON as well. If the condition triggers,
+one will have a little memory leak, but at least the machine
+still runs.
