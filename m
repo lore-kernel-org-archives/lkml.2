@@ -1,120 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab2BAVie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:38:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32024 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932498Ab2BAVic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:38:32 -0500
-Subject: Re: Memory corruption due to word sharing
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
-        rguenther@suse.de, gcc@gcc.gnu.org
-In-Reply-To: <CA+55aFx=4AhdFEgjY3b=85__mGYX8BKcaXpFC=1XZzoFFjeTrw@mail.gmail.com>
-References: <20120201151918.GC16714@quack.suse.cz>
-	 <1328116137.15992.6146.camel@triegel.csb>
-	 <CA+55aFyG3EifFPapU6SFYXCjrP+wQOF65hJGs3yyMxCgde5vdg@mail.gmail.com>
-	 <1328129620.15992.6453.camel@triegel.csb>
-	 <CA+55aFx=4AhdFEgjY3b=85__mGYX8BKcaXpFC=1XZzoFFjeTrw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Feb 2012 22:37:46 +0100
-Message-ID: <1328132266.15992.6528.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932924Ab2BAVjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:39:03 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48879 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757250Ab2BAVJs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 16:09:48 -0500
+X-Sasl-enc: OVKkkEhKWiRZgHL8i0Tvs1Qx11GJ0X8x7Xy3Ja4EQHZC 1328130586
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:46 2012
+Message-Id: <20120201210046.221886343@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Wed, 01 Feb 2012 12:59:50 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Andreas Schwab <schwab@linux-m68k.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [26/89] m68k: Fix assembler constraint to prevent overeager gcc optimisation
+In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 13:20 -0800, Linus Torvalds wrote:
-> On Wed, Feb 1, 2012 at 12:53 PM, Torvald Riegel <triegel@redhat.com> wrote:
-> >
-> > For volatile, I agree.
-> >
-> > However, the original btrfs example was *without* a volatile, and that's
-> > why I raised the memory model point.  This triggered an error in a
-> > concurrent execution, so that's memory model land, at least in C
-> > language standard.
-> 
-> Sure. The thing is, if you fix the volatile problem, you'll almost
-> certainly fix our problem too.
-> 
-> The whole "compilers actually do reasonable things" approach really
-> does work in reality. It in fact works a lot better than reading some
-> spec and trying to figure out if something is "valid" or not, and
-> having fifteen different compiler writers and users disagree about
-> what the meaning of the word "is" is in some part of it.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-That's why researchers have formalized the model in order to verify
-whether it's sane.  And they found bugs / ambiguities in it:
-http://www.cl.cam.ac.uk/~pes20/cpp/
+------------------
 
-The standards text might still be a typical standards text for various
-reasons. But it enables having a formal version of it too, and
-discussions about this formal version.  Personally, I find this more
-formal model easier to work with, exactly because it is more precise
-than prose.
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-> 
-> >> We do end up doing
-> >> much more aggressive threading, with models that C11 simply doesn't
-> >> cover.
-> >
-> > Any specific examples for that would be interesting.
-> 
-> Oh, one of my favorite (NOT!) pieces of code in the kernel is the
-> implementation of the
-> 
->    smp_read_barrier_depends()
-> 
-> macro, which on every single architecture except for one (alpha) is a no-op.
-> 
-> We have basically 30 or so empty definitions for it, and I think we
-> have something like five uses of it. One of them, I think, is
-> performance crticial, and the reason for that macro existing.
-> 
-> What does it do? The semantics is that it's a read barrier between two
-> different reads that we want to happen in order wrt two writes on the
-> writing side (the writing side also has to have a "smp_wmb()" to order
-> those writes). But the reason it isn't a simple read barrier is that
-> the reads are actually causally *dependent*, ie we have code like
-> 
->    first_read = read_pointer;
->    smp_read_barrier_depends();
->    second_read = *first_read;
-> 
-> and it turns out that on pretty much all architectures (except for
-> alpha), the *data*dependency* will already guarantee that the CPU
-> reads the thing in order. And because a read barrier can actually be
-> quite expensive, we don't want to have a read barrier for this case.
+commit 2a3535069e33d8b416f406c159ce924427315303 upstream.
 
-I don't have time to look at this in detail right now, but it looks
-roughly close to C++11's memory_order_consume to me, which is somehwat
-like an acquire, but just for subsequent data-dependent loads.  Added
-for performance reasons on some architecture AFAIR.
+Passing the address of a variable as an operand to an asm statement
+doesn't mark the value of this variable as used, so gcc may optimize its
+initialisation away.  Fix this by using the "m" constraint instead.
 
-> You really want to try to describe issues like this in your memory
-> consistency model? No you don't. Nobody will ever really care, except
-> for crazy kernel people. And quite frankly, not even kernel people
-> care: we have a fairly big kernel developer community, and the people
-> who actually talk about memory ordering issues can be counted on one
-> hand. There's the "RCU guy" who writes the RCU helper functions, and
-> hides the proper serializing code into those helpers, so that normal
-> mortal kernel people don't have to care, and don't even have to *know*
-> how ignorant they are about the things.
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I'm not a kernel person, and I do care about it.  Userspace is
-synchronizing too, and not just with pthread mutexes.
+---
+ arch/m68k/atari/config.c      |    8 ++++----
+ arch/m68k/kernel/process_mm.c |    4 ++--
+ arch/m68k/kernel/process_no.c |    4 ++--
+ arch/m68k/kernel/traps.c      |   36 +++++++++++++++++-------------------
+ arch/m68k/mm/cache.c          |    6 +++---
+ 5 files changed, 28 insertions(+), 30 deletions(-)
 
-> And that's also why the compiler shouldn't have to care. It's a really
-> small esoteric detail, and it can be hidden in a header file and a set
-> of library routines. Teaching the compiler about crazy memory ordering
-> would just not be worth it. 99.99% of all programmers will never need
-> to understand any of it, they'll use the locking primitives and follow
-> the rules, and the code that makes it all work is basically invisible
-> to them.
+--- a/arch/m68k/atari/config.c
++++ b/arch/m68k/atari/config.c
+@@ -414,9 +414,9 @@ void __init config_atari(void)
+ 					 * FDC val = 4 -> Supervisor only */
+ 		asm volatile ("\n"
+ 			"	.chip	68030\n"
+-			"	pmove	%0@,%/tt1\n"
++			"	pmove	%0,%/tt1\n"
+ 			"	.chip	68k"
+-			: : "a" (&tt1_val));
++			: : "m" (tt1_val));
+ 	} else {
+ 	        asm volatile ("\n"
+ 			"	.chip	68040\n"
+@@ -569,10 +569,10 @@ static void atari_reset(void)
+ 			: "d0");
+ 	} else
+ 		asm volatile ("\n"
+-			"	pmove	%0@,%%tc\n"
++			"	pmove	%0,%%tc\n"
+ 			"	jmp	%1@"
+ 			: /* no outputs */
+-			: "a" (&tc_val), "a" (reset_addr));
++			: "m" (tc_val), "a" (reset_addr));
+ }
+ 
+ 
+--- a/arch/m68k/kernel/process_mm.c
++++ b/arch/m68k/kernel/process_mm.c
+@@ -189,8 +189,8 @@ void flush_thread(void)
+ 	current->thread.fs = __USER_DS;
+ 	if (!FPU_IS_EMU)
+ 		asm volatile (".chip 68k/68881\n\t"
+-			      "frestore %0@\n\t"
+-			      ".chip 68k" : : "a" (&zero));
++			      "frestore %0\n\t"
++			      ".chip 68k" : : "m" (zero));
+ }
+ 
+ /*
+--- a/arch/m68k/kernel/process_no.c
++++ b/arch/m68k/kernel/process_no.c
+@@ -163,8 +163,8 @@ void flush_thread(void)
+ #ifdef CONFIG_FPU
+ 	if (!FPU_IS_EMU)
+ 		asm volatile (".chip 68k/68881\n\t"
+-			      "frestore %0@\n\t"
+-			      ".chip 68k" : : "a" (&zero));
++			      "frestore %0\n\t"
++			      ".chip 68k" : : "m" (zero));
+ #endif
+ }
+ 
+--- a/arch/m68k/kernel/traps.c
++++ b/arch/m68k/kernel/traps.c
+@@ -552,13 +552,13 @@ static inline void bus_error030 (struct
+ 
+ #ifdef DEBUG
+ 		asm volatile ("ptestr %3,%2@,#7,%0\n\t"
+-			      "pmove %%psr,%1@"
+-			      : "=a&" (desc)
+-			      : "a" (&temp), "a" (addr), "d" (ssw));
++			      "pmove %%psr,%1"
++			      : "=a&" (desc), "=m" (temp)
++			      : "a" (addr), "d" (ssw));
+ #else
+ 		asm volatile ("ptestr %2,%1@,#7\n\t"
+-			      "pmove %%psr,%0@"
+-			      : : "a" (&temp), "a" (addr), "d" (ssw));
++			      "pmove %%psr,%0"
++			      : "=m" (temp) : "a" (addr), "d" (ssw));
+ #endif
+ 		mmusr = temp;
+ 
+@@ -605,20 +605,18 @@ static inline void bus_error030 (struct
+ 			       !(ssw & RW) ? "write" : "read", addr,
+ 			       fp->ptregs.pc, ssw);
+ 			asm volatile ("ptestr #1,%1@,#0\n\t"
+-				      "pmove %%psr,%0@"
+-				      : /* no outputs */
+-				      : "a" (&temp), "a" (addr));
++				      "pmove %%psr,%0"
++				      : "=m" (temp)
++				      : "a" (addr));
+ 			mmusr = temp;
+ 
+ 			printk ("level 0 mmusr is %#x\n", mmusr);
+ #if 0
+-			asm volatile ("pmove %%tt0,%0@"
+-				      : /* no outputs */
+-				      : "a" (&tlong));
++			asm volatile ("pmove %%tt0,%0"
++				      : "=m" (tlong));
+ 			printk("tt0 is %#lx, ", tlong);
+-			asm volatile ("pmove %%tt1,%0@"
+-				      : /* no outputs */
+-				      : "a" (&tlong));
++			asm volatile ("pmove %%tt1,%0"
++				      : "=m" (tlong));
+ 			printk("tt1 is %#lx\n", tlong);
+ #endif
+ #ifdef DEBUG
+@@ -668,13 +666,13 @@ static inline void bus_error030 (struct
+ 
+ #ifdef DEBUG
+ 	asm volatile ("ptestr #1,%2@,#7,%0\n\t"
+-		      "pmove %%psr,%1@"
+-		      : "=a&" (desc)
+-		      : "a" (&temp), "a" (addr));
++		      "pmove %%psr,%1"
++		      : "=a&" (desc), "=m" (temp)
++		      : "a" (addr));
+ #else
+ 	asm volatile ("ptestr #1,%1@,#7\n\t"
+-		      "pmove %%psr,%0@"
+-		      : : "a" (&temp), "a" (addr));
++		      "pmove %%psr,%0"
++		      : "=m" (temp) : "a" (addr));
+ #endif
+ 	mmusr = temp;
+ 
+--- a/arch/m68k/mm/cache.c
++++ b/arch/m68k/mm/cache.c
+@@ -52,9 +52,9 @@ static unsigned long virt_to_phys_slow(u
+ 		unsigned long *descaddr;
+ 
+ 		asm volatile ("ptestr %3,%2@,#7,%0\n\t"
+-			      "pmove %%psr,%1@"
+-			      : "=a&" (descaddr)
+-			      : "a" (&mmusr), "a" (vaddr), "d" (get_fs().seg));
++			      "pmove %%psr,%1"
++			      : "=a&" (descaddr), "=m" (mmusr)
++			      : "a" (vaddr), "d" (get_fs().seg));
+ 		if (mmusr & (MMU_I|MMU_B|MMU_L))
+ 			return 0;
+ 		descaddr = phys_to_virt((unsigned long)descaddr);
 
-I disagree (though it would be nice if it were that esoteric), but
-that's off-topic...
 
