@@ -1,89 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab2BAODT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 09:03:19 -0500
-Received: from mail.tomasu.net ([64.85.170.232]:47389 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754623Ab2BAODR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 09:03:17 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: Simon McNair <simonmcnair@gmail.com>
-Subject: Re: mvsas with 3.1
-Date: Wed, 1 Feb 2012 07:03:09 -0700
-User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        ayan@marvell.com, andy yan <andyysj@gmail.com>,
-        "linux-raid" <linux-raid@vger.kernel.org>
-References: <201201131144.58044.thomas@fjellstrom.ca> <CAKaSfQDyU1a641ZMBNNJJABhXBQxhPGH=E6sNoss=2JyYgFusw@mail.gmail.com>
-In-Reply-To: <CAKaSfQDyU1a641ZMBNNJJABhXBQxhPGH=E6sNoss=2JyYgFusw@mail.gmail.com>
+	id S1756429Ab2BAOED (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 09:04:03 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56427 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab2BAOEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 09:04:01 -0500
+Date: Wed, 1 Feb 2012 15:03:57 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, rjw@sisk.pl, len.brown@intel.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] PM/Freezer: Make thaw_processes() thaw only
+ userspace tasks
+Message-ID: <20120201140357.GD3673@elf.ucw.cz>
+References: <20120130231342.11129.87187.stgit@srivatsabhat.in.ibm.com>
+ <20120130231437.11129.3708.stgit@srivatsabhat.in.ibm.com>
+ <20120130233055.GE27616@google.com>
+ <4F27311C.5020200@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202010703.09833.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F27311C.5020200@linux.vnet.ibm.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Feb 1, 2012, Simon McNair wrote:
-> Hi Thomas,
-> I've been trying to get an answer to this same question (I have a
-> supermicro AOC-SASLP-MV8 too).  See my post at
-> https://lkml.org/lkml/2012/1/30/107  .
-> 
-> My only suggestion is to get a kernel that's pre 2.6.30 (my Thecus
-> 5200 marvell based unit is on 2.6.13 and it seems okay).  If the data
-> is mission critical I certainly wouldn't be using the latest kernels
-> in production until it had 6+months in a stress test environment (of
-> course I'm an obsessive apt-get upgrade which makes me a hypocrite
-> 
-> :-P).
-> 
-> I can see from searching lkml.org  for mvsas that there is a lot of
-> code going in to this driver and unless your're a linux guru and can
-> fix these problems I can only suggest you keep anything important on a
-> =< 2.6.13 kernel and monitor the situation.
-> 
-> Oh, and keep back ups ;-) (again here's me being the hypocrite).
-> 
-> That's my plan :-(
+Hi!
 
-The older drivers were even worse, they'd have these really nasty pauses, or 
-just outright OOPS the entire machine.
-
-That said, I've finally had it with the lack of support. It's been over two 
-years since I got the card, and enough is enough. I picked up a refurb IBM 
-ServeRaid M1015 (aka: LSI 9220-8i) card. It arrived yesterday. Just have to 
-wait and see why grub doesn't like it.
-
-> Simon
+> The thing is that, I wanted to avoid a bug in the patch posted at
+> https://lkml.org/lkml/2012/1/29/47 as explained in the link.
 > 
-> On 13 January 2012 18:44, Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
-> > Is there chance this driver will ever be stable? After more than two
-> > years I'm starting to get extremely frustrated. I don't really have the
-> > option at the moment to get a new card, otherwise I would, likely a non
-> > marvell based device.
-> > 
-> > It actually managed to last 10 days this time though. Which is a record.
-> > The interesting thing is there are no warnings or errors in dmesg coming
-> > from the mvsas driver or scsi code. All that's happened is processes
-> > lock up when trying to write. Reading seems to be fine.
-> > 
-> > Just to refresh everyone's memory, it's a AOC-SASLP-MV8 card, has a
-> > MV64460/64461/64462 chipset. And I have 7 (seagate 7200.12 SATA drives
-> > hooked up).
-> > 
-> > --
-> > Thomas Fjellstrom
-> > thomas@fjellstrom.ca
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-raid" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> So I guess I should have simply done:
+> 
+> freeze_kernel_threads() calls thaw_kernel_threads() upon error.
 
-
+Seems like a good idea. When error is reported, call should be NOP.
+									Pavel
 -- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
