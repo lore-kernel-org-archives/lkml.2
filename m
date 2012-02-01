@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab2BACSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 21:18:13 -0500
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:43485 "EHLO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab2BACSL convert rfc822-to-8bit (ORCPT
+	id S1755705Ab2BACSj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 21:18:39 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48389 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755689Ab2BACSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 21:18:11 -0500
+	Tue, 31 Jan 2012 21:18:38 -0500
+X-AuditID: 9c93016f-b7c20ae000005067-9e-4f28a0fbc497
+Message-ID: <4F28A0F9.9070603@gmail.com>
+Date: Wed, 01 Feb 2012 11:18:33 +0900
+From: Namhyung Kim <namhyung@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120131154748.GA5650@redhat.com>
-References: <CAOwKts8zS1rYA+Y4k-vb8YAaR=aFd1BwryhhWWnWLQyrYrNqyA@mail.gmail.com>
-	<20120131154748.GA5650@redhat.com>
-Date: Wed, 1 Feb 2012 10:18:09 +0800
-Message-ID: <CAOwKts_dTvc4LiCZUXN9oYzty1pkDEn_VQwPKY=EoVzk0n6tFA@mail.gmail.com>
-Subject: Re: In many cases softlockup can not be reported after disabling IRQ
- for long time
-From: TAO HU <tghk48@motorola.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-omap <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-CFilter-Loop: Reflected
+Newsgroups: gmane.linux.kernel,gmane.linux.kernel.device-mapper.devel
+To: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, dm-devel@redhat.com
+Subject: Re: [PATCH] block: add missing block_bio_complete() tracepoint
+References: <1327830093-12130-1-git-send-email-namhyung@gmail.com> <4F263B01.4050103@gmail.com> <20120130170548.GA3355@google.com> <4F278A78.8080300@gmail.com> <CAOS58YP1F6_yBxRArcP4oyzAJVArLJB-ckjdXU35U1SNwi75XQ@mail.gmail.com>
+In-Reply-To: <CAOS58YP1F6_yBxRArcP4oyzAJVArLJB-ckjdXU35U1SNwi75XQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Don
+Hi,
 
-Thanks for your feedback!
-
-Unfortunately, the hardlockup depends on NMI which is not available on
-ARM (Cortex-A9) per my understanding.
-Our system uses OMAP4430. Any more suggestions?
-
-On Tue, Jan 31, 2012 at 11:47 PM, Don Zickus <dzickus@redhat.com> wrote:
-> On Tue, Jan 31, 2012 at 03:28:09PM +0800, TAO HU wrote:
->> Resend with a new subject
+2012-01-31 7:39 PM, Tejun Heo wrote:
+> Hello,
+>
+> On Mon, Jan 30, 2012 at 10:30 PM, Namhyung Kim<namhyung@gmail.com>  wrote:
+>> Right, but the point is it could make a NULL pointer dereference during
+>> evaluation of the argument of the TP AFAICS. I'm not sure about the TP
+>> implementation though, I think I was wrong - T_E_C() cannot protect us from
+>> it because it happens just before jumping to the TP, right?
 >>
->> On Wed, Jan 25, 2012 at 4:24 PM, TAO HU <tghk48@motorola.com> wrote:
->> > Hi, All
->> >
->> > While playing kernel 3.0.8 with below test code, it does NOT report
->> > any softlockup with 60%~70% chances.
->> > NOTE: the softlockup timeout is set to 10 seconds (i.e.
->> > watchdog_thresh=5) in my test.
->> > ... ...
->> > preempt_disable();
->> > local_irq_disable();
->> > for (i = 0; i < 20; i++)
->> >       mdelay(1000);
->> > local_irq_enable();
->> > preempt_enable();
->> > ... ...
->> >
->> > However, if I remove local_irq_disable()/local_irq_enable() it will
->> > report softlockup with no problem.
->> > I believe it is due to that after local_irq_enable()
->> > touch_softlockup_watchdog() is called prior softlockup timer.
+>> So I think we need a conditional jump (with the "likely" annotation) for
+>> this even when the TP is disabled.
 >
-> Hi Hu,
+> Hmmm... still not following. Where the said NULL dereference happen?
+> TEC conditional is equivalent to "if (COND) TP;".  If you don't use
+> TEC, it'll be "if (COND) if (TP enabled) TP;".  With TEC, it will be
+> "if (TP enabled) if (COND) TP;".  There's no other difference.
 >
-> Honestly, you should be getting hardlockup warnings if you are disabling
-> interrupts.  Do you see anything in the console output?
+> Thanks.
 >
-> Cheers,
-> Don
+
+I've made a quick investigation on TP implementation, and finally 
+figured out what I was wrong - I thought the COND would be checkd in a 
+probe, but it's not. Thanks for pointing it out.
+
+However, for some reason, it seems gcc generated code that evaluates the 
+arguments - bdev_get_queue() in this case - before checking the COND. 
+Simple test module below caused a NULL pointer dereference when I used 
+TRACE_EVENT_CONDITION(), but not for conditional jump:
+
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/bio.h>
+
+static int __init init_mod(void)
+{
+         struct bio *bio = bio_alloc(GFP_KERNEL, 0);
+         bio_endio(bio, 0);
+         bio_put(bio);
+         return 0;
+}
+
+static void __exit exit_mod(void)
+{
+}
+
+module_init(init_mod);
+module_exit(exit_mod);
 
 
-
--- 
-Best Regards
-Hu Tao
+Thanks,
+Namhyung
