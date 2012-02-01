@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab2BATuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:50:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15498 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756814Ab2BATuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:50:51 -0500
-Message-ID: <4F29978A.3010707@redhat.com>
-Date: Wed, 01 Feb 2012 11:50:34 -0800
-From: Andy Grover <agrover@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111104 Red Hat/3.1.16-2.el6_1 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: Chris Boot <bootc@bootc.net>, target-devel@vger.kernel.org,
-        linux1394-devel@lists.sourceforge.net, linux-scsi@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: FireWire/SBP2 Target mode
-References: <4E4BD560.4010806@bootc.net> <4E4D3B88.30003@ladisch.de>
-In-Reply-To: <4E4D3B88.30003@ladisch.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756821Ab2BATvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:51:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50482 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756813Ab2BATvJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:51:09 -0500
+Date: Wed, 1 Feb 2012 11:51:07 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Tim Hockin <thockin@hockin.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+Message-Id: <20120201115107.93e11471.akpm@linux-foundation.org>
+In-Reply-To: <20120201184959.GH6731@somewhere.redhat.com>
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+	<20120201163126.GA19837@google.com>
+	<20120201184959.GH6731@somewhere.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry to raise this thread from the dead.
+On Wed, 1 Feb 2012 19:50:01 +0100
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Chris Boot wrote Aug 2011-ish:
-> I would very much like to see something like this added to the
-> kernel, and would very much like to contribute to writing this
-> feature. However my kernel development knowledge is very limited
-> indeed so this would require a lot hand-holding and mentoring.
-
-If you're still interested, I'd definitely encourage you to work on this
-project. Me and others on target-devel would be happy to help with any
-target-related advice.
-
-On 08/18/2011 09:19 AM, Clemens Ladisch wrote:
-> Chris Boot wrote:
->> Now that we have a nice SCSI target framework in the kernel, and drivers
->> either in-tree or being worked on for iSCSI, FC, FCoE, SAS and iSER, I
->> was wondering about the possibility of adding FireWire to that list.
+> On Wed, Feb 01, 2012 at 08:31:26AM -0800, Tejun Heo wrote:
+> > On Wed, Feb 01, 2012 at 04:37:40AM +0100, Frederic Weisbecker wrote:
+> > > Changes In this version:
+> > > 
+> > > - Split 32/64 bits version of res_counter_write_u64() [1/10]
+> > >   Courtesy of Kirill A. Shutemov
+> > > 
+> > > - Added Kirill's ack [8/10]
+> > > 
+> > > - Added selftests [9/10], [10/10]
+> > > 
+> > > Please consider for merging. At least two users want this feature:
+> > 
+> > Has there been further discussion about this approach?  IIRC, we
+> > weren't sure whether this should be merged.
 > 
-> As far as I can tell from briefly looking at the framework, this would
-> require both a fabric module (which is nicely abstracted) and a new
-> protocol (which doesn't seem to be).
+> The doubts I have noticed were:
 > 
-> Is there any documentation of how to add a new LIO protocol?
+> Q: Can't we rather focus on a global solution to fight forkbombs?
 > 
-> And what is the difference between a protocol and a fabric?
+> If we can find a reliable solution that works in any case and that
+> prevent from any forkbomb to impact the rest of the system then it
+> may be an acceptable solution. But I'm not aware of such feature.
+> 
+> Besides, another point in having this task counter is that we
+> have a per container limit. Assuming all containers are running under
+> the same user, we can protect against a container starving all others
+> with a massive amount of processes close to the NR_PROC rlimit.
+> 
+> Q: Can/should we implement a limitation on the number of "fork" as well?
+>    (as in https://lkml.org/lkml/2011/11/3/233 )
+> 
+> I'm still not sure about why such a thing is needed. Is it really something we
+> want? Why can't the task counter be used instead?
+> 
+> I need more details from the author of this patch. But I doubt we can merge
+> both subsystems, they have pretty different semantics.
 
-Right now the documentation is the other fabric modules, alas.
-
-You're saying the sbp2 protocol can theoretically be used other places
-besides firewire? I'd say put it all in the fabric module for now.
-
-You can also join irc.oftc.net #storage and ask more questions there.
-
-Regards -- Andy
+What I struggle with is "is this feature useful enough to warrant
+merging it"?
