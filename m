@@ -1,37 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab2BAVaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:30:18 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58453 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286Ab2BAVaO (ORCPT
+	id S932670Ab2BAVa4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:30:56 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:34998 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932612Ab2BAVTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:30:14 -0500
-Date: Wed, 1 Feb 2012 21:30:25 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: x86@kernel.org, Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v5 2/5] x86/platform: (TS-5500) add GPIO support
-Message-ID: <20120201213025.53d820d2@pyramind.ukuu.org.uk>
-In-Reply-To: <1328130344-18836-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<1328130344-18836-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Feb 2012 16:19:16 -0500
+X-Sasl-enc: CygjT+se8fp/xbUiFpguXIRacrzpCeiNw+uF4X2infMO 1328131155
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:45 2012
+Message-Id: <20120201210045.211143182@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Wed, 01 Feb 2012 12:59:39 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [15/89] ASoC: Dont go through cache when applying WM5100 rev A updates
+In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Wants to be gpi-ts5500 and in the drivers/gpio directory.
+------------------
+
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+commit 495174a8ffbaa0d15153d855cf206cdc46d51cf4 upstream.
+
+These are all to either uncached registers or fixes to register defaults,
+in the former case the cache won't do anything and in the latter case
+we're fixing things so the cache sync will do the right thing.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/soc/codecs/wm5100.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/sound/soc/codecs/wm5100.c
++++ b/sound/soc/codecs/wm5100.c
+@@ -1379,6 +1379,7 @@ static int wm5100_set_bias_level(struct
+ 
+ 			switch (wm5100->rev) {
+ 			case 0:
++				regcache_cache_bypass(wm5100->regmap, true);
+ 				snd_soc_write(codec, 0x11, 0x3);
+ 				snd_soc_write(codec, 0x203, 0xc);
+ 				snd_soc_write(codec, 0x206, 0);
+@@ -1394,6 +1395,7 @@ static int wm5100_set_bias_level(struct
+ 					snd_soc_write(codec,
+ 						      wm5100_reva_patches[i].reg,
+ 						      wm5100_reva_patches[i].val);
++				regcache_cache_bypass(wm5100->regmap, false);
+ 				break;
+ 			default:
+ 				break;
 
 
-Nothing else particularly strikes me abou tit
