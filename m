@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab2BAVcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:32:55 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:38935 "EHLO
+	id S1757409Ab2BAVTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:19:00 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:36252 "EHLO
 	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757434Ab2BAVTD (ORCPT
+	by vger.kernel.org with ESMTP id S1757373Ab2BAVRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:03 -0500
-X-Sasl-enc: CNu0iA97UgGdDfjnXHA+q63HR/qBi0yA0FSKLUapAYJK 1328131142
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:40 2012
-Message-Id: <20120201205740.122901097@clark.kroah.org>
+	Wed, 1 Feb 2012 16:17:38 -0500
+X-Sasl-enc: yzItk3yaaiPn/Rr4PgK7XVvrLfepV0wkc2ZMZpeYPbV3 1328131057
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:49 2012
+Message-Id: <20120201210049.442451460@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:10 -0800
+Date: Wed, 01 Feb 2012 13:00:27 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
-Subject: [30/65] USB: ftdi_sio: Add more identifiers
-In-Reply-To: <20120201210236.GA25966@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [63/89] hwmon: (f71805f) Fix clamping of temperature limits
+In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 2353f806c97020d4c7709f15eebb49b591f7306d upstream.
+commit 86b2bbfdbd1fcc4a3aa62ccd3f245c40c5ad5b85 upstream.
 
-0x04d8, 0x000a: Hornby Elite
+Properly clamp temperature limits set by the user. Without this fix,
+attempts to write temperature limits above the maximum supported by
+the chip (255 degrees Celsius) would arbitrarily and unexpectedly
+result in the limit being set to 0 degree Celsius.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/hwmon/f71805f.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -796,6 +796,7 @@ static struct usb_device_id id_table_com
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(ADI_VID, ADI_GNICEPLUS_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(HORNBY_VID, HORNBY_ELITE_PID) },
- 	{ USB_DEVICE(JETI_VID, JETI_SPC1201_PID) },
- 	{ USB_DEVICE(MARVELL_VID, MARVELL_SHEEVAPLUG_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -532,6 +532,12 @@
- #define ADI_GNICEPLUS_PID	0xF001
+--- a/drivers/hwmon/f71805f.c
++++ b/drivers/hwmon/f71805f.c
+@@ -283,11 +283,11 @@ static inline long temp_from_reg(u8 reg)
+ 
+ static inline u8 temp_to_reg(long val)
+ {
+-	if (val < 0)
+-		val = 0;
+-	else if (val > 1000 * 0xff)
+-		val = 0xff;
+-	return ((val + 500) / 1000);
++	if (val <= 0)
++		return 0;
++	if (val >= 1000 * 0xff)
++		return 0xff;
++	return (val + 500) / 1000;
+ }
  
  /*
-+ * Hornby Elite
-+ */
-+#define HORNBY_VID		0x04D8
-+#define HORNBY_ELITE_PID	0x000A
-+
-+/*
-  * RATOC REX-USB60F
-  */
- #define RATOC_VENDOR_ID		0x0584
 
 
