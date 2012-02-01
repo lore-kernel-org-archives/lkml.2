@@ -1,29 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab2BAPgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:36:13 -0500
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:58658 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753207Ab2BAPgM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:36:12 -0500
-From: Cassandra Gaddy <cgaddy@tcl.edu>
-Date: Wed, 1 Feb 2012 10:36:08 -0500
-Subject: I am mrs eli frank
-Thread-Topic: I am mrs eli frank
-Thread-Index: AQHM4Pc34Ve3z+dLs0CQevE+2wdn6Q==
-Message-ID: <F40731382BFEED4F902AE303D18CA3FE49375282B3@02111EX.tcl.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S932122Ab2BAPlh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:41:37 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:34831 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754704Ab2BAPlg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 10:41:36 -0500
+Date: Wed, 1 Feb 2012 16:34:53 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, dsterba@suse.cz,
+        ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+Message-ID: <20120201153453.GA1647@x4>
+References: <20120201151918.GC16714@quack.suse.cz>
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120201151918.GC16714@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012.02.01 at 16:19 +0100, Jan Kara wrote:
+>   we've spotted the following mismatch between what kernel folks expect
+> from a compiler and what GCC really does, resulting in memory corruption on
+> some architectures. Consider the following structure:
+> struct x {
+>     long a;
+>     unsigned int b1;
+>     unsigned int b2:1;
+> };
+> 
+> We have two processes P1 and P2 where P1 updates field b1 and P2 updates
+> bitfield b2. The code GCC generates for b2 = 1 e.g. on ia64 is:
+>    0:   09 00 21 40 00 21       [MMI]       adds r32=8,r32
+>    6:   00 00 00 02 00 e0                   nop.m 0x0
+>    c:   11 00 00 90                         mov r15=1;;
+>   10:   0b 70 00 40 18 10       [MMI]       ld8 r14=[r32];;
+>   16:   00 00 00 02 00 c0                   nop.m 0x0
+>   1c:   f1 70 c0 47                         dep r14=r15,r14,32,1;;
+>   20:   11 00 38 40 98 11       [MIB]       st8 [r32]=r14
+>   26:   00 00 00 02 00 80                   nop.i 0x0
+>   2c:   08 00 84 00                         br.ret.sptk.many b0;;
+> 
+> Note that gcc used 64-bit read-modify-write cycle to update b2. Thus if P1
+> races with P2, update of b1 can get lost. BTW: I've just checked on x86_64
+> and there GCC uses 8-bit bitop to modify the bitfield.
+> 
+> We actually spotted this race in practice in btrfs on structure
+> fs/btrfs/ctree.h:struct btrfs_block_rsv where spinlock content got
+> corrupted due to update of following bitfield and there seem to be other
+> places in kernel where this could happen.
+> 
+> I've raised the issue with our GCC guys and they said to me that: "C does
+> not provide such guarantee, nor can you reliably lock different
+> structure fields with different locks if they share naturally aligned
+> word-size memory regions.  The C++11 memory model would guarantee this,
+> but that's not implemented nor do you build the kernel with a C++11
+> compiler."
+> 
+> So it seems what C/GCC promises does not quite match with what kernel
+> expects. I'm not really an expert in this area so I wanted to report it
+> here so that more knowledgeable people can decide how to solve the issue...
 
+FYI, the gcc bug can be found here:
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52080
+
+-- 
+Markus
