@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab2BAGyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 01:54:00 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60543 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755144Ab2BAGx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 01:53:57 -0500
-Message-ID: <4F28E22A.703@cn.fujitsu.com>
-Date: Wed, 01 Feb 2012 14:56:42 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Neil Horman <nhorman@tuxdriver.com>
-Subject: [PATCH 6/6] cls_cgroup: remove redundant rcu_read_lock/unlock
-References: <4F28E1D1.900@cn.fujitsu.com>
-In-Reply-To: <4F28E1D1.900@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-01 14:52:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-01 14:52:35,
-	Serialize complete at 2012-02-01 14:52:35
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1755047Ab2BAG6z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 01:58:55 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45487 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab2BAG6y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 01:58:54 -0500
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <greg@kroah.com>, Dave Young <dyoung@redhat.com>
+Subject: [PATCH 1/2] lkdtm: use atomic_t to replace count_lock
+Date: Wed,  1 Feb 2012 14:58:19 +0800
+Message-Id: <1328079501-24746-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've already used rcu_read_lock/unlock inside task_classid(),
-so don't use the lock/unlock pair twice in this hot path.
+Andrew, this patch replaces
+lkdtm-avoid-calling-lkdtm_do_action-with-spin-lock-held.patch
+in your tree.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---------->
+
+The spin lock count_lock only protects count, it can be removed by
+using atomic_t. Suggested by Arnd.
+
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Dave Young <dyoung@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+
 ---
- net/core/sock.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/misc/lkdtm.c |   19 ++++---------------
+ 1 files changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 213c856..c0bab23 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1160,9 +1160,7 @@ void sock_update_classid(struct sock *sk)
- {
- 	u32 classid;
+diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
+index 150cd70..afdef2e 100644
+--- a/drivers/misc/lkdtm.c
++++ b/drivers/misc/lkdtm.c
+@@ -119,8 +119,7 @@ static int recur_count = REC_NUM_DEFAULT;
  
--	rcu_read_lock();  /* doing current task, which cannot vanish. */
- 	classid = task_cls_classid(current);
--	rcu_read_unlock();
- 	if (classid && classid != sk->sk_classid)
- 		sk->sk_classid = classid;
+ static enum cname cpoint = CN_INVALID;
+ static enum ctype cptype = CT_NONE;
+-static int count = DEFAULT_COUNT;
+-static DEFINE_SPINLOCK(count_lock);
++static atomic_t count = ATOMIC_INIT(DEFAULT_COUNT);
+ 
+ module_param(recur_count, int, 0644);
+ MODULE_PARM_DESC(recur_count, " Recursion level for the stack overflow test, "\
+@@ -231,14 +230,11 @@ static const char *cp_name_to_str(enum cname name)
+ static int lkdtm_parse_commandline(void)
+ {
+ 	int i;
+-	unsigned long flags;
+ 
+ 	if (cpoint_count < 1 || recur_count < 1)
+ 		return -EINVAL;
+ 
+-	spin_lock_irqsave(&count_lock, flags);
+-	count = cpoint_count;
+-	spin_unlock_irqrestore(&count_lock, flags);
++	atomic_set(&count, cpoint_count);
+ 
+ 	/* No special parameters */
+ 	if (!cpoint_type && !cpoint_name)
+@@ -353,18 +349,11 @@ static void lkdtm_do_action(enum ctype which)
+ 
+ static void lkdtm_handler(void)
+ {
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&count_lock, flags);
+-	count--;
+ 	printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
+-			cp_name_to_str(cpoint), cp_type_to_str(cptype), count);
++			cp_name_to_str(cpoint), cp_type_to_str(cptype), atomic_dec_return(&count));
+ 
+-	if (count == 0) {
++	if (!atomic_cmpxchg(&count, 0, cpoint_count))
+ 		lkdtm_do_action(cptype);
+-		count = cpoint_count;
+-	}
+-	spin_unlock_irqrestore(&count_lock, flags);
  }
+ 
+ static int lkdtm_register_cpoint(enum cname which)
 -- 
-1.7.3.1
+1.7.7.6
+
