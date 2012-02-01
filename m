@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab2BADhJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 22:37:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752342Ab2BADhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 22:37:07 -0500
-Date: Tue, 31 Jan 2012 22:36:53 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Jens Axboe <axboe@kernel.dk>,
-        Herbert Poetzl <herbert@13thfloor.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Wu Fengguang <wfg@linux.intel.com>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-Message-ID: <20120201033653.GA12092@redhat.com>
-References: <1327996780.21268.42.camel@sli10-conroe>
- <20120131220333.GD4378@redhat.com>
- <20120131141301.ba35ffe0.akpm@linux-foundation.org>
- <20120131222217.GE4378@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120131222217.GE4378@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755726Ab2BADiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 22:38:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60762 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab2BADh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 22:37:58 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Tim Hockin <thockin@hockin.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: [PATCH 00/10] cgroups: Task counter subsystem v8
+Date: Wed,  1 Feb 2012 04:37:40 +0100
+Message-Id: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 05:22:17PM -0500, Vivek Goyal wrote:
-[..]
+Hi,
 
-> > 
-> > We've never really bothered making the /dev/sda[X] I/O very efficient
-> > for large I/O's under the (probably wrong) assumption that it isn't a
-> > very interesting case.  Regular files will (or should) use the mpage
-> > functions, via address_space_operations.readpages().  fs/blockdev.c
-> > doesn't even implement it.
-> > 
-> > > and by the time all the pages
-> > > are submitted and one big merged request is formed it wates lot of time.
-> > 
-> > But that was the case in eariler kernels too.  Why did it change?
-> 
-> Actually, I assumed that the case of reading /dev/sda[X] worked well in
-> earlier kernels. Sorry about that. Will build a 2.6.38 kernel tonight
-> and run the test case again to make sure we had same overhead and
-> relatively poor performance while reading /dev/sda[X].
+Changes In this version:
 
-Ok, I tried it with 2.6.38 kernel and results look more or less same.
-Throughput varied between 105MB to 145MB. Many a times it was close to
-110MB and other times it was 145MB. Don't know what causes that spike
-sometimes.
+- Split 32/64 bits version of res_counter_write_u64() [1/10]
+  Courtesy of Kirill A. Shutemov
 
-I still see that IO is being submitted one page at a time. The only
-real difference seems to be that queue unplug happening at random times
-and many a times we are submitting much smaller requests (40 sectors, 48
-sectors etc).
+- Added Kirill's ack [8/10]
 
-Thanks
-Vivek
+- Added selftests [9/10], [10/10]
+
+Please consider for merging. At least two users want this feature:
+https://lkml.org/lkml/2011/12/13/309
+https://lkml.org/lkml/2011/12/13/364
+
+More general details provided in the last version posting:
+https://lkml.org/lkml/2012/1/13/230
+
+Thanks!
+
+
+Frederic Weisbecker (9):
+  cgroups: add res_counter_write_u64() API
+  cgroups: new resource counter inheritance API
+  cgroups: ability to stop res charge propagation on bounded ancestor
+  res_counter: allow charge failure pointer to be null
+  cgroups: pull up res counter charge failure interpretation to caller
+  cgroups: allow subsystems to cancel a fork
+  cgroups: Add a task counter subsystem
+  selftests: Enter each directories before executing selftests
+  selftests: Add a new task counter selftest
+
+Kirill A. Shutemov (1):
+  cgroups: add res counter common ancestor searching
+
+ Documentation/cgroups/resource_counter.txt         |   20 ++-
+ Documentation/cgroups/task_counter.txt             |  153 +++++++++++
+ include/linux/cgroup.h                             |   20 +-
+ include/linux/cgroup_subsys.h                      |    5 +
+ include/linux/res_counter.h                        |   27 ++-
+ init/Kconfig                                       |    9 +
+ kernel/Makefile                                    |    1 +
+ kernel/cgroup.c                                    |   23 ++-
+ kernel/cgroup_freezer.c                            |    6 +-
+ kernel/cgroup_task_counter.c                       |  272 ++++++++++++++++++++
+ kernel/exit.c                                      |    2 +-
+ kernel/fork.c                                      |    7 +-
+ kernel/res_counter.c                               |  103 +++++++-
+ tools/testing/selftests/Makefile                   |    2 +-
+ tools/testing/selftests/run_tests                  |    6 +-
+ tools/testing/selftests/task_counter/Makefile      |    8 +
+ tools/testing/selftests/task_counter/fork.c        |   40 +++
+ tools/testing/selftests/task_counter/forkbomb.c    |   40 +++
+ tools/testing/selftests/task_counter/multithread.c |   68 +++++
+ tools/testing/selftests/task_counter/run_test      |  198 ++++++++++++++
+ .../selftests/task_counter/spread_thread_group.c   |   82 ++++++
+ 21 files changed, 1056 insertions(+), 36 deletions(-)
+ create mode 100644 Documentation/cgroups/task_counter.txt
+ create mode 100644 kernel/cgroup_task_counter.c
+ create mode 100644 tools/testing/selftests/task_counter/Makefile
+ create mode 100644 tools/testing/selftests/task_counter/fork.c
+ create mode 100644 tools/testing/selftests/task_counter/forkbomb.c
+ create mode 100644 tools/testing/selftests/task_counter/multithread.c
+ create mode 100755 tools/testing/selftests/task_counter/run_test
+ create mode 100644 tools/testing/selftests/task_counter/spread_thread_group.c
+
+-- 
+1.7.5.4
+
