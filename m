@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab2BAVKS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:10:18 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47729 "EHLO
+	id S1757359Ab2BAVRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:17:15 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48772 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932545Ab2BAVKN (ORCPT
+	by vger.kernel.org with ESMTP id S932567Ab2BAVKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:13 -0500
-X-Sasl-enc: l0bGxhVYbV9tnvnahCXQ1eDnLVPw5Tr6gUiPL1VUzv4F 1328130611
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:47 2012
-Message-Id: <20120201210047.780570112@clark.kroah.org>
+	Wed, 1 Feb 2012 16:10:19 -0500
+X-Sasl-enc: PMcpTSYC+2G7ecJ0ZwZR3bS2bwc0or9e2mfam8RHJQbg 1328130617
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:48 2012
+Message-Id: <20120201210048.129713369@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:08 -0800
+Date: Wed, 01 Feb 2012 13:00:12 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
-Subject: [44/89] USB: ftdi_sio: Add more identifiers
+        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>
+Subject: [48/89] usb: dwc3: ep0: tidy up Pending Request handling
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 2353f806c97020d4c7709f15eebb49b591f7306d upstream.
+commit 68d8a781575d7be490f97eb2c403fb13b083da6a upstream.
 
-0x04d8, 0x000a: Hornby Elite
+The way our code was written, we should never have
+a DWC3_EP_PENDING_REQUEST flag set out of a Data Phase
+and the code in __dwc3_gadget_ep0_queue() did not
+reflect that situation properly.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Tidy up that case to avoid any possible mistakes
+when starting requests for IRQs which are long
+gone.
+
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/usb/dwc3/ep0.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -797,6 +797,7 @@ static struct usb_device_id id_table_com
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(ADI_VID, ADI_GNICEPLUS_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(HORNBY_VID, HORNBY_ELITE_PID) },
- 	{ USB_DEVICE(JETI_VID, JETI_SPC1201_PID) },
- 	{ USB_DEVICE(MARVELL_VID, MARVELL_SHEEVAPLUG_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -532,6 +532,12 @@
- #define ADI_GNICEPLUS_PID	0xF001
+--- a/drivers/usb/dwc3/ep0.c
++++ b/drivers/usb/dwc3/ep0.c
+@@ -149,20 +149,14 @@ static int __dwc3_gadget_ep0_queue(struc
  
- /*
-+ * Hornby Elite
-+ */
-+#define HORNBY_VID		0x04D8
-+#define HORNBY_ELITE_PID	0x000A
-+
-+/*
-  * RATOC REX-USB60F
-  */
- #define RATOC_VENDOR_ID		0x0584
+ 		direction = !!(dep->flags & DWC3_EP0_DIR_IN);
+ 
+-		if (dwc->ep0state == EP0_STATUS_PHASE) {
+-			type = dwc->three_stage_setup
+-				? DWC3_TRBCTL_CONTROL_STATUS3
+-				: DWC3_TRBCTL_CONTROL_STATUS2;
+-		} else if (dwc->ep0state == EP0_DATA_PHASE) {
+-			type = DWC3_TRBCTL_CONTROL_DATA;
+-		} else {
+-			/* should never happen */
+-			WARN_ON(1);
++		if (dwc->ep0state != EP0_DATA_PHASE) {
++			dev_WARN(dwc->dev, "Unexpected pending request\n");
+ 			return 0;
+ 		}
+ 
+ 		ret = dwc3_ep0_start_trans(dwc, direction,
+-				req->request.dma, req->request.length, type);
++				req->request.dma, req->request.length,
++				DWC3_TRBCTL_CONTROL_DATA);
+ 		dep->flags &= ~(DWC3_EP_PENDING_REQUEST |
+ 				DWC3_EP0_DIR_IN);
+ 	}
 
 
