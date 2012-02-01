@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756358Ab2BANgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 08:36:39 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38872 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722Ab2BANgi (ORCPT
+	id S1754182Ab2BANgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 08:36:47 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55701 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756365Ab2BANgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 08:36:38 -0500
-Subject: Re: [PATCH 5/9] perf: Adding sysfs group format attribute for pmu
- device
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4F289486.2050107@linux.vnet.ibm.com>
-References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
-	 <1327674868-10486-1-git-send-email-jolsa@redhat.com>
-	 <1327674868-10486-6-git-send-email-jolsa@redhat.com>
-	 <4F231256.8080905@linux.vnet.ibm.com>
-	 <20120130095223.GB1552@m.brq.redhat.com>
-	 <4F289486.2050107@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Feb 2012 14:36:24 +0100
-Message-ID: <1328103384.2760.37.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Feb 2012 08:36:45 -0500
+Date: Wed, 1 Feb 2012 14:36:42 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        Nigel Cunningham <nigel@tuxonice.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system
+ suspend/hibernation
+Message-ID: <20120201133642.GC3673@elf.ucw.cz>
+References: <201201281445.49377.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201201281445.49377.rjw@sisk.pl>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 17:25 -0800, Corey Ashford wrote:
-> 
-> One other comment that occurs to me is that it would be nice for perf to
-> know when a supplied value is out of range, or will have undefined
-> results.  For example, a field may be 8 bits wide, but not all 8-bit
-> values are legal.  For example, there may be 208 events, and the codes
-> may be somehwhat or even very sparsely encoded.  So, ideally, a config
-> field in sysfs might look like this:
-> 
-> config1:0-7:0x0-0xd8,0xdb-0xe2,0xe4-0xe6
-> 
-> This way perf could check for valid values before stuffing them into
-> registers, and give a good error message to the user.  If there is no
-> restriction field, it would be assumed all of the possible values are valid.
-> 
-> I think the kernel code needs to check for bad values as well, because
-> people can bypass the restrictions exposed by sysfs and use the
-> perf_events API directly. 
+Hi!
 
-Define bad? The only case where perf cares (from a kernel pov) is when
-it can make the hardware melt and similar things. Programming the PMU in
-a non-nonsensical but non-destructive way is fine, you get what you ask
-for.
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Freeze all filesystems during system suspend and (kernel-driven)
+> hibernation by calling freeze_supers() for all superblocks and thaw
+> them during the subsequent resume with the help of thaw_supers().
+> 
+> This makes filesystems stay in a consistent state in case something
+> goes wrong between system suspend (or hibernation) and the subsequent
+> resume (e.g. journal replays won't be necessary in those cases).  In
 
+Good.
 
+> particular, this should help to solve a long-standing issue that, in
+> some cases, during resume from hibernation the boot loader causes the
+> journal to be replied for the filesystem containing the kernel image
+> and/or initrd causing it to become inconsistent with the information
+> stored in the hibernation image.
 
+Ungood. Why is bootloader/initrd doing that? If it mounts filesystem
+read/write, what is the guarantee that it will not change data on the
+filesystem, breaking stuff?
+
+Bootloaders should just not replay journals.
+
+> The user-space-driven hibernation (s2disk) is not covered by this
+> change, because the freezing of filesystems prevents s2disk from
+> accessing device special files it needs to do its job.
+
+...so bootloaders need to be fixed, anyway.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
