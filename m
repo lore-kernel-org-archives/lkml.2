@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab2BAQ4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 11:56:52 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:63593 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab2BAQ4t (ORCPT
+	id S1753844Ab2BAQ6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 11:58:17 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:49674 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab2BAQ6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 11:56:49 -0500
+	Wed, 1 Feb 2012 11:58:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Ohad Ben-Cohen" <ohad@wizery.com>
+Subject: Re: Adding remoteproc/rpmsg to linux-next
+Date: Wed, 1 Feb 2012 16:57:36 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arm" <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-next@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Brian Swetland <swetland@google.com>, akpm@linux-foundation.org,
+        Greg KH <greg@kroah.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Walleij <linus.walleij@linaro.org>
+References: <CAK=WgbaU6vpiBGSgogYPjQNmrF-U0wk1rSXMX83DdgQa9hw5Mw@mail.gmail.com> <201112221522.21146.arnd@arndb.de> <CAK=WgbZK_fS_rPWZ9pNARia3sp4+jL5GmR0UmyE59WZSObfWEQ@mail.gmail.com>
+In-Reply-To: <CAK=WgbZK_fS_rPWZ9pNARia3sp4+jL5GmR0UmyE59WZSObfWEQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1328114266.5355.44.camel@lenny>
-References: <20120201151918.GC16714@quack.suse.cz> <1328114266.5355.44.camel@lenny>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Feb 2012 08:56:29 -0800
-X-Google-Sender-Auth: mOxHTR3jx_io1eKxO_-bv7vCdR4
-Message-ID: <CA+55aFxmdskUXX1iBaPx7rUGD95UqNJxhe1BLeVtZjqHjBpsPA@mail.gmail.com>
-Subject: Re: Memory corruption due to word sharing
-To: Colin Walters <walters@verbum.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
-        rguenther@suse.de, gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202011657.36998.arnd@arndb.de>
+X-Provags-ID: V02:K0:xgCmVQi9zVVcxT4tWDvPukEaiOBVRUYSns8PUg5Pi8A
+ QMrTnfjyUq58sYAkG3gSMFcpNMQO0MpOHJXQ9+Xe8cgc9dV4NB
+ VftqgwjODox8DhTVWHDm9BmEvDOu6OTFisB6E1i43cHLQOAcY2
+ dMd3uxIPVkxxeVUaOyfaMhsBWCmvkfTiJHR7kT5xRhZoIh5rFa
+ tYmPEhi4pEJmDWRs57AypfICO6qRVpNSwl0QnxW7MC1tGcgfOZ
+ 4CuvEsv/qzvRcfQy0dr/03hokIoGGqISUmD52TxFAgkbr9+V9P
+ EdZRfRN210rsKYbJTjvk/ABll9IW6CccwIETJSMuxcNa54PSRq
+ UD4H+SRG25HlUcS+mugc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 8:37 AM, Colin Walters <walters@verbum.org> wrote:
->
-> 1) Use the same lock for a given bitfield
+On Wednesday 01 February 2012, Ohad Ben-Cohen wrote:
+> On Thu, Dec 22, 2011 at 5:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > If you think you need more Acks or if there are other
+> > reasons to have it go through arm-soc, please tell me and I'll try harder
+> > to find the time for a proper review.
+> 
+> Any chance you could carve out some time for reviewing remoteproc and
+> rpmsg [1] ?
 
-That's not the problem. All the *bitfield* fields are all accessed
-under the same word already.
+I will.
+ 
+> I hope we could either get your Acks on the patches or even have it go
+> through arm-soc for 3.4.
 
-> 2) Split up the bitfield into different words
+Yes, I think it's best to have it merged through arm-soc, in case Linus
+is more likely to take it from there than pull from your tree.
 
-Again, it's not the bitfield that is the problem.
-
-The problem is that the compiler - when it writes to the word that
-contains the bitfield - will also corrupt the word *NEXT* to the
-bitfield (or before - it probably depends on alignment).
-
-So we have two separate 32-bit words - one of which just happens to
-contain a bitfield. We write to these *separate* words using different
-locking rules (btw, they don't even need to be protected by a lock: we
-may have other rules that protects the individual word contents.
-
-But the compiler turns the access to the bitfield (in a 32-bit aligned
-word) into a 64-bit access that accesses the word *next* to it.
-
-That word next to it might *be* the lock, for example.
-
-So we could literally have this kind of situation:
-
-   struct {
-      atomic_t counter;
-      unsigned int val:4, other:4, data:24;
-   };
-
-and if we write code like this:
-
-    spin_lock(&somelock);
-    s->data++;
-    spin_unlock(&somelock);
-
-and on another CPU we might do
-
-   atomic_inc(&counter);
-
-and the access to the bitfield will *corrupt* the atomic counter, even
-though both of them are perfectly fine!
-
-Quite frankly, if the bug is simply because gcc doesn't actually know
-or care about the underlying size of the bitmask, it is possible that
-we can find a case where gcc clearly is buggy even according to the
-original C rules.
-
-Honza - since you have access to the compiler in question, try
-compiling this trivial test-program:
-
-
-   struct example {
-      volatile int a;
-      int b:1;
-   };
-
-   ..
-     s->b = 1;
-   ..
-
-and if that bitfield access actually does a 64-bit access that also
-touches 's->a', then dammit, that's a clear violation of even the
-*old* C standard, and the gcc people cannot just wave away their bugs
-by saying "we've got standads, pttthththt".
-
-And I suspect it really is a generic bug that can be shown even with
-the above trivial example.
-
-                               Linus
+	Arnd
