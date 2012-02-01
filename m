@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180Ab2BAKwO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 05:52:14 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:46794 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753954Ab2BAKwL (ORCPT
+	id S1756164Ab2BAKwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 05:52:13 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:48940 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756143Ab2BAKwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Feb 2012 05:52:11 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
@@ -21,91 +21,99 @@ Cc: <cjb@laptop.org>, <rmk+kernel@arm.linux.org.uk>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
         <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
-Subject: [PATCH V3 04/12] dmaengine/amba-pl08x: Take flow controller info from DMA_SLAVE_CONFIG
-Date: Wed, 1 Feb 2012 16:12:20 +0530
-Message-ID: <c60812d9d0d0c6b93f59da973650e01c92b17ebd.1328091915.git.viresh.kumar@st.com>
+Subject: [PATCH V3 00/12] dmaengine: Pl08x and dw_dmac updates
+Date: Wed, 1 Feb 2012 16:12:16 +0530
+Message-ID: <cover.1328091915.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.8.110.g4cb5d
-In-Reply-To: <cover.1328091915.git.viresh.kumar@st.com>
-References: <cover.1328091915.git.viresh.kumar@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Flow controller information is passed now from DMA_SLAVE_CONFIG option. This
-patch makes changes in pl08x driver to use device_fc from it instead of platform
-data.
+Hi Vinod/Dan,
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/dma/amba-pl08x.c   |    4 +++-
- include/linux/amba/pl08x.h |    8 ++++----
- 2 files changed, 7 insertions(+), 5 deletions(-)
+   This patchset does following:
+   - Includes earlier patchset sent by Rajeev for cleanly applying this patchset
+   - Adds device_fc (device flow control) field in struct DMA_SLAVE_CONFIG
+   - Fixes existing users of DMAENGINE for device_fc.
+   - Updates pl08x driver according to that
+   - Fixes few issues/bugs in dw_dmac driver
+   - Adds DMA_SLAVE_CONFIG for dw_dmac driver
+   - Fixes existing users of dw_dmac driver
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 9ebceca..e1a71f0 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -1139,6 +1139,8 @@ static int dma_set_runtime_config(struct dma_chan *chan,
- 	cctl |= burst << PL080_CONTROL_SB_SIZE_SHIFT;
- 	cctl |= burst << PL080_CONTROL_DB_SIZE_SHIFT;
- 
-+	plchan->device_fc = config->device_fc;
-+
- 	if (plchan->runtime_direction == DMA_DEV_TO_MEM) {
- 		plchan->src_addr = config->src_addr;
- 		plchan->src_cctl = pl08x_cctl(cctl) | PL080_CONTROL_DST_INCR |
-@@ -1370,7 +1372,7 @@ static struct dma_async_tx_descriptor *pl08x_prep_slave_sg(
- 		return NULL;
- 	}
- 
--	if (plchan->cd->device_fc)
-+	if (plchan->device_fc)
- 		tmp = (direction == DMA_MEM_TO_DEV) ? PL080_FLOW_MEM2PER_PER :
- 			PL080_FLOW_PER2MEM_PER;
- 	else
-diff --git a/include/linux/amba/pl08x.h b/include/linux/amba/pl08x.h
-index 033f6aa..2c58853 100644
---- a/include/linux/amba/pl08x.h
-+++ b/include/linux/amba/pl08x.h
-@@ -47,9 +47,6 @@ enum {
-  * @muxval: a number usually used to poke into some mux regiser to
-  * mux in the signal to this channel
-  * @cctl_opt: default options for the channel control register
-- * @device_fc: Flow Controller Settings for ccfg register. Only valid for slave
-- * channels. Fill with 'true' if peripheral should be flow controller. Direction
-- * will be selected at Runtime.
-  * @addr: source/target address in physical memory for this DMA channel,
-  * can be the address of a FIFO register for burst requests for example.
-  * This can be left undefined if the PrimeCell API is used for configuring
-@@ -68,7 +65,6 @@ struct pl08x_channel_data {
- 	int max_signal;
- 	u32 muxval;
- 	u32 cctl;
--	bool device_fc;
- 	dma_addr_t addr;
- 	bool circular_buffer;
- 	bool single;
-@@ -183,6 +179,9 @@ enum pl08x_dma_chan_state {
-  * @host: a pointer to the host (internal use)
-  * @state: whether the channel is idle, paused, running etc
-  * @slave: whether this channel is a device (slave) or for memcpy
-+ * @device_fc: Flow Controller Settings for ccfg register. Only valid for slave
-+ * channels. Fill with 'true' if peripheral should be flow controller. Direction
-+ * will be selected at Runtime.
-  * @waiting: a TX descriptor on this channel which is waiting for a physical
-  * channel to become available
-  */
-@@ -205,6 +204,7 @@ struct pl08x_dma_chan {
- 	struct pl08x_driver_data *host;
- 	enum pl08x_dma_chan_state state;
- 	bool slave;
-+	bool device_fc;
- 	struct pl08x_txd *waiting;
- };
- 
+Change History:
+Since V2:
+ - fix code comment in 2/12
+ - fix commit log in 8/12
+
+Since V1:
+   - used dev_get_platdata() instead of platform_get_drvdata(), as
+   that was
+   incorrect
+   - Lots of fixes in: dmaengine/dw_dmac: Add support for
+   DMA_SLAVE_CONFIG
+   - Additional patches:
+   - dmaengine/dw_dmac: Add 64 bit access width support for
+   slave xfers on
+   mem side
+   - Fix other kernel driver for device_fc
+   and dw_dmac changes.
+
+   Rebased-on:
+
+   commit
+   3506c0d507144d9b0f19efd5a56d289f70611179
+   Author: Tushar Behera
+   <tushar.behera@linaro.org>
+   Date:   Tue Dec 6 16:15:54 2011 +0530
+
+   DMA: PL330: Remove pm_runtime_xxx
+   calls from pl330 probe/remove
+
+
+Rajeev KUMAR (1):
+  dmaengine/dw_dmac: Hibernation support in dw_dmac
+
+Viresh Kumar (11):
+  dmaengine: Add flow controller information to dma_slave_config
+  dmaengine: Pass dma_slave_config .device_fc = NULL for all existing
+    users
+  dmaengine/amba-pl08x: Take flow controller info from DMA_SLAVE_CONFIG
+  dmaengine/dw_dmac: Don't use magic number for total number of
+    channels
+  dmaengine/dw_dmac: Use dev_get_platdata() instead of accessing dev
+    directly
+  dmaengine/dw_dmac: Don't handle block interrupts
+  dmaengine/dw_dmac: Unmap all memory buffers after completion of
+    non-slave transfers
+  dmaengine/dw_dmac: Add 64 bit access width support for slave xfers on
+    mem side
+  dmaengine/dw_dmac: Add support for DMA_SLAVE_CONFIG
+  dmaengine/dw_dmac: Fix dw_dmac user drivers to adapt to slave_config
+    changes
+  dmaengine/dw_dmac: Remove unused fields in struct dw_dma_slave
+
+ arch/avr32/mach-at32ap/at32ap700x.c             |   13 --
+ arch/avr32/mach-at32ap/include/mach/atmel-mci.h |    7 -
+ drivers/dma/amba-pl08x.c                        |    4 +-
+ drivers/dma/dw_dmac.c                           |  232 +++++++++++++++--------
+ drivers/dma/dw_dmac_regs.h                      |   15 ++
+ drivers/mmc/host/atmel-mci.c                    |   24 ++-
+ drivers/mmc/host/mmci.c                         |    2 +
+ drivers/mmc/host/mxcmmc.c                       |    2 +
+ drivers/spi/spi-dw-mid.c                        |    3 +
+ drivers/spi/spi-pl022.c                         |    2 +
+ drivers/tty/serial/amba-pl011.c                 |    3 +
+ drivers/usb/musb/ux500_dma.c                    |    1 +
+ include/linux/amba/pl08x.h                      |    8 +-
+ include/linux/dmaengine.h                       |    5 +
+ include/linux/dw_dmac.h                         |   38 ----
+ sound/atmel/abdac.c                             |   18 ++-
+ sound/atmel/ac97c.c                             |   41 ++++-
+ sound/soc/imx/imx-pcm-dma-mx2.c                 |    3 +
+ 18 files changed, 255 insertions(+), 166 deletions(-)
+
 -- 
 1.7.8.110.g4cb5d
 
