@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab2BAXgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 18:36:04 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36044 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2BAXgC (ORCPT
+	id S1753070Ab2BAXhw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 18:37:52 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12861 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab2BAXhv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 18:36:02 -0500
+	Wed, 1 Feb 2012 18:37:51 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 01 Feb 2012 15:37:48 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Wed, 1 Feb 2012 15:37:47 -0800
+Subject: RE: [PATCH v2] pinctrl: delete raw device pointers in pinmux maps
+Thread-Topic: [PATCH v2] pinctrl: delete raw device pointers in pinmux maps
+Thread-Index: AczhET3kpWYNrH1PStOmD4UB78Y+IwAKS5iA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E124918@HQMAIL01.nvidia.com>
+References: <1328121721-3438-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1328121721-3438-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20120131122339.GG32010@elte.hu>
-References: <20120121082857.GC32134@elte.hu> <CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
- <20120121165830.GA9216@elte.hu> <CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
- <CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
- <CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
- <CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
- <20120131115855.5861bad7@pyramind.ukuu.org.uk> <20120131120922.GD32010@elte.hu>
- <20120131121820.58a1db97@pyramind.ukuu.org.uk> <20120131122339.GG32010@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Feb 2012 15:35:41 -0800
-X-Google-Sender-Auth: aS9Dsw2undneKkOHKG8Fok0hhJo
-Message-ID: <CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
-Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Hitoshi Mitake <h.mitake@gmail.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        linux-kernel@vger.kernel.org, hpa@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 4:23 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> non-atomic sounds good to me too.
+Linus Walleij wrote at Wednesday, February 01, 2012 11:42 AM:
+> After discussion with Mark Brown in an unrelated thread about
+> ADC lookups, it came to my knowledge that the ability to pass
+> a struct device * in the regulator consumers is just a
+> historical artifact, and not really recommended. Since there
+> are no in-kernel users of these pointers, we just kill them
+> right now, before someone starts to use them.
+> 
+> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-You both apparently missed the related discussion that some devices
-really do care about order, even if they don't care about atomicity.
+Documentation,
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-So we'd actually have two versions of the header file, one
-little-endian, and one big-endian. Then the driver that knows it
-doesn't need the atomic 'readq()' that is always defined, but wants a
-low-bytes-first version would just do
+-- 
+nvpublic
 
-   #include <linux/io64-little-endian.h>
-
-(or "big-endian" if it wants to read/write high bits first). Most
-drivers probably don't care, but apparently NVMe does.
-
-                 Linus
