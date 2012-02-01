@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab2BAPWU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:22:20 -0500
-Received: from mail.tomasu.net ([64.85.170.232]:40694 "EHLO mail.tomasu.net"
+	id S1756573Ab2BAPXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:23:00 -0500
+Received: from postkast.cyber.ee ([195.50.202.7]:52540 "EHLO postkast.cyber.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756505Ab2BAPWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:22:18 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: Hannes Reinecke <hare@suse.de>
-Subject: Re: GRUB doesn't like ServeRAID M1015/LSI 9220-8i (was Re: mvsas with 3.1)
-Date: Wed, 1 Feb 2012 08:22:07 -0700
-User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
-Cc: John Robinson <john.robinson@anonymous.org.uk>,
-        "linux-raid" <linux-raid@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-References: <201201131144.58044.thomas@fjellstrom.ca> <201202010742.07818.thomas@fjellstrom.ca> <4F295769.6070003@suse.de>
-In-Reply-To: <4F295769.6070003@suse.de>
+	id S1754369Ab2BAPW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 10:22:59 -0500
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 10:22:58 EST
+Date: Wed, 1 Feb 2012 17:16:19 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.3-rc2
+In-Reply-To: <20120201150015.EBB2413A4D6@koiott.cyber.ee>
+Message-ID: <alpine.DEB.2.00.1202011703280.16175@ondatra.cyber.ee>
+References: <20120201150015.EBB2413A4D6@koiott.cyber.ee>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202010822.07647.thomas@fjellstrom.ca>
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Feb 1, 2012, Hannes Reinecke wrote:
-> On 02/01/2012 03:42 PM, Thomas Fjellstrom wrote:
-> > On Wed Feb 1, 2012, John Robinson wrote:
-> >> On 01/02/2012 14:03, Thomas Fjellstrom wrote:
-> >> [...]
-> >> 
-> >>>  I picked up a refurb IBM
-> >>> 
-> >>> ServeRaid M1015 (aka: LSI 9220-8i) card. It arrived yesterday. Just
-> >>> have to wait and see why grub doesn't like it.
-> >> 
-> >> When you find out, please let me know - I bought one via ebay, its
-> >> firmware was elderly and wouldn't let me put it in JBOD mode, after a
-> >> bit of googling I flashed it with IBM's latest firmware, then GRUB
-> >> thought my machine had no RAM in it. The card has been sitting in a box
-> >> since.
-> > 
-> > Yeah, GRUB immediately throws an "out of memory. Aborted" error, its
-> > annoying, but I reported the issue on GRUB's bug tracker after talking
-> > to a guy in #grub on freenode. Hopefully someone looks at it soon. It
-> > appears it happens so early in grub's startup that it can't even output
-> > any debug info (I was asked to run: `grub-install --debug-image=all
-> > /dev/sdX`, and did so, I get debug output when the card is not
-> > installed, but absolutely nothing when it is installed.
-> 
-> From my experience the BIOS wouldn't present any disks in JBOD mode.
-> So you'd be needing to switch to RAID mode first.
+> One thing that has happened is that I've liked seeing the merge
+> message things that have come in through signed tags so much that I've
+> decided to try to write more explanations even for the merges that
+> don't get that kind of love from their subsystem maintainers. Some
+> subsystem maintainers (David with networking is a good example) have
+> tended to write nice good explanations in their pull requests, and
+> I've started to try to make those kinds of things part of my merge
+> messages.
+>
+> I'm not sure how many people really look at merges, and maybe it's a
+> waste of my time, but I thought I'd try it. I've also spent more
+> effort trying to explain even fairly trivial merge conflicts (although
+> the truly trivial "touched next to each other" that just aren't
+> interesting from a code standpoint I generally have left without
+> explanation).
 
-It does seem to notice them all in its own bios, and list them in JBOD mode. 
-But the disks aren't used for booting, so at the very least it shouldn't affect 
-booting at all. But I'll try that out anyhow to see if it "fixes" GRUB.
+Having human-readable merge summaries is very good. But simple merge 
+summaries that list the commits by one-line descriptions can also be 
+easily improved - just increase the number of lines there.
 
-> Cheers,
-> 
-> Hannes
-
+Looking at git.kernel.org for "todays merges" gives a quick summary and 
+these merge messages are artifically truncated there. Are these made by 
+git? In that case, increasing the line limit of these messages to 
+something that covers most normal cases would just help?
 
 -- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+Meelis Roos (mroos@linux.ee)
