@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab2BARlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:41:14 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45382 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540Ab2BARlL convert rfc822-to-8bit (ORCPT
+	id S1754857Ab2BARrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:47:35 -0500
+Received: from mga01.intel.com ([192.55.52.88]:63952 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753749Ab2BARrd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:41:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <1328053058-30752-1-git-send-email-mchehab@redhat.com>
-References: <1328053058-30752-1-git-send-email-mchehab@redhat.com>
-Date: Wed, 1 Feb 2012 12:41:10 -0500
-Message-ID: <CA+5PVA6oGQOouEPxUds8jWM9hccJDikC2veoo1nf6HbWgnVzbQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] edac/ppc4xx_edac: Fix compilation
-From: Josh Boyer <jwboyer@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 1 Feb 2012 12:47:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="112912370"
+From: "Rose, Gregory V" <gregory.v.rose@intel.com>
+To: "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "'David Ahern'" <daahern@cisco.com>
+CC: "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: RE: VFs go missing with latest kernel
+Thread-Topic: VFs go missing with latest kernel
+Thread-Index: AQHM4Gs6ffY5XbLoAUGa1L3askdwe5YnFpYAgACgHID//3peYIAAiyUA//98+jCAARgikA==
+Date: Wed, 1 Feb 2012 17:47:30 +0000
+Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A0702F66ADF@ORSMSX106.amr.corp.intel.com>
+References: <4F287102.3060600@cisco.com>
+ <C5551D9AAB213A418B7FD5E4A6F30A0702F6489B@ORSMSX106.amr.corp.intel.com>
+ <4F2887AB.8070005@cisco.com>
+ <C5551D9AAB213A418B7FD5E4A6F30A0702F64AF6@ORSMSX106.amr.corp.intel.com>
+ <4F288C4A.3070509@cisco.com>
+ <C5551D9AAB213A418B7FD5E4A6F30A0702F64B7F@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <C5551D9AAB213A418B7FD5E4A6F30A0702F64B7F@ORSMSX106.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 6:37 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> It seems that nobody is cross-compiling for this arch anymore...
->
-> drivers/edac/ppc4xx_edac.c: In function 'ppc4xx_edac_probe':
-> drivers/edac/ppc4xx_edac.c:188:12: error: storage class specified for parameter 'ppc4xx_edac_remove'
-> ...
-> drivers/edac/ppc4xx_edac.c:1068:19: error: 'match' undeclared (first use in this function)
-> drivers/edac/ppc4xx_edac.c:1068:19: note: each undeclared identifier is reported only once for each function it appears in
-> drivers/edac/ppc4xx_edac.c:1068:36: warning: left-hand operand of comma expression has no effect [-Wunused-value]
+> -----Original Message-----
+> From: Rose, Gregory V
+> Sent: Tuesday, January 31, 2012 5:03 PM
+> To: David Ahern
+> Cc: LKML
+> Subject: RE: VFs go missing with latest kernel
+> 
+> > -----Original Message-----
+> > From: David Ahern [mailto:daahern@cisco.com]
+> > Sent: Tuesday, January 31, 2012 4:50 PM
+> > To: Rose, Gregory V
+> > Cc: LKML
+> > Subject: Re: VFs go missing with latest kernel
+> >
+> > On 01/31/2012 05:43 PM, Rose, Gregory V wrote:
+> > >>
+> > >> Back to the missing VF problem: reverting the patch I mentioned
+> before
+> > >> and my VM boots up fine with the even-numbered VFs assigned to it.
+> > >
+> > > OK, thanks... I was staring at the dmesg output you sent me and it is
+> > odd because the even numbered VFs that go missing are there when you set
+> > their MAC addresses.  See output below the dotted line after my reply.
+> >
+> > Ah, I think I confused you. The VFs for the first 2 ports (ie., the
+> > first 14 VFs) are seen fine; I only showed the VFs for the second 2
+> > ports -- which are missing the even number.
+> >
+> > So, in summary I am missing 7 VFs all associated with the even numbers
+> > on the last ports of a quad port card.
+> 
+> OK, thanks for the clarification.  But it still shows that all 28 VFs
+> exist while their MAC addresses are being set but then at some point
+> subsequent to that 7 of them on the port belonging to PCI device 07:00.0
+> disappear for some reason.
+> 
+> I'll see what I can find.
 
-Ugh.  The linux-next tree builds ppc44x_defconfig daily, but I don't
-have this module enabled there.  I'll get it added.
+I found this in the log file you sent me.  I had missed it yesterday.
 
->
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[   15.835223] igb 0000:07:00.0: 7 pre-allocated VFs found - override max_vfs setting of 7
+[   15.835393] igb 0000:07:00.0: 7 VFs allocated
 
-Acked-by: Josh Boyer <jwboyer@gmail.com>
+I think that must be a bug in the code that searches for VFs already allocated and is the source of your problem.  I'll keep you updated on what I find but it has to be a bug in the VF device lookups.
 
-> ---
->  drivers/edac/ppc4xx_edac.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
-> index 0f06f14..1adaddf 100644
-> --- a/drivers/edac/ppc4xx_edac.c
-> +++ b/drivers/edac/ppc4xx_edac.c
-> @@ -184,7 +184,7 @@ struct ppc4xx_ecc_status {
->
->  /* Function Prototypes */
->
-> -static int ppc4xx_edac_probe(struct platform_device *device)
-> +static int ppc4xx_edac_probe(struct platform_device *device);
->  static int ppc4xx_edac_remove(struct platform_device *device);
->
->  /* Global Variables */
-> @@ -1065,7 +1065,7 @@ ppc4xx_edac_mc_init(struct mem_ctl_info *mci,
->
->        mci->mod_name           = PPC4XX_EDAC_MODULE_NAME;
->        mci->mod_ver            = PPC4XX_EDAC_MODULE_REVISION;
-> -       mci->ctl_name           = match->compatible,
-> +       mci->ctl_name           = ppc4xx_edac_match->compatible,
->        mci->dev_name           = np->full_name;
->
->        /* Initialize callbacks */
-> --
-> 1.7.8
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+- Greg
+
