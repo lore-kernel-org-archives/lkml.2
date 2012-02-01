@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab2BARhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:37:37 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35483 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab2BARhe convert rfc822-to-8bit (ORCPT
+	id S1755805Ab2BARhm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:37:42 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5272 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755747Ab2BARhk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:37:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1202011808240.22725@twin.jikos.cz>
-References: <20120201151918.GC16714@quack.suse.cz> <1328114266.5355.44.camel@lenny>
- <CA+55aFxmdskUXX1iBaPx7rUGD95UqNJxhe1BLeVtZjqHjBpsPA@mail.gmail.com> <alpine.LRH.2.00.1202011808240.22725@twin.jikos.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Feb 2012 09:37:13 -0800
-X-Google-Sender-Auth: otWpU6eqFh4IfNBwIgSXuPOmdZY
-Message-ID: <CA+55aFyXH5a8QWo+RFgHnpijj3cLA=f5J+d2iyMOCpkuCyoOpw@mail.gmail.com>
-Subject: Re: Memory corruption due to word sharing
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Colin Walters <walters@verbum.org>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 1 Feb 2012 12:37:40 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 01 Feb 2012 09:37:36 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 1 Feb 2012 09:37:36 -0800
+Subject: RE: [PATCH] pinctrl: delete raw device pointers in pinmux maps
+Thread-Topic: [PATCH] pinctrl: delete raw device pointers in pinmux maps
+Thread-Index: AczhBmCR9jmyfEofQIWHaICJOv6mGAAAYbPg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E12470D@HQMAIL01.nvidia.com>
+References: <1328117053-27807-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1328117053-27807-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 9:11 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Wed, 1 Feb 2012, Linus Torvalds wrote:
->>
->> And I suspect it really is a generic bug that can be shown even with
->> the above trivial example.
->
-> I have actually tried exactly this earlier today (because while looking at
-> this, I had an idea that putting volatile in place could be a workaround,
-> causing gcc to generate a saner code), but it doesn't work either:
->
-> # cat x.c
-> struct x {
->    long a;
->    volatile unsigned int lock;
->    unsigned int full:1;
-> };
->
-> void
-> wrong(struct x *ptr)
-> {
->        ptr->full = 1;
-> }
->
-> int main()
-> {
->        wrong(0);
-> }
-> # gcc -O2 x.c
-> # gdb -q ./a.out
-> Reading symbols from /root/a.out...done.
-> (gdb) disassemble wrong
-> Dump of assembler code for function wrong:
->   0x40000000000005c0 <+0>:     [MMI]       adds r32=8,r32
->   0x40000000000005c1 <+1>:                 nop.m 0x0
->   0x40000000000005c2 <+2>:                 mov r15=1;;
->   0x40000000000005d0 <+16>:    [MMI]       ld8 r14=[r32];;
->   0x40000000000005d1 <+17>:                nop.m 0x0
->   0x40000000000005d2 <+18>:                dep r14=r15,r14,32,1;;
->   0x40000000000005e0 <+32>:    [MIB]       st8 [r32]=r14
->   0x40000000000005e1 <+33>:                nop.i 0x0
->   0x40000000000005e2 <+34>:                br.ret.sptk.many b0;;
->
-> In my opinion, this is a clear bug in gcc (while the original problem,
-> without explitict volatile, is not a C spec violation per se, it's just
-> very inconvenient :) ).
+Linus Walleij wrote at Wednesday, February 01, 2012 10:24 AM:
+> After discussion with Mark Brown in an unrelated thread about
+> ADC lookups, it came to my knowledge that the ability to pass
+> a struct device * in the regulator consumers is just a
+> historical artifact, and not really recommended. Since there
+> are no in-kernel users of these pointers, we just kill them
+> right now, before someone starts to use them.
+> 
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-Yup, gcc is clearly just buggy here. I do not believe there is any
-question what-so-ever about the above test-case showing a bug.
+I didn't review the code, but just wanted to note that
+Documentation/pinctrl.txt needs some updates too, e.g. "Pinmux
+board/machine configuration" says:
 
-And the thing is, if they fix this bug, they'll fix our problem too,
-unless they are going to write explicit code to *try* to screw us over
-while fixing that 'volatile' bug.
+> As you can see we may have several pin controllers on the system and thus
+> we need to specify which one of them that contain the functions we wish
+> to map. The map can also use struct device * directly, so there is no
+> inherent need to use strings to specify .dev_name or .ctrl_dev_name, these
+> are for the situation where you do not have a handle to the struct device *,
+> for example if they are not yet instantiated or cumbersome to obtain.
 
-Because the right thing to do with bitfields is really to take the
-base type into account. If the bitfield was in an "int", you use an
-"int" access for it, not a 64-bit access. That's the simple fix for
-the volatile problem, and it just happens to fix our issue too.
+I'm fine with that being a separate patch if you want, or squashing
+together two separate patches.
 
-Trying to explicitly *look* for volatiles, and only doing the 32-bit
-access when you see them is actually extra code, and extra effort, and
-doesn't even *help* anything. It's not like the 64-bit access is
-somehow "better".
+-- 
+nvpublic
 
-I can see some vindictive programmer doing that, while thinking "I'll
-show these people who pointed out this bug in my code, mhwhahahahaa!
-I'll fix their test-case while still leaving the real problem
-unaddressed", but I don't think compiler people are quite *that* evil.
- Yes, they are evil people who are trying to trip us up, but still..
-
-                       Linus
