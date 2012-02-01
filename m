@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab2BAVML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:12:11 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54073 "EHLO
+	id S932685Ab2BAVMb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:12:31 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46900 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932685Ab2BAVKw (ORCPT
+	by vger.kernel.org with ESMTP id S932682Ab2BAVKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:52 -0500
-X-Sasl-enc: Y0Pe5GaHWc+mm+75eTWQuRrqPnDiiUQ5ztb5ChZUixvy 1328130650
+	Wed, 1 Feb 2012 16:10:51 -0500
+X-Sasl-enc: TPHU+4kl+gvjP3x9RqBDwh0rXrYo9p1glCyBkgyQ1awz 1328130649
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:50 2012
-Message-Id: <20120201210050.542807419@clark.kroah.org>
+Message-Id: <20120201210050.459861995@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:40 -0800
+Date: Wed, 01 Feb 2012 13:00:39 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Phil Oester <kernel@linuxace.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        Ben Greear <greearb@candelatech.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [76/89] net: bpf_jit: fix divide by 0 generation
+Subject: [75/89] macvlan: fix a possible use after free
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,124 +31,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit d00a9dd21bdf7908b70866794c8313ee8a5abd5c ]
+[ Upstream commit 4ec7ac1203bcf21f5e3d977c9818b1a56c9ef40d ]
 
-Several problems fixed in this patch :
+Commit bc416d9768 (macvlan: handle fragmented multicast frames) added a
+possible use after free in macvlan_handle_frame(), since
+ip_check_defrag() uses pskb_may_pull() : skb header can be reallocated.
 
-1) Target of the conditional jump in case a divide by 0 is performed
-   by a bpf is wrong.
-
-2) Must 'generate' the full function prologue/epilogue at pass=0,
-   or else we can stop too early in pass=1 if the proglen doesnt change.
-   (if the increase of prologue/epilogue equals decrease of all
-    instructions length because some jumps are converted to near jumps)
-
-3) Change the wrong length detection at the end of code generation to
-   issue a more explicit message, no need for a full stack trace.
-
-Reported-by: Phil Oester <kernel@linuxace.com>
 Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ben Greear <greearb@candelatech.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/x86/net/bpf_jit_comp.c |   36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
+ drivers/net/macvlan.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -151,17 +151,18 @@ void bpf_jit_compile(struct sk_filter *f
- 	cleanup_addr = proglen; /* epilogue address */
- 
- 	for (pass = 0; pass < 10; pass++) {
-+		u8 seen_or_pass0 = (pass == 0) ? (SEEN_XREG | SEEN_DATAREF | SEEN_MEM) : seen;
- 		/* no prologue/epilogue for trivial filters (RET something) */
- 		proglen = 0;
- 		prog = temp;
- 
--		if (seen) {
-+		if (seen_or_pass0) {
- 			EMIT4(0x55, 0x48, 0x89, 0xe5); /* push %rbp; mov %rsp,%rbp */
- 			EMIT4(0x48, 0x83, 0xec, 96);	/* subq  $96,%rsp	*/
- 			/* note : must save %rbx in case bpf_error is hit */
--			if (seen & (SEEN_XREG | SEEN_DATAREF))
-+			if (seen_or_pass0 & (SEEN_XREG | SEEN_DATAREF))
- 				EMIT4(0x48, 0x89, 0x5d, 0xf8); /* mov %rbx, -8(%rbp) */
--			if (seen & SEEN_XREG)
-+			if (seen_or_pass0 & SEEN_XREG)
- 				CLEAR_X(); /* make sure we dont leek kernel memory */
- 
- 			/*
-@@ -170,7 +171,7 @@ void bpf_jit_compile(struct sk_filter *f
- 			 *  r9 = skb->len - skb->data_len
- 			 *  r8 = skb->data
- 			 */
--			if (seen & SEEN_DATAREF) {
-+			if (seen_or_pass0 & SEEN_DATAREF) {
- 				if (offsetof(struct sk_buff, len) <= 127)
- 					/* mov    off8(%rdi),%r9d */
- 					EMIT4(0x44, 0x8b, 0x4f, offsetof(struct sk_buff, len));
-@@ -260,9 +261,14 @@ void bpf_jit_compile(struct sk_filter *f
- 			case BPF_S_ALU_DIV_X: /* A /= X; */
- 				seen |= SEEN_XREG;
- 				EMIT2(0x85, 0xdb);	/* test %ebx,%ebx */
--				if (pc_ret0 != -1)
--					EMIT_COND_JMP(X86_JE, addrs[pc_ret0] - (addrs[i] - 4));
--				else {
-+				if (pc_ret0 > 0) {
-+					/* addrs[pc_ret0 - 1] is start address of target
-+					 * (addrs[i] - 4) is the address following this jmp
-+					 * ("xor %edx,%edx; div %ebx" being 4 bytes long)
-+					 */
-+					EMIT_COND_JMP(X86_JE, addrs[pc_ret0 - 1] -
-+								(addrs[i] - 4));
-+				} else {
- 					EMIT_COND_JMP(X86_JNE, 2 + 5);
- 					CLEAR_A();
- 					EMIT1_off32(0xe9, cleanup_addr - (addrs[i] - 4)); /* jmp .+off32 */
-@@ -335,12 +341,12 @@ void bpf_jit_compile(struct sk_filter *f
- 				}
- 				/* fallinto */
- 			case BPF_S_RET_A:
--				if (seen) {
-+				if (seen_or_pass0) {
- 					if (i != flen - 1) {
- 						EMIT_JMP(cleanup_addr - addrs[i]);
- 						break;
- 					}
--					if (seen & SEEN_XREG)
-+					if (seen_or_pass0 & SEEN_XREG)
- 						EMIT4(0x48, 0x8b, 0x5d, 0xf8);  /* mov  -8(%rbp),%rbx */
- 					EMIT1(0xc9);		/* leaveq */
- 				}
-@@ -483,8 +489,9 @@ common_load:			seen |= SEEN_DATAREF;
- 				goto common_load;
- 			case BPF_S_LDX_B_MSH:
- 				if ((int)K < 0) {
--					if (pc_ret0 != -1) {
--						EMIT_JMP(addrs[pc_ret0] - addrs[i]);
-+					if (pc_ret0 > 0) {
-+						/* addrs[pc_ret0 - 1] is the start address */
-+						EMIT_JMP(addrs[pc_ret0 - 1] - addrs[i]);
- 						break;
- 					}
- 					CLEAR_A();
-@@ -599,13 +606,14 @@ cond_branch:			f_offset = addrs[i + filt
- 		 * use it to give the cleanup instruction(s) addr
- 		 */
- 		cleanup_addr = proglen - 1; /* ret */
--		if (seen)
-+		if (seen_or_pass0)
- 			cleanup_addr -= 1; /* leaveq */
--		if (seen & SEEN_XREG)
-+		if (seen_or_pass0 & SEEN_XREG)
- 			cleanup_addr -= 4; /* mov  -8(%rbp),%rbx */
- 
- 		if (image) {
--			WARN_ON(proglen != oldproglen);
-+			if (proglen != oldproglen)
-+				pr_err("bpb_jit_compile proglen=%u != oldproglen=%u\n", proglen, oldproglen);
- 			break;
- 		}
- 		if (proglen == oldproglen) {
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -172,6 +172,7 @@ static rx_handler_result_t macvlan_handl
+ 		skb = ip_check_defrag(skb, IP_DEFRAG_MACVLAN);
+ 		if (!skb)
+ 			return RX_HANDLER_CONSUMED;
++		eth = eth_hdr(skb);
+ 		src = macvlan_hash_lookup(port, eth->h_source);
+ 		if (!src)
+ 			/* frame comes from an external address */
 
 
