@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab2BAUO2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:14:28 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:46505 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934Ab2BAUO0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:14:26 -0500
-Date: Wed, 1 Feb 2012 12:13:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-Message-ID: <20120201201336.GI2382@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
- <1327591185.2446.102.camel@twins>
- <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
- <1328117722.2446.262.camel@twins>
- <20120201184045.GG2382@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1202011404500.2074@router.home>
+	id S1756733Ab2BAURV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:17:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58577 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752315Ab2BAURS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 15:17:18 -0500
+Date: Wed, 1 Feb 2012 21:16:32 +0100
+From: Jakub Jelinek <jakub@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+Message-ID: <20120201201631.GW18768@tyan-ft48-01.lab.bos.redhat.com>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <20120201151918.GC16714@quack.suse.cz>
+ <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb>
+ <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
+ <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1202011404500.2074@router.home>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020120-2398-0000-0000-000003DD3D8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 02:06:07PM -0600, Christoph Lameter wrote:
-> On Wed, 1 Feb 2012, Paul E. McKenney wrote:
-> 
-> > On Wed, Feb 01, 2012 at 06:35:22PM +0100, Peter Zijlstra wrote:
-> > > On Sun, 2012-01-29 at 10:25 +0200, Gilad Ben-Yossef wrote:
-> > > >
-> > > > If this is of interest, I keep a list tracking global IPI and global
-> > > > task schedulers sources in the core kernel here:
-> > > > https://github.com/gby/linux/wiki.
-> > >
-> > > You can add synchronize_.*_expedited() to the list, it does its best to
-> > > bash the entire machine in order to try and make RCU grace periods
-> > > happen fast.
+On Wed, Feb 01, 2012 at 12:01:46PM -0800, Linus Torvalds wrote:
+> On Wed, Feb 1, 2012 at 11:40 AM, Jakub Jelinek <jakub@redhat.com> wrote:
+> > struct S { long s1; unsigned int s2 : 5; unsigned int s3 : 19; unsigned char s4; unsigned int s5; };
+> > struct T { long t1 : 16; unsigned int t2; };
 > >
-> > I have duly added "Make synchronize_sched_expedited() avoid IPIing idle
-> > CPUs" to http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html.
+> > on e.g. x86_64-linux, S is 16 byte long, field s4 is packed together into
+> > the same 32 bits as s2 and s3.  While the memory model allows s2 to be
+> > changed when storing s3 (i.e. use a RMW cycle on it), it doesn't allow s4
+> > to be changed, as it isn't a bitfield (you'd need s4 : 8 for that).
+> > T is 8 bytes long, again, s2 is packed into the same 64 bits as s1,
+> > and the memory model doesn't allow s2 to be modified.
 > >
-> > This should not be hard once I have built up some trust in the new
-> > RCU idle-detection code.  It would also automatically apply to
-> > Frederic's dyntick-idle userspace work.
+> > Not sure what the kernel would expect in such a case.
 > 
-> Could we also apply the same approach to processors busy doing
-> computational work? In that case the OS is also not needed. Interrupting
-> these activities is impacting on performance and latency.
+> So the kernel really doesn't care what you do to things *within* the bitfield.
 
-Yep, that is in fact what Frederic's dyntick-idle userspace work does.
+But what is *within* the bitfield?  Do you consider s4 or t2 fields
+(non-bitfield fields that just the ABI wants to pack together with
+the bitfield) above as *within* or is already modifying of those a problem?
 
-							Thanx, Paul
+> The 'volatile'  example makes it entirely clear that the bug has
+> nothing what-so-ever to do with C11.
 
+The reason we mention C11/C++11 memory model is because we plan to support
+that, likely for GCC 4.8, when requested by some options (either by default
+when choosing those standards?, or when explicitly requested).  This will
+even disable some optimizations that are fine for single-threaded apps,
+but aren't fine in those memory models, aren't fine in OpenMP or for many
+other threaded programs.  E.g. loop store motion if it isn't guaranteed the
+variable is always stored in the loop:
+int x;
+
+void
+foo (int j)
+{
+  int i;
+  for (i = 0; i < 100000; i++)
+    if (i > j)
+      x = i;
+}
+can't be performed, because otherwise it introduces a tmp = x; ... x = tmp;
+into code that wouldn't otherwise touch the variable, so if some other
+thread modifies x, it might have unexpected value.
+
+	Jakub
