@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096Ab2BAVzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:55:50 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40537 "EHLO
+	id S933105Ab2BAV4D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:56:03 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55124 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756942Ab2BAVH7 (ORCPT
+	by vger.kernel.org with ESMTP id S1756997Ab2BAVH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:07:59 -0500
-X-Sasl-enc: eMM2h8t34u73Lwljnr5azZrFdynCuOSoKATTgt6jEs0q 1328130478
+	Wed, 1 Feb 2012 16:07:58 -0500
+X-Sasl-enc: qnuQ46/n8sXiv2dgPDtEvcsU+k5c/fyN6s9FRO7P3xPF 1328130477
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:15:31 2012
-Message-Id: <20120201201531.921362185@clark.kroah.org>
+Message-Id: <20120201201531.842552350@clark.kroah.org>
 User-Agent: quilt/0.51-14.1
-Date: Wed, 01 Feb 2012 12:14:12 -0800
+Date: Wed, 01 Feb 2012 12:14:11 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Torbj=C3=B6rn=20Lofterud?= <torbjorn@pi.nxs.se>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [10/20] USB: ftdi_sio: fix TIOCSSERIAL baud_base handling
+        alan@lxorguk.ukuu.org.uk, Paolo Bonzini <pbonzini@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>,
+        Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [09/20] dm: do not forward ioctls from logical volumes to the underlying device
 In-Reply-To: <20120201210055.GA25374@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,36 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
 
-commit eb833a9e0972f60beb4ab8104ad7ef6bf30f02fc upstream.
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-Return EINVAL if new baud_base does not match the current one.
+commit ec8013beddd717d1740cfefb1a9b900deef85462 upstream.
 
-The baud_base is device specific and can not be changed. This restores
-the old (pre-2005) behaviour which was changed due to a
-misunderstanding regarding this fact (see
-https://lkml.org/lkml/2005/1/20/84).
+A logical volume can map to just part of underlying physical volume.
+In this case, it must be treated like a partition.
 
-Reported-by: Torbjörn Lofterud <torbjorn@pi.nxs.se>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Based on a patch from Alasdair G Kergon.
+
+Cc: Alasdair G Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backport to 2.6.32 - drop change to drivers/md/dm-flakey.c]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/md/dm-linear.c |   12 +++++++++++-
+ drivers/md/dm-mpath.c  |    6 ++++++
+ 2 files changed, 17 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1351,8 +1351,7 @@ static int set_serial_info(struct tty_st
- 		goto check_and_exit;
- 	}
+--- a/drivers/md/dm-linear.c
++++ b/drivers/md/dm-linear.c
+@@ -116,7 +116,17 @@ static int linear_ioctl(struct dm_target
+ 			unsigned long arg)
+ {
+ 	struct linear_c *lc = (struct linear_c *) ti->private;
+-	return __blkdev_driver_ioctl(lc->dev->bdev, lc->dev->mode, cmd, arg);
++	struct dm_dev *dev = lc->dev;
++	int r = 0;
++
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (lc->start ||
++	    ti->len != i_size_read(dev->bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
++
++	return r ? : __blkdev_driver_ioctl(dev->bdev, dev->mode, cmd, arg);
+ }
  
--	if ((new_serial.baud_base != priv->baud_base) &&
--	    (new_serial.baud_base < 9600)) {
-+	if (new_serial.baud_base != priv->baud_base) {
- 	    	unlock_kernel();
- 		return -EINVAL;
- 	}
+ static int linear_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -1464,6 +1464,12 @@ static int multipath_ioctl(struct dm_tar
+ 
+ 	spin_unlock_irqrestore(&m->lock, flags);
+ 
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
++
+ 	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
+ }
+ 
 
 
