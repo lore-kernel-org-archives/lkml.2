@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933033Ab2BAVuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:50:04 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37494 "EHLO
+	id S933020Ab2BAVu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:50:28 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48105 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756028Ab2BAVIb (ORCPT
+	by vger.kernel.org with ESMTP id S1757101Ab2BAVIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:31 -0500
-X-Sasl-enc: d/jpz2hTbD3iAMMhdq/h+pI4OlGFxRwHp3xYnym8RkUI 1328130510
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:38 2012
-Message-Id: <20120201205738.185470776@clark.kroah.org>
+	Wed, 1 Feb 2012 16:08:30 -0500
+X-Sasl-enc: x1eiqKkl8BhBcyowenXBZ3YzLIO6CntCCORJgc3kSqvr 1328130509
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:39 2012
+Message-Id: <20120201205739.770784621@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:48 -0800
+Date: Wed, 01 Feb 2012 12:56:06 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Hellstrom <thellstrom@vmware.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [08/65] drm: Fix authentication kernel crash
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Torbj=C3=B6rn=20Lofterud?= <torbjorn@pi.nxs.se>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [26/65] USB: ftdi_sio: fix TIOCSSERIAL baud_base handling
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,85 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 598781d71119827b454fd75d46f84755bca6f0c6 upstream.
+commit eb833a9e0972f60beb4ab8104ad7ef6bf30f02fc upstream.
 
-If the master tries to authenticate a client using drm_authmagic and
-that client has already closed its drm file descriptor,
-either wilfully or because it was terminated, the
-call to drm_authmagic will dereference a stale pointer into kmalloc'ed memory
-and corrupt it.
+Return EINVAL if new baud_base does not match the current one.
 
-Typically this results in a hard system hang.
+The baud_base is device specific and can not be changed. This restores
+the old (pre-2005) behaviour which was changed due to a
+misunderstanding regarding this fact (see
+https://lkml.org/lkml/2005/1/20/84).
 
-This patch fixes that problem by removing any authentication tokens
-(struct drm_magic_entry) open for a file descriptor when that file
-descriptor is closed.
-
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reported-by: Torbjörn Lofterud <torbjorn@pi.nxs.se>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_auth.c |    6 +++++-
- drivers/gpu/drm/drm_fops.c |    5 +++++
- include/drm/drmP.h         |    1 +
- 3 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/drm_auth.c
-+++ b/drivers/gpu/drm/drm_auth.c
-@@ -101,7 +101,7 @@ static int drm_add_magic(struct drm_mast
-  * Searches and unlinks the entry in drm_device::magiclist with the magic
-  * number hash key, while holding the drm_device::struct_mutex lock.
-  */
--static int drm_remove_magic(struct drm_master *master, drm_magic_t magic)
-+int drm_remove_magic(struct drm_master *master, drm_magic_t magic)
- {
- 	struct drm_magic_entry *pt;
- 	struct drm_hash_item *hash;
-@@ -136,6 +136,8 @@ static int drm_remove_magic(struct drm_m
-  * If there is a magic number in drm_file::magic then use it, otherwise
-  * searches an unique non-zero magic number and add it associating it with \p
-  * file_priv.
-+ * This ioctl needs protection by the drm_global_mutex, which protects
-+ * struct drm_file::magic and struct drm_magic_entry::priv.
-  */
- int drm_getmagic(struct drm_device *dev, void *data, struct drm_file *file_priv)
- {
-@@ -173,6 +175,8 @@ int drm_getmagic(struct drm_device *dev,
-  * \return zero if authentication successed, or a negative number otherwise.
-  *
-  * Checks if \p file_priv is associated with the magic number passed in \arg.
-+ * This ioctl needs protection by the drm_global_mutex, which protects
-+ * struct drm_file::magic and struct drm_magic_entry::priv.
-  */
- int drm_authmagic(struct drm_device *dev, void *data,
- 		  struct drm_file *file_priv)
---- a/drivers/gpu/drm/drm_fops.c
-+++ b/drivers/gpu/drm/drm_fops.c
-@@ -486,6 +486,11 @@ int drm_release(struct inode *inode, str
- 		  (long)old_encode_dev(file_priv->minor->device),
- 		  dev->open_count);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1326,8 +1326,7 @@ static int set_serial_info(struct tty_st
+ 		goto check_and_exit;
+ 	}
  
-+	/* Release any auth tokens that might point to this file_priv,
-+	   (do that under the drm_global_mutex) */
-+	if (file_priv->magic)
-+		(void) drm_remove_magic(file_priv->master, file_priv->magic);
-+
- 	/* if the master has gone away we can't do anything with the lock */
- 	if (file_priv->minor->master)
- 		drm_master_release(dev, filp);
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -1323,6 +1323,7 @@ extern int drm_getmagic(struct drm_devic
- 			struct drm_file *file_priv);
- extern int drm_authmagic(struct drm_device *dev, void *data,
- 			 struct drm_file *file_priv);
-+extern int drm_remove_magic(struct drm_master *master, drm_magic_t magic);
- 
- /* Cache management (drm_cache.c) */
- void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
+-	if ((new_serial.baud_base != priv->baud_base) &&
+-	    (new_serial.baud_base < 9600)) {
++	if (new_serial.baud_base != priv->baud_base) {
+ 		mutex_unlock(&priv->cfg_lock);
+ 		return -EINVAL;
+ 	}
 
 
