@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab2BAVIN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:08:13 -0500
+	id S1757075Ab2BAVIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:08:18 -0500
 Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55592 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755984Ab2BAVIL (ORCPT
+	by vger.kernel.org with ESMTP id S1757059Ab2BAVIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:11 -0500
-X-Sasl-enc: O9DOBJJXRQDGMxtR/AIRW9h3YFfFamc6NCAKGkssbzD6 1328130490
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:37 2012
-Message-Id: <20120201205737.822818760@clark.kroah.org>
+	Wed, 1 Feb 2012 16:08:14 -0500
+X-Sasl-enc: YriDqPNgAk7c7lUAILKl5zR+gQu+BJCp50Vmesm+JRd8 1328130493
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:38 2012
+Message-Id: <20120201205738.009469701@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:44 -0800
+Date: Wed, 01 Feb 2012 12:55:46 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>
-Subject: [04/65] eCryptfs: Make truncate path killable
+Subject: [06/65] eCryptfs: Fix oops when printing debug info in extent crypto functions
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,67 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 5e6f0d769017cc49207ef56996e42363ec26c1f0 upstream.
+commit 58ded24f0fcb85bddb665baba75892f6ad0f4b8a upstream.
 
-ecryptfs_write() handles the truncation of eCryptfs inodes. It grabs a
-page, zeroes out the appropriate portions, and then encrypts the page
-before writing it to the lower filesystem. It was unkillable and due to
-the lack of sparse file support could result in tying up a large portion
-of system resources, while encrypting pages of zeros, with no way for
-the truncate operation to be stopped from userspace.
+If pages passed to the eCryptfs extent-based crypto functions are not
+mapped and the module parameter ecryptfs_verbosity=1 was specified at
+loading time, a NULL pointer dereference will occur.
 
-This patch adds the ability for ecryptfs_write() to detect a pending
-fatal signal and return as gracefully as possible. The intent is to
-leave the lower file in a useable state, while still allowing a user to
-break out of the encryption loop. If a pending fatal signal is detected,
-the eCryptfs inode size is updated to reflect the modified inode size
-and then -EINTR is returned.
+Note that this wouldn't happen on a production system, as you wouldn't
+pass ecryptfs_verbosity=1 on a production system. It leaks private
+information to the system logs and is for debugging only.
+
+The debugging info printed in these messages is no longer very useful
+and rather than doing a kmap() in these debugging paths, it will be
+better to simply remove the debugging paths completely.
+
+https://launchpad.net/bugs/913651
 
 Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/read_write.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ fs/ecryptfs/crypto.c |   40 ----------------------------------------
+ 1 file changed, 40 deletions(-)
 
---- a/fs/ecryptfs/read_write.c
-+++ b/fs/ecryptfs/read_write.c
-@@ -132,6 +132,11 @@ int ecryptfs_write(struct inode *ecryptf
- 		size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
- 		size_t total_remaining_bytes = ((offset + size) - pos);
- 
-+		if (fatal_signal_pending(current)) {
-+			rc = -EINTR;
-+			break;
-+		}
-+
- 		if (num_bytes > total_remaining_bytes)
- 			num_bytes = total_remaining_bytes;
- 		if (pos < offset) {
-@@ -193,15 +198,19 @@ int ecryptfs_write(struct inode *ecryptf
- 		}
- 		pos += num_bytes;
+--- a/fs/ecryptfs/crypto.c
++++ b/fs/ecryptfs/crypto.c
+@@ -417,17 +417,6 @@ static int ecryptfs_encrypt_extent(struc
+ 			(unsigned long long)(extent_base + extent_offset), rc);
+ 		goto out;
  	}
--	if ((offset + size) > ecryptfs_file_size) {
--		i_size_write(ecryptfs_inode, (offset + size));
-+	if (pos > ecryptfs_file_size) {
-+		i_size_write(ecryptfs_inode, pos);
- 		if (crypt_stat->flags & ECRYPTFS_ENCRYPTED) {
--			rc = ecryptfs_write_inode_size_to_metadata(
-+			int rc2;
-+
-+			rc2 = ecryptfs_write_inode_size_to_metadata(
- 								ecryptfs_inode);
--			if (rc) {
-+			if (rc2) {
- 				printk(KERN_ERR	"Problem with "
- 				       "ecryptfs_write_inode_size_to_metadata; "
--				       "rc = [%d]\n", rc);
-+				       "rc = [%d]\n", rc2);
-+				if (!rc)
-+					rc = rc2;
- 				goto out;
- 			}
- 		}
+-	if (unlikely(ecryptfs_verbosity > 0)) {
+-		ecryptfs_printk(KERN_DEBUG, "Encrypting extent "
+-				"with iv:\n");
+-		ecryptfs_dump_hex(extent_iv, crypt_stat->iv_bytes);
+-		ecryptfs_printk(KERN_DEBUG, "First 8 bytes before "
+-				"encryption:\n");
+-		ecryptfs_dump_hex((char *)
+-				  (page_address(page)
+-				   + (extent_offset * crypt_stat->extent_size)),
+-				  8);
+-	}
+ 	rc = ecryptfs_encrypt_page_offset(crypt_stat, enc_extent_page, 0,
+ 					  page, (extent_offset
+ 						 * crypt_stat->extent_size),
+@@ -440,14 +429,6 @@ static int ecryptfs_encrypt_extent(struc
+ 		goto out;
+ 	}
+ 	rc = 0;
+-	if (unlikely(ecryptfs_verbosity > 0)) {
+-		ecryptfs_printk(KERN_DEBUG, "Encrypt extent [0x%.16llx]; "
+-			"rc = [%d]\n",
+-			(unsigned long long)(extent_base + extent_offset), rc);
+-		ecryptfs_printk(KERN_DEBUG, "First 8 bytes after "
+-				"encryption:\n");
+-		ecryptfs_dump_hex((char *)(page_address(enc_extent_page)), 8);
+-	}
+ out:
+ 	return rc;
+ }
+@@ -543,17 +524,6 @@ static int ecryptfs_decrypt_extent(struc
+ 			(unsigned long long)(extent_base + extent_offset), rc);
+ 		goto out;
+ 	}
+-	if (unlikely(ecryptfs_verbosity > 0)) {
+-		ecryptfs_printk(KERN_DEBUG, "Decrypting extent "
+-				"with iv:\n");
+-		ecryptfs_dump_hex(extent_iv, crypt_stat->iv_bytes);
+-		ecryptfs_printk(KERN_DEBUG, "First 8 bytes before "
+-				"decryption:\n");
+-		ecryptfs_dump_hex((char *)
+-				  (page_address(enc_extent_page)
+-				   + (extent_offset * crypt_stat->extent_size)),
+-				  8);
+-	}
+ 	rc = ecryptfs_decrypt_page_offset(crypt_stat, page,
+ 					  (extent_offset
+ 					   * crypt_stat->extent_size),
+@@ -567,16 +537,6 @@ static int ecryptfs_decrypt_extent(struc
+ 		goto out;
+ 	}
+ 	rc = 0;
+-	if (unlikely(ecryptfs_verbosity > 0)) {
+-		ecryptfs_printk(KERN_DEBUG, "Decrypt extent [0x%.16llx]; "
+-			"rc = [%d]\n",
+-			(unsigned long long)(extent_base + extent_offset), rc);
+-		ecryptfs_printk(KERN_DEBUG, "First 8 bytes after "
+-				"decryption:\n");
+-		ecryptfs_dump_hex((char *)(page_address(page)
+-					   + (extent_offset
+-					      * crypt_stat->extent_size)), 8);
+-	}
+ out:
+ 	return rc;
+ }
 
 
