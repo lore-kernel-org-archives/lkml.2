@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab2BADik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 22:38:40 -0500
+	id S1755961Ab2BADiu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 22:38:50 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:60762 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905Ab2BADih (ORCPT
+	with ESMTP id S1755905Ab2BADiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 22:38:37 -0500
+	Tue, 31 Jan 2012 22:38:46 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Li Zefan <lizf@cn.fujitsu.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
         Paul Menage <paul@paulmenage.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
@@ -23,9 +24,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Max Kellermann <mk@cm4all.com>,
         Mandeep Singh Baines <msb@chromium.org>
-Subject: [PATCH 08/10] cgroups: Add a task counter subsystem
-Date: Wed,  1 Feb 2012 04:37:48 +0100
-Message-Id: <1328067470-5980-9-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 10/10] selftests: Add a new task counter selftest
+Date: Wed,  1 Feb 2012 04:37:50 +0100
+Message-Id: <1328067470-5980-11-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
 References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
@@ -33,40 +34,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new subsystem to limit the number of running tasks,
-similar to the NR_PROC rlimit but in the scope of a cgroup.
+This is a batch of tests running against the cgroup task counter
+subsystem in order to validate the expected behaviour from this
+cgroup feature.
 
-The user can set an upper bound limit that is checked every
-time a task forks in a cgroup or is moved into a cgroup
-with that subsystem binded.
+This checks the reliability of the value found in the tasks.usage file
+after events like forks, exits or cgroup migration of whole processes
+or individual threads.
 
-The primary goal is to protect against forkbombs that explode
-inside a container. The traditional NR_PROC rlimit is not
-efficient in that case because if we run containers in parallel
-under the same user, one of these could starve all the others
-by spawning a high number of tasks close to the user wide limit.
+This also check that forks or cgroup migration are either accepted or
+rejected according to the value set in the tasks.limit file.
 
-This is a prevention against forkbombs, so it's not deemed to
-cure the effects of a forkbomb when the system is in a state
-where it's not responsive. It's aimed at preventing from ever
-reaching that state and stop the spreading of tasks early.
-While defining the limit on the allowed number of tasks, it's
-up to the user to find the right balance between the resource
-its containers may need and what it can afford to provide.
-
-As it's totally dissociated from the rlimit NR_PROC, both
-can be complementary: the cgroup task counter can set an upper
-bound per container and the rlmit can be an upper bound on the
-overall set of containers.
-
-Also this subsystem can be used to kill all the tasks in a cgroup
-without races against concurrent forks, by setting the limit of
-tasks to 0, any further forks can be rejected. This is a good
-way to kill a forkbomb in a container, or simply kill any container
-without the need to retry an unbound number of times.
+A forkbomb is also launched to test if the subsystem stops well its
+propagation and kills it properly as expected.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Kirill A. Shutemov <kirill@shutemov.name>
 Cc: Paul Menage <paul@paulmenage.org>
 Cc: Li Zefan <lizf@cn.fujitsu.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
@@ -84,497 +67,517 @@ Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: Max Kellermann <mk@cm4all.com>
 Cc: Mandeep Singh Baines <msb@chromium.org>
 ---
- Documentation/cgroups/task_counter.txt |  153 ++++++++++++++++++
- include/linux/cgroup_subsys.h          |    5 +
- init/Kconfig                           |    9 +
- kernel/Makefile                        |    1 +
- kernel/cgroup_task_counter.c           |  272 ++++++++++++++++++++++++++++++++
- 5 files changed, 440 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/cgroups/task_counter.txt
- create mode 100644 kernel/cgroup_task_counter.c
+ tools/testing/selftests/Makefile                   |    2 +-
+ tools/testing/selftests/run_tests                  |    2 +-
+ tools/testing/selftests/task_counter/Makefile      |    8 +
+ tools/testing/selftests/task_counter/fork.c        |   40 ++++
+ tools/testing/selftests/task_counter/forkbomb.c    |   40 ++++
+ tools/testing/selftests/task_counter/multithread.c |   68 +++++++
+ tools/testing/selftests/task_counter/run_test      |  198 ++++++++++++++++++++
+ .../selftests/task_counter/spread_thread_group.c   |   82 ++++++++
+ 8 files changed, 438 insertions(+), 2 deletions(-)
+ create mode 100644 tools/testing/selftests/task_counter/Makefile
+ create mode 100644 tools/testing/selftests/task_counter/fork.c
+ create mode 100644 tools/testing/selftests/task_counter/forkbomb.c
+ create mode 100644 tools/testing/selftests/task_counter/multithread.c
+ create mode 100755 tools/testing/selftests/task_counter/run_test
+ create mode 100644 tools/testing/selftests/task_counter/spread_thread_group.c
 
-diff --git a/Documentation/cgroups/task_counter.txt b/Documentation/cgroups/task_counter.txt
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 4ec8401..c697742 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -1,4 +1,4 @@
+-TARGETS = breakpoints
++TARGETS = breakpoints task_counter
+ 
+ all:
+ 	for TARGET in $(TARGETS); do \
+diff --git a/tools/testing/selftests/run_tests b/tools/testing/selftests/run_tests
+index 19043d3..11d76f7 100644
+--- a/tools/testing/selftests/run_tests
++++ b/tools/testing/selftests/run_tests
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ 
+-TARGETS=breakpoints
++TARGETS="breakpoints task_counter"
+ 
+ for TARGET in $TARGETS
+ do
+diff --git a/tools/testing/selftests/task_counter/Makefile b/tools/testing/selftests/task_counter/Makefile
 new file mode 100644
-index 0000000..1562d88
+index 0000000..e314ce4
 --- /dev/null
-+++ b/Documentation/cgroups/task_counter.txt
-@@ -0,0 +1,153 @@
-+Task counter subsystem
++++ b/tools/testing/selftests/task_counter/Makefile
+@@ -0,0 +1,8 @@
++all:
++	gcc fork.c -o fork
++	gcc forkbomb.c -o forkbomb
++	gcc multithread.c -o multithread -lpthread
++	gcc spread_thread_group.c -o spread_thread_group -lpthread
 +
-+1. Description
++clean:
++	rm -f fork forkbomb multithread spread_thread_group *~
+diff --git a/tools/testing/selftests/task_counter/fork.c b/tools/testing/selftests/task_counter/fork.c
+new file mode 100644
+index 0000000..20b48a9
+--- /dev/null
++++ b/tools/testing/selftests/task_counter/fork.c
+@@ -0,0 +1,40 @@
++/*
++ * Copyright (C) 2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
++ *
++ * Licensed under the terms of the GNU GPL License version 2
++ *
++ * Move a task to a cgroup and try to fork on it.
++ */
 +
-+The task counter subsystem limits the number of tasks running
-+inside a given cgroup. It behaves like the NR_PROC rlimit but in
-+the scope of a cgroup instead of a user.
++#include <stdio.h>
++#include <sys/types.h>
++#include <unistd.h>
++#include <string.h>
 +
-+It has two typical usecases, although more can probably be found:
++int main(int argc, char **argv)
++{
++	FILE *fp;
++	int pid;
++	char cpid[50];
 +
-+1.1 Protection against forkbomb in a container
++	if (argc < 2)
++		return -1;
 +
-+One usecase is to protect against forkbombs that explode inside
-+a container when that container is implemented using a cgroup. The
-+NR_PROC rlimit is known to be a working protection against this type
-+of attack but is not suitable anymore when we run containers in
-+parallel under the same user. One container could starve all the
-+others by spawning a high number of tasks close to the rlimit
-+boundary. So in this case we need this limitation to be done in a
-+per cgroup granularity.
++	pid = getpid();
++	fp = fopen(argv[1], "w");
++	if (!fp)
++		return -2;
 +
-+Note this works by preventing forkbombs propagation. It doesn't cure
-+the forkbomb effects when it has already grown up enough to make
-+the system hardly responsive. While defining the limit on the number
-+of tasks, it's up to the admin to find the right balance between the
-+possible needs of a container and the resources the system can afford
-+to provide.
++	sprintf(cpid, "%d\n", pid);
 +
-+Also the NR_PROC rlimit and this cgroup subsystem are totally
-+dissociated. But they can be complementary. The task counter limits
-+the containers and the rlimit can provide an upper bound on the whole
-+set of containers.
++	if (fwrite(cpid, strlen(cpid), 1, fp) != 1) {
++		perror("can't write pid\n");
++		return -3;
++	}
++	fclose(fp);
 +
++	if (fork() == -1)
++		return 0;
 +
-+1.2 Kill tasks inside a cgroup
++	return -4;
++}
+diff --git a/tools/testing/selftests/task_counter/forkbomb.c b/tools/testing/selftests/task_counter/forkbomb.c
+new file mode 100644
+index 0000000..221fefb
+--- /dev/null
++++ b/tools/testing/selftests/task_counter/forkbomb.c
+@@ -0,0 +1,40 @@
++/*
++ * Copyright (C) 2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
++ *
++ * Licensed under the terms of the GNU GPL License version 2
++ *
++ * Move a task to a cgroup and forkbomb there.
++ */
 +
-+An other usecase comes along the forkbomb prevention: it brings
-+the ability to kill all tasks inside a cgroup without races. By
-+setting the limit of running tasks to 0, one can prevent from any
-+further fork inside a cgroup and then kill all of its tasks without
-+the need to retry an unbound amount of time due to races between
-+kills and forks running in parallel (more details in "Kill a cgroup
-+safely" paragraph).
++#include <stdio.h>
++#include <sys/types.h>
++#include <unistd.h>
++#include <string.h>
 +
-+This is useful to kill a forkbomb for example. When its gazillion
-+of forks are competing with the kills, one need to ensure this
-+operation won't run in a nearly endless loop of retry.
++int main(int argc, char **argv)
++{
++	FILE *fp;
++	int pid;
++	char cpid[50];
 +
-+And more generally it is useful to kill a cgroup in a bound amount
-+of pass.
++	if (argc < 2)
++		return -1;
 +
++	pid = getpid();
++	fp = fopen(argv[1], "w");
++	if (!fp)
++		return -2;
 +
-+2. Interface
++	sprintf(cpid, "%d\n", pid);
 +
-+When a hierarchy is mounted with the task counter subsystem binded, it
-+adds two files into the cgroups directories, except the root one:
++	if (fwrite(cpid, strlen(cpid), 1, fp) != 1) {
++		perror("can't write pid\n");
++		return -3;
++	}
++	fclose(fp);
 +
-+- tasks.usage contains the number of tasks running inside a cgroup and
-+its children in the hierarchy (see paragraph about Inheritance).
++	for (;;)
++		fork();
 +
-+- tasks.limit contains the maximum number of tasks that can run inside
-+a cgroup. We check this limit when a task forks or when it is migrated
-+to a cgroup.
-+
-+Note that the tasks.limit value can be forced below tasks.usage, in which
-+case any new task in the cgroup will be rejected until the tasks.usage
-+value goes below tasks.limit.
-+
-+For optimization reasons, the root directory of a hierarchy doesn't have
-+a task counter.
-+
-+
-+3. Inheritance
-+
-+When a task is added to a cgroup, by way of a cgroup migration or a fork,
-+it increases the task counter of that cgroup and of all its ancestors.
-+Hence a cgroup is also subject to the limit of its ancestors.
-+
-+In the following hierarchy:
-+
-+
-+             A
-+             |
-+             B
-+           /   \
-+          C     D
-+
-+
-+We have 1 task running in B, one running in C and none running in D.
-+It means we have tasks.usage = 1 in C and tasks.usage = 2 in B because
-+B counts its task and those of its children.
-+
-+Now lets set tasks.limit = 2 in B and tasks.limit = 1 in D.
-+If we move a new task in D, it will be refused because the limit in B has
-+been reached already.
++	return 0;
++}
+diff --git a/tools/testing/selftests/task_counter/multithread.c b/tools/testing/selftests/task_counter/multithread.c
+new file mode 100644
+index 0000000..e566a02
+--- /dev/null
++++ b/tools/testing/selftests/task_counter/multithread.c
+@@ -0,0 +1,68 @@
++/*
++ * Copyright (C) 2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
++ *
++ * Licensed under the terms of the GNU GPL License version 2
++ *
++ * Try to move a multithread proc to a cgroup.
++ */
 +
 +
-+4. Kill a cgroup safely
++#include <stdio.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <string.h>
++#include <pthread.h>
 +
-+As explained in the description, this subsystem is also helpful to
-+kill all tasks in a cgroup safely, after setting tasks.limit to 0,
-+so that we don't race against parallel forks in an unbound numbers
-+of kill iterations.
++volatile static int thread_end;
++pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
++pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 +
-+But there is a small detail to be aware of to use this feature that
-+way.
 +
-+Some typical way to proceed would be:
++static void *thread_start(void *unused)
++{
++	pthread_mutex_lock(&mutex);
 +
-+	echo 0 > tasks.limit
-+	for TASK in $(cat cgroup.procs)
++	while (!thread_end)
++		pthread_cond_wait(&cond, &mutex);
++
++	pthread_mutex_unlock(&mutex);
++
++	return NULL;
++}
++
++int main(int argc, char **argv)
++{
++	int fd;
++	int pid;
++	char cpid[50];
++	pthread_t thread;
++
++	if (argc < 2)
++		return -1;
++
++	if (pthread_create(&thread, NULL, thread_start, NULL) != 0)
++		return -2;
++
++	pid = getpid();
++	fd = open(argv[1], O_WRONLY);
++	if (fd < 0)
++		return -3;
++
++	sprintf(cpid, "%d\n", pid);
++
++	if (write(fd, cpid, strlen(cpid)) < 0)
++		return -4;
++
++	close(fd);
++
++	pthread_mutex_lock(&mutex);
++	thread_end = 1;
++	pthread_cond_signal(&cond);
++	pthread_mutex_unlock(&mutex);
++
++	pthread_join(thread, NULL);
++
++	return 0;
++}
+diff --git a/tools/testing/selftests/task_counter/run_test b/tools/testing/selftests/task_counter/run_test
+new file mode 100755
+index 0000000..ee063aa
+--- /dev/null
++++ b/tools/testing/selftests/task_counter/run_test
+@@ -0,0 +1,198 @@
++#!/bin/bash
++# Copyright (C) 2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
++#
++# Licensed under the terms of the GNU GPL License version 2
++#
++# Validation tests for the cgroup task counter subsystem
++
++BASE=/dev/cgroup
++
++if [ $UID != 0 ]
++then
++	echo "Must be root to run task counter selftest"
++	exit 0
++fi
++
++if [ -e $BASE ]
++then
++	echo "Directory $BASE already exist"
++	echo "Can't run task counter selftest"
++	exit 0
++fi
++
++mkdir $BASE
++mount -t cgroup -o tasks cgroup $BASE
++if [ $? != 0 ]
++then
++    echo "Unable to mount cgroup filesystem"
++    echo "Can't run task counter selftest."
++    rmdir $BASE
++    exit 0
++fi
++
++sleep 1d &
++PID1=$!
++
++sleep 1d &
++PID2=$!
++
++echo 1 > $BASE/cgroup.clone_children
++mkdir $BASE/cgroup0
++
++function test_result
++{
++    # Result of the test
++    res=$1
++    # Expected result
++    expected=$2
++    # Invert test against expected result
++    # 0 = equal
++    # 1 = non equal
++    inv=$3
++    # String message
++    test_str=$4
++    passed=0
++
++    echo -n $test_str
++
++    if [ $res = $expected ]
++    then
++	passed=1
++    fi
++
++    passed=$[$passed ^ $inv]
++
++    if [ $passed = 1 ]
++    then
++	echo " [OK]"
++    else
++	echo " [FAILED]"
++    fi
++
++}
++
++# simple test limit
++echo 1 > $BASE/cgroup0/tasks.limit
++echo $PID1 >  $BASE/cgroup0/cgroup.procs
++test_result $? 0 0 "Allow 1 task on limit 1"
++
++echo $PID2 >  $BASE/cgroup0/cgroup.procs
++test_result $? 0 1 "Don't allow 2 tasks on limit 1"
++
++# simple test usage
++USAGE=$(cat $BASE/cgroup0/tasks.usage)
++test_result $USAGE 1 0 "Correct usage "
++
++# simple test exit
++kill $PID1
++USAGE=$(cat $BASE/cgroup0/tasks.usage)
++test_result $USAGE 0 0 "Correct usage after exit "
++
++
++sleep 1d &
++PID1=$!
++
++echo 1 > $BASE/cgroup0/tasks.limit
++echo $PID1 >  $BASE/cgroup0/cgroup.procs
++test_result $? 0 0 "Correct reuse after exit "
++
++# simple move to root
++
++echo $PID1 > $BASE/cgroup.procs
++test_result $? 0 0 "Correct move to root "
++
++# propagation tests
++
++mkdir $BASE/cgroup0/cgroup1
++mkdir $BASE/cgroup0/cgroup2
++
++echo 1 > $BASE/cgroup0/cgroup1/tasks.limit
++echo $PID1 > $BASE/cgroup0/cgroup1/cgroup.procs
++USAGE=$(cat $BASE/cgroup0/tasks.usage)
++test_result $USAGE 1 0 "Correct propagated usage "
++
++echo $PID1 > $BASE/cgroup0/cgroup.procs
++test_result $? 0 0 "Correct move on parent "
++
++
++# move
++
++echo $PID1 > $BASE/cgroup0/cgroup1/cgroup.procs
++test_result $? 0 0 "Correct move on child "
++
++echo $PID1 > $BASE/cgroup0/cgroup2/cgroup.procs
++test_result $? 0 0 "Correct move on sibling "
++
++echo $PID2 > $BASE/cgroup0/cgroup1/cgroup.procs
++test_result $? 0 1 "Correct propagation limit "
++
++kill $PID1
++kill $PID2
++
++# test limit on thread group
++echo 1024 > $BASE/cgroup0/tasks.limit
++echo 0 > $BASE/cgroup0/cgroup1/tasks.limit
++
++./multithread $BASE/cgroup0/cgroup1/cgroup.procs
++test_result $? 0 1 "Correct limit on multithreaded"
++
++# test move of a thread group
++echo 2 > $BASE/cgroup0/cgroup1/tasks.limit
++
++./multithread $BASE/cgroup0/cgroup1/cgroup.procs
++test_result $? 0 0 "Correct move of multithreaded"
++
++rmdir $BASE/cgroup0/cgroup1
++rmdir $BASE/cgroup0/cgroup2
++
++# test bug on common ancestor logic
++# as described in https://lkml.org/lkml/2011/11/8/218
++
++./spread_thread_group $BASE/cgroup0/cgroup.procs $BASE/tasks
++test_result $? 0 0 "Test bug on common ancestor logic"
++
++# test fork
++
++echo 1 > $BASE/cgroup0/tasks.limit
++./fork $BASE/cgroup0/cgroup.procs
++test_result $? 0 0 "Correct fork limit "
++
++# test forkbomb
++
++echo 128 > $BASE/cgroup0/tasks.limit
++echo -n "Trying to stop forkbomb propagation..."
++./forkbomb $BASE/cgroup0/cgroup.procs &
++sleep 1
++RES=$(cat $BASE/cgroup0/tasks.usage)
++test_result $RES 128 0 ""
++
++# kill forkbomb
++
++echo -n "Trying to kill forkbomb "
++echo 0 > $BASE/cgroup0/tasks.limit
++END=false
++
++while [ $END = false ]
++do
++	NR_TASKS=$(cat $BASE/cgroup0/tasks.usage)
++	NR_KILLED=0
++
++	for TASK in $(cat $BASE/cgroup0/cgroup.procs)
 +	do
++		NR_KILLED=$(($NR_KILLED+1))
 +		kill -KILL $TASK
 +	done
 +
-+However there is a small race window where a task can be in the way to
-+be forked but hasn't enough completed the fork to have the PID of the
-+fork appearing in the cgroup.procs file.
++	if [ "$NR_TASKS" = "$NR_KILLED" ]
++	then
++		END=true
++	fi
++done
 +
-+The only way to get it right is to run a loop that reads tasks.usage, kill
-+all the tasks in cgroup.procs and exit the loop only if the value in
-+tasks.usage was the same than the number of tasks that were in cgroup.procs,
-+ie: the number of tasks that were killed.
++echo "[OK]"
 +
-+It works because the new child appears in tasks.usage right before we check,
-+in the fork path, whether the parent has a pending signal, in which case the
-+fork is cancelled anyway. So relying on tasks.usage is fine and non-racy.
-+
-+This race window is tiny and unlikely to happen, so most of the time a single
-+kill iteration should be enough. But it's worth knowing about that corner
-+case spotted by Oleg Nesterov.
-+
-+Example of safe use would be:
-+
-+	echo 0 > tasks.limit
-+	END=false
-+
-+	while [ $END == false ]
-+	do
-+		NR_TASKS=$(cat tasks.usage)
-+		NR_KILLED=0
-+
-+		for TASK in $(cat cgroup.procs)
-+		do
-+			let NR_KILLED=NR_KILLED+1
-+			kill -KILL $TASK
-+		done
-+
-+		if [ "$NR_TASKS" = "$NR_KILLED" ]
-+		then
-+			END=true
-+		fi
-+	done
-diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-index 0bd390c..a95eb27 100644
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -72,3 +72,8 @@ SUBSYS(net_prio)
- #endif
- 
- /* */
-+#ifdef CONFIG_CGROUP_TASK_COUNTER
-+SUBSYS(tasks)
-+#endif
-+
-+/* */
-diff --git a/init/Kconfig b/init/Kconfig
-index 3f42cd6..488916e 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -715,6 +715,15 @@ config CGROUP_MEM_RES_CTLR_KMEM
- 	  the kmem extension can use it to guarantee that no group of processes
- 	  will ever exhaust kernel resources alone.
- 
-+config CGROUP_TASK_COUNTER
-+	bool "Control number of tasks in a cgroup"
-+	depends on RESOURCE_COUNTERS
-+	help
-+	  Let the user set up an upper boundary of the allowed number of tasks
-+	  running in a cgroup. When a task forks or is migrated to a cgroup that
-+	  has this subsystem binded, the limit is checked to either accept or
-+	  reject the fork/migration.
-+
- config CGROUP_PERF
- 	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
- 	depends on PERF_EVENTS && CGROUPS
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 2d9de86..7bc4ce7 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -59,6 +59,7 @@ obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
- obj-$(CONFIG_COMPAT) += compat.o
- obj-$(CONFIG_CGROUPS) += cgroup.o
- obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
-+obj-$(CONFIG_CGROUP_TASK_COUNTER) += cgroup_task_counter.o
- obj-$(CONFIG_CPUSETS) += cpuset.o
- obj-$(CONFIG_UTS_NS) += utsname.o
- obj-$(CONFIG_USER_NS) += user_namespace.o
-diff --git a/kernel/cgroup_task_counter.c b/kernel/cgroup_task_counter.c
++# Wait a bit for killed tasks to exit the cgroup 
++sleep 1
++rmdir $BASE/cgroup0
++umount $BASE
++rmdir $BASE
+\ No newline at end of file
+diff --git a/tools/testing/selftests/task_counter/spread_thread_group.c b/tools/testing/selftests/task_counter/spread_thread_group.c
 new file mode 100644
-index 0000000..a4d87ac
+index 0000000..e088deb
 --- /dev/null
-+++ b/kernel/cgroup_task_counter.c
-@@ -0,0 +1,272 @@
++++ b/tools/testing/selftests/task_counter/spread_thread_group.c
+@@ -0,0 +1,82 @@
 +/*
-+ * Limits on number of tasks subsystem for cgroups
++ * Copyright (C) 2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
 + *
-+ * Copyright (C) 2011-2012 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
++ * Licensed under the terms of the GNU GPL License version 2
 + *
-+ * Thanks to Andrew Morton, Johannes Weiner, Li Zefan, Oleg Nesterov and
-+ * Paul Menage for their suggestions.
-+ *
++ * Try to reproduce bug on common ancestor logic as described
++ * at https://lkml.org/lkml/2011/11/8/218
 + */
 +
-+#include <linux/err.h>
-+#include <linux/cgroup.h>
-+#include <linux/slab.h>
-+#include <linux/res_counter.h>
++#include <stdio.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <string.h>
++#include <pthread.h>
++
++volatile static int thread_end;
++pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
++pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 +
 +
-+struct task_counter {
-+	struct res_counter		res;
-+	struct cgroup_subsys_state	css;
-+};
-+
-+/*
-+ * The root task counter doesn't exist because it's not part of the
-+ * whole task counting. We want to optimize the trivial case of only
-+ * one root cgroup living.
-+ */
-+static struct cgroup_subsys_state root_css;
-+
-+
-+static inline struct task_counter *cgroup_task_counter(struct cgroup *cgrp)
++static void *thread_start(void *unused)
 +{
-+	if (!cgrp->parent)
-+		return NULL;
++	pthread_mutex_lock(&mutex);
 +
-+	return container_of(cgroup_subsys_state(cgrp, tasks_subsys_id),
-+			    struct task_counter, css);
++	while (!thread_end)
++		pthread_cond_wait(&cond, &mutex);
++
++	pthread_mutex_unlock(&mutex);
++
++	return NULL;
 +}
 +
-+static inline struct res_counter *cgroup_task_res_counter(struct cgroup *cgrp)
++int main(int argc, char **argv)
 +{
-+	struct task_counter *cnt;
++	int fd_root, fd;
++	int pid;
++	char cpid[50];
++	pthread_t thread;
 +
-+	cnt = cgroup_task_counter(cgrp);
-+	if (!cnt)
-+		return NULL;
++	if (argc < 3)
++		return -1;
 +
-+	return &cnt->res;
-+}
++	if (pthread_create(&thread, NULL, thread_start, NULL) != 0)
++		return -2;
 +
-+static struct cgroup_subsys_state *
-+task_counter_create(struct cgroup_subsys *ss, struct cgroup *cgrp)
-+{
-+	struct task_counter *cnt;
-+	struct res_counter *parent_res;
++	pid = getpid();
++	fd = open(argv[1], O_WRONLY);
++	if (fd < 0)
++		return -3;
 +
-+	if (!cgrp->parent)
-+		return &root_css;
++	sprintf(cpid, "%d\n", pid);
 +
-+	cnt = kzalloc(sizeof(*cnt), GFP_KERNEL);
-+	if (!cnt)
-+		return ERR_PTR(-ENOMEM);
++	/* Move group to /dev/cgroup/cgroup0 */
++	if (write(fd, cpid, strlen(cpid)) < 0)
++		return -4;
 +
-+	parent_res = cgroup_task_res_counter(cgrp->parent);
++	fd_root = open(argv[2], O_WRONLY);
++	if (fd < 0)
++		return -5;
 +
-+	res_counter_init(&cnt->res, parent_res);
++	/* Move group leader to /dev/cgroup/ root */
++	if (write(fd_root, cpid, strlen(cpid)) < 0)
++		return -6;
 +
-+	return &cnt->css;
-+}
++	/* Move back group to /dev/cgroup/cgroup0 */
++	if (write(fd, cpid, strlen(cpid)) < 0)
++		return -7;
 +
-+/*
-+ * Inherit the limit value of the parent. This is not really to enforce
-+ * a limit below or equal to the one of the parent which can be changed
-+ * concurrently anyway. This is just to honour the clone flag.
-+ */
-+static void task_counter_post_clone(struct cgroup_subsys *ss,
-+				    struct cgroup *cgrp)
-+{
-+	/* cgrp can't be root, so cgroup_task_res_counter() can't return NULL */
-+	res_counter_inherit(cgroup_task_res_counter(cgrp), RES_LIMIT);
-+}
++	close(fd_root);
++	close(fd);
 +
-+static void task_counter_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
-+{
-+	struct task_counter *cnt = cgroup_task_counter(cgrp);
++	pthread_mutex_lock(&mutex);
++	thread_end = 1;
++	pthread_cond_signal(&cond);
++	pthread_mutex_unlock(&mutex);
 +
-+	kfree(cnt);
-+}
-+
-+/* Uncharge the cgroup the task was attached to */
-+static void task_counter_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
-+			      struct cgroup *old_cgrp, struct task_struct *task)
-+{
-+	/* Optimize for the root cgroup case */
-+	if (old_cgrp->parent)
-+		res_counter_uncharge(cgroup_task_res_counter(old_cgrp), 1);
-+}
-+
-+static void task_counter_cancel_attach_until(struct res_counter *res,
-+					     struct cgroup_taskset *tset,
-+					     struct task_struct *until)
-+{
-+	struct task_struct *tsk;
-+	struct res_counter *old_res;
-+	struct cgroup *old_cgrp;
-+	struct res_counter *common_ancestor;
-+
-+	cgroup_taskset_for_each(tsk, NULL, tset) {
-+		if (tsk == until)
-+			break;
-+		old_cgrp = cgroup_taskset_cur_cgroup(tset);
-+		old_res = cgroup_task_res_counter(old_cgrp);
-+		common_ancestor = res_counter_common_ancestor(res, old_res);
-+		res_counter_uncharge_until(res, common_ancestor, 1);
-+	}
-+}
-+
-+/*
-+ * This does more than just probing the ability to attach to the dest cgroup.
-+ * We can not just _check_ if we can attach to the destination and do the real
-+ * attachment later in task_counter_attach() because a task in the dest
-+ * cgroup can fork before and steal the last remaining count.
-+ * Thus we need to charge the dest cgroup right now.
-+ */
-+static int task_counter_can_attach(struct cgroup_subsys *ss,
-+				   struct cgroup *cgrp,
-+				   struct cgroup_taskset *tset)
-+{
-+	struct res_counter *res = cgroup_task_res_counter(cgrp);
-+	struct res_counter *old_res;
-+	struct cgroup *old_cgrp;
-+	struct res_counter *common_ancestor;
-+	struct task_struct *tsk;
-+	int err = 0;
-+
-+	cgroup_taskset_for_each(tsk, NULL, tset) {
-+		old_cgrp = cgroup_taskset_cur_cgroup(tset);
-+		old_res = cgroup_task_res_counter(old_cgrp);
-+		/*
-+		 * When moving a task from a cgroup to another, we don't want
-+		 * to charge the common ancestors, even though they will be
-+		 * uncharged later from attach_task(), because during that
-+		 * short window between charge and uncharge, a task could fork
-+		 * in the ancestor and spuriously fail due to the temporary
-+		 * charge.
-+		 */
-+		common_ancestor = res_counter_common_ancestor(res, old_res);
-+
-+		/*
-+		 * If cgrp is the root then res is NULL, however in this case
-+		 * the common ancestor is NULL as well, making the below a NOP.
-+		 */
-+		err = res_counter_charge_until(res, common_ancestor, 1, NULL);
-+		if (err) {
-+			task_counter_cancel_attach_until(res, tset, tsk);
-+			return -EINVAL;
-+		}
-+	}
++	pthread_join(thread, NULL);
 +
 +	return 0;
 +}
-+
-+/* Uncharge the dest cgroup that we charged in task_counter_can_attach() */
-+static void task_counter_cancel_attach(struct cgroup_subsys *ss,
-+				       struct cgroup *cgrp,
-+				       struct cgroup_taskset *tset)
-+{
-+	task_counter_cancel_attach_until(cgroup_task_res_counter(cgrp),
-+					 tset, NULL);
-+}
-+
-+/*
-+ * This uncharge the old cgroups. We can do that now that we are sure the
-+ * attachment can't cancelled anymore, because this uncharge operation
-+ * couldn't be reverted later: a task in the old cgroup could fork after
-+ * we uncharge and reach the task counter limit, making our return there
-+ * not possible.
-+ */
-+static void task_counter_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-+				struct cgroup_taskset *tset)
-+{
-+	struct res_counter *res = cgroup_task_res_counter(cgrp);
-+	struct task_struct *tsk;
-+	struct res_counter *old_res;
-+	struct cgroup *old_cgrp;
-+	struct res_counter *common_ancestor;
-+
-+	cgroup_taskset_for_each(tsk, NULL, tset) {
-+		old_cgrp = cgroup_taskset_cur_cgroup(tset);
-+		old_res = cgroup_task_res_counter(old_cgrp);
-+		common_ancestor = res_counter_common_ancestor(res, old_res);
-+		res_counter_uncharge_until(old_res, common_ancestor, 1);
-+	}
-+}
-+
-+static u64 task_counter_read_u64(struct cgroup *cgrp, struct cftype *cft)
-+{
-+	int type = cft->private;
-+
-+	return res_counter_read_u64(cgroup_task_res_counter(cgrp), type);
-+}
-+
-+static int task_counter_write_u64(struct cgroup *cgrp, struct cftype *cft,
-+				  u64 val)
-+{
-+	int type = cft->private;
-+
-+	res_counter_write_u64(cgroup_task_res_counter(cgrp), type, val);
-+
-+	return 0;
-+}
-+
-+static struct cftype files[] = {
-+	{
-+		.name		= "limit",
-+		.read_u64	= task_counter_read_u64,
-+		.write_u64	= task_counter_write_u64,
-+		.private	= RES_LIMIT,
-+	},
-+
-+	{
-+		.name		= "usage",
-+		.read_u64	= task_counter_read_u64,
-+		.private	= RES_USAGE,
-+	},
-+};
-+
-+static int task_counter_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
-+{
-+	if (!cgrp->parent)
-+		return 0;
-+
-+	return cgroup_add_files(cgrp, ss, files, ARRAY_SIZE(files));
-+}
-+
-+/*
-+ * Charge the task counter with the new child coming, or reject it if we
-+ * reached the limit.
-+ */
-+static int task_counter_fork(struct cgroup_subsys *ss,
-+			     struct task_struct *child)
-+{
-+	struct cgroup_subsys_state *css;
-+	struct cgroup *cgrp;
-+	int err;
-+
-+	css = child->cgroups->subsys[tasks_subsys_id];
-+	cgrp = css->cgroup;
-+
-+	/* Optimize for the root cgroup case, which doesn't have a limit */
-+	if (!cgrp->parent)
-+		return 0;
-+
-+	err = res_counter_charge(cgroup_task_res_counter(cgrp), 1, NULL);
-+	if (err)
-+		return -EAGAIN;
-+
-+	return 0;
-+}
-+
-+struct cgroup_subsys tasks_subsys = {
-+	.name			= "tasks",
-+	.subsys_id		= tasks_subsys_id,
-+	.create			= task_counter_create,
-+	.post_clone		= task_counter_post_clone,
-+	.destroy		= task_counter_destroy,
-+	.exit			= task_counter_exit,
-+	.can_attach		= task_counter_can_attach,
-+	.cancel_attach		= task_counter_cancel_attach,
-+	.attach			= task_counter_attach,
-+	.fork			= task_counter_fork,
-+	.populate		= task_counter_populate,
-+};
 -- 
 1.7.5.4
 
