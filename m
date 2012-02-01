@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932550Ab2BAVhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:37:37 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34737 "EHLO
+	id S1757267Ab2BAVJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:09:51 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41521 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757270Ab2BAVJw (ORCPT
+	by vger.kernel.org with ESMTP id S1757200Ab2BAVJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:52 -0500
-X-Sasl-enc: 8Fb987ocaru5wD6I/V51TrWUD5B7sPLa6y5uXeqOCtgl 1328130591
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:44 2012
-Message-Id: <20120201210044.148740440@clark.kroah.org>
+	Wed, 1 Feb 2012 16:09:46 -0500
+X-Sasl-enc: 2OAFtvCu7JH3ngGz33lJi6m90flIXfARf9J9JpF22ctJ 1328130585
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:46 2012
+Message-Id: <20120201210046.121039322@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:59:27 -0800
+Date: Wed, 01 Feb 2012 12:59:49 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [03/89] eCryptfs: Sanitize write counts of /dev/ecryptfs
+        alan@lxorguk.ukuu.org.uk, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, <stable@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [25/89] x86/microcode_amd: Add support for CPU family specific container files
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,101 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit db10e556518eb9d21ee92ff944530d84349684f4 upstream.
+commit 5b68edc91cdc972c46f76f85eded7ffddc3ff5c2 upstream.
 
-A malicious count value specified when writing to /dev/ecryptfs may
-result in a a very large kernel memory allocation.
+We've decided to provide CPU family specific container files
+(starting with CPU family 15h). E.g. for family 15h we have to
+load microcode_amd_fam15h.bin instead of microcode_amd.bin
 
-This patch peeks at the specified packet payload size, adds that to the
-size of the packet headers and compares the result with the write count
-value. The resulting maximum memory allocation size is approximately 532
-bytes.
+Rationale is that starting with family 15h patch size is larger
+than 2KB which was hard coded as maximum patch size in various
+microcode loaders (not just Linux).
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Container files which include patches larger than 2KB cause
+different kinds of trouble with such old patch loaders. Thus we
+have to ensure that the default container file provides only
+patches with size less than 2KB.
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/20120120164412.GD24508@alberich.amd.com
+[ documented the naming convention and tidied the code a bit. ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/miscdev.c |   56 +++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 38 insertions(+), 18 deletions(-)
+ arch/x86/kernel/microcode_amd.c |   24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
---- a/fs/ecryptfs/miscdev.c
-+++ b/fs/ecryptfs/miscdev.c
-@@ -409,11 +409,47 @@ ecryptfs_miscdev_write(struct file *file
- 	ssize_t sz = 0;
- 	char *data;
- 	uid_t euid = current_euid();
-+	unsigned char packet_size_peek[3];
- 	int rc;
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -300,13 +300,33 @@ free_table:
+ 	return state;
+ }
  
--	if (count == 0)
-+	if (count == 0) {
++/*
++ * AMD microcode firmware naming convention, up to family 15h they are in
++ * the legacy file:
++ *
++ *    amd-ucode/microcode_amd.bin
++ *
++ * This legacy file is always smaller than 2K in size.
++ *
++ * Starting at family 15h they are in family specific firmware files:
++ *
++ *    amd-ucode/microcode_amd_fam15h.bin
++ *    amd-ucode/microcode_amd_fam16h.bin
++ *    ...
++ *
++ * These might be larger than 2K.
++ */
+ static enum ucode_state request_microcode_amd(int cpu, struct device *device)
+ {
+-	const char *fw_name = "amd-ucode/microcode_amd.bin";
++	char fw_name[36] = "amd-ucode/microcode_amd.bin";
+ 	const struct firmware *fw;
+ 	enum ucode_state ret = UCODE_NFOUND;
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
+ 
+-	if (request_firmware(&fw, fw_name, device)) {
++	if (c->x86 >= 0x15)
++		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
++
++	if (request_firmware(&fw, (const char *)fw_name, device)) {
+ 		pr_err("failed to load file %s\n", fw_name);
  		goto out;
-+	} else if (count == (1 + 4)) {
-+		/* Likely a harmless MSG_HELO or MSG_QUIT - no packet length */
-+		goto memdup;
-+	} else if (count < (1 + 4 + 1)
-+		   || count > (1 + 4 + 2 + sizeof(struct ecryptfs_message) + 4
-+			       + ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES)) {
-+		printk(KERN_WARNING "%s: Acceptable packet size range is "
-+		       "[%d-%lu], but amount of data written is [%zu].",
-+		       __func__, (1 + 4 + 1),
-+		       (1 + 4 + 2 + sizeof(struct ecryptfs_message) + 4
-+			+ ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES), count);
-+		return -EINVAL;
-+	}
-+
-+	if (copy_from_user(packet_size_peek, (buf + 1 + 4),
-+			   sizeof(packet_size_peek))) {
-+		printk(KERN_WARNING "%s: Error while inspecting packet size\n",
-+		       __func__);
-+		return -EFAULT;
-+	}
- 
-+	rc = ecryptfs_parse_packet_length(packet_size_peek, &packet_size,
-+					  &packet_size_length);
-+	if (rc) {
-+		printk(KERN_WARNING "%s: Error parsing packet length; "
-+		       "rc = [%d]\n", __func__, rc);
-+		return rc;
-+	}
-+
-+	if ((1 + 4 + packet_size_length + packet_size) != count) {
-+		printk(KERN_WARNING "%s: Invalid packet size [%zu]\n", __func__,
-+		       packet_size);
-+		return -EINVAL;
-+	}
-+
-+memdup:
- 	data = memdup_user(buf, count);
- 	if (IS_ERR(data)) {
- 		printk(KERN_ERR "%s: memdup_user returned error [%ld]\n",
-@@ -435,23 +471,7 @@ ecryptfs_miscdev_write(struct file *file
- 		}
- 		memcpy(&counter_nbo, &data[i], 4);
- 		seq = be32_to_cpu(counter_nbo);
--		i += 4;
--		rc = ecryptfs_parse_packet_length(&data[i], &packet_size,
--						  &packet_size_length);
--		if (rc) {
--			printk(KERN_WARNING "%s: Error parsing packet length; "
--			       "rc = [%d]\n", __func__, rc);
--			goto out_free;
--		}
--		i += packet_size_length;
--		if ((1 + 4 + packet_size_length + packet_size) != count) {
--			printk(KERN_WARNING "%s: (1 + packet_size_length([%zd])"
--			       " + packet_size([%zd]))([%zd]) != "
--			       "count([%zd]). Invalid packet format.\n",
--			       __func__, packet_size_length, packet_size,
--			       (1 + packet_size_length + packet_size), count);
--			goto out_free;
--		}
-+		i += 4 + packet_size_length;
- 		rc = ecryptfs_miscdev_response(&data[i], packet_size,
- 					       euid, current_user_ns(),
- 					       task_pid(current), seq);
+ 	}
 
 
