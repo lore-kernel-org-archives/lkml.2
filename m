@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab2BAU1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:27:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49417 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab2BAU1q (ORCPT
+	id S1755086Ab2BAU2p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:28:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43740 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab2BAU2o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:27:46 -0500
-X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=p-wZvnPcUTwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=qQEtgr_gvJB5gL5YKMAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328128063.5882.80.camel@gandalf.stny.rr.com>
-Subject: Re: [ANNOUNCE] 3.0.14-rt31 - ksoftirq running wild - FEC ethernet
- driver to blame? Yep
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tim Sander <tim.sander@hbm.com>
-Cc: RT <linux-rt-users@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Tim Sander <tstone@iss.tu-darmstadt.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Gerlando Falauto <gerlando.falauto@keymile.com>,
-        Micha Nelissen <micha@neli.hopto.org>,
-        Holger Brunck <holger.brunck@keymile.com>
-Date: Wed, 01 Feb 2012 15:27:43 -0500
-In-Reply-To: <201201251031.48983.tim.sander@hbm.com>
-References: <1324525237.5916.114.camel@gandalf.stny.rr.com>
-	 <201201181211.45011.tim.sander@hbm.com>
-	 <201201241152.21472.tim.sander@hbm.com>
-	 <201201251031.48983.tim.sander@hbm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 1 Feb 2012 15:28:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F296721.5040203@stericsson.com>
+References: <1328112555-32459-1-git-send-email-linus.walleij@stericsson.com>
+	<4F296721.5040203@stericsson.com>
+Date: Wed, 1 Feb 2012 21:28:43 +0100
+Message-ID: <CACRpkdZ_YDoxDWx4oG62=NPeaPZanUU159PCaQy5VUsSDim+ZA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] mfd/ab8500: fix error path bug
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@stericsson.com>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alex MACRO <alex.macro@stericsson.com>,
+        Michel JAOUEN <michel.jaouen@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-25 at 10:31 +0100, Tim Sander wrote:
+On Wed, Feb 1, 2012 at 5:24 PM, Maxime Coquelin
+<maxime.coquelin@stericsson.com> wrote:
+> On 02/01/2012 05:09 PM, Linus WALLEIJ wrote:
 
-> Bad news, the ksoftirq(sirq-net-tx) error seems to happen not so often any 
-> more but it still happens :-(.
+>> --- a/drivers/mfd/ab8500-core.c
+>> +++ b/drivers/mfd/ab8500-core.c
+>> @@ -956,9 +956,10 @@ int __devinit ab8500_init(struct ab8500 *ab8500)
+>>        return ret;
+>>
+>>  out_freeirq:
+>> -       if (ab8500->irq_base) {
+>> +       if (ab8500->irq_base)
+>>                free_irq(ab8500->irq, ab8500);
+>>  out_removeirq:
+>> +       if (ab8500->irq_base)
+>>                ab8500_irq_remove(ab8500);
+>>        }
+>
+> Shouldn't the above brace to be removed?
 
-Tim,
+Yes of course, thanks for spotting this! Fixed it in my patch queue.
 
-Is the system still usable when this happens? If so, can you configure
-in ftrace, and run a trace on what ksoftirq is doing:
-
-mkdir /debug
-mount -t debugfs nodev /debug
-cd /debug/tracing
-echo <pid-of-ksoftirq> > set_ftrace_pid
-echo function > current_tracer
-cat trace
-
-Thanks!
-
--- Steve
-
-
+Yours,
+Linus Walleij
