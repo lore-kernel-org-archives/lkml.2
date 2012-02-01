@@ -1,41 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab2BAT7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:59:49 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44596 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756731Ab2BAT7r convert rfc822-to-8bit (ORCPT
+	id S932246Ab2BAUCK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:02:10 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60054 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab2BAUCH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:59:47 -0500
+	Wed, 1 Feb 2012 15:02:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120201.143455.1014458821077044311.davem@davemloft.net>
-References: <21672990.651327923923151.JavaMail.root@5-MeO-DMT.ynet.sk>
- <13688762.701327924297781.JavaMail.root@5-MeO-DMT.ynet.sk> <20120201.143455.1014458821077044311.davem@davemloft.net>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Wed, 1 Feb 2012 20:59:27 +0100
-X-Google-Sender-Auth: ccgMkwn_ZsYuSPzOJHeseVtmmsM
-Message-ID: <CAGsizzJc9pJ-xsX12JNxZhFBC7VzF6QkRZMoPopK1nsVtA0AeA@mail.gmail.com>
-Subject: Re: [patch v7, kernel version 3.2.1] Source mode for macvlan interface
-To: David Miller <davem@davemloft.net>
-Cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
+References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb> <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Feb 2012 12:01:46 -0800
+X-Google-Sender-Auth: xv1WKrg4klAtQxXBUlWLEfnXiiY
+Message-ID: <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
+Subject: Re: Memory corruption due to word sharing
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/1 David Miller <davem@davemloft.net>:
-> From: Stefan Gula <steweg@ynet.sk>
-> Date: Mon, 30 Jan 2012 12:51:37 +0100 (CET)
+On Wed, Feb 1, 2012 at 11:40 AM, Jakub Jelinek <jakub@redhat.com> wrote:
 >
->> V6 changes:
->>  - removed ability to fill the list of macaddr per link to fix the
->>    issue of netlink skb size. This can be added back by using separate
->>    netlink dumper in kernel and parse inside iproute2 codes. Those codes
->>    are beyond my abilities so if anyone actually need that feel free to
->>    help.
+> Well, the C++11/C11 model doesn't allow to use the underlying type
+> for accesses, consider e.g.
 >
-> I'm not applying this patch until you add an appropriate way to query
-> the setting, working around the link dump SKB size issue by not providing
-> a way to query the information at all is not acceptable.
-Ok
+> struct S { long s1; unsigned int s2 : 5; unsigned int s3 : 19; unsigned char s4; unsigned int s5; };
+> struct T { long s1 : 16; unsigned int s2; };
+>
+> on e.g. x86_64-linux, S is 16 byte long, field s4 is packed together into
+> the same 32 bits as s2 and s3.  While the memory model allows s2 to be
+> changed when storing s3 (i.e. use a RMW cycle on it), it doesn't allow s4
+> to be changed, as it isn't a bitfield (you'd need s4 : 8 for that).
+> T is 8 bytes long, again, s2 is packed into the same 64 bits as s1,
+> and the memory model doesn't allow s2 to be modified.
+>
+> Not sure what the kernel would expect in such a case.
+
+So the kernel really doesn't care what you do to things *within* the bitfield.
+
+Sure, we do have some expectations of packing, but basically we never
+expect bitfields to be 'atomic'. You really don't need to worry about
+that.
+
+>From a correctness standpoint, I really don't think the kernel cares
+if gcc does bitfield reads and writes one bit at a time. Seriously.
+
+The bug is that the bitfield write wrote *outside* the bitfield.
+That's *WRONG*. It's completely wrong, even if you write back the same
+value you read. It's *always* wrong. It's simply not acceptable.
+
+If gcc does that kind of crap, then gcc needs to align bitfields
+sufficiently that the accesses that are outside the bitfields never
+touch any other fields.
+
+So what I would suggest:
+
+ - use the *smallest* aligned access you can use to access the
+bitfield. This will be 'correct', but it may perform badly.
+
+   This is apparently what x86 does. So on x86, if you have a one-bit
+bitfield within a bitfield that is really 32 bits wide, it looks like
+gcc will generally generate a byte load/store to set that bit. I don't
+know exactly what the rules are, but this is fine from a *correctness*
+point.
+
+ - However, while using the *smallest* possible access may generate
+correct code, it often generates really *crappy* code. Which is
+exactly the bug that I reported in
+
+   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48696
+
+So quite frankly, my suggestion is to just try to use the base type.
+
+But *whatever* you do, using a type *larger* than the whole bitfield
+itself is a bug.
+
+And dammit, the people who continue to bring up C11 as if this was a
+new issue, and only needs to be worried about if you support C11 (ie
+gcc-4.7 and up) are just in denial.
+
+The 'volatile'  example makes it entirely clear that the bug has
+nothing what-so-ever to do with C11.
+
+                    Linus
