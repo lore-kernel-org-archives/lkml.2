@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab2BATv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:51:59 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33597 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab2BATnL (ORCPT
+	id S932203Ab2BATnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:43:10 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:40483 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756773Ab2BATnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:43:11 -0500
+	Wed, 1 Feb 2012 14:43:02 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,209 +17,118 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 38/41] rcu: Rework detection of use of RCU by offline CPUs
-Date: Wed,  1 Feb 2012 11:41:56 -0800
-Message-Id: <1328125319-5205-38-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 30/41] rcutorture: Permit holding off CPU-hotplug operations during boot
+Date: Wed,  1 Feb 2012 11:41:48 -0800
+Message-Id: <1328125319-5205-30-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120201194131.GA10028@linux.vnet.ibm.com>
  <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020119-6148-0000-0000-000003144F54
+x-cbid: 12020119-7282-0000-0000-0000061F24F7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-Because newly offlined CPUs continue executing after completing the
-CPU_DYING notifiers, they legitimately enter the scheduler and use
-RCU while appearing to be offline.  This calls for a more sophisticated
-approach as follows:
-
-1.	RCU marks the CPU online during the CPU_UP_PREPARE phase.
-
-2.	RCU marks the CPU offline during the CPU_DEAD phase.
-
-3.	Diagnostics regarding use of read-side RCU by offline CPUs use
-	RCU's accounting rather than the cpu_online_map.  (Note that
-	__call_rcu() still uses cpu_online_map to detect illegal
-	invocations within CPU_DYING notifiers.)
-
-4.	Offline CPUs are prevented from hanging the system by
-	force_quiescent_state(), which pays attention to cpu_online_map.
-	Some additional work (in a later commit) will be needed to
-	guarantee that force_quiescent_state() waits a full jiffy before
-	assuming that a CPU is offline, for example, when called from
-	idle entry.
-
-This approach avoids the false positives encountered when attempting to
-use more exact classification of CPU online/offline state.
+When rcutorture is started automatically at boot time, it might well
+also start CPU-hotplug operations at that time, which might not be
+desirable.  This commit therefore adds an rcutorture parameter that
+allows CPU-hotplug operations to be held off for the specified number
+of seconds after the start of boot.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c        |   92 ++++++++++++++++++++++++++++++----------------
- kernel/rcutree_plugin.h |    2 +-
- 2 files changed, 61 insertions(+), 33 deletions(-)
+ Documentation/RCU/torture.txt |   15 ++++++++++++---
+ kernel/rcutorture.c           |   12 ++++++++++--
+ 2 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 632b1c3..ce39431 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -604,19 +604,33 @@ EXPORT_SYMBOL(rcu_is_cpu_idle);
-  * this task being preempted, its old CPU being taken offline, resuming
-  * on some other CPU, then determining that its old CPU is now offline.
-  * It is OK to use RCU on an offline processor during initial boot, hence
-- * the check for rcu_scheduler_fully_active.
-+ * the check for rcu_scheduler_fully_active.  Note also that it is OK
-+ * for a CPU coming online to use RCU for one jiffy prior to marking itself
-+ * online in the cpu_online_mask.  Similarly, it is OK for a CPU going
-+ * offline to continue to use RCU for one jiffy after marking itself
-+ * offline in the cpu_online_mask.  This leniency is necessary given the
-+ * non-atomic nature of the online and offline processing, for example,
-+ * the fact that a CPU enters the scheduler after completing the CPU_DYING
-+ * notifiers.
-+ *
-+ * This is also why RCU internally marks CPUs online during the
-+ * CPU_UP_PREPARE phase and offline during the CPU_DEAD phase.
-  *
-  * Disable checking if in an NMI handler because we cannot safely report
-  * errors from NMI handlers anyway.
-  */
- bool rcu_lockdep_current_cpu_online(void)
- {
-+	struct rcu_data *rdp;
-+	struct rcu_node *rnp;
- 	bool ret;
+diff --git a/Documentation/RCU/torture.txt b/Documentation/RCU/torture.txt
+index d67068d..d25be87 100644
+--- a/Documentation/RCU/torture.txt
++++ b/Documentation/RCU/torture.txt
+@@ -69,6 +69,13 @@ onoff_interval
+ 		CPU-hotplug operations regardless of what value is
+ 		specified for onoff_interval.
  
- 	if (in_nmi())
- 		return 1;
- 	preempt_disable();
--	ret = cpu_online(smp_processor_id()) ||
-+	rdp = &__get_cpu_var(rcu_sched_data);
-+	rnp = rdp->mynode;
-+	ret = (rdp->grpmask & rnp->qsmaskinit) ||
- 	      !rcu_scheduler_fully_active;
- 	preempt_enable();
- 	return ret;
-@@ -1311,14 +1325,12 @@ rcu_check_quiescent_state(struct rcu_state *rsp, struct rcu_data *rdp)
-  */
- static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
- {
--	unsigned long flags;
- 	int i;
- 	unsigned long mask;
--	int need_report;
- 	int receive_cpu = cpumask_any(cpu_online_mask);
- 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
- 	struct rcu_data *receive_rdp = per_cpu_ptr(rsp->rda, receive_cpu);
--	struct rcu_node *rnp = rdp->mynode; /* For dying CPU. */
-+	RCU_TRACE(struct rcu_node *rnp = rdp->mynode); /* For dying CPU. */
++onoff_holdoff	The number of seconds to wait until starting CPU-hotplug
++		operations.  This would normally only be used when
++		rcutorture was built into the kernel and started
++		automatically at boot time, in which case it is useful
++		in order to avoid confusing boot-time code with CPUs
++		coming and going.
++
+ shuffle_interval
+ 		The number of seconds to keep the test threads affinitied
+ 		to a particular subset of the CPUs, defaults to 3 seconds.
+@@ -271,11 +278,13 @@ The following script may be used to torture RCU:
+ 	#!/bin/sh
  
- 	/* First, adjust the counts. */
- 	if (rdp->nxtlist != NULL) {
-@@ -1384,32 +1396,6 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
- 			       "cpuofl");
- 	rcu_report_qs_rdp(smp_processor_id(), rsp, rdp, rsp->gpnum);
- 	/* Note that rcu_report_qs_rdp() might call trace_rcu_grace_period(). */
--
--	/*
--	 * Remove the dying CPU from the bitmasks in the rcu_node
--	 * hierarchy.  Because we are in stop_machine() context, we
--	 * automatically exclude ->onofflock critical sections.
--	 */
--	do {
--		raw_spin_lock_irqsave(&rnp->lock, flags);
--		rnp->qsmaskinit &= ~mask;
--		if (rnp->qsmaskinit != 0) {
--			raw_spin_unlock_irqrestore(&rnp->lock, flags);
--			break;
--		}
--		if (rnp == rdp->mynode) {
--			need_report = rcu_preempt_offline_tasks(rsp, rnp, rdp);
--			if (need_report & RCU_OFL_TASKS_NORM_GP)
--				rcu_report_unblock_qs_rnp(rnp, flags);
--			else
--				raw_spin_unlock_irqrestore(&rnp->lock, flags);
--			if (need_report & RCU_OFL_TASKS_EXP_GP)
--				rcu_report_exp_rnp(rsp, rnp, true);
--		} else
--			raw_spin_unlock_irqrestore(&rnp->lock, flags);
--		mask = rnp->grpmask;
--		rnp = rnp->parent;
--	} while (rnp != NULL);
+ 	modprobe rcutorture
+-	sleep 100
++	sleep 3600
+ 	rmmod rcutorture
+ 	dmesg | grep torture:
+ 
+ The output can be manually inspected for the error flag of "!!!".
+ One could of course create a more elaborate script that automatically
+-checked for such errors.  The "rmmod" command forces a "SUCCESS" or
+-"FAILURE" indication to be printk()ed.
++checked for such errors.  The "rmmod" command forces a "SUCCESS",
++"FAILURE", or "RCU_HOTPLUG" indication to be printk()ed.  The first
++two are self-explanatory, while the last indicates that while there
++were no RCU failures, CPU-hotplug problems were detected.
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index a94eaef..eeafbd0 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -65,6 +65,7 @@ static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
+ static int fqs_holdoff;		/* Hold time within burst (us). */
+ static int fqs_stutter = 3;	/* Wait time between bursts (s). */
+ static int onoff_interval;	/* Wait time between CPU hotplugs, 0=disable. */
++static int onoff_holdoff;	/* Seconds after boot before CPU hotplugs. */
+ static int shutdown_secs;	/* Shutdown time (s).  <=0 for no shutdown. */
+ static int test_boost = 1;	/* Test RCU prio boost: 0=no, 1=maybe, 2=yes. */
+ static int test_boost_interval = 7; /* Interval between boost tests, seconds. */
+@@ -95,6 +96,8 @@ module_param(fqs_stutter, int, 0444);
+ MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
+ module_param(onoff_interval, int, 0444);
+ MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
++module_param(onoff_holdoff, int, 0444);
++MODULE_PARM_DESC(onoff_holdoff, "Time after boot before CPU hotplugs (s)");
+ module_param(shutdown_secs, int, 0444);
+ MODULE_PARM_DESC(shutdown_secs, "Shutdown time (s), zero to disable.");
+ module_param(test_boost, int, 0444);
+@@ -1300,13 +1303,13 @@ rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
+ 		"fqs_duration=%d fqs_holdoff=%d fqs_stutter=%d "
+ 		"test_boost=%d/%d test_boost_interval=%d "
+ 		"test_boost_duration=%d shutdown_secs=%d "
+-		"onoff_interval=%d\n",
++		"onoff_interval=%d onoff_holdoff=%d\n",
+ 		torture_type, tag, nrealreaders, nfakewriters,
+ 		stat_interval, verbose, test_no_idle_hz, shuffle_interval,
+ 		stutter, irqreader, fqs_duration, fqs_holdoff, fqs_stutter,
+ 		test_boost, cur_ops->can_boost,
+ 		test_boost_interval, test_boost_duration, shutdown_secs,
+-		onoff_interval);
++		onoff_interval, onoff_holdoff);
  }
  
- /*
-@@ -1420,11 +1406,53 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
-  */
- static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
- {
-+	unsigned long flags;
-+	unsigned long mask;
-+	int need_report = 0;
- 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
--	struct rcu_node *rnp = rdp->mynode;
-+	struct rcu_node *rnp = rdp->mynode;  /* Outgoing CPU's rnp. */
- 
-+	/* Adjust any no-longer-needed kthreads. */
- 	rcu_stop_cpu_kthread(cpu);
- 	rcu_node_kthread_setaffinity(rnp, -1);
-+
-+	/* Remove the dying CPU from the bitmasks in the rcu_node hierarchy. */
-+
-+	/* Exclude any attempts to start a new grace period. */
-+	raw_spin_lock_irqsave(&rsp->onofflock, flags);
-+
-+	/* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
-+	mask = rdp->grpmask;	/* rnp->grplo is constant. */
-+	do {
-+		raw_spin_lock(&rnp->lock);	/* irqs already disabled. */
-+		rnp->qsmaskinit &= ~mask;
-+		if (rnp->qsmaskinit != 0) {
-+			if (rnp != rdp->mynode)
-+				raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-+			break;
-+		}
-+		if (rnp == rdp->mynode)
-+			need_report = rcu_preempt_offline_tasks(rsp, rnp, rdp);
-+		else
-+			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-+		mask = rnp->grpmask;
-+		rnp = rnp->parent;
-+	} while (rnp != NULL);
-+
-+	/*
-+	 * We still hold the leaf rcu_node structure lock here, and
-+	 * irqs are still disabled.  The reason for this subterfuge is
-+	 * because invoking rcu_report_unblock_qs_rnp() with ->onofflock
-+	 * held leads to deadlock.
-+	 */
-+	raw_spin_unlock(&rsp->onofflock); /* irqs remain disabled. */
-+	rnp = rdp->mynode;
-+	if (need_report & RCU_OFL_TASKS_NORM_GP)
-+		rcu_report_unblock_qs_rnp(rnp, flags);
-+	else
-+		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+	if (need_report & RCU_OFL_TASKS_EXP_GP)
-+		rcu_report_exp_rnp(rsp, rnp, true);
- }
- 
- #else /* #ifdef CONFIG_HOTPLUG_CPU */
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 3dc58cc..56a63bc 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -610,7 +610,7 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
- 	 * absolutely necessary, but this is a good performance/complexity
- 	 * tradeoff.
- 	 */
--	if (rcu_preempt_blocked_readers_cgp(rnp))
-+	if (rcu_preempt_blocked_readers_cgp(rnp) && rnp->qsmask == 0)
- 		retval |= RCU_OFL_TASKS_NORM_GP;
- 	if (rcu_preempted_readers_exp(rnp))
- 		retval |= RCU_OFL_TASKS_EXP_GP;
+ static struct notifier_block rcutorture_shutdown_nb = {
+@@ -1410,6 +1413,11 @@ rcu_torture_onoff(void *arg)
+ 	for_each_online_cpu(cpu)
+ 		maxcpu = cpu;
+ 	WARN_ON(maxcpu < 0);
++	if (onoff_holdoff > 0) {
++		VERBOSE_PRINTK_STRING("rcu_torture_onoff begin holdoff");
++		schedule_timeout_interruptible(onoff_holdoff * HZ);
++		VERBOSE_PRINTK_STRING("rcu_torture_onoff end holdoff");
++	}
+ 	while (!kthread_should_stop()) {
+ 		cpu = (rcu_random(&rand) >> 4) % (maxcpu + 1);
+ 		if (cpu_online(cpu) && cpu_is_hotpluggable(cpu)) {
 -- 
 1.7.8
 
