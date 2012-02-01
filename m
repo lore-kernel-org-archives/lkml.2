@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab2BAR57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:57:59 -0500
-Received: from mtv-iport-3.cisco.com ([173.36.130.14]:49319 "EHLO
-	mtv-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab2BAR56 (ORCPT
+	id S1754468Ab2BAR6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:58:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50814 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab2BAR63 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:57:58 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av8EACB8KU+rRDoI/2dsb2JhbABDrFWCKYEFgXIBAQEEEgFlARALGAkWDwkDAgECAUUGDQEHAQEeoVIBnl6LMgEEAgECAgkCAgEGBwMTAQgFAwMJHAMBgnEZBAMMAxQFVw0BBAQMAgoCgz0EiEGMYIVXjR0
-X-IronPort-AV: E=Sophos;i="4.71,603,1320624000"; 
-   d="scan'208";a="28245135"
-Message-ID: <4F297D25.7090902@cisco.com>
-Date: Wed, 01 Feb 2012 10:57:57 -0700
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: "Rose, Gregory V" <gregory.v.rose@intel.com>
-CC: "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: VFs go missing with latest kernel
-References: <4F287102.3060600@cisco.com> <C5551D9AAB213A418B7FD5E4A6F30A0702F6489B@ORSMSX106.amr.corp.intel.com> <4F2887AB.8070005@cisco.com> <C5551D9AAB213A418B7FD5E4A6F30A0702F64AF6@ORSMSX106.amr.corp.intel.com> <4F288C4A.3070509@cisco.com> <C5551D9AAB213A418B7FD5E4A6F30A0702F64B7F@ORSMSX106.amr.corp.intel.com> <C5551D9AAB213A418B7FD5E4A6F30A0702F66ADF@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <C5551D9AAB213A418B7FD5E4A6F30A0702F66ADF@ORSMSX106.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Feb 2012 12:58:29 -0500
+Message-ID: <1328119072.2446.264.camel@twins>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+From: Peter Zijlstra <peterz@infradead.org>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>, paulmck <paulmck@linux.vnet.ibm.com>
+Date: Wed, 01 Feb 2012 18:57:52 +0100
+In-Reply-To: <1328117722.2446.262.camel@twins>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	 <1327591185.2446.102.camel@twins>
+	 <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+	 <1328117722.2446.262.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2012 10:47 AM, Rose, Gregory V wrote:
-> I found this in the log file you sent me.  I had missed it yesterday.
+On Wed, 2012-02-01 at 18:35 +0100, Peter Zijlstra wrote:
+> On Sun, 2012-01-29 at 10:25 +0200, Gilad Ben-Yossef wrote:
+> > 
+> > If this is of interest, I keep a list tracking global IPI and global
+> > task schedulers sources in the core kernel here:
+> > https://github.com/gby/linux/wiki. 
 > 
-> [   15.835223] igb 0000:07:00.0: 7 pre-allocated VFs found - override max_vfs setting of 7
-> [   15.835393] igb 0000:07:00.0: 7 VFs allocated
-> 
-> I think that must be a bug in the code that searches for VFs already allocated and is the source of your problem.  I'll keep you updated on what I find but it has to be a bug in the VF device lookups.
+> You can add synchronize_.*_expedited() to the list, it does its best to
+> bash the entire machine in order to try and make RCU grace periods
+> happen fast.
 
-Confused. What is pre-allocating the VFs during boot? Looking at my
-rc-scripts I am only set MAC addresses at boot. No VMs have been started
-yet. This setup has worked fine with Fedora 14 and 3.0 kernels; it's
-really the move to 3.3-rc that I hit the problem.
-
-David
+Also anything using stop_machine, such as module unload, cpu hot-unplug
+and text_poke().
