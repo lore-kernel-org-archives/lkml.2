@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab2BAURV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:17:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752315Ab2BAURS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:17:18 -0500
-Date: Wed, 1 Feb 2012 21:16:32 +0100
-From: Jakub Jelinek <jakub@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+	id S1756769Ab2BAUTl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:19:41 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62246 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab2BAUTj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 15:19:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
+References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb> <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
+ <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Feb 2012 12:19:18 -0800
+X-Google-Sender-Auth: RXtGJGdZv8yMs_G4dhQHZpOvdgI
+Message-ID: <CA+55aFwG7BoFg-zaER7=hiamX62_zZCQhB_A+edHaK9Sj7Ga0g@mail.gmail.com>
+Subject: Re: Memory corruption due to word sharing
+To: Jakub Jelinek <jakub@redhat.com>
 Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
         LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
         dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Re: Memory corruption due to word sharing
-Message-ID: <20120201201631.GW18768@tyan-ft48-01.lab.bos.redhat.com>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
-References: <20120201151918.GC16714@quack.suse.cz>
- <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
- <1328118174.15992.6206.camel@triegel.csb>
- <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
- <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 12:01:46PM -0800, Linus Torvalds wrote:
-> On Wed, Feb 1, 2012 at 11:40 AM, Jakub Jelinek <jakub@redhat.com> wrote:
-> > struct S { long s1; unsigned int s2 : 5; unsigned int s3 : 19; unsigned char s4; unsigned int s5; };
-> > struct T { long t1 : 16; unsigned int t2; };
-> >
-> > on e.g. x86_64-linux, S is 16 byte long, field s4 is packed together into
-> > the same 32 bits as s2 and s3.  While the memory model allows s2 to be
-> > changed when storing s3 (i.e. use a RMW cycle on it), it doesn't allow s4
-> > to be changed, as it isn't a bitfield (you'd need s4 : 8 for that).
-> > T is 8 bytes long, again, s2 is packed into the same 64 bits as s1,
-> > and the memory model doesn't allow s2 to be modified.
-> >
-> > Not sure what the kernel would expect in such a case.
-> 
-> So the kernel really doesn't care what you do to things *within* the bitfield.
+On Wed, Feb 1, 2012 at 12:01 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>  - However, while using the *smallest* possible access may generate
+> correct code, it often generates really *crappy* code. Which is
+> exactly the bug that I reported in
+>
+>   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48696
 
-But what is *within* the bitfield?  Do you consider s4 or t2 fields
-(non-bitfield fields that just the ABI wants to pack together with
-the bitfield) above as *within* or is already modifying of those a problem?
+Btw, as I also pointed out in that (old) bugzilla entry, gcc can do
+pretty much whatever it damn well pleases with loads from a bitfield.
 
-> The 'volatile'  example makes it entirely clear that the bug has
-> nothing what-so-ever to do with C11.
+You can narrow them, you can make them wider, you can paint them pink.
 
-The reason we mention C11/C++11 memory model is because we plan to support
-that, likely for GCC 4.8, when requested by some options (either by default
-when choosing those standards?, or when explicitly requested).  This will
-even disable some optimizations that are fine for single-threaded apps,
-but aren't fine in those memory models, aren't fine in OpenMP or for many
-other threaded programs.  E.g. loop store motion if it isn't guaranteed the
-variable is always stored in the loop:
-int x;
+Widening the loads can still be a performance problem, and technically
+it's a really bad idea for any nearby "volatile"s too, but in practice
+things will *work*.
 
-void
-foo (int j)
-{
-  int i;
-  for (i = 0; i < 100000; i++)
-    if (i > j)
-      x = i;
-}
-can't be performed, because otherwise it introduces a tmp = x; ... x = tmp;
-into code that wouldn't otherwise touch the variable, so if some other
-thread modifies x, it might have unexpected value.
+Writes are much more critical. If you overwrite a field that is no
+longer in the bitfield, you can no longer depend on "nobody cares
+about bitfield accesses", because by definition you are clearly now
+stepping on non-bitfield things.
 
-	Jakub
+You do realize that even in user space, and even before C11, people
+have things like "sig_atomic_t" etc. So even if you don't like the
+notion of "volatile", here's *another* example of this being  real gcc
+bug:
+
+   struct mydata {
+      sig_atomic_t seen_signal;
+      unsigned flags:1;
+   };
+
+and now do the same test-program, realizing that "sig_atomic_t" is
+normally the exact same thing as "int".
+
+Now, thing about what happens if you have a signal handler that comes
+in and does
+
+   mydata.seen_signal = 1;
+
+and happens to interrupt the code that changes "mydata.flags" in just
+the right spot.
+
+That's right: the bitfield update will possibly *clear* that
+"signal-safe" flag again, and gcc just created buggy asm code from
+correct C code.
+
+Guys, if you don't admit that this is a bug, I don't know what to say.
+
+IT IS A GCC BUG.
+
+Don't try to make it into something bigger and related to C++11/C11.
+Don't try to talk about "memory models". Just admit that it is a bug
+to do a 64-bit write to a 32-bit bitfield, and fix it!
+
+                        Linus
