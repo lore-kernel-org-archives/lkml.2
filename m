@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab2BAPT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:19:58 -0500
-Received: from seven.medozas.de ([188.40.89.202]:35593 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932122Ab2BAPT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:19:56 -0500
-Date: Wed, 1 Feb 2012 16:19:55 +0100 (CET)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-cc: Netfilter Developer Mailing List 
-	<netfilter-devel@vger.kernel.org>,
-        Linux Networking Developer Mailing List 
-	<netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: Re: [PATCH 1/6] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
-In-Reply-To: <CAFLxGvzgvvfkKQ7r2WWD6jOr+nLCTOE0MvXaMxfCR3HPAHivxg@mail.gmail.com>
-Message-ID: <alpine.LNX.2.01.1202011616280.26332@frira.zrqbmnf.qr>
-References: <1327269381-20748-1-git-send-email-richard@nod.at> <1327269381-20748-2-git-send-email-richard@nod.at> <CAFLxGvzLvdyyaBvh7LCM2+tTmKobK6n8jTRoH8NXd=MVmN4ocA@mail.gmail.com> <alpine.LNX.2.01.1201310208370.7433@frira.zrqbmnf.qr>
- <CAFLxGvwh5J=CR6OzST7ok6cEuHPWTziDN5TSbGxAiJOpANpAAQ@mail.gmail.com> <alpine.LNX.2.01.1202011523590.18699@frira.zrqbmnf.qr> <CAFLxGvzgvvfkKQ7r2WWD6jOr+nLCTOE0MvXaMxfCR3HPAHivxg@mail.gmail.com>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S932210Ab2BAPVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:21:00 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:38655 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122Ab2BAPU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 10:20:58 -0500
+Message-ID: <4F29584F.1060503@free-electrons.com>
+Date: Wed, 01 Feb 2012 16:20:47 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: jic23@cam.ac.uk
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        guenter.roeck@ericsson.com, khali@linux-fr.org,
+        dmitry.torokhov@gmail.com, broonie@opensource.wolfsonmicro.com,
+        gregkh@suse.de, alan@lxorguk.ukuu.org.uk, arnd@arndb.de,
+        linus.walleij@linaro.org, lars@metafoo.de
+Subject: Re: [PATCH 1/6] IIO: Core sysfs only support.
+References: <1320677563-18378-1-git-send-email-jic23@cam.ac.uk> <1320677563-18378-2-git-send-email-jic23@cam.ac.uk>
+In-Reply-To: <1320677563-18378-2-git-send-email-jic23@cam.ac.uk>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+I know that this patchset is probably a bit outdated but still...
 
-On Wednesday 2012-02-01 16:08, richard -rw- weinberger wrote:
->> I don't see that extra pointer (outside xt_log_info_v1) that you talk about.
->> +struct xt_log_info_v1 {
->> +       unsigned char level;
->> +       unsigned char logflags;
->> +       char prefix[30];
->> +
->> +       char ring_name[30];
->> +       unsigned long ring_size;
->> +       struct xt_LOG_ring_ctx *rctx;
->> +};
->
->See:
->include/linux/netfilter/xt_LOG.h (user space part).
->
->+struct xt_log_info_v1 {
->+       unsigned char level;
->+       unsigned char logflags;
->+       char prefix[30];
->+
->+       char ring_name[30];
->+       unsigned long ring_siVs.ze;
->+};
->
->Here is no context pointer.
+On 07/11/2011 15:52, jic23@cam.ac.uk wrote:
+> From: Jonathan Cameron <jic23@cam.ac.uk>
+> 
+> Add support for simple sysfs only interfaces.
+> 
+> Bulk of patch is concerned with taking struct iio_chan_spec
+> arrays and generating all the relevant interfaces from them.
+> 
+> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+First, you can add my
+Tested-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Aw don't do that. That is not maintainer-friendly (since headers
-are more or less regularly updated by copying from kernel sources).
-Keep the structs the same on each side.
+I have encountered a bug during my tests though, see below
 
-That's why we have .userspacesize in the first place.
-See libxt_quota.c on how it's done.
+> +struct iio_dev *iio_device_allocate(int sizeof_priv)
+> +{
+> +	struct iio_dev *dev;
+> +	size_t alloc_size;
+> +
+> +	alloc_size = sizeof(struct iio_dev);
+> +	if (sizeof_priv) {
+> +		alloc_size = ALIGN(alloc_size, IIO_ALIGN);
+> +		alloc_size += sizeof_priv;
+> +	}
+> +	/* ensure cacheline alignment of whole construct */
+> +	alloc_size += IIO_ALIGN - 1;
+> +
+> +	dev = kzalloc(alloc_size, GFP_KERNEL);
+> +
+> +	if (dev) {
+> +		dev->dev.groups = dev->groups;
+> +		dev->dev.type = &iio_dev_type;
+> +		dev->dev.bus = &iio_bus_type;
+> +		device_initialize(&dev->dev);
+> +		dev_set_drvdata(&dev->dev, (void *)dev);
+> +		mutex_init(&dev->mlock);
+> +	}
+> +
+> +	return dev;
+> +}
+> +EXPORT_SYMBOL_GPL(iio_device_allocate);
+> +
+> +void iio_device_free(struct iio_dev *dev)
+> +{
+> +	if (dev)
+> +		iio_put_device(dev);
+> +}
+> +EXPORT_SYMBOL_GPL(iio_device_free);
 
-	.size = XT_ALIGN(sizeof(struct xt_log_info_v1)),
-	.userspacesize = offsetof(struct xt_log_info_v1, firstkernelmember),
+Here, the iio_put_device is called in free, but get_device is never
+called, but seem to be called in iio_device_register, which, if you ever
+encounter an error in the probe function, you will never have called the
+iio_device_register function, before calling the iio_device_free
+function, which leads to a segfault.
+
+Maxime
+
+-- 
+Maxime Ripard, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
