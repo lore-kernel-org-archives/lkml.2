@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab2BAVJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:09:31 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51753 "EHLO
+	id S1757241Ab2BAVlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:41:23 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33029 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757150Ab2BAVJV (ORCPT
+	by vger.kernel.org with ESMTP id S1757186Ab2BAVJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:21 -0500
-X-Sasl-enc: GpL6iN2DR2hI76hmaOb7hoxV+nE6FC19o3rIs6j2I3Vs 1328130559
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:43 2012
-Message-Id: <20120201205743.159447354@clark.kroah.org>
+	Wed, 1 Feb 2012 16:09:30 -0500
+X-Sasl-enc: SnEYXFSVGZxXWP4/veE2Ah3dHEfJ4O1GRtDRmKt4zt/g 1328130568
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:41 2012
+Message-Id: <20120201205741.321543909@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:45 -0800
+Date: Wed, 01 Feb 2012 12:56:24 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
-        Preston Fick <preston.fick@silabs.com>
-Subject: [65/65] USB: cp210x: allow more baud rates above 1Mbaud
+        alan@lxorguk.ukuu.org.uk, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [44/65] hwmon: (w83627ehf) Disable setting DC mode for pwm2, pwm3 on NCT6776F
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit d1620ca9e7bb0030068c3b45b653defde8839dac upstream.
+commit ad77c3e1808f07fa70f707b1c92a683b7c7d3f85 upstream.
 
-Allow more baud rates to be set in [1M,2M] baud.
+NCT6776F only supports pwm mode for pwm2 and pwm3. Return error if an attempt
+is made to set those pwm channels to DC mode.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Cc: Preston Fick <preston.fick@silabs.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/hwmon/w83627ehf.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -388,10 +388,10 @@ static unsigned int cp210x_quantise_baud
- 	else if (baud <= 491520)   baud = 460800;
- 	else if (baud <= 567138)   baud = 500000;
- 	else if (baud <= 670254)   baud = 576000;
--	else if (baud <= 1053257)  baud = 921600;
--	else if (baud <= 1474560)  baud = 1228800;
--	else if (baud <= 2457600)  baud = 1843200;
--	else                       baud = 3686400;
-+	else if (baud < 1000000)
-+		baud = 921600;
-+	else if (baud > 2000000)
-+		baud = 2000000;
- 	return baud;
- }
+--- a/drivers/hwmon/w83627ehf.c
++++ b/drivers/hwmon/w83627ehf.c
+@@ -1295,6 +1295,7 @@ store_pwm_mode(struct device *dev, struc
+ {
+ 	struct w83627ehf_data *data = dev_get_drvdata(dev);
+ 	struct sensor_device_attribute *sensor_attr = to_sensor_dev_attr(attr);
++	struct w83627ehf_sio_data *sio_data = dev->platform_data;
+ 	int nr = sensor_attr->index;
+ 	unsigned long val;
+ 	int err;
+@@ -1306,6 +1307,11 @@ store_pwm_mode(struct device *dev, struc
  
-@@ -611,7 +611,8 @@ static void cp210x_change_speed(struct t
- 
- 	baud = tty->termios->c_ospeed;
- 
--	/* This maps the requested rate to a rate valid on cp2102 or cp2103.
-+	/* This maps the requested rate to a rate valid on cp2102 or cp2103,
-+	 * or to an arbitrary rate in [1M,2M].
- 	 *
- 	 * NOTE: B0 is not implemented.
- 	 */
+ 	if (val > 1)
+ 		return -EINVAL;
++
++	/* On NCT67766F, DC mode is only supported for pwm1 */
++	if (sio_data->kind == nct6776 && nr && val != 1)
++		return -EINVAL;
++
+ 	mutex_lock(&data->update_lock);
+ 	reg = w83627ehf_read_value(data, W83627EHF_REG_PWM_ENABLE[nr]);
+ 	data->pwm_mode[nr] = val;
 
 
