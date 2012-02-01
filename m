@@ -1,83 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040Ab2BAWUM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:20:12 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:6618 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab2BAWUJ (ORCPT
+	id S933164Ab2BAWUV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:20:21 -0500
+Received: from mga07.intel.com ([143.182.124.22]:15892 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933113Ab2BAWUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:20:09 -0500
-From: "Boehm, Hans" <hans.boehm@hp.com>
-To: Torvald Riegel <triegel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "dsterba@suse.cz" <dsterba@suse.cz>,
-        "ptesarik@suse.cz" <ptesarik@suse.cz>,
-        "rguenther@suse.de" <rguenther@suse.de>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: RE: Memory corruption due to word sharing
-Thread-Topic: Memory corruption due to word sharing
-Thread-Index: AQHM4PTrUuQzu7yZv0OOPDwQnxvuBZYoRnOAgAAFwICAADkJAIAAB5mAgAAEugCAAAi6QA==
-Date: Wed, 1 Feb 2012 22:18:53 +0000
-Message-ID: <A3E67C2071F49C4CBC4F17E6D77CDDD232754220@G4W3299.americas.hpqcorp.net>
-References: <20120201151918.GC16714@quack.suse.cz>
-	 <1328116137.15992.6146.camel@triegel.csb>
-	 <CA+55aFyG3EifFPapU6SFYXCjrP+wQOF65hJGs3yyMxCgde5vdg@mail.gmail.com>
-	 <1328129620.15992.6453.camel@triegel.csb>
-	 <CA+55aFx=4AhdFEgjY3b=85__mGYX8BKcaXpFC=1XZzoFFjeTrw@mail.gmail.com>
- <1328132266.15992.6528.camel@triegel.csb>
-In-Reply-To: <1328132266.15992.6528.camel@triegel.csb>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.216.12.11]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 1 Feb 2012 17:20:15 -0500
+Message-ID: <4F29B9A1.3090504@intel.com>
+Date: Thu, 02 Feb 2012 00:16:01 +0200
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Organization: Intel Finland Oy, Helsinki, Finland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+CC: sparclinux@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Fix the sparc32 mpilib build mess.
+References: <20120126.173202.2207050843577467461.davem@davemloft.net>
+In-Reply-To: <20120126.173202.2207050843577467461.davem@davemloft.net>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms020900020706070005030908"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q11MKJSE023750
 
-> From: Torvald Riegel
-> > Oh, one of my favorite (NOT!) pieces of code in the kernel is the
-> > implementation of the
-> >
-> >    smp_read_barrier_depends()
-> >
-> > macro, which on every single architecture except for one (alpha) is a
-> no-op.
-> >
-> > We have basically 30 or so empty definitions for it, and I think we
-> > have something like five uses of it. One of them, I think, is
-> > performance crticial, and the reason for that macro existing.
-> >
-> > What does it do? The semantics is that it's a read barrier between
-> two
-> > different reads that we want to happen in order wrt two writes on the
-> > writing side (the writing side also has to have a "smp_wmb()" to
-> order
-> > those writes). But the reason it isn't a simple read barrier is that
-> > the reads are actually causally *dependent*, ie we have code like
-> >
-> >    first_read = read_pointer;
-> >    smp_read_barrier_depends();
-> >    second_read = *first_read;
-> >
-> > and it turns out that on pretty much all architectures (except for
-> > alpha), the *data*dependency* will already guarantee that the CPU
-> > reads the thing in order. And because a read barrier can actually be
-> > quite expensive, we don't want to have a read barrier for this case.
-> 
-> I don't have time to look at this in detail right now, but it looks
-> roughly close to C++11's memory_order_consume to me, which is somehwat
-> like an acquire, but just for subsequent data-dependent loads.  Added
-> for performance reasons on some architecture AFAIR.
-> 
-It's intended to address the same problem, though somewhat differently.  (I suspect there was overlap in the people involved?) One reason that C11 took a slightly different path is that compilers can, and sometimes do, remove dependencies, making smp_read_barrier_depends brittle unless it also imposes compiler constraints.
+This is a cryptographically signed message in MIME format.
 
-Hans
+--------------ms020900020706070005030908
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I am very sorry...
+I was trying to test-forward saved patch mails, but it did work not like =
+
+I expected...
+Try to find out how to forward email without TO and CC lists..
+
+- Dmitry
+
+On 02/02/2012 12:12 AM, Dmitry Kasatkin wrote:
+> From: David Miller<davem@davemloft.net>
+>
+>
+> The long and short of it is that the longlong.h header added by
+> the mpilib code is quite old and out of date.
+>
+> Here I've solved the clz_tab[] multiple definition problem as
+> well as the outdated udiv_qrnnd() definition, but long term
+> we should probably have a more uptodate longlong.h header
+> provides at include/linux/longlong.h to avoid this kind of
+> stuff in the future.
+>
+> It's a part of the libgcc interface and therefore has no
+> business being tucked down deep under lib/foo/ somewhere.
+
+
+--------------ms020900020706070005030908
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIVTDCC
+Az0wggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UE
+ChMHRXF1aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9y
+aXR5MB4XDTA2MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAY
+BgNVBAoTEUludGVsIENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNp
+YyBQb2xpY3kgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ
+8mQ1042TdOIq3ATDIsV2xDyt30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLG
+IKeNNG97dqyc30FElEUjZzTZFq2N4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+Cif
+ozexHLb/hEZj+yISCU61kRZvuSQ0E11yYL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1
+Ppk965XQAKsHfnyT7C4S50T4lVn4lz36wOdNZn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6Kb
+gJCKLovnujGuohquBNfdXKpZkvz6pGv+iC1HawJdAgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQD
+AgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0Vgaj7TdUDDA6BgNVHR8EMzAxMC+gLaArhilo
+dHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3NlY3VyZWNhLmNybDAfBgNVHSMEGDAWgBRI
+5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBBQUAA4GB
+ABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69tOkIP4SgDJOfsxyobIrPLe75
+kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3jMfr900fXZKj5XeqCJ+JP
+0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYR6AtwAAAAAABzANBgkqhkiG
+9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xJzAl
+BgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI1MTNa
+Fw0xNTA1MTUxOTM1MTNaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3Jh
+dGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTCCASIw
+DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMGPgGLnOO5IOzlHRfr1XfCVb97V4BR2QVpP
+Z7CrcIQ+FGa2KHD/6dPjwxOIrtFTdfW4BYikdFmxUZVBWRWZ5Vye2cCdGzFWqIEOE1e17nNx
+1jM8Z6GZEqbDUS+vBuPlBFHKQoVm5BaNIHpyn2XZxqwjV9j5/crIfPrCGstk+2ztUhVS8OHE
+gzO784PgD9pOgBnnAbZHmEM1FYYmQ6ibS+gVCHzobDYG+YReRiHpFKWBxpUuP+X0WYFw/Ja1
+JW7N8pELAFDw0UFBWFgiv1QIusdLvSy8mcsLJ5wy050OVcxShqoUxhw/wvyuuoQxvmEPjhRa
+1C2oSCmGN0003GMhQWMCAwEAAaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYE
+FKoWZq+3PVZTYK4Nwu3z7gfLUWB+MAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQAB
+MCMGCSsGAQQBgjcVAgQWBBTCKwhTx+hdMsKCgOmWwLgjQsAV+TAZBgkrBgEEAYI3FAIEDB4K
+AFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1
+MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRl
+bCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZp
+Y2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNp
+YyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYIKwYBBQUHMAKGV2h0
+dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0
+ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZgaHR0cDovL2Nl
+cnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBF
+eHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IBAQCU
+Y/1d0MS6VPTlIcOho1XWh193PD5kJDJSPdphLHQdM1oKA+whMdIBoY1VzTDDK+C+Ey4Jcyna
+7fpC8uVmn/Rz/i9MZtyc7qezPtZTn9UyORvJmddH+Ox/RycGwe3ags8jUdspECorYOkJyZks
+nDIlTVUvbR7wyY+gGJYqxWXqrcVFEiMsWu8/OIlf7F2gAYMBw1kZ55dn4lWBIM0WqvReWpPv
+hYeN7Y+3MKEdSMkQ7TZiNbfdZ5D/8KfWNMTJ4VHltOgCL1lA5tx/F4R1920skpL5eu3Sj650
+RUe3rOXsaV5NyJzBwB31+1zsmleVdFD0k/Fw9HxXbAQE35ucN/7CMIIGFzCCBP+gAwIBAgIK
+YaZA0gABAABqcjANBgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50
+ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3Vpbmcg
+Q0EgM0EwHhcNMTEwODEwMTE0MDIxWhcNMTQwNzI1MTE0MDIxWjBFMRkwFwYDVQQDExBLYXNh
+dGtpbiwgRG1pdHJ5MSgwJgYJKoZIhvcNAQkBFhlkbWl0cnkua2FzYXRraW5AaW50ZWwuY29t
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0hsbgILRCTXVBTBfuYE/LIWY0YC1
+RavODNFGOuz5v2mTgHVmvyyTV2KhVmOjiLkYD20SMAA2F6qk+WdyQKdyrxcl08XlMf529EZ6
+WNfdtHUjznDnXqjrOce8J85/qX1cwxMHCQZwlMBnacqm4hPnLO6cpXR2wiWa6h8kXc9wMg/n
+fMzeRiSljnDevvz/gtZMPWEhy4nzjIMjn4o3lm4Bn0H9zggk9ritbfMmMZQnZU82T5qslRYX
+EXQOCZVEK9hdQzyAEw2wCikTYzsZHosLurK74ThBlOOmaHGUsNoP2uj6ca2YHEJImd7fY+HD
+BcymHiOUGdF87AZlwIzP6aU35wIDAQABo4IC9jCCAvIwCwYDVR0PBAQDAgeAMDwGCSsGAQQB
+gjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4HevTmV8EMCAWQCAQgw
+HQYDVR0OBBYEFOHXj1xKICzYacJ+Wt9esZs8PVxGMB8GA1UdIwQYMBaAFKoWZq+3PVZTYK4N
+wu3z7gfLUWB+MIHPBgNVHR8EgccwgcQwgcGggb6ggbuGV2h0dHA6Ly93d3cuaW50ZWwuY29t
+L3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBD
+QSUyMDNBKDEpLmNybIZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9y
+eS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwM0EoMSku
+Y3JsMIH1BggrBgEFBQcBAQSB6DCB5TBsBggrBgEFBQcwAoZgaHR0cDovL3d3dy5pbnRlbC5j
+b20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIw
+SXNzdWluZyUyMENBJTIwM0EoMSkuY3J0MHUGCCsGAQUFBzAChmlodHRwOi8vY2VydGlmaWNh
+dGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFs
+JTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQSgxKS5jcnQwHwYDVR0lBBgwFgYIKwYBBQUH
+AwQGCisGAQQBgjcKAwwwKQYJKwYBBAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3
+CgMMME8GA1UdEQRIMEagKQYKKwYBBAGCNxQCA6AbDBlkbWl0cnkua2FzYXRraW5AaW50ZWwu
+Y29tgRlkbWl0cnkua2FzYXRraW5AaW50ZWwuY29tMA0GCSqGSIb3DQEBBQUAA4IBAQAp2uSP
+L6GMJIyxc4SJsJbCZ3BtU58vJ0u9VthsidMvo3kTsj/ExFuh9OJ40Z9fDgMAZF7DMx1GbjpH
+/agiSRWhV1GlqVmv3STiSJKIeZw9XypbVbHanQ/rAgSHd633VLA8ZQLPFGDSNUVAS/OB4SwO
+iA+tXHzgNDQBqMSmIQmQuV2l+hFDV8vte0LmDi+81K2KpdCFMSyBNUTCQ8IhTRr06WiV5blV
+vo3TASVaKNMFt9CLEfOAFQJjML7nkIhJnSVEzezfwsm/t1G8wHfP0+dkgkuskm3diyvfx/in
+HodZphAw9G/XYbCW0cAY8pa0CMaCd4KB4yjy95S3RM9nGMDGMIIGXjCCBUagAwIBAgIKbdof
+NwABAAB1cjANBgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwg
+Q29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0Eg
+M0IwHhcNMTEwODEwMTEzODUyWhcNMTQwNzI1MTEzODUyWjBFMRkwFwYDVQQDExBLYXNhdGtp
+biwgRG1pdHJ5MSgwJgYJKoZIhvcNAQkBFhlkbWl0cnkua2FzYXRraW5AaW50ZWwuY29tMIIB
+IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4VC2dDFZA7qND1Pgz6MY+Sb834DUe7ye
+wApKecEM+0iY01safCwDBcn9k/WeazWNzYmMb1K18752POXRlS9p+IRdenZ9cWwXJrrCWjg4
+IAB6XFvSOMNYRuMfKh7bPibJIEszk8aCH09g1+Fy8BE0xYDlxDLLY2BYxQzSGEfUOy8OjgBD
+bjDljoRGtbqkc1oWbLAF+nsBkqZJ06gNpfudGLDdw9ON03cySFcBAt3qNDIK3q3tcSG5+AeS
+wT/MqUw5ltyK4LV0SdnsK4d/uKp3wdQjJf+X3Qs1anWkhRX9/1d9M248/kfTWfkdJOIGW23h
+2wlAZOCNcQzIINlPubUk1wIDAQABo4IDPTCCAzkwCwYDVR0PBAQDAgQwMD0GCSsGAQQBgjcV
+BwQwMC4GJisGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4S52UGHhP9OAgFkAgEMMEQG
+CSqGSIb3DQEJDwQ3MDUwDgYIKoZIhvcNAwICAgCAMA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMC
+BzAKBggqhkiG9w0DBzAdBgNVHQ4EFgQUWl/BAgkqJlaxJNdkhBggeqZpiU8wHwYDVR0jBBgw
+FoAUDsYq91myCBCQJW/D3f2KZjEwK8Uwgc8GA1UdHwSBxzCBxDCBwaCBvqCBu4ZXaHR0cDov
+L3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2lj
+JTIwSXNzdWluZyUyMENBJTIwM0IoMSkuY3JshmBodHRwOi8vY2VydGlmaWNhdGVzLmludGVs
+LmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5n
+JTIwQ0ElMjAzQigxKS5jcmwwgfUGCCsGAQUFBwEBBIHoMIHlMGwGCCsGAQUFBzAChmBodHRw
+Oi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVy
+bmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5jcnQwdQYIKwYBBQUHMAKGaWh0
+dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0lu
+dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNydDAfBgNV
+HSUEGDAWBggrBgEFBQcDBAYKKwYBBAGCNwoDBDApBgkrBgEEAYI3FQoEHDAaMAoGCCsGAQUF
+BwMEMAwGCisGAQQBgjcKAwQwTwYDVR0RBEgwRqApBgorBgEEAYI3FAIDoBsMGWRtaXRyeS5r
+YXNhdGtpbkBpbnRlbC5jb22BGWRtaXRyeS5rYXNhdGtpbkBpbnRlbC5jb20wDQYJKoZIhvcN
+AQEFBQADggEBAAqn6eoP43/82qfmPxnYBLHjPrq/23Vx6ZcMU8aCnTP3OzSPl3vu7w1ESat3
+Gt06gsOCvE6bqEYotm7AflNu/QTb8JaX4pQOTxnaj9EidJkHNbDOM58QUCNVJLH02sYVjDYg
+gCI/Ef48juH1HcKRSm6eZpuBbekt+d75eVaKikFOHjrluqpxrLrAlgkGWc7UAvqy4w50A3XI
+MhsBZ1wX2upbJnoKtON+DliXmQ6XgkBGjCzdgtSzaaCuKfF0bvhuYwM1O0SZgZcZ71x1lHAZ
+LoHTtTkyrRTLFWXEU2dH3yH0cibj61+uVrYbqgqRK5LgTsZTmBOoEof1W8ZWLzUAF0wxggM5
+MIIDNQIBATBkMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlvbjEr
+MCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQQIKYaZA0gABAABq
+cjAJBgUrDgMCGgUAoIIBqjAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJ
+BTEPFw0xMjAyMDEyMjE2MDFaMCMGCSqGSIb3DQEJBDEWBBScMknoC2OUGURqAkrL7vd8klav
+RTBfBgkqhkiG9w0BCQ8xUjBQMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0D
+AgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwcwYJKwYBBAGC
+NxAEMWYwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzAp
+BgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0ICCm3aHzcAAQAAdXIw
+dQYLKoZIhvcNAQkQAgsxZqBkMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jw
+b3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQgIK
+bdofNwABAAB1cjANBgkqhkiG9w0BAQEFAASCAQDCs0IX/slkzYY7qbx2vInTaFTcQC+5hAsV
+eCySQr8mrJTlej4hhCTZNyJcjff/1H5nrn0UZjV9GoXC6ENqFGxIVfiKcguN9PCQsw4WAlWn
+7DG6kt0Z1oO/CHxxA+gEPKXjQNjqoXr96tHimqga31PBUJhT02rolmsKJEv5M4W5v9xeZzhU
+vaEDuDc8DJ85V0myxc6km25p/1ICHhJpBiaoIP1YWP9xIyO5/mESqb/Rp6fvXqVqaemHQ0ly
+CLDxkkFt8s/yfPZ7iXPdP5BWh6ezta2V3FOBJAKr1cI9Ev28SqzJ4/BmjRVisUYaWnHoa1s7
+jfk3by7Rz4kzCc/+hBqyAAAAAAAA
+--------------ms020900020706070005030908--
