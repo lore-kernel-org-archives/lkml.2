@@ -1,88 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab2BACkF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 21:40:05 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:45746 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753237Ab2BACkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 21:40:03 -0500
-Date: Wed, 1 Feb 2012 13:39:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Message-Id: <20120201133950.ece9e39bba11f943e4724014@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__1_Feb_2012_13_39_50_+1100_o3K7sK3MFzOWeO3n"
+	id S1755707Ab2BACrj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 21:47:39 -0500
+Received: from relmlor4.renesas.com ([210.160.252.174]:48665 "EHLO
+	relmlor4.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207Ab2BACrh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 21:47:37 -0500
+X-IronPort-AV: E=Sophos;i="4.71,599,1320591600";   d="scan'208";a="65846860"
+Message-id: <4F28A7C7.8060500@renesas.com>
+Date: Wed, 01 Feb 2012 11:47:35 +0900
+From: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0) Gecko/20120129
+ Thunderbird/10.0
+MIME-version: 1.0
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 1/7 v2] dmaengine: add a simple dma library
+References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
+ <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de>
+ <4F22624E.2090201@renesas.com>
+ <Pine.LNX.4.64.1201270946150.32661@axis700.grange> <4F27CA7D.601@renesas.com>
+ <Pine.LNX.4.64.1202010145510.31226@axis700.grange>
+In-reply-to: <Pine.LNX.4.64.1202010145510.31226@axis700.grange>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__1_Feb_2012_13_39_50_+1100_o3K7sK3MFzOWeO3n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Guennadi-san,
 
-Hi John,
+2012/02/01 9:52, Guennadi Liakhovetski wrote:
+> Hi Shimoda-san
+> 
+> On Tue, 31 Jan 2012, Shimoda, Yoshihiro wrote:
+[ snip ]
+>> I investigaed the issue. I found out the renesas_usbhs driver may
+>> call tx_submit() in the callback()
+> 
+> Well, actually, this is not something, that shdma officially supports ATM. 
+> Originally it was prohibited by the API, but later a correction has been 
+> added to Documentation/dmaengine.txt, explicitly allowing this. So, good, 
+> if this works for you, but watch out for possible issues.
+>
+>> of the dma-simple finally.
+>> In this case, the value of power_up in the simple_tx_submit is 0,
+>> the start_xfer() is not called. And then, even if the ld_queue is
+>> not empty, the DMA doesn't start.
+> 
+> This is correct. As soon as all the transfers, currently queued in the 
+> shdma driver, has been processed and completed, to restart DMA you need to 
+> call dma_async_issue_pending().
+> 
+>> So, if I add codes like the following in the dma-simple.c,
+>> the renesas_usbhs driver can work correctly without the driver changes.
+>> If you think the code is good, would you merge it to your code?
+>> ======= chan_irqt() =======
+>> 	simple_chan_ld_cleanup(schan, false);
+>>
+>> +	spin_lock_irq(&schan->chan_lock);
+>> +	/* Next desc */
+>> +	simple_chan_xfer_ld_queue(schan);
+>> +	spin_unlock_irq(&schan->chan_lock);
+>>
+>> 	return IRQ_HANDLED;
+>> ==============
+> 
+> Therefore, no, this shouldn't be needed.
 
-Today's linux-next merge of the wireless-next tree got a conflict in
-drivers/net/wireless/rtlwifi/rtl8192se/sw.c between commit e404decb0fb0
-("drivers/net: Remove unnecessary k.alloc/v.alloc OOM messages") from the
-net-next tree and commit f30d7507a811 ("rtlwifi: Convert RT_TRACE macro
-to use ##__VA_ARGS__") from the wireless-next tree.
+Thank you very much for your comment.
+I understood it. I will investigate the renesas_usbhs driver more.
 
-The former removed the code modified by the latter, so I did that (see
-below).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Best regards,
+Yoshihiro Shimoda
 
-diff --cc drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-index 36140cc,ca38dd9..0000000
---- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-@@@ -186,9 -226,14 +226,11 @@@ static int rtl92s_init_sw_vars(struct i
- =20
-  	/* for firmware buf */
-  	rtlpriv->rtlhal.pfirmware =3D vzalloc(sizeof(struct rt_firmware));
- -	if (!rtlpriv->rtlhal.pfirmware) {
- -		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
- -			 "Can't alloc buffer for fw\n");
- +	if (!rtlpriv->rtlhal.pfirmware)
-  		return 1;
- -	}
- =20
-+ 	rtlpriv->max_fw_size =3D sizeof(struct rt_firmware);
-+=20
-  	pr_info("Driver for Realtek RTL8192SE/RTL8191SE\n"
-  		"Loading firmware %s\n", rtlpriv->cfg->fw_name);
-  	/* request fw */
+> Thanks
+> Guennadi
+> 
+>>
+>> Best regards,
+>> Yoshihiro Shimoda
+>>
+>>> Thanks
+>>> Guennadi
+>>>
+>>>> For reference, if I changed the threaded IRQ to tasklet,
+>>>> the 2 environment worked correctly:
+>>>> ==============
+>>>> diff --git a/drivers/dma/dma-simple.c b/drivers/dma/dma-simple.c
+>>>> index 49d8f7d..65a5170 100644
+>>>> --- a/drivers/dma/dma-simple.c
+>>>> +++ b/drivers/dma/dma-simple.c
+>>>> @@ -715,16 +715,18 @@ static irqreturn_t chan_irq(int irq, void *dev)
+>>>>
+>>>>  	spin_lock(&schan->chan_lock);
+>>>>
+>>>> -	ret = ops->chan_irq(schan, irq) ? IRQ_WAKE_THREAD : IRQ_NONE;
+>>>> +	ret = ops->chan_irq(schan, irq) ? IRQ_HANDLED : IRQ_NONE;
+>>>> +	if (ret == IRQ_HANDLED)
+>>>> +		tasklet_schedule(&schan->tasklet);
+>>>>
+>>>>  	spin_unlock(&schan->chan_lock);
+>>>>
+>>>>  	return ret;
+>>>>  }
+>>>>
+>>>> -static irqreturn_t chan_irqt(int irq, void *dev)
+>>>> +static void chan_irqt(unsigned long dev)
+>>>>  {
+>>>> -	struct dma_simple_chan *schan = dev;
+>>>> +	struct dma_simple_chan *schan = (struct dma_simple_chan *)dev;
+>>>>  	const struct dma_simple_ops *ops =
+>>>>  		to_simple_dev(schan->dma_chan.device)->ops;
+>>>>  	struct dma_simple_desc *sdesc;
+>>>> @@ -744,15 +746,13 @@ static irqreturn_t chan_irqt(int irq, void *dev)
+>>>>  	spin_unlock_irq(&schan->chan_lock);
+>>>>
+>>>>  	simple_chan_ld_cleanup(schan, false);
+>>>> -
+>>>> -	return IRQ_HANDLED;
+>>>>  }
+>>>>
+>>>>  int dma_simple_request_irq(struct dma_simple_chan *schan, int irq,
+>>>>  			   unsigned long flags, const char *name)
+>>>>  {
+>>>> -	int ret = request_threaded_irq(irq, chan_irq, chan_irqt,
+>>>> -				       flags, name, schan);
+>>>> +	int ret = request_irq(irq, chan_irq, flags, name, schan);
+>>>> +	tasklet_init(&schan->tasklet, chan_irqt, (unsigned long)schan);
+>>>>
+>>>>  	schan->irq = ret < 0 ? ret : irq;
+>>>>
+>>>> diff --git a/include/linux/dma-simple.h b/include/linux/dma-simple.h
+>>>> index 5336674..beb1489 100644
+>>>> --- a/include/linux/dma-simple.h
+>>>> +++ b/include/linux/dma-simple.h
+>>>> @@ -68,6 +68,7 @@ struct dma_simple_chan {
+>>>>  	int id;				/* Raw id of this channel */
+>>>>  	int irq;			/* Channel IRQ */
+>>>>  	enum dma_simple_pm_state pm_state;
+>>>> +	struct tasklet_struct tasklet;
+>>>>  };
+>>>>
+>>>>  /**
+>>>> ==============
+>>>>
+>>>> Best regards,
+>>>> Yoshihiro Shimoda
+>>>>
+>>>
+>>> ---
+>>> Guennadi Liakhovetski, Ph.D.
+>>> Freelance Open-Source Software Developer
+>>> http://www.open-technology.de/
+>>>
+>>
+>>
+>> -- 
+>> Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+>> EC No.
+>>
+> 
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
+> 
 
---Signature=_Wed__1_Feb_2012_13_39_50_+1100_o3K7sK3MFzOWeO3n
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPKKX2AAoJEECxmPOUX5FEj14P/0V6AwPrzUGfAxESJHiEzpji
-maZ+61hEXWI9L4skvF1rDyIU0PHyRpzdm6yBxNL3/TdNLIUH/hGc5rsrMr2nonFv
-FzmOtnZrbyHrtiVdwU3QI70mBE6zxK+iA20Akt88M8tXu4KLEpLc9D51ih+G22M5
-K7JByqFZqEKP/1h3+iunESkMKxK0pKdmNplWsEuzAOl+nDfYinBin0dxvWAlBH+f
-zIUzhJBpVRkGHGSk0lUMSEPmLNasY7mzIM9HfUc9uMRNA2iIwASKhUJiLXzUidEu
-vrKle9hASokQd03ngmopGIq31hqHYOQaQk+otm19qkdikiQfyg4nQpEgbmaRC8U+
-TZPs2AHCOsQL7mmosyYHFt+3sAIl2/3+7LRa/15IJSuGeEPqYtAyyEPaLjVT0oF8
-tlA0GDeVgK7jROv8d7rJDwhz1mxeF6os/zXLkfF2D7TpyTher4xi4jk45DoguuSJ
-yqh5rgjjqSOcRzVkhJaOAMO1wjNI450YapwgD+eN2yJwUl4D6LjN8OLH27VooiyT
-3lOdF3xH78CxtSWnOrazCPLqKFfU8MpK9Ztw2UWSl+OEBbQA3NNm2gp8CKEeZhI4
-e4orLlei3VRQlG6KP1ajcQOrrTauZ7o4yLlxlmPvyrrMY2OXDHtyzQsmMd8c38GH
-GLdcBcwuBrkrl8BibH5T
-=MrdA
------END PGP SIGNATURE-----
-
---Signature=_Wed__1_Feb_2012_13_39_50_+1100_o3K7sK3MFzOWeO3n--
+-- 
+Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+EC No.
