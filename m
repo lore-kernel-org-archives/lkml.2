@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab2BAVfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:35:08 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55900 "EHLO
+	id S932516Ab2BAVfG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:35:06 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50351 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932517Ab2BAVKG (ORCPT
+	by vger.kernel.org with ESMTP id S932519Ab2BAVKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:06 -0500
-X-Sasl-enc: loiM/B7RGBRGUtZRykvze3esEfJS1DTGoi9ohZ8XSyKL 1328130604
+	Wed, 1 Feb 2012 16:10:07 -0500
+X-Sasl-enc: V1kNcF7Oz4bGFxsHPEVkH9b6a+zkho1Ll0ZccQmDFHzz 1328130606
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:47 2012
-Message-Id: <20120201210047.329334073@clark.kroah.org>
+Message-Id: <20120201210047.428318096@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:03 -0800
+Date: Wed, 01 Feb 2012 13:00:04 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Kentaro Matsuyama <kentaro.matsuyama@gmail.com>
-Subject: [39/89] USB: option: Add LG docomo L-02C
+        =?UTF-8?q?Torbj=C3=B6rn=20Lofterud?= <torbjorn@pi.nxs.se>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [40/89] USB: ftdi_sio: fix TIOCSSERIAL baud_base handling
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kentaro Matsuyama <kentaro.matsuyama@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit e423d7401fd0717cb56a6cf51dd8341cc3e800d2 upstream.
+commit eb833a9e0972f60beb4ab8104ad7ef6bf30f02fc upstream.
 
-Add vendor and product ID for USB 3G/LTE modem of docomo L-02C
+Return EINVAL if new baud_base does not match the current one.
 
-Signed-off-by: Kentaro Matsuyama <kentaro.matsuyama@gmail.com>
+The baud_base is device specific and can not be changed. This restores
+the old (pre-2005) behaviour which was changed due to a
+misunderstanding regarding this fact (see
+https://lkml.org/lkml/2005/1/20/84).
+
+Reported-by: Torbjörn Lofterud <torbjorn@pi.nxs.se>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/serial/ftdi_sio.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -480,6 +480,10 @@ static void option_instat_callback(struc
- #define ZD_VENDOR_ID				0x0685
- #define ZD_PRODUCT_7000				0x7000
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1333,8 +1333,7 @@ static int set_serial_info(struct tty_st
+ 		goto check_and_exit;
+ 	}
  
-+/* LG products */
-+#define LG_VENDOR_ID				0x1004
-+#define LG_PRODUCT_L02C				0x618f
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1183,6 +1187,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU526) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE(LG_VENDOR_ID, LG_PRODUCT_L02C) }, /* docomo L-02C modem */
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+-	if ((new_serial.baud_base != priv->baud_base) &&
+-	    (new_serial.baud_base < 9600)) {
++	if (new_serial.baud_base != priv->baud_base) {
+ 		mutex_unlock(&priv->cfg_lock);
+ 		return -EINVAL;
+ 	}
 
 
