@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab2BAOED (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 09:04:03 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56427 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab2BAOEB (ORCPT
+	id S1754798Ab2BAORM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 09:17:12 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60565 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668Ab2BAORL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 09:04:01 -0500
-Date: Wed, 1 Feb 2012 15:03:57 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, rjw@sisk.pl, len.brown@intel.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] PM/Freezer: Make thaw_processes() thaw only
- userspace tasks
-Message-ID: <20120201140357.GD3673@elf.ucw.cz>
-References: <20120130231342.11129.87187.stgit@srivatsabhat.in.ibm.com>
- <20120130231437.11129.3708.stgit@srivatsabhat.in.ibm.com>
- <20120130233055.GE27616@google.com>
- <4F27311C.5020200@linux.vnet.ibm.com>
+	Wed, 1 Feb 2012 09:17:11 -0500
+Date: Wed, 1 Feb 2012 15:17:05 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v3 22/25] irq_domain/x86: Convert x86 (embedded) to use
+ common irq_domain
+Message-ID: <20120201141705.GF9587@linutronix.de>
+References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
+ <1327700179-17454-23-git-send-email-grant.likely@secretlab.ca>
+ <20120128164405.GA20763@linutronix.de>
+ <20120130195842.GT28397@ponder.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4F27311C.5020200@linux.vnet.ibm.com>
-X-Warning: Reading this can be dangerous to your mental health.
+In-Reply-To: <20120130195842.GT28397@ponder.secretlab.ca>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+* Grant Likely | 2012-01-30 12:58:42 [-0700]:
 
-> The thing is that, I wanted to avoid a bug in the patch posted at
-> https://lkml.org/lkml/2012/1/29/47 as explained in the link.
-> 
-> So I guess I should have simply done:
-> 
-> freeze_kernel_threads() calls thaw_kernel_threads() upon error.
+>Ugh.  This isn't easy.  The legacy mapping really needs all the
 
-Seems like a good idea. When error is reported, call should be NOP.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Feel free to merge this patch. I don't have the time to look at this now
+so I take a look at the ioapic later.
+
+>g.
+
+Sebastian
