@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab2BAVwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:52:39 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36722 "EHLO
+	id S933044Ab2BAVw5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:52:57 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48105 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755317Ab2BAVIR (ORCPT
+	by vger.kernel.org with ESMTP id S1757001Ab2BAVIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:17 -0500
-X-Sasl-enc: 8UBveSaymiw6q3Q1/razDdE2EHDPky2U+GKySEgZlTEA 1328130496
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:39 2012
-Message-Id: <20120201205738.971881770@clark.kroah.org>
+	Wed, 1 Feb 2012 16:08:16 -0500
+X-Sasl-enc: vbGQzpENIBjdcMgw00Cw5nAdnXyYL4ky4bPIXyRRHADa 1328130494
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:37 2012
+Message-Id: <20120201205737.569960095@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:57 -0800
+Date: Wed, 01 Feb 2012 12:55:41 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Russ Anderson <rja@sgi.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [17/65] x86/uv: Fix uv_gpa_to_soc_phys_ram() shift
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [01/65] ALSA: hda - Fix silent outputs from docking-station jacks of Dell laptops
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russ Anderson <rja@sgi.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5a51467b146ab7948d2f6812892eac120a30529c upstream.
+commit b4ead019afc201f71c39cd0dfcaafed4a97b3dd2 upstream.
 
-uv_gpa_to_soc_phys_ram() was inadvertently ignoring the
-shift values.  This fix takes the shift into account.
+The recent change of the power-widget handling for IDT codecs caused
+the silent output from the docking-station line-out jack.  This was
+partially fixed by the commit f2cbba7602383cd9cdd21f0a5d0b8bd1aad47b33
+"ALSA: hda - Fix the lost power-setup of seconary pins after PM resume".
+But the line-out on the docking-station is still silent when booted
+with the jack plugged even by this fix.
 
-Signed-off-by: Russ Anderson <rja@sgi.com>
-Link: http://lkml.kernel.org/r/20120119020753.GA7228@sgi.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+The remainig bug is that the power-widget is set off in stac92xx_init()
+because the pins in cfg->line_out_pins[] aren't checked there properly
+but only hp_pins[] are checked in is_nid_hp_pin().
+
+This patch fixes the problem by checking both HP and line-out pins
+and leaving the power-map correctly.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42637
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/uv/uv_hub.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/arch/x86/include/asm/uv/uv_hub.h
-+++ b/arch/x86/include/asm/uv/uv_hub.h
-@@ -318,13 +318,13 @@ uv_gpa_in_mmr_space(unsigned long gpa)
- /* UV global physical address --> socket phys RAM */
- static inline unsigned long uv_gpa_to_soc_phys_ram(unsigned long gpa)
- {
--	unsigned long paddr = gpa & uv_hub_info->gpa_mask;
-+	unsigned long paddr;
- 	unsigned long remap_base = uv_hub_info->lowmem_remap_base;
- 	unsigned long remap_top =  uv_hub_info->lowmem_remap_top;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -4162,13 +4162,15 @@ static int enable_pin_detect(struct hda_
+ 	return 1;
+ }
  
- 	gpa = ((gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
- 		((gpa >> uv_hub_info->n_lshift) << uv_hub_info->m_val);
--	gpa = gpa & uv_hub_info->gpa_mask;
-+	paddr = gpa & uv_hub_info->gpa_mask;
- 	if (paddr >= remap_base && paddr < remap_base + remap_top)
- 		paddr -= remap_base;
- 	return paddr;
+-static int is_nid_hp_pin(struct auto_pin_cfg *cfg, hda_nid_t nid)
++static int is_nid_out_jack_pin(struct auto_pin_cfg *cfg, hda_nid_t nid)
+ {
+ 	int i;
+ 	for (i = 0; i < cfg->hp_outs; i++)
+ 		if (cfg->hp_pins[i] == nid)
+ 			return 1; /* nid is a HP-Out */
+-
++	for (i = 0; i < cfg->line_outs; i++)
++		if (cfg->line_out_pins[i] == nid)
++			return 1; /* nid is a line-Out */
+ 	return 0; /* nid is not a HP-Out */
+ };
+ 
+@@ -4354,7 +4356,7 @@ static int stac92xx_init(struct hda_code
+ 			continue;
+ 		}
+ 
+-		if (is_nid_hp_pin(cfg, nid))
++		if (is_nid_out_jack_pin(cfg, nid))
+ 			continue; /* already has an unsol event */
+ 
+ 		pinctl = snd_hda_codec_read(codec, nid, 0,
 
 
