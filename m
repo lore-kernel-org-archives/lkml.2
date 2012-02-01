@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab2BAVIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:08:43 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41102 "EHLO
+	id S933009Ab2BAVsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:48:09 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48111 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756088Ab2BAVIh (ORCPT
+	by vger.kernel.org with ESMTP id S932437Ab2BAVIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:37 -0500
-X-Sasl-enc: zG82SUpjY0ECusDQL8Epeho4nVI3F0QWu7T1DMmJnh13 1328130516
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:40 2012
-Message-Id: <20120201205740.617324998@clark.kroah.org>
+	Wed, 1 Feb 2012 16:08:45 -0500
+X-Sasl-enc: Mq8uuBsAW29eQtrWP4iwycnuM+nFzAr4Fm46cV/FFDLW 1328130524
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:38 2012
+Message-Id: <20120201205738.621347571@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:16 -0800
+Date: Wed, 01 Feb 2012 12:55:53 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rabin Vincent <rabin.vincent@stericsson.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Bibek Basu <bibek.basu@stericsson.com>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [36/65] serial: amba-pl011: lock console writes against interrupts
+        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>
+Subject: [13/65] ftrace: Update filter when tracing enabled in set_ftrace_filter()
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,64 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit ef605fdb33883d687cff5ba75095a91b313b4966 upstream.
+commit 072126f4529196f71a97960248bca54fd4554c2d upstream.
 
-Protect against pl011_console_write() and the interrupt for
-the console UART running concurrently on different CPUs.
+Currently, if set_ftrace_filter() is called when the ftrace_ops is
+active, the function filters will not be updated. They will only be updated
+when tracing is disabled and re-enabled.
 
-Otherwise the console_write could spin for a long time
-waiting for the UART to become not busy, while the other
-CPU continuously services UART interrupts and keeps the
-UART busy.
+Update the functions immediately during set_ftrace_filter().
 
-The checks for sysrq and oops_in_progress are taken
-from 8250.c.
-
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Reviewed-by: Bibek Basu <bibek.basu@stericsson.com>
-Reviewed-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ kernel/trace/ftrace.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1733,9 +1733,19 @@ pl011_console_write(struct console *co,
- {
- 	struct uart_amba_port *uap = amba_ports[co->index];
- 	unsigned int status, old_cr, new_cr;
-+	unsigned long flags;
-+	int locked = 1;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2901,6 +2901,10 @@ ftrace_set_regex(struct ftrace_ops *ops,
  
- 	clk_enable(uap->clk);
- 
-+	local_irq_save(flags);
-+	if (uap->port.sysrq)
-+		locked = 0;
-+	else if (oops_in_progress)
-+		locked = spin_trylock(&uap->port.lock);
-+	else
-+		spin_lock(&uap->port.lock);
+ 	mutex_lock(&ftrace_lock);
+ 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
++	if (!ret && ops->flags & FTRACE_OPS_FL_ENABLED
++	    && ftrace_enabled)
++		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
 +
- 	/*
- 	 *	First save the CR then disable the interrupts
- 	 */
-@@ -1755,6 +1765,10 @@ pl011_console_write(struct console *co,
- 	} while (status & UART01x_FR_BUSY);
- 	writew(old_cr, uap->port.membase + UART011_CR);
+ 	mutex_unlock(&ftrace_lock);
  
-+	if (locked)
-+		spin_unlock(&uap->port.lock);
-+	local_irq_restore(flags);
-+
- 	clk_disable(uap->clk);
- }
- 
+ 	mutex_unlock(&ftrace_regex_lock);
 
 
