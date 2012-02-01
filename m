@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072Ab2BAVyl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:54:41 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48105 "EHLO
+	id S933084Ab2BAVy4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:54:56 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51705 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757020Ab2BAVIE (ORCPT
+	by vger.kernel.org with ESMTP id S1757013Ab2BAVID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:04 -0500
-X-Sasl-enc: wxAWPVo1oqeRPuucDLgc2aIrZP7EMt91+RSnOe0QPx8C 1328130483
+	Wed, 1 Feb 2012 16:08:03 -0500
+X-Sasl-enc: x6fRbczHMCeXdKLKakSXDOP7kY31fTa0dzPEuHPViJje 1328130481
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:15:32 2012
-Message-Id: <20120201201532.158741856@clark.kroah.org>
+Message-Id: <20120201201532.083848738@clark.kroah.org>
 User-Agent: quilt/0.51-14.1
-Date: Wed, 01 Feb 2012 12:14:15 -0800
+Date: Wed, 01 Feb 2012 12:14:14 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
-Subject: [13/20] USB: ftdi_sio: Add more identifiers
+        alan@lxorguk.ukuu.org.uk, Peter Naulls <peter@chocky.org>
+Subject: [12/20] USB: serial: ftdi additional IDs
 In-Reply-To: <20120201210055.GA25374@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,13 +26,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Peter Naulls <peter@chocky.org>
 
-commit 2353f806c97020d4c7709f15eebb49b591f7306d upstream.
+commit fc216ec363f4d174932df90bbf35c77d0540e561 upstream.
 
-0x04d8, 0x000a: Hornby Elite
+I tested this against 2.6.39 in the Ubuntu kernel, however I see the IDs
+are not in latest 3.2 git.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+This adds IDs for the FTDI controller in the Rainforest Automation
+Zigbee dongle.
+
+Signed-off-by: Peter Naulls <peter@chocky.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
@@ -42,28 +46,25 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/usb/serial/ftdi_sio.c
 +++ b/drivers/usb/serial/ftdi_sio.c
-@@ -798,6 +798,7 @@ static struct usb_device_id id_table_com
+@@ -844,6 +844,7 @@ static struct usb_device_id id_table_com
  		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(ADI_VID, ADI_GNICEPLUS_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(HORNBY_VID, HORNBY_ELITE_PID) },
- 	{ USB_DEVICE(JETI_VID, JETI_SPC1201_PID) },
- 	{ USB_DEVICE(MARVELL_VID, MARVELL_SHEEVAPLUG_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
++	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
 --- a/drivers/usb/serial/ftdi_sio_ids.h
 +++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -531,6 +531,12 @@
- #define ADI_GNICEPLUS_PID 	0xF001
- 
- /*
-+ * Hornby Elite
-+ */
-+#define HORNBY_VID		0x04D8
-+#define HORNBY_ELITE_PID	0x000A
+@@ -1180,3 +1180,9 @@
+  */
+ /* TagTracer MIFARE*/
+ #define FTDI_ZEITCONTROL_TAGTRACE_MIFARE_PID	0xF7C0
 +
 +/*
-  * RATOC REX-USB60F
-  */
- #define RATOC_VENDOR_ID		0x0584
++ * Rainforest Automation
++ */
++/* ZigBee controller */
++#define FTDI_RF_R106		0x8A28
 
 
