@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab2BATzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:55:24 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:34043 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140Ab2BATzW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:55:22 -0500
-Date: Wed, 01 Feb 2012 14:49:13 -0500 (EST)
-Message-Id: <20120201.144913.977767856248048589.davem@davemloft.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org,
-        paul.mckenney@linaro.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org
-Subject: Re: [PATCH RFC tip/core/rcu 09/41] ipv4: Convert call_rcu() to
- kfree_rcu()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1328125319-5205-9-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
-	<1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1328125319-5205-9-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1756801Ab2BATzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:55:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756650Ab2BATzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:55:46 -0500
+Message-ID: <4F299888.40307@redhat.com>
+Date: Wed, 01 Feb 2012 12:54:48 -0700
+From: Jeff Law <law@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: "Boehm, Hans" <hans.boehm@hp.com>
+CC: Torvald Riegel <triegel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "dsterba@suse.cz" <dsterba@suse.cz>,
+        "ptesarik@suse.cz" <ptesarik@suse.cz>,
+        "rguenther@suse.de" <rguenther@suse.de>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: Memory corruption due to word sharing
+References: <20120201151918.GC16714@quack.suse.cz>	 <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com> <1328118174.15992.6206.camel@triegel.csb> <A3E67C2071F49C4CBC4F17E6D77CDDD23275408E@G4W3299.americas.hpqcorp.net>
+In-Reply-To: <A3E67C2071F49C4CBC4F17E6D77CDDD23275408E@G4W3299.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 01 Feb 2012 11:49:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Wed,  1 Feb 2012 11:41:27 -0800
+On 02/01/2012 12:44 PM, Boehm, Hans wrote:
 
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> 
-> Because opt_kfree_rcu() just calls kfree(), all call_rcu() uses of it
-> may be converted to kfree_rcu().  This permits opt_kfree_rcu() to
-> be eliminated.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> C11 is a published standard.  Last I checked, gcc did not follow many of the above rules.  It looks like major changes were recently merged into the gcc trunk, and I haven't had a chance to test those, so it may well be fixed.  But more importantly, so far I haven't read anything here to dissuade me that they are the right target.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+The bitfield changes didn't make it into gcc-4.7; we're still working 
+through implementation details.   GCC's bitfield support is a horrid 
+nasty mess which has made implementation of the standard problematical. 
+   It's on Aldy's plate for gcc-4.8.
+
+jeff
