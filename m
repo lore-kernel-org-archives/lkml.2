@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab2BAS3W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 13:29:22 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37945 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab2BAS3V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 13:29:21 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: sysfs regression: wrong link counts
-Date: Wed, 1 Feb 2012 19:29:15 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <4F27120A.4040106@suse.cz>
-In-Reply-To: <4F27120A.4040106@suse.cz>
+	id S1755213Ab2BAS3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 13:29:54 -0500
+Received: from bar.sig21.net ([80.81.252.164]:36300 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754942Ab2BAS3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 13:29:41 -0500
+Date: Wed, 1 Feb 2012 19:29:32 +0100
+From: Johannes Stezenbach <js@sig21.net>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: huge debug_objects_cache. swapping but 25% mem free
+Message-ID: <20120201182932.GA15518@sig21.net>
+References: <20120130154048.GA421@sig21.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202011929.15349.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120130154048.GA421@sig21.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -2.9 (--)
+X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziałek, 30 stycznia 2012 o 22:56:26 Jiri Slaby wrote:
-> Hi,
+On Mon, Jan 30, 2012 at 04:40:48PM +0100, Johannes Stezenbach wrote:
 > 
-> I cannot boot properly with this commit:
-> commit 524b6c5b39b931311dfe5a2f5abae2f5c9731676
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Sun Dec 18 20:09:31 2011 -0800
-> 
->     sysfs: Kill nlink counting.
-> 
-> 
-> 1) network systemd rule doesn't start network
-> 2) sensors complain:
->    sensors_init: Kernel interface error
-> 
-> ad 2) look at what it does:
-> /* returns !0 if sysfs filesystem was found, 0 otherwise */
-> int sensors_init_sysfs(void)
-> {
->         struct stat statbuf;
-> 
->         snprintf(sensors_sysfs_mount, NAME_MAX, "%s", "/sys");
->         if (stat(sensors_sysfs_mount, &statbuf) < 0
-> 
->          || statbuf.st_nlink <= 2)      /* Empty directory */
-> 
->                 return 0;
-> 
->         return 1;
-> }
-> 
-> 
-> So this looks like it became a part of ABI we cannot break...
-> 
-> A revert of this commit on the top of today's -next fixes the problem.
-> 
-> thanks,
+> According to slabtop debug_objects_cache eats half the
+> memory, is this expected?  The Kconfig help text does not
+> suggest it.
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=42712
-for your bug report, please add your address to the CC list in there, thanks!
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+FWIW, today after running full backup using rsync:
+
+  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+4025450 4025447  99%    0.36K 183977       22   1471816K debug_objects_cache
+170266  87241  51%    1.74K   9645       18    308640K ext3_inode_cache
+ 54855  40215  73%    0.58K   2034       27     32544K dentry
+ 38124  12474  32%    0.42K   2119       18     16952K buffer_head
+ 17794  17464  98%    0.51K    574       31      9184K sysfs_dir_cache
+ 11434   8494  74%    0.87K    713       18     11408K radix_tree_node
+ 11400   5570  48%    0.38K    570       20      4560K kmalloc-64
+
+/sys/kernel/debug/debug_objects/stats:
+max_chain     :870
+warnings      :0
+fixups        :0
+pool_free     :258
+pool_min_free :252
+pool_used     :4025193
+pool_max_used :4025195
+
+
+then after "echo 3 >/proc/sys/vm/drop_caches":
+
+  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+4030488 4030485  99%    0.36K 184206       22   1473648K debug_objects_cache
+ 17955   9071  50%    0.58K    665       27     10640K dentry
+ 17763  17455  98%    0.51K    573       31      9168K sysfs_dir_cache
+  9408   9156  97%    0.33K    392       24      3136K kmalloc-8
+
+
+I'm still not sure if this is normal behaviour of DEBUG_OBJECTS or a bug?
+
+
+Anyway, I'm going to turn it off now.
+
+
+Johannes
