@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab2BAJFP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 04:05:15 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:51470 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753980Ab2BAJFI convert rfc822-to-8bit (ORCPT
+	id S1756038Ab2BAJJL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 04:09:11 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41278 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab2BAJJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 04:05:08 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 1 Feb 2012 04:09:05 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6606"; a="157261449"
+Message-ID: <4F29012B.50202@codeaurora.org>
+Date: Wed, 01 Feb 2012 14:38:59 +0530
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 01/16] eicon: fix -Warray-bounds warning
-Date: Wed, 1 Feb 2012 09:04:48 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E45@saturn3.aculab.com>
-In-Reply-To: <201201311804.20464.danny.kukawka@bisect.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 01/16] eicon: fix -Warray-bounds warning
-Thread-Index: AczgOnoxHay8jt8aR1u7f+Xf/9MGbAAhfbeA
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Danny Kukawka" <danny.kukawka@bisect.de>,
-        "Karsten Keil" <kkeil@linux-pingi.de>
-Cc: "Ben Hutchings" <bhutchings@solarflare.com>,
-        "Armin Schindler" <mac@melware.de>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, "Karsten Keil" <isdn@linux-pingi.de>
-X-OriginalArrivalTime: 01 Feb 2012 09:04:48.0732 (UTC) FILETIME=[8CCA69C0:01CCE0C0]
+To: Vinod Koul <vinod.koul@intel.com>
+CC: linux-arm-kernel@lists.infradead.org, davidb@codeaurora.org,
+        dan.j.williams@intel.com, Daniel Walker <dwalker@fifo99.com>,
+        johlstei@codeaurora.org, bryanh@codeaurora.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        arnd@arndb.de, tsoni@codeaurora.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH v2 0/2] Add Qualcomm MSM ADM DMAEngine driver
+References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org> <1326807902.1540.116.camel@vkoul-udesk3> <4F195E4C.6080805@codeaurora.org> <1327066287.517.4.camel@vkoul-udesk3> <4F1D4052.3070701@codeaurora.org> <1327326713.517.32.camel@vkoul-udesk3> <4F1FFF7E.3000802@codeaurora.org> <1327911315.1527.8.camel@vkoul-udesk3> <4F278341.4020600@codeaurora.org> <1327990151.1527.80.camel@vkoul-udesk3> <4F28D8A2.9050605@codeaurora.org> <1328084998.1610.11.camel@vkoul-udesk3>  <4F28F9D5.6020801@codeaurora.org> <1328086017.1610.13.camel@vkoul-udesk3>
+In-Reply-To: <1328086017.1610.13.camel@vkoul-udesk3>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On 2/1/2012 2:16 PM, Vinod Koul wrote:
+> On Wed, 2012-02-01 at 14:07 +0530, Ravi Kumar V wrote:
+>> Our hardware supports single transfer mode,scatter gather mode&  box
+>> mode.
+>>
+>> we are using these dmaengine API's for our HW
+>> device_prep_memcpy() for single mode.
+>> device_prep_dma_sg() for sg mode.
+>> device_prep_interleaved_dma() for box mode.
+>>
+>> We need to pass command configuration parameter to all of the above
+>> three modes and it can be possible if extra context parameter is added
+>> into these API's
+> but again, is this static fr channel for each transfer. Would you be
+> able to derive these for non box modes?
+>
 
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org 
-> [mailto:netdev-owner@vger.kernel.org] On Behalf Of Danny Kukawka
-> Sent: 31 January 2012 17:04
-> To: Karsten Keil
-> Cc: Ben Hutchings; Armin Schindler; 
-> linux-kernel@vger.kernel.org; netdev@vger.kernel.org; Karsten Keil
-> Subject: Re: [PATCH 01/16] eicon: fix -Warray-bounds warning
-> 
-> On Dienstag, 31. Januar 2012, Karsten Keil wrote:
-> > On Mon, Jan 30, 2012 at 11:09:32PM +0000, Ben Hutchings wrote:
-> > > On Mon, 2012-01-30 at 23:00 +0100, Danny Kukawka wrote:
-> > > > Fix for a -Warray-bounds warning. mixer_notify_update() tries to
-> > > > write to ((CAPI_MSG *) msg)->info.facility_req.structs[3] while
-> > > > structs is defined as byte structs[1], define structs[1] as
-> > > > structs[4].
-> > >
-> > > I suspect that all the 'byte structs[1];' fields defined 
-> in that header
-> > > are actually variable-length arrays.  In that case, there 
-> may be no
-> > > reasonable bound you can specify.
-> >
-> > Yes, exactely, the structs is a ASN1 coded message so it 
-> can have any len.
-> 
-> So, how can we get rid of the compiler warning then?
+Command configuration parameter has this information which is used be our HW
+1.Device Id for Synchronization & acknowledgment with slow clock devices.
+2.Endian type.
+3.Blocking/unblocking channel after/before transfer.
 
-Try defining it as a 'variable sized array' - byte structs[0].
+Command configuration parameter should be passed in all the three modes 
+and per transfer so this parameter is dynamic keep changing for each 
+transfer.
 
-	David
-
-
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
