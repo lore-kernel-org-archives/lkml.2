@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab2BAUgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:36:11 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53612 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682Ab2BAUfy convert rfc822-to-8bit (ORCPT
+	id S1756704Ab2BAUik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:38:40 -0500
+Received: from sunsite.ms.mff.cuni.cz ([195.113.15.26]:56182 "EHLO
+	sunsite.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab2BAUij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:35:54 -0500
+	Wed, 1 Feb 2012 15:38:39 -0500
+X-Greylist: delayed 3454 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 15:38:38 EST
+Date: Wed, 1 Feb 2012 20:40:25 +0100
+From: Jakub Jelinek <jakub@redhat.com>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+Message-ID: <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <20120201151918.GC16714@quack.suse.cz>
+ <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jK-4DaUVofwy3aqKnQTbyQGsLVmNNfAc1pjkJHt2Kfwww@mail.gmail.com>
-References: <cover.1327858005.git.luto@amacapital.net> <9a520b74ad5dc14a3d6950b6d63a64714adbdd7d.1327858005.git.luto@amacapital.net>
- <CAGXu5jK-4DaUVofwy3aqKnQTbyQGsLVmNNfAc1pjkJHt2Kfwww@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 1 Feb 2012 12:35:33 -0800
-Message-ID: <CALCETrV6eMYGsw-AS+ZwLpTfdzbinJT_3or0hN+R=7PKmai4mg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/4] Allow unprivileged CLONE_NEWUTS and CLONE_NEWIPC
- with no_new_privs
-To: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jamie Lokier <jamie@shareable.org>, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328118174.15992.6206.camel@triegel.csb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 11:02 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Jan 30, 2012 at 8:17 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> They are normally disallowed because they could be used to subvert
->> setuid programs.  But if setuid is disabled, then they are safe.
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>  kernel/nsproxy.c |    8 +++++++-
->>  1 files changed, 7 insertions(+), 1 deletions(-)
->>
->> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
->> index b576f7f..47cf873 100644
->> --- a/kernel/nsproxy.c
->> +++ b/kernel/nsproxy.c
->> @@ -191,7 +191,13 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
->>                               CLONE_NEWNET)))
->>                return 0;
->>
->> -       if (!capable(CAP_SYS_ADMIN))
->> +       /* We require either no_new_privs or CAP_SYS_ADMIN for all modes */
->> +       if (!current->no_new_privs && !capable(CAP_SYS_ADMIN))
->> +               return -EPERM;
->> +
->> +       /* NEWNS and NEWNET always require CAP_SYS_ADMIN. */
->> +       if ((unshare_flags & (CLONE_NEWNS | CLONE_NEWNET)) &&
->> +           !capable(CAP_SYS_ADMIN))
->>                return -EPERM;
->>
->>        *new_nsp = create_new_namespaces(unshare_flags, current,
->
-> While I think it's unlikely that the list handled by
-> unshare_nsproxy_namespaces() is going to change, I'd still prefer that
-> the logic of this test be reversed so that the nnp-allowed flags are
-> listed instead of the CAP_SYS_ADMIN-required ones so that it will
-> default to disallowing new flags. It's a little less readable, but
-> maybe something like this (untested):
->
-> unsigned long handled_mask = (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
->                                 CLONE_NEWNET);
-> unsigned long npp_mask = (CLONE_NEWUTS | CLONE_NEWIPC);
->
-> if (!(unshare_flags & handled_mask))
->        return 0;
->
-> if (  !(current->no_new_privs &&
->        !(unshare_flags & (handled_mask ^ npp_mask))) &&
->      !capable(CAP_SYS_ADMIN))
->        return -EPERM;
-> ...
->
-> This also has the side-effect of removing the double-check of
-> capable() in some cases.
+On Wed, Feb 01, 2012 at 06:42:54PM +0100, Torvald Riegel wrote:
+> We need a proper memory model.  No vague assumptions with lots of
+> hand-waving.  If you think that this is simple stuff and can
+> sufficiently described by "don't do anything stupid", then please have a
+> look at the issues that the Java memory model faced, and all the
+> iterations of the C++11/C11 model and discussions about it.
+> 
+> The only candidate that I see is the C++11/C11 model.  Any other
+> suggestions?
 
-Agreed -- will fix.
+Well, the C++11/C11 model doesn't allow to use the underlying type
+for accesses, consider e.g.
 
-This patch is also missing the corresponding change for clone.  I'll add that.
+struct S { long s1; unsigned int s2 : 5; unsigned int s3 : 19; unsigned char s4; unsigned int s5; };
+struct T { long s1 : 16; unsigned int s2; };
 
-I'm tempted to add CLONE_NEWPID as well (it's _useful_), but there's
-an unresolved issue with SCM_CREDENTIALS.
+on e.g. x86_64-linux, S is 16 byte long, field s4 is packed together into
+the same 32 bits as s2 and s3.  While the memory model allows s2 to be
+changed when storing s3 (i.e. use a RMW cycle on it), it doesn't allow s4
+to be changed, as it isn't a bitfield (you'd need s4 : 8 for that).
+T is 8 bytes long, again, s2 is packed into the same 64 bits as s1,
+and the memory model doesn't allow s2 to be modified.
 
---Andy
+Not sure what the kernel would expect in such a case.
+
+	Jakub
