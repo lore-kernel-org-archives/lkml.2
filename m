@@ -1,127 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab2BATPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:15:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31495 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752887Ab2BATPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:15:32 -0500
-Message-ID: <1328123721.6937.225.camel@bling.home>
-Subject: Re: [PATCH 2/3] device_isolation: Support isolation on POWER p5ioc2
- bridges
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org, aik@ozlabs.ru,
-        benh@kernel.crashing.org, qemu-devel@nongnu.org, joerg.roedel@amd.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 01 Feb 2012 12:15:21 -0700
-In-Reply-To: <1328122724.6937.216.camel@bling.home>
-References: <1328071614-8320-1-git-send-email-david@gibson.dropbear.id.au>
-	 <1328071614-8320-3-git-send-email-david@gibson.dropbear.id.au>
-	 <1328122724.6937.216.camel@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1755846Ab2BATQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:16:08 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:33425 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab2BATQF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:16:05 -0500
+Date: Wed, 01 Feb 2012 14:15:51 -0500 (EST)
+Message-Id: <20120201.141551.1696887866364021374.davem@davemloft.net>
+To: akinobu.mita@gmail.com
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        isdn@linux-pingi.de, netdev@vger.kernel.org
+Subject: Re: [PATCH] mISDN: use memchr_inv
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1327674295-3700-8-git-send-email-akinobu.mita@gmail.com>
+References: <1327674295-3700-1-git-send-email-akinobu.mita@gmail.com>
+	<1327674295-3700-8-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 01 Feb 2012 11:15:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 11:58 -0700, Alex Williamson wrote:
-> On Wed, 2012-02-01 at 15:46 +1100, David Gibson wrote:
-> > This patch adds code to the code for the powernv platform to create
-> > and populate isolation groups on hardware using the p5ioc2 PCI host
-> > bridge used on some IBM POWER systems.
-> > 
-> > Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> > Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-> > ---
-> >  arch/powerpc/platforms/powernv/pci-p5ioc2.c |   14 +++++++++++++-
-> >  arch/powerpc/platforms/powernv/pci.h        |    3 +++
-> >  2 files changed, 16 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/powerpc/platforms/powernv/pci-p5ioc2.c b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
-> > index 2649677..e5bb3a6 100644
-> > --- a/arch/powerpc/platforms/powernv/pci-p5ioc2.c
-> > +++ b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
-> > @@ -20,6 +20,7 @@
-> >  #include <linux/irq.h>
-> >  #include <linux/io.h>
-> >  #include <linux/msi.h>
-> > +#include <linux/device_isolation.h>
-> >  
-> >  #include <asm/sections.h>
-> >  #include <asm/io.h>
-> > @@ -88,10 +89,21 @@ static void pnv_pci_init_p5ioc2_msis(struct pnv_phb *phb) { }
-> >  static void __devinit pnv_pci_p5ioc2_dma_dev_setup(struct pnv_phb *phb,
-> >  						   struct pci_dev *pdev)
-> >  {
-> > -	if (phb->p5ioc2.iommu_table.it_map == NULL)
-> > +	if (phb->p5ioc2.iommu_table.it_map == NULL) {
-> >  		iommu_init_table(&phb->p5ioc2.iommu_table, phb->hose->node);
-> > +#ifdef CONFIG_DEVICE_ISOLATION
-> > +		phb->p5ioc2.di_group = kzalloc(sizeof(*(phb->p5ioc2.di_group)),
-> > +					       GFP_KERNEL);
-> > +		BUG_ON(!phb->p5ioc2.di_group ||
-> > +		       (device_isolation_group_init(phb->p5ioc2.di_group,
-> > +						    "p5ioc2:%llx", phb->opal_id) < 0));
-> > +#endif
+From: Akinobu Mita <akinobu.mita@gmail.com>
+Date: Fri, 27 Jan 2012 23:24:55 +0900
+
+> Use memchr_inv to check if the data contains all same bytes.  It is
+> faster than looping for each byte.
 > 
-> Hmm, it's really unfortunate that this is architected so we need to
-> surround everything in #ifdefs even though we have stub functions
-> defined.
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
 
-I think maybe we want:
-
-#ifdef CONFIG_DEVICE_ISOLATION
-struct device_isolation_group *device_isolation_create_group(void)
-{
-	struct device_isolation_group *di_group;
-
-	di_group = kzalloc(sizeof(*di_group), GFP_KERNEL);
-	if (!di_group)
-		return ERR_PTR(-ENOMEM);
-
-	return di_group;
-}
-#else
-struct device_isolation_group *device_isolation_create_group(void)
-{
-	return NULL;
-}
-#endif
-
-Then we can do:
-
-	phb->p5ioc2.di_group = device_isolation_create_group();
-	BUG_ON(IS_ERR(phb->p5ioc2.di_group) || (device_isolation_group_init(phb->p5ioc2.di_group, ...
-
-(We pass NULL to the stubs, but that's ok)
-	
-> > +	}
-> >  
-> >  	set_iommu_table_base(&pdev->dev, &phb->p5ioc2.iommu_table);
-> > +#ifdef CONFIG_DEVICE_ISOLATION
-> > +	device_isolation_dev_add(phb->p5ioc2.di_group, &pdev->dev);
-> > +#endif
-> >  }
-> >  
-> >  static void __init pnv_pci_init_p5ioc2_phb(struct device_node *np,
-> > diff --git a/arch/powerpc/platforms/powernv/pci.h b/arch/powerpc/platforms/powernv/pci.h
-> > index 8bc4796..64ede1e 100644
-> > --- a/arch/powerpc/platforms/powernv/pci.h
-> > +++ b/arch/powerpc/platforms/powernv/pci.h
-> > @@ -87,6 +87,9 @@ struct pnv_phb {
-> >  	union {
-> >  		struct {
-> >  			struct iommu_table iommu_table;
-> > +#ifdef CONFIG_DEVICE_ISOLATION
-> > +			struct device_isolation_group *di_group;
-> > +#endif
-> >  		} p5ioc2;
-> >  
-> >  		struct {
-> 
-> 
-
-
-
+Applied, thanks.
