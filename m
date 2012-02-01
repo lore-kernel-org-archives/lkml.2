@@ -1,55 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab2BAVbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:31:36 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:49484 "EHLO
+	id S932576Ab2BAVTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:19:10 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48160 "EHLO
 	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932587Ab2BAVTN (ORCPT
+	by vger.kernel.org with ESMTP id S1757422Ab2BAVTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:13 -0500
-X-Sasl-enc: x/WAEizUX0x12Tcl4kQ9YJ+u8hYcftfnAy54ZGvD717Z 1328131152
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:45 2012
-Message-Id: <20120201210045.035823319@clark.kroah.org>
+	Wed, 1 Feb 2012 16:19:06 -0500
+X-Sasl-enc: Zw0GFtcjMhjdLwW8uo7maTCVHWM2V25dNhT3xL8IFwP6 1328131145
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:40 2012
+Message-Id: <20120201205740.283351666@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:59:37 -0800
+Date: Wed, 01 Feb 2012 12:56:12 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [13/89] ASoC: Mark WM5100 register map cache only when going into BIAS_OFF
-In-Reply-To: <20120201210505.GA26028@kroah.com>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: [32/65] USB: cdc-wdm: use two mutexes to allow simultaneous read and write
+In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit e53e417331c57b9b97e3f8be870214a02c99265c upstream.
+commit e8537bd2c4f325a4796da33564ddcef9489b7feb upstream.
 
-Writing to the registers won't work if we do actually manage to hit a fully
-powered off state.
+using a separate read and write mutex for locking is sufficient to make the
+driver accept simultaneous read and write. This improves useability a lot.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Cc: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm5100.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/class/cdc-wdm.c |   49 +++++++++++++++++++++++++++-----------------
+ 1 file changed, 31 insertions(+), 18 deletions(-)
 
---- a/sound/soc/codecs/wm5100.c
-+++ b/sound/soc/codecs/wm5100.c
-@@ -1404,6 +1404,7 @@ static int wm5100_set_bias_level(struct
- 		break;
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -88,7 +88,8 @@ struct wdm_device {
+ 	int			count;
+ 	dma_addr_t		shandle;
+ 	dma_addr_t		ihandle;
+-	struct mutex		lock;
++	struct mutex		wlock;
++	struct mutex		rlock;
+ 	wait_queue_head_t	wait;
+ 	struct work_struct	rxwork;
+ 	int			werr;
+@@ -323,7 +324,7 @@ static ssize_t wdm_write
+ 	}
  
- 	case SND_SOC_BIAS_OFF:
-+		regcache_cache_only(wm5100->regmap, true);
- 		if (wm5100->pdata.ldo_ena)
- 			gpio_set_value_cansleep(wm5100->pdata.ldo_ena, 0);
- 		regulator_bulk_disable(ARRAY_SIZE(wm5100->core_supplies),
+ 	/* concurrent writes and disconnect */
+-	r = mutex_lock_interruptible(&desc->lock);
++	r = mutex_lock_interruptible(&desc->wlock);
+ 	rv = -ERESTARTSYS;
+ 	if (r) {
+ 		kfree(buf);
+@@ -386,7 +387,7 @@ static ssize_t wdm_write
+ out:
+ 	usb_autopm_put_interface(desc->intf);
+ outnp:
+-	mutex_unlock(&desc->lock);
++	mutex_unlock(&desc->wlock);
+ outnl:
+ 	return rv < 0 ? rv : count;
+ }
+@@ -399,7 +400,7 @@ static ssize_t wdm_read
+ 	struct wdm_device *desc = file->private_data;
+ 
+ 
+-	rv = mutex_lock_interruptible(&desc->lock); /*concurrent reads */
++	rv = mutex_lock_interruptible(&desc->rlock); /*concurrent reads */
+ 	if (rv < 0)
+ 		return -ERESTARTSYS;
+ 
+@@ -476,7 +477,7 @@ retry:
+ 	rv = cntr;
+ 
+ err:
+-	mutex_unlock(&desc->lock);
++	mutex_unlock(&desc->rlock);
+ 	return rv;
+ }
+ 
+@@ -542,7 +543,8 @@ static int wdm_open(struct inode *inode,
+ 	}
+ 	intf->needs_remote_wakeup = 1;
+ 
+-	mutex_lock(&desc->lock);
++	/* using write lock to protect desc->count */
++	mutex_lock(&desc->wlock);
+ 	if (!desc->count++) {
+ 		desc->werr = 0;
+ 		desc->rerr = 0;
+@@ -555,7 +557,7 @@ static int wdm_open(struct inode *inode,
+ 	} else {
+ 		rv = 0;
+ 	}
+-	mutex_unlock(&desc->lock);
++	mutex_unlock(&desc->wlock);
+ 	usb_autopm_put_interface(desc->intf);
+ out:
+ 	mutex_unlock(&wdm_mutex);
+@@ -567,9 +569,11 @@ static int wdm_release(struct inode *ino
+ 	struct wdm_device *desc = file->private_data;
+ 
+ 	mutex_lock(&wdm_mutex);
+-	mutex_lock(&desc->lock);
++
++	/* using write lock to protect desc->count */
++	mutex_lock(&desc->wlock);
+ 	desc->count--;
+-	mutex_unlock(&desc->lock);
++	mutex_unlock(&desc->wlock);
+ 
+ 	if (!desc->count) {
+ 		dev_dbg(&desc->intf->dev, "wdm_release: cleanup");
+@@ -667,7 +671,8 @@ next_desc:
+ 	desc = kzalloc(sizeof(struct wdm_device), GFP_KERNEL);
+ 	if (!desc)
+ 		goto out;
+-	mutex_init(&desc->lock);
++	mutex_init(&desc->rlock);
++	mutex_init(&desc->wlock);
+ 	spin_lock_init(&desc->iuspin);
+ 	init_waitqueue_head(&desc->wait);
+ 	desc->wMaxCommand = maxcom;
+@@ -781,10 +786,12 @@ static void wdm_disconnect(struct usb_in
+ 	/* to terminate pending flushes */
+ 	clear_bit(WDM_IN_USE, &desc->flags);
+ 	spin_unlock_irqrestore(&desc->iuspin, flags);
+-	mutex_lock(&desc->lock);
++	mutex_lock(&desc->rlock);
++	mutex_lock(&desc->wlock);
+ 	kill_urbs(desc);
+ 	cancel_work_sync(&desc->rxwork);
+-	mutex_unlock(&desc->lock);
++	mutex_unlock(&desc->wlock);
++	mutex_unlock(&desc->rlock);
+ 	wake_up_all(&desc->wait);
+ 	if (!desc->count)
+ 		cleanup(desc);
+@@ -800,8 +807,10 @@ static int wdm_suspend(struct usb_interf
+ 	dev_dbg(&desc->intf->dev, "wdm%d_suspend\n", intf->minor);
+ 
+ 	/* if this is an autosuspend the caller does the locking */
+-	if (!(message.event & PM_EVENT_AUTO))
+-		mutex_lock(&desc->lock);
++	if (!(message.event & PM_EVENT_AUTO)) {
++		mutex_lock(&desc->rlock);
++		mutex_lock(&desc->wlock);
++	}
+ 	spin_lock_irq(&desc->iuspin);
+ 
+ 	if ((message.event & PM_EVENT_AUTO) &&
+@@ -817,8 +826,10 @@ static int wdm_suspend(struct usb_interf
+ 		kill_urbs(desc);
+ 		cancel_work_sync(&desc->rxwork);
+ 	}
+-	if (!(message.event & PM_EVENT_AUTO))
+-		mutex_unlock(&desc->lock);
++	if (!(message.event & PM_EVENT_AUTO)) {
++		mutex_unlock(&desc->wlock);
++		mutex_unlock(&desc->rlock);
++	}
+ 
+ 	return rv;
+ }
+@@ -856,7 +867,8 @@ static int wdm_pre_reset(struct usb_inte
+ {
+ 	struct wdm_device *desc = usb_get_intfdata(intf);
+ 
+-	mutex_lock(&desc->lock);
++	mutex_lock(&desc->rlock);
++	mutex_lock(&desc->wlock);
+ 	kill_urbs(desc);
+ 
+ 	/*
+@@ -878,7 +890,8 @@ static int wdm_post_reset(struct usb_int
+ 	int rv;
+ 
+ 	rv = recover_from_urb_loss(desc);
+-	mutex_unlock(&desc->lock);
++	mutex_unlock(&desc->wlock);
++	mutex_unlock(&desc->rlock);
+ 	return 0;
+ }
+ 
 
 
