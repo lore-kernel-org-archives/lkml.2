@@ -1,111 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab2BATQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:16:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18063 "EHLO mx1.redhat.com"
+	id S1755936Ab2BATRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:17:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8958 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755125Ab2BATQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:16:28 -0500
-Subject: Re: Memory corruption due to word sharing
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
-        rguenther@suse.de, gcc@gcc.gnu.org
-In-Reply-To: <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
-References: <20120201151918.GC16714@quack.suse.cz>
-	 <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+	id S1753450Ab2BATRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:17:14 -0500
+Message-ID: <1328123825.6937.227.camel@bling.home>
+Subject: Re: [PATCH 3/3] device_isolation: Support isolation on POWER p7ioc
+ (IODA) bridges
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org, aik@ozlabs.ru,
+        benh@kernel.crashing.org, qemu-devel@nongnu.org, joerg.roedel@amd.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 01 Feb 2012 12:17:05 -0700
+In-Reply-To: <1328071614-8320-4-git-send-email-david@gibson.dropbear.id.au>
+References: <1328071614-8320-1-git-send-email-david@gibson.dropbear.id.au>
+	 <1328071614-8320-4-git-send-email-david@gibson.dropbear.id.au>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Feb 2012 18:42:54 +0100
-Message-ID: <1328118174.15992.6206.camel@triegel.csb>
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 08:41 -0800, Linus Torvalds wrote:
-> If the gcc people aren't willing to agree that this is actually a flaw
-> in the standard (one that is being addressed, no less)
-
-It has been addressed in the standards.
-
-> and try to fix
-> it,
-
-Again, this is being worked on, see http://gcc.gnu.org/wiki/Atomic/GCCMM
-
-> we just have to extend our assumptions to something like "a
-> compiler would be stupid to ever access anything bigger than the
-> aligned register-size area". It's still just an assumption, and
-> compiler people could be crazy, but we could just extend the current
-> alpha rules to cover not just "int", but "long" too.
-
-So, let's ignore everyone's craziness (the kernel is not the only GCC
-client...) and think about how we can improve the situation.
-
-We need a proper memory model.  No vague assumptions with lots of
-hand-waving.  If you think that this is simple stuff and can
-sufficiently described by "don't do anything stupid", then please have a
-look at the issues that the Java memory model faced, and all the
-iterations of the C++11/C11 model and discussions about it.
-
-The only candidate that I see is the C++11/C11 model.  Any other
-suggestions?
-
-Now, if we assume this model, what does the kernel community think about
-it?  It might be good to split this discussion into the following two
-points, to avoid syntax flame wars:
-1) The model itself (ie, the memory orders, ordering guarantees, (lack
-of) progress guarantees, etc.).
-2) The syntax/APIs to specify atomics.
-
-If something else or more is needed, the compiler needs to have a formal
-specification for that.  This will help users too, because it avoids all
-the ambiguities.
-
-> Sure, the compiler people could use "load/store multiple" or something
-> like that, but it would be obviously crazy code, so if it happens past
-> a register size, at least you could argue that it's a performance
-> issue and maybe the gcc people would care.
+On Wed, 2012-02-01 at 15:46 +1100, David Gibson wrote:
+> This patch adds code to the code for the powernv platform to create
+> and populate isolation groups on hardware using the p7ioc (aka IODA) PCI host
+> bridge used on some IBM POWER systems.
 > 
-> HOWEVER. The problem with the alpha rules (which, btw, were huge, and
-> led to the CPU designers literally changing the CPU instruction set
-> because they admitted they made a huge mistake) was never so much the
-> occasional memory corruption, as the fact that the places where it
-> could happen were basically almost impossible to find.
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+> ---
+>  arch/powerpc/platforms/powernv/pci-ioda.c |   18 ++++++++++++++++--
+>  arch/powerpc/platforms/powernv/pci.h      |    6 ++++++
+>  2 files changed, 22 insertions(+), 2 deletions(-)
 > 
-> So we probably have tons of random places in the kernel that violate
-> even the alpha rules - because the corruption is so rare, and the
-> architecture was so rare as to making the corruption even harder to
-> find.
+> diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
+> index 5e155df..4648475 100644
+> --- a/arch/powerpc/platforms/powernv/pci-ioda.c
+> +++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/irq.h>
+>  #include <linux/io.h>
+>  #include <linux/msi.h>
+> +#include <linux/device_isolation.h>
+>  
+>  #include <asm/sections.h>
+>  #include <asm/io.h>
+> @@ -877,6 +878,9 @@ static void __devinit pnv_ioda_setup_bus_dma(struct pnv_ioda_pe *pe,
+>  		set_iommu_table_base(&dev->dev, &pe->tce32_table);
+>  		if (dev->subordinate)
+>  			pnv_ioda_setup_bus_dma(pe, dev->subordinate);
+> +#ifdef CONFIG_DEVICE_ISOLATION
+> +		device_isolation_dev_add(&pe->di_group, &dev->dev);
+> +#endif
+>  	}
+>  }
+>  
+> @@ -957,11 +961,21 @@ static void __devinit pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
+>  	}
+>  	iommu_init_table(tbl, phb->hose->node);
+>  
+> -	if (pe->pdev)
+> +#ifdef CONFIG_DEVICE_ISOLATION
+> +	BUG_ON(device_isolation_group_init(&pe->di_group, "ioda:rid%x-pe%x",
+> +					   pe->rid, pe->pe_number) < 0);
+> +#endif
+> +
+> +	if (pe->pdev) {
+>  		set_iommu_table_base(&pe->pdev->dev, tbl);
+> -	else
+> +#ifdef CONFIG_DEVICE_ISOLATION
+> +		device_isolation_dev_add(&pe->di_group, &pe->pdev->dev);
+> +#endif
+> +	} else
+>  		pnv_ioda_setup_bus_dma(pe, pe->pbus);
+>  
 
-I assume you still would want a weak memory model, or not?  (That is,
-rely on data-race-freedom, only atomics do not contribute to data races,
-and you need to mark data used for synchronization (or which is just
-accessed concurrently) as atomics).
+Blech, #ifdefs.
 
-If so, you need to tell the compiler which variables etc. are atomics.
+> +
+> +
+>  	return;
+>   fail:
+>  	/* XXX Failure: Try to fallback to 64-bit only ? */
+> diff --git a/arch/powerpc/platforms/powernv/pci.h b/arch/powerpc/platforms/powernv/pci.h
+> index 64ede1e..3e282b7 100644
+> --- a/arch/powerpc/platforms/powernv/pci.h
+> +++ b/arch/powerpc/platforms/powernv/pci.h
+> @@ -1,6 +1,8 @@
+>  #ifndef __POWERNV_PCI_H
+>  #define __POWERNV_PCI_H
+>  
+> +#include <linux/device_isolation.h>
+> +
+>  struct pci_dn;
+>  
+>  enum pnv_phb_type {
+> @@ -60,6 +62,10 @@ struct pnv_ioda_pe {
+>  
+>  	/* Link in list of PE#s */
+>  	struct list_head	link;
+> +
+> +#ifdef CONFIG_DEVICE_ISOLATION
+> +	struct device_isolation_group di_group;
+> +#endif
 
-> I assume this code generation idiocy only happens with bitfields? The
-> problem is, we really don't want to make all bitfields take up 64 bits
-> just because we might have a lock or something else next to them. But
-> we could probably re-order things (and then *occasionally* wasting
-> memory) if we could just find the ones that are problematic.
+Embedding the struct means we need to know the size, which means we
+can't get rid of the #ifdef.  Probably better to use a pointer if we
+don't mind adding a few bytes in the #ifndef case.  Thanks,
 
-If the compiler is aware what is a lock (or atomics, or similar), then a
-correct implementation should leave the lock alone.  But in a weak
-memory model, it needs to know what is a lock.
-(Same goes for volatile obviously, like in the other example posted in
-the thread where the bitfields interfered with the volatile.)
+Alex
 
-> 
-> It's finding the problematic ones that is the issue. Which is why the
-> compiler should just generate code that matches what we told it to do,
-
-So, would it be okay to tell the compiler which part of the state is
-accessed concurrently (ie, locks, atomics, ...)?
+>  };
+>  
+>  struct pnv_phb {
 
 
-Torvald
 
