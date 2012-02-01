@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab2BAVQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:16:18 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42567 "EHLO
+	id S932582Ab2BAVKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:10:22 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43453 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932592Ab2BAVKZ (ORCPT
+	by vger.kernel.org with ESMTP id S932541Ab2BAVKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:25 -0500
-X-Sasl-enc: 94g+nX4ctw97kTa0nBnebBzIpEJ9qc9IdSyVqAWaWvHT 1328130623
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:48 2012
-Message-Id: <20120201210048.391552990@clark.kroah.org>
+	Wed, 1 Feb 2012 16:10:12 -0500
+X-Sasl-enc: MyusRsX3Wat4D/HKd/46Bv6QDnRVlOPtf8IhD6O8GuBi 1328130610
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:47 2012
+Message-Id: <20120201210047.677030339@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:15 -0800
+Date: Wed, 01 Feb 2012 13:00:07 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rabin Vincent <rabin.vincent@stericsson.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Bibek Basu <bibek.basu@stericsson.com>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [51/89] serial: amba-pl011: lock console writes against interrupts
+        alan@lxorguk.ukuu.org.uk, Peter Naulls <peter@chocky.org>
+Subject: [43/89] USB: serial: ftdi additional IDs
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,64 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+From: Peter Naulls <peter@chocky.org>
 
-commit ef605fdb33883d687cff5ba75095a91b313b4966 upstream.
+commit fc216ec363f4d174932df90bbf35c77d0540e561 upstream.
 
-Protect against pl011_console_write() and the interrupt for
-the console UART running concurrently on different CPUs.
+I tested this against 2.6.39 in the Ubuntu kernel, however I see the IDs
+are not in latest 3.2 git.
 
-Otherwise the console_write could spin for a long time
-waiting for the UART to become not busy, while the other
-CPU continuously services UART interrupts and keeps the
-UART busy.
+This adds IDs for the FTDI controller in the Rainforest Automation
+Zigbee dongle.
 
-The checks for sysrq and oops_in_progress are taken
-from 8250.c.
-
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Reviewed-by: Bibek Basu <bibek.basu@stericsson.com>
-Reviewed-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Peter Naulls <peter@chocky.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1740,9 +1740,19 @@ pl011_console_write(struct console *co,
- {
- 	struct uart_amba_port *uap = amba_ports[co->index];
- 	unsigned int status, old_cr, new_cr;
-+	unsigned long flags;
-+	int locked = 1;
- 
- 	clk_enable(uap->clk);
- 
-+	local_irq_save(flags);
-+	if (uap->port.sysrq)
-+		locked = 0;
-+	else if (oops_in_progress)
-+		locked = spin_trylock(&uap->port.lock);
-+	else
-+		spin_lock(&uap->port.lock);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -843,6 +843,7 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
++	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1175,3 +1175,9 @@
+  */
+ /* TagTracer MIFARE*/
+ #define FTDI_ZEITCONTROL_TAGTRACE_MIFARE_PID	0xF7C0
 +
- 	/*
- 	 *	First save the CR then disable the interrupts
- 	 */
-@@ -1762,6 +1772,10 @@ pl011_console_write(struct console *co,
- 	} while (status & UART01x_FR_BUSY);
- 	writew(old_cr, uap->port.membase + UART011_CR);
- 
-+	if (locked)
-+		spin_unlock(&uap->port.lock);
-+	local_irq_restore(flags);
-+
- 	clk_disable(uap->clk);
- }
- 
++/*
++ * Rainforest Automation
++ */
++/* ZigBee controller */
++#define FTDI_RF_R106		0x8A28
 
 
