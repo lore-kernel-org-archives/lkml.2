@@ -1,149 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab2BAQJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 11:09:19 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63654 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756588Ab2BAQJS (ORCPT
+	id S932194Ab2BAQJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 11:09:31 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:39870 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756601Ab2BAQJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 11:09:18 -0500
-Message-ID: <4F2963AA.3010306@linaro.org>
-Date: Wed, 01 Feb 2012 20:09:14 +0400
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	Wed, 1 Feb 2012 11:09:27 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/4] AB8500 fixes and AB9540 support
+Date: Wed, 1 Feb 2012 17:09:07 +0100
+Message-ID: <1328112547-32424-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.8
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Module/kthread/printk question/problem
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm writing a kernel module which creates a substantial amount of
-kernel threads. After dropping some real stuff, the module is:
+From: Linus Walleij <linus.walleij@linaro.org>
 
-#include <linux/kernel.h>
-#include <linux/sched.h>
-#include <linux/kthread.h>
-#include <linux/module.h>
-#include <linux/slab.h>
+This breaks the earlier patch to support AB9540 apart into
+smaller pieces, and uses the platform device ID to enforce
+which version of the ASIC is being used.
 
-MODULE_LICENSE("GPL");
+Sam: seeking ACKs for these, [1/4] could possibly go into
+the -rc series if you find time for it.
 
-static int nrthreads = 128;
-module_param(nrthreads, int, 0644);
+Linus Walleij (4):
+  mfd/ab8500: fix error path bug
+  mfd/ab8500: add version detection and enforcing
+  mfd/ab8500: parametrize IRQ masks and registers
+  mfd/ab8500: support AB9540 variant
 
-static int loopcount = 1024;
-module_param(loopcount, int, 0644);
+ arch/arm/mach-ux500/board-mop500.c                 |    1 -
+ .../mach-ux500/include/mach/irqs-board-mop500.h    |    2 +-
+ drivers/mfd/ab8500-core.c                          |  301 ++++++++++++++++----
+ drivers/mfd/ab8500-i2c.c                           |   15 +-
+ include/linux/mfd/abx500.h                         |    7 -
+ include/linux/mfd/abx500/ab8500-gpio.h             |    4 +-
+ include/linux/mfd/abx500/ab8500-sysctrl.h          |   43 +++
+ include/linux/mfd/abx500/ab8500.h                  |  114 +++++++-
+ include/linux/regulator/ab8500.h                   |   70 +++++-
+ 9 files changed, 487 insertions(+), 70 deletions(-)
 
-static int usehrtime = 0;
-module_param(usehrtime, int, 0644);
+-- 
+1.7.8
 
-static int slack = 50000;
-module_param(slack, int, 0644);
-
-static int msecs = 1;
-module_param(msecs, int, 0644);
-
-static DECLARE_COMPLETION(done);
-static struct task_struct **threads;
-static atomic_t nrunning;
-
-static int test(void *unused)
-{
-         int i;
-         ktime_t expires = ktime_set(0, msecs * NSEC_PER_MSEC);
-
-         for (i = 0; !kthread_should_stop() && i < loopcount; i++) {
-                 if (usehrtime) {
-                         set_current_state(TASK_UNINTERRUPTIBLE);
-                         schedule_hrtimeout_range(&expires, slack, HRTIMER_MODE_REL);
-                 }
-                 else
-                         schedule_timeout_uninterruptible(msecs_to_jiffies(msecs));
-         }
-
-         if (atomic_dec_and_test(&nrunning)) {
-                 printk("last thread done\n");
-                 complete(&done);
-         }
-         return 0;
-}
-
-static int __init testmod_init(void)
-{
-         int i;
-
-         printk("test begin\n");
-
-         atomic_set(&nrunning, nrthreads);
-
-         threads = kmalloc(nrthreads * sizeof(struct task_struct *), GFP_KERNEL);
-         if (!threads)
-                 return -ENOMEM;
-
-         for (i = 0; i < nrthreads; i++) {
-                 threads[i] = kthread_run(test, NULL, "test/%d", i);
-                 if (IS_ERR(threads[i])) {
-                         int j, err = PTR_ERR(threads[i]);
-
-                         for (j = 0; j < i; j++)
-                                 kthread_stop(threads[j]);
-                         kfree(threads);
-                         return err;
-                 }
-         }
-         return 0;
-}
-
-static void __exit testmod_exit(void)
-{
-         wait_for_completion(&done);
-         kfree(threads);
-}
-
-module_init(testmod_init);
-module_exit(testmod_exit);
-
-Usually it works as expected, at least from 8 to 128 threads.
-But when I'm trying to run it a loop like:
-
-   while true; do insmod testmod.ko && rmmod testmod.ko; sleep 1; done
-
-it's also possible to catch a very rare crash (ARM example):
-
-Unable to handle kernel paging request at virtual address 7f1200c4
-pgd = 80004000
-[7f1200c4] *pgd=bdc28811, *pte=00000000, *ppte=00000000
-Internal error: Oops: 80000007 [#1] PREEMPT SMP
-Modules linked in: [last unloaded: testmod]
-CPU: 1    Tainted: G           O  (3.3.0-rc2 #3)
-PC is at 0x7f1200c4
-LR is at __schedule+0x684/0x6e4
-pc : [<7f1200c4>]    lr : [<802c053c>]    psr: 600f0113
-sp : bf115f88  ip : 00000000  fp : 00000000
-r10: 00000000  r9 : 00000000  r8 : 7f120394
-r7 : 00000002  r6 : 00000400  r5 : 7f120204  r4 : bf114000
-r3 : 00000000  r2 : bf115ec0  r1 : bf9220c0  r0 : 00000001
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5387d  Table: bfbcc04a  DAC: 00000015
-Process test/126 (pid: 10918, stack limit = 0xbf1142f8)
-Stack: (0xbf115f88 to 0xbf116000)
-5f80:                   000f4240 00000000 bf213e4c 00000000 7f120000 00000013
-5fa0: 00000000 80049228 00000000 00000000 00000000 00000000 00000000 00000000
-5fc0: dead4ead ffffffff ffffffff 8048b2b8 00000000 00000000 8036a3f9 bf115fdc
-5fe0: bf115fdc 271aee1c bf213e4c 8004919c 8000eabc 8000eabc bfefc811 bfefcc11
-Code: bad PC value
-
-Note the bad PC, and stack is just a nonsense. I suspect that the kernel calls
-testmod_exit() and frees module memory _before_ all test/X threads are really
-dead - i.e. the module memory is freed when at least one of the test/X threads
-is somewhere in do_exit() or nearby. Is that possible? If yes, what's the better
-way to ensure that all test/X threads are really gone at some point of
-testmod_exit()?
-
-An interesting thing is that I can't reproduce this fault with both printk()s
-commented out. No ideas why.
-
-Dmitry
