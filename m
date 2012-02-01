@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab2BANUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 08:20:24 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:59451 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab2BANUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 08:20:23 -0500
-X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=0ow4NSV8tcgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=5lmDXb4f-sgiy-48x_4A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328102419.5882.60.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 0/5 v2] [GIT PULL] x86/jump label: Paranoid checks and 2
- or 5 byte nops
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jason Baron <jbaron@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Wed, 01 Feb 2012 08:20:19 -0500
-In-Reply-To: <20120201080539.GA11770@elte.hu>
-References: <20120128160925.275163704@goodmis.org>
-	 <20120130144857.GA22013@elte.hu>
-	 <1327936060.22710.165.camel@gandalf.stny.rr.com>
-	 <20120131194813.GA12074@elte.hu>
-	 <1328072925.5882.57.camel@gandalf.stny.rr.com>
-	 <20120201080539.GA11770@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	id S1754557Ab2BANYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 08:24:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18748 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753168Ab2BANYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 08:24:45 -0500
+Message-ID: <4F293D14.5030008@redhat.com>
+Date: Wed, 01 Feb 2012 15:24:36 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
+        Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] srcu: Implement call_srcu()
+References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com>  <1328017807.2446.230.camel@twins>  <20120131222447.GH2391@linux.vnet.ibm.com> <1328091749.2760.34.camel@laptop> <4F29178A.1090306@redhat.com> <4F2918D5.4050104@redhat.com> <4F291B56.30600@oss.ntt.co.jp> <4F291B92.8070402@redhat.com> <4F291E1F.3030505@oss.ntt.co.jp>
+In-Reply-To: <4F291E1F.3030505@oss.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 09:05 +0100, Ingo Molnar wrote:
+On 02/01/2012 01:12 PM, Takuya Yoshikawa wrote:
+> (2012/02/01 20:01), Avi Kivity wrote:
+>> On 02/01/2012 01:00 PM, Takuya Yoshikawa wrote:
+>
+>>> How about just doing:
+>>>
+>>> take a spin_lock
+>>> copy the entire (or some portions of) bitmap locally
+>>> clear the bitmap
+>>> unlock
+>>>
+>>
+>> That means that vcpus dirtying memory also have to take that lock, and
+>> spin while the bitmap is being copied.  So kvm_vm_ioctl_get_dirty_log()
+>> will become faster, at the expense of vcpus, which I think is a bad
+>> tradeoff.
+>
+> Almost every caller is already holding the mmu_lock.
 
-> It would be better to make this a regular commit, this kind of 
-> diagnostics obviously makes sense. That way i could pull in your 
-> updated branch for more testing.
+True.  But let's not add more locks.
 
-Actually, I was planing on doing that ;-) I just didn't have the time to
-push it through my normal testing.
+>
+> Isn't it possible to make others hold the lock only for the case of
+> marking to the bitmap? (I will check myself too.)
 
-I'm also curious if you get a bug with only patches 1,2, and 3. That is,
-the current jump label doesn't do any testing. It would be interesting
-to know if something is happening with the current jump label code that
-we do not expect.
+Yes, in walk_addr(), while setting accessed and dirty bits in guest
+PTEs, or while emulating instructions and writing to guest memory.
 
--- Steve
+>> That'll be great, numbers are better than speculation.
+>>
+>
+>
+> Yes, I already have some good numbers to show (and some patches).
 
+Looking forward.
+
+-- 
+error compiling committee.c: too many arguments to function
 
