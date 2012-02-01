@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab2BARC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:02:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39174 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307Ab2BARCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:02:24 -0500
-Date: Wed, 1 Feb 2012 12:01:58 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: John Stultz <john.stultz@linaro.org>, Michal Marek <mmarek@suse.cz>
-Cc: kernel-team@fedoraproject.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] merge_config.sh: Use the first file as the initial config
-Message-ID: <20120201170157.GA4907@zod.bos.redhat.com>
+	id S1754540Ab2BAREy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:04:54 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:50112 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab2BAREw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 12:04:52 -0500
+Date: Wed, 1 Feb 2012 18:04:47 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+Message-ID: <20120201170443.GE6731@somewhere.redhat.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+ <1327591185.2446.102.camel@twins>
+ <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Take the first config fragment and use it verbatim as the initial config set.
-This avoids running the verification loop for the first file, as nothing has
-actually been merged at this point.  This significantly increases performance
-for large config fragments.
+On Sun, Jan 29, 2012 at 10:25:46AM +0200, Gilad Ben-Yossef wrote:
+> On Thu, Jan 26, 2012 at 5:19 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> >
+> > On Thu, 2012-01-26 at 12:01 +0200, Gilad Ben-Yossef wrote:
+> > > Gilad Ben-Yossef (8):
+> > >   smp: introduce a generic on_each_cpu_mask function
+> > >   arm: move arm over to generic on_each_cpu_mask
+> > >   tile: move tile to use generic on_each_cpu_mask
+> > >   smp: add func to IPI cpus based on parameter func
+> > >   slub: only IPI CPUs that have per cpu obj to flush
+> > >   fs: only send IPI to invalidate LRU BH when needed
+> > >   mm: only IPI CPUs to drain local pages if they exist
+> >
+> > These patches look very nice!
+> >
+> > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >
+> 
+> Thank you :-)
+> 
+> If this is of interest, I keep a list tracking global IPI and global
+> task schedulers sources in the core kernel here:
+> https://github.com/gby/linux/wiki.
+> 
+> I plan to visit all these potential interference source to see if
+> something can be done to lower their effect on
+> isolated CPUs over time.
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
+Very nice especially as many people seem to be interested in
+CPU isolation.
 
-When experimenting with merge_config.sh on the Fedora config fragments, this
-cut the execution time of a single invocation with all the config fragments
-in half (from 28 seconds to 13 seconds).
-
- scripts/kconfig/merge_config.sh |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
-index ceadf0e..23d738a 100644
---- a/scripts/kconfig/merge_config.sh
-+++ b/scripts/kconfig/merge_config.sh
-@@ -58,12 +58,16 @@ while true; do
- 	esac
- done
- 
--
-+INITFILE=$1
-+shift;
- 
- MERGE_LIST=$*
- SED_CONFIG_EXP="s/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/p"
- TMP_FILE=$(mktemp ./.tmp.config.XXXXXXXXXX)
- 
-+echo "Using $INITFILE as base"
-+cat $INITFILE > $TMP_FILE
-+
- # Merge files, printing warnings on overrided values
- for MERGE_FILE in $MERGE_LIST ; do
- 	echo "Merging $MERGE_FILE"
--- 
-1.7.8.4
-
+When we get the adaptive tickless feature in place, perhaps we'll
+also need to think about some way to have more control on the
+CPU affinity of some non pinned timers to avoid disturbing
+adaptive tickless CPUs. We still need to consider their cache affinity
+though.
