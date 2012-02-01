@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab2BAR1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:27:21 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44295 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751766Ab2BAR1U (ORCPT
+	id S1754689Ab2BAR3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:29:53 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52158 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab2BAR3v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:27:20 -0500
-Date: Wed, 1 Feb 2012 17:27:18 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: delete raw device pointers in pinmux maps
-Message-ID: <20120201172717.GG17170@opensource.wolfsonmicro.com>
-References: <1328117053-27807-1-git-send-email-linus.walleij@stericsson.com>
+	Wed, 1 Feb 2012 12:29:51 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MiFvc8Vo6wRSORdP"
-Content-Disposition: inline
-In-Reply-To: <1328117053-27807-1-git-send-email-linus.walleij@stericsson.com>
-X-Cookie: You may be recognized soon.  Hide.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328116137.15992.6146.camel@triegel.csb>
+References: <20120201151918.GC16714@quack.suse.cz> <1328116137.15992.6146.camel@triegel.csb>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Feb 2012 09:29:31 -0800
+X-Google-Sender-Auth: 8YoV27A_IGpB4N0zNuLhcMintZE
+Message-ID: <CA+55aFyG3EifFPapU6SFYXCjrP+wQOF65hJGs3yyMxCgde5vdg@mail.gmail.com>
+Subject: Re: Memory corruption due to word sharing
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
+        rguenther@suse.de, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 1, 2012 at 9:08 AM, Torvald Riegel <triegel@redhat.com> wrote:
+>
+> What do the kernel folks think about the C11 memory model?  If you can
+> spot any issues in there, the GCC community would certainly like to
+> know.
 
---MiFvc8Vo6wRSORdP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't think this is about memory models except very tangentially.
 
-On Wed, Feb 01, 2012 at 06:24:13PM +0100, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->=20
-> After discussion with Mark Brown in an unrelated thread about
-> ADC lookups, it came to my knowledge that the ability to pass
-> a struct device * in the regulator consumers is just a
-> historical artifact, and not really recommended. Since there
-> are no in-kernel users of these pointers, we just kill them
-> right now, before someone starts to use them.
+Gcc currently accesses fields in a way that affects *independent*
+fields, without checking their memory models at all.
 
-Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Even original C already has one memory model: "volatile" data is seen
+outside the virtual C machine. And Jiri reports that even that
+*original* memory model is being violated. We're taling about the one
+from about 40 years ago.
 
---MiFvc8Vo6wRSORdP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So no amount of memory model will ever matter, if gcc can't even get
+the 40-year old one right.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Also, the C11 memory model really isn't going to make any difference
+to this. Again, because this happens even if we have explicit locking
+for the different fields. So they aren't "atomic" or anything like
+that, because we do our own (and sufficient) locking. But once the
+compiler starts to randomly touch data that just happens to be
+adjacent to other data, any memory model about those individual pieces
+is going to be entirely immaterial anyway.
 
-iQIcBAEBAgAGBQJPKXXtAAoJEBus8iNuMP3d6i0P/0lBmmQFHX71bUcXAezXtdun
-cY2Nw26Wor54JriwlQwS7+FbfPx2NGApfssRArz4n1iTbW7IhrjvuEu61K2BlJxO
-7wctlWQ/TRkCaYzkrOkeQ2jECn3Qh6g2VKrCwTYPuQxQvPee9wrVloS93yxOF8+w
-TKMpXROAjWefJ3T/KlHq63InAjGDsGWz3iIr8zqlB7S2gmxNUuFqCQfWvEdPHAQX
-byieUm3dtFKz9RGmR1p1BM7qM5QWR08HuZEmsO//DbHdbcXYbR2AxwUYEF/HOZ5I
-314kXx9zK1dgMksJ8myDvM+HwlEsxoM+UoImt871PZ1i1GaAJw68u3hp/1rJBZtU
-a48edLqqTTQCO7sVmjjIWVdBUN/+V7g7b78r2vxx9EbS2LOYQF11F8L2bLAMCOWb
-+iZyW/TpojJOfm2Ovlk2GdNbN4gPLeaNssrV3jyo1GxXpX/L6v23HxuZIj0hP+f+
-hRosOtwIj85d3IEQ0C+prdBNRQygJFZqZe7rzKjtrxJklnjW2nzlSRg1hsj+EjcS
-LA+D1Z0aP71RpEyDAp8pLHXVAF4lV1BpSWoZ0h6b9bAuSozyq+8tjCNkGzQZclmE
-oXh5tm/fEaIWOLR36/gqb7qDvB1puI/rd1PV2MfKsQB7lM7Uj61Pij0tMDBtBiRV
-FNNpORkS+juHn3De6nm7
-=Wrcj
------END PGP SIGNATURE-----
+Finally: I do not believe for a second that we can actually use the
+C11 memory model in the kernel and say "that's sufficient for our
+needs". We will continue to have to do things that are "outside the
+specs" for the very simple reason that the kernel isn't just some
+random application that happens to use pthreads. We do end up doing
+much more aggressive threading, with models that C11 simply doesn't
+cover.
 
---MiFvc8Vo6wRSORdP--
+_Atomic simply isn't going to make any difference to us. Sure, we
+might use it in a couple of places (where we have sometimes tried to
+use volatile casts, for example), but it would be totally irrelevant
+in this case exactly because *neither* field is really atomic - they
+are both protected, it's just that they are *separately* protected, so
+accessing one does *not* mean that you can access the other, even if
+they are next to each other.
+
+                  Linus
