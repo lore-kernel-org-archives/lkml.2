@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab2BAKnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 05:43:53 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57717 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab2BAKnu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 05:43:50 -0500
+	id S1756133Ab2BAKof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 05:44:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54266 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753954Ab2BAKod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 05:44:33 -0500
+Message-ID: <4F29178A.1090306@redhat.com>
+Date: Wed, 01 Feb 2012 12:44:26 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1201292337390.27749@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201292337390.27749@swampdragon.chaosbits.net>
-Date: Wed, 1 Feb 2012 05:43:50 -0500
-Message-ID: <CAHdPZaP4aArSh7G15KhP2ombW8Zs2L4osQ0xi0W829oBZSuTtg@mail.gmail.com>
-Subject: Re: [PATCH] In crypto_add_alg(), 'exact' wants to be initialized to 0
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <peterz@infradead.org>
+CC: paulmck@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] srcu: Implement call_srcu()
+References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com>  <1328017807.2446.230.camel@twins>  <20120131222447.GH2391@linux.vnet.ibm.com> <1328091749.2760.34.camel@laptop>
+In-Reply-To: <1328091749.2760.34.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 29, 2012 at 5:39 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> We declare 'exact' without initializing it and then do:
+On 02/01/2012 12:22 PM, Peter Zijlstra wrote:
+> One of the things I was thinking of is adding a sequence counter in the
+> per-cpu data. Using that we could do something like:
 >
-> [...]
->        if (strlen(p->cru_driver_name))
->                exact = 1;
+>   unsigned int seq1 = 0, seq2 = 0, count = 0;
+>   int cpu, idx;
 >
->        if (priority && !exact)
->                return -EINVAL;
+>   idx = ACCESS_ONCE(sp->completions) & 1;
 >
-> [...]
+>   for_each_possible_cpu(cpu)
+> 	seq1 += per_cpu(sp->per_cpu_ref, cpu)->seq;
 >
-> If the first 'if' is not true, then the second will test an
-> uninitialized 'exact'.
+>   for_each_possible_cpu(cpu)
+> 	count += per_cpu(sp->per_cpu_ref, cpu)->c[idx];
+>
+>   for_each_possible_cpu(cpu)
+> 	seq2 += per_cpu(sp->per_cpu_ref, cpu)->seq;
+>
+>   /*
+>    * there's no active references and no activity, we pass
+>    */
+>   if (seq1 == seq2 && count == 0)
+> 	return;
+>
+>   synchronize_srcu_slow();
+>
+>
+> This would add a fast-path which should catch the case Avi outlined
+> where we call sync_srcu() when there's no other SRCU activity.
 
-not needed . as the cru_driver_name will always be present :).
-> As far as I can tell, what we want is for 'exact' to be initialized to
-> 0 (zero/false).
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  crypto/crypto_user.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
->  Compile tested only.
->
-> diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
-> index 16f8693..36a2af7 100644
-> --- a/crypto/crypto_user.c
-> +++ b/crypto/crypto_user.c
-> @@ -304,7 +304,7 @@ static int crypto_del_alg(struct sk_buff *skb, struct nlmsghdr *nlh,
->  static int crypto_add_alg(struct sk_buff *skb, struct nlmsghdr *nlh,
->                          struct nlattr **attrs)
->  {
-> -       int exact;
-> +       int exact = 0;
->        const char *name;
->        struct crypto_alg *alg;
->        struct crypto_user_alg *p = nlmsg_data(nlh);
-> --
-> 1.7.8.4
->
->
-> --
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Sorry, I was inaccurate.  In two of the cases indeed we don't expect
+guest activity, and we're okay with waiting a bit if there is guest
+activity - when we're altering the guest physical memory map.  But the
+third case does have concurrent guest activity with
+synchronize_srcu_expedited() and we still need it fast - that's when
+userspace reads the dirty bitmap log of a running guest and replaces it
+with a new bitmap.
+
+There may be a way to convert it to call_srcu() though.  Without
+synchronize_srcu_expedited(), kvm sees both the old and the new bitmaps,
+but that's fine, since the dirty bits will go *somewhere*, and we can
+pick them up later in call_srcu().  The only problem is if this is the
+very last call to kvm_vm_ioctl_get_dirty_log(), and the callback
+triggers after it returns - we end up with a bag of bits with not one to
+return them to.  Maybe we can detect this conditions (all vcpus ought to
+be stopped), and do something like:
+
+
+   if (all vcpus stopped) {
+        /* no activity, this should be fast */
+        synchronize_srcu()
+        /* collect and return bits */
+   } else {
+        call_srcu(collect bits)
+   }
+
+still a snag - we can't reliably detect that all vcpus are stopped, they
+may be just resting in userspace, and restart while synchronize_srcu()
+is running.
+
+Marcelo?
+
+-- 
+error compiling committee.c: too many arguments to function
+
