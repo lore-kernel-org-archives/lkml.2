@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664Ab2BAVOm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:14:42 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51158 "EHLO
+	id S932621Ab2BAVKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:10:30 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42567 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932631Ab2BAVKe (ORCPT
+	by vger.kernel.org with ESMTP id S932585Ab2BAVKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:34 -0500
-X-Sasl-enc: UQ2pUR92GnwOmGIsxMobYQbO1aYgmf075CWoS4p48NdL 1328130632
+	Wed, 1 Feb 2012 16:10:23 -0500
+X-Sasl-enc: vBArb1AJFeWhNAUd1UgwCEOdI0K5jX+uo1mTpaCxtrTv 1328130620
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:48 2012
-Message-Id: <20120201210048.912206126@clark.kroah.org>
+Message-Id: <20120201210048.214159802@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:21 -0800
+Date: Wed, 01 Feb 2012 13:00:13 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>
-Subject: [57/89] usb: gadget: langwell: dont call gadgets disconnect()
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Wolfgang Frisch <wfpub@roembden.net>
+Subject: [49/89] usb: io_ti: Make edge_remove_sysfs_attrs the port_remove method.
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,91 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 37fd37108449d574da11aa9055c5c8afb39ff226 upstream.
+commit 6d443d8499e4e59ffb949759cdded32730f8d2f6 upstream.
 
-UDC core will call disconnect() and unbind() for us upon the gadget
-removal, so we should not do it ourselves. Otherwise, a composite
-gadget will explode, for example. Others might too.
+Calling edge_remove_sysfs_attrs from edge_disconnect is too late
+as the device has already been removed from sysfs.
 
-This was introduced during conversion to new style gadget in 2c7f0989
-(usb: gadget: langwell: convert to new style).
+Do the simple and obvious thing and make edge_remove_sysfs_attrs
+the port_remove method.
 
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: linux-usb@vger.kernel.org
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Reported-by: Wolfgang Frisch <wfpub@roembden.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/langwell_udc.c |   18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ drivers/usb/serial/io_ti.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/gadget/langwell_udc.c
-+++ b/drivers/usb/gadget/langwell_udc.c
-@@ -1522,8 +1522,7 @@ static void langwell_udc_stop(struct lan
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -2677,15 +2677,7 @@ cleanup:
  
- 
- /* stop all USB activities */
--static void stop_activity(struct langwell_udc *dev,
--		struct usb_gadget_driver *driver)
-+static void stop_activity(struct langwell_udc *dev)
+ static void edge_disconnect(struct usb_serial *serial)
  {
- 	struct langwell_ep	*ep;
- 	dev_dbg(&dev->pdev->dev, "---> %s()\n", __func__);
-@@ -1535,9 +1534,9 @@ static void stop_activity(struct langwel
- 	}
- 
- 	/* report disconnect; the driver is already quiesced */
--	if (driver) {
-+	if (dev->driver) {
- 		spin_unlock(&dev->lock);
--		driver->disconnect(&dev->gadget);
-+		dev->driver->disconnect(&dev->gadget);
- 		spin_lock(&dev->lock);
- 	}
- 
-@@ -1925,11 +1924,10 @@ static int langwell_stop(struct usb_gadg
- 
- 	/* stop all usb activities */
- 	dev->gadget.speed = USB_SPEED_UNKNOWN;
--	stop_activity(dev, driver);
--	spin_unlock_irqrestore(&dev->lock, flags);
+-	int i;
+-	struct edgeport_port *edge_port;
 -
- 	dev->gadget.dev.driver = NULL;
- 	dev->driver = NULL;
-+	stop_activity(dev);
-+	spin_unlock_irqrestore(&dev->lock, flags);
+ 	dbg("%s", __func__);
+-
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		edge_port = usb_get_serial_port_data(serial->port[i]);
+-		edge_remove_sysfs_attrs(edge_port->port);
+-	}
+ }
  
- 	device_remove_file(&dev->pdev->dev, &dev_attr_function);
- 
-@@ -2733,7 +2731,7 @@ static void handle_usb_reset(struct lang
- 		dev->bus_reset = 1;
- 
- 		/* reset all the queues, stop all USB activities */
--		stop_activity(dev, dev->driver);
-+		stop_activity(dev);
- 		dev->usb_state = USB_STATE_DEFAULT;
- 	} else {
- 		dev_vdbg(&dev->pdev->dev, "device controller reset\n");
-@@ -2741,7 +2739,7 @@ static void handle_usb_reset(struct lang
- 		langwell_udc_reset(dev);
- 
- 		/* reset all the queues, stop all USB activities */
--		stop_activity(dev, dev->driver);
-+		stop_activity(dev);
- 
- 		/* reset ep0 dQH and endptctrl */
- 		ep0_reset(dev);
-@@ -3367,7 +3365,7 @@ static int langwell_udc_suspend(struct p
- 
- 	spin_lock_irq(&dev->lock);
- 	/* stop all usb activities */
--	stop_activity(dev, dev->driver);
-+	stop_activity(dev);
- 	spin_unlock_irq(&dev->lock);
- 
- 	/* free dTD dma_pool and dQH */
+ static void edge_release(struct usb_serial *serial)
+@@ -2764,6 +2756,7 @@ static struct usb_serial_driver edgeport
+ 	.disconnect		= edge_disconnect,
+ 	.release		= edge_release,
+ 	.port_probe		= edge_create_sysfs_attrs,
++	.port_remove		= edge_remove_sysfs_attrs,
+ 	.ioctl			= edge_ioctl,
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
+@@ -2795,6 +2788,7 @@ static struct usb_serial_driver edgeport
+ 	.disconnect		= edge_disconnect,
+ 	.release		= edge_release,
+ 	.port_probe		= edge_create_sysfs_attrs,
++	.port_remove		= edge_remove_sysfs_attrs,
+ 	.ioctl			= edge_ioctl,
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
 
 
