@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab2BAAne (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 19:43:34 -0500
-Received: from mga14.intel.com ([143.182.124.37]:18718 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752541Ab2BAAnd convert rfc822-to-8bit (ORCPT
+	id S1754160Ab2BAAs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 19:48:29 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:33945 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab2BAAs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 19:43:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="61876692"
-From: "Rose, Gregory V" <gregory.v.rose@intel.com>
-To: David Ahern <daahern@cisco.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: RE: VFs go missing with latest kernel
-Thread-Topic: VFs go missing with latest kernel
-Thread-Index: AQHM4Gs6ffY5XbLoAUGa1L3askdwe5YnFpYAgACgHID//3peYA==
-Date: Wed, 1 Feb 2012 00:43:07 +0000
-Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A0702F64AF6@ORSMSX106.amr.corp.intel.com>
-References: <4F287102.3060600@cisco.com>
- <C5551D9AAB213A418B7FD5E4A6F30A0702F6489B@ORSMSX106.amr.corp.intel.com>
- <4F2887AB.8070005@cisco.com>
-In-Reply-To: <4F2887AB.8070005@cisco.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 31 Jan 2012 19:48:28 -0500
+Message-ID: <4F288BBC.9080202@linux.vnet.ibm.com>
+Date: Tue, 31 Jan 2012 16:47:56 -0800
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        Carl Love <carll@us.ibm.com>
+Subject: Re: [PATCH 5/9] perf: Adding sysfs group format attribute for pmu
+ device
+References: <1326717103-10287-1-git-send-email-jolsa@redhat.com> <1327674868-10486-1-git-send-email-jolsa@redhat.com> <1327674868-10486-6-git-send-email-jolsa@redhat.com> <4F231256.8080905@linux.vnet.ibm.com> <1327699182.2446.177.camel@twins>
+In-Reply-To: <1327699182.2446.177.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020100-2398-0000-0000-000003D6F962
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Ahern [mailto:daahern@cisco.com]
-> Sent: Tuesday, January 31, 2012 4:31 PM
-> To: Rose, Gregory V
-> Cc: LKML
-> Subject: Re: VFs go missing with latest kernel
+On 01/27/2012 01:19 PM, Peter Zijlstra wrote:
+> On Fri, 2012-01-27 at 13:08 -0800, Corey Ashford wrote:
+>> s an example, the IBM PowerEN processor has roughly 20 different PMU's
+>> on it.  Some of those PMU's are quite complex and divide their events up
+>> into subsets, each with different fields.  For example, some events may
+>> have a PID matching field, and others may have an bus number matching
+>> field, or matching mode field, etc.  The fields are different widths,
+>> and may overlap in the config/1/2 space.
+>>
+>> It seems that there are two approaches you could take:
+>>
+>> 1) Keep your format, but allow the fields to overlap in the bit space.
+>> For example:
+>>
+>>   "/sys/...<dev>/format/event" contains "config:0-7"
+>>   "/sys/...<dev>/format/pidmatch" contains "config:8-15"
+>>   "/sys/...<dev>/format/busmatch"   contains "config:8-13"
+>>
+>> Note that busmatch overlaps pidmatch
+>>
+>> 2) Create event groups that have their overlapping config space
+>> separated out:
+>>
+>>   "/sys/...<dev>/format/event" contains "config:0-7"
+>>
+>>   "/sys/...<dev>.1/format/pidmatch" contains "config:8-15"
+>>
+>>   "/sys/...<dev>.2/format/busmatch"   contains "config:8-13"
+>>
+>>
+>> Notice the .1 and .2 on the <dev>.
+>>
+>> This might help the user understand which fields go together.  I'm not
+>> sold on the .1 syntax... you could do it as <dev>.<event-group-name>/ or
+>> <dev>/<event-group-name>/... or whatever seems to make the most sense
+>> and is relatively easy to implement and use. 
 > 
-> On 01/31/2012 03:58 PM, Rose, Gregory V wrote:
-> >> I am hitting some other problem trying to use the VF on 3.3.0-rc1 --
-> KVM
-> >> fails the KVM_CAP_IOMMU check though the server has one (works fine
-> with
-> >> the older kernel) and it is built into the kernel. Debugging that
-> >> problem now.
-> 
-> second problem was due to a CONFIG setting.
-> 
-> Back to the missing VF problem: reverting the patch I mentioned before
-> and my VM boots up fine with the even-numbered VFs assigned to it.
+> Why try and stuff those 20 in a single driver? Have 20 drivers and each
+> their own format/ hierarchy.
 
-OK, thanks... I was staring at the dmesg output you sent me and it is odd because the even numbered VFs that go missing are there when you set their MAC addresses.  See output below the dotted line after my reply.
+I'm sure that could work.  Since sysfs seems to be fairly independent
+(if necessary) of the hardware structure, I suppose this wouldn't be a
+problem.
 
-Also, the dmesg output indicates 28 VFs are created but the lspci output you've sent only shows 14, even from the stock FC 14 kernel.  So even in that case you seem to be missing 14 VFs from the lspci output.
+What do you think of Jiri's (Jirka's ?) other ideas of subdividing the
+format directory?
 
-So they're there at one point but then disappear.  Very odd.  I'm finishing up a few other things but will try to repro ASAP and get back to you with my results.
+- Corey
 
-- Greg
-
-------------
-[   81.432421] igb 0000:07:00.0: setting MAC 02:12:34:56:79:41 on VF 1
-[   81.432550] igb 0000:07:00.0: Reload the VF driver to make this change effective.
-[   81.432667] igb 0000:07:00.0: The VF MAC address has been set, but the PF device is not up.
-[   81.432942] igb 0000:07:00.0: Bring the PF device up before attempting to use the VF device.
-[   81.434947] igb 0000:07:00.0: setting MAC 02:12:34:56:79:42 on VF 2
-[   81.435060] igb 0000:07:00.0: Reload the VF driver to make this change effective.
-[   81.435174] igb 0000:07:00.0: The VF MAC address has been set, but the PF device is not up.
-[   81.435450] igb 0000:07:00.0: Bring the PF device up before attempting to use the VF device.
-[   81.437429] igb 0000:07:00.0: setting MAC 02:12:34:56:79:43 on VF 3
-[   81.437555] igb 0000:07:00.0: Reload the VF driver to make this change effective.
-[   81.437670] igb 0000:07:00.0: The VF MAC address has been set, but the PF device is not up.
-[   81.437937] igb 0000:07:00.0: Bring the PF device up before attempting to use the VF device.
-[   81.439904] igb 0000:07:00.0: setting MAC 02:12:34:56:79:44 on VF 4
-[   81.440016] igb 0000:07:00.0: Reload the VF driver to make this change effective.
-[   81.440132] igb 0000:07:00.0: The VF MAC address has been set, but the PF device is not up.
-[   81.440400] igb 0000:07:00.0: Bring the PF device up before attempting to use the VF device.
-[   81.442328] igb 0000:07:00.0: setting MAC 02:12:34:56:79:45 on VF 5
-[   81.442453] igb 0000:07:00.0: Reload the VF driver to make this change effective.
-[   81.442567] igb 0000:07:00.0: The VF MAC address has been set, but the PF device is not up.
-[   81.442837] igb 0000:07:00.0: Bring the PF device up before attempting to use the VF device.
-[   81.444921] igb 0000:07:00.0: setting MAC 02:12:34:56:79:46 on VF 6
-[   81.445035] igb 0000:07:00.0: Reload the VF driver to make this change effective.
-[   81.445149] igb 0000:07:00.0: The VF MAC address has been set, but the PF device is not up.
-[   81.445417] igb 0000:07:00.0: Bring the PF device up before attempting to use the VF device.
--------------------
-
-> 
-> David
