@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab2BAUuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:50:54 -0500
+	id S1756902Ab2BAUut (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:50:49 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:33552 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab2BAUuv (ORCPT
+	with ESMTP id S1751065Ab2BAUup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:50:51 -0500
+	Wed, 1 Feb 2012 15:50:45 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/16] blkcg: shoot down blkio_groups on elevator switch
-Date: Wed,  1 Feb 2012 12:50:20 -0800
-Message-Id: <1328129429-11823-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/16] elevator: make elevator_init_fn() return 0/-errno
+Date: Wed,  1 Feb 2012 12:50:17 -0800
+Message-Id: <1328129429-11823-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1328129429-11823-1-git-send-email-tj@kernel.org>
 References: <1328129429-11823-1-git-send-email-tj@kernel.org>
@@ -21,296 +21,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Elevator switch may involve changes to blkcg policies.  Implement
-shoot down of blkio_groups.
+elevator_ops->elevator_init_fn() has a weird return value.  It returns
+a void * which the caller should assign to q->elevator->elevator_data
+and %NULL return denotes init failure.
 
-Combined with the previous bypass updates, the end goal is updating
-blkcg core such that it can ensure that blkcg's being affected become
-quiescent and don't have any per-blkg data hanging around before
-commencing any policy updates.  Until queues are made aware of the
-policies that applies to them, as an interim step, all per-policy blkg
-data will be shot down.
+Update such that it returns integer 0/-errno and sets elevator_data
+directly as necessary.
 
-* blk-throtl doesn't need this change as it can't be disabled for a
-  live queue; however, update it anyway as the scheduled blkg
-  unification requires this behavior change.  This means that
-  blk-throtl configuration will be unnecessarily lost over elevator
-  switch.  This oddity will be removed after blkcg learns to associate
-  individual policies with request_queues.
-
-* blk-throtl dosen't shoot down root_tg.  This is to ease transition.
-  Unified blkg will always have persistent root group and not shooting
-  down root_tg for now eases transition to that point by avoiding
-  having to update td->root_tg and is safe as blk-throtl can never be
-  disabled
-
--v2: Vivek pointed out that group list is not guaranteed to be empty
-     on return from clear function if it raced cgroup removal and
-     lost.  Fix it by waiting a bit and retrying.  This kludge will
-     soon be removed once locking is updated such that blkg is never
-     in limbo state between blkcg and request_queue locks.
-
-     blk-throtl no longer shoots down root_tg to avoid breaking
-     td->root_tg.
-
-     Also, Nest queue_lock inside blkio_list_lock not the other way
-     around to avoid introduce possible deadlock via blkcg lock.
-
--v3: blkcg_clear_queue() repositioned and renamed to
-     blkg_destroy_all() to increase consistency with later changes.
-     cfq_clear_queue() updated to check q->elevator before
-     dereferencing it to avoid NULL dereference on not fully
-     initialized queues (used by later change).
+This makes the interface more conventional and eases further cleanup.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c   |   34 +++++++++++++++++++++++++++++++++-
- block/blk-cgroup.h   |    5 ++++-
- block/blk-throttle.c |   27 +++++++++++++++++++++++++--
- block/cfq-iosched.c  |   20 +++++++++++++++++++-
- block/elevator.c     |    3 +++
- 5 files changed, 84 insertions(+), 5 deletions(-)
+ block/cfq-iosched.c      |    9 +++++----
+ block/deadline-iosched.c |    8 +++++---
+ block/elevator.c         |   12 ++----------
+ block/noop-iosched.c     |    8 +++++---
+ include/linux/elevator.h |    2 +-
+ 5 files changed, 18 insertions(+), 21 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 7bfc574..2d2986a 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -17,8 +17,9 @@
- #include <linux/err.h>
- #include <linux/blkdev.h>
- #include <linux/slab.h>
--#include "blk-cgroup.h"
- #include <linux/genhd.h>
-+#include <linux/delay.h>
-+#include "blk-cgroup.h"
- 
- #define MAX_KEY_LEN 100
- 
-@@ -546,6 +547,37 @@ struct blkio_group *blkiocg_lookup_group(struct blkio_cgroup *blkcg, void *key)
- }
- EXPORT_SYMBOL_GPL(blkiocg_lookup_group);
- 
-+void blkg_destroy_all(struct request_queue *q)
-+{
-+	struct blkio_policy_type *pol;
-+
-+	while (true) {
-+		bool done = true;
-+
-+		spin_lock(&blkio_list_lock);
-+		spin_lock_irq(q->queue_lock);
-+
-+		/*
-+		 * clear_queue_fn() might return with non-empty group list
-+		 * if it raced cgroup removal and lost.  cgroup removal is
-+		 * guaranteed to make forward progress and retrying after a
-+		 * while is enough.  This ugliness is scheduled to be
-+		 * removed after locking update.
-+		 */
-+		list_for_each_entry(pol, &blkio_list, list)
-+			if (!pol->ops.blkio_clear_queue_fn(q))
-+				done = false;
-+
-+		spin_unlock_irq(q->queue_lock);
-+		spin_unlock(&blkio_list_lock);
-+
-+		if (done)
-+			break;
-+
-+		msleep(10);	/* just some random duration I like */
-+	}
-+}
-+
- static void blkio_reset_stats_cpu(struct blkio_group *blkg)
- {
- 	struct blkio_group_stats_cpu *stats_cpu;
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 3551687..e5cfcbd 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -203,7 +203,7 @@ extern unsigned int blkcg_get_write_iops(struct blkio_cgroup *blkcg,
- 				     dev_t dev);
- 
- typedef void (blkio_unlink_group_fn) (void *key, struct blkio_group *blkg);
--
-+typedef bool (blkio_clear_queue_fn)(struct request_queue *q);
- typedef void (blkio_update_group_weight_fn) (void *key,
- 			struct blkio_group *blkg, unsigned int weight);
- typedef void (blkio_update_group_read_bps_fn) (void * key,
-@@ -217,6 +217,7 @@ typedef void (blkio_update_group_write_iops_fn) (void *key,
- 
- struct blkio_policy_ops {
- 	blkio_unlink_group_fn *blkio_unlink_group_fn;
-+	blkio_clear_queue_fn *blkio_clear_queue_fn;
- 	blkio_update_group_weight_fn *blkio_update_group_weight_fn;
- 	blkio_update_group_read_bps_fn *blkio_update_group_read_bps_fn;
- 	blkio_update_group_write_bps_fn *blkio_update_group_write_bps_fn;
-@@ -233,6 +234,7 @@ struct blkio_policy_type {
- /* Blkio controller policy registration */
- extern void blkio_policy_register(struct blkio_policy_type *);
- extern void blkio_policy_unregister(struct blkio_policy_type *);
-+extern void blkg_destroy_all(struct request_queue *q);
- 
- static inline char *blkg_path(struct blkio_group *blkg)
- {
-@@ -249,6 +251,7 @@ struct blkio_policy_type {
- 
- static inline void blkio_policy_register(struct blkio_policy_type *blkiop) { }
- static inline void blkio_policy_unregister(struct blkio_policy_type *blkiop) { }
-+static inline void blkg_destroy_all(struct request_queue *q) { }
- 
- static inline char *blkg_path(struct blkio_group *blkg) { return NULL; }
- 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 702c0e6..3699ab4 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -989,12 +989,17 @@ throtl_destroy_tg(struct throtl_data *td, struct throtl_grp *tg)
- 	td->nr_undestroyed_grps--;
- }
- 
--static void throtl_release_tgs(struct throtl_data *td)
-+static bool throtl_release_tgs(struct throtl_data *td, bool release_root)
- {
- 	struct hlist_node *pos, *n;
- 	struct throtl_grp *tg;
-+	bool empty = true;
- 
- 	hlist_for_each_entry_safe(tg, pos, n, &td->tg_list, tg_node) {
-+		/* skip root? */
-+		if (!release_root && tg == td->root_tg)
-+			continue;
-+
- 		/*
- 		 * If cgroup removal path got to blk_group first and removed
- 		 * it from cgroup list, then it will take care of destroying
-@@ -1002,7 +1007,10 @@ static void throtl_release_tgs(struct throtl_data *td)
- 		 */
- 		if (!blkiocg_del_blkio_group(&tg->blkg))
- 			throtl_destroy_tg(td, tg);
-+		else
-+			empty = false;
- 	}
-+	return empty;
- }
- 
- /*
-@@ -1029,6 +1037,20 @@ void throtl_unlink_blkio_group(void *key, struct blkio_group *blkg)
- 	spin_unlock_irqrestore(td->queue->queue_lock, flags);
- }
- 
-+static bool throtl_clear_queue(struct request_queue *q)
-+{
-+	lockdep_assert_held(q->queue_lock);
-+
-+	/*
-+	 * Clear tgs but leave the root one alone.  This is necessary
-+	 * because root_tg is expected to be persistent and safe because
-+	 * blk-throtl can never be disabled while @q is alive.  This is a
-+	 * kludge to prepare for unified blkg.  This whole function will be
-+	 * removed soon.
-+	 */
-+	return throtl_release_tgs(q->td, false);
-+}
-+
- static void throtl_update_blkio_group_common(struct throtl_data *td,
- 				struct throtl_grp *tg)
- {
-@@ -1097,6 +1119,7 @@ static void throtl_shutdown_wq(struct request_queue *q)
- static struct blkio_policy_type blkio_policy_throtl = {
- 	.ops = {
- 		.blkio_unlink_group_fn = throtl_unlink_blkio_group,
-+		.blkio_clear_queue_fn = throtl_clear_queue,
- 		.blkio_update_group_read_bps_fn =
- 					throtl_update_blkio_group_read_bps,
- 		.blkio_update_group_write_bps_fn =
-@@ -1282,7 +1305,7 @@ void blk_throtl_exit(struct request_queue *q)
- 	throtl_shutdown_wq(q);
- 
- 	spin_lock_irq(q->queue_lock);
--	throtl_release_tgs(td);
-+	throtl_release_tgs(td, true);
- 
- 	/* If there are other groups */
- 	if (td->nr_undestroyed_grps > 0)
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index f3d6b04..f268ae4 100644
+index 529dfba..f3d6b04 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -1225,10 +1225,11 @@ static void cfq_destroy_cfqg(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	cfq_put_cfqg(cfqg);
+@@ -3662,7 +3662,7 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ 	kfree(cfqd);
  }
  
--static void cfq_release_cfq_groups(struct cfq_data *cfqd)
-+static bool cfq_release_cfq_groups(struct cfq_data *cfqd)
+-static void *cfq_init_queue(struct request_queue *q)
++static int cfq_init_queue(struct request_queue *q)
  {
- 	struct hlist_node *pos, *n;
- 	struct cfq_group *cfqg;
-+	bool empty = true;
+ 	struct cfq_data *cfqd;
+ 	int i, j;
+@@ -3671,7 +3671,7 @@ static void *cfq_init_queue(struct request_queue *q)
  
- 	hlist_for_each_entry_safe(cfqg, pos, n, &cfqd->cfqg_list, cfqd_node) {
- 		/*
-@@ -1238,7 +1239,10 @@ static void cfq_release_cfq_groups(struct cfq_data *cfqd)
- 		 */
- 		if (!cfq_blkiocg_del_blkio_group(&cfqg->blkg))
- 			cfq_destroy_cfqg(cfqd, cfqg);
-+		else
-+			empty = false;
+ 	cfqd = kmalloc_node(sizeof(*cfqd), GFP_KERNEL | __GFP_ZERO, q->node);
+ 	if (!cfqd)
+-		return NULL;
++		return -ENOMEM;
+ 
+ 	/* Init root service tree */
+ 	cfqd->grp_service_tree = CFQ_RB_ROOT;
+@@ -3698,7 +3698,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	if (blkio_alloc_blkg_stats(&cfqg->blkg)) {
+ 		kfree(cfqg);
+ 		kfree(cfqd);
+-		return NULL;
++		return -ENOMEM;
  	}
-+	return empty;
+ 
+ 	rcu_read_lock();
+@@ -3729,6 +3729,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	cfq_link_cfqq_cfqg(&cfqd->oom_cfqq, &cfqd->root_group);
+ 
+ 	cfqd->queue = q;
++	q->elevator->elevator_data = cfqd;
+ 
+ 	init_timer(&cfqd->idle_slice_timer);
+ 	cfqd->idle_slice_timer.function = cfq_idle_slice_timer;
+@@ -3753,7 +3754,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	 * second, in order to have larger depth for async operations.
+ 	 */
+ 	cfqd->last_delayed_sync = jiffies - HZ;
+-	return cfqd;
++	return 0;
  }
  
  /*
-@@ -1265,6 +1269,19 @@ static void cfq_unlink_blkio_group(void *key, struct blkio_group *blkg)
- 	spin_unlock_irqrestore(cfqd->queue->queue_lock, flags);
+diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
+index 7bf12d7..599b12e 100644
+--- a/block/deadline-iosched.c
++++ b/block/deadline-iosched.c
+@@ -337,13 +337,13 @@ static void deadline_exit_queue(struct elevator_queue *e)
+ /*
+  * initialize elevator private data (deadline_data).
+  */
+-static void *deadline_init_queue(struct request_queue *q)
++static int deadline_init_queue(struct request_queue *q)
+ {
+ 	struct deadline_data *dd;
+ 
+ 	dd = kmalloc_node(sizeof(*dd), GFP_KERNEL | __GFP_ZERO, q->node);
+ 	if (!dd)
+-		return NULL;
++		return -ENOMEM;
+ 
+ 	INIT_LIST_HEAD(&dd->fifo_list[READ]);
+ 	INIT_LIST_HEAD(&dd->fifo_list[WRITE]);
+@@ -354,7 +354,9 @@ static void *deadline_init_queue(struct request_queue *q)
+ 	dd->writes_starved = writes_starved;
+ 	dd->front_merges = 1;
+ 	dd->fifo_batch = fifo_batch;
+-	return dd;
++
++	q->elevator->elevator_data = dd;
++	return 0;
  }
  
-+static struct elevator_type iosched_cfq;
-+
-+static bool cfq_clear_queue(struct request_queue *q)
-+{
-+	lockdep_assert_held(q->queue_lock);
-+
-+	/* shoot down blkgs iff the current elevator is cfq */
-+	if (!q->elevator || q->elevator->type != &iosched_cfq)
-+		return true;
-+
-+	return cfq_release_cfq_groups(q->elevator->elevator_data);
-+}
-+
- #else /* GROUP_IOSCHED */
- static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd)
- {
-@@ -3881,6 +3898,7 @@ static struct elevator_type iosched_cfq = {
- static struct blkio_policy_type blkio_policy_cfq = {
- 	.ops = {
- 		.blkio_unlink_group_fn =	cfq_unlink_blkio_group,
-+		.blkio_clear_queue_fn = cfq_clear_queue,
- 		.blkio_update_group_weight_fn =	cfq_update_blkio_group_weight,
- 	},
- 	.plid = BLKIO_POLICY_PROP,
+ /*
 diff --git a/block/elevator.c b/block/elevator.c
-index 078a491..d6116af 100644
+index 42543e3..8dc65b1 100644
 --- a/block/elevator.c
 +++ b/block/elevator.c
-@@ -38,6 +38,7 @@
- #include <trace/events/block.h>
+@@ -168,14 +168,6 @@ static struct elevator_type *elevator_get(const char *name)
+ 	return e;
+ }
  
- #include "blk.h"
-+#include "blk-cgroup.h"
+-static int elevator_init_queue(struct request_queue *q)
+-{
+-	q->elevator->elevator_data = q->elevator->type->ops.elevator_init_fn(q);
+-	if (q->elevator->elevator_data)
+-		return 0;
+-	return -ENOMEM;
+-}
+-
+ static char chosen_elevator[ELV_NAME_MAX];
  
- static DEFINE_SPINLOCK(elv_list_lock);
- static LIST_HEAD(elv_list);
-@@ -941,6 +942,8 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
- 	ioc_clear_queue(q);
- 	spin_unlock_irq(q->queue_lock);
+ static int __init elevator_setup(char *str)
+@@ -271,7 +263,7 @@ int elevator_init(struct request_queue *q, char *name)
+ 	if (!q->elevator)
+ 		return -ENOMEM;
  
-+	blkg_destroy_all(q);
+-	err = elevator_init_queue(q);
++	err = e->ops.elevator_init_fn(q);
+ 	if (err) {
+ 		kobject_put(&q->elevator->kobj);
+ 		return err;
+@@ -974,7 +966,7 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
+ 	if (!q->elevator)
+ 		goto fail_init;
+ 
+-	err = elevator_init_queue(q);
++	err = new_e->ops.elevator_init_fn(q);
+ 	if (err) {
+ 		kobject_put(&q->elevator->kobj);
+ 		goto fail_init;
+diff --git a/block/noop-iosched.c b/block/noop-iosched.c
+index 413a0b1..5d1bf70 100644
+--- a/block/noop-iosched.c
++++ b/block/noop-iosched.c
+@@ -59,15 +59,17 @@ noop_latter_request(struct request_queue *q, struct request *rq)
+ 	return list_entry(rq->queuelist.next, struct request, queuelist);
+ }
+ 
+-static void *noop_init_queue(struct request_queue *q)
++static int noop_init_queue(struct request_queue *q)
+ {
+ 	struct noop_data *nd;
+ 
+ 	nd = kmalloc_node(sizeof(*nd), GFP_KERNEL, q->node);
+ 	if (!nd)
+-		return NULL;
++		return -ENOMEM;
 +
- 	/* allocate, init and register new elevator */
- 	err = -ENOMEM;
- 	q->elevator = elevator_alloc(q, new_e);
+ 	INIT_LIST_HEAD(&nd->queue);
+-	return nd;
++	q->elevator->elevator_data = nd;
++	return 0;
+ }
+ 
+ static void noop_exit_queue(struct elevator_queue *e)
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index c24f3d7..d7726c9 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -33,7 +33,7 @@ typedef void (elevator_put_req_fn) (struct request *);
+ typedef void (elevator_activate_req_fn) (struct request_queue *, struct request *);
+ typedef void (elevator_deactivate_req_fn) (struct request_queue *, struct request *);
+ 
+-typedef void *(elevator_init_fn) (struct request_queue *);
++typedef int (elevator_init_fn) (struct request_queue *);
+ typedef void (elevator_exit_fn) (struct elevator_queue *);
+ 
+ struct elevator_ops
 -- 
 1.7.7.3
 
