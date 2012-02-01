@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab2BAREy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:04:54 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:50112 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab2BAREw (ORCPT
+	id S1754670Ab2BARHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:07:22 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57048 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab2BARHU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:04:52 -0500
-Date: Wed, 1 Feb 2012 18:04:47 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-Message-ID: <20120201170443.GE6731@somewhere.redhat.com>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
- <1327591185.2446.102.camel@twins>
- <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+	Wed, 1 Feb 2012 12:07:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328104527.2662.4.camel@laptop>
+References: <1327854877.8504.3.camel@localhost.localdomain>
+	<20120131084830.GA22077@linux.vnet.ibm.com>
+	<1328104527.2662.4.camel@laptop>
+Date: Wed, 1 Feb 2012 23:07:20 +0600
+Message-ID: <CADZ9YHjQXdeFkCbn9A81+Eo+udZoG8vF_1=N7hM4iZo_3uD3nA@mail.gmail.com>
+Subject: Re: [PATCH] sched: At sched_fork use __set_task_cpu().
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 29, 2012 at 10:25:46AM +0200, Gilad Ben-Yossef wrote:
-> On Thu, Jan 26, 2012 at 5:19 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >
-> > On Thu, 2012-01-26 at 12:01 +0200, Gilad Ben-Yossef wrote:
-> > > Gilad Ben-Yossef (8):
-> > >   smp: introduce a generic on_each_cpu_mask function
-> > >   arm: move arm over to generic on_each_cpu_mask
-> > >   tile: move tile to use generic on_each_cpu_mask
-> > >   smp: add func to IPI cpus based on parameter func
-> > >   slub: only IPI CPUs that have per cpu obj to flush
-> > >   fs: only send IPI to invalidate LRU BH when needed
-> > >   mm: only IPI CPUs to drain local pages if they exist
-> >
-> > These patches look very nice!
-> >
-> > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >
-> 
-> Thank you :-)
-> 
-> If this is of interest, I keep a list tracking global IPI and global
-> task schedulers sources in the core kernel here:
-> https://github.com/gby/linux/wiki.
-> 
-> I plan to visit all these potential interference source to see if
-> something can be done to lower their effect on
-> isolated CPUs over time.
+On Wed, Feb 1, 2012 at 7:55 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2012-01-31 at 14:18 +0530, Kamalesh Babulal wrote:
+>> * Rakib Mullick <rakib.mullick@gmail.com> [2012-01-29 22:34:37]:
+>>
+>> >  We don't use select_task_rq() from sched_fork() anymore and no chance of task gets migrated at
+>> > this point. Therefore, we can avoid task migration related checking/accounting, so use
+>> > __set_task_cpu() instead of set_task_cpu().
+>> >
+>> > Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+>>   Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+>
+> Since we call sched_fork() with preemption enabled _long_ after the
+> child is copied from the parent who is to say we (parent) didn't migrate
+> away and are now setting a different cpu?
+>
+If parent gets migrated that should be accounted as parents migration
+count not for child offcourse. And if we're counting child's
+nr_migration count for parent's getting migrated, we're simply
+screwing childs migration count. Isn't it?
 
-Very nice especially as many people seem to be interested in
-CPU isolation.
+> One could argue that that might not be a real migration from the child's
+> POV, maybe, but nobody seems to be making that argument.
+>
+But I'm not seeing it from child's or parent's POV. I'm simply
+addressing the point of a task's migration counter
+(p->se.nr_migrations), simply this task wasn't moved.
 
-When we get the adaptive tickless feature in place, perhaps we'll
-also need to think about some way to have more control on the
-CPU affinity of some non pinned timers to avoid disturbing
-adaptive tickless CPUs. We still need to consider their cache affinity
-though.
+> I really don't see the point of this..
+>
+I'm hoping, you'll rethink...
+
+Thanks,
+Rakib
