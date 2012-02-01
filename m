@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048Ab2BAVvd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:51:33 -0500
-Received: from tundra.namei.org ([65.99.196.166]:46631 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932314Ab2BAVva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:51:30 -0500
-Date: Thu, 2 Feb 2012 08:51:25 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Fixes for MPI library
-In-Reply-To: <CALLzPKZ6AzsAzd0mWBChf2XZ0gBEAUjzsAm6YfqMiZVOVzYiiw@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1202020850400.23450@tundra.namei.org>
-References: <alpine.LRH.2.00.1202020037340.20463@tundra.namei.org> <20120201.125245.681472105466012081.davem@davemloft.net> <CALLzPKZ6AzsAzd0mWBChf2XZ0gBEAUjzsAm6YfqMiZVOVzYiiw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933053Ab2BAVvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:51:51 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48105 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932295Ab2BAVIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 16:08:22 -0500
+X-Sasl-enc: q+jWoDZxywcDv1elZc+lEX7XZDCKpQjzapmiSVvDoH7h 1328130502
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:39 2012
+Message-Id: <20120201205739.316624410@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Wed, 01 Feb 2012 12:56:01 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Eric Anholt <eric@anholt.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Keith Packard <keithp@keithp.com>
+Subject: [21/65] drm/i915/sdvo: always set positive sync polarity
+In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Feb 2012, Kasatkin, Dmitry wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> > What happened to the sparc 32-bit build fixes I posted to Dmitry the other
-> > week?
-> 
-> I notice you have not sent it to lsm.
-> James, can you take them or I/David need to resend them?
+------------------
 
-I don't seem to have them, so please forward them to me, Dmitry.
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
+
+commit ba68e086223a5f149f37bf8692c8cdbf1b0ba3ef upstream.
+
+This is a revert of 81a14b46846fea0741902e8d8dfcc6c6c78154c8.
+
+We already set the mode polarity using the SDVO commands with struct
+intel_sdvo_dtd. We have at least 3 bugs that get fixed with this patch.
+The documentation, despite not clear, can also be interpreted in a way
+that suggests this patch is needed.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=15766
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=42174
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=43333
+Reviewed-by: Eric Anholt <eric@anholt.net>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/i915/intel_sdvo.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1059,15 +1059,13 @@ static void intel_sdvo_mode_set(struct d
+ 
+ 	/* Set the SDVO control regs. */
+ 	if (INTEL_INFO(dev)->gen >= 4) {
+-		sdvox = 0;
++		/* The real mode polarity is set by the SDVO commands, using
++		 * struct intel_sdvo_dtd. */
++		sdvox = SDVO_VSYNC_ACTIVE_HIGH | SDVO_HSYNC_ACTIVE_HIGH;
+ 		if (intel_sdvo->is_hdmi)
+ 			sdvox |= intel_sdvo->color_range;
+ 		if (INTEL_INFO(dev)->gen < 5)
+ 			sdvox |= SDVO_BORDER_ENABLE;
+-		if (adjusted_mode->flags & DRM_MODE_FLAG_PVSYNC)
+-			sdvox |= SDVO_VSYNC_ACTIVE_HIGH;
+-		if (adjusted_mode->flags & DRM_MODE_FLAG_PHSYNC)
+-			sdvox |= SDVO_HSYNC_ACTIVE_HIGH;
+ 	} else {
+ 		sdvox = I915_READ(intel_sdvo->sdvo_reg);
+ 		switch (intel_sdvo->sdvo_reg) {
 
 
-- James
--- 
-James Morris
-<jmorris@namei.org>
