@@ -1,190 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab2BAWTY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:19:24 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:37818 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757002Ab2BAWTW (ORCPT
+	id S933040Ab2BAWUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:20:12 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:6618 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754353Ab2BAWUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:19:22 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Greg KH <greg@kroah.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: [PATCH] sysfs:  Optionally count subdirectories to support buggy applications
-References: <4F27120A.4040106@suse.cz> <20120130220611.GA26655@kroah.com>
-	<20120130221059.26ab5edf@pyramind.ukuu.org.uk>
-	<20120130222717.GA6393@kroah.com> <m18vkoirv9.fsf@fess.ebiederm.org>
-	<4F27C6EB.2070305@suse.cz> <m14nvc82jo.fsf@fess.ebiederm.org>
-	<CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
-	<m1wr87ywex.fsf@fess.ebiederm.org>
-Date: Wed, 01 Feb 2012 14:21:59 -0800
-In-Reply-To: <m1wr87ywex.fsf@fess.ebiederm.org> (Eric W. Biederman's message
-	of "Tue, 31 Jan 2012 21:06:46 -0800")
-Message-ID: <m1ehueyz20.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 1 Feb 2012 17:20:09 -0500
+From: "Boehm, Hans" <hans.boehm@hp.com>
+To: Torvald Riegel <triegel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "dsterba@suse.cz" <dsterba@suse.cz>,
+        "ptesarik@suse.cz" <ptesarik@suse.cz>,
+        "rguenther@suse.de" <rguenther@suse.de>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: RE: Memory corruption due to word sharing
+Thread-Topic: Memory corruption due to word sharing
+Thread-Index: AQHM4PTrUuQzu7yZv0OOPDwQnxvuBZYoRnOAgAAFwICAADkJAIAAB5mAgAAEugCAAAi6QA==
+Date: Wed, 1 Feb 2012 22:18:53 +0000
+Message-ID: <A3E67C2071F49C4CBC4F17E6D77CDDD232754220@G4W3299.americas.hpqcorp.net>
+References: <20120201151918.GC16714@quack.suse.cz>
+	 <1328116137.15992.6146.camel@triegel.csb>
+	 <CA+55aFyG3EifFPapU6SFYXCjrP+wQOF65hJGs3yyMxCgde5vdg@mail.gmail.com>
+	 <1328129620.15992.6453.camel@triegel.csb>
+	 <CA+55aFx=4AhdFEgjY3b=85__mGYX8BKcaXpFC=1XZzoFFjeTrw@mail.gmail.com>
+ <1328132266.15992.6528.camel@triegel.csb>
+In-Reply-To: <1328132266.15992.6528.camel@triegel.csb>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.216.12.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+ZdXbjkoMtDKWsAR7A9QMG9pABJJsbvqI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q11MKJSE023750
 
+> From: Torvald Riegel
+> > Oh, one of my favorite (NOT!) pieces of code in the kernel is the
+> > implementation of the
+> >
+> >    smp_read_barrier_depends()
+> >
+> > macro, which on every single architecture except for one (alpha) is a
+> no-op.
+> >
+> > We have basically 30 or so empty definitions for it, and I think we
+> > have something like five uses of it. One of them, I think, is
+> > performance crticial, and the reason for that macro existing.
+> >
+> > What does it do? The semantics is that it's a read barrier between
+> two
+> > different reads that we want to happen in order wrt two writes on the
+> > writing side (the writing side also has to have a "smp_wmb()" to
+> order
+> > those writes). But the reason it isn't a simple read barrier is that
+> > the reads are actually causally *dependent*, ie we have code like
+> >
+> >    first_read = read_pointer;
+> >    smp_read_barrier_depends();
+> >    second_read = *first_read;
+> >
+> > and it turns out that on pretty much all architectures (except for
+> > alpha), the *data*dependency* will already guarantee that the CPU
+> > reads the thing in order. And because a read barrier can actually be
+> > quite expensive, we don't want to have a read barrier for this case.
+> 
+> I don't have time to look at this in detail right now, but it looks
+> roughly close to C++11's memory_order_consume to me, which is somehwat
+> like an acquire, but just for subsequent data-dependent loads.  Added
+> for performance reasons on some architecture AFAIR.
+> 
+It's intended to address the same problem, though somewhat differently.  (I suspect there was overlap in the people involved?) One reason that C11 took a slightly different path is that compilers can, and sometimes do, remove dependencies, making smp_read_barrier_depends brittle unless it also imposes compiler constraints.
 
-lm_sensors and possibly other applications get confused if all sysfs
-directories return nlink == 1.  The lm_sensors code that got confused
-was just wrong and a fixed version of lm_sensors should be released
-shortly.
+Hans
 
-There may be other applications that have problems with sysfs return
-nlink == 1 for directories.  To allow people to continue to use old
-versions of userspace with new kernels add to sysfs a compile time
-option to maintain mostly precise directory counts for those people who
-don't mind the cost.
-
-I have moved where we keep nlink in sysfs_dirent as compared to previous
-versions of subdirectory counting to a location that packs better.
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- fs/sysfs/Kconfig |   15 +++++++++++++++
- fs/sysfs/dir.c   |    8 ++++++++
- fs/sysfs/inode.c |    2 ++
- fs/sysfs/sysfs.h |   38 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 63 insertions(+), 0 deletions(-)
-
-diff --git a/fs/sysfs/Kconfig b/fs/sysfs/Kconfig
-index 8c41fea..9b403e9 100644
---- a/fs/sysfs/Kconfig
-+++ b/fs/sysfs/Kconfig
-@@ -21,3 +21,18 @@ config SYSFS
- 	example, "root=03:01" for /dev/hda1.
- 
- 	Designers of embedded systems may wish to say N here to conserve space.
-+
-+config SYSFS_COUNT_LINKS
-+	bool "sysfs count subdirectoires to support buggy applications"
-+	default n
-+	help
-+
-+	Increase the memory and cpu untilization of sysfs by maintaining
-+	by maintaining a count of how hard links from subdirectories a
-+	directory has.  This allows sysfs to report the directory nlink
-+	as the number of subdirectories plus two.  With out this enabled
-+	sysfs will report the nlink of all directories as 1, which is
-+	the standard way of indicating that the number of subdirectoires
-+	is not tracked.
-+
-+	Unless you know you need this say N here.
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index dd3779c..f30df7c 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -91,6 +91,9 @@ static int sysfs_link_sibling(struct sysfs_dirent *sd)
- 	struct rb_node **node = &sd->s_parent->s_dir.children.rb_node;
- 	struct rb_node *parent = NULL;
- 
-+	if (sysfs_type(sd) == SYSFS_DIR)
-+		sysfs_inc_nlink(sd->s_parent);
-+
- 	while (*node) {
- 		struct sysfs_dirent *pos;
- 		int result;
-@@ -123,6 +126,9 @@ static int sysfs_link_sibling(struct sysfs_dirent *sd)
-  */
- static void sysfs_unlink_sibling(struct sysfs_dirent *sd)
- {
-+	if (sysfs_type(sd) == SYSFS_DIR)
-+		sysfs_dec_nlink(sd->s_parent);
-+
- 	rb_erase(&sd->s_rb, &sd->s_parent->s_dir.children);
- }
- 
-@@ -367,6 +373,8 @@ struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type)
- 	sd->s_mode = mode;
- 	sd->s_flags = type;
- 
-+	sysfs_init_nlink(sd);
-+
- 	return sd;
- 
-  err_out2:
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 4291fd1..782c66a 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -216,6 +216,8 @@ static void sysfs_refresh_inode(struct sysfs_dirent *sd, struct inode *inode)
- 					    iattrs->ia_secdata,
- 					    iattrs->ia_secdata_len);
- 	}
-+
-+	set_nlink(inode, sysfs_read_nlink(sd));
- }
- 
- int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 6289a00..4603506 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -69,6 +69,9 @@ struct sysfs_dirent {
- 
- 	const void		*s_ns; /* namespace tag */
- 	unsigned int		s_hash; /* ns + name hash */
-+#ifdef CONFIG_SYSFS_COUNT_LINKS
-+	unsigned int		s_nlink;
-+#endif
- 	union {
- 		struct sysfs_elem_dir		s_dir;
- 		struct sysfs_elem_symlink	s_symlink;
-@@ -127,6 +130,41 @@ do {								\
- #define sysfs_dirent_init_lockdep(sd) do {} while(0)
- #endif
- 
-+#ifdef CONFIG_SYSFS_COUNT_LINKS
-+static inline void sysfs_init_nlink(struct sysfs_dirent *sd)
-+{
-+	if (sysfs_type(sd) == SYSFS_DIR)
-+		sd->s_nlink = 2;
-+	else
-+		sd->s_nlink = 1;
-+}
-+static inline void sysfs_inc_nlink(struct sysfs_dirent *sd)
-+{
-+	sd->s_nlink++;
-+}
-+static inline void sysfs_dec_nlink(struct sysfs_dirent *sd)
-+{
-+	sd->s_nlink++;
-+}
-+static inline unsigned int sysfs_read_nlink(struct sysfs_dirent *sd)
-+{
-+	return sd->s_nlink;
-+}
-+#else
-+static inline void sysfs_init_nlink(struct sysfs_dirent *sd)
-+{
-+}
-+static inline void sysfs_inc_nlink(struct sysfs_dirent *sd)
-+{
-+}
-+static inline void sysfs_dec_nlink(struct sysfs_dirent *sd)
-+{
-+}
-+static inline unsigned int sysfs_read_nlink(struct sysfs_dirent *sd)
-+{
-+	return 1;
-+}
-+#endif
- /*
-  * Context structure to be used while adding/removing nodes.
-  */
--- 
-1.7.2.5
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
