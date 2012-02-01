@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab2BARrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:47:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:63952 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab2BARrd convert rfc822-to-8bit (ORCPT
+	id S1753618Ab2BARwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:52:51 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:32852 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab2BARwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:47:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="112912370"
-From: "Rose, Gregory V" <gregory.v.rose@intel.com>
-To: "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "'David Ahern'" <daahern@cisco.com>
-CC: "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: RE: VFs go missing with latest kernel
-Thread-Topic: VFs go missing with latest kernel
-Thread-Index: AQHM4Gs6ffY5XbLoAUGa1L3askdwe5YnFpYAgACgHID//3peYIAAiyUA//98+jCAARgikA==
-Date: Wed, 1 Feb 2012 17:47:30 +0000
-Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A0702F66ADF@ORSMSX106.amr.corp.intel.com>
-References: <4F287102.3060600@cisco.com>
- <C5551D9AAB213A418B7FD5E4A6F30A0702F6489B@ORSMSX106.amr.corp.intel.com>
- <4F2887AB.8070005@cisco.com>
- <C5551D9AAB213A418B7FD5E4A6F30A0702F64AF6@ORSMSX106.amr.corp.intel.com>
- <4F288C4A.3070509@cisco.com>
- <C5551D9AAB213A418B7FD5E4A6F30A0702F64B7F@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <C5551D9AAB213A418B7FD5E4A6F30A0702F64B7F@ORSMSX106.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 1 Feb 2012 12:52:50 -0500
+Date: Wed, 01 Feb 2012 12:52:45 -0500 (EST)
+Message-Id: <20120201.125245.681472105466012081.davem@davemloft.net>
+To: jmorris@namei.org
+Cc: torvalds@linux-foundation.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Fixes for MPI library
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LRH.2.00.1202020037340.20463@tundra.namei.org>
+References: <alpine.LRH.2.00.1202020037340.20463@tundra.namei.org>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 01 Feb 2012 09:52:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Rose, Gregory V
-> Sent: Tuesday, January 31, 2012 5:03 PM
-> To: David Ahern
-> Cc: LKML
-> Subject: RE: VFs go missing with latest kernel
+From: James Morris <jmorris@namei.org>
+Date: Thu, 2 Feb 2012 00:39:46 +1100 (EST)
+
+> Hi Linus,
 > 
-> > -----Original Message-----
-> > From: David Ahern [mailto:daahern@cisco.com]
-> > Sent: Tuesday, January 31, 2012 4:50 PM
-> > To: Rose, Gregory V
-> > Cc: LKML
-> > Subject: Re: VFs go missing with latest kernel
-> >
-> > On 01/31/2012 05:43 PM, Rose, Gregory V wrote:
-> > >>
-> > >> Back to the missing VF problem: reverting the patch I mentioned
-> before
-> > >> and my VM boots up fine with the even-numbered VFs assigned to it.
-> > >
-> > > OK, thanks... I was staring at the dmesg output you sent me and it is
-> > odd because the even numbered VFs that go missing are there when you set
-> > their MAC addresses.  See output below the dotted line after my reply.
-> >
-> > Ah, I think I confused you. The VFs for the first 2 ports (ie., the
-> > first 14 VFs) are seen fine; I only showed the VFs for the second 2
-> > ports -- which are missing the even number.
-> >
-> > So, in summary I am missing 7 VFs all associated with the even numbers
-> > on the last ports of a quad port card.
+> Please pull these fixes for the MPI library.
 > 
-> OK, thanks for the clarification.  But it still shows that all 28 VFs
-> exist while their MAC addresses are being set but then at some point
-> subsequent to that 7 of them on the port belonging to PCI device 07:00.0
-> disappear for some reason.
+> Thanks to Tetsuo Handa for reviewing and analyzing the code.
 > 
-> I'll see what I can find.
+> 
+> The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
+>   Linus Torvalds (1):
+>         Linux 3.3-rc2
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+> 
+> Dmitry Kasatkin (11):
+>       lib/mpi: added missing NULL check
+>       lib/mpi: replaced MPI_NULL with normal NULL
+>       lib/mpi: return error code on dividing by zero
+>       lib/mpi: checks for zero divisor length
+>       lib/mpi: removed unused functions
+>       lib/digsig: additional sanity checks against badly formated key payload
+>       lib/digsig: pkcs_1_v1_5_decode_emsa cleanup
+>       lib/mpi: check for possible zero length
+>       lib/mpi: added comment on divide by 0 case
+>       lib/mpi: added missing NULL check
+>       lib/digsig: checks for NULL return value
 
-I found this in the log file you sent me.  I had missed it yesterday.
-
-[   15.835223] igb 0000:07:00.0: 7 pre-allocated VFs found - override max_vfs setting of 7
-[   15.835393] igb 0000:07:00.0: 7 VFs allocated
-
-I think that must be a bug in the code that searches for VFs already allocated and is the source of your problem.  I'll keep you updated on what I find but it has to be a bug in the VF device lookups.
-
-- Greg
-
+What happened to the sparc 32-bit build fixes I posted to Dmitry the other
+week?
