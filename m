@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab2BAXhw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 18:37:52 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12861 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131Ab2BAXhv convert rfc822-to-8bit (ORCPT
+	id S1753133Ab2BAXmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 18:42:17 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58566 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab2BAXmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 18:37:51 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 01 Feb 2012 15:37:48 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Wed, 1 Feb 2012 15:37:47 -0800
-Subject: RE: [PATCH v2] pinctrl: delete raw device pointers in pinmux maps
-Thread-Topic: [PATCH v2] pinctrl: delete raw device pointers in pinmux maps
-Thread-Index: AczhET3kpWYNrH1PStOmD4UB78Y+IwAKS5iA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E124918@HQMAIL01.nvidia.com>
-References: <1328121721-3438-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1328121721-3438-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 1 Feb 2012 18:42:16 -0500
+Date: Thu, 2 Feb 2012 02:42:08 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [06/20] crypto: sha512 - reduce stack usage to safe number
+Message-ID: <20120201234208.GA28700@p183.telecom.by>
+References: <20120201210055.GA25374@kroah.com>
+ <20120201201531.599621544@clark.kroah.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120201201531.599621544@clark.kroah.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Wednesday, February 01, 2012 11:42 AM:
-> After discussion with Mark Brown in an unrelated thread about
-> ADC lookups, it came to my knowledge that the ability to pass
-> a struct device * in the regulator consumers is just a
-> historical artifact, and not really recommended. Since there
-> are no in-kernel users of these pointers, we just kill them
-> right now, before someone starts to use them.
-> 
-> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+On Wed, Feb 01, 2012 at 12:14:08PM -0800, Greg KH wrote:
+> @@ -87,38 +87,48 @@ sha512_transform(u64 *state, const u8 *i
+>  	u64 a, b, c, d, e, f, g, h, t1, t2;
+>  
+>  	int i;
+> -	u64 W[80];
+> +	u64 W[16];
 
-Documentation,
-Acked-by: Stephen Warren <swarren@nvidia.com>
+This needs 3rd companion patch which does stack reduction even on i386.
+Patch which removes excessive loop unrolling and thus fixes the problem
+has been posted. Maybe there is some other way to maintain low stack
+space on i386 but I haven't found it.
 
--- 
-nvpublic
+http://marc.info/?l=linux-netdev&m=132768692525017&w=4
 
+If you apply only 2, original bug will be fixed, but on at least i386
+stack usage could go in 900-byte region.
