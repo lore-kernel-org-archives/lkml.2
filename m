@@ -1,322 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461Ab2BAPM4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:12:56 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:62651 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab2BAPMz (ORCPT
+	id S932149Ab2BAPOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:14:54 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54501 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095Ab2BAPOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:12:55 -0500
-X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 10:12:55 EST
-Date: Wed, 01 Feb 2012 10:06:34 -0500
-Message-Id: <87aa527fut.fsf@gmail.com>
-From: Michael D Labriola <michael.d.labriola@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Michael D Labriola <mlabriol@gdeb.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] x86/reboot: cleanup coding style
+	Wed, 1 Feb 2012 10:14:53 -0500
+Date: Wed, 1 Feb 2012 16:14:48 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: rcu warnings cause stack overflow
+Message-ID: <20120201151445.GA6731@somewhere.redhat.com>
+References: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit simply cleans up the style used in this file to fall in line
-with what's specified in CodingStyle.  Mostly comment changes, with a
-single removal of unneeded braces.
+On Wed, Feb 01, 2012 at 11:06:52AM +0100, Heiko Carstens wrote:
+> Hi Frederic,
+> 
+> your patch 00f49e5729 "rcu: Warn when rcu_read_lock() is used in extended
+> quiescent state" adds a WARN_ON_ONCE to rcu_lock_acquire().
+> Actually this found a bug on s390 (thanks!) but it probably didn't work
+> as expected.
+> On architectures which implement WARN_ON_ONCE with an exception this
+> additional warning will lead to a stack overflow (if it triggers):
+> 
+> [   55.746956] Kernel stack overflow.
+> [   55.746966] Modules linked in: qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod qeth vmur ccwgroup [last unloaded: scsi_wait_
+> scan]
+> [   55.746999] CPU: 0 Not tainted 3.3.0-rc1-00167-gf8275f9 #90
+> [   55.747005] Process swapper/0 (pid: 0, task: 0000000000911100, ksp: 0000000000907d50)
+> [   55.747013] Krnl PSW : 0404000180000000 00000000005d5728 (illegal_op+0x1c/0x134)
+> [   55.747034]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:0 CC:0 PM:0 EA:3
+> [   55.747043] Krnl GPRS: 0000000000000001 00000000005d570c 00000000009040e8 0000000000000002
+> [   55.747054]            00000000005d83dc ffffffffffffffff 0000000000000000 0400000000907cc8
+> [   55.747064]            0404100180000000 00000000005d8478 0000000000000008 00000000009040e8
+> [   55.747074]            0000000000904000 00000000005dc550 0000000000904048 0000000000904048
+> [   55.747096] Krnl Code: 00000000005d571c: b90400ef            lgr     %r14,%r15
+> [   55.747118]            00000000005d5720: b90400b2            lgr     %r11,%r2
+> [   55.747194]           #00000000005d5724: a7840001            brc     8,5d5726
+> [   55.747205]           >00000000005d5728: a7fbff18            aghi    %r15,-232
+> [   55.747216]            00000000005d572c: e3e0f0980024        stg     %r14,152(%r15)
+> [   55.747228]            00000000005d5732: e31020100004        lg      %r1,16(%r2)
+> [   55.747242]            00000000005d5738: 58c020a0            l       %r12,160(%r2)
+> [   55.747257]            00000000005d573c: 91012009            tm      9(%r2),1
+> [   55.747276] Call Trace:
+> [   55.747282] ([<00000000005d60b4>] pgm_check_handler+0x154/0x158)
+> [   55.747296]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
+> [   55.747309] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
+> [   55.747322]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
+> [   55.747335]  [<00000000005d852a>] notify_die+0x52/0x60
+> [   55.747349]  [<00000000005d57da>] illegal_op+0xce/0x134
+> [   55.747364]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
+> 
+> [...lots more of the same...] 
+> 
+> [   55.747379]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
+> [   55.747425] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
+> [   55.747432]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
+> [   55.747440]  [<00000000005d852a>] notify_die+0x52/0x60
+> [   55.747448]  [<00000000005d57da>] illegal_op+0xce/0x134
+> [   55.747457]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
+> [   55.747797]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
+> [   55.747806] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
+> [   55.747816]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
+> [   55.747826]  [<00000000005d852a>] notify_die+0x52/0x60
+> [   55.748456]  [<00000000005d57da>] illegal_op+0xce/0x134
+> [   55.748463]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
+> [   55.748472]  [<000000000017afa0>] select_task_rq_fair+0x1478/0x14b4
+> [   55.748483] ([<0000000000179bb8>] select_task_rq_fair+0x90/0x14b4)
+> [   55.748493]  [<0000000000170702>] try_to_wake_up+0x136/0x47c
+> [   55.748506]  [<000000000015b446>] autoremove_wake_function+0x26/0x58
+> [   55.748518]  [<000000000016693a>] __wake_up_common+0x76/0xb4
+> [   55.748530]  [<000000000016aed0>] __wake_up+0x4c/0x60
+> [   55.748541]  [<0000000000109ee0>] s390_handle_mcck+0x194/0x1f8
+> [   55.748557]  [<000000000010486a>] cpu_idle+0x192/0x1c0
+> [   55.748570]  [<0000000000977916>] start_kernel+0x402/0x410
+> [   55.748588]  [<0000000000100020>] _stext+0x20/0x80
+> [   55.748603] 2 locks held by swapper/0/0:
+> [   55.748612]  #0:  (crw_handler_wait_q.lock){......}, at: [<000000000016aeb6>] __wake_up+0x32/0x60
+> [   55.748648]  #1:  (&p->pi_lock){-.-.-.}, at: [<000000000017060c>] try_to_wake_up+0x40/0x47c
+> [   55.748663] Last Breaking-Event-Address:
+> [   55.748667]  [<0000000000000000>] 0x0
+> 
+> This simply happens because WARN_ON_ONCE causes an exception, the excpetion
+> handler wants to call a notifier call chain (notify_die), which again uses
+> rcu_read_lock(), which again causes an exception and so on...
+> Unfortunately WARN_ON_ONCE first causes an exception and only afterwards sets
+> the flag that the warning already happened. Seems to be quite some effort to
+> change this behaviour.
+> 
+> Removing the WARN_ON_ONCE will fix this and, if lockdep is turned on, still
+> will find illegal uses. But it won't work for lockdep off configs...
+> So we probably want something better than the patch below.
 
-Note that the comments for all the DMI quirks in reboot_dmi_table now all
-line up consistently using tabs instead of spaces.
+Ah ok. Hmm, but why are you using an exception to implement WARN_ON()
+in s390? Is it to have a whole new stack for the warning path in order
+to avoid stack overflow from the place that called the WARN_ON() ?
 
-Signed-off-by: Michael D Labriola <michael.d.labriola@gmail.com>
----
- arch/x86/kernel/reboot.c |  114 +++++++++++++++++++++++++--------------------
- 1 files changed, 63 insertions(+), 51 deletions(-)
+Anyway perhaps we need a recursion protection on WARN_ON_ONCE(), such
+as:
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index e739737..abc5c6a 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -39,7 +39,8 @@ static int reboot_mode;
- enum reboot_type reboot_type = BOOT_ACPI;
- int reboot_force;
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index 84458b0..f76635f 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -137,9 +137,13 @@ extern void warn_slowpath_null(const char *file, const int line);
+ 	static bool __warned;					\
+ 	int __ret_warn_once = !!(condition);			\
+ 								\
+-	if (unlikely(__ret_warn_once))				\
+-		if (WARN_ON(!__warned)) 			\
++	if (unlikely(__ret_warn_once)) {			\
++		if (!__warned) {				\
+ 			__warned = true;			\
++			barrier();				\
++			WARN_ON(1);				\
++		}						\
++	}							\
+ 	unlikely(__ret_warn_once);				\
+ })
  
--/* This variable is used privately to keep track of whether or not
-+/*
-+ * This variable is used privately to keep track of whether or not
-  * reboot_type is still set to its default value (i.e., reboot= hasn't
-  * been set on the command line).  This is needed so that we can
-  * suppress DMI scanning for reboot quirks.  Without it, it's
-@@ -51,7 +52,8 @@ static int reboot_default = 1;
- static int reboot_cpu = -1;
- #endif
- 
--/* This is set if we need to go through the 'emergency' path.
-+/*
-+ * This is set if we need to go through the 'emergency' path.
-  * When machine_emergency_restart() is called, we may be on
-  * an inconsistent state and won't be able to do a clean cleanup
-  */
-@@ -60,22 +62,24 @@ static int reboot_emergency;
- /* This is set by the PCI code if either type 1 or type 2 PCI is detected */
- bool port_cf9_safe = false;
- 
--/* reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old] | p[ci]
--   warm   Don't set the cold reboot flag
--   cold   Set the cold reboot flag
--   bios   Reboot by jumping through the BIOS (only for X86_32)
--   smp    Reboot by executing reset on BSP or other CPU (only for X86_32)
--   triple Force a triple fault (init)
--   kbd    Use the keyboard controller. cold reset (default)
--   acpi   Use the RESET_REG in the FADT
--   efi    Use efi reset_system runtime service
--   pci    Use the so-called "PCI reset register", CF9
--   force  Avoid anything that could hang.
-+/*
-+ * reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old] | p[ci]
-+ * warm   Don't set the cold reboot flag
-+ * cold   Set the cold reboot flag
-+ * bios   Reboot by jumping through the BIOS (only for X86_32)
-+ * smp    Reboot by executing reset on BSP or other CPU (only for X86_32)
-+ * triple Force a triple fault (init)
-+ * kbd    Use the keyboard controller. cold reset (default)
-+ * acpi   Use the RESET_REG in the FADT
-+ * efi    Use efi reset_system runtime service
-+ * pci    Use the so-called "PCI reset register", CF9
-+ * force  Avoid anything that could hang.
-  */
- static int __init reboot_setup(char *str)
- {
- 	for (;;) {
--		/* Having anything passed on the command line via
-+		/*
-+		 * Having anything passed on the command line via
- 		 * reboot= will cause us to disable DMI checking
- 		 * below.
- 		 */
-@@ -98,9 +102,11 @@ static int __init reboot_setup(char *str)
- 				if (isdigit(*(str+2)))
- 					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
- 			}
--				/* we will leave sorting out the final value
--				   when we are ready to reboot, since we might not
--				   have detected BSP APIC ID or smp_num_cpu */
-+				/*
-+				 * we will leave sorting out the final value
-+				 * when we are ready to reboot, since we might not
-+				 * have detected BSP APIC ID or smp_num_cpu
-+				 */
- 			break;
- #endif /* CONFIG_SMP */
- 
-@@ -162,14 +168,15 @@ void machine_real_restart(unsigned int type)
- 
- 	local_irq_disable();
- 
--	/* Write zero to CMOS register number 0x0f, which the BIOS POST
--	   routine will recognize as telling it to do a proper reboot.  (Well
--	   that's what this book in front of me says -- it may only apply to
--	   the Phoenix BIOS though, it's not clear).  At the same time,
--	   disable NMIs by setting the top bit in the CMOS address register,
--	   as we're about to do peculiar things to the CPU.  I'm not sure if
--	   `outb_p' is needed instead of just `outb'.  Use it to be on the
--	   safe side.  (Yes, CMOS_WRITE does outb_p's. -  Paul G.)
-+	/*
-+	 * Write zero to CMOS register number 0x0f, which the BIOS POST
-+	 * routine will recognize as telling it to do a proper reboot.  (Well
-+	 * that's what this book in front of me says -- it may only apply to
-+	 * the Phoenix BIOS though, it's not clear).  At the same time,
-+	 * disable NMIs by setting the top bit in the CMOS address register,
-+	 * as we're about to do peculiar things to the CPU.  I'm not sure if
-+	 * `outb_p' is needed instead of just `outb'.  Use it to be on the
-+	 * safe side.  (Yes, CMOS_WRITE does outb_p's. -  Paul G.)
- 	 */
- 	spin_lock(&rtc_lock);
- 	CMOS_WRITE(0x00, 0x8f);
-@@ -180,11 +187,12 @@ void machine_real_restart(unsigned int type)
- 	 */
- 	load_cr3(initial_page_table);
- 
--	/* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
--	   this on booting to tell it to "Bypass memory test (also warm
--	   boot)".  This seems like a fairly standard thing that gets set by
--	   REBOOT.COM programs, and the previous reset routine did this
--	   too. */
-+	/*
-+	 * Write 0x1234 to absolute memory location 0x472.  The BIOS reads
-+	 * this on booting to tell it to "Bypass memory test (also warm
-+	 * boot)".  This seems like a fairly standard thing that gets set by
-+	 * REBOOT.COM programs, and the previous reset routine did this
-+	 * too. */
- 	*((unsigned short *)0x472) = reboot_mode;
- 
- 	/* Patch the GDT in the low memory trampoline */
-@@ -233,7 +241,8 @@ static int __init set_kbd_reboot(const struct dmi_system_id *d)
- 	return 0;
- }
- 
--/* This is a single dmi_table handling all reboot quirks.  Note that
-+/*
-+ * This is a single dmi_table handling all reboot quirks.  Note that
-  * REBOOT_BIOS is only available for 32bit
-  */
- static struct dmi_system_id __initdata reboot_dmi_table[] = {
-@@ -262,7 +271,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "PowerEdge 300/"),
- 		},
- 	},
--	{       /* Handle problems with rebooting on Dell Optiplex 745's SFF*/
-+	{	/* Handle problems with rebooting on Dell Optiplex 745's SFF*/
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 745",
- 		.matches = {
-@@ -270,7 +279,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 745"),
- 		},
- 	},
--	{       /* Handle problems with rebooting on Dell Optiplex 745's DFF*/
-+	{	/* Handle problems with rebooting on Dell Optiplex 745's DFF*/
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 745",
- 		.matches = {
-@@ -279,7 +288,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "0MM599"),
- 		},
- 	},
--	{       /* Handle problems with rebooting on Dell Optiplex 745 with 0KW626 */
-+	{	/* Handle problems with rebooting on Dell Optiplex 745 with 0KW626 */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 745",
- 		.matches = {
-@@ -288,7 +297,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "0KW626"),
- 		},
- 	},
--	{   /* Handle problems with rebooting on Dell Optiplex 330 with 0KP561 */
-+	{	/* Handle problems with rebooting on Dell Optiplex 330 with 0KP561 */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 330",
- 		.matches = {
-@@ -297,7 +306,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "0KP561"),
- 		},
- 	},
--	{   /* Handle problems with rebooting on Dell Optiplex 360 with 0T656F */
-+	{	/* Handle problems with rebooting on Dell Optiplex 360 with 0T656F */
- 		.callback = set_bios_reboot,
- 		.ident = "Dell OptiPlex 360",
- 		.matches = {
-@@ -379,7 +388,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "SBC-FITPC2"),
- 		},
- 	},
--	{       /* Handle problems with rebooting on ASUS P4S800 */
-+	{	/* Handle problems with rebooting on ASUS P4S800 */
- 		.callback = set_bios_reboot,
- 		.ident = "ASUS P4S800",
- 		.matches = {
-@@ -389,7 +398,7 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 	},
- #endif /* CONFIG_X86_32 */
- 
--	{ /* Handle reboot issue on Acer Aspire one */
-+	{	/* Handle reboot issue on Acer Aspire one */
- 		.callback = set_kbd_reboot,
- 		.ident = "Acer Aspire One A110",
- 		.matches = {
-@@ -466,12 +475,12 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 
- static int __init reboot_init(void)
- {
--	/* Only do the DMI check if reboot_type hasn't been overridden
-+	/*
-+	 * Only do the DMI check if reboot_type hasn't been overridden
- 	 * on the command line
- 	 */
--	if (reboot_default) {
-+	if (reboot_default)
- 		dmi_check_system(reboot_dmi_table);
--	}
- 	return 0;
- }
- core_initcall(reboot_init);
-@@ -492,14 +501,14 @@ static void vmxoff_nmi(int cpu, struct pt_regs *regs)
- 	cpu_emergency_vmxoff();
- }
- 
--/* Use NMIs as IPIs to tell all CPUs to disable virtualization
-- */
-+/* Use NMIs as IPIs to tell all CPUs to disable virtualization */
- static void emergency_vmx_disable_all(void)
- {
- 	/* Just make sure we won't change CPUs while doing this */
- 	local_irq_disable();
- 
--	/* We need to disable VMX on all CPUs before rebooting, otherwise
-+	/*
-+	 * We need to disable VMX on all CPUs before rebooting, otherwise
- 	 * we risk hanging up the machine, because the CPU ignore INIT
- 	 * signals when VMX is enabled.
- 	 *
-@@ -518,8 +527,7 @@ static void emergency_vmx_disable_all(void)
- 	 * is still enabling VMX.
- 	 */
- 	if (cpu_has_vmx() && cpu_vmx_enabled()) {
--		/* Disable VMX on this CPU.
--		 */
-+		/* Disable VMX on this CPU. */
- 		cpu_vmxoff();
- 
- 		/* Halt and disable VMX on the other CPUs */
-@@ -649,7 +657,8 @@ void native_machine_shutdown(void)
- 	/* Make certain I only run on the appropriate processor */
- 	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
- 
--	/* O.K Now that I'm on the appropriate processor,
-+	/*
-+	 * O.K Now that I'm on the appropriate processor,
- 	 * stop all of the others.
- 	 */
- 	stop_other_cpus();
-@@ -765,7 +774,8 @@ static int crash_nmi_callback(unsigned int val, struct pt_regs *regs)
- 
- 	cpu = raw_smp_processor_id();
- 
--	/* Don't do anything if this handler is invoked on crashing cpu.
-+	/*
-+	 * Don't do anything if this handler is invoked on crashing cpu.
- 	 * Otherwise, system will completely hang. Crashing cpu can get
- 	 * an NMI if system was initially booted with nmi_watchdog parameter.
- 	 */
-@@ -789,7 +799,8 @@ static void smp_send_nmi_allbutself(void)
- 	apic->send_IPI_allbutself(NMI_VECTOR);
- }
- 
--/* Halt all other CPUs, calling the specified function on each of them
-+/*
-+ * Halt all other CPUs, calling the specified function on each of them
-  *
-  * This function can be used to halt all other CPUs on crash
-  * or emergency reboot time. The function passed as parameter
-@@ -800,7 +811,7 @@ void nmi_shootdown_cpus(nmi_shootdown_cb callback)
- 	unsigned long msecs;
- 	local_irq_disable();
- 
--	/* Make a note of crashing cpu. Will be used in NMI callback.*/
-+	/* Make a note of crashing cpu. Will be used in NMI callback. */
- 	crashing_cpu = safe_smp_processor_id();
- 
- 	shootdown_callback = callback;
-@@ -810,7 +821,8 @@ void nmi_shootdown_cpus(nmi_shootdown_cb callback)
- 	if (register_nmi_handler(NMI_LOCAL, crash_nmi_callback,
- 				 NMI_FLAG_FIRST, "crash"))
- 		return;		/* return what? */
--	/* Ensure the new callback function is set before sending
-+	/*
-+	 * Ensure the new callback function is set before sending
- 	 * out the NMI
- 	 */
- 	wmb();
--- 
-1.7.1.1
-
