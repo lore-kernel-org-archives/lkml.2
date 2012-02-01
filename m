@@ -1,140 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2BAVIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:08:07 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50788 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164Ab2BAVHu (ORCPT
+	id S933062Ab2BAVx5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:53:57 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55592 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757038Ab2BAVII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:07:50 -0500
-X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=KzFBExjkGvcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=57_12kv_sXm3N-Y1ro0A:9 a=kUEh2ZV3-Vyq7Ha0mV0A:7 a=jeBq3FmKZ4MA:10 a=N6QJnO5oWte6PJx6:21 a=Kmbu9my__6Tu-0vz:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120201210748.397671856@goodmis.org>
-User-Agent: quilt/0.50-1
-Date: Wed, 01 Feb 2012 16:06:13 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Andi Kleen <ak@linux.intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Luis Goncalves <lgoncalv@redhat.com>
-Subject: [PATCH RT 1/2 v3] x86: Do not disable preemption in int3 on 32bit
-References: <20120201210612.730595791@goodmis.org>
-Content-Disposition: inline; filename=fix-rt-int3-x86_32-3.2-rt.patch
+	Wed, 1 Feb 2012 16:08:08 -0500
+X-Sasl-enc: 9FGCoTJUnZlEBwFHyXRUSPQxpx6Ueex6V/BCAaP+98Q9 1328130487
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:37 2012
+Message-Id: <20120201205737.661269307@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Wed, 01 Feb 2012 12:55:42 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [02/65] eCryptfs: Sanitize write counts of /dev/ecryptfs
+In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preemption must be disabled before enabling interrupts in do_trap
-on x86_64 because the stack in use for int3 and debug is a per CPU
-stack set by th IST. But 32bit does not have an IST and the stack
-still belongs to the current task and there is no problem in scheduling
-out the task.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Keep preemption enabled on X86_32 when enabling interrupts for
-do_trap().
+------------------
 
-The name of the function is changed from preempt_conditional_sti/cli()
-to conditional_sti/cli_ist(), to annotate that this function is used
-when the stack is on the IST.
+From: Tyler Hicks <tyhicks@canonical.com>
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+commit db10e556518eb9d21ee92ff944530d84349684f4 upstream.
 
-Index: linux-rt.git/arch/x86/kernel/traps.c
-===================================================================
---- linux-rt.git.orig/arch/x86/kernel/traps.c
-+++ linux-rt.git/arch/x86/kernel/traps.c
-@@ -87,9 +87,21 @@ static inline void conditional_sti(struc
- 		local_irq_enable();
- }
+A malicious count value specified when writing to /dev/ecryptfs may
+result in a a very large kernel memory allocation.
+
+This patch peeks at the specified packet payload size, adds that to the
+size of the packet headers and compares the result with the write count
+value. The resulting maximum memory allocation size is approximately 532
+bytes.
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ecryptfs/miscdev.c |   56 +++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 38 insertions(+), 18 deletions(-)
+
+--- a/fs/ecryptfs/miscdev.c
++++ b/fs/ecryptfs/miscdev.c
+@@ -409,11 +409,47 @@ ecryptfs_miscdev_write(struct file *file
+ 	ssize_t sz = 0;
+ 	char *data;
+ 	uid_t euid = current_euid();
++	unsigned char packet_size_peek[3];
+ 	int rc;
  
--static inline void preempt_conditional_sti(struct pt_regs *regs)
-+static inline void conditional_sti_ist(struct pt_regs *regs)
- {
-+#ifdef CONFIG_X86_64
-+	/*
-+	 * X86_64 uses a per CPU stack on the IST for certain traps
-+	 * like int3. The task can not be preempted when using one
-+	 * of these stacks, thus preemption must be disabled, otherwise
-+	 * the stack can be corrupted if the task is scheduled out,
-+	 * and another task comes in and uses this stack.
-+	 *
-+	 * On x86_32 the task keeps its own stack and it is OK if the
-+	 * task schedules out.
-+	 */
- 	inc_preempt_count();
-+#endif
- 	if (regs->flags & X86_EFLAGS_IF)
- 		local_irq_enable();
- }
-@@ -100,11 +112,13 @@ static inline void conditional_cli(struc
- 		local_irq_disable();
- }
+-	if (count == 0)
++	if (count == 0) {
+ 		goto out;
++	} else if (count == (1 + 4)) {
++		/* Likely a harmless MSG_HELO or MSG_QUIT - no packet length */
++		goto memdup;
++	} else if (count < (1 + 4 + 1)
++		   || count > (1 + 4 + 2 + sizeof(struct ecryptfs_message) + 4
++			       + ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES)) {
++		printk(KERN_WARNING "%s: Acceptable packet size range is "
++		       "[%d-%lu], but amount of data written is [%zu].",
++		       __func__, (1 + 4 + 1),
++		       (1 + 4 + 2 + sizeof(struct ecryptfs_message) + 4
++			+ ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES), count);
++		return -EINVAL;
++	}
++
++	if (copy_from_user(packet_size_peek, (buf + 1 + 4),
++			   sizeof(packet_size_peek))) {
++		printk(KERN_WARNING "%s: Error while inspecting packet size\n",
++		       __func__);
++		return -EFAULT;
++	}
  
--static inline void preempt_conditional_cli(struct pt_regs *regs)
-+static inline void conditional_cli_ist(struct pt_regs *regs)
- {
- 	if (regs->flags & X86_EFLAGS_IF)
- 		local_irq_disable();
-+#ifdef CONFIG_X86_64
- 	dec_preempt_count();
-+#endif
- }
- 
- static void __kprobes
-@@ -222,9 +236,9 @@ dotraplinkage void do_stack_segment(stru
- 	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
- 			12, SIGBUS) == NOTIFY_STOP)
- 		return;
--	preempt_conditional_sti(regs);
-+	conditional_sti_ist(regs);
- 	do_trap(12, SIGBUS, "stack segment", regs, error_code, NULL);
--	preempt_conditional_cli(regs);
-+	conditional_cli_ist(regs);
- }
- 
- dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
-@@ -316,9 +330,9 @@ dotraplinkage void __kprobes do_int3(str
- 		return;
- #endif
- 
--	preempt_conditional_sti(regs);
-+	conditional_sti_ist(regs);
- 	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
--	preempt_conditional_cli(regs);
-+	conditional_cli_ist(regs);
- }
- 
- #ifdef CONFIG_X86_64
-@@ -412,12 +426,12 @@ dotraplinkage void __kprobes do_debug(st
- 		return;
- 
- 	/* It's safe to allow irq's after DR6 has been saved */
--	preempt_conditional_sti(regs);
-+	conditional_sti_ist(regs);
- 
- 	if (regs->flags & X86_VM_MASK) {
- 		handle_vm86_trap((struct kernel_vm86_regs *) regs,
- 				error_code, 1);
--		preempt_conditional_cli(regs);
-+		conditional_cli_ist(regs);
- 		return;
- 	}
- 
-@@ -436,7 +450,7 @@ dotraplinkage void __kprobes do_debug(st
- 	si_code = get_si_code(tsk->thread.debugreg6);
- 	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS) || user_icebp)
- 		send_sigtrap(tsk, regs, error_code, si_code);
--	preempt_conditional_cli(regs);
-+	conditional_cli_ist(regs);
- 
- 	return;
- }
++	rc = ecryptfs_parse_packet_length(packet_size_peek, &packet_size,
++					  &packet_size_length);
++	if (rc) {
++		printk(KERN_WARNING "%s: Error parsing packet length; "
++		       "rc = [%d]\n", __func__, rc);
++		return rc;
++	}
++
++	if ((1 + 4 + packet_size_length + packet_size) != count) {
++		printk(KERN_WARNING "%s: Invalid packet size [%zu]\n", __func__,
++		       packet_size);
++		return -EINVAL;
++	}
++
++memdup:
+ 	data = memdup_user(buf, count);
+ 	if (IS_ERR(data)) {
+ 		printk(KERN_ERR "%s: memdup_user returned error [%ld]\n",
+@@ -435,23 +471,7 @@ ecryptfs_miscdev_write(struct file *file
+ 		}
+ 		memcpy(&counter_nbo, &data[i], 4);
+ 		seq = be32_to_cpu(counter_nbo);
+-		i += 4;
+-		rc = ecryptfs_parse_packet_length(&data[i], &packet_size,
+-						  &packet_size_length);
+-		if (rc) {
+-			printk(KERN_WARNING "%s: Error parsing packet length; "
+-			       "rc = [%d]\n", __func__, rc);
+-			goto out_free;
+-		}
+-		i += packet_size_length;
+-		if ((1 + 4 + packet_size_length + packet_size) != count) {
+-			printk(KERN_WARNING "%s: (1 + packet_size_length([%zd])"
+-			       " + packet_size([%zd]))([%zd]) != "
+-			       "count([%zd]). Invalid packet format.\n",
+-			       __func__, packet_size_length, packet_size,
+-			       (1 + packet_size_length + packet_size), count);
+-			goto out_free;
+-		}
++		i += 4 + packet_size_length;
+ 		rc = ecryptfs_miscdev_response(&data[i], packet_size,
+ 					       euid, current_user_ns(),
+ 					       task_pid(current), seq);
+
 
