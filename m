@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab2BAGp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 01:45:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63139 "EHLO
+	id S1754362Ab2BAGsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 01:48:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52535 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab2BAGp4 (ORCPT
+	with ESMTP id S1753588Ab2BAGsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 01:45:56 -0500
-Message-ID: <4F28DF9B.40702@gmail.com>
-Date: Wed, 01 Feb 2012 14:45:47 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Wed, 1 Feb 2012 01:48:16 -0500
 MIME-Version: 1.0
-To: Dave Young <dyoung@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] move vm tools from Documentation/vm/ to tools/
-References: <20120201063420.GA10204@darkstar.nay.redhat.com>
-In-Reply-To: <20120201063420.GA10204@darkstar.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [93.173.140.105]
+In-Reply-To: <87aa53jmjm.fsf@rustcorp.com.au>
+References: <CA+55aFwWEhobGDzkuRoXaS37y3tMU41ExhiR+vCa68cUNRehKg@mail.gmail.com>
+ <CADMYwHxhyExw8jzAVT6PEdfXT-vCSLxg_eGbbqCwRNh0q3Q6eQ@mail.gmail.com>
+ <20120123131808.GC23571@ponder.secretlab.ca> <201201231518.26158.arnd@arndb.de>
+ <87y5sydjpb.fsf@rustcorp.com.au> <4F281D36.3080604@redhat.com> <87aa53jmjm.fsf@rustcorp.com.au>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 1 Feb 2012 08:47:56 +0200
+Message-ID: <CAK=WgbZM+JbFsFNn7m40aAXA4VA2CEMzs1qWbaMO=HPDk0R7vw@mail.gmail.com>
+Subject: Re: Linux 3.3-1 out - merge window closed
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Brian Swetland <swetland@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2012 02:34 PM, Dave Young wrote:
-> tools/ is the better place for vm tools which are used by many people.
-> Moving them to tools also make them open to more users instead of hide in
-> Documentation folder.
+On Wed, Feb 1, 2012 at 4:49 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Ohad, do you have an up-to-date lyx patch for me with the final spec?
 
-Well, hugepage-mmap, hugepage-shm, and map_hugetlb are examples, not 
-really tools. So, only page-types is probably a tool, but I leave this 
-to Fengguang to decide.
+Sure - I'll prepare an updated one and send it over.
 
->
-> Also fixed several coding style problem.
-
-Make it another patch for people to review. :)
-
-[...]
-> diff --git a/tools/vm/Makefile b/tools/vm/Makefile
-> new file mode 100644
-> index 0000000..b4f9fdd
-> --- /dev/null
-> +++ b/tools/vm/Makefile
-> @@ -0,0 +1,11 @@
-> +# Makefile for vm tools
-> +
-> +CC = $(CROSS_COMPILE)gcc
-> +CFLAGS = -Wall -Wextra
-> +
-> +all: page-types hugepage-mmap hugepage-shm map_hugetlb
-> +%: %.c
-> +	$(CC) $(CFLAGS) -o $@ $^
-> +
-> +clean:
-> +	$(RM) page-types hugepage-mmap hugepage-shm map_hugetlb
-
-Is $(RM) defined?
+Thanks!
+Ohad.
