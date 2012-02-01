@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932792Ab2BAVZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:25:42 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:33584 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932668Ab2BAVTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:34 -0500
-X-Sasl-enc: ZNbLe4yDvjQPwyRzvcsL1jp5+4OhMa1Fh7J55R0tMlia 1328131173
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:50 2012
-Message-Id: <20120201210050.911189030@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:44 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, shawnlu <shawn.lu@ericsson.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [80/89] tcp: md5: using remote adress for md5 lookup in rst packet
-In-Reply-To: <20120201210505.GA26028@kroah.com>
+	id S932823Ab2BAVZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:25:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932457Ab2BAVZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 16:25:45 -0500
+Subject: Re: Memory corruption due to word sharing
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
+        rguenther@suse.de, gcc@gcc.gnu.org
+In-Reply-To: <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
+References: <20120201151918.GC16714@quack.suse.cz>
+	 <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+	 <1328118174.15992.6206.camel@triegel.csb>
+	 <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
+	 <1328128874.15992.6430.camel@triegel.csb>
+	 <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Feb 2012 22:24:58 +0100
+Message-ID: <1328131498.15992.6503.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2012-02-01 at 12:59 -0800, Linus Torvalds wrote:
+> On Wed, Feb 1, 2012 at 12:41 PM, Torvald Riegel <triegel@redhat.com> wrote:
+> >
+> > You do rely on the compiler to do common transformations I suppose:
+> > hoist loads out of loops, CSE, etc.  How do you expect the compiler to
+> > know whether they are allowed for a particular piece of code or not?
+> 
+> We have barriers.
+> 
+> Compiler barriers are cheap. They look like this:
+[snip]
 
-------------------
+I know, and I've programmed my chunk of concurrent code with those and
+architecture-specific code too (or libatomic-ops for a bit more
+ready-to-use portability).
 
+> It's not the only thing we do. We have cases where it's not that you
+> can't hoist things outside of loops, it's that you have to read things
+> exactly *once*, and then use that particular value (ie the compiler
+> can't be allowed to reload the value because it may change). So any
+> *particular* value we read is valid, but we can't allow the compiler
+> to do anything but a single access.
 
-From: shawnlu <shawn.lu@ericsson.com>
+That's what an access to an atomics-typed var would give you as well.
 
-[ Upstream commit 8a622e71f58ec9f092fc99eacae0e6cf14f6e742 ]
+> And I realize that compiler people tend to think that loop hoisting
+> etc is absolutely critical for performance, and some big hammer like
+> "barrier()" makes a compiler person wince. You think it results in
+> horrible code generation problems.
+> 
+> It really doesn't. Loops are fairly unusual in the kernel to begin
+> with, and the compiler barriers are a total non-issue.
 
-md5 key is added in socket through remote address.
-remote address should be used in finding md5 key when
-sending out reset packet.
+This is interesting, because GCC is currently not optimizing across
+atomics but we we're considering working on this later.
+Do you have real data about this, or is this based on analysis of
+samples of compiled code?
 
-Signed-off-by: shawnlu <shawn.lu@ericsson.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_ipv4.c |    2 +-
- net/ipv6/tcp_ipv6.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> We have much
+> more problems with the actual CPU barriers that can be *very*
+> expensive on some architectures, and we work a lot at avoiding those
+> and avoiding cacheline ping-pong issues etc.
 
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -630,7 +630,7 @@ static void tcp_v4_send_reset(struct soc
- 	arg.iov[0].iov_len  = sizeof(rep.th);
- 
- #ifdef CONFIG_TCP_MD5SIG
--	key = sk ? tcp_v4_md5_do_lookup(sk, ip_hdr(skb)->daddr) : NULL;
-+	key = sk ? tcp_v4_md5_do_lookup(sk, ip_hdr(skb)->saddr) : NULL;
- 	if (key) {
- 		rep.opt[0] = htonl((TCPOPT_NOP << 24) |
- 				   (TCPOPT_NOP << 16) |
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1084,7 +1084,7 @@ static void tcp_v6_send_reset(struct soc
- 
- #ifdef CONFIG_TCP_MD5SIG
- 	if (sk)
--		key = tcp_v6_md5_do_lookup(sk, &ipv6_hdr(skb)->daddr);
-+		key = tcp_v6_md5_do_lookup(sk, &ipv6_hdr(skb)->saddr);
- #endif
- 
- 	if (th->ack)
+Well, obviously...
 
+> 
+> >> > No vague assumptions with lots of hand-waving.
+> >>
+> >> So here's basically what the kernel needs:
+> >>
+> >>  - if we don't touch a field, the compiler doesn't touch it.
+> >
+> > "we don't touch a field": what does that mean precisely?  Never touch it
+> > in the same thread?  Same function?  Same basic block?  Between two
+> > sequence points?  When crossing synchronizing code?  For example, in the
+> > above code, can we touch it earlier/later?
+> 
+> Why are you trying to make it more complex than it is?
+> 
+> If the source code doesn't write to it, the assembly the compiler
+> generates doesn't write to it.
+
+If it would be so easy, then answering my questions would have been easy
+too, right?  Which piece of source code?  The whole kernel?
+
+> 
+> Don't try to make it anything more complicated. This has *nothing* to
+> do with threads or functions or anything else.
+> 
+> If you do massive inlining, and you don't see any barriers or
+> conditionals or other reasons not to write to it, just write to it.
+
+And a precise definition of these reasons is what we need to agree on.
+
+> Don't try to appear smart and make this into something it isn't.
+
+Even if I would have done it, it wouldn't be as rude as trying to imply
+that other people aren't smart.
 
