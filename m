@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab2BAUGQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:06:16 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:38012 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756722Ab2BAUGO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:06:14 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: h1Qxum8VM1nngVj3zL9ehltE47Xt3aJ1LGQUc1vl835oI_c
- 3nbRjvgqE2rRGRSmvni98loxaITou9FJ1aQRiQ4Pql9TJOSaOLvTGFp_kNKa
- qrGiEzPJiPbuNXEa_z1DAp6C9xbaEYYHWPNHfgnwwZsJgMb7SzTZIq7148n.
- psb2bxYYqrUk1AB7X720ZYK3x_.ENzd1I8zbAbUYZCNvtyQN4SG2gUIxMV85
- T22Ml9xxo5ZhTW.pUTU3hD84wX1uQHjjlIYJ7yhD4UTtI32diu5TunUduVSX
- oRGQOqyuc47r01O5_ClB41ePeJArrh.ORlzui7PuX8CIKlyvnzqaLrrJlzLW
- my17.akYxYSF1kILEb_dyUsRLDDP06vpKFgKik84L9yt5wN4vT0s2PV8GKPg
- mqxHLSRUhBQXsoxh47UEObuV4Qsk5pzFhSmKKSL1Nm3a3OVf6wBXCfd_M4CG
- 1j.BYE.3tq01Llm51q53z1GpKDtDzJfxCZosFdyz9dWL3s3UU4gwa2mtSMoI
- K.LqiSOGLZjUJXY9A4tWeDjtyRNL6_t1MOwDB030Y3LFTxjLGKfDDHynl
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 1 Feb 2012 14:06:07 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-In-Reply-To: <20120201184045.GG2382@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1202011404500.2074@router.home>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327591185.2446.102.camel@twins> <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <1328117722.2446.262.camel@twins> <20120201184045.GG2382@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932190Ab2BAUIx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:08:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54502 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754590Ab2BAUIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 15:08:52 -0500
+Message-ID: <1328126919.6937.254.camel@bling.home>
+Subject: Re: RFC: Device isolation groups
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org, aik@ozlabs.ru,
+        benh@kernel.crashing.org, qemu-devel@nongnu.org, joerg.roedel@amd.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 01 Feb 2012 13:08:39 -0700
+In-Reply-To: <1328071614-8320-1-git-send-email-david@gibson.dropbear.id.au>
+References: <1328071614-8320-1-git-send-email-david@gibson.dropbear.id.au>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Feb 2012, Paul E. McKenney wrote:
+On Wed, 2012-02-01 at 15:46 +1100, David Gibson wrote:
+> This patch series introduces a new infrastructure to the driver core
+> for representing "device isolation groups".  That is, groups of
+> devices which can be "isolated" in such a way that the rest of the
+> system can be protected from them, even in the presence of userspace
+> or a guest OS directly driving the devices.
+> 
+> Isolation will typically be due to an IOMMU which can safely remap DMA
+> and interrupts coming from these devices.  We need to represent whole
+> groups, rather than individual devices, because there are a number of
+> cases where the group can be isolated as a whole, but devices within
+> it cannot be safely isolated from each other - this usually occurs
+> because the IOMMU cannot reliably distinguish which device in the
+> group initiated a transaction.  In other words, isolation groups
+> represent the minimum safe granularity for passthrough to guests or
+> userspace.
+> 
+> This series provides the core infraustrcture for tracking isolation
+> groups, and example implementations initializing the groups
+> appropriately for two PCI bridges (which include IOMMUs) found on IBM
+> POWER systems.
+> 
+> Actually using the group information is not included here, but David
+> Woodhouse has expressed an interest in using a structure like this to
+> represent operations in iommu_ops more correctly.
+> 
+> Some tracking of groups is a prerequisite for safe passthrough of
+> devices to guests or userspace, such as done by VFIO.  Current VFIO
+> patches use the iommu_ops->device_group mechanism for this.  However,
+> that mechanism is awkward, because without an in-kernel concrete
+> representation of groups, enumerating a group requires traversing
+> every device on a given bus type.  It also fails to cover some very
+> plausible IOMMU topologies, because its groups cannot span devices on
+> multiple bus types.
 
-> On Wed, Feb 01, 2012 at 06:35:22PM +0100, Peter Zijlstra wrote:
-> > On Sun, 2012-01-29 at 10:25 +0200, Gilad Ben-Yossef wrote:
-> > >
-> > > If this is of interest, I keep a list tracking global IPI and global
-> > > task schedulers sources in the core kernel here:
-> > > https://github.com/gby/linux/wiki.
-> >
-> > You can add synchronize_.*_expedited() to the list, it does its best to
-> > bash the entire machine in order to try and make RCU grace periods
-> > happen fast.
->
-> I have duly added "Make synchronize_sched_expedited() avoid IPIing idle
-> CPUs" to http://kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html.
->
-> This should not be hard once I have built up some trust in the new
-> RCU idle-detection code.  It would also automatically apply to
-> Frederic's dyntick-idle userspace work.
+So far so good, but there's not much meat on the bone yet.  The sysfs
+linking and a list of devices in a group is all pretty straight forward
+and obvious.  I'm not sure yet how this solves the DMA quirks kind of
+issues though.  For instance if we have the ricoh device that uses the
+wrong source ID for DMA from function 1 and we put functions 0 & 1 in an
+isolation group... then what?  And who does device quirk grouping?  Each
+IOMMU driver?
 
-Could we also apply the same approach to processors busy doing
-computational work? In that case the OS is also not needed. Interrupting
-these activities is impacting on performance and latency.
+For the iommu_device_group() interface, I had imagined that we'd have
+something like:
+
+struct device *device_dma_alias_quirk(struct device *dev)
+{
+	if (<is broken ricoh func 1)
+		return <ricoh func0>;
+
+	return dev;
+}
+
+Then iommu_device_group turns into:
+
+int iommu_device_group(struct device *dev, unsigned int *groupid)
+{
+	dev = device_dma_alias_quirk(dev);
+        if (iommu_present(dev->bus) && dev->bus->iommu_ops->device_group)
+                return dev->bus->iommu_ops->device_group(dev, groupid);
+
+        return -ENODEV;
+}
+
+and device_dma_alias_quirk() is available for dma_ops too.
+
+So maybe a struct device_isolation_group not only needs a list of
+devices, but it also needs the representative device to do mappings
+identified.  dma_ops would then just use dev->di_group->dma_dev for
+mappings, and I assume we call iommu_alloc() with a di_group and instead
+of iommu_attach/detach_device, we'd have iommu_attach/detach_group?
+
+What I'm really curious about is where you now stand on what's going to
+happen in device_isolation_bind().  How do we get from a device in sysfs
+pointing to a group to something like vfio binding to that group and
+creating a chardev to access it?  Are we manipulating automatic driver
+binding or existing bound drivers once a group is bound?  Do isolation
+groups enforce isolation, or just describe it?  Thanks,
+
+Alex
 
