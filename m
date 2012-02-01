@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab2BAVJJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:09:09 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40428 "EHLO
+	id S1756101Ab2BAVI5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:08:57 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35855 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932453Ab2BAVJE (ORCPT
+	by vger.kernel.org with ESMTP id S1757148Ab2BAVIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:04 -0500
-X-Sasl-enc: S1GODrD3WWcM7Xt/sDwjbseYz0MiNN1mcvpoRwrVCGnB 1328130543
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:42 2012
-Message-Id: <20120201205742.301942470@clark.kroah.org>
+	Wed, 1 Feb 2012 16:08:52 -0500
+X-Sasl-enc: zX7Xj3EzdZY6orqTITWXZAyRWelpQ+KsMJc786RXl0XX 1328130531
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:41 2012
+Message-Id: <20120201205741.585485432@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:35 -0800
+Date: Wed, 01 Feb 2012 12:56:27 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Kumar Sanghvi <kumaras@chelsio.com>,
-        Josh Boyer <jwboyer@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [55/65] rds: Make rds_sock_lock BH rather than IRQ safe.
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Oliver Neukum <oliver@neukum.org>
+Subject: [47/65] USB: cdc-wdm: better allocate a buffer that is at least as big as we tell the USB core
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,117 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Bjørn Mork <bjorn@mork.no>
 
-From: "David S. Miller" <davem@davemloft.net>
+commit 655e247daf52b202a6c2d0f8a06dd2051e756ce4 upstream.
 
-[ Upstream commit efc3dbc37412c027e363736b4f4c74ee5e8ecffc ]
+As it turns out, there was a mismatch between the allocated inbuf size
+(desc->bMaxPacketSize0, typically something like 64) and the length we
+specified in the URB (desc->wMaxCommand, typically something like 2048)
 
-rds_sock_info() triggers locking warnings because we try to perform a
-local_bh_enable() (via sock_i_ino()) while hardware interrupts are
-disabled (via taking rds_sock_lock).
-
-There is no reason for rds_sock_lock to be a hardware IRQ disabling
-lock, none of these access paths run in hardware interrupt context.
-
-Therefore making it a BH disabling lock is safe and sufficient to
-fix this bug.
-
-Reported-by: Kumar Sanghvi <kumaras@chelsio.com>
-Reported-by: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Cc: Oliver Neukum <oliver@neukum.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/rds/af_rds.c |   20 ++++++++------------
- 1 file changed, 8 insertions(+), 12 deletions(-)
 
---- a/net/rds/af_rds.c
-+++ b/net/rds/af_rds.c
-@@ -68,7 +68,6 @@ static int rds_release(struct socket *so
- {
- 	struct sock *sk = sock->sk;
- 	struct rds_sock *rs;
--	unsigned long flags;
+---
+ drivers/usb/class/cdc-wdm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -723,7 +723,7 @@ next_desc:
+ 		goto err;
  
- 	if (!sk)
- 		goto out;
-@@ -94,10 +93,10 @@ static int rds_release(struct socket *so
- 	rds_rdma_drop_keys(rs);
- 	rds_notify_queue_get(rs, NULL);
- 
--	spin_lock_irqsave(&rds_sock_lock, flags);
-+	spin_lock_bh(&rds_sock_lock);
- 	list_del_init(&rs->rs_item);
- 	rds_sock_count--;
--	spin_unlock_irqrestore(&rds_sock_lock, flags);
-+	spin_unlock_bh(&rds_sock_lock);
- 
- 	rds_trans_put(rs->rs_transport);
- 
-@@ -409,7 +408,6 @@ static const struct proto_ops rds_proto_
- 
- static int __rds_create(struct socket *sock, struct sock *sk, int protocol)
- {
--	unsigned long flags;
- 	struct rds_sock *rs;
- 
- 	sock_init_data(sock, sk);
-@@ -426,10 +424,10 @@ static int __rds_create(struct socket *s
- 	spin_lock_init(&rs->rs_rdma_lock);
- 	rs->rs_rdma_keys = RB_ROOT;
- 
--	spin_lock_irqsave(&rds_sock_lock, flags);
-+	spin_lock_bh(&rds_sock_lock);
- 	list_add_tail(&rs->rs_item, &rds_sock_list);
- 	rds_sock_count++;
--	spin_unlock_irqrestore(&rds_sock_lock, flags);
-+	spin_unlock_bh(&rds_sock_lock);
- 
- 	return 0;
- }
-@@ -471,12 +469,11 @@ static void rds_sock_inc_info(struct soc
- {
- 	struct rds_sock *rs;
- 	struct rds_incoming *inc;
--	unsigned long flags;
- 	unsigned int total = 0;
- 
- 	len /= sizeof(struct rds_info_message);
- 
--	spin_lock_irqsave(&rds_sock_lock, flags);
-+	spin_lock_bh(&rds_sock_lock);
- 
- 	list_for_each_entry(rs, &rds_sock_list, rs_item) {
- 		read_lock(&rs->rs_recv_lock);
-@@ -492,7 +489,7 @@ static void rds_sock_inc_info(struct soc
- 		read_unlock(&rs->rs_recv_lock);
- 	}
- 
--	spin_unlock_irqrestore(&rds_sock_lock, flags);
-+	spin_unlock_bh(&rds_sock_lock);
- 
- 	lens->nr = total;
- 	lens->each = sizeof(struct rds_info_message);
-@@ -504,11 +501,10 @@ static void rds_sock_info(struct socket
- {
- 	struct rds_info_socket sinfo;
- 	struct rds_sock *rs;
--	unsigned long flags;
- 
- 	len /= sizeof(struct rds_info_socket);
- 
--	spin_lock_irqsave(&rds_sock_lock, flags);
-+	spin_lock_bh(&rds_sock_lock);
- 
- 	if (len < rds_sock_count)
- 		goto out;
-@@ -529,7 +525,7 @@ out:
- 	lens->nr = rds_sock_count;
- 	lens->each = sizeof(struct rds_info_socket);
- 
--	spin_unlock_irqrestore(&rds_sock_lock, flags);
-+	spin_unlock_bh(&rds_sock_lock);
- }
- 
- static void rds_exit(void)
+ 	desc->inbuf = usb_alloc_coherent(interface_to_usbdev(intf),
+-					 desc->bMaxPacketSize0,
++					 desc->wMaxCommand,
+ 					 GFP_KERNEL,
+ 					 &desc->response->transfer_dma);
+ 	if (!desc->inbuf)
 
 
