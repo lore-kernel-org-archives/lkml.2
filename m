@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932989Ab2BAVp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:45:58 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35761 "EHLO
+	id S1757207Ab2BAVqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:46:21 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43355 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756272Ab2BAVI7 (ORCPT
+	by vger.kernel.org with ESMTP id S1756237Ab2BAVI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:59 -0500
-X-Sasl-enc: vF6Jvc8Xl84L3WEd/Z+Dq30m3uwuOm2Uc52oUkW57SFf 1328130539
+	Wed, 1 Feb 2012 16:08:58 -0500
+X-Sasl-enc: 4ZmFOdxcC61xv/7vXmUNrCmPkJAdOvUPNxLI1QWLwITi 1328130537
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:42 2012
-Message-Id: <20120201205742.017291221@clark.kroah.org>
+Message-Id: <20120201205741.930965171@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:32 -0800
+Date: Wed, 01 Feb 2012 12:56:31 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Narendra K <Narendra_K@Dell.com>,
-        Jiri Bohac <jbohac@suse.cz>, Jay Vosburgh <fubar@us.ibm.com>,
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
+        =?UTF-8?q?Sjur=20Br=E6ndeland?= <sjur.brandeland@stericsson.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [52/65] bonding: fix enslaving in alb mode when link down
+Subject: [51/65] net caif: Register properly as a pernet subsystem.
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,113 +30,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jiri Bohac <jbohac@suse.cz>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit b924551bed09f61b64f21bffe241afc5526b091a ]
+[ Upstream commit 8a8ee9aff6c3077dd9c2c7a77478e8ed362b96c6 ]
 
-bond_alb_init_slave() is called from bond_enslave() and sets the slave's MAC
-address. This is done differently for TLB and ALB modes.
-bond->alb_info.rlb_enabled is used to discriminate between the two modes but
-this flag may be uninitialized if the slave is being enslaved prior to calling
-bond_open() -> bond_alb_initialize() on the master.
+caif is a subsystem and as such it needs to register with
+register_pernet_subsys instead of register_pernet_device.
 
-It turns out all the callers of alb_set_slave_mac_addr() pass
-bond->alb_info.rlb_enabled as the hw parameter.
+Among other problems using register_pernet_device was resulting in
+net_generic being called before the caif_net structure was allocated.
+Which has been causing net_generic to fail with either BUG_ON's or by
+return NULL pointers.
 
-This patch cleans up the unnecessary parameter of alb_set_slave_mac_addr() and
-makes the function decide based on the bonding mode instead, which fixes the
-above problem.
+A more ugly problem that could be caused is packets in flight why the
+subsystem is shutting down.
 
-Reported-by: Narendra K <Narendra_K@Dell.com>
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+To remove confusion also remove the cruft cause by inappropriately
+trying to fix this bug.
+
+With the aid of the previous patch I have tested this patch and
+confirmed that using register_pernet_subsys makes the failure go away as
+it should.
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_alb.c |   27 +++++++++------------------
- 1 file changed, 9 insertions(+), 18 deletions(-)
+ net/caif/caif_dev.c |   11 ++++-------
+ net/caif/cfcnfg.c   |    1 -
+ 2 files changed, 4 insertions(+), 8 deletions(-)
 
---- a/drivers/net/bonding/bond_alb.c
-+++ b/drivers/net/bonding/bond_alb.c
-@@ -871,16 +871,12 @@ static void alb_send_learning_packets(st
- 	}
+--- a/net/caif/caif_dev.c
++++ b/net/caif/caif_dev.c
+@@ -53,7 +53,6 @@ struct cfcnfg *get_cfcnfg(struct net *ne
+ 	struct caif_net *caifn;
+ 	BUG_ON(!net);
+ 	caifn = net_generic(net, caif_net_id);
+-	BUG_ON(!caifn);
+ 	return caifn->cfg;
+ }
+ EXPORT_SYMBOL(get_cfcnfg);
+@@ -63,7 +62,6 @@ static struct caif_device_entry_list *ca
+ 	struct caif_net *caifn;
+ 	BUG_ON(!net);
+ 	caifn = net_generic(net, caif_net_id);
+-	BUG_ON(!caifn);
+ 	return &caifn->caifdevs;
  }
  
--/* hw is a boolean parameter that determines whether we should try and
-- * set the hw address of the device as well as the hw address of the
-- * net_device
-- */
--static int alb_set_slave_mac_addr(struct slave *slave, u8 addr[], int hw)
-+static int alb_set_slave_mac_addr(struct slave *slave, u8 addr[])
+@@ -92,7 +90,6 @@ static struct caif_device_entry *caif_de
+ 	struct caif_device_entry *caifd;
+ 
+ 	caifdevs = caif_device_list(dev_net(dev));
+-	BUG_ON(!caifdevs);
+ 
+ 	caifd = kzalloc(sizeof(*caifd), GFP_ATOMIC);
+ 	if (!caifd)
+@@ -108,7 +105,7 @@ static struct caif_device_entry *caif_ge
+ 	struct caif_device_entry_list *caifdevs =
+ 	    caif_device_list(dev_net(dev));
+ 	struct caif_device_entry *caifd;
+-	BUG_ON(!caifdevs);
++
+ 	list_for_each_entry_rcu(caifd, &caifdevs->list, list) {
+ 		if (caifd->netdev == dev)
+ 			return caifd;
+@@ -349,7 +346,7 @@ static struct notifier_block caif_device
+ static int caif_init_net(struct net *net)
  {
- 	struct net_device *dev = slave->dev;
- 	struct sockaddr s_addr;
+ 	struct caif_net *caifn = net_generic(net, caif_net_id);
+-	BUG_ON(!caifn);
++
+ 	INIT_LIST_HEAD(&caifn->caifdevs.list);
+ 	mutex_init(&caifn->caifdevs.lock);
  
--	if (!hw) {
-+	if (slave->bond->params.mode == BOND_MODE_TLB) {
- 		memcpy(dev->dev_addr, addr, dev->addr_len);
- 		return 0;
- 	}
-@@ -910,8 +906,8 @@ static void alb_swap_mac_addr(struct bon
- 	u8 tmp_mac_addr[ETH_ALEN];
+@@ -414,7 +411,7 @@ static int __init caif_device_init(void)
+ {
+ 	int result;
  
- 	memcpy(tmp_mac_addr, slave1->dev->dev_addr, ETH_ALEN);
--	alb_set_slave_mac_addr(slave1, slave2->dev->dev_addr, bond->alb_info.rlb_enabled);
--	alb_set_slave_mac_addr(slave2, tmp_mac_addr, bond->alb_info.rlb_enabled);
-+	alb_set_slave_mac_addr(slave1, slave2->dev->dev_addr);
-+	alb_set_slave_mac_addr(slave2, tmp_mac_addr);
+-	result = register_pernet_device(&caif_net_ops);
++	result = register_pernet_subsys(&caif_net_ops);
  
+ 	if (result)
+ 		return result;
+@@ -427,7 +424,7 @@ static int __init caif_device_init(void)
+ 
+ static void __exit caif_device_exit(void)
+ {
+-	unregister_pernet_device(&caif_net_ops);
++	unregister_pernet_subsys(&caif_net_ops);
+ 	unregister_netdevice_notifier(&caif_device_notifier);
+ 	dev_remove_pack(&caif_packet_type);
  }
+--- a/net/caif/cfcnfg.c
++++ b/net/caif/cfcnfg.c
+@@ -313,7 +313,6 @@ int caif_connect_client(struct net *net,
+ 	int err;
+ 	struct cfctrl_link_param param;
+ 	struct cfcnfg *cfg = get_cfcnfg(net);
+-	caif_assert(cfg != NULL);
  
-@@ -1058,8 +1054,7 @@ static int alb_handle_addr_collision_on_
- 
- 		/* Try setting slave mac to bond address and fall-through
- 		   to code handling that situation below... */
--		alb_set_slave_mac_addr(slave, bond->dev->dev_addr,
--				       bond->alb_info.rlb_enabled);
-+		alb_set_slave_mac_addr(slave, bond->dev->dev_addr);
- 	}
- 
- 	/* The slave's address is equal to the address of the bond.
-@@ -1095,8 +1090,7 @@ static int alb_handle_addr_collision_on_
- 	}
- 
- 	if (free_mac_slave) {
--		alb_set_slave_mac_addr(slave, free_mac_slave->perm_hwaddr,
--				       bond->alb_info.rlb_enabled);
-+		alb_set_slave_mac_addr(slave, free_mac_slave->perm_hwaddr);
- 
- 		pr_warning("%s: Warning: the hw address of slave %s is in use by the bond; giving it the hw address of %s\n",
- 			   bond->dev->name, slave->dev->name,
-@@ -1452,8 +1446,7 @@ int bond_alb_init_slave(struct bonding *
- {
- 	int res;
- 
--	res = alb_set_slave_mac_addr(slave, slave->perm_hwaddr,
--				     bond->alb_info.rlb_enabled);
-+	res = alb_set_slave_mac_addr(slave, slave->perm_hwaddr);
- 	if (res) {
- 		return res;
- 	}
-@@ -1604,8 +1597,7 @@ void bond_alb_handle_active_change(struc
- 		alb_swap_mac_addr(bond, swap_slave, new_slave);
- 	} else {
- 		/* set the new_slave to the bond mac address */
--		alb_set_slave_mac_addr(new_slave, bond->dev->dev_addr,
--				       bond->alb_info.rlb_enabled);
-+		alb_set_slave_mac_addr(new_slave, bond->dev->dev_addr);
- 	}
- 
- 	if (swap_slave) {
-@@ -1665,8 +1657,7 @@ int bond_alb_set_mac_address(struct net_
- 		alb_swap_mac_addr(bond, swap_slave, bond->curr_active_slave);
- 		alb_fasten_mac_swap(bond, swap_slave, bond->curr_active_slave);
- 	} else {
--		alb_set_slave_mac_addr(bond->curr_active_slave, bond_dev->dev_addr,
--				       bond->alb_info.rlb_enabled);
-+		alb_set_slave_mac_addr(bond->curr_active_slave, bond_dev->dev_addr);
- 
- 		read_lock(&bond->lock);
- 		alb_send_learning_packets(bond->curr_active_slave, bond_dev->dev_addr);
+ 	rcu_read_lock();
+ 	err = caif_connect_req_to_link_param(cfg, conn_req, &param);
 
 
