@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab2BAVJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:09:14 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55722 "EHLO
+	id S932974Ab2BAVng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:43:36 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40426 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932465Ab2BAVJD (ORCPT
+	by vger.kernel.org with ESMTP id S1756184Ab2BAVJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:03 -0500
-X-Sasl-enc: DK+Ik/A8Opau9kFaC2MM9qv6TmyI3clmWWfKMNgvYQWc 1328130542
+	Wed, 1 Feb 2012 16:09:14 -0500
+X-Sasl-enc: e0BSZukpgxkcPby6w2BBA8gVdI9C75ObVvdiN556pY+A 1328130552
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:42 2012
-Message-Id: <20120201205742.198872616@clark.kroah.org>
+Message-Id: <20120201205742.733279122@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:34 -0800
+Date: Wed, 01 Feb 2012 12:56:40 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Phil Oester <kernel@linuxace.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [54/65] net: bpf_jit: fix divide by 0 generation
+        alan@lxorguk.ukuu.org.uk, Preston Fick <preston.fick@silabs.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [60/65] USB: cp210x: fix CP2104 baudrate usage
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,127 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Preston Fick <preston.fick@silabs.com>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 7f482fc88ac47662228d6b1f05759797c8936a30 upstream.
 
-[ Upstream commit d00a9dd21bdf7908b70866794c8313ee8a5abd5c ]
+This fix changes the way baudrates are set on the CP210x devices from
+Silicon Labs. The CP2101/2/3 will respond to both a GET/SET_BAUDDIV
+command, and GET/SET_BAUDRATE command, while CP2104 and higher devices
+only respond to GET/SET_BAUDRATE. The current cp210x.ko driver in
+kernel version 3.2.0 only implements the GET/SET_BAUDDIV command.
 
-Several problems fixed in this patch :
+This patch implements the two new codes for the GET/SET_BAUDRATE
+commands. Then there is a change in the way that the baudrate is
+assigned or retrieved. This is done according to the CP210x USB
+specification in AN571. This document can be found here:
+http://www.silabs.com/pages/DownloadDoc.aspx?FILEURL=Support%20Documents/TechnicalDocs/AN571.pdf&src=DocumentationWebPart
 
-1) Target of the conditional jump in case a divide by 0 is performed
-   by a bpf is wrong.
+Sections 5.3/5.4 describe the USB packets for the old baudrate method.
+Sections 5.5/5.6 describe the USB packets for the new method. This
+patch also implements the new request scheme, and eliminates the
+unnecessary baudrate calculations since it uses the "actual baudrate"
+method.
 
-2) Must 'generate' the full function prologue/epilogue at pass=0,
-   or else we can stop too early in pass=1 if the proglen doesnt change.
-   (if the increase of prologue/epilogue equals decrease of all
-    instructions length because some jumps are converted to near jumps)
+This patch solves the problem reported for the CP2104 in bug 42586,
+and also keeps support for all other devices (CP2101/2/3).
 
-3) Change the wrong length detection at the end of code generation to
-   issue a more explicit message, no need for a full stack trace.
+This patchfile is also attached to the bug report on
+bugzilla.kernel.org. This patch has been developed and test on the
+3.2.0 mainline kernel version under Ubuntu 10.11.
 
-Reported-by: Phil Oester <kernel@linuxace.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Preston Fick <preston.fick@silabs.com>
+[duplicate patch also sent by Johan - gregkh]
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/x86/net/bpf_jit_comp.c |   36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
 
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -151,17 +151,18 @@ void bpf_jit_compile(struct sk_filter *f
- 	cleanup_addr = proglen; /* epilogue address */
+---
+ drivers/usb/serial/cp210x.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -202,6 +202,8 @@ static struct usb_serial_driver cp210x_d
+ #define CP210X_EMBED_EVENTS	0x15
+ #define CP210X_GET_EVENTSTATE	0x16
+ #define CP210X_SET_CHARS	0x19
++#define CP210X_GET_BAUDRATE	0x1D
++#define CP210X_SET_BAUDRATE	0x1E
  
- 	for (pass = 0; pass < 10; pass++) {
-+		u8 seen_or_pass0 = (pass == 0) ? (SEEN_XREG | SEEN_DATAREF | SEEN_MEM) : seen;
- 		/* no prologue/epilogue for trivial filters (RET something) */
- 		proglen = 0;
- 		prog = temp;
+ /* CP210X_IFC_ENABLE */
+ #define UART_ENABLE		0x0001
+@@ -456,10 +458,7 @@ static void cp210x_get_termios_port(stru
  
--		if (seen) {
-+		if (seen_or_pass0) {
- 			EMIT4(0x55, 0x48, 0x89, 0xe5); /* push %rbp; mov %rsp,%rbp */
- 			EMIT4(0x48, 0x83, 0xec, 96);	/* subq  $96,%rsp	*/
- 			/* note : must save %rbx in case bpf_error is hit */
--			if (seen & (SEEN_XREG | SEEN_DATAREF))
-+			if (seen_or_pass0 & (SEEN_XREG | SEEN_DATAREF))
- 				EMIT4(0x48, 0x89, 0x5d, 0xf8); /* mov %rbx, -8(%rbp) */
--			if (seen & SEEN_XREG)
-+			if (seen_or_pass0 & SEEN_XREG)
- 				CLEAR_X(); /* make sure we dont leek kernel memory */
+ 	dbg("%s - port %d", __func__, port->number);
  
- 			/*
-@@ -170,7 +171,7 @@ void bpf_jit_compile(struct sk_filter *f
- 			 *  r9 = skb->len - skb->data_len
- 			 *  r8 = skb->data
- 			 */
--			if (seen & SEEN_DATAREF) {
-+			if (seen_or_pass0 & SEEN_DATAREF) {
- 				if (offsetof(struct sk_buff, len) <= 127)
- 					/* mov    off8(%rdi),%r9d */
- 					EMIT4(0x44, 0x8b, 0x4f, offsetof(struct sk_buff, len));
-@@ -260,9 +261,14 @@ void bpf_jit_compile(struct sk_filter *f
- 			case BPF_S_ALU_DIV_X: /* A /= X; */
- 				seen |= SEEN_XREG;
- 				EMIT2(0x85, 0xdb);	/* test %ebx,%ebx */
--				if (pc_ret0 != -1)
--					EMIT_COND_JMP(X86_JE, addrs[pc_ret0] - (addrs[i] - 4));
--				else {
-+				if (pc_ret0 > 0) {
-+					/* addrs[pc_ret0 - 1] is start address of target
-+					 * (addrs[i] - 4) is the address following this jmp
-+					 * ("xor %edx,%edx; div %ebx" being 4 bytes long)
-+					 */
-+					EMIT_COND_JMP(X86_JE, addrs[pc_ret0 - 1] -
-+								(addrs[i] - 4));
-+				} else {
- 					EMIT_COND_JMP(X86_JNE, 2 + 5);
- 					CLEAR_A();
- 					EMIT1_off32(0xe9, cleanup_addr - (addrs[i] - 4)); /* jmp .+off32 */
-@@ -335,12 +341,12 @@ void bpf_jit_compile(struct sk_filter *f
- 				}
- 				/* fallinto */
- 			case BPF_S_RET_A:
--				if (seen) {
-+				if (seen_or_pass0) {
- 					if (i != flen - 1) {
- 						EMIT_JMP(cleanup_addr - addrs[i]);
- 						break;
- 					}
--					if (seen & SEEN_XREG)
-+					if (seen_or_pass0 & SEEN_XREG)
- 						EMIT4(0x48, 0x8b, 0x5d, 0xf8);  /* mov  -8(%rbp),%rbx */
- 					EMIT1(0xc9);		/* leaveq */
- 				}
-@@ -483,8 +489,9 @@ common_load:			seen |= SEEN_DATAREF;
- 				goto common_load;
- 			case BPF_S_LDX_B_MSH:
- 				if ((int)K < 0) {
--					if (pc_ret0 != -1) {
--						EMIT_JMP(addrs[pc_ret0] - addrs[i]);
-+					if (pc_ret0 > 0) {
-+						/* addrs[pc_ret0 - 1] is the start address */
-+						EMIT_JMP(addrs[pc_ret0 - 1] - addrs[i]);
- 						break;
- 					}
- 					CLEAR_A();
-@@ -599,13 +606,14 @@ cond_branch:			f_offset = addrs[i + filt
- 		 * use it to give the cleanup instruction(s) addr
- 		 */
- 		cleanup_addr = proglen - 1; /* ret */
--		if (seen)
-+		if (seen_or_pass0)
- 			cleanup_addr -= 1; /* leaveq */
--		if (seen & SEEN_XREG)
-+		if (seen_or_pass0 & SEEN_XREG)
- 			cleanup_addr -= 4; /* mov  -8(%rbp),%rbx */
+-	cp210x_get_config(port, CP210X_GET_BAUDDIV, &baud, 2);
+-	/* Convert to baudrate */
+-	if (baud)
+-		baud = cp210x_quantise_baudrate((BAUD_RATE_GEN_FREQ + baud/2)/ baud);
++	cp210x_get_config(port, CP210X_GET_BAUDRATE, &baud, 4);
  
- 		if (image) {
--			WARN_ON(proglen != oldproglen);
-+			if (proglen != oldproglen)
-+				pr_err("bpb_jit_compile proglen=%u != oldproglen=%u\n", proglen, oldproglen);
- 			break;
+ 	dbg("%s - baud rate = %d", __func__, baud);
+ 	*baudp = baud;
+@@ -594,8 +593,7 @@ static void cp210x_set_termios(struct tt
+ 	if (baud != tty_termios_baud_rate(old_termios) && baud != 0) {
+ 		dbg("%s - Setting baud rate to %d baud", __func__,
+ 				baud);
+-		if (cp210x_set_config_single(port, CP210X_SET_BAUDDIV,
+-					((BAUD_RATE_GEN_FREQ + baud/2) / baud))) {
++		if (cp210x_set_config(port, CP210X_SET_BAUDRATE, &baud, 4)) {
+ 			dbg("Baud rate requested not supported by device");
+ 			baud = tty_termios_baud_rate(old_termios);
  		}
- 		if (proglen == oldproglen) {
 
 
