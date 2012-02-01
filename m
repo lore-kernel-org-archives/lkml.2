@@ -1,52 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab2BAFhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 00:37:00 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:53072 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753725Ab2BAFg7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 00:36:59 -0500
-X-Sasl-enc: qGwDEZtSCWhagYRMFcMWxw4MzkFnLieZsJSgg/14p+3w 1328074618
-Date: Tue, 31 Jan 2012 21:36:42 -0800
-From: Greg KH <greg@kroah.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Greg's suse email address is dead
-Message-ID: <20120201053642.GA7500@kroah.com>
-References: <20120201040200.GA3821@kroah.com>
- <1328069752.14714.42.camel@joe2Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328069752.14714.42.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754878Ab2BAFhx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 00:37:53 -0500
+Received: from mga02.intel.com ([134.134.136.20]:22999 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039Ab2BAFhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 00:37:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="104842616"
+Subject: Re: [PATCH 1/7 v2] dmaengine: add a simple dma library
+From: Vinod Koul <vinod.koul@intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <Pine.LNX.4.64.1201310746470.31226@axis700.grange>
+References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
+	 <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de>
+	 <1327912346.1527.13.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1201300944360.7932@axis700.grange>
+	 <1327992090.1527.116.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1201310746470.31226@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Feb 2012 11:08:46 +0530
+Message-ID: <1328074726.1610.1.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 08:15:52PM -0800, Joe Perches wrote:
-> On Tue, 2012-01-31 at 20:02 -0800, Greg KH wrote:
-> > My email address has changed, the suse.de one is now dead, so update all
-> > of my MAINTAINER entries with the correct one so that patches don't get
-> > lost.
-> > 
-> > Also change the status of some of my entries as I'm supposed to be doing
-> > this stuff now for real.
-> > 
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Tue, 2012-01-31 at 09:59 +0100, Guennadi Liakhovetski wrote:
+> Hi Vinod
 > 
-> Hi Greg.
+> Thanks for your reply.
 > 
-> Congratulations seem appropriate.
+> On Tue, 31 Jan 2012, Vinod Koul wrote:
+> 
+> > On Mon, 2012-01-30 at 10:34 +0100, Guennadi Liakhovetski wrote:
+> > > > I don't still comprehend the need for a library on top of dmaengine
+> > > > which gain is just a library between clients and dmacs. Surely we don't
+> > > > want to write another abstraction on top of one provided?
+> > > > 
+> > > > If the question is to handle scatter-gather even if the hardware doesn't
+> > > > have the capability, then why don't add that in dmaengine itself rather
+> > > > than one more layer?
+> > > 
+> > > Well, yes, adding new abstraction layers is always a decision, that has to 
+> > > be well justified. In this case it does at least make the life easier for 
+> > > two sh-mobile drivers: shdma and the new SUDMAC driver.
+> > > 
+> > > However, I did name the library in a generic way without reference to sh, 
+> > > assuming, that it might with time become useful for other architectures 
+> > > too. The reasons why I prefered to keep it as an optional addition to 
+> > > dmaengine core, instead of tightly integrating it with it are, that (1) I 
+> > > did not want to add useless code to drivers, that do not need it, 
+> > So are we sure that only sh-mobile drivers need this capablity?
+> 
+> If I was sure about that, I'd call the library shmobile-dma or something 
+> similar:-)
+> 
+> > Btw does you hardware only support single transfers and no sg support,
+> 
+> Well, the controller does have some repeat- and reload-modes, but they are 
+> currently not supported by the driver and from the documentation I cannot 
+> easily understand, how useful those modes could be to implement SG.
+> 
+> > would this remain the same in future?
+> 
+> Who knows?...
+> 
+> > > (2) I am 
+> > > not sure if and when this library will become useful for other drivers: 
+> > > apart from sh I am only familiar with one more dmaengine driver: 
+> > > ipu/ipu_idmac.c, and that one supports scatter-gather lists in a limited 
+> > > way and has some further peculiarities, that would likely make it a bad 
+> > > match for the simple DMA library,
+> > typically the dmacs will support this in some form or other, so your
+> > point is valid :)
+> > >  (3) keeping it separate makes its 
+> > > further development easier.
+> > > 
+> > > OTOH, I'm certainly fine with a tighter library integration with the 
+> > > dmaengine core. I think, it still would be better to keep it in a separate 
+> > > file and only build it if needed, right? This woult also simplify code 
+> > > debugging and further development. I can remove the "simple" notation, 
+> > > which does make it look like an additional abstraction layer, and replace 
+> > > it with, say, sgsoft (scatter-gather software implementation)?
+> > that would be more apt :)
+> > >  A more 
+> > > interesting question is what to do with struct dma_simple_dev, struct 
+> > > dma_simple_chan, struct dma_simple_desc, that embed struct dma_device, 
+> > > struct dma_chan and struct dma_async_tx_descriptor respectively. I don't 
+> > > think we want to merge all the additions from those wrapping structs back 
+> > > into their dmaengine counterparts?
+> > Sure they should be kept separate. I like the wrapping, this keeps it
+> > simple.
+> > > 
+> > > How would you like to do this? Don't you think, it would be good to allow 
+> > > both: either implement a dmaengine driver directly, exactly as all drivers 
+> > > are doing now, or use the additional helper library for suitable (simple) 
+> > > hardware types? I see it similar to I2C, where you either implement an I2C 
+> > > driver directly, or you use the bitbanging abstraction for simpler 
+> > > hardware.
+> > I think it would be good to have both, this can be used by folks who
+> > don't have sg support available.
+> 
+> Ok, so, should I just rename the driver to sgsoft? Is this the only 
+> change, that you'd like to see?
+That would be one :)
+Also, I would review the other patch patches by today/tomorrow, you can
+add any changes in next version as well
 
-Thank you.
+-- 
+~Vinod
 
-> Both Linus and Andrew Morton use linux-foundation.org addresses
-> It'd be nice to be consistent.
-
-Sorry, but this is the address I was given to use.
-
-greg k-h
