@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab2BAPm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:42:56 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35613 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab2BAPmz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:42:55 -0500
-Date: Thu, 2 Feb 2012 00:42:49 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
-        Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [RFC][PATCH] srcu: Implement call_srcu()
-Message-Id: <20120202004249.adb9954c45225383510b6994@gmail.com>
-In-Reply-To: <20120201134347.GA18998@amt.cnet>
-References: <1328016724.2446.229.camel@twins>
-	<4F27F0E6.1040309@redhat.com>
-	<1328017807.2446.230.camel@twins>
-	<20120131222447.GH2391@linux.vnet.ibm.com>
-	<1328091749.2760.34.camel@laptop>
-	<4F29178A.1090306@redhat.com>
-	<4F2918D5.4050104@redhat.com>
-	<4F291B56.30600@oss.ntt.co.jp>
-	<4F291B92.8070402@redhat.com>
-	<20120201134347.GA18998@amt.cnet>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756628Ab2BAPo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:44:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36642 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753925Ab2BAPoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 10:44:23 -0500
+Date: Wed, 1 Feb 2012 10:43:36 -0500
+From: Dave Jones <davej@redhat.com>
+To: Emmanuel Grumbach <egrumbach@gmail.com>,
+        Norbert Preining <preining@logic.at>, linux-kernel@vger.kernel.org,
+        ipw3945-devel@lists.sourceforge.net,
+        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>
+Subject: Re: iwlagn is getting even worse with 3.3-rc1
+Message-ID: <20120201154335.GA8494@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Emmanuel Grumbach <egrumbach@gmail.com>,
+	Norbert Preining <preining@logic.at>, linux-kernel@vger.kernel.org,
+	ipw3945-devel@lists.sourceforge.net,
+	"Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+	Johannes Berg <johannes@sipsolutions.net>,
+	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+	"ilw@linux.intel.com" <ilw@linux.intel.com>
+References: <20120124013625.GB18436@gamma.logic.tuwien.ac.at>
+ <CANUX_P3er0orBy8OhDuY1DfgD810UD-_HB_ukJnCA+W8e-VazQ@mail.gmail.com>
+ <20120125002250.GA20431@gamma.logic.tuwien.ac.at>
+ <CANUX_P0UREz_jZABu+Y_QYOh9tx_sKZSSkZpYHBEVtcU4QQdSA@mail.gmail.com>
+ <20120126003735.GA2346@gamma.logic.tuwien.ac.at>
+ <CANUX_P0H_WaWwnpjoBcMpZQY4xH=cbVhAKxWKXmz-HwFMcWS6w@mail.gmail.com>
+ <CANUX_P3XSCsWUJ9M55qeaK-DuPEMXODFPJiNk+BgnHN-=WECqw@mail.gmail.com>
+ <20120126232555.GB16330@gamma.logic.tuwien.ac.at>
+ <CANUX_P0z2800ip=yfW15zELqhDNFrHbTvDY3OF59PuxizN=XSA@mail.gmail.com>
+ <20120131024143.GA10418@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120131024143.GA10418@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Feb 2012 11:43:47 -0200
-Marcelo Tosatti <mtosatti@redhat.com> wrote:
+On Mon, Jan 30, 2012 at 09:41:43PM -0500, Dave Jones wrote:
+ 
+ >  > > Generally fine.
+ >  > >
+ >  > > Thanks, more reports later.
+ >  > 
+ >  > Dave ?
+ > 
+ > after running with it all evening, it seems to be working fine so far.
 
-> > > I can show you some performance numbers, this weekend, if you like.
-> > 
-> > That'll be great, numbers are better than speculation.
-> 
->   get dirty log:    5634134 ns for     262144 dirty pages
-> 
-> 5ms (for the entire operation).
-> 
+Two days later, it hasn't locked up at all, so this is definitly fixing my problem.
 
-I have mixed my personal patch series and Avi's comments, and ...
+One thing though, dmesg is flooded with these..
 
-I am now getting really good improvements for every number of dirty pages.
-(might be a dream, so checking now ... will soon report)
+[ 4384.849732] iwlwifi 0000:04:00.0: Tx aggregation enabled on ra = b8:c7:5d:0c:39:87 tid = 0
+[ 4434.332275] iwlwifi 0000:04:00.0: Tx aggregation enabled on ra = b8:c7:5d:0c:39:87 tid = 0
+[ 4475.309883] iwlwifi 0000:04:00.0: Tx aggregation enabled on ra = b8:c7:5d:0c:39:87 tid = 0
 
-	Takuya
+Can it be supressed if the ra hasn't changed ?
+
+	Dave
+
