@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab2BAINi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 03:13:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1092 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793Ab2BAINh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 03:13:37 -0500
-Message-ID: <4F28F42A.1050103@redhat.com>
-Date: Wed, 01 Feb 2012 09:13:30 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1755291Ab2BAIQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 03:16:21 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43472 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab2BAIQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 03:16:20 -0500
+Date: Wed, 1 Feb 2012 00:16:18 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] ARM: tegra: Switch to new pinctrl driver
+Message-ID: <20120201081618.GJ7399@quad.lixom.net>
+References: <1327083746-31430-1-git-send-email-swarren@nvidia.com>
+ <1327083746-31430-3-git-send-email-swarren@nvidia.com>
+ <CACRpkdZ_hBviswq7pXoLozC8gjzvowCBrj9yjw1xJT79b5rtwQ@mail.gmail.com>
+ <CAOesGMjuewhO2H+QFQtAX+xFb5hyNn8Q65Cuup4vaXWAFvX87w@mail.gmail.com>
+ <CACRpkdayNsOFkOwLZNO_pJnNmM=NmSZhkJtAwkHxQvHovdF0uw@mail.gmail.com>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH v4 0/3] virtio-scsi driver
-References: <1327077939-7084-1-git-send-email-pbonzini@redhat.com> <4F26596B.6030703@redhat.com> <CAOJsxLHwT0o=mS2nCSxjtwdfOif7oZkT_ZED3UOybFACVG6WvQ@mail.gmail.com>
-In-Reply-To: <CAOJsxLHwT0o=mS2nCSxjtwdfOif7oZkT_ZED3UOybFACVG6WvQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdayNsOFkOwLZNO_pJnNmM=NmSZhkJtAwkHxQvHovdF0uw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2012 08:31 AM, Pekka Enberg wrote:
-> What's the benefit of virtio-scsi over virtio-blk?
+On Wed, Jan 25, 2012 at 12:13:06AM +0100, Linus Walleij wrote:
+> On Tue, Jan 24, 2012 at 11:44 PM, Olof Johansson <olof@lixom.net> wrote:
+> 
+> > Yup, I've just been waiting on things to settle,
+> > bindings/implementation wise. Will look at it over the next day or two
+> > and get back.
+> 
+> The only bindings you need to look into for this patch set should be
+> for the driver itself, the other muxmap bindings discussion I would
+> *very* much like to keep orthogonal to the review of this driver.
 
-Most of this is in the spec or the KVM Forum 2011 presentation.
+Yup, it's more that I grouped the discussions together mentally and passed on
+all of them for a while. :)
 
-1) scalability limitations: virtio-blk-over-PCI puts a strong upper
-limit on the number of devices that can be added to a guest. Common
-configurations have a limit of ~30 devices. While this can be worked
-around by implementing a PCI-to-PCI bridge, or by using multifunction
-virtio-blk devices, these solutions either have not been implemented
-yet, or introduce management restrictions.
+> I'm pretty scared of how device tree bindings seem to suck in
+> every discussion like a black hole and then explode in a myriad
+> fragmented discussions like a supernova :-P
 
-2) limited flexibility: virtio-blk does not support all possible storage
-scenarios.  For example, persistent reservations require you to pass a
-whole LUN to the guest, they do not work with images.  In principle,
-virtio-scsi provides anything that the underlying SCSI target supports.
-The SCSI target can also be the in-kernel LIO target, which can
-talk to virio-scsi via vhost.
+Yeah, welcome to the ugly side of device trees. Some things are easier and
+nicer to do there. Some things... are not.
 
-3) limited extensibility: over the time, many features have been added
-to virtio-blk. Each such change requires modifications to the virtio
-specification, to the guest drivers, and to the device model in the
-host. The virtio-scsi spec has been written to follow SAM conventions,
-and exposing new features to the guest will only require changes to the
-host's SCSI target implementation.
 
-> Are we going to support both or eventually phase out virtio-blk?
-
-Certainly older guests will have no virtio-scsi support, so it's going
-to stay with us for a long time.
-
-> Have the virtio specification changes been reviewed? Can we guarantee
-> stable ABI for the virtio-scsi driver?
-
-Of course.  I would have proposed it for staging otherwise.
-
-Paolo
+-Olof
