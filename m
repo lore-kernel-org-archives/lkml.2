@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab2BAOip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 09:38:45 -0500
-Received: from mga09.intel.com ([134.134.136.24]:15866 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754375Ab2BAOio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 09:38:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="102697872"
-Subject: Re: [RFC] dmaengine/dma_slave: add context parameter to
- prep_slave_sg callback
-From: Vinod Koul <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        dan.j.williams@intel.com, Jassi Brar <jaswinder.singh@linaro.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-In-Reply-To: <Pine.LNX.4.64.1202011234180.24739@axis700.grange>
-References: <1327612946-29397-1-git-send-email-alexandre.bounine@idt.com>
-	 <1327915849.1527.17.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1202010022310.31226@axis700.grange>
-	 <1328075003.1610.6.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1202011234180.24739@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Feb 2012 20:09:35 +0530
-Message-ID: <1328107175.1610.32.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754763Ab2BAOkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 09:40:14 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:34811 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753722Ab2BAOkM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 09:40:12 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: MMTsYM0VM1l2s._oSoLyjah0FovsSJu9ZuTLl_suXGL.18n
+ 2EIs6UbZRTzrTu2GIcAvShDdrZvc4bHwQBjSHJC5yiUWHr.RwSkhit01TeGi
+ qJoZNLGjCtyNVmSUJP0zz9rMAGxxqB5smTGJcXyiXoajlLqEpdZZVxGHEfg6
+ VoW9WHOAJn7IguquGFNp7xlXMMkzY7GIeEZaHd2Pewbk4OuifM7lpTD1QNzz
+ KHsgYWAiv6LDzAvDSzXj8sGilv4SvWkDIrGAhoULcmuyP8GHITWTRk5.WfXk
+ lhk.1VYCE9ZSanDPdYQjhX5oVTEnR6FN5Nl9ExXf4BWu8CeIrPstYa8ek8pY
+ QUAQvxzH7zORtFnOVELuImLv5H88ETjrS_U.tkE8wx_3HaMJ91_LKeYK_NlV
+ EcsiTBdCYfZIKfQ0WQ8nGUWSjTiua63R6v.Y-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 1 Feb 2012 08:40:09 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Wu Fengguang <fengguang.wu@intel.com>
+cc: Dave Young <dyoung@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] move vm tools from Documentation/vm/ to tools/
+In-Reply-To: <20120201083032.GA6774@localhost>
+Message-ID: <alpine.DEB.2.00.1202010839540.28991@router.home>
+References: <20120201063420.GA10204@darkstar.nay.redhat.com> <CAOJsxLGVS3bK=hiKJu4NwTv-Nf8TCSAEL4reSZoY4=44hPt8rA@mail.gmail.com> <4F28EC9D.7000907@redhat.com> <20120201083032.GA6774@localhost>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 12:58 +0100, Guennadi Liakhovetski wrote:
-> > The two things are completely orthogonal and shouldn't be clubbed.
-> > For your issue we need a separate debate on how to solve this... I am
-> > open to ideas...
-> 
-> Well, I'm not sure whether they are necessarily always orthogonal, they 
-> don't seem so in my case at least. We definitely can use our approach - 
-> configure the channel during allocation. I _think_ we could also perform 
-> the configuration on a per-transfer basis, during the prepare stage, as 
-> this RFC is suggesting, but that definitely would require reworking the 
-> driver somewhat and changing the concept. The current concept is a fixed 
-> DMA channel allocation to slaves for as long as the slave is using DMA. 
-> This is simpler, avoids some overhead during operation and fits well with 
-> the dmaengine PRIVATE channel concept. So, given the choice, we would 
-> prefer to perform the configuration during channel allocation.
-> 
-> Maybe there are cases, where the driver absolutely needs this additional 
-> information during allocation, in which case my proposal would be the only 
-> way to go for them.
-what are you trying to address, sending controller specific information
-at allocation or the channel allocation itself. I kind of sense both.
-But apprach here is discussed is to pass paramters which are required
-for each transfer, not static for a channel, hence the additional
-controller specific parameter in respective prepare. 
-> 
-> I'll post an RFC soon - stay tuned:-) 
-Patch is always the best idea :-)
+On Wed, 1 Feb 2012, Wu Fengguang wrote:
 
--- 
-~Vinod
+> > BTW, I think tools/slub/slabinfo.c should be included in tools/vm/ as
+> > well, will move it in v2 patch
+>
+> CC Christoph. Maybe not a big deal since it's already under tools/.
+
+Sure. You have my blessing.
 
