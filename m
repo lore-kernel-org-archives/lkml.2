@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044Ab2BAVw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:52:57 -0500
+	id S933065Ab2BAVxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:53:14 -0500
 Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48105 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757001Ab2BAVIQ (ORCPT
+	by vger.kernel.org with ESMTP id S1757049Ab2BAVIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:16 -0500
-X-Sasl-enc: vbGQzpENIBjdcMgw00Cw5nAdnXyYL4ky4bPIXyRRHADa 1328130494
+	Wed, 1 Feb 2012 16:08:13 -0500
+X-Sasl-enc: YH4sWprO6xwFK2feTplaFu0dFUwS6u6LFn9lvBTj/NJe 1328130491
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:37 2012
-Message-Id: <20120201205737.569960095@clark.kroah.org>
+Message-Id: <20120201205737.920720032@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:41 -0800
+Date: Wed, 01 Feb 2012 12:55:45 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [01/65] ALSA: hda - Fix silent outputs from docking-station jacks of Dell laptops
+        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
+        Li Wang <liwang@nudt.edu.cn>
+Subject: [05/65] eCryptfs: Check inode changes in setattr
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +27,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit b4ead019afc201f71c39cd0dfcaafed4a97b3dd2 upstream.
+commit a261a03904849c3df50bd0300efb7fb3f865137d upstream.
 
-The recent change of the power-widget handling for IDT codecs caused
-the silent output from the docking-station line-out jack.  This was
-partially fixed by the commit f2cbba7602383cd9cdd21f0a5d0b8bd1aad47b33
-"ALSA: hda - Fix the lost power-setup of seconary pins after PM resume".
-But the line-out on the docking-station is still silent when booted
-with the jack plugged even by this fix.
+Most filesystems call inode_change_ok() very early in ->setattr(), but
+eCryptfs didn't call it at all. It allowed the lower filesystem to make
+the call in its ->setattr() function. Then, eCryptfs would copy the
+appropriate inode attributes from the lower inode to the eCryptfs inode.
 
-The remainig bug is that the power-widget is set off in stac92xx_init()
-because the pins in cfg->line_out_pins[] aren't checked there properly
-but only hp_pins[] are checked in is_nid_hp_pin().
+This patch changes that and actually calls inode_change_ok() on the
+eCryptfs inode, fairly early in ecryptfs_setattr(). Ideally, the call
+would happen earlier in ecryptfs_setattr(), but there are some possible
+inode initialization steps that must happen first.
 
-This patch fixes the problem by checking both HP and line-out pins
-and leaving the power-map correctly.
+Since the call was already being made on the lower inode, the change in
+functionality should be minimal, except for the case of a file extending
+truncate call. In that case, inode_newsize_ok() was never being
+called on the eCryptfs inode. Rather than inode_newsize_ok() catching
+maximum file size errors early on, eCryptfs would encrypt zeroed pages
+and write them to the lower filesystem until the lower filesystem's
+write path caught the error in generic_write_checks(). This patch
+introduces a new function, called ecryptfs_inode_newsize_ok(), which
+checks if the new lower file size is within the appropriate limits when
+the truncate operation will be growing the lower file.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42637
+In summary this change prevents eCryptfs truncate operations (and the
+resulting page encryptions), which would exceed the lower filesystem
+limits or FSIZE rlimits, from ever starting.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reviewed-by: Li Wang <liwang@nudt.edu.cn>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ fs/ecryptfs/inode.c |   48 ++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 36 insertions(+), 12 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -4162,13 +4162,15 @@ static int enable_pin_detect(struct hda_
- 	return 1;
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -854,18 +854,6 @@ static int truncate_upper(struct dentry
+ 		size_t num_zeros = (PAGE_CACHE_SIZE
+ 				    - (ia->ia_size & ~PAGE_CACHE_MASK));
+ 
+-
+-		/*
+-		 * XXX(truncate) this should really happen at the begginning
+-		 * of ->setattr.  But the code is too messy to that as part
+-		 * of a larger patch.  ecryptfs is also totally missing out
+-		 * on the inode_change_ok check at the beginning of
+-		 * ->setattr while would include this.
+-		 */
+-		rc = inode_newsize_ok(inode, ia->ia_size);
+-		if (rc)
+-			goto out;
+-
+ 		if (!(crypt_stat->flags & ECRYPTFS_ENCRYPTED)) {
+ 			truncate_setsize(inode, ia->ia_size);
+ 			lower_ia->ia_size = ia->ia_size;
+@@ -915,6 +903,28 @@ out:
+ 	return rc;
  }
  
--static int is_nid_hp_pin(struct auto_pin_cfg *cfg, hda_nid_t nid)
-+static int is_nid_out_jack_pin(struct auto_pin_cfg *cfg, hda_nid_t nid)
- {
- 	int i;
- 	for (i = 0; i < cfg->hp_outs; i++)
- 		if (cfg->hp_pins[i] == nid)
- 			return 1; /* nid is a HP-Out */
--
-+	for (i = 0; i < cfg->line_outs; i++)
-+		if (cfg->line_out_pins[i] == nid)
-+			return 1; /* nid is a line-Out */
- 	return 0; /* nid is not a HP-Out */
- };
++static int ecryptfs_inode_newsize_ok(struct inode *inode, loff_t offset)
++{
++	struct ecryptfs_crypt_stat *crypt_stat;
++	loff_t lower_oldsize, lower_newsize;
++
++	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
++	lower_oldsize = upper_size_to_lower_size(crypt_stat,
++						 i_size_read(inode));
++	lower_newsize = upper_size_to_lower_size(crypt_stat, offset);
++	if (lower_newsize > lower_oldsize) {
++		/*
++		 * The eCryptfs inode and the new *lower* size are mixed here
++		 * because we may not have the lower i_mutex held and/or it may
++		 * not be appropriate to call inode_newsize_ok() with inodes
++		 * from other filesystems.
++		 */
++		return inode_newsize_ok(inode, lower_newsize);
++	}
++
++	return 0;
++}
++
+ /**
+  * ecryptfs_truncate
+  * @dentry: The ecryptfs layer dentry
+@@ -931,6 +941,10 @@ int ecryptfs_truncate(struct dentry *den
+ 	struct iattr lower_ia = { .ia_valid = 0 };
+ 	int rc;
  
-@@ -4354,7 +4356,7 @@ static int stac92xx_init(struct hda_code
- 			continue;
++	rc = ecryptfs_inode_newsize_ok(dentry->d_inode, new_length);
++	if (rc)
++		return rc;
++
+ 	rc = truncate_upper(dentry, &ia, &lower_ia);
+ 	if (!rc && lower_ia.ia_valid & ATTR_SIZE) {
+ 		struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
+@@ -1012,6 +1026,16 @@ static int ecryptfs_setattr(struct dentr
  		}
- 
--		if (is_nid_hp_pin(cfg, nid))
-+		if (is_nid_out_jack_pin(cfg, nid))
- 			continue; /* already has an unsol event */
- 
- 		pinctl = snd_hda_codec_read(codec, nid, 0,
+ 	}
+ 	mutex_unlock(&crypt_stat->cs_mutex);
++
++	rc = inode_change_ok(inode, ia);
++	if (rc)
++		goto out;
++	if (ia->ia_valid & ATTR_SIZE) {
++		rc = ecryptfs_inode_newsize_ok(inode, ia->ia_size);
++		if (rc)
++			goto out;
++	}
++
+ 	if (S_ISREG(inode->i_mode)) {
+ 		rc = filemap_write_and_wait(inode->i_mapping);
+ 		if (rc)
 
 
