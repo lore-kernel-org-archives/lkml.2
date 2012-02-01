@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab2BASLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 13:11:36 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:32954 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab2BASLd (ORCPT
+	id S1754881Ab2BASOi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 13:14:38 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63559 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab2BASOg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 13:11:33 -0500
-Date: Wed, 01 Feb 2012 13:09:05 -0500 (EST)
-Message-Id: <20120201.130905.1131458895704793597.davem@davemloft.net>
-To: matz@suse.de
-Cc: jkosina@suse.cz, torvalds@linux-foundation.org, walters@verbum.org,
-        jack@suse.cz, linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Re: Memory corruption due to word sharing
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <Pine.LNX.4.64.1202011818570.25409@wotan.suse.de>
-References: <CA+55aFxmdskUXX1iBaPx7rUGD95UqNJxhe1BLeVtZjqHjBpsPA@mail.gmail.com>
-	<alpine.LRH.2.00.1202011808240.22725@twin.jikos.cz>
-	<Pine.LNX.4.64.1202011818570.25409@wotan.suse.de>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 01 Feb 2012 10:09:08 -0800 (PST)
+	Wed, 1 Feb 2012 13:14:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <7102b0e278af50d27b5d61d1be5faaba1b0a091e.1327858005.git.luto@amacapital.net>
+References: <cover.1327858005.git.luto@amacapital.net>
+	<7102b0e278af50d27b5d61d1be5faaba1b0a091e.1327858005.git.luto@amacapital.net>
+Date: Wed, 1 Feb 2012 10:14:31 -0800
+X-Google-Sender-Auth: EdIiyaQz8EGof6cjw68WQJUFb34
+Message-ID: <CAGXu5j+JfTHFZUgYw7vCkBajTyfG4jP19-KLCtOw9cMuymUKjQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/4] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve
+ from granting privs
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jamie Lokier <jamie@shareable.org>, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Matz <matz@suse.de>
-Date: Wed, 1 Feb 2012 18:41:05 +0100 (CET)
+On Mon, Jan 30, 2012 at 8:17 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> With this set, a lot of dangerous operations (chroot, unshare, etc)
+> become a lot less dangerous because there is no possibility of
+> subverting privileged binaries.
+>
+> This patch completely breaks apparmor.  Someone who understands (and
+> uses) apparmor should fix it or at least give me a hint.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-> One problem is that it's not a new problem, GCC emitted similar code since 
-> about forever, and still they turned up only now (well, probably because 
-> ia64 is dead, but sparc64 should have similar problems). 
+Looking forward to this -- it'll give us a lot more flexibility.
 
-Indeed, on sparc64 it does do the silly 64-bit access too:
+Reviewed-by: Kees Cook <keescook@chromium.org>
 
-wrong:
-        ldx     [%o0+8], %g2
-        sethi   %hi(2147483648), %g1
-        or      %g2, %g1, %g1
-        jmp     %o7+8
-         stx    %g1, [%o0+8]
-
-Personally I've avoided C bitfields like the plague in any code I've
-written.
+-- 
+Kees Cook
+ChromeOS Security
