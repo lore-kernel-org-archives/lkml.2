@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab2BAJEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 04:04:00 -0500
-Received: from netz.smurf.noris.de ([213.95.21.43]:39867 "EHLO
-	netz.smurf.noris.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab2BAJD4 (ORCPT
+	id S1756062Ab2BAJFP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 04:05:15 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:51470 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753980Ab2BAJFI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 04:03:56 -0500
-X-Greylist: delayed 1020 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 04:03:56 EST
-Date: Wed, 1 Feb 2012 09:46:21 +0100
-From: Matthias Urlichs <matthias@urlichs.de>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux GPL becomes unenforcable?
-Message-ID: <20120201084621.GI27226@smurf.noris.de>
-References: <loom.20120201T082213-806@post.gmane.org>
- <20120201.024521.1532078280534553420.davem@davemloft.net>
+	Wed, 1 Feb 2012 04:05:08 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3O1VwFp74L81IIeR"
-Content-Disposition: inline
-In-Reply-To: <20120201.024521.1532078280534553420.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Smurf-Spam-Score: -1.9 (-)
-X-Smurf-Whitelist: +relay_from_hosts
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 01/16] eicon: fix -Warray-bounds warning
+Date: Wed, 1 Feb 2012 09:04:48 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E45@saturn3.aculab.com>
+In-Reply-To: <201201311804.20464.danny.kukawka@bisect.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 01/16] eicon: fix -Warray-bounds warning
+Thread-Index: AczgOnoxHay8jt8aR1u7f+Xf/9MGbAAhfbeA
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Danny Kukawka" <danny.kukawka@bisect.de>,
+        "Karsten Keil" <kkeil@linux-pingi.de>
+Cc: "Ben Hutchings" <bhutchings@solarflare.com>,
+        "Armin Schindler" <mac@melware.de>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, "Karsten Keil" <isdn@linux-pingi.de>
+X-OriginalArrivalTime: 01 Feb 2012 09:04:48.0732 (UTC) FILETIME=[8CCA69C0:01CCE0C0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ 
 
---3O1VwFp74L81IIeR
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: netdev-owner@vger.kernel.org 
+> [mailto:netdev-owner@vger.kernel.org] On Behalf Of Danny Kukawka
+> Sent: 31 January 2012 17:04
+> To: Karsten Keil
+> Cc: Ben Hutchings; Armin Schindler; 
+> linux-kernel@vger.kernel.org; netdev@vger.kernel.org; Karsten Keil
+> Subject: Re: [PATCH 01/16] eicon: fix -Warray-bounds warning
+> 
+> On Dienstag, 31. Januar 2012, Karsten Keil wrote:
+> > On Mon, Jan 30, 2012 at 11:09:32PM +0000, Ben Hutchings wrote:
+> > > On Mon, 2012-01-30 at 23:00 +0100, Danny Kukawka wrote:
+> > > > Fix for a -Warray-bounds warning. mixer_notify_update() tries to
+> > > > write to ((CAPI_MSG *) msg)->info.facility_req.structs[3] while
+> > > > structs is defined as byte structs[1], define structs[1] as
+> > > > structs[4].
+> > >
+> > > I suspect that all the 'byte structs[1];' fields defined 
+> in that header
+> > > are actually variable-length arrays.  In that case, there 
+> may be no
+> > > reasonable bound you can specify.
+> >
+> > Yes, exactely, the structs is a ASN1 coded message so it 
+> can have any len.
+> 
+> So, how can we get rid of the compiler warning then?
 
-Hi,
+Try defining it as a 'variable sized array' - byte structs[0].
 
-David Miller:
->=20
-> troll alert
-
-You would be wrong.
+	David
 
 
-=E2=80=A6 and I was being stupid, unfortunately.
-Upon re-reading: s/SFLC/SFC, http://sfconservancy.org.
-
---=20
--- Matthias Urlichs
-
---3O1VwFp74L81IIeR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPKPvZAAoJEHLPjl4ltMKTwp8P/3plZtXkkRpDJ87m3oNe0enY
-JYNBFK9sGwHxDfDZeoUzE0+u3+gGBZJfUYHg4rFC2wAo5RwZ8CH/R9Y7bGjh7mgQ
-0pOla6Q7Bjw8DW+xFmrAMx/7TEX5xtP1jLsg4plRvPlZxsoBE1WTXs8fYAvLySfg
-i/uT1ttQY9b6Yn29c69w9LVkCzxuM8kKGhxNRWXJ8bgx1GiMiZlOpVfkxPprpDAz
-cpP8O9Zs8PJHsemDV5q2K81cvqWBE7HmGn7xBchBbu7zsworP6Ec9FIDf1vkaEnG
-6wzWjVyVXA0GiIj143IPlDMjus8lHNf1eksJK7TB393qTL82GMN9I4E8d3YsSHyL
-8yMGP5wd/I5x7MDWREtswlAOpJfgXfmZCZ1wmjZ5v4yslmg7V8c7yLPbGPFpV/Xm
-zvKI4OIAeFpCF+124hM8+XIqW46Bt2KUjS4FJcGyZLF0o1JWAnDE0Qp8Xki21MC5
-n0APc3SoX2841or1jox9g9WWf4B87ksblB6UFdS0x4ZbCBnnEIbaW6gEam82/l/E
-yEMUSjRVRqrefTpI4knujoDCJJLGrMutKmEed44BqXy6zXjeG+qPNHswAIPrxFTZ
-G1MgCw30uRhxYtgWaUOBgJR7uGRm/aClvUoE6TYNEdLV8IFhoOALbrzX5YbcJWkS
-nARzVyLuvYtHgOk5JKd0
-=dewo
------END PGP SIGNATURE-----
-
---3O1VwFp74L81IIeR--
