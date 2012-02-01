@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab2BADSf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 22:18:35 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34181 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab2BADSe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 22:18:34 -0500
+	id S1754497Ab2BADhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 22:37:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10890 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752342Ab2BADhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 22:37:07 -0500
+Date: Tue, 31 Jan 2012 22:36:53 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Jens Axboe <axboe@kernel.dk>,
+        Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Wu Fengguang <wfg@linux.intel.com>
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+Message-ID: <20120201033653.GA12092@redhat.com>
+References: <1327996780.21268.42.camel@sli10-conroe>
+ <20120131220333.GD4378@redhat.com>
+ <20120131141301.ba35ffe0.akpm@linux-foundation.org>
+ <20120131222217.GE4378@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4F286529.1060407@gmail.com>
-References: <4F286529.1060407@gmail.com>
-Date: Wed, 1 Feb 2012 11:18:34 +0800
-X-Google-Sender-Auth: 53wULCZlYJqlsOSqGxYj2wuPqLs
-Message-ID: <CANejiEUVeqjgEHumtEaCTpLgdQ54DWa3HJF-3qj+7t8F2bTXeg@mail.gmail.com>
-Subject: Re: cfq bug still not fixed on x86
-From: Shaohua Li <shaohua.li@intel.com>
-To: walt <w41ter@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120131222217.GE4378@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-can you try the debug patch from Tejun:
+On Tue, Jan 31, 2012 at 05:22:17PM -0500, Vivek Goyal wrote:
+[..]
 
-http://marc.info/?l=linux-kernel&m=132683711206544&w=2
+> > 
+> > We've never really bothered making the /dev/sda[X] I/O very efficient
+> > for large I/O's under the (probably wrong) assumption that it isn't a
+> > very interesting case.  Regular files will (or should) use the mpage
+> > functions, via address_space_operations.readpages().  fs/blockdev.c
+> > doesn't even implement it.
+> > 
+> > > and by the time all the pages
+> > > are submitted and one big merged request is formed it wates lot of time.
+> > 
+> > But that was the case in eariler kernels too.  Why did it change?
+> 
+> Actually, I assumed that the case of reading /dev/sda[X] worked well in
+> earlier kernels. Sorry about that. Will build a 2.6.38 kernel tonight
+> and run the test case again to make sure we had same overhead and
+> relatively poor performance while reading /dev/sda[X].
 
-2012/2/1 walt <w41ter@gmail.com>:
-> Hi guys.  Linus recently commited this bugfix from Jens:
->
-> commit 54b466e44b1c7809144bbd8cd6be3f85877ca46f
-> Author: Jens Axboe
-> Date:   Tue Jan 17 21:26:11 2012 +0100
->
->    cfq-iosched: fix use-after-free of cfqq
->
-> That fixed the problem on my amd64x2 machine, but my old UP x86 amd
-> machine is still producing the same backtrace when udevd segfaults
-> during bootup.
->
-> I'm wondering if the patch neglects some 32-bit or non-SMP code?
->
-> Thanks for all your hard work on open-source :)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Ok, I tried it with 2.6.38 kernel and results look more or less same.
+Throughput varied between 105MB to 145MB. Many a times it was close to
+110MB and other times it was 145MB. Don't know what causes that spike
+sometimes.
+
+I still see that IO is being submitted one page at a time. The only
+real difference seems to be that queue unplug happening at random times
+and many a times we are submitting much smaller requests (40 sectors, 48
+sectors etc).
+
+Thanks
+Vivek
