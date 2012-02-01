@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961Ab2BAVmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:42:53 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53391 "EHLO
+	id S932459Ab2BAVJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:09:14 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55722 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757156Ab2BAVJY (ORCPT
+	by vger.kernel.org with ESMTP id S932465Ab2BAVJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:24 -0500
-X-Sasl-enc: dm1R86TvejLtzIUy0S4gN2pDBoRF5pvPpIP+IH/xkk7C 1328130562
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:41 2012
-Message-Id: <20120201205740.981128563@clark.kroah.org>
+	Wed, 1 Feb 2012 16:09:03 -0500
+X-Sasl-enc: DK+Ik/A8Opau9kFaC2MM9qv6TmyI3clmWWfKMNgvYQWc 1328130542
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:42 2012
+Message-Id: <20120201205742.198872616@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:20 -0800
+Date: Wed, 01 Feb 2012 12:56:34 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [40/65] drivers/usb/host/ehci-fsl.c: add missing iounmap
+        alan@lxorguk.ukuu.org.uk, Phil Oester <kernel@linuxace.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [54/65] net: bpf_jit: fix divide by 0 generation
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,52 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-commit 2492c6e6454ff3edb11e273b071a6ea80a199c71 upstream.
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-Add missing iounmap in error handling code, in a case where the function
-already preforms iounmap on some other execution path.
+[ Upstream commit d00a9dd21bdf7908b70866794c8313ee8a5abd5c ]
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+Several problems fixed in this patch :
 
-// <smpl>
-@@
-expression e;
-statement S,S1;
-int ret;
-@@
-e = \(ioremap\|ioremap_nocache\)(...)
-... when != iounmap(e)
-if (<+...e...+>) S
-... when any
-    when != iounmap(e)
-*if (...)
-   { ... when != iounmap(e)
-     return ...; }
-... when any
-iounmap(e);
-// </smpl>
+1) Target of the conditional jump in case a divide by 0 is performed
+   by a bpf is wrong.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+2) Must 'generate' the full function prologue/epilogue at pass=0,
+   or else we can stop too early in pass=1 if the proglen doesnt change.
+   (if the increase of prologue/epilogue equals decrease of all
+    instructions length because some jumps are converted to near jumps)
+
+3) Change the wrong length detection at the end of code generation to
+   issue a more explicit message, no need for a full stack trace.
+
+Reported-by: Phil Oester <kernel@linuxace.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/host/ehci-fsl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/net/bpf_jit_comp.c |   36 ++++++++++++++++++++++--------------
+ 1 file changed, 22 insertions(+), 14 deletions(-)
 
---- a/drivers/usb/host/ehci-fsl.c
-+++ b/drivers/usb/host/ehci-fsl.c
-@@ -125,7 +125,7 @@ static int usb_hcd_fsl_probe(const struc
- 	 */
- 	if (pdata->init && pdata->init(pdev)) {
- 		retval = -ENODEV;
--		goto err3;
-+		goto err4;
- 	}
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -151,17 +151,18 @@ void bpf_jit_compile(struct sk_filter *f
+ 	cleanup_addr = proglen; /* epilogue address */
  
- 	/* Enable USB controller, 83xx or 8536 */
+ 	for (pass = 0; pass < 10; pass++) {
++		u8 seen_or_pass0 = (pass == 0) ? (SEEN_XREG | SEEN_DATAREF | SEEN_MEM) : seen;
+ 		/* no prologue/epilogue for trivial filters (RET something) */
+ 		proglen = 0;
+ 		prog = temp;
+ 
+-		if (seen) {
++		if (seen_or_pass0) {
+ 			EMIT4(0x55, 0x48, 0x89, 0xe5); /* push %rbp; mov %rsp,%rbp */
+ 			EMIT4(0x48, 0x83, 0xec, 96);	/* subq  $96,%rsp	*/
+ 			/* note : must save %rbx in case bpf_error is hit */
+-			if (seen & (SEEN_XREG | SEEN_DATAREF))
++			if (seen_or_pass0 & (SEEN_XREG | SEEN_DATAREF))
+ 				EMIT4(0x48, 0x89, 0x5d, 0xf8); /* mov %rbx, -8(%rbp) */
+-			if (seen & SEEN_XREG)
++			if (seen_or_pass0 & SEEN_XREG)
+ 				CLEAR_X(); /* make sure we dont leek kernel memory */
+ 
+ 			/*
+@@ -170,7 +171,7 @@ void bpf_jit_compile(struct sk_filter *f
+ 			 *  r9 = skb->len - skb->data_len
+ 			 *  r8 = skb->data
+ 			 */
+-			if (seen & SEEN_DATAREF) {
++			if (seen_or_pass0 & SEEN_DATAREF) {
+ 				if (offsetof(struct sk_buff, len) <= 127)
+ 					/* mov    off8(%rdi),%r9d */
+ 					EMIT4(0x44, 0x8b, 0x4f, offsetof(struct sk_buff, len));
+@@ -260,9 +261,14 @@ void bpf_jit_compile(struct sk_filter *f
+ 			case BPF_S_ALU_DIV_X: /* A /= X; */
+ 				seen |= SEEN_XREG;
+ 				EMIT2(0x85, 0xdb);	/* test %ebx,%ebx */
+-				if (pc_ret0 != -1)
+-					EMIT_COND_JMP(X86_JE, addrs[pc_ret0] - (addrs[i] - 4));
+-				else {
++				if (pc_ret0 > 0) {
++					/* addrs[pc_ret0 - 1] is start address of target
++					 * (addrs[i] - 4) is the address following this jmp
++					 * ("xor %edx,%edx; div %ebx" being 4 bytes long)
++					 */
++					EMIT_COND_JMP(X86_JE, addrs[pc_ret0 - 1] -
++								(addrs[i] - 4));
++				} else {
+ 					EMIT_COND_JMP(X86_JNE, 2 + 5);
+ 					CLEAR_A();
+ 					EMIT1_off32(0xe9, cleanup_addr - (addrs[i] - 4)); /* jmp .+off32 */
+@@ -335,12 +341,12 @@ void bpf_jit_compile(struct sk_filter *f
+ 				}
+ 				/* fallinto */
+ 			case BPF_S_RET_A:
+-				if (seen) {
++				if (seen_or_pass0) {
+ 					if (i != flen - 1) {
+ 						EMIT_JMP(cleanup_addr - addrs[i]);
+ 						break;
+ 					}
+-					if (seen & SEEN_XREG)
++					if (seen_or_pass0 & SEEN_XREG)
+ 						EMIT4(0x48, 0x8b, 0x5d, 0xf8);  /* mov  -8(%rbp),%rbx */
+ 					EMIT1(0xc9);		/* leaveq */
+ 				}
+@@ -483,8 +489,9 @@ common_load:			seen |= SEEN_DATAREF;
+ 				goto common_load;
+ 			case BPF_S_LDX_B_MSH:
+ 				if ((int)K < 0) {
+-					if (pc_ret0 != -1) {
+-						EMIT_JMP(addrs[pc_ret0] - addrs[i]);
++					if (pc_ret0 > 0) {
++						/* addrs[pc_ret0 - 1] is the start address */
++						EMIT_JMP(addrs[pc_ret0 - 1] - addrs[i]);
+ 						break;
+ 					}
+ 					CLEAR_A();
+@@ -599,13 +606,14 @@ cond_branch:			f_offset = addrs[i + filt
+ 		 * use it to give the cleanup instruction(s) addr
+ 		 */
+ 		cleanup_addr = proglen - 1; /* ret */
+-		if (seen)
++		if (seen_or_pass0)
+ 			cleanup_addr -= 1; /* leaveq */
+-		if (seen & SEEN_XREG)
++		if (seen_or_pass0 & SEEN_XREG)
+ 			cleanup_addr -= 4; /* mov  -8(%rbp),%rbx */
+ 
+ 		if (image) {
+-			WARN_ON(proglen != oldproglen);
++			if (proglen != oldproglen)
++				pr_err("bpb_jit_compile proglen=%u != oldproglen=%u\n", proglen, oldproglen);
+ 			break;
+ 		}
+ 		if (proglen == oldproglen) {
 
 
