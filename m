@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab2BAHIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 02:08:53 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:56209 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab2BAHIw (ORCPT
+	id S1755856Ab2BAHJW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 02:09:22 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41799 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753550Ab2BAHJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 02:08:52 -0500
-Date: Wed, 01 Feb 2012 02:07:38 -0500 (EST)
-Message-Id: <20120201.020738.1965865410881089752.davem@davemloft.net>
-To: lizf@cn.fujitsu.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, nhorman@tuxdriver.com
-Subject: Re: [PATCH 4/6] netprio_cgroup: use IS_ENABLED() and family
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F28E48D.3040505@cn.fujitsu.com>
-References: <4F28E203.10502@cn.fujitsu.com>
-	<20120201.015954.2098592611164231843.davem@davemloft.net>
-	<4F28E48D.3040505@cn.fujitsu.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 31 Jan 2012 23:07:40 -0800 (PST)
+	Wed, 1 Feb 2012 02:09:20 -0500
+Date: Tue, 31 Jan 2012 23:09:18 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V1] arm: tegra: dma: not required to move requestor when
+ stopping.
+Message-ID: <20120201070918.GA7399@quad.lixom.net>
+References: <1327392649-27605-1-git-send-email-ldewangan@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF178CB81E5F@HQMAIL01.nvidia.com>
+ <4F27CA58.2020809@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F27CA58.2020809@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizf@cn.fujitsu.com>
-Date: Wed, 01 Feb 2012 15:06:53 +0800
+On Tue, Jan 31, 2012 at 04:32:48PM +0530, Laxman Dewangan wrote:
+> On Wednesday 25 January 2012 02:27 AM, Stephen Warren wrote:
+> >Laxman Dewangan wrote at Tuesday, January 24, 2012 1:11 AM:
+> >>It is not require to move the requestor of dma to INVALID
+> >>option before stopping dma.
+> >>
+> >>Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+> >Acked-by: Stephen Warren<swarren@nvidia.com>
+> >Tested-by: Stephen Warren<swarren@nvidia.com>
+> >
+> >I know that Laxman has checked with the HW engineers, and they see no
+> >reason to do this. I was originally worried about hung FIFOs preventing
+> >an in-progress DMA from completely without the removed code, but according
+> >to HW, that isn't a concern.
+> >
+> Olaf,
+> Can it be applied if it is OK to you?
 
-> 14:59, David Miller wrote:
->> 
->> Do not mix genuine bug fixes and cleanups.
->> 
->> Otherwise I cannot apply your bug fixes to the 'net' tree.
->> 
->> Seperate things out, submit only pure bug fixes first, then
->> later once those changes propagate you can submit the cleanups.
->> 
-> 
-> I did seperate them out, so the first three patches are fixes,
-> and others are cleanups. I can resend cleanup patches once
-> fixes hit mainline.
+Yep, applied.
 
-Seperate them in different groups, don't submit them as one
-collection.  And definitely don't submit them all at the
-same damn time!  You have to wait with the dependent cleanups
-until the fixes go in, and subsequently show up in my net-next
-tree.
 
-I'm not applying this stuff until you submit it properly, in
-two stages.
+-Olof
