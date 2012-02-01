@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab2BARe7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:34:59 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33562 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab2BARe4 (ORCPT
+	id S1755517Ab2BARf4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:35:56 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42007 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab2BARfz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:34:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <bd6c07e54f2a86916550f69013e4dcc6.squirrel@webmail.greenhost.nl>
-References: <1327706681-11959-1-git-send-email-wad@chromium.org>
- <1327706681-11959-2-git-send-email-wad@chromium.org> <c211732dcacbff72c70127ccab36122a.squirrel@webmail.greenhost.nl>
- <CABqD9hatfCSSqUt-FYUa6-LcCeDEht8gLMAY7cnWKe6gp-9upg@mail.gmail.com>
- <13b3f9dcf188908604a9529ef1934ecf.squirrel@webmail.greenhost.nl>
- <CABqD9hYXJapEiDcA_VxggkTkC6KXnJwmoE3zAoPzvYDCgkQXSA@mail.gmail.com>
- <8a37c5805a9941a8616f1c28245a0880.squirrel@webmail.greenhost.nl>
- <CABqD9hYpiDtCM5gPgjjHOJ6DcFs-HHUORAGi+AMFs1+9EAk1UA@mail.gmail.com> <bd6c07e54f2a86916550f69013e4dcc6.squirrel@webmail.greenhost.nl>
-From: Roland McGrath <mcgrathr@google.com>
-Date: Wed, 1 Feb 2012 09:34:31 -0800
-Message-ID: <CAB=4xhr73ON-rmiHXFspLANO0JfNWpc4sduF5-z6UaBODsgF6w@mail.gmail.com>
-Subject: Re: [PATCH v5 2/3] seccomp_filters: system call filtering using BPF
-To: Indan Zupancic <indan@nul.nu>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 1 Feb 2012 12:35:55 -0500
+Message-ID: <1328117722.2446.262.camel@twins>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>, paulmck <paulmck@linux.vnet.ibm.com>
+Date: Wed, 01 Feb 2012 18:35:22 +0100
+In-Reply-To: <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	 <1327591185.2446.102.camel@twins>
+	 <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 5:36 PM, Indan Zupancic <indan@nul.nu> wrote:
->> ref: http://lkml.indiana.edu/hypermail/linux/kernel/0906.3/00096.html
->
-> That's 2009! I wonder why no progress happened since then.
+On Sun, 2012-01-29 at 10:25 +0200, Gilad Ben-Yossef wrote:
+> 
+> If this is of interest, I keep a list tracking global IPI and global
+> task schedulers sources in the core kernel here:
+> https://github.com/gby/linux/wiki. 
 
-At that time I did most of all the CONFIG_HAVE_ARCH_TRACEHOOK work for ARM.
-The ARM kernel maintainers just weren't interested in paying attention, and
-I gave up on hounding them.  Since then, only a subset of what I did before
-has actually been done and merged.  (e.g. there is now some user_regset
-support, but less than what I implemented and posted originally--so for
-some ARM variants there is still register information only accessible via
-old ptrace calls but not in core dumps and no PTRACE_GETREGSET support.
-The really trivial stuff like using tracehook_report_* still hasn't gone
-in, though I posted that code back then too.)
-
-
-Thanks,
-Roland
+You can add synchronize_.*_expedited() to the list, it does its best to
+bash the entire machine in order to try and make RCU grace periods
+happen fast.
