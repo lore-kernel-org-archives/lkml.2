@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab2BAHf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 02:35:27 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50264 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940Ab2BAHfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 02:35:24 -0500
-Date: Tue, 31 Jan 2012 23:35:23 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 0/3] Add support for LP3
-Message-ID: <20120201073523.GF7399@quad.lixom.net>
-References: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
+	id S1755918Ab2BAHgp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 02:36:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8941 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753684Ab2BAHgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 02:36:45 -0500
+Message-ID: <4F28EC26.8010604@redhat.com>
+Date: Wed, 01 Feb 2012 15:39:18 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327594923-21822-1-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cong Wang <xiyou.wangcong@gmail.com>
+CC: linux-kernel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH] move vm tools from Documentation/vm/ to tools/
+References: <20120201063420.GA10204@darkstar.nay.redhat.com> <4F28DF9B.40702@gmail.com>
+In-Reply-To: <4F28DF9B.40702@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 06:22:00PM +0200, Peter De Schrijver wrote:
-> Introduce support for LP3 (CPU core clockgating) for Tegra20 and Tegra30.
-> 
-> Peter De Schrijver (3):
->   ARM: tegra: definitions for flow controller
->   ARM: tegra: assembler code for LP3
->   ARM: tegra: cpuidle driver for tegra
-> 
->  arch/arm/mach-tegra/Makefile   |    2 +
->  arch/arm/mach-tegra/cpuidle.c  |  107 ++++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-tegra/flowctrl.h |   37 ++++++++++++++
->  arch/arm/mach-tegra/sleep.S    |   91 ++++++++++++++++++++++++++++++++++
->  4 files changed, 237 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-tegra/cpuidle.c
->  create mode 100644 arch/arm/mach-tegra/flowctrl.h
->  create mode 100644 arch/arm/mach-tegra/sleep.S
+On 02/01/2012 02:45 PM, Cong Wang wrote:
 
-Thanks, applied.
+> On 02/01/2012 02:34 PM, Dave Young wrote:
+>> tools/ is the better place for vm tools which are used by many people.
+>> Moving them to tools also make them open to more users instead of hide in
+>> Documentation folder.
+> 
+> Well, hugepage-mmap, hugepage-shm, and map_hugetlb are examples, not
+> really tools. So, only page-types is probably a tool, but I leave this
+> to Fengguang to decide.
+
+
+looks reasonable
+
+> 
+>>
+>> Also fixed several coding style problem.
+> 
+> Make it another patch for people to review. :)
+
+
+Will do
+
+> 
+> [...]
+>> diff --git a/tools/vm/Makefile b/tools/vm/Makefile
+>> new file mode 100644
+>> index 0000000..b4f9fdd
+>> --- /dev/null
+>> +++ b/tools/vm/Makefile
+>> @@ -0,0 +1,11 @@
+>> +# Makefile for vm tools
+>> +
+>> +CC = $(CROSS_COMPILE)gcc
+>> +CFLAGS = -Wall -Wextra
+>> +
+>> +all: page-types hugepage-mmap hugepage-shm map_hugetlb
+>> +%: %.c
+>> +    $(CC) $(CFLAGS) -o $@ $^
+>> +
+>> +clean:
+>> +    $(RM) page-types hugepage-mmap hugepage-shm map_hugetlb
+> 
+> Is $(RM) defined?
+
+
+It's a predefined variables of GNU makefile, It Imply rule of 'rm -f'
+
+-- 
+Thanks
+Dave
