@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab2BAHUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 02:20:08 -0500
-Received: from mga03.intel.com ([143.182.124.21]:28017 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755051Ab2BAHUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 02:20:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101856599"
-Date: Wed, 1 Feb 2012 15:10:00 +0800
-From: Wu Fengguang <wfg@linux.intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Jens Axboe <axboe@kernel.dk>,
-        Herbert Poetzl <herbert@13thfloor.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-Message-ID: <20120201071000.GB29083@localhost>
-References: <1327996780.21268.42.camel@sli10-conroe>
- <20120131220333.GD4378@redhat.com>
- <20120131141301.ba35ffe0.akpm@linux-foundation.org>
- <20120131222217.GE4378@redhat.com>
- <20120201033653.GA12092@redhat.com>
+	id S1755900Ab2BAHUT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 02:20:19 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51298 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755849Ab2BAHUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 02:20:15 -0500
+Message-ID: <4F28E853.7000104@cn.fujitsu.com>
+Date: Wed, 01 Feb 2012 15:22:59 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120201033653.GA12092@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, nhorman@tuxdriver.com
+Subject: Re: [PATCH 4/6] netprio_cgroup: use IS_ENABLED() and family
+References: <4F28E203.10502@cn.fujitsu.com>	<20120201.015954.2098592611164231843.davem@davemloft.net>	<4F28E48D.3040505@cn.fujitsu.com> <20120201.020738.1965865410881089752.davem@davemloft.net>
+In-Reply-To: <20120201.020738.1965865410881089752.davem@davemloft.net>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-01 15:18:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-01 15:18:53,
+	Serialize complete at 2012-02-01 15:18:53
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 10:36:53PM -0500, Vivek Goyal wrote:
-> On Tue, Jan 31, 2012 at 05:22:17PM -0500, Vivek Goyal wrote:
-> [..]
+>>> Do not mix genuine bug fixes and cleanups.
+>>>
+>>> Otherwise I cannot apply your bug fixes to the 'net' tree.
+>>>
+>>> Seperate things out, submit only pure bug fixes first, then
+>>> later once those changes propagate you can submit the cleanups.
+>>>
+>>
+>> I did seperate them out, so the first three patches are fixes,
+>> and others are cleanups. I can resend cleanup patches once
+>> fixes hit mainline.
 > 
-> > > 
-> > > We've never really bothered making the /dev/sda[X] I/O very efficient
-> > > for large I/O's under the (probably wrong) assumption that it isn't a
-> > > very interesting case.  Regular files will (or should) use the mpage
-> > > functions, via address_space_operations.readpages().  fs/blockdev.c
-> > > doesn't even implement it.
-> > > 
-> > > > and by the time all the pages
-> > > > are submitted and one big merged request is formed it wates lot of time.
-> > > 
-> > > But that was the case in eariler kernels too.  Why did it change?
-> > 
-> > Actually, I assumed that the case of reading /dev/sda[X] worked well in
-> > earlier kernels. Sorry about that. Will build a 2.6.38 kernel tonight
-> > and run the test case again to make sure we had same overhead and
-> > relatively poor performance while reading /dev/sda[X].
+> Seperate them in different groups, don't submit them as one
+> collection.  And definitely don't submit them all at the
+> same damn time!  You have to wait with the dependent cleanups
+> until the fixes go in, and subsequently show up in my net-next
+> tree.
 > 
-> Ok, I tried it with 2.6.38 kernel and results look more or less same.
-> Throughput varied between 105MB to 145MB. Many a times it was close to
-> 110MB and other times it was 145MB. Don't know what causes that spike
-> sometimes.
+> I'm not applying this stuff until you submit it properly, in
+> two stages.
+> 
 
-The block device really has some aged performance bug. Which
-interestingly only show up in some test environments...
-
-> I still see that IO is being submitted one page at a time. The only
-> real difference seems to be that queue unplug happening at random times
-> and many a times we are submitting much smaller requests (40 sectors, 48
-> sectors etc).
-
-Would you share the blktrace data?
-
-Thanks,
-Fengguang
+I'll do this when I get some comments/acks.
