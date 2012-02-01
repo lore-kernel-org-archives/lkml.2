@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab2BAIIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 03:08:44 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:57993 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684Ab2BAIIn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 03:08:43 -0500
-Date: Wed, 1 Feb 2012 18:38:36 +1030
-From: Christopher Yeoh <cyeoh@au1.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] Fix race in process_vm_rw_core
-Message-ID: <20120201183836.1cf5fc52@Gantu.yeoh.info>
-In-Reply-To: <CA+55aFxstU98L64xgoUiacsV0zwX5ioNv3cT5CH2rvBrUGaovw@mail.gmail.com>
-References: <20120130124406.1567af7a@Gantu.yeoh.info>
-	<20120130150922.GA17643@redhat.com>
-	<20120201162330.43d421d3@Gantu.yeoh.info>
-	<CA+55aFxstU98L64xgoUiacsV0zwX5ioNv3cT5CH2rvBrUGaovw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12013121-9264-0000-0000-000000BD5732
+	id S1755941Ab2BAINi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 03:13:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1092 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753793Ab2BAINh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 03:13:37 -0500
+Message-ID: <4F28F42A.1050103@redhat.com>
+Date: Wed, 01 Feb 2012 09:13:30 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Pekka Enberg <penberg@kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH v4 0/3] virtio-scsi driver
+References: <1327077939-7084-1-git-send-email-pbonzini@redhat.com> <4F26596B.6030703@redhat.com> <CAOJsxLHwT0o=mS2nCSxjtwdfOif7oZkT_ZED3UOybFACVG6WvQ@mail.gmail.com>
+In-Reply-To: <CAOJsxLHwT0o=mS2nCSxjtwdfOif7oZkT_ZED3UOybFACVG6WvQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Jan 2012 22:10:13 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On 02/01/2012 08:31 AM, Pekka Enberg wrote:
+> What's the benefit of virtio-scsi over virtio-blk?
 
-> On Tue, Jan 31, 2012 at 9:53 PM, Christopher Yeoh <cyeoh@au1.ibm.com>
-> wrote:
-> > +       mm = mm_access(task, PTRACE_MODE_ATTACH);
-> > +       if (!mm || IS_ERR(mm)) {
-> > +               if (!mm)
-> > +                       rc = -EINVAL;
-> > +               else
-> > +                       rc = -EPERM;
-> >                goto put_task_struct;
-> 
-> Btw, do you really want to throw away the error code?
-> 
-> IOW, maybe it should be
-> 
->    rc = IS_ERR(mm) ? PTR_ERR(mm) : -EINVAL;
-> 
-> or something? Instead of forcing the EPERM? And the -EINVAL might be
-> better off as an ESRCH? I dunno.
+Most of this is in the spec or the KVM Forum 2011 presentation.
 
-Yea, that probably makes more sense.
+1) scalability limitations: virtio-blk-over-PCI puts a strong upper
+limit on the number of devices that can be added to a guest. Common
+configurations have a limit of ~30 devices. While this can be worked
+around by implementing a PCI-to-PCI bridge, or by using multifunction
+virtio-blk devices, these solutions either have not been implemented
+yet, or introduce management restrictions.
 
-> Right now you turn all errors into EPERM, whether they were really
-> about permission problems or not. And that just makes be a bit
-> nervous. I wonder if we wouldn't be better off just returning EACCES
-> (and any possible future problem) than try so hard to always return
-> EPERM?
-> 
-> I dunno. I don't have any really *strong* opinion and I see why you do
-> it, but my gut feel is still that the error number change really does
-> seem a bit arbitrary.
+2) limited flexibility: virtio-blk does not support all possible storage
+scenarios.  For example, persistent reservations require you to pass a
+whole LUN to the guest, they do not work with images.  In principle,
+virtio-scsi provides anything that the underlying SCSI target supports.
+The SCSI target can also be the in-kernel LIO target, which can
+talk to virio-scsi via vhost.
 
-I'm not super attached to returning EPERM instead of EACCES though I do
-think it would look at bit odd from a user of the syscall view. Is it
-too ugly to do:
+3) limited extensibility: over the time, many features have been added
+to virtio-blk. Each such change requires modifications to the virtio
+specification, to the guest drivers, and to the device model in the
+host. The virtio-scsi spec has been written to follow SAM conventions,
+and exposing new features to the guest will only require changes to the
+host's SCSI target implementation.
 
-    rc = IS_ERR(mm) ? PTR_ERR(mm) : -ESRCH;
-    if (rc == -EACCES)
-            rc = -EPERM;
+> Are we going to support both or eventually phase out virtio-blk?
 
-That way we avoid the problem of overwriting EINTR and if there are
-changes in the future which return different error codes we won't
-override those.
+Certainly older guests will have no virtio-scsi support, so it's going
+to stay with us for a long time.
 
-If you think it is too ugly then I'll give in and just return EACESS.
-Just should to get it settled before too many people start using the
-syscalls.
+> Have the virtio specification changes been reviewed? Can we guarantee
+> stable ABI for the virtio-scsi driver?
 
-Chris
--- 
-cyeoh@au.ibm.com
+Of course.  I would have proposed it for staging otherwise.
 
+Paolo
