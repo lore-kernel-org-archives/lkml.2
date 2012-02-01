@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab2BAVKL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:10:11 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52676 "EHLO
+	id S932678Ab2BAVKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:10:47 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40019 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757292Ab2BAVJ6 (ORCPT
+	by vger.kernel.org with ESMTP id S932656Ab2BAVKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:58 -0500
-X-Sasl-enc: zfBRG/czI8qHDz048z1jpOGGRU0No6P4Ml1IcjmMeTLr 1328130597
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:44 2012
-Message-Id: <20120201210044.522179261@clark.kroah.org>
+	Wed, 1 Feb 2012 16:10:40 -0500
+X-Sasl-enc: GRQMmLCz9ZFUVa7plBZ/ffDichtYnIja+ML7MgvwCmPc 1328130639
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:46 2012
+Message-Id: <20120201210046.477401847@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:59:31 -0800
+Date: Wed, 01 Feb 2012 12:59:53 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>
-Subject: [07/89] eCryptfs: Fix oops when printing debug info in extent crypto functions
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [29/89] ALSA: hda - Fix silent output on Haier W18 laptop
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,100 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 58ded24f0fcb85bddb665baba75892f6ad0f4b8a upstream.
+commit b3a81520bd37a28f77cb0f7002086fb14061824d upstream.
 
-If pages passed to the eCryptfs extent-based crypto functions are not
-mapped and the module parameter ecryptfs_verbosity=1 was specified at
-loading time, a NULL pointer dereference will occur.
+The very same problem is seen on Haier W18 laptop with ALC861 as seen
+on ASUS A6Rp, which was fixed by the commit 3b25eb69.
+Now we just need to add a new SSID entry pointing to the same fixup.
 
-Note that this wouldn't happen on a production system, as you wouldn't
-pass ecryptfs_verbosity=1 on a production system. It leaks private
-information to the system logs and is for debugging only.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42656
 
-The debugging info printed in these messages is no longer very useful
-and rather than doing a kmap() in these debugging paths, it will be
-better to simply remove the debugging paths completely.
-
-https://launchpad.net/bugs/913651
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/crypto.c |   40 ----------------------------------------
- 1 file changed, 40 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ecryptfs/crypto.c
-+++ b/fs/ecryptfs/crypto.c
-@@ -417,17 +417,6 @@ static int ecryptfs_encrypt_extent(struc
- 			(unsigned long long)(extent_base + extent_offset), rc);
- 		goto out;
- 	}
--	if (unlikely(ecryptfs_verbosity > 0)) {
--		ecryptfs_printk(KERN_DEBUG, "Encrypting extent "
--				"with iv:\n");
--		ecryptfs_dump_hex(extent_iv, crypt_stat->iv_bytes);
--		ecryptfs_printk(KERN_DEBUG, "First 8 bytes before "
--				"encryption:\n");
--		ecryptfs_dump_hex((char *)
--				  (page_address(page)
--				   + (extent_offset * crypt_stat->extent_size)),
--				  8);
--	}
- 	rc = ecryptfs_encrypt_page_offset(crypt_stat, enc_extent_page, 0,
- 					  page, (extent_offset
- 						 * crypt_stat->extent_size),
-@@ -440,14 +429,6 @@ static int ecryptfs_encrypt_extent(struc
- 		goto out;
- 	}
- 	rc = 0;
--	if (unlikely(ecryptfs_verbosity > 0)) {
--		ecryptfs_printk(KERN_DEBUG, "Encrypt extent [0x%.16llx]; "
--			"rc = [%d]\n",
--			(unsigned long long)(extent_base + extent_offset), rc);
--		ecryptfs_printk(KERN_DEBUG, "First 8 bytes after "
--				"encryption:\n");
--		ecryptfs_dump_hex((char *)(page_address(enc_extent_page)), 8);
--	}
- out:
- 	return rc;
- }
-@@ -543,17 +524,6 @@ static int ecryptfs_decrypt_extent(struc
- 			(unsigned long long)(extent_base + extent_offset), rc);
- 		goto out;
- 	}
--	if (unlikely(ecryptfs_verbosity > 0)) {
--		ecryptfs_printk(KERN_DEBUG, "Decrypting extent "
--				"with iv:\n");
--		ecryptfs_dump_hex(extent_iv, crypt_stat->iv_bytes);
--		ecryptfs_printk(KERN_DEBUG, "First 8 bytes before "
--				"decryption:\n");
--		ecryptfs_dump_hex((char *)
--				  (page_address(enc_extent_page)
--				   + (extent_offset * crypt_stat->extent_size)),
--				  8);
--	}
- 	rc = ecryptfs_decrypt_page_offset(crypt_stat, page,
- 					  (extent_offset
- 					   * crypt_stat->extent_size),
-@@ -567,16 +537,6 @@ static int ecryptfs_decrypt_extent(struc
- 		goto out;
- 	}
- 	rc = 0;
--	if (unlikely(ecryptfs_verbosity > 0)) {
--		ecryptfs_printk(KERN_DEBUG, "Decrypt extent [0x%.16llx]; "
--			"rc = [%d]\n",
--			(unsigned long long)(extent_base + extent_offset), rc);
--		ecryptfs_printk(KERN_DEBUG, "First 8 bytes after "
--				"decryption:\n");
--		ecryptfs_dump_hex((char *)(page_address(page)
--					   + (extent_offset
--					      * crypt_stat->extent_size)), 8);
--	}
- out:
- 	return rc;
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5247,6 +5247,7 @@ static const struct alc_fixup alc861_fix
+ 
+ static const struct snd_pci_quirk alc861_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", PINFIX_ASUS_A6RP),
++	SND_PCI_QUIRK(0x1584, 0x2b01, "Haier W18", PINFIX_ASUS_A6RP),
+ 	SND_PCI_QUIRK(0x1734, 0x10c7, "FSC Amilo Pi1505", PINFIX_FSC_AMILO_PI1505),
+ 	{}
+ };
 
 
