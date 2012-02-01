@@ -1,59 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab2BAVRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:17:53 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:56732 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757400Ab2BAVRo (ORCPT
+	id S1757415Ab2BAVRv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:17:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51803 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757350Ab2BAVRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:17:44 -0500
-X-Sasl-enc: Bwa7cVIXiPBeWL0rM0Xi+FYr2l3h7/0t+uAHRfc4P5Vg 1328131063
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:49 2012
-Message-Id: <20120201210049.788725663@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:31 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Oliver Neukum <oliver@neukum.org>
-Subject: [67/89] USB: cdc-wdm: better allocate a buffer that is at least as big as we tell the USB core
-In-Reply-To: <20120201210505.GA26028@kroah.com>
+	Wed, 1 Feb 2012 16:17:47 -0500
+Date: Wed, 1 Feb 2012 13:17:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] move vm tools from Documentation/vm/ to tools/
+Message-Id: <20120201131746.07e2219e.akpm@linux-foundation.org>
+In-Reply-To: <20120201063420.GA10204@darkstar.nay.redhat.com>
+References: <20120201063420.GA10204@darkstar.nay.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 1 Feb 2012 14:34:20 +0800
+Dave Young <dyoung@redhat.com> wrote:
 
-------------------
+> tools/ is the better place for vm tools which are used by many people.
+> Moving them to tools also make them open to more users instead of hide in
+> Documentation folder.
+> 
 
-From: Bjørn Mork <bjorn@mork.no>
-
-commit 655e247daf52b202a6c2d0f8a06dd2051e756ce4 upstream.
-
-As it turns out, there was a mismatch between the allocated inbuf size
-(desc->bMaxPacketSize0, typically something like 64) and the length we
-specified in the URB (desc->wMaxCommand, typically something like 2048)
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Cc: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/class/cdc-wdm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -723,7 +723,7 @@ next_desc:
- 		goto err;
- 
- 	desc->inbuf = usb_alloc_coherent(interface_to_usbdev(intf),
--					 desc->bMaxPacketSize0,
-+					 desc->wMaxCommand,
- 					 GFP_KERNEL,
- 					 &desc->response->transfer_dma);
- 	if (!desc->inbuf)
-
+It would be nice to covert these into simple pass/fail tests and
+promote them to tools/testing/selftests/.
 
