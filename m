@@ -1,44 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab2BAQEu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 11:04:50 -0500
-Received: from [41.78.77.123] ([41.78.77.123]:57182 "EHLO msu.ac.zw"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754745Ab2BAQEt convert rfc822-to-8bit (ORCPT
+	id S1756622Ab2BAQJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 11:09:19 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63654 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756588Ab2BAQJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 11:04:49 -0500
-X-Greylist: delayed 2978 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 11:04:49 EST
-Message-ID: <20120201171507.13522wqo3ajojojf@mail.msu.ac.zw>
-Date: Wed, 01 Feb 2012 17:15:07 +0200
-From: Mail Admin <webmail@mail.com>
-Reply-to: noreply@mail.com
-To: undisclosed-recipients:;
-Subject: Por favor, Upgarde Sua Conta Agora
+	Wed, 1 Feb 2012 11:09:18 -0500
+Message-ID: <4F2963AA.3010306@linaro.org>
+Date: Wed, 01 Feb 2012 20:09:14 +0400
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
+To: linux-kernel@vger.kernel.org
+Subject: Module/kthread/printk question/problem
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'm writing a kernel module which creates a substantial amount of
+kernel threads. After dropping some real stuff, the module is:
 
-Nosso Web Mail sistemas automatizados de scan mostra que sua conta  
-está sendo infectado por algum vírus DGXT suspeita, Ao clicar neste  
-link sua conta será automaticamente digitalizar e analisar todos os  
-vírus suspeito.
+#include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/kthread.h>
+#include <linux/module.h>
+#include <linux/slab.h>
 
-Por favor Clique ou Copiar  
-http://kgko.com/formz/use/Account/form1.html para remover  
-permanentemente
+MODULE_LICENSE("GPL");
 
-Obrigado,
-Serviço Técnico Helpdesk.
+static int nrthreads = 128;
+module_param(nrthreads, int, 0644);
 
+static int loopcount = 1024;
+module_param(loopcount, int, 0644);
 
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
+static int usehrtime = 0;
+module_param(usehrtime, int, 0644);
+
+static int slack = 50000;
+module_param(slack, int, 0644);
+
+static int msecs = 1;
+module_param(msecs, int, 0644);
+
+static DECLARE_COMPLETION(done);
+static struct task_struct **threads;
+static atomic_t nrunning;
+
+static int test(void *unused)
+{
+         int i;
+         ktime_t expires = ktime_set(0, msecs * NSEC_PER_MSEC);
+
+         for (i = 0; !kthread_should_stop() && i < loopcount; i++) {
+                 if (usehrtime) {
+                         set_current_state(TASK_UNINTERRUPTIBLE);
+                         schedule_hrtimeout_range(&expires, slack, HRTIMER_MODE_REL);
+                 }
+                 else
+                         schedule_timeout_uninterruptible(msecs_to_jiffies(msecs));
+         }
+
+         if (atomic_dec_and_test(&nrunning)) {
+                 printk("last thread done\n");
+                 complete(&done);
+         }
+         return 0;
+}
+
+static int __init testmod_init(void)
+{
+         int i;
+
+         printk("test begin\n");
+
+         atomic_set(&nrunning, nrthreads);
+
+         threads = kmalloc(nrthreads * sizeof(struct task_struct *), GFP_KERNEL);
+         if (!threads)
+                 return -ENOMEM;
+
+         for (i = 0; i < nrthreads; i++) {
+                 threads[i] = kthread_run(test, NULL, "test/%d", i);
+                 if (IS_ERR(threads[i])) {
+                         int j, err = PTR_ERR(threads[i]);
+
+                         for (j = 0; j < i; j++)
+                                 kthread_stop(threads[j]);
+                         kfree(threads);
+                         return err;
+                 }
+         }
+         return 0;
+}
+
+static void __exit testmod_exit(void)
+{
+         wait_for_completion(&done);
+         kfree(threads);
+}
+
+module_init(testmod_init);
+module_exit(testmod_exit);
+
+Usually it works as expected, at least from 8 to 128 threads.
+But when I'm trying to run it a loop like:
+
+   while true; do insmod testmod.ko && rmmod testmod.ko; sleep 1; done
+
+it's also possible to catch a very rare crash (ARM example):
+
+Unable to handle kernel paging request at virtual address 7f1200c4
+pgd = 80004000
+[7f1200c4] *pgd=bdc28811, *pte=00000000, *ppte=00000000
+Internal error: Oops: 80000007 [#1] PREEMPT SMP
+Modules linked in: [last unloaded: testmod]
+CPU: 1    Tainted: G           O  (3.3.0-rc2 #3)
+PC is at 0x7f1200c4
+LR is at __schedule+0x684/0x6e4
+pc : [<7f1200c4>]    lr : [<802c053c>]    psr: 600f0113
+sp : bf115f88  ip : 00000000  fp : 00000000
+r10: 00000000  r9 : 00000000  r8 : 7f120394
+r7 : 00000002  r6 : 00000400  r5 : 7f120204  r4 : bf114000
+r3 : 00000000  r2 : bf115ec0  r1 : bf9220c0  r0 : 00000001
+Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c5387d  Table: bfbcc04a  DAC: 00000015
+Process test/126 (pid: 10918, stack limit = 0xbf1142f8)
+Stack: (0xbf115f88 to 0xbf116000)
+5f80:                   000f4240 00000000 bf213e4c 00000000 7f120000 00000013
+5fa0: 00000000 80049228 00000000 00000000 00000000 00000000 00000000 00000000
+5fc0: dead4ead ffffffff ffffffff 8048b2b8 00000000 00000000 8036a3f9 bf115fdc
+5fe0: bf115fdc 271aee1c bf213e4c 8004919c 8000eabc 8000eabc bfefc811 bfefcc11
+Code: bad PC value
+
+Note the bad PC, and stack is just a nonsense. I suspect that the kernel calls
+testmod_exit() and frees module memory _before_ all test/X threads are really
+dead - i.e. the module memory is freed when at least one of the test/X threads
+is somewhere in do_exit() or nearby. Is that possible? If yes, what's the better
+way to ensure that all test/X threads are really gone at some point of
+testmod_exit()?
+
+An interesting thing is that I can't reproduce this fault with both printk()s
+commented out. No ideas why.
+
+Dmitry
