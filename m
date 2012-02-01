@@ -1,148 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab2BARU1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 12:20:27 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:50331 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab2BARU0 (ORCPT
+	id S1754556Ab2BARYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 12:24:39 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:46987 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753450Ab2BARYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 12:20:26 -0500
-Date: Wed, 1 Feb 2012 09:18:56 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: rcu warnings cause stack overflow
-Message-ID: <20120201171856.GC2382@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
- <20120201151445.GA6731@somewhere.redhat.com>
+	Wed, 1 Feb 2012 12:24:37 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] pinctrl: delete raw device pointers in pinmux maps
+Date: Wed, 1 Feb 2012 18:24:13 +0100
+Message-ID: <1328117053-27807-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120201151445.GA6731@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020117-3270-0000-0000-000003A88DED
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 04:14:48PM +0100, Frederic Weisbecker wrote:
-> On Wed, Feb 01, 2012 at 11:06:52AM +0100, Heiko Carstens wrote:
-> > Hi Frederic,
-> > 
-> > your patch 00f49e5729 "rcu: Warn when rcu_read_lock() is used in extended
-> > quiescent state" adds a WARN_ON_ONCE to rcu_lock_acquire().
-> > Actually this found a bug on s390 (thanks!) but it probably didn't work
-> > as expected.
-> > On architectures which implement WARN_ON_ONCE with an exception this
-> > additional warning will lead to a stack overflow (if it triggers):
-> > 
-> > [   55.746956] Kernel stack overflow.
-> > [   55.746966] Modules linked in: qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod qeth vmur ccwgroup [last unloaded: scsi_wait_
-> > scan]
-> > [   55.746999] CPU: 0 Not tainted 3.3.0-rc1-00167-gf8275f9 #90
-> > [   55.747005] Process swapper/0 (pid: 0, task: 0000000000911100, ksp: 0000000000907d50)
-> > [   55.747013] Krnl PSW : 0404000180000000 00000000005d5728 (illegal_op+0x1c/0x134)
-> > [   55.747034]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:0 CC:0 PM:0 EA:3
-> > [   55.747043] Krnl GPRS: 0000000000000001 00000000005d570c 00000000009040e8 0000000000000002
-> > [   55.747054]            00000000005d83dc ffffffffffffffff 0000000000000000 0400000000907cc8
-> > [   55.747064]            0404100180000000 00000000005d8478 0000000000000008 00000000009040e8
-> > [   55.747074]            0000000000904000 00000000005dc550 0000000000904048 0000000000904048
-> > [   55.747096] Krnl Code: 00000000005d571c: b90400ef            lgr     %r14,%r15
-> > [   55.747118]            00000000005d5720: b90400b2            lgr     %r11,%r2
-> > [   55.747194]           #00000000005d5724: a7840001            brc     8,5d5726
-> > [   55.747205]           >00000000005d5728: a7fbff18            aghi    %r15,-232
-> > [   55.747216]            00000000005d572c: e3e0f0980024        stg     %r14,152(%r15)
-> > [   55.747228]            00000000005d5732: e31020100004        lg      %r1,16(%r2)
-> > [   55.747242]            00000000005d5738: 58c020a0            l       %r12,160(%r2)
-> > [   55.747257]            00000000005d573c: 91012009            tm      9(%r2),1
-> > [   55.747276] Call Trace:
-> > [   55.747282] ([<00000000005d60b4>] pgm_check_handler+0x154/0x158)
-> > [   55.747296]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
-> > [   55.747309] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
-> > [   55.747322]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
-> > [   55.747335]  [<00000000005d852a>] notify_die+0x52/0x60
-> > [   55.747349]  [<00000000005d57da>] illegal_op+0xce/0x134
-> > [   55.747364]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
-> > 
-> > [...lots more of the same...] 
-> > 
-> > [   55.747379]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
-> > [   55.747425] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
-> > [   55.747432]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
-> > [   55.747440]  [<00000000005d852a>] notify_die+0x52/0x60
-> > [   55.747448]  [<00000000005d57da>] illegal_op+0xce/0x134
-> > [   55.747457]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
-> > [   55.747797]  [<00000000005d8478>] __atomic_notifier_call_chain+0xd8/0xfc
-> > [   55.747806] ([<00000000005d83dc>] __atomic_notifier_call_chain+0x3c/0xfc)
-> > [   55.747816]  [<00000000005d84c6>] atomic_notifier_call_chain+0x2a/0x3c
-> > [   55.747826]  [<00000000005d852a>] notify_die+0x52/0x60
-> > [   55.748456]  [<00000000005d57da>] illegal_op+0xce/0x134
-> > [   55.748463]  [<00000000005d60b4>] pgm_check_handler+0x154/0x158
-> > [   55.748472]  [<000000000017afa0>] select_task_rq_fair+0x1478/0x14b4
-> > [   55.748483] ([<0000000000179bb8>] select_task_rq_fair+0x90/0x14b4)
-> > [   55.748493]  [<0000000000170702>] try_to_wake_up+0x136/0x47c
-> > [   55.748506]  [<000000000015b446>] autoremove_wake_function+0x26/0x58
-> > [   55.748518]  [<000000000016693a>] __wake_up_common+0x76/0xb4
-> > [   55.748530]  [<000000000016aed0>] __wake_up+0x4c/0x60
-> > [   55.748541]  [<0000000000109ee0>] s390_handle_mcck+0x194/0x1f8
-> > [   55.748557]  [<000000000010486a>] cpu_idle+0x192/0x1c0
-> > [   55.748570]  [<0000000000977916>] start_kernel+0x402/0x410
-> > [   55.748588]  [<0000000000100020>] _stext+0x20/0x80
-> > [   55.748603] 2 locks held by swapper/0/0:
-> > [   55.748612]  #0:  (crw_handler_wait_q.lock){......}, at: [<000000000016aeb6>] __wake_up+0x32/0x60
-> > [   55.748648]  #1:  (&p->pi_lock){-.-.-.}, at: [<000000000017060c>] try_to_wake_up+0x40/0x47c
-> > [   55.748663] Last Breaking-Event-Address:
-> > [   55.748667]  [<0000000000000000>] 0x0
-> > 
-> > This simply happens because WARN_ON_ONCE causes an exception, the excpetion
-> > handler wants to call a notifier call chain (notify_die), which again uses
-> > rcu_read_lock(), which again causes an exception and so on...
-> > Unfortunately WARN_ON_ONCE first causes an exception and only afterwards sets
-> > the flag that the warning already happened. Seems to be quite some effort to
-> > change this behaviour.
-> > 
-> > Removing the WARN_ON_ONCE will fix this and, if lockdep is turned on, still
-> > will find illegal uses. But it won't work for lockdep off configs...
-> > So we probably want something better than the patch below.
-> 
-> Ah ok. Hmm, but why are you using an exception to implement WARN_ON()
-> in s390? Is it to have a whole new stack for the warning path in order
-> to avoid stack overflow from the place that called the WARN_ON() ?
-> 
-> Anyway perhaps we need a recursion protection on WARN_ON_ONCE(), such
-> as:
+From: Linus Walleij <linus.walleij@linaro.org>
 
-This makes sense to me, but I am also taking Heiko's patch
-removing the WARN_ON()s in favor of the lockdep checks now in
-rcu_read_lock_held().  After all, the rcu_lock_acquire() WARN_ON_ONCE()
-only appears if PROVE_LOCKING=y, so the added requirement is not a
-big deal.  Also, CONFIG_PROVE_RCU is in the testing requirements in
-Documentation/SubmitChecklist.
+After discussion with Mark Brown in an unrelated thread about
+ADC lookups, it came to my knowledge that the ability to pass
+a struct device * in the regulator consumers is just a
+historical artifact, and not really recommended. Since there
+are no in-kernel users of these pointers, we just kill them
+right now, before someone starts to use them.
 
-							Thanx, Paul
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/core.c          |   22 +++++++---------------
+ drivers/pinctrl/core.h          |    3 +--
+ drivers/pinctrl/pinconf.c       |    8 ++++----
+ drivers/pinctrl/pinmux.c        |   27 ++++++++-------------------
+ include/linux/pinctrl/machine.h |   12 ++----------
+ 5 files changed, 22 insertions(+), 50 deletions(-)
 
-> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-> index 84458b0..f76635f 100644
-> --- a/include/asm-generic/bug.h
-> +++ b/include/asm-generic/bug.h
-> @@ -137,9 +137,13 @@ extern void warn_slowpath_null(const char *file, const int line);
->  	static bool __warned;					\
->  	int __ret_warn_once = !!(condition);			\
->  								\
-> -	if (unlikely(__ret_warn_once))				\
-> -		if (WARN_ON(!__warned)) 			\
-> +	if (unlikely(__ret_warn_once)) {			\
-> +		if (!__warned) {				\
->  			__warned = true;			\
-> +			barrier();				\
-> +			WARN_ON(1);				\
-> +		}						\
-> +	}							\
->  	unlikely(__ret_warn_once);				\
->  })
-> 
-> 
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 894cd5e..4f10476 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -48,31 +48,23 @@ void *pinctrl_dev_get_drvdata(struct pinctrl_dev *pctldev)
+ EXPORT_SYMBOL_GPL(pinctrl_dev_get_drvdata);
+ 
+ /**
+- * get_pinctrl_dev_from_dev() - look up pin controller device
+- * @dev: a device pointer, this may be NULL but then devname needs to be
+- *	defined instead
+- * @devname: the name of a device instance, as returned by dev_name(), this
+- *	may be NULL but then dev needs to be defined instead
++ * get_pinctrl_dev_from_devname() - look up pin controller device
++ * @devname: the name of a device instance, as returned by dev_name()
+  *
+  * Looks up a pin control device matching a certain device name or pure device
+  * pointer, the pure device pointer will take precedence.
+  */
+-struct pinctrl_dev *get_pinctrl_dev_from_dev(struct device *dev,
+-					     const char *devname)
++struct pinctrl_dev *get_pinctrl_dev_from_devname(const char *devname)
+ {
+ 	struct pinctrl_dev *pctldev = NULL;
+ 	bool found = false;
+ 
++	if (!devname)
++		return NULL;
++
+ 	mutex_lock(&pinctrldev_list_mutex);
+ 	list_for_each_entry(pctldev, &pinctrldev_list, node) {
+-		if (dev && pctldev->dev == dev) {
+-			/* Matched on device pointer */
+-			found = true;
+-			break;
+-		}
+-
+-		if (devname &&
+-		    !strcmp(dev_name(pctldev->dev), devname)) {
++		if (!strcmp(dev_name(pctldev->dev), devname)) {
+ 			/* Matched on device name */
+ 			found = true;
+ 			break;
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index cfa86da..8a8b02e 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -72,8 +72,7 @@ struct pin_desc {
+ #endif
+ };
+ 
+-struct pinctrl_dev *get_pinctrl_dev_from_dev(struct device *dev,
+-					     const char *dev_name);
++struct pinctrl_dev *get_pinctrl_dev_from_devname(const char *dev_name);
+ struct pin_desc *pin_desc_get(struct pinctrl_dev *pctldev, unsigned int pin);
+ int pin_get_from_name(struct pinctrl_dev *pctldev, const char *name);
+ int pinctrl_get_device_gpio_range(unsigned gpio,
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index e7adde4..0309bce 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -51,7 +51,7 @@ int pin_config_get(const char *dev_name, const char *name,
+ 	struct pinctrl_dev *pctldev;
+ 	int pin;
+ 
+-	pctldev = get_pinctrl_dev_from_dev(NULL, dev_name);
++	pctldev = get_pinctrl_dev_from_devname(dev_name);
+ 	if (!pctldev)
+ 		return -EINVAL;
+ 
+@@ -99,7 +99,7 @@ int pin_config_set(const char *dev_name, const char *name,
+ 	struct pinctrl_dev *pctldev;
+ 	int pin;
+ 
+-	pctldev = get_pinctrl_dev_from_dev(NULL, dev_name);
++	pctldev = get_pinctrl_dev_from_devname(dev_name);
+ 	if (!pctldev)
+ 		return -EINVAL;
+ 
+@@ -118,7 +118,7 @@ int pin_config_group_get(const char *dev_name, const char *pin_group,
+ 	const struct pinconf_ops *ops;
+ 	int selector;
+ 
+-	pctldev = get_pinctrl_dev_from_dev(NULL, dev_name);
++	pctldev = get_pinctrl_dev_from_devname(dev_name);
+ 	if (!pctldev)
+ 		return -EINVAL;
+ 	ops = pctldev->desc->confops;
+@@ -151,7 +151,7 @@ int pin_config_group_set(const char *dev_name, const char *pin_group,
+ 	int ret;
+ 	int i;
+ 
+-	pctldev = get_pinctrl_dev_from_dev(NULL, dev_name);
++	pctldev = get_pinctrl_dev_from_devname(dev_name);
+ 	if (!pctldev)
+ 		return -EINVAL;
+ 	ops = pctldev->desc->confops;
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 7c3193f..1311f1d 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -354,7 +354,7 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
+ 			return -EINVAL;
+ 		}
+ 
+-		if (!maps[i].ctrl_dev && !maps[i].ctrl_dev_name) {
++		if (!maps[i].ctrl_dev_name) {
+ 			pr_err("failed to register map %s (%d): no pin control device given\n",
+ 			       maps[i].name, i);
+ 			return -EINVAL;
+@@ -366,7 +366,7 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
+ 			return -EINVAL;
+ 		}
+ 
+-		if (!maps[i].dev && !maps[i].dev_name)
++		if (!maps[i].dev_name)
+ 			pr_debug("add system map %s function %s with no device\n",
+ 				 maps[i].name,
+ 				 maps[i].function);
+@@ -721,20 +721,12 @@ struct pinmux *pinmux_get(struct device *dev, const char *name)
+ 		/*
+ 		 * First, try to find the pctldev given in the map
+ 		 */
+-		pctldev = get_pinctrl_dev_from_dev(map->ctrl_dev,
+-						   map->ctrl_dev_name);
++		pctldev = get_pinctrl_dev_from_devname(map->ctrl_dev_name);
+ 		if (!pctldev) {
+-			const char *devname = NULL;
+-
+-			if (map->ctrl_dev)
+-				devname = dev_name(map->ctrl_dev);
+-			else if (map->ctrl_dev_name)
+-				devname = map->ctrl_dev_name;
+-
+ 			pr_warning("could not find a pinctrl device for pinmux function %s, fishy, they shall all have one\n",
+ 				   map->function);
+ 			pr_warning("given pinctrl device name: %s",
+-				   devname ? devname : "UNDEFINED");
++				   map->ctrl_dev_name);
+ 
+ 			/* Continue to check the other mappings anyway... */
+ 			continue;
+@@ -925,7 +917,7 @@ static int pinmux_hog_map(struct pinctrl_dev *pctldev,
+ 	struct pinmux *pmx;
+ 	int ret;
+ 
+-	if (map->dev || map->dev_name) {
++	if (map->dev_name) {
+ 		/*
+ 		 * TODO: the day we have device tree support, we can
+ 		 * traverse the device tree and hog to specific device nodes
+@@ -996,9 +988,8 @@ int pinmux_hog_maps(struct pinctrl_dev *pctldev)
+ 		if (!map->hog_on_boot)
+ 			continue;
+ 
+-		if ((map->ctrl_dev == dev) ||
+-			(map->ctrl_dev_name &&
+-				!strcmp(map->ctrl_dev_name, devname))) {
++		if (map->ctrl_dev_name &&
++		    !strcmp(map->ctrl_dev_name, devname)) {
+ 			/* OK time to hog! */
+ 			ret = pinmux_hog_map(pctldev, map);
+ 			if (ret)
+@@ -1156,14 +1147,12 @@ static int pinmux_maps_show(struct seq_file *s, void *what)
+ 		struct pinmux_map const *map = &pinmux_maps[i];
+ 
+ 		seq_printf(s, "%s:\n", map->name);
+-		if (map->dev || map->dev_name)
++		if (map->dev_name)
+ 			seq_printf(s, "  device: %s\n",
+-				   map->dev ? dev_name(map->dev) :
+ 				   map->dev_name);
+ 		else
+ 			seq_printf(s, "  SYSTEM MUX\n");
+ 		seq_printf(s, "  controlling device %s\n",
+-			   map->ctrl_dev ? dev_name(map->ctrl_dev) :
+ 			   map->ctrl_dev_name);
+ 		seq_printf(s, "  function: %s\n", map->function);
+ 		seq_printf(s, "  group: %s\n", map->group ? map->group :
+diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+index d0aecb7..f8593fd 100644
+--- a/include/linux/pinctrl/machine.h
++++ b/include/linux/pinctrl/machine.h
+@@ -17,22 +17,16 @@
+  * @name: the name of this specific map entry for the particular machine.
+  *	This is the second parameter passed to pinmux_get() when you want
+  *	to have several mappings to the same device
+- * @ctrl_dev: the pin control device to be used by this mapping, may be NULL
+- *	if you provide .ctrl_dev_name instead (this is more common)
+  * @ctrl_dev_name: the name of the device controlling this specific mapping,
+- *	the name must be the same as in your struct device*, may be NULL if
+- *	you provide .ctrl_dev instead
++ *	the name must be the same as in your struct device*
+  * @function: a function in the driver to use for this mapping, the driver
+  *	will lookup the function referenced by this ID on the specified
+  *	pin control device
+  * @group: sometimes a function can map to different pin groups, so this
+  *	selects a certain specific pin group to activate for the function, if
+  *	left as NULL, the first applicable group will be used
+- * @dev: the device using this specific mapping, may be NULL if you provide
+- *	.dev_name instead (this is more common)
+  * @dev_name: the name of the device using this specific mapping, the name
+- *	must be the same as in your struct device*, may be NULL if you
+- *	provide .dev instead
++ *	must be the same as in your struct device*
+  * @hog_on_boot: if this is set to true, the pin control subsystem will itself
+  *	hog the mappings as the pinmux device drivers are attached, so this is
+  *	typically used with system maps (mux mappings without an assigned
+@@ -42,11 +36,9 @@
+  */
+ struct pinmux_map {
+ 	const char *name;
+-	struct device *ctrl_dev;
+ 	const char *ctrl_dev_name;
+ 	const char *function;
+ 	const char *group;
+-	struct device *dev;
+ 	const char *dev_name;
+ 	bool hog_on_boot;
+ };
+-- 
+1.7.8
 
