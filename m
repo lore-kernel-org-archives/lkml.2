@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab2BAVqy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:46:54 -0500
+	id S932469Ab2BAVrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:47:12 -0500
 Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43355 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932432Ab2BAVIy (ORCPT
+	by vger.kernel.org with ESMTP id S1757086Ab2BAVIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:54 -0500
-X-Sasl-enc: /vvlrg4iXOYW9fTRDOq+BYSVHIbJF60AlL8Im89Vh/ep 1328130533
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:41 2012
-Message-Id: <20120201205741.669375656@clark.kroah.org>
+	Wed, 1 Feb 2012 16:08:51 -0500
+X-Sasl-enc: VIb9aaniwdLb0QFKlxG8LFCTeHKFaVy6JlRWpEn1DKRs 1328130530
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:38 2012
+Message-Id: <20120201205738.099652830@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:28 -0800
+Date: Wed, 01 Feb 2012 12:55:47 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [48/65] USB: cdc-wdm: Avoid hanging on interface with no USB_CDC_DMM_TYPE
+        alan@lxorguk.ukuu.org.uk, Dmitry Podgorny <pasis.uax@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [07/65] drm/radeon/kms: Add an MSI quirk for Dell RS690
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,47 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 15699e6fafc3a90e5fdc2ef30555a04dee62286f upstream.
+commit 44517c44496062180a6376cc704b33129441ce60 upstream.
 
-The probe does not strictly require the USB_CDC_DMM_TYPE
-descriptor, which is a good thing as it makes the driver
-usable on non-conforming interfaces.  A user could e.g.
-bind to it to a CDC ECM interface by using the new_id and
-bind sysfs files.  But this would fail with a 0 buffer length
-due to the missing descriptor.
+Interrupts only work with MSIs.
+https://bugs.freedesktop.org/show_bug.cgi?id=37679
 
-Fix by defining a reasonable fallback size: The minimum
-device receive buffer size required by the CDC WMC standard,
-revision 1.1
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Reported-by: Dmitry Podgorny <pasis.uax@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_irq_kms.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -57,6 +57,8 @@ MODULE_DEVICE_TABLE (usb, wdm_ids);
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -134,6 +134,12 @@ static bool radeon_msi_ok(struct radeon_
+ 	/* Dell RS690 only seems to work with MSIs. */
+ 	if ((rdev->pdev->device == 0x791f) &&
+ 	    (rdev->pdev->subsystem_vendor == 0x1028) &&
++	    (rdev->pdev->subsystem_device == 0x01fc))
++		return true;
++
++	/* Dell RS690 only seems to work with MSIs. */
++	if ((rdev->pdev->device == 0x791f) &&
++	    (rdev->pdev->subsystem_vendor == 0x1028) &&
+ 	    (rdev->pdev->subsystem_device == 0x01fd))
+ 		return true;
  
- #define WDM_MAX			16
- 
-+/* CDC-WMC r1.1 requires wMaxCommand to be "at least 256 decimal (0x100)" */
-+#define WDM_DEFAULT_BUFSIZE	256
- 
- static DEFINE_MUTEX(wdm_mutex);
- 
-@@ -636,7 +638,7 @@ static int wdm_probe(struct usb_interfac
- 	struct usb_cdc_dmm_desc *dmhd;
- 	u8 *buffer = intf->altsetting->extra;
- 	int buflen = intf->altsetting->extralen;
--	u16 maxcom = 0;
-+	u16 maxcom = WDM_DEFAULT_BUFSIZE;
- 
- 	if (!buffer)
- 		goto out;
 
 
