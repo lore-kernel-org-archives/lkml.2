@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab2BATn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:43:27 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:40816 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756783Ab2BATnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:43:24 -0500
+	id S932328Ab2BATse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:48:34 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:50742 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932261Ab2BATn0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:43:26 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,46 +17,72 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 04/41] rcu: Add diagnostic for misaligned rcu_head structures
-Date: Wed,  1 Feb 2012 11:41:22 -0800
-Message-Id: <1328125319-5205-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 06/41] rcu: Move RCU_TRACE to lib/Kconfig.debug
+Date: Wed,  1 Feb 2012 11:41:24 -0800
+Message-Id: <1328125319-5205-6-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120201194131.GA10028@linux.vnet.ibm.com>
  <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020119-1976-0000-0000-00000A09ADD1
+x-cbid: 12020119-2398-0000-0000-000003DD0E22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-The push for energy efficiency will require that RCU tag rcu_head
-structures to indicate whether or not their invocation is time critical.
-This tagging is best carried out in the bottom bits of the ->next
-pointers in the rcu_head structures.  This tagging requires that the
-rcu_head structures be properly aligned, so this commit adds the required
-diagnostics.
+The RCU_TRACE kernel parameter has always been intended for debugging,
+not for production use.  Formalize this by moving RCU_TRACE from
+init/Kconfig to lib/Kconfig.debug.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ init/Kconfig      |    9 ---------
+ lib/Kconfig.debug |    9 +++++++++
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index d0f8e64..4655f3e 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1707,6 +1707,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
- 	unsigned long flags;
- 	struct rcu_data *rdp;
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..72f33fa 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -438,15 +438,6 @@ config PREEMPT_RCU
+ 	  This option enables preemptible-RCU code that is common between
+ 	  the TREE_PREEMPT_RCU and TINY_PREEMPT_RCU implementations.
  
-+	WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
- 	debug_rcu_head_queue(head);
- 	head->func = func;
- 	head->next = NULL;
+-config RCU_TRACE
+-	bool "Enable tracing for RCU"
+-	help
+-	  This option provides tracing in RCU which presents stats
+-	  in debugfs for debugging RCU implementation.
+-
+-	  Say Y here if you want to enable RCU tracing
+-	  Say N if you are unsure.
+-
+ config RCU_FANOUT
+ 	int "Tree-based hierarchical RCU fanout value"
+ 	range 2 64 if 64BIT
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 8745ac7..bb67ce2 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -927,6 +927,15 @@ config RCU_CPU_STALL_VERBOSE
+ 
+ 	  Say Y if you want to enable such checks.
+ 
++config RCU_TRACE
++	bool "Enable tracing for RCU"
++	help
++	  This option provides tracing in RCU which presents stats
++	  in debugfs for debugging RCU implementation.
++
++	  Say Y here if you want to enable RCU tracing
++	  Say N if you are unsure.
++
+ config KPROBES_SANITY_TEST
+ 	bool "Kprobes sanity tests"
+ 	depends on DEBUG_KERNEL
 -- 
 1.7.8
 
