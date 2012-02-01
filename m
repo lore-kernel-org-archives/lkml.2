@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab2BAVGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:06:24 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:44620 "EHLO
+	id S932402Ab2BAVGh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:06:37 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:44697 "EHLO
 	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756853Ab2BAVGU (ORCPT
+	with ESMTP id S1756846Ab2BAVGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:06:20 -0500
+	Wed, 1 Feb 2012 16:06:33 -0500
 From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 To: x86@kernel.org
 Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
@@ -14,9 +14,9 @@ Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
         lm-sensors@lm-sensors.org, Guenter Roeck <guenter.roeck@ericsson.com>,
         Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH v5 1/5] x86/platform: (TS-5500) add platform base support
-Date: Wed,  1 Feb 2012 16:05:40 -0500
-Message-Id: <1328130344-18836-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+Subject: [PATCH v5 4/5] hwmon: add MAX197 support
+Date: Wed,  1 Feb 2012 16:05:43 -0500
+Message-Id: <1328130344-18836-5-git-send-email-vivien.didelot@savoirfairelinux.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
@@ -24,480 +24,548 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
 Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 ---
- Documentation/ABI/testing/sysfs-platform-ts5500 |   46 ++++
- MAINTAINERS                                     |    5 +
- arch/x86/Kconfig                                |    2 +
- arch/x86/platform/Makefile                      |    1 +
- arch/x86/platform/ts5500/Kconfig                |    8 +
- arch/x86/platform/ts5500/Makefile               |    1 +
- arch/x86/platform/ts5500/ts5500.c               |  299 +++++++++++++++++++++++
- arch/x86/platform/ts5500/ts5500.h               |   35 +++
- 8 files changed, 397 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-platform-ts5500
- create mode 100644 arch/x86/platform/ts5500/Kconfig
- create mode 100644 arch/x86/platform/ts5500/Makefile
- create mode 100644 arch/x86/platform/ts5500/ts5500.c
- create mode 100644 arch/x86/platform/ts5500/ts5500.h
+ Documentation/hwmon/max197 |   54 ++++++
+ drivers/hwmon/Kconfig      |    9 +
+ drivers/hwmon/Makefile     |    1 +
+ drivers/hwmon/max197.c     |  403 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/max197.h     |   22 +++
+ 5 files changed, 489 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/hwmon/max197
+ create mode 100644 drivers/hwmon/max197.c
+ create mode 100644 include/linux/max197.h
 
-diff --git a/Documentation/ABI/testing/sysfs-platform-ts5500 b/Documentation/ABI/testing/sysfs-platform-ts5500
+diff --git a/Documentation/hwmon/max197 b/Documentation/hwmon/max197
 new file mode 100644
-index 0000000..4b5c2dc
+index 0000000..aa0934f
 --- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-platform-ts5500
-@@ -0,0 +1,46 @@
-+What:		/sys/devices/platform/ts5500/id
-+Date:		February 2012
-+KernelVersion:	3.2
-+Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
-+Description:
-+		Product ID of the TS board. TS-5500 ID is 0x60.
++++ b/Documentation/hwmon/max197
+@@ -0,0 +1,54 @@
++Maxim MAX197 driver
++===================
 +
-+What:		/sys/devices/platform/ts5500/sram
-+Date:		February 2012
-+KernelVersion:	3.2
-+Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
-+Description:
-+		Say if the SRAM feature is present. If it is enabled, it will
-+		display "1", otherwise "0".
++Author:
++  * Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 +
-+What:		/sys/devices/platform/ts5500/ereset
-+Date:		February 2012
-+KernelVersion:	3.2
-+Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
-+Description:
-+		Say if an external reset is present. If it is present, it will
-+		display "1", otherwise "0".
++Supported chips:
++  * Maxim MAX197
++    Prefix: 'max197'
++    Datasheet: http://datasheets.maxim-ic.com/en/ds/MAX197.pdf
 +
-+What:		/sys/devices/platform/ts5500/jp{1,2,3,4,5,6}
-+Date:		February 2012
-+KernelVersion:	3.2
-+Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
-+Description:
-+		Show the state of a plugged jumper. If it is present, it will
-+		display "1", otherwise "0".
++  * Maxim MAX199
++    Prefix: 'max199'
++    Datasheet: http://datasheets.maxim-ic.com/en/ds/MAX199.pdf
 +
-+What:		/sys/devices/platform/ts5500/adc
-+Date:		February 2012
-+KernelVersion:	3.2
-+Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
-+Description:
-+		Say if the A/D Converter is present. If it is enabled,
-+		it will display "1", otherwise "0".
++Description
++-----------
 +
-+What:		/sys/devices/platform/ts5500/rs485
-+Date:		February 2012
-+KernelVersion:	3.2
-+Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
-+Description:
-+		Say if the RS485 feature is present. If it is enabled, it
-+		will display "1", otherwise "0".
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 62f1cd3..c494156 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6500,6 +6500,11 @@ W:	http://tcp-lp-mod.sourceforge.net/
- S:	Maintained
- F:	net/ipv4/tcp_lp.c
++The A/D converters MAX197 and MAX199 are both 8-Channel, Multi-Range, 5V,
++12-Bit DAS with 8+4 Bus Interface and Fault Protection.
++
++The available ranges for the MAX197 are {0,-5V} to 5V, and {0,-10V} to 10V,
++while they are {0,-2V} to 2V, and {0,-4V} to 4V on the MAX199.
++
++Platform data
++-------------
++
++The MAX197 platform data (defined in linux/max197.h) should be filled with two
++function pointers:
++
++* start:
++  The function which writes the control byte to start a new conversion.
++* read:
++  The function used to read the raw value from the chip.
++
++Control-Byte Format:
++
++Bit	Name		Description
++7,6	PD1,PD0		Clock and Power-Down modes
++5	ACQMOD		Internal or External Controlled Acquisition
++4	RNG		Full-scale voltage magnitude at the input
++3	BIP		Unipolar or Bipolar conversion mode
++2,1,0	A2,A1,A0	Channel
++
++Sysfs interface
++---------------
++
++* in[0-7]_input: The conversion value for the corresponding channel.
++* in[0-7]_min:   The lower limit (in mV) for the corresponding channel.
++                 It can be one value in -10000, -5000, -4000, -2000, 0,
++                 depending on the chip.
++* in[0-7]_max:   The higher limit (in mV) for the corresponding channel.
++                 It can be one value in 2000, 4000, 5000, 10000,
++                 depending on the chip.
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 91be41f..ccdf59b 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -1360,6 +1360,15 @@ config SENSORS_MC13783_ADC
+         help
+           Support for the A/D converter on MC13783 PMIC.
  
-+TECHNOLOGIC SYSTEMS TS-5500 MACHINE SUPPORT
-+M:	Savoir-faire Linux Inc. <kernel@savoirfairelinux.com>
-+S:	Maintained
-+F:  arch/x86/platform/ts5500/*
-+
- TEGRA SUPPORT
- M:	Colin Cross <ccross@android.com>
- M:	Olof Johansson <olof@lixom.net>
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index efb4294..5204f62 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2090,6 +2090,8 @@ config ALIX
- 
- 	  Note: You have to set alix.force=1 for boards with Award BIOS.
- 
-+source "arch/x86/platform/ts5500/Kconfig"
-+
- endif # X86_32
- 
- config AMD_NB
-diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
-index 8d87439..2d17fd3 100644
---- a/arch/x86/platform/Makefile
-+++ b/arch/x86/platform/Makefile
-@@ -9,3 +9,4 @@ obj-y	+= scx200/
- obj-y	+= sfi/
- obj-y	+= visws/
- obj-y	+= uv/
-+obj-y	+= ts5500/
-diff --git a/arch/x86/platform/ts5500/Kconfig b/arch/x86/platform/ts5500/Kconfig
-new file mode 100644
-index 0000000..929b617
---- /dev/null
-+++ b/arch/x86/platform/ts5500/Kconfig
-@@ -0,0 +1,8 @@
-+config TS5500
-+	bool "Technologic Systems TS-5500 Single Board Computer support"
-+	depends on MELAN
-+  select CHECK_SIGNATURE
++config SENSORS_MAX197
++	tristate "Maxim MAX197 and compatibles."
 +	help
-+	  Add support for the Technologic Systems TS-5500 platform.
++    If you say yes here you get support for the Maxim MAX197,
++    and MAX199 A/D converters.
 +
-+	  If you have a TS-5500, say Y here.
-diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
++	  This driver can also be built as a module.  If so, the module
++	  will be called max197.
++
+ if ACPI
+ 
+ comment "ACPI drivers"
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 8251ce8..dfb73d9 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -125,6 +125,7 @@ obj-$(CONFIG_SENSORS_W83L785TS)	+= w83l785ts.o
+ obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
+ obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
+ obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
++obj-$(CONFIG_SENSORS_MAX197)	+= max197.o
+ 
+ obj-$(CONFIG_PMBUS)		+= pmbus/
+ 
+diff --git a/drivers/hwmon/max197.c b/drivers/hwmon/max197.c
 new file mode 100644
-index 0000000..0a689a7
+index 0000000..985615c
 --- /dev/null
-+++ b/arch/x86/platform/ts5500/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_TS5500)			+= ts5500.o
-diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
-new file mode 100644
-index 0000000..7c01c46
---- /dev/null
-+++ b/arch/x86/platform/ts5500/ts5500.c
-@@ -0,0 +1,299 @@
++++ b/drivers/hwmon/max197.c
+@@ -0,0 +1,403 @@
 +/*
-+ * Technologic Systems TS-5500 board - SBC info layer
++ * Maxim MAX197 A/D Converter Driver
 + *
-+ * Copyright (c) 2010-2012 Savoir-faire Linux Inc.
-+ *	Alexandre Savard <alexandre.savard@savoirfairelinux.com>
-+ *	Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-+ *	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++ * Copyright (c) 2012 Savoir-faire Linux Inc.
++ *          Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 + *
-+ * Portions originate from ts_sbcinfo.c (c) Technologic Systems
-+ *	Liberty Young <liberty@embeddedx86.com>
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + *
-+ * These functions add sysfs platform entries to display information about
-+ * the Technologic Systems TS-5500 Single Board Computer (SBC).
-+ *
-+ * For further information about sysfs entries, see
-+ * Documentation/ABI/testing/sysfs-platform-ts5500
++ * For further information, see the Documentation/hwmon/max197 file.
 + */
 +
++#include <linux/init.h>
 +#include <linux/module.h>
-+#include <linux/ioport.h>
-+#include <linux/platform_device.h>
 +#include <linux/kernel.h>
++#include <linux/device.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/err.h>
++#include <linux/sysfs.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
 +#include <linux/mutex.h>
-+#include <linux/io.h>
 +#include <linux/slab.h>
-+#include <asm/processor.h>
-+#include "ts5500.h"
++#include <linux/io.h>
++#include <linux/max197.h>
 +
-+/* Hardware info for pre-detection */
-+#define AMD_ELAN_FAMILY			4
-+#define AMD_ELAN_SC520			9
++#define MAX199_LIMIT	4000	/* 4V */
++#define MAX197_LIMIT	10000	/* 10V */
 +
-+/* Product code register */
-+#define TS5500_PRODUCT_CODE_REG		0x74
-+#define TS5500_PRODUCT_CODE		0x60	/* TS-5500 product code */
++#define MAX197_NUM_CH	8	/* 8 Analog Input Channels */
++
++/* Control byte format */
++#define MAX197_A0	0x01	/* Channel bit 0 */
++#define MAX197_A1	0x02	/* Channel bit 1 */
++#define MAX197_A2	0x04	/* Channel bit 2 */
++#define MAX197_BIP	0x08	/* Bipolarity */
++#define MAX197_RNG	0x10	/* Full range */
++#define MAX197_ACQMOD	0x20	/* Internal/External controlled acquisition */
++#define MAX197_PD0	0x40	/* Clock/Power-Down modes bit 1 */
++#define MAX197_PD1	0x80	/* Clock/Power-Down modes bit 2 */
++
++#define MAX197_SCALE	12207	/* Scale coefficient for raw data */
 +
 +/**
-+ * struct ts5500_sbc - TS-5500 SBC main structure
++ * struct max197_chip - device instance specific data
++ * @pdata:		Platform data.
++ * @hwmon_dev:		The hwmon device.
 + * @lock:		Read/Write mutex.
-+ * @board_id:		Board name.
-+ * @sram:		Check SRAM option.
-+ * @rs485:		Check RS-485 option.
-+ * @adc:		Check Analog/Digital converter option.
-+ * @ereset:		Check External Reset option.
-+ * @itr:		Check Industrial Temperature Range option.
-+ * @jumpers:		States of jumpers 1-7.
++ * @limit:		Max range value (10V for MAX197, 4V for MAX199).
++ * @scale:		Need to scale.
++ * @ctrl_bytes:		Channels control byte.
 + */
-+struct ts5500_sbc {
-+	struct mutex	lock;
-+	int		board_id;
-+	bool		sram;
-+	bool		rs485;
-+	bool		adc;
-+	bool		ereset;
-+	bool		itr;
-+	u8		jumpers;
++struct max197_chip {
++	struct max197_platform_data *pdata;
++	struct device *hwmon_dev;
++	struct mutex lock;
++	int limit;
++	bool scale;
++	u8 ctrl_bytes[MAX197_NUM_CH];
 +};
 +
-+/* Current platform */
-+struct ts5500_sbc *ts5500;
-+
-+/**
-+ * ts5500_pre_detect_hw() - check for TS-5500 specific hardware
-+ */
-+static __init int ts5500_pre_detect_hw(void)
++static inline void max197_set_unipolarity(struct max197_chip *chip, int channel)
 +{
-+	/* Check for AMD ElanSC520 Microcontroller */
-+	if (cpu_info.x86_vendor != X86_VENDOR_AMD ||
-+	    cpu_info.x86 != AMD_ELAN_FAMILY	  ||
-+	    cpu_info.x86_model != AMD_ELAN_SC520)
-+		return -ENODEV;
-+
-+	return 0;
++	chip->ctrl_bytes[channel] &= ~MAX197_BIP;
 +}
 +
-+/* BIOS signatures */
-+static struct {
-+	const unsigned char *string;
-+	const ssize_t offset;
-+} signatures[] __initdata = {
-+	{"TS-5x00 AMD Elan", 0xb14}
-+};
++static inline void max197_set_bipolarity(struct max197_chip *chip, int channel)
++{
++	chip->ctrl_bytes[channel] |= MAX197_BIP;
++}
++
++static inline void max197_set_half_range(struct max197_chip *chip, int channel)
++{
++	chip->ctrl_bytes[channel] &= ~MAX197_RNG;
++}
++
++static inline void max197_set_full_range(struct max197_chip *chip, int channel)
++{
++	chip->ctrl_bytes[channel] |= MAX197_RNG;
++}
++
++static inline bool max197_is_bipolar(struct max197_chip *chip, int channel)
++{
++	return !!(chip->ctrl_bytes[channel] & MAX197_BIP);
++}
++
++static inline bool max197_is_full_range(struct max197_chip *chip, int channel)
++{
++	return !!(chip->ctrl_bytes[channel] & MAX197_RNG);
++}
 +
 +/**
-+ * ts5500_bios_signature() - find board signature in BIOS shadow RAM.
++ * max197_show_range() - Display range on user output
++ *
++ * Function called on read access on in{0,1,2,3,4,5,6,7}_{min,max}
 + */
-+static __init int ts5500_bios_signature(void)
++static ssize_t max197_show_range(struct device *dev,
++				 struct device_attribute *devattr, char *buf)
 +{
-+	void __iomem *bios = ioremap(0xF0000, 0x10000);
-+	int i, ret = 0;
++	struct max197_chip *chip = dev_get_drvdata(dev);
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++	int channel = attr->index;
++	bool is_min = attr->nr;
++	int range;
 +
-+	for (i = 0; i < ARRAY_SIZE(signatures); i++)
-+		if (check_signature(bios + signatures[i].offset,
-+				    signatures[i].string,
-+				    strlen(signatures[i].string)))
-+			goto found;
++	if (mutex_lock_interruptible(&chip->lock))
++		return -ERESTARTSYS;
++
++	range = max197_is_full_range(chip, channel) ?
++		chip->limit : chip->limit / 2;
++	if (is_min) {
++		if (max197_is_bipolar(chip, channel))
++			range = -range;
 +		else
-+			pr_notice("Technologic Systems BIOS signature "
-+				  "'%s' not found at offset %zd\n",
-+				  signatures[i].string, signatures[i].offset);
-+	ret = -ENODEV;
-+found:
-+	iounmap(bios);
-+	return ret;
++			range = 0;
++	}
++
++	mutex_unlock(&chip->lock);
++
++	return sprintf(buf, "%d\n", range);
 +}
 +
 +/**
-+ * ts5500_detect_config() - detect the TS board
-+ * @sbc:	Structure in which the detected board's details will be stored.
++ * max197_store_range() - Write range from user input
++ *
++ * Function called on write access on in{0,1,2,3,4,5,6,7}_{min,max}
 + */
-+static int ts5500_detect_config(struct ts5500_sbc *sbc)
++static ssize_t max197_store_range(struct device *dev,
++				  struct device_attribute *devattr,
++				  const char *buf, size_t count)
 +{
-+	u8 tmp;
-+	int ret = 0;
++	struct max197_chip *chip = dev_get_drvdata(dev);
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++	int channel = attr->index;
++	bool is_min = attr->nr;
++	long value;
++	int half = chip->limit / 2;
++	int full = chip->limit;
 +
-+	if (!request_region(TS5500_PRODUCT_CODE_REG, 4, "ts5500"))
-+		return -EBUSY;
++	if (kstrtol(buf, 10, &value))
++		return -EINVAL;
 +
-+	mutex_lock(&ts5500->lock);
-+	tmp = inb(TS5500_PRODUCT_CODE_REG);
-+	if (tmp != TS5500_PRODUCT_CODE) {
-+		pr_err("This platform is not a TS-5500 (found ID 0x%x)\n", tmp);
-+		ret = -ENODEV;
-+		goto cleanup;
-+	}
-+	sbc->board_id = tmp;
-+
-+	tmp = inb(TS5500_SRAM_RS485_ADC_REG);
-+	ts5500->sram = !!(tmp & TS5500_SRAM_OPT);
-+	ts5500->rs485 = !!(tmp & TS5500_RS485_OPT);
-+	ts5500->adc = !!(tmp & TS5500_ADC_OPT);
-+
-+	tmp = inb(TS5500_ERESET_ITR_REG);
-+	ts5500->ereset = !!(tmp & TS5500_ERESET_OPT);
-+	ts5500->itr = !!(tmp & TS5500_ITR_OPT);
-+
-+	tmp = inb(TS5500_LED_JMPRS_REG);
-+	sbc->jumpers = tmp & 0xFE;	/* All bits except the first (LED) */
-+
-+cleanup:
-+	mutex_unlock(&ts5500->lock);
-+	release_region(TS5500_PRODUCT_CODE_REG, 4);
-+	return ret;
-+}
-+
-+#define TS5500_IS_JP_SET(sbc, jmp) (!!(sbc->jumpers & TS5500_JP##jmp))
-+
-+static ssize_t ts5500_show_id(struct device *dev,
-+			      struct device_attribute *attr, char *buf)
-+{
-+	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "0x%x\n", sbc->board_id);
-+}
-+
-+static ssize_t ts5500_show_sram(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", sbc->sram);
-+}
-+
-+static ssize_t ts5500_show_rs485(struct device *dev,
-+				 struct device_attribute *attr, char *buf)
-+{
-+	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", sbc->rs485);
-+}
-+
-+static ssize_t ts5500_show_adc(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
-+{
-+	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", sbc->adc);
-+}
-+
-+static ssize_t ts5500_show_ereset(struct device *dev,
-+					  struct device_attribute *attr,
-+					  char *buf)
-+{
-+	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", sbc->ereset);
-+}
-+
-+static ssize_t ts5500_show_itr(struct device *dev,
-+			       struct device_attribute *attr,
-+			       char *buf)
-+{
-+	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", sbc->itr);
-+}
-+
-+#define TS5500_SHOW_JP(jp)						\
-+	static ssize_t ts5500_show_jp##jp(struct device *dev,		\
-+					  struct device_attribute *attr,\
-+					  char *buf)			\
-+	{								\
-+		struct ts5500_sbc *sbc = dev_get_drvdata(dev);		\
-+		return sprintf(buf, "%d\n", TS5500_IS_JP_SET(sbc, jp)); \
++	if (is_min) {
++		if ((value != 0) && (value != -half) && (value != -full))
++			return -EINVAL;
++	} else {
++		if ((value != half) && (value != full))
++			return -EINVAL;
 +	}
 +
-+TS5500_SHOW_JP(1)
-+TS5500_SHOW_JP(2)
-+TS5500_SHOW_JP(3)
-+TS5500_SHOW_JP(4)
-+TS5500_SHOW_JP(5)
-+TS5500_SHOW_JP(6)
++	if (mutex_lock_interruptible(&chip->lock))
++		return -ERESTARTSYS;
 +
-+static DEVICE_ATTR(id, S_IRUGO, ts5500_show_id, NULL);
-+static DEVICE_ATTR(sram, S_IRUGO, ts5500_show_sram, NULL);
-+static DEVICE_ATTR(rs485, S_IRUGO, ts5500_show_rs485, NULL);
-+static DEVICE_ATTR(adc, S_IRUGO, ts5500_show_adc, NULL);
-+static DEVICE_ATTR(ereset, S_IRUGO, ts5500_show_ereset, NULL);
-+static DEVICE_ATTR(itr, S_IRUGO, ts5500_show_itr, NULL);
-+static DEVICE_ATTR(jp1, S_IRUGO, ts5500_show_jp1, NULL);
-+static DEVICE_ATTR(jp2, S_IRUGO, ts5500_show_jp2, NULL);
-+static DEVICE_ATTR(jp3, S_IRUGO, ts5500_show_jp3, NULL);
-+static DEVICE_ATTR(jp4, S_IRUGO, ts5500_show_jp4, NULL);
-+static DEVICE_ATTR(jp5, S_IRUGO, ts5500_show_jp5, NULL);
-+static DEVICE_ATTR(jp6, S_IRUGO, ts5500_show_jp6, NULL);
++	if (value == 0) {
++		/* We can deduce only the polarity */
++		max197_set_unipolarity(chip, channel);
++	} else if (value == -half) {
++		max197_set_bipolarity(chip, channel);
++		max197_set_half_range(chip, channel);
++	} else if (value == -full) {
++		max197_set_bipolarity(chip, channel);
++		max197_set_full_range(chip, channel);
++	} else if (value == half) {
++		/* We can deduce only the range */
++		max197_set_half_range(chip, channel);
++	} else if (value == full) {
++		/* We can deduce only the range */
++		max197_set_full_range(chip, channel);
++	}
 +
-+static struct attribute *ts5500_attributes[] = {
-+	&dev_attr_id.attr,
-+	&dev_attr_sram.attr,
-+	&dev_attr_rs485.attr,
-+	&dev_attr_adc.attr,
-+	&dev_attr_ereset.attr,
-+	&dev_attr_itr.attr,
-+	&dev_attr_jp1.attr,
-+	&dev_attr_jp2.attr,
-+	&dev_attr_jp3.attr,
-+	&dev_attr_jp4.attr,
-+	&dev_attr_jp5.attr,
-+	&dev_attr_jp6.attr,
-+	NULL
-+};
++	mutex_unlock(&chip->lock);
 +
-+static const struct attribute_group ts5500_attr_group = {
-+	.attrs = ts5500_attributes
-+};
++	return count;
++}
 +
-+static int __init ts5500_init(void)
++/**
++ * max197_show_input() - Show channel input
++ *
++ * Function called on read access on in{0,1,2,3,4,5,6,7}_input
++ */
++static ssize_t max197_show_input(struct device *dev,
++				 struct device_attribute *devattr,
++				 char *buf)
 +{
++	struct max197_chip *chip = dev_get_drvdata(dev);
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	int channel = attr->index;
++	u16 raw;
++	s32 scaled;
 +	int ret;
-+	struct platform_device *pdev;
++
++	if (mutex_lock_interruptible(&chip->lock))
++		return -ERESTARTSYS;
++
++	ret = chip->pdata->start(chip->ctrl_bytes[channel]);
++	if (ret) {
++		dev_err(dev, "start conversion failed\n");
++		goto unlock;
++	}
++
++	ret = chip->pdata->read(&raw);
++	if (ret) {
++		dev_err(dev, "raw read failed\n");
++		goto unlock;
++	}
 +
 +	/*
-+	 * There is no DMI available, or PCI bridge subvendor info,
-+	 * only the BIOS provides a 16-bit identification call.
-+	 * It is safer to check for a TS-5500 specific hardware
-+	 * such as the processor, then find a signature in the BIOS.
++	 * Coefficient to apply on raw value.
++	 * See Table 1. Full Scale and Zero Scale in the MAX197 datasheet.
 +	 */
-+	ret = ts5500_pre_detect_hw();
-+	if (ret)
-+		return ret;
-+
-+	ret = ts5500_bios_signature();
-+	if (ret)
-+		return ret;
-+
-+	ts5500 = kzalloc(sizeof(struct ts5500_sbc), GFP_KERNEL);
-+	if (!ts5500)
-+		return -ENOMEM;
-+	mutex_init(&ts5500->lock);
-+
-+	ret = ts5500_detect_config(ts5500);
-+	if (ret)
-+		goto release_mem;
-+
-+	pdev = platform_device_register_simple("ts5500", -1, NULL, 0);
-+	if (IS_ERR(pdev)) {
-+		ret = PTR_ERR(pdev);
-+		goto release_mem;
++	scaled = raw;
++	if (chip->scale) {
++		scaled *= MAX197_SCALE;
++		if (max197_is_full_range(chip, channel))
++			scaled *= 2;
++		scaled /= 10000;
 +	}
-+	platform_set_drvdata(pdev, ts5500);
 +
-+	ret = sysfs_create_group(&pdev->dev.kobj,
-+				 &ts5500_attr_group);
-+	if (ret)
-+		goto release_pdev;
++	ret = sprintf(buf, "%d\n", scaled);
++
++unlock:
++	mutex_unlock(&chip->lock);
++	return ret;
++}
++
++static ssize_t max197_show_name(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	return sprintf(buf, "%s\n", pdev->name);
++}
++
++#define MAX197_SENSOR_DEVICE_ATTR_CH(chan)				\
++	static SENSOR_DEVICE_ATTR(in##chan##_input, S_IRUGO,		\
++				  max197_show_input, NULL, chan);	\
++	static SENSOR_DEVICE_ATTR_2(in##chan##_min, S_IRUGO | S_IWUSR,	\
++				    max197_show_range,			\
++				    max197_store_range,			\
++				    true, chan);			\
++	static SENSOR_DEVICE_ATTR_2(in##chan##_max, S_IRUGO | S_IWUSR,	\
++			            max197_show_range,			\
++				    max197_store_range,			\
++				    false, chan)
++
++#define MAX197_SENSOR_DEV_ATTR_IN(chan)					\
++	&sensor_dev_attr_in##chan##_input.dev_attr.attr,		\
++	&sensor_dev_attr_in##chan##_max.dev_attr.attr,			\
++	&sensor_dev_attr_in##chan##_min.dev_attr.attr
++
++static DEVICE_ATTR(name, S_IRUGO, max197_show_name, NULL);
++
++MAX197_SENSOR_DEVICE_ATTR_CH(0);
++MAX197_SENSOR_DEVICE_ATTR_CH(1);
++MAX197_SENSOR_DEVICE_ATTR_CH(2);
++MAX197_SENSOR_DEVICE_ATTR_CH(3);
++MAX197_SENSOR_DEVICE_ATTR_CH(4);
++MAX197_SENSOR_DEVICE_ATTR_CH(5);
++MAX197_SENSOR_DEVICE_ATTR_CH(6);
++MAX197_SENSOR_DEVICE_ATTR_CH(7);
++
++static const struct attribute_group max197_sysfs_group = {
++	.attrs = (struct attribute *[]) {
++		&dev_attr_name.attr,
++		MAX197_SENSOR_DEV_ATTR_IN(0),
++		MAX197_SENSOR_DEV_ATTR_IN(1),
++		MAX197_SENSOR_DEV_ATTR_IN(2),
++		MAX197_SENSOR_DEV_ATTR_IN(3),
++		MAX197_SENSOR_DEV_ATTR_IN(4),
++		MAX197_SENSOR_DEV_ATTR_IN(5),
++		MAX197_SENSOR_DEV_ATTR_IN(6),
++		MAX197_SENSOR_DEV_ATTR_IN(7),
++		NULL
++	}
++};
++
++static int __devinit max197_probe(struct platform_device *pdev)
++{
++	struct max197_chip *chip = kzalloc(sizeof *chip, GFP_KERNEL);
++	int ch, ret;
++
++	if (chip == NULL) {
++		ret = -ENOMEM;
++		goto error_ret;
++	}
++	platform_set_drvdata(pdev, chip);
++
++	mutex_init(&chip->lock);
++
++	if (pdev->dev.platform_data == NULL) {
++		dev_err(&pdev->dev, "no platform data supplied\n");
++		ret = -EINVAL;
++		goto error_free_chip;
++	}
++	chip->pdata = pdev->dev.platform_data;
++
++	if (chip->pdata->start == NULL) {
++		dev_err(&pdev->dev, "no start function supplied\n");
++		ret = -EINVAL;
++		goto error_free_chip;
++	}
++
++	if (chip->pdata->read == NULL) {
++		dev_err(&pdev->dev, "no read function supplied\n");
++		ret = -EINVAL;
++		goto error_free_chip;
++	}
++
++	if (strcmp("max197", pdev->name) == 0) {
++		chip->limit = MAX197_LIMIT;
++		chip->scale = true;
++	} else {
++		chip->limit = MAX199_LIMIT;
++		chip->scale = false;
++	}
++
++	for (ch = 0; ch < MAX197_NUM_CH; ch++)
++		chip->ctrl_bytes[ch] = (u8) ch;
++
++	ret = sysfs_create_group(&pdev->dev.kobj, &max197_sysfs_group);
++	if (ret) {
++		dev_err(&pdev->dev, "sysfs create group failed\n");
++		goto error_free_chip;
++	}
++
++	chip->hwmon_dev = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(chip->hwmon_dev)) {
++		dev_err(&pdev->dev, "hwmon device register failed\n");
++		ret = PTR_ERR(chip->hwmon_dev);
++		goto error_release_sysfs_group;
++	}
 +
 +	return 0;
 +
-+release_pdev:
-+	platform_device_unregister(pdev);
-+release_mem:
-+	kfree(ts5500);
++error_release_sysfs_group:
++	sysfs_remove_group(&pdev->dev.kobj, &max197_sysfs_group);
++error_free_chip:
++	kfree(chip);
++error_ret:
++	return ret;
++}
++
++static int __devexit max197_remove(struct platform_device *pdev)
++{
++	struct max197_chip *chip = platform_get_drvdata(pdev);
++
++	hwmon_device_unregister(chip->hwmon_dev);
++	sysfs_remove_group(&pdev->dev.kobj, &max197_sysfs_group);
++	kfree(chip);
++
++	return 0;
++}
++
++static struct platform_driver __refdata maxim_drivers[] = {
++	{
++		.driver = {
++			.name = "max197",
++			.owner = THIS_MODULE,
++		},
++		.probe = max197_probe,
++		.remove = __devexit_p(max197_remove),
++	}, {
++		.driver = {
++			.name = "max199",
++			.owner = THIS_MODULE,
++		},
++		.probe = max197_probe,
++		.remove = __devexit_p(max197_remove),
++	}
++};
++
++static int __init max197_init(void)
++{
++	int ret;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(maxim_drivers); i++) {
++		ret = platform_driver_register(&maxim_drivers[i]);
++		if (ret)
++			goto error_unregister;
++	}
++
++	return 0;
++
++error_unregister:
++	while (--i >= 0)
++		platform_driver_unregister(&maxim_drivers[i]);
 +
 +	return ret;
 +}
-+postcore_initcall(ts5500_init);
++module_init(max197_init);
++
++static void __exit max197_exit(void)
++{
++	int i;
++	for (i = ARRAY_SIZE(maxim_drivers) - 1; i >= 0; i--)
++		platform_driver_unregister(&maxim_drivers[i]);
++}
++module_exit(max197_exit);
 +
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Technologic Systems TS-5500 Board's platform driver");
-diff --git a/arch/x86/platform/ts5500/ts5500.h b/arch/x86/platform/ts5500/ts5500.h
++MODULE_DESCRIPTION("Maxim MAX197 ADC driver");
+diff --git a/include/linux/max197.h b/include/linux/max197.h
 new file mode 100644
-index 0000000..f4f1bc4
+index 0000000..25ec203
 --- /dev/null
-+++ b/arch/x86/platform/ts5500/ts5500.h
-@@ -0,0 +1,35 @@
++++ b/include/linux/max197.h
+@@ -0,0 +1,22 @@
 +/*
-+ * Technologic Systems TS-5500 board
++ * Maxim MAX197 A/D Converter Driver
 + *
-+ * Copyright (c) 2010-2012 Savoir-faire Linux Inc.
-+ *	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++ * Copyright (c) 2012 Savoir-faire Linux Inc.
++ *          Vivien Didelot <vivien.didelot@savoirfairelinux.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * For further information, see the Documentation/hwmon/max197 file.
 + */
 +
-+#ifndef _TS5500_H
-+#define _TS5500_H
-+
-+/* SRAM/RS-485/ADC options, and RS-485 RTS/Automatic RS-485 flags register */
-+#define TS5500_SRAM_RS485_ADC_REG	0x75
-+#define TS5500_SRAM_OPT			0x01	/* SRAM option */
-+#define TS5500_RS485_OPT		0x02	/* RS-485 option */
-+#define TS5500_ADC_OPT			0x04	/* A/D converter option */
-+#define TS5500_RS485_RTS_MASK		0x40	/* RTS for RS-485 */
-+#define TS5500_RS485_AUTO_MASK		0x80	/* Automatic RS-485 */
-+
-+/* External Reset/Industrial Temperature Range options register */
-+#define TS5500_ERESET_ITR_REG		0x76
-+#define TS5500_ERESET_OPT		0x01	/*  External Reset option */
-+#define TS5500_ITR_OPT			0x02	/* Indust. Temp. Range option */
-+
-+/* LED/Jumpers register */
-+#define TS5500_LED_JMPRS_REG		0x77
-+#define TS5500_LED_MASK			0x01	/* LED flag */
-+#define TS5500_JP1			0x02	/* Automatic CMOS */
-+#define TS5500_JP2			0x04	/* Enable Serial Console */
-+#define TS5500_JP3			0x08	/* Write Enable Drive A */
-+#define TS5500_JP4			0x10	/* Fast Console (115K baud) */
-+#define TS5500_JP5			0x20	/* User Jumper */
-+#define TS5500_JP6			0x40	/* Console on COM1 (req. JP2) */
-+#define TS5500_JP7			0x80	/* Undocumented (Unused) */
-+
-+#endif
++/**
++ * struct max197_platform_data - MAX197 connectivity info
++ * @start:	function pointer to start a conversion.
++ * @read:	function pointer to read a raw conversion result.
++ */
++struct max197_platform_data {
++	int (*start)(u8 ctrl_byte);
++	int (*read)(u16 *raw);
++};
 -- 
 1.7.6.5
 
