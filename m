@@ -1,30 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab2BAVT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:19:27 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:63444 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757466Ab2BAVTV (ORCPT
+	id S1757538Ab2BAVTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:19:40 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:43271 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757500Ab2BAVT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:21 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: [PATCH] small fixes to 3.3 (and 3.2) CPU hotplug code. (v1)
-Date: Wed,  1 Feb 2012 16:16:38 -0500
-Message-Id: <1328131000-13485-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4F29AC56.00BC,ss=1,re=0.000,fgs=0
+	Wed, 1 Feb 2012 16:19:29 -0500
+X-Sasl-enc: wLD+dxFKsrWKcVvyaqd95nXkIKFnheA2AENMgRC63DCE 1328131168
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:47 2012
+Message-Id: <20120201210047.001257427@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Wed, 01 Feb 2012 12:59:59 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [35/89] ARM: 7296/1: proc-v7.S: remove HARVARD_CACHE preprocessor guards
+In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While I was playing with 'xm vcpu-set X N' I realized that the VCPU hotplug
-code in 3.2 spews tons of messages. Found out that we were missing an preempt_*
-call. While at it, I fixed also an annoying message ("XENBUS: Unable to ..")
-that shows up during bootup.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Anyhow, these are going for 3.3 and CC-ing stable on the:
- [PATCH 1/2] xen/smp: Fix CPU online/offline bug triggering a BUG:
+------------------
+
+From: Will Deacon <will.deacon@arm.com>
+
+commit 612539e81f655f6ac73c7af1da8701c1ee618aee upstream.
+
+On v7, we use the same cache maintenance instructions for data lines
+as for unified lines. This was not the case for v6, where HARVARD_CACHE
+was defined to indicate the L1 cache topology.
+
+This patch removes the erroneous compile-time check for HARVARD_CACHE in
+proc-v7.S, ensuring that we perform I-side invalidation at boot.
+
+Reported-and-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+
+Acked-by: Catalin Marinas <Catalin.Marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/mm/proc-v7.S |    6 ------
+ 1 file changed, 6 deletions(-)
+
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -271,10 +271,6 @@ ENDPROC(cpu_v7_do_resume)
+  *	Initialise TLB, Caches, and MMU state ready to switch the MMU
+  *	on.  Return in r0 the new CP15 C1 control register setting.
+  *
+- *	We automatically detect if we have a Harvard cache, and use the
+- *	Harvard cache control instructions insead of the unified cache
+- *	control instructions.
+- *
+  *	This should be able to cover all ARMv7 cores.
+  *
+  *	It is assumed that:
+@@ -373,9 +369,7 @@ __v7_setup:
+ #endif
+ 
+ 3:	mov	r10, #0
+-#ifdef HARVARD_CACHE
+ 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
+-#endif
+ 	dsb
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
+
 
