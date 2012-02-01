@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab2BAVIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:08:47 -0500
+	id S1757145Ab2BAVIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:08:52 -0500
 Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43355 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757122Ab2BAVIo (ORCPT
+	by vger.kernel.org with ESMTP id S1757133Ab2BAVIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:44 -0500
-X-Sasl-enc: Z+TxcY6JmPINsyV8oRE7g4DbEsThc4ohbb26mxmJKGO6 1328130522
+	Wed, 1 Feb 2012 16:08:48 -0500
+X-Sasl-enc: c9s4dcB3MDaxH+4vvk628KWDpGG8kHryLqpEElbouTYp 1328130527
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:38 2012
-Message-Id: <20120201205738.533950408@clark.kroah.org>
+Message-Id: <20120201205738.802311246@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:52 -0800
+Date: Wed, 01 Feb 2012 12:55:55 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>
-Subject: [12/65] ftrace: Balance records when updating the hash
+        alan@lxorguk.ukuu.org.uk, Nick Bowler <nbowler@elliptictech.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [15/65] ah: Dont return NET_XMIT_DROP on input.
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,128 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Nick Bowler <nbowler@elliptictech.com>
 
-commit 41fb61c2d08107ce96a5dcb3a6289b2afd3e135c upstream.
+commit 4b90a603a1b21d63cf743cc833680cb195a729f6 upstream.
 
-Whenever the hash of the ftrace_ops is updated, the record counts
-must be balance. This requires disabling the records that are set
-in the original hash, and then enabling the records that are set
-in the updated hash.
+When the ahash driver returns -EBUSY, AH4/6 input functions return
+NET_XMIT_DROP, presumably copied from the output code path.  But
+returning transmit codes on input doesn't make a lot of sense.
+Since NET_XMIT_DROP is a positive int, this gets interpreted as
+the next header type (i.e., success).  As that can only end badly,
+remove the check.
 
-Moving the update into ftrace_hash_move() removes the bug where the
-hash was updated but the records were not, which results in ftrace
-triggering a warning and disabling itself because the ftrace_ops filter
-is updated while the ftrace_ops was registered, and then the failure
-happens when the ftrace_ops is unregistered.
-
-The current code will not trigger this bug, but new code will.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |   49 +++++++++++++++++++++++++++++++++----------------
- 1 file changed, 33 insertions(+), 16 deletions(-)
+ net/ipv4/ah4.c |    2 --
+ net/ipv6/ah6.c |    2 --
+ 2 files changed, 4 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1182,8 +1182,14 @@ alloc_and_copy_ftrace_hash(int size_bits
- 	return NULL;
- }
+--- a/net/ipv4/ah4.c
++++ b/net/ipv4/ah4.c
+@@ -369,8 +369,6 @@ static int ah_input(struct xfrm_state *x
+ 		if (err == -EINPROGRESS)
+ 			goto out;
  
-+static void
-+ftrace_hash_rec_disable(struct ftrace_ops *ops, int filter_hash);
-+static void
-+ftrace_hash_rec_enable(struct ftrace_ops *ops, int filter_hash);
-+
- static int
--ftrace_hash_move(struct ftrace_hash **dst, struct ftrace_hash *src)
-+ftrace_hash_move(struct ftrace_ops *ops, int enable,
-+		 struct ftrace_hash **dst, struct ftrace_hash *src)
- {
- 	struct ftrace_func_entry *entry;
- 	struct hlist_node *tp, *tn;
-@@ -1193,9 +1199,16 @@ ftrace_hash_move(struct ftrace_hash **ds
- 	unsigned long key;
- 	int size = src->count;
- 	int bits = 0;
-+	int ret;
- 	int i;
- 
- 	/*
-+	 * Remove the current set, update the hash and add
-+	 * them back.
-+	 */
-+	ftrace_hash_rec_disable(ops, enable);
-+
-+	/*
- 	 * If the new source is empty, just free dst and assign it
- 	 * the empty_hash.
- 	 */
-@@ -1215,9 +1228,10 @@ ftrace_hash_move(struct ftrace_hash **ds
- 	if (bits > FTRACE_HASH_MAX_BITS)
- 		bits = FTRACE_HASH_MAX_BITS;
- 
-+	ret = -ENOMEM;
- 	new_hash = alloc_ftrace_hash(bits);
- 	if (!new_hash)
--		return -ENOMEM;
-+		goto out;
- 
- 	size = 1 << src->size_bits;
- 	for (i = 0; i < size; i++) {
-@@ -1236,7 +1250,16 @@ ftrace_hash_move(struct ftrace_hash **ds
- 	rcu_assign_pointer(*dst, new_hash);
- 	free_ftrace_hash_rcu(old_hash);
- 
--	return 0;
-+	ret = 0;
-+ out:
-+	/*
-+	 * Enable regardless of ret:
-+	 *  On success, we enable the new hash.
-+	 *  On failure, we re-enable the original hash.
-+	 */
-+	ftrace_hash_rec_enable(ops, enable);
-+
-+	return ret;
- }
- 
- /*
-@@ -2877,7 +2900,7 @@ ftrace_set_regex(struct ftrace_ops *ops,
- 		ftrace_match_records(hash, buf, len);
- 
- 	mutex_lock(&ftrace_lock);
--	ret = ftrace_hash_move(orig_hash, hash);
-+	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
- 	mutex_unlock(&ftrace_lock);
- 
- 	mutex_unlock(&ftrace_regex_lock);
-@@ -3060,18 +3083,12 @@ ftrace_regex_release(struct inode *inode
- 			orig_hash = &iter->ops->notrace_hash;
- 
- 		mutex_lock(&ftrace_lock);
--		/*
--		 * Remove the current set, update the hash and add
--		 * them back.
--		 */
--		ftrace_hash_rec_disable(iter->ops, filter_hash);
--		ret = ftrace_hash_move(orig_hash, iter->hash);
--		if (!ret) {
--			ftrace_hash_rec_enable(iter->ops, filter_hash);
--			if (iter->ops->flags & FTRACE_OPS_FL_ENABLED
--			    && ftrace_enabled)
--				ftrace_run_update_code(FTRACE_ENABLE_CALLS);
--		}
-+		ret = ftrace_hash_move(iter->ops, filter_hash,
-+				       orig_hash, iter->hash);
-+		if (!ret && (iter->ops->flags & FTRACE_OPS_FL_ENABLED)
-+		    && ftrace_enabled)
-+			ftrace_run_update_code(FTRACE_ENABLE_CALLS);
-+
- 		mutex_unlock(&ftrace_lock);
+-		if (err == -EBUSY)
+-			err = NET_XMIT_DROP;
+ 		goto out_free;
  	}
- 	free_ftrace_hash(iter->hash);
+ 
+--- a/net/ipv6/ah6.c
++++ b/net/ipv6/ah6.c
+@@ -581,8 +581,6 @@ static int ah6_input(struct xfrm_state *
+ 		if (err == -EINPROGRESS)
+ 			goto out;
+ 
+-		if (err == -EBUSY)
+-			err = NET_XMIT_DROP;
+ 		goto out_free;
+ 	}
+ 
 
 
