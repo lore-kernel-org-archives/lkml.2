@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab2BAGv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 01:51:58 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:34984 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab2BAGv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 01:51:57 -0500
-Date: Wed, 1 Feb 2012 09:53:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
-        Christopher Lais <chris+android@zenthought.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/2] Staging: android: binder: Add some error checks
-Message-ID: <20120201065322.GA24652@mwanda>
-References: <1327118181-3542-1-git-send-email-arve@android.com>
- <1327118181-3542-2-git-send-email-arve@android.com>
- <20120121082208.GL3294@mwanda>
- <20120131185228.GA21481@kroah.com>
- <CAMP5XgedsSDtYa-bZCW--+Hj41sN94tDXQ8_d7c4=fT5bJ7mTQ@mail.gmail.com>
+	id S1754971Ab2BAGwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 01:52:33 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53243 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752899Ab2BAGwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 01:52:32 -0500
+Message-ID: <4F28E1D1.900@cn.fujitsu.com>
+Date: Wed, 01 Feb 2012 14:55:13 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
-Content-Disposition: inline
-In-Reply-To: <CAMP5XgedsSDtYa-bZCW--+Hj41sN94tDXQ8_d7c4=fT5bJ7mTQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090203.4F28E106.00DA,ss=1,re=0.000,fgs=0
+To: David Miller <davem@davemloft.net>
+CC: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Neil Horman <nhorman@tuxdriver.com>
+Subject: [PATCH 1/6] netprio_cgroup: fix an off-by-one bug
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-01 14:51:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-01 14:51:07,
+	Serialize complete at 2012-02-01 14:51:07
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  # mount -t cgroup xxx /mnt
+  # mkdir /mnt/tmp
+  # cat /mnt/tmp/net_prio.ifpriomap
+  lo 0
+  eth0 0
+  virbr0 0
+  # echo 'lo 999' > /mnt/tmp/net_prio.ifpriomap
+  # cat /mnt/tmp/net_prio.ifpriomap
+  lo 999
+  eth0 0
+  virbr0 4101267344
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We got weired output, because we exceeded the boundary of the array.
+We may even crash the kernel..
 
-On Tue, Jan 31, 2012 at 03:20:30PM -0800, Arve Hj=F8nnev=E5g wrote:
-> 2012/1/31 Greg KH <greg@kroah.com>:
-> > On Sat, Jan 21, 2012 at 11:22:08AM +0300, Dan Carpenter wrote:
-> >> On Fri, Jan 20, 2012 at 07:56:20PM -0800, Arve Hj=F8nnev=E5g wrote:
-> >> > - Add a mutex to protect against two processes mmapping the
-> >> > =A0 same binder_proc.
-> >> > - After locking mmap_sem, check that the vma we want to access
-> >> > =A0 (still) points to the same mm_struct.
-> >> > - Use proc->tsk instead of current to get the files struct since
-> >> > =A0 this is where we get the rlimit from.
-> >>
-> >> This doesn't seem related to the locking change at all. =A0Probably
-> >> this patch should be split into three patches, one bugfix per
-> >> patch, unless they are very closely related.
-> >
-> > I agree. =A0Arve, is this all fixing one problem, or multiple ones? =A0=
-If
-> > multiple ones, we need this split up into multiple patches.
-> >
->=20
-> That depend on your point of view. It fixes crashes if you use the
-> same binder file pointer from multiple processes. It seemed excessive
-> to have three patches for this.
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ net/core/netprio_cgroup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It would have helped you to write a better changelog.  The subject
-says "[patch] android: grab bag of random fixes" and the the
-description matches that.  You have no idea how annoyed I get at
-grab bag patches.
-
-Also don't ignore review comments.  I review a lot of staging
-patches and I'm not an expert on every driver so my review comments
-are often wrong.  I don't get upset when people tell me that.
-Review is part of the process.  Everybody does it.
-
-regards,
-dan carpenter
-
-
---PEIAKu/WMn1b1Hv9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPKOFiAAoJEOnZkXI/YHqRQXwP/2EAu2+clJHvq7X2f+M3OBg1
-fiEHHIAPUEXPB93tFIXLoRbBaPDNbw15jH5GlQpGoMpNdUnH0ZsuEFs1KD64VQbB
-HhBC0xlVGJFyX2yjIgKqh9esFyy6SIT/NbES0xPoM5uKw/RY7okS+lLL2AD5MHhQ
-KHKH58pGeBYRkzN+/K8Pz5j2I4Z1ultVQLedGjhp/DtZ6ejMUCQoOUXchC2Danfx
-AFpnLgCNRCBr1s4FSTJ0cNyom6qBhkANn52LvS9wx8UwPjgIJSMz6qBeCbkLdG/m
-piHRhwY8I6Sa8nQykyYWexhsIBMrU2JSMRtEtJZsyMD/oFc79jhxatDUA9hESi3+
-PY/9j0OxzaK0bhpzm3v+zV/S2/n2HOZdavsfIL9HkrXsRViyGbp41SgrI3AerSZq
-3f4pGEtxpTklr5MNXdRvB5Ip/Pf41s3+8EkgHt/3xx/TZbXQt1P4syz8kAOagtQt
-XYW3m0b1NCchJXxpgUhwCWx5PH2FxB+gUKPxDSwmzVgjfE5KmuxmptyGolPlYWDs
-AtjAif8m8wGGbPnX/iJgoa8wNRuIXesr+N3sQQu6PZGU12AgSR0B8Vh162YbjKut
-d1Jbx40sAnUybZt4OaVEO6qddBk8iljTc+6eEr8W89VOqbvtuUetPbiVPp+fUwlQ
-+r4lFAbAe4Cl0X/MjIkz
-=G6y4
------END PGP SIGNATURE-----
-
---PEIAKu/WMn1b1Hv9--
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index 3a9fd48..a296cbb 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -107,7 +107,7 @@ static void extend_netdev_table(struct net_device *dev, u32 new_len)
+ static void update_netdev_tables(void)
+ {
+ 	struct net_device *dev;
+-	u32 max_len = atomic_read(&max_prioidx);
++	u32 max_len = atomic_read(&max_prioidx) + 1;
+ 	struct netprio_map *map;
+ 
+ 	rtnl_lock();
+-- 
+1.7.3.1
