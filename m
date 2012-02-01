@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab2BAVsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:48:09 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48111 "EHLO
+	id S933014Ab2BAVsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:48:33 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43355 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932437Ab2BAVIp (ORCPT
+	by vger.kernel.org with ESMTP id S1756092Ab2BAVIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:45 -0500
-X-Sasl-enc: Mq8uuBsAW29eQtrWP4iwycnuM+nFzAr4Fm46cV/FFDLW 1328130524
+	Wed, 1 Feb 2012 16:08:42 -0500
+X-Sasl-enc: tyPWys99q2CdSmwQmk5L2FK3Oo7UGmb7xHHRUkoZFYcK 1328130521
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:38 2012
-Message-Id: <20120201205738.621347571@clark.kroah.org>
+Message-Id: <20120201205738.452643756@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:53 -0800
+Date: Wed, 01 Feb 2012 12:55:51 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>
-Subject: [13/65] ftrace: Update filter when tracing enabled in set_ftrace_filter()
+        alan@lxorguk.ukuu.org.uk, Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [11/65] crypto: sha512 - reduce stack usage to safe number
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +27,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Alexey Dobriyan <adobriyan@gmail.com>
 
-commit 072126f4529196f71a97960248bca54fd4554c2d upstream.
+commit 51fc6dc8f948047364f7d42a4ed89b416c6cc0a3 upstream.
 
-Currently, if set_ftrace_filter() is called when the ftrace_ops is
-active, the function filters will not be updated. They will only be updated
-when tracing is disabled and re-enabled.
+For rounds 16--79, W[i] only depends on W[i - 2], W[i - 7], W[i - 15] and W[i - 16].
+Consequently, keeping all W[80] array on stack is unnecessary,
+only 16 values are really needed.
 
-Update the functions immediately during set_ftrace_filter().
+Using W[16] instead of W[80] greatly reduces stack usage
+(~750 bytes to ~340 bytes on x86_64).
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Line by line explanation:
+* BLEND_OP
+  array is "circular" now, all indexes have to be modulo 16.
+  Round number is positive, so remainder operation should be
+  without surprises.
+
+* initial full message scheduling is trimmed to first 16 values which
+  come from data block, the rest is calculated before it's needed.
+
+* original loop body is unrolled version of new SHA512_0_15 and
+  SHA512_16_79 macros, unrolling was done to not do explicit variable
+  renaming. Otherwise it's the very same code after preprocessing.
+  See sha1_transform() code which does the same trick.
+
+Patch survives in-tree crypto test and original bugreport test
+(ping flood with hmac(sha512).
+
+See FIPS 180-2 for SHA-512 definition
+http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf
+
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ crypto/sha512_generic.c |   58 ++++++++++++++++++++++++++++--------------------
+ 1 file changed, 34 insertions(+), 24 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2901,6 +2901,10 @@ ftrace_set_regex(struct ftrace_ops *ops,
+--- a/crypto/sha512_generic.c
++++ b/crypto/sha512_generic.c
+@@ -78,7 +78,7 @@ static inline void LOAD_OP(int I, u64 *W
  
- 	mutex_lock(&ftrace_lock);
- 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
-+	if (!ret && ops->flags & FTRACE_OPS_FL_ENABLED
-+	    && ftrace_enabled)
-+		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
+ static inline void BLEND_OP(int I, u64 *W)
+ {
+-	W[I] = s1(W[I-2]) + W[I-7] + s0(W[I-15]) + W[I-16];
++	W[I % 16] += s1(W[(I-2) % 16]) + W[(I-7) % 16] + s0(W[(I-15) % 16]);
+ }
+ 
+ static void
+@@ -87,38 +87,48 @@ sha512_transform(u64 *state, const u8 *i
+ 	u64 a, b, c, d, e, f, g, h, t1, t2;
+ 
+ 	int i;
+-	u64 W[80];
++	u64 W[16];
+ 
+ 	/* load the input */
+         for (i = 0; i < 16; i++)
+                 LOAD_OP(i, W, input);
+ 
+-        for (i = 16; i < 80; i++) {
+-                BLEND_OP(i, W);
+-        }
+-
+ 	/* load the state into our registers */
+ 	a=state[0];   b=state[1];   c=state[2];   d=state[3];
+ 	e=state[4];   f=state[5];   g=state[6];   h=state[7];
+ 
+-	/* now iterate */
+-	for (i=0; i<80; i+=8) {
+-		t1 = h + e1(e) + Ch(e,f,g) + sha512_K[i  ] + W[i  ];
+-		t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
+-		t1 = g + e1(d) + Ch(d,e,f) + sha512_K[i+1] + W[i+1];
+-		t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
+-		t1 = f + e1(c) + Ch(c,d,e) + sha512_K[i+2] + W[i+2];
+-		t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
+-		t1 = e + e1(b) + Ch(b,c,d) + sha512_K[i+3] + W[i+3];
+-		t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
+-		t1 = d + e1(a) + Ch(a,b,c) + sha512_K[i+4] + W[i+4];
+-		t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
+-		t1 = c + e1(h) + Ch(h,a,b) + sha512_K[i+5] + W[i+5];
+-		t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
+-		t1 = b + e1(g) + Ch(g,h,a) + sha512_K[i+6] + W[i+6];
+-		t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
+-		t1 = a + e1(f) + Ch(f,g,h) + sha512_K[i+7] + W[i+7];
+-		t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
++#define SHA512_0_15(i, a, b, c, d, e, f, g, h)			\
++	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[i];	\
++	t2 = e0(a) + Maj(a, b, c);				\
++	d += t1;						\
++	h = t1 + t2
 +
- 	mutex_unlock(&ftrace_lock);
++#define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
++	BLEND_OP(i, W);						\
++	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)%16];	\
++	t2 = e0(a) + Maj(a, b, c);				\
++	d += t1;						\
++	h = t1 + t2
++
++	for (i = 0; i < 16; i += 8) {
++		SHA512_0_15(i, a, b, c, d, e, f, g, h);
++		SHA512_0_15(i + 1, h, a, b, c, d, e, f, g);
++		SHA512_0_15(i + 2, g, h, a, b, c, d, e, f);
++		SHA512_0_15(i + 3, f, g, h, a, b, c, d, e);
++		SHA512_0_15(i + 4, e, f, g, h, a, b, c, d);
++		SHA512_0_15(i + 5, d, e, f, g, h, a, b, c);
++		SHA512_0_15(i + 6, c, d, e, f, g, h, a, b);
++		SHA512_0_15(i + 7, b, c, d, e, f, g, h, a);
++	}
++	for (i = 16; i < 80; i += 8) {
++		SHA512_16_79(i, a, b, c, d, e, f, g, h);
++		SHA512_16_79(i + 1, h, a, b, c, d, e, f, g);
++		SHA512_16_79(i + 2, g, h, a, b, c, d, e, f);
++		SHA512_16_79(i + 3, f, g, h, a, b, c, d, e);
++		SHA512_16_79(i + 4, e, f, g, h, a, b, c, d);
++		SHA512_16_79(i + 5, d, e, f, g, h, a, b, c);
++		SHA512_16_79(i + 6, c, d, e, f, g, h, a, b);
++		SHA512_16_79(i + 7, b, c, d, e, f, g, h, a);
+ 	}
  
- 	mutex_unlock(&ftrace_regex_lock);
+ 	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
 
 
