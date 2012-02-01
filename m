@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab2BAVpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:45:00 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42364 "EHLO
+	id S932992Ab2BAVp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:45:26 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35761 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756246Ab2BAVJI (ORCPT
+	by vger.kernel.org with ESMTP id S1753891Ab2BAVJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:08 -0500
-X-Sasl-enc: 5qgZ0DFFnBgxDy4HLlCvLYnDABzJ3zKC8y8AHGpivzYs 1328130546
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:40 2012
-Message-Id: <20120201205740.792273750@clark.kroah.org>
+	Wed, 1 Feb 2012 16:09:02 -0500
+X-Sasl-enc: AswADBKH2mpV0PhH4KaPJm07Pti/vsjbJKJKLCDVEhVQ 1328130540
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:42 2012
+Message-Id: <20120201205742.099348948@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:18 -0800
+Date: Wed, 01 Feb 2012 12:56:33 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ryan Mallon <rmallon@gmail.com>,
-        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
-Subject: [38/65] vmwgfx: Fix assignment in vmw_framebuffer_create_handle
+        alan@lxorguk.ukuu.org.uk, James Chapman <jchapman@katalix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [53/65] l2tp: l2tp_ip - fix possible oops on packet receive
 In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,31 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryan Mallon <rmallon@gmail.com>
 
-commit bf9c05d5b6d19b3e4c9fe21047694e94f48db89b upstream.
+From: James Chapman <jchapman@katalix.com>
 
-The assignment of handle in vmw_framebuffer_create_handle doesn't actually do anything useful and is incorrectly assigning an integer value to a pointer argument. It appears that this is a typo and should be dereferencing handle rather than assigning to it directly. This fixes a bug where an undefined handle value is potentially returned to user-space.
+[ Upstream commit 68315801dbf3ab2001679fd2074c9dc5dcf87dfa ]
 
-Signed-off-by: Ryan Mallon <rmallon@gmail.com>
-Reviewed-by: Jakob Bornecrantz<jakob@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+When a packet is received on an L2TP IP socket (L2TPv3 IP link
+encapsulation), the l2tpip socket's backlog_rcv function calls
+xfrm4_policy_check(). This is not necessary, since it was called
+before the skb was added to the backlog. With CONFIG_NET_NS enabled,
+xfrm4_policy_check() will oops if skb->dev is null, so this trivial
+patch removes the call.
+
+This bug has always been present, but only when CONFIG_NET_NS is
+enabled does it cause problems. Most users are probably using UDP
+encapsulation for L2TP, hence the problem has only recently
+surfaced.
+
+EIP: 0060:[<c12bb62b>] EFLAGS: 00210246 CPU: 0
+EIP is at l2tp_ip_recvmsg+0xd4/0x2a7
+EAX: 00000001 EBX: d77b5180 ECX: 00000000 EDX: 00200246
+ESI: 00000000 EDI: d63cbd30 EBP: d63cbd18 ESP: d63cbcf4
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Call Trace:
+ [<c1218568>] sock_common_recvmsg+0x31/0x46
+ [<c1215c92>] __sock_recvmsg_nosec+0x45/0x4d
+ [<c12163a1>] __sock_recvmsg+0x31/0x3b
+ [<c1216828>] sock_recvmsg+0x96/0xab
+ [<c10b2693>] ? might_fault+0x47/0x81
+ [<c10b2693>] ? might_fault+0x47/0x81
+ [<c1167fd0>] ? _copy_from_user+0x31/0x115
+ [<c121e8c8>] ? copy_from_user+0x8/0xa
+ [<c121ebd6>] ? verify_iovec+0x3e/0x78
+ [<c1216604>] __sys_recvmsg+0x10a/0x1aa
+ [<c1216792>] ? sock_recvmsg+0x0/0xab
+ [<c105a99b>] ? __lock_acquire+0xbdf/0xbee
+ [<c12d5a99>] ? do_page_fault+0x193/0x375
+ [<c10d1200>] ? fcheck_files+0x9b/0xca
+ [<c10d1259>] ? fget_light+0x2a/0x9c
+ [<c1216bbb>] sys_recvmsg+0x2b/0x43
+ [<c1218145>] sys_socketcall+0x16d/0x1a5
+ [<c11679f0>] ? trace_hardirqs_on_thunk+0xc/0x10
+ [<c100305f>] sysenter_do_call+0x12/0x38
+Code: c6 05 8c ea a8 c1 01 e8 0c d4 d9 ff 85 f6 74 07 3e ff 86 80 00 00 00 b9 17 b6 2b c1 ba 01 00 00 00 b8 78 ed 48 c1 e8 23 f6 d9 ff <ff> 76 0c 68 28 e3 30 c1 68 2d 44 41 c1 e8 89 57 01 00 83 c4 0c
+
+Signed-off-by: James Chapman <jchapman@katalix.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/l2tp/l2tp_ip.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-@@ -313,7 +313,7 @@ int vmw_framebuffer_create_handle(struct
- 				  unsigned int *handle)
+--- a/net/l2tp/l2tp_ip.c
++++ b/net/l2tp/l2tp_ip.c
+@@ -393,11 +393,6 @@ static int l2tp_ip_backlog_recv(struct s
  {
- 	if (handle)
--		handle = 0;
-+		*handle = 0;
+ 	int rc;
  
- 	return 0;
- }
+-	if (!xfrm4_policy_check(sk, XFRM_POLICY_IN, skb))
+-		goto drop;
+-
+-	nf_reset(skb);
+-
+ 	/* Charge it to the socket, dropping if the queue is full. */
+ 	rc = sock_queue_rcv_skb(sk, skb);
+ 	if (rc < 0)
 
 
