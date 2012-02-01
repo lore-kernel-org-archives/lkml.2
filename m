@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab2BALJt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 06:09:49 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58250 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753999Ab2BALJs (ORCPT
+	id S1756212Ab2BALKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 06:10:40 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:48658 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756135Ab2BALKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 06:09:48 -0500
-Date: Wed, 1 Feb 2012 11:08:36 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 3/8] ARM: tegra: rework Tegra secondary CPU core
- bringup
-Message-ID: <20120201110836.GB3058@mudshark.cambridge.arm.com>
-References: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
- <1328028051-24271-4-git-send-email-pdeschrijver@nvidia.com>
- <20120131225045.GE8338@n2100.arm.linux.org.uk>
+	Wed, 1 Feb 2012 06:10:38 -0500
+Message-ID: <4F291E1F.3030505@oss.ntt.co.jp>
+Date: Wed, 01 Feb 2012 20:12:31 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120131225045.GE8338@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
+        Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] srcu: Implement call_srcu()
+References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com>  <1328017807.2446.230.camel@twins>  <20120131222447.GH2391@linux.vnet.ibm.com> <1328091749.2760.34.camel@laptop> <4F29178A.1090306@redhat.com> <4F2918D5.4050104@redhat.com> <4F291B56.30600@oss.ntt.co.jp> <4F291B92.8070402@redhat.com>
+In-Reply-To: <4F291B92.8070402@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 10:50:45PM +0000, Russell King - ARM Linux wrote:
-> On Tue, Jan 31, 2012 at 06:40:41PM +0200, Peter De Schrijver wrote:
-> > +#ifdef CONFIG_ARM_ERRATA_743622
-> > +	teq	r6, #0x20			@ present in r2p0
-> > +	teqne	r6, #0x21			@ present in r2p1
-> > +	teqne	r6, #0x22			@ present in r2p2
-> > +	teqne	r6, #0x27			@ present in r2p7
-> > +	teqne	r6, #0x29			@ present in r2p9
-> 
-> Okay, so we have this errata in proc-v7.S, but only for p0..p2.  If
-> it's also p7 and p9, then it shows that the errata in the kernel aren't
-> being actively maintained, and brings into question their worth.
+(2012/02/01 20:01), Avi Kivity wrote:
+> On 02/01/2012 01:00 PM, Takuya Yoshikawa wrote:
 
-It looks like the errata document has been updated since I wrote the
-workaround in proc-v7.S (and new r2p* versions of the A9 have been
-released). The new document states that r2p* are affected, so we should
-update the workaround.
+>> How about just doing:
+>>
+>> take a spin_lock
+>> copy the entire (or some portions of) bitmap locally
+>> clear the bitmap
+>> unlock
+>>
+>
+> That means that vcpus dirtying memory also have to take that lock, and
+> spin while the bitmap is being copied.  So kvm_vm_ioctl_get_dirty_log()
+> will become faster, at the expense of vcpus, which I think is a bad
+> tradeoff.
 
-> Plus, of course, we don't want platforms re-implementing the errata
-> in their own code if we're already implementing it somewhere in the
-> kernel.  So, that's something which needs to be thought about.
+Almost every caller is already holding the mmu_lock.
 
-Indeed, that could become extremely confusing, especially when they start
-doing different things.
+Isn't it possible to make others hold the lock only for the case of
+marking to the bitmap? (I will check myself too.)
 
-> That's something that needs considering along side the whole 'what
-> to do about errata when running in non-secure mode' problem which
-> OMAP suffers from.
 
-My view is that the workarounds in the kernel are a good way to highlight
-which errata we consider to be important from Linux's point-of-view and also
-how to avoid them in practice. It's not always possible to apply them in the
-kernel at runtime (due to security constraints) but I think it's important
-to show what Linux expects.
+>> write protect the dirty pages based on the copied dirty data
+>>
+>> copy_to_user
+>>
+>>
+>>
+>> I can show you some performance numbers, this weekend, if you like.
+>
+> That'll be great, numbers are better than speculation.
+>
 
-I'll go back through the errata document and check if any others have been
-updated besides this one.
+Yes, I already have some good numbers to show (and some patches).
 
-Will
+	Takuya
