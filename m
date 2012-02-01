@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab2BAJuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 04:50:52 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57371 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753913Ab2BAJuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 04:50:50 -0500
-Date: Wed, 1 Feb 2012 09:50:43 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 07/07] ONKEY: OnKey module for DA9052/53 PMIC v1
-Message-ID: <20120201095043.GB3150@opensource.wolfsonmicro.com>
-References: <C3AE124F08223B42BC95AEB82F0F6CED1FDDA3ED@KCHJEXMB02.kpit.com>
- <1328084935.19234.36.camel@dhruva>
+	id S1756084Ab2BAJvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 04:51:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19552 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753913Ab2BAJvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 04:51:07 -0500
+Message-ID: <4F290B9E.1090605@redhat.com>
+Date: Wed, 01 Feb 2012 17:53:34 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kORqDWCi7qDJ0mEj"
-Content-Disposition: inline
-In-Reply-To: <1328084935.19234.36.camel@dhruva>
-X-Cookie: Q:	How do you keep a moron in suspense?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] move vm tools from Documentation/vm/ to tools/
+References: <20120201063420.GA10204@darkstar.nay.redhat.com> <CAOJsxLGVS3bK=hiKJu4NwTv-Nf8TCSAEL4reSZoY4=44hPt8rA@mail.gmail.com> <4F28EC9D.7000907@redhat.com> <20120201083032.GA6774@localhost>
+In-Reply-To: <20120201083032.GA6774@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/01/2012 04:30 PM, Wu Fengguang wrote:
 
---kORqDWCi7qDJ0mEj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Wed, Feb 01, 2012 at 03:41:17PM +0800, Dave Young wrote:
+>> On 02/01/2012 03:32 PM, Pekka Enberg wrote:
+>>
+>>> On Wed, Feb 1, 2012 at 8:34 AM, Dave Young <dyoung@redhat.com> wrote:
+>>>> tools/ is the better place for vm tools which are used by many people.
+>>>> Moving them to tools also make them open to more users instead of hide in
+>>>> Documentation folder.
+>>>
+>>> For moving the code:
+>>>
+>>> Acked-by: Pekka Enberg <penberg@kernel.org>
+> 
+> I have no problem with the move -- actually I sent a similar patch
+> long time ago to Andrew ;)
 
-On Wed, Feb 01, 2012 at 01:58:55PM +0530, Ashish Jangam wrote:
-> On Wed, 2012-02-01 at 13:30 +0530, Ashish Jangam wrote:
 
-> > > +	ret = da9052_reg_read(onkey->da9052, DA9052_EVENT_B_REG);
-> > > +	if (ret < 0) {
-> > > +		dev_err(onkey->da9052->dev,
-> > > +			"da9052_onkey_report_event da9052_reg_read error %d\n",
-> > > +			ret);
-> > > +		ret = 1;
-> > > +	} else {
-> > > +		ret = ret & DA9052_EVENTB_ENONKEY;
-> > > +		input_report_key(onkey->input, KEY_POWER, ret);
-> > > +		input_sync(onkey->input);
-> > > +	}
+Good to know, then do you mind I add your signed-off line?
 
-> > > +	if (ret)
-> > > +		schedule_delayed_work(&onkey->work, msecs_to_jiffies(50));
+> 
+> Will git-mv end up with a better commit?
+> 
+>>>> Also fixed several coding style problem.
+>>>
+>>> Can you please make that a separate patch?
+>>
+>>
+>> Will do.
+>>
+>> BTW, I think tools/slub/slabinfo.c should be included in tools/vm/ as
+>> well, will move it in v2 patch
+> 
+> CC Christoph. Maybe not a big deal since it's already under tools/.
+> 
+> Thanks,
+> Fengguang
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> > Why not just schedule the work directly?  The use of ret took a bit of
-> > thinking about to follow.
 
-> schedule_dealyed_work simulates the release of the onkey button since event for release
-> is not generated and ret & DA9052_EVENTB_ENONKEY is used to determine the release
 
-That doesn't seem to address the concern.  You're setting ret in exactly
-one place and scheduling the work in exactly one place, why are these
-two things split?
-> of the onkey button.
-> > > +	error = request_threaded_irq(onkey->da9052->irq_base + onkey->irq, NULL,
-> > > +				     da9052_onkey_irq,
-
-> > This looks buggy, the resource should have the IRQ you need directly in
-> > it.  The MFD core can do this for the chip core driver when it registers
-> > children.
-
-> As irq_base may get determined at runtime this will require modification to the
-> defined resource struct for each mfd child in the device init function of the mfd core.
-> Not sure if this is fine.
-
-No, it really won't require that.  Please read what I wrote above: the
-MFD core can do this for you.
-
---kORqDWCi7qDJ0mEj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPKQrGAAoJEBus8iNuMP3dX28QAI4y/6bVVq8zjYo/mUUuBMni
-odqBelnm5gu6/7BRY33KOd0K0WmJmuJ2jm/NwdALhutfxeO1Oeova4Ffj9miiP5j
-yuDeYqEq9HKDABm9mdJmRMR3xCkPIcpxzOmISslxYmbM+TDT34181ERYi2WxzZD1
-FA24z297YsRuHI9fHQsXK5HGxsfp5rhBPQP6aC6/BoYsBUGx/tjw9qy6R2h6AwrJ
-5LxbHGhiGfRhT8XTEmD6Ud9INmR6uo29XKkhsKfp3vZ1nH1XAepf3XK2SRQRdrnL
-aqiv/HItjI8NyKXpEbeeL3WQS2AmAVz2H7GOX98CXcKjUQTxgrC5X2+dV6U9acwM
-Owg3xKz2/s7+7CoQJTHT56AAntIpxfpOJGs4Ukxsn4fvZrCBPUKA+pG/wd9+k67F
-Wu0TJVM+klS2VivcUusPSXc+IJTNDGzf2myUxSPgBOXcF2hQesf08olJ/cqUIEa9
-CHx6kxp6kaWGS8AaYop6DbokAB/QkuyarI9BmNyfVPUcaTandSm2hgIuf6PwtnSE
-eLtbVx/IAyR7JcjAaQZhAHha6wQCIeG+i3fUHLK8mvqQ/kHGODhzoSVG3LCwtPeQ
-hIhgCqpU7h7+fh8GzzWBW0RO7wcEXYLMeqBAeCXLuqwW88cQGaj+BO+cfq4pROxs
-xiUqc5ZByjPOEg1EsBTC
-=tva1
------END PGP SIGNATURE-----
-
---kORqDWCi7qDJ0mEj--
+-- 
+Thanks
+Dave
