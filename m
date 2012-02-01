@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab2BANzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 08:55:35 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39098 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab2BANze (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 08:55:34 -0500
-Subject: Re: [PATCH] sched: At sched_fork use __set_task_cpu().
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Cc: Rakib Mullick <rakib.mullick@gmail.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20120131084830.GA22077@linux.vnet.ibm.com>
-References: <1327854877.8504.3.camel@localhost.localdomain>
-	 <20120131084830.GA22077@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Feb 2012 14:55:27 +0100
-Message-ID: <1328104527.2662.4.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1756425Ab2BAODT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 09:03:19 -0500
+Received: from mail.tomasu.net ([64.85.170.232]:47389 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754623Ab2BAODR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 09:03:17 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: Simon McNair <simonmcnair@gmail.com>
+Subject: Re: mvsas with 3.1
+Date: Wed, 1 Feb 2012 07:03:09 -0700
+User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        ayan@marvell.com, andy yan <andyysj@gmail.com>,
+        "linux-raid" <linux-raid@vger.kernel.org>
+References: <201201131144.58044.thomas@fjellstrom.ca> <CAKaSfQDyU1a641ZMBNNJJABhXBQxhPGH=E6sNoss=2JyYgFusw@mail.gmail.com>
+In-Reply-To: <CAKaSfQDyU1a641ZMBNNJJABhXBQxhPGH=E6sNoss=2JyYgFusw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201202010703.09833.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 14:18 +0530, Kamalesh Babulal wrote:
-> * Rakib Mullick <rakib.mullick@gmail.com> [2012-01-29 22:34:37]:
+On Wed Feb 1, 2012, Simon McNair wrote:
+> Hi Thomas,
+> I've been trying to get an answer to this same question (I have a
+> supermicro AOC-SASLP-MV8 too).  See my post at
+> https://lkml.org/lkml/2012/1/30/107  .
 > 
-> >  We don't use select_task_rq() from sched_fork() anymore and no chance of task gets migrated at
-> > this point. Therefore, we can avoid task migration related checking/accounting, so use
-> > __set_task_cpu() instead of set_task_cpu().
-> > 
-> > Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
->   Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+> My only suggestion is to get a kernel that's pre 2.6.30 (my Thecus
+> 5200 marvell based unit is on 2.6.13 and it seems okay).  If the data
+> is mission critical I certainly wouldn't be using the latest kernels
+> in production until it had 6+months in a stress test environment (of
+> course I'm an obsessive apt-get upgrade which makes me a hypocrite
+> 
+> :-P).
+> 
+> I can see from searching lkml.org  for mvsas that there is a lot of
+> code going in to this driver and unless your're a linux guru and can
+> fix these problems I can only suggest you keep anything important on a
+> =< 2.6.13 kernel and monitor the situation.
+> 
+> Oh, and keep back ups ;-) (again here's me being the hypocrite).
+> 
+> That's my plan :-(
 
-Since we call sched_fork() with preemption enabled _long_ after the
-child is copied from the parent who is to say we (parent) didn't migrate
-away and are now setting a different cpu?
+The older drivers were even worse, they'd have these really nasty pauses, or 
+just outright OOPS the entire machine.
 
-One could argue that that might not be a real migration from the child's
-POV, maybe, but nobody seems to be making that argument.
+That said, I've finally had it with the lack of support. It's been over two 
+years since I got the card, and enough is enough. I picked up a refurb IBM 
+ServeRaid M1015 (aka: LSI 9220-8i) card. It arrived yesterday. Just have to 
+wait and see why grub doesn't like it.
 
-I really don't see the point of this..
-
-> > ---
+> Simon
+> 
+> On 13 January 2012 18:44, Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
+> > Is there chance this driver will ever be stable? After more than two
+> > years I'm starting to get extremely frustrated. I don't really have the
+> > option at the moment to get a new card, otherwise I would, likely a non
+> > marvell based device.
 > > 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index df00cb0..a38026e 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -1755,7 +1755,7 @@ void sched_fork(struct task_struct *p)
-> >  	 * Silence PROVE_RCU.
-> >  	 */
-> >  	raw_spin_lock_irqsave(&p->pi_lock, flags);
-> > -	set_task_cpu(p, cpu);
-> > +	__set_task_cpu(p, cpu);
-> >  	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+> > It actually managed to last 10 days this time though. Which is a record.
+> > The interesting thing is there are no warnings or errors in dmesg coming
+> > from the mvsas driver or scsi code. All that's happened is processes
+> > lock up when trying to write. Reading seems to be fine.
 > > 
-> >  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-> > 
+> > Just to refresh everyone's memory, it's a AOC-SASLP-MV8 card, has a
+> > MV64460/64461/64462 chipset. And I have 7 (seagate 7200.12 SATA drives
+> > hooked up).
 > > 
 > > --
-> 
+> > Thomas Fjellstrom
+> > thomas@fjellstrom.ca
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-raid" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
-
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
