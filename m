@@ -1,108 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab2BAHMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 02:12:55 -0500
-Received: from mga14.intel.com ([143.182.124.37]:6140 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753650Ab2BAHMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 02:12:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101854826"
-Date: Wed, 1 Feb 2012 15:02:47 +0800
-From: Wu Fengguang <wfg@linux.intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
-Message-ID: <20120201070247.GA29083@localhost>
-References: <1327996780.21268.42.camel@sli10-conroe>
- <20120131220333.GD4378@redhat.com>
+	id S1755042Ab2BAHRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 02:17:19 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:55625 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752859Ab2BAHRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 02:17:17 -0500
+Message-ID: <4F28E7A0.6000309@cn.fujitsu.com>
+Date: Wed, 01 Feb 2012 15:20:00 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120131220333.GD4378@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH 6/6] cls_cgroup: remove redundant rcu_read_lock/unlock
+References: <4F28E1D1.900@cn.fujitsu.com> <4F28E22A.703@cn.fujitsu.com> <1328080039.22641.2.camel@edumazet-laptop>
+In-Reply-To: <1328080039.22641.2.camel@edumazet-laptop>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-01 15:15:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-01 15:15:55,
+	Serialize complete at 2012-02-01 15:15:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 05:03:33PM -0500, Vivek Goyal wrote:
-> On Tue, Jan 31, 2012 at 03:59:40PM +0800, Shaohua Li wrote:
-> > Herbert Poetzl reported a performance regression since 2.6.39. The test
-> > is a simple dd read, but with big block size. The reason is:
-> > 
-> > T1: ra (A, A+128k), (A+128k, A+256k)
-> > T2: lock_page for page A, submit the 256k
-> > T3: hit page A+128K, ra (A+256k, A+384). the range isn't submitted
-> > because of plug and there isn't any lock_page till we hit page A+256k
-> > because all pages from A to A+256k is in memory
-> > T4: hit page A+256k, ra (A+384, A+ 512). Because of plug, the range isn't
-> > submitted again.
-> > T5: lock_page A+256k, so (A+256k, A+512k) will be submitted. The task is
-> > waitting for (A+256k, A+512k) finish.
-> > 
-> > There is no request to disk in T3 and T4, so readahead pipeline breaks.
-> > 
-> > We really don't need block plug for generic_file_aio_read() for buffered
-> > I/O. The readahead already has plug and has fine grained control when I/O
-> > should be submitted. Deleting plug for buffered I/O fixes the regression.
-> > 
-> > One side effect is plug makes the request size 256k, the size is 128k
-> > without it. This is because default ra size is 128k and not a reason we
-> > need plug here.
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+
+>> diff --git a/net/core/sock.c b/net/core/sock.c
+>> index 213c856..c0bab23 100644
+>> --- a/net/core/sock.c
+>> +++ b/net/core/sock.c
+>> @@ -1160,9 +1160,7 @@ void sock_update_classid(struct sock *sk)
+>>  {
+>>  	u32 classid;
+>>  
+>> -	rcu_read_lock();  /* doing current task, which cannot vanish. */
+>>  	classid = task_cls_classid(current);
+>> -	rcu_read_unlock();
+>>  	if (classid && classid != sk->sk_classid)
+>>  		sk->sk_classid = classid;
 > 
-> For me, this patch helps only so much and does not get back all the
-> performance lost in case of raw disk read. It does improve the throughput
-> from around 85-90 MB/s to 110-120 MB/s but running the same dd with
-> iflag=direct, gets me more than 250MB/s.
+> Yes, this seems fine.
 > 
-> # echo 3 > /proc/sys/vm/drop_caches 
-> # dd if=/dev/sdb of=/dev/null bs=1M count=1K
-> 1024+0 records in
-> 1024+0 records out
-> 1073741824 bytes (1.1 GB) copied, 9.03305 s, 119 MB/s
+> Then, I wonder why we do the "if (classid && classid != sk->sk_classid)"
 > 
-> echo 3 > /proc/sys/vm/drop_caches 
-> # dd if=/dev/sdb of=/dev/null bs=1M count=1K iflag=direct
-> 1024+0 records in
-> 1024+0 records out
-> 1073741824 bytes (1.1 GB) copied, 4.07426 s, 264 MB/s
+> before the :
 > 
-> I think it is happening because in case of raw read we are submitting
-> one page at a time to request queue and by the time all the pages
-> are submitted and one big merged request is formed it wates lot of time.
+> 	sk->sk_classid = classid;
 > 
-> In case of direct IO, we are getting bigger IOs at request queue so
-> less cpu overhead, less idling on queue.
-
-Note that "dd bs=1M" will result in 128KB readahead IO. The buffered
-dd reads may perform much better if 1MB readahead size is used:
-
-blockdev --setra 2048 /dev/sda
-
-> I created ext4 filesystem on same SSD and did the buffered read and
-> that seems to work just fine. Now I am getting bigger requests at
-> the request queue. (128K, 256 sectors).
+> This seems unnecessary checks.
 > 
-> [root@chilli common]# echo 3 > /proc/sys/vm/drop_caches 
-> [root@chilli common]# dd if=zerofile-4G of=/dev/null bs=1M count=1K
-> 1024+0 records in
-> 1024+0 records out
-> 1073741824 bytes (1.1 GB) copied, 4.09186 s, 262 MB/s
 
-So the raw sda reads have some performance problems. What's the exact
-blktrace sequence for sda reads? And the block size?
-
-blockdev --getbsz /dev/sda               
-
-> Anyway, remvoing top level plug in case of buffered reads sounds
-> reasonable.
-
-Yup.
-
-Thanks,
-Fengguang
+I was wondering about this too. He who added this may provide us with an
+answer.
