@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab2BADmk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 22:42:40 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40690 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752531Ab2BADmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 22:42:39 -0500
-Message-ID: <1328067755.14714.39.camel@joe2Laptop>
-Subject: Re: [PATCH 1/4] coda: Remove unnecessary OOM messages
-From: Joe Perches <joe@perches.com>
-To: Jan Harkes <jaharkes@cs.cmu.edu>
-Cc: Ryan Mallon <rmallon@gmail.com>, linux-kernel@vger.kernel.org,
+	id S1755841Ab2BADo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 22:44:29 -0500
+Received: from ozlabs.org ([203.10.76.45]:51516 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753365Ab2BADo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 22:44:27 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Tue, 31 Jan 2012 19:42:35 -0800
-In-Reply-To: <189650fe-7304-4762-a353-e355609f3e84@email.android.com>
-References: <cover.1328049542.git.joe@perches.com>
-	 <db4ffce1e5a8a3a6e54e7a4f6487e822709dbdba.1328049542.git.joe@perches.com>
-	 <4F288178.4040405@gmail.com> <1328055665.14714.5.camel@joe2Laptop>
-	 <4F2885EC.8070900@gmail.com> <1328055976.14714.7.camel@joe2Laptop>
-	 <189650fe-7304-4762-a353-e355609f3e84@email.android.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Subject: Re: [RFC][PATCH] tracing/module: Move tracepoint out of module.h
+In-Reply-To: <20120131122016.GF32010@elte.hu>
+References: <1327545664.22710.78.camel@gandalf.stny.rr.com> <20120126102836.GD3853@elte.hu> <1327585945.22710.87.camel@gandalf.stny.rr.com> <20120126135504.GA13107@elte.hu> <1327586669.22710.89.camel@gandalf.stny.rr.com> <1327588606.22710.100.camel@gandalf.stny.rr.com> <20120126183946.GA14709@elte.hu> <87ehuldf0m.fsf@rustcorp.com.au> <1327924333.22710.157.camel@gandalf.stny.rr.com> <87sjiwjzew.fsf@rustcorp.com.au> <20120131122016.GF32010@elte.hu>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Wed, 01 Feb 2012 11:40:22 +1030
+Message-ID: <87lionjr41.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 22:10 -0500, Jan Harkes wrote:
-> Joe Perches <joe@perches.com> wrote:
-> >On Wed, 2012-02-01 at 11:23 +1100, Ryan Mallon wrote:
-> >> On 01/02/12 11:21, Joe Perches wrote:
-> >> > Maybe because alloc/free functions are
-> >> > used relatively infrequently, maybe it'd
-> >> > be better to not declare the functions
-> >> > inline but add them to coda_linux.c
-> >> Sure, either approach is fine. Do you want to add the patch to your
-> >series?
-> >I think Jan can work it out properly if he wants it.
-> It looks good to me, I have no problem if you want to add it to your series.
+On Tue, 31 Jan 2012 13:20:16 +0100, Ingo Molnar <mingo@elte.hu> wrote:
+> > Wow, we're really bikeshedding this!
+> 
+> Hey, I don't think this is bikesheddig: we are shedding 
+> *kilobytes* of code from pretty hot codepaths, that kind of 
+> topic does deserve some detailed attention :-)
 
-(adding Al Viro and Andrew Morton to cc:)
+I agree, but we put the bloat in without this much discussion :)
 
-Hi Jan.
+I get the impression last I looked that most get/put aren't actually hot
+paths (though it was designed to allow that, such as an inc per packet).
+Which is an even better reason to out-of-line it...
 
-I think Ryan's patches are fine as well.
+> > Doesn't save me much here, though.  What are your stats?
+> 
+> I suspect it depends on inlining options in the .config plus on 
+> event tracing?
+...
+> Most distro kernels do tracepoints so I guess that's where the 
+> size delta comes from :-) In any case:
+> 
 
->From my perspective as a contributor, you should ack the
-patches you apply to your own tree with your own
-"Signed-off-by:" tag and later send a pull request to
-Linus or another upstream maintainer like Al Viro or you
-should ack the patches and forward them to another upstream
-maintainer to be applied in their tree with your "Acked-by:"
-tag.
+Yeah, I'm rebuilding an Ubuntu config kernel before and after to get
+some more accurate stats on the final result for the commit message.
 
-cheers, Joe
+> Acked-by: Ingo Molnar <mingo@elte.hu>
 
+Thanks,
+Rusty.
