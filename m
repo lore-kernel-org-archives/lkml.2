@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab2BAWZZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:25:25 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33795 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932069Ab2BAWZX (ORCPT
+	id S1757668Ab2BAW1h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:27:37 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46902 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756150Ab2BAW1f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:25:23 -0500
-X-Sasl-enc: qav2zsmPO4dg0MqS27xLEO2UJ3ZVKv++uCWeU/M1usRC 1328135122
-Date: Wed, 1 Feb 2012 14:24:41 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] sysfs:  Optionally count subdirectories to support buggy
- applications
-Message-ID: <20120201222441.GB2333@kroah.com>
-References: <4F27120A.4040106@suse.cz>
- <20120130220611.GA26655@kroah.com>
- <20120130221059.26ab5edf@pyramind.ukuu.org.uk>
- <20120130222717.GA6393@kroah.com>
- <m18vkoirv9.fsf@fess.ebiederm.org>
- <4F27C6EB.2070305@suse.cz>
- <m14nvc82jo.fsf@fess.ebiederm.org>
- <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
- <m1wr87ywex.fsf@fess.ebiederm.org>
- <m1ehueyz20.fsf_-_@fess.ebiederm.org>
+	Wed, 1 Feb 2012 17:27:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1ehueyz20.fsf_-_@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <A3E67C2071F49C4CBC4F17E6D77CDDD232754183@G4W3299.americas.hpqcorp.net>
+References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb> <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
+ <1328128874.15992.6430.camel@triegel.csb> <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
+ <A3E67C2071F49C4CBC4F17E6D77CDDD232754183@G4W3299.americas.hpqcorp.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Feb 2012 14:27:15 -0800
+X-Google-Sender-Auth: RfGH4P_bZQcnVNeW3z5ODYDPHRE
+Message-ID: <CA+55aFyfD_AEotpx=7-pyiCp1Ph5_1QSmnd2_-fS=UH8vZfj1A@mail.gmail.com>
+Subject: Re: Memory corruption due to word sharing
+To: "Boehm, Hans" <hans.boehm@hp.com>
+Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "dsterba@suse.cz" <dsterba@suse.cz>,
+        "ptesarik@suse.cz" <ptesarik@suse.cz>,
+        "rguenther@suse.de" <rguenther@suse.de>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 02:21:59PM -0800, Eric W. Biederman wrote:
-> 
-> lm_sensors and possibly other applications get confused if all sysfs
-> directories return nlink == 1.  The lm_sensors code that got confused
-> was just wrong and a fixed version of lm_sensors should be released
-> shortly.
-> 
-> There may be other applications that have problems with sysfs return
-> nlink == 1 for directories.  To allow people to continue to use old
-> versions of userspace with new kernels add to sysfs a compile time
-> option to maintain mostly precise directory counts for those people who
-> don't mind the cost.
-> 
-> I have moved where we keep nlink in sysfs_dirent as compared to previous
-> versions of subdirectory counting to a location that packs better.
-> 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  fs/sysfs/Kconfig |   15 +++++++++++++++
->  fs/sysfs/dir.c   |    8 ++++++++
->  fs/sysfs/inode.c |    2 ++
->  fs/sysfs/sysfs.h |   38 ++++++++++++++++++++++++++++++++++++++
->  4 files changed, 63 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/sysfs/Kconfig b/fs/sysfs/Kconfig
-> index 8c41fea..9b403e9 100644
-> --- a/fs/sysfs/Kconfig
-> +++ b/fs/sysfs/Kconfig
-> @@ -21,3 +21,18 @@ config SYSFS
->  	example, "root=03:01" for /dev/hda1.
->  
->  	Designers of embedded systems may wish to say N here to conserve space.
-> +
-> +config SYSFS_COUNT_LINKS
-> +	bool "sysfs count subdirectoires to support buggy applications"
-> +	default n
+On Wed, Feb 1, 2012 at 1:25 PM, Boehm, Hans <hans.boehm@hp.com> wrote:
+>
+> Here are some more interesting ones that illustrate the issues (all declarations are non-local, unless stated otherwise):
+>
+> struct { char a; int b:9; int c:7; char d} x;
+>
+> Is x.b = 1 allowed to overwrite x.a?  C11 says no, essentially requiring two byte stores.  Gcc currently does so.  I'm not sure I understand Linus' position here.
 
-As we don't want to break things, this should be default y, right?
+So I like the fact that the C11 stance seems very strict. But honestly
+I also think it sounds like C11 is actually more strict than I would
+necessarily be.
 
-Also, should we list this in the feature_removal list as well so that we
-can get rid of it in a year or so?
+I really do think that bitfields imply "int", both historically and
+technically. So I would not see the problem with treating the
+bitfields as part of an 'int' and thus overwriting a (and d) when
+writing to b. That's how bitfields work! They are fields of an int.
 
-thanks,
+It would be good if it perhaps caused a *warning*, and gave a good way
+to avoid it. For example, while I think using any other base type than
+'int' is technically an extension of the C bitfield rules (but
+whatever, I don't have any specs in front of me), I think a warning
+together with alowing the user to rewrite it as
 
-greg k-h
+  struct { char a; char d; short b:9; short c:7; } x;
+
+would make it clear that now a write to 'b' cannot validly overwrite
+'a' or 'd'.
+
+But forcing the compiler to do two (and sometimes three!) byte
+accesses sounds excessive.
+
+The reason I think the
+
+   int flag:1;
+   int othervariable;
+
+overwriting of "othervariable" is so *obviously* a bug is exactly that
+bitfields are historically about 'int', and no 'long' was there
+anywhere, so using a 64-bit access is clearly not sane in any way,
+shape or form.
+
+I dunno.
+
+                 Linus
