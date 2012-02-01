@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230Ab2BAWoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 17:44:34 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:33752 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756315Ab2BAWo3 (ORCPT
+	id S1757741Ab2BAWs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 17:48:26 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:48575 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757700Ab2BAWoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 17:44:29 -0500
+	Wed, 1 Feb 2012 17:44:34 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -16,74 +16,48 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 01/15] Make %pR could handle bus resource with domain
-Date: Wed,  1 Feb 2012 14:43:48 -0800
-Message-Id: <1328136242-17725-2-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: [PATCH 06/15] PCI, ia64: Register busn_res for root buses
+Date: Wed,  1 Feb 2012 14:43:53 -0800
+Message-Id: <1328136242-17725-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
 References: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090207.4F29C046.008E,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090205.4F29C04A.000C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So could use %pR for busn_res with domain nr in start/end
-
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
 ---
- lib/vsprintf.c |   28 ++++++++++++++++++++++++----
- 1 files changed, 24 insertions(+), 4 deletions(-)
+ arch/ia64/pci/pci.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 8e75003..b34eeea 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -451,6 +451,12 @@ char *resource_string(char *buf, char *end, struct resource *res,
- 		.precision = -1,
- 		.flags = SPECIAL | SMALL | ZEROPAD,
- 	};
-+	static const struct printf_spec domain_spec = {
-+		.base = 16,
-+		.field_width = 4,
-+		.precision = -1,
-+		.flags = SMALL | ZEROPAD,
-+	};
- 	static const struct printf_spec bus_spec = {
- 		.base = 16,
- 		.field_width = 2,
-@@ -507,11 +513,25 @@ char *resource_string(char *buf, char *end, struct resource *res,
- 		specp = &mem_spec;
- 		decode = 0;
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index f82f5d4..936b2f1 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -331,6 +331,7 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	struct acpi_device *device = root->device;
+ 	int domain = root->segment;
+ 	int bus = root->secondary.start;
++	int busmax = root->secondary.end;
+ 	struct pci_controller *controller;
+ 	unsigned int windows = 0;
+ 	struct pci_root_info info;
+@@ -384,6 +385,7 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		return NULL;
  	}
--	p = number(p, pend, res->start, *specp);
--	if (res->start != res->end) {
--		*p++ = '-';
--		p = number(p, pend, res->end, *specp);
-+
-+	if (res->flags & IORESOURCE_BUS && res->end >> 8) {
-+		p = number(p, pend, res->start >> 8, domain_spec);
-+		*p++ = ':';
-+		p = number(p, pend, res->start & 0xff, *specp);
-+		if (res->start != res->end) {
-+			*p++ = '-';
-+			p = number(p, pend, res->end >> 8, domain_spec);
-+			*p++ = ':';
-+			p = number(p, pend, res->end & 0xff, *specp);
-+		}
-+	} else {
-+		p = number(p, pend, res->start, *specp);
-+		if (res->start != res->end) {
-+			*p++ = '-';
-+			p = number(p, pend, res->end, *specp);
-+		}
- 	}
-+
- 	if (decode) {
- 		if (res->flags & IORESOURCE_MEM_64)
- 			p = string(p, pend, " 64bit", str_spec);
+ 
++	pci_bus_insert_busn_res(pbus, busnum, busmax);
+ 	pbus->subordinate = pci_scan_child_bus(pbus);
+ 	return pbus;
+ 
 -- 
 1.7.7
 
