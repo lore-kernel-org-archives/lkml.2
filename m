@@ -1,109 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823Ab2BAVZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:25:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932457Ab2BAVZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:25:45 -0500
-Subject: Re: Memory corruption due to word sharing
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
-        rguenther@suse.de, gcc@gcc.gnu.org
-In-Reply-To: <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
-References: <20120201151918.GC16714@quack.suse.cz>
-	 <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
-	 <1328118174.15992.6206.camel@triegel.csb>
-	 <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
-	 <1328128874.15992.6430.camel@triegel.csb>
-	 <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Feb 2012 22:24:58 +0100
-Message-ID: <1328131498.15992.6503.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757503Ab2BAV0S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:26:18 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34095 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757502Ab2BAVTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 16:19:31 -0500
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, vgoyal@redhat.com
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 04/11] blkcg: clear all request_queues on blkcg policy [un]registrations
+Date: Wed,  1 Feb 2012 13:19:09 -0800
+Message-Id: <1328131156-13290-5-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1328131156-13290-1-git-send-email-tj@kernel.org>
+References: <1328131156-13290-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 12:59 -0800, Linus Torvalds wrote:
-> On Wed, Feb 1, 2012 at 12:41 PM, Torvald Riegel <triegel@redhat.com> wrote:
-> >
-> > You do rely on the compiler to do common transformations I suppose:
-> > hoist loads out of loops, CSE, etc.  How do you expect the compiler to
-> > know whether they are allowed for a particular piece of code or not?
-> 
-> We have barriers.
-> 
-> Compiler barriers are cheap. They look like this:
-[snip]
+Keep track of all request_queues which have blkcg initialized and turn
+on bypass and invoke blkcg_clear_queue() on all before making changes
+to blkcg policies.
 
-I know, and I've programmed my chunk of concurrent code with those and
-architecture-specific code too (or libatomic-ops for a bit more
-ready-to-use portability).
+This is to prepare for moving blkg management into blkcg core.  Note
+that this uses more brute force than necessary.  Finer grained shoot
+down will be implemented later and given that policy [un]registration
+almost never happens on running systems (blk-throtl can't be built as
+a module and cfq usually is the builtin default iosched), this
+shouldn't be a problem for the time being.
 
-> It's not the only thing we do. We have cases where it's not that you
-> can't hoist things outside of loops, it's that you have to read things
-> exactly *once*, and then use that particular value (ie the compiler
-> can't be allowed to reload the value because it may change). So any
-> *particular* value we read is valid, but we can't allow the compiler
-> to do anything but a single access.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-cgroup.c     |   48 +++++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/blkdev.h |    3 +++
+ 2 files changed, 50 insertions(+), 1 deletions(-)
 
-That's what an access to an atomics-typed var would give you as well.
-
-> And I realize that compiler people tend to think that loop hoisting
-> etc is absolutely critical for performance, and some big hammer like
-> "barrier()" makes a compiler person wince. You think it results in
-> horrible code generation problems.
-> 
-> It really doesn't. Loops are fairly unusual in the kernel to begin
-> with, and the compiler barriers are a total non-issue.
-
-This is interesting, because GCC is currently not optimizing across
-atomics but we we're considering working on this later.
-Do you have real data about this, or is this based on analysis of
-samples of compiled code?
-
-> We have much
-> more problems with the actual CPU barriers that can be *very*
-> expensive on some architectures, and we work a lot at avoiding those
-> and avoiding cacheline ping-pong issues etc.
-
-Well, obviously...
-
-> 
-> >> > No vague assumptions with lots of hand-waving.
-> >>
-> >> So here's basically what the kernel needs:
-> >>
-> >>  - if we don't touch a field, the compiler doesn't touch it.
-> >
-> > "we don't touch a field": what does that mean precisely?  Never touch it
-> > in the same thread?  Same function?  Same basic block?  Between two
-> > sequence points?  When crossing synchronizing code?  For example, in the
-> > above code, can we touch it earlier/later?
-> 
-> Why are you trying to make it more complex than it is?
-> 
-> If the source code doesn't write to it, the assembly the compiler
-> generates doesn't write to it.
-
-If it would be so easy, then answering my questions would have been easy
-too, right?  Which piece of source code?  The whole kernel?
-
-> 
-> Don't try to make it anything more complicated. This has *nothing* to
-> do with threads or functions or anything else.
-> 
-> If you do massive inlining, and you don't see any barriers or
-> conditionals or other reasons not to write to it, just write to it.
-
-And a precise definition of these reasons is what we need to agree on.
-
-> Don't try to appear smart and make this into something it isn't.
-
-Even if I would have done it, it wouldn't be as rude as trying to imply
-that other people aren't smart.
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 15264d0..10878a4 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -27,6 +27,9 @@
+ static DEFINE_SPINLOCK(blkio_list_lock);
+ static LIST_HEAD(blkio_list);
+ 
++static DEFINE_MUTEX(all_q_mutex);
++static LIST_HEAD(all_q_list);
++
+ struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
+ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
+ 
+@@ -1461,9 +1464,20 @@ done:
+  */
+ int blkcg_init_queue(struct request_queue *q)
+ {
++	int ret;
++
+ 	might_sleep();
+ 
+-	return blk_throtl_init(q);
++	ret = blk_throtl_init(q);
++	if (ret)
++		return ret;
++
++	mutex_lock(&all_q_mutex);
++	INIT_LIST_HEAD(&q->all_q_node);
++	list_add_tail(&q->all_q_node, &all_q_list);
++	mutex_unlock(&all_q_mutex);
++
++	return 0;
+ }
+ 
+ /**
+@@ -1487,6 +1501,10 @@ void blkcg_drain_queue(struct request_queue *q)
+  */
+ void blkcg_exit_queue(struct request_queue *q)
+ {
++	mutex_lock(&all_q_mutex);
++	list_del_init(&q->all_q_node);
++	mutex_unlock(&all_q_mutex);
++
+ 	blk_throtl_exit(q);
+ }
+ 
+@@ -1532,8 +1550,33 @@ static void blkiocg_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
+ 	}
+ }
+ 
++static void blkcg_bypass_start(void)
++	__acquires(&all_q_mutex)
++{
++	struct request_queue *q;
++
++	mutex_lock(&all_q_mutex);
++
++	list_for_each_entry(q, &all_q_list, all_q_node) {
++		blk_queue_bypass_start(q);
++		blkg_destroy_all(q);
++	}
++}
++
++static void blkcg_bypass_end(void)
++	__releases(&all_q_mutex)
++{
++	struct request_queue *q;
++
++	list_for_each_entry(q, &all_q_list, all_q_node)
++		blk_queue_bypass_end(q);
++
++	mutex_unlock(&all_q_mutex);
++}
++
+ void blkio_policy_register(struct blkio_policy_type *blkiop)
+ {
++	blkcg_bypass_start();
+ 	spin_lock(&blkio_list_lock);
+ 
+ 	BUG_ON(blkio_policy[blkiop->plid]);
+@@ -1541,11 +1584,13 @@ void blkio_policy_register(struct blkio_policy_type *blkiop)
+ 	list_add_tail(&blkiop->list, &blkio_list);
+ 
+ 	spin_unlock(&blkio_list_lock);
++	blkcg_bypass_end();
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_register);
+ 
+ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ {
++	blkcg_bypass_start();
+ 	spin_lock(&blkio_list_lock);
+ 
+ 	BUG_ON(blkio_policy[blkiop->plid] != blkiop);
+@@ -1553,5 +1598,6 @@ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ 	list_del_init(&blkiop->list);
+ 
+ 	spin_unlock(&blkio_list_lock);
++	blkcg_bypass_end();
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_unregister);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index f10958b..e38e4d0 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -397,6 +397,9 @@ struct request_queue {
+ 	struct bsg_class_device bsg_dev;
+ #endif
+ 
++#ifdef CONFIG_BLK_CGROUP
++	struct list_head	all_q_node;
++#endif
+ #ifdef CONFIG_BLK_DEV_THROTTLING
+ 	/* Throttle data */
+ 	struct throtl_data *td;
+-- 
+1.7.7.3
 
