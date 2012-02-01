@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab2BACWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 21:22:21 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55955 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab2BACWU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 21:22:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdaLekGTdkpfr_Zf5PXAZ16dZsXrwnFHjBe+aEvGb5zYjg@mail.gmail.com>
-References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
- <1328004002-24646-2-git-send-email-Barry.Song@csr.com> <CACRpkdaLekGTdkpfr_Zf5PXAZ16dZsXrwnFHjBe+aEvGb5zYjg@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 1 Feb 2012 10:22:00 +0800
-Message-ID: <CAGsJ_4z-QB_1z1Dw3H6sE2Vwe2ZQtRce9uy-Xa3V+sfj2drOuA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] platform: add common resource requesting and mapping helper
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Barry Song <Barry.Song@csr.com>, Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, Grant Likely <grant.likely@secretlab.ca>,
-        linux-mtd@lists.infradead.org, Barry Song <Baohua.Song@csr.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Erik Gilling <konkers@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754503Ab2BAC0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 21:26:33 -0500
+Received: from mga03.intel.com ([143.182.124.21]:13204 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751890Ab2BAC0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 21:26:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="101790270"
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+From: Shaohua Li <shaohua.li@intel.com>
+To: Wu Fengguang <wfg@linux.intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Vivek Goyal <vgoyal@redhat.com>
+In-Reply-To: <20120131103416.GA1661@localhost>
+References: <1327996780.21268.42.camel@sli10-conroe>
+	 <20120131103416.GA1661@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Feb 2012 10:25:26 +0800
+Message-ID: <1328063126.21268.54.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, 2012-01-31 at 18:34 +0800, Wu Fengguang wrote:
+> I'd like to propose a sister patch on the write part. It may not be
+> as easy to measure any performance impacts of it, but I'll try.
+I did think about it, the write case doesn't matter because we didn't do
+real IO there.
+I can do another patch to cleanup the code (moving it to direct_io),
+sounds ok?
 
-2012/2/1 Linus Walleij <linus.walleij@linaro.org>:
-> On Tue, Jan 31, 2012 at 11:00 AM, Barry Song <Barry.Song@csr.com> wrote:
->
->> From: Barry Song <Baohua.Song@csr.com>
->>
->> this patch helps to move the common pattern from
->
-> Good idea!
->
->> @@ -44,6 +44,7 @@ extern struct device platform_bus;
->>
->>  extern void arch_setup_pdev_archdata(struct platform_device *);
->>  extern struct resource *platform_get_resource(struct platform_device *, unsigned int, unsigned int);
->> +extern void __iomem *platform_devm_request_and_ioremap(struct platform_device *, unsigned int);
->
-> But don't you want a reverse call for the module remove() function?
->
-> Like:
->
-> extern void __iomem *platform_devm_iounmap_and_free(struct
-> platform_device *, unsigned int);
+> ---
+> Subject: remove plugging at buffered write time 
+> Date: Tue Jan 31 18:25:48 CST 2012
+> 
+> Buffered write(2) is not directly tied to IO, so no need to handle plug
+> in generic_file_aio_write().
+> 
+> CC: Jens Axboe <axboe@kernel.dk>
+> CC: Li Shaohua <shaohua.li@intel.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/filemap.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> --- linux-next.orig/mm/filemap.c	2012-01-31 18:23:52.000000000 +0800
+> +++ linux-next/mm/filemap.c	2012-01-31 18:25:38.000000000 +0800
+> @@ -2267,6 +2267,7 @@ generic_file_direct_write(struct kiocb *
+>  	struct file	*file = iocb->ki_filp;
+>  	struct address_space *mapping = file->f_mapping;
+>  	struct inode	*inode = mapping->host;
+> +	struct blk_plug plug;
+>  	ssize_t		written;
+>  	size_t		write_len;
+>  	pgoff_t		end;
+> @@ -2301,7 +2302,9 @@ generic_file_direct_write(struct kiocb *
+>  		}
+>  	}
+>  
+> +	blk_start_plug(&plug);
+>  	written = mapping->a_ops->direct_IO(WRITE, iocb, iov, pos, *nr_segs);
+> +	blk_finish_plug(&plug);
+>  
+>  	/*
+>  	 * Finally, try again to invalidate clean pages which might have been
+> @@ -2610,13 +2613,11 @@ ssize_t generic_file_aio_write(struct ki
+>  {
+>  	struct file *file = iocb->ki_filp;
+>  	struct inode *inode = file->f_mapping->host;
+> -	struct blk_plug plug;
+>  	ssize_t ret;
+>  
+>  	BUG_ON(iocb->ki_pos != pos);
+>  
+>  	mutex_lock(&inode->i_mutex);
+> -	blk_start_plug(&plug);
+>  	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+>  	mutex_unlock(&inode->i_mutex);
+>  
+> @@ -2627,7 +2628,6 @@ ssize_t generic_file_aio_write(struct ki
+>  		if (err < 0 && ret > 0)
+>  			ret = err;
+>  	}
+> -	blk_finish_plug(&plug);
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL(generic_file_aio_write);
 
-that point is we have the garbage collection mechanism by calling
-devm_ function families. everything is undone on driver detach.
-so we will not have the free and unmap things.
->
-> ?
->
-> Yours,
-> Linus Walleij
 
--barry
