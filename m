@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab2BAVft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:35:49 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58504 "EHLO
+	id S932873Ab2BAVgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:36:05 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58991 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932509Ab2BAVKE (ORCPT
+	by vger.kernel.org with ESMTP id S1757283Ab2BAVKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:04 -0500
-X-Sasl-enc: UPt0W1aXV3zvl07DHSVwTrbzLEJcT/0MgigUHMMcHDHz 1328130603
+	Wed, 1 Feb 2012 16:10:03 -0500
+X-Sasl-enc: ber3qn0erBoG+VKP1sziv20hfYdoEnmPVQjXqvdO4H6r 1328130601
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:44 2012
-Message-Id: <20120201210043.968262390@clark.kroah.org>
+Message-Id: <20120201210044.760939071@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:59:25 -0800
+Date: Wed, 01 Feb 2012 12:59:34 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [01/89] ALSA: hda - Fix buffer-alignment regression with Nvidia HDMI
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [10/89] drm/radeon/kms: rework modeset sequence for DCE41 and DCE5
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 52409aa6a0e96337da137c069856298f4dd825a0 upstream.
+commit 3a47824d85eeca122895646f027dc63480994199 upstream.
 
-The commit 2ae66c26550cd94b0e2606a9275eb0ab7070ad0e
-    ALSA: hda: option to enable arbitrary buffer/period sizes
-introduced a regression on machines with Intel controller and Nvidia
-HDMI.  The reason is that the driver modifies the global variable
-align_buffer_size when an Intel controller is found, and the Nvidia
-HDMI controller is probed after Intel although Nvidia chips require
-the aligned buffers.
+dig transmitter control table only has ENABLE/DISABLE actions
+on DCE4.1/DCE5.
 
-This patch fixes the problem by moving the flag into the local struct
-so that it's not affected by other controllers.
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=44955
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42567
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/atombios_encoders.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -461,6 +461,7 @@ struct azx {
- 	unsigned int irq_pending_warned :1;
- 	unsigned int probing :1; /* codec probing phase */
- 	unsigned int snoop:1;
-+	unsigned int align_buffer_size:1;
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1352,7 +1352,8 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 	switch (mode) {
+ 	case DRM_MODE_DPMS_ON:
+ 		/* some early dce3.2 boards have a bug in their transmitter control table */
+-		if ((rdev->family == CHIP_RV710) || (rdev->family == CHIP_RV730))
++		if ((rdev->family == CHIP_RV710) || (rdev->family == CHIP_RV730) ||
++		    ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev))
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
+ 		else
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+@@ -1362,8 +1363,6 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 							     ATOM_TRANSMITTER_ACTION_POWER_ON);
+ 				radeon_dig_connector->edp_on = true;
+ 			}
+-			if (ASIC_IS_DCE4(rdev))
+-				atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_DP_VIDEO_OFF, 0);
+ 			radeon_dp_link_train(encoder, connector);
+ 			if (ASIC_IS_DCE4(rdev))
+ 				atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_DP_VIDEO_ON, 0);
+@@ -1374,7 +1373,10 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 	case DRM_MODE_DPMS_STANDBY:
+ 	case DRM_MODE_DPMS_SUSPEND:
+ 	case DRM_MODE_DPMS_OFF:
+-		atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE_OUTPUT, 0, 0);
++		if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev))
++			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
++		else
++			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE_OUTPUT, 0, 0);
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
+ 			if (ASIC_IS_DCE4(rdev))
+ 				atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_DP_VIDEO_OFF, 0);
+@@ -1821,7 +1823,7 @@ radeon_atom_encoder_mode_set(struct drm_
+ 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+ 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
+ 	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
+-		if (ASIC_IS_DCE4(rdev)) {
++		if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev)) {
+ 			struct drm_connector *connector = radeon_get_connector_for_encoder(encoder);
+ 			struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
  
- 	/* for debugging */
- 	unsigned int last_cmd[AZX_MAX_CODECS];
-@@ -1697,7 +1698,7 @@ static int azx_pcm_open(struct snd_pcm_s
- 	runtime->hw.rates = hinfo->rates;
- 	snd_pcm_limit_hw_rates(runtime);
- 	snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
--	if (align_buffer_size)
-+	if (chip->align_buffer_size)
- 		/* constrain buffer sizes to be multiple of 128
- 		   bytes. This is more efficient in terms of memory
- 		   access but isn't required by the HDA spec and
-@@ -2753,8 +2754,9 @@ static int __devinit azx_create(struct s
- 	}
+@@ -1830,13 +1832,16 @@ radeon_atom_encoder_mode_set(struct drm_
+ 			else
+ 				dig->panel_mode = radeon_dp_get_panel_mode(encoder, connector);
  
- 	/* disable buffer size rounding to 128-byte multiples if supported */
-+	chip->align_buffer_size = align_buffer_size;
- 	if (chip->driver_caps & AZX_DCAPS_BUFSIZE)
--		align_buffer_size = 0;
-+		chip->align_buffer_size = 0;
+-			/* disable the transmitter */
+-			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
+ 			/* setup and enable the encoder */
+ 			atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_SETUP, 0);
+ 			atombios_dig_encoder_setup(encoder,
+ 						   ATOM_ENCODER_CMD_SETUP_PANEL_MODE,
+ 						   dig->panel_mode);
++		} else if (ASIC_IS_DCE4(rdev)) {
++			/* disable the transmitter */
++			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
++			/* setup and enable the encoder */
++			atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_SETUP, 0);
  
- 	/* allow 64bit DMA address if supported by H/W */
- 	if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
+ 			/* enable the transmitter */
+ 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
 
 
