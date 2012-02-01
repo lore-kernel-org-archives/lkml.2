@@ -1,75 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab2BATY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:24:29 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46372 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab2BATY1 convert rfc822-to-8bit (ORCPT
+	id S1756229Ab2BAT2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:28:50 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62611 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab2BAT2t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:24:27 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Manuel Lauss <manuel.lauss@googlemail.com>
-Subject: Re: [WARN] offlining CPUs yields warning at arch/x86/kernel/smp.c:120
-Date: Wed, 1 Feb 2012 20:24:22 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <CAOLZvyE=z=Y5wD-Vyp1ZbWV1-kqW8EmZkrHOcMBPZmBQ67E+Ow@mail.gmail.com>
-In-Reply-To: <CAOLZvyE=z=Y5wD-Vyp1ZbWV1-kqW8EmZkrHOcMBPZmBQ67E+Ow@mail.gmail.com>
+	Wed, 1 Feb 2012 14:28:49 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB15E@HQMAIL01.nvidia.com>
+References: <1326725496-28928-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1780DAB15E@HQMAIL01.nvidia.com>
+Date: Wed, 1 Feb 2012 20:28:48 +0100
+Message-ID: <CACRpkdZAofVVQ5_b_R2FUWy5AfWOge1NOuO61q7vFiLB4wUizQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: pin configuration states
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201202012024.22322.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Å›roda, 1 lutego 2012 o 15:23:49 Manuel Lauss wrote:
-> Hello,
-> 
-> When offlining/onlining CPUs the following warning is spat out repeatedly.
-> System is a 4-core+HT SandyBridge laptop.  Full dmesg below.
-> 
-> CPU 7 is now offline
-> CPU 6 is now offline
-> CPU 5 is now offline
-> ------------[ cut here ]------------
-> WARNING: at /mnt/data/.src/linux.git/arch/x86/kernel/smp.c:120
-> update_process_times+0x65/0x80()
-> Hardware name: Precision M6600
-> Modules linked in:
-> Pid: 17, comm: migration/2 Not tainted 3.3.0-rc1-00473-g6bc2b95 #1
-> Call Trace:
->  <IRQ>  [<ffffffff8104e5eb>] ? warn_slowpath_common+0x7b/0xc0
->  [<ffffffff8108a000>] ? tick_nohz_handler+0xd0/0xd0
->  [<ffffffff8105af45>] ? update_process_times+0x65/0x80
->  [<ffffffff8108a05b>] ? tick_sched_timer+0x5b/0xb0
->  [<ffffffff8106dc0e>] ? __run_hrtimer.isra.33+0x4e/0xe0
->  [<ffffffff8106e3e0>] ? hrtimer_interrupt+0xe0/0x210
->  [<ffffffff810a09e0>] ? queue_stop_cpus_work+0xf0/0xf0
->  [<ffffffff8101c513>] ? smp_apic_timer_interrupt+0x63/0xa0
->  [<ffffffff818acbcb>] ? apic_timer_interrupt+0x6b/0x70
->  <EOI>  [<ffffffff810a0a6a>] ? stop_machine_cpu_stop+0x8a/0xb0
->  [<ffffffff810a06f4>] ? cpu_stopper_thread+0xc4/0x190
->  [<ffffffff81073e6e>] ? try_to_wake_up+0x1de/0x290
->  [<ffffffff8107153f>] ? __wake_up_common+0x4f/0x80
->  [<ffffffff810a0630>] ? cpu_stop_signal_done+0x30/0x30
->  [<ffffffff81069ec5>] ? kthread+0x85/0x90
->  [<ffffffff818ad294>] ? kernel_thread_helper+0x4/0x10
->  [<ffffffff81069e40>] ? kthread_freezable_should_stop+0x60/0x60
->  [<ffffffff818ad290>] ? gs_change+0xb/0xb
-> ---[ end trace 431db5dbf525be16 ]---
-> CPU 4 is now offline
-> 
-> [and so on].
-> 
-> Please take a look.
-> 
-It is regression? If yes, which is latest good kernel and/or can you do 
-bisection?
+On Thu, Jan 19, 2012 at 8:03 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Monday, January 16, 2012 7:52 AM:
+>> This introduce a pin configuration state structure and activation
+>> functions similar to the pinmux map. (etc)
 
-Regards
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+>> Also there is no way for a pinmux and its associated device to
+>> switch states in this solution. However one does not exclude the
+>> other, we might want per-device associated pinmux and group
+>> states *also*.
+>
+> Yes, I think per-device states are a primary use-case...
+
+OK added this for v2.
+
+> In the long-run for per-device states, I think you'll need the per-
+> device fields that the pinmux mapping table has:
+>
+>        struct device *dev;
+>        const char *dev_name;
+
+OK fixed this.
+
+> In that case, .apply_on_init/.apply_on_exit don't really apply that well.
+> I'd suggest combining those two fields into a "bool hog" field just like
+> the pinmux mapping table, and defining that .name name must be "init" or
+> "exit" when .hog==true. That seems more in line with devices using the
+> .name field to define which states happen when.
+
+I don't know, it looks fragile, "hog" is not intuitive since that state is
+not going to stay or be "hogged" in any way. I'm staying with the
+strongly-typed bools instead of hard-coded strings FTM.
+
+But using #defined strings has the beauty of enforcing it a bit
+across platforms so I'm still considering it.
+
+> Bikeshedding a but, the names init/fini are a slightly more match pair,
+> but perhaps less understandable?
+
+Hehe :-) a bashism?
+
+> Probe/remove match the Linux driver
+> model better, but wouldn't map as well to device tree which isn't supposed
+> to be influenced by Linux.
+
+I'm trying to keep orthogonal to the device tree here, trying to take
+that into account for everything just burns me out and distorts
+focus currently. We can always refactor or translate whatever the
+DT discussions lead up to.
+
+>> +     /*
+>> +      * Make a copy of the config state array - string pointers will end up
+> ...
+>> +     pinconf_states = tmp;
+>> +     pinconf_states_num += num_states;
+>
+> We need to allow multiple tables to be registered, for all the same
+> reasons we do for the pinmux mapping table. This implementation only
+> keeps the most recently registered table.
+
+? beats me.
+
+Please check the code for how I realloc the tmp variable (in the v2
+patch set), I cannot spot the problem. It was designed to allow exactly
+multiple calls to add tables piece by piece.
+
+The rest are fixed as I addressed yours, Dongs and Thomas' comments,
+or so I hope.
+
+Thanks,
+Linus Walleij
