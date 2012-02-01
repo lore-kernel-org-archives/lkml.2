@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab2BAUxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:53:52 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33552 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756846Ab2BAUun (ORCPT
+	id S1756869Ab2BAUul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:50:41 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54454 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753802Ab2BAUuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:50:43 -0500
+	Wed, 1 Feb 2012 15:50:39 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 03/16] elevator: clear auxiliary data earlier during elevator switch
-Date: Wed,  1 Feb 2012 12:50:16 -0800
-Message-Id: <1328129429-11823-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 01/16] blkcg: make CONFIG_BLK_CGROUP bool
+Date: Wed,  1 Feb 2012 12:50:14 -0800
+Message-Id: <1328129429-11823-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1328129429-11823-1-git-send-email-tj@kernel.org>
 References: <1328129429-11823-1-git-send-email-tj@kernel.org>
@@ -21,188 +21,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Elevator switch tries hard to keep as much as context until new
-elevator is ready so that it can revert to the original state if
-initializing the new elevator fails for some reason.  Unfortunately,
-with more auxiliary contexts to manage, this makes elevator init and
-exit paths too complex and fragile.
+Block cgroup core can be built as module; however, it isn't too useful
+as blk-throttle can only be built-in and cfq-iosched is usually the
+default built-in scheduler.  Scheduled blkcg cleanup requires calling
+into blkcg from block core.  To simplify that, disallow building blkcg
+as module by making CONFIG_BLK_CGROUP bool.
 
-This patch makes elevator_switch() unregister the current elevator and
-flush icq's before start initializing the new one.  As we still keep
-the old elevator itself, the only difference is that we lose icq's on
-rare occassions of switching failure, which isn't critical at all.
+If building blkcg core as module really matters, which I doubt, we can
+revisit it after blkcg API cleanup.
 
-Note that this makes explicit elevator parameter to
-elevator_init_queue() and __elv_register_queue() unnecessary as they
-always can use the current elevator.
-
-This patch enables block cgroup cleanups.
+-v2: Vivek pointed out that IOSCHED_CFQ was incorrectly updated to
+     depend on BLK_CGROUP.  Fixed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/elevator.c |   88 +++++++++++++++++++++++++++---------------------------
- 1 files changed, 44 insertions(+), 44 deletions(-)
+ block/Kconfig.iosched |    4 ----
+ block/blk-cgroup.c    |   17 -----------------
+ block/blk-cgroup.h    |   10 ++--------
+ init/Kconfig          |    2 +-
+ 4 files changed, 3 insertions(+), 30 deletions(-)
 
-diff --git a/block/elevator.c b/block/elevator.c
-index 91e18f8..42543e3 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -168,11 +168,10 @@ static struct elevator_type *elevator_get(const char *name)
- 	return e;
- }
+diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+index 3199b76..421bef9 100644
+--- a/block/Kconfig.iosched
++++ b/block/Kconfig.iosched
+@@ -23,8 +23,6 @@ config IOSCHED_DEADLINE
  
--static int elevator_init_queue(struct request_queue *q,
--			       struct elevator_queue *eq)
-+static int elevator_init_queue(struct request_queue *q)
- {
--	eq->elevator_data = eq->type->ops.elevator_init_fn(q);
--	if (eq->elevator_data)
-+	q->elevator->elevator_data = q->elevator->type->ops.elevator_init_fn(q);
-+	if (q->elevator->elevator_data)
- 		return 0;
- 	return -ENOMEM;
- }
-@@ -235,7 +234,6 @@ static void elevator_release(struct kobject *kobj)
- int elevator_init(struct request_queue *q, char *name)
- {
- 	struct elevator_type *e = NULL;
--	struct elevator_queue *eq;
- 	int err;
+ config IOSCHED_CFQ
+ 	tristate "CFQ I/O scheduler"
+-	# If BLK_CGROUP is a module, CFQ has to be built as module.
+-	depends on (BLK_CGROUP=m && m) || !BLK_CGROUP || BLK_CGROUP=y
+ 	default y
+ 	---help---
+ 	  The CFQ I/O scheduler tries to distribute bandwidth equally
+@@ -34,8 +32,6 @@ config IOSCHED_CFQ
  
- 	if (unlikely(q->elevator))
-@@ -269,17 +267,16 @@ int elevator_init(struct request_queue *q, char *name)
- 		}
- 	}
+ 	  This is the default I/O scheduler.
  
--	eq = elevator_alloc(q, e);
--	if (!eq)
-+	q->elevator = elevator_alloc(q, e);
-+	if (!q->elevator)
- 		return -ENOMEM;
- 
--	err = elevator_init_queue(q, eq);
-+	err = elevator_init_queue(q);
- 	if (err) {
--		kobject_put(&eq->kobj);
-+		kobject_put(&q->elevator->kobj);
- 		return err;
- 	}
- 
--	q->elevator = eq;
- 	return 0;
- }
- EXPORT_SYMBOL(elevator_init);
-@@ -848,8 +845,9 @@ static struct kobj_type elv_ktype = {
- 	.release	= elevator_release,
+-	  Note: If BLK_CGROUP=m, then CFQ can be built only as module.
+-
+ config CFQ_GROUP_IOSCHED
+ 	bool "CFQ Group Scheduling support"
+ 	depends on IOSCHED_CFQ && BLK_CGROUP
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index fa8f263..7bfc574 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -50,10 +50,7 @@ struct cgroup_subsys blkio_subsys = {
+ 	.attach = blkiocg_attach,
+ 	.destroy = blkiocg_destroy,
+ 	.populate = blkiocg_populate,
+-#ifdef CONFIG_BLK_CGROUP
+-	/* note: blkio_subsys_id is otherwise defined in blk-cgroup.h */
+ 	.subsys_id = blkio_subsys_id,
+-#endif
+ 	.use_id = 1,
+ 	.module = THIS_MODULE,
  };
- 
--int __elv_register_queue(struct request_queue *q, struct elevator_queue *e)
-+int elv_register_queue(struct request_queue *q)
- {
-+	struct elevator_queue *e = q->elevator;
- 	int error;
- 
- 	error = kobject_add(&e->kobj, &q->kobj, "%s", "iosched");
-@@ -867,11 +865,6 @@ int __elv_register_queue(struct request_queue *q, struct elevator_queue *e)
- 	}
- 	return error;
+@@ -1679,17 +1676,3 @@ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ 	spin_unlock(&blkio_list_lock);
  }
+ EXPORT_SYMBOL_GPL(blkio_policy_unregister);
 -
--int elv_register_queue(struct request_queue *q)
+-static int __init init_cgroup_blkio(void)
 -{
--	return __elv_register_queue(q, q->elevator);
+-	return cgroup_load_subsys(&blkio_subsys);
 -}
- EXPORT_SYMBOL(elv_register_queue);
- 
- void elv_unregister_queue(struct request_queue *q)
-@@ -954,39 +947,47 @@ EXPORT_SYMBOL_GPL(elv_unregister);
-  */
- static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
- {
--	struct elevator_queue *old_elevator, *e;
-+	struct elevator_queue *old = q->elevator;
-+	bool registered = old->registered;
- 	int err;
- 
--	/* allocate new elevator */
--	e = elevator_alloc(q, new_e);
--	if (!e)
--		return -ENOMEM;
 -
--	err = elevator_init_queue(q, e);
--	if (err) {
--		kobject_put(&e->kobj);
--		return err;
--	}
+-static void __exit exit_cgroup_blkio(void)
+-{
+-	cgroup_unload_subsys(&blkio_subsys);
+-}
 -
--	/* turn on BYPASS and drain all requests w/ elevator private data */
-+	/*
-+	 * Turn on BYPASS and drain all requests w/ elevator private data.
-+	 * Block layer doesn't call into a quiesced elevator - all requests
-+	 * are directly put on the dispatch list without elevator data
-+	 * using INSERT_BACK.  All requests have SOFTBARRIER set and no
-+	 * merge happens either.
-+	 */
- 	elv_quiesce_start(q);
+-module_init(init_cgroup_blkio);
+-module_exit(exit_cgroup_blkio);
+-MODULE_LICENSE("GPL");
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 6f3ace7..3551687 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -24,13 +24,7 @@ enum blkio_policy_id {
+ /* Max limits for throttle policy */
+ #define THROTL_IOPS_MAX		UINT_MAX
  
--	/* unregister old queue, register new one and kill old elevator */
--	if (q->elevator->registered) {
-+	/* unregister and clear all auxiliary data of the old elevator */
-+	if (registered)
- 		elv_unregister_queue(q);
--		err = __elv_register_queue(q, e);
--		if (err)
--			goto fail_register;
--	}
+-#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+-
+-#ifndef CONFIG_BLK_CGROUP
+-/* When blk-cgroup is a module, its subsys_id isn't a compile-time constant */
+-extern struct cgroup_subsys blkio_subsys;
+-#define blkio_subsys_id blkio_subsys.subsys_id
+-#endif
++#ifdef CONFIG_BLK_CGROUP
  
--	/* done, clear io_cq's, switch elevators and turn off BYPASS */
- 	spin_lock_irq(q->queue_lock);
- 	ioc_clear_queue(q);
--	old_elevator = q->elevator;
--	q->elevator = e;
- 	spin_unlock_irq(q->queue_lock);
+ enum stat_type {
+ 	/* Total time spent (in ns) between request dispatch to the driver and
+@@ -303,7 +297,7 @@ static inline void blkiocg_update_idle_time_stats(struct blkio_group *blkg) {}
+ static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg) {}
+ #endif
  
--	elevator_exit(old_elevator);
-+	/* allocate, init and register new elevator */
-+	err = -ENOMEM;
-+	q->elevator = elevator_alloc(q, new_e);
-+	if (!q->elevator)
-+		goto fail_init;
-+
-+	err = elevator_init_queue(q);
-+	if (err) {
-+		kobject_put(&q->elevator->kobj);
-+		goto fail_init;
-+	}
-+
-+	if (registered) {
-+		err = elv_register_queue(q);
-+		if (err)
-+			goto fail_register;
-+	}
-+
-+	/* done, kill the old one and finish */
-+	elevator_exit(old);
- 	elv_quiesce_end(q);
+-#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
++#ifdef CONFIG_BLK_CGROUP
+ extern struct blkio_cgroup blkio_root_cgroup;
+ extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
+ extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..da9222d 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -766,7 +766,7 @@ config RT_GROUP_SCHED
+ endif #CGROUP_SCHED
  
- 	blk_add_trace_msg(q, "elv switch: %s", e->type->elevator_name);
-@@ -994,11 +995,10 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
- 	return 0;
- 
- fail_register:
--	/*
--	 * switch failed, exit the new io scheduler and reattach the old
--	 * one again (along with re-adding the sysfs dir)
--	 */
--	elevator_exit(e);
-+	elevator_exit(q->elevator);
-+fail_init:
-+	/* switch failed, restore and re-register old elevator */
-+	q->elevator = old;
- 	elv_register_queue(q);
- 	elv_quiesce_end(q);
- 
+ config BLK_CGROUP
+-	tristate "Block IO controller"
++	bool "Block IO controller"
+ 	depends on BLOCK
+ 	default n
+ 	---help---
 -- 
 1.7.7.3
 
