@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab2BAO6P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 09:58:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932088Ab2BAO6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 09:58:14 -0500
-Date: Wed, 1 Feb 2012 09:58:02 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: TAO HU <tghk48@motorola.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-omap <linux-omap@vger.kernel.org>
-Subject: Re: In many cases softlockup can not be reported after disabling IRQ
- for long time
-Message-ID: <20120201145802.GF5650@redhat.com>
-References: <CAOwKts8zS1rYA+Y4k-vb8YAaR=aFd1BwryhhWWnWLQyrYrNqyA@mail.gmail.com>
- <20120131154748.GA5650@redhat.com>
- <CAOwKts_dTvc4LiCZUXN9oYzty1pkDEn_VQwPKY=EoVzk0n6tFA@mail.gmail.com>
+	id S1756514Ab2BAPA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:00:59 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:33882 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab2BAPA5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 10:00:57 -0500
+Date: Wed, 1 Feb 2012 14:59:35 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Colin Cross <ccross@android.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kevin Hilman <khilman@ti.com>, Len Brown <len.brown@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [linux-pm] [PATCH 0/3] coupled cpuidle state support
+Message-ID: <20120201145934.GA20421@e102568-lin.cambridge.arm.com>
+References: <1324426147-16735-1-git-send-email-ccross@android.com>
+ <4F1929E9.7070707@linaro.org>
+ <CAMbhsRTbVqV6p0py9NGZrpFPf2yvp-B0dr+o-m7qbdja_-Lfzw@mail.gmail.com>
+ <CAKfTPtAsO8z_8AnR8zSGZ9cm_7orDNxB3r09JAFk+2jdezUVmQ@mail.gmail.com>
+ <CAMbhsRQYVXTZ2pX4mBrM6=SyGTqn_GY8xsW4rt_e21zerEzctA@mail.gmail.com>
+ <CAKfTPtB3Kcy41H9g9u3u81kEHJeypi=GvOfOjcpdztzqN991nA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOwKts_dTvc4LiCZUXN9oYzty1pkDEn_VQwPKY=EoVzk0n6tFA@mail.gmail.com>
+In-Reply-To: <CAKfTPtB3Kcy41H9g9u3u81kEHJeypi=GvOfOjcpdztzqN991nA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 01 Feb 2012 14:59:38.0924 (UTC) FILETIME=[1EBBE6C0:01CCE0F2]
+X-MC-Unique: 112020115000104301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 10:18:09AM +0800, TAO HU wrote:
-> Hi, Don
-> 
-> Thanks for your feedback!
-> 
-> Unfortunately, the hardlockup depends on NMI which is not available on
-> ARM (Cortex-A9) per my understanding.
-> Our system uses OMAP4430. Any more suggestions?
+On Wed, Feb 01, 2012 at 12:13:26PM +0000, Vincent Guittot wrote:
 
-Ah.  I wrongly assumed this is x86. Sorry about that.
+[...]
 
-Ok, so this is what is going on.  The softlockup check is just a high
-priority thread that periodically runs.  If preemption is disabled that
-thread can't run (or any threads for that matter) and a softlockup
-condition will exist.  However, in order to determine that, a periodic
-hrtimer has to come along and do the actual check.
-
-If that check fails, then the warning is printed out.  However that
-accuracy is based on the resolution of that hrtimer which I set to about
-1/5 the watchdog threshold or 1 second in this case.
-
-Unfortunately, if you disable the irqs, then that timer can't fire and now
-we don't have a way to trigger the softlockup check until interrupts are
-re-enabled.
-
-On x86, we have a backup plan for disabled interrupts and that is the
-hardlockup check which rely on NMIs (something that still fires even when
-interrupts are disabled).
-
-If on ARM you don't have NMIs, then it will be difficult to check for
-softlockups when interrupts are disabled.  Though I do recall sparc doing
-something clever like using IRQ0 as a special purpose IRQ to emulate an
-NMI (IOW, software purposely avoided masking IRQ0).  So when an interrupt
-came in on that irq, it was never blocked and always ran based on the irq
-nesting rules.
-
-I don't know ARM well enough to give any solution for your problem, but my
-reason above is why it isn't working the way you intended.
-
-Cheers,
-Don
-
-> 
-> On Tue, Jan 31, 2012 at 11:47 PM, Don Zickus <dzickus@redhat.com> wrote:
-> > On Tue, Jan 31, 2012 at 03:28:09PM +0800, TAO HU wrote:
-> >> Resend with a new subject
-> >>
-> >> On Wed, Jan 25, 2012 at 4:24 PM, TAO HU <tghk48@motorola.com> wrote:
-> >> > Hi, All
-> >> >
-> >> > While playing kernel 3.0.8 with below test code, it does NOT report
-> >> > any softlockup with 60%~70% chances.
-> >> > NOTE: the softlockup timeout is set to 10 seconds (i.e.
-> >> > watchdog_thresh=5) in my test.
-> >> > ... ...
-> >> > preempt_disable();
-> >> > local_irq_disable();
-> >> > for (i = 0; i < 20; i++)
-> >> >       mdelay(1000);
-> >> > local_irq_enable();
-> >> > preempt_enable();
-> >> > ... ...
-> >> >
-> >> > However, if I remove local_irq_disable()/local_irq_enable() it will
-> >> > report softlockup with no problem.
-> >> > I believe it is due to that after local_irq_enable()
-> >> > touch_softlockup_watchdog() is called prior softlockup timer.
+> >> In your patch, you put in safe state (WFI for most of platform) the
+> >> cpus that become idle and these cpus are woken up each time a new cpu
+> >> of the cluster becomes idle. Then, the cluster state is chosen and the
+> >> cpus enter the selected C-state. On ux500, we are using another
+> >> behavior for synchronizing  the cpus. The cpus are prepared to enter
+> >> the c-state that has been chosen by the governor and the last cpu,
+> >> that enters idle, chooses the final cluster state (according to cpus'
+> >> C-state). The main advantage of this solution is that you don't need
+> >> to wake other cpus to enter the C-state of a cluster. This can be
+> >> quite worth full when tasks mainly run on one cpu. Have you also think
+> >> about such behavior when developing the coupled cpuidle driver ? It
+> >> could be interesting to add such behavior.
 > >
-> > Hi Hu,
-> >
-> > Honestly, you should be getting hardlockup warnings if you are disabling
-> > interrupts.  Do you see anything in the console output?
-> >
-> > Cheers,
-> > Don
+> > Waking up the cpus that are in the safe state is not done just to
+> > choose the target state, it's done to allow the cpus to take
+> > themselves to the target low power state.  On ux500, are you saying
+> > you take the cpus directly from the safe state to a lower power state
+> > without ever going back to the active state?  I once implemented Tegra
 > 
-> 
-> 
-> -- 
-> Best Regards
-> Hu Tao
+> yes it is
+
+But if there is a single power rail for the entire cluster, when a CPU
+is "prepared" for shutdown this means that you have to save the context and
+clean L1, maybe for nothing since if other CPUs are up and running the
+CPU going idle can just enter a simple standby wfi (clock-gated but power on).
+
+With Colin's approach, context is saved and L1 cleaned only when it is
+almost certain the cluster is powered off (so the CPUs).
+
+It is a trade-off, I am not saying one approach is better than the
+other; we just have to make sure that preparing the CPU for "possible" shutdown 
+is better than sending IPIs to take CPUs out of wfi and synchronize
+them (this happens if and only if CPUs enter coupled C-states).
+
+As usual this will depend on use cases (and silicon implementations :) )
+
+It is definitely worth benchmarking them.
+
+Lorenzo
+
