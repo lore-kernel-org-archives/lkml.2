@@ -1,37 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab2BATQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:16:08 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:33425 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab2BATQF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:16:05 -0500
-Date: Wed, 01 Feb 2012 14:15:51 -0500 (EST)
-Message-Id: <20120201.141551.1696887866364021374.davem@davemloft.net>
-To: akinobu.mita@gmail.com
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        isdn@linux-pingi.de, netdev@vger.kernel.org
-Subject: Re: [PATCH] mISDN: use memchr_inv
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1327674295-3700-8-git-send-email-akinobu.mita@gmail.com>
-References: <1327674295-3700-1-git-send-email-akinobu.mita@gmail.com>
-	<1327674295-3700-8-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	id S1756377Ab2BATQa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:16:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18063 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755125Ab2BATQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:16:28 -0500
+Subject: Re: Memory corruption due to word sharing
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
+        rguenther@suse.de, gcc@gcc.gnu.org
+In-Reply-To: <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+References: <20120201151918.GC16714@quack.suse.cz>
+	 <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Feb 2012 18:42:54 +0100
+Message-ID: <1328118174.15992.6206.camel@triegel.csb>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 01 Feb 2012 11:15:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Akinobu Mita <akinobu.mita@gmail.com>
-Date: Fri, 27 Jan 2012 23:24:55 +0900
+On Wed, 2012-02-01 at 08:41 -0800, Linus Torvalds wrote:
+> If the gcc people aren't willing to agree that this is actually a flaw
+> in the standard (one that is being addressed, no less)
 
-> Use memchr_inv to check if the data contains all same bytes.  It is
-> faster than looping for each byte.
+It has been addressed in the standards.
+
+> and try to fix
+> it,
+
+Again, this is being worked on, see http://gcc.gnu.org/wiki/Atomic/GCCMM
+
+> we just have to extend our assumptions to something like "a
+> compiler would be stupid to ever access anything bigger than the
+> aligned register-size area". It's still just an assumption, and
+> compiler people could be crazy, but we could just extend the current
+> alpha rules to cover not just "int", but "long" too.
+
+So, let's ignore everyone's craziness (the kernel is not the only GCC
+client...) and think about how we can improve the situation.
+
+We need a proper memory model.  No vague assumptions with lots of
+hand-waving.  If you think that this is simple stuff and can
+sufficiently described by "don't do anything stupid", then please have a
+look at the issues that the Java memory model faced, and all the
+iterations of the C++11/C11 model and discussions about it.
+
+The only candidate that I see is the C++11/C11 model.  Any other
+suggestions?
+
+Now, if we assume this model, what does the kernel community think about
+it?  It might be good to split this discussion into the following two
+points, to avoid syntax flame wars:
+1) The model itself (ie, the memory orders, ordering guarantees, (lack
+of) progress guarantees, etc.).
+2) The syntax/APIs to specify atomics.
+
+If something else or more is needed, the compiler needs to have a formal
+specification for that.  This will help users too, because it avoids all
+the ambiguities.
+
+> Sure, the compiler people could use "load/store multiple" or something
+> like that, but it would be obviously crazy code, so if it happens past
+> a register size, at least you could argue that it's a performance
+> issue and maybe the gcc people would care.
 > 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> HOWEVER. The problem with the alpha rules (which, btw, were huge, and
+> led to the CPU designers literally changing the CPU instruction set
+> because they admitted they made a huge mistake) was never so much the
+> occasional memory corruption, as the fact that the places where it
+> could happen were basically almost impossible to find.
+> 
+> So we probably have tons of random places in the kernel that violate
+> even the alpha rules - because the corruption is so rare, and the
+> architecture was so rare as to making the corruption even harder to
+> find.
 
-Applied, thanks.
+I assume you still would want a weak memory model, or not?  (That is,
+rely on data-race-freedom, only atomics do not contribute to data races,
+and you need to mark data used for synchronization (or which is just
+accessed concurrently) as atomics).
+
+If so, you need to tell the compiler which variables etc. are atomics.
+
+> I assume this code generation idiocy only happens with bitfields? The
+> problem is, we really don't want to make all bitfields take up 64 bits
+> just because we might have a lock or something else next to them. But
+> we could probably re-order things (and then *occasionally* wasting
+> memory) if we could just find the ones that are problematic.
+
+If the compiler is aware what is a lock (or atomics, or similar), then a
+correct implementation should leave the lock alone.  But in a weak
+memory model, it needs to know what is a lock.
+(Same goes for volatile obviously, like in the other example posted in
+the thread where the bitfields interfered with the volatile.)
+
+> 
+> It's finding the problematic ones that is the issue. Which is why the
+> compiler should just generate code that matches what we told it to do,
+
+So, would it be okay to tell the compiler which part of the state is
+accessed concurrently (ie, locks, atomics, ...)?
+
+
+Torvald
+
