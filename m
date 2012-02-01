@@ -1,190 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab2BAI6R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 03:58:17 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38184 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab2BAI6Q (ORCPT
+	id S1756027Ab2BAJBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 04:01:25 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65518 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab2BAJBX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 03:58:16 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 1 Feb 2012 17:56:57 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] speed up /proc/pid/stat, statm
-Message-Id: <20120201175657.0b67bc00.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1328075682.2617.48.camel@edumazet-laptop>
-References: <20120131171443.567b53ad.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120131123612.6b60bdfc.akpm@linux-foundation.org>
-	<20120201085546.ecbf628d.kamezawa.hiroyu@jp.fujitsu.com>
-	<1328075682.2617.48.camel@edumazet-laptop>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 1 Feb 2012 04:01:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <201201131144.58044.thomas@fjellstrom.ca>
+References: <201201131144.58044.thomas@fjellstrom.ca>
+Date: Wed, 1 Feb 2012 09:01:22 +0000
+Message-ID: <CAKaSfQDyU1a641ZMBNNJJABhXBQxhPGH=E6sNoss=2JyYgFusw@mail.gmail.com>
+Subject: Re: mvsas with 3.1
+From: Simon McNair <simonmcnair@gmail.com>
+To: thomas@fjellstrom.ca
+Cc: linux-kernel@vger.kernel.org,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        ayan@marvell.com, andy yan <andyysj@gmail.com>,
+        linux-raid <linux-raid@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Feb 2012 06:54:42 +0100
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+Hi Thomas,
+I've been trying to get an answer to this same question (I have a
+supermicro AOC-SASLP-MV8 too).  See my post at
+https://lkml.org/lkml/2012/1/30/107  .
 
-> Le mercredi 01 fÃ©vrier 2012 Ã  08:55 +0900, KAMEZAWA Hiroyuki a Ã©crit :
-> 
-> > seq_xxxx functions set m->count == m->size when it finds possible buffer overflow.
-> > If m->count == m->size after ->show(), buffer will be freed and twice size buffer
-> > will be re-allocated, and retry.
-> > 
-> > If we don't set m->count == m->size here, following seq_putc() will succeed and
-> > we'll see corrupted outputs.
-> 
-> I suppose we could define a self documented helper
-> 
-> void seq_overflow(struct seq_file *seq)
-> {
-> 	seq->count = seq->size;
-> }
-> 
+My only suggestion is to get a kernel that's pre 2.6.30 (my Thecus
+5200 marvell based unit is on 2.6.13 and it seems okay).  If the data
+is mission critical I certainly wouldn't be using the latest kernels
+in production until it had 6+months in a stress test environment (of
+course I'm an obsessive apt-get upgrade which makes me a hypocrite
+:-P).
 
-How about this ?
-==
->From 76769c79d44ae0532c32113a352dc0269bb7a7d5 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 1 Feb 2012 18:10:16 +0900
-Subject: [PATCH] add seq_set_overflow(), seq_overflow()
+I can see from searching lkml.org  for mvsas that there is a lot of
+code going in to this driver and unless your're a linux guru and can
+fix these problems I can only suggest you keep anything important on a
+=< 2.6.13 kernel and monitor the situation.
 
-It's undocumented but seq file's overflow state is checked by
-m->count == m->size. This patch adds seq_set_overflow() and
-seq_overflow() to set/check overflow status explicitly.
+Oh, and keep back ups ;-) (again here's me being the hypocrite).
 
-Based on an idea from Eric Dumazet <eric.dumazet@gmail.com>
+That's my plan :-(
 
-Signed-off-by:KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/seq_file.c |   36 ++++++++++++++++++++++++++----------
- 1 files changed, 26 insertions(+), 10 deletions(-)
+Simon
 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index eea2b01..8712652 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -13,6 +13,22 @@
- #include <asm/uaccess.h>
- #include <asm/page.h>
- 
-+
-+/*
-+ * seq file has a buffer but it may overflow. At overflow, larger buffer
-+ * is re-allocated and all data will be printed, again.
-+ * Now, overflow check is done by m->count == m->size.
-+ */
-+static bool seq_overflow(struct seq_file *m)
-+{
-+	return m->count == m->size;
-+}
-+
-+static void seq_set_overflow(struct seq_file *m)
-+{
-+	m->count = m->size;
-+}
-+
- /**
-  *	seq_open -	initialize sequential file
-  *	@file: file we initialize
-@@ -92,7 +108,7 @@ static int traverse(struct seq_file *m, loff_t offset)
- 			error = 0;
- 			m->count = 0;
- 		}
--		if (m->count == m->size)
-+		if (seq_overflow(m))
- 			goto Eoverflow;
- 		if (pos + m->count > offset) {
- 			m->from = offset - pos;
-@@ -232,7 +248,7 @@ Fill:
- 			break;
- 		}
- 		err = m->op->show(m, p);
--		if (m->count == m->size || err) {
-+		if (seq_overflow(m) || err) {
- 			m->count = offs;
- 			if (likely(err <= 0))
- 				break;
-@@ -359,7 +375,7 @@ int seq_escape(struct seq_file *m, const char *s, const char *esc)
- 			*p++ = '0' + (c & 07);
- 			continue;
- 		}
--		m->count = m->size;
-+		seq_set_overflow(m);
- 		return -1;
-         }
- 	m->count = p - m->buf;
-@@ -381,7 +397,7 @@ int seq_printf(struct seq_file *m, const char *f, ...)
- 			return 0;
- 		}
- 	}
--	m->count = m->size;
-+	seq_set_overflow(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_printf);
-@@ -510,7 +526,7 @@ int seq_bitmap(struct seq_file *m, const unsigned long *bits,
- 			return 0;
- 		}
- 	}
--	m->count = m->size;
-+	seq_set_overflow(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_bitmap);
-@@ -526,7 +542,7 @@ int seq_bitmap_list(struct seq_file *m, const unsigned long *bits,
- 			return 0;
- 		}
- 	}
--	m->count = m->size;
-+	seq_set_overflow(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_bitmap_list);
-@@ -637,7 +653,7 @@ int seq_puts(struct seq_file *m, const char *s)
- 		m->count += len;
- 		return 0;
- 	}
--	m->count = m->size;
-+	seq_set_overflow(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_puts);
-@@ -671,7 +687,7 @@ int seq_put_decimal_ull(struct seq_file *m, char delimiter,
- 	m->count += len;
- 	return 0;
- overflow:
--	m->count = m->size;
-+	seq_set_overflow(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_put_decimal_ull);
-@@ -681,7 +697,7 @@ int seq_put_decimal_ll(struct seq_file *m, char delimiter,
- {
- 	if (num < 0) {
- 		if (m->count + 3 >= m->size) {
--			m->count = m->size;
-+			seq_set_overflow(m);
- 			return -1;
- 		}
- 		if (delimiter)
-@@ -709,7 +725,7 @@ int seq_write(struct seq_file *seq, const void *data, size_t len)
- 		seq->count += len;
- 		return 0;
- 	}
--	seq->count = seq->size;
-+	seq_set_overflow(seq);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_write);
--- 
-1.7.4.1
-
-
+On 13 January 2012 18:44, Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
+> Is there chance this driver will ever be stable? After more than two years I'm
+> starting to get extremely frustrated. I don't really have the option at the
+> moment to get a new card, otherwise I would, likely a non marvell based
+> device.
+>
+> It actually managed to last 10 days this time though. Which is a record. The
+> interesting thing is there are no warnings or errors in dmesg coming from the
+> mvsas driver or scsi code. All that's happened is processes lock up when
+> trying to write. Reading seems to be fine.
+>
+> Just to refresh everyone's memory, it's a AOC-SASLP-MV8 card, has a
+> MV64460/64461/64462 chipset. And I have 7 (seagate 7200.12 SATA drives hooked
+> up).
+>
+> --
+> Thomas Fjellstrom
+> thomas@fjellstrom.ca
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-raid" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
