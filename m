@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756442Ab2BAOZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 09:25:09 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40298 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab2BAOZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 09:25:08 -0500
-X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=0LOP1KteNnsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Tty9oNO6AAAA:8 a=meVymXHHAAAA:8 a=DNvn3mvtqgzobwZ5EhYA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328106305.5882.63.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH] tracing/module: Move tracepoint out of module.h
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Date: Wed, 01 Feb 2012 09:25:05 -0500
-In-Reply-To: <20120201134943.GC28547@elte.hu>
-References: <20120126135504.GA13107@elte.hu>
-	 <1327586669.22710.89.camel@gandalf.stny.rr.com>
-	 <1327588606.22710.100.camel@gandalf.stny.rr.com>
-	 <20120126183946.GA14709@elte.hu> <87ehuldf0m.fsf@rustcorp.com.au>
-	 <1327924333.22710.157.camel@gandalf.stny.rr.com>
-	 <87sjiwjzew.fsf@rustcorp.com.au> <20120131122016.GF32010@elte.hu>
-	 <1328014230.5882.29.camel@gandalf.stny.rr.com>
-	 <87y5snhwwd.fsf@rustcorp.com.au> <20120201134943.GC28547@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932101Ab2BAOcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 09:32:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59239 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753820Ab2BAOcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 09:32:13 -0500
+Date: Wed, 1 Feb 2012 15:31:37 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>, acme@redhat.com,
+        mingo@elte.hu, paulus@samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/9] perf: Adding sysfs group format attribute for pmu
+ device
+Message-ID: <20120201143137.GD1655@m.brq.redhat.com>
+References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
+ <1327674868-10486-1-git-send-email-jolsa@redhat.com>
+ <1327674868-10486-6-git-send-email-jolsa@redhat.com>
+ <4F231256.8080905@linux.vnet.ibm.com>
+ <20120130095223.GB1552@m.brq.redhat.com>
+ <4F289486.2050107@linux.vnet.ibm.com>
+ <20120201131340.GC1655@m.brq.redhat.com>
+ <1328105932.2662.5.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328105932.2662.5.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 14:49 +0100, Ingo Molnar wrote:
-> * Rusty Russell <rusty@rustcorp.com.au> wrote:
-> 
-> > Applied,
-> > Rusty.
+On Wed, Feb 01, 2012 at 03:18:52PM +0100, Peter Zijlstra wrote:
+> On Wed, 2012-02-01 at 14:13 +0100, Jiri Olsa wrote:
+> > > Are you are suggesting that a single event could use multiple groups
+> > > because they may share some common fields, such as the event code?  If
+> > > so, I think that might be confusing.   I think it would be better to
+> > > have every group fully lay out the bits in the config{,1,2} fields so
+> > > that you only need to specify one group per event, even if that leads to
+> > > some redundancy (e.g. group1..n all have an eventcode field.)
 > > 
-> > From: Steven Rostedt <rostedt@goodmis.org>
+> > ok, it'd be the 'cpu::group1/config=1,config1=2,config2=3/u' then..
+> > 
+> > but let's see what Peter thinks about this, since he first suggested
+> > to 'fix' this by having separate pmu drivers.. not format groups :) 
 > 
-> > Acked-by: Ingo Molnar <mingo@elte.hu>
-> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au> (made all out-of-line)
+> I'm not convinced we need the whole grouping thing. Even x86 might have
+> overlapping definitions, even for a single PMU (config1 contents will
+> radically differ depending on the actual events used for instance).
+
+well, I think let's go with what we have now, and see if need/want
+to care about format groups later after we use it for a while..
+
+since the "cpu/..../" syntax is new interface, there should be no
+problem to change it
+
 > 
-> Steve's SOB seems to be missing.
+> All we should do is warn the user when overlapping masks are used in a
+> single event definition and other than that just do as they tell us.
 
-Ah I may have never added it as it was originally just posted to get
-Rusty's approval. So here it is:
+that should be no problem..
+do you want it in to take this.. ooor is later ok ;)
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+jirka
 
-Thanks,
-
--- Steve
-
-
+> 
+> PMUs can always do an informal namespace thing if really needed, eg. by
+> using a consistent prefix.
+> 
