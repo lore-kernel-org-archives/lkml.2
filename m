@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346Ab2BAVQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:16:58 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59085 "EHLO
+	id S932564Ab2BAVKS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:10:18 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47729 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932571Ab2BAVKU (ORCPT
+	by vger.kernel.org with ESMTP id S932545Ab2BAVKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:20 -0500
-X-Sasl-enc: YBdxVcUYGXXptFV2Sd5xlql+dRmxHmZX94oIGMrE/AJ4 1328130619
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:46 2012
-Message-Id: <20120201210046.568187743@clark.kroah.org>
+	Wed, 1 Feb 2012 16:10:13 -0500
+X-Sasl-enc: l0bGxhVYbV9tnvnahCXQ1eDnLVPw5Tr6gUiPL1VUzv4F 1328130611
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:47 2012
+Message-Id: <20120201210047.780570112@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:59:54 -0800
+Date: Wed, 01 Feb 2012 13:00:08 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Anholt <eric@anholt.net>,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Keith Packard <keithp@keithp.com>
-Subject: [30/89] drm/i915: paper over missed irq issues with force wake voodoo
+        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
+Subject: [44/89] USB: ftdi_sio: Add more identifiers
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,123 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 4cd53c0c8b01fc05c3ad5b2acdad02e37d3c2f55 upstream.
+commit 2353f806c97020d4c7709f15eebb49b591f7306d upstream.
 
-Two things seem to do the trick on my ivb machine here:
-- prevent the gt from powering down while waiting for seqno
-  notification interrupts by grabbing the force_wake in get_irq (and
-  dropping it in put_irq again).
-- ordering writes from the ring's CS by reading a CS register, ACTHD
-  seems to work.
+0x04d8, 0x000a: Hornby Elite
 
-Only the blt&bsd ring on ivb seem to be massively affected by this,
-but for paranoia do this dance also on the render ring and on snb
-(i.e. all gpus with forcewake).
-
-Tested with Eric's glCopyPixels loop which without this patch scores a
-missed irq every few seconds.
-
-This patch needs my forcewake rework to use a spinlock instead of
-dev->struct_mutex.
-
-After crawling through docs a lot I've found the following nugget:
-
-Internal doc "SNB GT PM Programming Guide", Section 4.3.1:
-
-"GT does not generate interrupts while in RC6 (by design)"
-
-So it looks like rc6 and irq generation are indeed related.
-
-v2: Improve the comment per Eugeni Dodonov's suggestion.
-
-v3: Add the documentation snipped. Also restrict the w/a to ivb only
-for -fixes, as suggested by Keith Packard.
-
-Cc: Eric Anholt <eric@anholt.net>
-Cc: Kenneth Graunke <kenneth@whitecape.org>
-Cc: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |   27 +++++++++++++++++++++++++--
- 1 file changed, 25 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -631,6 +631,19 @@ render_ring_add_request(struct intel_rin
- }
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -797,6 +797,7 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(ADI_VID, ADI_GNICEPLUS_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(HORNBY_VID, HORNBY_ELITE_PID) },
+ 	{ USB_DEVICE(JETI_VID, JETI_SPC1201_PID) },
+ 	{ USB_DEVICE(MARVELL_VID, MARVELL_SHEEVAPLUG_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -532,6 +532,12 @@
+ #define ADI_GNICEPLUS_PID	0xF001
  
- static u32
-+gen6_ring_get_seqno(struct intel_ring_buffer *ring)
-+{
-+	struct drm_device *dev = ring->dev;
+ /*
++ * Hornby Elite
++ */
++#define HORNBY_VID		0x04D8
++#define HORNBY_ELITE_PID	0x000A
 +
-+	/* Workaround to force correct ordering between irq and seqno writes on
-+	 * ivb (and maybe also on snb) by reading from a CS register (like
-+	 * ACTHD) before reading the status page. */
-+	if (IS_GEN7(dev))
-+		intel_ring_get_active_head(ring);
-+	return intel_read_status_page(ring, I915_GEM_HWS_INDEX);
-+}
-+
-+static u32
- ring_get_seqno(struct intel_ring_buffer *ring)
- {
- 	return intel_read_status_page(ring, I915_GEM_HWS_INDEX);
-@@ -795,6 +808,12 @@ gen6_ring_get_irq(struct intel_ring_buff
- 	if (!dev->irq_enabled)
- 	       return false;
- 
-+	/* It looks like we need to prevent the gt from suspending while waiting
-+	 * for an notifiy irq, otherwise irqs seem to get lost on at least the
-+	 * blt/bsd rings on ivb. */
-+	if (IS_GEN7(dev))
-+		gen6_gt_force_wake_get(dev_priv);
-+
- 	spin_lock(&ring->irq_lock);
- 	if (ring->irq_refcount++ == 0) {
- 		ring->irq_mask &= ~rflag;
-@@ -819,6 +838,9 @@ gen6_ring_put_irq(struct intel_ring_buff
- 		ironlake_disable_irq(dev_priv, gflag);
- 	}
- 	spin_unlock(&ring->irq_lock);
-+
-+	if (IS_GEN7(dev))
-+		gen6_gt_force_wake_put(dev_priv);
- }
- 
- static bool
-@@ -1316,7 +1338,7 @@ static const struct intel_ring_buffer ge
- 	.write_tail		= gen6_bsd_ring_write_tail,
- 	.flush			= gen6_ring_flush,
- 	.add_request		= gen6_add_request,
--	.get_seqno		= ring_get_seqno,
-+	.get_seqno		= gen6_ring_get_seqno,
- 	.irq_get		= gen6_bsd_ring_get_irq,
- 	.irq_put		= gen6_bsd_ring_put_irq,
- 	.dispatch_execbuffer	= gen6_ring_dispatch_execbuffer,
-@@ -1451,7 +1473,7 @@ static const struct intel_ring_buffer ge
- 	.write_tail		= ring_write_tail,
- 	.flush			= blt_ring_flush,
- 	.add_request		= gen6_add_request,
--	.get_seqno		= ring_get_seqno,
-+	.get_seqno		= gen6_ring_get_seqno,
- 	.irq_get		= blt_ring_get_irq,
- 	.irq_put		= blt_ring_put_irq,
- 	.dispatch_execbuffer	= gen6_ring_dispatch_execbuffer,
-@@ -1474,6 +1496,7 @@ int intel_init_render_ring_buffer(struct
- 		ring->flush = gen6_render_ring_flush;
- 		ring->irq_get = gen6_render_ring_get_irq;
- 		ring->irq_put = gen6_render_ring_put_irq;
-+		ring->get_seqno = gen6_ring_get_seqno;
- 	} else if (IS_GEN5(dev)) {
- 		ring->add_request = pc_render_add_request;
- 		ring->get_seqno = pc_render_get_seqno;
++/*
+  * RATOC REX-USB60F
+  */
+ #define RATOC_VENDOR_ID		0x0584
 
 
