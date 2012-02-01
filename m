@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab2BAFhx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 00:37:53 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22999 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039Ab2BAFhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 00:37:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="104842616"
-Subject: Re: [PATCH 1/7 v2] dmaengine: add a simple dma library
-From: Vinod Koul <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <Pine.LNX.4.64.1201310746470.31226@axis700.grange>
-References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
-	 <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de>
-	 <1327912346.1527.13.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1201300944360.7932@axis700.grange>
-	 <1327992090.1527.116.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1201310746470.31226@axis700.grange>
+	id S1752893Ab2BAFli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 00:41:38 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:57632 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab2BAFlg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 00:41:36 -0500
+Message-ID: <1328074891.2617.45.camel@edumazet-laptop>
+Subject: Re: [PATCH] Fix logical and operator at interrupt handler thread
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Geunsik Lim <geunsik.lim@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 01 Feb 2012 06:41:31 +0100
+In-Reply-To: <1328073594-16673-1-git-send-email-geunsik.lim@gmail.com>
+References: <1328073594-16673-1-git-send-email-geunsik.lim@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Feb 2012 11:08:46 +0530
-Message-ID: <1328074726.1610.1.camel@vkoul-udesk3>
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 09:59 +0100, Guennadi Liakhovetski wrote:
-> Hi Vinod
+Le mercredi 01 février 2012 à 14:19 +0900, Geunsik Lim a écrit :
+> From: Geunsik Lim <geunsik.lim@samsung.com>
 > 
-> Thanks for your reply.
+> '&' is a bitwise operation. (e.g: a & b )
+> Use '&&' and-operator instead of '&' bitwise operator.
 > 
-> On Tue, 31 Jan 2012, Vinod Koul wrote:
+> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+> ---
+>  kernel/irq/manage.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> > On Mon, 2012-01-30 at 10:34 +0100, Guennadi Liakhovetski wrote:
-> > > > I don't still comprehend the need for a library on top of dmaengine
-> > > > which gain is just a library between clients and dmacs. Surely we don't
-> > > > want to write another abstraction on top of one provided?
-> > > > 
-> > > > If the question is to handle scatter-gather even if the hardware doesn't
-> > > > have the capability, then why don't add that in dmaengine itself rather
-> > > > than one more layer?
-> > > 
-> > > Well, yes, adding new abstraction layers is always a decision, that has to 
-> > > be well justified. In this case it does at least make the life easier for 
-> > > two sh-mobile drivers: shdma and the new SUDMAC driver.
-> > > 
-> > > However, I did name the library in a generic way without reference to sh, 
-> > > assuming, that it might with time become useful for other architectures 
-> > > too. The reasons why I prefered to keep it as an optional addition to 
-> > > dmaengine core, instead of tightly integrating it with it are, that (1) I 
-> > > did not want to add useless code to drivers, that do not need it, 
-> > So are we sure that only sh-mobile drivers need this capablity?
-> 
-> If I was sure about that, I'd call the library shmobile-dma or something 
-> similar:-)
-> 
-> > Btw does you hardware only support single transfers and no sg support,
-> 
-> Well, the controller does have some repeat- and reload-modes, but they are 
-> currently not supported by the driver and from the documentation I cannot 
-> easily understand, how useful those modes could be to implement SG.
-> 
-> > would this remain the same in future?
-> 
-> Who knows?...
-> 
-> > > (2) I am 
-> > > not sure if and when this library will become useful for other drivers: 
-> > > apart from sh I am only familiar with one more dmaengine driver: 
-> > > ipu/ipu_idmac.c, and that one supports scatter-gather lists in a limited 
-> > > way and has some further peculiarities, that would likely make it a bad 
-> > > match for the simple DMA library,
-> > typically the dmacs will support this in some form or other, so your
-> > point is valid :)
-> > >  (3) keeping it separate makes its 
-> > > further development easier.
-> > > 
-> > > OTOH, I'm certainly fine with a tighter library integration with the 
-> > > dmaengine core. I think, it still would be better to keep it in a separate 
-> > > file and only build it if needed, right? This woult also simplify code 
-> > > debugging and further development. I can remove the "simple" notation, 
-> > > which does make it look like an additional abstraction layer, and replace 
-> > > it with, say, sgsoft (scatter-gather software implementation)?
-> > that would be more apt :)
-> > >  A more 
-> > > interesting question is what to do with struct dma_simple_dev, struct 
-> > > dma_simple_chan, struct dma_simple_desc, that embed struct dma_device, 
-> > > struct dma_chan and struct dma_async_tx_descriptor respectively. I don't 
-> > > think we want to merge all the additions from those wrapping structs back 
-> > > into their dmaengine counterparts?
-> > Sure they should be kept separate. I like the wrapping, this keeps it
-> > simple.
-> > > 
-> > > How would you like to do this? Don't you think, it would be good to allow 
-> > > both: either implement a dmaengine driver directly, exactly as all drivers 
-> > > are doing now, or use the additional helper library for suitable (simple) 
-> > > hardware types? I see it similar to I2C, where you either implement an I2C 
-> > > driver directly, or you use the bitbanging abstraction for simpler 
-> > > hardware.
-> > I think it would be good to have both, this can be used by folks who
-> > don't have sg support available.
-> 
-> Ok, so, should I just rename the driver to sgsoft? Is this the only 
-> change, that you'd like to see?
-That would be one :)
-Also, I would review the other patch patches by today/tomorrow, you can
-add any changes in next version as well
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index a9a9dbe..c0730ad 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -773,7 +773,7 @@ static int irq_thread(void *data)
+>  			struct irqaction *action);
+>  	int wake;
+>  
+> -	if (force_irqthreads & test_bit(IRQTF_FORCED_THREAD,
+> +	if (force_irqthreads && test_bit(IRQTF_FORCED_THREAD,
+>  					&action->thread_flags))
+>  		handler_fn = irq_forced_thread_fn;
+>  	else
 
--- 
-~Vinod
+
+This was intentional, to have a single conditional move :
+
+ffffffff810b0868:       0f b6 15 19 f5 bd 00    movzbl 0xbdf519(%rip),%edx        # ffffffff81c8fd88 <force_irqthreads>
+ffffffff810b086f:       49 89 c5                mov    %rax,%r13
+ffffffff810b0872:       48 8b 43 40             mov    0x40(%rbx),%rax
+ffffffff810b0876:       be 01 00 00 00          mov    $0x1,%esi
+ffffffff810b087b:       48 c1 e8 04             shr    $0x4,%rax
+ffffffff810b087f:       85 c2                   test   %eax,%edx
+ffffffff810b0881:       48 c7 c0 80 0a 0b 81    mov    $0xffffffff810b0a80,%rax
+ffffffff810b0888:       48 c7 c2 40 dc 80 81    mov    $0xffffffff8180dc40,%rdx
+ffffffff810b088f:       4c 0f 44 f8             cmove  %rax,%r15
+
+
+I guess you could instead use jump_label here to shorten the code.
+
+
+
 
