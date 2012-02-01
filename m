@@ -1,59 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab2BAVWC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:22:02 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:40461 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757557Ab2BAVTo (ORCPT
+	id S932735Ab2BAVWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:22:04 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52096 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757553Ab2BAVTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:44 -0500
-X-Sasl-enc: I87pqe9olMK37TLklnCNAlTN9XPMayZ0gybxbh6ozbMy 1328131183
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:51 2012
-Message-Id: <20120201210051.533127419@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:51 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
-        Preston Fick <preston.fick@silabs.com>
-Subject: [87/89] USB: cp210x: initialise baud rate at open
-In-Reply-To: <20120201210505.GA26028@kroah.com>
+	Wed, 1 Feb 2012 16:19:42 -0500
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, vgoyal@redhat.com
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 09/11] blkcg: move per-queue blkg list heads and counters to queue and blkg
+Date: Wed,  1 Feb 2012 13:19:14 -0800
+Message-Id: <1328131156-13290-10-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1328131156-13290-1-git-send-email-tj@kernel.org>
+References: <1328131156-13290-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Currently, specific policy implementations are responsible for
+maintaining list and number of blkgs.  This duplicates code
+unnecessarily, and hinders factoring common code and providing blkcg
+API with better defined semantics.
 
-------------------
+After this patch, request_queue hosts list heads and counters and blkg
+has list nodes for both policies.  This patch only relocates the
+necessary fields and the next patch will actually move management code
+into blkcg core.
 
-From: Johan Hovold <jhovold@gmail.com>
+Note that request_queue->blkg_list[] and ->nr_blkgs[] are hardcoded to
+have 2 elements.  This is to avoid include dependency and will be
+removed by the next patch.
 
-commit cdc32fd6f7b2b2580d7f1b74563f888e4dd9eb8a upstream.
+This patch doesn't introduce any behavior change.
 
-The newer cp2104 devices require the baud rate to be initialised after
-power on. Make sure it is set when port is opened.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Cc: Preston Fick <preston.fick@silabs.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- drivers/usb/serial/cp210x.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ block/blk-cgroup.c     |    2 +
+ block/blk-cgroup.h     |    1 +
+ block/blk-core.c       |    4 +++
+ block/blk-throttle.c   |   49 ++++++++++++++++++++++-------------------------
+ block/cfq-iosched.c    |   46 +++++++++++++++++---------------------------
+ include/linux/blkdev.h |    5 ++++
+ 6 files changed, 53 insertions(+), 54 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -408,6 +408,10 @@ static int cp210x_open(struct tty_struct
- 	/* Configure the termios structure */
- 	cp210x_get_termios(tty, port);
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index c121189..0513ed5 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -499,6 +499,8 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
  
-+	/* The baud rate must be initialised on cp2104 */
-+	if (tty)
-+		cp210x_change_speed(tty, port, NULL);
-+
- 	return usb_serial_generic_open(tty, port);
+ 	spin_lock_init(&blkg->stats_lock);
+ 	rcu_assign_pointer(blkg->q, q);
++	INIT_LIST_HEAD(&blkg->q_node[0]);
++	INIT_LIST_HEAD(&blkg->q_node[1]);
+ 	blkg->blkcg = blkcg;
+ 	blkg->plid = pol->plid;
+ 	blkg->refcnt = 1;
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 60e96b4..ae96f19 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -178,6 +178,7 @@ struct blkg_policy_data {
+ struct blkio_group {
+ 	/* Pointer to the associated request_queue, RCU protected */
+ 	struct request_queue __rcu *q;
++	struct list_head q_node[BLKIO_NR_POLICIES];
+ 	struct hlist_node blkcg_node;
+ 	struct blkio_cgroup *blkcg;
+ 	/* Store cgroup path */
+diff --git a/block/blk-core.c b/block/blk-core.c
+index ab0a11b..025ef60 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -546,6 +546,10 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ 	setup_timer(&q->timeout, blk_rq_timed_out_timer, (unsigned long) q);
+ 	INIT_LIST_HEAD(&q->timeout_list);
+ 	INIT_LIST_HEAD(&q->icq_list);
++#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
++	INIT_LIST_HEAD(&q->blkg_list[0]);
++	INIT_LIST_HEAD(&q->blkg_list[1]);
++#endif
+ 	INIT_LIST_HEAD(&q->flush_queue[0]);
+ 	INIT_LIST_HEAD(&q->flush_queue[1]);
+ 	INIT_LIST_HEAD(&q->flush_data_in_flight);
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index b2fddaf..c15d383 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -41,9 +41,6 @@ struct throtl_rb_root {
+ #define rb_entry_tg(node)	rb_entry((node), struct throtl_grp, rb_node)
+ 
+ struct throtl_grp {
+-	/* List of throtl groups on the request queue*/
+-	struct hlist_node tg_node;
+-
+ 	/* active throtl group service_tree member */
+ 	struct rb_node rb_node;
+ 
+@@ -83,9 +80,6 @@ struct throtl_grp {
+ 
+ struct throtl_data
+ {
+-	/* List of throtl groups */
+-	struct hlist_head tg_list;
+-
+ 	/* service tree for active throtl groups */
+ 	struct throtl_rb_root tg_service_tree;
+ 
+@@ -152,7 +146,6 @@ static void throtl_init_blkio_group(struct blkio_group *blkg)
+ {
+ 	struct throtl_grp *tg = blkg_to_tg(blkg);
+ 
+-	INIT_HLIST_NODE(&tg->tg_node);
+ 	RB_CLEAR_NODE(&tg->rb_node);
+ 	bio_list_init(&tg->bio_lists[0]);
+ 	bio_list_init(&tg->bio_lists[1]);
+@@ -167,11 +160,9 @@ static void throtl_init_blkio_group(struct blkio_group *blkg)
+ static void throtl_link_blkio_group(struct request_queue *q,
+ 				    struct blkio_group *blkg)
+ {
+-	struct throtl_data *td = q->td;
+-	struct throtl_grp *tg = blkg_to_tg(blkg);
+-
+-	hlist_add_head(&tg->tg_node, &td->tg_list);
+-	td->nr_undestroyed_grps++;
++	list_add(&blkg->q_node[BLKIO_POLICY_THROTL],
++		 &q->blkg_list[BLKIO_POLICY_THROTL]);
++	q->nr_blkgs[BLKIO_POLICY_THROTL]++;
  }
  
-
+ static struct
+@@ -711,8 +702,8 @@ static int throtl_select_dispatch(struct throtl_data *td, struct bio_list *bl)
+ 
+ static void throtl_process_limit_change(struct throtl_data *td)
+ {
+-	struct throtl_grp *tg;
+-	struct hlist_node *pos, *n;
++	struct request_queue *q = td->queue;
++	struct blkio_group *blkg, *n;
+ 
+ 	if (!td->limits_changed)
+ 		return;
+@@ -721,7 +712,10 @@ static void throtl_process_limit_change(struct throtl_data *td)
+ 
+ 	throtl_log(td, "limits changed");
+ 
+-	hlist_for_each_entry_safe(tg, pos, n, &td->tg_list, tg_node) {
++	list_for_each_entry_safe(blkg, n, &q->blkg_list[BLKIO_POLICY_THROTL],
++				 q_node[BLKIO_POLICY_THROTL]) {
++		struct throtl_grp *tg = blkg_to_tg(blkg);
++
+ 		if (!tg->limits_changed)
+ 			continue;
+ 
+@@ -822,26 +816,31 @@ throtl_schedule_delayed_work(struct throtl_data *td, unsigned long delay)
+ static void
+ throtl_destroy_tg(struct throtl_data *td, struct throtl_grp *tg)
+ {
++	struct blkio_group *blkg = tg_to_blkg(tg);
++
+ 	/* Something wrong if we are trying to remove same group twice */
+-	BUG_ON(hlist_unhashed(&tg->tg_node));
++	WARN_ON_ONCE(list_empty(&blkg->q_node[BLKIO_POLICY_THROTL]));
+ 
+-	hlist_del_init(&tg->tg_node);
++	list_del_init(&blkg->q_node[BLKIO_POLICY_THROTL]);
+ 
+ 	/*
+ 	 * Put the reference taken at the time of creation so that when all
+ 	 * queues are gone, group can be destroyed.
+ 	 */
+ 	blkg_put(tg_to_blkg(tg));
+-	td->nr_undestroyed_grps--;
++	td->queue->nr_blkgs[BLKIO_POLICY_THROTL]--;
+ }
+ 
+ static bool throtl_release_tgs(struct throtl_data *td, bool release_root)
+ {
+-	struct hlist_node *pos, *n;
+-	struct throtl_grp *tg;
++	struct request_queue *q = td->queue;
++	struct blkio_group *blkg, *n;
+ 	bool empty = true;
+ 
+-	hlist_for_each_entry_safe(tg, pos, n, &td->tg_list, tg_node) {
++	list_for_each_entry_safe(blkg, n, &q->blkg_list[BLKIO_POLICY_THROTL],
++				 q_node[BLKIO_POLICY_THROTL]) {
++		struct throtl_grp *tg = blkg_to_tg(blkg);
++
+ 		/* skip root? */
+ 		if (!release_root && tg == td->root_tg)
+ 			continue;
+@@ -851,7 +850,7 @@ static bool throtl_release_tgs(struct throtl_data *td, bool release_root)
+ 		 * it from cgroup list, then it will take care of destroying
+ 		 * cfqg also.
+ 		 */
+-		if (!blkiocg_del_blkio_group(tg_to_blkg(tg)))
++		if (!blkiocg_del_blkio_group(blkg))
+ 			throtl_destroy_tg(td, tg);
+ 		else
+ 			empty = false;
+@@ -1114,7 +1113,6 @@ int blk_throtl_init(struct request_queue *q)
+ 	if (!td)
+ 		return -ENOMEM;
+ 
+-	INIT_HLIST_HEAD(&td->tg_list);
+ 	td->tg_service_tree = THROTL_RB_ROOT;
+ 	td->limits_changed = false;
+ 	INIT_DELAYED_WORK(&td->throtl_work, blk_throtl_work);
+@@ -1144,7 +1142,7 @@ int blk_throtl_init(struct request_queue *q)
+ void blk_throtl_exit(struct request_queue *q)
+ {
+ 	struct throtl_data *td = q->td;
+-	bool wait = false;
++	bool wait;
+ 
+ 	BUG_ON(!td);
+ 
+@@ -1154,8 +1152,7 @@ void blk_throtl_exit(struct request_queue *q)
+ 	throtl_release_tgs(td, true);
+ 
+ 	/* If there are other groups */
+-	if (td->nr_undestroyed_grps > 0)
+-		wait = true;
++	wait = q->nr_blkgs[BLKIO_POLICY_THROTL];
+ 
+ 	spin_unlock_irq(q->queue_lock);
+ 
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 0cb3908..c13e376 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -208,9 +208,7 @@ struct cfq_group {
+ 	unsigned long saved_workload_slice;
+ 	enum wl_type_t saved_workload;
+ 	enum wl_prio_t saved_serving_prio;
+-#ifdef CONFIG_CFQ_GROUP_IOSCHED
+-	struct hlist_node cfqd_node;
+-#endif
++
+ 	/* number of requests that are on the dispatch list or inside driver */
+ 	int dispatched;
+ 	struct cfq_ttime ttime;
+@@ -302,12 +300,6 @@ struct cfq_data {
+ 	struct cfq_queue oom_cfqq;
+ 
+ 	unsigned long last_delayed_sync;
+-
+-	/* List of cfq groups being managed on this device*/
+-	struct hlist_head cfqg_list;
+-
+-	/* Number of groups which are on blkcg->blkg_list */
+-	unsigned int nr_blkcg_linked_grps;
+ };
+ 
+ static inline struct cfq_group *blkg_to_cfqg(struct blkio_group *blkg)
+@@ -1056,13 +1048,9 @@ static void cfq_update_blkio_group_weight(struct request_queue *q,
+ static void cfq_link_blkio_group(struct request_queue *q,
+ 				 struct blkio_group *blkg)
+ {
+-	struct cfq_data *cfqd = q->elevator->elevator_data;
+-	struct cfq_group *cfqg = blkg_to_cfqg(blkg);
+-
+-	cfqd->nr_blkcg_linked_grps++;
+-
+-	/* Add group on cfqd list */
+-	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
++	list_add(&blkg->q_node[BLKIO_POLICY_PROP],
++		 &q->blkg_list[BLKIO_POLICY_PROP]);
++	q->nr_blkgs[BLKIO_POLICY_PROP]++;
+ }
+ 
+ static void cfq_init_blkio_group(struct blkio_group *blkg)
+@@ -1110,13 +1098,15 @@ static void cfq_link_cfqq_cfqg(struct cfq_queue *cfqq, struct cfq_group *cfqg)
+ 
+ static void cfq_destroy_cfqg(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ {
++	struct blkio_group *blkg = cfqg_to_blkg(cfqg);
++
+ 	/* Something wrong if we are trying to remove same group twice */
+-	BUG_ON(hlist_unhashed(&cfqg->cfqd_node));
++	BUG_ON(list_empty(&blkg->q_node[BLKIO_POLICY_PROP]));
+ 
+-	hlist_del_init(&cfqg->cfqd_node);
++	list_del_init(&blkg->q_node[BLKIO_POLICY_PROP]);
+ 
+-	BUG_ON(cfqd->nr_blkcg_linked_grps <= 0);
+-	cfqd->nr_blkcg_linked_grps--;
++	BUG_ON(cfqd->queue->nr_blkgs[BLKIO_POLICY_PROP] <= 0);
++	cfqd->queue->nr_blkgs[BLKIO_POLICY_PROP]--;
+ 
+ 	/*
+ 	 * Put the reference taken at the time of creation so that when all
+@@ -1127,18 +1117,19 @@ static void cfq_destroy_cfqg(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 
+ static bool cfq_release_cfq_groups(struct cfq_data *cfqd)
+ {
+-	struct hlist_node *pos, *n;
+-	struct cfq_group *cfqg;
++	struct request_queue *q = cfqd->queue;
++	struct blkio_group *blkg, *n;
+ 	bool empty = true;
+ 
+-	hlist_for_each_entry_safe(cfqg, pos, n, &cfqd->cfqg_list, cfqd_node) {
++	list_for_each_entry_safe(blkg, n, &q->blkg_list[BLKIO_POLICY_PROP],
++				 q_node[BLKIO_POLICY_PROP]) {
+ 		/*
+ 		 * If cgroup removal path got to blk_group first and removed
+ 		 * it from cgroup list, then it will take care of destroying
+ 		 * cfqg also.
+ 		 */
+-		if (!cfq_blkiocg_del_blkio_group(cfqg_to_blkg(cfqg)))
+-			cfq_destroy_cfqg(cfqd, cfqg);
++		if (!cfq_blkiocg_del_blkio_group(blkg))
++			cfq_destroy_cfqg(cfqd, blkg_to_cfqg(blkg));
+ 		else
+ 			empty = false;
+ 	}
+@@ -3552,7 +3543,7 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ {
+ 	struct cfq_data *cfqd = e->elevator_data;
+ 	struct request_queue *q = cfqd->queue;
+-	bool wait = false;
++	bool wait;
+ 
+ 	cfq_shutdown_timer_wq(cfqd);
+ 
+@@ -3568,8 +3559,7 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ 	 * If there are groups which we could not unlink from blkcg list,
+ 	 * wait for a rcu period for them to be freed.
+ 	 */
+-	if (cfqd->nr_blkcg_linked_grps)
+-		wait = true;
++	wait = q->nr_blkgs[BLKIO_POLICY_PROP];
+ 
+ 	spin_unlock_irq(q->queue_lock);
+ 
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index e38e4d0..5eb8a93 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -362,6 +362,11 @@ struct request_queue {
+ 	struct list_head	timeout_list;
+ 
+ 	struct list_head	icq_list;
++#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
++	/* XXX: array size hardcoded to avoid include dependency (temporary) */
++	struct list_head	blkg_list[2];
++	int			nr_blkgs[2];
++#endif
+ 
+ 	struct queue_limits	limits;
+ 
+-- 
+1.7.7.3
 
