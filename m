@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab2BAPRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:17:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45947 "EHLO mx2.suse.de"
+	id S1756571Ab2BAPTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:19:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46042 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753722Ab2BAPQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:16:59 -0500
-Message-ID: <4F295769.6070003@suse.de>
-Date: Wed, 01 Feb 2012 16:16:57 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1754860Ab2BAPTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 10:19:20 -0500
+Date: Wed, 1 Feb 2012 16:19:18 +0100
+From: Jan Kara <jack@suse.cz>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-ia64@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Subject: Memory corruption due to word sharing
+Message-ID: <20120201151918.GC16714@quack.suse.cz>
 MIME-Version: 1.0
-To: thomas@fjellstrom.ca
-Cc: John Robinson <john.robinson@anonymous.org.uk>,
-        linux-raid <linux-raid@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: GRUB doesn't like ServeRAID M1015/LSI 9220-8i (was Re: mvsas
- with 3.1)
-References: <201201131144.58044.thomas@fjellstrom.ca> <201202010703.09833.thomas@fjellstrom.ca> <4F294E64.10204@anonymous.org.uk> <201202010742.07818.thomas@fjellstrom.ca>
-In-Reply-To: <201202010742.07818.thomas@fjellstrom.ca>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2012 03:42 PM, Thomas Fjellstrom wrote:
-> On Wed Feb 1, 2012, John Robinson wrote:
->> On 01/02/2012 14:03, Thomas Fjellstrom wrote:
->> [...]
->>
->>>  I picked up a refurb IBM
->>>
->>> ServeRaid M1015 (aka: LSI 9220-8i) card. It arrived yesterday. Just have
->>> to wait and see why grub doesn't like it.
->>
->> When you find out, please let me know - I bought one via ebay, its
->> firmware was elderly and wouldn't let me put it in JBOD mode, after a
->> bit of googling I flashed it with IBM's latest firmware, then GRUB
->> thought my machine had no RAM in it. The card has been sitting in a box
->> since.
-> 
-> Yeah, GRUB immediately throws an "out of memory. Aborted" error, its annoying, 
-> but I reported the issue on GRUB's bug tracker after talking to a guy in #grub 
-> on freenode. Hopefully someone looks at it soon. It appears it happens so 
-> early in grub's startup that it can't even output any debug info (I was asked 
-> to run: `grub-install --debug-image=all /dev/sdX`, and did so, I get debug 
-> output when the card is not installed, but absolutely nothing when it is 
-> installed.
-> 
->From my experience the BIOS wouldn't present any disks in JBOD mode.
-So you'd be needing to switch to RAID mode first.
+  Hello,
 
-Cheers,
+  we've spotted the following mismatch between what kernel folks expect
+from a compiler and what GCC really does, resulting in memory corruption on
+some architectures. Consider the following structure:
+struct x {
+    long a;
+    unsigned int b1;
+    unsigned int b2:1;
+};
 
-Hannes
+We have two processes P1 and P2 where P1 updates field b1 and P2 updates
+bitfield b2. The code GCC generates for b2 = 1 e.g. on ia64 is:
+   0:   09 00 21 40 00 21       [MMI]       adds r32=8,r32
+   6:   00 00 00 02 00 e0                   nop.m 0x0
+   c:   11 00 00 90                         mov r15=1;;
+  10:   0b 70 00 40 18 10       [MMI]       ld8 r14=[r32];;
+  16:   00 00 00 02 00 c0                   nop.m 0x0
+  1c:   f1 70 c0 47                         dep r14=r15,r14,32,1;;
+  20:   11 00 38 40 98 11       [MIB]       st8 [r32]=r14
+  26:   00 00 00 02 00 80                   nop.i 0x0
+  2c:   08 00 84 00                         br.ret.sptk.many b0;;
+
+Note that gcc used 64-bit read-modify-write cycle to update b2. Thus if P1
+races with P2, update of b1 can get lost. BTW: I've just checked on x86_64
+and there GCC uses 8-bit bitop to modify the bitfield.
+
+We actually spotted this race in practice in btrfs on structure
+fs/btrfs/ctree.h:struct btrfs_block_rsv where spinlock content got
+corrupted due to update of following bitfield and there seem to be other
+places in kernel where this could happen.
+
+I've raised the issue with our GCC guys and they said to me that: "C does
+not provide such guarantee, nor can you reliably lock different
+structure fields with different locks if they share naturally aligned
+word-size memory regions.  The C++11 memory model would guarantee this,
+but that's not implemented nor do you build the kernel with a C++11
+compiler."
+
+So it seems what C/GCC promises does not quite match with what kernel
+expects. I'm not really an expert in this area so I wanted to report it
+here so that more knowledgeable people can decide how to solve the issue...
+
+								Honza
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
