@@ -1,71 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab2BABDU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 20:03:20 -0500
-Received: from mga03.intel.com ([143.182.124.21]:63835 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754182Ab2BABDT convert rfc822-to-8bit (ORCPT
+	id S1754273Ab2BABGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 20:06:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46690 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843Ab2BABGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 20:03:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="61882517"
-From: "Rose, Gregory V" <gregory.v.rose@intel.com>
-To: David Ahern <daahern@cisco.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: RE: VFs go missing with latest kernel
-Thread-Topic: VFs go missing with latest kernel
-Thread-Index: AQHM4Gs6ffY5XbLoAUGa1L3askdwe5YnFpYAgACgHID//3peYIAAiyUA//98+jA=
-Date: Wed, 1 Feb 2012 01:03:08 +0000
-Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A0702F64B7F@ORSMSX106.amr.corp.intel.com>
-References: <4F287102.3060600@cisco.com>
- <C5551D9AAB213A418B7FD5E4A6F30A0702F6489B@ORSMSX106.amr.corp.intel.com>
- <4F2887AB.8070005@cisco.com>
- <C5551D9AAB213A418B7FD5E4A6F30A0702F64AF6@ORSMSX106.amr.corp.intel.com>
- <4F288C4A.3070509@cisco.com>
-In-Reply-To: <4F288C4A.3070509@cisco.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 31 Jan 2012 20:06:31 -0500
+Date: Tue, 31 Jan 2012 19:06:25 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>, Alex Deucher <alexander.deucher@amd.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: Re: radeon issues on MacBook Pro 8,2
+Message-ID: <20120201010625.GK23667@ubuntu-macmini>
+Mail-Followup-To: Alex Deucher <alexdeucher@gmail.com>,
+	Dave Airlie <airlied@redhat.com>,
+	Alex Deucher <alexander.deucher@amd.com>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <20120119171808.GB23144@ubuntu-macmini>
+ <CADnq5_MiLE0XSpbrd66003DVxdR9c4MgQav3BD+bWtrKvbf+7Q@mail.gmail.com>
+ <20120119205317.GC23144@ubuntu-macmini>
+ <20120120155318.GA8162@ubuntu-macmini>
+ <CADnq5_NNpwsPoEP0_fzSJ9LQKfaHPJx90yObXKYHO39xLWM6sQ@mail.gmail.com>
+ <20120120211214.GC8162@ubuntu-macmini>
+ <CADnq5_NcZacne-VH-N7FQ5GQo8EbWNgi7WjeHxnJHciyaSeBvg@mail.gmail.com>
+ <20120120230831.GA2292@ubuntu-macmini>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120120230831.GA2292@ubuntu-macmini>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Ahern [mailto:daahern@cisco.com]
-> Sent: Tuesday, January 31, 2012 4:50 PM
-> To: Rose, Gregory V
-> Cc: LKML
-> Subject: Re: VFs go missing with latest kernel
+On Fri, Jan 20, 2012 at 05:08:31PM -0600, Seth Forshee wrote:
+> > Can you track down who is calling the connector->detect() callbacks
+> > during suspend and resume?
 > 
-> On 01/31/2012 05:43 PM, Rose, Gregory V wrote:
-> >>
-> >> Back to the missing VF problem: reverting the patch I mentioned before
-> >> and my VM boots up fine with the even-numbered VFs assigned to it.
-> >
-> > OK, thanks... I was staring at the dmesg output you sent me and it is
-> odd because the even numbered VFs that go missing are there when you set
-> their MAC addresses.  See output below the dotted line after my reply.
+> I got two different stack traces, see below.
 > 
-> Ah, I think I confused you. The VFs for the first 2 ports (ie., the
-> first 14 VFs) are seen fine; I only showed the VFs for the second 2
-> ports -- which are missing the even number.
+> And to slightly amend my statement above, I'm only seeing the wrong
+> status returned on the suspend side of things. The status during resume
+> always seems to be correct.
 > 
-> So, in summary I am missing 7 VFs all associated with the even numbers
-> on the last ports of a quad port card.
-
-OK, thanks for the clarification.  But it still shows that all 28 VFs exist while their MAC addresses are being set but then at some point subsequent to that 7 of them on the port belonging to PCI device 07:00.0 disappear for some reason.
-
-I'll see what I can find.
-
-Thanks,
-
-- Greg
-
+>  Pid: 49, comm: kworker/0:2 Tainted: G         C O 3.2.0-10-generic #17-Ubuntu
+>  Call Trace:
+>   [<ffffffffa03f5e1e>] radeon_dp_detect+0x1de/0x230 [radeon]
+>   [<ffffffffa014ac6d>] output_poll_execute+0xbd/0x1a0 [drm_kms_helper]
+>   [<ffffffffa014abb0>] ? drm_helper_mode_fill_fb_struct+0x30/0x30 [drm_kms_helper]
+>   [<ffffffff81083dca>] process_one_work+0x11a/0x480
+>   [<ffffffff81084b74>] worker_thread+0x164/0x370
+>   [<ffffffff81084a10>] ? manage_workers.isra.30+0x130/0x130
+>   [<ffffffff810893cc>] kthread+0x8c/0xa0
+>   [<ffffffff81660674>] kernel_thread_helper+0x4/0x10
+>   [<ffffffff81089340>] ? flush_kthread_worker+0xa0/0xa0
+>   [<ffffffff81660670>] ? gs_change+0x13/0x13
 > 
-> David
+>  Pid: 49, comm: kworker/0:2 Tainted: G         C O 3.2.0-10-generic #17-Ubuntu
+>  Call Trace:
+>   [<ffffffffa03f5e1e>] radeon_dp_detect+0x1de/0x230 [radeon]
+>   [<ffffffffa014b6b3>] drm_helper_probe_single_connector_modes+0x2c3/0x380 [drm_kms_helper]
+>   [<ffffffffa0149d42>] drm_fb_helper_hotplug_event+0xf2/0x150 [drm_kms_helper]
+>   [<ffffffffa03fe8d5>] radeon_fb_output_poll_changed+0x15/0x20 [radeon]
+>   [<ffffffffa03f7b65>] radeon_output_poll_changed+0x15/0x20 [radeon]
+>   [<ffffffffa014ad40>] output_poll_execute+0x190/0x1a0 [drm_kms_helper]
+>   [<ffffffffa014abb0>] ? drm_helper_mode_fill_fb_struct+0x30/0x30 [drm_kms_helper]
+>   [<ffffffff81083dca>] process_one_work+0x11a/0x480
+>   [<ffffffff81084b74>] worker_thread+0x164/0x370
+>   [<ffffffff81084a10>] ? manage_workers.isra.30+0x130/0x130
+>   [<ffffffff810893cc>] kthread+0x8c/0xa0
+>   [<ffffffff81660674>] kernel_thread_helper+0x4/0x10
+>   [<ffffffff81089340>] ? flush_kthread_worker+0xa0/0xa0
+>   [<ffffffff81660670>] ? gs_change+0x13/0x13
+
+>From these traces it looks like all that really needs to happen is to
+disable the output polling during suspend. The following patch seems to
+get rid of the problems I'm seeing. Does this look okay to you?
+
+
+>From 0c01950f248c541198b7560793cf57c59b2c11f8 Mon Sep 17 00:00:00 2001
+From: Seth Forshee <seth.forshee@canonical.com>
+Date: Tue, 31 Jan 2012 15:37:02 -0600
+Subject: [PATCH 1/1] drm/radeon/kms: disable output polling when suspended
+
+Polling the outputs when the device is suspended can result in erroneous
+status updates. Disable output polling during suspend to prevent this
+from happening.
+
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/gpu/drm/radeon/radeon_device.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index cec51a5..49f7cb7 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -883,6 +883,8 @@ int radeon_suspend_kms(struct drm_device *dev, pm_message_t state)
+ 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
+ 		return 0;
+ 
++	drm_kms_helper_poll_disable(dev);
++
+ 	/* turn off display hw */
+ 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+ 		drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
+@@ -972,6 +974,8 @@ int radeon_resume_kms(struct drm_device *dev)
+ 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+ 		drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
+ 	}
++
++	drm_kms_helper_poll_enable(dev);
+ 	return 0;
+ }
+ 
+-- 
+1.7.8.3
+
