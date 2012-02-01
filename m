@@ -1,122 +1,2866 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab2BAGWd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 01:22:33 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:59101 "EHLO e2.ny.us.ibm.com"
+	id S1754937Ab2BAGbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 01:31:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12889 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753605Ab2BAGWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 01:22:31 -0500
-Date: Wed, 1 Feb 2012 14:21:45 +0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Cc: Ram Pai <linuxram@us.ibm.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai.lu@oracle.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUGFIX][PATCH] pci: check for 4k resource_size alignment in
- sriov_init
-Message-ID: <20120201062145.GA11505@ram-ThinkPad-T61>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <20120127191032.GA22999@dirshya.in.ibm.com>
- <20120130031845.GA2359@ram-ThinkPad-T61>
- <20120131174402.GA6172@dirshya.in.ibm.com>
+	id S1752930Ab2BAGbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 01:31:45 -0500
+Date: Wed, 1 Feb 2012 14:34:20 +0800
+From: Dave Young <dyoung@redhat.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] move vm tools from Documentation/vm/ to tools/
+Message-ID: <20120201063420.GA10204@darkstar.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120131174402.GA6172@dirshya.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020106-5112-0000-0000-0000049853B3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 11:14:02PM +0530, Vaidyanathan Srinivasan wrote:
-> * Ram Pai <linuxram@us.ibm.com> [2012-01-30 11:18:45]:
-> 
-> > On Sat, Jan 28, 2012 at 12:40:32AM +0530, Vaidyanathan Srinivasan wrote:
-> > > Hi Ram and Jesse,
-> > > 
-> > > I found a trivial issue with page size alignment check on IBM POWER
-> > > box with 64k base page size.  In sriov_init(), changing the check from
-> > > PAGE_SIZE (arch and config dependent) to HW_PAGE_SIZE (always 4k) was
-> > > required to use one of the sriov adapter as PF since the
-> > > resource_size() comes up as 0x8000 and PAGE_SIZE would be 0x10000 for
-> > > pseries boxes.
-> > > 
-> > > I think resource_size() could be less than SystemPageSize, but I would
-> > > like your comments/ack/nack on any consequences of checking for only
-> > > 4k alignment here in a system with larger base page size.
-> > 
-> > As per the SRIOV specs, the  resource has to be System page size aligned.
-> > 
-> > PFs are required to support 4-KB, 8-KB, 64-KB, 256-KB, 1-MB, and 4-MB
-> > page sizes. In your case if your adapter's PF is not supporting 64K page size
-> > then I think it is not conforming to the PCI SRIOV spec.
-> 
-> Hi Ram,
-> 
-> Thanks for the pointer.  I did some more experiments and found that
-> the card does support 64k page size, but the PCI_SRIOV_SYS_PGSIZE was
-> set to default 4k when we do the query and check resource_size().
-> 
-> You were correct, the resource_size() has to come up with 64k on 64k
-> PAGE_SIZE system.  We should not change that check.  I was able to
-> get a working solution by setting PCI_SRIOV_SYS_PGSIZE to 64k before
-> we do the query.
-> 
-> This was the case in the original code before you moved these to
-> sriov_enable().  If it is ok to leave the SYS_PGSIZE setting in
-> sriov_init(), then I have the following fix that works for me.
-> 
-> Please review and let me know your comments.
-> 
-> Thanks,
-> Vaidy
-> ---
-> 
->     	pci: set pci sriov page size before reading sriov bar
->     
->     	For an SRIOV device, PCI_SRIOV_SYS_PGSIZE should be set before
->     	the PCI_SRIOV_BAR is queried.  The sys pagesize defaults to 4k,
->     	so this change is required on powerpc box with 64k base page size.
->     
->     	This is a regression caused due to moving SRIOV init to sriov_enable().
->     
->     	| commit afd24ece5c76af87f6fc477f2747b83a764f161c
->     	| Author: Ram Pai <linuxram@us.ibm.com>
->     
->     	| PCI: delay configuration of SRIOV capability
->     	| The SRIOV capability, namely page size and total_vfs of a device are
->     	| configured during enumeration phase of the device.  This can potentially
->     	| interfere with the PCI operations of the platform, if the IOV capability
->     	| of the device is not enabled.
->     
->     Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-> 
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index 0321fa3..0dab5ec 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -347,8 +347,6 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
->  			return rc;
->  	}
-> 
-> -	pci_write_config_dword(dev, iov->pos + PCI_SRIOV_SYS_PGSIZE, iov->pgsz);
-> -
->  	iov->ctrl |= PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
->  	pci_cfg_access_lock(dev);
->  	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
-> @@ -466,6 +464,7 @@ found:
->  		return -EIO;
-> 
->  	pgsz &= ~(pgsz - 1);
-> +	pci_write_config_dword(dev, pos + PCI_SRIOV_SYS_PGSIZE, pgsz);
-> 
->  	nres = 0;
->  	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+tools/ is the better place for vm tools which are used by many people.
+Moving them to tools also make them open to more users instead of hide in
+Documentation folder.
 
+Also fixed several coding style problem.
 
-ACK. I think it is better to revert  afd24ece5c76af87f6fc477f2747b83a764f161c.
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ Documentation/vm/Makefile        |    8 -
+ Documentation/vm/hugepage-mmap.c |   91 ----
+ Documentation/vm/hugepage-shm.c  |   98 ----
+ Documentation/vm/map_hugetlb.c   |   77 ---
+ Documentation/vm/page-types.c    | 1100 --------------------------------------
+ tools/vm/Makefile                |   11 +
+ tools/vm/hugepage-mmap.c         |   91 ++++
+ tools/vm/hugepage-shm.c          |   99 ++++
+ tools/vm/map_hugetlb.c           |   77 +++
+ tools/vm/page-types.c            | 1100 ++++++++++++++++++++++++++++++++++++++
+ 10 files changed, 1378 insertions(+), 1374 deletions(-)
+ delete mode 100644 Documentation/vm/Makefile
+ delete mode 100644 Documentation/vm/hugepage-mmap.c
+ delete mode 100644 Documentation/vm/hugepage-shm.c
+ delete mode 100644 Documentation/vm/map_hugetlb.c
+ delete mode 100644 Documentation/vm/page-types.c
+ create mode 100644 tools/vm/Makefile
+ create mode 100644 tools/vm/hugepage-mmap.c
+ create mode 100644 tools/vm/hugepage-shm.c
+ create mode 100644 tools/vm/map_hugetlb.c
+ create mode 100644 tools/vm/page-types.c
 
-RP
+diff --git a/Documentation/vm/Makefile b/Documentation/vm/Makefile
+deleted file mode 100644
+index 3fa4d06..0000000
+--- a/Documentation/vm/Makefile
++++ /dev/null
+@@ -1,8 +0,0 @@
+-# kbuild trick to avoid linker error. Can be omitted if a module is built.
+-obj- := dummy.o
+-
+-# List of programs to build
+-hostprogs-y := page-types hugepage-mmap hugepage-shm map_hugetlb
+-
+-# Tell kbuild to always build the programs
+-always := $(hostprogs-y)
+diff --git a/Documentation/vm/hugepage-mmap.c b/Documentation/vm/hugepage-mmap.c
+deleted file mode 100644
+index db0dd9a..0000000
+--- a/Documentation/vm/hugepage-mmap.c
++++ /dev/null
+@@ -1,91 +0,0 @@
+-/*
+- * hugepage-mmap:
+- *
+- * Example of using huge page memory in a user application using the mmap
+- * system call.  Before running this application, make sure that the
+- * administrator has mounted the hugetlbfs filesystem (on some directory
+- * like /mnt) using the command mount -t hugetlbfs nodev /mnt. In this
+- * example, the app is requesting memory of size 256MB that is backed by
+- * huge pages.
+- *
+- * For the ia64 architecture, the Linux kernel reserves Region number 4 for
+- * huge pages.  That means that if one requires a fixed address, a huge page
+- * aligned address starting with 0x800000... will be required.  If a fixed
+- * address is not required, the kernel will select an address in the proper
+- * range.
+- * Other architectures, such as ppc64, i386 or x86_64 are not so constrained.
+- */
+-
+-#include <stdlib.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-#include <sys/mman.h>
+-#include <fcntl.h>
+-
+-#define FILE_NAME "/mnt/hugepagefile"
+-#define LENGTH (256UL*1024*1024)
+-#define PROTECTION (PROT_READ | PROT_WRITE)
+-
+-/* Only ia64 requires this */
+-#ifdef __ia64__
+-#define ADDR (void *)(0x8000000000000000UL)
+-#define FLAGS (MAP_SHARED | MAP_FIXED)
+-#else
+-#define ADDR (void *)(0x0UL)
+-#define FLAGS (MAP_SHARED)
+-#endif
+-
+-static void check_bytes(char *addr)
+-{
+-	printf("First hex is %x\n", *((unsigned int *)addr));
+-}
+-
+-static void write_bytes(char *addr)
+-{
+-	unsigned long i;
+-
+-	for (i = 0; i < LENGTH; i++)
+-		*(addr + i) = (char)i;
+-}
+-
+-static void read_bytes(char *addr)
+-{
+-	unsigned long i;
+-
+-	check_bytes(addr);
+-	for (i = 0; i < LENGTH; i++)
+-		if (*(addr + i) != (char)i) {
+-			printf("Mismatch at %lu\n", i);
+-			break;
+-		}
+-}
+-
+-int main(void)
+-{
+-	void *addr;
+-	int fd;
+-
+-	fd = open(FILE_NAME, O_CREAT | O_RDWR, 0755);
+-	if (fd < 0) {
+-		perror("Open failed");
+-		exit(1);
+-	}
+-
+-	addr = mmap(ADDR, LENGTH, PROTECTION, FLAGS, fd, 0);
+-	if (addr == MAP_FAILED) {
+-		perror("mmap");
+-		unlink(FILE_NAME);
+-		exit(1);
+-	}
+-
+-	printf("Returned address is %p\n", addr);
+-	check_bytes(addr);
+-	write_bytes(addr);
+-	read_bytes(addr);
+-
+-	munmap(addr, LENGTH);
+-	close(fd);
+-	unlink(FILE_NAME);
+-
+-	return 0;
+-}
+diff --git a/Documentation/vm/hugepage-shm.c b/Documentation/vm/hugepage-shm.c
+deleted file mode 100644
+index 07956d8..0000000
+--- a/Documentation/vm/hugepage-shm.c
++++ /dev/null
+@@ -1,98 +0,0 @@
+-/*
+- * hugepage-shm:
+- *
+- * Example of using huge page memory in a user application using Sys V shared
+- * memory system calls.  In this example the app is requesting 256MB of
+- * memory that is backed by huge pages.  The application uses the flag
+- * SHM_HUGETLB in the shmget system call to inform the kernel that it is
+- * requesting huge pages.
+- *
+- * For the ia64 architecture, the Linux kernel reserves Region number 4 for
+- * huge pages.  That means that if one requires a fixed address, a huge page
+- * aligned address starting with 0x800000... will be required.  If a fixed
+- * address is not required, the kernel will select an address in the proper
+- * range.
+- * Other architectures, such as ppc64, i386 or x86_64 are not so constrained.
+- *
+- * Note: The default shared memory limit is quite low on many kernels,
+- * you may need to increase it via:
+- *
+- * echo 268435456 > /proc/sys/kernel/shmmax
+- *
+- * This will increase the maximum size per shared memory segment to 256MB.
+- * The other limit that you will hit eventually is shmall which is the
+- * total amount of shared memory in pages. To set it to 16GB on a system
+- * with a 4kB pagesize do:
+- *
+- * echo 4194304 > /proc/sys/kernel/shmall
+- */
+-
+-#include <stdlib.h>
+-#include <stdio.h>
+-#include <sys/types.h>
+-#include <sys/ipc.h>
+-#include <sys/shm.h>
+-#include <sys/mman.h>
+-
+-#ifndef SHM_HUGETLB
+-#define SHM_HUGETLB 04000
+-#endif
+-
+-#define LENGTH (256UL*1024*1024)
+-
+-#define dprintf(x)  printf(x)
+-
+-/* Only ia64 requires this */
+-#ifdef __ia64__
+-#define ADDR (void *)(0x8000000000000000UL)
+-#define SHMAT_FLAGS (SHM_RND)
+-#else
+-#define ADDR (void *)(0x0UL)
+-#define SHMAT_FLAGS (0)
+-#endif
+-
+-int main(void)
+-{
+-	int shmid;
+-	unsigned long i;
+-	char *shmaddr;
+-
+-	if ((shmid = shmget(2, LENGTH,
+-			    SHM_HUGETLB | IPC_CREAT | SHM_R | SHM_W)) < 0) {
+-		perror("shmget");
+-		exit(1);
+-	}
+-	printf("shmid: 0x%x\n", shmid);
+-
+-	shmaddr = shmat(shmid, ADDR, SHMAT_FLAGS);
+-	if (shmaddr == (char *)-1) {
+-		perror("Shared memory attach failure");
+-		shmctl(shmid, IPC_RMID, NULL);
+-		exit(2);
+-	}
+-	printf("shmaddr: %p\n", shmaddr);
+-
+-	dprintf("Starting the writes:\n");
+-	for (i = 0; i < LENGTH; i++) {
+-		shmaddr[i] = (char)(i);
+-		if (!(i % (1024 * 1024)))
+-			dprintf(".");
+-	}
+-	dprintf("\n");
+-
+-	dprintf("Starting the Check...");
+-	for (i = 0; i < LENGTH; i++)
+-		if (shmaddr[i] != (char)i)
+-			printf("\nIndex %lu mismatched\n", i);
+-	dprintf("Done.\n");
+-
+-	if (shmdt((const void *)shmaddr) != 0) {
+-		perror("Detach failure");
+-		shmctl(shmid, IPC_RMID, NULL);
+-		exit(3);
+-	}
+-
+-	shmctl(shmid, IPC_RMID, NULL);
+-
+-	return 0;
+-}
+diff --git a/Documentation/vm/map_hugetlb.c b/Documentation/vm/map_hugetlb.c
+deleted file mode 100644
+index eda1a6d..0000000
+--- a/Documentation/vm/map_hugetlb.c
++++ /dev/null
+@@ -1,77 +0,0 @@
+-/*
+- * Example of using hugepage memory in a user application using the mmap
+- * system call with MAP_HUGETLB flag.  Before running this program make
+- * sure the administrator has allocated enough default sized huge pages
+- * to cover the 256 MB allocation.
+- *
+- * For ia64 architecture, Linux kernel reserves Region number 4 for hugepages.
+- * That means the addresses starting with 0x800000... will need to be
+- * specified.  Specifying a fixed address is not required on ppc64, i386
+- * or x86_64.
+- */
+-#include <stdlib.h>
+-#include <stdio.h>
+-#include <unistd.h>
+-#include <sys/mman.h>
+-#include <fcntl.h>
+-
+-#define LENGTH (256UL*1024*1024)
+-#define PROTECTION (PROT_READ | PROT_WRITE)
+-
+-#ifndef MAP_HUGETLB
+-#define MAP_HUGETLB 0x40000 /* arch specific */
+-#endif
+-
+-/* Only ia64 requires this */
+-#ifdef __ia64__
+-#define ADDR (void *)(0x8000000000000000UL)
+-#define FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_FIXED)
+-#else
+-#define ADDR (void *)(0x0UL)
+-#define FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB)
+-#endif
+-
+-static void check_bytes(char *addr)
+-{
+-	printf("First hex is %x\n", *((unsigned int *)addr));
+-}
+-
+-static void write_bytes(char *addr)
+-{
+-	unsigned long i;
+-
+-	for (i = 0; i < LENGTH; i++)
+-		*(addr + i) = (char)i;
+-}
+-
+-static void read_bytes(char *addr)
+-{
+-	unsigned long i;
+-
+-	check_bytes(addr);
+-	for (i = 0; i < LENGTH; i++)
+-		if (*(addr + i) != (char)i) {
+-			printf("Mismatch at %lu\n", i);
+-			break;
+-		}
+-}
+-
+-int main(void)
+-{
+-	void *addr;
+-
+-	addr = mmap(ADDR, LENGTH, PROTECTION, FLAGS, 0, 0);
+-	if (addr == MAP_FAILED) {
+-		perror("mmap");
+-		exit(1);
+-	}
+-
+-	printf("Returned address is %p\n", addr);
+-	check_bytes(addr);
+-	write_bytes(addr);
+-	read_bytes(addr);
+-
+-	munmap(addr, LENGTH);
+-
+-	return 0;
+-}
+diff --git a/Documentation/vm/page-types.c b/Documentation/vm/page-types.c
+deleted file mode 100644
+index 7445caa..0000000
+--- a/Documentation/vm/page-types.c
++++ /dev/null
+@@ -1,1100 +0,0 @@
+-/*
+- * page-types: Tool for querying page flags
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of the GNU General Public License as published by the Free
+- * Software Foundation; version 2.
+- *
+- * This program is distributed in the hope that it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- * You should find a copy of v2 of the GNU General Public License somewhere on
+- * your Linux system; if not, write to the Free Software Foundation, Inc., 59
+- * Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+- *
+- * Copyright (C) 2009 Intel corporation
+- *
+- * Authors: Wu Fengguang <fengguang.wu@intel.com>
+- */
+-
+-#define _LARGEFILE64_SOURCE
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <unistd.h>
+-#include <stdint.h>
+-#include <stdarg.h>
+-#include <string.h>
+-#include <getopt.h>
+-#include <limits.h>
+-#include <assert.h>
+-#include <sys/types.h>
+-#include <sys/errno.h>
+-#include <sys/fcntl.h>
+-#include <sys/mount.h>
+-#include <sys/statfs.h>
+-#include "../../include/linux/magic.h"
+-
+-
+-#ifndef MAX_PATH
+-# define MAX_PATH 256
+-#endif
+-
+-#ifndef STR
+-# define _STR(x) #x
+-# define STR(x) _STR(x)
+-#endif
+-
+-/*
+- * pagemap kernel ABI bits
+- */
+-
+-#define PM_ENTRY_BYTES      sizeof(uint64_t)
+-#define PM_STATUS_BITS      3
+-#define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
+-#define PM_STATUS_MASK      (((1LL << PM_STATUS_BITS) - 1) << PM_STATUS_OFFSET)
+-#define PM_STATUS(nr)       (((nr) << PM_STATUS_OFFSET) & PM_STATUS_MASK)
+-#define PM_PSHIFT_BITS      6
+-#define PM_PSHIFT_OFFSET    (PM_STATUS_OFFSET - PM_PSHIFT_BITS)
+-#define PM_PSHIFT_MASK      (((1LL << PM_PSHIFT_BITS) - 1) << PM_PSHIFT_OFFSET)
+-#define PM_PSHIFT(x)        (((u64) (x) << PM_PSHIFT_OFFSET) & PM_PSHIFT_MASK)
+-#define PM_PFRAME_MASK      ((1LL << PM_PSHIFT_OFFSET) - 1)
+-#define PM_PFRAME(x)        ((x) & PM_PFRAME_MASK)
+-
+-#define PM_PRESENT          PM_STATUS(4LL)
+-#define PM_SWAP             PM_STATUS(2LL)
+-
+-
+-/*
+- * kernel page flags
+- */
+-
+-#define KPF_BYTES		8
+-#define PROC_KPAGEFLAGS		"/proc/kpageflags"
+-
+-/* copied from kpageflags_read() */
+-#define KPF_LOCKED		0
+-#define KPF_ERROR		1
+-#define KPF_REFERENCED		2
+-#define KPF_UPTODATE		3
+-#define KPF_DIRTY		4
+-#define KPF_LRU			5
+-#define KPF_ACTIVE		6
+-#define KPF_SLAB		7
+-#define KPF_WRITEBACK		8
+-#define KPF_RECLAIM		9
+-#define KPF_BUDDY		10
+-
+-/* [11-20] new additions in 2.6.31 */
+-#define KPF_MMAP		11
+-#define KPF_ANON		12
+-#define KPF_SWAPCACHE		13
+-#define KPF_SWAPBACKED		14
+-#define KPF_COMPOUND_HEAD	15
+-#define KPF_COMPOUND_TAIL	16
+-#define KPF_HUGE		17
+-#define KPF_UNEVICTABLE		18
+-#define KPF_HWPOISON		19
+-#define KPF_NOPAGE		20
+-#define KPF_KSM			21
+-
+-/* [32-] kernel hacking assistances */
+-#define KPF_RESERVED		32
+-#define KPF_MLOCKED		33
+-#define KPF_MAPPEDTODISK	34
+-#define KPF_PRIVATE		35
+-#define KPF_PRIVATE_2		36
+-#define KPF_OWNER_PRIVATE	37
+-#define KPF_ARCH		38
+-#define KPF_UNCACHED		39
+-
+-/* [48-] take some arbitrary free slots for expanding overloaded flags
+- * not part of kernel API
+- */
+-#define KPF_READAHEAD		48
+-#define KPF_SLOB_FREE		49
+-#define KPF_SLUB_FROZEN		50
+-#define KPF_SLUB_DEBUG		51
+-
+-#define KPF_ALL_BITS		((uint64_t)~0ULL)
+-#define KPF_HACKERS_BITS	(0xffffULL << 32)
+-#define KPF_OVERLOADED_BITS	(0xffffULL << 48)
+-#define BIT(name)		(1ULL << KPF_##name)
+-#define BITS_COMPOUND		(BIT(COMPOUND_HEAD) | BIT(COMPOUND_TAIL))
+-
+-static const char *page_flag_names[] = {
+-	[KPF_LOCKED]		= "L:locked",
+-	[KPF_ERROR]		= "E:error",
+-	[KPF_REFERENCED]	= "R:referenced",
+-	[KPF_UPTODATE]		= "U:uptodate",
+-	[KPF_DIRTY]		= "D:dirty",
+-	[KPF_LRU]		= "l:lru",
+-	[KPF_ACTIVE]		= "A:active",
+-	[KPF_SLAB]		= "S:slab",
+-	[KPF_WRITEBACK]		= "W:writeback",
+-	[KPF_RECLAIM]		= "I:reclaim",
+-	[KPF_BUDDY]		= "B:buddy",
+-
+-	[KPF_MMAP]		= "M:mmap",
+-	[KPF_ANON]		= "a:anonymous",
+-	[KPF_SWAPCACHE]		= "s:swapcache",
+-	[KPF_SWAPBACKED]	= "b:swapbacked",
+-	[KPF_COMPOUND_HEAD]	= "H:compound_head",
+-	[KPF_COMPOUND_TAIL]	= "T:compound_tail",
+-	[KPF_HUGE]		= "G:huge",
+-	[KPF_UNEVICTABLE]	= "u:unevictable",
+-	[KPF_HWPOISON]		= "X:hwpoison",
+-	[KPF_NOPAGE]		= "n:nopage",
+-	[KPF_KSM]		= "x:ksm",
+-
+-	[KPF_RESERVED]		= "r:reserved",
+-	[KPF_MLOCKED]		= "m:mlocked",
+-	[KPF_MAPPEDTODISK]	= "d:mappedtodisk",
+-	[KPF_PRIVATE]		= "P:private",
+-	[KPF_PRIVATE_2]		= "p:private_2",
+-	[KPF_OWNER_PRIVATE]	= "O:owner_private",
+-	[KPF_ARCH]		= "h:arch",
+-	[KPF_UNCACHED]		= "c:uncached",
+-
+-	[KPF_READAHEAD]		= "I:readahead",
+-	[KPF_SLOB_FREE]		= "P:slob_free",
+-	[KPF_SLUB_FROZEN]	= "A:slub_frozen",
+-	[KPF_SLUB_DEBUG]	= "E:slub_debug",
+-};
+-
+-
+-static const char *debugfs_known_mountpoints[] = {
+-	"/sys/kernel/debug",
+-	"/debug",
+-	0,
+-};
+-
+-/*
+- * data structures
+- */
+-
+-static int		opt_raw;	/* for kernel developers */
+-static int		opt_list;	/* list pages (in ranges) */
+-static int		opt_no_summary;	/* don't show summary */
+-static pid_t		opt_pid;	/* process to walk */
+-
+-#define MAX_ADDR_RANGES	1024
+-static int		nr_addr_ranges;
+-static unsigned long	opt_offset[MAX_ADDR_RANGES];
+-static unsigned long	opt_size[MAX_ADDR_RANGES];
+-
+-#define MAX_VMAS	10240
+-static int		nr_vmas;
+-static unsigned long	pg_start[MAX_VMAS];
+-static unsigned long	pg_end[MAX_VMAS];
+-
+-#define MAX_BIT_FILTERS	64
+-static int		nr_bit_filters;
+-static uint64_t		opt_mask[MAX_BIT_FILTERS];
+-static uint64_t		opt_bits[MAX_BIT_FILTERS];
+-
+-static int		page_size;
+-
+-static int		pagemap_fd;
+-static int		kpageflags_fd;
+-
+-static int		opt_hwpoison;
+-static int		opt_unpoison;
+-
+-static char		hwpoison_debug_fs[MAX_PATH+1];
+-static int		hwpoison_inject_fd;
+-static int		hwpoison_forget_fd;
+-
+-#define HASH_SHIFT	13
+-#define HASH_SIZE	(1 << HASH_SHIFT)
+-#define HASH_MASK	(HASH_SIZE - 1)
+-#define HASH_KEY(flags)	(flags & HASH_MASK)
+-
+-static unsigned long	total_pages;
+-static unsigned long	nr_pages[HASH_SIZE];
+-static uint64_t 	page_flags[HASH_SIZE];
+-
+-
+-/*
+- * helper functions
+- */
+-
+-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+-
+-#define min_t(type, x, y) ({			\
+-	type __min1 = (x);			\
+-	type __min2 = (y);			\
+-	__min1 < __min2 ? __min1 : __min2; })
+-
+-#define max_t(type, x, y) ({			\
+-	type __max1 = (x);			\
+-	type __max2 = (y);			\
+-	__max1 > __max2 ? __max1 : __max2; })
+-
+-static unsigned long pages2mb(unsigned long pages)
+-{
+-	return (pages * page_size) >> 20;
+-}
+-
+-static void fatal(const char *x, ...)
+-{
+-	va_list ap;
+-
+-	va_start(ap, x);
+-	vfprintf(stderr, x, ap);
+-	va_end(ap);
+-	exit(EXIT_FAILURE);
+-}
+-
+-static int checked_open(const char *pathname, int flags)
+-{
+-	int fd = open(pathname, flags);
+-
+-	if (fd < 0) {
+-		perror(pathname);
+-		exit(EXIT_FAILURE);
+-	}
+-
+-	return fd;
+-}
+-
+-/*
+- * pagemap/kpageflags routines
+- */
+-
+-static unsigned long do_u64_read(int fd, char *name,
+-				 uint64_t *buf,
+-				 unsigned long index,
+-				 unsigned long count)
+-{
+-	long bytes;
+-
+-	if (index > ULONG_MAX / 8)
+-		fatal("index overflow: %lu\n", index);
+-
+-	if (lseek(fd, index * 8, SEEK_SET) < 0) {
+-		perror(name);
+-		exit(EXIT_FAILURE);
+-	}
+-
+-	bytes = read(fd, buf, count * 8);
+-	if (bytes < 0) {
+-		perror(name);
+-		exit(EXIT_FAILURE);
+-	}
+-	if (bytes % 8)
+-		fatal("partial read: %lu bytes\n", bytes);
+-
+-	return bytes / 8;
+-}
+-
+-static unsigned long kpageflags_read(uint64_t *buf,
+-				     unsigned long index,
+-				     unsigned long pages)
+-{
+-	return do_u64_read(kpageflags_fd, PROC_KPAGEFLAGS, buf, index, pages);
+-}
+-
+-static unsigned long pagemap_read(uint64_t *buf,
+-				  unsigned long index,
+-				  unsigned long pages)
+-{
+-	return do_u64_read(pagemap_fd, "/proc/pid/pagemap", buf, index, pages);
+-}
+-
+-static unsigned long pagemap_pfn(uint64_t val)
+-{
+-	unsigned long pfn;
+-
+-	if (val & PM_PRESENT)
+-		pfn = PM_PFRAME(val);
+-	else
+-		pfn = 0;
+-
+-	return pfn;
+-}
+-
+-
+-/*
+- * page flag names
+- */
+-
+-static char *page_flag_name(uint64_t flags)
+-{
+-	static char buf[65];
+-	int present;
+-	int i, j;
+-
+-	for (i = 0, j = 0; i < ARRAY_SIZE(page_flag_names); i++) {
+-		present = (flags >> i) & 1;
+-		if (!page_flag_names[i]) {
+-			if (present)
+-				fatal("unknown flag bit %d\n", i);
+-			continue;
+-		}
+-		buf[j++] = present ? page_flag_names[i][0] : '_';
+-	}
+-
+-	return buf;
+-}
+-
+-static char *page_flag_longname(uint64_t flags)
+-{
+-	static char buf[1024];
+-	int i, n;
+-
+-	for (i = 0, n = 0; i < ARRAY_SIZE(page_flag_names); i++) {
+-		if (!page_flag_names[i])
+-			continue;
+-		if ((flags >> i) & 1)
+-			n += snprintf(buf + n, sizeof(buf) - n, "%s,",
+-					page_flag_names[i] + 2);
+-	}
+-	if (n)
+-		n--;
+-	buf[n] = '\0';
+-
+-	return buf;
+-}
+-
+-
+-/*
+- * page list and summary
+- */
+-
+-static void show_page_range(unsigned long voffset,
+-			    unsigned long offset, uint64_t flags)
+-{
+-	static uint64_t      flags0;
+-	static unsigned long voff;
+-	static unsigned long index;
+-	static unsigned long count;
+-
+-	if (flags == flags0 && offset == index + count &&
+-	    (!opt_pid || voffset == voff + count)) {
+-		count++;
+-		return;
+-	}
+-
+-	if (count) {
+-		if (opt_pid)
+-			printf("%lx\t", voff);
+-		printf("%lx\t%lx\t%s\n",
+-				index, count, page_flag_name(flags0));
+-	}
+-
+-	flags0 = flags;
+-	index  = offset;
+-	voff   = voffset;
+-	count  = 1;
+-}
+-
+-static void show_page(unsigned long voffset,
+-		      unsigned long offset, uint64_t flags)
+-{
+-	if (opt_pid)
+-		printf("%lx\t", voffset);
+-	printf("%lx\t%s\n", offset, page_flag_name(flags));
+-}
+-
+-static void show_summary(void)
+-{
+-	int i;
+-
+-	printf("             flags\tpage-count       MB"
+-		"  symbolic-flags\t\t\tlong-symbolic-flags\n");
+-
+-	for (i = 0; i < ARRAY_SIZE(nr_pages); i++) {
+-		if (nr_pages[i])
+-			printf("0x%016llx\t%10lu %8lu  %s\t%s\n",
+-				(unsigned long long)page_flags[i],
+-				nr_pages[i],
+-				pages2mb(nr_pages[i]),
+-				page_flag_name(page_flags[i]),
+-				page_flag_longname(page_flags[i]));
+-	}
+-
+-	printf("             total\t%10lu %8lu\n",
+-			total_pages, pages2mb(total_pages));
+-}
+-
+-
+-/*
+- * page flag filters
+- */
+-
+-static int bit_mask_ok(uint64_t flags)
+-{
+-	int i;
+-
+-	for (i = 0; i < nr_bit_filters; i++) {
+-		if (opt_bits[i] == KPF_ALL_BITS) {
+-			if ((flags & opt_mask[i]) == 0)
+-				return 0;
+-		} else {
+-			if ((flags & opt_mask[i]) != opt_bits[i])
+-				return 0;
+-		}
+-	}
+-
+-	return 1;
+-}
+-
+-static uint64_t expand_overloaded_flags(uint64_t flags)
+-{
+-	/* SLOB/SLUB overload several page flags */
+-	if (flags & BIT(SLAB)) {
+-		if (flags & BIT(PRIVATE))
+-			flags ^= BIT(PRIVATE) | BIT(SLOB_FREE);
+-		if (flags & BIT(ACTIVE))
+-			flags ^= BIT(ACTIVE) | BIT(SLUB_FROZEN);
+-		if (flags & BIT(ERROR))
+-			flags ^= BIT(ERROR) | BIT(SLUB_DEBUG);
+-	}
+-
+-	/* PG_reclaim is overloaded as PG_readahead in the read path */
+-	if ((flags & (BIT(RECLAIM) | BIT(WRITEBACK))) == BIT(RECLAIM))
+-		flags ^= BIT(RECLAIM) | BIT(READAHEAD);
+-
+-	return flags;
+-}
+-
+-static uint64_t well_known_flags(uint64_t flags)
+-{
+-	/* hide flags intended only for kernel hacker */
+-	flags &= ~KPF_HACKERS_BITS;
+-
+-	/* hide non-hugeTLB compound pages */
+-	if ((flags & BITS_COMPOUND) && !(flags & BIT(HUGE)))
+-		flags &= ~BITS_COMPOUND;
+-
+-	return flags;
+-}
+-
+-static uint64_t kpageflags_flags(uint64_t flags)
+-{
+-	flags = expand_overloaded_flags(flags);
+-
+-	if (!opt_raw)
+-		flags = well_known_flags(flags);
+-
+-	return flags;
+-}
+-
+-/* verify that a mountpoint is actually a debugfs instance */
+-static int debugfs_valid_mountpoint(const char *debugfs)
+-{
+-	struct statfs st_fs;
+-
+-	if (statfs(debugfs, &st_fs) < 0)
+-		return -ENOENT;
+-	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
+-		return -ENOENT;
+-
+-	return 0;
+-}
+-
+-/* find the path to the mounted debugfs */
+-static const char *debugfs_find_mountpoint(void)
+-{
+-	const char **ptr;
+-	char type[100];
+-	FILE *fp;
+-
+-	ptr = debugfs_known_mountpoints;
+-	while (*ptr) {
+-		if (debugfs_valid_mountpoint(*ptr) == 0) {
+-			strcpy(hwpoison_debug_fs, *ptr);
+-			return hwpoison_debug_fs;
+-		}
+-		ptr++;
+-	}
+-
+-	/* give up and parse /proc/mounts */
+-	fp = fopen("/proc/mounts", "r");
+-	if (fp == NULL)
+-		perror("Can't open /proc/mounts for read");
+-
+-	while (fscanf(fp, "%*s %"
+-		      STR(MAX_PATH)
+-		      "s %99s %*s %*d %*d\n",
+-		      hwpoison_debug_fs, type) == 2) {
+-		if (strcmp(type, "debugfs") == 0)
+-			break;
+-	}
+-	fclose(fp);
+-
+-	if (strcmp(type, "debugfs") != 0)
+-		return NULL;
+-
+-	return hwpoison_debug_fs;
+-}
+-
+-/* mount the debugfs somewhere if it's not mounted */
+-
+-static void debugfs_mount(void)
+-{
+-	const char **ptr;
+-
+-	/* see if it's already mounted */
+-	if (debugfs_find_mountpoint())
+-		return;
+-
+-	ptr = debugfs_known_mountpoints;
+-	while (*ptr) {
+-		if (mount(NULL, *ptr, "debugfs", 0, NULL) == 0) {
+-			/* save the mountpoint */
+-			strcpy(hwpoison_debug_fs, *ptr);
+-			break;
+-		}
+-		ptr++;
+-	}
+-
+-	if (*ptr == NULL) {
+-		perror("mount debugfs");
+-		exit(EXIT_FAILURE);
+-	}
+-}
+-
+-/*
+- * page actions
+- */
+-
+-static void prepare_hwpoison_fd(void)
+-{
+-	char buf[MAX_PATH + 1];
+-
+-	debugfs_mount();
+-
+-	if (opt_hwpoison && !hwpoison_inject_fd) {
+-		snprintf(buf, MAX_PATH, "%s/hwpoison/corrupt-pfn",
+-			hwpoison_debug_fs);
+-		hwpoison_inject_fd = checked_open(buf, O_WRONLY);
+-	}
+-
+-	if (opt_unpoison && !hwpoison_forget_fd) {
+-		snprintf(buf, MAX_PATH, "%s/hwpoison/unpoison-pfn",
+-			hwpoison_debug_fs);
+-		hwpoison_forget_fd = checked_open(buf, O_WRONLY);
+-	}
+-}
+-
+-static int hwpoison_page(unsigned long offset)
+-{
+-	char buf[100];
+-	int len;
+-
+-	len = sprintf(buf, "0x%lx\n", offset);
+-	len = write(hwpoison_inject_fd, buf, len);
+-	if (len < 0) {
+-		perror("hwpoison inject");
+-		return len;
+-	}
+-	return 0;
+-}
+-
+-static int unpoison_page(unsigned long offset)
+-{
+-	char buf[100];
+-	int len;
+-
+-	len = sprintf(buf, "0x%lx\n", offset);
+-	len = write(hwpoison_forget_fd, buf, len);
+-	if (len < 0) {
+-		perror("hwpoison forget");
+-		return len;
+-	}
+-	return 0;
+-}
+-
+-/*
+- * page frame walker
+- */
+-
+-static int hash_slot(uint64_t flags)
+-{
+-	int k = HASH_KEY(flags);
+-	int i;
+-
+-	/* Explicitly reserve slot 0 for flags 0: the following logic
+-	 * cannot distinguish an unoccupied slot from slot (flags==0).
+-	 */
+-	if (flags == 0)
+-		return 0;
+-
+-	/* search through the remaining (HASH_SIZE-1) slots */
+-	for (i = 1; i < ARRAY_SIZE(page_flags); i++, k++) {
+-		if (!k || k >= ARRAY_SIZE(page_flags))
+-			k = 1;
+-		if (page_flags[k] == 0) {
+-			page_flags[k] = flags;
+-			return k;
+-		}
+-		if (page_flags[k] == flags)
+-			return k;
+-	}
+-
+-	fatal("hash table full: bump up HASH_SHIFT?\n");
+-	exit(EXIT_FAILURE);
+-}
+-
+-static void add_page(unsigned long voffset,
+-		     unsigned long offset, uint64_t flags)
+-{
+-	flags = kpageflags_flags(flags);
+-
+-	if (!bit_mask_ok(flags))
+-		return;
+-
+-	if (opt_hwpoison)
+-		hwpoison_page(offset);
+-	if (opt_unpoison)
+-		unpoison_page(offset);
+-
+-	if (opt_list == 1)
+-		show_page_range(voffset, offset, flags);
+-	else if (opt_list == 2)
+-		show_page(voffset, offset, flags);
+-
+-	nr_pages[hash_slot(flags)]++;
+-	total_pages++;
+-}
+-
+-#define KPAGEFLAGS_BATCH	(64 << 10)	/* 64k pages */
+-static void walk_pfn(unsigned long voffset,
+-		     unsigned long index,
+-		     unsigned long count)
+-{
+-	uint64_t buf[KPAGEFLAGS_BATCH];
+-	unsigned long batch;
+-	long pages;
+-	unsigned long i;
+-
+-	while (count) {
+-		batch = min_t(unsigned long, count, KPAGEFLAGS_BATCH);
+-		pages = kpageflags_read(buf, index, batch);
+-		if (pages == 0)
+-			break;
+-
+-		for (i = 0; i < pages; i++)
+-			add_page(voffset + i, index + i, buf[i]);
+-
+-		index += pages;
+-		count -= pages;
+-	}
+-}
+-
+-#define PAGEMAP_BATCH	(64 << 10)
+-static void walk_vma(unsigned long index, unsigned long count)
+-{
+-	uint64_t buf[PAGEMAP_BATCH];
+-	unsigned long batch;
+-	unsigned long pages;
+-	unsigned long pfn;
+-	unsigned long i;
+-
+-	while (count) {
+-		batch = min_t(unsigned long, count, PAGEMAP_BATCH);
+-		pages = pagemap_read(buf, index, batch);
+-		if (pages == 0)
+-			break;
+-
+-		for (i = 0; i < pages; i++) {
+-			pfn = pagemap_pfn(buf[i]);
+-			if (pfn)
+-				walk_pfn(index + i, pfn, 1);
+-		}
+-
+-		index += pages;
+-		count -= pages;
+-	}
+-}
+-
+-static void walk_task(unsigned long index, unsigned long count)
+-{
+-	const unsigned long end = index + count;
+-	unsigned long start;
+-	int i = 0;
+-
+-	while (index < end) {
+-
+-		while (pg_end[i] <= index)
+-			if (++i >= nr_vmas)
+-				return;
+-		if (pg_start[i] >= end)
+-			return;
+-
+-		start = max_t(unsigned long, pg_start[i], index);
+-		index = min_t(unsigned long, pg_end[i], end);
+-
+-		assert(start < index);
+-		walk_vma(start, index - start);
+-	}
+-}
+-
+-static void add_addr_range(unsigned long offset, unsigned long size)
+-{
+-	if (nr_addr_ranges >= MAX_ADDR_RANGES)
+-		fatal("too many addr ranges\n");
+-
+-	opt_offset[nr_addr_ranges] = offset;
+-	opt_size[nr_addr_ranges] = min_t(unsigned long, size, ULONG_MAX-offset);
+-	nr_addr_ranges++;
+-}
+-
+-static void walk_addr_ranges(void)
+-{
+-	int i;
+-
+-	kpageflags_fd = checked_open(PROC_KPAGEFLAGS, O_RDONLY);
+-
+-	if (!nr_addr_ranges)
+-		add_addr_range(0, ULONG_MAX);
+-
+-	for (i = 0; i < nr_addr_ranges; i++)
+-		if (!opt_pid)
+-			walk_pfn(0, opt_offset[i], opt_size[i]);
+-		else
+-			walk_task(opt_offset[i], opt_size[i]);
+-
+-	close(kpageflags_fd);
+-}
+-
+-
+-/*
+- * user interface
+- */
+-
+-static const char *page_flag_type(uint64_t flag)
+-{
+-	if (flag & KPF_HACKERS_BITS)
+-		return "(r)";
+-	if (flag & KPF_OVERLOADED_BITS)
+-		return "(o)";
+-	return "   ";
+-}
+-
+-static void usage(void)
+-{
+-	int i, j;
+-
+-	printf(
+-"page-types [options]\n"
+-"            -r|--raw                   Raw mode, for kernel developers\n"
+-"            -d|--describe flags        Describe flags\n"
+-"            -a|--addr    addr-spec     Walk a range of pages\n"
+-"            -b|--bits    bits-spec     Walk pages with specified bits\n"
+-"            -p|--pid     pid           Walk process address space\n"
+-#if 0 /* planned features */
+-"            -f|--file    filename      Walk file address space\n"
+-#endif
+-"            -l|--list                  Show page details in ranges\n"
+-"            -L|--list-each             Show page details one by one\n"
+-"            -N|--no-summary            Don't show summary info\n"
+-"            -X|--hwpoison              hwpoison pages\n"
+-"            -x|--unpoison              unpoison pages\n"
+-"            -h|--help                  Show this usage message\n"
+-"flags:\n"
+-"            0x10                       bitfield format, e.g.\n"
+-"            anon                       bit-name, e.g.\n"
+-"            0x10,anon                  comma-separated list, e.g.\n"
+-"addr-spec:\n"
+-"            N                          one page at offset N (unit: pages)\n"
+-"            N+M                        pages range from N to N+M-1\n"
+-"            N,M                        pages range from N to M-1\n"
+-"            N,                         pages range from N to end\n"
+-"            ,M                         pages range from 0 to M-1\n"
+-"bits-spec:\n"
+-"            bit1,bit2                  (flags & (bit1|bit2)) != 0\n"
+-"            bit1,bit2=bit1             (flags & (bit1|bit2)) == bit1\n"
+-"            bit1,~bit2                 (flags & (bit1|bit2)) == bit1\n"
+-"            =bit1,bit2                 flags == (bit1|bit2)\n"
+-"bit-names:\n"
+-	);
+-
+-	for (i = 0, j = 0; i < ARRAY_SIZE(page_flag_names); i++) {
+-		if (!page_flag_names[i])
+-			continue;
+-		printf("%16s%s", page_flag_names[i] + 2,
+-				 page_flag_type(1ULL << i));
+-		if (++j > 3) {
+-			j = 0;
+-			putchar('\n');
+-		}
+-	}
+-	printf("\n                                   "
+-		"(r) raw mode bits  (o) overloaded bits\n");
+-}
+-
+-static unsigned long long parse_number(const char *str)
+-{
+-	unsigned long long n;
+-
+-	n = strtoll(str, NULL, 0);
+-
+-	if (n == 0 && str[0] != '0')
+-		fatal("invalid name or number: %s\n", str);
+-
+-	return n;
+-}
+-
+-static void parse_pid(const char *str)
+-{
+-	FILE *file;
+-	char buf[5000];
+-
+-	opt_pid = parse_number(str);
+-
+-	sprintf(buf, "/proc/%d/pagemap", opt_pid);
+-	pagemap_fd = checked_open(buf, O_RDONLY);
+-
+-	sprintf(buf, "/proc/%d/maps", opt_pid);
+-	file = fopen(buf, "r");
+-	if (!file) {
+-		perror(buf);
+-		exit(EXIT_FAILURE);
+-	}
+-
+-	while (fgets(buf, sizeof(buf), file) != NULL) {
+-		unsigned long vm_start;
+-		unsigned long vm_end;
+-		unsigned long long pgoff;
+-		int major, minor;
+-		char r, w, x, s;
+-		unsigned long ino;
+-		int n;
+-
+-		n = sscanf(buf, "%lx-%lx %c%c%c%c %llx %x:%x %lu",
+-			   &vm_start,
+-			   &vm_end,
+-			   &r, &w, &x, &s,
+-			   &pgoff,
+-			   &major, &minor,
+-			   &ino);
+-		if (n < 10) {
+-			fprintf(stderr, "unexpected line: %s\n", buf);
+-			continue;
+-		}
+-		pg_start[nr_vmas] = vm_start / page_size;
+-		pg_end[nr_vmas] = vm_end / page_size;
+-		if (++nr_vmas >= MAX_VMAS) {
+-			fprintf(stderr, "too many VMAs\n");
+-			break;
+-		}
+-	}
+-	fclose(file);
+-}
+-
+-static void parse_file(const char *name)
+-{
+-}
+-
+-static void parse_addr_range(const char *optarg)
+-{
+-	unsigned long offset;
+-	unsigned long size;
+-	char *p;
+-
+-	p = strchr(optarg, ',');
+-	if (!p)
+-		p = strchr(optarg, '+');
+-
+-	if (p == optarg) {
+-		offset = 0;
+-		size   = parse_number(p + 1);
+-	} else if (p) {
+-		offset = parse_number(optarg);
+-		if (p[1] == '\0')
+-			size = ULONG_MAX;
+-		else {
+-			size = parse_number(p + 1);
+-			if (*p == ',') {
+-				if (size < offset)
+-					fatal("invalid range: %lu,%lu\n",
+-							offset, size);
+-				size -= offset;
+-			}
+-		}
+-	} else {
+-		offset = parse_number(optarg);
+-		size   = 1;
+-	}
+-
+-	add_addr_range(offset, size);
+-}
+-
+-static void add_bits_filter(uint64_t mask, uint64_t bits)
+-{
+-	if (nr_bit_filters >= MAX_BIT_FILTERS)
+-		fatal("too much bit filters\n");
+-
+-	opt_mask[nr_bit_filters] = mask;
+-	opt_bits[nr_bit_filters] = bits;
+-	nr_bit_filters++;
+-}
+-
+-static uint64_t parse_flag_name(const char *str, int len)
+-{
+-	int i;
+-
+-	if (!*str || !len)
+-		return 0;
+-
+-	if (len <= 8 && !strncmp(str, "compound", len))
+-		return BITS_COMPOUND;
+-
+-	for (i = 0; i < ARRAY_SIZE(page_flag_names); i++) {
+-		if (!page_flag_names[i])
+-			continue;
+-		if (!strncmp(str, page_flag_names[i] + 2, len))
+-			return 1ULL << i;
+-	}
+-
+-	return parse_number(str);
+-}
+-
+-static uint64_t parse_flag_names(const char *str, int all)
+-{
+-	const char *p    = str;
+-	uint64_t   flags = 0;
+-
+-	while (1) {
+-		if (*p == ',' || *p == '=' || *p == '\0') {
+-			if ((*str != '~') || (*str == '~' && all && *++str))
+-				flags |= parse_flag_name(str, p - str);
+-			if (*p != ',')
+-				break;
+-			str = p + 1;
+-		}
+-		p++;
+-	}
+-
+-	return flags;
+-}
+-
+-static void parse_bits_mask(const char *optarg)
+-{
+-	uint64_t mask;
+-	uint64_t bits;
+-	const char *p;
+-
+-	p = strchr(optarg, '=');
+-	if (p == optarg) {
+-		mask = KPF_ALL_BITS;
+-		bits = parse_flag_names(p + 1, 0);
+-	} else if (p) {
+-		mask = parse_flag_names(optarg, 0);
+-		bits = parse_flag_names(p + 1, 0);
+-	} else if (strchr(optarg, '~')) {
+-		mask = parse_flag_names(optarg, 1);
+-		bits = parse_flag_names(optarg, 0);
+-	} else {
+-		mask = parse_flag_names(optarg, 0);
+-		bits = KPF_ALL_BITS;
+-	}
+-
+-	add_bits_filter(mask, bits);
+-}
+-
+-static void describe_flags(const char *optarg)
+-{
+-	uint64_t flags = parse_flag_names(optarg, 0);
+-
+-	printf("0x%016llx\t%s\t%s\n",
+-		(unsigned long long)flags,
+-		page_flag_name(flags),
+-		page_flag_longname(flags));
+-}
+-
+-static const struct option opts[] = {
+-	{ "raw"       , 0, NULL, 'r' },
+-	{ "pid"       , 1, NULL, 'p' },
+-	{ "file"      , 1, NULL, 'f' },
+-	{ "addr"      , 1, NULL, 'a' },
+-	{ "bits"      , 1, NULL, 'b' },
+-	{ "describe"  , 1, NULL, 'd' },
+-	{ "list"      , 0, NULL, 'l' },
+-	{ "list-each" , 0, NULL, 'L' },
+-	{ "no-summary", 0, NULL, 'N' },
+-	{ "hwpoison"  , 0, NULL, 'X' },
+-	{ "unpoison"  , 0, NULL, 'x' },
+-	{ "help"      , 0, NULL, 'h' },
+-	{ NULL        , 0, NULL, 0 }
+-};
+-
+-int main(int argc, char *argv[])
+-{
+-	int c;
+-
+-	page_size = getpagesize();
+-
+-	while ((c = getopt_long(argc, argv,
+-				"rp:f:a:b:d:lLNXxh", opts, NULL)) != -1) {
+-		switch (c) {
+-		case 'r':
+-			opt_raw = 1;
+-			break;
+-		case 'p':
+-			parse_pid(optarg);
+-			break;
+-		case 'f':
+-			parse_file(optarg);
+-			break;
+-		case 'a':
+-			parse_addr_range(optarg);
+-			break;
+-		case 'b':
+-			parse_bits_mask(optarg);
+-			break;
+-		case 'd':
+-			describe_flags(optarg);
+-			exit(0);
+-		case 'l':
+-			opt_list = 1;
+-			break;
+-		case 'L':
+-			opt_list = 2;
+-			break;
+-		case 'N':
+-			opt_no_summary = 1;
+-			break;
+-		case 'X':
+-			opt_hwpoison = 1;
+-			prepare_hwpoison_fd();
+-			break;
+-		case 'x':
+-			opt_unpoison = 1;
+-			prepare_hwpoison_fd();
+-			break;
+-		case 'h':
+-			usage();
+-			exit(0);
+-		default:
+-			usage();
+-			exit(1);
+-		}
+-	}
+-
+-	if (opt_list && opt_pid)
+-		printf("voffset\t");
+-	if (opt_list == 1)
+-		printf("offset\tlen\tflags\n");
+-	if (opt_list == 2)
+-		printf("offset\tflags\n");
+-
+-	walk_addr_ranges();
+-
+-	if (opt_list == 1)
+-		show_page_range(0, 0, 0);  /* drain the buffer */
+-
+-	if (opt_no_summary)
+-		return 0;
+-
+-	if (opt_list)
+-		printf("\n\n");
+-
+-	show_summary();
+-
+-	return 0;
+-}
+diff --git a/tools/vm/Makefile b/tools/vm/Makefile
+new file mode 100644
+index 0000000..b4f9fdd
+--- /dev/null
++++ b/tools/vm/Makefile
+@@ -0,0 +1,11 @@
++# Makefile for vm tools
++
++CC = $(CROSS_COMPILE)gcc
++CFLAGS = -Wall -Wextra
++
++all: page-types hugepage-mmap hugepage-shm map_hugetlb
++%: %.c
++	$(CC) $(CFLAGS) -o $@ $^
++
++clean:
++	$(RM) page-types hugepage-mmap hugepage-shm map_hugetlb
+diff --git a/tools/vm/hugepage-mmap.c b/tools/vm/hugepage-mmap.c
+new file mode 100644
+index 0000000..db0dd9a
+--- /dev/null
++++ b/tools/vm/hugepage-mmap.c
+@@ -0,0 +1,91 @@
++/*
++ * hugepage-mmap:
++ *
++ * Example of using huge page memory in a user application using the mmap
++ * system call.  Before running this application, make sure that the
++ * administrator has mounted the hugetlbfs filesystem (on some directory
++ * like /mnt) using the command mount -t hugetlbfs nodev /mnt. In this
++ * example, the app is requesting memory of size 256MB that is backed by
++ * huge pages.
++ *
++ * For the ia64 architecture, the Linux kernel reserves Region number 4 for
++ * huge pages.  That means that if one requires a fixed address, a huge page
++ * aligned address starting with 0x800000... will be required.  If a fixed
++ * address is not required, the kernel will select an address in the proper
++ * range.
++ * Other architectures, such as ppc64, i386 or x86_64 are not so constrained.
++ */
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <unistd.h>
++#include <sys/mman.h>
++#include <fcntl.h>
++
++#define FILE_NAME "/mnt/hugepagefile"
++#define LENGTH (256UL*1024*1024)
++#define PROTECTION (PROT_READ | PROT_WRITE)
++
++/* Only ia64 requires this */
++#ifdef __ia64__
++#define ADDR (void *)(0x8000000000000000UL)
++#define FLAGS (MAP_SHARED | MAP_FIXED)
++#else
++#define ADDR (void *)(0x0UL)
++#define FLAGS (MAP_SHARED)
++#endif
++
++static void check_bytes(char *addr)
++{
++	printf("First hex is %x\n", *((unsigned int *)addr));
++}
++
++static void write_bytes(char *addr)
++{
++	unsigned long i;
++
++	for (i = 0; i < LENGTH; i++)
++		*(addr + i) = (char)i;
++}
++
++static void read_bytes(char *addr)
++{
++	unsigned long i;
++
++	check_bytes(addr);
++	for (i = 0; i < LENGTH; i++)
++		if (*(addr + i) != (char)i) {
++			printf("Mismatch at %lu\n", i);
++			break;
++		}
++}
++
++int main(void)
++{
++	void *addr;
++	int fd;
++
++	fd = open(FILE_NAME, O_CREAT | O_RDWR, 0755);
++	if (fd < 0) {
++		perror("Open failed");
++		exit(1);
++	}
++
++	addr = mmap(ADDR, LENGTH, PROTECTION, FLAGS, fd, 0);
++	if (addr == MAP_FAILED) {
++		perror("mmap");
++		unlink(FILE_NAME);
++		exit(1);
++	}
++
++	printf("Returned address is %p\n", addr);
++	check_bytes(addr);
++	write_bytes(addr);
++	read_bytes(addr);
++
++	munmap(addr, LENGTH);
++	close(fd);
++	unlink(FILE_NAME);
++
++	return 0;
++}
+diff --git a/tools/vm/hugepage-shm.c b/tools/vm/hugepage-shm.c
+new file mode 100644
+index 0000000..7c8c19e
+--- /dev/null
++++ b/tools/vm/hugepage-shm.c
+@@ -0,0 +1,99 @@
++/*
++ * hugepage-shm:
++ *
++ * Example of using huge page memory in a user application using Sys V shared
++ * memory system calls.  In this example the app is requesting 256MB of
++ * memory that is backed by huge pages.  The application uses the flag
++ * SHM_HUGETLB in the shmget system call to inform the kernel that it is
++ * requesting huge pages.
++ *
++ * For the ia64 architecture, the Linux kernel reserves Region number 4 for
++ * huge pages.  That means that if one requires a fixed address, a huge page
++ * aligned address starting with 0x800000... will be required.  If a fixed
++ * address is not required, the kernel will select an address in the proper
++ * range.
++ * Other architectures, such as ppc64, i386 or x86_64 are not so constrained.
++ *
++ * Note: The default shared memory limit is quite low on many kernels,
++ * you may need to increase it via:
++ *
++ * echo 268435456 > /proc/sys/kernel/shmmax
++ *
++ * This will increase the maximum size per shared memory segment to 256MB.
++ * The other limit that you will hit eventually is shmall which is the
++ * total amount of shared memory in pages. To set it to 16GB on a system
++ * with a 4kB pagesize do:
++ *
++ * echo 4194304 > /proc/sys/kernel/shmall
++ */
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <sys/types.h>
++#include <sys/ipc.h>
++#include <sys/shm.h>
++#include <sys/mman.h>
++
++#ifndef SHM_HUGETLB
++#define SHM_HUGETLB 04000
++#endif
++
++#define LENGTH (256UL*1024*1024)
++
++#define dprintf(x)  printf(x)
++
++/* Only ia64 requires this */
++#ifdef __ia64__
++#define ADDR (void *)(0x8000000000000000UL)
++#define SHMAT_FLAGS (SHM_RND)
++#else
++#define ADDR (void *)(0x0UL)
++#define SHMAT_FLAGS (0)
++#endif
++
++int main(void)
++{
++	int shmid;
++	unsigned long i;
++	char *shmaddr;
++
++	shmid = shmget(2, LENGTH,
++		       (SHM_HUGETLB | IPC_CREAT | SHM_R | SHM_W) < 0);
++	if (shmid < 0) {
++		perror("shmget");
++		exit(1);
++	}
++	printf("shmid: 0x%x\n", shmid);
++
++	shmaddr = shmat(shmid, ADDR, SHMAT_FLAGS);
++	if (shmaddr == (char *)-1) {
++		perror("Shared memory attach failure");
++		shmctl(shmid, IPC_RMID, NULL);
++		exit(2);
++	}
++	printf("shmaddr: %p\n", shmaddr);
++
++	dprintf("Starting the writes:\n");
++	for (i = 0; i < LENGTH; i++) {
++		shmaddr[i] = (char)(i);
++		if (!(i % (1024 * 1024)))
++			dprintf(".");
++	}
++	dprintf("\n");
++
++	dprintf("Starting the Check...");
++	for (i = 0; i < LENGTH; i++)
++		if (shmaddr[i] != (char)i)
++			printf("\nIndex %lu mismatched\n", i);
++	dprintf("Done.\n");
++
++	if (shmdt((const void *)shmaddr) != 0) {
++		perror("Detach failure");
++		shmctl(shmid, IPC_RMID, NULL);
++		exit(3);
++	}
++
++	shmctl(shmid, IPC_RMID, NULL);
++
++	return 0;
++}
+diff --git a/tools/vm/map_hugetlb.c b/tools/vm/map_hugetlb.c
+new file mode 100644
+index 0000000..eda1a6d
+--- /dev/null
++++ b/tools/vm/map_hugetlb.c
+@@ -0,0 +1,77 @@
++/*
++ * Example of using hugepage memory in a user application using the mmap
++ * system call with MAP_HUGETLB flag.  Before running this program make
++ * sure the administrator has allocated enough default sized huge pages
++ * to cover the 256 MB allocation.
++ *
++ * For ia64 architecture, Linux kernel reserves Region number 4 for hugepages.
++ * That means the addresses starting with 0x800000... will need to be
++ * specified.  Specifying a fixed address is not required on ppc64, i386
++ * or x86_64.
++ */
++#include <stdlib.h>
++#include <stdio.h>
++#include <unistd.h>
++#include <sys/mman.h>
++#include <fcntl.h>
++
++#define LENGTH (256UL*1024*1024)
++#define PROTECTION (PROT_READ | PROT_WRITE)
++
++#ifndef MAP_HUGETLB
++#define MAP_HUGETLB 0x40000 /* arch specific */
++#endif
++
++/* Only ia64 requires this */
++#ifdef __ia64__
++#define ADDR (void *)(0x8000000000000000UL)
++#define FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_FIXED)
++#else
++#define ADDR (void *)(0x0UL)
++#define FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB)
++#endif
++
++static void check_bytes(char *addr)
++{
++	printf("First hex is %x\n", *((unsigned int *)addr));
++}
++
++static void write_bytes(char *addr)
++{
++	unsigned long i;
++
++	for (i = 0; i < LENGTH; i++)
++		*(addr + i) = (char)i;
++}
++
++static void read_bytes(char *addr)
++{
++	unsigned long i;
++
++	check_bytes(addr);
++	for (i = 0; i < LENGTH; i++)
++		if (*(addr + i) != (char)i) {
++			printf("Mismatch at %lu\n", i);
++			break;
++		}
++}
++
++int main(void)
++{
++	void *addr;
++
++	addr = mmap(ADDR, LENGTH, PROTECTION, FLAGS, 0, 0);
++	if (addr == MAP_FAILED) {
++		perror("mmap");
++		exit(1);
++	}
++
++	printf("Returned address is %p\n", addr);
++	check_bytes(addr);
++	write_bytes(addr);
++	read_bytes(addr);
++
++	munmap(addr, LENGTH);
++
++	return 0;
++}
+diff --git a/tools/vm/page-types.c b/tools/vm/page-types.c
+new file mode 100644
+index 0000000..89dd173
+--- /dev/null
++++ b/tools/vm/page-types.c
+@@ -0,0 +1,1100 @@
++/*
++ * page-types: Tool for querying page flags
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; version 2.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should find a copy of v2 of the GNU General Public License somewhere on
++ * your Linux system; if not, write to the Free Software Foundation, Inc., 59
++ * Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * Copyright (C) 2009 Intel corporation
++ *
++ * Authors: Wu Fengguang <fengguang.wu@intel.com>
++ */
++
++#define _LARGEFILE64_SOURCE
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <stdint.h>
++#include <stdarg.h>
++#include <string.h>
++#include <getopt.h>
++#include <limits.h>
++#include <assert.h>
++#include <sys/types.h>
++#include <sys/errno.h>
++#include <sys/fcntl.h>
++#include <sys/mount.h>
++#include <sys/statfs.h>
++#include "../../include/linux/magic.h"
++
++
++#ifndef MAX_PATH
++# define MAX_PATH 256
++#endif
++
++#ifndef STR
++# define _STR(x) #x
++# define STR(x) _STR(x)
++#endif
++
++/*
++ * pagemap kernel ABI bits
++ */
++
++#define PM_ENTRY_BYTES      sizeof(uint64_t)
++#define PM_STATUS_BITS      3
++#define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
++#define PM_STATUS_MASK      (((1LL << PM_STATUS_BITS) - 1) << PM_STATUS_OFFSET)
++#define PM_STATUS(nr)       (((nr) << PM_STATUS_OFFSET) & PM_STATUS_MASK)
++#define PM_PSHIFT_BITS      6
++#define PM_PSHIFT_OFFSET    (PM_STATUS_OFFSET - PM_PSHIFT_BITS)
++#define PM_PSHIFT_MASK      (((1LL << PM_PSHIFT_BITS) - 1) << PM_PSHIFT_OFFSET)
++#define PM_PSHIFT(x)        (((u64) (x) << PM_PSHIFT_OFFSET) & PM_PSHIFT_MASK)
++#define PM_PFRAME_MASK      ((1LL << PM_PSHIFT_OFFSET) - 1)
++#define PM_PFRAME(x)        ((x) & PM_PFRAME_MASK)
++
++#define PM_PRESENT          PM_STATUS(4LL)
++#define PM_SWAP             PM_STATUS(2LL)
++
++
++/*
++ * kernel page flags
++ */
++
++#define KPF_BYTES		8
++#define PROC_KPAGEFLAGS		"/proc/kpageflags"
++
++/* copied from kpageflags_read() */
++#define KPF_LOCKED		0
++#define KPF_ERROR		1
++#define KPF_REFERENCED		2
++#define KPF_UPTODATE		3
++#define KPF_DIRTY		4
++#define KPF_LRU			5
++#define KPF_ACTIVE		6
++#define KPF_SLAB		7
++#define KPF_WRITEBACK		8
++#define KPF_RECLAIM		9
++#define KPF_BUDDY		10
++
++/* [11-20] new additions in 2.6.31 */
++#define KPF_MMAP		11
++#define KPF_ANON		12
++#define KPF_SWAPCACHE		13
++#define KPF_SWAPBACKED		14
++#define KPF_COMPOUND_HEAD	15
++#define KPF_COMPOUND_TAIL	16
++#define KPF_HUGE		17
++#define KPF_UNEVICTABLE		18
++#define KPF_HWPOISON		19
++#define KPF_NOPAGE		20
++#define KPF_KSM			21
++
++/* [32-] kernel hacking assistances */
++#define KPF_RESERVED		32
++#define KPF_MLOCKED		33
++#define KPF_MAPPEDTODISK	34
++#define KPF_PRIVATE		35
++#define KPF_PRIVATE_2		36
++#define KPF_OWNER_PRIVATE	37
++#define KPF_ARCH		38
++#define KPF_UNCACHED		39
++
++/* [48-] take some arbitrary free slots for expanding overloaded flags
++ * not part of kernel API
++ */
++#define KPF_READAHEAD		48
++#define KPF_SLOB_FREE		49
++#define KPF_SLUB_FROZEN		50
++#define KPF_SLUB_DEBUG		51
++
++#define KPF_ALL_BITS		((uint64_t)~0ULL)
++#define KPF_HACKERS_BITS	(0xffffULL << 32)
++#define KPF_OVERLOADED_BITS	(0xffffULL << 48)
++#define BIT(name)		(1ULL << KPF_##name)
++#define BITS_COMPOUND		(BIT(COMPOUND_HEAD) | BIT(COMPOUND_TAIL))
++
++static const char * const page_flag_names[] = {
++	[KPF_LOCKED]		= "L:locked",
++	[KPF_ERROR]		= "E:error",
++	[KPF_REFERENCED]	= "R:referenced",
++	[KPF_UPTODATE]		= "U:uptodate",
++	[KPF_DIRTY]		= "D:dirty",
++	[KPF_LRU]		= "l:lru",
++	[KPF_ACTIVE]		= "A:active",
++	[KPF_SLAB]		= "S:slab",
++	[KPF_WRITEBACK]		= "W:writeback",
++	[KPF_RECLAIM]		= "I:reclaim",
++	[KPF_BUDDY]		= "B:buddy",
++
++	[KPF_MMAP]		= "M:mmap",
++	[KPF_ANON]		= "a:anonymous",
++	[KPF_SWAPCACHE]		= "s:swapcache",
++	[KPF_SWAPBACKED]	= "b:swapbacked",
++	[KPF_COMPOUND_HEAD]	= "H:compound_head",
++	[KPF_COMPOUND_TAIL]	= "T:compound_tail",
++	[KPF_HUGE]		= "G:huge",
++	[KPF_UNEVICTABLE]	= "u:unevictable",
++	[KPF_HWPOISON]		= "X:hwpoison",
++	[KPF_NOPAGE]		= "n:nopage",
++	[KPF_KSM]		= "x:ksm",
++
++	[KPF_RESERVED]		= "r:reserved",
++	[KPF_MLOCKED]		= "m:mlocked",
++	[KPF_MAPPEDTODISK]	= "d:mappedtodisk",
++	[KPF_PRIVATE]		= "P:private",
++	[KPF_PRIVATE_2]		= "p:private_2",
++	[KPF_OWNER_PRIVATE]	= "O:owner_private",
++	[KPF_ARCH]		= "h:arch",
++	[KPF_UNCACHED]		= "c:uncached",
++
++	[KPF_READAHEAD]		= "I:readahead",
++	[KPF_SLOB_FREE]		= "P:slob_free",
++	[KPF_SLUB_FROZEN]	= "A:slub_frozen",
++	[KPF_SLUB_DEBUG]	= "E:slub_debug",
++};
++
++
++static const char * const debugfs_known_mountpoints[] = {
++	"/sys/kernel/debug",
++	"/debug",
++	0,
++};
++
++/*
++ * data structures
++ */
++
++static int		opt_raw;	/* for kernel developers */
++static int		opt_list;	/* list pages (in ranges) */
++static int		opt_no_summary;	/* don't show summary */
++static pid_t		opt_pid;	/* process to walk */
++
++#define MAX_ADDR_RANGES	1024
++static int		nr_addr_ranges;
++static unsigned long	opt_offset[MAX_ADDR_RANGES];
++static unsigned long	opt_size[MAX_ADDR_RANGES];
++
++#define MAX_VMAS	10240
++static int		nr_vmas;
++static unsigned long	pg_start[MAX_VMAS];
++static unsigned long	pg_end[MAX_VMAS];
++
++#define MAX_BIT_FILTERS	64
++static int		nr_bit_filters;
++static uint64_t		opt_mask[MAX_BIT_FILTERS];
++static uint64_t		opt_bits[MAX_BIT_FILTERS];
++
++static int		page_size;
++
++static int		pagemap_fd;
++static int		kpageflags_fd;
++
++static int		opt_hwpoison;
++static int		opt_unpoison;
++
++static char		hwpoison_debug_fs[MAX_PATH+1];
++static int		hwpoison_inject_fd;
++static int		hwpoison_forget_fd;
++
++#define HASH_SHIFT	13
++#define HASH_SIZE	(1 << HASH_SHIFT)
++#define HASH_MASK	(HASH_SIZE - 1)
++#define HASH_KEY(flags)	(flags & HASH_MASK)
++
++static unsigned long	total_pages;
++static unsigned long	nr_pages[HASH_SIZE];
++static uint64_t		page_flags[HASH_SIZE];
++
++
++/*
++ * helper functions
++ */
++
++#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
++
++#define min_t(type, x, y) ({			\
++	type __min1 = (x);			\
++	type __min2 = (y);			\
++	__min1 < __min2 ? __min1 : __min2; })
++
++#define max_t(type, x, y) ({			\
++	type __max1 = (x);			\
++	type __max2 = (y);			\
++	__max1 > __max2 ? __max1 : __max2; })
++
++static unsigned long pages2mb(unsigned long pages)
++{
++	return (pages * page_size) >> 20;
++}
++
++static void fatal(const char *x, ...)
++{
++	va_list ap;
++
++	va_start(ap, x);
++	vfprintf(stderr, x, ap);
++	va_end(ap);
++	exit(EXIT_FAILURE);
++}
++
++static int checked_open(const char *pathname, int flags)
++{
++	int fd = open(pathname, flags);
++
++	if (fd < 0) {
++		perror(pathname);
++		exit(EXIT_FAILURE);
++	}
++
++	return fd;
++}
++
++/*
++ * pagemap/kpageflags routines
++ */
++
++static unsigned long do_u64_read(int fd, char *name,
++				 uint64_t *buf,
++				 unsigned long index,
++				 unsigned long count)
++{
++	long bytes;
++
++	if (index > ULONG_MAX / 8)
++		fatal("index overflow: %lu\n", index);
++
++	if (lseek(fd, index * 8, SEEK_SET) < 0) {
++		perror(name);
++		exit(EXIT_FAILURE);
++	}
++
++	bytes = read(fd, buf, count * 8);
++	if (bytes < 0) {
++		perror(name);
++		exit(EXIT_FAILURE);
++	}
++	if (bytes % 8)
++		fatal("partial read: %lu bytes\n", bytes);
++
++	return bytes / 8;
++}
++
++static unsigned long kpageflags_read(uint64_t *buf,
++				     unsigned long index,
++				     unsigned long pages)
++{
++	return do_u64_read(kpageflags_fd, PROC_KPAGEFLAGS, buf, index, pages);
++}
++
++static unsigned long pagemap_read(uint64_t *buf,
++				  unsigned long index,
++				  unsigned long pages)
++{
++	return do_u64_read(pagemap_fd, "/proc/pid/pagemap", buf, index, pages);
++}
++
++static unsigned long pagemap_pfn(uint64_t val)
++{
++	unsigned long pfn;
++
++	if (val & PM_PRESENT)
++		pfn = PM_PFRAME(val);
++	else
++		pfn = 0;
++
++	return pfn;
++}
++
++
++/*
++ * page flag names
++ */
++
++static char *page_flag_name(uint64_t flags)
++{
++	static char buf[65];
++	int present;
++	int i, j;
++
++	for (i = 0, j = 0; i < ARRAY_SIZE(page_flag_names); i++) {
++		present = (flags >> i) & 1;
++		if (!page_flag_names[i]) {
++			if (present)
++				fatal("unknown flag bit %d\n", i);
++			continue;
++		}
++		buf[j++] = present ? page_flag_names[i][0] : '_';
++	}
++
++	return buf;
++}
++
++static char *page_flag_longname(uint64_t flags)
++{
++	static char buf[1024];
++	int i, n;
++
++	for (i = 0, n = 0; i < ARRAY_SIZE(page_flag_names); i++) {
++		if (!page_flag_names[i])
++			continue;
++		if ((flags >> i) & 1)
++			n += snprintf(buf + n, sizeof(buf) - n, "%s,",
++					page_flag_names[i] + 2);
++	}
++	if (n)
++		n--;
++	buf[n] = '\0';
++
++	return buf;
++}
++
++
++/*
++ * page list and summary
++ */
++
++static void show_page_range(unsigned long voffset,
++			    unsigned long offset, uint64_t flags)
++{
++	static uint64_t      flags0;
++	static unsigned long voff;
++	static unsigned long index;
++	static unsigned long count;
++
++	if (flags == flags0 && offset == index + count &&
++	    (!opt_pid || voffset == voff + count)) {
++		count++;
++		return;
++	}
++
++	if (count) {
++		if (opt_pid)
++			printf("%lx\t", voff);
++		printf("%lx\t%lx\t%s\n",
++				index, count, page_flag_name(flags0));
++	}
++
++	flags0 = flags;
++	index  = offset;
++	voff   = voffset;
++	count  = 1;
++}
++
++static void show_page(unsigned long voffset,
++		      unsigned long offset, uint64_t flags)
++{
++	if (opt_pid)
++		printf("%lx\t", voffset);
++	printf("%lx\t%s\n", offset, page_flag_name(flags));
++}
++
++static void show_summary(void)
++{
++	int i;
++
++	printf("             flags\tpage-count       MB"
++		"  symbolic-flags\t\t\tlong-symbolic-flags\n");
++
++	for (i = 0; i < ARRAY_SIZE(nr_pages); i++) {
++		if (nr_pages[i])
++			printf("0x%016llx\t%10lu %8lu  %s\t%s\n",
++				(unsigned long long)page_flags[i],
++				nr_pages[i],
++				pages2mb(nr_pages[i]),
++				page_flag_name(page_flags[i]),
++				page_flag_longname(page_flags[i]));
++	}
++
++	printf("             total\t%10lu %8lu\n",
++			total_pages, pages2mb(total_pages));
++}
++
++
++/*
++ * page flag filters
++ */
++
++static int bit_mask_ok(uint64_t flags)
++{
++	int i;
++
++	for (i = 0; i < nr_bit_filters; i++) {
++		if (opt_bits[i] == KPF_ALL_BITS) {
++			if ((flags & opt_mask[i]) == 0)
++				return 0;
++		} else {
++			if ((flags & opt_mask[i]) != opt_bits[i])
++				return 0;
++		}
++	}
++
++	return 1;
++}
++
++static uint64_t expand_overloaded_flags(uint64_t flags)
++{
++	/* SLOB/SLUB overload several page flags */
++	if (flags & BIT(SLAB)) {
++		if (flags & BIT(PRIVATE))
++			flags ^= BIT(PRIVATE) | BIT(SLOB_FREE);
++		if (flags & BIT(ACTIVE))
++			flags ^= BIT(ACTIVE) | BIT(SLUB_FROZEN);
++		if (flags & BIT(ERROR))
++			flags ^= BIT(ERROR) | BIT(SLUB_DEBUG);
++	}
++
++	/* PG_reclaim is overloaded as PG_readahead in the read path */
++	if ((flags & (BIT(RECLAIM) | BIT(WRITEBACK))) == BIT(RECLAIM))
++		flags ^= BIT(RECLAIM) | BIT(READAHEAD);
++
++	return flags;
++}
++
++static uint64_t well_known_flags(uint64_t flags)
++{
++	/* hide flags intended only for kernel hacker */
++	flags &= ~KPF_HACKERS_BITS;
++
++	/* hide non-hugeTLB compound pages */
++	if ((flags & BITS_COMPOUND) && !(flags & BIT(HUGE)))
++		flags &= ~BITS_COMPOUND;
++
++	return flags;
++}
++
++static uint64_t kpageflags_flags(uint64_t flags)
++{
++	flags = expand_overloaded_flags(flags);
++
++	if (!opt_raw)
++		flags = well_known_flags(flags);
++
++	return flags;
++}
++
++/* verify that a mountpoint is actually a debugfs instance */
++static int debugfs_valid_mountpoint(const char *debugfs)
++{
++	struct statfs st_fs;
++
++	if (statfs(debugfs, &st_fs) < 0)
++		return -ENOENT;
++	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
++		return -ENOENT;
++
++	return 0;
++}
++
++/* find the path to the mounted debugfs */
++static const char *debugfs_find_mountpoint(void)
++{
++	const char **ptr;
++	char type[100];
++	FILE *fp;
++
++	ptr = debugfs_known_mountpoints;
++	while (*ptr) {
++		if (debugfs_valid_mountpoint(*ptr) == 0) {
++			strcpy(hwpoison_debug_fs, *ptr);
++			return hwpoison_debug_fs;
++		}
++		ptr++;
++	}
++
++	/* give up and parse /proc/mounts */
++	fp = fopen("/proc/mounts", "r");
++	if (fp == NULL)
++		perror("Can't open /proc/mounts for read");
++
++	while (fscanf(fp, "%*s %"
++		      STR(MAX_PATH)
++		      "s %99s %*s %*d %*d\n",
++		      hwpoison_debug_fs, type) == 2) {
++		if (strcmp(type, "debugfs") == 0)
++			break;
++	}
++	fclose(fp);
++
++	if (strcmp(type, "debugfs") != 0)
++		return NULL;
++
++	return hwpoison_debug_fs;
++}
++
++/* mount the debugfs somewhere if it's not mounted */
++
++static void debugfs_mount(void)
++{
++	const char **ptr;
++
++	/* see if it's already mounted */
++	if (debugfs_find_mountpoint())
++		return;
++
++	ptr = debugfs_known_mountpoints;
++	while (*ptr) {
++		if (mount(NULL, *ptr, "debugfs", 0, NULL) == 0) {
++			/* save the mountpoint */
++			strcpy(hwpoison_debug_fs, *ptr);
++			break;
++		}
++		ptr++;
++	}
++
++	if (*ptr == NULL) {
++		perror("mount debugfs");
++		exit(EXIT_FAILURE);
++	}
++}
++
++/*
++ * page actions
++ */
++
++static void prepare_hwpoison_fd(void)
++{
++	char buf[MAX_PATH + 1];
++
++	debugfs_mount();
++
++	if (opt_hwpoison && !hwpoison_inject_fd) {
++		snprintf(buf, MAX_PATH, "%s/hwpoison/corrupt-pfn",
++			hwpoison_debug_fs);
++		hwpoison_inject_fd = checked_open(buf, O_WRONLY);
++	}
++
++	if (opt_unpoison && !hwpoison_forget_fd) {
++		snprintf(buf, MAX_PATH, "%s/hwpoison/unpoison-pfn",
++			hwpoison_debug_fs);
++		hwpoison_forget_fd = checked_open(buf, O_WRONLY);
++	}
++}
++
++static int hwpoison_page(unsigned long offset)
++{
++	char buf[100];
++	int len;
++
++	len = sprintf(buf, "0x%lx\n", offset);
++	len = write(hwpoison_inject_fd, buf, len);
++	if (len < 0) {
++		perror("hwpoison inject");
++		return len;
++	}
++	return 0;
++}
++
++static int unpoison_page(unsigned long offset)
++{
++	char buf[100];
++	int len;
++
++	len = sprintf(buf, "0x%lx\n", offset);
++	len = write(hwpoison_forget_fd, buf, len);
++	if (len < 0) {
++		perror("hwpoison forget");
++		return len;
++	}
++	return 0;
++}
++
++/*
++ * page frame walker
++ */
++
++static int hash_slot(uint64_t flags)
++{
++	int k = HASH_KEY(flags);
++	int i;
++
++	/* Explicitly reserve slot 0 for flags 0: the following logic
++	 * cannot distinguish an unoccupied slot from slot (flags==0).
++	 */
++	if (flags == 0)
++		return 0;
++
++	/* search through the remaining (HASH_SIZE-1) slots */
++	for (i = 1; i < ARRAY_SIZE(page_flags); i++, k++) {
++		if (!k || k >= ARRAY_SIZE(page_flags))
++			k = 1;
++		if (page_flags[k] == 0) {
++			page_flags[k] = flags;
++			return k;
++		}
++		if (page_flags[k] == flags)
++			return k;
++	}
++
++	fatal("hash table full: bump up HASH_SHIFT?\n");
++	exit(EXIT_FAILURE);
++}
++
++static void add_page(unsigned long voffset,
++		     unsigned long offset, uint64_t flags)
++{
++	flags = kpageflags_flags(flags);
++
++	if (!bit_mask_ok(flags))
++		return;
++
++	if (opt_hwpoison)
++		hwpoison_page(offset);
++	if (opt_unpoison)
++		unpoison_page(offset);
++
++	if (opt_list == 1)
++		show_page_range(voffset, offset, flags);
++	else if (opt_list == 2)
++		show_page(voffset, offset, flags);
++
++	nr_pages[hash_slot(flags)]++;
++	total_pages++;
++}
++
++#define KPAGEFLAGS_BATCH	(64 << 10)	/* 64k pages */
++static void walk_pfn(unsigned long voffset,
++		     unsigned long index,
++		     unsigned long count)
++{
++	uint64_t buf[KPAGEFLAGS_BATCH];
++	unsigned long batch;
++	long pages;
++	unsigned long i;
++
++	while (count) {
++		batch = min_t(unsigned long, count, KPAGEFLAGS_BATCH);
++		pages = kpageflags_read(buf, index, batch);
++		if (pages == 0)
++			break;
++
++		for (i = 0; i < pages; i++)
++			add_page(voffset + i, index + i, buf[i]);
++
++		index += pages;
++		count -= pages;
++	}
++}
++
++#define PAGEMAP_BATCH	(64 << 10)
++static void walk_vma(unsigned long index, unsigned long count)
++{
++	uint64_t buf[PAGEMAP_BATCH];
++	unsigned long batch;
++	unsigned long pages;
++	unsigned long pfn;
++	unsigned long i;
++
++	while (count) {
++		batch = min_t(unsigned long, count, PAGEMAP_BATCH);
++		pages = pagemap_read(buf, index, batch);
++		if (pages == 0)
++			break;
++
++		for (i = 0; i < pages; i++) {
++			pfn = pagemap_pfn(buf[i]);
++			if (pfn)
++				walk_pfn(index + i, pfn, 1);
++		}
++
++		index += pages;
++		count -= pages;
++	}
++}
++
++static void walk_task(unsigned long index, unsigned long count)
++{
++	const unsigned long end = index + count;
++	unsigned long start;
++	int i = 0;
++
++	while (index < end) {
++
++		while (pg_end[i] <= index)
++			if (++i >= nr_vmas)
++				return;
++		if (pg_start[i] >= end)
++			return;
++
++		start = max_t(unsigned long, pg_start[i], index);
++		index = min_t(unsigned long, pg_end[i], end);
++
++		assert(start < index);
++		walk_vma(start, index - start);
++	}
++}
++
++static void add_addr_range(unsigned long offset, unsigned long size)
++{
++	if (nr_addr_ranges >= MAX_ADDR_RANGES)
++		fatal("too many addr ranges\n");
++
++	opt_offset[nr_addr_ranges] = offset;
++	opt_size[nr_addr_ranges] = min_t(unsigned long, size, ULONG_MAX-offset);
++	nr_addr_ranges++;
++}
++
++static void walk_addr_ranges(void)
++{
++	int i;
++
++	kpageflags_fd = checked_open(PROC_KPAGEFLAGS, O_RDONLY);
++
++	if (!nr_addr_ranges)
++		add_addr_range(0, ULONG_MAX);
++
++	for (i = 0; i < nr_addr_ranges; i++)
++		if (!opt_pid)
++			walk_pfn(0, opt_offset[i], opt_size[i]);
++		else
++			walk_task(opt_offset[i], opt_size[i]);
++
++	close(kpageflags_fd);
++}
++
++
++/*
++ * user interface
++ */
++
++static const char *page_flag_type(uint64_t flag)
++{
++	if (flag & KPF_HACKERS_BITS)
++		return "(r)";
++	if (flag & KPF_OVERLOADED_BITS)
++		return "(o)";
++	return "   ";
++}
++
++static void usage(void)
++{
++	int i, j;
++
++	printf(
++"page-types [options]\n"
++"            -r|--raw                   Raw mode, for kernel developers\n"
++"            -d|--describe flags        Describe flags\n"
++"            -a|--addr    addr-spec     Walk a range of pages\n"
++"            -b|--bits    bits-spec     Walk pages with specified bits\n"
++"            -p|--pid     pid           Walk process address space\n"
++#if 0 /* planned features */
++"            -f|--file    filename      Walk file address space\n"
++#endif
++"            -l|--list                  Show page details in ranges\n"
++"            -L|--list-each             Show page details one by one\n"
++"            -N|--no-summary            Don't show summary info\n"
++"            -X|--hwpoison              hwpoison pages\n"
++"            -x|--unpoison              unpoison pages\n"
++"            -h|--help                  Show this usage message\n"
++"flags:\n"
++"            0x10                       bitfield format, e.g.\n"
++"            anon                       bit-name, e.g.\n"
++"            0x10,anon                  comma-separated list, e.g.\n"
++"addr-spec:\n"
++"            N                          one page at offset N (unit: pages)\n"
++"            N+M                        pages range from N to N+M-1\n"
++"            N,M                        pages range from N to M-1\n"
++"            N,                         pages range from N to end\n"
++"            ,M                         pages range from 0 to M-1\n"
++"bits-spec:\n"
++"            bit1,bit2                  (flags & (bit1|bit2)) != 0\n"
++"            bit1,bit2=bit1             (flags & (bit1|bit2)) == bit1\n"
++"            bit1,~bit2                 (flags & (bit1|bit2)) == bit1\n"
++"            =bit1,bit2                 flags == (bit1|bit2)\n"
++"bit-names:\n"
++	);
++
++	for (i = 0, j = 0; i < ARRAY_SIZE(page_flag_names); i++) {
++		if (!page_flag_names[i])
++			continue;
++		printf("%16s%s", page_flag_names[i] + 2,
++				 page_flag_type(1ULL << i));
++		if (++j > 3) {
++			j = 0;
++			putchar('\n');
++		}
++	}
++	printf("\n                                   "
++		"(r) raw mode bits  (o) overloaded bits\n");
++}
++
++static unsigned long long parse_number(const char *str)
++{
++	unsigned long long n;
++
++	n = strtoll(str, NULL, 0);
++
++	if (n == 0 && str[0] != '0')
++		fatal("invalid name or number: %s\n", str);
++
++	return n;
++}
++
++static void parse_pid(const char *str)
++{
++	FILE *file;
++	char buf[5000];
++
++	opt_pid = parse_number(str);
++
++	sprintf(buf, "/proc/%d/pagemap", opt_pid);
++	pagemap_fd = checked_open(buf, O_RDONLY);
++
++	sprintf(buf, "/proc/%d/maps", opt_pid);
++	file = fopen(buf, "r");
++	if (!file) {
++		perror(buf);
++		exit(EXIT_FAILURE);
++	}
++
++	while (fgets(buf, sizeof(buf), file) != NULL) {
++		unsigned long vm_start;
++		unsigned long vm_end;
++		unsigned long long pgoff;
++		int major, minor;
++		char r, w, x, s;
++		unsigned long ino;
++		int n;
++
++		n = sscanf(buf, "%lx-%lx %c%c%c%c %llx %x:%x %lu",
++			   &vm_start,
++			   &vm_end,
++			   &r, &w, &x, &s,
++			   &pgoff,
++			   &major, &minor,
++			   &ino);
++		if (n < 10) {
++			fprintf(stderr, "unexpected line: %s\n", buf);
++			continue;
++		}
++		pg_start[nr_vmas] = vm_start / page_size;
++		pg_end[nr_vmas] = vm_end / page_size;
++		if (++nr_vmas >= MAX_VMAS) {
++			fprintf(stderr, "too many VMAs\n");
++			break;
++		}
++	}
++	fclose(file);
++}
++
++static void parse_file(const char *name)
++{
++}
++
++static void parse_addr_range(const char *optarg)
++{
++	unsigned long offset;
++	unsigned long size;
++	char *p;
++
++	p = strchr(optarg, ',');
++	if (!p)
++		p = strchr(optarg, '+');
++
++	if (p == optarg) {
++		offset = 0;
++		size   = parse_number(p + 1);
++	} else if (p) {
++		offset = parse_number(optarg);
++		if (p[1] == '\0')
++			size = ULONG_MAX;
++		else {
++			size = parse_number(p + 1);
++			if (*p == ',') {
++				if (size < offset)
++					fatal("invalid range: %lu,%lu\n",
++							offset, size);
++				size -= offset;
++			}
++		}
++	} else {
++		offset = parse_number(optarg);
++		size   = 1;
++	}
++
++	add_addr_range(offset, size);
++}
++
++static void add_bits_filter(uint64_t mask, uint64_t bits)
++{
++	if (nr_bit_filters >= MAX_BIT_FILTERS)
++		fatal("too much bit filters\n");
++
++	opt_mask[nr_bit_filters] = mask;
++	opt_bits[nr_bit_filters] = bits;
++	nr_bit_filters++;
++}
++
++static uint64_t parse_flag_name(const char *str, int len)
++{
++	int i;
++
++	if (!*str || !len)
++		return 0;
++
++	if (len <= 8 && !strncmp(str, "compound", len))
++		return BITS_COMPOUND;
++
++	for (i = 0; i < ARRAY_SIZE(page_flag_names); i++) {
++		if (!page_flag_names[i])
++			continue;
++		if (!strncmp(str, page_flag_names[i] + 2, len))
++			return 1ULL << i;
++	}
++
++	return parse_number(str);
++}
++
++static uint64_t parse_flag_names(const char *str, int all)
++{
++	const char *p    = str;
++	uint64_t   flags = 0;
++
++	while (1) {
++		if (*p == ',' || *p == '=' || *p == '\0') {
++			if ((*str != '~') || (*str == '~' && all && *++str))
++				flags |= parse_flag_name(str, p - str);
++			if (*p != ',')
++				break;
++			str = p + 1;
++		}
++		p++;
++	}
++
++	return flags;
++}
++
++static void parse_bits_mask(const char *optarg)
++{
++	uint64_t mask;
++	uint64_t bits;
++	const char *p;
++
++	p = strchr(optarg, '=');
++	if (p == optarg) {
++		mask = KPF_ALL_BITS;
++		bits = parse_flag_names(p + 1, 0);
++	} else if (p) {
++		mask = parse_flag_names(optarg, 0);
++		bits = parse_flag_names(p + 1, 0);
++	} else if (strchr(optarg, '~')) {
++		mask = parse_flag_names(optarg, 1);
++		bits = parse_flag_names(optarg, 0);
++	} else {
++		mask = parse_flag_names(optarg, 0);
++		bits = KPF_ALL_BITS;
++	}
++
++	add_bits_filter(mask, bits);
++}
++
++static void describe_flags(const char *optarg)
++{
++	uint64_t flags = parse_flag_names(optarg, 0);
++
++	printf("0x%016llx\t%s\t%s\n",
++		(unsigned long long)flags,
++		page_flag_name(flags),
++		page_flag_longname(flags));
++}
++
++static const struct option opts[] = {
++	{ "raw"       , 0, NULL, 'r' },
++	{ "pid"       , 1, NULL, 'p' },
++	{ "file"      , 1, NULL, 'f' },
++	{ "addr"      , 1, NULL, 'a' },
++	{ "bits"      , 1, NULL, 'b' },
++	{ "describe"  , 1, NULL, 'd' },
++	{ "list"      , 0, NULL, 'l' },
++	{ "list-each" , 0, NULL, 'L' },
++	{ "no-summary", 0, NULL, 'N' },
++	{ "hwpoison"  , 0, NULL, 'X' },
++	{ "unpoison"  , 0, NULL, 'x' },
++	{ "help"      , 0, NULL, 'h' },
++	{ NULL        , 0, NULL, 0 }
++};
++
++int main(int argc, char *argv[])
++{
++	int c;
++
++	page_size = getpagesize();
++
++	while ((c = getopt_long(argc, argv,
++				"rp:f:a:b:d:lLNXxh", opts, NULL)) != -1) {
++		switch (c) {
++		case 'r':
++			opt_raw = 1;
++			break;
++		case 'p':
++			parse_pid(optarg);
++			break;
++		case 'f':
++			parse_file(optarg);
++			break;
++		case 'a':
++			parse_addr_range(optarg);
++			break;
++		case 'b':
++			parse_bits_mask(optarg);
++			break;
++		case 'd':
++			describe_flags(optarg);
++			exit(0);
++		case 'l':
++			opt_list = 1;
++			break;
++		case 'L':
++			opt_list = 2;
++			break;
++		case 'N':
++			opt_no_summary = 1;
++			break;
++		case 'X':
++			opt_hwpoison = 1;
++			prepare_hwpoison_fd();
++			break;
++		case 'x':
++			opt_unpoison = 1;
++			prepare_hwpoison_fd();
++			break;
++		case 'h':
++			usage();
++			exit(0);
++		default:
++			usage();
++			exit(1);
++		}
++	}
++
++	if (opt_list && opt_pid)
++		printf("voffset\t");
++	if (opt_list == 1)
++		printf("offset\tlen\tflags\n");
++	if (opt_list == 2)
++		printf("offset\tflags\n");
++
++	walk_addr_ranges();
++
++	if (opt_list == 1)
++		show_page_range(0, 0, 0);  /* drain the buffer */
++
++	if (opt_no_summary)
++		return 0;
++
++	if (opt_list)
++		printf("\n\n");
++
++	show_summary();
++
++	return 0;
++}
+-- 
+1.7.4.4
 
