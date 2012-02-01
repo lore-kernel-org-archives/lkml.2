@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2BAPlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 10:41:37 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:34831 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704Ab2BAPlg (ORCPT
+	id S1756544Ab2BAPm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 10:42:56 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35613 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab2BAPmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 10:41:36 -0500
-Date: Wed, 1 Feb 2012 16:34:53 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, dsterba@suse.cz,
-        ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Re: Memory corruption due to word sharing
-Message-ID: <20120201153453.GA1647@x4>
-References: <20120201151918.GC16714@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120201151918.GC16714@quack.suse.cz>
+	Wed, 1 Feb 2012 10:42:55 -0500
+Date: Thu, 2 Feb 2012 00:42:49 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
+        Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [RFC][PATCH] srcu: Implement call_srcu()
+Message-Id: <20120202004249.adb9954c45225383510b6994@gmail.com>
+In-Reply-To: <20120201134347.GA18998@amt.cnet>
+References: <1328016724.2446.229.camel@twins>
+	<4F27F0E6.1040309@redhat.com>
+	<1328017807.2446.230.camel@twins>
+	<20120131222447.GH2391@linux.vnet.ibm.com>
+	<1328091749.2760.34.camel@laptop>
+	<4F29178A.1090306@redhat.com>
+	<4F2918D5.4050104@redhat.com>
+	<4F291B56.30600@oss.ntt.co.jp>
+	<4F291B92.8070402@redhat.com>
+	<20120201134347.GA18998@amt.cnet>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.02.01 at 16:19 +0100, Jan Kara wrote:
->   we've spotted the following mismatch between what kernel folks expect
-> from a compiler and what GCC really does, resulting in memory corruption on
-> some architectures. Consider the following structure:
-> struct x {
->     long a;
->     unsigned int b1;
->     unsigned int b2:1;
-> };
-> 
-> We have two processes P1 and P2 where P1 updates field b1 and P2 updates
-> bitfield b2. The code GCC generates for b2 = 1 e.g. on ia64 is:
->    0:   09 00 21 40 00 21       [MMI]       adds r32=8,r32
->    6:   00 00 00 02 00 e0                   nop.m 0x0
->    c:   11 00 00 90                         mov r15=1;;
->   10:   0b 70 00 40 18 10       [MMI]       ld8 r14=[r32];;
->   16:   00 00 00 02 00 c0                   nop.m 0x0
->   1c:   f1 70 c0 47                         dep r14=r15,r14,32,1;;
->   20:   11 00 38 40 98 11       [MIB]       st8 [r32]=r14
->   26:   00 00 00 02 00 80                   nop.i 0x0
->   2c:   08 00 84 00                         br.ret.sptk.many b0;;
-> 
-> Note that gcc used 64-bit read-modify-write cycle to update b2. Thus if P1
-> races with P2, update of b1 can get lost. BTW: I've just checked on x86_64
-> and there GCC uses 8-bit bitop to modify the bitfield.
-> 
-> We actually spotted this race in practice in btrfs on structure
-> fs/btrfs/ctree.h:struct btrfs_block_rsv where spinlock content got
-> corrupted due to update of following bitfield and there seem to be other
-> places in kernel where this could happen.
-> 
-> I've raised the issue with our GCC guys and they said to me that: "C does
-> not provide such guarantee, nor can you reliably lock different
-> structure fields with different locks if they share naturally aligned
-> word-size memory regions.  The C++11 memory model would guarantee this,
-> but that's not implemented nor do you build the kernel with a C++11
-> compiler."
-> 
-> So it seems what C/GCC promises does not quite match with what kernel
-> expects. I'm not really an expert in this area so I wanted to report it
-> here so that more knowledgeable people can decide how to solve the issue...
+On Wed, 1 Feb 2012 11:43:47 -0200
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-FYI, the gcc bug can be found here:
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52080
+> > > I can show you some performance numbers, this weekend, if you like.
+> > 
+> > That'll be great, numbers are better than speculation.
+> 
+>   get dirty log:    5634134 ns for     262144 dirty pages
+> 
+> 5ms (for the entire operation).
+> 
 
--- 
-Markus
+I have mixed my personal patch series and Avi's comments, and ...
+
+I am now getting really good improvements for every number of dirty pages.
+(might be a dream, so checking now ... will soon report)
+
+	Takuya
