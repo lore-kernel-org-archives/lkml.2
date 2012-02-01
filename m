@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757420Ab2BAVy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:54:26 -0500
+	id S933072Ab2BAVyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:54:41 -0500
 Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48105 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756985Ab2BAVIF (ORCPT
+	by vger.kernel.org with ESMTP id S1757020Ab2BAVIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:05 -0500
-X-Sasl-enc: gmFwnUVnzoPFF49tSvO6ASdYdvNMC/oOJerOr9+q6WRt 1328130484
+	Wed, 1 Feb 2012 16:08:04 -0500
+X-Sasl-enc: wxAWPVo1oqeRPuucDLgc2aIrZP7EMt91+RSnOe0QPx8C 1328130483
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:15:32 2012
-Message-Id: <20120201201532.233253910@clark.kroah.org>
+Message-Id: <20120201201532.158741856@clark.kroah.org>
 User-Agent: quilt/0.51-14.1
-Date: Wed, 01 Feb 2012 12:14:16 -0800
+Date: Wed, 01 Feb 2012 12:14:15 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [14/20] USB: cdc-wdm: updating desc->length must be protected by spin_lock
+        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
+Subject: [13/20] USB: ftdi_sio: Add more identifiers
 In-Reply-To: <20120201210055.GA25374@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,31 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Alan Cox <alan@linux.intel.com>
 
-commit c428b70c1e115c5649707a602742e34130d19428 upstream.
+commit 2353f806c97020d4c7709f15eebb49b591f7306d upstream.
 
-wdm_in_callback() will also touch this field, so we cannot change it without locking
+0x04d8, 0x000a: Hornby Elite
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -458,7 +458,9 @@ retry:
- 	for (i = 0; i < desc->length - cntr; i++)
- 		desc->ubuf[i] = desc->ubuf[i + cntr];
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -798,6 +798,7 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(ADI_VID, ADI_GNICEPLUS_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(HORNBY_VID, HORNBY_ELITE_PID) },
+ 	{ USB_DEVICE(JETI_VID, JETI_SPC1201_PID) },
+ 	{ USB_DEVICE(MARVELL_VID, MARVELL_SHEEVAPLUG_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -531,6 +531,12 @@
+ #define ADI_GNICEPLUS_PID 	0xF001
  
-+	spin_lock_irq(&desc->iuspin);
- 	desc->length -= cntr;
-+	spin_unlock_irq(&desc->iuspin);
- 	/* in case we had outstanding data */
- 	if (!desc->length)
- 		clear_bit(WDM_READ, &desc->flags);
+ /*
++ * Hornby Elite
++ */
++#define HORNBY_VID		0x04D8
++#define HORNBY_ELITE_PID	0x000A
++
++/*
+  * RATOC REX-USB60F
+  */
+ #define RATOC_VENDOR_ID		0x0584
 
 
