@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab2BAHWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 02:22:24 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48130 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab2BAHWW convert rfc822-to-8bit (ORCPT
+	id S1755904Ab2BAHXU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 02:23:20 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:41117 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab2BAHXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 02:22:22 -0500
+	Wed, 1 Feb 2012 02:23:19 -0500
+Date: Wed, 1 Feb 2012 18:23:07 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: [PATCH 6/6] cls_cgroup: remove redundant rcu_read_lock/unlock
+Message-ID: <20120201072307.GA6358@gondor.apana.org.au>
+References: <4F28E1D1.900@cn.fujitsu.com> <4F28E22A.703@cn.fujitsu.com> <1328080039.22641.2.camel@edumazet-laptop> <4F28E7A0.6000309@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20120131.190830.1189531706541596294.davem@davemloft.net>
-References: <4168018.821328016111235.JavaMail.root@5-MeO-DMT.ynet.sk>
- <20120131.115005.1292336126288944173.davem@davemloft.net> <CAGsizzLTHw5Ja3kT-zEN8uK5GrzpmN1bxOhA0OscGL5R6tH3WA@mail.gmail.com>
- <20120131.190830.1189531706541596294.davem@davemloft.net>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Wed, 1 Feb 2012 08:22:02 +0100
-X-Google-Sender-Auth: eUozW0CmaPs0dS_zyJFwEI8dv20
-Message-ID: <CAGsizzKB=NcAe9KvfZbbPiGvSQ6a9Mj+kBaKtDQziGWJ+eGGRA@mail.gmail.com>
-Subject: Re: [patch v7, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-To: David Miller <davem@davemloft.net>
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F28E7A0.6000309@cn.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/1 David Miller <davem@davemloft.net>:
-> From: Štefan Gula <steweg@ynet.sk>
-> Date: Wed, 1 Feb 2012 00:32:04 +0100
->
->
-> You don't understand.
->
-> If your code is superfluous in the end, we shouldn't add it in
-> the first place.
->
-> But if I do relent and let your code in now, we have to live
-> with it, and it's associated maintainence costs, FOREVER.
->
-> That's why I'm forcing this to be implemented properly from the start,
-> so we don't end up with two pieces of code that provide essentially
-> the same functionality.
-I understand your strategic point of maintenance here and partially
-agree with it. And if I understand it correctly, it is to one day have
-openvswitch as full replacement of linux bridge code. On the other
-hand gretap interface already exists in kernel so that part of the
-code is currently also superfluous - what's the plan with that
-particular piece of code?. So if this is now only about the
-maintenance of my code, I'll be more than happy to continue
-maintaining it myself together with you guys. And if it comes in the
-future to decision to remove whole gretap code (not just my part) and
-replace it with something else that will provide the same or even more
-functionality, I have absolutely no problem with that.
+On Wed, Feb 01, 2012 at 03:20:00PM +0800, Li Zefan wrote:
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> 
+> >> diff --git a/net/core/sock.c b/net/core/sock.c
+> >> index 213c856..c0bab23 100644
+> >> --- a/net/core/sock.c
+> >> +++ b/net/core/sock.c
+> >> @@ -1160,9 +1160,7 @@ void sock_update_classid(struct sock *sk)
+> >>  {
+> >>  	u32 classid;
+> >>  
+> >> -	rcu_read_lock();  /* doing current task, which cannot vanish. */
+> >>  	classid = task_cls_classid(current);
+> >> -	rcu_read_unlock();
+> >>  	if (classid && classid != sk->sk_classid)
+> >>  		sk->sk_classid = classid;
+> > 
+> > Yes, this seems fine.
+> > 
+> > Then, I wonder why we do the "if (classid && classid != sk->sk_classid)"
+> > 
+> > before the :
+> > 
+> > 	sk->sk_classid = classid;
+> > 
+> > This seems unnecessary checks.
+> > 
+> 
+> I was wondering about this too. He who added this may provide us with an
+> answer.
+
+Well writing a cache-line unnecessarily is bad.
+
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
