@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab2BAAHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 19:07:51 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51950 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541Ab2BAAHt (ORCPT
+	id S1755547Ab2BAAI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 19:08:57 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57417 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab2BAAI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 19:07:49 -0500
-Date: Tue, 31 Jan 2012 17:07:42 -0700
+	Tue, 31 Jan 2012 19:08:56 -0500
+Date: Tue, 31 Jan 2012 17:08:48 -0700
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-kernel@vger.kernel.org,
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Rob Herring <robherring2@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         devicetree-discuss@lists.ozlabs.org,
         linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v3 00/25] irq_domain generalization and refinement
-Message-ID: <20120201000742.GM22611@ponder.secretlab.ca>
+Subject: Re: [PATCH v3 14/25] irq_domain: Remove irq_domain_add_simple()
+Message-ID: <20120201000848.GN22611@ponder.secretlab.ca>
 References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
- <20120131045344.GA27609@quad.lixom.net>
+ <1327700179-17454-15-git-send-email-grant.likely@secretlab.ca>
+ <20120131124500.GA28571@S2101-09.ap.freescale.net>
+ <4F27E96E.9010204@gmail.com>
+ <20120131135821.GA24804@S2100-06.ap.freescale.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120131045344.GA27609@quad.lixom.net>
+In-Reply-To: <20120131135821.GA24804@S2100-06.ap.freescale.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 08:53:44PM -0800, Olof Johansson wrote:
-> On Fri, Jan 27, 2012 at 02:35:54PM -0700, Grant Likely wrote:
-> > Hey everyone,
+On Tue, Jan 31, 2012 at 09:58:22PM +0800, Shawn Guo wrote:
+> On Tue, Jan 31, 2012 at 07:15:26AM -0600, Rob Herring wrote:
+> ...
+> > >> --- a/arch/arm/mach-mx5/imx51-dt.c
+> > >> +++ b/arch/arm/mach-mx5/imx51-dt.c
+> > >> @@ -47,7 +47,7 @@ static const struct of_dev_auxdata imx51_auxdata_lookup[] __initconst = {
+> > >>  static int __init imx51_tzic_add_irq_domain(struct device_node *np,
+> > >>  				struct device_node *interrupt_parent)
+> > >>  {
+> > >> -	irq_domain_add_simple(np, 0);
+> > >> +	irq_domain_add_legacy(np, 32, 0, 0, &irq_domain_simple_ops, NULL);
+> > >>  	return 0;
+> > >>  }
+> > >>  
+> > >> @@ -57,7 +57,7 @@ static int __init imx51_gpio_add_irq_domain(struct device_node *np,
+> > >>  	static int gpio_irq_base = MXC_GPIO_IRQ_START + ARCH_NR_GPIOS;
+> > >>  
+> > >>  	gpio_irq_base -= 32;
+> > >> -	irq_domain_add_simple(np, gpio_irq_base);
+> > >> +	irq_domain_add_legacy(np, 32, gpio_irq_base, 0, &irq_domain_simple_ops, NULL);
+> > > 
+> > > The tzic on imx5 gets 128 irq lines rather than 32 here.  The current
+> > > code will make any hwirq that is > 32 hit the WARN_ON below in
+> > > irq_domain_legacy_revmap().
 > > 
-> > This patch series is ready for much wider consumption now.  I'd like
-> > to get it into linux-next ASAP because there will be ARM board support
-> > depending on it.  I'll wait a few days before I ask Stephen to pull
-> > this in.
+> > But this is the gpio controller code? Really this should be 4 domains,
+> > but this temp fix is probably fine until you use my generic irq chip
+> > support.
 > > 
-> > Stephen/Milton/Ben, any testing you can help with here would be
-> > appreciated since you've got access to a wider variety of Power
-> > machines than I do.
-> 
-> This series has been:
-> 
-> Tested-by: Olof Johansson <olof@lixom.net>
-> 
-> On powerpc/pasemi (it's the only one I still have easy access to).
+> Sorry.  The comment was put at the wrong place.  It should be against
+> imx51_tzic_add_irq_domain() just above.
 
-Excellent, thanks Olof!
+I didn't know how large the bank was, so I just assumed 32.  If it should
+be 128 then I'll change it.  Please confirm (or reply with a fixup patch)
 
 g.
+
