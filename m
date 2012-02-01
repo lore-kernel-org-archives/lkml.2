@@ -1,87 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab2BAV3a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:29:30 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:63445 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757467Ab2BAVTV (ORCPT
+	id S1757445Ab2BAV3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:29:43 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:60693 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757463Ab2BAVTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:21 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/2] xen/smp: Fix CPU online/offline bug triggering a BUG: scheduling while atomic.
-Date: Wed,  1 Feb 2012 16:16:39 -0500
-Message-Id: <1328131000-13485-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1328131000-13485-1-git-send-email-konrad.wilk@oracle.com>
-References: <1328131000-13485-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4F29AC57.0006,ss=1,re=0.000,fgs=0
+	Wed, 1 Feb 2012 16:19:20 -0500
+X-Sasl-enc: 8e4jLlt6gqfhnIj/mx40GcduuqAr9oOen5ZRYANKF2B0 1328131159
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:45 2012
+Message-Id: <20120201210045.477095805@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Wed, 01 Feb 2012 12:59:42 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Pontus Fuchs <pontus.fuchs@gmail.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [18/89] mac80211: fix work removal on deauth request
+In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a user offlines a VCPU and then onlines it, we get:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-NMI watchdog disabled (cpu2): hardware events not enabled
-BUG: scheduling while atomic: swapper/2/0/0x00000002
-Modules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi scsi_mod libcrc32c crc32c radeon fbco
- ttm bitblit softcursor drm_kms_helper xen_blkfront xen_netfront xen_fbfront fb_sys_fops sysimgblt sysfillrect syscopyarea xen_kbdfront xenfs [last unloaded:
+------------------
 
-Pid: 0, comm: swapper/2 Tainted: G           O 3.2.0phase15.1-00003-gd6f7f5b-dirty #4
-Call Trace:
- [<ffffffff81070571>] __schedule_bug+0x61/0x70
- [<ffffffff8158eb78>] __schedule+0x798/0x850
- [<ffffffff8158ed6a>] schedule+0x3a/0x50
- [<ffffffff810349be>] cpu_idle+0xbe/0xe0
- [<ffffffff81583599>] cpu_bringup_and_idle+0xe/0x10
+From: Johannes Berg <johannes.berg@intel.com>
 
-The reason for this should be obvious from this call-chain:
-cpu_bringup_and_idle:
- \- cpu_bringup
-  |   \-[preempt_disable]
-  |
-  |- cpu_idle
-       \- play_dead [assuming the user offlined the VCPU]
-       |     \
-       |     +- (xen_play_dead)
-       |          \- HYPERVISOR_VCPU_off [so VCPU is dead, once user
-       |          |                       onlines it starts from here]
-       |          \- cpu_bringup [preempt_disable]
-       |
-       +- preempt_enable_no_reschedule()
-       +- schedule()
-       \- preempt_enable()
+commit bc4934bc61d0a11fd62c5187ff83645628f8be8b upstream.
 
-So we have two preempt_disble() and one preempt_enable(). Calling
-preempt_enable() after the cpu_bringup() in the xen_play_dead
-fixes the imbalance.
+When deauth is requested while an auth or assoc
+work item is in progress, we currently delete it
+without regard for any state it might need to
+clean up. Fix it by cleaning up for those items.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In the case Pontus found, the problem manifested
+itself as such:
+
+authenticate with 00:23:69:aa:dd:7b (try 1)
+authenticated
+failed to insert Dummy STA entry for the AP (error -17)
+deauthenticating from 00:23:69:aa:dd:7b by local choice (reason=2)
+
+It could also happen differently if the driver
+uses the tx_sync callback.
+
+We can't just call the ->done() method of the work
+items because that will lock up due to the locking
+in cfg80211. This fix isn't very clean, but that
+seems acceptable since I have patches pending to
+remove this code completely.
+
+Reported-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+Tested-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/x86/xen/smp.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ net/mac80211/mlme.c |   38 +++++++++++++++++++++++++++-----------
+ 1 file changed, 27 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 041d4fe..501d4e0 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -409,6 +409,13 @@ static void __cpuinit xen_play_dead(void) /* used only with HOTPLUG_CPU */
- 	play_dead_common();
- 	HYPERVISOR_vcpu_op(VCPUOP_down, smp_processor_id(), NULL);
- 	cpu_bringup();
-+	/*
-+	 * Balance out the preempt calls - as we are running in cpu_idle
-+	 * loop which has been called at bootup from cpu_bringup_and_idle.
-+	 * The cpucpu_bringup_and_idle called cpu_bringup which made a
-+	 * preempt_disable() So this preempt_enable will balance it out.
-+	 */
-+	preempt_enable();
- }
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -2719,7 +2719,6 @@ int ieee80211_mgd_deauth(struct ieee8021
+ {
+ 	struct ieee80211_local *local = sdata->local;
+ 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+-	struct ieee80211_work *wk;
+ 	u8 bssid[ETH_ALEN];
+ 	bool assoc_bss = false;
  
- #else /* !CONFIG_HOTPLUG_CPU */
--- 
-1.7.7.5
+@@ -2732,30 +2731,47 @@ int ieee80211_mgd_deauth(struct ieee8021
+ 		assoc_bss = true;
+ 	} else {
+ 		bool not_auth_yet = false;
++		struct ieee80211_work *tmp, *wk = NULL;
+ 
+ 		mutex_unlock(&ifmgd->mtx);
+ 
+ 		mutex_lock(&local->mtx);
+-		list_for_each_entry(wk, &local->work_list, list) {
+-			if (wk->sdata != sdata)
++		list_for_each_entry(tmp, &local->work_list, list) {
++			if (tmp->sdata != sdata)
+ 				continue;
+ 
+-			if (wk->type != IEEE80211_WORK_DIRECT_PROBE &&
+-			    wk->type != IEEE80211_WORK_AUTH &&
+-			    wk->type != IEEE80211_WORK_ASSOC &&
+-			    wk->type != IEEE80211_WORK_ASSOC_BEACON_WAIT)
++			if (tmp->type != IEEE80211_WORK_DIRECT_PROBE &&
++			    tmp->type != IEEE80211_WORK_AUTH &&
++			    tmp->type != IEEE80211_WORK_ASSOC &&
++			    tmp->type != IEEE80211_WORK_ASSOC_BEACON_WAIT)
+ 				continue;
+ 
+-			if (memcmp(req->bss->bssid, wk->filter_ta, ETH_ALEN))
++			if (memcmp(req->bss->bssid, tmp->filter_ta, ETH_ALEN))
+ 				continue;
+ 
+-			not_auth_yet = wk->type == IEEE80211_WORK_DIRECT_PROBE;
+-			list_del_rcu(&wk->list);
+-			free_work(wk);
++			not_auth_yet = tmp->type == IEEE80211_WORK_DIRECT_PROBE;
++			list_del_rcu(&tmp->list);
++			synchronize_rcu();
++			wk = tmp;
+ 			break;
+ 		}
+ 		mutex_unlock(&local->mtx);
+ 
++		if (wk && wk->type == IEEE80211_WORK_ASSOC) {
++			/* clean up dummy sta & TX sync */
++			sta_info_destroy_addr(wk->sdata, wk->filter_ta);
++			if (wk->assoc.synced)
++				drv_finish_tx_sync(local, wk->sdata,
++						   wk->filter_ta,
++						   IEEE80211_TX_SYNC_ASSOC);
++		} else if (wk && wk->type == IEEE80211_WORK_AUTH) {
++			if (wk->probe_auth.synced)
++				drv_finish_tx_sync(local, wk->sdata,
++						   wk->filter_ta,
++						   IEEE80211_TX_SYNC_AUTH);
++		}
++		kfree(wk);
++
+ 		/*
+ 		 * If somebody requests authentication and we haven't
+ 		 * sent out an auth frame yet there's no need to send
+
 
