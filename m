@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab2BAVbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:31:15 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:43356 "EHLO
+	id S932596Ab2BAVTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:19:14 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:38602 "EHLO
 	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932611Ab2BAVTP (ORCPT
+	by vger.kernel.org with ESMTP id S1757378Ab2BAVTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:15 -0500
-X-Sasl-enc: HuNpAbhgluzfWSHAo9TAKQEgeHErc+TW7CLFojVA4CuW 1328131154
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:45 2012
-Message-Id: <20120201210045.130551019@clark.kroah.org>
+	Wed, 1 Feb 2012 16:19:07 -0500
+X-Sasl-enc: 8BtayW0qOxq+oqrE7zQWpILOwkVI9LRtbd3t0hLJhNQZ 1328131146
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:40 2012
+Message-Id: <20120201205740.369660906@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:59:38 -0800
+Date: Wed, 01 Feb 2012 12:56:13 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [14/89] ASoC: Disable register synchronisation for low frequency WM8996 SYSCLK
-In-Reply-To: <20120201210505.GA26028@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dcbw@redhat.com>
+Subject: [33/65] qcaux: add more Pantech UML190 and UML290 ports
+In-Reply-To: <20120201210236.GA25966@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit fed22007113cb857e917913ce016d9b539dc3a80 upstream.
+commit 074cc73506f529f39fef32ad1c9e1d4cdd8acf6c upstream.
 
-With a low frequency SYSCLK and a fast I2C clock register synchronisation
-may occasionally take too long to take effect, causing I/O issues. Disable
-synchronisation in order to avoid any issues.
+More ports we now know how to talk to.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8996.c |    4 ++++
- sound/soc/codecs/wm8996.h |    4 ++++
- 2 files changed, 8 insertions(+)
+ drivers/usb/serial/qcaux.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8996.c
-+++ b/sound/soc/codecs/wm8996.c
-@@ -1932,6 +1932,7 @@ static int wm8996_set_sysclk(struct snd_
- 	struct wm8996_priv *wm8996 = snd_soc_codec_get_drvdata(codec);
- 	int lfclk = 0;
- 	int ratediv = 0;
-+	int sync = WM8996_REG_SYNC;
- 	int src;
- 	int old;
+--- a/drivers/usb/serial/qcaux.c
++++ b/drivers/usb/serial/qcaux.c
+@@ -36,6 +36,7 @@
+ #define UTSTARCOM_PRODUCT_UM175_V1		0x3712
+ #define UTSTARCOM_PRODUCT_UM175_V2		0x3714
+ #define UTSTARCOM_PRODUCT_UM175_ALLTEL		0x3715
++#define PANTECH_PRODUCT_UML190_VZW		0x3716
+ #define PANTECH_PRODUCT_UML290_VZW		0x3718
  
-@@ -1976,6 +1977,7 @@ static int wm8996_set_sysclk(struct snd_
- 	case 32000:
- 	case 32768:
- 		lfclk = WM8996_LFCLK_ENA;
-+		sync = 0;
- 		break;
- 	default:
- 		dev_warn(codec->dev, "Unsupported clock rate %dHz\n",
-@@ -1989,6 +1991,8 @@ static int wm8996_set_sysclk(struct snd_
- 			    WM8996_SYSCLK_SRC_MASK | WM8996_SYSCLK_DIV_MASK,
- 			    src << WM8996_SYSCLK_SRC_SHIFT | ratediv);
- 	snd_soc_update_bits(codec, WM8996_CLOCKING_1, WM8996_LFCLK_ENA, lfclk);
-+	snd_soc_update_bits(codec, WM8996_CONTROL_INTERFACE_1,
-+			    WM8996_REG_SYNC, sync);
- 	snd_soc_update_bits(codec, WM8996_AIF_CLOCKING_1,
- 			    WM8996_SYSCLK_ENA, old);
- 
---- a/sound/soc/codecs/wm8996.h
-+++ b/sound/soc/codecs/wm8996.h
-@@ -1567,6 +1567,10 @@ int wm8996_detect(struct snd_soc_codec *
- /*
-  * R257 (0x101) - Control Interface (1)
-  */
-+#define WM8996_REG_SYNC                         0x8000  /* REG_SYNC */
-+#define WM8996_REG_SYNC_MASK                    0x8000  /* REG_SYNC */
-+#define WM8996_REG_SYNC_SHIFT                       15  /* REG_SYNC */
-+#define WM8996_REG_SYNC_WIDTH                        1  /* REG_SYNC */
- #define WM8996_AUTO_INC                         0x0004  /* AUTO_INC */
- #define WM8996_AUTO_INC_MASK                    0x0004  /* AUTO_INC */
- #define WM8996_AUTO_INC_SHIFT                        2  /* AUTO_INC */
+ /* CMOTECH devices */
+@@ -67,7 +68,11 @@ static struct usb_device_id id_table[] =
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(LG_VENDOR_ID, LG_PRODUCT_VX4400_6000, 0xff, 0xff, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SANYO_VENDOR_ID, SANYO_PRODUCT_KATANA_LX, 0xff, 0xff, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_U520, 0xff, 0x00, 0x00) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML190_VZW, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML190_VZW, 0xff, 0xfe, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xfd, 0xff) },  /* NMEA */
++	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xfe, 0xff) },  /* WMC */
++	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xff, 0xff) },  /* DIAG */
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
