@@ -1,199 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576Ab2BAVTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:19:10 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48160 "EHLO
+	id S932842Ab2BAVbz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:31:55 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:51977 "EHLO
 	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757422Ab2BAVTG (ORCPT
+	by vger.kernel.org with ESMTP id S932574Ab2BAVTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:06 -0500
-X-Sasl-enc: Zw0GFtcjMhjdLwW8uo7maTCVHWM2V25dNhT3xL8IFwP6 1328131145
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:40 2012
-Message-Id: <20120201205740.283351666@clark.kroah.org>
+	Wed, 1 Feb 2012 16:19:10 -0500
+X-Sasl-enc: UWxQx58VDit8FGsMDwkql1KGG1yGsuw17miMmMCQxbfK 1328131149
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:44 2012
+Message-Id: <20120201210044.849998349@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:56:12 -0800
+Date: Wed, 01 Feb 2012 12:59:35 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [32/65] USB: cdc-wdm: use two mutexes to allow simultaneous read and write
-In-Reply-To: <20120201210236.GA25966@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Thomas Hellstrom <thellstrom@vmware.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [11/89] drm: Fix authentication kernel crash
+In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit e8537bd2c4f325a4796da33564ddcef9489b7feb upstream.
+commit 598781d71119827b454fd75d46f84755bca6f0c6 upstream.
 
-using a separate read and write mutex for locking is sufficient to make the
-driver accept simultaneous read and write. This improves useability a lot.
+If the master tries to authenticate a client using drm_authmagic and
+that client has already closed its drm file descriptor,
+either wilfully or because it was terminated, the
+call to drm_authmagic will dereference a stale pointer into kmalloc'ed memory
+and corrupt it.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Cc: Oliver Neukum <oneukum@suse.de>
+Typically this results in a hard system hang.
+
+This patch fixes that problem by removing any authentication tokens
+(struct drm_magic_entry) open for a file descriptor when that file
+descriptor is closed.
+
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |   49 +++++++++++++++++++++++++++-----------------
- 1 file changed, 31 insertions(+), 18 deletions(-)
+ drivers/gpu/drm/drm_auth.c |    6 +++++-
+ drivers/gpu/drm/drm_fops.c |    5 +++++
+ include/drm/drmP.h         |    1 +
+ 3 files changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -88,7 +88,8 @@ struct wdm_device {
- 	int			count;
- 	dma_addr_t		shandle;
- 	dma_addr_t		ihandle;
--	struct mutex		lock;
-+	struct mutex		wlock;
-+	struct mutex		rlock;
- 	wait_queue_head_t	wait;
- 	struct work_struct	rxwork;
- 	int			werr;
-@@ -323,7 +324,7 @@ static ssize_t wdm_write
- 	}
- 
- 	/* concurrent writes and disconnect */
--	r = mutex_lock_interruptible(&desc->lock);
-+	r = mutex_lock_interruptible(&desc->wlock);
- 	rv = -ERESTARTSYS;
- 	if (r) {
- 		kfree(buf);
-@@ -386,7 +387,7 @@ static ssize_t wdm_write
- out:
- 	usb_autopm_put_interface(desc->intf);
- outnp:
--	mutex_unlock(&desc->lock);
-+	mutex_unlock(&desc->wlock);
- outnl:
- 	return rv < 0 ? rv : count;
- }
-@@ -399,7 +400,7 @@ static ssize_t wdm_read
- 	struct wdm_device *desc = file->private_data;
- 
- 
--	rv = mutex_lock_interruptible(&desc->lock); /*concurrent reads */
-+	rv = mutex_lock_interruptible(&desc->rlock); /*concurrent reads */
- 	if (rv < 0)
- 		return -ERESTARTSYS;
- 
-@@ -476,7 +477,7 @@ retry:
- 	rv = cntr;
- 
- err:
--	mutex_unlock(&desc->lock);
-+	mutex_unlock(&desc->rlock);
- 	return rv;
- }
- 
-@@ -542,7 +543,8 @@ static int wdm_open(struct inode *inode,
- 	}
- 	intf->needs_remote_wakeup = 1;
- 
--	mutex_lock(&desc->lock);
-+	/* using write lock to protect desc->count */
-+	mutex_lock(&desc->wlock);
- 	if (!desc->count++) {
- 		desc->werr = 0;
- 		desc->rerr = 0;
-@@ -555,7 +557,7 @@ static int wdm_open(struct inode *inode,
- 	} else {
- 		rv = 0;
- 	}
--	mutex_unlock(&desc->lock);
-+	mutex_unlock(&desc->wlock);
- 	usb_autopm_put_interface(desc->intf);
- out:
- 	mutex_unlock(&wdm_mutex);
-@@ -567,9 +569,11 @@ static int wdm_release(struct inode *ino
- 	struct wdm_device *desc = file->private_data;
- 
- 	mutex_lock(&wdm_mutex);
--	mutex_lock(&desc->lock);
-+
-+	/* using write lock to protect desc->count */
-+	mutex_lock(&desc->wlock);
- 	desc->count--;
--	mutex_unlock(&desc->lock);
-+	mutex_unlock(&desc->wlock);
- 
- 	if (!desc->count) {
- 		dev_dbg(&desc->intf->dev, "wdm_release: cleanup");
-@@ -667,7 +671,8 @@ next_desc:
- 	desc = kzalloc(sizeof(struct wdm_device), GFP_KERNEL);
- 	if (!desc)
- 		goto out;
--	mutex_init(&desc->lock);
-+	mutex_init(&desc->rlock);
-+	mutex_init(&desc->wlock);
- 	spin_lock_init(&desc->iuspin);
- 	init_waitqueue_head(&desc->wait);
- 	desc->wMaxCommand = maxcom;
-@@ -781,10 +786,12 @@ static void wdm_disconnect(struct usb_in
- 	/* to terminate pending flushes */
- 	clear_bit(WDM_IN_USE, &desc->flags);
- 	spin_unlock_irqrestore(&desc->iuspin, flags);
--	mutex_lock(&desc->lock);
-+	mutex_lock(&desc->rlock);
-+	mutex_lock(&desc->wlock);
- 	kill_urbs(desc);
- 	cancel_work_sync(&desc->rxwork);
--	mutex_unlock(&desc->lock);
-+	mutex_unlock(&desc->wlock);
-+	mutex_unlock(&desc->rlock);
- 	wake_up_all(&desc->wait);
- 	if (!desc->count)
- 		cleanup(desc);
-@@ -800,8 +807,10 @@ static int wdm_suspend(struct usb_interf
- 	dev_dbg(&desc->intf->dev, "wdm%d_suspend\n", intf->minor);
- 
- 	/* if this is an autosuspend the caller does the locking */
--	if (!(message.event & PM_EVENT_AUTO))
--		mutex_lock(&desc->lock);
-+	if (!(message.event & PM_EVENT_AUTO)) {
-+		mutex_lock(&desc->rlock);
-+		mutex_lock(&desc->wlock);
-+	}
- 	spin_lock_irq(&desc->iuspin);
- 
- 	if ((message.event & PM_EVENT_AUTO) &&
-@@ -817,8 +826,10 @@ static int wdm_suspend(struct usb_interf
- 		kill_urbs(desc);
- 		cancel_work_sync(&desc->rxwork);
- 	}
--	if (!(message.event & PM_EVENT_AUTO))
--		mutex_unlock(&desc->lock);
-+	if (!(message.event & PM_EVENT_AUTO)) {
-+		mutex_unlock(&desc->wlock);
-+		mutex_unlock(&desc->rlock);
-+	}
- 
- 	return rv;
- }
-@@ -856,7 +867,8 @@ static int wdm_pre_reset(struct usb_inte
+--- a/drivers/gpu/drm/drm_auth.c
++++ b/drivers/gpu/drm/drm_auth.c
+@@ -101,7 +101,7 @@ static int drm_add_magic(struct drm_mast
+  * Searches and unlinks the entry in drm_device::magiclist with the magic
+  * number hash key, while holding the drm_device::struct_mutex lock.
+  */
+-static int drm_remove_magic(struct drm_master *master, drm_magic_t magic)
++int drm_remove_magic(struct drm_master *master, drm_magic_t magic)
  {
- 	struct wdm_device *desc = usb_get_intfdata(intf);
+ 	struct drm_magic_entry *pt;
+ 	struct drm_hash_item *hash;
+@@ -136,6 +136,8 @@ static int drm_remove_magic(struct drm_m
+  * If there is a magic number in drm_file::magic then use it, otherwise
+  * searches an unique non-zero magic number and add it associating it with \p
+  * file_priv.
++ * This ioctl needs protection by the drm_global_mutex, which protects
++ * struct drm_file::magic and struct drm_magic_entry::priv.
+  */
+ int drm_getmagic(struct drm_device *dev, void *data, struct drm_file *file_priv)
+ {
+@@ -173,6 +175,8 @@ int drm_getmagic(struct drm_device *dev,
+  * \return zero if authentication successed, or a negative number otherwise.
+  *
+  * Checks if \p file_priv is associated with the magic number passed in \arg.
++ * This ioctl needs protection by the drm_global_mutex, which protects
++ * struct drm_file::magic and struct drm_magic_entry::priv.
+  */
+ int drm_authmagic(struct drm_device *dev, void *data,
+ 		  struct drm_file *file_priv)
+--- a/drivers/gpu/drm/drm_fops.c
++++ b/drivers/gpu/drm/drm_fops.c
+@@ -487,6 +487,11 @@ int drm_release(struct inode *inode, str
+ 		  (long)old_encode_dev(file_priv->minor->device),
+ 		  dev->open_count);
  
--	mutex_lock(&desc->lock);
-+	mutex_lock(&desc->rlock);
-+	mutex_lock(&desc->wlock);
- 	kill_urbs(desc);
++	/* Release any auth tokens that might point to this file_priv,
++	   (do that under the drm_global_mutex) */
++	if (file_priv->magic)
++		(void) drm_remove_magic(file_priv->master, file_priv->magic);
++
+ 	/* if the master has gone away we can't do anything with the lock */
+ 	if (file_priv->minor->master)
+ 		drm_master_release(dev, filp);
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1328,6 +1328,7 @@ extern int drm_getmagic(struct drm_devic
+ 			struct drm_file *file_priv);
+ extern int drm_authmagic(struct drm_device *dev, void *data,
+ 			 struct drm_file *file_priv);
++extern int drm_remove_magic(struct drm_master *master, drm_magic_t magic);
  
- 	/*
-@@ -878,7 +890,8 @@ static int wdm_post_reset(struct usb_int
- 	int rv;
- 
- 	rv = recover_from_urb_loss(desc);
--	mutex_unlock(&desc->lock);
-+	mutex_unlock(&desc->wlock);
-+	mutex_unlock(&desc->rlock);
- 	return 0;
- }
- 
+ /* Cache management (drm_cache.c) */
+ void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
 
 
