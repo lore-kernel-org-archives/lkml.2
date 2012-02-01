@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab2BATo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:44:56 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:41011 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932303Ab2BATnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932306Ab2BATnd (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 1 Feb 2012 14:43:33 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:54408 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932131Ab2BATnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:43:25 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,139 +16,203 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 32/41] rcu: Update stall-warning documentation
-Date: Wed,  1 Feb 2012 11:41:50 -0800
-Message-Id: <1328125319-5205-32-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 34/41] rcu: Check for illegal use of RCU from offlined CPUs
+Date: Wed,  1 Feb 2012 11:41:52 -0800
+Message-Id: <1328125319-5205-34-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120201194131.GA10028@linux.vnet.ibm.com>
  <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020119-1976-0000-0000-00000A09AE06
+x-cbid: 12020119-5806-0000-0000-000011F2FE81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-Add documentation of CONFIG_RCU_CPU_STALL_VERBOSE, CONFIG_RCU_CPU_STALL_INFO,
-and RCU_STALL_DELAY_DELTA.  Describe multiple stall-warning messages from
-a single stall, and the timing of the subsequent messages.  Add headings.
+Although it is legal to use RCU during early boot, it is anything
+but legal to use RCU at runtime from an offlined CPU.  After all, RCU
+explicitly ignores offlined CPUs.  This commit therefore adds checks
+for runtime use of RCU from offlined CPUs.
+
+These checks are not perfect, in particular, they can be subverted
+through use of things like rcu_dereference_raw().  Note that it is not
+possible to put checks in rcu_read_lock() and friends due to the fact
+that these primitives are used in code that might be used under either
+RCU or lock-based protection, which means that checking rcu_read_lock()
+gets you fat piles of false positives.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/stallwarn.txt |   85 ++++++++++++++++++++++++++++++++++++---
- 1 files changed, 79 insertions(+), 6 deletions(-)
+ include/linux/rcupdate.h |   19 +++++++++++++++++++
+ include/linux/srcu.h     |   11 +++++++----
+ kernel/rcupdate.c        |    5 +++++
+ kernel/rcutree.c         |   29 +++++++++++++++++++++++++++++
+ kernel/rcutree_plugin.h  |    1 +
+ 5 files changed, 61 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
-index 083d88c..54f354c 100644
---- a/Documentation/RCU/stallwarn.txt
-+++ b/Documentation/RCU/stallwarn.txt
-@@ -14,12 +14,36 @@ CONFIG_RCU_CPU_STALL_TIMEOUT
- 	issues an RCU CPU stall warning.  This time period is normally
- 	ten seconds.
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index f409529..146d37d 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -226,6 +226,15 @@ static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
+ }
+ #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
  
--RCU_SECONDS_TILL_STALL_RECHECK
-+	This configuration parameter may be changed at runtime via the
-+	/sys/module/rcutree/parameters/rcu_cpu_stall_timeout, however
-+	this parameter is checked only at the beginning of a cycle.
-+	So if you are 30 seconds into a 70-second stall, setting this
-+	sysfs parameter to (say) five will shorten the timeout for the
-+	-next- stall, or the following warning for the current stall
-+	(assuming the stall lasts long enough).  It will not affect the
-+	timing of the next warning for the current stall.
++#if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU)
++bool rcu_lockdep_current_cpu_online(void);
++#else /* #if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU) */
++static inline bool rcu_lockdep_current_cpu_online(void)
++{
++	return 1;
++}
++#endif /* #else #if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU) */
++
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
  
--	This macro defines the period of time that RCU will wait after
--	issuing a stall warning until it issues another stall warning
--	for the same stall.  This time period is normally set to three
--	times the check interval plus thirty seconds.
-+	Stall-warning messages may be enabled and disabled completely via
-+	/sys/module/rcutree/parameters/rcu_cpu_stall_suppress.
-+
-+CONFIG_RCU_CPU_STALL_VERBOSE
-+
-+	This kernel configuration parameter causes the stall warning to
-+	also dump the stacks of any tasks that are blocking the current
-+	RCU-preempt grace period.
-+
-+RCU_CPU_STALL_INFO
-+
-+	This kernel configuration parameter causes the stall warning to
-+	print out additional per-CPU diagnostic information, including
-+	information on scheduling-clock ticks and RCU's idle-CPU tracking.
-+
-+RCU_STALL_DELAY_DELTA
-+
-+	Although the lockdep facility is extremely useful, it does add
-+	some overhead.  Therefore, under CONFIG_PROVE_RCU, the
-+	RCU_STALL_DELAY_DELTA macro allows five extra seconds before
-+	giving an RCU CPU stall warning message.
+ #ifdef CONFIG_PROVE_RCU
+@@ -270,6 +279,9 @@ extern int debug_lockdep_rcu_enabled(void);
+  * occur in the same context, for example, it is illegal to invoke
+  * rcu_read_unlock() in process context if the matching rcu_read_lock()
+  * was invoked from within an irq handler.
++ *
++ * Note that rcu_read_lock() is disallowed if the CPU is either idle or
++ * offline from an RCU perspective, so check for those as well.
+  */
+ static inline int rcu_read_lock_held(void)
+ {
+@@ -277,6 +289,8 @@ static inline int rcu_read_lock_held(void)
+ 		return 1;
+ 	if (rcu_is_cpu_idle())
+ 		return 0;
++	if (!rcu_lockdep_current_cpu_online())
++		return 0;
+ 	return lock_is_held(&rcu_lock_map);
+ }
  
- RCU_STALL_RAT_DELAY
+@@ -313,6 +327,9 @@ extern int rcu_read_lock_bh_held(void);
+  * notice an extended quiescent state to other CPUs that started a grace
+  * period. Otherwise we would delay any grace period as long as we run in
+  * the idle task.
++ *
++ * Similarly, we avoid claiming an SRCU read lock held if the current
++ * CPU is offline.
+  */
+ #ifdef CONFIG_PREEMPT_COUNT
+ static inline int rcu_read_lock_sched_held(void)
+@@ -323,6 +340,8 @@ static inline int rcu_read_lock_sched_held(void)
+ 		return 1;
+ 	if (rcu_is_cpu_idle())
+ 		return 0;
++	if (!rcu_lockdep_current_cpu_online())
++		return 0;
+ 	if (debug_locks)
+ 		lockdep_opinion = lock_is_held(&rcu_sched_lock_map);
+ 	return lockdep_opinion || preempt_count() != 0 || irqs_disabled();
+diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+index e1b0059..9a32372 100644
+--- a/include/linux/srcu.h
++++ b/include/linux/srcu.h
+@@ -99,15 +99,18 @@ long srcu_batches_completed(struct srcu_struct *sp);
+  * power mode. This way we can notice an extended quiescent state to
+  * other CPUs that started a grace period. Otherwise we would delay any
+  * grace period as long as we run in the idle task.
++ *
++ * Similarly, we avoid claiming an SRCU read lock held if the current
++ * CPU is offline.
+  */
+ static inline int srcu_read_lock_held(struct srcu_struct *sp)
+ {
+-	if (rcu_is_cpu_idle())
+-		return 0;
+-
+ 	if (!debug_lockdep_rcu_enabled())
+ 		return 1;
+-
++	if (rcu_is_cpu_idle())
++		return 0;
++	if (!rcu_lockdep_current_cpu_online())
++		return 0;
+ 	return lock_is_held(&sp->dep_map);
+ }
  
-@@ -64,6 +88,54 @@ INFO: rcu_bh_state detected stalls on CPUs/tasks: { } (detected by 4, 2502 jiffi
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index 2bc4e13..a86f174 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -88,6 +88,9 @@ EXPORT_SYMBOL_GPL(debug_lockdep_rcu_enabled);
+  * section.
+  *
+  * Check debug_lockdep_rcu_enabled() to prevent false positives during boot.
++ *
++ * Note that rcu_read_lock() is disallowed if the CPU is either idle or
++ * offline from an RCU perspective, so check for those as well.
+  */
+ int rcu_read_lock_bh_held(void)
+ {
+@@ -95,6 +98,8 @@ int rcu_read_lock_bh_held(void)
+ 		return 1;
+ 	if (rcu_is_cpu_idle())
+ 		return 0;
++	if (!rcu_lockdep_current_cpu_online())
++		return 0;
+ 	return in_softirq() || irqs_disabled();
+ }
+ EXPORT_SYMBOL_GPL(rcu_read_lock_bh_held);
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index d2c770b..243ceb1 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -594,6 +594,35 @@ int rcu_is_cpu_idle(void)
+ }
+ EXPORT_SYMBOL(rcu_is_cpu_idle);
  
- This is rare, but does happen from time to time in real life.
++#ifdef CONFIG_HOTPLUG_CPU
++
++/*
++ * Is the current CPU online?  Disable preemption to avoid false positives
++ * that could otherwise happen due to the current CPU number being sampled,
++ * this task being preempted, its old CPU being taken offline, resuming
++ * on some other CPU, then determining that its old CPU is now offline.
++ * It is OK to use RCU on an offline processor during initial boot, hence
++ * the check for rcu_scheduler_fully_active.
++ *
++ * Disable checking if in an NMI handler because we cannot safely report
++ * errors from NMI handlers anyway.
++ */
++bool rcu_lockdep_current_cpu_online(void)
++{
++	bool ret;
++
++	if (in_nmi())
++		return 1;
++	preempt_disable();
++	ret = cpu_online(smp_processor_id()) ||
++	      !rcu_scheduler_fully_active;
++	preempt_enable();
++	return ret;
++}
++EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
++
++#endif /* #ifdef CONFIG_HOTPLUG_CPU */
++
+ #endif /* #ifdef CONFIG_PROVE_RCU */
  
-+If the CONFIG_RCU_CPU_STALL_INFO kernel configuration parameter is set,
-+more information is printed with the stall-warning message, for example:
-+
-+	INFO: rcu_preempt detected stall on CPU
-+	0: (63959 ticks this GP) idle=241/3fffffffffffffff/0
-+	   (t=65000 jiffies)
-+
-+In kernels with CONFIG_RCU_FAST_NO_HZ, even more information is
-+printed:
-+
-+	INFO: rcu_preempt detected stall on CPU
-+	0: (64628 ticks this GP) idle=dd5/3fffffffffffffff/0 drain=0 . timer=-1
-+	   (t=65000 jiffies)
-+
-+The "(64628 ticks this GP)" indicates that this CPU has taken more
-+than 64,000 scheduling-clock interrupts during the current stalled
-+grace period.  If the CPU was not yet aware of the current grace
-+period (for example, if it was offline), then this part of the message
-+indicates how many grace periods behind the CPU is.
-+
-+The "idle=" portion of the message prints the dyntick-idle state.
-+The hex number before the first "/" is the low-order 12 bits of the
-+dynticks counter, which will have an even-numbered value if the CPU is
-+in dyntick-idle mode and an odd-numbered value otherwise.  The hex
-+number between the two "/"s is the value of the nesting, which will
-+be a small positive number if in the idle loop and a very large positive
-+number (as shown above) otherwise.
-+
-+For CONFIG_RCU_FAST_NO_HZ kernels, the "drain=0" indicates that the
-+CPU is not in the process of trying to force itself into dyntick-idle
-+state, the "." indicates that the CPU has not given up forcing RCU
-+into dyntick-idle mode (it would be "H" otherwise), and the "timer=-1"
-+indicates that the CPU has not recented forced RCU into dyntick-idle
-+mode (it would otherwise indicate the number of microseconds remaining
-+in this forced state).
-+
-+
-+Multiple Warnings From One Stall
-+
-+If a stall lasts long enough, multiple stall-warning messages will be
-+printed for it.  The second and subsequent messages are printed at
-+longer intervals, so that the time between (say) the first and second
-+message will be about three times the interval between the beginning
-+of the stall and the first message.
-+
-+
-+What Causes RCU CPU Stall Warnings?
-+
- So your kernel printed an RCU CPU stall warning.  The next question is
- "What caused it?"  The following problems can result in RCU CPU stall
- warnings:
-@@ -128,4 +200,5 @@ is occurring, which will usually be in the function nearest the top of
- that portion of the stack which remains the same from trace to trace.
- If you can reliably trigger the stall, ftrace can be quite helpful.
+ /**
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index a56fa20..255ef887 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1945,6 +1945,7 @@ void synchronize_sched_expedited(void)
+ 	/* Note that atomic_inc_return() implies full memory barrier. */
+ 	firstsnap = snap = atomic_inc_return(&sync_sched_expedited_started);
+ 	get_online_cpus();
++	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
  
--RCU bugs can often be debugged with the help of CONFIG_RCU_TRACE.
-+RCU bugs can often be debugged with the help of CONFIG_RCU_TRACE
-+and with RCU's event tracing.
+ 	/*
+ 	 * Each pass through the following loop attempts to force a
 -- 
 1.7.8
 
