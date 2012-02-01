@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab2BAVKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:10:22 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43453 "EHLO
+	id S1757309Ab2BAVQf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:16:35 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56575 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932541Ab2BAVKM (ORCPT
+	by vger.kernel.org with ESMTP id S932587Ab2BAVKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:12 -0500
-X-Sasl-enc: MyusRsX3Wat4D/HKd/46Bv6QDnRVlOPtf8IhD6O8GuBi 1328130610
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:47 2012
-Message-Id: <20120201210047.677030339@clark.kroah.org>
+	Wed, 1 Feb 2012 16:10:24 -0500
+X-Sasl-enc: YZaj5Pus8PW7DHfaC2GheUizMVkmZxAejlo/6Beh3dvO 1328130622
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:48 2012
+Message-Id: <20120201210048.299953262@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 13:00:07 -0800
+Date: Wed, 01 Feb 2012 13:00:14 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Naulls <peter@chocky.org>
-Subject: [43/89] USB: serial: ftdi additional IDs
+        alan@lxorguk.ukuu.org.uk, Jiri Slaby <jslaby@suse.cz>
+Subject: [50/89] TTY: fix UV serial console regression
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Naulls <peter@chocky.org>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit fc216ec363f4d174932df90bbf35c77d0540e561 upstream.
+commit 0eee50af5b13e00b3fb7a5fe8480419a71b8235d upstream.
 
-I tested this against 2.6.39 in the Ubuntu kernel, however I see the IDs
-are not in latest 3.2 git.
+Commit 74c2107759d (serial: Use block_til_ready helper) and its fixup
+3f582b8c110 (serial: fix termios settings in open) introduced a
+regression on UV systems. The serial eventually freezes while being
+used. It's completely unpredictable and sometimes needs a heap of
+traffic to happen first.
 
-This adds IDs for the FTDI controller in the Rainforest Automation
-Zigbee dongle.
+To reproduce this, yast installation was used as it turned out to be
+pretty reliable in reproducing. Especially during installation process
+where one doesn't have an SSH daemon running. And no monitor as the HW
+is completely headless. So this was fun to find. Given the machine
+doesn't boot on vanilla before 2.6.36 final. (And the commits above
+are older.)
 
-Signed-off-by: Peter Naulls <peter@chocky.org>
+Unless there is some bad race in the code, the hardware seems to be
+pretty broken. Otherwise pure MSR read should not cause such a bug,
+or?
+
+So to prevent the bug, revert to the old behavior. I.e. read modem
+status only if we really have to -- for non-CLOCAL set serials.
+Non-CLOCAL works on this hardware OK, I tried. See? I don't.
+
+And document that shit.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+References: https://lkml.org/lkml/2011/12/6/573
+References: https://bugzilla.novell.com/show_bug.cgi?id=718518
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/tty/tty_port.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -843,6 +843,7 @@ static struct usb_device_id id_table_com
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1175,3 +1175,9 @@
-  */
- /* TagTracer MIFARE*/
- #define FTDI_ZEITCONTROL_TAGTRACE_MIFARE_PID	0xF7C0
-+
-+/*
-+ * Rainforest Automation
-+ */
-+/* ZigBee controller */
-+#define FTDI_RF_R106		0x8A28
+--- a/drivers/tty/tty_port.c
++++ b/drivers/tty/tty_port.c
+@@ -227,7 +227,6 @@ int tty_port_block_til_ready(struct tty_
+ 	int do_clocal = 0, retval;
+ 	unsigned long flags;
+ 	DEFINE_WAIT(wait);
+-	int cd;
+ 
+ 	/* block if port is in the process of being closed */
+ 	if (tty_hung_up_p(filp) || port->flags & ASYNC_CLOSING) {
+@@ -284,11 +283,14 @@ int tty_port_block_til_ready(struct tty_
+ 				retval = -ERESTARTSYS;
+ 			break;
+ 		}
+-		/* Probe the carrier. For devices with no carrier detect this
+-		   will always return true */
+-		cd = tty_port_carrier_raised(port);
++		/*
++		 * Probe the carrier. For devices with no carrier detect
++		 * tty_port_carrier_raised will always return true.
++		 * Never ask drivers if CLOCAL is set, this causes troubles
++		 * on some hardware.
++		 */
+ 		if (!(port->flags & ASYNC_CLOSING) &&
+-				(do_clocal || cd))
++				(do_clocal || tty_port_carrier_raised(port)))
+ 			break;
+ 		if (signal_pending(current)) {
+ 			retval = -ERESTARTSYS;
 
 
