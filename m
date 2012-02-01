@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab2BAIdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 03:33:37 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39742 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab2BAIdf (ORCPT
+	id S1755319Ab2BAIfG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 03:35:06 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:19581
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753949Ab2BAIfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 03:33:35 -0500
-Date: Wed, 1 Feb 2012 00:33:34 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/8] Add tegra30 support for secondary cores
-Message-ID: <20120201083334.GM7399@quad.lixom.net>
-References: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
+	Wed, 1 Feb 2012 03:35:04 -0500
+X-SpamScore: -12
+X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dhc1bhc31hc1ah2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: Re: [PATCH 07/07] ONKEY: OnKey module for DA9052/53 PMIC v1
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+In-Reply-To: <C3AE124F08223B42BC95AEB82F0F6CED1FDDA3ED@KCHJEXMB02.kpit.com>
+References: <C3AE124F08223B42BC95AEB82F0F6CED1FDDA3ED@KCHJEXMB02.kpit.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 1 Feb 2012 13:58:55 +0530
+Message-ID: <1328084935.19234.36.camel@dhruva>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2012-02-01 at 13:30 +0530, Ashish Jangam wrote:
+> On Tue, Jan 17, 2012 at 06:59:11PM +0530, Ashish Jangam wrote:
+> 
+> > +	ret = da9052_reg_read(onkey->da9052, DA9052_EVENT_B_REG);
+> > +	if (ret < 0) {
+> > +		dev_err(onkey->da9052->dev,
+> > +			"da9052_onkey_report_event da9052_reg_read error %d\n",
+> > +			ret);
+> > +		ret = 1;
+> > +	} else {
+> > +		ret = ret & DA9052_EVENTB_ENONKEY;
+> > +		input_report_key(onkey->input, KEY_POWER, ret);
+> > +		input_sync(onkey->input);
+> > +	}
+> > +
+> > +	if (ret)
+> > +		schedule_delayed_work(&onkey->work, msecs_to_jiffies(50));
+> 
+> Why not just schedule the work directly?  The use of ret took a bit of
+> thinking about to follow.
+schedule_dealyed_work simulates the release of the onkey button since event for release
+is not generated and ret & DA9052_EVENTB_ENONKEY is used to determine the release
+of the onkey button.
+> > +	error = request_threaded_irq(onkey->da9052->irq_base + onkey->irq, NULL,
+> > +				     da9052_onkey_irq,
+> 
+> This looks buggy, the resource should have the IRQ you need directly in
+> it.  The MFD core can do this for the chip core driver when it registers
+> children.
+> 
+As irq_base may get determined at runtime this will require modification to the
+defined resource struct for each mfd child in the device init function of the mfd core.
+Not sure if this is fine.
 
-On Tue, Jan 31, 2012 at 06:40:38PM +0200, Peter De Schrijver wrote:
-> This patchset introduces support for secondary cores on tegra30. It also
-> introduces some functions for the flowcontroller and adds basic support for
-> tegra30 powerdomains.
 
-It would be very useful to get a quick recap of what has changed since
-previous versions in the cover email, if not detailed in the individual
-patches (which it doesn't seem to be).
-
-
--Olof
