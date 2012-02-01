@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883Ab2BAVg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:36:26 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46257 "EHLO
+	id S932870Ab2BAVgo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:36:44 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55786 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757293Ab2BAVKB (ORCPT
+	by vger.kernel.org with ESMTP id S932499Ab2BAVJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:10:01 -0500
-X-Sasl-enc: Druu6OvejwTurObDZCt5KEocqJYryIGThcef2lkWYdHa 1328130600
+	Wed, 1 Feb 2012 16:09:56 -0500
+X-Sasl-enc: zIuurSMNrIs0YIWRb+R+DfMdDCGZ2IK9XgrXysEsc9YK 1328130595
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:44 2012
-Message-Id: <20120201210044.680366029@clark.kroah.org>
+Message-Id: <20120201210044.421971683@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:59:33 -0800
+Date: Wed, 01 Feb 2012 12:59:30 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [09/89] drm/radeon/kms: move panel mode setup into encoder mode set
+        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
+        Li Wang <liwang@nudt.edu.cn>
+Subject: [06/89] eCryptfs: Check inode changes in setattr
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,123 +27,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 386d4d751e8e0b4b693bb724f09aae064ee5297d upstream.
+commit a261a03904849c3df50bd0300efb7fb3f865137d upstream.
 
-Needs to happen earlier in the mode set.
+Most filesystems call inode_change_ok() very early in ->setattr(), but
+eCryptfs didn't call it at all. It allowed the lower filesystem to make
+the call in its ->setattr() function. Then, eCryptfs would copy the
+appropriate inode attributes from the lower inode to the eCryptfs inode.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This patch changes that and actually calls inode_change_ok() on the
+eCryptfs inode, fairly early in ecryptfs_setattr(). Ideally, the call
+would happen earlier in ecryptfs_setattr(), but there are some possible
+inode initialization steps that must happen first.
+
+Since the call was already being made on the lower inode, the change in
+functionality should be minimal, except for the case of a file extending
+truncate call. In that case, inode_newsize_ok() was never being
+called on the eCryptfs inode. Rather than inode_newsize_ok() catching
+maximum file size errors early on, eCryptfs would encrypt zeroed pages
+and write them to the lower filesystem until the lower filesystem's
+write path caught the error in generic_write_checks(). This patch
+introduces a new function, called ecryptfs_inode_newsize_ok(), which
+checks if the new lower file size is within the appropriate limits when
+the truncate operation will be growing the lower file.
+
+In summary this change prevents eCryptfs truncate operations (and the
+resulting page encryptions), which would exceed the lower filesystem
+limits or FSIZE rlimits, from ever starting.
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reviewed-by: Li Wang <liwang@nudt.edu.cn>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c       |   22 ++++++++++------------
- drivers/gpu/drm/radeon/atombios_encoders.c |   11 +++++++++++
- drivers/gpu/drm/radeon/radeon_mode.h       |    3 +++
- 3 files changed, 24 insertions(+), 12 deletions(-)
+ fs/ecryptfs/inode.c |   48 ++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 36 insertions(+), 12 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -549,8 +549,8 @@ bool radeon_dp_getdpcd(struct radeon_con
- 	return false;
- }
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -841,18 +841,6 @@ static int truncate_upper(struct dentry
+ 		size_t num_zeros = (PAGE_CACHE_SIZE
+ 				    - (ia->ia_size & ~PAGE_CACHE_MASK));
  
--static void radeon_dp_set_panel_mode(struct drm_encoder *encoder,
--				     struct drm_connector *connector)
-+int radeon_dp_get_panel_mode(struct drm_encoder *encoder,
-+			     struct drm_connector *connector)
- {
- 	struct drm_device *dev = encoder->dev;
- 	struct radeon_device *rdev = dev->dev_private;
-@@ -558,7 +558,7 @@ static void radeon_dp_set_panel_mode(str
- 	int panel_mode = DP_PANEL_MODE_EXTERNAL_DP_MODE;
- 
- 	if (!ASIC_IS_DCE4(rdev))
--		return;
-+		return panel_mode;
- 
- 	if (radeon_connector_encoder_get_dp_bridge_encoder_id(connector) ==
- 	    ENCODER_OBJECT_ID_NUTMEG)
-@@ -572,14 +572,7 @@ static void radeon_dp_set_panel_mode(str
- 			panel_mode = DP_PANEL_MODE_INTERNAL_DP2_MODE;
- 	}
- 
--	atombios_dig_encoder_setup(encoder,
--				   ATOM_ENCODER_CMD_SETUP_PANEL_MODE,
--				   panel_mode);
 -
--	if ((connector->connector_type == DRM_MODE_CONNECTOR_eDP) &&
--	    (panel_mode == DP_PANEL_MODE_INTERNAL_DP2_MODE)) {
--		radeon_write_dpcd_reg(radeon_connector, DP_EDP_CONFIGURATION_SET, 1);
--	}
-+	return panel_mode;
+-		/*
+-		 * XXX(truncate) this should really happen at the begginning
+-		 * of ->setattr.  But the code is too messy to that as part
+-		 * of a larger patch.  ecryptfs is also totally missing out
+-		 * on the inode_change_ok check at the beginning of
+-		 * ->setattr while would include this.
+-		 */
+-		rc = inode_newsize_ok(inode, ia->ia_size);
+-		if (rc)
+-			goto out;
+-
+ 		if (!(crypt_stat->flags & ECRYPTFS_ENCRYPTED)) {
+ 			truncate_setsize(inode, ia->ia_size);
+ 			lower_ia->ia_size = ia->ia_size;
+@@ -902,6 +890,28 @@ out:
+ 	return rc;
  }
  
- void radeon_dp_set_link_config(struct drm_connector *connector,
-@@ -717,6 +710,8 @@ static void radeon_dp_set_tp(struct rade
- 
- static int radeon_dp_link_train_init(struct radeon_dp_link_train_info *dp_info)
- {
-+	struct radeon_encoder *radeon_encoder = to_radeon_encoder(dp_info->encoder);
-+	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
- 	u8 tmp;
- 
- 	/* power up the sink */
-@@ -732,7 +727,10 @@ static int radeon_dp_link_train_init(str
- 		radeon_write_dpcd_reg(dp_info->radeon_connector,
- 				      DP_DOWNSPREAD_CTRL, 0);
- 
--	radeon_dp_set_panel_mode(dp_info->encoder, dp_info->connector);
-+	if ((dp_info->connector->connector_type == DRM_MODE_CONNECTOR_eDP) &&
-+	    (dig->panel_mode == DP_PANEL_MODE_INTERNAL_DP2_MODE)) {
-+		radeon_write_dpcd_reg(dp_info->radeon_connector, DP_EDP_CONFIGURATION_SET, 1);
++static int ecryptfs_inode_newsize_ok(struct inode *inode, loff_t offset)
++{
++	struct ecryptfs_crypt_stat *crypt_stat;
++	loff_t lower_oldsize, lower_newsize;
++
++	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
++	lower_oldsize = upper_size_to_lower_size(crypt_stat,
++						 i_size_read(inode));
++	lower_newsize = upper_size_to_lower_size(crypt_stat, offset);
++	if (lower_newsize > lower_oldsize) {
++		/*
++		 * The eCryptfs inode and the new *lower* size are mixed here
++		 * because we may not have the lower i_mutex held and/or it may
++		 * not be appropriate to call inode_newsize_ok() with inodes
++		 * from other filesystems.
++		 */
++		return inode_newsize_ok(inode, lower_newsize);
 +	}
- 
- 	/* set the lane count on the sink */
- 	tmp = dp_info->dp_lane_count;
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1822,10 +1822,21 @@ radeon_atom_encoder_mode_set(struct drm_
- 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
- 	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
- 		if (ASIC_IS_DCE4(rdev)) {
-+			struct drm_connector *connector = radeon_get_connector_for_encoder(encoder);
-+			struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
 +
-+			if (!connector)
-+				dig->panel_mode = DP_PANEL_MODE_EXTERNAL_DP_MODE;
-+			else
-+				dig->panel_mode = radeon_dp_get_panel_mode(encoder, connector);
++	return 0;
++}
 +
- 			/* disable the transmitter */
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
- 			/* setup and enable the encoder */
- 			atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_SETUP, 0);
-+			atombios_dig_encoder_setup(encoder,
-+						   ATOM_ENCODER_CMD_SETUP_PANEL_MODE,
-+						   dig->panel_mode);
+ /**
+  * ecryptfs_truncate
+  * @dentry: The ecryptfs layer dentry
+@@ -918,6 +928,10 @@ int ecryptfs_truncate(struct dentry *den
+ 	struct iattr lower_ia = { .ia_valid = 0 };
+ 	int rc;
  
- 			/* enable the transmitter */
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -362,6 +362,7 @@ struct radeon_encoder_atom_dig {
- 	struct backlight_device *bl_dev;
- 	int dpms_mode;
- 	uint8_t backlight_level;
-+	int panel_mode;
- };
- 
- struct radeon_encoder_atom_dac {
-@@ -482,6 +483,8 @@ extern void radeon_dp_link_train(struct
- extern bool radeon_dp_needs_link_train(struct radeon_connector *radeon_connector);
- extern u8 radeon_dp_getsinktype(struct radeon_connector *radeon_connector);
- extern bool radeon_dp_getdpcd(struct radeon_connector *radeon_connector);
-+extern int radeon_dp_get_panel_mode(struct drm_encoder *encoder,
-+				    struct drm_connector *connector);
- extern void atombios_dig_encoder_setup(struct drm_encoder *encoder, int action, int panel_mode);
- extern void radeon_atom_encoder_init(struct radeon_device *rdev);
- extern void atombios_dig_transmitter_setup(struct drm_encoder *encoder,
++	rc = ecryptfs_inode_newsize_ok(dentry->d_inode, new_length);
++	if (rc)
++		return rc;
++
+ 	rc = truncate_upper(dentry, &ia, &lower_ia);
+ 	if (!rc && lower_ia.ia_valid & ATTR_SIZE) {
+ 		struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
+@@ -997,6 +1011,16 @@ static int ecryptfs_setattr(struct dentr
+ 		}
+ 	}
+ 	mutex_unlock(&crypt_stat->cs_mutex);
++
++	rc = inode_change_ok(inode, ia);
++	if (rc)
++		goto out;
++	if (ia->ia_valid & ATTR_SIZE) {
++		rc = ecryptfs_inode_newsize_ok(inode, ia->ia_size);
++		if (rc)
++			goto out;
++	}
++
+ 	if (S_ISREG(inode->i_mode)) {
+ 		rc = filemap_write_and_wait(inode->i_mapping);
+ 		if (rc)
 
 
