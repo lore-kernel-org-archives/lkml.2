@@ -1,261 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab2BADif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 22:38:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60762 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab2BADib (ORCPT
+	id S1755834Ab2BADki (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 22:40:38 -0500
+Received: from BERING.ISR.CS.CMU.EDU ([128.2.209.223]:39758 "EHLO
+	bering.isr.cs.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755758Ab2BADkg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 22:38:31 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Tim Hockin <thockin@hockin.org>, Tejun Heo <htejun@gmail.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
-        Daniel J Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Max Kellermann <mk@cm4all.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: [PATCH 07/10] cgroups: allow subsystems to cancel a fork
-Date: Wed,  1 Feb 2012 04:37:47 +0100
-Message-Id: <1328067470-5980-8-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
-References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+	Tue, 31 Jan 2012 22:40:36 -0500
+X-Greylist: delayed 1783 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Jan 2012 22:40:36 EST
+References: <cover.1328049542.git.joe@perches.com> <db4ffce1e5a8a3a6e54e7a4f6487e822709dbdba.1328049542.git.joe@perches.com> <4F288178.4040405@gmail.com> <1328055665.14714.5.camel@joe2Laptop> <4F2885EC.8070900@gmail.com> <1328055976.14714.7.camel@joe2Laptop>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1328055976.14714.7.camel@joe2Laptop>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 1/4] coda: Remove unnecessary OOM messages
+From: Jan Harkes <jaharkes@cs.cmu.edu>
+Date: Tue, 31 Jan 2012 22:10:45 -0500
+To: Joe Perches <joe@perches.com>, Ryan Mallon <rmallon@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Message-ID: <189650fe-7304-4762-a353-e355609f3e84@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the subsystem's fork callback return an error value so that they can
-cancel a fork.  This is going to be used by the task counter subsystem to
-implement the limit.
+Joe Perches <joe@perches.com> wrote:
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Menage <paul@paulmenage.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Aditya Kali <adityakali@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Tim Hockin <thockin@hockin.org>
-Cc: Tejun Heo <htejun@gmail.com>
-Cc: Containers <containers@lists.linux-foundation.org>
-Cc: Glauber Costa <glommer@gmail.com>
-Cc: Cgroups <cgroups@vger.kernel.org>
-Cc: Daniel J Walsh <dwalsh@redhat.com>
-Cc: "Daniel P. Berrange" <berrange@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Max Kellermann <mk@cm4all.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
- include/linux/cgroup.h  |   20 ++++++++++++++------
- kernel/cgroup.c         |   23 +++++++++++++++++++----
- kernel/cgroup_freezer.c |    6 ++++--
- kernel/exit.c           |    2 +-
- kernel/fork.c           |    7 +++++--
- 5 files changed, 43 insertions(+), 15 deletions(-)
+>On Wed, 2012-02-01 at 11:23 +1100, Ryan Mallon wrote:
+>> On 01/02/12 11:21, Joe Perches wrote:
+>> > Maybe because alloc/free functions are
+>> > used relatively infrequently, maybe it'd
+>> > be better to not declare the functions
+>> > inline but add them to coda_linux.c
+>> Sure, either approach is fine. Do you want to add the patch to your
+>series?
+>
+>I think Jan can work it out properly if he wants it.
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 7da3e74..e7d3f0d 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -17,10 +17,11 @@
- #include <linux/rwsem.h>
- #include <linux/idr.h>
- 
-+struct cgroup_subsys;
-+
- #ifdef CONFIG_CGROUPS
- 
- struct cgroupfs_root;
--struct cgroup_subsys;
- struct inode;
- struct cgroup;
- struct css_id;
-@@ -32,9 +33,11 @@ extern int cgroup_lock_is_held(void);
- extern bool cgroup_lock_live_group(struct cgroup *cgrp);
- extern void cgroup_unlock(void);
- extern void cgroup_fork(struct task_struct *p);
--extern void cgroup_fork_callbacks(struct task_struct *p);
-+extern int cgroup_fork_callbacks(struct task_struct *p,
-+				 struct cgroup_subsys **failed_ss);
- extern void cgroup_post_fork(struct task_struct *p);
--extern void cgroup_exit(struct task_struct *p, int run_callbacks);
-+extern void cgroup_exit(struct task_struct *p, int run_callbacks,
-+			struct cgroup_subsys *failed_ss);
- extern int cgroupstats_build(struct cgroupstats *stats,
- 				struct dentry *dentry);
- extern int cgroup_load_subsys(struct cgroup_subsys *ss);
-@@ -462,7 +465,7 @@ struct cgroup_subsys {
- 			      struct cgroup_taskset *tset);
- 	void (*attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 		       struct cgroup_taskset *tset);
--	void (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
-+	int (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
- 	void (*exit)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 			struct cgroup *old_cgrp, struct task_struct *task);
- 	int (*populate)(struct cgroup_subsys *ss,
-@@ -614,9 +617,14 @@ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
- static inline int cgroup_init_early(void) { return 0; }
- static inline int cgroup_init(void) { return 0; }
- static inline void cgroup_fork(struct task_struct *p) {}
--static inline void cgroup_fork_callbacks(struct task_struct *p) {}
-+static inline int cgroup_fork_callbacks(struct task_struct *p,
-+					struct cgroup_subsys **failed_ss)
-+{
-+	return 0;
-+}
- static inline void cgroup_post_fork(struct task_struct *p) {}
--static inline void cgroup_exit(struct task_struct *p, int callbacks) {}
-+static inline void cgroup_exit(struct task_struct *p, int callbacks,
-+			       struct cgroup_subsys *failed_ss) {}
- 
- static inline void cgroup_lock(void) {}
- static inline void cgroup_unlock(void) {}
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 1626152..af38004 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4583,8 +4583,11 @@ void cgroup_fork(struct task_struct *child)
-  * tasklist. No need to take any locks since no-one can
-  * be operating on this task.
-  */
--void cgroup_fork_callbacks(struct task_struct *child)
-+int cgroup_fork_callbacks(struct task_struct *child,
-+			  struct cgroup_subsys **failed_ss)
- {
-+	int err;
-+
- 	if (need_forkexit_callback) {
- 		int i;
- 		/*
-@@ -4594,10 +4597,17 @@ void cgroup_fork_callbacks(struct task_struct *child)
- 		 */
- 		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
- 			struct cgroup_subsys *ss = subsys[i];
--			if (ss->fork)
--				ss->fork(ss, child);
-+			if (ss->fork) {
-+				err = ss->fork(ss, child);
-+				if (err) {
-+					*failed_ss = ss;
-+					return err;
-+				}
-+			}
- 		}
- 	}
-+
-+	return 0;
- }
- 
- /**
-@@ -4664,7 +4674,8 @@ void cgroup_post_fork(struct task_struct *child)
-  *    which wards off any cgroup_attach_task() attempts, or task is a failed
-  *    fork, never visible to cgroup_attach_task.
-  */
--void cgroup_exit(struct task_struct *tsk, int run_callbacks)
-+void cgroup_exit(struct task_struct *tsk, int run_callbacks,
-+		 struct cgroup_subsys *failed_ss)
- {
- 	struct css_set *cg;
- 	int i;
-@@ -4693,6 +4704,10 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
- 		 */
- 		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
- 			struct cgroup_subsys *ss = subsys[i];
-+
-+			if (ss == failed_ss)
-+				break;
-+
- 			if (ss->exit) {
- 				struct cgroup *old_cgrp =
- 					rcu_dereference_raw(cg->subsys[i])->cgroup;
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index fc0646b..ec86eb7 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -185,7 +185,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
- 	return 0;
- }
- 
--static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
-+static int freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- {
- 	struct freezer *freezer;
- 
-@@ -205,7 +205,7 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- 	 * following check.
- 	 */
- 	if (!freezer->css.cgroup->parent)
--		return;
-+		return 0;
- 
- 	spin_lock_irq(&freezer->lock);
- 	BUG_ON(freezer->state == CGROUP_FROZEN);
-@@ -214,6 +214,8 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- 	if (freezer->state == CGROUP_FREEZING)
- 		freeze_task(task);
- 	spin_unlock_irq(&freezer->lock);
-+
-+	return 0;
- }
- 
- /*
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 294b170..e2ee0bb 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -990,7 +990,7 @@ void do_exit(long code)
- 	 */
- 	perf_event_exit_task(tsk);
- 
--	cgroup_exit(tsk, 1);
-+	cgroup_exit(tsk, 1, NULL);
- 
- 	if (group_dead)
- 		disassociate_ctty(1);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 051f090..617ca93 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1054,6 +1054,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	int retval;
- 	struct task_struct *p;
- 	int cgroup_callbacks_done = 0;
-+	struct cgroup_subsys *cgroup_failed_ss = NULL;
- 
- 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
- 		return ERR_PTR(-EINVAL);
-@@ -1308,8 +1309,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	/* Now that the task is set up, run cgroup callbacks if
- 	 * necessary. We need to run them before the task is visible
- 	 * on the tasklist. */
--	cgroup_fork_callbacks(p);
-+	retval = cgroup_fork_callbacks(p, &cgroup_failed_ss);
- 	cgroup_callbacks_done = 1;
-+	if (retval)
-+		goto bad_fork_free_pid;
- 
- 	/* Need tasklist lock for parent etc handling! */
- 	write_lock_irq(&tasklist_lock);
-@@ -1413,7 +1416,7 @@ bad_fork_cleanup_cgroup:
- #endif
- 	if (clone_flags & CLONE_THREAD)
- 		threadgroup_change_end(current);
--	cgroup_exit(p, cgroup_callbacks_done);
-+	cgroup_exit(p, cgroup_callbacks_done, cgroup_failed_ss);
- 	delayacct_tsk_free(p);
- 	module_put(task_thread_info(p)->exec_domain->module);
- bad_fork_cleanup_count:
--- 
-1.7.5.4
+It looks good to me, I have no problem if you want to add it to your series.
+
+Jan
 
