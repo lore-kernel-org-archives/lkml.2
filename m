@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab2BAXbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 18:31:37 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39534 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab2BAXbg convert rfc822-to-8bit (ORCPT
+	id S1752945Ab2BAXgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 18:36:04 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36044 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2BAXgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 18:31:36 -0500
+	Wed, 1 Feb 2012 18:36:02 -0500
 MIME-Version: 1.0
-In-Reply-To: <CADyApD0yVOePmaLznks_h6xR_BCUjzEFUB7VtsL9vvsoHwCOVw@mail.gmail.com>
-References: <20120130205444.22f5e26a@infradead.org> <20120131125232.GD4408@elte.hu>
- <20120131054155.371e8307@infradead.org> <20120131143130.GF13676@elte.hu>
- <20120131072216.1ce78e50@infradead.org> <20120131161207.GA18357@elte.hu>
- <20120131082439.575978c0@infradead.org> <20120201145544.f3a4cc64.akpm@linux-foundation.org>
- <CADyApD0yVOePmaLznks_h6xR_BCUjzEFUB7VtsL9vvsoHwCOVw@mail.gmail.com>
+In-Reply-To: <20120131122339.GG32010@elte.hu>
+References: <20120121082857.GC32134@elte.hu> <CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+ <20120121165830.GA9216@elte.hu> <CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+ <CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
+ <CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
+ <CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
+ <20120131115855.5861bad7@pyramind.ukuu.org.uk> <20120131120922.GD32010@elte.hu>
+ <20120131121820.58a1db97@pyramind.ukuu.org.uk> <20120131122339.GG32010@elte.hu>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Feb 2012 15:31:16 -0800
-X-Google-Sender-Auth: frE2WdwRzp_o601APoKl29AwS0I
-Message-ID: <CA+55aFwuGpYJ944EnZq5-DJ3dLeCu1YA5GncRQueYnDaQPVhog@mail.gmail.com>
-Subject: Re: smp: Start up non-boot CPUs asynchronously
-To: Arjan van de Ven <arjanvandeven@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Milton Miller <miltonm@bga.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 1 Feb 2012 15:35:41 -0800
+X-Google-Sender-Auth: aS9Dsw2undneKkOHKG8Fok0hhJo
+Message-ID: <CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Hitoshi Mitake <h.mitake@gmail.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        linux-kernel@vger.kernel.org, hpa@linux.intel.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 3:09 PM, Arjan van de Ven
-<arjanvandeven@gmail.com> wrote:
+On Tue, Jan 31, 2012 at 4:23 AM, Ingo Molnar <mingo@elte.hu> wrote:
 >
->
-> we spend slightly more than 10 milliseconds on doing the hardware level
-> "send ipi, wait for the cpu to get power"  dance. This is mostly just
-> hardware physics.
-> we spend a bunch of time calibrating loops-per-jiffie/tsc (in 3.3-rc this is
-> only done once per socket, but each time we do it, it's several dozen
-> milliseconds)
-> we spend 20 milliseconds on making sure the tsc is not out of sync with the
-> rest of the system (we're looking at optimizing this right now)
->
-> a 3.2 kernel spent on average 120 milliseconds per logical non-boot cpu on
-> my laptop. 3.3-rc is better (the calibration is now cached for each physical
-> cpu), but still dire
+> non-atomic sounds good to me too.
 
-Could we drop the cpu hotplug lock earlier?
+You both apparently missed the related discussion that some devices
+really do care about order, even if they don't care about atomicity.
 
-In particular, maybe we could split it up, and make it something like
-the following:
+So we'd actually have two versions of the header file, one
+little-endian, and one big-endian. Then the driver that knows it
+doesn't need the atomic 'readq()' that is always defined, but wants a
+low-bytes-first version would just do
 
- - keep the existing cpu_hotplug.lock with largely the same semantics
+   #include <linux/io64-little-endian.h>
 
- - add a new *per-cpu* hotplug lock that gets taken fairly early when
-the CPU comes up (before calibration), and then we can drop the global
-lock. We just need to make sure that the CPU has been added to the
-list of CPU's, we don't need for the CPU to have fully initialized
-itself.
+(or "big-endian" if it wants to read/write high bits first). Most
+drivers probably don't care, but apparently NVMe does.
 
- - on cpu unplug, we first take the global lock, and then after that
-we need to take the local lock of the CPU being brought down - so that
-a "down" event cannot succeed before the previous "up" is complete.
-
-Wouldn't something like that largely solve the problem? Sure, maybe
-some of the current get_online_cpus() users would need to be taught to
-wait for the percpu lock (or completion - maybe that would be better),
-but most of them don't really care. They tend to want to just do
-something fairly simple with a stable list of CPU's.
-
-I dunno. Maybe it would be more painful than I think it would.
-
-                  Linus
+                 Linus
