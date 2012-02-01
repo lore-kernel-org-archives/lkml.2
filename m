@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909Ab2BAVkL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:40:11 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54768 "EHLO
+	id S1757226Ab2BAVkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:40:40 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46189 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757205Ab2BAVJh (ORCPT
+	by vger.kernel.org with ESMTP id S1757162Ab2BAVJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:09:37 -0500
-X-Sasl-enc: M8qOPmwbaGfoCnu5fUAkiq6Pb2mKk4PMSjSRKGfacIbF 1328130576
+	Wed, 1 Feb 2012 16:09:36 -0500
+X-Sasl-enc: YzsWWsxAUPDwIJ5vKUAGhLh4SQKCSOxtR7zGy48lO3fA 1328130574
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:45 2012
-Message-Id: <20120201210045.673805725@clark.kroah.org>
+Message-Id: <20120201210045.579292915@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:59:44 -0800
+Date: Wed, 01 Feb 2012 12:59:43 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alexey Dobriyan <adobriyan@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [20/89] crypto: sha512 - make it work, undo percpu message schedule
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>
+Subject: [19/89] jbd: Issue cache flush after checkpointing
 In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,75 +26,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Dobriyan <adobriyan@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 84e31fdb7c797a7303e0cc295cb9bc8b73fb872d upstream.
+commit 353b67d8ced4dc53281c88150ad295e24bc4b4c5 upstream.
 
-commit f9e2bca6c22d75a289a349f869701214d63b5060
-aka "crypto: sha512 - Move message schedule W[80] to static percpu area"
-created global message schedule area.
+When we reach cleanup_journal_tail(), there is no guarantee that
+checkpointed buffers are on a stable storage - especially if buffers were
+written out by log_do_checkpoint(), they are likely to be only in disk's
+caches. Thus when we update journal superblock, effectively removing old
+transaction from journal, this write of superblock can get to stable storage
+before those checkpointed buffers which can result in filesystem corruption
+after a crash.
 
-If sha512_update will ever be entered twice, hash will be silently
-calculated incorrectly.
+A similar problem can happen if we replay the journal and wipe it before
+flushing disk's caches.
 
-Probably the easiest way to notice incorrect hashes being calculated is
-to run 2 ping floods over AH with hmac(sha512):
+Thus we must unconditionally issue a cache flush before we update journal
+superblock in these cases. The fix is slightly complicated by the fact that we
+have to get log tail before we issue cache flush but we can store it in the
+journal superblock only after the cache flush. Otherwise we risk races where
+new tail is written before appropriate cache flush is finished.
 
-	#!/usr/sbin/setkey -f
-	flush;
-	spdflush;
-	add IP1 IP2 ah 25 -A hmac-sha512 0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000025;
-	add IP2 IP1 ah 52 -A hmac-sha512 0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000052;
-	spdadd IP1 IP2 any -P out ipsec ah/transport//require;
-	spdadd IP2 IP1 any -P in  ipsec ah/transport//require;
+I managed to reproduce the corruption using somewhat tweaked Chris Mason's
+barrier-test scheduler. Also this should fix occasional reports of 'Bit already
+freed' filesystem errors which are totally unreproducible but inspection of
+several fs images I've gathered over time points to a problem like this.
 
-XfrmInStateProtoError will start ticking with -EBADMSG being returned
-from ah_input(). This never happens with, say, hmac(sha1).
-
-With patch applied (on BOTH sides), XfrmInStateProtoError does not tick
-with multiple bidirectional ping flood streams like it doesn't tick
-with SHA-1.
-
-After this patch sha512_transform() will start using ~750 bytes of stack on x86_64.
-This is OK for simple loads, for something more heavy, stack reduction will be done
-separatedly.
-
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/sha512_generic.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ fs/jbd/checkpoint.c |   27 ++++++++++++++++++++++-----
+ fs/jbd/recovery.c   |    4 ++++
+ 2 files changed, 26 insertions(+), 5 deletions(-)
 
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -21,8 +21,6 @@
- #include <linux/percpu.h>
- #include <asm/byteorder.h>
+--- a/fs/jbd/checkpoint.c
++++ b/fs/jbd/checkpoint.c
+@@ -453,8 +453,6 @@ out:
+  *
+  * Return <0 on error, 0 on success, 1 if there was nothing to clean up.
+  *
+- * Called with the journal lock held.
+- *
+  * This is the only part of the journaling code which really needs to be
+  * aware of transaction aborts.  Checkpointing involves writing to the
+  * main filesystem area rather than to the journal, so it can proceed
+@@ -472,13 +470,14 @@ int cleanup_journal_tail(journal_t *jour
+ 	if (is_journal_aborted(journal))
+ 		return 1;
  
--static DEFINE_PER_CPU(u64[80], msg_schedule);
+-	/* OK, work out the oldest transaction remaining in the log, and
++	/*
++	 * OK, work out the oldest transaction remaining in the log, and
+ 	 * the log block it starts at.
+ 	 *
+ 	 * If the log is now empty, we need to work out which is the
+ 	 * next transaction ID we will write, and where it will
+-	 * start. */
 -
- static inline u64 Ch(u64 x, u64 y, u64 z)
- {
-         return z ^ (x & (y ^ z));
-@@ -89,7 +87,7 @@ sha512_transform(u64 *state, const u8 *i
- 	u64 a, b, c, d, e, f, g, h, t1, t2;
++	 * start.
++	 */
+ 	spin_lock(&journal->j_state_lock);
+ 	spin_lock(&journal->j_list_lock);
+ 	transaction = journal->j_checkpoint_transactions;
+@@ -504,7 +503,25 @@ int cleanup_journal_tail(journal_t *jour
+ 		spin_unlock(&journal->j_state_lock);
+ 		return 1;
+ 	}
++	spin_unlock(&journal->j_state_lock);
++
++	/*
++	 * We need to make sure that any blocks that were recently written out
++	 * --- perhaps by log_do_checkpoint() --- are flushed out before we
++	 * drop the transactions from the journal. It's unlikely this will be
++	 * necessary, especially with an appropriately sized journal, but we
++	 * need this to guarantee correctness.  Fortunately
++	 * cleanup_journal_tail() doesn't get called all that often.
++	 */
++	if (journal->j_flags & JFS_BARRIER)
++		blkdev_issue_flush(journal->j_fs_dev, GFP_KERNEL, NULL);
  
- 	int i;
--	u64 *W = get_cpu_var(msg_schedule);
-+	u64 W[80];
++	spin_lock(&journal->j_state_lock);
++	if (!tid_gt(first_tid, journal->j_tail_sequence)) {
++		spin_unlock(&journal->j_state_lock);
++		/* Someone else cleaned up journal so return 0 */
++		return 0;
++	}
+ 	/* OK, update the superblock to recover the freed space.
+ 	 * Physical blocks come first: have we wrapped beyond the end of
+ 	 * the log?  */
+--- a/fs/jbd/recovery.c
++++ b/fs/jbd/recovery.c
+@@ -20,6 +20,7 @@
+ #include <linux/fs.h>
+ #include <linux/jbd.h>
+ #include <linux/errno.h>
++#include <linux/blkdev.h>
+ #endif
  
- 	/* load the input */
-         for (i = 0; i < 16; i++)
-@@ -128,8 +126,6 @@ sha512_transform(u64 *state, const u8 *i
+ /*
+@@ -263,6 +264,9 @@ int journal_recover(journal_t *journal)
+ 	err2 = sync_blockdev(journal->j_fs_dev);
+ 	if (!err)
+ 		err = err2;
++	/* Flush disk caches to get replayed data on the permanent storage */
++	if (journal->j_flags & JFS_BARRIER)
++		blkdev_issue_flush(journal->j_fs_dev, GFP_KERNEL, NULL);
  
- 	/* erase our data */
- 	a = b = c = d = e = f = g = h = t1 = t2 = 0;
--	memset(W, 0, sizeof(__get_cpu_var(msg_schedule)));
--	put_cpu_var(msg_schedule);
+ 	return err;
  }
- 
- static int
 
 
