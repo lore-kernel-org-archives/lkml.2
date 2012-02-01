@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab2BATvf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 14:51:35 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42059 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756813Ab2BATvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 14:51:33 -0500
+	id S1756858Ab2BATv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 14:51:59 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:33597 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932208Ab2BATnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 14:43:11 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,114 +17,209 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 16/41] rcu: Don't make callbacks go through second full grace period
-Date: Wed,  1 Feb 2012 11:41:34 -0800
-Message-Id: <1328125319-5205-16-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 38/41] rcu: Rework detection of use of RCU by offline CPUs
+Date: Wed,  1 Feb 2012 11:41:56 -0800
+Message-Id: <1328125319-5205-38-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120201194131.GA10028@linux.vnet.ibm.com>
  <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020119-3534-0000-0000-0000051ACA77
+x-cbid: 12020119-6148-0000-0000-000003144F54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-RCU's current CPU-offline code path dumps all of the outgoing CPU's
-callbacks onto the RCU_NEXT_TAIL portion of the surviving CPU's
-callback list.  This means that all the ready-to-invoke callbacks from
-the outgoing CPU must wait for another full RCU grace period.  This was
-just fine when CPU-hotplug events were rare, but there is increasing
-evidence that users are planning to make increasing use of CPU hotplug.
+Because newly offlined CPUs continue executing after completing the
+CPU_DYING notifiers, they legitimately enter the scheduler and use
+RCU while appearing to be offline.  This calls for a more sophisticated
+approach as follows:
 
-Therefore, this commit changes the callback-dumping procedure so that
-callbacks that are ready to invoke are moved to the RCU_DONE_TAIL
-portion of the surviving CPU's callback list.  This avoids running
-these callbacks through a second unnecessary grace period.
+1.	RCU marks the CPU online during the CPU_UP_PREPARE phase.
+
+2.	RCU marks the CPU offline during the CPU_DEAD phase.
+
+3.	Diagnostics regarding use of read-side RCU by offline CPUs use
+	RCU's accounting rather than the cpu_online_map.  (Note that
+	__call_rcu() still uses cpu_online_map to detect illegal
+	invocations within CPU_DYING notifiers.)
+
+4.	Offline CPUs are prevented from hanging the system by
+	force_quiescent_state(), which pays attention to cpu_online_map.
+	Some additional work (in a later commit) will be needed to
+	guarantee that force_quiescent_state() waits a full jiffy before
+	assuming that a CPU is offline, for example, when called from
+	idle entry.
+
+This approach avoids the false positives encountered when attempting to
+use more exact classification of CPU online/offline state.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 46 insertions(+), 6 deletions(-)
+ kernel/rcutree.c        |   92 ++++++++++++++++++++++++++++++----------------
+ kernel/rcutree_plugin.h |    2 +-
+ 2 files changed, 61 insertions(+), 33 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 03c0d5f..ee2009d 100644
+index 632b1c3..ce39431 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -1270,24 +1270,64 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+@@ -604,19 +604,33 @@ EXPORT_SYMBOL(rcu_is_cpu_idle);
+  * this task being preempted, its old CPU being taken offline, resuming
+  * on some other CPU, then determining that its old CPU is now offline.
+  * It is OK to use RCU on an offline processor during initial boot, hence
+- * the check for rcu_scheduler_fully_active.
++ * the check for rcu_scheduler_fully_active.  Note also that it is OK
++ * for a CPU coming online to use RCU for one jiffy prior to marking itself
++ * online in the cpu_online_mask.  Similarly, it is OK for a CPU going
++ * offline to continue to use RCU for one jiffy after marking itself
++ * offline in the cpu_online_mask.  This leniency is necessary given the
++ * non-atomic nature of the online and offline processing, for example,
++ * the fact that a CPU enters the scheduler after completing the CPU_DYING
++ * notifiers.
++ *
++ * This is also why RCU internally marks CPUs online during the
++ * CPU_UP_PREPARE phase and offline during the CPU_DEAD phase.
+  *
+  * Disable checking if in an NMI handler because we cannot safely report
+  * errors from NMI handlers anyway.
+  */
+ bool rcu_lockdep_current_cpu_online(void)
+ {
++	struct rcu_data *rdp;
++	struct rcu_node *rnp;
+ 	bool ret;
+ 
+ 	if (in_nmi())
+ 		return 1;
+ 	preempt_disable();
+-	ret = cpu_online(smp_processor_id()) ||
++	rdp = &__get_cpu_var(rcu_sched_data);
++	rnp = rdp->mynode;
++	ret = (rdp->grpmask & rnp->qsmaskinit) ||
+ 	      !rcu_scheduler_fully_active;
+ 	preempt_enable();
+ 	return ret;
+@@ -1311,14 +1325,12 @@ rcu_check_quiescent_state(struct rcu_state *rsp, struct rcu_data *rdp)
+  */
+ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+ {
+-	unsigned long flags;
+ 	int i;
+ 	unsigned long mask;
+-	int need_report;
+ 	int receive_cpu = cpumask_any(cpu_online_mask);
+ 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
  	struct rcu_data *receive_rdp = per_cpu_ptr(rsp->rda, receive_cpu);
- 	struct rcu_node *rnp = rdp->mynode; /* For dying CPU. */
+-	struct rcu_node *rnp = rdp->mynode; /* For dying CPU. */
++	RCU_TRACE(struct rcu_node *rnp = rdp->mynode); /* For dying CPU. */
  
--	/* Move callbacks to some other CPU. */
-+	/* First, adjust the counts. */
-+	if (rdp->nxtlist != NULL) {
-+		receive_rdp->qlen_lazy += rdp->qlen_lazy;
-+		receive_rdp->qlen += rdp->qlen;
-+		rdp->qlen_lazy = 0;
-+		rdp->qlen = 0;
-+	}
-+
-+	/*
-+	 * Next, move ready-to-invoke callbacks to be invoked on some
-+	 * other CPU.  These will not be required to pass through another
-+	 * grace period:  They are done, regardless of CPU.
-+	 */
-+	if (rdp->nxtlist != NULL &&
-+	    rdp->nxttail[RCU_DONE_TAIL] != &rdp->nxtlist) {
-+		struct rcu_head *oldhead;
-+		struct rcu_head **oldtail;
-+		struct rcu_head **newtail;
-+
-+		oldhead = rdp->nxtlist;
-+		oldtail = receive_rdp->nxttail[RCU_DONE_TAIL];
-+		rdp->nxtlist = *rdp->nxttail[RCU_DONE_TAIL];
-+		*rdp->nxttail[RCU_DONE_TAIL] = *oldtail;
-+		*receive_rdp->nxttail[RCU_DONE_TAIL] = oldhead;
-+		newtail = rdp->nxttail[RCU_DONE_TAIL];
-+		for (i = RCU_DONE_TAIL; i < RCU_NEXT_SIZE; i++) {
-+			if (receive_rdp->nxttail[i] == oldtail)
-+				receive_rdp->nxttail[i] = newtail;
-+			if (rdp->nxttail[i] == newtail)
-+				rdp->nxttail[i] = &rdp->nxtlist;
-+		}
-+	}
-+
-+	/*
-+	 * Finally, put the rest of the callbacks at the end of the list.
-+	 * The ones that made it partway through get to start over:  We
-+	 * cannot assume that grace periods are synchronized across CPUs.
-+	 * (We could splice RCU_WAIT_TAIL into RCU_NEXT_READY_TAIL, but
-+	 * this does not seem compelling.  Not yet, anyway.)
-+	 */
+ 	/* First, adjust the counts. */
  	if (rdp->nxtlist != NULL) {
- 		*receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
- 		receive_rdp->nxttail[RCU_NEXT_TAIL] =
- 				rdp->nxttail[RCU_NEXT_TAIL];
--		receive_rdp->qlen_lazy += rdp->qlen_lazy;
--		receive_rdp->qlen += rdp->qlen;
- 		receive_rdp->n_cbs_adopted += rdp->qlen;
- 		rdp->n_cbs_orphaned += rdp->qlen;
+@@ -1384,32 +1396,6 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+ 			       "cpuofl");
+ 	rcu_report_qs_rdp(smp_processor_id(), rsp, rdp, rsp->gpnum);
+ 	/* Note that rcu_report_qs_rdp() might call trace_rcu_grace_period(). */
+-
+-	/*
+-	 * Remove the dying CPU from the bitmasks in the rcu_node
+-	 * hierarchy.  Because we are in stop_machine() context, we
+-	 * automatically exclude ->onofflock critical sections.
+-	 */
+-	do {
+-		raw_spin_lock_irqsave(&rnp->lock, flags);
+-		rnp->qsmaskinit &= ~mask;
+-		if (rnp->qsmaskinit != 0) {
+-			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-			break;
+-		}
+-		if (rnp == rdp->mynode) {
+-			need_report = rcu_preempt_offline_tasks(rsp, rnp, rdp);
+-			if (need_report & RCU_OFL_TASKS_NORM_GP)
+-				rcu_report_unblock_qs_rnp(rnp, flags);
+-			else
+-				raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-			if (need_report & RCU_OFL_TASKS_EXP_GP)
+-				rcu_report_exp_rnp(rsp, rnp, true);
+-		} else
+-			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-		mask = rnp->grpmask;
+-		rnp = rnp->parent;
+-	} while (rnp != NULL);
+ }
  
- 		rdp->nxtlist = NULL;
- 		for (i = 0; i < RCU_NEXT_SIZE; i++)
- 			rdp->nxttail[i] = &rdp->nxtlist;
--		rdp->qlen_lazy = 0;
--		rdp->qlen = 0;
- 	}
+ /*
+@@ -1420,11 +1406,53 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+  */
+ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+ {
++	unsigned long flags;
++	unsigned long mask;
++	int need_report = 0;
+ 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
+-	struct rcu_node *rnp = rdp->mynode;
++	struct rcu_node *rnp = rdp->mynode;  /* Outgoing CPU's rnp. */
  
--	/* Record a quiescent state for the dying CPU. */
++	/* Adjust any no-longer-needed kthreads. */
+ 	rcu_stop_cpu_kthread(cpu);
+ 	rcu_node_kthread_setaffinity(rnp, -1);
++
++	/* Remove the dying CPU from the bitmasks in the rcu_node hierarchy. */
++
++	/* Exclude any attempts to start a new grace period. */
++	raw_spin_lock_irqsave(&rsp->onofflock, flags);
++
++	/* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
++	mask = rdp->grpmask;	/* rnp->grplo is constant. */
++	do {
++		raw_spin_lock(&rnp->lock);	/* irqs already disabled. */
++		rnp->qsmaskinit &= ~mask;
++		if (rnp->qsmaskinit != 0) {
++			if (rnp != rdp->mynode)
++				raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++			break;
++		}
++		if (rnp == rdp->mynode)
++			need_report = rcu_preempt_offline_tasks(rsp, rnp, rdp);
++		else
++			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++		mask = rnp->grpmask;
++		rnp = rnp->parent;
++	} while (rnp != NULL);
++
 +	/*
-+	 * Record a quiescent state for the dying CPU.  This is safe
-+	 * only because we have already cleared out the callbacks.
-+	 * (Otherwise, the RCU core might try to schedule the invocation
-+	 * of callbacks on this now-offline CPU, which would be bad.)
++	 * We still hold the leaf rcu_node structure lock here, and
++	 * irqs are still disabled.  The reason for this subterfuge is
++	 * because invoking rcu_report_unblock_qs_rnp() with ->onofflock
++	 * held leads to deadlock.
 +	 */
- 	mask = rdp->grpmask;	/* rnp->grplo is constant. */
- 	trace_rcu_grace_period(rsp->name,
- 			       rnp->gpnum + 1 - !!(rnp->qsmask & mask),
++	raw_spin_unlock(&rsp->onofflock); /* irqs remain disabled. */
++	rnp = rdp->mynode;
++	if (need_report & RCU_OFL_TASKS_NORM_GP)
++		rcu_report_unblock_qs_rnp(rnp, flags);
++	else
++		raw_spin_unlock_irqrestore(&rnp->lock, flags);
++	if (need_report & RCU_OFL_TASKS_EXP_GP)
++		rcu_report_exp_rnp(rsp, rnp, true);
+ }
+ 
+ #else /* #ifdef CONFIG_HOTPLUG_CPU */
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 3dc58cc..56a63bc 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -610,7 +610,7 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
+ 	 * absolutely necessary, but this is a good performance/complexity
+ 	 * tradeoff.
+ 	 */
+-	if (rcu_preempt_blocked_readers_cgp(rnp))
++	if (rcu_preempt_blocked_readers_cgp(rnp) && rnp->qsmask == 0)
+ 		retval |= RCU_OFL_TASKS_NORM_GP;
+ 	if (rcu_preempted_readers_exp(rnp))
+ 		retval |= RCU_OFL_TASKS_EXP_GP;
 -- 
 1.7.8
 
