@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab2BAXSG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 18:18:06 -0500
-Received: from lnx141.hrz.tu-darmstadt.de ([130.83.156.236]:59125 "EHLO
-	lnx141.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751595Ab2BAXSC (ORCPT
+	id S1752821Ab2BAXS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 18:18:27 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33702 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab2BAXSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 18:18:02 -0500
-X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 18:17:50 EST
-From: Tim Sander <tstone@vlsi.informatik.tu-darmstadt.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [ANNOUNCE] 3.0.14-rt31 - ksoftirq running wild - FEC ethernet driver to blame? Yep
-Date: Thu, 2 Feb 2012 00:11:02 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc1-00514-gd3712b9; KDE/4.6.5; x86_64; ; )
-Cc: Tim Sander <tim.sander@hbm.com>, RT <linux-rt-users@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Tim Sander <tstone@iss.tu-darmstadt.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Gerlando Falauto <gerlando.falauto@keymile.com>,
-        Micha Nelissen <micha@neli.hopto.org>,
-        Holger Brunck <holger.brunck@keymile.com>
-References: <1324525237.5916.114.camel@gandalf.stny.rr.com> <201201251031.48983.tim.sander@hbm.com> <1328128063.5882.80.camel@gandalf.stny.rr.com>
-In-Reply-To: <1328128063.5882.80.camel@gandalf.stny.rr.com>
+	Wed, 1 Feb 2012 18:18:25 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202020011.03253.tstone@vlsi.informatik.tu-darmstadt.de>
-X-PMX-TU: seen v1.2 by 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.2.1.225714
-X-PMX-RELAY: outgoing
+In-Reply-To: <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
+References: <4F27120A.4040106@suse.cz> <20120130220611.GA26655@kroah.com>
+ <20120130221059.26ab5edf@pyramind.ukuu.org.uk> <20120130222717.GA6393@kroah.com>
+ <m18vkoirv9.fsf@fess.ebiederm.org> <4F27C6EB.2070305@suse.cz>
+ <m14nvc82jo.fsf@fess.ebiederm.org> <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
+ <m1wr87ywex.fsf@fess.ebiederm.org> <m1ehueyz20.fsf_-_@fess.ebiederm.org> <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Feb 2012 15:18:05 -0800
+X-Google-Sender-Auth: yybVqAkNOS-8MFUtLiOT0epuGB0
+Message-ID: <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
+Subject: Re: [PATCH] sysfs: Optionally count subdirectories to support buggy applications
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven
-> Is the system still usable when this happens? If so, can you configure
-> in ftrace, and run a trace on what ksoftirq is doing:
-Well its slooooooooooooooooow since its only 5% of a 500Mhz arm v6 cpu.
-So i can easy type faster than this thing echo characters on a serial console :-)
-> mkdir /debug
-> mount -t debugfs nodev /debug
-> cd /debug/tracing
-> echo <pid-of-ksoftirq> > set_ftrace_pid
-> echo function > current_tracer
-> cat trace
-Well i tried the complete function tracer and i think systemload is just to high 
-for this system but i will give it a try as soon as i see this error again.
+On Wed, Feb 1, 2012 at 3:15 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> No extra "keep track of inode counts by hand" crap, and no idiotic
+> config options that just make it easy to (conditionally) get things
+> wrong. Just do it right, and do it *unconditionally* right.
 
-When toying around with the hw debugger i think it runs somehow into do_coredump 
-when this error hits and then somehow loops but since i was feeding the wrong 
-symbol table to my hw debugger all this stuff looked even weirder today 8-/.
+And btw, "nlink shows number of subdirectories" for a directory entry
+really *is* right. It's how Unix filesystems work, like it or not.
 
-I was also toying around with setting the phy timeout in the driver and 
-hacking in the phy interrupt, but nothing conclusive.
+It's mainly lazy/bad filesystems that set nlink to 1. So the whole
+"nlink==1" case is meant for crap like FAT etc, not for a filesystem
+that we control and that could easily just do it right.
 
-Best regards
-Tim
+Which is why I detest that config option. It's as if you were asking the user
 
-dmesg output with phy irq enabled, either my hackish interrupt setting is not
-working or the fec driver has a problem with phy interrupts... dunno:
+ "Do you want to make the sysfs filesystem act like crap filesystems?"
 
-nf_conntrack version 0.5.0 (1979 buckets, 7916 max)
-fec_stop : Graceful transmit stop did not complete !
-sched: RT throttling activated
-FEC: MDIO read timeout
-PHY: 1:00 - Link is Down
-irq 103: nobody cared (try booting with the "irqpoll" option)
-Backtrace: 
-[<c002de30>] (dump_backtrace+0x0/0x110) from [<c024d780>] (dump_stack+0x18/0x1c)
- r6:00000000 r5:c794a2e0 r4:c031856c r3:00000000
-[<c024d768>] (dump_stack+0x0/0x1c) from [<c0070930>] (__report_bad_irq.clone.5+0x2c/0xdc)
-[<c0070904>] (__report_bad_irq.clone.5+0x0/0xdc) from [<c0070bf0>] (note_interrupt+0x19c/0x244)
- r5:c794a2e0 r4:c0318544
-[<c0070a54>] (note_interrupt+0x0/0x244) from [<c006f724>] (irq_thread+0xf0/0x1f4)
-[<c006f634>] (irq_thread+0x0/0x1f4) from [<c0057298>] (kthread+0x8c/0x94)
-[<c005720c>] (kthread+0x0/0x94) from [<c00413d4>] (do_exit+0x0/0x2d8)
- r7:00000013 r6:c00413d4 r5:c005720c r4:c7bd9904
-handlers:
-[<c006f4c8>] irq_default_primary_handler threaded [<c01a1660>] phy_interrupt
-Disabling IRQ #103
-FEC: MDIO write timeout
-init: avahi-autoip main process (423) terminated with status 1
-init: avahi-autoip main process ended, respawning
-eth0: Freescale FEC PHY driver [Micrel KS8041] (mii_bus:phy_addr=1:00, irq=103)
-ADDRCONF(NETDEV_UP): eth0: link is not ready
-PHY: 1:00 - Link is Up - 100/Full
-ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+and kernel config time. What kind of inane question is that?
 
+                    Linus
