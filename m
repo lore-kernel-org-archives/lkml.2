@@ -1,166 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab2BASwi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 13:52:38 -0500
-Received: from comm.purplecow.org ([210.87.62.131]:33659 "EHLO
-	comm.purplecow.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435Ab2BASwg (ORCPT
+	id S1755522Ab2BASxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 13:53:15 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63743 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab2BASxM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 13:52:36 -0500
-X-Greylist: delayed 3602 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 13:52:36 EST
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-1
-Message-id: <64097.10.0.66.17.1328118751.squirrel@interact.purplecow.org>
-Date: Wed, 01 Feb 2012 12:52:31 -0500 (EST)
+	Wed, 1 Feb 2012 13:53:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1202011818570.25409@wotan.suse.de>
+References: <20120201151918.GC16714@quack.suse.cz> <1328114266.5355.44.camel@lenny>
+ <CA+55aFxmdskUXX1iBaPx7rUGD95UqNJxhe1BLeVtZjqHjBpsPA@mail.gmail.com>
+ <alpine.LRH.2.00.1202011808240.22725@twin.jikos.cz> <Pine.LNX.4.64.1202011818570.25409@wotan.suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Feb 2012 10:52:51 -0800
+X-Google-Sender-Auth: gMLf9XIh7vEA-gf2xI3YkDFpljE
+Message-ID: <CA+55aFxt3rG8_HyoRqiMOKVDqaGTkRk=Kh+bAJTAxxdHAGzuVw@mail.gmail.com>
 Subject: Re: Memory corruption due to word sharing
-From: Dennis Clarke <dclarke@blastwave.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Walters <walters@verbum.org>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Reply-to: dclarke@blastwave.org
-User-Agent: SquirrelMail/1.4.11
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Michael Matz <matz@suse.de>
+Cc: Jiri Kosina <jkosina@suse.cz>, Colin Walters <walters@verbum.org>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
+        rguenther@suse.de, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> I have actually tried exactly this earlier today (because while looking at
-> this, I had an idea that putting volatile in place could be a workaround,
-> causing gcc to generate a saner code), but it doesn't work either:
+On Wed, Feb 1, 2012 at 9:41 AM, Michael Matz <matz@suse.de> wrote:
 >
-> # cat x.c
-> struct x {
->     long a;
->     volatile unsigned int lock;
->     unsigned int full:1;
-> };
+> One problem is that it's not a new problem, GCC emitted similar code since
+> about forever, and still they turned up only now (well, probably because
+> ia64 is dead, but sparc64 should have similar problems).  The bitfield
+> handling code is _terribly_ complex and fixing it is quite involved.  So
+> don't expect any quick fixes.
+
+I agree that bitfields are nasty, I've had to handle them myself in
+sparse. And we have actually had problems with bitfields before, to
+the point where we've replaced use of bitfields with masking and
+setting bits by hand.
+
+But I also think that gcc is simply *buggy*, and has made them much
+nastier than they should be. What gcc *should* have done is to turn
+bitfield accesses into shift-and-masking of the underlying field as
+early as possible, and then do all optimizations at that level.
+
+In fact, there is another gcc bug outstanding (48696) where I complain
+about absolutely horrible code generation, and that one was actually
+the exact same issue except in reverse: gcc wouldn't take the
+underlying size of the bitfield into account, and use the wrong
+(smaller) size for the access, causing absolutely horrendous code
+generation that mixes byte and word accesses, and causes slowdowns by
+orders of magnitude.
+
+And it really is the same issue: gcc has forgotten what the base type
+is, and tries to "compute" some type using the actual bits. Which is
+simply *wrong*. Always has been.
+
+It's stupid, it generates bad code (both from performance *and* from a
+correctness angle), and it has actually resulted in gcc having *extra*
+complexity because it keeps the bitfield data around much too late.
+
+> The other problem is specification.  While you think that the code you
+> wrote is totally obvious it might not actually be so.  For instance, what
+> about this struct:
 >
-> void
-> wrong(struct x *ptr)
-> {
->         ptr->full = 1;
-> }
+> {long l:32; int i1:16; short s; int i2:1; char c:7; short s2:8; short s3;}
 >
-> int main()
-> {
->         wrong(0);
-> }
-<snip>
-> In my opinion, this is a clear bug in gcc (while the original problem,
-> without explitict volatile, is not a C spec violation per se, it's just
-> very inconvenient :) ).
+> What are the obviously correct accesses for various writes into this
+> struct?
 
-As a data point, the exact same code on a Solaris 8 pentium III box:
+I really don't think that example matters. You should instead turn the
+question around, and look at the real code examples, make *those*
+generate good and obviously correct code, and then *after* you've done
+that, you start looking at the mixed case where people do odd things.
 
-$ gcc -S -o x.s x.c
-$ cat x.s
-        .file   "x.c"
-        .text
-.globl wrong
-        .type   wrong, @function
-wrong:
-        pushl   %ebp
-        movl    %esp, %ebp
-        movl    8(%ebp), %eax
-        movzbl  8(%eax), %edx
-        orl     $1, %edx
-        movb    %dl, 8(%eax)
-        popl    %ebp
-        ret
-        .size   wrong, .-wrong
-.globl main
-        .type   main, @function
-main:
-        pushl   %ebp
-        movl    %esp, %ebp
-        subl    $4, %esp
-        movl    $0, (%esp)
-        call    wrong
-        leave
-        ret
-        .size   main, .-main
-        .ident  "GCC: (Blastwave.org Inc. Thu Dec 16 18:05:01 GMT 2010) 4.5.2"
-$ gcc -o x x.c
-$ file x
-x:              ELF 32-bit LSB executable 80386 Version 1, dynamically linked,
-not stripped
-$ ldd x
-        libc.so.1 =>     /usr/lib/libc.so.1
-        libdl.so.1 =>    /usr/lib/libdl.so.1
-$ ./x
-Segmentation Fault(coredump)
+Quite frankly, the layout that makes *sense* for something like the
+above is not to pack them. You'd just do
 
-$ ls -l core
--rw-------   1 dclarke  csw        71384 Feb  1 17:26 core
+If somebody actually wants packing, they'd do the *sane* thing, which is
 
-71384 bytes core is complete thus :
+  unsigned int l:32, i1:16; s:16,i2:1, c:7, s2:8, s3:16;
 
-$  elfdump -p core | tail -6
+and now it's obvious what the packing rules and the access rules are.
 
-Program Header[12]:
-    p_vaddr:      0xdfbf3000      p_flags:    [ PF_X  PF_W  PF_R ]
-    p_paddr:      0               p_type:     [ PT_LOAD ]
-    p_filesz:     0x1000          p_memsz:    0x1000
-    p_offset:     0x106d8         p_align:    0
+That said, I just tried, and 'sparse' actually gets your crazy example
+right (where "right" is defined as what I *think* you want): optimally
+packed. And it turns the accesses into the ones that are based on the
+base type.  And I'm pretty sure the sparse bitfield rules are way
+simpler than gcc, exactly because it tries to convert bitfields fairly
+early into mask-and-set. So if I do
 
-$ /opt/studio/SOS11/SUNWspro/bin/dbx -c "print 0x1000 + 0x106d8; quit"
-dbx: warning: unknown language, 'c' assumed
-0x1000+0x106d8 = 71384
+  struct {long l:32; int i1:16; short s; int i2:1; char c:7; short
+s2:8; short s3;} dummy;
 
-what caused the seg fault ?
+  int main(int argc, char **argv)
+  {
+	dummy.l = 1;
+	dummy.i1 = 2;
+        dummy.s = 3;
+        dummy.i2 = 4;
+        dummy.c = 5;
+        dummy.s2 = 6;
+        dummy.s3 = 7;
+  }
 
-$ /opt/studio/SOS11/SUNWspro/bin/dbx x core
-Reading x
-core file header read successfully
-Reading ld.so.1
-Reading libc.so.1
-Reading libdl.so.1
-program terminated by signal SEGV (no mapping at the fault address)
-0x08050672: wrong+0x0006:       movzbl   0x00000008(%eax),%edx
-(dbx) where
-=>[1] wrong(0x0, 0x8047b70, 0x805057d, 0x1, 0x8047b7c, 0x8047b84), at 0x8050672
-  [2] main(0x1, 0x8047b7c, 0x8047b84), at 0x8050690
+and then do a test-linearize (with "-m64" to show the difference
+between "long" and "int") I get
 
-However Sun Studio 5.8 does no better :
+  t.c:2:48: error: dubious one-bit signed bitfield
+  main:
+  .L0x7f928e378010:
+	<entry-point>
+	load.64     %r1 <- 0[dummy]
+	and.64      %r2 <- %r1, $0xffffffff00000000
+	or.64       %r3 <- %r2, $1
+	store.64    %r3 -> 0[dummy]
+	load.32     %r4 <- 4[dummy]
+	and.32      %r5 <- %r4, $0xffffffffffff0000
+	or.32       %r6 <- %r5, $2
+	store.32    %r6 -> 4[dummy]
+	store.16    $3 -> 6[dummy]
+	load.32     %r7 <- 8[dummy]
+	and.32      %r8 <- %r7, $-2
+	store.32    %r8 -> 8[dummy]
+	load.8      %r10 <- 8[dummy]
+	and.8       %r12 <- %r10, $-255
+	or.8        %r13 <- %r12, $10
+	store.8     %r13 -> 8[dummy]
+	load.16     %r14 <- 8[dummy]
+	and.16      %r16 <- %r14, $0xffffffffffff00ff
+	or.16       %r17 <- %r16, $0x600
+	store.16    %r17 -> 8[dummy]
+	store.16    $7 -> 10[dummy]
+	ret.32      $7
 
-$ /opt/studio/SOS11/SUNWspro/bin/cc -Xc -o x_Sun_Studio_5.8 x.c
-$ ./x_Sun_Studio_5.8
-Segmentation Fault(coredump)
-$ ls -l core
--rw-------   1 dclarke  csw        71384 Feb  1 17:48 core
+which I think is what you'd expect. Now, sparse doesn't do the smart
+"combine shifts-and-masks to memory", but that's an optimization phase
+that should be done long after bitfields *anyway*, so that's kind of
+immaterial.
 
-$ /opt/studio/SOS11/SUNWspro/bin/dbx x_Sun_Studio_5.8 core
-dbx: warning: core object name "x_Sun_Studio_5." matches
-object name "x_Sun_Studio_5.8" within the limit of 14. assuming they match
-core file header read successfully
-Reading ld.so.1
-Reading libc.so.1
-Reading libdl.so.1
-program terminated by signal SEGV (no mapping at the fault address)
-0x080506ae: wrong+0x000e:       movl     0x00000008(%ecx),%eax
-(dbx) where
-=>[1] wrong(0x0), at 0x80506ae
-  [2] main(0x1, 0x8047b4c, 0x8047b54), at 0x80506ca
-(dbx) quit
-$ /opt/studio/SOS11/SUNWspro/bin/cc -V
-cc: Sun C 5.8 Patch 121016-08 2009/04/20
-usage: cc [ options] files.  Use 'cc -flags' for details
-$
+And yes, look at how you can see how sparse mixes different access
+sizes for different fields. But that is damn well what the programmer
+asked for.
 
+If programmers write stupid code, the compiler might as well generate odd code.
 
-dc
+But if a programmer writes *good* code, and the compiler messes it up
+because it *thinks* the code is stupid, then the compiler is just bad.
 
+> One rule may be to never write to a bitfield with accesses larger than
+> their underlying declared type.  Well, but only if the bitfield fits into
+> that type (int:96 is quite okay to have, and what accesses should be
+> allowed there?).
 
--- 
---
-http://pgp.mit.edu:11371/pks/lookup?op=vindex&search=0x1D936C72FA35B44B
-+-------------------------+-----------------------------------+
-| Dennis Clarke           | Solaris and Linux and Open Source |
-| dclarke@blastwave.org   | Respect for open standards.       |
-+-------------------------+-----------------------------------+
+Actually, "int:96" isn't ok last I saw. Not in original C, at least.
 
+Yeah, I just checked. You get an error like
+
+   error: width of ‘a’ exceeds its type
+
+so "int:96" is fine, but only if int is bigger than or equal to 96 bits.
+
+> That might be one obvious rule.  But it's not how
+> traditional bitfield layout works.  It works based on underlying objects,
+> and for that e.g. the three fields i2,c,s are all in the same one, of int
+> type.
+
+I think that's actually because bitfields are really only defined for
+'int' to begin with afaik. Anything else (well, "unsigned" is fine
+too) is not really defined.
+
+The 'long' thing is a later extension, and the shorter fields are just
+random. They happen to be pretty portable.
+
+> The rule above would at least work for code that most people do write,
+> i.e. sequence of same-typed bitfields mixed with normal members.
+
+Right. Where the same-type should generally be "unsigned int"
+(bitfield signs are really debatable and nonportable too, so unsigned
+is actually the only really sane type, although others do work).
+
+> And then, there's the last problem: are you sure that if GCC would use 4
+> byte accesses for the case at hand, that the hardware wouldn't screw you
+> again?  What about using atomic instructions for one half of the
+> cache-line (the spinlock) but non-atomic instructions on the other half
+> (the bitfield).  Are you sure the latter won't interfere with the former?
+
+Yes, I'm sure. Of course, if the architecture isn't cache-coherent,
+all bets are off, but nobody cares. That's a hardware issue, not a
+compiler problem.
+
+If we told you "unsigned int bitfield:x", then you as the compiler
+should just assume that you can access it as an "int" (unless you only
+allocate a "char' for it, of course, in which case you need to access
+it as a char - you can never access past the field).
+
+Just out of morbid curiosity, what happens if you have totally
+*separate* variables that just happen to link together? IOW, something
+like
+
+   static struct { unsigned bit:1; } onebit;
+   static volatile int var;
+
+and they just *happen* to link next to each other (because they were
+declared next to each other) in the same 8-byte aligned block?
+
+                 Linus
