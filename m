@@ -1,146 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab2BAVxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:53:14 -0500
+	id S932208Ab2BAVIK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:08:10 -0500
 Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48105 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757049Ab2BAVIN (ORCPT
+	by vger.kernel.org with ESMTP id S1755984Ab2BAVIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:08:13 -0500
-X-Sasl-enc: YH4sWprO6xwFK2feTplaFu0dFUwS6u6LFn9lvBTj/NJe 1328130491
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:57:37 2012
-Message-Id: <20120201205737.920720032@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Wed, 01 Feb 2012 12:55:45 -0800
+	Wed, 1 Feb 2012 16:08:07 -0500
+X-Sasl-enc: c8CyJwzpQr4++7bZ1B8KOntOPZhc5D4Z/HVGQrPRum9L 1328130485
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 12:15:31 2012
+Message-Id: <20120201201531.519476348@clark.kroah.org>
+User-Agent: quilt/0.51-14.1
+Date: Wed, 01 Feb 2012 12:14:07 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
-        Li Wang <liwang@nudt.edu.cn>
-Subject: [05/65] eCryptfs: Check inode changes in setattr
-In-Reply-To: <20120201210236.GA25966@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [05/20] crypto: sha512 - make it work, undo percpu message schedule
+In-Reply-To: <20120201210055.GA25374@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Alexey Dobriyan <adobriyan@gmail.com>
 
-commit a261a03904849c3df50bd0300efb7fb3f865137d upstream.
+commit 84e31fdb7c797a7303e0cc295cb9bc8b73fb872d upstream.
 
-Most filesystems call inode_change_ok() very early in ->setattr(), but
-eCryptfs didn't call it at all. It allowed the lower filesystem to make
-the call in its ->setattr() function. Then, eCryptfs would copy the
-appropriate inode attributes from the lower inode to the eCryptfs inode.
+commit f9e2bca6c22d75a289a349f869701214d63b5060
+aka "crypto: sha512 - Move message schedule W[80] to static percpu area"
+created global message schedule area.
 
-This patch changes that and actually calls inode_change_ok() on the
-eCryptfs inode, fairly early in ecryptfs_setattr(). Ideally, the call
-would happen earlier in ecryptfs_setattr(), but there are some possible
-inode initialization steps that must happen first.
+If sha512_update will ever be entered twice, hash will be silently
+calculated incorrectly.
 
-Since the call was already being made on the lower inode, the change in
-functionality should be minimal, except for the case of a file extending
-truncate call. In that case, inode_newsize_ok() was never being
-called on the eCryptfs inode. Rather than inode_newsize_ok() catching
-maximum file size errors early on, eCryptfs would encrypt zeroed pages
-and write them to the lower filesystem until the lower filesystem's
-write path caught the error in generic_write_checks(). This patch
-introduces a new function, called ecryptfs_inode_newsize_ok(), which
-checks if the new lower file size is within the appropriate limits when
-the truncate operation will be growing the lower file.
+Probably the easiest way to notice incorrect hashes being calculated is
+to run 2 ping floods over AH with hmac(sha512):
 
-In summary this change prevents eCryptfs truncate operations (and the
-resulting page encryptions), which would exceed the lower filesystem
-limits or FSIZE rlimits, from ever starting.
+	#!/usr/sbin/setkey -f
+	flush;
+	spdflush;
+	add IP1 IP2 ah 25 -A hmac-sha512 0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000025;
+	add IP2 IP1 ah 52 -A hmac-sha512 0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000052;
+	spdadd IP1 IP2 any -P out ipsec ah/transport//require;
+	spdadd IP2 IP1 any -P in  ipsec ah/transport//require;
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reviewed-by: Li Wang <liwang@nudt.edu.cn>
+XfrmInStateProtoError will start ticking with -EBADMSG being returned
+from ah_input(). This never happens with, say, hmac(sha1).
+
+With patch applied (on BOTH sides), XfrmInStateProtoError does not tick
+with multiple bidirectional ping flood streams like it doesn't tick
+with SHA-1.
+
+After this patch sha512_transform() will start using ~750 bytes of stack on x86_64.
+This is OK for simple loads, for something more heavy, stack reduction will be done
+separatedly.
+
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/inode.c |   48 ++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 36 insertions(+), 12 deletions(-)
+ crypto/sha512_generic.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -854,18 +854,6 @@ static int truncate_upper(struct dentry
- 		size_t num_zeros = (PAGE_CACHE_SIZE
- 				    - (ia->ia_size & ~PAGE_CACHE_MASK));
+--- a/crypto/sha512_generic.c
++++ b/crypto/sha512_generic.c
+@@ -21,8 +21,6 @@
+ #include <linux/percpu.h>
+ #include <asm/byteorder.h>
  
+-static DEFINE_PER_CPU(u64[80], msg_schedule);
 -
--		/*
--		 * XXX(truncate) this should really happen at the begginning
--		 * of ->setattr.  But the code is too messy to that as part
--		 * of a larger patch.  ecryptfs is also totally missing out
--		 * on the inode_change_ok check at the beginning of
--		 * ->setattr while would include this.
--		 */
--		rc = inode_newsize_ok(inode, ia->ia_size);
--		if (rc)
--			goto out;
--
- 		if (!(crypt_stat->flags & ECRYPTFS_ENCRYPTED)) {
- 			truncate_setsize(inode, ia->ia_size);
- 			lower_ia->ia_size = ia->ia_size;
-@@ -915,6 +903,28 @@ out:
- 	return rc;
+ static inline u64 Ch(u64 x, u64 y, u64 z)
+ {
+         return z ^ (x & (y ^ z));
+@@ -89,7 +87,7 @@ sha512_transform(u64 *state, const u8 *i
+ 	u64 a, b, c, d, e, f, g, h, t1, t2;
+ 
+ 	int i;
+-	u64 *W = get_cpu_var(msg_schedule);
++	u64 W[80];
+ 
+ 	/* load the input */
+         for (i = 0; i < 16; i++)
+@@ -128,8 +126,6 @@ sha512_transform(u64 *state, const u8 *i
+ 
+ 	/* erase our data */
+ 	a = b = c = d = e = f = g = h = t1 = t2 = 0;
+-	memset(W, 0, sizeof(__get_cpu_var(msg_schedule)));
+-	put_cpu_var(msg_schedule);
  }
  
-+static int ecryptfs_inode_newsize_ok(struct inode *inode, loff_t offset)
-+{
-+	struct ecryptfs_crypt_stat *crypt_stat;
-+	loff_t lower_oldsize, lower_newsize;
-+
-+	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
-+	lower_oldsize = upper_size_to_lower_size(crypt_stat,
-+						 i_size_read(inode));
-+	lower_newsize = upper_size_to_lower_size(crypt_stat, offset);
-+	if (lower_newsize > lower_oldsize) {
-+		/*
-+		 * The eCryptfs inode and the new *lower* size are mixed here
-+		 * because we may not have the lower i_mutex held and/or it may
-+		 * not be appropriate to call inode_newsize_ok() with inodes
-+		 * from other filesystems.
-+		 */
-+		return inode_newsize_ok(inode, lower_newsize);
-+	}
-+
-+	return 0;
-+}
-+
- /**
-  * ecryptfs_truncate
-  * @dentry: The ecryptfs layer dentry
-@@ -931,6 +941,10 @@ int ecryptfs_truncate(struct dentry *den
- 	struct iattr lower_ia = { .ia_valid = 0 };
- 	int rc;
- 
-+	rc = ecryptfs_inode_newsize_ok(dentry->d_inode, new_length);
-+	if (rc)
-+		return rc;
-+
- 	rc = truncate_upper(dentry, &ia, &lower_ia);
- 	if (!rc && lower_ia.ia_valid & ATTR_SIZE) {
- 		struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
-@@ -1012,6 +1026,16 @@ static int ecryptfs_setattr(struct dentr
- 		}
- 	}
- 	mutex_unlock(&crypt_stat->cs_mutex);
-+
-+	rc = inode_change_ok(inode, ia);
-+	if (rc)
-+		goto out;
-+	if (ia->ia_valid & ATTR_SIZE) {
-+		rc = ecryptfs_inode_newsize_ok(inode, ia->ia_size);
-+		if (rc)
-+			goto out;
-+	}
-+
- 	if (S_ISREG(inode->i_mode)) {
- 		rc = filemap_write_and_wait(inode->i_mapping);
- 		if (rc)
+ static int
 
 
