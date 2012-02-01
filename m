@@ -1,234 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab2BAVTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 16:19:42 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60700 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757499Ab2BAVT2 (ORCPT
+	id S932777Ab2BAVWf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 16:22:35 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:35453 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757551Ab2BAVTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 16:19:28 -0500
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, vgoyal@redhat.com
-Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 03/11] blkcg: add blkcg_{init|drain|exit}_queue()
-Date: Wed,  1 Feb 2012 13:19:08 -0800
-Message-Id: <1328131156-13290-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1328131156-13290-1-git-send-email-tj@kernel.org>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
+	Wed, 1 Feb 2012 16:19:42 -0500
+X-Sasl-enc: 3XIy3kSg9HrMLqE4cYyaartMK/3i5svkOHDB9AAAOzI1 1328131181
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Feb  1 13:00:51 2012
+Message-Id: <20120201210051.439470864@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Wed, 01 Feb 2012 13:00:50 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>,
+        Preston Fick <preston.fick@silabs.com>
+Subject: [86/89] USB: cp210x: clean up, refactor and document speed handling
+In-Reply-To: <20120201210505.GA26028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently block core calls directly into blk-throttle for init, drain
-and exit.  This patch adds blkcg_{init|drain|exit}_queue() which wraps
-the blk-throttle functions.  This is to give more control and
-visiblity to blkcg core layer for proper layering.  Further patches
-will add logic common to blkcg policies to the functions.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-While at it, collapse blk_throtl_release() into blk_throtl_exit().
-There's no reason to keep them separate.
+------------------
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
+
+commit e5990874e511d5bbca23b3396419480cb2ca0ee7 upstream.
+
+Clean up and refactor speed handling.
+Document baud rate handling for CP210{1,2,4,5,10}.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Cc: Preston Fick <preston.fick@silabs.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- block/blk-cgroup.c   |   42 ++++++++++++++++++++++++++++++++++++++++++
- block/blk-cgroup.h   |    7 +++++++
- block/blk-core.c     |    7 ++++---
- block/blk-sysfs.c    |    4 ++--
- block/blk-throttle.c |    3 ---
- block/blk.h          |    2 --
- 6 files changed, 55 insertions(+), 10 deletions(-)
+ drivers/usb/serial/cp210x.c |   69 +++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 56 insertions(+), 13 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index b4380a0..15264d0 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -20,6 +20,7 @@
- #include <linux/genhd.h>
- #include <linux/delay.h>
- #include "blk-cgroup.h"
-+#include "blk.h"
- 
- #define MAX_KEY_LEN 100
- 
-@@ -1448,6 +1449,47 @@ done:
- 	return &blkcg->css;
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -39,6 +39,8 @@ static void cp210x_get_termios(struct tt
+ 	struct usb_serial_port *port);
+ static void cp210x_get_termios_port(struct usb_serial_port *port,
+ 	unsigned int *cflagp, unsigned int *baudp);
++static void cp210x_change_speed(struct tty_struct *, struct usb_serial_port *,
++							struct ktermios *);
+ static void cp210x_set_termios(struct tty_struct *, struct usb_serial_port *,
+ 							struct ktermios*);
+ static int cp210x_tiocmget(struct tty_struct *);
+@@ -572,11 +574,62 @@ static void cp210x_get_termios_port(stru
+ 	*cflagp = cflag;
  }
  
-+/**
-+ * blkcg_init_queue - initialize blkcg part of request queue
-+ * @q: request_queue to initialize
++/*
++ * CP2101 supports the following baud rates:
 + *
-+ * Called from blk_alloc_queue_node(). Responsible for initializing blkcg
-+ * part of new request_queue @q.
++ *	300, 600, 1200, 1800, 2400, 4800, 7200, 9600, 14400, 19200, 28800,
++ *	38400, 56000, 57600, 115200, 128000, 230400, 460800, 921600
 + *
-+ * RETURNS:
-+ * 0 on success, -errno on failure.
++ * CP2102 and CP2103 support the following additional rates:
++ *
++ *	4000, 16000, 51200, 64000, 76800, 153600, 250000, 256000, 500000,
++ *	576000
++ *
++ * The device will map a requested rate to a supported one, but the result
++ * of requests for rates greater than 1053257 is undefined (see AN205).
++ *
++ * CP2104, CP2105 and CP2110 support most rates up to 2M, 921k and 1M baud,
++ * respectively, with an error less than 1%. The actual rates are determined
++ * by
++ *
++ *	div = round(freq / (2 x prescale x request))
++ *	actual = freq / (2 x prescale x div)
++ *
++ * For CP2104 and CP2105 freq is 48Mhz and prescale is 4 for request <= 365bps
++ * or 1 otherwise.
++ * For CP2110 freq is 24Mhz and prescale is 4 for request <= 300bps or 1
++ * otherwise.
 + */
-+int blkcg_init_queue(struct request_queue *q)
++static void cp210x_change_speed(struct tty_struct *tty,
++		struct usb_serial_port *port, struct ktermios *old_termios)
 +{
-+	might_sleep();
++	u32 baud;
 +
-+	return blk_throtl_init(q);
++	baud = tty->termios->c_ospeed;
++
++	/* This maps the requested rate to a rate valid on cp2102 or cp2103.
++	 *
++	 * NOTE: B0 is not implemented.
++	 */
++	baud = cp210x_quantise_baudrate(baud);
++
++	dbg("%s - setting baud rate to %u", __func__, baud);
++	if (cp210x_set_config(port, CP210X_SET_BAUDRATE, &baud,
++							sizeof(baud))) {
++		dev_warn(&port->dev, "failed to set baud rate to %u\n", baud);
++		if (old_termios)
++			baud = old_termios->c_ospeed;
++		else
++			baud = 9600;
++	}
++
++	tty_encode_baud_rate(tty, baud, baud);
 +}
 +
-+/**
-+ * blkcg_drain_queue - drain blkcg part of request_queue
-+ * @q: request_queue to drain
-+ *
-+ * Called from blk_drain_queue().  Responsible for draining blkcg part.
-+ */
-+void blkcg_drain_queue(struct request_queue *q)
-+{
-+	lockdep_assert_held(q->queue_lock);
-+
-+	blk_throtl_drain(q);
-+}
-+
-+/**
-+ * blkcg_exit_queue - exit and release blkcg part of request_queue
-+ * @q: request_queue being released
-+ *
-+ * Called from blk_release_queue().  Responsible for exiting blkcg part.
-+ */
-+void blkcg_exit_queue(struct request_queue *q)
-+{
-+	blk_throtl_exit(q);
-+}
-+
- /*
-  * We cannot support shared io contexts, as we have no mean to support
-  * two tasks with the same ioc in two different groups without major rework
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index ca1fc63..3bc1710 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -215,6 +215,10 @@ struct blkio_policy_type {
- 	enum blkio_policy_id plid;
- };
- 
-+extern int blkcg_init_queue(struct request_queue *q);
-+extern void blkcg_drain_queue(struct request_queue *q);
-+extern void blkcg_exit_queue(struct request_queue *q);
-+
- /* Blkio controller policy registration */
- extern void blkio_policy_register(struct blkio_policy_type *);
- extern void blkio_policy_unregister(struct blkio_policy_type *);
-@@ -233,6 +237,9 @@ struct blkio_group {
- struct blkio_policy_type {
- };
- 
-+static inline int blkcg_init_queue(struct request_queue *q) { return 0; }
-+static inline void blkcg_drain_queue(struct request_queue *q) { }
-+static inline void blkcg_exit_queue(struct request_queue *q) { }
- static inline void blkio_policy_register(struct blkio_policy_type *blkiop) { }
- static inline void blkio_policy_unregister(struct blkio_policy_type *blkiop) { }
- static inline void blkg_destroy_all(struct request_queue *q) { }
-diff --git a/block/blk-core.c b/block/blk-core.c
-index ddda1cc..ab0a11b 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -34,6 +34,7 @@
- #include <trace/events/block.h>
- 
- #include "blk.h"
-+#include "blk-cgroup.h"
- 
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
-@@ -280,7 +281,7 @@ EXPORT_SYMBOL(blk_stop_queue);
-  *
-  *     This function does not cancel any asynchronous activity arising
-  *     out of elevator or throttling code. That would require elevaotor_exit()
-- *     and blk_throtl_exit() to be called with queue lock initialized.
-+ *     and blkcg_exit_queue() to be called with queue lock initialized.
-  *
-  */
- void blk_sync_queue(struct request_queue *q)
-@@ -373,7 +374,7 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
- 		spin_lock_irq(q->queue_lock);
- 
- 		elv_drain_elevator(q);
--		blk_throtl_drain(q);
-+		blkcg_drain_queue(q);
- 
- 		/*
- 		 * This function might be called on a queue which failed
-@@ -561,7 +562,7 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
- 	 */
- 	q->queue_lock = &q->__queue_lock;
- 
--	if (blk_throtl_init(q))
-+	if (blkcg_init_queue(q))
- 		goto fail_id;
- 
- 	return q;
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index cf15001..00cdc98 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -9,6 +9,7 @@
- #include <linux/blktrace_api.h>
- 
- #include "blk.h"
-+#include "blk-cgroup.h"
- 
- struct queue_sysfs_entry {
- 	struct attribute attr;
-@@ -486,7 +487,7 @@ static void blk_release_queue(struct kobject *kobj)
- 		elevator_exit(q->elevator);
- 	}
- 
--	blk_throtl_exit(q);
-+	blkcg_exit_queue(q);
- 
- 	if (rl->rq_pool)
- 		mempool_destroy(rl->rq_pool);
-@@ -494,7 +495,6 @@ static void blk_release_queue(struct kobject *kobj)
- 	if (q->queue_tags)
- 		__blk_queue_free_tags(q);
- 
--	blk_throtl_release(q);
- 	blk_trace_shutdown(q);
- 
- 	bdi_destroy(&q->backing_dev_info);
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index fe6a442..ac6d0fe 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -1226,10 +1226,7 @@ void blk_throtl_exit(struct request_queue *q)
- 	 * it.
- 	 */
- 	throtl_shutdown_wq(q);
--}
- 
--void blk_throtl_release(struct request_queue *q)
--{
- 	kfree(q->td);
- }
- 
-diff --git a/block/blk.h b/block/blk.h
-index 33897f6..bf04a6f 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -234,7 +234,6 @@ extern bool blk_throtl_bio(struct request_queue *q, struct bio *bio);
- extern void blk_throtl_drain(struct request_queue *q);
- extern int blk_throtl_init(struct request_queue *q);
- extern void blk_throtl_exit(struct request_queue *q);
--extern void blk_throtl_release(struct request_queue *q);
- #else /* CONFIG_BLK_DEV_THROTTLING */
- static inline bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ static void cp210x_set_termios(struct tty_struct *tty,
+ 		struct usb_serial_port *port, struct ktermios *old_termios)
  {
-@@ -243,7 +242,6 @@ static inline bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- static inline void blk_throtl_drain(struct request_queue *q) { }
- static inline int blk_throtl_init(struct request_queue *q) { return 0; }
- static inline void blk_throtl_exit(struct request_queue *q) { }
--static inline void blk_throtl_release(struct request_queue *q) { }
- #endif /* CONFIG_BLK_DEV_THROTTLING */
+ 	unsigned int cflag, old_cflag;
+-	u32 baud;
+ 	unsigned int bits;
+ 	unsigned int modem_ctl[4];
  
- #endif /* BLK_INTERNAL_H */
--- 
-1.7.7.3
+@@ -588,19 +641,9 @@ static void cp210x_set_termios(struct tt
+ 	tty->termios->c_cflag &= ~CMSPAR;
+ 	cflag = tty->termios->c_cflag;
+ 	old_cflag = old_termios->c_cflag;
+-	baud = cp210x_quantise_baudrate(tty_get_baud_rate(tty));
+ 
+-	/* If the baud rate is to be updated*/
+-	if (baud != tty_termios_baud_rate(old_termios) && baud != 0) {
+-		dbg("%s - Setting baud rate to %d baud", __func__,
+-				baud);
+-		if (cp210x_set_config(port, CP210X_SET_BAUDRATE, &baud, sizeof(baud))) {
+-			dbg("Baud rate requested not supported by device");
+-			baud = tty_termios_baud_rate(old_termios);
+-		}
+-	}
+-	/* Report back the resulting baud rate */
+-	tty_encode_baud_rate(tty, baud, baud);
++	if (tty->termios->c_ospeed != old_termios->c_ospeed)
++		cp210x_change_speed(tty, port, old_termios);
+ 
+ 	/* If the number of data bits is to be updated */
+ 	if ((cflag & CSIZE) != (old_cflag & CSIZE)) {
+
 
