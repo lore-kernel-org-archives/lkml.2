@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab2BACLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Jan 2012 21:11:32 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37292 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850Ab2BACLb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Jan 2012 21:11:31 -0500
+	id S1754554Ab2BACPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Jan 2012 21:15:53 -0500
+Received: from seven.medozas.de ([188.40.89.202]:59664 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752987Ab2BACPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Jan 2012 21:15:52 -0500
+Date: Wed, 1 Feb 2012 03:15:50 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] treewide: fix memory corruptions when TASK_COMM_LEN
+ != 16
+In-Reply-To: <20120131174914.8ce5291d.akpm@linux-foundation.org>
+Message-ID: <alpine.LNX.2.01.1202010257240.29848@frira.zrqbmnf.qr>
+References: <1327183785-27023-1-git-send-email-jengelh@medozas.de> <20120124135443.2772d455.akpm@linux-foundation.org> <alpine.LNX.2.01.1201250121260.20692@frira.zrqbmnf.qr> <20120131172334.7f26f164.akpm@linux-foundation.org> <alpine.LNX.2.01.1202010224510.29848@frira.zrqbmnf.qr>
+ <20120131174914.8ce5291d.akpm@linux-foundation.org>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120131211554.GA28105@pengutronix.de>
-References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
- <1328004002-24646-2-git-send-email-Barry.Song@csr.com> <20120131101734.GE2471@pengutronix.de>
- <CAGsJ_4wyJ6Wymy4AWoW1eHubZX=W7GT_Fbow9ofXoY1RrcHzgA@mail.gmail.com>
- <20120131113358.GM2471@pengutronix.de> <20120131203455.GG22611@ponder.secretlab.ca>
- <20120131211554.GA28105@pengutronix.de>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 1 Feb 2012 10:11:10 +0800
-Message-ID: <CAGsJ_4yJZYHUzr9YerdM5o8grGd6iP51ra4nJkMuOo5Khn95RQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] platform: add common resource requesting and mapping helper
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Barry Song <Barry.Song@csr.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, Erik Gilling <konkers@google.com>,
-        linux-mtd@lists.infradead.org, Barry Song <Baohua.Song@csr.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Wolfram,
 
-2012/2/1 Wolfram Sang <w.sang@pengutronix.de>:
+On Wednesday 2012-02-01 02:49, Andrew Morton wrote:
+>> 
+>> Did my patch not change the existing code sites using ->comm
+>> to always copy at most min(userbufsize aka 16, sizeof(t->comm)) bytes,
+>> thereby keeping the promise to userspace while at the same time
+>> making TASK_COMM_LEN's value freely choosable?
 >
->> > I am not sure using 'platform_devm_request_and_ioremap' and later using
->> > plain 'devm_*' functions (without platform_-prefix) is less confusing.
->> > The alternative would be to check which helper functions also use
->> > 'struct resource' and if they do checks on that. If all do that, you
->> > would have the simple rule, that you only need to check yourself if you
->> > access it yourself.
->>
->> The reason I suggested the wrapper is that then the driver code doesn't need
->> to fart around with the res pointer at all.  It reduces boilerplate in platform
->> drivers which I think is a good thing.
->
-> I do understand your motivation and fully agree with what you are aiming for
-> (that's exactly why I implemented devm_request_and_ioremap()).
->
-> This patch is a micro-optimization, though, and won't cut it IMHO. I still have
-> issues with only one platform_devm_* and all the rest being devm_* (without
-> platform_). Things might look better, if we'd for example also have
-> platform_devm_request_irq() or something similar. That might be an approach
-> where we can play around with and see what is left to do. Or, if other
-> approaches might be more elegant.
->
-> To discuss that, try things, etc, I'd simply like to have a bit more time. If
-> we are accepting the first iteration right away, and people let run their
-> coccinelle-scripts based on that, it might get annoying to change that a second
-> time, I'd think.
->
+>That change is pretty pointless as long as we don't provide APIs to let
+>userspace access the expanded size.  And I've explained why we cannot
+>alter the existing APIs.
 
-i think it makes sense for us to have platform_devm_request_irq() and
-similar things. i'll take care.
-
-PS:  as the man maintaining embedded systems of the i2c subsystem,
-would you comment the CSR i2c driver which has been there waiting for
-a long time?
-http://www.spinics.net/lists/linux-i2c/msg07081.html
-
-> Regards,
->
->   Wolfram
->
-> --
-> Pengutronix e.K.                           | Wolfram Sang                |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
-Thanks
-barry
+Ah yes, indeed. My reason for augmenting the size of t->comm was so
+that `ps afx` could show a more complete name of certain kernel
+threads' names. In this case, the kernel delivers the name via
+procfs via seq_printf("%s, t->comm), as do a few debug statements
+in the fashion of pr_debug("%s/%u ate my CPU", t->comm, t->pid).
+So maybe it was not /completely/ pointless.
