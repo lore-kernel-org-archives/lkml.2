@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab2BAUIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 15:08:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54502 "EHLO mx1.redhat.com"
+	id S1756717Ab2BAUKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 15:10:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25370 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754590Ab2BAUIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 15:08:52 -0500
-Message-ID: <1328126919.6937.254.camel@bling.home>
-Subject: Re: RFC: Device isolation groups
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org, aik@ozlabs.ru,
-        benh@kernel.crashing.org, qemu-devel@nongnu.org, joerg.roedel@amd.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 01 Feb 2012 13:08:39 -0700
-In-Reply-To: <1328071614-8320-1-git-send-email-david@gibson.dropbear.id.au>
-References: <1328071614-8320-1-git-send-email-david@gibson.dropbear.id.au>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753444Ab2BAUKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 15:10:34 -0500
+Date: Wed, 1 Feb 2012 15:10:17 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Jens Axboe <axboe@kernel.dk>,
+        Herbert Poetzl <herbert@13thfloor.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Wu Fengguang <wfg@linux.intel.com>
+Subject: Re: [PATCH] fix readahead pipeline break caused by block plug
+Message-ID: <20120201201017.GC13246@redhat.com>
+References: <1327996780.21268.42.camel@sli10-conroe>
+ <20120131220333.GD4378@redhat.com>
+ <20120131141301.ba35ffe0.akpm@linux-foundation.org>
+ <20120131222217.GE4378@redhat.com>
+ <20120201033653.GA12092@redhat.com>
+ <20120201091807.GA7451@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120201091807.GA7451@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 15:46 +1100, David Gibson wrote:
-> This patch series introduces a new infrastructure to the driver core
-> for representing "device isolation groups".  That is, groups of
-> devices which can be "isolated" in such a way that the rest of the
-> system can be protected from them, even in the presence of userspace
-> or a guest OS directly driving the devices.
+On Wed, Feb 01, 2012 at 04:18:07AM -0500, Christoph Hellwig wrote:
+> On Tue, Jan 31, 2012 at 10:36:53PM -0500, Vivek Goyal wrote:
+> > I still see that IO is being submitted one page at a time. The only
+> > real difference seems to be that queue unplug happening at random times
+> > and many a times we are submitting much smaller requests (40 sectors, 48
+> > sectors etc).
 > 
-> Isolation will typically be due to an IOMMU which can safely remap DMA
-> and interrupts coming from these devices.  We need to represent whole
-> groups, rather than individual devices, because there are a number of
-> cases where the group can be isolated as a whole, but devices within
-> it cannot be safely isolated from each other - this usually occurs
-> because the IOMMU cannot reliably distinguish which device in the
-> group initiated a transaction.  In other words, isolation groups
-> represent the minimum safe granularity for passthrough to guests or
-> userspace.
-> 
-> This series provides the core infraustrcture for tracking isolation
-> groups, and example implementations initializing the groups
-> appropriately for two PCI bridges (which include IOMMUs) found on IBM
-> POWER systems.
-> 
-> Actually using the group information is not included here, but David
-> Woodhouse has expressed an interest in using a structure like this to
-> represent operations in iommu_ops more correctly.
-> 
-> Some tracking of groups is a prerequisite for safe passthrough of
-> devices to guests or userspace, such as done by VFIO.  Current VFIO
-> patches use the iommu_ops->device_group mechanism for this.  However,
-> that mechanism is awkward, because without an in-kernel concrete
-> representation of groups, enumerating a group requires traversing
-> every device on a given bus type.  It also fails to cover some very
-> plausible IOMMU topologies, because its groups cannot span devices on
-> multiple bus types.
+> This is expected given that the block device node uses
+> block_read_full_page, and not mpage_readpage(s).
 
-So far so good, but there's not much meat on the bone yet.  The sysfs
-linking and a list of devices in a group is all pretty straight forward
-and obvious.  I'm not sure yet how this solves the DMA quirks kind of
-issues though.  For instance if we have the ricoh device that uses the
-wrong source ID for DMA from function 1 and we put functions 0 & 1 in an
-isolation group... then what?  And who does device quirk grouping?  Each
-IOMMU driver?
+What is the difference between block_read_full_page() and
+mpage_readpage(). IOW, why block device does not use mpage_readpage(s)
+interface?
 
-For the iommu_device_group() interface, I had imagined that we'd have
-something like:
+Is enabling mpage_readpages() on block devices is as simple as following
+patch or more is involved? (I suspect it has to be more than this. If it
+was this simple, it would have been done by now).
 
-struct device *device_dma_alias_quirk(struct device *dev)
-{
-	if (<is broken ricoh func 1)
-		return <ricoh func0>;
+This patch complies and seems to work. (system does not crash and dd
+seems to be working. I can't verify the contents of the file though).
 
-	return dev;
-}
+Applying following patch improved the speed from 110MB/s to more than
+230MB/s.
 
-Then iommu_device_group turns into:
+# dd if=/dev/sdb of=/dev/null bs=1M count=1K
+1024+0 records in
+1024+0 records out
+1073741824 bytes (1.1 GB) copied, 4.6269 s, 232 MB/s
 
-int iommu_device_group(struct device *dev, unsigned int *groupid)
-{
-	dev = device_dma_alias_quirk(dev);
-        if (iommu_present(dev->bus) && dev->bus->iommu_ops->device_group)
-                return dev->bus->iommu_ops->device_group(dev, groupid);
+---
+ fs/block_dev.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-        return -ENODEV;
-}
+Index: linux-2.6/fs/block_dev.c
+===================================================================
+--- linux-2.6.orig/fs/block_dev.c	2012-02-01 22:21:42.000000000 -0500
++++ linux-2.6/fs/block_dev.c	2012-02-02 01:52:40.000000000 -0500
+@@ -347,6 +347,12 @@ static int blkdev_readpage(struct file *
+ 	return block_read_full_page(page, blkdev_get_block);
+ }
+ 
++static int blkdev_readpages(struct file * file, struct address_space *mapping,
++		struct list_head *pages, unsigned nr_pages)
++{
++	return mpage_readpages(mapping, pages, nr_pages, blkdev_get_block);
++}
++
+ static int blkdev_write_begin(struct file *file, struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned flags,
+ 			struct page **pagep, void **fsdata)
+@@ -1601,6 +1607,7 @@ static int blkdev_releasepage(struct pag
+ 
+ static const struct address_space_operations def_blk_aops = {
+ 	.readpage	= blkdev_readpage,
++	.readpages	= blkdev_readpages,
+ 	.writepage	= blkdev_writepage,
+ 	.write_begin	= blkdev_write_begin,
+ 	.write_end	= blkdev_write_end,
 
-and device_dma_alias_quirk() is available for dma_ops too.
 
-So maybe a struct device_isolation_group not only needs a list of
-devices, but it also needs the representative device to do mappings
-identified.  dma_ops would then just use dev->di_group->dma_dev for
-mappings, and I assume we call iommu_alloc() with a di_group and instead
-of iommu_attach/detach_device, we'd have iommu_attach/detach_group?
 
-What I'm really curious about is where you now stand on what's going to
-happen in device_isolation_bind().  How do we get from a device in sysfs
-pointing to a group to something like vfio binding to that group and
-creating a chardev to access it?  Are we manipulating automatic driver
-binding or existing bound drivers once a group is bound?  Do isolation
-groups enforce isolation, or just describe it?  Thanks,
-
-Alex
 
