@@ -1,76 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab2BASuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 13:50:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45908 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab2BASuH (ORCPT
+	id S1755493Ab2BASwi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 13:52:38 -0500
+Received: from comm.purplecow.org ([210.87.62.131]:33659 "EHLO
+	comm.purplecow.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab2BASwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 13:50:07 -0500
-Date: Wed, 1 Feb 2012 19:50:01 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <paul@paulmenage.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Tim Hockin <thockin@hockin.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
-        Daniel J Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Max Kellermann <mk@cm4all.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
-Message-ID: <20120201184959.GH6731@somewhere.redhat.com>
-References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
- <20120201163126.GA19837@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120201163126.GA19837@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 1 Feb 2012 13:52:36 -0500
+X-Greylist: delayed 3602 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 13:52:36 EST
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-1
+Message-id: <64097.10.0.66.17.1328118751.squirrel@interact.purplecow.org>
+Date: Wed, 01 Feb 2012 12:52:31 -0500 (EST)
+Subject: Re: Memory corruption due to word sharing
+From: Dennis Clarke <dclarke@blastwave.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Walters <walters@verbum.org>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Reply-to: dclarke@blastwave.org
+User-Agent: SquirrelMail/1.4.11
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 08:31:26AM -0800, Tejun Heo wrote:
-> On Wed, Feb 01, 2012 at 04:37:40AM +0100, Frederic Weisbecker wrote:
-> > Changes In this version:
-> > 
-> > - Split 32/64 bits version of res_counter_write_u64() [1/10]
-> >   Courtesy of Kirill A. Shutemov
-> > 
-> > - Added Kirill's ack [8/10]
-> > 
-> > - Added selftests [9/10], [10/10]
-> > 
-> > Please consider for merging. At least two users want this feature:
-> 
-> Has there been further discussion about this approach?  IIRC, we
-> weren't sure whether this should be merged.
 
-The doubts I have noticed were:
+> I have actually tried exactly this earlier today (because while looking at
+> this, I had an idea that putting volatile in place could be a workaround,
+> causing gcc to generate a saner code), but it doesn't work either:
+>
+> # cat x.c
+> struct x {
+>     long a;
+>     volatile unsigned int lock;
+>     unsigned int full:1;
+> };
+>
+> void
+> wrong(struct x *ptr)
+> {
+>         ptr->full = 1;
+> }
+>
+> int main()
+> {
+>         wrong(0);
+> }
+<snip>
+> In my opinion, this is a clear bug in gcc (while the original problem,
+> without explitict volatile, is not a C spec violation per se, it's just
+> very inconvenient :) ).
 
-Q: Can't we rather focus on a global solution to fight forkbombs?
+As a data point, the exact same code on a Solaris 8 pentium III box:
 
-If we can find a reliable solution that works in any case and that
-prevent from any forkbomb to impact the rest of the system then it
-may be an acceptable solution. But I'm not aware of such feature.
+$ gcc -S -o x.s x.c
+$ cat x.s
+        .file   "x.c"
+        .text
+.globl wrong
+        .type   wrong, @function
+wrong:
+        pushl   %ebp
+        movl    %esp, %ebp
+        movl    8(%ebp), %eax
+        movzbl  8(%eax), %edx
+        orl     $1, %edx
+        movb    %dl, 8(%eax)
+        popl    %ebp
+        ret
+        .size   wrong, .-wrong
+.globl main
+        .type   main, @function
+main:
+        pushl   %ebp
+        movl    %esp, %ebp
+        subl    $4, %esp
+        movl    $0, (%esp)
+        call    wrong
+        leave
+        ret
+        .size   main, .-main
+        .ident  "GCC: (Blastwave.org Inc. Thu Dec 16 18:05:01 GMT 2010) 4.5.2"
+$ gcc -o x x.c
+$ file x
+x:              ELF 32-bit LSB executable 80386 Version 1, dynamically linked,
+not stripped
+$ ldd x
+        libc.so.1 =>     /usr/lib/libc.so.1
+        libdl.so.1 =>    /usr/lib/libdl.so.1
+$ ./x
+Segmentation Fault(coredump)
 
-Besides, another point in having this task counter is that we
-have a per container limit. Assuming all containers are running under
-the same user, we can protect against a container starving all others
-with a massive amount of processes close to the NR_PROC rlimit.
+$ ls -l core
+-rw-------   1 dclarke  csw        71384 Feb  1 17:26 core
 
-Q: Can/should we implement a limitation on the number of "fork" as well?
-   (as in https://lkml.org/lkml/2011/11/3/233 )
+71384 bytes core is complete thus :
 
-I'm still not sure about why such a thing is needed. Is it really something we
-want? Why can't the task counter be used instead?
+$  elfdump -p core | tail -6
 
-I need more details from the author of this patch. But I doubt we can merge
-both subsystems, they have pretty different semantics.
+Program Header[12]:
+    p_vaddr:      0xdfbf3000      p_flags:    [ PF_X  PF_W  PF_R ]
+    p_paddr:      0               p_type:     [ PT_LOAD ]
+    p_filesz:     0x1000          p_memsz:    0x1000
+    p_offset:     0x106d8         p_align:    0
+
+$ /opt/studio/SOS11/SUNWspro/bin/dbx -c "print 0x1000 + 0x106d8; quit"
+dbx: warning: unknown language, 'c' assumed
+0x1000+0x106d8 = 71384
+
+what caused the seg fault ?
+
+$ /opt/studio/SOS11/SUNWspro/bin/dbx x core
+Reading x
+core file header read successfully
+Reading ld.so.1
+Reading libc.so.1
+Reading libdl.so.1
+program terminated by signal SEGV (no mapping at the fault address)
+0x08050672: wrong+0x0006:       movzbl   0x00000008(%eax),%edx
+(dbx) where
+=>[1] wrong(0x0, 0x8047b70, 0x805057d, 0x1, 0x8047b7c, 0x8047b84), at 0x8050672
+  [2] main(0x1, 0x8047b7c, 0x8047b84), at 0x8050690
+
+However Sun Studio 5.8 does no better :
+
+$ /opt/studio/SOS11/SUNWspro/bin/cc -Xc -o x_Sun_Studio_5.8 x.c
+$ ./x_Sun_Studio_5.8
+Segmentation Fault(coredump)
+$ ls -l core
+-rw-------   1 dclarke  csw        71384 Feb  1 17:48 core
+
+$ /opt/studio/SOS11/SUNWspro/bin/dbx x_Sun_Studio_5.8 core
+dbx: warning: core object name "x_Sun_Studio_5." matches
+object name "x_Sun_Studio_5.8" within the limit of 14. assuming they match
+core file header read successfully
+Reading ld.so.1
+Reading libc.so.1
+Reading libdl.so.1
+program terminated by signal SEGV (no mapping at the fault address)
+0x080506ae: wrong+0x000e:       movl     0x00000008(%ecx),%eax
+(dbx) where
+=>[1] wrong(0x0), at 0x80506ae
+  [2] main(0x1, 0x8047b4c, 0x8047b54), at 0x80506ca
+(dbx) quit
+$ /opt/studio/SOS11/SUNWspro/bin/cc -V
+cc: Sun C 5.8 Patch 121016-08 2009/04/20
+usage: cc [ options] files.  Use 'cc -flags' for details
+$
+
+
+dc
+
+
+-- 
+--
+http://pgp.mit.edu:11371/pks/lookup?op=vindex&search=0x1D936C72FA35B44B
++-------------------------+-----------------------------------+
+| Dennis Clarke           | Solaris and Linux and Open Source |
+| dclarke@blastwave.org   | Respect for open standards.       |
++-------------------------+-----------------------------------+
+
