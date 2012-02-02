@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab2BBOyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:54:15 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:58274 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932145Ab2BBOxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:53:10 -0500
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: netdev@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3 v2] drivers/net/ethernet/ti: Move call to PTR_ERR after reassignment
-Date: Thu,  2 Feb 2012 15:53:01 +0100
-Message-Id: <1328194382-32465-3-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1328194382-32465-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1328194382-32465-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S932389Ab2BBOzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:55:46 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:52578 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932099Ab2BBOzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 09:55:45 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH 1/2] lkdtm: use atomic_t to replace count_lock
+Date: Thu, 2 Feb 2012 14:55:38 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "Greg Kroah-Hartman" <greg@kroah.com>, Dave Young <dyoung@redhat.com>
+References: <1328079501-24746-1-git-send-email-xiyou.wangcong@gmail.com> <201202021344.19455.arnd@arndb.de> <4F2A9D56.3080102@gmail.com>
+In-Reply-To: <4F2A9D56.3080102@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202021455.38966.arnd@arndb.de>
+X-Provags-ID: V02:K0:jR73DVt3zi6YboRK/vWM4ZZ4lF5/8EOIcBHMbN2uHn5
+ 93AFskQgJDPULRfZfGqDn79wF3rH4yazVI94UbjiFBmgy0829b
+ LvzAzEYXixaZiaLlTm3cv/jTullO0suBhb/QuvFk3pFVNCxxBu
+ IUcVrr2yTz4OVdeybusXZbIdWelAjygK1KF14xb+YckyQHQA3a
+ CLbU66u61heIFsAlDCIRzIKaRiBGgT8zKVfG7Vk60AEdsZQ/Oo
+ fuoZhZISmb6gk4kGztAiDk+KGPeOd3MfPuus5kPkBSGHwLq1S1
+ 9vwdfwNmnbFLXlI9vQ+mByrMp4zG2HjaJZ3DNWEl+0Sxyo9H8X
+ UddGDjNO28C1DWW9ZtOk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thursday 02 February 2012, Cong Wang wrote:
+> On 02/02/2012 09:44 PM, Arnd Bergmann wrote:
+> > On Thursday 02 February 2012, Cong Wang wrote:
+> >>> In order to have an atomic here, you have to use a loop around
+> >>> atomic_cmpxchg, like
+> >>>
+> >>>
+> >>>        int old, new;
+> >>>        old = atomic_read(&count);
+> >>>        do {
+> >>>                new = old ? old - 1 : cpoint_count;
+> >>>                old = cmpxchg(&count, old, new);
 
-PTR_ERR should be called before its argument is cleared.
+		    ^^^^^^^
+I guess I meant "new = cmpxchg(...)" here, sorry.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+> >>>        } while (old != new);
+> >>>
+> >>> I suppose you could also just keep the spinlock and move lkdtm_do_action()
+> >>> outside of it?
+> >>
+> >> If we still need spinlock, I think we don't need to bother atomic_t at all.
+> >
+> > Yes, it's one or the other: If you use the cmpxchg loop, you don't need a
+> > spinlock and vice versa.
+> >
+> 
+> The cmpxchg loop is for comparing and assigning to 'count', but still 
+> there is a printk() above that needs to read 'count'. Combining these 
+> two operations means we have to use a spinlock, correct? Because there 
+> is a chance that another process could change 'count' in between.
 
-// <smpl>
-@@
-expression e,e1;
-constant c;
-@@
+No, you can just print the value of "old" in the above example,
+which was atomically read.
 
-*e = c
-... when != e = e1
-    when != &e
-    when != true IS_ERR(e)
-*PTR_ERR(e)
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Reported-by: Josh Triplett <josh@joshtriplett.org>
-
----
-v2: correct commit message.
-
- drivers/net/ethernet/ti/davinci_emac.c |    3 ++-
- drivers/net/ethernet/ti/davinci_mdio.c |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
-index efd4f3e..922a937 100644
---- a/drivers/net/ethernet/ti/davinci_emac.c
-+++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -1600,8 +1600,9 @@ static int emac_dev_open(struct net_device *ndev)
- 		if (IS_ERR(priv->phydev)) {
- 			dev_err(emac_dev, "could not connect to phy %s\n",
- 				priv->phy_id);
-+			ret = PTR_ERR(priv->phydev);
- 			priv->phydev = NULL;
--			return PTR_ERR(priv->phydev);
-+			return ret;
- 		}
- 
- 		priv->link = 0;
-diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
-index ef7c9c1..af8b8fc 100644
---- a/drivers/net/ethernet/ti/davinci_mdio.c
-+++ b/drivers/net/ethernet/ti/davinci_mdio.c
-@@ -318,9 +318,9 @@ static int __devinit davinci_mdio_probe(struct platform_device *pdev)
- 
- 	data->clk = clk_get(dev, NULL);
- 	if (IS_ERR(data->clk)) {
--		data->clk = NULL;
- 		dev_err(dev, "failed to get device clock\n");
- 		ret = PTR_ERR(data->clk);
-+		data->clk = NULL;
- 		goto bail_out;
- 	}
- 
-
+	Arnd
