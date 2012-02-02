@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2BBNgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 08:36:15 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:55776
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753478Ab2BBNgO (ORCPT
+	id S1755959Ab2BBNin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 08:38:43 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37873 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753032Ab2BBNim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 08:36:14 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org
-Cc: standby24x7@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] [trivial] scsi: Fix typo in mvumi.c
-Date: Thu,  2 Feb 2012 22:34:43 +0900
-Message-Id: <1328189683-1722-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Thu, 2 Feb 2012 08:38:42 -0500
+Date: Thu, 2 Feb 2012 13:38:38 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Maxime Coquelin <maxime.coquelin@stericsson.com>,
+        Alex Macro <alex.macro@stericsson.com>,
+        Michel Jaouen <michel.jaouen@stericsson.com>
+Subject: Re: [PATCH 2/4] mfd/ab8500: add version detection and enforcing
+Message-ID: <20120202133838.GO7428@opensource.wolfsonmicro.com>
+References: <1328112561-32494-1-git-send-email-linus.walleij@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328112561-32494-1-git-send-email-linus.walleij@stericsson.com>
+X-Cookie: Never give an inch!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "resouce" to "resource" in
-drivers/scsi/mvumi.c
+On Wed, Feb 01, 2012 at 05:09:21PM +0100, Linus Walleij wrote:
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/scsi/mvumi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -512,7 +512,6 @@ static struct stedma40_chan_cfg uart2_dma_cfg_tx = {
+>  };
+>  #endif
+>  
+> -
+>  static pin_cfg_t mop500_pins_uart0[] = {
+>  	GPIO0_U0_CTSn   | PIN_INPUT_PULLUP,
+>  	GPIO1_U0_RTSn   | PIN_OUTPUT_HIGH,
 
-diff --git a/drivers/scsi/mvumi.c b/drivers/scsi/mvumi.c
-index 88cf1db..787d9bd 100644
---- a/drivers/scsi/mvumi.c
-+++ b/drivers/scsi/mvumi.c
-@@ -122,7 +122,7 @@ static struct mvumi_res *mvumi_alloc_mem_resource(struct mvumi_hba *mhba,
- 
- 	if (!res) {
- 		dev_err(&mhba->pdev->dev,
--			"Failed to allocate memory for resouce manager.\n");
-+			"Failed to allocate memory for resource manager.\n");
- 		return NULL;
- 	}
- 
--- 
-1.7.6.5
+This probably should be dropped, it's not like there's even any other
+arch/arm updates here.
 
+Otherwise looks good
+
+Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
