@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab2BBByj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 20:54:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34705 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab2BBByi (ORCPT
+	id S1754497Ab2BBBz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 20:55:28 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41082 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753509Ab2BBBz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 20:54:38 -0500
-Date: Thu, 2 Feb 2012 02:54:30 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>, linux-pm@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH RFC idle 1/3] x86: Avoid invoking RCU when CPU is idle
-Message-ID: <20120202015428.GA8807@somewhere.redhat.com>
-References: <20120202004253.GA10946@linux.vnet.ibm.com>
- <1328143404-11038-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	Wed, 1 Feb 2012 20:55:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328143404-11038-1-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <CAN1soZxzWgiX7m6meLAS8bRpg5JNF5YRu8XXpUSmwzRJoBBP6w@mail.gmail.com>
+References: <1325217971.4022.1.camel@phoenix> <1325338529.24725.YahooMailClassic@web29008.mail.ird.yahoo.com>
+ <CAN1soZxzWgiX7m6meLAS8bRpg5JNF5YRu8XXpUSmwzRJoBBP6w@mail.gmail.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 2 Feb 2012 09:55:05 +0800
+Message-ID: <CAF+7xWmzdG9NBp4xLroUTJ43=xx=HQiOnadfWFc5zWBLnVG_Jg@mail.gmail.com>
+Subject: Re: [PATCH v2] pxa/hx4700: add platform device and I2C info for
+ AK4641 codec
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Paul Parsons <lost.distance@yahoo.com>, linux-kernel@vger.kernel.org,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Dmitry Artamonow <mad_soft@inbox.ru>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 04:43:22PM -0800, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> 
-> The idle loop is a quiscent state for RCU, which means that RCU ignores
-> CPUs that have told RCU that they are idle via rcu_idle_enter().  There
-> are nevertheless quite a few places where idle CPUs use RCU, most commonly
-> indirectly via tracing.  This patch fixes these problems for x86.
-> 
-> Many of these bugs have been in the kernel for quite some time, but
-> Frederic's recent change now gives warnings.
-> 
-> This patch takes the straightforward approach of pushing the
-> rcu_idle_enter()/rcu_idle_exit() pair further down into the core
-> of the idle loop.
+2012/1/4 Haojian Zhuang <haojian.zhuang@gmail.com>:
+> On Sat, Dec 31, 2011 at 9:35 PM, Paul Parsons <lost.distance@yahoo.com> wrote:
+>> Works for me on linux-3.2-rc7.
+>>
+>> Tested-by: Paul Parsons <lost.distance@yahoo.com>
+>>
+> Applied.
+Hi Haojian,
+This patch is not (yet) upstream.
+Not in Linus' tree. and not in linux-next tree.
+Could you help to check it again.
 
-I guess this is about the trace_power_*() things, right?
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-Thanks.
+Thanks,
+Axel
