@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2BBKmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 05:42:14 -0500
-Received: from ns.pmeerw.net ([87.118.82.44]:33282 "EHLO pmeerw.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755429Ab2BBKmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 05:42:12 -0500
-Date: Thu, 2 Feb 2012 11:42:09 +0100 (CET)
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, lars@metafoo.de, rpurdie@rpsys.net
-Subject: Re: [PATCH v2] add LED driver for PCA9663 I2C chip
-In-Reply-To: <20120130163424.ef8eb9af.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.01.1202021130070.10172@pmeerw.net>
-References: <1326916289-19004-1-git-send-email-pmeerw@pmeerw.net> <20120130162849.635c83a9.akpm@linux-foundation.org> <20120130163424.ef8eb9af.akpm@linux-foundation.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1755557Ab2BBKvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 05:51:05 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36409 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405Ab2BBKvC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 05:51:02 -0500
+Date: Thu, 2 Feb 2012 11:50:59 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Keith Packard <keithp@keithp.com>, stern@rowland.harvard.edu,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH] Regression: Revert "Bluetooth: use buffer priority to
+ mark URB_ISO_ASAP flag"
+Message-ID: <20120202105059.GC1643@atrey.karlin.mff.cuni.cz>
+References: <1327298281-2502-1-git-send-email-keithp@keithp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327298281-2502-1-git-send-email-keithp@keithp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> > > +exit:
-> > > +	while (i--) {
-> > > +		led_classdev_unregister(&pca9633[i].led_cdev);
-> > > +		cancel_work_sync(&pca9633[i].work);
-> > > +	}
-> > This (untested!) loop has an off-by-one error. 
+> This reverts commit b8aabfc92249b239c425da7e4ca85b7e4855e984.
+> 
+> URB_ISO_ASAP may only be used with iso end points, but this patch was
+> attempting to use it with a bulk endpoint. When DEBUG is defined in
+> the USB stack, it checks for invalid flags and returns -EINVAL instead
+> of actually transmitting the data.
+> 
+> Signed-off-by: Keith Packard <keithp@keithp.com>
 
-> Well, it's partly wrong.  It's wrong for the cancel_work_sync() but not
-> for the led_classdev_unregister().  The cancel_work_sync() can just be
-> removed: we haven't scheduled any works yet.
+This patch fixes a regression, and it is not in 3.3.0-rc2.
 
-there are 4 leds with get led_classdev_register()ed
-
-wouldn't it be possible that someone is starting to use led1 while led3 has 
-not been registered yet? if registration for led3 fails, the exit code 
-(above) is called and there might be work scheduled
-
-so (hypothetically):
-register led1 -> ok
-register led2 -> ok
-use led1 (schedule work)
-register led3 -> fail -> exit code
-
-the code has been copied from other led drivers
-I think there is no harm to keep cancel_work_sync()
-
-p.
-
+(And for the record I also believe that #ifdef debug should not
+introduce extra error returns. WARN_ON() should be enough. Don't break
+systems for people who try to be nice and enable debugging.)
+									Pavel
 -- 
-
-Peter Meerwald
-+43-664-2444418 (mobile)
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
