@@ -1,38 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344Ab2BBPxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 10:53:12 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35660 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756591Ab2BBPxL (ORCPT
+	id S932448Ab2BBPyX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 10:54:23 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38185 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932138Ab2BBPyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 10:53:11 -0500
+	Thu, 2 Feb 2012 10:54:22 -0500
+Date: Thu, 2 Feb 2012 07:53:38 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Josh Triplett <josh@freedesktop.org>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3 v2] kernel/rcutorture.c: Move call to PTR_ERR after
+ reassignment
+Message-ID: <20120202155338.GF2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1328194382-32465-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1328194382-32465-4-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-In-Reply-To: <CAL8zT=gX5=S9fd1MdYyYVYg+35anmK-aJwFj9fUiKNuMSb8n_w@mail.gmail.com>
-References: <CAL8zT=gX5=S9fd1MdYyYVYg+35anmK-aJwFj9fUiKNuMSb8n_w@mail.gmail.com>
-From: Jean-Michel Hautbois <jhautbois@gmail.com>
-Date: Thu, 2 Feb 2012 16:52:50 +0100
-Message-ID: <CAL8zT=jXmSWbEQO2T2Kpp2_Yei5VJ+sGVt5U2vJwPo=6T2YY1g@mail.gmail.com>
-Subject: Specifying some processes to record using perf
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jean-Michel Hautbois <jhautbois@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328194382-32465-4-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020215-7282-0000-0000-000006257FE6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Queued, thank you both!
 
-I am using perf and I have several process and threads to record.
-I know that some threads in particular are interesting, and I don't
-find a way to specify multiple threads in perf record.
-The "-t" option takes only one thread IIUC.
-I don't know if the "--cgroup" is intended to do that, but I didn't
-succeed to use it...
+							Thanx, Paul
 
-I would also like to exclude one specific process (or thread) when I
-do a system-wide record, and I think it is not possible either ?
+On Thu, Feb 02, 2012 at 03:53:02PM +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> PTR_ERR should be called before its argument is cleared.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e,e1;
+> constant c;
+> @@
+> 
+> *e = c
+> ... when != e = e1
+>     when != &e
+>     when != true IS_ERR(e)
+> *PTR_ERR(e)
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> Reported-by: Josh Triplett <josh@joshtriplett.org>
+> 
+> ---
+> v2: correct commit message.
+> 
+>  kernel/rcutorture.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> index a58ac28..4b3cd87 100644
+> --- a/kernel/rcutorture.c
+> +++ b/kernel/rcutorture.c
+> @@ -1450,12 +1450,15 @@ rcu_torture_onoff(void *arg)
+>  static int __cpuinit
+>  rcu_torture_onoff_init(void)
+>  {
+> +	int ret;
+> +
+>  	if (onoff_interval <= 0)
+>  		return 0;
+>  	onoff_task = kthread_run(rcu_torture_onoff, NULL, "rcu_torture_onoff");
+>  	if (IS_ERR(onoff_task)) {
+> +		ret = PTR_ERR(onoff_task);
+>  		onoff_task = NULL;
+> -		return PTR_ERR(onoff_task);
+> +		return ret;
+>  	}
+>  	return 0;
+>  }
+> 
 
-Thanks in advance !
-Regards,
-JM
