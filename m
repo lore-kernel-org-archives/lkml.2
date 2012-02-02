@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab2BBOb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:31:29 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:60093 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110Ab2BBObX (ORCPT
+	id S1756682Ab2BBObo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:31:44 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44863 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756110Ab2BBObk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:31:23 -0500
+	Thu, 2 Feb 2012 09:31:40 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -24,313 +24,1107 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 02 Feb 2012 19:49:38 +0530
-Message-Id: <20120202141938.5967.45905.sendpatchset@srdronam.in.ibm.com>
+Date: Thu, 02 Feb 2012 19:50:24 +0530
+Message-Id: <20120202142024.5967.49777.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
 References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v10 3.3-rc2 4/9] uprobes: counter to optimize probe hits.
-x-cbid: 12020204-6102-0000-0000-000000C2549D
+Subject: [PATCH v10 3.3-rc2 7/9] tracing: uprobes trace_event interface
+x-cbid: 12020204-5490-0000-0000-000000A9BCD2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Maintain a per-mm counter (number of uprobes that are inserted on
-this process address space). This counter can be used at probe hit
-time to determine if we need to do a uprobe lookup in the uprobes
-rbtree. Everytime a probe gets inserted successfully, the probe
-count is incremented and everytime a probe gets removed successfully
-the probe count is removed.
+Implements trace_event support for uprobes. In its current form it can
+be used to put probes at a specified offset in a file and dump the
+required registers when the code flow reaches the probed address.
 
-A new hook munmap_uprobe is added to keep the counter to be correct
-even when a region is unmapped or remapped. This patch expects that
-once a munmap_uprobe() is called, the vma either go away or a
-subsequent mmap_uprobe gets called before a removal of a probe from
-unregister_uprobe in the same address space.
+The following example shows how to dump the instruction pointer and %ax
+a register at the probed text address.  Here we are trying to probe
+zfree in /bin/zsh
 
-On every executable vma thats cowed at fork, mmap_uprobe is called
-so that the mm_uprobes_count is in sync.
+# cd /sys/kernel/debug/tracing/
+# cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
+00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
+# objdump -T /bin/zsh | grep -w zfree
+0000000000446420 g    DF .text  0000000000000012  Base        zfree
+# echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
+# cat uprobe_events
+p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
+# echo 1 > events/uprobes/enable
+# sleep 20
+# echo 0 > events/uprobes/enable
+# cat trace
+# tracer: nop
+#
+#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+#              | |       |          |         |
+             zsh-24842 [006] 258544.995456: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+             zsh-24842 [007] 258545.000270: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+             zsh-24842 [002] 258545.043929: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+             zsh-24842 [004] 258547.046129: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
 
-When a vma of interest is mapped, insert the breakpoint at the right
-address. Upon munmap, just make sure the data structures are
-adjusted/cleaned up.
-
-On process creation, make sure the probes count in the child is set
-correctly.
-
-Special cases that are taken care include:
-a. mremap()
-b. VM_DONTCOPY vmas on fork()
-c. insertion/removal races in the parent during fork().
+TODO: Connect a filter to a consumer.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
-Changelog (since v7)
-- Separate this patch from the patch that implements mmap_uprobe.
-- Increment counter only after verifying that the probe lies underneath.
+Changelog (since v9)
+- Disable preemption while in perf handler as suggested by Jiri Olsa.
 
 Changelog (since v5)
-- While forking, handle vma's that have VM_DONTCOPY.
-- While forking, handle race of new breakpoints being inserted / removed
-  in the parent process.
+- Added uprobe tracer documentation to this patch.
 
- include/linux/mm_types.h |    1 
- include/linux/uprobes.h  |    4 ++
- kernel/fork.c            |    4 ++
- kernel/uprobes.c         |  103 ++++++++++++++++++++++++++++++++++++++++++++--
- mm/mmap.c                |   10 ++++
- 5 files changed, 117 insertions(+), 5 deletions(-)
+ Documentation/trace/uprobetracer.txt |   93 ++++
+ arch/Kconfig                         |   10 
+ kernel/trace/Kconfig                 |   16 +
+ kernel/trace/Makefile                |    1 
+ kernel/trace/trace.h                 |    5 
+ kernel/trace/trace_kprobe.c          |    4 
+ kernel/trace/trace_probe.c           |   14 -
+ kernel/trace/trace_probe.h           |    3 
+ kernel/trace/trace_uprobe.c          |  772 ++++++++++++++++++++++++++++++++++
+ 9 files changed, 902 insertions(+), 16 deletions(-)
+ create mode 100644 Documentation/trace/uprobetracer.txt
+ create mode 100644 kernel/trace/trace_uprobe.c
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 9ade86e..62d5aeb 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -390,6 +390,7 @@ struct mm_struct {
- 	struct cpumask cpumask_allocation;
- #endif
- #ifdef CONFIG_UPROBES
-+	atomic_t mm_uprobes_count;
- 	struct uprobes_xol_area *uprobes_xol_area;
- #endif
+diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
+new file mode 100644
+index 0000000..457932f
+--- /dev/null
++++ b/Documentation/trace/uprobetracer.txt
+@@ -0,0 +1,93 @@
++		Uprobe-tracer: Uprobe-based Event Tracing
++		=========================================
++                 Documentation is written by Srikar Dronamraju
++
++Overview
++--------
++These events are similar to kprobe based events.
++To enable this feature, build your kernel with CONFIG_UPROBE_EVENTS=y.
++
++Similar to the kprobe-event tracer, this doesn't need to be activated via
++current_tracer. Instead of that, add probe points via
++/sys/kernel/debug/tracing/uprobe_events, and enable it via
++/sys/kernel/debug/tracing/events/uprobes/<EVENT>/enabled.
++
++
++Synopsis of uprobe_tracer
++-------------------------
++  p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS]	: Set a probe
++
++ GRP		: Group name. If omitted, use "uprobes" for it.
++ EVENT		: Event name. If omitted, the event name is generated
++		  based on SYMBOL+offs.
++ PATH		: path to an executable or a library.
++ SYMBOL[+offs]	: Symbol+offset where the probe is inserted.
++
++ FETCHARGS	: Arguments. Each probe can have up to 128 args.
++  %REG		: Fetch register REG
++
++Event Profiling
++---------------
++ You can check the total number of probe hits and probe miss-hits via
++/sys/kernel/debug/tracing/uprobe_profile.
++ The first column is event name, the second is the number of probe hits,
++the third is the number of probe miss-hits.
++
++Usage examples
++--------------
++To add a probe as a new event, write a new definition to uprobe_events
++as below.
++
++  echo 'p: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
++
++ This sets a uprobe at an offset of 0x4245c0 in the executable /bin/bash
++
++
++  echo > /sys/kernel/debug/tracing/uprobe_events
++
++ This clears all probe points.
++
++The following example shows how to dump the instruction pointer and %ax
++a register at the probed text address.  Here we are trying to probe
++function zfree in /bin/zsh
++
++    # cd /sys/kernel/debug/tracing/
++    # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
++    00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
++    # objdump -T /bin/zsh | grep -w zfree
++    0000000000446420 g    DF .text  0000000000000012  Base        zfree
++
++0x46420 is the offset of zfree in object /bin/zsh that is loaded at
++0x00400000. Hence the command to probe would be :
++
++    # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
++
++We can see the events that are registered by looking at the uprobe_events
++file.
++
++    # cat uprobe_events
++    p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
++
++Right after definition, each event is disabled by default. For tracing these
++events, you need to enable it by:
++
++    # echo 1 > events/uprobes/enable
++
++Lets disable the event after sleeping for some time.
++    # sleep 20
++    # echo 0 > events/uprobes/enable
++
++And you can see the traced information via /sys/kernel/debug/tracing/trace.
++
++    # cat trace
++    # tracer: nop
++    #
++    #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
++    #              | |       |          |         |
++                 zsh-24842 [006] 258544.995456: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
++                 zsh-24842 [007] 258545.000270: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
++                 zsh-24842 [002] 258545.043929: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
++                 zsh-24842 [004] 258547.046129: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
++
++Each line shows us probes were triggered for a pid 24842 with ip being
++0x446421 and contents of ax register being 79.
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 284f589..ebb86e5 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -66,15 +66,7 @@ config OPTPROBES
+ 	depends on !PREEMPT
+ 
+ config UPROBES
+-	bool "User-space probes (EXPERIMENTAL)"
+-	depends on ARCH_SUPPORTS_UPROBES
+-	default n
+-	help
+-	  Uprobes enables kernel subsystems to establish probepoints
+-	  in user applications and execute handler functions when
+-	  the probepoints are hit.
+-
+-	  If in doubt, say "N".
++	def_bool n
+ 
+ config HAVE_EFFICIENT_UNALIGNED_ACCESS
+ 	bool
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 520106a..b001fb1 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -386,6 +386,22 @@ config KPROBE_EVENT
+ 	  This option is also required by perf-probe subcommand of perf tools.
+ 	  If you want to use perf tools, this option is strongly recommended.
+ 
++config UPROBE_EVENT
++	bool "Enable uprobes-based dynamic events"
++	depends on ARCH_SUPPORTS_UPROBES
++	depends on MMU
++	select UPROBES
++	select PROBE_EVENTS
++	select TRACING
++	default n
++	help
++	  This allows the user to add tracing events on top of userspace dynamic
++	  events (similar to tracepoints) on the fly via the traceevents interface.
++	  Those events can be inserted wherever uprobes can probe, and record
++	  various registers.
++	  This option is required if you plan to use perf-probe subcommand of perf
++	  tools on user space applications.
++
+ config PROBE_EVENTS
+ 	def_bool n
+ 
+diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+index fa10d5c..1734c03 100644
+--- a/kernel/trace/Makefile
++++ b/kernel/trace/Makefile
+@@ -62,5 +62,6 @@ ifeq ($(CONFIG_TRACING),y)
+ obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
+ endif
+ obj-$(CONFIG_PROBE_EVENTS) += trace_probe.o
++obj-$(CONFIG_UPROBE_EVENT) += trace_uprobe.o
+ 
+ libftrace-y := ftrace.o
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index b93ecba..03a5818 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -97,6 +97,11 @@ struct kretprobe_trace_entry_head {
+ 	unsigned long		ret_ip;
  };
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index c9ad7fc..0f6cc1a 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -126,6 +126,7 @@ extern void unregister_uprobe(struct inode *inode, loff_t offset,
- extern void free_uprobe_utask(struct task_struct *tsk);
- extern void free_uprobes_xol_area(struct mm_struct *mm);
- extern int mmap_uprobe(struct vm_area_struct *vma);
-+extern void munmap_uprobe(struct vm_area_struct *vma);
- extern unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs);
- extern int uprobe_post_notifier(struct pt_regs *regs);
- extern int uprobe_bkpt_notifier(struct pt_regs *regs);
-@@ -146,6 +147,9 @@ static inline int mmap_uprobe(struct vm_area_struct *vma)
- {
- 	return 0;
- }
-+static inline void munmap_uprobe(struct vm_area_struct *vma)
-+{
-+}
- static inline void uprobe_notify_resume(struct pt_regs *regs)
- {
- }
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 8e65a55..53e7959 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -420,6 +420,9 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
  
- 		if (retval)
- 			goto out;
++struct uprobe_trace_entry_head {
++	struct trace_entry	ent;
++	unsigned long		ip;
++};
 +
-+		if (file && mmap_uprobe(tmp))
-+			goto out;
- 	}
- 	/* a new mm has just been created */
- 	arch_dup_mmap(oldmm, mm);
-@@ -741,6 +744,7 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
- 	mm->pmd_huge_pte = NULL;
- #endif
- #ifdef CONFIG_UPROBES
-+	atomic_set(&mm->mm_uprobes_count, 0);
- 	mm->uprobes_xol_area = NULL;
- #endif
- 
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index f789c84..96cf12c 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -615,6 +615,30 @@ static int copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma,
- 	return __copy_insn(mapping, vma, uprobe->insn, bytes, uprobe->offset);
- }
- 
-+/*
-+ * How mm_uprobes_count gets updated
-+ * mmap_uprobe() increments the count if
-+ * 	- it successfully adds a breakpoint.
-+ * 	- it not add a breakpoint, but sees that there is a underlying
-+ * 	  breakpoint (via a is_bkpt_at_addr()).
-+ *
-+ * munmap_uprobe() decrements the count if
-+ * 	- it sees a underlying breakpoint, (via is_bkpt_at_addr)
-+ * 	- Subsequent unregister_uprobe wouldnt find the breakpoint
-+ * 	  unless a mmap_uprobe kicks in, since the old vma would be
-+ * 	  dropped just after munmap_uprobe.
-+ *
-+ * register_uprobe increments the count if:
-+ * 	- it successfully adds a breakpoint.
-+ *
-+ * unregister_uprobe decrements the count if:
-+ * 	- it sees a underlying breakpoint and removes successfully.
-+ * 			(via is_bkpt_at_addr)
-+ * 	- Subsequent munmap_uprobe wouldnt find the breakpoint
-+ * 	  since there is no underlying breakpoint after the
-+ * 	  breakpoint removal.
-+ */
-+
- static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- 				struct vm_area_struct *vma, loff_t vaddr)
- {
-@@ -646,7 +670,19 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- 
- 		uprobe->flags |= UPROBES_COPY_INSN;
- 	}
-+
-+	/*
-+	 * Ideally, should be updating the probe count after the breakpoint
-+	 * has been successfully inserted. However a thread could hit the
-+	 * breakpoint we just inserted even before the probe count is
-+	 * incremented. If this is the first breakpoint placed, breakpoint
-+	 * notifier might ignore uprobes and pass the trap to the thread.
-+	 * Hence increment before and decrement on failure.
-+	 */
-+	atomic_inc(&mm->mm_uprobes_count);
- 	ret = set_bkpt(mm, uprobe, addr);
-+	if (ret)
-+		atomic_dec(&mm->mm_uprobes_count);
- 
- 	return ret;
- }
-@@ -654,7 +690,8 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- static void remove_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- 							loff_t vaddr)
- {
--	set_orig_insn(mm, uprobe, (unsigned long)vaddr, true);
-+	if (!set_orig_insn(mm, uprobe, (unsigned long)vaddr, true))
-+		atomic_dec(&mm->mm_uprobes_count);
- }
- 
  /*
-@@ -960,7 +997,7 @@ int mmap_uprobe(struct vm_area_struct *vma)
- 	struct list_head tmp_list;
- 	struct uprobe *uprobe, *u;
- 	struct inode *inode;
--	int ret = 0;
-+	int ret = 0, count = 0;
- 
- 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, true))
- 		return ret;	/* Bail-out */
-@@ -984,17 +1021,74 @@ int mmap_uprobe(struct vm_area_struct *vma)
- 			}
- 			ret = install_breakpoint(vma->vm_mm, uprobe, vma,
- 								vaddr);
--			if (ret == -EEXIST)
-+			if (ret == -EEXIST) {
- 				ret = 0;
-+				if (!is_bkpt_at_addr(vma->vm_mm, vaddr))
-+					continue;
-+
-+				/*
-+				 * Unable to insert a breakpoint, but
-+				 * breakpoint lies underneath. Increment the
-+				 * probe count.
-+				 */
-+				atomic_inc(&vma->vm_mm->mm_uprobes_count);
-+			}
-+			if (!ret)
-+				count++;
-+
+  * trace_flag_type is an enumeration that holds different
+  * states when a trace occurs. These are:
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 967e634..60384df 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -524,8 +524,8 @@ static int create_trace_probe(int argc, char **argv)
  		}
- 		put_uprobe(uprobe);
+ 
+ 		/* Parse fetch argument */
+-		ret = traceprobe_parse_probe_arg(arg, &tp->size, &tp->args[i],
+-								is_return);
++		ret = traceprobe_parse_probe_arg(arg, &tp->size,
++					&tp->args[i], is_return, true);
+ 		if (ret) {
+ 			pr_info("Parse error at argument[%d]. (%d)\n", i, ret);
+ 			goto error;
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index e79a9e5..c0a98e6 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -529,13 +529,17 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+ 
+ /* Recursive argument parser */
+ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+-		     struct fetch_param *f, bool is_return)
++		     struct fetch_param *f, bool is_return, bool is_kprobe)
+ {
+ 	int ret = 0;
+ 	unsigned long param;
+ 	long offset;
+ 	char *tmp;
+ 
++	/* Until uprobe_events supports only reg arguments */
++	if (!is_kprobe && arg[0] != '%')
++		return -EINVAL;
++
+ 	switch (arg[0]) {
+ 	case '$':
+ 		ret = parse_probe_vars(arg + 1, t, f, is_return);
+@@ -585,7 +589,8 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 			if (!dprm)
+ 				return -ENOMEM;
+ 			dprm->offset = offset;
+-			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return);
++			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return,
++							is_kprobe);
+ 			if (ret)
+ 				kfree(dprm);
+ 			else {
+@@ -640,7 +645,7 @@ static int __parse_bitfield_probe_arg(const char *bf,
+ 
+ /* String length checking wrapper */
+ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
+-		struct probe_arg *parg, bool is_return)
++		struct probe_arg *parg, bool is_return, bool is_kprobe)
+ {
+ 	const char *t;
+ 	int ret;
+@@ -666,7 +671,8 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
  	}
+ 	parg->offset = *size;
+ 	*size += parg->type->size;
+-	ret = parse_probe_arg(arg, parg->type, &parg->fetch, is_return);
++	ret = parse_probe_arg(arg, parg->type, &parg->fetch, is_return,
++							is_kprobe);
+ 	if (ret >= 0 && t != NULL)
+ 		ret = __parse_bitfield_probe_arg(t, parg->type, &parg->fetch);
+ 	if (ret >= 0) {
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index 84eef0a..31e635e 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -66,6 +66,7 @@
+ #define TP_FLAG_TRACE	1
+ #define TP_FLAG_PROFILE	2
+ #define TP_FLAG_REGISTERED 4
++#define TP_FLAG_UPROBE	8
  
- 	mutex_unlock(uprobes_mmap_hash(inode));
-+	if (ret)
-+		atomic_sub(count, &vma->vm_mm->mm_uprobes_count);
  
- 	return ret;
+ /* data_rloc: data relative location, compatible with u32 */
+@@ -144,7 +145,7 @@ static inline int is_good_name(const char *name)
  }
  
+ extern int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
+-		   struct probe_arg *parg, bool is_return);
++		   struct probe_arg *parg, bool is_return, bool is_kprobe);
+ 
+ extern int traceprobe_conflict_field_name(const char *name,
+ 			       struct probe_arg *args, int narg);
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+new file mode 100644
+index 0000000..4d3857c
+--- /dev/null
++++ b/kernel/trace/trace_uprobe.c
+@@ -0,0 +1,772 @@
 +/*
-+ * Called in context of a munmap of a vma.
++ * uprobes-based tracing events
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ * Copyright (C) IBM Corporation, 2010
++ * Author:	Srikar Dronamraju
 + */
-+void munmap_uprobe(struct vm_area_struct *vma)
++
++#include <linux/module.h>
++#include <linux/uaccess.h>
++#include <linux/uprobes.h>
++#include <linux/namei.h>
++
++#include "trace_probe.h"
++
++#define UPROBE_EVENT_SYSTEM "uprobes"
++
++/**
++ * uprobe event core functions
++ */
++struct trace_uprobe;
++struct uprobe_trace_consumer {
++	struct uprobe_consumer cons;
++	struct trace_uprobe *tp;
++};
++
++struct trace_uprobe {
++	struct list_head	list;
++	struct ftrace_event_class	class;
++	struct ftrace_event_call	call;
++	struct uprobe_trace_consumer	*consumer;
++	struct inode		*inode;
++	char			*filename;
++	unsigned long		offset;
++	unsigned long		nhit;
++	unsigned int		flags;	/* For TP_FLAG_* */
++	ssize_t			size;		/* trace entry size */
++	unsigned int		nr_args;
++	struct probe_arg	args[];
++};
++
++#define SIZEOF_TRACE_UPROBE(n)			\
++	(offsetof(struct trace_uprobe, args) +	\
++	(sizeof(struct probe_arg) * (n)))
++
++static int register_uprobe_event(struct trace_uprobe *tp);
++static void unregister_uprobe_event(struct trace_uprobe *tp);
++
++static DEFINE_MUTEX(uprobe_lock);
++static LIST_HEAD(uprobe_list);
++
++static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
++
++/*
++ * Allocate new trace_uprobe and initialize it (including uprobes).
++ */
++static struct trace_uprobe *alloc_trace_uprobe(const char *group,
++				const char *event, int nargs)
 +{
-+	struct list_head tmp_list;
-+	struct uprobe *uprobe, *u;
-+	struct inode *inode;
++	struct trace_uprobe *tp;
 +
-+	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
-+		return;		/* Bail-out */
++	if (!event || !is_good_name(event))
++		return ERR_PTR(-EINVAL);
 +
-+	if (!atomic_read(&vma->vm_mm->mm_uprobes_count))
-+		return;
++	if (!group || !is_good_name(group))
++		return ERR_PTR(-EINVAL);
 +
-+	inode = vma->vm_file->f_mapping->host;
-+	if (!inode)
-+		return;
++	tp = kzalloc(SIZEOF_TRACE_UPROBE(nargs), GFP_KERNEL);
++	if (!tp)
++		return ERR_PTR(-ENOMEM);
 +
-+	INIT_LIST_HEAD(&tmp_list);
-+	mutex_lock(uprobes_mmap_hash(inode));
-+	build_probe_list(inode, &tmp_list);
-+	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-+		loff_t vaddr;
++	tp->call.class = &tp->class;
++	tp->call.name = kstrdup(event, GFP_KERNEL);
++	if (!tp->call.name)
++		goto error;
 +
-+		list_del(&uprobe->pending_list);
-+		vaddr = vma_address(vma, uprobe->offset);
-+		if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
++	tp->class.system = kstrdup(group, GFP_KERNEL);
++	if (!tp->class.system)
++		goto error;
 +
-+			/*
-+			 * An unregister could have removed the probe before
-+			 * unmap. So check before we decrement the count.
-+			 */
-+			if (is_bkpt_at_addr(vma->vm_mm, vaddr) == 1)
-+				atomic_dec(&vma->vm_mm->mm_uprobes_count);
-+		}
-+		put_uprobe(uprobe);
-+	}
-+	mutex_unlock(uprobes_mmap_hash(inode));
-+	return;
++	INIT_LIST_HEAD(&tp->list);
++	return tp;
++error:
++	kfree(tp->call.name);
++	kfree(tp);
++	return ERR_PTR(-ENOMEM);
 +}
 +
- /* Slot allocation for XOL */
- static int xol_add_vma(struct uprobes_xol_area *area)
- {
-@@ -1397,7 +1491,8 @@ int uprobe_bkpt_notifier(struct pt_regs *regs)
- {
- 	struct uprobe_task *utask;
- 
--	if (!current->mm)
-+	if (!current->mm || !atomic_read(&current->mm->mm_uprobes_count))
-+		/* task is currently not uprobed */
- 		return 0;
- 
- 	utask = current->utask;
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 1aed183..e7f5e3c 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -218,6 +218,7 @@ void unlink_file_vma(struct vm_area_struct *vma)
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		__remove_shared_vm_struct(vma, file, mapping);
- 		mutex_unlock(&mapping->i_mmap_mutex);
-+		munmap_uprobe(vma);
- 	}
- }
- 
-@@ -546,8 +547,14 @@ again:			remove_next = 1 + (end > next->vm_end);
- 
- 	if (file) {
- 		mapping = file->f_mapping;
--		if (!(vma->vm_flags & VM_NONLINEAR))
-+		if (!(vma->vm_flags & VM_NONLINEAR)) {
- 			root = &mapping->i_mmap;
-+			munmap_uprobe(vma);
++static void free_trace_uprobe(struct trace_uprobe *tp)
++{
++	int i;
 +
-+			if (adjust_next)
-+				munmap_uprobe(next);
++	for (i = 0; i < tp->nr_args; i++)
++		traceprobe_free_probe_arg(&tp->args[i]);
++
++	iput(tp->inode);
++	kfree(tp->call.class->system);
++	kfree(tp->call.name);
++	kfree(tp->filename);
++	kfree(tp);
++}
++
++static struct trace_uprobe *find_probe_event(const char *event,
++					const char *group)
++{
++	struct trace_uprobe *tp;
++
++	list_for_each_entry(tp, &uprobe_list, list)
++		if (strcmp(tp->call.name, event) == 0 &&
++		    strcmp(tp->call.class->system, group) == 0)
++			return tp;
++	return NULL;
++}
++
++/* Unregister a trace_uprobe and probe_event: call with locking uprobe_lock */
++static void unregister_trace_uprobe(struct trace_uprobe *tp)
++{
++	list_del(&tp->list);
++	unregister_uprobe_event(tp);
++	free_trace_uprobe(tp);
++}
++
++/* Register a trace_uprobe and probe_event */
++static int register_trace_uprobe(struct trace_uprobe *tp)
++{
++	struct trace_uprobe *old_tp;
++	int ret;
++
++	mutex_lock(&uprobe_lock);
++
++	/* register as an event */
++	old_tp = find_probe_event(tp->call.name, tp->call.class->system);
++	if (old_tp)
++		/* delete old event */
++		unregister_trace_uprobe(old_tp);
++
++	ret = register_uprobe_event(tp);
++	if (ret) {
++		pr_warning("Failed to register probe event(%d)\n", ret);
++		goto end;
++	}
++
++	list_add_tail(&tp->list, &uprobe_list);
++end:
++	mutex_unlock(&uprobe_lock);
++	return ret;
++}
++
++static int create_trace_uprobe(int argc, char **argv)
++{
++	/*
++	 * Argument syntax:
++	 *  - Add uprobe: p[:[GRP/]EVENT] VADDR@PID [%REG]
++	 *
++	 *  - Remove uprobe: -:[GRP/]EVENT
++	 */
++	struct path path;
++	struct inode *inode = NULL;
++	struct trace_uprobe *tp;
++	int i, ret = 0;
++	int is_delete = 0;
++	char *arg = NULL, *event = NULL, *group = NULL;
++	unsigned long offset;
++	char buf[MAX_EVENT_NAME_LEN];
++	char *filename;
++
++	/* argc must be >= 1 */
++	if (argv[0][0] == '-')
++		is_delete = 1;
++	else if (argv[0][0] != 'p') {
++		pr_info("Probe definition must be started with 'p', 'r' or"
++			" '-'.\n");
++		return -EINVAL;
++	}
++
++	if (argv[0][1] == ':') {
++		event = &argv[0][2];
++		if (strchr(event, '/')) {
++			group = event;
++			event = strchr(group, '/') + 1;
++			event[-1] = '\0';
++			if (strlen(group) == 0) {
++				pr_info("Group name is not specified\n");
++				return -EINVAL;
++			}
++		}
++		if (strlen(event) == 0) {
++			pr_info("Event name is not specified\n");
++			return -EINVAL;
++		}
++	}
++	if (!group)
++		group = UPROBE_EVENT_SYSTEM;
++
++	if (is_delete) {
++		if (!event) {
++			pr_info("Delete command needs an event name.\n");
++			return -EINVAL;
++		}
++		mutex_lock(&uprobe_lock);
++		tp = find_probe_event(event, group);
++		if (!tp) {
++			mutex_unlock(&uprobe_lock);
++			pr_info("Event %s/%s doesn't exist.\n", group, event);
++			return -ENOENT;
++		}
++		/* delete an event */
++		unregister_trace_uprobe(tp);
++		mutex_unlock(&uprobe_lock);
++		return 0;
++	}
++
++	if (argc < 2) {
++		pr_info("Probe point is not specified.\n");
++		return -EINVAL;
++	}
++	if (isdigit(argv[1][0])) {
++		pr_info("probe point must be have a filename.\n");
++		return -EINVAL;
++	}
++	arg = strchr(argv[1], ':');
++	if (!arg)
++		goto fail_address_parse;
++
++	*arg++ = '\0';
++	filename = argv[1];
++	ret = kern_path(filename, LOOKUP_FOLLOW, &path);
++	if (ret)
++		goto fail_address_parse;
++
++	inode = igrab(path.dentry->d_inode);
++
++	ret = strict_strtoul(arg, 0, &offset);
++		if (ret)
++			goto fail_address_parse;
++
++	argc -= 2;
++	argv += 2;
++
++	/* setup a probe */
++	if (!event) {
++		char *tail = strrchr(filename, '/');
++		char *ptr;
++
++		ptr = kstrdup((tail ? tail + 1 : filename), GFP_KERNEL);
++		if (!ptr) {
++			ret = -ENOMEM;
++			goto fail_address_parse;
 +		}
 +
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		if (insert) {
- 			/*
-@@ -626,6 +633,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 
- 	if (remove_next) {
- 		if (file) {
-+			munmap_uprobe(next);
- 			fput(file);
- 			if (next->vm_flags & VM_EXECUTABLE)
- 				removed_exe_file_vma(mm);
++		tail = ptr;
++		ptr = strpbrk(tail, ".-_");
++		if (ptr)
++			*ptr = '\0';
++
++		snprintf(buf, MAX_EVENT_NAME_LEN, "%c_%s_0x%lx", 'p', tail,
++				offset);
++		event = buf;
++		kfree(tail);
++	}
++	tp = alloc_trace_uprobe(group, event, argc);
++	if (IS_ERR(tp)) {
++		pr_info("Failed to allocate trace_uprobe.(%d)\n",
++			(int)PTR_ERR(tp));
++		iput(inode);
++		return PTR_ERR(tp);
++	}
++	tp->offset = offset;
++	tp->inode = inode;
++	tp->filename = kstrdup(filename, GFP_KERNEL);
++	if (!tp->filename) {
++			pr_info("Failed to allocate filename.\n");
++			ret = -ENOMEM;
++			goto error;
++	}
++
++	/* parse arguments */
++	ret = 0;
++	for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
++		/* Increment count for freeing args in error case */
++		tp->nr_args++;
++
++		/* Parse argument name */
++		arg = strchr(argv[i], '=');
++		if (arg) {
++			*arg++ = '\0';
++			tp->args[i].name = kstrdup(argv[i], GFP_KERNEL);
++		} else {
++			arg = argv[i];
++			/* If argument name is omitted, set "argN" */
++			snprintf(buf, MAX_EVENT_NAME_LEN, "arg%d", i + 1);
++			tp->args[i].name = kstrdup(buf, GFP_KERNEL);
++		}
++
++		if (!tp->args[i].name) {
++			pr_info("Failed to allocate argument[%d] name.\n", i);
++			ret = -ENOMEM;
++			goto error;
++		}
++
++		if (!is_good_name(tp->args[i].name)) {
++			pr_info("Invalid argument[%d] name: %s\n",
++				i, tp->args[i].name);
++			ret = -EINVAL;
++			goto error;
++		}
++
++		if (traceprobe_conflict_field_name(tp->args[i].name,
++							tp->args, i)) {
++			pr_info("Argument[%d] name '%s' conflicts with "
++				"another field.\n", i, argv[i]);
++			ret = -EINVAL;
++			goto error;
++		}
++
++		/* Parse fetch argument */
++		ret = traceprobe_parse_probe_arg(arg, &tp->size, &tp->args[i],
++								false, false);
++		if (ret) {
++			pr_info("Parse error at argument[%d]. (%d)\n", i, ret);
++			goto error;
++		}
++	}
++
++	ret = register_trace_uprobe(tp);
++	if (ret)
++		goto error;
++	return 0;
++
++error:
++	free_trace_uprobe(tp);
++	return ret;
++
++fail_address_parse:
++	if (inode)
++		iput(inode);
++	pr_info("Failed to parse address.\n");
++	return ret;
++}
++
++static void cleanup_all_probes(void)
++{
++	struct trace_uprobe *tp;
++
++	mutex_lock(&uprobe_lock);
++	while (!list_empty(&uprobe_list)) {
++		tp = list_entry(uprobe_list.next, struct trace_uprobe, list);
++		unregister_trace_uprobe(tp);
++	}
++	mutex_unlock(&uprobe_lock);
++}
++
++/* Probes listing interfaces */
++static void *probes_seq_start(struct seq_file *m, loff_t *pos)
++{
++	mutex_lock(&uprobe_lock);
++	return seq_list_start(&uprobe_list, *pos);
++}
++
++static void *probes_seq_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	return seq_list_next(v, &uprobe_list, pos);
++}
++
++static void probes_seq_stop(struct seq_file *m, void *v)
++{
++	mutex_unlock(&uprobe_lock);
++}
++
++static int probes_seq_show(struct seq_file *m, void *v)
++{
++	struct trace_uprobe *tp = v;
++	int i;
++
++	seq_printf(m, "p:%s/%s", tp->call.class->system, tp->call.name);
++	seq_printf(m, " %s:0x%p", tp->filename, (void *)tp->offset);
++
++	for (i = 0; i < tp->nr_args; i++)
++		seq_printf(m, " %s=%s", tp->args[i].name, tp->args[i].comm);
++	seq_printf(m, "\n");
++	return 0;
++}
++
++static const struct seq_operations probes_seq_op = {
++	.start  = probes_seq_start,
++	.next   = probes_seq_next,
++	.stop   = probes_seq_stop,
++	.show   = probes_seq_show
++};
++
++static int probes_open(struct inode *inode, struct file *file)
++{
++	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC))
++		cleanup_all_probes();
++
++	return seq_open(file, &probes_seq_op);
++}
++
++static ssize_t probes_write(struct file *file, const char __user *buffer,
++			    size_t count, loff_t *ppos)
++{
++	return traceprobe_probes_write(file, buffer, count, ppos,
++			create_trace_uprobe);
++}
++
++static const struct file_operations uprobe_events_ops = {
++	.owner          = THIS_MODULE,
++	.open           = probes_open,
++	.read           = seq_read,
++	.llseek         = seq_lseek,
++	.release        = seq_release,
++	.write		= probes_write,
++};
++
++/* Probes profiling interfaces */
++static int probes_profile_seq_show(struct seq_file *m, void *v)
++{
++	struct trace_uprobe *tp = v;
++
++	seq_printf(m, "  %s %-44s %15lu\n", tp->filename, tp->call.name,
++								tp->nhit);
++	return 0;
++}
++
++static const struct seq_operations profile_seq_op = {
++	.start  = probes_seq_start,
++	.next   = probes_seq_next,
++	.stop   = probes_seq_stop,
++	.show   = probes_profile_seq_show
++};
++
++static int profile_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &profile_seq_op);
++}
++
++static const struct file_operations uprobe_profile_ops = {
++	.owner          = THIS_MODULE,
++	.open           = profile_open,
++	.read           = seq_read,
++	.llseek         = seq_lseek,
++	.release        = seq_release,
++};
++
++/* uprobe handler */
++static void uprobe_trace_func(struct trace_uprobe *tp, struct pt_regs *regs)
++{
++	struct uprobe_trace_entry_head *entry;
++	struct ring_buffer_event *event;
++	struct ring_buffer *buffer;
++	u8 *data;
++	int size, i, pc;
++	unsigned long irq_flags;
++	struct ftrace_event_call *call = &tp->call;
++
++	tp->nhit++;
++
++	local_save_flags(irq_flags);
++	pc = preempt_count();
++
++	size = sizeof(*entry) + tp->size;
++
++	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
++						  size, irq_flags, pc);
++	if (!event)
++		return;
++
++	entry = ring_buffer_event_data(event);
++	entry->ip = get_uprobe_bkpt_addr(task_pt_regs(current));
++	data = (u8 *)&entry[1];
++	for (i = 0; i < tp->nr_args; i++)
++		call_fetch(&tp->args[i].fetch, regs,
++						data + tp->args[i].offset);
++
++	if (!filter_current_check_discard(buffer, call, entry, event))
++		trace_buffer_unlock_commit(buffer, event, irq_flags, pc);
++}
++
++/* Event entry printers */
++static enum print_line_t
++print_uprobe_event(struct trace_iterator *iter, int flags,
++		   struct trace_event *event)
++{
++	struct uprobe_trace_entry_head *field;
++	struct trace_seq *s = &iter->seq;
++	struct trace_uprobe *tp;
++	u8 *data;
++	int i;
++
++	field = (struct uprobe_trace_entry_head *)iter->ent;
++	tp = container_of(event, struct trace_uprobe, call.event);
++
++	if (!trace_seq_printf(s, "%s: (", tp->call.name))
++		goto partial;
++
++	if (!seq_print_ip_sym(s, field->ip, flags | TRACE_ITER_SYM_OFFSET))
++		goto partial;
++
++	if (!trace_seq_puts(s, ")"))
++		goto partial;
++
++	data = (u8 *)&field[1];
++	for (i = 0; i < tp->nr_args; i++)
++		if (!tp->args[i].type->print(s, tp->args[i].name,
++					     data + tp->args[i].offset, field))
++			goto partial;
++
++	if (!trace_seq_puts(s, "\n"))
++		goto partial;
++
++	return TRACE_TYPE_HANDLED;
++partial:
++	return TRACE_TYPE_PARTIAL_LINE;
++}
++
++static int probe_event_enable(struct trace_uprobe *tp, int flag)
++{
++	struct uprobe_trace_consumer *utc;
++	int ret = 0;
++
++	if (!tp->inode || tp->consumer)
++		return -EINTR;
++
++	utc = kzalloc(sizeof(struct uprobe_trace_consumer), GFP_KERNEL);
++	if (!utc)
++		return -EINTR;
++
++	utc->cons.handler = uprobe_dispatcher;
++	utc->cons.filter = NULL;
++	ret = register_uprobe(tp->inode, tp->offset, &utc->cons);
++	if (ret) {
++		kfree(utc);
++		return ret;
++	}
++
++	tp->flags |= flag;
++	utc->tp = tp;
++	tp->consumer = utc;
++	return 0;
++}
++
++static void probe_event_disable(struct trace_uprobe *tp, int flag)
++{
++	if (!tp->inode || !tp->consumer)
++		return;
++
++	unregister_uprobe(tp->inode, tp->offset, &tp->consumer->cons);
++	tp->flags &= ~flag;
++	kfree(tp->consumer);
++	tp->consumer = NULL;
++}
++
++static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
++{
++	int ret, i;
++	struct uprobe_trace_entry_head field;
++	struct trace_uprobe *tp = (struct trace_uprobe *)event_call->data;
++
++	DEFINE_FIELD(unsigned long, ip, FIELD_STRING_IP, 0);
++	/* Set argument names as fields */
++	for (i = 0; i < tp->nr_args; i++) {
++		ret = trace_define_field(event_call, tp->args[i].type->fmttype,
++					 tp->args[i].name,
++					 sizeof(field) + tp->args[i].offset,
++					 tp->args[i].type->size,
++					 tp->args[i].type->is_signed,
++					 FILTER_OTHER);
++		if (ret)
++			return ret;
++	}
++	return 0;
++}
++
++static int __set_print_fmt(struct trace_uprobe *tp, char *buf, int len)
++{
++	int i;
++	int pos = 0;
++
++	const char *fmt, *arg;
++
++	fmt = "(%lx)";
++	arg = "REC->" FIELD_STRING_IP;
++
++	/* When len=0, we just calculate the needed length */
++#define LEN_OR_ZERO (len ? len - pos : 0)
++
++	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
++
++	for (i = 0; i < tp->nr_args; i++) {
++		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
++				tp->args[i].name, tp->args[i].type->fmt);
++	}
++
++	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
++
++	for (i = 0; i < tp->nr_args; i++) {
++		pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
++				tp->args[i].name);
++	}
++
++#undef LEN_OR_ZERO
++
++	/* return the length of print_fmt */
++	return pos;
++}
++
++static int set_print_fmt(struct trace_uprobe *tp)
++{
++	int len;
++	char *print_fmt;
++
++	/* First: called with 0 length to calculate the needed length */
++	len = __set_print_fmt(tp, NULL, 0);
++	print_fmt = kmalloc(len + 1, GFP_KERNEL);
++	if (!print_fmt)
++		return -ENOMEM;
++
++	/* Second: actually write the @print_fmt */
++	__set_print_fmt(tp, print_fmt, len + 1);
++	tp->call.print_fmt = print_fmt;
++
++	return 0;
++}
++
++#ifdef CONFIG_PERF_EVENTS
++
++/* uprobe profile handler */
++static void uprobe_perf_func(struct trace_uprobe *tp, struct pt_regs *regs)
++{
++	struct ftrace_event_call *call = &tp->call;
++	struct uprobe_trace_entry_head *entry;
++	struct hlist_head *head;
++	u8 *data;
++	int size, __size, i;
++	int rctx;
++
++	__size = sizeof(*entry) + tp->size;
++	size = ALIGN(__size + sizeof(u32), sizeof(u64));
++	size -= sizeof(u32);
++	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
++		     "profile buffer not large enough"))
++		return;
++
++	preempt_disable();
++
++	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
++	if (!entry)
++		goto out;
++
++	entry->ip = get_uprobe_bkpt_addr(task_pt_regs(current));
++	data = (u8 *)&entry[1];
++	for (i = 0; i < tp->nr_args; i++)
++		call_fetch(&tp->args[i].fetch, regs,
++						data + tp->args[i].offset);
++
++	head = this_cpu_ptr(call->perf_events);
++	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head);
++ out:
++	preempt_enable();
++}
++#endif	/* CONFIG_PERF_EVENTS */
++
++static
++int uprobe_register(struct ftrace_event_call *event, enum trace_reg type)
++{
++	switch (type) {
++	case TRACE_REG_REGISTER:
++		return probe_event_enable(event->data, TP_FLAG_TRACE);
++	case TRACE_REG_UNREGISTER:
++		probe_event_disable(event->data, TP_FLAG_TRACE);
++		return 0;
++
++#ifdef CONFIG_PERF_EVENTS
++	case TRACE_REG_PERF_REGISTER:
++		return probe_event_enable(event->data, TP_FLAG_PROFILE);
++	case TRACE_REG_PERF_UNREGISTER:
++		probe_event_disable(event->data, TP_FLAG_PROFILE);
++		return 0;
++#endif
++	}
++	return 0;
++}
++
++static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
++{
++	struct uprobe_trace_consumer *utc;
++	struct trace_uprobe *tp;
++
++	utc = container_of(con, struct uprobe_trace_consumer, cons);
++	tp = utc->tp;
++	if (!tp || tp->consumer != utc)
++		return 0;
++
++	if (tp->flags & TP_FLAG_TRACE)
++		uprobe_trace_func(tp, regs);
++#ifdef CONFIG_PERF_EVENTS
++	if (tp->flags & TP_FLAG_PROFILE)
++		uprobe_perf_func(tp, regs);
++#endif
++	return 0;
++}
++
++static struct trace_event_functions uprobe_funcs = {
++	.trace		= print_uprobe_event
++};
++
++static int register_uprobe_event(struct trace_uprobe *tp)
++{
++	struct ftrace_event_call *call = &tp->call;
++	int ret;
++
++	/* Initialize ftrace_event_call */
++	INIT_LIST_HEAD(&call->class->fields);
++	call->event.funcs = &uprobe_funcs;
++	call->class->define_fields = uprobe_event_define_fields;
++	if (set_print_fmt(tp) < 0)
++		return -ENOMEM;
++	ret = register_ftrace_event(&call->event);
++	if (!ret) {
++		kfree(call->print_fmt);
++		return -ENODEV;
++	}
++	call->flags = 0;
++	call->class->reg = uprobe_register;
++	call->data = tp;
++	ret = trace_add_event_call(call);
++	if (ret) {
++		pr_info("Failed to register uprobe event: %s\n", call->name);
++		kfree(call->print_fmt);
++		unregister_ftrace_event(&call->event);
++	}
++	return ret;
++}
++
++static void unregister_uprobe_event(struct trace_uprobe *tp)
++{
++	/* tp->event is unregistered in trace_remove_event_call() */
++	trace_remove_event_call(&tp->call);
++	kfree(tp->call.print_fmt);
++	tp->call.print_fmt = NULL;
++}
++
++/* Make a trace interface for controling probe points */
++static __init int init_uprobe_trace(void)
++{
++	struct dentry *d_tracer;
++
++	d_tracer = tracing_init_dentry();
++	if (!d_tracer)
++		return 0;
++
++	trace_create_file("uprobe_events", 0644, d_tracer,
++				    NULL, &uprobe_events_ops);
++	/* Profile interface */
++	trace_create_file("uprobe_profile", 0444, d_tracer,
++				    NULL, &uprobe_profile_ops);
++	return 0;
++}
++
++fs_initcall(init_uprobe_trace);
 
