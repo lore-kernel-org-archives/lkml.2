@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847Ab2BBRbb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 12:31:31 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50444 "EHLO arroyo.ext.ti.com"
+	id S932964Ab2BBRdE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 12:33:04 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50447 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932715Ab2BBRb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 12:31:26 -0500
+	id S932841Ab2BBRbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 12:31:31 -0500
 From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
 To: <linux-omap@vger.kernel.org>
 CC: <grant.likely@secretlab.ca>, <khilman@ti.com>, <tony@atomide.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Charulatha V <charu@ti.com>
-Subject: [PATCH v9 15/25] gpio/omap: fix bankwidth for OMAP7xx MPUIO
-Date: Thu, 2 Feb 2012 23:00:41 +0530
-Message-ID: <1328203851-20435-16-git-send-email-tarun.kanti@ti.com>
+        Tarun Kanti DebBarma <tarun.kanti@ti.com>, Charulatha V <charu@ti.com>
+Subject: [PATCH v9 13/25] gpio/omap: remove unnecessary bit-masking for read access
+Date: Thu, 2 Feb 2012 23:00:39 +0530
+Message-ID: <1328203851-20435-14-git-send-email-tarun.kanti@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
 References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
@@ -23,32 +23,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Charulatha V <charu@ti.com>
-
-In all OMAP1 SoCs, the MPUIO bank width is 16 bits. But, in OMAP7xx,
-it is wrongly initialised to 32. Fix this.
+Remove un-necessary bit masking. Since the register are 4 byte aligned
+and readl would work as is. The 'enabled' mask is already taking care
+to mask for bank width.
 
 Signed-off-by: Charulatha V <charu@ti.com>
+Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
 Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm/mach-omap1/gpio7xx.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/gpio/gpio-omap.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-omap1/gpio7xx.c b/arch/arm/mach-omap1/gpio7xx.c
-index 433491c..4771d6b 100644
---- a/arch/arm/mach-omap1/gpio7xx.c
-+++ b/arch/arm/mach-omap1/gpio7xx.c
-@@ -52,8 +52,8 @@ static struct omap_gpio_reg_offs omap7xx_mpuio_regs = {
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index 485b6b2..38beccc 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -576,9 +576,6 @@ static void gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
+ 		enabled = _get_gpio_irqbank_mask(bank);
+ 		isr_saved = isr = __raw_readl(isr_reg) & enabled;
  
- static struct __initdata omap_gpio_platform_data omap7xx_mpu_gpio_config = {
- 	.virtual_irq_start	= IH_MPUIO_BASE,
--	.bank_width		= 32,
- 	.is_mpuio		= true,
-+	.bank_width		= 16,
- 	.bank_stride		= 2,
- 	.regs                   = &omap7xx_mpuio_regs,
- };
+-		if (cpu_is_omap15xx() && (bank->method == METHOD_MPUIO))
+-			isr &= 0x0000ffff;
+-
+ 		if (bank->level_mask)
+ 			level_mask = bank->level_mask & enabled;
+ 
 -- 
 1.7.0.4
 
