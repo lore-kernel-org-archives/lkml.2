@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115Ab2BBOmY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:42:24 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:26525 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756338Ab2BBOmW (ORCPT
+	id S932155Ab2BBOo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:44:59 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35267 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab2BBOo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:42:22 -0500
-Date: Thu, 2 Feb 2012 15:42:43 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-cc: "devendra.aaru" <devendra.aaru@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] In crypto_add_alg(), 'exact' wants to be initialized to
- 0
-In-Reply-To: <20120202075122.GA23142@secunet.com>
-Message-ID: <alpine.LNX.2.00.1202021541440.12088@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201292337390.27749@swampdragon.chaosbits.net> <CAHdPZaP4aArSh7G15KhP2ombW8Zs2L4osQ0xi0W829oBZSuTtg@mail.gmail.com> <alpine.LNX.2.00.1202012050390.8577@swampdragon.chaosbits.net> <20120202075122.GA23142@secunet.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-296885160-1328193764=:12088"
+	Thu, 2 Feb 2012 09:44:57 -0500
+Date: Thu, 2 Feb 2012 23:44:50 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
+        Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [test result] dirty logging without srcu update -- Re:
+ [RFC][PATCH] srcu: Implement call_srcu()
+Message-Id: <20120202234450.20b75999de0e3b05043ffb71@gmail.com>
+In-Reply-To: <4F2A6D46.6010406@redhat.com>
+References: <1328016724.2446.229.camel@twins>
+	<4F27F0E6.1040309@redhat.com>
+	<1328017807.2446.230.camel@twins>
+	<20120131222447.GH2391@linux.vnet.ibm.com>
+	<1328091749.2760.34.camel@laptop>
+	<4F29178A.1090306@redhat.com>
+	<4F2918D5.4050104@redhat.com>
+	<4F291B56.30600@oss.ntt.co.jp>
+	<4F291B92.8070402@redhat.com>
+	<4F291E1F.3030505@oss.ntt.co.jp>
+	<4F293D14.5030008@redhat.com>
+	<20120202144633.1fc9b997.yoshikawa.takuya@oss.ntt.co.jp>
+	<4F2A611E.6090005@redhat.com>
+	<4F2A63B9.8000405@oss.ntt.co.jp>
+	<4F2A63C6.7030301@redhat.com>
+	<4F2A682C.7090109@oss.ntt.co.jp>
+	<4F2A6D46.6010406@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Avi Kivity <avi@redhat.com> wrote:
 
---8323328-296885160-1328193764=:12088
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 2 Feb 2012, Steffen Klassert wrote:
-
-> On Wed, Feb 01, 2012 at 09:21:39PM +0100, Jesper Juhl wrote:
-> > On Wed, 1 Feb 2012, devendra.aaru wrote:
-> > 
-> > > On Sun, Jan 29, 2012 at 5:39 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > > > We declare 'exact' without initializing it and then do:
-> > > >
-> > > > [...]
-> > > >        if (strlen(p->cru_driver_name))
-> > > >                exact = 1;
-> > > >
-> > > >        if (priority && !exact)
-> > > >                return -EINVAL;
-> > > >
-> > > > [...]
-> > > >
-> > > > If the first 'if' is not true, then the second will test an
-> > > > uninitialized 'exact'.
-> > > 
-> > > not needed . as the cru_driver_name will always be present :).
-> > 
-> > If that is indeed the case, and we are guaranteed that, then it would seem 
-> > that a patch like the following would be what we want instead??
-> > 
-> > Please note that this patch is intended just for discussion, nothing else 
-> > (which is why I left out a Signed-off-by on purpose), since I've not 
-> > tested it beyond checking that it compiles, nor have I verified your claim 
-> > that cru_driver_name will always be present.
-> > 
+> > I have one concern about correctness issue though:
+> >
+> >     concurrent rmap write protection may not be safe due to
+> >     delayed tlb flush ... cannot happen?
 > 
-> We get cru_driver_name from a netlink message that a user sends us.
-> So it depends pretty much on the user whether cru_driver_name is
-> set or not. Usually it is set when a user wants to instantiate
-> a certain algorithm driver, like "cbc(aes-asm)". If the user just
-> wants to instantiate the system default of an algorithm, he can
-> set cru_name (e.g. to "cbc(aes)") instead of cru_driver_name.
+> What do you mean by concurrent rmap write protection?
 > 
-> Your first patch is correct.
-> 
-Thank you for the explanation.
 
-Can I take that to mean that I can add your Acked-by: if/when I resend the 
-patch?
+Not sure, but other codes like:
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+- mmu_sync_children()
+	for_each_sp(pages, sp, parents, i)
+		protected |= rmap_write_protect(vcpu->kvm, sp->gfn);
 
---8323328-296885160-1328193764=:12088--
+		if (protected)
+			kvm_flush_remote_tlbs(vcpu->kvm);
+
+- kvm_mmu_get_page()
+	if (rmap_write_protect(vcpu->kvm, gfn))
+		kvm_flush_remote_tlbs(vcpu->kvm);
+
+I just wondered what can happen if GET_DIRTY_LOG is being processed
+behind these processing?
+
+They may find nothing to write protect and won't do kvm_flush_remote_tlbs()
+if the gfn has been already protected by GET_DIRTY_LOG.
+
+But GET_DIRTY_LOG may still be busy write protecting other pages and
+others can return before.  (My code releases mmu_lock to not include
+__put_user() in the critical section.)
+
+I am not still enough familier with these code yet.
+(maybe empty concern)
+
+	Takuya
