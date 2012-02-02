@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab2BBIg1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 03:36:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32876 "EHLO mx2.suse.de"
+	id S1754981Ab2BBIgy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 03:36:54 -0500
+Received: from isrv.corpit.ru ([86.62.121.231]:59739 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754727Ab2BBIgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 03:36:25 -0500
-Date: Thu, 2 Feb 2012 09:36:24 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] hid-multitouch: add support for trackpads
-In-Reply-To: <CAN+gG=HsiGyCMVHbWm1ri5q5_s8L0Af76B9R8gJVHhKMa8t1FQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1202020935390.18918@pobox.suse.cz>
-References: <1326887468-5148-1-git-send-email-benjamin.tissoires@enac.fr> <1326887468-5148-2-git-send-email-benjamin.tissoires@enac.fr> <20120120160948.GA18530@polaris.bitmath.org> <20120120164849.GA6520@core.coreip.homeip.net>
- <CAN+gG=HsiGyCMVHbWm1ri5q5_s8L0Af76B9R8gJVHhKMa8t1FQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754873Ab2BBIgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 03:36:52 -0500
+Message-ID: <4F2A4B22.7020909@msgid.tls.msk.ru>
+Date: Thu, 02 Feb 2012 12:36:50 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110805 Icedove/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Professor Berkley Shands <berkley@seas.wustl.edu>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0.18 tcsetattr on fd 0 when detached freezes system (RCU timeouts)
+ (Centos 6.1 x86_64)
+References: <4F234498.5070800@seas.wustl.edu> <4F239BE1.4090106@msgid.tls.msk.ru> <4F283B40.1070200@seas.wustl.edu>
+In-Reply-To: <4F283B40.1070200@seas.wustl.edu>
+X-Enigmail-Version: 1.2.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Jan 2012, Benjamin Tissoires wrote:
+On 31.01.2012 23:04, Professor Berkley Shands wrote:
+> Very strange. Now boxes with NO OFED, no Intel-10 Gige and no special drivers are locking up.
+> If your kernel is Red Hat compatible, could you please send me a copy of the .config so I can try to
+> isolate this more?
 
-> Hi Dmitry and Henrik,
-> 
-> Thanks Dmitry for the comment.
-> 
-> I'll do the change as you mentioned and will also remove the
-> input_mt_report_finger_count call.
+Why are you writing to me personally?  I just
+tried your code and can't find the problem you
+see, and I replied to the list.  Cc'ing to the
+list now.
 
-Benjamin,
+I don't understand what is "redhat compatible".
+I use kernel from kernel.org, currently at version
+3.0.18.
 
-I have just materialized from almost 3 weeks of being offline, so I just 
-wanted to check the current status of this.
-
-Are you planning to send v3 of this patchset?
+Did you try my small "reproducer" - does it lock your
+machines too?  I provided complete code which is
+compilable and runnable, unlike your version which
+lacked some context.
 
 Thanks,
 
--- 
-Jiri Kosina
-SUSE Labs
+/mjt
