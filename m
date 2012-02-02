@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab2BBBAs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 20:00:48 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:54878 "EHLO
+	id S1753926Ab2BBBCA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 20:02:00 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:35337 "EHLO
 	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab2BBBAr (ORCPT
+	with ESMTP id S1753341Ab2BBBB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 20:00:47 -0500
-X-Originating-IP: 217.70.178.133
+	Wed, 1 Feb 2012 20:01:59 -0500
+X-Originating-IP: 217.70.178.139
 X-Originating-IP: 50.43.15.19
-Date: Wed, 1 Feb 2012 17:00:26 -0800
+Date: Wed, 1 Feb 2012 17:01:46 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -21,7 +21,7 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         "Paul E. McKenney" <paul.mckenney@linaro.org>
 Subject: Re: [PATCH RFC tip/core/rcu 04/41] rcu: Add diagnostic for
  misaligned rcu_head structures
-Message-ID: <20120202010026.GE29058@leaf>
+Message-ID: <20120202010146.GF29058@leaf>
 References: <20120201194131.GA10028@linux.vnet.ibm.com>
  <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
  <1328125319-5205-4-git-send-email-paulmck@linux.vnet.ibm.com>
@@ -35,13 +35,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Feb 01, 2012 at 11:41:22AM -0800, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> 
 > The push for energy efficiency will require that RCU tag rcu_head
 > structures to indicate whether or not their invocation is time critical.
 > This tagging is best carried out in the bottom bits of the ->next
 > pointers in the rcu_head structures.  This tagging requires that the
 > rcu_head structures be properly aligned, so this commit adds the required
 > diagnostics.
-
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutree.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index d0f8e64..4655f3e 100644
 > --- a/kernel/rcutree.c
 > +++ b/kernel/rcutree.c
 > @@ -1707,6 +1707,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
@@ -49,8 +59,14 @@ On Wed, Feb 01, 2012 at 11:41:22AM -0800, Paul E. McKenney wrote:
 >  	struct rcu_data *rdp;
 >  
 > +	WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
+>  	debug_rcu_head_queue(head);
 
-I wonder if this should go out in one of the wrapper macros, so that the
-_ONCE means once per call site?
+Upon further checking:
+
+static inline void debug_rcu_head_queue(struct rcu_head *head)
+{
+        WARN_ON_ONCE((unsigned long)head & 0x3);
+
+:)
 
 - Josh Triplett
