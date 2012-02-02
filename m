@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab2BBTaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:30:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35888 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757038Ab2BBTaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:30:04 -0500
-Date: Thu, 2 Feb 2012 14:29:58 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] blkcg: unify blkgs for different policies
-Message-ID: <20120202192958.GA1723@redhat.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328131156-13290-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932722Ab2BBTaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:30:46 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:35411 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757007Ab2BBTap (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:30:45 -0500
+From: stigge@antcom.de
+To: w.sang@pengutronix.de, bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
+        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v3 5/7] ARM: LPC32xx: clock.c: Clock registration fixes
+Date: Thu,  2 Feb 2012 20:19:46 +0100
+Message-Id: <1328210388-21296-5-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1328210388-21296-1-git-send-email-stigge@antcom.de>
+References: <1328210388-21296-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 01:19:05PM -0800, Tejun Heo wrote:
+This patch adjusts the clock registration list, ported from the latest version
+of Kevin Wells' latest version of clock.c: i2s0_ck, i2s1_ck and dev:mmc0 have
+NULL pointers associated as the .dev_id and .con_id, respectively. The old
+values were not useful.
 
-[..]
-> 
-> * use unified stats updated under queue lock and drop percpu stats
->   which should fix locking / context bug across percpu allocation.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Hi Tejun,
+--- a/arch/arm/mach-lpc32xx/clock.c
++++ b/arch/arm/mach-lpc32xx/clock.c
+@@ -1076,10 +1098,10 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("dev:ssp1", NULL, clk_ssp1)
+ 	_REGISTER_CLOCK("lpc32xx_keys.0", NULL, clk_kscan)
+ 	_REGISTER_CLOCK("lpc32xx-nand.0", "nand_ck", clk_nand)
+-	_REGISTER_CLOCK("tbd", "i2s0_ck", clk_i2s0)
+-	_REGISTER_CLOCK("tbd", "i2s1_ck", clk_i2s1)
++	_REGISTER_CLOCK(NULL, "i2s0_ck", clk_i2s0)
++	_REGISTER_CLOCK(NULL, "i2s1_ck", clk_i2s1)
+ 	_REGISTER_CLOCK("ts-lpc32xx", NULL, clk_tsc)
+-	_REGISTER_CLOCK("dev:mmc0", "MCLK", clk_mmc)
++	_REGISTER_CLOCK("dev:mmc0", NULL, clk_mmc)
+ 	_REGISTER_CLOCK("lpc-net.0", NULL, clk_net)
+ 	_REGISTER_CLOCK("dev:clcd", NULL, clk_lcd)
+ 	_REGISTER_CLOCK("lpc32xx_udc", "ck_usbd", clk_usbd)
 
-Does that mean that stat updation will happen under queue lock even if
-there are no throttling rules? That will introduce extra queue lock on
-fast path those who have throttling compiled in but are not using (common
-case for distributions).
-
-IMHO, we should keep the lockless per cpu stats and do the allocation in
-worker thread. I was going through my messages and noticed that for
-a workload queue lock contention had come down by 11% and in a separate
-testing I could gain 4-5% with PCIe based flash drive for random reads
-while I saturated the cpus.
-
-Thanks
-Vivek
