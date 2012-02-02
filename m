@@ -1,117 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab2BBLUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 06:20:06 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36392 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755757Ab2BBLUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 06:20:03 -0500
-Date: Thu, 2 Feb 2012 12:19:41 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Re: Memory corruption due to word sharing
-Message-ID: <20120202111941.GA7714@elte.hu>
-References: <20120201151918.GC16714@quack.suse.cz>
- <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
- <1328118174.15992.6206.camel@triegel.csb>
- <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
- <1328128874.15992.6430.camel@triegel.csb>
- <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
+	id S1755802Ab2BBLVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 06:21:44 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:14649
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755583Ab2BBLVm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 06:21:42 -0500
+X-SpamScore: -16
+X-BigFish: VPS-16(zz146fK1432N98dK4015Lzz1202hzz8275bhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LYRJK0-01-1S5-02
+X-M-MSG: 
+Date: Thu, 2 Feb 2012 12:21:33 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
+ samples
+Message-ID: <20120202112133.GR16322@erda.amd.com>
+References: <1323969824-9711-5-git-send-email-robert.richter@amd.com>
+ <20111223103329.GC4749@elte.hu>
+ <20111223111958.GE16765@erda.amd.com>
+ <20111223135340.GB21382@elte.hu>
+ <1324649698.24803.55.camel@twins>
+ <20111223144040.GB2297@elte.hu>
+ <20111223161701.GF16765@erda.amd.com>
+ <20111223163930.GA5983@elte.hu>
+ <20111223165030.GG16765@erda.amd.com>
+ <20111230095521.GA12077@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
+In-Reply-To: <20111230095521.GA12077@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ingo,
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> [...]
+On 30.12.11 10:55:21, Ingo Molnar wrote:
 > 
-> And I realize that compiler people tend to think that loop 
-> hoisting etc is absolutely critical for performance, and some 
-> big hammer like "barrier()" makes a compiler person wince. You 
-> think it results in horrible code generation problems.
+> * Robert Richter <robert.richter@amd.com> wrote:
 > 
-> It really doesn't. Loops are fairly unusual in the kernel to 
-> begin with, and the compiler barriers are a total non-issue. 
-> We have much more problems with the actual CPU barriers that 
-> can be *very* expensive on some architectures, and we work a 
-> lot at avoiding those and avoiding cacheline ping-pong issues 
-> etc.
+> > > Once something like 'perf report' works for some useful 
+> > > looking sub-case you can also tack on all the extra IBS 
+> > > goodies that specialized tools might need as well, i have no 
+> > > problem with providing that.
+> > 
+> > Isn't that outlook I gave about pebs like implementation of 
+> > the precise bit with IBS "useful enough"? This would be on top 
+> > patches anyway, so no need to hold back current patches.
+> 
+> An 'outlook' is not something I can test before sending commits 
+> to Linus.
 
-Just to underline this point, if barriers caused optimization 
-problems when GCC builds the kernel then we'd expect to see 
-various code generation problems: for example the compiler would 
-not be able to cache things well enough and reorder it to make 
-the code faster and (often) more compact.
+The question was more if this is the direction you think may make
+sense to go to. Of course, I would then implement and send patches for
+this.
 
-So to test that effect of Linus's claim I picked up a fairly 
-bleeding edge version of GCC:
+> To help your effort we could tentatively put the patches into a 
+> separate tip:perf/ibs topic branch if everyone agrees otherwise, 
+> which can go upstream once it's complete and usable.
 
-  gcc version 4.7.0 20120112 (Red Hat 4.7.0-0.6) (GCC)
+This would be very helpful for me. So far I see following patches for
+this on top of today's tip/perf/core (623ec99):
 
-and performed a test build of the kernel with the majority of 
-optimization barriers removed (using the v3.2 kernel, x86 
-defconfig, 64-bit, -O2 optimization level): 1600 barriers were 
-removed (!) and GCC's hands were thus freed to create more 
-optimal code [and a very broken kernel], if it could.
+08e232d perf, x86: Implement IBS event configuration
+05efba4 perf, x86: Implement IBS interrupt handler
+b0532b2 perf, x86: Implement IBS pmu control ops
+56ccf1a perf, x86: Implement 64 bit counter support for IBS
+98e655c perf tool: Parse general/raw events from sysfs
+aac22da perf tools: Add pmu mappings to header information
+f1f062d perf script: Add script to collect and display IBS samples
 
-I compared the resulting kernel image to an unmodified kernel 
-image:
+Only 'perf tools: Add pmu mappings to header information' applies with
+conflicts, so I could resend an updated version. This patch is also
+independent from the other patches and can be applied separately.
 
-    text	   data	    bss	     dec	    hex	filename
- 9781555	 982328	1118208	11882091	 b54e6b	vmlinux.vanilla
- 9780972	 982328	1118208	11881508	 b54c24	vmlinux.no-barriers
+If you wish I also can send all patches again, but they would be
+unchanged anyway (except that one with the conflict).
 
-So the barriers are costing us only a 0.06% size increase - 583 
-bytes on an almost 10 MB kernel image.
+Peter and Arnaldo,
 
-To put that into perspectve: a *single* inline function inlining 
-decision by the compiler has a larger effect than that. Just a 
-couple of days ago we uninlined a function, which had an order 
-of magnitude larger effect than this.
+please agree with a separate tip:perf/ibs development branch. It would
+be easier to all of us because we don't have the effort of reviewing
+patches again that will not change anymore.
 
-The other possible dimension would be the ordering of 
-instructions.
-
-To test for that effect I disassembled the two kernel images and 
-performed a function by function, instruction by instruction 
-comparison of instruction ordering. The summary is that GCC was 
-able to remove only 86 instructions (0.005%) and reordered 
-around 2400 instructions (0.15%) - out of about 1,570,000 
-instructions.
-
-Or, put differently, for the 1600 barriers in this particular 
-kernel build, there's about 1.5 instructions reordered and 0.05 
-instructions removed.
-
-I also inspected the type of reordering: the overwhelming 
-majority of reordering happened within a jump-free basic block 
-of instructions and did not affect any loops.
-
-Thus much of the effect of barriers kernel is only the crutial 
-effect that we want them to have: to reorder code to have a 
-specific program order sequence - but in the process the 
-barriers() cause very, very small optimization quality side 
-effects.
-
-So the numbers support Linus's claim, the kernel incurs very 
-little optimization cost side effects from barriers.
- 
 Thanks,
 
-	Ingo
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
