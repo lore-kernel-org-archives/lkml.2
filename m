@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab2BBRca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 12:32:30 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16027 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932586Ab2BBRcZ convert rfc822-to-8bit (ORCPT
+	id S1756940Ab2BBRbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 12:31:32 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47565 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932415Ab2BBRba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 12:32:25 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 02 Feb 2012 09:32:13 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 2 Feb 2012 09:32:12 -0800
-Subject: RE: [PATCH v1 3/8] ARM: tegra: rework Tegra secondary CPU core
- bringup
-Thread-Topic: [PATCH v1 3/8] ARM: tegra: rework Tegra secondary CPU core
- bringup
-Thread-Index: AczczDbIaESii6t4S1qd9+3rsKA/kQFBDXXQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E124A8B@HQMAIL01.nvidia.com>
-References: <1327597641-7519-1-git-send-email-pdeschrijver@nvidia.com>
- <1327597641-7519-4-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF178CB8246B@HQMAIL01.nvidia.com>
- <20120127081802.GU29914@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20120127081802.GU29914@tbergstrom-lnx.Nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Feb 2012 12:31:30 -0500
+From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <grant.likely@secretlab.ca>, <khilman@ti.com>, <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Subject: [PATCH v9 20/25] gpio/omap: fix incorrect access of debounce module
+Date: Thu, 2 Feb 2012 23:00:46 +0530
+Message-ID: <1328203851-20435-21-git-send-email-tarun.kanti@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
+References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Friday, January 27, 2012 1:18 AM:
-> On Thu, Jan 26, 2012 at 09:25:53PM +0100, Stephen Warren wrote:
-> > Peter De Schrijver wrote at Thursday, January 26, 2012 10:07 AM:
-> > > Prepare the Tegra secondary CPU core bringup code for other Tegra variants.
-> > > The reset handler is also generalized to allow for future introduction of
-> > > powersaving modes which turn off the CPU cores.
-> >
-> > > diff --git a/arch/arm/mach-tegra/headsmp.S b/arch/arm/mach-tegra/headsmp.S
-> >
-> > >  ENTRY(tegra_secondary_startup)
-> > ...
-> > > +	enable_coresight r0
-> >
-> > > +ENTRY(__tegra_cpu_reset_handler)
-> > > +
-> > > +#if DEBUG_CPU_RESET_HANDLER
-> > > +	enable_coresight r0
-> > > +	b	.
-> > > +#endif
-> >
-> > I'm not sure why the macro call enable_coresight is ifdef'd in one place
-> > but not the other... Should just the instruction "b ." be inside the
-> > ifdef?
-> 
-> This code path will also be used by LP2 and LP1 resume in the future, I'm not
-> sure we should unconditionally enable Coresight in that case.
+Enable debounce clock before writing/reading debounce registers.
+Disable the clock at the end so that it is synchronized with the
+pm_runtime_get/put_sync calls.
 
-What I'm unclear on is why it's a good idea to unconditionally enable
-coresight in tegra_secondary_startup if it's not a good idea to
-unconditionally enable it in __tegra_cpu_reset_handler.
+Enable debounce clock per module. This call is mandatory because
+in omap_gpio_request() when *_runtime_get_sync() is called,
+_gpio_dbck_enable() within runtime callbck fails to turn on dbck
+ because dbck_enable_mask used within _gpio_dbck_enable() is still
+not initialized at that point. Therefore we have to enable dbck here.
 
+Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ drivers/gpio/gpio-omap.c |   18 +++++++++++++-----
+ 1 files changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index 0ea3dc9..7515382 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -203,22 +203,30 @@ static void _set_gpio_debounce(struct gpio_bank *bank, unsigned gpio,
+ 
+ 	l = GPIO_BIT(bank, gpio);
+ 
++	clk_enable(bank->dbck);
+ 	reg = bank->base + bank->regs->debounce;
+ 	__raw_writel(debounce, reg);
+ 
+ 	reg = bank->base + bank->regs->debounce_en;
+ 	val = __raw_readl(reg);
+ 
+-	if (debounce) {
++	if (debounce)
+ 		val |= l;
+-		clk_enable(bank->dbck);
+-	} else {
++	else
+ 		val &= ~l;
+-		clk_disable(bank->dbck);
+-	}
+ 	bank->dbck_enable_mask = val;
+ 
+ 	__raw_writel(val, reg);
++	clk_disable(bank->dbck);
++	/*
++	 * Enable debounce clock per module.
++	 * This call is mandatory because in omap_gpio_request() when
++	 * *_runtime_get_sync() is called,  _gpio_dbck_enable() within
++	 * runtime callbck fails to turn on dbck because dbck_enable_mask
++	 * used within _gpio_dbck_enable() is still not initialized at
++	 * that point. Therefore we have to enable dbck here.
++	 */
++	_gpio_dbck_enable(bank);
+ }
+ 
+ static inline void set_gpio_trigger(struct gpio_bank *bank, int gpio,
 -- 
-nvpublic
+1.7.0.4
 
