@@ -1,53 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab2BBTdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:33:38 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34459 "EHLO ogre.sisk.pl"
+	id S1757292Ab2BBTfD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:35:03 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34473 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755522Ab2BBTdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:33:36 -0500
+	id S1754988Ab2BBTfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:35:00 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM/Suspend: Avoid code duplication in suspend statistics update
-Date: Thu, 2 Feb 2012 20:37:19 +0100
+Subject: Re: [PATCH] PM/Freezer: Thaw only kernel threads if freezing of kernel threads fails
+Date: Thu, 2 Feb 2012 20:38:41 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Marcos Paulo de Souza <marcos.mage@gmail.com>, len.brown@intel.com,
-        pavel@ucw.cz, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1328146776-1766-1-git-send-email-marcos.mage@gmail.com> <4F29EBED.6060006@linux.vnet.ibm.com>
-In-Reply-To: <4F29EBED.6060006@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, pavel@ucw.cz, len.brown@intel.com,
+        linux-pm@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Nigel Cunningham <nigel@tuxonice.net>
+References: <20120201223105.6669.12718.stgit@srivatsabhat.in.ibm.com> <20120201223647.GB19837@google.com> <4F29C3E3.1040108@linux.vnet.ibm.com>
+In-Reply-To: <4F29C3E3.1040108@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202022037.19225.rjw@sisk.pl>
+Message-Id: <201202022038.42156.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> On 02/02/2012 07:09 AM, Marcos Paulo de Souza wrote:
+On Wednesday, February 01, 2012, Srivatsa S. Bhat wrote:
+> On 02/02/2012 04:06 AM, Tejun Heo wrote:
 > 
-> > The code
-> >        if (error) {
-> >                suspend_stats.fail++;
-> >                dpm_save_failed_errno(error);
-> >        } else
-> >                suspend_stats.success++;
+> > On Thu, Feb 02, 2012 at 04:01:12AM +0530, Srivatsa S. Bhat wrote:
+> >> So, modify freeze_kernel_threads() to thaw only kernel threads in case of
+> >> freezing failure.
+> >>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 > > 
-> > Appears in the kernel/power/main.c and kernel/power/suspend.c.
+> > Acked-by: Tejun Heo <tj@kernel.org>
 > > 
-> > This patch just creates a new function to avoid duplicated code.
+> 
+> 
+> Thanks a lot!
+> 
+> > with nits below,
 > > 
-> > Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
-> > ---
+> > 
+> > Heh, the original ?: code was scary.  That said, IMHO, the above seems
+> > a bit too verbose.  Functions usually shouldn't have side effects on
+> > failure and the above code is usual in that sense and it would be nice
+> > to mention the reformatting (from cryptic to sane) in the commit log.
 > 
 > 
-> Looks good to me :-)
+> Ok :-)
 > 
-> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > Also, how many columns are you flowing the text to?  It seems quite
+> > narrower than they usually should be.
+> 
+> 
+> Oh right, I didn't give attention to that. I'll try to fit it in lesser
+> number of lines. But, should I really cut short on the explanation itself?
+> I remember Nigel had requested some comments on a different patch
+> on roughly similar code path https://lkml.org/lkml/2012/1/28/111.
+> So I thought it would be a good idea to explicitly document the differences,
+> to be clear...
+> 
+> Here is the updated patch:
+> 
+> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Subject: [PATCH] PM/Freezer: Thaw only kernel threads if freezing of kernel threads fails
+> 
+> If freezing of kernel threads fails, we are expected to automatically thaw
+> tasks in the error recovery path. However, at times, we encounter situations
+> in which we would like the automatic error recovery path to thaw only the
+> kernel threads, because we want to be able to do some more cleanup before
+> we thaw userspace. Something like:
+> 
+> error = freeze_kernel_threads();
+> if (error) {
+> 	/* Do some cleanup */
+> 
+> 	/* Only then thaw userspace tasks*/
+> 	thaw_processes();
+> }
+> 
+> An example of such a situation is where we freeze/thaw filesystems during
+> suspend/hibernation. There, if freezing of kernel threads fails, we would
+> like to thaw the frozen filesystems before thawing the userspace tasks.
+> 
+> So, modify freeze_kernel_threads() to thaw only kernel threads in case of
+> freezing failure. And change suspend_freeze_processes() accordingly.
+> (At the same time, let us also get rid of the rather cryptic usage of the
+> conditional operator (:?) in that function.)
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Acked-by: Tejun Heo <tj@kernel.org>
 
 Applied.
 
 Thanks,
 Rafael
+
+
+> ---
+> 
+>  kernel/power/power.h   |   24 ++++++++++++++++++++++--
+>  kernel/power/process.c |    7 +++++--
+>  2 files changed, 27 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/power/power.h b/kernel/power/power.h
+> index 0c4defe..21724ee 100644
+> --- a/kernel/power/power.h
+> +++ b/kernel/power/power.h
+> @@ -231,8 +231,28 @@ extern int pm_test_level;
+>  #ifdef CONFIG_SUSPEND_FREEZER
+>  static inline int suspend_freeze_processes(void)
+>  {
+> -	int error = freeze_processes();
+> -	return error ? : freeze_kernel_threads();
+> +	int error;
+> +
+> +	error = freeze_processes();
+> +
+> +	/*
+> +	 * freeze_processes() automatically thaws every task if freezing
+> +	 * fails. So we need not do anything extra upon error.
+> +	 */
+> +	if (error)
+> +		goto Finish;
+> +
+> +	error = freeze_kernel_threads();
+> +
+> +	/*
+> +	 * freeze_kernel_threads() thaws only kernel threads upon freezing
+> +	 * failure. So we have to thaw the userspace tasks ourselves.
+> +	 */
+> +	if (error)
+> +		thaw_processes();
+> +
+> + Finish:
+> +	return error;
+>  }
+>  
+>  static inline void suspend_thaw_processes(void)
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index eeca003..7e42645 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -143,7 +143,10 @@ int freeze_processes(void)
+>  /**
+>   * freeze_kernel_threads - Make freezable kernel threads go to the refrigerator.
+>   *
+> - * On success, returns 0.  On failure, -errno and system is fully thawed.
+> + * On success, returns 0.  On failure, -errno and only the kernel threads are
+> + * thawed, so as to give a chance to the caller to do additional cleanups
+> + * (if any) before thawing the userspace tasks. So, it is the responsibility
+> + * of the caller to thaw the userspace tasks, when the time is right.
+>   */
+>  int freeze_kernel_threads(void)
+>  {
+> @@ -159,7 +162,7 @@ int freeze_kernel_threads(void)
+>  	BUG_ON(in_atomic());
+>  
+>  	if (error)
+> -		thaw_processes();
+> +		thaw_kernel_threads();
+>  	return error;
+>  }
+>  
+> 
+> 
+> 
+> 
+
