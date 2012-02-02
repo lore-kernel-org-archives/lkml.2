@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab2BBNEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 08:04:04 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:60966 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753589Ab2BBNEB (ORCPT
+	id S1754522Ab2BBNNw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 08:13:52 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:40103 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab2BBNNv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 08:04:01 -0500
-Message-ID: <4F2A89BC.6090303@ti.com>
-Date: Thu, 02 Feb 2012 15:03:56 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20120106 Thunderbird/9.0
+	Thu, 2 Feb 2012 08:13:51 -0500
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Liam Girdwood <lrg@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 5/7] OMAP: sdp4430: Add fixed regulator for twl6040 needs
-References: <1328185019-29575-1-git-send-email-peter.ujfalusi@ti.com> <1328185019-29575-6-git-send-email-peter.ujfalusi@ti.com> <20120202124025.GF7428@opensource.wolfsonmicro.com>
-In-Reply-To: <20120202124025.GF7428@opensource.wolfsonmicro.com>
+In-Reply-To: <20120124191031.GA20164@samfundet.no>
+References: <1327243593-29215-1-git-send-email-fabio.baltieri@gmail.com>
+	<20120124191031.GA20164@samfundet.no>
+Date: Thu, 2 Feb 2012 14:13:50 +0100
+X-Google-Sender-Auth: MIsAah1b_lz7Sn3Vq3D1TM-2iFI
+Message-ID: <CABkP77eA9vMLA_V6E=LEy7vRZQP05DmKBRrje4eLbWNJwReyYg@mail.gmail.com>
+Subject: Re: [PATCH] avr32: select generic atomic64_t support
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 02:40 PM, Mark Brown wrote:
-> On Thu, Feb 02, 2012 at 02:16:57PM +0200, Peter Ujfalusi wrote:
->> The twl6040 VIO power is connected to SMPS V1V8, the
->> V2V1 power is coming from SMPS V2V1 of twl6030.
->> These are fixed, always on regulators.
->> Create fixed voltage regulators for these supplies.
-> 
-> Shouldn't the PMIC be creating the relevant fixed voltage regulators?
-> It's a bit clearer given that the supplies actually come from the PMIC
-> and it would cut down a bit on the boilerplate in boards (though much
-> less so with device tree, sadly).
+Hi,
 
-Yes these are coming from twl6030, so it might be better to create the
-fixed regulators in the PMIC driver. I'll take a look.
+  yes, I think so. Do you want me to re-send the patch to some
+specific address? (like trivial fixes or so...).
 
-Thanks,
-Péter
+Thanks!
+
+On Tue, Jan 24, 2012 at 8:10 PM, Hans-Christian Egtvedt
+<egtvedt@samfundet.no> wrote:
+> Around Sun 22 Jan 2012 15:46:33 +0100 or thereabout, Fabio Baltieri wrote:
+>> Enable use of the generic atomic64 implementation on AVR32 platforms.
+>> Without this the kernel fails to build as the architecture does not
+>> provide its version.
+>
+> Thanks for the fix. I don't have an AVR32 tree currently, as I lost my access
+> to kernel.org. Could it be merged in with generic fixes?
+>
+>> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+>
+> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+>
+>> ---
+>>  arch/avr32/Kconfig |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
+>> index 197e96f..3dea7231 100644
+>> --- a/arch/avr32/Kconfig
+>> +++ b/arch/avr32/Kconfig
+>> @@ -8,6 +8,7 @@ config AVR32
+>>       select HAVE_KPROBES
+>>       select HAVE_GENERIC_HARDIRQS
+>>       select GENERIC_IRQ_PROBE
+>> +     select GENERIC_ATOMIC64
+>>       select HARDIRQS_SW_RESEND
+>>       select GENERIC_IRQ_SHOW
+>>       select ARCH_HAVE_NMI_SAFE_CMPXCHG
+> --
+> mvh
+> Hans-Christian Egtvedt
+
+
+
+-- 
+Fabio Baltieri
