@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933487Ab2BBTxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:53:32 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61503 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933313Ab2BBTxa convert rfc822-to-8bit (ORCPT
+	id S933494Ab2BBTy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:54:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36752 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888Ab2BBTy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:53:30 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Mel Gorman" <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>
-Subject: Re: [PATCH 02/15] mm: page_alloc: update migrate type of pages on pcp
- when isolating
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
- <1327568457-27734-3-git-send-email-m.szyprowski@samsung.com>
- <20120130111522.GE25268@csn.ul.ie> <op.v8wlu8ws3l0zgt@mpn-glaptop>
- <20120130161447.GU25268@csn.ul.ie>
- <022e01cce034$bc6cf440$3546dcc0$%szyprowski@samsung.com>
- <20120202124729.GA5796@csn.ul.ie>
-Date: Thu, 02 Feb 2012 20:53:25 +0100
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v82hjbd13l0zgt@mpn-glaptop>
-In-Reply-To: <20120202124729.GA5796@csn.ul.ie>
-User-Agent: Opera Mail/11.61 (Linux)
+	Thu, 2 Feb 2012 14:54:58 -0500
+Date: Thu, 2 Feb 2012 11:54:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Meerwald <pmeerw@pmeerw.net>
+Cc: linux-kernel@vger.kernel.org, lars@metafoo.de, rpurdie@rpsys.net
+Subject: Re: [PATCH v2] add LED driver for PCA9663 I2C chip
+Message-Id: <20120202115456.7fe11c18.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.01.1202021130070.10172@pmeerw.net>
+References: <1326916289-19004-1-git-send-email-pmeerw@pmeerw.net>
+	<20120130162849.635c83a9.akpm@linux-foundation.org>
+	<20120130163424.ef8eb9af.akpm@linux-foundation.org>
+	<alpine.DEB.2.01.1202021130070.10172@pmeerw.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Jan 31, 2012 at 05:23:59PM +0100, Marek Szyprowski wrote:
->> Pages, which have incorrect migrate type on free finally
->> causes pageblock migration type change from MIGRATE_CMA to MIGRATE_MOVABLE.
+On Thu, 2 Feb 2012 11:42:09 +0100 (CET)
+Peter Meerwald <pmeerw@pmeerw.net> wrote:
 
-On Thu, 02 Feb 2012 13:47:29 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> I'm not quite seeing this. In free_hot_cold_page(), the pageblock
-> type is checked so the page private should be set to MIGRATE_CMA or
-> MIGRATE_ISOLATE for the CMA area. It's not clear how this can change a
-> pageblock to MIGRATE_MOVABLE in error.
+> 
+> > Andrew Morton <akpm@linux-foundation.org> wrote:
+> > > > +exit:
+> > > > +	while (i--) {
+> > > > +		led_classdev_unregister(&pca9633[i].led_cdev);
+> > > > +		cancel_work_sync(&pca9633[i].work);
+> > > > +	}
+> > > This (untested!) loop has an off-by-one error. 
+> 
+> > Well, it's partly wrong.  It's wrong for the cancel_work_sync() but not
+> > for the led_classdev_unregister().  The cancel_work_sync() can just be
+> > removed: we haven't scheduled any works yet.
+> 
+> there are 4 leds with get led_classdev_register()ed
+> 
+> wouldn't it be possible that someone is starting to use led1 while led3 has 
+> not been registered yet? if registration for led3 fails, the exit code 
+> (above) is called and there might be work scheduled
+> 
+> so (hypothetically):
+> register led1 -> ok
+> register led2 -> ok
+> use led1 (schedule work)
+> register led3 -> fail -> exit code
+> 
+> the code has been copied from other led drivers
+> I think there is no harm to keep cancel_work_sync()
 
-Here's what I think may happen:
+Spose so - it won't hurt.  And I was wrong about there being an
+off-by-one.
 
-When drain_all_pages() is called, __free_one_page() is called for each page on
-pcp list with migrate type deducted from page_private() which is MIGRATE_CMA.
-This result in the page being put on MIGRATE_CMA freelist even though its
-pageblock's migrate type is MIGRATE_ISOLATE.
-
-When allocation happens and pcp list is empty, rmqueue_bulk() will get executed
-with migratetype argument set to MIGRATE_MOVABLE.  It calls __rmqueue() to grab
-some pages and because the page described above is on MIGRATE_CMA freelist it
-may be returned back to rmqueue_bulk().
-
-But, pageblock's migrate type is not MIGRATE_CMA but MIGRATE_ISOLATE, so the
-following code:
-
-#ifdef CONFIG_CMA
-		if (is_pageblock_cma(page))
-			set_page_private(page, MIGRATE_CMA);
-		else
-#endif
-			set_page_private(page, migratetype);
-
-will set it's private to MIGRATE_MOVABLE and in the end the page lands back
-on MIGRATE_MOVABLE pcp list but this time with page_private == MIGRATE_MOVABLE
-and not MIGRATE_CMA.
-
-One more drain_all_pages() (which may happen since alloc_contig_range() calls
-set_migratetype_isolate() for each block) and next __rmqueue_fallback() may
-convert the whole pageblock to MIGRATE_MOVABLE.
-
-I know, this sounds crazy and improbable, but I couldn't find an easier path
-to destruction.  As you pointed, once the page is allocated, free_hot_cold_page()
-will do the right thing by reading pageblock's migrate type.
-
-Marek is currently experimenting with various patches including the following
-change:
-
-#ifdef CONFIG_CMA
-                 int mt = get_pageblock_migratetype(page);
-                 if (is_migrate_cma(mt) || mt == MIGRATE_ISOLATE)
-                         set_page_private(page, mt);
-                 else
-#endif
-                         set_page_private(page, migratetype);
-
-As a matter of fact, if __rmqueue() was changed to return migrate type of the
-freelist it took page from, we could avoid this get_pageblock_migratetype() all
-together.  For now, however, I'd rather not go that way just yet -- I'll be happy
-to dig into it once CMA gets merged.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
