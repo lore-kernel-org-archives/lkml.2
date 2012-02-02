@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab2BBCOG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 21:14:06 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:46549 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754367Ab2BBCNo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 21:13:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120201131746.07e2219e.akpm@linux-foundation.org>
-References: <20120201063420.GA10204@darkstar.nay.redhat.com>
-	<20120201131746.07e2219e.akpm@linux-foundation.org>
-Date: Thu, 2 Feb 2012 10:13:43 +0800
-Message-ID: <CABqxG0fyH89YP+jpZ5nJoVfzOQ++J4EfGP42FtjxAv7OY9o+5w@mail.gmail.com>
-Subject: Re: [PATCH] move vm tools from Documentation/vm/ to tools/
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754658Ab2BBCYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 21:24:35 -0500
+Received: from umail.ceopen.cn ([202.10.79.62]:38167 "HELO ceopen.cn"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753626Ab2BBCYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 21:24:34 -0500
+X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Feb 2012 21:24:33 EST
+X-UMAIL-SMTPAUTH: wangjing@300.cn
+Date: Thu, 2 Feb 2012 10:18:24 +0800
+From: "wangjing" <wangjing@300.cn>
+To: "linux-nfs" <linux-nfs@vger.kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+Cc: "wjk302" <wjk302@gmail.com>
+Subject: could modify sillyrename to put files in /tmp
+Message-ID: <201202021018234324363@300.cn>
+X-mailer: Foxmail 6, 15, 201, 23 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q122P8Gn025190
 
-On Thu, Feb 2, 2012 at 5:17 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 1 Feb 2012 14:34:20 +0800
-> Dave Young <dyoung@redhat.com> wrote:
->
->> tools/ is the better place for vm tools which are used by many people.
->> Moving them to tools also make them open to more users instead of hide in
->> Documentation folder.
->>
->
-> It would be nice to covert these into simple pass/fail tests and
-> promote them to tools/testing/selftests/.
+In nfs v3 ,if mulity process visit nfs mount nfs dir ,there sometimes occour .nfsXXX can't delete .
 
-Andrew, I'm not clear about this, do you means to selftest
-hugepage-mmap.c,  hugepage-shm.c  and map_hugetlb.c? I think slabinfo
-and page-types should stay in tools/vm/. Can you explain a bit?
+If modify sillyrename to put files in /tmp ,it will be more friendly to nfs user.
 
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at Â http://www.tux.org/lkml/
+
+the background
+   1¡¢Linux fs has   /nfsmnt/work_pub/web and /nfsmnt/work_inwork/web £¬they use NFS V3 mount
+   2¡¢there is many process will read and write files in the dir /nfsmnt/work_pub/web 
+   3¡¢cron will del  all files in dir  /nfsmnt/work_pub/web in period£¬and will copy all the files which in the dir /nfsmnt/work_inwork/web 
+
+in some times delete all files in  /nfsmnt/work_pub/web will faild ,because there is some .nfsXXXX
 
 
 
--- 
-Regards
-Dave
+My question is :can i modify nfs_sillyrename funncion  in the fs/nfs/dir.c , general all .nfsXXX in /tmp,and make kernel ?
+
+
+
+
+2012-02-02 
+wangjing
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
