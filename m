@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab2BBNt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 08:49:58 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43791 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753201Ab2BBNt5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 08:49:57 -0500
-Date: Thu, 2 Feb 2012 13:49:52 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Maxime Coquelin <maxime.coquelin@stericsson.com>,
-        Alex Macro <alex.macro@stericsson.com>,
-        Michel Jaouen <michel.jaouen@stericsson.com>
-Subject: Re: [PATCH 4/4] mfd/ab8500: support AB9540 variant
-Message-ID: <20120202134952.GQ7428@opensource.wolfsonmicro.com>
-References: <1328112578-32564-1-git-send-email-linus.walleij@stericsson.com>
+	id S1756182Ab2BBNui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 08:50:38 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:30585 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752052Ab2BBNug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 08:50:36 -0500
+X-IronPort-AV: E=Sophos;i="4.71,609,1320652800"; 
+   d="scan'208";a="621801247"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: wangjing <wangjing@300.cn>
+CC: linux-nfs <linux-nfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, wjk302 <wjk302@gmail.com>
+Subject: Re: could modify sillyrename to put files in /tmp
+Thread-Topic: could modify sillyrename to put files in /tmp
+Thread-Index: AQHM4bGdZwX8e73jsE2/1l3g+/gUYw==
+Date: Thu, 2 Feb 2012 13:50:26 +0000
+Message-ID: <1328190625.2584.0.camel@lade.trondhjem.org>
+References: <201202021018234324363@300.cn>
+In-Reply-To: <201202021018234324363@300.cn>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <551A70C38B674B468BF1B77F117ADBD7@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JF+ytOk7PH04NsRm"
-Content-Disposition: inline
-In-Reply-To: <1328112578-32564-1-git-send-email-linus.walleij@stericsson.com>
-X-Cookie: Never give an inch!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 02 Feb 2012 13:50:28.0062 (UTC) FILETIME=[9F0A5FE0:01CCE1B1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q12Domn4028452
+
+On Thu, 2012-02-02 at 10:18 +0800, wangjing wrote:
+> In nfs v3 ,if mulity process visit nfs mount nfs dir ,there sometimes occour .nfsXXX can't delete .
+> 
+> If modify sillyrename to put files in /tmp ,it will be more friendly to nfs user.
+
+No it wouldn't. Think permissions....
+
+> the background
+>    1„ÄÅLinux fs has   /nfsmnt/work_pub/web and /nfsmnt/work_inwork/web Ôºåthey use NFS V3 mount
+>    2„ÄÅthere is many process will read and write files in the dir /nfsmnt/work_pub/web 
+>    3„ÄÅcron will del  all files in dir  /nfsmnt/work_pub/web in periodÔºåand will copy all the files which in the dir /nfsmnt/work_inwork/web 
+> 
+> in some times delete all files in  /nfsmnt/work_pub/web will faild ,because there is some .nfsXXXX
+> 
+> 
+> 
+> My question is :can i modify nfs_sillyrename funncion  in the fs/nfs/dir.c , general all .nfsXXX in /tmp,and make kernel ?
+> 
+NACK.
 
 
---JF+ytOk7PH04NsRm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-On Wed, Feb 01, 2012 at 05:09:38PM +0100, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->=20
-> The AB9540 variant of the AB8500 is basically close enough
-> to use the same driver. This adds the new registers and
-> deviations for this new chip variant.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
---JF+ytOk7PH04NsRm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPKpR6AAoJEBus8iNuMP3dWYsP/05EMpzpR64WLIVQxEKzQNxr
-Ia2mb0KmUBQO7ionrcDz/Cwmht6xEws+KYji6F1BIilqblH96j+GlIDtJJLvTzlH
-DelEMy6ZjSJj58/6thuMOajJRa/s08tWQH/dnxpn0FKYNcsTtFrgV7MyVoyoQclp
-hsy5WSqTNeKWiIhzvgxIV47hP66KjrA/0LtmmbkEbHz/9xDpdN/FVN8toEWsM07z
-ZxFZ44J3gS/XX8KHgI1f/tK7mhzeZSxlWHGeB+pZ7kRDXYZfA9jiGZGZyugF5gCQ
-BOcqE+EOsy1J8aIPDWSLqRytuZUg7MrTPZBnh+vOBuu6NLJSvKnU77E2FLKMSVzK
-hcvpYYwP+vMFTBjdjo/ky8uQwupoRmNyyeBA2PrAqG0aevUnF6sW/xBRQHkH7g42
-fvu2upBQNxaUUyOD6vQ04vz/zQiR0Z383W6Mi7hiv2O1pd2qTdqkTHWQ76Kq7Ohx
-rUFXW7A1OdYe1zqzn/L2xygGR+MDvEbd396HfLaFwdq/S5Itb6eqmdMzPvwqeVm2
-IArDdQ4pNd9SaA1Oo43KK4Bu84gu7gqKZdPXs9paQInhSq0Zxkt1GEgFi5+2ptMi
-V5Qzu9/UM02SlphvohXY2g5qWLrqDsqj7KyuV7/Q4kDyTZM1OEVuzvxrvxTMq31l
-623wPUnH+r3K4Dh9KWYl
-=ztjq
------END PGP SIGNATURE-----
-
---JF+ytOk7PH04NsRm--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
