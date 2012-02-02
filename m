@@ -1,126 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab2BBUOg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:14:36 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34570 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab2BBUOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:14:34 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM/Hibernate: Thaw kernel threads in hibernation_snapshot() in error/test path
-Date: Thu, 2 Feb 2012 21:18:15 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20120202003359.9930.9844.stgit@srivatsabhat.in.ibm.com> <201202022011.55493.rjw@sisk.pl> <4F2AEB87.70908@linux.vnet.ibm.com>
-In-Reply-To: <4F2AEB87.70908@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202022118.15863.rjw@sisk.pl>
+	id S1755430Ab2BBUQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:16:10 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:21804 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab2BBUQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:16:07 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] pci: Fix pci cardbus removal
+Date: Thu,  2 Feb 2012 12:15:48 -0800
+Message-Id: <1328213748-2804-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090201.4F2AEF01.0071,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> On 02/03/2012 12:41 AM, Rafael J. Wysocki wrote:
-> 
-> > On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> >> In the hibernation call path, the kernel threads are frozen inside
-> >> hibernation_snapshot(). If we happen to encounter an error further down
-> >> the road or if we are exiting early due to a successful freezer test,
-> >> then thaw kernel threads before returning to the caller.
-> >>
-> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> >> ---
-> >>
-> >>  kernel/power/hibernate.c |    6 ++++--
-> >>  kernel/power/user.c      |    8 ++------
-> >>  2 files changed, 6 insertions(+), 8 deletions(-)
-> >>
-> >> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> >> index a5d4cf0..c6dee73 100644
-> >> --- a/kernel/power/hibernate.c
-> >> +++ b/kernel/power/hibernate.c
-> >> @@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
-> >>  		 * successful freezer test.
-> >>  		 */
-> >>  		freezer_test_done = true;
-> >> -		goto Cleanup;
-> >> +		goto Thaw;
-> >>  	}
-> >>  
-> >>  	error = dpm_prepare(PMSG_FREEZE);
-> >>  	if (error) {
-> >>  		dpm_complete(PMSG_RECOVER);
-> >> -		goto Cleanup;
-> >> +		goto Thaw;
-> >>  	}
-> >>  
-> >>  	suspend_console();
-> >> @@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
-> >>  	platform_end(platform_mode);
-> >>  	return error;
-> >>  
-> >> + Thaw:
-> >> +	thaw_kernel_threads();
-> > 
-> > Actaully, no.  You have to do swsusp_free() before thawing, otherwise
-> > some allocations made by the just thawed kernel threads may fail.
-> > 
-> 
-> 
-> But then what about the case (in the existing code) when
-> freeze_kernel_threads() fails? It would first thaw kernel threads (in
-> fact it used to thaw even userspace tasks earlier!) before calling
-> swsusp_free(). So, the existing code itself seems to be brittle, considering
-> the point you raised. Right?
+During test busn_res allocation with cardbus, found pci card removal is not
+working anymore, and it turns out it is broken by:
 
-Well, that's why freeze_kernel_threads() originally hadn't tried to thaw anything
-and started to do that after one of the Tejun's commits (and I forgot about
-this particular issue back then).
+|commit 79cc9601c3e42b4f0650fe7e69132ebce7ab48f9
+|Date:   Tue Nov 22 21:06:53 2011 -0800
+|
+|    PCI: Only call pci_stop_bus_device() one time for child devices at remove
 
-> >>   Cleanup:
-> >>  	swsusp_free();
-> >>  	goto Close;
-> >> diff --git a/kernel/power/user.c b/kernel/power/user.c
-> >> index 3e10007..7bee91f 100644
-> >> --- a/kernel/power/user.c
-> >> +++ b/kernel/power/user.c
-> >> @@ -249,16 +249,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
-> >>  		}
-> >>  		pm_restore_gfp_mask();
-> >>  		error = hibernation_snapshot(data->platform_support);
-> >> -		if (error) {
-> >> -			thaw_kernel_threads();
-> >> -		} else {
-> >> +		if (!error) {
-> >>  			error = put_user(in_suspend, (int __user *)arg);
-> >>  			if (!error && !freezer_test_done)
-> >>  				data->ready = 1;
-> >> -			if (freezer_test_done) {
-> >> +			if (freezer_test_done)
-> >>  				freezer_test_done = false;
-> >> -				thaw_kernel_threads();
-> >> -			}
-> >>  		}
-> >>  		break;
-> > 
-> > Overall, this seems to be a cleanup, or is it a bug fix?
-> > 
-> 
-> 
-> This was intended as a cleanup only, not a bug fix. But now, (see my point
-> above), I am beginning to feel that the existing code itself is not robust
-> enough...
+that patch changed pci_remove_behind_bridge behavoir that yenta_carbus depends.
 
-Well, let's pretend that we think it is safe to thaw kernel threads before
-freeing memory (actually, they are frozen after the preallocation, so it
-really should be OK).
+Restore the behavoir by:
+1. rename pci_remove_behind_bridge to __pci_remove_behind_bridge, and let
+	__pci_remove_bus_device() call it instead.
+2. add pci-stop_befind_bridge that will stop device under bridge
+3. add back new pci_remove_behind_bridge that will stop and remove device
+	under bridge.
 
-So I think I'll apply your patch after all.
+This one is for v3.3
 
-Thanks,
-Rafael
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/remove.c |   28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
+
+Index: linux-2.6/drivers/pci/remove.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/remove.c
++++ linux-2.6/drivers/pci/remove.c
+@@ -78,6 +78,7 @@ void pci_remove_bus(struct pci_bus *pci_
+ }
+ EXPORT_SYMBOL(pci_remove_bus);
+ 
++static void __pci_remove_behind_bridge(struct pci_dev *dev);
+ /**
+  * pci_remove_bus_device - remove a PCI device and any children
+  * @dev: the device to remove
+@@ -95,7 +96,7 @@ static void __pci_remove_bus_device(stru
+ 	if (dev->subordinate) {
+ 		struct pci_bus *b = dev->subordinate;
+ 
+-		pci_remove_behind_bridge(dev);
++		__pci_remove_behind_bridge(dev);
+ 		pci_remove_bus(b);
+ 		dev->subordinate = NULL;
+ 	}
+@@ -108,6 +109,24 @@ void pci_remove_bus_device(struct pci_de
+ 	__pci_remove_bus_device(dev);
+ }
+ 
++static void __pci_remove_behind_bridge(struct pci_dev *dev)
++{
++	struct list_head *l, *n;
++
++	if (dev->subordinate)
++		list_for_each_safe(l, n, &dev->subordinate->devices)
++			__pci_remove_bus_device(pci_dev_b(l));
++}
++
++static void pci_stop_behind_bridge(struct pci_dev *dev)
++{
++	struct list_head *l, *n;
++
++	if (dev->subordinate)
++		list_for_each_safe(l, n, &dev->subordinate->devices)
++			pci_stop_bus_device(pci_dev_b(l));
++}
++
+ /**
+  * pci_remove_behind_bridge - remove all devices behind a PCI bridge
+  * @dev: PCI bridge device
+@@ -118,11 +137,8 @@ void pci_remove_bus_device(struct pci_de
+  */
+ void pci_remove_behind_bridge(struct pci_dev *dev)
+ {
+-	struct list_head *l, *n;
+-
+-	if (dev->subordinate)
+-		list_for_each_safe(l, n, &dev->subordinate->devices)
+-			__pci_remove_bus_device(pci_dev_b(l));
++	pci_stop_behind_bridge(dev);
++	__pci_remove_behind_bridge(dev);
+ }
+ 
+ static void pci_stop_bus_devices(struct pci_bus *bus)
