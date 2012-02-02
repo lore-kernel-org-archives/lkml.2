@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab2BBQ1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 11:27:12 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:37167 "EHLO e2.ny.us.ibm.com"
+	id S1754746Ab2BBQ2d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 11:28:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57413 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752956Ab2BBQ1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 11:27:10 -0500
-Date: Thu, 2 Feb 2012 08:22:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 04/41] rcu: Add diagnostic for
- misaligned rcu_head structures
-Message-ID: <20120202162235.GI2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120202010026.GE29058@leaf>
+	id S1751946Ab2BBQ2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 11:28:32 -0500
+Date: Thu, 2 Feb 2012 17:28:30 +0100 (CET)
+From: Michael Matz <matz@suse.de>
+To: Aldy Hernandez <aldyh@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jakub Jelinek <jakub@redhat.com>, Torvald Riegel <triegel@redhat.com>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
+        rguenther@suse.de, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+In-Reply-To: <874nv9qlau.fsf@houston.quesejoda.com>
+Message-ID: <Pine.LNX.4.64.1202021726020.25409@wotan.suse.de>
+References: <20120201151918.GC16714@quack.suse.cz>
+ <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb> <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
+ <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
+ <20120201201631.GW18768@tyan-ft48-01.lab.bos.redhat.com>
+ <CA+55aFwcLpD2Cw5VxZ3ym66QBDAeDam3-hprivrC+keUMXJOtw@mail.gmail.com>
+ <874nv9qlau.fsf@houston.quesejoda.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202010026.GE29058@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020216-5112-0000-0000-000004A6DF9D
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 05:00:26PM -0800, Josh Triplett wrote:
-> On Wed, Feb 01, 2012 at 11:41:22AM -0800, Paul E. McKenney wrote:
-> > The push for energy efficiency will require that RCU tag rcu_head
-> > structures to indicate whether or not their invocation is time critical.
-> > This tagging is best carried out in the bottom bits of the ->next
-> > pointers in the rcu_head structures.  This tagging requires that the
-> > rcu_head structures be properly aligned, so this commit adds the required
-> > diagnostics.
+Hi,
+
+On Thu, 2 Feb 2012, Aldy Hernandez wrote:
+
+> > Seriously - is there any real argument *against* just using the base 
+> > type as a hint for access size?
 > 
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1707,6 +1707,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
-> >  	unsigned long flags;
-> >  	struct rcu_data *rdp;
-> >  
-> > +	WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
-> 
-> I wonder if this should go out in one of the wrapper macros, so that the
-> _ONCE means once per call site?
+> If I'm on the hook for attempting to fix this again, I'd also like to 
+> know if there are any arguments against using the base type.
 
-Certainly past experience introducing lockdep-RCU would argue that way.  ;-)
+Sure.  Simplest example: struct s {int i:24;} __attribute__((packed)).
 
-However, my testing thus far (famous last words!) has found no
-misalignments.  So I expect that these will be caught as they are
-inserted, so one at a time should be fine.
+You must access only three bytes, no matter what.  The basetype (int) is 
+four bytes.
 
-								Thanx, Paul
 
+Ciao,
+Michael.
