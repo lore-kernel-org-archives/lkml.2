@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab2BBWv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 17:51:27 -0500
-Received: from smtp4.mundo-r.com ([212.51.32.151]:46131 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab2BBWvZ (ORCPT
+	id S1755080Ab2BBWxO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 17:53:14 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37221 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753802Ab2BBWxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 17:51:25 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4EANwSK09bdWOb/2dsb2JhbABDhQurDIFzAQUjBAsBIyMQJQIYDgICOQMbBgESh3+mHZF3gS+KIgEFAgICCAEBBA0EBgELCQgUF4MzXhWCQoEWBJUjhVeMfw
-X-IronPort-AV: E=Sophos;i="4.73,348,1325458800"; 
-   d="scan'208";a="864145633"
-From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
-	<vjaquez@igalia.com>
-To: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH v2 4/8] staging: tidspbridge: silence the compiler
-Date: Thu,  2 Feb 2012 23:51:08 +0100
-Message-Id: <cbdbc287395a2668253a07f6173900357d4ac254.1328222377.git.vjaquez@igalia.com>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <d25cfe1b88f2b749cb31887d551a1c9b0fcde42e.1327964066.git.vjaquez@igalia.com>
-References: <d25cfe1b88f2b749cb31887d551a1c9b0fcde42e.1327964066.git.vjaquez@igalia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 2 Feb 2012 17:53:12 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=0ow4NSV8tcgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=YiKPRh2-Ynl6pai5ZOIA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328223190.5882.128.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/5 v2] [GIT PULL] x86/jump label: Paranoid checks and 2
+ or 5 byte nops
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Baron <jbaron@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Thu, 02 Feb 2012 17:53:10 -0500
+In-Reply-To: <4F2B090F.5020609@zytor.com>
+References: <20120128160925.275163704@goodmis.org>
+	  <20120130144857.GA22013@elte.hu>
+	  <1327936060.22710.165.camel@gandalf.stny.rr.com>
+	  <20120131194813.GA12074@elte.hu>
+	  <1328072925.5882.57.camel@gandalf.stny.rr.com>
+	  <20120201080539.GA11770@elte.hu>
+	  <1328109697.5882.65.camel@gandalf.stny.rr.com>
+	  <20120202135154.GA10315@elte.hu> <4F2A9960.2090500@zytor.com>
+	  <1328193068.5882.95.camel@gandalf.stny.rr.com>
+	 <1328220280.5882.122.camel@gandalf.stny.rr.com>
+	 <4F2B090F.5020609@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When compiling this report is raised by the compiler:
+On Thu, 2012-02-02 at 14:07 -0800, H. Peter Anvin wrote:
 
-  CC [M]  drivers/staging/tidspbridge/rmgr/drv_interface.o
-drivers/staging/tidspbridge/rmgr/drv_interface.c: In function 'bridge_mmap':
-drivers/staging/tidspbridge/rmgr/drv_interface.c:275:2: warning: format '%lx' expects type 'long unsigned int', but argument 9 has type 'pgprot_t'
+> Would it make more sense to keep track of three states:
+> 
+> "Default"
+> "Enabled"
+> "Disabled"
 
-This patch fixes that warning message.
+Well, it is only default on start up, and every jump label is
+initialized then to the ideal nop. Either at boot up, or on module load.
 
-Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
----
- drivers/staging/tidspbridge/rmgr/drv_interface.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+What's nice is that the jump label init calls call the "_static" version
+of the update (arch_jump_label_transform_static()), and the
+enable/disable calls the non "_static" version
+(arch_jump_label_transform()). This means that we can set the "init"
+flag depending on which way we got into the common code. The upper layer
+only needs to know if the field is enabled or disabled. Remember this is
+a x86 specific thing. Other archs do not have a different "default" nop.
+There's no reason to save a "default" state, as that would require
+changing the common arch layers of jump label.
 
-diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-index 4316f4e..7a6401a 100644
---- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-@@ -273,8 +273,9 @@ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
- 
- 	dev_dbg(bridge, "%s: vm filp %p offset %x start %lx end %lx page_prot "
--		"%lx flags %lx\n", __func__, filp, offset,
--		vma->vm_start, vma->vm_end, vma->vm_page_prot, vma->vm_flags);
-+		"%ulx flags %lx\n", __func__, filp, offset,
-+		vma->vm_start, vma->vm_end, vma->vm_page_prot,
-+		vma->vm_flags);
- 
- 	status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
- 				 vma->vm_end - vma->vm_start,
--- 
-1.7.8.3
+-- Steve
+
+
+
 
