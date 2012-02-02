@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516Ab2BBW0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 17:26:41 -0500
-Received: from communigate.iinet.net.au ([203.59.1.19]:39428 "EHLO
-	octa4.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756618Ab2BBW0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 17:26:40 -0500
-X-Greylist: delayed 3599 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Feb 2012 17:26:40 EST
-From: Helpdesk Support Center <websuport11dpt@9.cn>
-Subject: Dear Account User
-X-Mailer: CommuniGate Pro WebUser Interface v.4.1.1
-Date: Fri, 03 Feb 2012 05:26:32 +0800
-Message-ID: <web-275199705@octa4.net.au>
+	id S933551Ab2BBW2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 17:28:31 -0500
+Received: from mail4.aviatnet.com ([192.147.115.31]:51997 "EHLO
+	mail4.aviatnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932556Ab2BBW2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 17:28:30 -0500
+Subject: Re: [PATCH v3] rtc: ds1307: generalise ram size and offset
+From: Austin Boyle <Austin.Boyle@aviatnet.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>
+In-Reply-To: <1328143057.3159.34.camel@pc786-ubu.gnet.global.vpn>
+References: <1326144071.3096.25.camel@pc786-ubu.gnet.global.vpn>
+	 <20120111110650.GC2605@pengutronix.de>
+	 <1326320516.3096.64.camel@pc786-ubu.gnet.global.vpn>
+	 <20120119194541.GA32483@pengutronix.de>
+	 <1328143057.3159.34.camel@pc786-ubu.gnet.global.vpn>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 3 Feb 2012 11:28:24 +1300
+Message-ID: <1328221704.3159.50.camel@pc786-ubu.gnet.global.vpn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
-To: unlisted-recipients:; (no To-header on input)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.16.1.34]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Wolfram,
 
-Dear Email User
+I have been thinking about this some more but maybe I don't understand
+the problem...
 
-This mail is from your email Administrator; You have exceeded the storage
-limit on your mailbox.You will not be able to send or receive new mail until
-you upgrade your email quota.
+> > ... that nvram is static and we are changing it. Yeah, it is very unlikely but
+> > if we have two RTC with different nvram sizes, one of them will not work correctly.
+> I see the issue. Am I right that it would only occur when you have two
+> I2C buses, each with one of the RTC chips supported by this driver?
 
-we wish to bring to your notice the Condition of your email account. We have
-just noticed that you have exceeded your email Database limit of 500 MB quota
-and your email IP is causing conflict because it is been accessed in
-different server location. You need to Upgrade and expand your email quota
-limit before you can continue to use your email Account. Update your email
-quota limit to 2.6 GB, In order to ensure you do not experience service
-interruptions/ possible deactivation, please you must reply to this email
-immediately confirming your email account details below for confirmation/
-identification
+On my system, it looks like each rtc would have it's own directory e.g.:
+# ls /sys/class/rtc
+rtc0
+# cat /sys/class/rtc/rtc0/device/name
+ds1388
+# ls /sys/class/rtc/rtc0/device/
+driver     modalias   name    nvram    rtc    subsystem     uevent
 
-1. First Name & Last Name:
-2. Email Address:
-3. Username & Password:
-4. Confirm your Current Password:
+So if you have multiple RTCs, even of the same type, they would be in
+rtc0, rtc1, rtc2
 
-Failure to do this will result to email deactivation within 24hours Thank you
-for your understanding.
-Copyright ?2010 Helpdesk Technical Support Centre.
+Since they each have their own nvram, does it matter if the size is
+changed?
+
+Cheers,
+Austin.
+
