@@ -1,34 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab2BBUuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:50:50 -0500
-Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:37345 "HELO
-	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932119Ab2BBUut (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:50:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1202022116280.16704@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202022116280.16704@swampdragon.chaosbits.net>
-From: Roland Dreier <roland@kernel.org>
-Date: Thu, 2 Feb 2012 12:50:27 -0800
-X-Google-Sender-Auth: IkfMwW9RLewEm-myUD_P_fPzgHE
-Message-ID: <CAL1RGDWRB2AND0LO1K6+PFiqF=Tm7E+MG4uAu0TqaXLp+qPrKg@mail.gmail.com>
-Subject: Re: [PATCH] Infiniband: Remove unneeded version.h include from drivers/infiniband/ulp/srpt/ib_srpt.h
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-rdma@vger.kernel.org, Bart Van Assche <bvanassche@acm.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        "Nicholas A. Bellinger" <nab@risingtidesystems.com>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        target-devel <target-devel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757166Ab2BBUv5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:51:57 -0500
+Received: from xes-mad.com ([216.165.139.218]:21750 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756480Ab2BBUv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:51:56 -0500
+X-Greylist: delayed 3250 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Feb 2012 15:51:55 EST
+Message-ID: <1328212615.12622.193.camel@petert>
+Subject: Re: [PATCH] gpio: New driver for the Intel 82801 (ICH) GPIO pins
+From: Peter Tyser <ptyser@xes-inc.com>
+To: guenter.roeck@ericsson.com
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 02 Feb 2012 13:56:55 -0600
+In-Reply-To: <1328204105.2261.140.camel@groeck-laptop>
+References: <20110419145303.111aead7@endymion.delvare>
+	 <20120202023129.GA19535@ericsson.com>
+	 <20120202084909.2adf0f50@endymion.delvare>
+	 <1328204105.2261.140.camel@groeck-laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, applied.
+<snip>
 
-Nic, I assume it's OK with you if I merge trivial srpt patches like this?
+> > > >  drivers/gpio/Kconfig     |    7
+> > > >  drivers/gpio/Makefile    |    1
+> > > >  drivers/gpio/i801_gpio.c |  432 ++++++++++++++++++++++++++++++++++++++++++++++
+> > > >  3 files changed, 440 insertions(+)
+> > >
+> > > Did this or an alternate patch for gpio support on the recent Intel ICHs go anywhere ?
+> > > 
+> > > I found another patch which is using a different approach, but I don't see anything
+> > > in the latest kernel.
+> > 
+> > I don't think any driver made it into the kernel, at least I can't find
+> > any in 3.3-rc2 nor linux-next. I'm not surprised, as neither driver was
+> > using the MFD framework while this would really be the right thing to
+> > do here. I never took the time to convert my driver to MFD and
+> > apparently Peter did not either. This is still on my to-do list but you
+> > know how long it is. If anyone is faster than me at getting the code is
+> > a shape suitable for upstream, I'll be happy to help with review and
+> > testing.
+> > 
+> I'd love to take this on, but unfortunately my task list isn't getting
+> shorter either. Just bad that this doesn't seem to make it in.
+> 
+> One reason of course may be that at least Peter's version tried to
+> accomplish too much. Looking through the comments, seems there was a
+> disagreement on unrelated issues such as if there should be a new
+> "unknown" gpio direction or not. Maybe it would make more sense to
+> separate the core patch to add ICH gpio support from the rest of Peter's
+> proposed changes.
 
- - R.
+I agree with Jean, I believe the main issue it wasn't accepted was the
+fact that it didn't use the MFD framework.  The driver I submitted
+follows the model of other drivers that share the same PCI device (iTCO,
+esb2rom, etc), so is functionally OK to use as is, it just doesn't use
+the recommend MFD framework, which was gating its acceptance.
+
+> Peter, do you have any plans to work on this in the near future ?
+
+I too have been caught up in other tasks.  A co-worker recently created
+a patch to transition the ICHx gpio driver I wrote and other related
+drivers (esb2rom, iTCO, etc) to the MFD structure with the intention
+that it would eventually be merged upstream.  The patch is still under
+review internally, but I'll talk to him about submitting it upstream.
+
+Best,
+Peter
+
