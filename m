@@ -1,58 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab2BBVc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 16:32:26 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:51218 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932183Ab2BBVcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 16:32:23 -0500
-Date: Thu, 2 Feb 2012 22:32:20 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: WARNING: at arch/x86/kernel/cpu/perf_event.c:989
-Message-ID: <20120202213220.GB1642@x4>
-References: <20120202211709.GA1642@x4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202211709.GA1642@x4>
+	id S1757425Ab2BBVd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 16:33:28 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:57271 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756627Ab2BBVd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 16:33:26 -0500
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>, akpm@linux-foundation.org,
+        jaswinder.singh@linaro.org
+Subject: [PATCH 00/11] dmaengine: add context parameter to prep_slave_sg and prep_dma_cyclic
+Date: Thu,  2 Feb 2012 16:32:10 -0500
+Message-Id: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.02.02 at 22:17 +0100, Markus Trippelsdorf wrote:
-> The following warning is easily reproducible after todays
-> 'perf-urgent-for-mingo' merge by just running "perf top":
-> 
-> ------------[ cut here ]------------
-> WARNING: at arch/x86/kernel/cpu/perf_event.c:989 x86_pmu_start+0xa5/0x100()
-> Hardware name: System Product Name
-> Pid: 0, comm: swapper/2 Not tainted 3.3.0-rc2-00068-g24b36da-dirty #22
-> Call Trace:
->  <IRQ>  [<ffffffff81054ba0>] ? warn_slowpath_common+0x60/0xa0
->  [<ffffffff8103e1a5>] ? x86_pmu_start+0xa5/0x100
->  [<ffffffff8109f062>] ? perf_adjust_freq_unthr_context.part.82+0xe2/0x140
->  [<ffffffff8109f260>] ? perf_event_task_tick+0x1a0/0x280
->  [<ffffffff81078be3>] ? scheduler_tick+0xc3/0x140
->  [<ffffffff810615b5>] ? update_process_times+0x55/0x80
->  [<ffffffff8108904d>] ? tick_sched_timer+0x4d/0xa0
->  [<ffffffff81072d1b>] ? __run_hrtimer.isra.32+0x3b/0xc0
->  [<ffffffff810735e5>] ? hrtimer_interrupt+0xc5/0x1e0
->  [<ffffffff81045de3>] ? smp_apic_timer_interrupt+0x63/0xa0
->  [<ffffffff8147768b>] ? apic_timer_interrupt+0x6b/0x70
->  <EOI>  [<ffffffff81039100>] ? default_idle+0x20/0x40
->  [<ffffffff81039172>] ? amd_e400_idle+0x52/0x100
->  [<ffffffff81030156>] ? cpu_idle+0xb6/0xe0
-> ---[ end trace 7dc3992f562261b6 ]---
+As we agreed during our discussion about adding DMA Engine support for RapidIO
+subsystem [1], RapidIO and similar clients may benefit from adding an extra
+context parameter to device_prep_slave_sg() and device_prep_dma_cyclic() interfaces.
 
-Most likely caused by e050e3f0a71b :
- perf: Fix broken interrupt rate throttling
+Adding the context parameter will allow to pass client/target specific
+information associated with an individual data transfer request.
 
-CCing Stephane.
+In the case of RapidIO support this additional information consists of target
+destination ID and its buffer address (which is not mapped into the local CPU
+memory space). Because a single RapidIO-capable DMA channel may queue data
+transfer requests to different target devices, the per-request configuration
+is required.
+
+This set of patches presents changes to DMA_SLAVE and DMA_CYCLIC interfaces [2]
+and corresponding changes to all affected current drivers/clients.
+
+DMA Engine support for RapidIO and device-specific driver for Tsi721 PCIe-to-SRIO
+bridge will follow as a separate set of patches.
+
+[1] https://lkml.org/lkml/2011/10/24/275
+[2] https://lkml.org/lkml/2012/1/30/624
+
+
+Alexandre Bounine (11):
+  dmaengine: add context parameter to prep_slave_sg and prep_dma_cyclic
+  dmaengine/drivers: add context parameter for DMA_SLAVE and DMA_CYCLIC
+  plat-samsung: add context parameter for DMA_SLAVE and DMA_CYCLIC
+  media/video: add new context parameter for DMA_SLAVE calls
+  mmc/host: add context parameter for DMA_SLAVE and DMA_CYCLIC
+  nand/gpmi: add context parameter to prep_slave_sg calls
+  net/ks8842: add context parameter to prep_slave_sg call
+  spi/serial: add context parameter for DMA_SLAVE and DMA_CYCLIC
+  usb/musb: add context parameter to prep_slave_sg call
+  usb/renesas: add context parameter to prep_slave_sg call
+  sound/soc: add context parameter to prep_slave_sg and prep_dma_cyclic
+    calls
+
+ arch/arm/plat-nomadik/include/plat/ste_dma40.h |    2 +-
+ arch/arm/plat-samsung/dma-ops.c                |    5 ++-
+ drivers/dma/amba-pl08x.c                       |    2 +-
+ drivers/dma/at_hdmac.c                         |    7 ++++-
+ drivers/dma/coh901318.c                        |    2 +-
+ drivers/dma/dw_dmac.c                          |    2 +-
+ drivers/dma/ep93xx_dma.c                       |    6 +++-
+ drivers/dma/fsldma.c                           |    4 ++-
+ drivers/dma/imx-dma.c                          |    5 ++-
+ drivers/dma/imx-sdma.c                         |    5 ++-
+ drivers/dma/intel_mid_dma.c                    |    3 +-
+ drivers/dma/ipu/ipu_idmac.c                    |    3 +-
+ drivers/dma/mxs-dma.c                          |    5 ++-
+ drivers/dma/pch_dma.c                          |    3 +-
+ drivers/dma/pl330.c                            |    5 ++-
+ drivers/dma/shdma.c                            |    3 +-
+ drivers/dma/sirf-dma.c                         |    2 +-
+ drivers/dma/ste_dma40.c                        |    5 ++-
+ drivers/dma/timb_dma.c                         |    3 +-
+ drivers/dma/txx9dmac.c                         |    2 +-
+ drivers/media/video/mx3_camera.c               |    2 +-
+ drivers/media/video/timblogiw.c                |    2 +-
+ drivers/mmc/host/atmel-mci.c                   |    2 +-
+ drivers/mmc/host/mmci.c                        |    2 +-
+ drivers/mmc/host/mxcmmc.c                      |    2 +-
+ drivers/mmc/host/mxs-mmc.c                     |    2 +-
+ drivers/mmc/host/sh_mmcif.c                    |    6 +++-
+ drivers/mmc/host/tmio_mmc_dma.c                |    4 +-
+ drivers/mtd/nand/gpmi-nand/gpmi-lib.c          |   25 ++++++++++++++---------
+ drivers/net/ethernet/micrel/ks8842.c           |    4 +-
+ drivers/spi/spi-dw-mid.c                       |    6 +++-
+ drivers/spi/spi-ep93xx.c                       |    3 +-
+ drivers/spi/spi-pl022.c                        |    6 +++-
+ drivers/spi/spi-topcliff-pch.c                 |    6 +++-
+ drivers/tty/serial/amba-pl011.c                |    6 +++-
+ drivers/tty/serial/pch_uart.c                  |    5 ++-
+ drivers/tty/serial/sh-sci.c                    |    4 +-
+ drivers/usb/musb/ux500_dma.c                   |    3 +-
+ drivers/usb/renesas_usbhs/fifo.c               |    3 +-
+ drivers/video/mx3fb.c                          |    6 +++-
+ include/linux/dmaengine.h                      |   10 +++++---
+ sound/soc/ep93xx/ep93xx-pcm.c                  |    2 +-
+ sound/soc/imx/imx-pcm-dma-mx2.c                |    2 +-
+ sound/soc/mxs/mxs-pcm.c                        |    2 +-
+ sound/soc/sh/siu_pcm.c                         |    6 +++-
+ sound/soc/txx9/txx9aclc.c                      |    2 +-
+ 46 files changed, 120 insertions(+), 77 deletions(-)
 
 -- 
-Markus
+1.7.8.4
+
