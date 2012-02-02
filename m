@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab2BBUzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:55:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab2BBUzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:55:37 -0500
-Date: Thu, 2 Feb 2012 15:55:32 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] blkcg: let blkio_group point to blkio_cgroup
- directly
-Message-ID: <20120202205532.GD1723@redhat.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
- <1328131156-13290-2-git-send-email-tj@kernel.org>
- <20120202200318.GB1723@redhat.com>
- <20120202203352.GG19837@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202203352.GG19837@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757310Ab2BBUzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:55:46 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:53256 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab2BBUzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:55:44 -0500
+Message-ID: <1328216139.2480.24.camel@edumazet-laptop>
+Subject: [PATCH] sched: reduce /proc/schedstat access times
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Thu, 02 Feb 2012 21:55:39 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 12:33:52PM -0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Feb 02, 2012 at 03:03:18PM -0500, Vivek Goyal wrote:
-> > > +static void blkiocg_destroy(struct cgroup_subsys *subsys, struct cgroup *cgroup)
-> > > +{
-> > > +	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
-> > > +
-> > >  	if (blkcg != &blkio_root_cgroup)
-> > >  		kfree(blkcg);
-> > 
-> > What makes sure that all the blkg are gone and they have dropped their
-> > reference to blkcg? IIUC, pre-destroy will just make sure to decouple
-> > blkg from request queue as well as blkcg list and also drop joint cgroup
-> > and request queue reference.
-> > 
-> > But there could well be some IO queued in the group which might have
-> > its own reference and will be dropped later when IO completes. So at
-> > the time of blkiocg_destroy() it is not guranteed that there are
-> > no reference holders to blkcg?
-> 
-> Yeah, and that would wait till all css refs held by blkgs are gone,
-> right?
+On a 16 cpus NUMA machine, we can have quite a long /proc/schedstat
 
-Ok, I missed that. So ->destroy() is not called till all the css refs
-are gone. So directory removal will wait for all the pending IO in the
-group to finish.
+# wc -c /proc/schedstat 
+8355 /proc/schedstat
 
-I have some minor concerns here. A low prio group might not be able to
-dispatch IO for quite some amount of time. Especially with CFQ, in presence of
-sync IO, async IO can be starved for a very long time. So if some task
-dumped bunch of low prio IO and exited and now we are removing the cgroup,
-this task might have to wait for significant amount of time. (I am worried
-about "hung task waited for 120 seconds kind of messages").
+It appears show_schedstat() is called three times, because initial
+seq_file buffer size is underestimated.
 
-Also it is little unintutive to the user that why rmdir should be delayed.
+seq buffer must be reallocated two times and we spend 3x more time than
+needed.
 
-Anyway, this is not a very strong concern. Just something to keep in mind.
+A quick fix is to maintain the maximum length reached in
+show_schedstat() instead of guessing.
 
-Thanks
-Vivek
+Also use seq_bitmap() to avoid the mask_str temp variable.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/stats.c |   19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/sched/stats.c b/kernel/sched/stats.c
+index 2a581ba..34bb9c8 100644
+--- a/kernel/sched/stats.c
++++ b/kernel/sched/stats.c
+@@ -11,15 +11,11 @@
+  * format, so that tools can adapt (or abort)
+  */
+ #define SCHEDSTAT_VERSION 15
++static size_t max_schedstat_len = 4096;
+ 
+ static int show_schedstat(struct seq_file *seq, void *v)
+ {
+ 	int cpu;
+-	int mask_len = DIV_ROUND_UP(NR_CPUS, 32) * 9;
+-	char *mask_str = kmalloc(mask_len, GFP_KERNEL);
+-
+-	if (mask_str == NULL)
+-		return -ENOMEM;
+ 
+ 	seq_printf(seq, "version %d\n", SCHEDSTAT_VERSION);
+ 	seq_printf(seq, "timestamp %lu\n", jiffies);
+@@ -47,9 +43,9 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 		for_each_domain(cpu, sd) {
+ 			enum cpu_idle_type itype;
+ 
+-			cpumask_scnprintf(mask_str, mask_len,
+-					  sched_domain_span(sd));
+-			seq_printf(seq, "domain%d %s", dcount++, mask_str);
++			seq_printf(seq, "domain%d ", dcount++);
++			seq_bitmap(seq, cpumask_bits(sched_domain_span(sd)),
++				   nr_cpumask_bits);
+ 			for (itype = CPU_IDLE; itype < CPU_MAX_IDLE_TYPES;
+ 					itype++) {
+ 				seq_printf(seq, " %u %u %u %u %u %u %u %u",
+@@ -73,14 +69,13 @@ static int show_schedstat(struct seq_file *seq, void *v)
+ 		rcu_read_unlock();
+ #endif
+ 	}
+-	kfree(mask_str);
++	max_schedstat_len = max(max_schedstat_len, seq->count);
+ 	return 0;
+ }
+ 
+ static int schedstat_open(struct inode *inode, struct file *file)
+ {
+-	unsigned int size = PAGE_SIZE * (1 + num_online_cpus() / 32);
+-	char *buf = kmalloc(size, GFP_KERNEL);
++	char *buf = kmalloc(max_schedstat_len, GFP_KERNEL);
+ 	struct seq_file *m;
+ 	int res;
+ 
+@@ -90,7 +85,7 @@ static int schedstat_open(struct inode *inode, struct file *file)
+ 	if (!res) {
+ 		m = file->private_data;
+ 		m->buf = buf;
+-		m->size = size;
++		m->size = ksize(buf);
+ 	} else
+ 		kfree(buf);
+ 	return res;
+
+
