@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab2BBP4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 10:56:46 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:45603 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756114Ab2BBP4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 10:56:44 -0500
-Date: Thu, 2 Feb 2012 07:56:12 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH RFC tip/core/rcu 10/41] ipv4: Convert call_rcu() to
- kfree_rcu()
-Message-ID: <20120202155612.GG2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-10-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120202002403.GB29058@leaf>
+	id S1756778Ab2BBP7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 10:59:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756619Ab2BBP7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 10:59:05 -0500
+Date: Thu, 2 Feb 2012 10:58:41 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: TAO HU <tghk48@motorola.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-omap <linux-omap@vger.kernel.org>
+Subject: Re: In many cases softlockup can not be reported after disabling IRQ
+ for long time
+Message-ID: <20120202155841.GO5650@redhat.com>
+References: <CAOwKts8zS1rYA+Y4k-vb8YAaR=aFd1BwryhhWWnWLQyrYrNqyA@mail.gmail.com>
+ <20120131154748.GA5650@redhat.com>
+ <CAOwKts_dTvc4LiCZUXN9oYzty1pkDEn_VQwPKY=EoVzk0n6tFA@mail.gmail.com>
+ <20120201145802.GF5650@redhat.com>
+ <CAOwKts8S0EkUGcP3rYqZe+HdvyXD0+SR1f_3xWpu5FprKWuGhQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120202002403.GB29058@leaf>
+In-Reply-To: <CAOwKts8S0EkUGcP3rYqZe+HdvyXD0+SR1f_3xWpu5FprKWuGhQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020215-7408-0000-0000-00000258EAF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 04:24:03PM -0800, Josh Triplett wrote:
-> On Wed, Feb 01, 2012 at 11:41:28AM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> > 
-> > The call_rcu() in do_ip_setsockopt() invokes opt_kfree_rcu(), which just
-> > calls kfree().  So convert the call_rcu() to kfree_rcu(), which allows
-> > opt_kfree_rcu() to be eliminated.
+On Thu, Feb 02, 2012 at 04:17:02PM +0800, TAO HU wrote:
+> Hi, Don
 > 
-> This and patch 9/41 have exactly the same subject line.  Consider
-> adding the name of the function you replaced to each one, to
-> disambiguate them.
+> My concern is not actually that the softlockup could not be reported
+> while the IRQ is disabled.
+> What bothering me is that even AFTER re-enable the IRQ, it will not
+> give warning in many cases.
+> 
+> In theory, disabling IRQ for long time (10s in my case) also implies
+> the high priority thread (watchdog) is blocked
+> as well.
+> So the ideal case is that softlockup driver could give warning right
+> after the IRQ is re-enabled.
+> It does so occasionally but fails to be consistent.
 
-Good point, will also add function names to the other three kfree_rcu()
-patches.
+The only thing I can think of is that the clock/jiffies isn't updated
+until after the hrtimer is run.  I'm not sure if there is any guarantee
+for ordering once interrupts are enabled.
 
-							Thanx, Paul
+But that is just a guess.
 
+I guess in theory, I would expect that when interrupts are enabled, the
+system would immediately jump into an IRQ context, update the
+clock/jiffies, then run all the other irq handlers like hrtimers, which
+would see the new time and do the right thing.  After everything is done,
+the system would return to your test code and re-enable preemption
+allowing the softlockup thread to run again.
+
+I could be very wrong though. :-)
+
+Cheers,
+Don
