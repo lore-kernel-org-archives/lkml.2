@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933116Ab2BBR4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 12:56:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38107 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932092Ab2BBR4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 12:56:37 -0500
-Message-ID: <4F2ACE46.4000307@redhat.com>
-Date: Thu, 02 Feb 2012 19:56:22 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S933131Ab2BBR6I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 12:58:08 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:47177 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755849Ab2BBR6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 12:58:05 -0500
+Date: Thu, 2 Feb 2012 09:56:46 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 30/41] rcutorture: Permit holding off
+ CPU-hotplug operations during boot
+Message-ID: <20120202175646.GW2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120201194131.GA10028@linux.vnet.ibm.com>
+ <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1328125319-5205-30-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120202054259.GQ29058@leaf>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] KVM: x86: add tracepoints to trace mmio begin
- and complete
-References: <4F2AC707.7020801@gmail.com> <4F2AC790.1090805@gmail.com> <4F2AC9A0.7090904@redhat.com> <4F2ACE04.9040602@gmail.com>
-In-Reply-To: <4F2ACE04.9040602@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202054259.GQ29058@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020217-6148-0000-0000-0000031B2814
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 07:55 PM, Xiao Guangrong wrote:
-> On 02/03/2012 01:36 AM, Avi Kivity wrote:
->
-> > On 02/02/2012 07:27 PM, Xiao Guangrong wrote:
-> >> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> >>
-> >> 'perf kvm-events' will use kvm_exit and kvm_mmio(read...) to calculate
-> >> mmio read emulated time for the old kernel, in order to trace mmio read
-> >> event more exactly, we add kvm_mmio_begin to trace the time when mmio read
-> >> begins
-> >>
-> >> Also, add kvm_mmio_done to trace the time when mmio/pio is completed
-> > 
-> > Previously, we discussed using the kvm_entry to do this.  This reduces
-> > the number of tracepoints, and is backwards compatible.  What was the
-> > conclusion?
-> > 
->
->
-> Since using kvm_entry can cause lots of unnecessary calculated, these new two
-> tracepoints can let the result be exacter.
+On Wed, Feb 01, 2012 at 09:43:00PM -0800, Josh Triplett wrote:
+> On Wed, Feb 01, 2012 at 11:41:48AM -0800, Paul E. McKenney wrote:
+> > When rcutorture is started automatically at boot time, it might well
+> > also start CPU-hotplug operations at that time, which might not be
+> > desirable.  This commit therefore adds an rcutorture parameter that
+> > allows CPU-hotplug operations to be held off for the specified number
+> > of seconds after the start of boot.
+> > --- a/Documentation/RCU/torture.txt
+> > +++ b/Documentation/RCU/torture.txt
+> > @@ -271,11 +278,13 @@ The following script may be used to torture RCU:
+> >  	#!/bin/sh
+> >  
+> >  	modprobe rcutorture
+> > -	sleep 100
+> > +	sleep 3600
+> >  	rmmod rcutorture
+> >  	dmesg | grep torture:
+> 
+> This looks like an entirely unrelated change.
 
-Do you have numbers on the ratio between kvm_entry traces and
-kvm_mmio_begin/end traces?
+I suppose it is.  I did split it out, though a one-line documentation change
+seems a bit lightweight for a commit.
 
-> And, they are only used in new kernel, we will fall back to using kvm_entry if
-> they are not existing, that means it does not break backwards compatible.
-
-Ah ok.
-
-
--- 
-error compiling committee.c: too many arguments to function
+								Thanx, Paul
 
