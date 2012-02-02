@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab2BBNcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 08:32:12 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55069 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754251Ab2BBNcL (ORCPT
+	id S1756051Ab2BBNeI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 08:34:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52962 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab2BBNeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 08:32:11 -0500
-Date: Thu, 2 Feb 2012 13:32:08 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Liam Girdwood <lrg@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 7/7] MFD: TWL6040: Add regulator support for VIO, V2V1
- supplies
-Message-ID: <20120202133207.GN7428@opensource.wolfsonmicro.com>
-References: <1328185019-29575-1-git-send-email-peter.ujfalusi@ti.com>
- <1328185019-29575-8-git-send-email-peter.ujfalusi@ti.com>
- <20120202125250.GJ7428@opensource.wolfsonmicro.com>
- <4F2A8D11.9010705@ti.com>
+	Thu, 2 Feb 2012 08:34:06 -0500
+Message-ID: <4F2A90B4.1050709@gmail.com>
+Date: Thu, 02 Feb 2012 21:33:40 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DH4/xewco2zMcht6"
-Content-Disposition: inline
-In-Reply-To: <4F2A8D11.9010705@ti.com>
-X-Cookie: Never give an inch!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <greg@kroah.com>, Dave Young <dyoung@redhat.com>
+Subject: Re: [PATCH 1/2] lkdtm: use atomic_t to replace count_lock
+References: <1328079501-24746-1-git-send-email-xiyou.wangcong@gmail.com> <201202011527.35366.arnd@arndb.de>
+In-Reply-To: <201202011527.35366.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/01/2012 11:27 PM, Arnd Bergmann wrote:
+> On Wednesday 01 February 2012, Cong Wang wrote:
+>>   static void lkdtm_handler(void)
+>>   {
+>> -       unsigned long flags;
+>> -
+>> -       spin_lock_irqsave(&count_lock, flags);
+>> -       count--;
+>>          printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
+>> -                       cp_name_to_str(cpoint), cp_type_to_str(cptype), count);
+>> +                       cp_name_to_str(cpoint), cp_type_to_str(cptype), atomic_dec_return(&count));
+>>
+>> -       if (count == 0) {
+>> +       if (!atomic_cmpxchg(&count, 0, cpoint_count))
+>>                  lkdtm_do_action(cptype);
+>> -               count = cpoint_count;
+>> -       }
+>> -       spin_unlock_irqrestore(&count_lock, flags);
+>>   }
+>
+> This use is not atomic, you could have two threads doing atomic_dec_return
+> at the same time, and after that the value will be -1 so the atomic_cmpxchg
+> does not trigger.
 
---DH4/xewco2zMcht6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Thu, Feb 02, 2012 at 03:18:09PM +0200, Peter Ujfalusi wrote:
-> On 02/02/2012 02:52 PM, Mark Brown wrote:
+Yeah, simply combining two atomic operations is not atomic. :-/
 
-> > Looks like you want regulator_bulk_get() here.  Or (better yet though
-> > it'd be a potential issue for merge via MFD and the benefits aren't that
-> > exciting since you still need to disable) devm_regulator_bulk_get().
+>
+> In order to have an atomic here, you have to use a loop around
+> atomic_cmpxchg, like
+>
+>
+> 	int old, new;
+> 	old = atomic_read(&count);
+> 	do {
+> 		new = old ? old - 1 : cpoint_count;
+> 		old = cmpxchg(&count, old, new);
+> 	} while (old != new);
+>
+> I suppose you could also just keep the spinlock and move lkdtm_do_action()
+> outside of it?
 
-> I need separate control for the two power source since we can hit
-> different power levels depending on which is powered/not powered:
-> power down: vio, v2v1 is OFF
-> deep sleep: vio is ON, v2v1 is OFF
-> sleep/power on: vio, v2v1 is ON
-
-> And we have certain sequence to move between power states.
-
-That's not a problem for using the bulk get - the array is part of the
-API so you can use regulator_bulk_get() and still look at individual
-supplies within the array later on when enabling and disabling them.
-
-> >> +	ret = regulator_enable(twl6040->vio);
-> >> +	if (ret != 0) {
-> >> +		dev_err(&client->dev, "Failed to enable VIO: %d\n", ret);
-> >> +		goto power_err;
-> >> +	}
-> >> +	ret = regulator_enable(twl6040->v2v1);
-> >> +	if (ret != 0) {
-> >> +		dev_err(&client->dev, "Failed to enable V2V1: %d\n", ret);
-> >> +		regulator_disable(twl6040->vio);
-
-> I disable the vio here, if the v2v1 enable fails.
-
-Oh, that's quite confusing when mixed in with the goto/unwind - it'd be
-clearer to have the extra lable to jump to.
-
---DH4/xewco2zMcht6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPKpBPAAoJEBus8iNuMP3dWiIP/jfLytqSvCZ5b+fQqMD5mmiX
-Ui7K7iYXKaSyXJSoAuBJXNzFoUOV998rYwanhJXhsVfGKYJzfoidEsWVQamVVS7x
-BModtw7453/5DzNan47UJFRJ1/iqG/kJw20Jq625TbAiVtT1vEF1B9zfqN3JbczR
-iYqzU7/9+SRqdUQt9rvXR5iJI22v801b05Dxe1WrPP2X1y8lzZ7cl2gFCLjjdrit
-ngEAqBwLewX01NEpkJU52a+TAr6Ag4joA6mRX4Um7THWwuYrNPehXDdBr8hEmKgi
-GNBtzizk7KSScXKjabD+ZzLmIc0AAMOKKRNdjtsMKJBTR0d7CpNHebf1CQbqj7so
-K3nev50sHy2HqYfuWxUbFImYN3GuWp5eoIj37q9iOSqPHhgRYgodGOWX5kmkBZ6/
-EC7m3K4JOoXhoK87ImbSWUQI7++u0ewlvVFbtzTHMh1kTLdNnqCVU9Cg+UEGzG8n
-cZLwRgYuKoMuuXvcrHKGMtPGFychZiZFSokt8/1poW6E8P6NzPoRBmA5+gqczIWa
-7PSbLuv1zNPESbKLhgoaSD3l3CCNHPUwWaidGBSmk0Y0R3kVgLfb5wsEIjWlY30f
-wT/LqPOoHFYj8IGzMF3JP4uYYKlugorB6Lic3RchYGV73c/VzHHNA5tpj5+QVLuW
-uJETdo51CBITFvimrWgY
-=kH0B
------END PGP SIGNATURE-----
-
---DH4/xewco2zMcht6--
+If we still need spinlock, I think we don't need to bother atomic_t at all.
