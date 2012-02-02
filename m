@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab2BBTIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:08:16 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34386 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932505Ab2BBTIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:08:13 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM/Hibernate: Thaw kernel threads in hibernation_snapshot() in error/test path
-Date: Thu, 2 Feb 2012 20:11:55 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20120202003359.9930.9844.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120202003359.9930.9844.stgit@srivatsabhat.in.ibm.com>
+	id S933180Ab2BBTIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:08:47 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44265 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932505Ab2BBTIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:08:46 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202022011.55493.rjw@sisk.pl>
+In-Reply-To: <20120202184209.GD2518@linux.vnet.ibm.com>
+References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb> <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
+ <1328128874.15992.6430.camel@triegel.csb> <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
+ <20120201224554.GK2382@linux.vnet.ibm.com> <CA+55aFyzYO0CMZOgdrVV0PdG2DkbwTQG7eE7N3bp=0tQmruFEQ@mail.gmail.com>
+ <20120202184209.GD2518@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 2 Feb 2012 11:08:25 -0800
+X-Google-Sender-Auth: dHcJIuXJga1Loe8Mz5J44Eg6aXo
+Message-ID: <CA+55aFyYxzED4OoYvb3nbET7_zyP5mGhEa2w_QCvQOx55bVjHg@mail.gmail.com>
+Subject: Re: Memory corruption due to word sharing
+To: paulmck@linux.vnet.ibm.com
+Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> In the hibernation call path, the kernel threads are frozen inside
-> hibernation_snapshot(). If we happen to encounter an error further down
-> the road or if we are exiting early due to a successful freezer test,
-> then thaw kernel threads before returning to the caller.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  kernel/power/hibernate.c |    6 ++++--
->  kernel/power/user.c      |    8 ++------
->  2 files changed, 6 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> index a5d4cf0..c6dee73 100644
-> --- a/kernel/power/hibernate.c
-> +++ b/kernel/power/hibernate.c
-> @@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
->  		 * successful freezer test.
->  		 */
->  		freezer_test_done = true;
-> -		goto Cleanup;
-> +		goto Thaw;
->  	}
->  
->  	error = dpm_prepare(PMSG_FREEZE);
->  	if (error) {
->  		dpm_complete(PMSG_RECOVER);
-> -		goto Cleanup;
-> +		goto Thaw;
->  	}
->  
->  	suspend_console();
-> @@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
->  	platform_end(platform_mode);
->  	return error;
->  
-> + Thaw:
-> +	thaw_kernel_threads();
+On Thu, Feb 2, 2012 at 10:42 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>>
+>> SMP-atomic or percpu atomic? Or both?
+>
+> Only SMP-atomic.
 
-Actaully, no.  You have to do swsusp_free() before thawing, otherwise
-some allocations made by the just thawed kernel threads may fail.
+And I assume that since the compiler does them, that would now make it
+impossible for us to gather a list of all the 'lock' prefixes so that
+we can undo them if it turns out that we are running on a UP machine.
 
->   Cleanup:
->  	swsusp_free();
->  	goto Close;
-> diff --git a/kernel/power/user.c b/kernel/power/user.c
-> index 3e10007..7bee91f 100644
-> --- a/kernel/power/user.c
-> +++ b/kernel/power/user.c
-> @@ -249,16 +249,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
->  		}
->  		pm_restore_gfp_mask();
->  		error = hibernation_snapshot(data->platform_support);
-> -		if (error) {
-> -			thaw_kernel_threads();
-> -		} else {
-> +		if (!error) {
->  			error = put_user(in_suspend, (int __user *)arg);
->  			if (!error && !freezer_test_done)
->  				data->ready = 1;
-> -			if (freezer_test_done) {
-> +			if (freezer_test_done)
->  				freezer_test_done = false;
-> -				thaw_kernel_threads();
-> -			}
->  		}
->  		break;
+When we do SMP operations, we don't just add a "lock" prefix to it. We do this:
 
-Overall, this seems to be a cleanup, or is it a bug fix?
+  #define LOCK_PREFIX_HERE \
+                ".section .smp_locks,\"a\"\n"   \
+                ".balign 4\n"                   \
+                ".long 671f - .\n" /* offset */ \
+                ".previous\n"                   \
+                "671:"
 
-Thanks,
-Rafael
+  #define LOCK_PREFIX LOCK_PREFIX_HERE "\n\tlock; "
+
+and I'm sure you know that, but I'm not sure the gcc people realize
+the kinds of games we play to make things work better.
+
+Sure, "everything will be SMP" some day, but running UP kernels is
+likely still going to remain a good idea in virtualized environments,
+for example. And having to make it a compile-time option is *not* a
+good idea.
+
+So compiler intrisics are often *worse* than doing it by hand for us
+for all these kinds of reasons. They aren't generally geared towards
+the very specialized needs that a kernel has.
+
+Of course, maybe even user space would want some kind of way to
+automatically strip 'lock' prefixes from a binary, so maybe the
+compiler would have some kind of support like this too.
+
+(And no, disassembling the binary in order to find lock prefixes is
+*not* the answer, at least not for the kernel)
+
+>> We need both variants in the kernel. If the compiler generates one of
+>> them for us, that doesn't really much help.
+>
+> I must admit that the non-x86 per-CPU atomics are, ummm, "interesting".
+
+Most non-x86 cpu's would probably be better off treating them the same
+as smp-atomics (load-locked + store-conditional), but right now we
+have this insane generic infrastructure for having versions that are
+irq-safe by disabling interrupts etc. Ugh. Mainly because nobody
+really is willing to work on and fix up the 25 architectures that
+really don't matter.
+
+              Linus
