@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab2BBT2a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:28:30 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60721 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab2BBT22 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:28:28 -0500
+	id S1757204Ab2BBTaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:30:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35888 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757038Ab2BBTaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:30:04 -0500
+Date: Thu, 2 Feb 2012 14:29:58 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] blkcg: unify blkgs for different policies
+Message-ID: <20120202192958.GA1723@redhat.com>
+References: <1328131156-13290-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <CADdbW+Eaab4ucATwX+ao-P+kcms-AJKQMGZr2E6g73gLACZSZg@mail.gmail.com>
-References: <4E68A6E8.9020700@pobox.com> <20110908165155.f661a738.akpm@linux-foundation.org>
- <4F26B162.4050000@pobox.com> <4F274E28.2010200@gmail.com> <4F27D9AD.1020806@pobox.com>
- <CADdbW+Eaab4ucATwX+ao-P+kcms-AJKQMGZr2E6g73gLACZSZg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 2 Feb 2012 11:28:08 -0800
-X-Google-Sender-Auth: EZFjVmEw9rv1IdUK1b6t14QHd4w
-Message-ID: <CA+55aFytBRZiQUcnWtSYnxqXUJCfVuS4f5tq=QUNG2GfbF1mhA@mail.gmail.com>
-Subject: Re: ASM1083 PCIx-PCI bridge interrupts - widespread problems
-To: Edward Donovan <edward.donovan@numble.net>
-Cc: Chris Palmer <chris.palmer@pobox.com>,
-        Robert Hancock <hancockrwd@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        ghost3k@ghost3k.net, linux-kernel@vger.kernel.org, keve@irb.hu,
-        bjorn.ottervik@gmail.com, kaneda@freemail.hu,
-        jeroen.vandenkeybus@gmail.com, clemens@ladisch.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328131156-13290-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 2, 2012 at 11:20 AM, Edward Donovan
-<edward.donovan@numble.net> wrote:
->
-> If we end up helpless with this chip, will we at least warn the user
-> that it's known to be buggy?  I dont' know if there's a standard
-> procedure when documenting bad hardware.
+On Wed, Feb 01, 2012 at 01:19:05PM -0800, Tejun Heo wrote:
 
-That's probably a good idea.
+[..]
+> 
+> * use unified stats updated under queue lock and drop percpu stats
+>   which should fix locking / context bug across percpu allocation.
 
-That said, the "switch to polled mode and then try to reenable every
-100ms" approach sounds like a good idea regardless. The more robust we
-can be, the better.
+Hi Tejun,
 
-I realize that the people with *this* particular problem would
-probably want to reenable them even more often than 100ms or so, but
-that could lead to problems for people with seriously screaming
-interrupts (which has definitely happened too), so we need to balance
-those two issues out against each other.
+Does that mean that stat updation will happen under queue lock even if
+there are no throttling rules? That will introduce extra queue lock on
+fast path those who have throttling compiled in but are not using (common
+case for distributions).
 
-And we'd probably need to limit the warning messages if we start
-re-enabling it - so that people with constantly screaming interrupts
-don't get a constant stream of 10 "nobody cared, disabling" messages
-per second.
+IMHO, we should keep the lockless per cpu stats and do the allocation in
+worker thread. I was going through my messages and noticed that for
+a workload queue lock contention had come down by 11% and in a separate
+testing I could gain 4-5% with PCIe based flash drive for random reads
+while I saturated the cpus.
 
-So I'd take a tested patch that looks sane for both the "warning: this
-pcie-pci bridge is dodgy" and for the "try polling, then re-enable for
-a while" approach.
-
-                    Linus
+Thanks
+Vivek
