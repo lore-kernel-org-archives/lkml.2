@@ -1,103 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197Ab2BBSMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 13:12:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18953 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932949Ab2BBSMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 13:12:42 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        kexec-list <kexec@lists.infradead.org>,
-        Don Zickus <dzickus@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH] x86, kdump: No need to disable ioapic in crash path
-Date: Thu,  2 Feb 2012 13:12:03 -0500
-Message-Id: <1328206323-25580-1-git-send-email-dzickus@redhat.com>
+	id S933212Ab2BBSOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 13:14:18 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37979 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932914Ab2BBSOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 13:14:16 -0500
+Date: Thu, 2 Feb 2012 19:14:12 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCH 5/7] ftrace, perf: Add support to use function tracepoint
+ in perf
+Message-ID: <20120202181409.GH9071@somewhere.redhat.com>
+References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+ <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+ <1327776209-4883-6-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327776209-4883-6-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A customer of ours noticed when their machine crashed, kdump did not
-work but hung instead.  Using their firmware dumping solution they
-grabbed a vmcore and decoded the stacks on the cpus.  What they
-noticed seemed to be a rare deadlock with the ioapic_lock.
+On Sat, Jan 28, 2012 at 07:43:27PM +0100, Jiri Olsa wrote:
+> Adding perf registration support for the ftrace function event,
+> so it is now possible to register it via perf interface.
+> 
+> The perf_event struct statically contains ftrace_ops as a handle
+> for function tracer. The function tracer is registered/unregistered
+> in open/close actions.
+> 
+> To be efficient, we enable/disable ftrace_ops each time the traced
+> process is scheduled in/out (via TRACE_REG_PERF_(ADD|DELL) handlers).
+> This way tracing is enabled only when the process is running.
+> Intentionally using this way instead of the event's hw state
+> PERF_HES_STOPPED, which would not disable the ftrace_ops.
+> 
+> It is now possible to use function trace within perf commands
+> like:
+> 
+>   perf record -e ftrace:function ls
+>   perf stat -e ftrace:function ls
+> 
+> Allowed only for root.
 
- CPU4:
- machine_crash_shutdown
- -> machine_ops.crash_shutdown
-    -> native_machine_crash_shutdown
-       -> kdump_nmi_shootdown_cpus ------> Send NMI to other CPUs
-       -> disable_IO_APIC
-          -> clear_IO_APIC
-             -> clear_IO_APIC_pin
-                -> ioapic_read_entry
-                   -> spin_lock_irqsave(&ioapic_lock, flags)
-                   ---Infinite loop here---
+Good idea. We probably don't want to leak the rate of calls of a kernel
+function to userspace.
 
- CPU0:
- do_IRQ
- -> handle_irq
-    -> handle_edge_irq
-        -> ack_apic_edge
-           -> move_native_irq
-               -> mask_IO_APIC_irq
-                  -> mask_IO_APIC_irq_desc
-                     -> spin_lock_irqsave(&ioapic_lock, flags)
-                     ---Receive NMI here after getting spinlock---
-                        -> nmi
-                           -> do_nmi
-                              -> crash_nmi_callback
-                              ---Infinite loop here---
+[...]
+> +static void
+> +perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
+> +{
+> +	struct ftrace_entry *entry;
+> +	struct hlist_head *head;
+> +	struct pt_regs regs;
+> +	int rctx;
+> +
+> +#define ENTRY_SIZE (ALIGN(sizeof(struct ftrace_entry) + sizeof(u32), \
+> +		    sizeof(u64)) - sizeof(u32))
+> +
+> +	BUILD_BUG_ON(ENTRY_SIZE > PERF_MAX_TRACE_SIZE);
+> +
+> +	perf_fetch_caller_regs(&regs);
+> +
+> +	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, NULL, &rctx);
+> +	if (!entry)
+> +		return;
+> +
+> +	entry->ip = ip;
+> +	entry->parent_ip = parent_ip;
+> +
+> +	head = this_cpu_ptr(event_function.perf_events);
+> +	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
+> +			      1, &regs, head);
+> +
+> +#undef ENTRY_SIZE
+> +}
+> +
+> +static int perf_ftrace_function_register(struct perf_event *event)
+> +{
+> +	struct ftrace_ops *ops = &event->ftrace_ops;
+> +
+> +	ops->flags |= FTRACE_OPS_FL_CONTROL;
+> +	ops->func = perf_ftrace_function_call;
+> +	return register_ftrace_function(ops);
+> +}
+> +
+> +static int perf_ftrace_function_unregister(struct perf_event *event)
+> +{
+> +	struct ftrace_ops *ops = &event->ftrace_ops;
+> +	return unregister_ftrace_function(ops);
+> +}
+> +
+> +static void perf_ftrace_function_enable(struct perf_event *event)
+> +{
+> +	ftrace_function_local_enable(&event->ftrace_ops);
+> +}
+> +
+> +static void perf_ftrace_function_disable(struct perf_event *event)
+> +{
+> +	ftrace_function_local_disable(&event->ftrace_ops);
+> +}
+> +
+> +int perf_ftrace_event_register(struct ftrace_event_call *call,
+> +			       enum trace_reg type, void *data)
+> +{
+> +	int etype = call->event.type;
+> +
+> +	if (etype != TRACE_FN)
+> +		return -EINVAL;
+> +
+> +	switch (type) {
+> +	case TRACE_REG_REGISTER:
+> +	case TRACE_REG_UNREGISTER:
+> +		break;
+> +	case TRACE_REG_PERF_REGISTER:
+> +	case TRACE_REG_PERF_UNREGISTER:
+> +		return 0;
+> +	case TRACE_REG_PERF_OPEN:
+> +		return perf_ftrace_function_register(data);
+> +	case TRACE_REG_PERF_CLOSE:
+> +		return perf_ftrace_function_unregister(data);
+> +	case TRACE_REG_PERF_ADD:
+> +		perf_ftrace_function_enable(data);
+> +		return 0;
+> +	case TRACE_REG_PERF_DEL:
+> +		perf_ftrace_function_disable(data);
+> +		return 0;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
 
-The problem is that although kdump tries to shutdown minimal hardware,
-it still needs to disable the IO APIC.  This requires spinlocks which
-may be held by another cpu.  This other cpu is being held infinitely in
-an NMI context by kdump in order to serialize the crashing path.  Instant
-deadlock.
+All the above from perf_ftrace_function_call() to here should perhaps
+go to trace_function.c.
 
-Eric, brought up a point that because the boot code was restructured we may
-not need to disable the io apic any more in the crash path.  The original
-concern that led to the development of disable_IO_APIC, was that the TSC
-calibration on boot up relied on the PIT timer for reference.  Access
-to the PIT required 8259 interrupts to be working.  This wouldn't work
-if the ioapic needed to be configured.  So on panic path, the ioapic was
-reconfigured to use virtual wire mode to allow the 8259 to passthrough.
+> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+> index bbeec31..867653c 100644
+> --- a/kernel/trace/trace_export.c
+> +++ b/kernel/trace/trace_export.c
+> @@ -131,6 +131,28 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+>  
+>  #include "trace_entries.h"
+>  
+> +static int ftrace_event_class_register(struct ftrace_event_call *call,
+> +				       enum trace_reg type, void *data)
+> +{
+> +	switch (type) {
+> +	case TRACE_REG_PERF_REGISTER:
+> +	case TRACE_REG_PERF_UNREGISTER:
+> +		return 0;
+> +	case TRACE_REG_PERF_OPEN:
+> +	case TRACE_REG_PERF_CLOSE:
+> +	case TRACE_REG_PERF_ADD:
+> +	case TRACE_REG_PERF_DEL:
+> +#ifdef CONFIG_PERF_EVENTS
+> +		return perf_ftrace_event_register(call, type, data);
+> +#endif
+> +	case TRACE_REG_REGISTER:
+> +	case TRACE_REG_UNREGISTER:
+> +		break;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
 
-Those concerns don't hold true now, thanks to the fast TSC calibration code
-not needing the PIT.  As a result, we can remove this call and simplify the
-locking needed in the panic path.
+Hmm, one day we'll need to demux here. What about adding an argument to
+FTRACE_ENTRY() to add the pointer to .reg ?
 
-I tested kdump on an Ivy Bridge platform, a Pentium4 and an old athlon that
-did not have an ioapic.  All three were successful.
-
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-
----
-I will probably need some help with my explaination as to why this line is not
-needed.  Any input is appreciated!
----
- arch/x86/kernel/crash.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index 13ad899..b053cf9 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -96,9 +96,6 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
- 	cpu_emergency_svm_disable();
- 
- 	lapic_shutdown();
--#if defined(CONFIG_X86_IO_APIC)
--	disable_IO_APIC();
--#endif
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
--- 
-1.7.7.6
-
+> +
+>  #undef __entry
+>  #define __entry REC
+>  
+> @@ -159,6 +181,7 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
+>  	.system			= __stringify(TRACE_SYSTEM),		\
+>  	.define_fields		= ftrace_define_fields_##call,		\
+>  	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
+> +	.reg			= ftrace_event_class_register,		\
+>  };									\
+>  									\
+>  struct ftrace_event_call __used event_##call = {			\
+> @@ -170,4 +193,9 @@ struct ftrace_event_call __used event_##call = {			\
+>  struct ftrace_event_call __used						\
+>  __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
+>  
+> +int ftrace_event_is_function(struct ftrace_event_call *call)
+> +{
+> +	return call == &event_function;
+> +}
+> +
+>  #include "trace_entries.h"
+> -- 
+> 1.7.1
+> 
