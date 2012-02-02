@@ -1,35 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2BBJdE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 04:33:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38257 "EHLO mx2.suse.de"
+	id S1754753Ab2BBJfY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 04:35:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24971 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754405Ab2BBJc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 04:32:59 -0500
-Date: Thu, 2 Feb 2012 10:32:58 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Keng-Yu Lin <kengyu@canonical.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sylee@canonical.com
-Subject: Re: [PATCH v2] HID: add more hotkeys in Asus AIO keyboards
-In-Reply-To: <1327904745-4592-1-git-send-email-kengyu@canonical.com>
-Message-ID: <alpine.LNX.2.00.1202021032500.18918@pobox.suse.cz>
-References: <1326957135-6958-1-git-send-email-kengyu@canonical.com> <1327904745-4592-1-git-send-email-kengyu@canonical.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754282Ab2BBJfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 04:35:20 -0500
+Message-ID: <4F2A58A1.90800@redhat.com>
+Date: Thu, 02 Feb 2012 11:34:25 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: paulmck@linux.vnet.ibm.com
+CC: Christoph Lameter <cl@linux.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327591185.2446.102.camel@twins> <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <1328117722.2446.262.camel@twins> <20120201184045.GG2382@linux.vnet.ibm.com> <alpine.DEB.2.00.1202011404500.2074@router.home> <20120201201336.GI2382@linux.vnet.ibm.com>
+In-Reply-To: <20120201201336.GI2382@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jan 2012, Keng-Yu Lin wrote:
+On 02/01/2012 10:13 PM, Paul E. McKenney wrote:
+> > 
+> > Could we also apply the same approach to processors busy doing
+> > computational work? In that case the OS is also not needed. Interrupting
+> > these activities is impacting on performance and latency.
+>
+> Yep, that is in fact what Frederic's dyntick-idle userspace work does.
+>
 
-> Add support for the camera key. The hotkey for
-> Asus S.H.E(Super Hybrid Engine) mode is mapped to KEY_KEY_PROG1
-> just for notifying the userspace.
-
-Applied.
+Running in a guest is a special case of running in userspace, so we'd
+need to extend this work to kvm as well.
 
 -- 
-Jiri Kosina
-SUSE Labs
+error compiling committee.c: too many arguments to function
+
