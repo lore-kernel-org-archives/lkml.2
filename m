@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab2BBX4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 18:56:54 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:31631 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755407Ab2BBX4v convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 18:56:51 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275bhz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "zbr@ioremap.net" <zbr@ioremap.net>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 3/6] drivers: hv: Cleanup the kvp related state in
- hyperv.h
-Thread-Topic: [PATCH 3/6] drivers: hv: Cleanup the kvp related state in
- hyperv.h
-Thread-Index: AQHM3U66rioNHVAWIE+lUxrVLjUsYJYq0IsA//97vdA=
-Date: Thu, 2 Feb 2012 23:41:29 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B70927D@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1327708522-26914-1-git-send-email-kys@microsoft.com>
- <1327708562-26964-1-git-send-email-kys@microsoft.com>
- <1327708562-26964-3-git-send-email-kys@microsoft.com>
- <20120202232936.GA9614@kroah.com>
-In-Reply-To: <20120202232936.GA9614@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.79]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+	id S933084Ab2BBX5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 18:57:10 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:47559 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756025Ab2BBX4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 18:56:52 -0500
+Message-Id: <20120202235650.736578988@gulag1.americas.sgi.com>
+References: <20120202235650.563029146@gulag1.americas.sgi.com>
+User-Agent: quilt/0.46-1
+Date: Thu, 02 Feb 2012 17:56:51 -0600
+From: Mike Travis <travis@sgi.com>
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Jack Steiner <steiner@sgi.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Mike Habeck <habeck@sgi.com>
+Subject: [PATCH 1/3] x86 PCI: Fix identity mapping for sandy bridge
+Content-Disposition: inline; filename=fix-iommu-identity-mapping-for-sb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With SandyBridge, Intel has changed these Socket PCI devices to have a class
+type of "System Peripheral" & "Performance counter", rather than "HostBridge".
+So instead of using a "special" case to detect which devices will not be
+doing DMA, use the fact that a device that is not associated with an IOMMU,
+will not need an identity map.
 
+Signed-off-by: Mike Travis <travis@sgi.com>
+Signed-off-by: Mike Habeck <habeck@sgi.com>
+---
+ drivers/iommu/intel-iommu.c |   20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, February 02, 2012 6:30 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> zbr@ioremap.net; Haiyang Zhang
-> Subject: Re: [PATCH 3/6] drivers: hv: Cleanup the kvp related state in hyperv.h
-> 
-> On Fri, Jan 27, 2012 at 03:55:59PM -0800, K. Y. Srinivasan wrote:
-> > Now cleanup the hyperv.h with regards to KVP definitions.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> >  include/linux/hyperv.h |   32 +++++++++++++++++++-------------
-> >  1 files changed, 19 insertions(+), 13 deletions(-)
-> >
-> > diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-> > index 7332b3f..802ece8 100644
-> > --- a/include/linux/hyperv.h
-> > +++ b/include/linux/hyperv.h
-> > @@ -137,7 +137,6 @@ struct hv_ku_msg {
-> >
-> >
-> >
-> > -#ifdef __KERNEL__
-> >
-> >  /*
-> >   * Registry value types.
-> > @@ -162,29 +161,36 @@ enum hv_kvp_exchg_pool {
-> >  	KVP_POOL_COUNT /* Number of pools, must be last. */
-> >  };
-> >
-> > +#ifndef __packed
-> > +#define __packed __attribute__((packed))
-> > +#endif
-> 
-> Why do this?
-> 
-> If you are so worried about this in userspace, then just change the
-> values below to __attribute__((packed)), like all of the other public .h
-> files do.
+--- linux.orig/drivers/iommu/intel-iommu.c
++++ linux/drivers/iommu/intel-iommu.c
+@@ -48,8 +48,6 @@
+ #define ROOT_SIZE		VTD_PAGE_SIZE
+ #define CONTEXT_SIZE		VTD_PAGE_SIZE
+ 
+-#define IS_BRIDGE_HOST_DEVICE(pdev) \
+-			    ((pdev->class >> 8) == PCI_CLASS_BRIDGE_HOST)
+ #define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
+ #define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
+ #define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
+@@ -2369,18 +2367,18 @@ static int __init iommu_prepare_static_i
+ 		return -EFAULT;
+ 
+ 	for_each_pci_dev(pdev) {
+-		/* Skip Host/PCI Bridge devices */
+-		if (IS_BRIDGE_HOST_DEVICE(pdev))
+-			continue;
+ 		if (iommu_should_identity_map(pdev, 1)) {
+-			printk(KERN_INFO "IOMMU: %s identity mapping for device %s\n",
+-			       hw ? "hardware" : "software", pci_name(pdev));
+-
+ 			ret = domain_add_dev_info(si_domain, pdev,
+-						     hw ? CONTEXT_TT_PASS_THROUGH :
+-						     CONTEXT_TT_MULTI_LEVEL);
+-			if (ret)
++					     hw ? CONTEXT_TT_PASS_THROUGH :
++						  CONTEXT_TT_MULTI_LEVEL);
++			if (ret) {
++				/* device not associated with an iommu */
++				if (ret == -ENODEV)
++					continue;
+ 				return ret;
++			}
++			pr_info("IOMMU: %s identity mapping for device %s\n",
++				hw ? "hardware" : "software", pci_name(pdev));
+ 		}
+ 	}
+ 
 
-Greg,
-
-When I ran the checkpatch script against these patches I got a warning that the
-preferred directive was to use "__packed".  So, for the header file that will be
-consumed in the kernel, I chose to go with the __packed. For inclusion of this
-header file in the user space daemon, I put in this definition here. So rather
-than having numerous warnings, I now have a single warning. If you prefer,
-I can move this definition to the daemon code where it is really needed.
-
-Regards,
-
-K. Y 
-
-
+-- 
