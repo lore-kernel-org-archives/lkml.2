@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab2BBKkZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 05:40:25 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:35192 "EHLO mx2.parallels.com"
+	id S1755552Ab2BBKmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 05:42:14 -0500
+Received: from ns.pmeerw.net ([87.118.82.44]:33282 "EHLO pmeerw.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754822Ab2BBKkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 05:40:24 -0500
-Message-ID: <4F2A67DE.1000909@parallels.com>
-Date: Thu, 2 Feb 2012 14:39:26 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1755429Ab2BBKmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 05:42:12 -0500
+Date: Thu, 2 Feb 2012 11:42:09 +0100 (CET)
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, lars@metafoo.de, rpurdie@rpsys.net
+Subject: Re: [PATCH v2] add LED driver for PCA9663 I2C chip
+In-Reply-To: <20120130163424.ef8eb9af.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.01.1202021130070.10172@pmeerw.net>
+References: <1326916289-19004-1-git-send-email-pmeerw@pmeerw.net> <20120130162849.635c83a9.akpm@linux-foundation.org> <20120130163424.ef8eb9af.akpm@linux-foundation.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <mst@redhat.com>
-Subject: Re: [v3.3-rc2+ PATCH] tcp: properly initialize tcp memory limits
-References: <20120202100700.38694.80000.stgit@amd-6168-8-1.englab.nay.redhat.com>
-In-Reply-To: <20120202100700.38694.80000.stgit@amd-6168-8-1.englab.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 02:07 PM, Jason Wang wrote:
-> Commit 4acb4190 tries to fix the using uninitialized value
-> introduced by commit 3dc43e3,  but it would make the
-> per-socket memory limits too small.
->
-> This patch fixes this and also remove the redundant codes
-> introduced in 4acb4190.
->
-> Signed-off-by: Jason Wang<jasowang@redhat.com>
-Acked-by: Glauber Costa <glommer@parallels.com>
 
-> ---
->   net/ipv4/sysctl_net_ipv4.c |    5 -----
->   net/ipv4/tcp.c             |    4 ++--
->   2 files changed, 2 insertions(+), 7 deletions(-)
->
-> diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-> index 4cb9cd2..1eb8caa 100644
-> --- a/net/ipv4/sysctl_net_ipv4.c
-> +++ b/net/ipv4/sysctl_net_ipv4.c
-> @@ -815,11 +815,6 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
->   	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
->
->   	tcp_init_mem(net);
-> -	limit = nr_free_buffer_pages() / 8;
-> -	limit = max(limit, 128UL);
-> -	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-> -	net->ipv4.sysctl_tcp_mem[1] = limit;
-> -	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
->
->   	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
->   			net_ipv4_ctl_path, table);
-Ok, this is indeed a good change, since we avoid initializing it twice.
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> > > +exit:
+> > > +	while (i--) {
+> > > +		led_classdev_unregister(&pca9633[i].led_cdev);
+> > > +		cancel_work_sync(&pca9633[i].work);
+> > > +	}
+> > This (untested!) loop has an off-by-one error. 
 
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 06373b4..3a7514b 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -3218,7 +3218,6 @@ __setup("thash_entries=", set_thash_entries);
->
->   void tcp_init_mem(struct net *net)
->   {
-> -	/* Set per-socket limits to no more than 1/128 the pressure threshold */
->   	unsigned long limit = nr_free_buffer_pages() / 8;
->   	limit = max(limit, 128UL);
->   	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-> @@ -3287,7 +3286,8 @@ void __init tcp_init(void)
->   	sysctl_max_syn_backlog = max(128, cnt / 256);
->
->   	tcp_init_mem(&init_net);
-> -	limit = nr_free_buffer_pages() / 8;
-> +	/* Set per-socket limits to no more than 1/128 the pressure threshold */
-> +	limit = nr_free_buffer_pages()<<  (PAGE_SHIFT - 10);
->   	limit = max(limit, 128UL);
->   	max_share = min(4UL*1024*1024, limit);
+> Well, it's partly wrong.  It's wrong for the cancel_work_sync() but not
+> for the led_classdev_unregister().  The cancel_work_sync() can just be
+> removed: we haven't scheduled any works yet.
 
-Indeed, this ends up influencing the value of max_share used below to 
-initialize the other fields.
-I like your change because now the limit variable is being set 
-independently between the global (now per-cgroup) and the per-socket 
-limits. (it previously was limit = sysctl_tcp_mem[1] << (PAGE_SHIFT-7))
+there are 4 leds with get led_classdev_register()ed
 
-So in the end, I personally think this is even clearer than what we had 
-before.
+wouldn't it be possible that someone is starting to use led1 while led3 has 
+not been registered yet? if registration for led3 fails, the exit code 
+(above) is called and there might be work scheduled
 
-Acked-by: Glauber Costa <glommer@parallels.com>
+so (hypothetically):
+register led1 -> ok
+register led2 -> ok
+use led1 (schedule work)
+register led3 -> fail -> exit code
+
+the code has been copied from other led drivers
+I think there is no harm to keep cancel_work_sync()
+
+p.
+
+-- 
+
+Peter Meerwald
++43-664-2444418 (mobile)
