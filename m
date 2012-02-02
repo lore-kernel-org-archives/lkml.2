@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab2BBKLF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 05:11:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8952 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754650Ab2BBKLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 05:11:01 -0500
-Subject: [v3.3-rc2+ PATCH] tcp: properly initialize tcp memory limits
-To: netdev@vger.kernel.org, jasowang@redhat.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, glommer@parallels.com
-From: Jason Wang <jasowang@redhat.com>
-Cc: mst@redhat.com
-Date: Thu, 02 Feb 2012 18:07:00 +0800
-Message-ID: <20120202100700.38694.80000.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/0.16-1-g60c4
+	id S1755339Ab2BBKQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 05:16:25 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57360 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754602Ab2BBKQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 05:16:22 -0500
+X-Greylist: delayed 545 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Feb 2012 05:16:22 EST
+X-Sasl-enc: 3YgRRtvDg+fMRf1JfvyY1q+kyHrmpW1SkP8zsbd5je6A 1328177236
+Message-ID: <4F2A60DC.9030007@ladisch.de>
+Date: Thu, 02 Feb 2012 11:09:32 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Andy Grover <agrover@redhat.com>, Chris Boot <bootc@bootc.net>,
+        target-devel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+        linux-scsi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: FireWire/SBP2 Target mode
+References: <4E4BD560.4010806@bootc.net> <4E4D3B88.30003@ladisch.de> <4F29978A.3010707@redhat.com> <20120201224156.0773ebc6@stein> <4F2A55B9.4040005@panasas.com>
+In-Reply-To: <4F2A55B9.4040005@panasas.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4acb4190 tries to fix the using uninitialized value
-introduced by commit 3dc43e3,  but it would make the
-per-socket memory limits too small.
+Boaz Harrosh wrote:
+> [...] So what do the other FireWire protocols use, like networking,
+> DV video, audio?
 
-This patch fixes this and also remove the redundant codes
-introduced in 4acb4190.
+Their own standard or non-standard mechanism.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- net/ipv4/sysctl_net_ipv4.c |    5 -----
- net/ipv4/tcp.c             |    4 ++--
- 2 files changed, 2 insertions(+), 7 deletions(-)
+> they have yet another encapsulating transport other than SBP-2?
 
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index 4cb9cd2..1eb8caa 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -815,11 +815,6 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
- 	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
- 
- 	tcp_init_mem(net);
--	limit = nr_free_buffer_pages() / 8;
--	limit = max(limit, 128UL);
--	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
--	net->ipv4.sysctl_tcp_mem[1] = limit;
--	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
- 
- 	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
- 			net_ipv4_ctl_path, table);
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 06373b4..3a7514b 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3218,7 +3218,6 @@ __setup("thash_entries=", set_thash_entries);
- 
- void tcp_init_mem(struct net *net)
- {
--	/* Set per-socket limits to no more than 1/128 the pressure threshold */
- 	unsigned long limit = nr_free_buffer_pages() / 8;
- 	limit = max(limit, 128UL);
- 	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-@@ -3287,7 +3286,8 @@ void __init tcp_init(void)
- 	sysctl_max_syn_backlog = max(128, cnt / 256);
- 
- 	tcp_init_mem(&init_net);
--	limit = nr_free_buffer_pages() / 8;
-+	/* Set per-socket limits to no more than 1/128 the pressure threshold */
-+	limit = nr_free_buffer_pages() << (PAGE_SHIFT - 10);
- 	limit = max(limit, 128UL);
- 	max_share = min(4UL*1024*1024, limit);
- 
+These other devices require isochronous or broadcast transfers, which
+SBP-2/3 does not handle well or at all.  It might be possible to use
+SBP-3 for control commands (which is exactly what SBP-3's AV/C support
+is), but using it would not bring any worthwhile benefits over existing
+transports, and would just introduce incompatibilities with all previous
+soft- and hardware.
 
+
+Regards,
+Clemens
