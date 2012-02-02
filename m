@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab2BBVcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 16:32:15 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:54679 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932183Ab2BBVcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 16:32:14 -0500
-Message-ID: <1328218327.18641.59.camel@joe2Laptop>
-Subject: Re: [PATCH] checkpatch: Check for quoted strings broken across lines
-From: Joe Perches <joe@perches.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Thu, 02 Feb 2012 13:32:07 -0800
-In-Reply-To: <20120202212840.GB11308@leaf>
-References: <20120202200621.GB9279@leaf>
-	 <1328214989.18641.54.camel@joe2Laptop> <20120202212840.GB11308@leaf>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932627Ab2BBVc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 16:32:26 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:51218 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932183Ab2BBVcX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 16:32:23 -0500
+Date: Thu, 2 Feb 2012 22:32:20 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: WARNING: at arch/x86/kernel/cpu/perf_event.c:989
+Message-ID: <20120202213220.GB1642@x4>
+References: <20120202211709.GA1642@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202211709.GA1642@x4>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-02 at 13:28 -0800, Josh Triplett wrote:
-> On Thu, Feb 02, 2012 at 12:36:29PM -0800, Joe Perches wrote:
-> > On Thu, 2012-02-02 at 12:06 -0800, Josh Triplett wrote:
-> > > Documentation/CodingStyle recommends not splitting quoted strings across
-> > > lines, because it breaks the ability to grep for the string.  checkpatch
-> > > already makes an exception to the 80-column rule for quoted strings to
-> > > allow this.  Rather than just allowing it, actively warn about quoted
-> > > strings split across lines.
-[]
-> > Seems sensible but there are also asm uses like:
-> > arch/x86/include/asm/pvclock.h:         "xor  %5,%5    ; "
-> >                 "add  %4,%%eax ; "
-> I did see those, yes.  However, a quick grep through the kernel shows
-> that those occur quite rarely compared to \n or \n\t; the latter looks
-> like the standard style.  How about I provide a patch for
-> Documentation/CodingStyle adding a chapter on inline assembly, with that
-> and other style guidelines? :)
+On 2012.02.02 at 22:17 +0100, Markus Trippelsdorf wrote:
+> The following warning is easily reproducible after todays
+> 'perf-urgent-for-mingo' merge by just running "perf top":
+> 
+> ------------[ cut here ]------------
+> WARNING: at arch/x86/kernel/cpu/perf_event.c:989 x86_pmu_start+0xa5/0x100()
+> Hardware name: System Product Name
+> Pid: 0, comm: swapper/2 Not tainted 3.3.0-rc2-00068-g24b36da-dirty #22
+> Call Trace:
+>  <IRQ>  [<ffffffff81054ba0>] ? warn_slowpath_common+0x60/0xa0
+>  [<ffffffff8103e1a5>] ? x86_pmu_start+0xa5/0x100
+>  [<ffffffff8109f062>] ? perf_adjust_freq_unthr_context.part.82+0xe2/0x140
+>  [<ffffffff8109f260>] ? perf_event_task_tick+0x1a0/0x280
+>  [<ffffffff81078be3>] ? scheduler_tick+0xc3/0x140
+>  [<ffffffff810615b5>] ? update_process_times+0x55/0x80
+>  [<ffffffff8108904d>] ? tick_sched_timer+0x4d/0xa0
+>  [<ffffffff81072d1b>] ? __run_hrtimer.isra.32+0x3b/0xc0
+>  [<ffffffff810735e5>] ? hrtimer_interrupt+0xc5/0x1e0
+>  [<ffffffff81045de3>] ? smp_apic_timer_interrupt+0x63/0xa0
+>  [<ffffffff8147768b>] ? apic_timer_interrupt+0x6b/0x70
+>  <EOI>  [<ffffffff81039100>] ? default_idle+0x20/0x40
+>  [<ffffffff81039172>] ? amd_e400_idle+0x52/0x100
+>  [<ffffffff81030156>] ? cpu_idle+0xb6/0xe0
+> ---[ end trace 7dc3992f562261b6 ]---
 
-Sounds fine to me.
+Most likely caused by e050e3f0a71b :
+ perf: Fix broken interrupt rate throttling
 
-Another option might be to ignore all
-strings in any asm block.
+CCing Stephane.
 
-
+-- 
+Markus
