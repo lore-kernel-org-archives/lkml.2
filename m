@@ -1,79 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab2BBRus (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 12:50:48 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53053 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755997Ab2BBRur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 12:50:47 -0500
-Date: Thu, 2 Feb 2012 09:50:05 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 24/41] rcu: Check for idle-loop entry
- while in RCU read-side critical section
-Message-ID: <20120202175005.GU2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-24-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120202051337.GP29058@leaf>
+	id S932750Ab2BBRwB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 12:52:01 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56036 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755590Ab2BBRv6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 12:51:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202051337.GP29058@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020217-9360-0000-0000-0000030A0956
+In-Reply-To: <Pine.LNX.4.64.1202021726020.25409@wotan.suse.de>
+References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb> <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
+ <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
+ <20120201201631.GW18768@tyan-ft48-01.lab.bos.redhat.com> <CA+55aFwcLpD2Cw5VxZ3ym66QBDAeDam3-hprivrC+keUMXJOtw@mail.gmail.com>
+ <874nv9qlau.fsf@houston.quesejoda.com> <Pine.LNX.4.64.1202021726020.25409@wotan.suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 2 Feb 2012 09:51:37 -0800
+X-Google-Sender-Auth: 51EkPSCfwn9d_rH-yVwV5VPVrtY
+Message-ID: <CA+55aFxx34wqaudKWEV69Vta6k8y4rmiCf9JLjiDZ2gjEic5_Q@mail.gmail.com>
+Subject: Re: Memory corruption due to word sharing
+To: Michael Matz <matz@suse.de>
+Cc: Aldy Hernandez <aldyh@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Content-Type: multipart/mixed; boundary=20cf300e4fbf38891104b7fedaf5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 09:13:37PM -0800, Josh Triplett wrote:
-> On Wed, Feb 01, 2012 at 11:41:42AM -0800, Paul E. McKenney wrote:
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -366,6 +366,20 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
-> >  	atomic_inc(&rdtp->dynticks);
-> >  	smp_mb__after_atomic_inc();  /* Force ordering with next sojourn. */
-> >  	WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
-> > +
-> > +	/*
-> > +	 * The idle task is not permitted to enter the idle loop while
-> > +	 * in an RCU read-side critical section.
-> > +	 */
-> > +	rcu_lockdep_assert(!lock_is_held(&rcu_lock_map),
-> > +			   "Illegal idle entry in RCU read-side "
-> > +			   "critical section.");
-> > +	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),
-> > +			   "Illegal idle entry in RCU-bh read-side "
-> > +			   "critical section.");
-> > +	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
-> > +			   "Illegal idle entry in RCU-sched read-side "
-> > +			   "critical section.");
-> 
-> Quoting a paragraph I added to Documentation/CodingStyle:
-> 
-> > Statements longer than 80 columns will be broken into sensible chunks, unless
-> > exceeding 80 columns significantly increases readability and does not hide
-> > information. Descendants are always substantially shorter than the parent and
-> > are placed substantially to the right. The same applies to function headers
-> > with a long argument list. However, never break user-visible strings such as
-> > printk messages, because that breaks the ability to grep for them.
-> 
-> So, please don't break those strings across multiple lines.  The same
-> goes for the similar rcu_lockdep_assert strings added in a previous
-> patch in this series.
+--20cf300e4fbf38891104b7fedaf5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Fixed!
+On Thu, Feb 2, 2012 at 8:28 AM, Michael Matz <matz@suse.de> wrote:
+>
+> Sure. =A0Simplest example: struct s {int i:24;} __attribute__((packed)).
+>
+> You must access only three bytes, no matter what. =A0The basetype (int) i=
+s
+> four bytes.
 
-Again, I leave it to you to get checkpatch.pl to complain about this.  ;-)
+Ok, so here's a really *stupid* (but also really really simple) patch attac=
+hed.
 
-							Thanx, Paul
+What it does is to simply change the meaning of the SLOW_BYTE_ACCESS thing.
 
+What SLOW_BYTE_ACCESS means is currently is not just that byte
+accesses are slow: it means that *everything* but full-word accesses
+are slow!
+
+Which is (a) not what the name really implies, (b) not even the
+historical meaning of that #define (why? the meaning of "full word"
+has changed since: it used to be 32 bits, now it is 64 bits) and (c)
+stupid, because that's not how hardware with slow byte accesses really
+work anyway.
+
+Finally, it's what causes gcc to do 64-bit accesses to bitfields that
+aren't 64 bits in size.
+
+So because of this, I propose gcc just change the rules for what
+SLOW_BYTE_ACCESS means.
+
+I propose to just change it to mean "accesses smaller than 32 bits are
+slow". That's actually much closer to what the hardware definition
+tends to be.
+
+It doesn't fix the generic issue, it doesn't fix any C++11/C11 issues,
+it doesn't really change anything, but what it *does* do is make for a
+hell of a lot saner model. And it avoids bugs in practice.
+
+NOTE! On at least some machines with SLOW_BYTE_ACCESS, accesses
+smaller than a word cannot possibly be atomic anyway (well, not
+without jumping through hoops), so the fact that we still extend to 32
+bits and the problem of touching too much still exists with 'char' and
+'short' variables that are in the same 32-bit word as a bitfield is
+kind of unavoidable.
+
+So this suggested patch doesn't really "fix" anything fundamental, but
+it is (a) simple, (b) totally untested and (c) at least fixes *some*
+cases.
+
+For example, it might fix the 'sig_atomic_t' shadowning, since that is
+usually 'int'. It obviously can never fix the issue with volatile
+char/short, but at least it works around it for 'long'.
+
+In other words - I'm not trying to say that this patch really "fixes"
+anything (except sig_atomic_t interaction, which really does get fixed
+for the normal 'int' case). But what it does do is to limit the damage
+of a bad situation.
+
+And it is small, and should hopefully be easy to accept even for
+stable versions of gcc.
+
+So can we please do something like this for maintenance releases, and
+consider the much more complex C++11/C11 issues to be a separate much
+bigger issue for the future?
+
+Because the current SLOW_BYTE_ACCESS meaning really is crap. The
+*only* thing that architecture define seems to do is literally the
+bitfield extract semantics, and it does that horribly horribly badly
+as shown by the bug on both 64-bit POWER and Sparc. For no good reason
+- both of those have perfectly fine word operations afaik.
+
+I did not look at other architectures that define SLOW_BYTE_ACCESS,
+but if they have a 32-bit integer type, I'm pretty sure they support
+fast loads/stores of it.
+
+Hacky? Yes. Pretty? No. But better than the disaster that is there
+now? Hell yes.
+
+                                   Linus
+
+PS. The only reason I hardcoded "32" was that I didn't know how to ask
+the quesion "is this mode at least as wide as 'int'" in the proper gcc
+way. So I'm really not suggesting you apply this patch as-is, I'm just
+sending it out as a "hey, this is a pretty obvious way to work around
+part of the problem, somebody who really knows what they are doing
+should probably improve on it".
+
+--20cf300e4fbf38891104b7fedaf5
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gy62yjzi0
+
+IGdjYy9zdG9yLWxheW91dC5jIHwgICAgNSArKysrKwogMSBmaWxlcyBjaGFuZ2VkLCA1IGluc2Vy
+dGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZ2NjL3N0b3ItbGF5b3V0LmMg
+Yi9nY2Mvc3Rvci1sYXlvdXQuYwppbmRleCBlYTBkNDRkNjRkMjYuLjEzODdjMGU5ZTA2MCAxMDA2
+NDQKLS0tIGEvZ2NjL3N0b3ItbGF5b3V0LmMKKysrIGIvZ2NjL3N0b3ItbGF5b3V0LmMKQEAgLTI0
+ODYsNyArMjQ4NiwxMiBAQCBnZXRfYmVzdF9tb2RlIChpbnQgYml0c2l6ZSwgaW50IGJpdHBvcywg
+dW5zaWduZWQgaW50IGFsaWduLAogCSAgICAgICYmIHVuaXQgPD0gTUlOIChhbGlnbiwgQklHR0VT
+VF9BTElHTk1FTlQpCiAJICAgICAgJiYgKGxhcmdlc3RfbW9kZSA9PSBWT0lEbW9kZQogCQkgIHx8
+IHVuaXQgPD0gR0VUX01PREVfQklUU0laRSAobGFyZ2VzdF9tb2RlKSkpCisJICB7CiAJICAgIHdp
+ZGVfbW9kZSA9IHRtb2RlOworCSAgICAvKiBXaWRlIGVub3VnaD8gKi8KKwkgICAgaWYgKHVuaXQg
+Pj0gMzIpCisJICAgICAgYnJlYWs7CisJICB9CiAJfQogCiAgICAgICBpZiAod2lkZV9tb2RlICE9
+IFZPSURtb2RlKQo=
+--20cf300e4fbf38891104b7fedaf5--
