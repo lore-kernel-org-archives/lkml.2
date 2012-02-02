@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932614Ab2BBS1b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 13:27:31 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49346 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab2BBS13 (ORCPT
+	id S932781Ab2BBS2G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 13:28:06 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55418 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932629Ab2BBS2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 13:27:29 -0500
-Message-ID: <4F2AD58A.3090307@gmail.com>
-Date: Fri, 03 Feb 2012 02:27:22 +0800
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Thu, 2 Feb 2012 13:28:03 -0500
+Date: Thu, 2 Feb 2012 10:27:05 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 39/41] rcu: Wait at least a jiffy before
+ declaring a CPU to be offline
+Message-ID: <20120202182705.GA2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120201194131.GA10028@linux.vnet.ibm.com>
+ <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1328125319-5205-39-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120202061228.GV29058@leaf>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] KVM: x86: add tracepoints to trace mmio begin
- and complete
-References: <4F2AC707.7020801@gmail.com> <4F2AC790.1090805@gmail.com> <4F2AC9A0.7090904@redhat.com> <4F2ACE04.9040602@gmail.com> <4F2ACE46.4000307@redhat.com>
-In-Reply-To: <4F2ACE46.4000307@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202061228.GV29058@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020218-3352-0000-0000-000002593877
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2012 01:56 AM, Avi Kivity wrote:
-
-> On 02/02/2012 07:55 PM, Xiao Guangrong wrote:
->> On 02/03/2012 01:36 AM, Avi Kivity wrote:
->>
->>> On 02/02/2012 07:27 PM, Xiao Guangrong wrote:
->>>> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>>>
->>>> 'perf kvm-events' will use kvm_exit and kvm_mmio(read...) to calculate
->>>> mmio read emulated time for the old kernel, in order to trace mmio read
->>>> event more exactly, we add kvm_mmio_begin to trace the time when mmio read
->>>> begins
->>>>
->>>> Also, add kvm_mmio_done to trace the time when mmio/pio is completed
->>>
->>> Previously, we discussed using the kvm_entry to do this.  This reduces
->>> the number of tracepoints, and is backwards compatible.  What was the
->>> conclusion?
->>>
->>
->>
->> Since using kvm_entry can cause lots of unnecessary calculated, these new two
->> tracepoints can let the result be exacter.
+On Wed, Feb 01, 2012 at 10:12:28PM -0800, Josh Triplett wrote:
+> On Wed, Feb 01, 2012 at 11:41:57AM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> > 
+> > The force_quiescent_state() function uses a state machine to help
+> > force grace periods to completion.  One of its responsibilities is to
+> > detect offline CPUs, and to report quiescent states on their behalf.
+> > However, the CPU hotplug process is not atomic, in fact, there is
+> > significant uncertainty as to exactly when a given CPU came online or
+> > went offline.  For example, once a CPU has marked itself offline and
+> > executed the CPU_DYING notifiers, it continues executing, entering
+> > the scheduler and perhaps also the idle loop.
+> > 
+> > In the old days, force_quiescent_state() was guaranteed to wait for
+> > several jiffies before declaring a given CPU offline.  This is no
+> > longer the case, due to some of the more aggressive rcutorture tests
+> > and the CONFIG_RCU_FAST_NO_HZ idle-entry code.  Therefore, this commit
+> > makes force_quiescent_state() explicitly wait for at least a jiffy
+> > before declaring a CPU to be offline.
 > 
-> Do you have numbers on the ratio between kvm_entry traces and
-> kvm_mmio_begin/end traces?
-> 
+> This commit seems to implement behavior documented as working in patch
+> 38.  Shouldn't those bits go together?
 
+It really needs to have gone with the addition of of the fqs_ module
+parameters to rcutorture.c, but that was some years back.  Failing that,
+it needs to have gone with the addition of RCU_FAST_NO_HZ, but that
+was more than a year ago as well.
 
-1: Using kvm_mmio_begin/end:
+But yes, merging with #38 makes sense to me!
 
-# ./perf kvm-events report --event mmio
-  Warning: Error: expected type 5 but read 4
-  Warning: Error: expected type 5 but read 0
-  Warning: unknown op '}'
+The still-ongoing top-to-bottom review of RCU is still yielding results, 
+and this is one of them.  Working through the hotplug code has been
+time consuming, buteducational.  ;-)
 
+							Thanx, Paul
 
-Analyze events for all VCPUs:
-
-         MMIO Access    Samples  Samples%     Time%         Avg time
-
-        0xfee00380:W      54926    58.45%    57.32%      3.90us ( +-   0.29% )
-        0xfee00300:W      12906    13.73%    28.70%      8.32us ( +-   0.50% )
-        0xfee00300:R      12906    13.73%     7.68%      2.23us ( +-   1.27% )
-        0xfee00310:W      12906    13.73%     6.07%      1.76us ( +-   1.05% )
-        0xfee00190:R        323     0.34%     0.23%      2.65us ( +-   2.85% )
-
-Total Samples:93967, Total events handled time:374012.26us.
-
-2: kvm_mmio_begin/end is not used:
-
-# ./perf kvm-events report --event mmio
-  Warning: Error: expected type 5 but read 4
-  Warning: Error: expected type 5 but read 0
-  Warning: unknown op '}'
-
-
-Analyze events for all VCPUs:
-
-         MMIO Access    Samples  Samples%     Time%         Avg time
-
-        0xfee00380:W      54926    58.45%    42.90%      3.90us ( +-   0.29% )
-        0xfee00300:W      12906    13.73%    21.48%      8.32us ( +-   0.50% )
-        0xfee00300:R      12906    13.73%    30.26%     11.72us ( +-   1.40% )
-        0xfee00310:W      12906    13.73%     4.54%      1.76us ( +-   1.05% )
-        0xfee00190:R        323     0.34%     0.82%     12.63us ( +-   2.85% )
-
-Total Samples:93967, Total events handled time:499755.82us.
-
-In this sample, the time of MMIO Read has big different,
-in the case 1(new tracepoints), the time is calculated by kvm_mmio_begin -> kvm_mmio(read...)
-in the case 2(existing tracepoints), the time is calculated by kvm_exit -> kvm_mmio(read...)
