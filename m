@@ -1,48 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab2BBUZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:25:18 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54930 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756329Ab2BBUZQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:25:16 -0500
+	id S1754390Ab2BBUaA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:30:00 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34617 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753823Ab2BBU36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:29:58 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] PM/Hibernate: Thaw kernel threads in hibernation_snapshot() in error/test path
+Date: Thu, 2 Feb 2012 21:33:39 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20120202003359.9930.9844.stgit@srivatsabhat.in.ibm.com> <201202022118.15863.rjw@sisk.pl> <4F2AEFB8.8060304@linux.vnet.ibm.com>
+In-Reply-To: <4F2AEFB8.8060304@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20120202185954.GA18225@samfundet.no>
-References: <1327243593-29215-1-git-send-email-fabio.baltieri@gmail.com>
-	<20120124191031.GA20164@samfundet.no>
-	<CABkP77eA9vMLA_V6E=LEy7vRZQP05DmKBRrje4eLbWNJwReyYg@mail.gmail.com>
-	<20120202185954.GA18225@samfundet.no>
-Date: Thu, 2 Feb 2012 21:25:15 +0100
-X-Google-Sender-Auth: ygYOMo6Rk0T6Fu1W4RvuKoE9otU
-Message-ID: <CABkP77d3rp2DEfzsj19j6FQcP1hQYjoGw0sJx9j9pcgGZtP49A@mail.gmail.com>
-Subject: Re: [PATCH] avr32: select generic atomic64_t support
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202022133.40009.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 2, 2012 at 7:59 PM, Hans-Christian Egtvedt
-<egtvedt@samfundet.no> wrote:
-> Around Thu 02 Feb 2012 14:13:50 +0100 or thereabout, Fabio Baltieri wrote:
->>   yes, I think so. Do you want me to re-send the patch to some
->> specific address? (like trivial fixes or so...).
->
-> Andrew does sometimes pick these small patches up, I would really like it to
-> go in as soon as possible. Try prefixing [RESEND] and add my Acked-by string.
+On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
+> On 02/03/2012 01:48 AM, Rafael J. Wysocki wrote:
+> 
+> > On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
+> >> On 02/03/2012 12:41 AM, Rafael J. Wysocki wrote:
+> >>
+> >>> On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
+> >>>> In the hibernation call path, the kernel threads are frozen inside
+> >>>> hibernation_snapshot(). If we happen to encounter an error further down
+> >>>> the road or if we are exiting early due to a successful freezer test,
+> >>>> then thaw kernel threads before returning to the caller.
+> >>>>
+> >>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >>>> ---
+> >>>>
+> >>>>  kernel/power/hibernate.c |    6 ++++--
+> >>>>  kernel/power/user.c      |    8 ++------
+> >>>>  2 files changed, 6 insertions(+), 8 deletions(-)
+> >>>>
+> >>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> >>>> index a5d4cf0..c6dee73 100644
+> >>>> --- a/kernel/power/hibernate.c
+> >>>> +++ b/kernel/power/hibernate.c
+> >>>> @@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
+> >>>>  		 * successful freezer test.
+> >>>>  		 */
+> >>>>  		freezer_test_done = true;
+> >>>> -		goto Cleanup;
+> >>>> +		goto Thaw;
+> >>>>  	}
+> >>>>  
+> >>>>  	error = dpm_prepare(PMSG_FREEZE);
+> >>>>  	if (error) {
+> >>>>  		dpm_complete(PMSG_RECOVER);
+> >>>> -		goto Cleanup;
+> >>>> +		goto Thaw;
+> >>>>  	}
+> >>>>  
+> >>>>  	suspend_console();
+> >>>> @@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
+> >>>>  	platform_end(platform_mode);
+> >>>>  	return error;
+> >>>>  
+> >>>> + Thaw:
+> >>>> +	thaw_kernel_threads();
+> >>>
+> >>> Actaully, no.  You have to do swsusp_free() before thawing, otherwise
+> >>> some allocations made by the just thawed kernel threads may fail.
+> >>>
+> >> But then what about the case (in the existing code) when
+> >> freeze_kernel_threads() fails? It would first thaw kernel threads (in
+> >> fact it used to thaw even userspace tasks earlier!) before calling
+> >> swsusp_free(). So, the existing code itself seems to be brittle, considering
+> >> the point you raised. Right?
+> > 
+> > Well, that's why freeze_kernel_threads() originally hadn't tried to thaw anything
+> > and started to do that after one of the Tejun's commits (and I forgot about
+> > this particular issue back then).
+> > 
+> >>>>   Cleanup:
+> >>>>  	swsusp_free();
+> >>>>  	goto Close;
+> >>>> diff --git a/kernel/power/user.c b/kernel/power/user.c
+> >>>> index 3e10007..7bee91f 100644
+> >>>> --- a/kernel/power/user.c
+> >>>> +++ b/kernel/power/user.c
+> >>>> @@ -249,16 +249,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+> >>>>  		}
+> >>>>  		pm_restore_gfp_mask();
+> >>>>  		error = hibernation_snapshot(data->platform_support);
+> >>>> -		if (error) {
+> >>>> -			thaw_kernel_threads();
+> >>>> -		} else {
+> >>>> +		if (!error) {
+> >>>>  			error = put_user(in_suspend, (int __user *)arg);
+> >>>>  			if (!error && !freezer_test_done)
+> >>>>  				data->ready = 1;
+> >>>> -			if (freezer_test_done) {
+> >>>> +			if (freezer_test_done)
+> >>>>  				freezer_test_done = false;
+> >>>> -				thaw_kernel_threads();
+> >>>> -			}
+> >>>>  		}
+> >>>>  		break;
+> >>>
+> >>> Overall, this seems to be a cleanup, or is it a bug fix?
+> >>>
+> >>
+> >> This was intended as a cleanup only, not a bug fix. But now, (see my point
+> >> above), I am beginning to feel that the existing code itself is not robust
+> >> enough...
+> > 
+> > Well, let's pretend that we think it is safe to thaw kernel threads before
+> > freeing memory (actually, they are frozen after the preallocation, so it
+> > really should be OK).
+> >
+> 
+> 
+> Yeah, even I had the same reasoning in mind when writing this patch.
+> 
+>  
+> > So I think I'll apply your patch after all.
+> > 
+> 
+> 
+> :-)
 
-Ok, I just resent it with the new ack'ed tag and Andrew in CC.
+However, this one should probably be regarded as a regression fix:
 
-> .oO(I really need to find a kernel developer here in Oslo, so I can get a
-> proper account again.)
+http://marc.info/?l=linux-kernel&m=132813572708843&w=4
 
-I hope you find someone... An AVR32 branch on kernel.org would be nice!
+because thawing all processes before calling swsusp_free() is definitely not
+a good idea.
 
-Thanks!
-
--- 
-Fabio Baltieri
+Thanks,
+Rafael
