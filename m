@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab2BBLMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 06:12:54 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50114 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650Ab2BBLMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 06:12:53 -0500
-Message-ID: <1328181289.28171.153.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] [trivial] jffs2: Fix typo in scan.c
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 02 Feb 2012 13:14:49 +0200
-In-Reply-To: <1327677448-2732-1-git-send-email-standby24x7@gmail.com>
-References: <1327677448-2732-1-git-send-email-standby24x7@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-99tYLPAcv6kIIiZndMmp"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1755726Ab2BBLNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 06:13:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43422 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755436Ab2BBLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 06:13:42 -0500
+Date: Thu, 2 Feb 2012 12:13:40 +0100
+From: David Sterba <dsterba@suse.cz>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, dsterba@suse.cz,
+        ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+Message-ID: <20120202111340.GB28416@ds.suse.cz>
+Reply-To: dsterba@suse.cz
+References: <20120201151918.GC16714@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120201151918.GC16714@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 01, 2012 at 04:19:18PM +0100, Jan Kara wrote:
+> We actually spotted this race in practice in btrfs on structure
+> fs/btrfs/ctree.h:struct btrfs_block_rsv where spinlock content got
+> corrupted due to update of following bitfield and there seem to be other
+> places in kernel where this could happen.
 
---=-99tYLPAcv6kIIiZndMmp
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Here's the list of structures where a bitfield is shared with spinlock
+or atomic/kref within an 8B word, generated from 3.3-rc2:
 
-On Sat, 2012-01-28 at 00:17 +0900, Masanari Iida wrote:
-> Correct spelling "scaning" to scanning" in
-> fs/jffs2/scan.c
->=20
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+spinlock+bitfield:
 
-Pushed to l2-mtd, thanks!
+Struct: struct ak4113; Field: init
+Struct: struct ak4114; Field: init
+Struct: struct ak4117; Field: init
+Struct: struct btrfs_block_rsv; Field: full
+Struct: struct cm109_dev; Field: buzzer_pending
+Struct: struct pch_udc_dev; Field: active
+Struct: struct rds_iw_device; Field: dma_local_lkey
+Struct: struct sierra_intf_private; Field: suspended
+Struct: struct sm501_gpio; Field: registered
+Struct: struct unix_sock; Field: gc_candidate
+Struct: struct usb_anchor; Field: poisoned
+Struct: struct usb_wwan_intf_private; Field: suspended
 
---=20
-Best Regards,
-Artem Bityutskiy
+atomic/kref+bitfield:
 
---=-99tYLPAcv6kIIiZndMmp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Struct: struct dlm_lock_resource; Field: migration_pending
+Struct: struct extent_map; Field: in_tree
+Struct: struct kobject; Field: state_initialized
+Struct: struct page; Field: inuse
+Struct: struct rds_ib_connection; Field: i_flowctl
+Struct: struct rds_iw_connection; Field: i_flowctl
+Struct: struct sctp_transport; Field: dead
+Struct: struct transaction_s; Field: t_synchronous_commit
+Struct: struct xfs_ioend; Field: io_isasync
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPKnApAAoJECmIfjd9wqK0y2UQAKjLe7A7RFBvj7VzH3XzTxmN
-F4HSJ4UHZIEApCNp6JsTpy/16JgK+6QNJ3jVnbKrQYlRLTvxg9xjMDqCvOpVHaSe
-Nk17xfXpoH2/zu+hBzfAChGUwOAjspw46AfycbYO0Pjczk2rm1dWxMK5aI78iQR+
-3JW0mcFl1l1LdiEnwRcOHaKykQsCCRggzUbdGk2IPDqPDrwfMpmQsjom3/HvNYOL
-DZi0Cre2PuxTV3y61jOwy8AlzIO2CdBky9JDACmDh4ck6tKTU1N7KbWMfYKu1A3R
-Prc90iLb7RYwdK7nGKKtlR4fkmuwtiM8DO3Zgou4epLVy1r8mK4XMYlAtLAMUZRA
-JuJyCfVWNv0Kxh9xbW/e8ZqFvJaroT0RNkkMOJDArv9irJHiAhE9anUHa55KYpQ4
-3zOGtV75Z9Rhg3pXHurqisZz+oearZhtVB0rVsUuDbIo+jY9OeFvSDOg6YjHdWa7
-EWsM8JbMIR15RCcxjhGAZ1dGtuFi40QE5ijQ7emtaRtut3U9bERQCcr5/FEtbCik
-ZJhMwaRUu6BAiqNtXH+49HZdbL/UaHDUz1tGz4tivl6fPu7LLgYXcRcNLh2c8NrC
-QeLdx8H6sKaWjUJRquMMqDIBUmmV5JIf4kKpu8OE+HJzgnpYbK4A3wVWJol2ZbJg
-GA0G33KyCJ+Fxf8EqdKp
-=/XID
------END PGP SIGNATURE-----
+Not all listed structs are necessarily subject to the bug. There may be
+another mechanism preventing concurrent access to the bitfield and
+spinlock/atomic, or the bitfield is modified from a single cpu, or is
+not used. But all of them need to be reviewed of course.
 
---=-99tYLPAcv6kIIiZndMmp--
 
+david
