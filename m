@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab2BBOhJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:37:09 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:36805 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756295Ab2BBOhH (ORCPT
+	id S932115Ab2BBOmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:42:24 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26525 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756338Ab2BBOmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:37:07 -0500
-X-Greylist: delayed 603 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Feb 2012 09:37:07 EST
-Date: Thu, 2 Feb 2012 15:26:28 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-edac@vger.kernel.org,
-        Borislav Petkov <bp@amd64.org>
-Subject: Re: linux-next: Tree for Feb 1 (mce_amd.c)
-Message-ID: <20120202142628.GA1052@aftab>
-References: <20120201171643.cbf8263eded709a75e92f4ad@canb.auug.org.au>
- <4F298A6C.6010101@xenotime.net>
+	Thu, 2 Feb 2012 09:42:22 -0500
+Date: Thu, 2 Feb 2012 15:42:43 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+cc: "devendra.aaru" <devendra.aaru@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] In crypto_add_alg(), 'exact' wants to be initialized to
+ 0
+In-Reply-To: <20120202075122.GA23142@secunet.com>
+Message-ID: <alpine.LNX.2.00.1202021541440.12088@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1201292337390.27749@swampdragon.chaosbits.net> <CAHdPZaP4aArSh7G15KhP2ombW8Zs2L4osQ0xi0W829oBZSuTtg@mail.gmail.com> <alpine.LNX.2.00.1202012050390.8577@swampdragon.chaosbits.net> <20120202075122.GA23142@secunet.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F298A6C.6010101@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-296885160-1328193764=:12088"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 10:54:36AM -0800, Randy Dunlap wrote:
-> On 01/31/2012 10:16 PM, Stephen Rothwell wrote:
-> > Hi all,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-296885160-1328193764=:12088
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Thu, 2 Feb 2012, Steffen Klassert wrote:
+
+> On Wed, Feb 01, 2012 at 09:21:39PM +0100, Jesper Juhl wrote:
+> > On Wed, 1 Feb 2012, devendra.aaru wrote:
 > > 
-> > Changes since 20120131:
+> > > On Sun, Jan 29, 2012 at 5:39 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> > > > We declare 'exact' without initializing it and then do:
+> > > >
+> > > > [...]
+> > > >        if (strlen(p->cru_driver_name))
+> > > >                exact = 1;
+> > > >
+> > > >        if (priority && !exact)
+> > > >                return -EINVAL;
+> > > >
+> > > > [...]
+> > > >
+> > > > If the first 'if' is not true, then the second will test an
+> > > > uninitialized 'exact'.
+> > > 
+> > > not needed . as the cru_driver_name will always be present :).
+> > 
+> > If that is indeed the case, and we are guaranteed that, then it would seem 
+> > that a patch like the following would be what we want instead??
+> > 
+> > Please note that this patch is intended just for discussion, nothing else 
+> > (which is why I left out a Signed-off-by on purpose), since I've not 
+> > tested it beyond checking that it compiles, nor have I verified your claim 
+> > that cru_driver_name will always be present.
+> > 
 > 
+> We get cru_driver_name from a netlink message that a user sends us.
+> So it depends pretty much on the user whether cru_driver_name is
+> set or not. Usually it is set when a user wants to instantiate
+> a certain algorithm driver, like "cbc(aes-asm)". If the user just
+> wants to instantiate the system default of an algorithm, he can
+> set cru_name (e.g. to "cbc(aes)") instead of cru_driver_name.
 > 
-> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to `cpu_llc_shared_map'
+> Your first patch is correct.
+> 
+Thank you for the explanation.
 
-Yeah, -rc2 has that problem too with your randconfig. The issue is with
-CONFIG_SMP not being set.
-
-The following chunk should cure it:
-
---
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bed94e..63fcb8a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -897,7 +897,7 @@ config X86_MCE_INTEL
- config X86_MCE_AMD
- 	def_bool y
- 	prompt "AMD MCE features"
--	depends on X86_MCE && X86_LOCAL_APIC
-+	depends on X86_MCE && X86_LOCAL_APIC && SMP
- 	---help---
- 	   Additional support for AMD specific MCE features such as
- 	   the DRAM Error Threshold.
---
-
-Thanks.
+Can I take that to mean that I can add your Acked-by: if/when I resend the 
+patch?
 
 -- 
-Regards/Gruss,
-Boris.
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+--8323328-296885160-1328193764=:12088--
