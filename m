@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab2BBSED (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 13:04:03 -0500
-Received: from mail-we0-f194.google.com ([74.125.82.194]:59809 "EHLO
-	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab2BBSEB (ORCPT
+	id S933145Ab2BBSE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 13:04:27 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2611 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab2BBSEZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 13:04:01 -0500
+	Thu, 2 Feb 2012 13:04:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 02 Feb 2012 10:04:15 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 2 Feb 2012 10:04:12 -0800
+Subject: RE: [PATCH v2 8/8] ARM: tegra: support for secondary cores on
+ Tegra30
+Thread-Topic: [PATCH v2 8/8] ARM: tegra: support for secondary cores on
+ Tegra30
+Thread-Index: AczgN015kuZlIgmRSziEBgxeEtpoQwBnUnqA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E124AA5@HQMAIL01.nvidia.com>
+References: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
+ <1328028051-24271-9-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1328028051-24271-9-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAPNxggbTGeDE34kKPEza4iedJ+ZLOgw+mn9mir6N=fx9DpXcfg@mail.gmail.com>
-References: <CAPNxggbTGeDE34kKPEza4iedJ+ZLOgw+mn9mir6N=fx9DpXcfg@mail.gmail.com>
-Date: Thu, 2 Feb 2012 19:03:59 +0100
-Message-ID: <CAPNxggam6=vesPJ9Bedf6fTSEw1nJDGH7ExC-g=SAiaRf9ecWw@mail.gmail.com>
-Subject: Re: An alternative for tasklist_lock in a module?
-From: "Arokux B." <arokux@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Christoph Hellwig <hch@lst.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Christoph and Andrew,
+Peter De Schrijver wrote at Tuesday, January 31, 2012 9:41 AM:
+> Add support for bringing up secondary cores on Tegra30. On Tegra30 secondary
+> CPU cores are powergated, so we need to turn on the domains before we can bring
+> the CPU cores online. Bringing secondary cores online happens early during the
+> sytem boot, so we call powergating initialization from platform early_init
+> function.
+> 
+> Based on work by:
+> 
+> Scott Williams <scwilliams@nvidia.com>
+> Colin Cross <ccross@android.com>
+> Alex Frid <afrid@nvidia.com>
+> 
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 
-you are correspondingly the author and signer of the mentioned commit.
-Could I get some feedback from you?
+The series,
 
-Thanks.
+Tested-by: Stephen Warren <swarren@nvidia.com>
 
+This time, since I now have the SD card working, I managed to test real
+user-space processes running on all 4 cores.
 
+Note, patch 3 shouldn't compile due to a typo in a .size directive. It
+does for me, so I could test this! But, it didn't for Olof. Aside from
+that (which perhaps Olof would fixup during patch application?),
 
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
+I also have a query on patch 3 about enabling coresight, but that's more
+for my education than something that'd block patch application.
 
-On Tue, Jan 31, 2012 at 7:58 PM, Arokux B. <arokux@gmail.com> wrote:
-> Hi,
->
-> (for learning purposes) I would like to iterate through all the tasks
-> in a module and output different information about them. For this task
-> I need to lock the list of all tasks (need I?). I've seen some example
-> in the kernel code which lock tasklist_lock. However this symbol
-> cannot be used by modules. Its export was removed by
-> c59923a15c12d2b3597af913bf234a0ef264a38b commit.
->
-> Is there any other way I can lock the list of tasks then? Or I'm supposed
-> not to use this list at all?
->
-> Thanks
+-- 
+nvpublic
+
