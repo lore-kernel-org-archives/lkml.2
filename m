@@ -1,182 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab2BBTWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:22:51 -0500
-Received: from mail.work-microwave.de ([62.245.205.51]:58453 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933361Ab2BBTU7 (ORCPT
+	id S933399Ab2BBTYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:24:51 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:34283 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932150Ab2BBTYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:20:59 -0500
-From: stigge@antcom.de
-To: w.sang@pengutronix.de, bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
-        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v3 1/7] ARM: LPC32xx: Added lpc32xx_defconfig
-Date: Thu,  2 Feb 2012 20:19:42 +0100
-Message-Id: <1328210388-21296-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.8.3
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Thu, 2 Feb 2012 14:24:49 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6608"; a="160053345"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
+Date: Thu,  2 Feb 2012 11:24:46 -0800
+Message-Id: <1328210686-15909-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.48.g85da4d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a working defconfig for the LPC32XX architecture. It is a
-general default configuration for the PHY3250 reference board and others
-based on LPC32XX.
+armv7's flush_cache_all() flushes caches via set/way. To
+determine the cache attributes (line size, number of sets,
+etc.) the assembly first writes the CSSELR register to select a
+cache level and then reads the CCSIDR register. The CSSELR register
+is banked per-cpu and is used to determine which cache level CCSIDR
+reads. If the task is migrated between when the CSSELR is written and
+the CCSIDR is read the CCSIDR value may be for an unexpected cache
+level (for example L1 instead of L2) and incorrect cache flushing
+could occur.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Tested-by: Wolfram Sang <w.sang@pengutronix.de>
+Disable preemption across the write and read so that the correct
+cache attributes are read and used for the cache flushing
+routine. This fixes a problem we see in scm_call() when
+flush_cache_all() is called from preemptible context and
+sometimes the L2 cache is not properly flushed out.
 
-diff --git a/arch/arm/configs/lpc32xx_defconfig b/arch/arm/configs/lpc32xx_defconfig
-new file mode 100644
-index 0000000..fb20881
---- /dev/null
-+++ b/arch/arm/configs/lpc32xx_defconfig
-@@ -0,0 +1,145 @@
-+CONFIG_EXPERIMENTAL=y
-+CONFIG_SYSVIPC=y
-+CONFIG_IKCONFIG=y
-+CONFIG_IKCONFIG_PROC=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_SYSFS_DEPRECATED=y
-+CONFIG_SYSFS_DEPRECATED_V2=y
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+CONFIG_SYSCTL_SYSCALL=y
-+CONFIG_EMBEDDED=y
-+CONFIG_SLAB=y
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+# CONFIG_BLK_DEV_BSG is not set
-+CONFIG_PARTITION_ADVANCED=y
-+CONFIG_ARCH_LPC32XX=y
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_PREEMPT=y
-+CONFIG_AEABI=y
-+CONFIG_ZBOOT_ROM_TEXT=0x0
-+CONFIG_ZBOOT_ROM_BSS=0x0
-+CONFIG_CMDLINE="console=ttyS0,115200n81 root=/dev/ram0"
-+CONFIG_CPU_IDLE=y
-+CONFIG_FPE_NWFPE=y
-+CONFIG_VFP=y
-+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-+CONFIG_BINFMT_AOUT=y
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+CONFIG_IP_MULTICAST=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
-+CONFIG_IP_PNP_BOOTP=y
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+# CONFIG_INET_LRO is not set
-+# CONFIG_INET_DIAG is not set
-+# CONFIG_IPV6 is not set
-+# CONFIG_WIRELESS is not set
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+# CONFIG_FW_LOADER is not set
-+CONFIG_MTD=y
-+CONFIG_MTD_CMDLINE_PARTS=y
-+CONFIG_MTD_CHAR=y
-+CONFIG_MTD_BLOCK=y
-+CONFIG_MTD_NAND=y
-+CONFIG_MTD_NAND_MUSEUM_IDS=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_CRYPTOLOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_COUNT=1
-+CONFIG_BLK_DEV_RAM_SIZE=16384
-+CONFIG_MISC_DEVICES=y
-+CONFIG_EEPROM_AT25=y
-+CONFIG_SCSI=y
-+CONFIG_BLK_DEV_SD=y
-+CONFIG_NETDEVICES=y
-+CONFIG_MII=y
-+CONFIG_PHYLIB=y
-+CONFIG_SMSC_PHY=y
-+# CONFIG_WLAN is not set
-+# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
-+CONFIG_INPUT_MOUSEDEV_SCREEN_X=240
-+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=320
-+CONFIG_INPUT_EVDEV=y
-+# CONFIG_INPUT_MOUSE is not set
-+CONFIG_INPUT_TOUCHSCREEN=y
-+CONFIG_TOUCHSCREEN_LPC32XX=y
-+# CONFIG_LEGACY_PTYS is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+# CONFIG_HW_RANDOM is not set
-+CONFIG_I2C=y
-+CONFIG_I2C_CHARDEV=y
-+CONFIG_I2C_PNX=y
-+CONFIG_SPI=y
-+CONFIG_SPI_PL022=y
-+CONFIG_GPIO_SYSFS=y
-+# CONFIG_HWMON is not set
-+CONFIG_WATCHDOG=y
-+CONFIG_PNX4008_WATCHDOG=y
-+CONFIG_FB=y
-+CONFIG_FB_ARMCLCD=y
-+CONFIG_FRAMEBUFFER_CONSOLE=y
-+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
-+CONFIG_LOGO=y
-+# CONFIG_LOGO_LINUX_MONO is not set
-+# CONFIG_LOGO_LINUX_VGA16 is not set
-+CONFIG_SOUND=y
-+CONFIG_SND=y
-+CONFIG_SND_SEQUENCER=y
-+CONFIG_SND_MIXER_OSS=y
-+CONFIG_SND_PCM_OSS=y
-+CONFIG_SND_SEQUENCER_OSS=y
-+CONFIG_SND_DYNAMIC_MINORS=y
-+# CONFIG_SND_VERBOSE_PROCFS is not set
-+# CONFIG_SND_DRIVERS is not set
-+# CONFIG_SND_ARM is not set
-+# CONFIG_SND_SPI is not set
-+CONFIG_SND_SOC=y
-+# CONFIG_HID_SUPPORT is not set
-+CONFIG_USB=y
-+CONFIG_USB_STORAGE=y
-+CONFIG_USB_LIBUSUAL=y
-+CONFIG_MMC=y
-+# CONFIG_MMC_BLOCK_BOUNCE is not set
-+CONFIG_MMC_ARMMMCI=y
-+CONFIG_NEW_LEDS=y
-+CONFIG_LEDS_CLASS=y
-+CONFIG_LEDS_GPIO=y
-+CONFIG_LEDS_TRIGGERS=y
-+CONFIG_LEDS_TRIGGER_HEARTBEAT=y
-+CONFIG_RTC_CLASS=y
-+CONFIG_RTC_INTF_DEV_UIE_EMUL=y
-+CONFIG_RTC_DRV_LPC32XX=y
-+CONFIG_EXT2_FS=y
-+CONFIG_AUTOFS4_FS=y
-+CONFIG_MSDOS_FS=y
-+CONFIG_VFAT_FS=y
-+CONFIG_TMPFS=y
-+CONFIG_JFFS2_FS=y
-+CONFIG_JFFS2_FS_WBUF_VERIFY=y
-+CONFIG_CRAMFS=y
-+CONFIG_NFS_FS=y
-+CONFIG_NFS_V3=y
-+CONFIG_ROOT_NFS=y
-+CONFIG_NLS_CODEPAGE_437=y
-+CONFIG_NLS_ASCII=y
-+CONFIG_NLS_ISO8859_1=y
-+CONFIG_NLS_UTF8=y
-+# CONFIG_SCHED_DEBUG is not set
-+# CONFIG_DEBUG_PREEMPT is not set
-+CONFIG_DEBUG_INFO=y
-+# CONFIG_FTRACE is not set
-+# CONFIG_ARM_UNWIND is not set
-+CONFIG_DEBUG_LL=y
-+CONFIG_EARLY_PRINTK=y
-+CONFIG_CRYPTO_ANSI_CPRNG=y
-+# CONFIG_CRYPTO_HW is not set
-+CONFIG_CRC_CCITT=y
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+---
+
+Should we move get_thread_info into assembler.h? It seems odd
+to include entry-header.S but I saw that vfp was doing the same.
+
+ arch/arm/mm/cache-v7.S |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mm/cache-v7.S b/arch/arm/mm/cache-v7.S
+index 07c4bc8..a033858 100644
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -16,6 +16,7 @@
+ #include <asm/unwind.h>
+ 
+ #include "proc-macros.S"
++#include "../kernel/entry-header.S"
+ 
+ /*
+  *	v7_flush_icache_all()
+@@ -54,9 +55,19 @@ loop1:
+ 	and	r1, r1, #7			@ mask of the bits for current cache only
+ 	cmp	r1, #2				@ see what cache we have at this level
+ 	blt	skip				@ skip if no cache, or just i-cache
++#ifdef CONFIG_PREEMPT
++	get_thread_info r9
++	ldr	r11, [r9, #TI_PREEMPT]		@ get preempt count
++	add	r11, r11, #1			@ increment it
++	str	r11, [r9, #TI_PREEMPT]
++#endif
+ 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+ 	isb					@ isb to sych the new cssr&csidr
+ 	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
++#ifdef CONFIG_PREEMPT
++	sub	r11, r11, #1			@ decrement preempt count
++	str	r11, [r9, #TI_PREEMPT]
++#endif
+ 	and	r2, r1, #7			@ extract the length of the cache lines
+ 	add	r2, r2, #4			@ add 4 (line length offset)
+ 	ldr	r4, =0x3ff
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
