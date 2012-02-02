@@ -1,139 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932750Ab2BBRwB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 12:52:01 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56036 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755590Ab2BBRv6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 12:51:58 -0500
+	id S932976Ab2BBRwP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 12:52:15 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:45609 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757078Ab2BBRwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 12:52:09 -0500
+Date: Thu, 2 Feb 2012 09:51:55 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+Message-ID: <20120202175155.GV2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+ <1328117722.2446.262.camel@twins>
+ <20120201184045.GG2382@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1202011404500.2074@router.home>
+ <20120201201336.GI2382@linux.vnet.ibm.com>
+ <4F2A58A1.90800@redhat.com>
+ <20120202153437.GD2518@linux.vnet.ibm.com>
+ <4F2AB66C.2030309@redhat.com>
+ <20120202170134.GM2518@linux.vnet.ibm.com>
+ <4F2AC69B.7000704@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1202021726020.25409@wotan.suse.de>
-References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
- <1328118174.15992.6206.camel@triegel.csb> <20120201194025.GG6148@sunsite.ms.mff.cuni.cz>
- <CA+55aFzVWjqcs1zRF-93_9yHRDS-YgmpgFTzACw6HQ-059U06Q@mail.gmail.com>
- <20120201201631.GW18768@tyan-ft48-01.lab.bos.redhat.com> <CA+55aFwcLpD2Cw5VxZ3ym66QBDAeDam3-hprivrC+keUMXJOtw@mail.gmail.com>
- <874nv9qlau.fsf@houston.quesejoda.com> <Pine.LNX.4.64.1202021726020.25409@wotan.suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 2 Feb 2012 09:51:37 -0800
-X-Google-Sender-Auth: 51EkPSCfwn9d_rH-yVwV5VPVrtY
-Message-ID: <CA+55aFxx34wqaudKWEV69Vta6k8y4rmiCf9JLjiDZ2gjEic5_Q@mail.gmail.com>
-Subject: Re: Memory corruption due to word sharing
-To: Michael Matz <matz@suse.de>
-Cc: Aldy Hernandez <aldyh@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Content-Type: multipart/mixed; boundary=20cf300e4fbf38891104b7fedaf5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2AC69B.7000704@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020217-7182-0000-0000-000000A767C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf300e4fbf38891104b7fedaf5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, Feb 02, 2012 at 07:23:39PM +0200, Avi Kivity wrote:
+> On 02/02/2012 07:01 PM, Paul E. McKenney wrote:
+> > > 
+> > > It's not called (since the cpu is not idle).  Instead we call
+> > > rcu_virt_note_context_switch().
+> >
+> > Frederic's work checks to see if there is only one runnable user task
+> > on a given CPU.  If there is only one, then the scheduling-clock interrupt
+> > is turned off for that CPU, and RCU is told to ignore it while it is
+> > executing in user space.  Not sure whether this covers KVM guests.
+> 
+> Conceptually it's the same.  Maybe it needs adjustments, since kvm
+> enters a guest in a different way than the kernel exits to userspace.
+> 
+> > In any case, this is not yet in mainline.
+> 
+> Let me know when it's in, and I'll have a look.
 
-On Thu, Feb 2, 2012 at 8:28 AM, Michael Matz <matz@suse.de> wrote:
->
-> Sure. =A0Simplest example: struct s {int i:24;} __attribute__((packed)).
->
-> You must access only three bytes, no matter what. =A0The basetype (int) i=
-s
-> four bytes.
+Could you please touch base with Frederic Weisbecker to make sure that
+what he is doing works for you?
 
-Ok, so here's a really *stupid* (but also really really simple) patch attac=
-hed.
+							Thanx, Paul
 
-What it does is to simply change the meaning of the SLOW_BYTE_ACCESS thing.
-
-What SLOW_BYTE_ACCESS means is currently is not just that byte
-accesses are slow: it means that *everything* but full-word accesses
-are slow!
-
-Which is (a) not what the name really implies, (b) not even the
-historical meaning of that #define (why? the meaning of "full word"
-has changed since: it used to be 32 bits, now it is 64 bits) and (c)
-stupid, because that's not how hardware with slow byte accesses really
-work anyway.
-
-Finally, it's what causes gcc to do 64-bit accesses to bitfields that
-aren't 64 bits in size.
-
-So because of this, I propose gcc just change the rules for what
-SLOW_BYTE_ACCESS means.
-
-I propose to just change it to mean "accesses smaller than 32 bits are
-slow". That's actually much closer to what the hardware definition
-tends to be.
-
-It doesn't fix the generic issue, it doesn't fix any C++11/C11 issues,
-it doesn't really change anything, but what it *does* do is make for a
-hell of a lot saner model. And it avoids bugs in practice.
-
-NOTE! On at least some machines with SLOW_BYTE_ACCESS, accesses
-smaller than a word cannot possibly be atomic anyway (well, not
-without jumping through hoops), so the fact that we still extend to 32
-bits and the problem of touching too much still exists with 'char' and
-'short' variables that are in the same 32-bit word as a bitfield is
-kind of unavoidable.
-
-So this suggested patch doesn't really "fix" anything fundamental, but
-it is (a) simple, (b) totally untested and (c) at least fixes *some*
-cases.
-
-For example, it might fix the 'sig_atomic_t' shadowning, since that is
-usually 'int'. It obviously can never fix the issue with volatile
-char/short, but at least it works around it for 'long'.
-
-In other words - I'm not trying to say that this patch really "fixes"
-anything (except sig_atomic_t interaction, which really does get fixed
-for the normal 'int' case). But what it does do is to limit the damage
-of a bad situation.
-
-And it is small, and should hopefully be easy to accept even for
-stable versions of gcc.
-
-So can we please do something like this for maintenance releases, and
-consider the much more complex C++11/C11 issues to be a separate much
-bigger issue for the future?
-
-Because the current SLOW_BYTE_ACCESS meaning really is crap. The
-*only* thing that architecture define seems to do is literally the
-bitfield extract semantics, and it does that horribly horribly badly
-as shown by the bug on both 64-bit POWER and Sparc. For no good reason
-- both of those have perfectly fine word operations afaik.
-
-I did not look at other architectures that define SLOW_BYTE_ACCESS,
-but if they have a 32-bit integer type, I'm pretty sure they support
-fast loads/stores of it.
-
-Hacky? Yes. Pretty? No. But better than the disaster that is there
-now? Hell yes.
-
-                                   Linus
-
-PS. The only reason I hardcoded "32" was that I didn't know how to ask
-the quesion "is this mode at least as wide as 'int'" in the proper gcc
-way. So I'm really not suggesting you apply this patch as-is, I'm just
-sending it out as a "hey, this is a pretty obvious way to work around
-part of the problem, somebody who really knows what they are doing
-should probably improve on it".
-
---20cf300e4fbf38891104b7fedaf5
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gy62yjzi0
-
-IGdjYy9zdG9yLWxheW91dC5jIHwgICAgNSArKysrKwogMSBmaWxlcyBjaGFuZ2VkLCA1IGluc2Vy
-dGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZ2NjL3N0b3ItbGF5b3V0LmMg
-Yi9nY2Mvc3Rvci1sYXlvdXQuYwppbmRleCBlYTBkNDRkNjRkMjYuLjEzODdjMGU5ZTA2MCAxMDA2
-NDQKLS0tIGEvZ2NjL3N0b3ItbGF5b3V0LmMKKysrIGIvZ2NjL3N0b3ItbGF5b3V0LmMKQEAgLTI0
-ODYsNyArMjQ4NiwxMiBAQCBnZXRfYmVzdF9tb2RlIChpbnQgYml0c2l6ZSwgaW50IGJpdHBvcywg
-dW5zaWduZWQgaW50IGFsaWduLAogCSAgICAgICYmIHVuaXQgPD0gTUlOIChhbGlnbiwgQklHR0VT
-VF9BTElHTk1FTlQpCiAJICAgICAgJiYgKGxhcmdlc3RfbW9kZSA9PSBWT0lEbW9kZQogCQkgIHx8
-IHVuaXQgPD0gR0VUX01PREVfQklUU0laRSAobGFyZ2VzdF9tb2RlKSkpCisJICB7CiAJICAgIHdp
-ZGVfbW9kZSA9IHRtb2RlOworCSAgICAvKiBXaWRlIGVub3VnaD8gKi8KKwkgICAgaWYgKHVuaXQg
-Pj0gMzIpCisJICAgICAgYnJlYWs7CisJICB9CiAJfQogCiAgICAgICBpZiAod2lkZV9tb2RlICE9
-IFZPSURtb2RlKQo=
---20cf300e4fbf38891104b7fedaf5--
