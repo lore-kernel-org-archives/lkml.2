@@ -1,152 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab2BBNjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 08:39:52 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:55296 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab2BBNjv (ORCPT
+	id S1756142Ab2BBNkI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 08:40:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37880 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756077Ab2BBNkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 08:39:51 -0500
-Message-ID: <1328190031.6508.1.camel@blackout-netbook>
-Subject: [PATCH] Correcting some style issues
-From: Tristan Pourcelot <tristan.pourcelot@gmail.com>
-To: davem@davemloft.net, herbert@gondor.hengli.com.au,
-        linux-geode@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 02 Feb 2012 14:40:31 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 2 Feb 2012 08:40:06 -0500
+Date: Thu, 2 Feb 2012 13:40:03 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Maxime Coquelin <maxime.coquelin@stericsson.com>,
+        Alex Macro <alex.macro@stericsson.com>,
+        Michel Jaouen <michel.jaouen@stericsson.com>
+Subject: Re: [PATCH 3/4] mfd/ab8500: parametrize IRQ masks and registers
+Message-ID: <20120202134002.GP7428@opensource.wolfsonmicro.com>
+References: <1328112568-32529-1-git-send-email-linus.walleij@stericsson.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rZHzn+A9B7nBTGyj"
+Content-Disposition: inline
+In-Reply-To: <1328112568-32529-1-git-send-email-linus.walleij@stericsson.com>
+X-Cookie: Never give an inch!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From d50e5530201aa02a5232ca9f2458a7fdd18de374 Mon Sep 17 00:00:00 2001
-From: Tristan Pourcelot <tristan.pourcelot@gmail.com>
-Date: Thu, 2 Feb 2012 14:01:03 +0100
-Subject: [PATCH] Correcting some style errors in
- drivers/crypto/geode-aes.c 
-Signed-off-by: Tristan Pourcelot <tristan.pourcelot@gmail.com>
 
----
- drivers/crypto/geode-aes.c |   72
-++++++++++++++++++++++----------------------
- 1 files changed, 36 insertions(+), 36 deletions(-)
+--rZHzn+A9B7nBTGyj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/crypto/geode-aes.c b/drivers/crypto/geode-aes.c
-index 2addf1a..e325929 100644
---- a/drivers/crypto/geode-aes.c
-+++ b/drivers/crypto/geode-aes.c
-@@ -282,21 +282,21 @@ static struct crypto_alg geode_alg = {
- 	.cra_driver_name	=	"geode-aes",
- 	.cra_priority		=	300,
- 	.cra_alignmask		=	15,
--	.cra_flags			=	CRYPTO_ALG_TYPE_CIPHER |
--							CRYPTO_ALG_NEED_FALLBACK,
--	.cra_init			=	fallback_init_cip,
--	.cra_exit			=	fallback_exit_cip,
-+	.cra_flags		=	CRYPTO_ALG_TYPE_CIPHER |
-+		CRYPTO_ALG_NEED_FALLBACK,
-+	.cra_init		=	fallback_init_cip,
-+	.cra_exit		=	fallback_exit_cip,
- 	.cra_blocksize		=	AES_MIN_BLOCK_SIZE,
- 	.cra_ctxsize		=	sizeof(struct geode_aes_op),
--	.cra_module			=	THIS_MODULE,
--	.cra_list			=	LIST_HEAD_INIT(geode_alg.cra_list),
--	.cra_u				=	{
--		.cipher	=	{
--			.cia_min_keysize	=	AES_MIN_KEY_SIZE,
--			.cia_max_keysize	=	AES_MAX_KEY_SIZE,
--			.cia_setkey			=	geode_setkey_cip,
--			.cia_encrypt		=	geode_encrypt,
--			.cia_decrypt		=	geode_decrypt
-+	.cra_module		=	THIS_MODULE,
-+	.cra_list		=	LIST_HEAD_INIT(geode_alg.cra_list),
-+	.cra_u			=	{
-+	.cipher	=	{
-+		.cia_min_keysize	=	AES_MIN_KEY_SIZE,
-+		.cia_max_keysize	=	AES_MAX_KEY_SIZE,
-+		.cia_setkey		=	geode_setkey_cip,
-+		.cia_encrypt		=	geode_encrypt,
-+		.cia_decrypt		=	geode_decrypt
- 		}
- 	}
- };
-@@ -392,24 +392,24 @@ static struct crypto_alg geode_cbc_alg = {
- 	.cra_name		=	"cbc(aes)",
- 	.cra_driver_name	=	"cbc-aes-geode",
- 	.cra_priority		=	400,
--	.cra_flags			=	CRYPTO_ALG_TYPE_BLKCIPHER |
--							CRYPTO_ALG_NEED_FALLBACK,
--	.cra_init			=	fallback_init_blk,
--	.cra_exit			=	fallback_exit_blk,
-+	.cra_flags		=	CRYPTO_ALG_TYPE_BLKCIPHER |
-+						CRYPTO_ALG_NEED_FALLBACK,
-+	.cra_init		=	fallback_init_blk,
-+	.cra_exit		=	fallback_exit_blk,
- 	.cra_blocksize		=	AES_MIN_BLOCK_SIZE,
- 	.cra_ctxsize		=	sizeof(struct geode_aes_op),
- 	.cra_alignmask		=	15,
--	.cra_type			=	&crypto_blkcipher_type,
--	.cra_module			=	THIS_MODULE,
--	.cra_list			=	LIST_HEAD_INIT(geode_cbc_alg.cra_list),
--	.cra_u				=	{
-+	.cra_type		=	&crypto_blkcipher_type,
-+	.cra_module		=	THIS_MODULE,
-+	.cra_list		=	LIST_HEAD_INIT(geode_cbc_alg.cra_list),
-+	.cra_u			=	{
- 		.blkcipher	=	{
- 			.min_keysize	=	AES_MIN_KEY_SIZE,
- 			.max_keysize	=	AES_MAX_KEY_SIZE,
--			.setkey			=	geode_setkey_blk,
--			.encrypt		=	geode_cbc_encrypt,
--			.decrypt		=	geode_cbc_decrypt,
--			.ivsize			=	AES_IV_LENGTH,
-+			.setkey		=	geode_setkey_blk,
-+			.encryp		=	geode_cbc_encrypt,
-+			.decryp		=	geode_cbc_decrypt,
-+			.ivsize		=	AES_IV_LENGTH,
- 		}
- 	}
- };
-@@ -478,23 +478,23 @@ static struct crypto_alg geode_ecb_alg = {
- 	.cra_name		=	"ecb(aes)",
- 	.cra_driver_name	=	"ecb-aes-geode",
- 	.cra_priority		=	400,
--	.cra_flags			=	CRYPTO_ALG_TYPE_BLKCIPHER |
--							CRYPTO_ALG_NEED_FALLBACK,
--	.cra_init			=	fallback_init_blk,
--	.cra_exit			=	fallback_exit_blk,
-+	.cra_flags		=	CRYPTO_ALG_TYPE_BLKCIPHER |
-+						CRYPTO_ALG_NEED_FALLBACK,
-+	.cra_init		=	fallback_init_blk,
-+	.cra_exit		=	fallback_exit_blk,
- 	.cra_blocksize		=	AES_MIN_BLOCK_SIZE,
- 	.cra_ctxsize		=	sizeof(struct geode_aes_op),
- 	.cra_alignmask		=	15,
--	.cra_type			=	&crypto_blkcipher_type,
--	.cra_module			=	THIS_MODULE,
--	.cra_list			=	LIST_HEAD_INIT(geode_ecb_alg.cra_list),
--	.cra_u				=	{
-+	.cra_type		=	&crypto_blkcipher_type,
-+	.cra_module		=	THIS_MODULE,
-+	.cra_list		=	LIST_HEAD_INIT(geode_ecb_alg.cra_list),
-+	.cra_u			=	{
- 		.blkcipher	=	{
- 			.min_keysize	=	AES_MIN_KEY_SIZE,
- 			.max_keysize	=	AES_MAX_KEY_SIZE,
--			.setkey			=	geode_setkey_blk,
--			.encrypt		=	geode_ecb_encrypt,
--			.decrypt		=	geode_ecb_decrypt,
-+			.setkey		=	geode_setkey_blk,
-+			.encrypt	=	geode_ecb_encrypt,
-+			.decrypt	=	geode_ecb_decrypt,
- 		}
- 	}
- };
--- 
-1.7.9
+On Wed, Feb 01, 2012 at 05:09:28PM +0100, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+>=20
+> This makes the AB8500 state struct contain the IRQ mask and
+> register offsets previously hard-coded so as to make room for
+> more AB8500 variants.
 
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
+though devm_kzalloc() might be nice if you're respinning...
 
+--rZHzn+A9B7nBTGyj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPKpIsAAoJEBus8iNuMP3dQnIP/R53bGQJv4Ip4OPxiCst+dmo
+o5BvROXo1Rnu+POaZvJs/BE5VNXdW9FQLaE4viIbYSH5jgFSAcn9WK81MUTKwqDh
+x0b7QdxxjMNRMnAZhpnoSx11CMhWKPZNmUs9Sarnr98LA2jotoqgxKDsWr2ECuB/
++yep5v7Q9rOHBhwl0SGY5iA66QLyszxzobuxgI82yb2BgTepDu0IOTfDwbtTtxdc
+v1Vt8tt48TwADoi+GE9YhDd5ufwhDMh8u+9+xFAzktkzBrPcHChdm6BADu4C6FQ7
+uc0P4gGO3zUUuWzBFTY0zFM+h1P0NPaoW2b6svEkY6cl5mjWYbLgtColZ06rANfF
+fIYHGDrgZfs/p5oV8UevwkLyGrKOBJKCqTapdT7E0PIzsHPdtGktPrveBzRFDAwR
+NKsJACGLQqg3zFGHMiFHih7rj3mpHQnVA39bqs0SyWjagPryum7qOYA77GvO1w2h
+bWum/ZIDhDffvkuGAOInAuB7H6nH0wLiq8X9qa0NVCcaGj0MyB+fjdsk48nZB63N
+1BjF4hq29XnuBomBEWM0BB3ZS66y3cbyc2XBwos37yEnROrnre5AwBgKUKS64mZF
+pvUlvNTUP1ZwoMOPq8ln7cb2CvAEgz+pn3Gg73xugANoJ6nhjrB45HplDLKYUGkO
+4jzXNQbCOesT/zi/UFIc
+=fYQ2
+-----END PGP SIGNATURE-----
+
+--rZHzn+A9B7nBTGyj--
