@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2BBC0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 21:26:42 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17370 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab2BBC0k (ORCPT
+	id S1754711Ab2BBC25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 21:28:57 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:48646 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577Ab2BBC2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 21:26:40 -0500
-Message-ID: <4F29F456.8090508@oracle.com>
-Date: Thu, 02 Feb 2012 10:26:30 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Wed, 1 Feb 2012 21:28:55 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM/Freezer/Docs: Document the beauty of freeze/thaw semantics
+To: rjw@sisk.pl
+Cc: tj@kernel.org, pavel@ucw.cz, len.brown@intel.com, rdunlap@xenotime.net,
+        linux-pm@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 02 Feb 2012 07:58:33 +0530
+Message-ID: <20120202022829.13341.64259.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Venkata Siva Vijayendra Bhamidipati <vbhamidi@cisco.com>,
-        Brian Uchino <buchino@cisco.com>, torvalds@linux-foundation.org
-CC: Sriharsha <sriharsha.devdas@oracle.com>, Joe Jin <joe.jin@oracle.com>,
-        stable@vger.kernel.org, linux-scsi@vger.kernel.org,
-        andrew thomas <andrew.thomas@oracle.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        Guru Anbalagane <guru.anbalagane@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH-RESEND] [SCSI] fnic: return zero on fnic_reset() success
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4F29F45E.001C,ss=1,re=0.000,fgs=0
+x-cbid: 12020116-1618-0000-0000-000000AFE747
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When issue LIP by sysfs found write("1") returned 8194, this caused by
-fnic_reset() return SUCCESS to store_fc_private_host_issue_lip().
-Return 0/-1 for fnic_reset() fix this issue.
+The way the different freeze/thaw functions encapsulate each other are quite
+lovely from a design point of view. And as a side-effect, the way in which
+they are invoked (cleaning up on failure for example) differs significantly
+from how usual functions are dealt with. This is because of the underlying
+semantics that govern the freezing and thawing of various tasks.
 
-Tested-by: Sriharsha <sriharsha.devdas@oracle.com>
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-Cc: Abhijeet Joglekar <abjoglek@cisco.com>
-Cc: Venkata Siva Vijayendra Bhamidipati <vbhamidi@cisco.com>
-Cc: Brian Uchino <buchino@cisco.com>
-CC: stable@vger.kernel.org
+This subtle aspect that differentiates these functions from the rest, is
+worth documenting.
+
+Many thanks to Tejun Heo for providing enlightenment on this topic.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- drivers/scsi/fnic/fnic_scsi.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
-index c40ce52..e705e5e 100644
---- a/drivers/scsi/fnic/fnic_scsi.c
-+++ b/drivers/scsi/fnic/fnic_scsi.c
-@@ -1662,7 +1662,7 @@ int fnic_reset(struct Scsi_Host *shost)
- {
- 	struct fc_lport *lp;
- 	struct fnic *fnic;
--	int ret = SUCCESS;
-+	int ret = 0;
+ Documentation/power/freezing-of-tasks.txt |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
+index ebd7490..ec715cd 100644
+--- a/Documentation/power/freezing-of-tasks.txt
++++ b/Documentation/power/freezing-of-tasks.txt
+@@ -63,6 +63,27 @@ devices have been reinitialized, the function thaw_processes() is called in
+ order to clear the PF_FROZEN flag for each frozen task.  Then, the tasks that
+ have been frozen leave __refrigerator() and continue running.
  
- 	lp = shost_priv(shost);
- 	fnic = lport_priv(lp);
-@@ -1675,11 +1675,11 @@ int fnic_reset(struct Scsi_Host *shost)
- 	 * reset remote port sessions, and if link is up, begin flogi
- 	 */
- 	if (lp->tt.lport_reset(lp))
--		ret = FAILED;
-+		ret = -1;
++
++Rationale behind the functions dealing with freezing and thawing of tasks:
++-------------------------------------------------------------------------
++
++freeze_processes():
++  - freezes only userspace tasks
++
++freeze_kernel_threads():
++  - freezes all tasks (including kernel threads) because we can't freeze
++    kernel threads without freezing userspace tasks
++
++thaw_kernel_threads():
++  - thaws only kernel threads; this is particularly useful if we need to do
++    anything special in between thawing of kernel threads and thawing of
++    userspace tasks, or if we want to postpone the thawing of userspace tasks
++
++thaw_processes():
++  - thaws all tasks (including kernel threads) because we can't thaw userspace
++    tasks without thawing kernel threads
++
++
+ III. Which kernel threads are freezable?
  
- 	FNIC_SCSI_DBG(KERN_DEBUG, fnic->lport->host,
- 		      "Returning from fnic reset %s\n",
--		      (ret == SUCCESS) ?
-+		      (ret == 0) ?
- 		      "SUCCESS" : "FAILED");
- 
- 	return ret;
-@@ -1706,7 +1706,7 @@ int fnic_host_reset(struct scsi_cmnd *sc)
- 	 * scsi-ml tries to send a TUR to every device if host reset is
- 	 * successful, so before returning to scsi, fabric should be up
- 	 */
--	ret = fnic_reset(shost);
-+	ret = (fnic_reset(shost) == 0) ? SUCCESS : FAILED;
- 	if (ret == SUCCESS) {
- 		wait_host_tmo = jiffies + FNIC_HOST_RESET_SETTLE_TIME * HZ;
- 		ret = FAILED;
--- 
-1.7.7.5
+ Kernel threads are not freezable by default.  However, a kernel thread may clear
 
