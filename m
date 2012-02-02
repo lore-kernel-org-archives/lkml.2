@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab2BBROG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 12:14:06 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:38653
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754677Ab2BBROD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 12:14:03 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, kys@microsoft.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] net/hyperv: Fix the page buffer when an RNDIS message goes beyond page boundary
-Date: Thu,  2 Feb 2012 09:18:00 -0800
-Message-Id: <1328203080-801-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1328203080-801-1-git-send-email-haiyangz@microsoft.com>
-References: <1328203080-801-1-git-send-email-haiyangz@microsoft.com>
+	id S1756018Ab2BBROU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 12:14:20 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57252 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944Ab2BBROR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 12:14:17 -0500
+Date: Thu, 2 Feb 2012 09:14:10 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: axboe@kernel.dk, vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/16] blkcg: make CONFIG_BLK_CGROUP bool
+Message-ID: <20120202171410.GD19837@google.com>
+References: <1328129429-11823-1-git-send-email-tj@kernel.org>
+ <1328129429-11823-2-git-send-email-tj@kernel.org>
+ <4F2A3305.9050009@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2A3305.9050009@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a possible data corruption if an RNDIS message goes beyond page
-boundary in the sending code path. This patch fixes the problem.
+On Thu, Feb 02, 2012 at 02:53:57PM +0800, Li Zefan wrote:
+> Tejun Heo wrote:
+> > Block cgroup core can be built as module; however, it isn't too useful
+> > as blk-throttle can only be built-in and cfq-iosched is usually the
+> > default built-in scheduler.  Scheduled blkcg cleanup requires calling
+> > into blkcg from block core.  To simplify that, disallow building blkcg
+> > as module by making CONFIG_BLK_CGROUP bool.
+> > 
+> > If building blkcg core as module really matters, which I doubt, we can
+> > revisit it after blkcg API cleanup.
+> > 
+> > -v2: Vivek pointed out that IOSCHED_CFQ was incorrectly updated to
+> >      depend on BLK_CGROUP.  Fixed.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: Vivek Goyal <vgoyal@redhat.com>
+> > ---
+> >  block/Kconfig.iosched |    4 ----
+> >  block/blk-cgroup.c    |   17 -----------------
+> >  block/blk-cgroup.h    |   10 ++--------
+> >  init/Kconfig          |    2 +-
+> >  4 files changed, 3 insertions(+), 30 deletions(-)
+> > 
+> 
+> You can merge the following change with your patch.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/netvsc_drv.c   |    8 ++++----
- drivers/net/hyperv/rndis_filter.c |   13 +++++++++++++
- include/linux/hyperv.h            |    2 +-
- 3 files changed, 18 insertions(+), 5 deletions(-)
+Nice, will do.
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 69193fc..466c58a 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -151,10 +151,10 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	int ret;
- 	unsigned int i, num_pages, npg_data;
- 
--	/* Add multipage for skb->data and additional one for RNDIS */
-+	/* Add multipages for skb->data and additional 2 for RNDIS */
- 	npg_data = (((unsigned long)skb->data + skb_headlen(skb) - 1)
- 		>> PAGE_SHIFT) - ((unsigned long)skb->data >> PAGE_SHIFT) + 1;
--	num_pages = skb_shinfo(skb)->nr_frags + npg_data + 1;
-+	num_pages = skb_shinfo(skb)->nr_frags + npg_data + 2;
- 
- 	/* Allocate a netvsc packet based on # of frags. */
- 	packet = kzalloc(sizeof(struct hv_netvsc_packet) +
-@@ -173,8 +173,8 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 				sizeof(struct hv_netvsc_packet) +
- 				    (num_pages * sizeof(struct hv_page_buffer));
- 
--	/* Setup the rndis header */
--	packet->page_buf_cnt = num_pages;
-+	/* If the rndis msg goes beyond 1 page, we will add 1 later */
-+	packet->page_buf_cnt = num_pages - 1;
- 
- 	/* Initialize it from the skb */
- 	packet->total_data_buflen = skb->len;
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index dc2e384..133b7fb 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -797,6 +797,19 @@ int rndis_filter_send(struct hv_device *dev,
- 			(unsigned long)rndisMessage & (PAGE_SIZE-1);
- 	pkt->page_buf[0].len = rndisMessageSize;
- 
-+	/* Add one page_buf if the rndis msg goes beyond page boundary */
-+	if (pkt->page_buf[0].offset + rndisMessageSize > PAGE_SIZE) {
-+		int i;
-+		for (i = pkt->page_buf_cnt; i > 1; i--)
-+			pkt->page_buf[i] = pkt->page_buf[i-1];
-+		pkt->page_buf_cnt++;
-+		pkt->page_buf[0].len = PAGE_SIZE - pkt->page_buf[0].offset;
-+		pkt->page_buf[1].pfn = virt_to_phys((void *)((ulong)
-+			rndisMessage + pkt->page_buf[0].len)) >> PAGE_SHIFT;
-+		pkt->page_buf[1].offset = 0;
-+		pkt->page_buf[1].len = rndisMessageSize - pkt->page_buf[0].len;
-+	}
-+
- 	/* Save the packet send completion and context */
- 	filterPacket->completion = pkt->completion.send.send_completion;
- 	filterPacket->completion_ctx =
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 62b908e..0ae065a 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -35,7 +35,7 @@
- #include <linux/mod_devicetable.h>
- 
- 
--#define MAX_PAGE_BUFFER_COUNT				18
-+#define MAX_PAGE_BUFFER_COUNT				19
- #define MAX_MULTIPAGE_BUFFER_COUNT			32 /* 128K */
- 
- #pragma pack(push, 1)
+> Moreover, some cgroup APIs were exported to allow blk-cgroup to be built
+> as a module, and now they can be unexported.
+
+Yeah, that would be nice too.  Let's think about that after this whole
+block thing settles down.
+
+Thanks.
+
 -- 
-1.7.4.1
-
+tejun
