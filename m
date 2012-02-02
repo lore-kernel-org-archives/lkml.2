@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933374Ab2BBTVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:21:03 -0500
-Received: from mail.work-microwave.de ([62.245.205.51]:60499 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933359Ab2BBTU5 (ORCPT
+	id S933396Ab2BBTWf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:22:35 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36497 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933364Ab2BBTVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:20:57 -0500
-From: stigge@antcom.de
-To: w.sang@pengutronix.de, bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
-        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v3 6/7] ARM: LPC32xx: clock.c: warning fix
-Date: Thu,  2 Feb 2012 20:19:47 +0100
-Message-Id: <1328210388-21296-6-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1328210388-21296-1-git-send-email-stigge@antcom.de>
-References: <1328210388-21296-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Thu, 2 Feb 2012 14:21:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <1328150554.5882.83.camel@gandalf.stny.rr.com>
+References: <1314062244-2997-1-git-send-email-vnagarnaik@google.com>
+ <1318382410-14967-1-git-send-email-vnagarnaik@google.com> <CAL26m8JSL504zUX+P8WbjOUUjG2WR9idQrh2T8noYrmQYObj4A@mail.gmail.com>
+ <1328150554.5882.83.camel@gandalf.stny.rr.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Thu, 2 Feb 2012 11:20:29 -0800
+Message-ID: <CAL26m8KNg8R5O64p3YYb0B2aRqr2PBS5u8CVFWbMmgExUegMXA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/4] trace: Add per_cpu ring buffer control files
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the debug warning on local_clk_disable() as done in Kevin
-Wells' driver update
+On Wed, Feb 1, 2012 at 6:42 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> I was thinking there was issues before and thought there was going to be
+> another round of patches or something.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
-Tested-by: Wolfram Sang <w.sang@pengutronix.de>
+I did send those updated patches with changes according to your
+feedback. Although, I just checked and the patches don't merge cleanly
+to the latest upstream HEAD. I am sending out the rebased patches.
 
-diff --git a/arch/arm/mach-lpc32xx/clock.c b/arch/arm/mach-lpc32xx/clock.c
-index d527288..0606a63 100644
---- a/arch/arm/mach-lpc32xx/clock.c
-+++ b/arch/arm/mach-lpc32xx/clock.c
-@@ -904,8 +904,6 @@ static inline void clk_unlock(void)
- 
- static void local_clk_disable(struct clk *clk)
- {
--	WARN_ON(clk->usecount == 0);
--
- 	/* Don't attempt to disable clock if it has no users */
- 	if (clk->usecount > 0) {
- 		clk->usecount--;
+>
+> I'll see if I can squeeze out some time to review them again. I'm
+> currently hunting down some other bugs.
+>
+
+Thanks.
+
+
+Vaibhav Nagarnaik
