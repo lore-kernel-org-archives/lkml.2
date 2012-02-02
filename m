@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527Ab2BBUoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:44:30 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41900 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756436Ab2BBUo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:44:28 -0500
-Date: Thu, 2 Feb 2012 20:44:11 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
-Message-ID: <20120202204411.GB14129@n2100.arm.linux.org.uk>
-References: <1328210686-15909-1-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328210686-15909-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756563Ab2BBUpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:45:33 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:54651 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756004Ab2BBUpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:45:32 -0500
+Date: Thu, 2 Feb 2012 12:45:29 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Sudden kernel panic with skge in 3.3-rc2
+Message-ID: <20120202124529.3e274223@s6510.linuxnetplumber.net>
+In-Reply-To: <20120202192115.GA8480@elliptictech.com>
+References: <20120202192115.GA8480@elliptictech.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 11:24:46AM -0800, Stephen Boyd wrote:
-> armv7's flush_cache_all() flushes caches via set/way. To
-> determine the cache attributes (line size, number of sets,
-> etc.) the assembly first writes the CSSELR register to select a
-> cache level and then reads the CCSIDR register. The CSSELR register
-> is banked per-cpu and is used to determine which cache level CCSIDR
-> reads. If the task is migrated between when the CSSELR is written and
-> the CCSIDR is read the CCSIDR value may be for an unexpected cache
-> level (for example L1 instead of L2) and incorrect cache flushing
-> could occur.
+On Thu, 2 Feb 2012 14:21:15 -0500
+Nick Bowler <nbowler@elliptictech.com> wrote:
+
+> Hi,
 > 
-> Disable preemption across the write and read so that the correct
-> cache attributes are read and used for the cache flushing
-> routine. This fixes a problem we see in scm_call() when
-> flush_cache_all() is called from preemptible context and
-> sometimes the L2 cache is not properly flushed out.
+> I just saw this panic on 3.3-rc2 with skge.  I don't know whether it's
+> reproducible yet -- the machine crashed while I was not actively using
+> it.  We've had this type of card for a few years and I've never seen this
+> before so it may be a regression, but admittedly we don't use them all
+> that often.
+> 
+> At the time of the crash, the network interface in question was up, but
+> not configured with any addresses; mtu configured to (the default) 1500
+> bytes.  It was used for packet capture (tcpdump) shortly beforehand,
+> although this was not running at the time of the crash.  It's a PCI
+> gigabit ethernet card:
+> 
+>   03:01.0 Ethernet controller: D-Link System Inc DGE-530T Gigabit Ethernet Adapter (rev 11) (rev 11)
+> 
+> In case it matters, the primary network interface of the system is an
+> onboard device using the sky2 driver:
+> 
+>   02:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8057 PCI-E Gigabit Ethernet Controller (rev 10Ethernet controller: Marvell Technology Group Ltd. 88E8057 PCI-E Gigabit Ethernet Controller (rev 10)
+> 
+> I took a photo of the screen, but unfortuately the top few lines are
+> lost forever.  Posted at imgur because it seems a bit big for the
+> mailing lists: <http://i.imgur.com/xklGU.jpg>. Apologies for the
+> terrible quality; the best camera I could find around was in someone's
+> mobile phone.  I'll see about configuring a serial console in case it
+> crashes again.
+> 
+> For convenience (hopefully), here's the call trace retyped in plain text
+> (addresses elided, see photo for them).  The full code line is
+> reproduced by hand because it's almost unreadable in the photo (and
+> truncated to boot).
+> 
+>   Call Trace:
+>    <IRQ>
+>    [...] net_rx_action+0xaa/0x1c0
+>    [...] __do_softirq+0x7e/0x125
+>    [...] ? _raw_spin_unlock+0x26/0x31
+>    [...] call_softirq+0x1c/0x30
+>    [...] do_softirq+0x33/0x68
+>    [...] irq_exit+0x3f/0xb9
+>    [...] do_IRQ+0x97/0xae
+>    [...] common_interrupt+0x6b/0x6b
+>    <EOI>
+>    [...] ? hrtimer_start+0x13/0x15
+>    [...] ? mwait_idle+0x6e/0x80
+>    [...] ? mwait_idle+0x61/0x80
+>    [...] cpu_idle+0x61/0xbd
+>    [...] rest_init+0x8d/0x91
+>    [...] start_kernel+0x338/0x343
+>    [...] x86_64_start_reservations+0xb8/0xbd
+>    [...] x86_64_start_kernel+0xed/0xf4
+>   Code: 48 8b 40 30 48 85 c0 74 0a b9 02 00 00 00 4c 89 fa ff d0 49 8b 86 d0 00 00 00 49 8b 4d b4 48 89 c7 48 8b b2 d0 00 00 00 <f3> a4 31 ff 48 8b 03 49 8b 75 18 48 8b 40 08 48 85 c0 74 13 48
+>   RIP  [...] skge_poll+0x367/0x5cd [skge]
+> 
+> Let me know if you need any more info,
 
-This isn't going to work for two reasons:
+Try reverting this commit, it seems problematic
+commit d0249e44432aa0ffcf710b64449b8eaa3722547e
+Author: stephen hemminger <shemminger@vyatta.com>
+Date:   Thu Jan 19 14:37:18 2012 +0000
 
-(1) (and the VFP code suffers from this) after we re-enable preemption,
-    we really should check for a pending preemption event in every case.
+    skge: check for PCI dma mapping errors
 
-(2) v7_flush_dcache_all() is called from __v7_setup() using a very small
-    private stack.  This doesn't have a thread info structure at the
-    bottom.
-
-So, if we need to disable preemption here, we need to find a different
-solution to it.
-
-> Should we move get_thread_info into assembler.h? It seems odd
-> to include entry-header.S but I saw that vfp was doing the same.
-
-Probably yes, and probably also have preempt_disable and preempt_enable
-assembler macros.  That's going to get rather icky if we have to
-explicitly call the scheduler though (to solve (1)).
