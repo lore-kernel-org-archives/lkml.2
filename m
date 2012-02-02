@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab2BBIMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 03:12:24 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52059 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754048Ab2BBIMX (ORCPT
+	id S1754548Ab2BBIMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 03:12:42 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:61167 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab2BBIMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 03:12:23 -0500
-Message-ID: <1328170333.11502.1.camel@phoenix>
-Subject: [PATCH 1/2] backlight: lp855x_bl: Checking platform data in
- lp855x_probe
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Purdie <rpurdie@rpsys.net>, "Milo(Woogyom) Kim" <milo.kim@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 02 Feb 2012 16:12:13 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	Thu, 2 Feb 2012 03:12:40 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6607"; a="157571411"
+X-IronPort-AV: E=Sophos;i="4.71,606,1320652800"; 
+   d="scan'208";a="193401922"
+Message-ID: <4F2A4570.5040206@qca.qualcomm.com>
+Date: Thu, 2 Feb 2012 10:12:32 +0200
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Masanari Iida <standby24x7@gmail.com>
+CC: <linux-wireless@vger.kernel.org>, <trivial@kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        ath6kl-devel <ath6kl-devel@qualcomm.com>
+Subject: Re: [PATCH] [trivial] ath6kl: Fix typo in cfg80211.c
+References: <1328020375-2210-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1328020375-2210-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [10.64.137.187]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reset of the code assumes pdata is not NULL.
-Add checking for pdata in lp855x_probe, this prevents NULL dereference if pdata
-is NULL.
+On 01/31/2012 04:32 PM, Masanari Iida wrote:
+> Correct spelling "spported" to "supported" in
+> drivers/net/wireless/ath/ath6kl/cfg80211.c
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/video/backlight/lp855x_bl.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+Thanks, applied to ath6kl.git.
 
-diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
-index 8f628b8..5ab9ec8 100644
---- a/drivers/video/backlight/lp855x_bl.c
-+++ b/drivers/video/backlight/lp855x_bl.c
-@@ -230,9 +230,14 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
- {
- 	struct lp855x *lp;
- 	struct lp855x_platform_data *pdata = cl->dev.platform_data;
--	enum lp855x_brightness_ctrl_mode mode = pdata->mode;
-+	enum lp855x_brightness_ctrl_mode mode;
- 	int ret;
- 
-+	if (!pdata) {
-+		dev_err(&cl->dev, "no platform data supplied\n");
-+		return -EINVAL;
-+	}
-+
- 	if (!i2c_check_functionality(cl->adapter, I2C_FUNC_SMBUS_I2C_BLOCK))
- 		return -EIO;
- 
-@@ -240,6 +245,7 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
- 	if (!lp)
- 		return -ENOMEM;
- 
-+	mode = pdata->mode;
- 	lp->client = cl;
- 	lp->dev = &cl->dev;
- 	lp->pdata = pdata;
--- 
-1.7.5.4
-
-
-
+Kalle
