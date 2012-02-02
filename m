@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309Ab2BBTMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:12:08 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:41142 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932647Ab2BBTMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:12:06 -0500
-Message-ID: <1328209919.18641.42.camel@joe2Laptop>
-Subject: Re: [PATCH] Keep kernel coding style rule of hfs-s+/sp source
-From: Joe Perches <joe@perches.com>
-To: Karsten Keil <kkeil@linux-pingi.de>
-Cc: geunsik.lim@gmail.com, David Miller <davem@davemloft.net>,
-        isdn@linux-pingi.de, lucas.demarchi@profusion.mobi,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 02 Feb 2012 11:11:59 -0800
-In-Reply-To: <20120202190152.GB11660@gw.linux-pingi.de>
-References: <1328079593-19197-1-git-send-email-geunsik.lim@gmail.com>
-	 <20120201.020602.131240058939599710.davem@davemloft.net>
-	 <CAGFP0LKU0uDPQzhCy8qmThXQ9f9ofSnQrbr2dO83i+usc85_FQ@mail.gmail.com>
-	 <20120201.024843.318636456202840126.davem@davemloft.net>
-	 <20120202190152.GB11660@gw.linux-pingi.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933323Ab2BBTMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:12:24 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:52619 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932647Ab2BBTMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:12:22 -0500
+Date: Thu, 2 Feb 2012 11:11:16 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: rcu warnings cause stack overflow
+Message-ID: <20120202191116.GF2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
+ <20120201151445.GA6731@somewhere.redhat.com>
+ <20120202122742.GA2745@osiris.boeblingen.de.ibm.com>
+ <20120202145219.GD9071@somewhere.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202145219.GD9071@somewhere.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020219-9360-0000-0000-0000030AED48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-02 at 20:01 +0100, Karsten Keil wrote:
-> > >> This was probably there to eliminate compiler warnings or avoid the
-> Yes it was.
-[]
-> I think in this case a coding style violation is minor to a warning or
-> potencial miscompiling.
-> Do not misunderstand me that I do not like to make the code better and more
-> readable, but such small style violations should be only fixed when here is
-> a strong need or the driver is reworked in bigger parts and full testing
-> is done.
+On Thu, Feb 02, 2012 at 03:52:20PM +0100, Frederic Weisbecker wrote:
+> On Thu, Feb 02, 2012 at 01:27:42PM +0100, Heiko Carstens wrote:
+> > On Wed, Feb 01, 2012 at 04:14:48PM +0100, Frederic Weisbecker wrote:
+> > > > Removing the WARN_ON_ONCE will fix this and, if lockdep is turned on, still
+> > > > will find illegal uses. But it won't work for lockdep off configs...
+> > > > So we probably want something better than the patch below.
+> > > 
+> > > Ah ok. Hmm, but why are you using an exception to implement WARN_ON()
+> > > in s390? Is it to have a whole new stack for the warning path in order
+> > > to avoid stack overflow from the place that called the WARN_ON() ?
+> > 
+> > The reason was to reduce the code footprint of the WARN_ON() and also
+> > be able to print the register contents at the time the warning happened.
+> 
+> Ah ok, makes sense.
 
-I agree, but in the future (or perhaps even today)
-it's better to mark these odd coding style uses with
-macros to indicate the reason for their use.
+So Frederic should push his anti-recursion patch, then?
 
-Perhaps something akin to the ACCESS_ONCE macro like
+							Thanx, Paul
 
-#define PERFORM_ONCE(expr)		\
-do {					\
-	if ((expr))			\
-		;			\
-} while (0)
-
+> > All architectures which define __WARN_TAINT implement warnings with
+> > exceptions. Currently that are parisc, powerpc, s390 and sh.
+> > 
+> 
 
