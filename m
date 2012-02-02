@@ -1,71 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab2BBLNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 06:13:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43422 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755436Ab2BBLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 06:13:42 -0500
-Date: Thu, 2 Feb 2012 12:13:40 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, dsterba@suse.cz,
-        ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Re: Memory corruption due to word sharing
-Message-ID: <20120202111340.GB28416@ds.suse.cz>
-Reply-To: dsterba@suse.cz
-References: <20120201151918.GC16714@quack.suse.cz>
+	id S1755766Ab2BBLN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 06:13:58 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38118 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755509Ab2BBLN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 06:13:56 -0500
+Message-ID: <4F2A6FAC.8010906@mvista.com>
+Date: Thu, 02 Feb 2012 15:12:44 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120201151918.GC16714@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: balbi@ti.com
+CC: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Pasupathy, Visuvanadan" <vichu@ti.com>
+Subject: Re: RFC: usb: musb: Changes proposed for adding CPPI4.1 DMA
+References: <47CEF8C4B26E8C44B22B028A650E0EA9317C5B92@DBDE01.ent.ti.com> <4F22CC37.8010307@mvista.com> <47CEF8C4B26E8C44B22B028A650E0EA9317D2B9D@DBDE01.ent.ti.com> <4F27D011.8060203@mvista.com> <47CEF8C4B26E8C44B22B028A650E0EA9317D9346@DBDE01.ent.ti.com> <20120202090923.GC9948@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20120202090923.GC9948@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 04:19:18PM +0100, Jan Kara wrote:
-> We actually spotted this race in practice in btrfs on structure
-> fs/btrfs/ctree.h:struct btrfs_block_rsv where spinlock content got
-> corrupted due to update of following bitfield and there seem to be other
-> places in kernel where this could happen.
+Hello.
 
-Here's the list of structures where a bitfield is shared with spinlock
-or atomic/kref within an 8B word, generated from 3.3-rc2:
+On 02-02-2012 13:09, Felipe Balbi wrote:
 
-spinlock+bitfield:
+>>>>>> As a next step to dma-engine based cppi4.1 driver implementation
+>>>>>> this RFC has the overview of changes in the musb driver.
+>>>>>> RFC on CPPI slave driver changes will follow next.
+>>>
+>>>>>> Overview of changes in the musb driver
+>>>>>> ======================================
 
-Struct: struct ak4113; Field: init
-Struct: struct ak4114; Field: init
-Struct: struct ak4117; Field: init
-Struct: struct btrfs_block_rsv; Field: full
-Struct: struct cm109_dev; Field: buzzer_pending
-Struct: struct pch_udc_dev; Field: active
-Struct: struct rds_iw_device; Field: dma_local_lkey
-Struct: struct sierra_intf_private; Field: suspended
-Struct: struct sm501_gpio; Field: registered
-Struct: struct unix_sock; Field: gc_candidate
-Struct: struct usb_anchor; Field: poisoned
-Struct: struct usb_wwan_intf_private; Field: suspended
+>>>>>> 1)Add a dma-engine.c file in the drivers/usb/musb folder
+>>>>>> 2)This file will host the current musb dma APIs and translates them to
+>>>>>>      dmaengine APIs.
+>>>>>> 3)This will help to keep the changes in drivers/usb/musb/musb* files
+>>>>>>      minimal and also to retain compatibility other DMA (Mentor etc.)
+>>>>>>      drivers which are yet to be moved to drivers/dma
+>>>>>> 4)drivers/usb/musb/dma-engine.c, will wrap the dmaengine APIs to
+>>>>>>      make existing musb APIs compatible.
+>>>>>> 5)drivers/usb/musb/dma-engine.c file will implement the filter
+>>>>>>      functions and also implement .dma_controller_create (allocates
+>>>>>>      &    provides "dma_controller" object) and .dma_controller_delete
+>>>>>> 6)CPPI4.1 DMA specific queue and buffer management will be internal
+>>>>>>      to slave CPPI DMA driver implementation.
 
-atomic/kref+bitfield:
+>>>>>       You mean drivers/dma/ driver?
 
-Struct: struct dlm_lock_resource; Field: migration_pending
-Struct: struct extent_map; Field: in_tree
-Struct: struct kobject; Field: state_initialized
-Struct: struct page; Field: inuse
-Struct: struct rds_ib_connection; Field: i_flowctl
-Struct: struct rds_iw_connection; Field: i_flowctl
-Struct: struct sctp_transport; Field: dead
-Struct: struct transaction_s; Field: t_synchronous_commit
-Struct: struct xfs_ioend; Field: io_isasync
+>>>> yes.
 
+>>>>> I think you are forgotting that CPPI 4.1 MUSB
+>>>>> has some registers controlling DMA/interrupts beside those of CPPI 4.1
+>>>>> controller and MUSB core itself. How do they fit in your scheme?
 
-Not all listed structs are necessarily subject to the bug. There may be
-another mechanism preventing concurrent access to the bitfield and
-spinlock/atomic, or the bitfield is modified from a single cpu, or is
-not used. But all of them need to be reviewed of course.
+>>>> We have been discussing on how to handle these in slave driver and
 
+>>>      These certainly cannot be handled in the slave driver because the
+>>> registers are different for every controller implementation and, the
+>>> main thing, they don't belong to CPPI 4.1 as such.
 
-david
+>> Felipe suggested to use device tree for differences in register maps
+>> among different platforms.
+
+>> I do see issues in reading wrapper interrupt status register and then
+>> calling musb_interrupt() [defined inside musb_core.c] from slave driver.
+
+> I have been thinking about that lately. In the end of the day, I want to
+> remove direct dependencies between musb_core and glue. So what I was
+> thinking about goes like so:
+
+> Glue layer basically has to prepare musb->int_usb, musb->int_tx and
+> musb->int_rx for musb. Maybe handle some glue specific stuff and so on,
+> but the IRQ line still belongs to MUSB.
+
+> So the idea would be to add something like:
+
+> musb_platform_read_intrusb()
+> musb_platform_read_intrtx()
+> musb_platform_read_intrrx()
+
+> those would default to basic:
+
+> musb_readb(musb->mregs, MUSB_INTRUSB);
+> musb_readw(musb->mregs, MUSB_INTRTX);
+> musb_readw(musb->mregs, MUSB_INTRRX);
+
+> if platform ops aren't passed. So, it would look something like:
+
+> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+> index 72a424d..ba0bcc2 100644
+> --- a/drivers/usb/musb/musb_core.c
+> +++ b/drivers/usb/musb/musb_core.c
+> @@ -1488,9 +1488,9 @@ static irqreturn_t generic_interrupt(int irq, void *__hci)
+>
+>   	spin_lock_irqsave(&musb->lock, flags);
+>
+> -	musb->int_usb = musb_readb(musb->mregs, MUSB_INTRUSB);
+> -	musb->int_tx = musb_readw(musb->mregs, MUSB_INTRTX);
+> -	musb->int_rx = musb_readw(musb->mregs, MUSB_INTRRX);
+> +	musb->int_usb = musb_platform_read_intusb(musb->controller);
+> +	musb->int_tx = musb_platform_read_inttx(musb->controller);
+> +	musb->int_rx = musb_platform_read_intrx(musb->controller);
+>
+>   	if (musb->int_usb || musb->int_tx || musb->int_rx)
+>   		retval = musb_interrupt(musb);
+>
+> those would make sure to prepare the cached IRQ status registers for
+> MUSB core.
+>
+> Keep in mind that this is only necessary because on
+> DaVinci/OMAP-L13x/AM35x devices you guys have decided to make the
+> wrapper read the IRQ status register from MUSB address space. And
+> because those are clear-on-read, we're screwed.
+
+> Oh well, this is the best I could come up with. Any problems you guys
+> see ?
+
+    On DaVinci/OMAP-L1x these 3 calls need to extract data from a single 
+32-bit register, so that doesn't seem a good idea to me. The current scheme 
+seems OK to me. Or either implement a signle function to read all 3 interrupt 
+masks...
+
+musb_platform_read_ints()
+
+WBR, Sergei
