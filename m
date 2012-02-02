@@ -1,216 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab2BBWxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 17:53:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39533 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121Ab2BBWxQ convert rfc822-to-8bit (ORCPT
+	id S1756610Ab2BBW6y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 17:58:54 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:36570 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141Ab2BBW6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 17:53:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <1328194978-20064-1-git-send-email-stigge@antcom.de>
-References: <1328194978-20064-1-git-send-email-stigge@antcom.de>
-Date: Thu, 2 Feb 2012 14:53:15 -0800
-Message-ID: <CADEiroq7=c6gqc-nT3V_HHDWhExfWw=hFY4XVz+-7UYd4Zze4w@mail.gmail.com>
-Subject: Re: [PATCH] ARM: LPC32xx: ADC support
-From: Kevin Wells <wellsk40@gmail.com>
-To: stigge@antcom.de
-Cc: w.sang@pengutronix.de, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org, jic23@cam.ac.uk,
-        gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Feb 2012 17:58:52 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH v2 REPOST] of: Support CONFIG_CMDLINE_EXTEND config option
+Date: Thu,  2 Feb 2012 14:58:28 -0800
+Message-Id: <1328223508-1228-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1326492948-26160-1-git-send-email-dianders@chromium.org>
+References: <1326492948-26160-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 2, 2012 at 7:02 AM,  <stigge@antcom.de> wrote:
-> This patch adds a 3-channel ADC driver for the LPC32xx ARM SoC
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
->
-> diff --git a/arch/arm/mach-lpc32xx/clock.c b/arch/arm/mach-lpc32xx/clock.c
-> index c269ef5..9cda6fa 100644
-> --- a/arch/arm/mach-lpc32xx/clock.c
-> +++ b/arch/arm/mach-lpc32xx/clock.c
-> @@ -760,6 +760,36 @@ static struct clk clk_tsc = {
->        .get_rate       = local_return_parent_rate,
->  };
->
-> +static int adc_onoff_enable(struct clk *clk, int enable)
-> +{
-> +       u32 tmp;
-> +
-> +       /* Use PERIPH_CLOCK */
-> +       tmp = __raw_readl(LPC32XX_CLKPWR_ADC_CLK_CTRL_1);
-> +       tmp |= LPC32XX_CLKPWR_ADCCTRL1_PCLK_SEL;
-> +       /*
-> +        * Set clock divider so that we have equal to or less than
-> +        * 4.5MHz clock at ADC
-> +        */
-> +       tmp |= clk->get_rate(clk) / 4500000 + 1;
-> +       __raw_writel(tmp, LPC32XX_CLKPWR_ADC_CLK_CTRL_1);
+The old logic assumes CMDLINE_FROM_BOOTLOADER vs. CMDLINE_FORCE and
+ignores CMDLINE_EXTEND.  Here's the old logic:
 
-For this clock, also set clk->rate = (actual rate of the ADC input clock).
-Something like clk->rate = clk->get_rate(clk->parent) / (computed divider)
-If the clk->rate stays at 0, the clk_get_rate() function for the ADC will
-return 13Mhz instead of around 4.5MHz.
+- CONFIG_CMDLINE_FORCE=true
+    CONFIG_CMDLINE
+- dt bootargs=non-empty:
+    dt bootargs
+- dt bootargs=empty, @data is non-empty string
+    @data is left unchanged
+- dt bootargs=empty, @data is empty string
+    CONFIG_CMDLINE (or "" if that's not defined)
 
-(I know the driver doesn't use clk_get_rate(), but this might save some
-debugging later if it ever does).
+The new logic is now documented in of_fdt.h and is copied here for
+reference:
 
-> +
-> +       if (enable == 0)
-> +               __raw_writel(0, clk->enable_reg);
-> +       else
-> +               __raw_writel(clk->enable_mask, clk->enable_reg);
-> +
-> +       return 0;
-> +}
-> +
+- CONFIG_CMDLINE_FORCE=true
+    CONFIG_CMDLINE
+- CONFIG_CMDLINE_EXTEND=true, @data is non-empty string
+    @data + dt bootargs (even if dt bootargs are empty)
+- CONFIG_CMDLINE_EXTEND=true, @data is empty string
+    CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
+- CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
+    dt bootargs
+- CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
+    @data is left unchanged
+- CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
+    CONFIG_CMDLINE (or "" if that's not defined)
 
-...
-...
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+CC: devicetree-discuss@lists.ozlabs.org
+CC: Grant Likely <grant.likely@secretlab.ca>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Rob Herring <rob.herring@calxeda.com>
+---
+Hoping to get either an Ack or other things people would like me to
+change about this patch.  Thanks!
 
-> +config LPC32XX_ADC
-> +       tristate "NXP LPC32XX ADC"
-> +       depends on ARCH_LPC32XX && !TOUCHSCREEN_LPC32XX
-> +       help
-> +         Say yes here to build support for the integrated ADC inside the
-> +         LPC32XX SoC. Note that this feature uses the same hardware as the
-> +         touchscreen driver, so you can only select one of the two drivers
-> +         (lpc32xx_adc or lpc32xx_ts). Provides direct access via sysfs.
+Changes in v2:
+- Removed broken fix for the case when there is no "chosen" attribute.
+- Changed CONFIG_CMDLINE_EXTEND behavior when @data is a non-empty string.
 
-I like how clean this driver is. Thanks for taking the time to write and submit
-this.
+ drivers/of/fdt.c       |   56 ++++++++++++++++++++++++++++++++++-------------
+ include/linux/of_fdt.h |   21 ++++++++++++++++++
+ 2 files changed, 61 insertions(+), 16 deletions(-)
 
-> +
->  endmenu
-> diff --git a/drivers/staging/iio/adc/Makefile b/drivers/staging/iio/adc/Makefile
-> index ceee7f3..f83ab95 100644
-> --- a/drivers/staging/iio/adc/Makefile
-> +++ b/drivers/staging/iio/adc/Makefile
-> @@ -37,3 +37,4 @@ obj-$(CONFIG_AD7192) += ad7192.o
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index ea2bd1b..740efa2 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -664,6 +664,29 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
+ 	return 0;
+ }
+ 
++/*
++ * Convert configs to something easy to use in C code
++ */
++#if defined(CONFIG_CMDLINE_FORCE)
++static const int overwrite_incoming_cmdline = 1;
++static const int read_dt_cmdline;
++static const int concat_cmdline;
++#elif defined(CONFIG_CMDLINE_EXTEND)
++static const int overwrite_incoming_cmdline;
++static const int read_dt_cmdline = 1;
++static const int concat_cmdline = 1;
++#else /* CMDLINE_FROM_BOOTLOADER */
++static const int overwrite_incoming_cmdline;
++static const int read_dt_cmdline = 1;
++static const int concat_cmdline;
++#endif
++
++#ifdef CONFIG_CMDLINE
++static const char *config_cmdline = CONFIG_CMDLINE;
++#else
++static const char *config_cmdline = "";
++#endif
++
+ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
+ 				     int depth, void *data)
+ {
+@@ -678,22 +701,23 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
+ 
+ 	early_init_dt_check_for_initrd(node);
+ 
+-	/* Retrieve command line */
+-	p = of_get_flat_dt_prop(node, "bootargs", &l);
+-	if (p != NULL && l > 0)
+-		strlcpy(data, p, min((int)l, COMMAND_LINE_SIZE));
+-
+-	/*
+-	 * CONFIG_CMDLINE is meant to be a default in case nothing else
+-	 * managed to set the command line, unless CONFIG_CMDLINE_FORCE
+-	 * is set in which case we override whatever was found earlier.
+-	 */
+-#ifdef CONFIG_CMDLINE
+-#ifndef CONFIG_CMDLINE_FORCE
+-	if (!((char *)data)[0])
+-#endif
+-		strlcpy(data, CONFIG_CMDLINE, COMMAND_LINE_SIZE);
+-#endif /* CONFIG_CMDLINE */
++	/* Put CONFIG_CMDLINE in if forced or if data had nothing in it to start */
++	if (overwrite_incoming_cmdline || !((char *)data)[0])
++		strlcpy(data, config_cmdline, COMMAND_LINE_SIZE);
++
++	/* Retrieve command line unless forcing */
++	if (read_dt_cmdline) {
++		p = of_get_flat_dt_prop(node, "bootargs", &l);
++		if (p != NULL && l > 0) {
++			if (concat_cmdline) {
++				strlcat(data, " ", COMMAND_LINE_SIZE);
++				strlcat(data, p, min_t(int, (int)l,
++						       COMMAND_LINE_SIZE));
++			} else
++				strlcpy(data, p, min_t(int, (int)l,
++						       COMMAND_LINE_SIZE));
++		}
++	}
+ 
+ 	pr_debug("Command line is: %s\n", (char*)data);
+ 
+diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+index ed136ad..7e190a9 100644
+--- a/include/linux/of_fdt.h
++++ b/include/linux/of_fdt.h
+@@ -91,6 +91,27 @@ extern int of_flat_dt_is_compatible(unsigned long node, const char *name);
+ extern int of_flat_dt_match(unsigned long node, const char *const *matches);
+ extern unsigned long of_get_flat_dt_root(void);
+ 
++/*
++ * early_init_dt_scan_chosen - scan the device tree for ramdisk and bootargs
++ *
++ * The boot arguments will be placed into the memory pointed to by @data.
++ * That memory should be COMMAND_LINE_SIZE big and initialized to be a valid
++ * (possibly empty) string.  Logic for what will be in @data after this
++ * function finishes:
++ *
++ * - CONFIG_CMDLINE_FORCE=true
++ *     CONFIG_CMDLINE
++ * - CONFIG_CMDLINE_EXTEND=true, @data is non-empty string
++ *     @data + dt bootargs (even if dt bootargs are empty)
++ * - CONFIG_CMDLINE_EXTEND=true, @data is empty string
++ *     CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
++ * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
++ *     dt bootargs
++ * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
++ *     @data is left unchanged
++ * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
++ *     CONFIG_CMDLINE (or "" if that's not defined)
++ */
+ extern int early_init_dt_scan_chosen(unsigned long node, const char *uname,
+ 				     int depth, void *data);
+ extern void early_init_dt_check_for_initrd(unsigned long node);
+-- 
+1.7.7.3
 
-...
-...
-
-> +       platform_set_drvdata(pdev, info);
-> +
-> +       device_init_wakeup(&pdev->dev, 1);
-
-I don't think you need this for this driver.
-
-> +       init_completion(&info->completion);
-> +
-> +       printk(KERN_INFO "LPC32XX ADC driver loaded, IRQ %d\n", info->irq);
-
-dev_info instead of printk
-
-> +
-> +       return 0;
-> +
-> +errout6:
-> +       clk_disable(info->clk);
-> +       clk_put(info->clk);
-> +errout5:
-> +       iio_device_unregister(info->dev);
-> +errout4:
-> +       iounmap(info->adc_base);
-> +errout3:
-> +       iio_free_device(info->dev);
-> +errout1:
-> +       return retval;
-> +}
-> +
-> +static int __devexit lpc32xx_adc_remove(struct platform_device *pdev)
-> +{
-> +       struct lpc32xx_adc_info *info = platform_get_drvdata(pdev);
-> +
-> +       free_irq(info->irq, info->dev);
-> +       platform_set_drvdata(pdev, NULL);
-> +       clk_disable(info->clk);
-> +       clk_put(info->clk);
-> +       iio_device_unregister(info->dev);
-> +       iio_free_device(info->dev);
-> +       iounmap(info->adc_base);
-> +       kfree(info);
-
-This may be ok. Needs a sanity check only.
-kfree() is used in remove() but not used in probe() failure path. Might be
-missing in probe() or not needed here.
-
-> +
-> +       printk(KERN_INFO "LPC32XX ADC driver unloaded\n");
-
-dev_info()
-
-> +
-> +       return 0;
-> +}
-> +
-> +#if defined(CONFIG_SUSPEND)
-> +static int lpc32xx_adc_suspend(struct device *dev)
-> +{
-> +       struct lpc32xx_adc_info *info = dev_get_drvdata(dev);
-> +
-> +       clk_disable(info->clk);
-
-The ADC block doesn't have to remain clocked when it's not being used.
-You might just encapsulate the main ADC read code with clock enable/disable
-and remove the suspend code and enable/disable code in probe/remove.
-This should save a little power when the ADC is idle.
-
-> +       return 0;
-> +}
-> +
-> +static int lpc32xx_adc_resume(struct device *dev)
-> +{
-> +       struct lpc32xx_adc_info *info = dev_get_drvdata(dev);
-> +
-> +       clk_enable(info->clk);
-> +       return 0;
-> +}
-> +
-> +static const struct dev_pm_ops lpc32xx_adc_pm_ops = {
-> +       .suspend        = lpc32xx_adc_suspend,
-> +       .resume         = lpc32xx_adc_resume,
-> +};
-> +#define LPC32XX_ADC_PM_OPS (&lpc32xx_adc_pm_ops)
-> +#else
-> +#define LPC32XX_ADC_PM_OPS NULL
-> +#endif
-> +
-> +static struct platform_driver lpc32xx_adc_driver = {
-> +       .probe          = lpc32xx_adc_probe,
-> +       .remove         = __devexit_p(lpc32xx_adc_remove),
-> +       .driver         = {
-> +               .name   = MOD_NAME,
-> +               .owner  = THIS_MODULE,
-> +               .pm     = LPC32XX_ADC_PM_OPS,
-> +       },
-> +};
-> +
-> +static int __init lpc32xx_adc_init(void)
-> +{
-> +       return platform_driver_register(&lpc32xx_adc_driver);
-> +}
-> +
-> +static void __exit lpc32xx_adc_exit(void)
-> +{
-> +       platform_driver_unregister(&lpc32xx_adc_driver);
-> +}
-> +
-> +module_init(lpc32xx_adc_init);
-> +module_exit(lpc32xx_adc_exit);
-> +
-> +MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
-> +MODULE_DESCRIPTION("LPC32XX ADC driver");
-> +MODULE_LICENSE("GPL");
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
