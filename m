@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab2BAXzH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 18:55:07 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44154 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752954Ab2BAXzF (ORCPT
+	id S1753315Ab2BBAAo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 19:00:44 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:44632 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab2BBAAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 18:55:05 -0500
-X-Sasl-enc: LSdllrUbR0XlWoUQjy3RhnvVA08DfcTsOuddO+o0/etR 1328140504
-Date: Wed, 1 Feb 2012 15:52:04 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [06/20] crypto: sha512 - reduce stack usage to safe number
-Message-ID: <20120201235204.GA18950@kroah.com>
-References: <20120201210055.GA25374@kroah.com>
- <20120201201531.599621544@clark.kroah.org>
- <20120201234208.GA28700@p183.telecom.by>
+	Wed, 1 Feb 2012 19:00:42 -0500
+Message-ID: <4F29D221.9050104@linux.vnet.ibm.com>
+Date: Thu, 02 Feb 2012 05:30:33 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120201234208.GA28700@p183.telecom.by>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Manuel Lauss <manuel.lauss@googlemail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [WARN] offlining CPUs yields warning at arch/x86/kernel/smp.c:120
+References: <CAOLZvyE=z=Y5wD-Vyp1ZbWV1-kqW8EmZkrHOcMBPZmBQ67E+Ow@mail.gmail.com>
+In-Reply-To: <CAOLZvyE=z=Y5wD-Vyp1ZbWV1-kqW8EmZkrHOcMBPZmBQ67E+Ow@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12020200-5816-0000-0000-0000011E53AF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 02:42:08AM +0300, Alexey Dobriyan wrote:
-> On Wed, Feb 01, 2012 at 12:14:08PM -0800, Greg KH wrote:
-> > @@ -87,38 +87,48 @@ sha512_transform(u64 *state, const u8 *i
-> >  	u64 a, b, c, d, e, f, g, h, t1, t2;
-> >  
-> >  	int i;
-> > -	u64 W[80];
-> > +	u64 W[16];
+On 02/01/2012 07:53 PM, Manuel Lauss wrote:
+
+> Hello,
 > 
-> This needs 3rd companion patch which does stack reduction even on i386.
-> Patch which removes excessive loop unrolling and thus fixes the problem
-> has been posted. Maybe there is some other way to maintain low stack
-> space on i386 but I haven't found it.
+> When offlining/onlining CPUs the following warning is spat out repeatedly.
+> System is a 4-core+HT SandyBridge laptop.  Full dmesg below.
 > 
-> http://marc.info/?l=linux-netdev&m=132768692525017&w=4
+> CPU 7 is now offline
+> CPU 6 is now offline
+> CPU 5 is now offline
+> ------------[ cut here ]------------
+> WARNING: at /mnt/data/.src/linux.git/arch/x86/kernel/smp.c:120
+> update_process_times+0x65/0x80()
+> Hardware name: Precision M6600
+> Modules linked in:
+> Pid: 17, comm: migration/2 Not tainted 3.3.0-rc1-00473-g6bc2b95 #1
+> Call Trace:
+>  <IRQ>  [<ffffffff8104e5eb>] ? warn_slowpath_common+0x7b/0xc0
+>  [<ffffffff8108a000>] ? tick_nohz_handler+0xd0/0xd0
+>  [<ffffffff8105af45>] ? update_process_times+0x65/0x80
+>  [<ffffffff8108a05b>] ? tick_sched_timer+0x5b/0xb0
+>  [<ffffffff8106dc0e>] ? __run_hrtimer.isra.33+0x4e/0xe0
+>  [<ffffffff8106e3e0>] ? hrtimer_interrupt+0xe0/0x210
+>  [<ffffffff810a09e0>] ? queue_stop_cpus_work+0xf0/0xf0
+>  [<ffffffff8101c513>] ? smp_apic_timer_interrupt+0x63/0xa0
+>  [<ffffffff818acbcb>] ? apic_timer_interrupt+0x6b/0x70
+>  <EOI>  [<ffffffff810a0a6a>] ? stop_machine_cpu_stop+0x8a/0xb0
+>  [<ffffffff810a06f4>] ? cpu_stopper_thread+0xc4/0x190
+>  [<ffffffff81073e6e>] ? try_to_wake_up+0x1de/0x290
+>  [<ffffffff8107153f>] ? __wake_up_common+0x4f/0x80
+>  [<ffffffff810a0630>] ? cpu_stop_signal_done+0x30/0x30
+>  [<ffffffff81069ec5>] ? kthread+0x85/0x90
+>  [<ffffffff818ad294>] ? kernel_thread_helper+0x4/0x10
+>  [<ffffffff81069e40>] ? kthread_freezable_should_stop+0x60/0x60
+>  [<ffffffff818ad290>] ? gs_change+0xb/0xb
+> ---[ end trace 431db5dbf525be16 ]---
+> CPU 4 is now offline
 > 
-> If you apply only 2, original bug will be fixed, but on at least i386
-> stack usage could go in 900-byte region.
+> [and so on].
+> 
+> Please take a look.
+> 
 
-But this patch isn't in Linus's tree yet, right?
 
-So, should I just drop this one for now (well both of them) or just wait
-for the above referenced patch to hit Linus's tree and handle it then?
+Hi,
 
-thanks,
+Try this patch:
+https://lkml.org/lkml/2012/1/19/463
 
-greg k-h
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
