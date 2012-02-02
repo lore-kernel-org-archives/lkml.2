@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab2BBLLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 06:11:12 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40862 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab2BBLLJ convert rfc822-to-8bit (ORCPT
+	id S1755014Ab2BBLMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 06:12:23 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57881 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066Ab2BBLMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 06:11:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120201151918.GC16714@quack.suse.cz>
-References: <20120201151918.GC16714@quack.suse.cz>
-Date: Thu, 2 Feb 2012 11:11:09 +0000
-Message-ID: <CAAMvbhEc8E39PCCoT1CyjUqSyph18FmPnaJYc7B3ZazYgUu2GQ@mail.gmail.com>
-Subject: Re: Memory corruption due to word sharing
-From: James Courtier-Dutton <james.dutton@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, dsterba@suse.cz,
-        ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Feb 2012 06:12:20 -0500
+Message-ID: <1328181135.2279.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] IB/ehca: use kthread_create_on_node
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Hoang-Nam Nguyen <hnguyen@de.ibm.com>
+Cc: Christoph Raisch <raisch@de.ibm.com>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>, linux-rdma@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 02 Feb 2012 12:12:15 +0100
+In-Reply-To: <1311923731.7845.25.camel@edumazet-laptop>
+References: <1311923731.7845.25.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 February 2012 15:19, Jan Kara <jack@suse.cz> wrote:
->  Hello,
->
->  we've spotted the following mismatch between what kernel folks expect
-> from a compiler and what GCC really does, resulting in memory corruption on
-> some architectures. Consider the following structure:
-> struct x {
->    long a;
->    unsigned int b1;
->    unsigned int b2:1;
-> };
->
-> We have two processes P1 and P2 where P1 updates field b1 and P2 updates
-> bitfield b2. The code GCC generates for b2 = 1 e.g. on ia64 is:
->   0:   09 00 21 40 00 21       [MMI]       adds r32=8,r32
->   6:   00 00 00 02 00 e0                   nop.m 0x0
->   c:   11 00 00 90                         mov r15=1;;
->  10:   0b 70 00 40 18 10       [MMI]       ld8 r14=[r32];;
->  16:   00 00 00 02 00 c0                   nop.m 0x0
->  1c:   f1 70 c0 47                         dep r14=r15,r14,32,1;;
->  20:   11 00 38 40 98 11       [MIB]       st8 [r32]=r14
->  26:   00 00 00 02 00 80                   nop.i 0x0
->  2c:   08 00 84 00                         br.ret.sptk.many b0;;
->
-> Note that gcc used 64-bit read-modify-write cycle to update b2. Thus if P1
-> races with P2, update of b1 can get lost. BTW: I've just checked on x86_64
-> and there GCC uses 8-bit bitop to modify the bitfield.
->
-> We actually spotted this race in practice in btrfs on structure
-> fs/btrfs/ctree.h:struct btrfs_block_rsv where spinlock content got
-> corrupted due to update of following bitfield and there seem to be other
-> places in kernel where this could happen.
->
-> I've raised the issue with our GCC guys and they said to me that: "C does
-> not provide such guarantee, nor can you reliably lock different
-> structure fields with different locks if they share naturally aligned
-> word-size memory regions.  The C++11 memory model would guarantee this,
-> but that's not implemented nor do you build the kernel with a C++11
-> compiler."
->
-> So it seems what C/GCC promises does not quite match with what kernel
-> expects. I'm not really an expert in this area so I wanted to report it
-> here so that more knowledgeable people can decide how to solve the issue...
->
->                                                                Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+Le vendredi 29 juillet 2011 à 09:15 +0200, Eric Dumazet a écrit :
+> Since create_comp_task() creates percpu kthread, it makes
+> sense to use kthread_create_on_node() to get proper NUMA affinity for
+> kthread stack.
+> 
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Hoang-Nam Nguyen <hnguyen@de.ibm.com>
+> CC: Christoph Raisch <raisch@de.ibm.com>
+> CC: Roland Dreier <roland@kernel.org>
+> CC: Sean Hefty <sean.hefty@intel.com>
+> ---
+>  drivers/infiniband/hw/ehca/ehca_irq.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/infiniband/hw/ehca/ehca_irq.c b/drivers/infiniband/hw/ehca/ehca_irq.c
+> index e571e60..5358900 100644
+> --- a/drivers/infiniband/hw/ehca/ehca_irq.c
+> +++ b/drivers/infiniband/hw/ehca/ehca_irq.c
+> @@ -786,7 +786,8 @@ static struct task_struct *create_comp_task(struct ehca_comp_pool *pool,
+>  	spin_lock_init(&cct->task_lock);
+>  	INIT_LIST_HEAD(&cct->cq_list);
+>  	init_waitqueue_head(&cct->wait_queue);
+> -	cct->task = kthread_create(comp_task, cct, "ehca_comp/%d", cpu);
+> +	cct->task = kthread_create_on_node(comp_task, cct, cpu_to_node(cpu),
+> +					   "ehca_comp/%d", cpu);
+>  
+>  	return cct->task;
+>  }
+> 
 
-What is the recommended work around for this problem?
+
+Any news on this patch ?
+
+Should I submit it again ?
+
+
+
