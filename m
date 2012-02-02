@@ -1,68 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685Ab2BBX6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 18:58:07 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61691 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932190Ab2BBX6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 18:58:03 -0500
-From: Venkatesh Pallipadi <venki@google.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        markgross <markgross@thegnar.org>, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH] CPU C-state breakage with PM Qos change
-Date: Thu,  2 Feb 2012 15:57:45 -0800
-Message-Id: <1328227065-22045-1-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1756974Ab2BBX5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 18:57:05 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:58797 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756050Ab2BBX4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 18:56:52 -0500
+Message-Id: <20120202235650.563029146@gulag1.americas.sgi.com>
+User-Agent: quilt/0.46-1
+Date: Thu, 02 Feb 2012 17:56:50 -0600
+From: Mike Travis <travis@sgi.com>
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Jack Steiner <steiner@sgi.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] Updates for SGI UV1/UV2 systems...
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like change "PM QoS: Move and rename the implementation files"
-made pm_qos depend on CONFIG_PM which depends on
-PM_SLEEP || PM_RUNTIME
 
-That breaks CPU C-states with kernels not having these CONFIGs, causing CPUs
-to spend time in Polling loop idle instead of going into deep C-states,
-consuming way way more power. This is with either acpi idle or intel idle
-enabled.
+- Fix arbitrary limitation of number of IOMMU (from 64 to MAX_IO_APICS [128])
 
-Either CONFIG_PM should be enabled with any pm_qos users or
-the !CONFIG_PM pm_qos_request() should return sane defaults not to break
-the existing users. Here's is the patch for the latter option.
+- Fix IOMMU identity mapping to not map a PCI device that does not to DMA.
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- include/linux/pm_qos.h |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
+- Update uv_handle_nmi to latest NMI processing.
 
-diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-index 83b0ea3..84c99f4 100644
---- a/include/linux/pm_qos.h
-+++ b/include/linux/pm_qos.h
-@@ -107,7 +107,19 @@ static inline void pm_qos_remove_request(struct pm_qos_request *req)
- 			{ return; }
- 
- static inline int pm_qos_request(int pm_qos_class)
--			{ return 0; }
-+{
-+	switch (pm_qos_class) {
-+	case PM_QOS_CPU_DMA_LATENCY:
-+		return PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
-+	case PM_QOS_NETWORK_LATENCY:
-+		return PM_QOS_NETWORK_LAT_DEFAULT_VALUE;
-+	case PM_QOS_NETWORK_LATENCY:
-+		return PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE;
-+	default:
-+		return PM_QOS_DEFAULT_VALUE;
-+	}
-+}
-+
- static inline int pm_qos_add_notifier(int pm_qos_class,
- 				      struct notifier_block *notifier)
- 			{ return 0; }
 -- 
-1.7.7.3
-
