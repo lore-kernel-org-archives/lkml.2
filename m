@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab2BBDqJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 22:46:09 -0500
-Received: from mga14.intel.com ([143.182.124.37]:42455 "EHLO mga14.intel.com"
+	id S1755305Ab2BBEEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 23:04:32 -0500
+Received: from mail.tomasu.net ([64.85.170.232]:46482 "EHLO mail.tomasu.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753966Ab2BBDp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 22:45:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="102252938"
-Date: Thu, 2 Feb 2012 11:35:24 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keith Packard <keithp@keithp.com>
-Subject: Re: Linux 3.3-rc2
-Message-ID: <20120202033524.GA11360@localhost>
-References: <CA+55aFye5iedspjus4YLi+r77Xq74bCq+MqU0HrTmDC5Dveivg@mail.gmail.com>
- <20120201175651.GA3300@elliptictech.com>
+	id S1755197Ab2BBEEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 23:04:25 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: Brad Campbell <brad@fnarfbargle.com>
+Subject: Re: GRUB doesn't like ServeRAID M1015/LSI 9220-8i (was Re: mvsas with 3.1)
+Date: Wed, 1 Feb 2012 21:04:20 -0700
+User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
+Cc: John Robinson <john.robinson@anonymous.org.uk>,
+        "linux-raid" <linux-raid@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+References: <201201131144.58044.thomas@fjellstrom.ca> <201202010742.07818.thomas@fjellstrom.ca> <4F29FCB2.6040204@fnarfbargle.com>
+In-Reply-To: <4F29FCB2.6040204@fnarfbargle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120201175651.GA3300@elliptictech.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202012104.20564.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick,
-
-[snip]
-> However, the _very next commit_:
+On Wed Feb 1, 2012, Brad Campbell wrote:
+> On 01/02/12 22:42, Thomas Fjellstrom wrote:
+> > Yeah, GRUB immediately throws an "out of memory. Aborted" error, its
+> > annoying, but I reported the issue on GRUB's bug tracker after talking
+> > to a guy in #grub on freenode. Hopefully someone looks at it soon. It
+> > appears it happens so early in grub's startup that it can't even output
+> > any debug info (I was asked to run: `grub-install --debug-image=all
+> > /dev/sdX`, and did so, I get debug output when the card is not
+> > installed, but absolutely nothing when it is installed.
 > 
->   2deed761188d ("drm/i915: HDMI hot remove notification to audio driver")
+> Just another data point. I've seen this issue also. It does not appear to
+> be GRUB's fault. It appears the BIOS on the card does something funky as
+> it also prevents syslinux/isolinux/pxelinux and its friends from properly
+> detecting/reporting the machines memory. Machine has 16GB but a PXE boot
+> believes it has 3GB.
 > 
-> reintroduces the log spam every mode change, with two additional lines
-> printed each time (the lines prefixed with an asterisk are new):
-> 
-> * HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=0 ELD_Valid=1
-> * HDMI status: Codec=3 Pin=3 Presence_Detect=0 ELD_Valid=0
->   HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
->   HDMI status: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
->   HDMI: detected monitor W2253 at connection type HDMI
->   HDMI: available speakers: FL/FR
->   HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
+> I "worked around" the problem by swapping out the mainboard for a later
+> model with a different BIOS and the problem went away. Not pretty, but it
+> was the only way I could get the machine to boot with those cards in it. I
+> have 4 IBM cards in 2 machines and they work fine here. I still have the
+> dodgy mainboard and can set it up if you need help testing/reproducing the
+> issue.
 
-Actually we have another patch to disable all the above printk lines:
+I meant to do some testing on it tonight, but that doesn't seem like its going 
+to happen. Basically I'm going to try that grub change and see if it helps, if 
+you have the time, and desire to help, that would be nice, but I'm most likely 
+going to try it out tomorrow sometime regardless.
 
-alsa: hide HDMI/ELD printks unless in debug kernels
-http://lists.freedesktop.org/archives/intel-gfx/2011-November/013322.html
+> Regards,
+> Brad
 
-And the plan is to merge it in the next release of all the ELD fixes,
-which should be 3.4.
 
-Thanks,
-Fengguang
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
