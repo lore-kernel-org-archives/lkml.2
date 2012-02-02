@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab2BBBz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 20:55:28 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41082 "EHLO
+	id S1754529Ab2BBB7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 20:59:51 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46355 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753509Ab2BBBz0 (ORCPT
+	by vger.kernel.org with ESMTP id S1753509Ab2BBB7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 20:55:26 -0500
+	Wed, 1 Feb 2012 20:59:49 -0500
 MIME-Version: 1.0
 Reply-To: axel.lin@gmail.com
-In-Reply-To: <CAN1soZxzWgiX7m6meLAS8bRpg5JNF5YRu8XXpUSmwzRJoBBP6w@mail.gmail.com>
-References: <1325217971.4022.1.camel@phoenix> <1325338529.24725.YahooMailClassic@web29008.mail.ird.yahoo.com>
- <CAN1soZxzWgiX7m6meLAS8bRpg5JNF5YRu8XXpUSmwzRJoBBP6w@mail.gmail.com>
+In-Reply-To: <CAN1soZyatf2u4fVk-=U_Sz4wcVwP7qFaiZK4CR3rosbXeQObvA@mail.gmail.com>
+References: <1324974344.2351.5.camel@phoenix> <CAMPhdO_QL3ahf4+F70Bg7FHKq5mrbbofN_BTz8dpcBLea9BNAw@mail.gmail.com>
+ <25B60CDC2F704E4E9D88FFD52780CB4C05EC64DBD3@SC-VEXCH1.marvell.com>
+ <CAMPhdO8=L1KGmn_OihoMmMWNDahZ5+3u7M+BNuT3FcSfExHm1w@mail.gmail.com> <CAN1soZyatf2u4fVk-=U_Sz4wcVwP7qFaiZK4CR3rosbXeQObvA@mail.gmail.com>
 From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 2 Feb 2012 09:55:05 +0800
-Message-ID: <CAF+7xWmzdG9NBp4xLroUTJ43=xx=HQiOnadfWFc5zWBLnVG_Jg@mail.gmail.com>
-Subject: Re: [PATCH v2] pxa/hx4700: add platform device and I2C info for
- AK4641 codec
+Date: Thu, 2 Feb 2012 09:59:28 +0800
+Message-ID: <CAF+7xW=VmaOATC1-J3u=s7pjuK-xefo+5zzZ3GpqVot7JJOfDA@mail.gmail.com>
+Subject: Re: [PATCH RESEND] ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
 To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Paul Parsons <lost.distance@yahoo.com>, linux-kernel@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Dmitry Artamonow <mad_soft@inbox.ru>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        linux-arm-kernel@lists.infradead.org
+Cc: Eric Miao <eric.y.miao@gmail.com>, Haojian Zhuang <hzhuang1@marvell.com>,
+        "linux-pcmcia@lists.infradead.org" <linux-pcmcia@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/4 Haojian Zhuang <haojian.zhuang@gmail.com>:
-> On Sat, Dec 31, 2011 at 9:35 PM, Paul Parsons <lost.distance@yahoo.com> wrote:
->> Works for me on linux-3.2-rc7.
 >>
->> Tested-by: Paul Parsons <lost.distance@yahoo.com>
+>> If it fails, it will jump to err1 anyway. The check there is redundant.
 >>
-> Applied.
+> Applied
+
 Hi Haojian,
 This patch is not (yet) upstream.
-Not in Linus' tree. and not in linux-next tree.
 Could you help to check it again.
 
 Thanks,
