@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab2BBVQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 16:16:48 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:56635 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756467Ab2BBVQr (ORCPT
+	id S1757418Ab2BBVRO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 16:17:14 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:47747 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932097Ab2BBVRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 16:16:47 -0500
-X-Originating-IP: 217.70.178.141
-X-Originating-IP: 50.43.15.19
-Date: Thu, 2 Feb 2012 13:16:38 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
-        Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] checkpatch: Check for quoted strings broken across lines
-Message-ID: <20120202211638.GA11308@leaf>
-References: <20120202200621.GB9279@leaf>
- <20120202202207.GA10041@elliptictech.com>
+	Thu, 2 Feb 2012 16:17:13 -0500
+Date: Thu, 2 Feb 2012 22:17:09 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: WARNING: at arch/x86/kernel/cpu/perf_event.c:989
+Message-ID: <20120202211709.GA1642@x4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120202202207.GA10041@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 03:22:07PM -0500, Nick Bowler wrote:
-> On 2012-02-02 12:06 -0800, Josh Triplett wrote:
-> > Documentation/CodingStyle recommends not splitting quoted strings across
-> > lines, because it breaks the ability to grep for the string.  checkpatch
-> > already makes an exception to the 80-column rule for quoted strings to
-> > allow this.  Rather than just allowing it, actively warn about quoted
-> > strings split across lines.
-> [...]
-> > +# Check for strings broken across lines (breaks greppability).  Make an
-> > +# exception when the previous string ends in a newline (multiple lines in one
-> > +# string constant) or \n\t (common in inline assembly to indent the instruction
-> > +# on the following line).
-> 
-> There are tons of strings in the kernel that this makes checkpatch warn
-> about where it probably shouldn't.  For example, this one (from
-> kernel/auditsc.c:1476):
-> 
->   		audit_log_format(ab,
->   			"oflag=0x%x mode=%#ho mq_flags=0x%lx mq_maxmsg=%ld "
->   			"mq_msgsize=%ld mq_curmsgs=%ld",
-> 
->   WARNING: quoted string split across lines
->   #1478: FILE: auditsc.c:1478:
->   +			"mq_msgsize=%ld mq_curmsgs=%ld",
-> 
-> Breaking "greppability" of this string is a non-issue, because this sort
-> of string is not really greppable to begin with (and would certainly not
-> be any easier to grep for if it were all on one line).
+The following warning is easily reproducible after todays
+'perf-urgent-for-mingo' merge by just running "perf top":
 
-While I agree that in that particular case (heavy on the %formats and
-light on the text) you can't easily grep to begin with, the guideline
-from CodingStyle still applies, as does the standard guideline about
-checkpatch (namely "don't go globally fixing everything it says, but fix
-it in new or changed code").
+------------[ cut here ]------------
+WARNING: at arch/x86/kernel/cpu/perf_event.c:989 x86_pmu_start+0xa5/0x100()
+Hardware name: System Product Name
+Pid: 0, comm: swapper/2 Not tainted 3.3.0-rc2-00068-g24b36da-dirty #22
+Call Trace:
+ <IRQ>  [<ffffffff81054ba0>] ? warn_slowpath_common+0x60/0xa0
+ [<ffffffff8103e1a5>] ? x86_pmu_start+0xa5/0x100
+ [<ffffffff8109f062>] ? perf_adjust_freq_unthr_context.part.82+0xe2/0x140
+ [<ffffffff8109f260>] ? perf_event_task_tick+0x1a0/0x280
+ [<ffffffff81078be3>] ? scheduler_tick+0xc3/0x140
+ [<ffffffff810615b5>] ? update_process_times+0x55/0x80
+ [<ffffffff8108904d>] ? tick_sched_timer+0x4d/0xa0
+ [<ffffffff81072d1b>] ? __run_hrtimer.isra.32+0x3b/0xc0
+ [<ffffffff810735e5>] ? hrtimer_interrupt+0xc5/0x1e0
+ [<ffffffff81045de3>] ? smp_apic_timer_interrupt+0x63/0xa0
+ [<ffffffff8147768b>] ? apic_timer_interrupt+0x6b/0x70
+ <EOI>  [<ffffffff81039100>] ? default_idle+0x20/0x40
+ [<ffffffff81039172>] ? amd_e400_idle+0x52/0x100
+ [<ffffffff81030156>] ? cpu_idle+0xb6/0xe0
+---[ end trace 7dc3992f562261b6 ]---
 
-I certainly don't think joining those lines would *hurt*.  Making that
-change blindly across the entire kernel doesn't seem worth it, but
-changing it on new code seems like a good idea.
 
-In theory checkpatch could try to heuristically ignore cases where the
-split in the string occurs immediately before or after a %format, but I
-don't fancy writing a regex to match valid printf format specifiers. :)
-
-I still think this patch provides a net win, and I don't think the
-example you mentioned represents a false positive.
-
-- Josh Triplett
+-- 
+Markus
