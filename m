@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2BBAJr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 19:09:47 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36031 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753042Ab2BBAJq (ORCPT
+	id S1753442Ab2BBAKK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 19:10:10 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53790 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab2BBAKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 19:09:46 -0500
-X-Sasl-enc: +BdZOFhOZJsk/4Jm3SKTO/pn9pJHi30tYYrR2ULp4TGy 1328141385
-Date: Wed, 1 Feb 2012 16:09:19 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [06/20] crypto: sha512 - reduce stack usage to safe number
-Message-ID: <20120202000919.GA7870@kroah.com>
-References: <20120201210055.GA25374@kroah.com>
- <20120201201531.599621544@clark.kroah.org>
- <20120201234208.GA28700@p183.telecom.by>
- <20120201235204.GA18950@kroah.com>
- <20120202000450.GA18441@gondor.apana.org.au>
+	Wed, 1 Feb 2012 19:10:07 -0500
+Date: Wed, 1 Feb 2012 17:10:05 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Barry Song <21cnbao@gmail.com>, Wolfram Sang <w.sang@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, linux-mtd@lists.infradead.org,
+        Atsushi Nemoto <anemo@mba.ocn.ne.jp>, Barry Song <Baohua.Song@csr.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Erik Gilling <konkers@google.com>, Barry Song <Barry.Song@csr.com>
+Subject: Re: [PATCH 1/3] platform: add common resource requesting and mapping
+ helper
+Message-ID: <20120202001005.GB15343@ponder.secretlab.ca>
+References: <1328004002-24646-1-git-send-email-Barry.Song@csr.com>
+ <1328004002-24646-2-git-send-email-Barry.Song@csr.com>
+ <20120131101734.GE2471@pengutronix.de>
+ <CAGsJ_4wyJ6Wymy4AWoW1eHubZX=W7GT_Fbow9ofXoY1RrcHzgA@mail.gmail.com>
+ <20120131113358.GM2471@pengutronix.de>
+ <20120131203455.GG22611@ponder.secretlab.ca>
+ <20120131211554.GA28105@pengutronix.de>
+ <CAGsJ_4yJZYHUzr9YerdM5o8grGd6iP51ra4nJkMuOo5Khn95RQ@mail.gmail.com>
+ <20120201125642.GC13723@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120202000450.GA18441@gondor.apana.org.au>
+In-Reply-To: <20120201125642.GC13723@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 11:04:51AM +1100, Herbert Xu wrote:
-> On Wed, Feb 01, 2012 at 03:52:04PM -0800, Greg KH wrote:
-> >
-> > But this patch isn't in Linus's tree yet, right?
-> > 
-> > So, should I just drop this one for now (well both of them) or just wait
-> > for the above referenced patch to hit Linus's tree and handle it then?
+On Wed, Feb 01, 2012 at 12:56:42PM +0000, Mark Brown wrote:
+> On Wed, Feb 01, 2012 at 10:11:10AM +0800, Barry Song wrote:
 > 
-> We're still working on the i386 issue.  However, I'd say that
-> you should take these two patches now since the problem they
-> fix is far worse than the potential stack issue on i386.
+> > i think it makes sense for us to have platform_devm_request_irq() and
+> > similar things. i'll take care.
+> 
+> Note that this one is more tricky than most as it's really important
+> that the interrupt handler can't be called when the data it needs and so
+> on have been freed.  With things like memory this really doesn't matter
+> and you can happily free in any order.
 
-Ok, thanks for letting me know, I'll leave these patches in.
+Good point.
 
-greg k-h
+g.
+
