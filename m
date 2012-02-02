@@ -1,201 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab2BBOcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:32:05 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55510 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756514Ab2BBOcB (ORCPT
+	id S1756634Ab2BBOb1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:31:27 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48752 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756518Ab2BBObY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:32:01 -0500
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 02 Feb 2012 19:50:40 +0530
-Message-Id: <20120202142040.5967.64156.sendpatchset@srdronam.in.ibm.com>
-In-Reply-To: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
-References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v10 3.3-rc2 8/9] perf: rename target_module to target
-x-cbid: 12020214-4790-0000-0000-000001259619
+	Thu, 2 Feb 2012 09:31:24 -0500
+Date: Thu, 2 Feb 2012 22:43:46 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/4] pinctrl: add a driver for NVIDIA Tegra
+Message-ID: <20120202144344.GI9773@S2101-09.ap.freescale.net>
+References: <1328130290-17607-1-git-send-email-swarren@nvidia.com>
+ <CACRpkda+KCutSFgPwH2Xvd14h0OCrArFGXAidp3n_ZgG28KB5g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkda+KCutSFgPwH2Xvd14h0OCrArFGXAidp3n_ZgG28KB5g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 02, 2012 at 02:26:54PM +0100, Linus Walleij wrote:
+> On Wed, Feb 1, 2012 at 10:04 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> 
+> > This adds a driver for the Tegra pinmux, and required parameterization
+> > data for Tegra20 and Tegra30.
+> 
+> OK so I've applied this monster patch and the three others,
+> 
+> the diffstat looks like so:
+> 
+> git diff --stat v3.3-rc2..HEAD
+>  arch/arm/mach-tegra/Kconfig                       |    4 +
+>  arch/arm/mach-tegra/Makefile                      |    3 -
+>  arch/arm/mach-tegra/board-harmony-pinmux.c        |  362 ++-
+>  arch/arm/mach-tegra/board-paz00-pinmux.c          |  362 ++-
+>  arch/arm/mach-tegra/board-pinmux.c                |   62 +-
+>  arch/arm/mach-tegra/board-pinmux.h                |   39 +-
+>  arch/arm/mach-tegra/board-seaboard-pinmux.c       |  442 ++-
+>  arch/arm/mach-tegra/board-trimslice-pinmux.c      |  366 ++-
+>  arch/arm/mach-tegra/include/mach/pinconf-tegra.h  |   63 +
+>  arch/arm/mach-tegra/include/mach/pinmux-tegra20.h |  184 -
+>  arch/arm/mach-tegra/include/mach/pinmux-tegra30.h |  320 --
+>  arch/arm/mach-tegra/include/mach/pinmux.h         |  302 --
+>  arch/arm/mach-tegra/pinmux-tegra20-tables.c       |  244 --
+>  arch/arm/mach-tegra/pinmux-tegra30-tables.c       |  376 ---
+>  arch/arm/mach-tegra/pinmux.c                      |  987 ------
+>  drivers/pinctrl/Kconfig                           |   15 +
+>  drivers/pinctrl/Makefile                          |    3 +
+>  drivers/pinctrl/pinctrl-tegra.c                   |  559 +++
+>  drivers/pinctrl/pinctrl-tegra.h                   |  163 +
+>  drivers/pinctrl/pinctrl-tegra20.c                 | 2860 ++++++++++++++++
+>  drivers/pinctrl/pinctrl-tegra30.c                 | 3726 +++++++++++++++++++++
+>  21 files changed, 8482 insertions(+), 2960 deletions(-)
+> 
+> It's still pretty big, adding some 6000 lines in sum total, but you've made
+> your case for having all information about the hardware in the driver
+> quite clear so I've not got much more to say. Short story: the driver knows
+> all about what the hardware can do, and the platform data or device
+> tree will decide how these capabilities are employed on a certain
+> system.
+> 
+> What is nice is to have this out of the ARM tree and under pinctrl
+> subsystem control.
+> 
+Heh, omap and imx have a much big SoC family than tegra.  Imaging what
+if omap and imx do the same thing here, probably will move Linus'
+attention from arch/arm/ to drivers/pinctrl :)
 
-This is a precursor patch that modifies names that refer to
-kernel/module to also refer to user space names.
+Fortunately, it seems omap and imx will try to get those huge data out
+of the driver/kernel.
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- tools/perf/builtin-probe.c    |   12 ++++++------
- tools/perf/util/probe-event.c |   26 +++++++++++++-------------
- 2 files changed, 19 insertions(+), 19 deletions(-)
-
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 59d43ab..833aa8c 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -60,7 +60,7 @@ static struct {
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
- 	struct line_range line_range;
--	const char *target_module;
-+	const char *target;
- 	int max_probe_points;
- 	struct strfilter *filter;
- } params;
-@@ -248,7 +248,7 @@ static const struct option options[] = {
- 		   "file", "vmlinux pathname"),
- 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
- 		   "directory", "path to kernel source"),
--	OPT_STRING('m', "module", &params.target_module,
-+	OPT_STRING('m', "module", &params.target,
- 		   "modname|path",
- 		   "target module name (for online) or path (for offline)"),
- #endif
-@@ -335,7 +335,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		if (!params.filter)
- 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
- 						       NULL);
--		ret = show_available_funcs(params.target_module,
-+		ret = show_available_funcs(params.target,
- 					   params.filter);
- 		strfilter__delete(params.filter);
- 		if (ret < 0)
-@@ -356,7 +356,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			usage_with_options(probe_usage, options);
- 		}
- 
--		ret = show_line_range(&params.line_range, params.target_module);
-+		ret = show_line_range(&params.line_range, params.target);
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show lines. (%d)\n", ret);
- 		return ret;
-@@ -373,7 +373,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 
- 		ret = show_available_vars(params.events, params.nevents,
- 					  params.max_probe_points,
--					  params.target_module,
-+					  params.target,
- 					  params.filter,
- 					  params.show_ext_vars);
- 		strfilter__delete(params.filter);
-@@ -395,7 +395,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 	if (params.nevents) {
- 		ret = add_perf_probe_events(params.events, params.nevents,
- 					    params.max_probe_points,
--					    params.target_module,
-+					    params.target,
- 					    params.force_add);
- 		if (ret < 0) {
- 			pr_err("  Error: Failed to add events. (%d)\n", ret);
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index eb25900..d54eefb 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -275,10 +275,10 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
- /* Try to find perf_probe_event with debuginfo */
- static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 					  struct probe_trace_event **tevs,
--					  int max_tevs, const char *module)
-+					  int max_tevs, const char *target)
- {
- 	bool need_dwarf = perf_probe_event_need_dwarf(pev);
--	struct debuginfo *dinfo = open_debuginfo(module);
-+	struct debuginfo *dinfo = open_debuginfo(target);
- 	int ntevs, ret = 0;
- 
- 	if (!dinfo) {
-@@ -297,9 +297,9 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 
- 	if (ntevs > 0) {	/* Succeeded to find trace events */
- 		pr_debug("find %d probe_trace_events.\n", ntevs);
--		if (module)
-+		if (target)
- 			ret = add_module_to_probe_trace_events(*tevs, ntevs,
--							       module);
-+							       target);
- 		return ret < 0 ? ret : ntevs;
- 	}
- 
-@@ -1798,14 +1798,14 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
- 
- static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 					  struct probe_trace_event **tevs,
--					  int max_tevs, const char *module)
-+					  int max_tevs, const char *target)
- {
- 	struct symbol *sym;
- 	int ret = 0, i;
- 	struct probe_trace_event *tev;
- 
- 	/* Convert perf_probe_event with debuginfo */
--	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, module);
-+	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
- 	if (ret != 0)
- 		return ret;	/* Found in debuginfo or got an error */
- 
-@@ -1821,8 +1821,8 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 		goto error;
- 	}
- 
--	if (module) {
--		tev->point.module = strdup(module);
-+	if (target) {
-+		tev->point.module = strdup(target);
- 		if (tev->point.module == NULL) {
- 			ret = -ENOMEM;
- 			goto error;
-@@ -1886,7 +1886,7 @@ struct __event_package {
- };
- 
- int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
--			  int max_tevs, const char *module, bool force_add)
-+			  int max_tevs, const char *target, bool force_add)
- {
- 	int i, j, ret;
- 	struct __event_package *pkgs;
-@@ -1909,7 +1909,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
- 		ret  = convert_to_probe_trace_events(pkgs[i].pev,
- 						     &pkgs[i].tevs,
- 						     max_tevs,
--						     module);
-+						     target);
- 		if (ret < 0)
- 			goto end;
- 		pkgs[i].ntevs = ret;
-@@ -2065,7 +2065,7 @@ static int filter_available_functions(struct map *map __unused,
- 	return 1;
- }
- 
--int show_available_funcs(const char *module, struct strfilter *_filter)
-+int show_available_funcs(const char *target, struct strfilter *_filter)
- {
- 	struct map *map;
- 	int ret;
-@@ -2076,9 +2076,9 @@ int show_available_funcs(const char *module, struct strfilter *_filter)
- 	if (ret < 0)
- 		return ret;
- 
--	map = kernel_get_module_map(module);
-+	map = kernel_get_module_map(target);
- 	if (!map) {
--		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-+		pr_err("Failed to find %s map.\n", (target) ? : "kernel");
- 		return -EINVAL;
- 	}
- 	available_func_filter = _filter;
-
+-- 
+Regards,
+Shawn
