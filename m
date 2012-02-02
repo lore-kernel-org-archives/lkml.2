@@ -1,41 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933475Ab2BBTvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:51:04 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:45098 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933461Ab2BBTvC (ORCPT
+	id S933487Ab2BBTxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:53:32 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61503 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933313Ab2BBTxa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:51:02 -0500
-Date: Thu, 02 Feb 2012 14:50:36 -0500 (EST)
-Message-Id: <20120202.145036.1235867786947627132.davem@davemloft.net>
-To: danny.kukawka@bisect.de
-Cc: mac@melware.de, dkukawka@suse.de, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, isdn@linux-pingi.de, bhutchings@solarflare.com,
-        David.Laight@aculab.com
-Subject: Re: [PATCH v2] eicon: fix -Warray-bounds warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1328188830-28133-1-git-send-email-danny.kukawka@bisect.de>
-References: <1328188830-28133-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 02 Feb 2012 11:50:40 -0800 (PST)
+	Thu, 2 Feb 2012 14:53:30 -0500
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Mel Gorman" <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>
+Subject: Re: [PATCH 02/15] mm: page_alloc: update migrate type of pages on pcp
+ when isolating
+References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
+ <1327568457-27734-3-git-send-email-m.szyprowski@samsung.com>
+ <20120130111522.GE25268@csn.ul.ie> <op.v8wlu8ws3l0zgt@mpn-glaptop>
+ <20120130161447.GU25268@csn.ul.ie>
+ <022e01cce034$bc6cf440$3546dcc0$%szyprowski@samsung.com>
+ <20120202124729.GA5796@csn.ul.ie>
+Date: Thu, 02 Feb 2012 20:53:25 +0100
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v82hjbd13l0zgt@mpn-glaptop>
+In-Reply-To: <20120202124729.GA5796@csn.ul.ie>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
-Date: Thu,  2 Feb 2012 14:20:28 +0100
+> On Tue, Jan 31, 2012 at 05:23:59PM +0100, Marek Szyprowski wrote:
+>> Pages, which have incorrect migrate type on free finally
+>> causes pageblock migration type change from MIGRATE_CMA to MIGRATE_MOVABLE.
 
-> Fix for a -Warray-bounds warning. mixer_notify_update() tries to
-> write to ((CAPI_MSG *) msg)->info.facility_req.structs[3] while
-> structs is defined as byte structs[1]. Set all 'structs' which are
-> part of the typdefs in the info union to 'byte structs[0]'.
-> 
-> v2: set all info.*.structs to byte structs[0]
-> 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+On Thu, 02 Feb 2012 13:47:29 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
+> I'm not quite seeing this. In free_hot_cold_page(), the pageblock
+> type is checked so the page private should be set to MIGRATE_CMA or
+> MIGRATE_ISOLATE for the CMA area. It's not clear how this can change a
+> pageblock to MIGRATE_MOVABLE in error.
 
-Applied, thanks.
+Here's what I think may happen:
+
+When drain_all_pages() is called, __free_one_page() is called for each page on
+pcp list with migrate type deducted from page_private() which is MIGRATE_CMA.
+This result in the page being put on MIGRATE_CMA freelist even though its
+pageblock's migrate type is MIGRATE_ISOLATE.
+
+When allocation happens and pcp list is empty, rmqueue_bulk() will get executed
+with migratetype argument set to MIGRATE_MOVABLE.  It calls __rmqueue() to grab
+some pages and because the page described above is on MIGRATE_CMA freelist it
+may be returned back to rmqueue_bulk().
+
+But, pageblock's migrate type is not MIGRATE_CMA but MIGRATE_ISOLATE, so the
+following code:
+
+#ifdef CONFIG_CMA
+		if (is_pageblock_cma(page))
+			set_page_private(page, MIGRATE_CMA);
+		else
+#endif
+			set_page_private(page, migratetype);
+
+will set it's private to MIGRATE_MOVABLE and in the end the page lands back
+on MIGRATE_MOVABLE pcp list but this time with page_private == MIGRATE_MOVABLE
+and not MIGRATE_CMA.
+
+One more drain_all_pages() (which may happen since alloc_contig_range() calls
+set_migratetype_isolate() for each block) and next __rmqueue_fallback() may
+convert the whole pageblock to MIGRATE_MOVABLE.
+
+I know, this sounds crazy and improbable, but I couldn't find an easier path
+to destruction.  As you pointed, once the page is allocated, free_hot_cold_page()
+will do the right thing by reading pageblock's migrate type.
+
+Marek is currently experimenting with various patches including the following
+change:
+
+#ifdef CONFIG_CMA
+                 int mt = get_pageblock_migratetype(page);
+                 if (is_migrate_cma(mt) || mt == MIGRATE_ISOLATE)
+                         set_page_private(page, mt);
+                 else
+#endif
+                         set_page_private(page, migratetype);
+
+As a matter of fact, if __rmqueue() was changed to return migrate type of the
+freelist it took page from, we could avoid this get_pageblock_migratetype() all
+together.  For now, however, I'd rather not go that way just yet -- I'll be happy
+to dig into it once CMA gets merged.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
