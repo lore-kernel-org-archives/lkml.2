@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab2BBWrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 17:47:52 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:53194 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935Ab2BBWru convert rfc822-to-8bit (ORCPT
+	id S1754684Ab2BBWs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 17:48:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38080 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753926Ab2BBWsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 17:47:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120202224708.GF1723@redhat.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
-	<1328131156-13290-10-git-send-email-tj@kernel.org>
-	<20120202224708.GF1723@redhat.com>
-Date: Thu, 2 Feb 2012 14:47:49 -0800
-X-Google-Sender-Auth: 2rDA3gE0zMrHsIfAU_5qQjp3KJM
-Message-ID: <CAOS58YOEF9--uruKyXDBOkxCzEP-pojmiz2CF1CD6xLMYu5x_w@mail.gmail.com>
-Subject: Re: [PATCH 09/11] blkcg: move per-queue blkg list heads and counters
- to queue and blkg
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Feb 2012 17:48:25 -0500
+Date: Thu, 2 Feb 2012 14:48:23 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: linux-media@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Enke Chen <enkechen@cisco.com>
+Subject: Re: [RFCv7 PATCH 0/4] Add poll_requested_events() function.
+Message-Id: <20120202144823.ce00767d.akpm@linux-foundation.org>
+In-Reply-To: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
+References: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu,  2 Feb 2012 11:26:53 +0100
+Hans Verkuil <hverkuil@xs4all.nl> wrote:
 
-On Thu, Feb 2, 2012 at 2:47 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Feb 01, 2012 at 01:19:14PM -0800, Tejun Heo wrote:
->
-> [..]
->> diff --git a/block/blk-core.c b/block/blk-core.c
->> index ab0a11b..025ef60 100644
->> --- a/block/blk-core.c
->> +++ b/block/blk-core.c
->> @@ -546,6 +546,10 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
->>       setup_timer(&q->timeout, blk_rq_timed_out_timer, (unsigned long) q);
->>       INIT_LIST_HEAD(&q->timeout_list);
->>       INIT_LIST_HEAD(&q->icq_list);
->> +#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
->
-> BLK_CGROUP_MODULE not required as you got rid of this possiblity in the
-> first patch itself
->
->>
->>       struct list_head        icq_list;
->> +#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
->
-> Ditto.
+> The first version of this patch was posted July 1st, 2011. I really hope that
+> it won't take another six months to get a review from a fs developer. As this
+> LWN article (http://lwn.net/Articles/450658/) said: 'There has been little
+> discussion of the patch; it doesn't seem like there is any real reason for it
+> not to go in for 3.1.'
+> 
+> The earliest this can go in now is 3.4. The only reason it takes so long is
+> that it has been almost impossible to get a Ack or comments or even just a
+> simple reply from the fs developers. That is really frustrating, I'm sorry
+> to say.
 
-Ooh, right.  Will remove them.  Thanks.
+Yup.  Nobody really maintains the poll/select code.  It happens to sit
+under fs/ so nominally belongs to the "fs maintainers".  The logs for
+fs/select.c seem to show me as the usual committer, but I wouldn't
+claim particular expertise in this area - I'm more a tube-unclogger
+here.  Probably Al knows the code as well or better than anyone else. 
+It's good that he looked at an earlier version of the patches.
 
--- 
-tejun
+fs/eventpoll.c has an identified maintainer, but he has been vigorously
+hiding from us for a year or so.  I'm the commit monkey for eventpoll,
+in a similar state to fs/select.c.
+
+So ho hum, all we can do is our best.  You're an experienced kernel
+developer who has put a lot of work into the code.  I suggest that you
+get your preferred version into linux-next ASAP then send Linus a pull
+request for 3.4-rc1, explaining the situation.  If the code wasn't
+already in linux-next I would put it in -mm today, for 3.4-rc1.
+
