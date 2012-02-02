@@ -1,115 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab2BBObJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:31:09 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58480 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110Ab2BBObG (ORCPT
+	id S1756610Ab2BBObR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:31:17 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:36705 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756110Ab2BBObP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:31:06 -0500
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+	Thu, 2 Feb 2012 09:31:15 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=0ow4NSV8tcgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=WfulkdPnAAAA:8 a=gFyO0h5d9Ng7Wv7kPowA:9 a=PUjeQqilurYA:10 a=l29vjEC0CZ8A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328193068.5882.95.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/5 v2] [GIT PULL] x86/jump label: Paranoid checks and 2
+ or 5 byte nops
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 02 Feb 2012 19:49:53 +0530
-Message-Id: <20120202141953.5967.69749.sendpatchset@srdronam.in.ibm.com>
-In-Reply-To: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
-References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v10 3.3-rc2 5/9] tracing: modify is_delete, is_return from ints to bool.
-x-cbid: 12020204-1618-0000-0000-000000B16A1F
+        Jason Baron <jbaron@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Thu, 02 Feb 2012 09:31:08 -0500
+In-Reply-To: <4F2A9960.2090500@zytor.com>
+References: <20120128160925.275163704@goodmis.org>
+	 <20120130144857.GA22013@elte.hu>
+	 <1327936060.22710.165.camel@gandalf.stny.rr.com>
+	 <20120131194813.GA12074@elte.hu>
+	 <1328072925.5882.57.camel@gandalf.stny.rr.com>
+	 <20120201080539.GA11770@elte.hu>
+	 <1328109697.5882.65.camel@gandalf.stny.rr.com>
+	 <20120202135154.GA10315@elte.hu> <4F2A9960.2090500@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-02-02 at 06:10 -0800, H. Peter Anvin wrote:
+> On 02/02/2012 05:51 AM, Ingo Molnar wrote:
+> > [    0.000000] Unexpected op at enqueue_task_fair+0xab/0x1fb [ffffffff81078a8d] (0f 1f 44 00 00) arch/x86/kernel/jump_label.c:74
+> 
+> So this is presumably the expected NOP... what was it expecting instead?
 
-is_delete and is_return can take atmost 2 values and
-are better of being a boolean than a int.
+It's expecting the "ideal_nop" that was determined at run time.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
+This code died on "enabling" the nop. I think the code now enables some
+nops by default on boot up, which doesn't expect to see the
+"default_nop".
 
-Changelog (since v5):
-- extracted from the next patch on Masami's suggestion.
+I need to look at the code to see why it is enabling the nop this early.
+I think there were patches out there to enable jump labels on boot up,
+but I didn't think they were included yet.
 
- kernel/trace/trace_kprobe.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+But I have a good idea of what is happening.
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 00d527c..2490dd1 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -651,7 +651,7 @@ static struct trace_probe *alloc_trace_probe(const char *group,
- 					     void *addr,
- 					     const char *symbol,
- 					     unsigned long offs,
--					     int nargs, int is_return)
-+					     int nargs, bool is_return)
- {
- 	struct trace_probe *tp;
- 	int ret = -ENOMEM;
-@@ -944,7 +944,7 @@ static int split_symbol_offset(char *symbol, unsigned long *offset)
- #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
- 
- static int parse_probe_vars(char *arg, const struct fetch_type *t,
--			    struct fetch_param *f, int is_return)
-+			    struct fetch_param *f, bool is_return)
- {
- 	int ret = 0;
- 	unsigned long param;
-@@ -977,7 +977,7 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
- 
- /* Recursive argument parser */
- static int __parse_probe_arg(char *arg, const struct fetch_type *t,
--			     struct fetch_param *f, int is_return)
-+			     struct fetch_param *f, bool is_return)
- {
- 	int ret = 0;
- 	unsigned long param;
-@@ -1089,7 +1089,7 @@ static int __parse_bitfield_probe_arg(const char *bf,
- 
- /* String length checking wrapper */
- static int parse_probe_arg(char *arg, struct trace_probe *tp,
--			   struct probe_arg *parg, int is_return)
-+			   struct probe_arg *parg, bool is_return)
- {
- 	const char *t;
- 	int ret;
-@@ -1162,7 +1162,7 @@ static int create_trace_probe(int argc, char **argv)
- 	 */
- 	struct trace_probe *tp;
- 	int i, ret = 0;
--	int is_return = 0, is_delete = 0;
-+	bool is_return = false, is_delete = false;
- 	char *symbol = NULL, *event = NULL, *group = NULL;
- 	char *arg;
- 	unsigned long offset = 0;
-@@ -1171,11 +1171,11 @@ static int create_trace_probe(int argc, char **argv)
- 
- 	/* argc must be >= 1 */
- 	if (argv[0][0] == 'p')
--		is_return = 0;
-+		is_return = false;
- 	else if (argv[0][0] == 'r')
--		is_return = 1;
-+		is_return = true;
- 	else if (argv[0][0] == '-')
--		is_delete = 1;
-+		is_delete = true;
- 	else {
- 		pr_info("Probe definition must be started with 'p', 'r' or"
- 			" '-'.\n");
+Which explains why my box didn't trigger this bug. The one box that can
+boot tip/master has the ideal_nop the same as the default_nop.
+
+I'm still working on getting my other box to boot. I'm still hunting
+down the patch in "out-of-tree" that prevents it from booting. This was
+a pain, because the mainline commit that the "out-of-tree" was based on
+contained another bug that prevented this box to boot. I just finished a
+ktest reverse bisect on the mainline branch to find that bug:
+
+commit 124482935fb7fb9303c8a8ab930149c6a93d9910
+Author: Andi Kleen <andi@firstfloor.org>
+Date:   Fri Jun 18 23:09:00 2010 +0200
+
+    x86: Fix vsyscall on gcc 4.5 with -Os
+
+Now I'm running a ktest bisect on the out-of-tree branch to find the
+commit that prevents this box from booting. (there's a PRE_BUILD and
+POST_BUILD option that lets me apply this patch at ever bisect :-)
+
+-- Steve
+
+
 
