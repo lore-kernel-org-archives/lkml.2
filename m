@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab2BBU70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:59:26 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38230 "EHLO
+	id S1757221Ab2BBVAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 16:00:24 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62523 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755385Ab2BBU7Y (ORCPT
+	with ESMTP id S1754183Ab2BBVAW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:59:24 -0500
-Date: Thu, 2 Feb 2012 12:59:20 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] blkcg: unify blkgs for different policies
-Message-ID: <20120202205920.GK19837@google.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
- <20120202192958.GA1723@redhat.com>
- <20120202203609.GI19837@google.com>
- <20120202204342.GB30258@redhat.com>
+	Thu, 2 Feb 2012 16:00:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202204342.GB30258@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120202121912.c82a185e.akpm@linux-foundation.org>
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com>
+	<1328055439-9441-1-git-send-email-venki@google.com>
+	<20120201140125.c656df41.akpm@linux-foundation.org>
+	<87d39xj955.fsf@rustcorp.com.au>
+	<20120202121912.c82a185e.akpm@linux-foundation.org>
+Date: Thu, 2 Feb 2012 13:00:21 -0800
+Message-ID: <CABeCy1YGnYexANsNrppxsMEam+fGC1nFHUfq3BdurCzG_jtT0g@mail.gmail.com>
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus -v5
+From: Venki Pallipadi <venki@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Feb 2, 2012 at 12:19 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 03 Feb 2012 06:33:02 +1030
+> Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+>> On Wed, 1 Feb 2012 14:01:25 -0800, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> > > Though most of the callers of these two routines are init time (with few
+>> > > exceptions of runtime calls), it is cleaner to use variables
+>> > > and not go through this repeated mask based calculation.
+>> >
+>> > Looks good to me.
+>>
+>> But, I wonder who's asking num_possible_cpus().  It's not a very useful
+>> thing to know, though some arch's "know" it's contiguous, so can cheat.
+>>
+>> Optimizing it seems particularly foolish.
+>
+> We're fools for optimisations!
+>
 
-On Thu, Feb 02, 2012 at 03:43:42PM -0500, Vivek Goyal wrote:
-> What about bio based drivers? They might have their own internal locking
-> and not relying on queue lock. And conceptually, we first throttle the
-> bio, update the stats and then call into driver. So are you planning
-> to move blk_throtl_bio() call into request function of individual driver
-> to avoid taking queue lock twice.
-> 
-> In fact even for request based drivers, if bio is being merged onto
-> existing request on plug, we will not take any queue lock. So I am not
-> sure how would you avoid extra queue lock for this case.
+I would think that if we are giving an API people will abuse it sooner
+or later :-).
 
-For request based drivers, it isn't an issue.  If tracking info across
-plug merging is necessary, just record the states in the plug
-structure.  The whole purpose of per-task plugging is exactly that -
-buffering state before going through request_lock after all.
+>> We either audit and wean
+>> everyone off who's using it incorrectly, or insist on contiguous CPU
+>> numbers and drop the mask altogether.
+>
+> drivers/block/nvme.c looks like it's assuming a contiguous map.  Maybe
+> also drivers/scsi/bnx2fc (wtf?).  I didn't see anything else outside
+> arch code.
+>
 
-For ->make_request_fn() drivers, I'm not sure yet and will have to
-look through different bio based drivers before deciding.  At the
-worst, we might require them to call stat update function under queue
-lock or maybe provide fuzzier update or a way to opt out of per-blkg
-stats.  Let's see.
+Yes. I found a bunch of them which seemed obviously wrong.  Doing
+things like allocating space based on num_possible_cpus() and
+accessing the space with get_cpu() or doing cou_online() check etc.
 
-Thanks.
+arch/x86/kernel/apic/x2apic_uv_x.c
+arch/x86/kernel/cpu/mcheck/mce-inject.c
+arch/x86/platform/uv/tlb_uv.c
+drivers/scsi/bnx2fc/bnx2fc_io.c
+kernel/debug/kdb/kdb_bt.c
 
--- 
-tejun
+I have a patch to fix these obvious ones. But, there are other users
+which were not very obvious to me and also I am know of code in older
+kernels (code which since have been rewritten) which can get benefit
+of this API change.
+
+Thanks,
+Venki
