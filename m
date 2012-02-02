@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab2BBXZU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 18:25:20 -0500
-Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:50067 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754175Ab2BBXZS (ORCPT
+	id S1757635Ab2BBX0S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 18:26:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38346 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755987Ab2BBX0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 18:25:18 -0500
-X-Greylist: delayed 1558 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Feb 2012 18:25:18 EST
-Date: Thu, 2 Feb 2012 23:59:17 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Chinmay V S <chinmay.v.s@pathpartnertech.com>
-Cc: linux-kernel@vger.kernel.org, cvs268@gmail.com, tglx@linutronix.de,
-        sebastian@breakpoint.cc, arjan@linux.intel.com,
-        jeff.chua.linux@gmail.com
-Subject: Re: [RFC] [PATCH] [timer] Optimise apply_slack() for size and speed.
-Message-ID: <20120202225917.GA1189@kibibi>
-References: <1328002652-7700-1-git-send-email-chinmay.v.s@pathpartnertech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1328002652-7700-1-git-send-email-chinmay.v.s@pathpartnertech.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 2 Feb 2012 18:26:17 -0500
+Date: Thu, 2 Feb 2012 15:26:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [patch cr 0/4] [patch cr 0/@total@]
+Message-Id: <20120202152615.be98d338.akpm@linux-foundation.org>
+In-Reply-To: <20120130140905.441199885@openvz.org>
+References: <20120130140905.441199885@openvz.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Chinmay V S | 2012-01-31 15:07:32 [+0530]:
+On Mon, 30 Jan 2012 18:09:05 +0400
+Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
->This patch modifies the masking logic to a bit-shift logic, therby
->reducing the complexity and number of operations. Thus obtaining a minor
->speed-up.
->diff --git a/kernel/timer.c b/kernel/timer.c
->index a297ffc..0379658 100644
->--- a/kernel/timer.c
->+++ b/kernel/timer.c
->@@ -785,9 +785,7 @@ EXPORT_SYMBOL(mod_timer_pending);
->@@ -811,9 +809,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+> Hi,
 > 
-> 	bit = find_last_bit(&mask, BITS_PER_LONG);
+> this is a series where I tried to resolve all concerns and nits
+> I've got from previous attempt:
 > 
->-	mask = (1 << bit) - 1;
->-
->-	expires_limit = expires_limit & ~(mask);
->+	expires_limit = (expires_limit >> bit) << bit;
+>  - fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v9
+> 	Now everything is under CONFIG_CHECKPOINT_RESTORE
+> 
+>  - syscalls, x86: Add __NR_kcmp syscall v7
+> 	* EBADF returned if there is no file
+> 	* EOPNOTSUP returned if there is no sysv support compiled in
+> 	* test uses syscall() from libc instead of own syscall implementation
+> 	* man page for this syscall is under progress still
+> 
+>  - c/r: procfs: add arg_start/end, env_start/end and exit_code members to /proc/$pid/stat
+> 	task->exit_code is shown IIF a caller has enough permissions
+> 
+>  - c/r: prctl: Extend PR_SET_MM to set up more mm_struct entries
+> 	when restoring mm->saved_auxv the task_lock is used to serialize access
+> 
+> Please review, if there is something I'm still missing, ping me back.
+> 
 
-The question is whether a shift left is more efficient compared to an
-and operation. Besides that you save atleast one operation because you
-don't need to load -1 into a register for creating a mask. So it looks
-like less code.
+Looks pretty close to me.  I had a few issues and niggles.  Please cc
+me on v10 and unless someone squawks convincingly I will grab it.
 
-Sebastian
