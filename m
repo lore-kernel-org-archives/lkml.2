@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab2BBTy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:54:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36752 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754888Ab2BBTy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:54:58 -0500
-Date: Thu, 2 Feb 2012 11:54:56 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Meerwald <pmeerw@pmeerw.net>
-Cc: linux-kernel@vger.kernel.org, lars@metafoo.de, rpurdie@rpsys.net
-Subject: Re: [PATCH v2] add LED driver for PCA9663 I2C chip
-Message-Id: <20120202115456.7fe11c18.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.01.1202021130070.10172@pmeerw.net>
-References: <1326916289-19004-1-git-send-email-pmeerw@pmeerw.net>
-	<20120130162849.635c83a9.akpm@linux-foundation.org>
-	<20120130163424.ef8eb9af.akpm@linux-foundation.org>
-	<alpine.DEB.2.01.1202021130070.10172@pmeerw.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933505Ab2BBT4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:56:15 -0500
+Received: from mx2.compro.net ([12.186.155.4]:47270 "EHLO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754888Ab2BBT4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:56:14 -0500
+X-IronPort-AV: E=Sophos;i="4.73,347,1325480400"; 
+   d="scan'208";a="7582941"
+Message-ID: <4F2AEABF.2020106@compro.net>
+Date: Thu, 02 Feb 2012 14:57:51 -0500
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
+MIME-Version: 1.0
+To: Jack Stone <jwjstone@fastmail.fm>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: git question
+References: <4F2AE6E9.5090402@compro.net> <4F2AE8D2.2090000@fastmail.fm>
+In-Reply-To: <4F2AE8D2.2090000@fastmail.fm>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Feb 2012 11:42:09 +0100 (CET)
-Peter Meerwald <pmeerw@pmeerw.net> wrote:
+On 02/02/2012 02:49 PM, Jack Stone wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 02/02/12 19:41, Mark Hounschell wrote:
+>> It's been a while but this used to work.
+>>
+>> # git clone
+>> git://git.kernel.org/pub/scm/linux/kernel/git/hpa/linux-2.6-allstable.git
+>>
+>>
+> Cloning into linux-2.6-allstable...
+>> fatal: The remote end hung up unexpectedly
+>>
+>> Google showed nothing helpful? Where do I go. I need to bisect
+>> from 2.6.38 to 2.6.39
+>>
+>
+> That repo has been deleted. The full list is available at:
+>
+> git.kernel.org
+>
+> If you want to bisect 2.6.38 ->  2.6.39 then I sugest you try :
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+>
+> Which is Linus' official repo. If you want to bisect from 2.6.38.x ->
+> something else then you will have to try the stable repo, I think the
+> following will help:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+>
+> The only thing to be careful of is that 2.6.39.x is not a direct
+> decendant of 2.6.38.x, but it is a direct decentant of 2.6.38: the
+> stable trees have patches added in parallel.
+>
+> Hope this helps,
 
-> 
-> > Andrew Morton <akpm@linux-foundation.org> wrote:
-> > > > +exit:
-> > > > +	while (i--) {
-> > > > +		led_classdev_unregister(&pca9633[i].led_cdev);
-> > > > +		cancel_work_sync(&pca9633[i].work);
-> > > > +	}
-> > > This (untested!) loop has an off-by-one error. 
-> 
-> > Well, it's partly wrong.  It's wrong for the cancel_work_sync() but not
-> > for the led_classdev_unregister().  The cancel_work_sync() can just be
-> > removed: we haven't scheduled any works yet.
-> 
-> there are 4 leds with get led_classdev_register()ed
-> 
-> wouldn't it be possible that someone is starting to use led1 while led3 has 
-> not been registered yet? if registration for led3 fails, the exit code 
-> (above) is called and there might be work scheduled
-> 
-> so (hypothetically):
-> register led1 -> ok
-> register led2 -> ok
-> use led1 (schedule work)
-> register led3 -> fail -> exit code
-> 
-> the code has been copied from other led drivers
-> I think there is no harm to keep cancel_work_sync()
+Yes it does. Thank you very much.
 
-Spose so - it won't hurt.  And I was wrong about there being an
-off-by-one.
+Mark
 
