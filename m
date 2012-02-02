@@ -1,51 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab2BCInz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 03:43:55 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59307 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab2BCIny (ORCPT
+	id S1755073Ab2BCIq1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 03:46:27 -0500
+Received: from smtp10.mail.sp.isp-net.nl ([217.149.192.65]:38288 "EHLO
+	smtp10.mail.sp.isp-net.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab2BCIq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 03:43:54 -0500
-From: Geunsik Lim <geunsik.lim@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-mm <linux-mm@kvack.org>
-Subject: [PATCH] Handling of unused variable 'do-numainfo on compilation time
-Date: Fri,  3 Feb 2012 17:43:47 +0900
-Message-Id: <1328258627-2241-1-git-send-email-geunsik.lim@gmail.com>
-X-Mailer: git-send-email 1.7.8.1
+	Fri, 3 Feb 2012 03:46:26 -0500
+X-Greylist: delayed 37266 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Feb 2012 03:46:25 EST
+Message-ID: <4F2B0D4D.3000304@xmsnet.nl>
+Date: Thu, 02 Feb 2012 23:25:17 +0100
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110903 Thunderbird/3.1.13
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: dosemu graphics broken in v3.3-rc1
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Spam-Scanned: InterNLnet Mail Scan System V2.03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually, Usage of the variable 'do_numainfo'is not suitable for gcc compiler.
-Declare the variable 'do_numainfo' if the number of NUMA nodes > 1.
+When running old graphic dos games in full screen dosemu, the screen 
+turn blank when the game switches from text to graphics.
 
-Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
----
- mm/memcontrol.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+My laptop has an Intel Corporation Mobile 945GM/GMS, 943/940GML Express 
+Integrated Graphics Controller
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 556859f..4e17ac5 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -776,7 +776,10 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
- 	/* threshold event is triggered in finer grain than soft limit */
- 	if (unlikely(mem_cgroup_event_ratelimit(memcg,
- 						MEM_CGROUP_TARGET_THRESH))) {
--		bool do_softlimit, do_numainfo;
-+		bool do_softlimit;
-+#if MAX_NUMNODES > 1
-+                bool do_numainfo;
-+#endif
- 
- 		do_softlimit = mem_cgroup_event_ratelimit(memcg,
- 						MEM_CGROUP_TARGET_SOFTLIMIT);
 -- 
-1.7.8.1
-
+Hans
