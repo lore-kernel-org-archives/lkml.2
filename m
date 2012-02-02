@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834Ab2BBSBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 13:01:13 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55898 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932584Ab2BBSBM (ORCPT
+	id S932876Ab2BBSED (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 13:04:03 -0500
+Received: from mail-we0-f194.google.com ([74.125.82.194]:59809 "EHLO
+	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab2BBSEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 13:01:12 -0500
-Date: Thu, 2 Feb 2012 10:00:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH RFC tip/core/rcu 31/41] rcu: Add CPU-stall capability to
- rcutorture
-Message-ID: <20120202180048.GX2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-31-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120202055310.GR29058@leaf>
+	Thu, 2 Feb 2012 13:04:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202055310.GR29058@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020218-4242-0000-0000-000000AC5EFA
+In-Reply-To: <CAPNxggbTGeDE34kKPEza4iedJ+ZLOgw+mn9mir6N=fx9DpXcfg@mail.gmail.com>
+References: <CAPNxggbTGeDE34kKPEza4iedJ+ZLOgw+mn9mir6N=fx9DpXcfg@mail.gmail.com>
+Date: Thu, 2 Feb 2012 19:03:59 +0100
+Message-ID: <CAPNxggam6=vesPJ9Bedf6fTSEw1nJDGH7ExC-g=SAiaRf9ecWw@mail.gmail.com>
+Subject: Re: An alternative for tasklist_lock in a module?
+From: "Arokux B." <arokux@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Christoph Hellwig <hch@lst.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 09:53:11PM -0800, Josh Triplett wrote:
-> On Wed, Feb 01, 2012 at 11:41:49AM -0800, Paul E. McKenney wrote:
-> > --- a/kernel/rcutorture.c
-> > +++ b/kernel/rcutorture.c
-> > +/* Spawn CPU-stall kthread, if stall_cpu specified. */
-> > +static int __init rcu_torture_stall_init(void)
-> > +{
-> > +	if (stall_cpu <= 0)
-> > +		return 0;
-> > +	stall_task = kthread_run(rcu_torture_stall, NULL, "rcu_torture_stall");
-> > +	if (IS_ERR(stall_task)) {
-> > +		stall_task = NULL;
-> > +		return PTR_ERR(stall_task);
-> 
-> This seems...unlikely to produce the desired result. :)
+Hello Christoph and Andrew,
 
-Error?  What error?
+you are correspondingly the author and signer of the mentioned commit.
+Could I get some feedback from you?
 
-Good eyes, fixed!
+Thanks.
 
-> A quick check turns up the same bug in rcutorture_onoff_init.
 
-Which is of course where I started when creating rcu_torture_stall_init().
 
-> This suggests a possible Coccinelle check, for uses of PTR_ERR(foo) after
-> foo = (any constant other than ERR_PTR(foo)).
 
-And I took the resulting patch, thank you!
 
-							Thanx, Paul
-
+On Tue, Jan 31, 2012 at 7:58 PM, Arokux B. <arokux@gmail.com> wrote:
+> Hi,
+>
+> (for learning purposes) I would like to iterate through all the tasks
+> in a module and output different information about them. For this task
+> I need to lock the list of all tasks (need I?). I've seen some example
+> in the kernel code which lock tasklist_lock. However this symbol
+> cannot be used by modules. Its export was removed by
+> c59923a15c12d2b3597af913bf234a0ef264a38b commit.
+>
+> Is there any other way I can lock the list of tasks then? Or I'm supposed
+> not to use this list at all?
+>
+> Thanks
