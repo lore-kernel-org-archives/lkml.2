@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab2BBCEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 21:04:20 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55736 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab2BBCET (ORCPT
+	id S1754620Ab2BBCGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 21:06:06 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:38860 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754391Ab2BBCGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 21:04:19 -0500
-X-Originating-IP: 217.70.178.133
-X-Originating-IP: 50.43.15.19
-Date: Wed, 1 Feb 2012 18:03:56 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 14/41] rcu: Limit lazy-callback duration
-Message-ID: <20120202020356.GL29058@leaf>
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-14-git-send-email-paulmck@linux.vnet.ibm.com>
+	Wed, 1 Feb 2012 21:06:04 -0500
+Message-ID: <4F29FD22.2050004@xenotime.net>
+Date: Wed, 01 Feb 2012 19:04:02 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328125319-5205-14-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: gregkh@linuxfoundation.org
+Subject: [PATCH] staging: fix go7007-usb license
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 11:41:32AM -0800, Paul E. McKenney wrote:
-> Currently, a given CPU is permitted to remain in dyntick-idle mode
-> indefinitely if it has only lazy RCU callbacks queued.  This is vulnerable
-> to corner cases in NUMA systems, so limit the time to six seconds by
-> default.  (Currently controlled by a cpp macro.)
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-I wonder: should this scale with the number of callbacks, or do we not
-want to make estimates about memory usage based on that?
+Add MODULE_LICENSE() for this source module to fix build warning:
 
-Interestingly, with kfree_rcu, we actually know at callback queuing time
-*exactly* how much memory we'll get back by calling the callback, and we
-could sum up those numbers.
+WARNING: modpost: missing MODULE_LICENSE() in drivers/staging/media/go7007/go7007-usb.o
+see include/linux/module.h for more information
 
-- Josh Triplett
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Ross Cohen <rcohen@snurgle.org>
+---
+ drivers/staging/media/go7007/go7007-usb.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- lnx-33-rc2.orig/drivers/staging/media/go7007/go7007-usb.c
++++ lnx-33-rc2/drivers/staging/media/go7007/go7007-usb.c
+@@ -1279,3 +1279,4 @@ static struct usb_driver go7007_usb_driv
+ };
+ 
+ module_usb_driver(go7007_usb_driver);
++MODULE_LICENSE("GPL v2");
