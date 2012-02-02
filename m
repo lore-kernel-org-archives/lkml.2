@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab2BBEEc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 23:04:32 -0500
-Received: from mail.tomasu.net ([64.85.170.232]:46482 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755197Ab2BBEEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 23:04:25 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: Brad Campbell <brad@fnarfbargle.com>
-Subject: Re: GRUB doesn't like ServeRAID M1015/LSI 9220-8i (was Re: mvsas with 3.1)
-Date: Wed, 1 Feb 2012 21:04:20 -0700
-User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
-Cc: John Robinson <john.robinson@anonymous.org.uk>,
-        "linux-raid" <linux-raid@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-References: <201201131144.58044.thomas@fjellstrom.ca> <201202010742.07818.thomas@fjellstrom.ca> <4F29FCB2.6040204@fnarfbargle.com>
-In-Reply-To: <4F29FCB2.6040204@fnarfbargle.com>
+	id S1753802Ab2BBEzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 23:55:52 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51380 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab2BBEzu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 23:55:50 -0500
+Date: Wed, 1 Feb 2012 20:55:38 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>, linux-pm@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH RFC idle 1/3] x86: Avoid invoking RCU when CPU is idle
+Message-ID: <20120202045538.GF2435@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120202004253.GA10946@linux.vnet.ibm.com>
+ <1328143404-11038-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120202015428.GA8807@somewhere.redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202012104.20564.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202015428.GA8807@somewhere.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020204-4242-0000-0000-000000AB5E91
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Feb 1, 2012, Brad Campbell wrote:
-> On 01/02/12 22:42, Thomas Fjellstrom wrote:
-> > Yeah, GRUB immediately throws an "out of memory. Aborted" error, its
-> > annoying, but I reported the issue on GRUB's bug tracker after talking
-> > to a guy in #grub on freenode. Hopefully someone looks at it soon. It
-> > appears it happens so early in grub's startup that it can't even output
-> > any debug info (I was asked to run: `grub-install --debug-image=all
-> > /dev/sdX`, and did so, I get debug output when the card is not
-> > installed, but absolutely nothing when it is installed.
+On Thu, Feb 02, 2012 at 02:54:30AM +0100, Frederic Weisbecker wrote:
+> On Wed, Feb 01, 2012 at 04:43:22PM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> > 
+> > The idle loop is a quiscent state for RCU, which means that RCU ignores
+> > CPUs that have told RCU that they are idle via rcu_idle_enter().  There
+> > are nevertheless quite a few places where idle CPUs use RCU, most commonly
+> > indirectly via tracing.  This patch fixes these problems for x86.
+> > 
+> > Many of these bugs have been in the kernel for quite some time, but
+> > Frederic's recent change now gives warnings.
+> > 
+> > This patch takes the straightforward approach of pushing the
+> > rcu_idle_enter()/rcu_idle_exit() pair further down into the core
+> > of the idle loop.
 > 
-> Just another data point. I've seen this issue also. It does not appear to
-> be GRUB's fault. It appears the BIOS on the card does something funky as
-> it also prevents syslinux/isolinux/pxelinux and its friends from properly
-> detecting/reporting the machines memory. Machine has 16GB but a PXE boot
-> believes it has 3GB.
+> I guess this is about the trace_power_*() things, right?
+
+Indeed it is!  Alternative suggestions gladly accepted.  ;-)
+
+							Thanx, Paul
+
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 > 
-> I "worked around" the problem by swapping out the mainboard for a later
-> model with a different BIOS and the problem went away. Not pretty, but it
-> was the only way I could get the machine to boot with those cards in it. I
-> have 4 IBM cards in 2 machines and they work fine here. I still have the
-> dodgy mainboard and can set it up if you need help testing/reproducing the
-> issue.
+> Thanks.
+> 
 
-I meant to do some testing on it tonight, but that doesn't seem like its going 
-to happen. Basically I'm going to try that grub change and see if it helps, if 
-you have the time, and desire to help, that would be nice, but I'm most likely 
-going to try it out tomorrow sometime regardless.
-
-> Regards,
-> Brad
-
-
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
