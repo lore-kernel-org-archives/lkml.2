@@ -1,155 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab2BBUq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:46:58 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34675 "EHLO ogre.sisk.pl"
+	id S1756604Ab2BBUsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:48:22 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39860 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756597Ab2BBUq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:46:56 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM/Hibernate: Thaw kernel threads in hibernation_snapshot() in error/test path
-Date: Thu, 2 Feb 2012 21:50:37 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20120202003359.9930.9844.stgit@srivatsabhat.in.ibm.com> <201202022133.40009.rjw@sisk.pl> <4F2AF41F.3050304@linux.vnet.ibm.com>
-In-Reply-To: <4F2AF41F.3050304@linux.vnet.ibm.com>
+	id S1754183Ab2BBUsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:48:21 -0500
+Message-ID: <4F2AF68D.1000505@ti.com>
+Date: Thu, 2 Feb 2012 21:48:13 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: <balbi@ti.com>, <khilman@ti.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Charulatha V <charu@ti.com>
+Subject: Re: [PATCH v9 01/25] gpio/omap: remove dependency on gpio_bank_count
+References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com> <1328203851-20435-2-git-send-email-tarun.kanti@ti.com> <20120202184106.GC29215@legolas.emea.dhcp.ti.com> <20120202191630.GT15343@ponder.secretlab.ca> <20120202194545.GA29351@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20120202194545.GA29351@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202022150.37314.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> On 02/03/2012 02:03 AM, Rafael J. Wysocki wrote:
-> 
-> > On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> >> On 02/03/2012 01:48 AM, Rafael J. Wysocki wrote:
-> >>
-> >>> On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> >>>> On 02/03/2012 12:41 AM, Rafael J. Wysocki wrote:
-> >>>>
-> >>>>> On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> >>>>>> In the hibernation call path, the kernel threads are frozen inside
-> >>>>>> hibernation_snapshot(). If we happen to encounter an error further down
-> >>>>>> the road or if we are exiting early due to a successful freezer test,
-> >>>>>> then thaw kernel threads before returning to the caller.
-> >>>>>>
-> >>>>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> >>>>>> ---
-> >>>>>>
-> >>>>>>  kernel/power/hibernate.c |    6 ++++--
-> >>>>>>  kernel/power/user.c      |    8 ++------
-> >>>>>>  2 files changed, 6 insertions(+), 8 deletions(-)
-> >>>>>>
-> >>>>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> >>>>>> index a5d4cf0..c6dee73 100644
-> >>>>>> --- a/kernel/power/hibernate.c
-> >>>>>> +++ b/kernel/power/hibernate.c
-> >>>>>> @@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
-> >>>>>>  		 * successful freezer test.
-> >>>>>>  		 */
-> >>>>>>  		freezer_test_done = true;
-> >>>>>> -		goto Cleanup;
-> >>>>>> +		goto Thaw;
-> >>>>>>  	}
-> >>>>>>  
-> >>>>>>  	error = dpm_prepare(PMSG_FREEZE);
-> >>>>>>  	if (error) {
-> >>>>>>  		dpm_complete(PMSG_RECOVER);
-> >>>>>> -		goto Cleanup;
-> >>>>>> +		goto Thaw;
-> >>>>>>  	}
-> >>>>>>  
-> >>>>>>  	suspend_console();
-> >>>>>> @@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
-> >>>>>>  	platform_end(platform_mode);
-> >>>>>>  	return error;
-> >>>>>>  
-> >>>>>> + Thaw:
-> >>>>>> +	thaw_kernel_threads();
-> >>>>>
-> >>>>> Actaully, no.  You have to do swsusp_free() before thawing, otherwise
-> >>>>> some allocations made by the just thawed kernel threads may fail.
-> >>>>>
-> >>>> But then what about the case (in the existing code) when
-> >>>> freeze_kernel_threads() fails? It would first thaw kernel threads (in
-> >>>> fact it used to thaw even userspace tasks earlier!) before calling
-> >>>> swsusp_free(). So, the existing code itself seems to be brittle, considering
-> >>>> the point you raised. Right?
-> >>>
-> >>> Well, that's why freeze_kernel_threads() originally hadn't tried to thaw anything
-> >>> and started to do that after one of the Tejun's commits (and I forgot about
-> >>> this particular issue back then).
-> >>>
-> >>>>>>   Cleanup:
-> >>>>>>  	swsusp_free();
-> >>>>>>  	goto Close;
-> >>>>>> diff --git a/kernel/power/user.c b/kernel/power/user.c
-> >>>>>> index 3e10007..7bee91f 100644
-> >>>>>> --- a/kernel/power/user.c
-> >>>>>> +++ b/kernel/power/user.c
-> >>>>>> @@ -249,16 +249,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
-> >>>>>>  		}
-> >>>>>>  		pm_restore_gfp_mask();
-> >>>>>>  		error = hibernation_snapshot(data->platform_support);
-> >>>>>> -		if (error) {
-> >>>>>> -			thaw_kernel_threads();
-> >>>>>> -		} else {
-> >>>>>> +		if (!error) {
-> >>>>>>  			error = put_user(in_suspend, (int __user *)arg);
-> >>>>>>  			if (!error && !freezer_test_done)
-> >>>>>>  				data->ready = 1;
-> >>>>>> -			if (freezer_test_done) {
-> >>>>>> +			if (freezer_test_done)
-> >>>>>>  				freezer_test_done = false;
-> >>>>>> -				thaw_kernel_threads();
-> >>>>>> -			}
-> >>>>>>  		}
-> >>>>>>  		break;
-> >>>>>
-> >>>>> Overall, this seems to be a cleanup, or is it a bug fix?
-> >>>>>
-> >>>>
-> >>>> This was intended as a cleanup only, not a bug fix. But now, (see my point
-> >>>> above), I am beginning to feel that the existing code itself is not robust
-> >>>> enough...
-> >>>
-> >>> Well, let's pretend that we think it is safe to thaw kernel threads before
-> >>> freeing memory (actually, they are frozen after the preallocation, so it
-> >>> really should be OK).
-> >>>
-> >>
-> >>
-> >> Yeah, even I had the same reasoning in mind when writing this patch.
-> >>
-> >>  
-> >>> So I think I'll apply your patch after all.
-> >>>
-> >> :-)
-> > 
-> > However, this one should probably be regarded as a regression fix:
-> > 
-> > http://marc.info/?l=linux-kernel&m=132813572708843&w=4
-> > 
-> > because thawing all processes before calling swsusp_free() is definitely not
-> > a good idea.
-> > 
-> 
-> 
-> Right, I agree. So we need to get this into stable as well then..
+On 2/2/2012 8:45 PM, Felipe Balbi wrote:
+> On Thu, Feb 02, 2012 at 12:16:30PM -0700, Grant Likely wrote:
+>> On Thu, Feb 02, 2012 at 08:41:07PM +0200, Felipe Balbi wrote:
+>>> Hi,
+>>>
+>>> On Thu, Feb 02, 2012 at 11:00:27PM +0530, Tarun Kanti DebBarma wrote:
+>>>> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+>>>> index 0b05629..6ea7390 100644
+>>>> --- a/drivers/gpio/gpio-omap.c
+>>>> +++ b/drivers/gpio/gpio-omap.c
+>>>> @@ -28,7 +28,10 @@
+>>>>   #include<asm/gpio.h>
+>>>>   #include<asm/mach/irq.h>
+>>>>
+>>>> +static LIST_HEAD(omap_gpio_list);
+>>>
+>>> I guess it's now too late because patch is acked and everything, but I
+>>> think if you make the driver handle one bank alone and just instantiate
+>>> it multiple times (omap_gpio.0, omap_gpio.1, omap_gpio.3, etc) driver
+>>> would be faaaaaar simpler.
+>>
+>> Is there any shared state between the banks?  On my very cursory glance it
+>> looked like banks still have some interaction between them.  If not, then
+>> yes I agree that multiple instances would be better.
+>
+> A quick glance at the TRM shows that banks have separate address spaces
+> and IRQ lines. I think it's done this way because we can handoff one (or
+> more) bank to other cores on the SoC, so they need to be pretty
+> independent.
+>
+> I could be missing something though.
 
-No, we don't, this is a 3.3 merge window fallout.
+In fact the driver already handled the 6 GPIOS banks as individual devices:
 
-> Do you want me to re-spin the patch with the commit message explicitly stating
-> that this is a regression fix and so on or is the current patch good enough?
+[    0.185638] gpiochip_add: registered GPIOs 0 to 31 on device: gpio
+[    0.185882] OMAP GPIO hardware version 0.1
+[    0.186767] gpiochip_add: registered GPIOs 32 to 63 on device: gpio
+[    0.187744] gpiochip_add: registered GPIOs 64 to 95 on device: gpio
+[    0.188751] gpiochip_add: registered GPIOs 96 to 127 on device: gpio
+[    0.189819] gpiochip_add: registered GPIOs 128 to 159 on device: gpio
+[    0.190917] gpiochip_add: registered GPIOs 160 to 191 on device: gpio
 
-Yes, it would be nice to rework the changelog to reflect the real importance
-of the patch.
+That list is only used to iterate over all the instances during CPU idle:
 
-Thanks,
-Rafael
+void omap2_gpio_prepare_for_idle(int pwr_mode)
+{
+	struct gpio_bank *bank;
+
+	list_for_each_entry(bank, &omap_gpio_list, node) {
+		if (!bank->mod_usage || !bank->loses_context)
+			continue;
+
+		bank->power_mode = pwr_mode;
+
+		pm_runtime_put_sync_suspend(bank->dev);
+	}
+}
+
+void omap2_gpio_resume_after_idle(void)
+{
+	struct gpio_bank *bank;
+
+	list_for_each_entry(bank, &omap_gpio_list, node) {
+		if (!bank->mod_usage || !bank->loses_context)
+			continue;
+
+		pm_runtime_get_sync(bank->dev);
+	}
+}
+
+
+I don't know if there is some reason to not use driver_for_each_device.
+
+
+Kevin,
+
+Do we have any constraint inside omap_sram_idle to not use the device 
+iterator?
+
+
+Regards,
+Benoit
