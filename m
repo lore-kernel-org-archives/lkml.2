@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab2BBTaq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:30:46 -0500
-Received: from mail.work-microwave.de ([62.245.205.51]:35411 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757007Ab2BBTap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:30:45 -0500
-From: stigge@antcom.de
-To: w.sang@pengutronix.de, bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
-        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v3 5/7] ARM: LPC32xx: clock.c: Clock registration fixes
-Date: Thu,  2 Feb 2012 20:19:46 +0100
-Message-Id: <1328210388-21296-5-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1328210388-21296-1-git-send-email-stigge@antcom.de>
-References: <1328210388-21296-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S933017Ab2BBTdS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:33:18 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34452 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502Ab2BBTdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:33:17 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] PM/Freezer/Docs: Document the beauty of freeze/thaw semantics
+Date: Thu, 2 Feb 2012 20:36:58 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: tj@kernel.org, pavel@ucw.cz, len.brown@intel.com, rdunlap@xenotime.net,
+        linux-pm@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20120202022829.13341.64259.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120202022829.13341.64259.stgit@srivatsabhat.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202022036.59167.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adjusts the clock registration list, ported from the latest version
-of Kevin Wells' latest version of clock.c: i2s0_ck, i2s1_ck and dev:mmc0 have
-NULL pointers associated as the .dev_id and .con_id, respectively. The old
-values were not useful.
+On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
+> The way the different freeze/thaw functions encapsulate each other are quite
+> lovely from a design point of view. And as a side-effect, the way in which
+> they are invoked (cleaning up on failure for example) differs significantly
+> from how usual functions are dealt with. This is because of the underlying
+> semantics that govern the freezing and thawing of various tasks.
+> 
+> This subtle aspect that differentiates these functions from the rest, is
+> worth documenting.
+> 
+> Many thanks to Tejun Heo for providing enlightenment on this topic.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Applied.
 
---- a/arch/arm/mach-lpc32xx/clock.c
-+++ b/arch/arm/mach-lpc32xx/clock.c
-@@ -1076,10 +1098,10 @@ static struct clk_lookup lookups[] = {
- 	_REGISTER_CLOCK("dev:ssp1", NULL, clk_ssp1)
- 	_REGISTER_CLOCK("lpc32xx_keys.0", NULL, clk_kscan)
- 	_REGISTER_CLOCK("lpc32xx-nand.0", "nand_ck", clk_nand)
--	_REGISTER_CLOCK("tbd", "i2s0_ck", clk_i2s0)
--	_REGISTER_CLOCK("tbd", "i2s1_ck", clk_i2s1)
-+	_REGISTER_CLOCK(NULL, "i2s0_ck", clk_i2s0)
-+	_REGISTER_CLOCK(NULL, "i2s1_ck", clk_i2s1)
- 	_REGISTER_CLOCK("ts-lpc32xx", NULL, clk_tsc)
--	_REGISTER_CLOCK("dev:mmc0", "MCLK", clk_mmc)
-+	_REGISTER_CLOCK("dev:mmc0", NULL, clk_mmc)
- 	_REGISTER_CLOCK("lpc-net.0", NULL, clk_net)
- 	_REGISTER_CLOCK("dev:clcd", NULL, clk_lcd)
- 	_REGISTER_CLOCK("lpc32xx_udc", "ck_usbd", clk_usbd)
+Thanks,
+Rafael
+
+
+> ---
+> 
+>  Documentation/power/freezing-of-tasks.txt |   21 +++++++++++++++++++++
+>  1 files changed, 21 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
+> index ebd7490..ec715cd 100644
+> --- a/Documentation/power/freezing-of-tasks.txt
+> +++ b/Documentation/power/freezing-of-tasks.txt
+> @@ -63,6 +63,27 @@ devices have been reinitialized, the function thaw_processes() is called in
+>  order to clear the PF_FROZEN flag for each frozen task.  Then, the tasks that
+>  have been frozen leave __refrigerator() and continue running.
+>  
+> +
+> +Rationale behind the functions dealing with freezing and thawing of tasks:
+> +-------------------------------------------------------------------------
+> +
+> +freeze_processes():
+> +  - freezes only userspace tasks
+> +
+> +freeze_kernel_threads():
+> +  - freezes all tasks (including kernel threads) because we can't freeze
+> +    kernel threads without freezing userspace tasks
+> +
+> +thaw_kernel_threads():
+> +  - thaws only kernel threads; this is particularly useful if we need to do
+> +    anything special in between thawing of kernel threads and thawing of
+> +    userspace tasks, or if we want to postpone the thawing of userspace tasks
+> +
+> +thaw_processes():
+> +  - thaws all tasks (including kernel threads) because we can't thaw userspace
+> +    tasks without thawing kernel threads
+> +
+> +
+>  III. Which kernel threads are freezable?
+>  
+>  Kernel threads are not freezable by default.  However, a kernel thread may clear
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
 
