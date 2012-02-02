@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab2BBUQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:16:10 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:21804 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab2BBUQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:16:07 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] pci: Fix pci cardbus removal
-Date: Thu,  2 Feb 2012 12:15:48 -0800
-Message-Id: <1328213748-2804-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F2AEF01.0071,ss=1,re=0.000,fgs=0
+	id S1755807Ab2BBUQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:16:59 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33082 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751468Ab2BBUQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:16:57 -0500
+Message-ID: <1328213697.2342.154.camel@work-vm>
+Subject: Re: [PATCH] merge_config.sh: Use the first file as the initial
+ config
+From: John Stultz <john.stultz@linaro.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Michal Marek <mmarek@suse.cz>, kernel-team@fedoraproject.org,
+        linux-kernel@vger.kernel.org, Darren Hart <dvhart@linux.intel.com>
+Date: Thu, 02 Feb 2012 12:14:57 -0800
+In-Reply-To: <20120201170157.GA4907@zod.bos.redhat.com>
+References: <20120201170157.GA4907@zod.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020220-7182-0000-0000-000000A8B4FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During test busn_res allocation with cardbus, found pci card removal is not
-working anymore, and it turns out it is broken by:
+On Wed, 2012-02-01 at 12:01 -0500, Josh Boyer wrote:
+> Take the first config fragment and use it verbatim as the initial config set.
+> This avoids running the verification loop for the first file, as nothing has
+> actually been merged at this point.  This significantly increases performance
+> for large config fragments.
+> 
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+> ---
+> 
+> When experimenting with merge_config.sh on the Fedora config fragments, this
+> cut the execution time of a single invocation with all the config fragments
+> in half (from 28 seconds to 13 seconds).
 
-|commit 79cc9601c3e42b4f0650fe7e69132ebce7ab48f9
-|Date:   Tue Nov 22 21:06:53 2011 -0800
-|
-|    PCI: Only call pci_stop_bus_device() one time for child devices at remove
+Adding Darren to the CC.
 
-that patch changed pci_remove_behind_bridge behavoir that yenta_carbus depends.
+Nice! Looks ok to me.
 
-Restore the behavoir by:
-1. rename pci_remove_behind_bridge to __pci_remove_behind_bridge, and let
-	__pci_remove_bus_device() call it instead.
-2. add pci-stop_befind_bridge that will stop device under bridge
-3. add back new pci_remove_behind_bridge that will stop and remove device
-	under bridge.
+Acked-by: John Stultz <john.stultz@linaro.org>
 
-This one is for v3.3
+>  scripts/kconfig/merge_config.sh |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
+> index ceadf0e..23d738a 100644
+> --- a/scripts/kconfig/merge_config.sh
+> +++ b/scripts/kconfig/merge_config.sh
+> @@ -58,12 +58,16 @@ while true; do
+>  	esac
+>  done
+> 
+> -
+> +INITFILE=$1
+> +shift;
+> 
+>  MERGE_LIST=$*
+>  SED_CONFIG_EXP="s/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/p"
+>  TMP_FILE=$(mktemp ./.tmp.config.XXXXXXXXXX)
+> 
+> +echo "Using $INITFILE as base"
+> +cat $INITFILE > $TMP_FILE
+> +
+>  # Merge files, printing warnings on overrided values
+>  for MERGE_FILE in $MERGE_LIST ; do
+>  	echo "Merging $MERGE_FILE"
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
----
- drivers/pci/remove.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
-
-Index: linux-2.6/drivers/pci/remove.c
-===================================================================
---- linux-2.6.orig/drivers/pci/remove.c
-+++ linux-2.6/drivers/pci/remove.c
-@@ -78,6 +78,7 @@ void pci_remove_bus(struct pci_bus *pci_
- }
- EXPORT_SYMBOL(pci_remove_bus);
- 
-+static void __pci_remove_behind_bridge(struct pci_dev *dev);
- /**
-  * pci_remove_bus_device - remove a PCI device and any children
-  * @dev: the device to remove
-@@ -95,7 +96,7 @@ static void __pci_remove_bus_device(stru
- 	if (dev->subordinate) {
- 		struct pci_bus *b = dev->subordinate;
- 
--		pci_remove_behind_bridge(dev);
-+		__pci_remove_behind_bridge(dev);
- 		pci_remove_bus(b);
- 		dev->subordinate = NULL;
- 	}
-@@ -108,6 +109,24 @@ void pci_remove_bus_device(struct pci_de
- 	__pci_remove_bus_device(dev);
- }
- 
-+static void __pci_remove_behind_bridge(struct pci_dev *dev)
-+{
-+	struct list_head *l, *n;
-+
-+	if (dev->subordinate)
-+		list_for_each_safe(l, n, &dev->subordinate->devices)
-+			__pci_remove_bus_device(pci_dev_b(l));
-+}
-+
-+static void pci_stop_behind_bridge(struct pci_dev *dev)
-+{
-+	struct list_head *l, *n;
-+
-+	if (dev->subordinate)
-+		list_for_each_safe(l, n, &dev->subordinate->devices)
-+			pci_stop_bus_device(pci_dev_b(l));
-+}
-+
- /**
-  * pci_remove_behind_bridge - remove all devices behind a PCI bridge
-  * @dev: PCI bridge device
-@@ -118,11 +137,8 @@ void pci_remove_bus_device(struct pci_de
-  */
- void pci_remove_behind_bridge(struct pci_dev *dev)
- {
--	struct list_head *l, *n;
--
--	if (dev->subordinate)
--		list_for_each_safe(l, n, &dev->subordinate->devices)
--			__pci_remove_bus_device(pci_dev_b(l));
-+	pci_stop_behind_bridge(dev);
-+	__pci_remove_behind_bridge(dev);
- }
- 
- static void pci_stop_bus_devices(struct pci_bus *bus)
