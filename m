@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab2BBOIa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:08:30 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:55781
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756108Ab2BBOI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:08:29 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: jack_wang@usish.com, lindar_liu@usish.com, linux-scsi@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] pm8001: Fix typo in pm8001_hwi.c
-Date: Thu,  2 Feb 2012 23:07:40 +0900
-Message-Id: <1328191660-2037-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1756413Ab2BBOLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:11:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49032 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756094Ab2BBOLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 09:11:06 -0500
+Message-ID: <4F2A9960.2090500@zytor.com>
+Date: Thu, 02 Feb 2012 06:10:40 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Baron <jbaron@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 0/5 v2] [GIT PULL] x86/jump label: Paranoid checks and
+ 2 or 5 byte nops
+References: <20120128160925.275163704@goodmis.org> <20120130144857.GA22013@elte.hu> <1327936060.22710.165.camel@gandalf.stny.rr.com> <20120131194813.GA12074@elte.hu> <1328072925.5882.57.camel@gandalf.stny.rr.com> <20120201080539.GA11770@elte.hu> <1328109697.5882.65.camel@gandalf.stny.rr.com> <20120202135154.GA10315@elte.hu>
+In-Reply-To: <20120202135154.GA10315@elte.hu>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct typo "deviece" to "device" in
-drivers/scsi/pm8001/pm8001_hwi.c
+On 02/02/2012 05:51 AM, Ingo Molnar wrote:
+> [    0.000000] Unexpected op at enqueue_task_fair+0xab/0x1fb [ffffffff81078a8d] (0f 1f 44 00 00) arch/x86/kernel/jump_label.c:74
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/scsi/pm8001/pm8001_hwi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+So this is presumably the expected NOP... what was it expecting instead?
 
-diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
-index b7b92f7..92f3429 100644
---- a/drivers/scsi/pm8001/pm8001_hwi.c
-+++ b/drivers/scsi/pm8001/pm8001_hwi.c
-@@ -3532,7 +3532,7 @@ static void process_one_iomb(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 		break;
- 	case OPC_OUB_DEREG_DEV:
- 		PM8001_MSG_DBG(pm8001_ha,
--			pm8001_printk("unresgister the deviece\n"));
-+			pm8001_printk("unresgister the device\n"));
- 		mpi_dereg_resp(pm8001_ha, piomb);
- 		break;
- 	case OPC_OUB_GET_DEV_HANDLE:
+	-hpa
+
 -- 
-1.7.6.5
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
