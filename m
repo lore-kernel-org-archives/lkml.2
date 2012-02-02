@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab2BBOo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:44:59 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35267 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab2BBOo5 (ORCPT
+	id S932179Ab2BBOuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:50:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49816 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067Ab2BBOuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:44:57 -0500
-Date: Thu, 2 Feb 2012 23:44:50 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
-        Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [test result] dirty logging without srcu update -- Re:
- [RFC][PATCH] srcu: Implement call_srcu()
-Message-Id: <20120202234450.20b75999de0e3b05043ffb71@gmail.com>
-In-Reply-To: <4F2A6D46.6010406@redhat.com>
-References: <1328016724.2446.229.camel@twins>
-	<4F27F0E6.1040309@redhat.com>
-	<1328017807.2446.230.camel@twins>
-	<20120131222447.GH2391@linux.vnet.ibm.com>
-	<1328091749.2760.34.camel@laptop>
-	<4F29178A.1090306@redhat.com>
-	<4F2918D5.4050104@redhat.com>
-	<4F291B56.30600@oss.ntt.co.jp>
-	<4F291B92.8070402@redhat.com>
-	<4F291E1F.3030505@oss.ntt.co.jp>
-	<4F293D14.5030008@redhat.com>
-	<20120202144633.1fc9b997.yoshikawa.takuya@oss.ntt.co.jp>
-	<4F2A611E.6090005@redhat.com>
-	<4F2A63B9.8000405@oss.ntt.co.jp>
-	<4F2A63C6.7030301@redhat.com>
-	<4F2A682C.7090109@oss.ntt.co.jp>
-	<4F2A6D46.6010406@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Feb 2012 09:50:09 -0500
+Date: Thu, 2 Feb 2012 15:50:02 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Tim Hockin <thockin@hockin.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+Message-ID: <20120202145000.GC9071@somewhere.redhat.com>
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+ <20120201163126.GA19837@google.com>
+ <20120201184959.GH6731@somewhere.redhat.com>
+ <20120201115107.93e11471.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120201115107.93e11471.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity <avi@redhat.com> wrote:
-
-> > I have one concern about correctness issue though:
-> >
-> >     concurrent rmap write protection may not be safe due to
-> >     delayed tlb flush ... cannot happen?
+On Wed, Feb 01, 2012 at 11:51:07AM -0800, Andrew Morton wrote:
+> On Wed, 1 Feb 2012 19:50:01 +0100
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> What do you mean by concurrent rmap write protection?
+> > On Wed, Feb 01, 2012 at 08:31:26AM -0800, Tejun Heo wrote:
+> > > On Wed, Feb 01, 2012 at 04:37:40AM +0100, Frederic Weisbecker wrote:
+> > > > Changes In this version:
+> > > > 
+> > > > - Split 32/64 bits version of res_counter_write_u64() [1/10]
+> > > >   Courtesy of Kirill A. Shutemov
+> > > > 
+> > > > - Added Kirill's ack [8/10]
+> > > > 
+> > > > - Added selftests [9/10], [10/10]
+> > > > 
+> > > > Please consider for merging. At least two users want this feature:
+> > > 
+> > > Has there been further discussion about this approach?  IIRC, we
+> > > weren't sure whether this should be merged.
+> > 
+> > The doubts I have noticed were:
+> > 
+> > Q: Can't we rather focus on a global solution to fight forkbombs?
+> > 
+> > If we can find a reliable solution that works in any case and that
+> > prevent from any forkbomb to impact the rest of the system then it
+> > may be an acceptable solution. But I'm not aware of such feature.
+> > 
+> > Besides, another point in having this task counter is that we
+> > have a per container limit. Assuming all containers are running under
+> > the same user, we can protect against a container starving all others
+> > with a massive amount of processes close to the NR_PROC rlimit.
+> > 
+> > Q: Can/should we implement a limitation on the number of "fork" as well?
+> >    (as in https://lkml.org/lkml/2011/11/3/233 )
+> > 
+> > I'm still not sure about why such a thing is needed. Is it really something we
+> > want? Why can't the task counter be used instead?
+> > 
+> > I need more details from the author of this patch. But I doubt we can merge
+> > both subsystems, they have pretty different semantics.
 > 
+> What I struggle with is "is this feature useful enough to warrant
+> merging it"?
 
-Not sure, but other codes like:
+The reason why I've been working on it is because we need this feature
+(at least) for LXC.
 
-- mmu_sync_children()
-	for_each_sp(pages, sp, parents, i)
-		protected |= rmap_write_protect(vcpu->kvm, sp->gfn);
+Two people from our teams have jumped onto the discussion to express
+that they want this feature and why:
 
-		if (protected)
-			kvm_flush_remote_tlbs(vcpu->kvm);
-
-- kvm_mmu_get_page()
-	if (rmap_write_protect(vcpu->kvm, gfn))
-		kvm_flush_remote_tlbs(vcpu->kvm);
-
-I just wondered what can happen if GET_DIRTY_LOG is being processed
-behind these processing?
-
-They may find nothing to write protect and won't do kvm_flush_remote_tlbs()
-if the gfn has been already protected by GET_DIRTY_LOG.
-
-But GET_DIRTY_LOG may still be busy write protecting other pages and
-others can return before.  (My code releases mmu_lock to not include
-__put_user() in the critical section.)
-
-I am not still enough familier with these code yet.
-(maybe empty concern)
-
-	Takuya
+https://lkml.org/lkml/2011/12/13/309
+https://lkml.org/lkml/2011/12/13/364
