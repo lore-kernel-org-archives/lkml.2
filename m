@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933344Ab2BBTUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:20:21 -0500
-Received: from antcom.de ([188.40.178.216]:50564 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932162Ab2BBTUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:20:19 -0500
-Message-ID: <4F2AE1F0.2070200@antcom.de>
-Date: Thu, 02 Feb 2012 20:20:16 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120104 Icedove/8.0
-MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
+	id S933354Ab2BBTUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:20:54 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:33883 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754800Ab2BBTUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:20:52 -0500
+From: stigge@antcom.de
+To: w.sang@pengutronix.de, bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
         sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
         linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 6/7] LPC32xx: clock.c: USB PLL fix
-References: <1327939327-7799-1-git-send-email-stigge@antcom.de> <1327939327-7799-6-git-send-email-stigge@antcom.de> <20120131103401.GJ2471@pengutronix.de> <4F293DAF.4050402@antcom.de> <20120202164920.GC3219@pengutronix.de>
-In-Reply-To: <20120202164920.GC3219@pengutronix.de>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v3 4/7] ARM: LPC32xx: clock.c: jiffies wrapping
+Date: Thu,  2 Feb 2012 20:19:45 +0100
+Message-Id: <1328210388-21296-4-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1328210388-21296-1-git-send-email-stigge@antcom.de>
+References: <1328210388-21296-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+This patch fixes the jiffies wrapping bug in clock.c.
 
-On 02/02/2012 05:49 PM, Wolfram Sang wrote:
-> Yes, please repost this series with the updates. And without USB &
-> MMC updates. Those updates should be in later series, when we
-> actually add support for these devices.
+It corrects the timeout computation based on jiffies, uses time_before() for
+correct wrapping handling and replaces a binary "&" which should really be a
+logical "&&" in a truth expression.
 
-OK, reposting.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Wolfram Sang <w.sang@pengutronix.de> 
+Tested-by: Wolfram Sang <w.sang@pengutronix.de>
 
-> First step, I'd suggest: After you repost this series, I'll create
-> a branch with the relevant patches (defconfig, buildfixes, clock
-> fixes) and send a pull-request to Arnd/Olof. You can decide which
-> issue you want to tackle next. I'd think MMC or USB are more of the
-> lower hanging fruits, but I leave that to you.
-
-I'd then first repost the GPIO fixes I posted previously and then look
-after USB if that's fine for you. :-)
-
-Thanks,
-
-Roland
+diff --git a/arch/arm/mach-lpc32xx/clock.c b/arch/arm/mach-lpc32xx/clock.c
+index 8e79313..f64c9a1 100644
+--- a/arch/arm/mach-lpc32xx/clock.c
++++ b/arch/arm/mach-lpc32xx/clock.c
+@@ -128,7 +128,7 @@ static struct clk osc_32KHz = {
+ static int local_pll397_enable(struct clk *clk, int enable)
+ {
+ 	u32 reg;
+-	unsigned long timeout = 1 + msecs_to_jiffies(10);
++	unsigned long timeout = jiffies + msecs_to_jiffies(10);
+ 
+ 	reg = __raw_readl(LPC32XX_CLKPWR_PLL397_CTRL);
+ 
+@@ -143,7 +143,7 @@ static int local_pll397_enable(struct clk *clk, int enable)
+ 		/* Wait for PLL397 lock */
+ 		while (((__raw_readl(LPC32XX_CLKPWR_PLL397_CTRL) &
+ 			LPC32XX_CLKPWR_SYSCTRL_PLL397_STS) == 0) &&
+-			(timeout > jiffies))
++			time_before(jiffies, timeout))
+ 			cpu_relax();
+ 
+ 		if ((__raw_readl(LPC32XX_CLKPWR_PLL397_CTRL) &
+@@ -157,7 +157,7 @@ static int local_pll397_enable(struct clk *clk, int enable)
+ static int local_oscmain_enable(struct clk *clk, int enable)
+ {
+ 	u32 reg;
+-	unsigned long timeout = 1 + msecs_to_jiffies(10);
++	unsigned long timeout = jiffies + msecs_to_jiffies(10);
+ 
+ 	reg = __raw_readl(LPC32XX_CLKPWR_MAIN_OSC_CTRL);
+ 
+@@ -172,7 +172,7 @@ static int local_oscmain_enable(struct clk *clk, int enable)
+ 		/* Wait for main oscillator to start */
+ 		while (((__raw_readl(LPC32XX_CLKPWR_MAIN_OSC_CTRL) &
+ 			LPC32XX_CLKPWR_MOSC_DISABLE) != 0) &&
+-			(timeout > jiffies))
++			time_before(jiffies, timeout))
+ 			cpu_relax();
+ 
+ 		if ((__raw_readl(LPC32XX_CLKPWR_MAIN_OSC_CTRL) &
+@@ -384,7 +384,7 @@ static int local_usbpll_enable(struct clk *clk, int enable)
+ {
+ 	u32 reg;
+ 	int ret = -ENODEV;
+-	unsigned long timeout = 1 + msecs_to_jiffies(10);
++	unsigned long timeout = jiffies + msecs_to_jiffies(10);
+ 
+ 	reg = __raw_readl(LPC32XX_CLKPWR_USB_CTRL);
+ 
+@@ -397,7 +397,7 @@ static int local_usbpll_enable(struct clk *clk, int enable)
+ 		__raw_writel(reg, LPC32XX_CLKPWR_USB_CTRL);
+ 
+ 		/* Wait for PLL lock */
+-		while ((timeout > jiffies) & (ret == -ENODEV)) {
++		while (time_before(jiffies, timeout) && (ret == -ENODEV)) {
+ 			reg = __raw_readl(LPC32XX_CLKPWR_USB_CTRL);
+ 			if (reg & LPC32XX_CLKPWR_USBCTRL_PLL_STS)
+ 				ret = 0;
