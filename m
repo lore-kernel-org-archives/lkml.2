@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab2BBKvF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 05:51:05 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36409 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754405Ab2BBKvC (ORCPT
+	id S1755564Ab2BBKys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 05:54:48 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61966 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab2BBKyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 05:51:02 -0500
-Date: Thu, 2 Feb 2012 11:50:59 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Keith Packard <keithp@keithp.com>, stern@rowland.harvard.edu,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH] Regression: Revert "Bluetooth: use buffer priority to
- mark URB_ISO_ASAP flag"
-Message-ID: <20120202105059.GC1643@atrey.karlin.mff.cuni.cz>
-References: <1327298281-2502-1-git-send-email-keithp@keithp.com>
+	Thu, 2 Feb 2012 05:54:47 -0500
+Message-ID: <4F2A6B74.4030500@monstr.eu>
+Date: Thu, 02 Feb 2012 11:54:44 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327298281-2502-1-git-send-email-keithp@keithp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze changes for 3.3 rc3
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Linus,
 
-> This reverts commit b8aabfc92249b239c425da7e4ca85b7e4855e984.
-> 
-> URB_ISO_ASAP may only be used with iso end points, but this patch was
-> attempting to use it with a bulk endpoint. When DEBUG is defined in
-> the USB stack, it checks for invalid flags and returns -EINVAL instead
-> of actually transmitting the data.
-> 
-> Signed-off-by: Keith Packard <keithp@keithp.com>
+I had to revert one patch because another patch turned on generic Kconfig option.
+More information is in the patch.
 
-This patch fixes a regression, and it is not in 3.3.0-rc2.
+Thanks,
+Michal
 
-(And for the record I also believe that #ifdef debug should not
-introduce extra error returns. WARN_ON() should be enough. Don't break
-systems for people who try to be nice and enable debugging.)
-									Pavel
+The following changes since commit 27ba234c8dfe86c96675d4ef275d1d3c1f5f7053:
+   Linus Torvalds (1):
+         Merge tag 'tty-3.3-rc1' of git://git.kernel.org/.../gregkh/tty
+
+are available in the git repository at:
+
+   git://git.monstr.eu/linux-2.6-microblaze.git next
+
+Michal Simek (1):
+       Revert "microblaze: Add topology init"
+
+  arch/microblaze/kernel/setup.c |   21 +--------------------
+  1 files changed, 1 insertions(+), 20 deletions(-)
+
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
