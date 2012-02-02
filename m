@@ -1,133 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab2BBLnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 06:43:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58178 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754793Ab2BBLnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 06:43:21 -0500
-Message-ID: <4F2A76C4.2010601@redhat.com>
-Date: Thu, 02 Feb 2012 12:43:00 +0100
-From: Igor Mammedov <imammedo@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1755887Ab2BBLtV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 06:49:21 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:59125 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755509Ab2BBLtU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 06:49:20 -0500
+Date: Thu, 2 Feb 2012 13:49:12 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: balbi@ti.com, "Gupta, Ajay Kumar" <ajay.gupta@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Pasupathy, Visuvanadan" <vichu@ti.com>
+Subject: Re: RFC: usb: musb: Changes proposed for adding CPPI4.1 DMA
+Message-ID: <20120202114911.GH29134@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <47CEF8C4B26E8C44B22B028A650E0EA9317C5B92@DBDE01.ent.ti.com>
+ <4F22CC37.8010307@mvista.com>
+ <47CEF8C4B26E8C44B22B028A650E0EA9317D2B9D@DBDE01.ent.ti.com>
+ <4F27D011.8060203@mvista.com>
+ <47CEF8C4B26E8C44B22B028A650E0EA9317D9346@DBDE01.ent.ti.com>
+ <20120202090923.GC9948@legolas.emea.dhcp.ti.com>
+ <4F2A6FAC.8010906@mvista.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: kvm@vger.kernel.org,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        kosaki.motohiro@jp.fujitsu.com, tj@kernel.org, x86@kernel.org,
-        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>
-Subject: Need advice how to fix an access to uninitialized per_cpu clock
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2xzXx3ruJf7hsAzo"
+Content-Disposition: inline
+In-Reply-To: <4F2A6FAC.8010906@mvista.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While playing with kvm cpu hot-plug, I've probably stumbled on general
-kernel bug. So I'm lookng for advice on approach to fix it.
 
-When kvm guest uses kvmclock, it may hang on cpu hot-plug at
+--2xzXx3ruJf7hsAzo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-     BSP:
-      smp_apic_timer_interrupt
-        ...
-          -> do_timer
-            -> update_wall_time
+On Thu, Feb 02, 2012 at 03:12:44PM +0400, Sergei Shtylyov wrote:
+> Hello.
+>=20
+> On 02-02-2012 13:09, Felipe Balbi wrote:
+>=20
+> >>>>>>As a next step to dma-engine based cppi4.1 driver implementation
+> >>>>>>this RFC has the overview of changes in the musb driver.
+> >>>>>>RFC on CPPI slave driver changes will follow next.
+> >>>
+> >>>>>>Overview of changes in the musb driver
+> >>>>>>=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+>=20
+> >>>>>>1)Add a dma-engine.c file in the drivers/usb/musb folder
+> >>>>>>2)This file will host the current musb dma APIs and translates them=
+ to
+> >>>>>>     dmaengine APIs.
+> >>>>>>3)This will help to keep the changes in drivers/usb/musb/musb* files
+> >>>>>>     minimal and also to retain compatibility other DMA (Mentor etc=
+=2E)
+> >>>>>>     drivers which are yet to be moved to drivers/dma
+> >>>>>>4)drivers/usb/musb/dma-engine.c, will wrap the dmaengine APIs to
+> >>>>>>     make existing musb APIs compatible.
+> >>>>>>5)drivers/usb/musb/dma-engine.c file will implement the filter
+> >>>>>>     functions and also implement .dma_controller_create (allocates
+> >>>>>>     &    provides "dma_controller" object) and .dma_controller_del=
+ete
+> >>>>>>6)CPPI4.1 DMA specific queue and buffer management will be internal
+> >>>>>>     to slave CPPI DMA driver implementation.
+>=20
+> >>>>>      You mean drivers/dma/ driver?
+>=20
+> >>>>yes.
+>=20
+> >>>>>I think you are forgotting that CPPI 4.1 MUSB
+> >>>>>has some registers controlling DMA/interrupts beside those of CPPI 4=
+=2E1
+> >>>>>controller and MUSB core itself. How do they fit in your scheme?
+>=20
+> >>>>We have been discussing on how to handle these in slave driver and
+>=20
+> >>>     These certainly cannot be handled in the slave driver because the
+> >>>registers are different for every controller implementation and, the
+> >>>main thing, they don't belong to CPPI 4.1 as such.
+>=20
+> >>Felipe suggested to use device tree for differences in register maps
+> >>among different platforms.
+>=20
+> >>I do see issues in reading wrapper interrupt status register and then
+> >>calling musb_interrupt() [defined inside musb_core.c] from slave driver.
+>=20
+> >I have been thinking about that lately. In the end of the day, I want to
+> >remove direct dependencies between musb_core and glue. So what I was
+> >thinking about goes like so:
+>=20
+> >Glue layer basically has to prepare musb->int_usb, musb->int_tx and
+> >musb->int_rx for musb. Maybe handle some glue specific stuff and so on,
+> >but the IRQ line still belongs to MUSB.
+>=20
+> >So the idea would be to add something like:
+>=20
+> >musb_platform_read_intrusb()
+> >musb_platform_read_intrtx()
+> >musb_platform_read_intrrx()
+>=20
+> >those would default to basic:
+>=20
+> >musb_readb(musb->mregs, MUSB_INTRUSB);
+> >musb_readw(musb->mregs, MUSB_INTRTX);
+> >musb_readw(musb->mregs, MUSB_INTRRX);
+>=20
+> >if platform ops aren't passed. So, it would look something like:
+>=20
+> >diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+> >index 72a424d..ba0bcc2 100644
+> >--- a/drivers/usb/musb/musb_core.c
+> >+++ b/drivers/usb/musb/musb_core.c
+> >@@ -1488,9 +1488,9 @@ static irqreturn_t generic_interrupt(int irq, void=
+ *__hci)
+> >
+> >  	spin_lock_irqsave(&musb->lock, flags);
+> >
+> >-	musb->int_usb =3D musb_readb(musb->mregs, MUSB_INTRUSB);
+> >-	musb->int_tx =3D musb_readw(musb->mregs, MUSB_INTRTX);
+> >-	musb->int_rx =3D musb_readw(musb->mregs, MUSB_INTRRX);
+> >+	musb->int_usb =3D musb_platform_read_intusb(musb->controller);
+> >+	musb->int_tx =3D musb_platform_read_inttx(musb->controller);
+> >+	musb->int_rx =3D musb_platform_read_intrx(musb->controller);
+> >
+> >  	if (musb->int_usb || musb->int_tx || musb->int_rx)
+> >  		retval =3D musb_interrupt(musb);
+> >
+> >those would make sure to prepare the cached IRQ status registers for
+> >MUSB core.
+> >
+> >Keep in mind that this is only necessary because on
+> >DaVinci/OMAP-L13x/AM35x devices you guys have decided to make the
+> >wrapper read the IRQ status register from MUSB address space. And
+> >because those are clear-on-read, we're screwed.
+>=20
+> >Oh well, this is the best I could come up with. Any problems you guys
+> >see ?
+>=20
+>    On DaVinci/OMAP-L1x these 3 calls need to extract data from a
+> single 32-bit register, so that doesn't seem a good idea to me. The
 
-and a being on-lined CPU at waiting on sync with BSP at:
-      start_secondary:
-        while (!cpumask_test_cpu(smp_processor_id(), cpu_active_mask))
-                     cpu_relax();
+that's a problem on DaVinci/OMAP-L1x.
 
-because of unusually big value returned by clock->read(clock) in
-update_wall_time.
-This happens due to overflow in pvclock_get_nsec_offset
+> current scheme seems OK to me. Or either implement a signle function
+> to read all 3 interrupt masks...
+>=20
+> musb_platform_read_ints()
 
-         u64 delta = tsc - shadow->tsc_timestamp;
+I wanted to avoid glue layer having to access the musb pointer directly.
+If I implement musb_platform_read_ints() I will have to pass musb as
+argument, or agree on another way to return the values. Thanks, but no
+thanks.
 
-when shadow->tsc_timestamp is bigger than tsc.
-And since pvclock_clocksource_read remembers and returns largest
-value of any clock that ever was returned, clock for affected guest
-virtually freezes.
+I want to remove direct access of musb from glue layer, and at some
+point I will have to do it in order to fix a few problems we might still
+have with modules, basically because glue layer could be trying to
+access memory which was freed already.
 
-Overflow happens due to reading undefined values from uninitialized
-per_cpu variable hv_clock. In case of cpu hot-plug, clock is read at
-least once on being on-lined cpu before it is initialized for this
-cpu:
+--=20
+balbi
 
-       start_secondary
-         |-> smp_callin
-         |  ->  smp_store_cpu_info
-         |    -> identify_secondary_cpu
-         |      -> mtrr_ap_init
-         |        -> mtrr_restore
-         |          -> stop_machine_from_inactive_cpu
-         |            -> queue_stop_cpus_work
-         |              ...
-         |                -> kvm_clock_read
-         |...
-         |x86_cpuinit.setup_percpu_clockev
+--2xzXx3ruJf7hsAzo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-full call chain is below:
-[    0.002999]  [<ffffffff8102fc74>] pvclock_clocksource_read+0x9f/0x275
-[    0.002999]  [<ffffffff81071f9e>] ? check_preempt_wakeup+0x11c/0x1c2
-[    0.002999]  [<ffffffff8102f05d>] kvm_clock_read+0x21/0xd3
-[    0.002999]  [<ffffffff810154b1>] sched_clock+0x9/0xd
-[    0.002999]  [<ffffffff81070509>] sched_clock_local+0x12/0x75
-[    0.002999]  [<ffffffff8107065e>] sched_clock_cpu+0x84/0xc6
-[    0.002999]  [<ffffffff8106bfd3>] update_rq_clock+0x28/0x108
-[    0.002999]  [<ffffffff8106c15e>] enqueue_task+0x1d/0x64
-[    0.002999]  [<ffffffff8106c500>] activate_task+0x22/0x24
-[    0.002999]  [<ffffffff8106c90c>] ttwu_do_activate.constprop.39+0x32/0x61
-[    0.002999]  [<ffffffff8106cd0c>] try_to_wake_up+0x17e/0x1e1
-[    0.002999]  [<ffffffff8106cd98>] wake_up_process+0x15/0x17
-[    0.002999]  [<ffffffff8109ebbf>] cpu_stop_queue_work+0x3d/0x5f
-[    0.002999]  [<ffffffff8109ec6c>] queue_stop_cpus_work+0x8b/0xb6
-[    0.002999]  [<ffffffff8109f0e3>] stop_machine_from_inactive_cpu+0xb4/0xed
-[    0.002999]  [<ffffffff81023896>] ? mtrr_restore+0x4a/0x4a
-[    0.002999]  [<ffffffff81023eb3>] mtrr_ap_init+0x5a/0x5c
-[    0.002999]  [<ffffffff814b95f7>] identify_secondary_cpu+0x19/0x1b
-[    0.002999]  [<ffffffff814bc0d3>] smp_store_cpu_info+0x3c/0x3e
-[    0.002999]  [<ffffffff814bc4ed>] start_secondary+0x122/0x263
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Looking at native_smp_prepare_cpus in arch/x86/kernel/smpboot.c
-I see that it unconditionally calls set_mtrr_aps_delayed_init which
-in turn effectively converts calls to mtrr_ap_init to nop ops.
-And later call to native_smp_cpus_done -> mtrr_aps_init completes
-mtrr initialization.
+iQIcBAEBAgAGBQJPKng3AAoJEIaOsuA1yqREvB0QAKazyBwVA/kAdtoRcokWQ/Sg
+weCufONT6G7VL2ezjCQGcQ18VYa1XK4nAq3pMUA8PVsT0rBPqcFn0FqyssgExnYY
+e265OuUhDsCcBF2CfeGIgahJxs5iEyTqHIE/DdZ6GMY3Fa7oVioD36uNZaPGEIAP
+qWvD2e4yyjZYPP/dWeOiO7Emy4jXPcMbSMMqARi/DwelBZ4H2Qp2yYKrbwsivWM5
+6lUyi6LojXtkHXKZQm2uXUbLSISPSU1QtQW6iFqVm2zkaOVCBUu5KRsOHLaGMxYD
+2yLvAmRTCTCiNPpV8/WMMOirTVO4OOcJwgcNH1Zp+oOP8sUtRYmK+a11DebZnKmb
+K7rMbBmzUOn2YhAqcIBFV0J+AR+zM4sYFPqA+dAb6EIAUFuNF9IxtXZ2poUrc3rH
+sV4YeJCHE/d2eOzY6zGb2R7edAdcUWOn890pI1VpSzCBh7zssYGKeYJ0WNvYokUl
+riHSz4sbHj9qynnnA7J2FrwBDNMlt5sFxj1K1HZ8QHzcD5pxTZxkcpYvbIgnXt1w
+vEtTxBiO5P+6JRLdYJvWeBpiBaFGk1SR0O6oWcJ5Qo+gOsEWjQ7Wj9VCXJBgEdWn
+NlZbvibcPTPMY2an4xO7dlCf4PHgkoCOG0NVCa2fPg+iDmurxUULIXIj3nZXidaX
+/NqE1Dk4FIskgY5YT4dU
+=5yJv
+-----END PGP SIGNATURE-----
 
-The same pattern might be noticed in suspend/hibernate handlers, that
-call enable_nonboot_cpus.
-
-   enable_nonboot_cpus
-     -> arch_enable_nonboot_cpus_begin
-          -> set_mtrr_aps_delayed_init
-
-     -> boot secondary cpus
-
-     -> arch_enable_nonboot_cpus_end
-          -> mtrr_aps_init
-
-So question is if the calling mtrr_ap_init so early in
-identify_secondary_cpu is really necessary?
- From current code it looks like it is never called at normal smp
-boot/resume time. And only path that triggers it is cpu hot-plug one.
-
-I see following possible solutions:
-
-1. Could the call to mtrr_ap_init be just moved from identify_secondary_cpu
-to start_secondary right after x86_cpuinit.setup_percpu_clockev call?
-This will prevent an access to uninitialized per_cpu clock. Or move
-x86_cpuinit.setup_percpu_clockev before smp_callin?
-
-2. Another way to prevent access to uninitialized per_cpu clock is to
-introduce hook.early_percpu_clock_init that will be called before
-smp_callin or right before mtrr_ap_init.
-
-I hope to see opinions about this matter from a more experienced people than me.
-
--- 
-Thanks,
-  Igor
+--2xzXx3ruJf7hsAzo--
