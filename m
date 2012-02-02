@@ -1,103 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab2BBWQa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 17:16:30 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:52662 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502Ab2BBWQ2 convert rfc822-to-8bit (ORCPT
+	id S1757611Ab2BBWUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 17:20:00 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:55781 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133Ab2BBWT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 17:16:28 -0500
+	Thu, 2 Feb 2012 17:19:58 -0500
+Date: Thu, 2 Feb 2012 23:19:45 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
+cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 1/7 v2] dmaengine: add a simple dma library
+In-Reply-To: <4F27CA7D.601@renesas.com>
+Message-ID: <Pine.LNX.4.64.1202022317560.13860@axis700.grange>
+References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
+ <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de> <4F22624E.2090201@renesas.com>
+ <Pine.LNX.4.64.1201270946150.32661@axis700.grange> <4F27CA7D.601@renesas.com>
 MIME-Version: 1.0
-In-Reply-To: <CAB9FdM9M2DWXBxxyG-ez_5igT61x5b7ptw+fKfgaqMBU_JS5aA@mail.gmail.com>
-References: <4F2AB552.2070909@redhat.com>
-	<CAB9FdM9M2DWXBxxyG-ez_5igT61x5b7ptw+fKfgaqMBU_JS5aA@mail.gmail.com>
-Date: Thu, 2 Feb 2012 14:16:27 -0800
-Message-ID: <CAB9FdM-oniPUOAPUJQ0Rr1uVK-MkzYQYU9c0G24sCHm8CpOdzg@mail.gmail.com>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-From: Rob Earhart <earhart@google.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:A/BGafrz5SnB5d+xv8H6j0NlXo0YEHxfhKKf/guQPoV
+ PxX+nOXGrGRHNOpQwWEBNu3SWj0mY4/DIZom4ZlSSPaoOU6KEL
+ +7d98mxWPluJKbgBg16lYaijFMkUZO3/ursKra/UasbLbpPvgH
+ IDfd315Jn3FYamEFKSnwgvUWt/rKVbhkSkyMYSZ6mSz7f99yaV
+ TyITNn/XJ1eBNlgDMDIuqaU3X1Wprgzf/UfLe3M5V+3l+/7EeL
+ YZbaYq+tWZAOkRnUnp5UnQjfhzYnz0WJPJJ8trWBkbJfTwNeRb
+ iGBoIKPArqxxTdC8eBuZwf79qFR7QJuk49hWcM6clVvwx26eOM
+ H5FBIr3hmKmxFxUGiKyQ/7RpfvBr5sPu2ReysIE7IKzoV/OqAb
+ aGyCh2Ix/tQsQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Resending as plain text to appease vger.kernel.org :-)
+Shimoda-san
 
-On Thu, Feb 2, 2012 at 8:09 AM, Avi Kivity <avi@redhat.com> wrote:
->
-> The kvm api has been accumulating cruft for several years now.  This is
-> due to feature creep, fixing mistakes, experience gained by the
-> maintainers and developers on how to do things, ports to new
-> architectures, and simply as a side effect of a code base that is
-> developed slowly and incrementally.
->
-> While I don't think we can justify a complete revamp of the API now, I'm
-> writing this as a thought experiment to see where a from-scratch API can
-> take us.  Of course, if we do implement this, the new and old APIs will
-> have to be supported side by side for several years.
->
-> Syscalls
-> --------
-> kvm currently uses the much-loved ioctl() system call as its entry
-> point.  While this made it easy to add kvm to the kernel unintrusively,
-> it does have downsides:
->
-> - overhead in the entry path, for the ioctl dispatch path and vcpu mutex
-> (low but measurable)
-> - semantic mismatch: kvm really wants a vcpu to be tied to a thread, and
-> a vm to be tied to an mm_struct, but the current API ties them to file
-> descriptors, which can move between threads and processes.  We check
-> that they don't, but we don't want to.
->
-> Moving to syscalls avoids these problems, but introduces new ones:
->
-> - adding new syscalls is generally frowned upon, and kvm will need several
-> - syscalls into modules are harder and rarer than into core kernel code
-> - will need to add a vcpu pointer to task_struct, and a kvm pointer to
-> mm_struct
->
-> Syscalls that operate on the entire guest will pick it up implicitly
-> from the mm_struct, and syscalls that operate on a vcpu will pick it up
-> from current.
->
+On Tue, 31 Jan 2012, Shimoda, Yoshihiro wrote:
 
-<snipped>
+> Hi Guennadi-san,
+> 
+> 2012/01/27 17:48, Guennadi Liakhovetski wrote:
+> > Hi Shimoda-san
+> > 
+> > On Fri, 27 Jan 2012, Shimoda, Yoshihiro wrote:
+> [ snip ]
+> >>>
+> >>> 1. switch from using a tasklet to threaded IRQ, which allowed to
+> >>
+> >> I tested this driver on 2 environment, but it could not work correctly.
+> >>  - renesas_usbhs driver with shdma driver on the mackerel board
+> >>  - renesas_usbhs driver with experimental SUDMAC driver
+> >>
+> >> In this case, should we modify the renesas_usbhs driver?
+> > 
+> > Yes, you do. Please, see the respective version of the shdma patch. It 
+> > doesn't request channel IRQs any more directly, instead, it uses a 
+> > dma-simple wrapper function. Also operations change a bit.
+> 
+> Thank you for your comment.
+> 
+> I investigaed the issue. I found out the renesas_usbhs driver may
+> call tx_submit() in the callback() of the dma-simple finally.
 
-I like the ioctl() interface.  If the overhead matters in your hot
-path, I suspect you're doing it wrong; use irq fds & ioevent fds.  You
-might fix the semantic mismatch by having a notion of a "current
-process's VM" and "current thread's VCPU", and just use the one
-/dev/kvm filedescriptor.
+Sorry, in my first reply to this your email I misread the renesas_usbhs 
+for an issue with your new SUDMAC driver. Since this is not the case and 
+my patch seems to be causing a regression, I'll look at it.
 
-Or you could go the other way, and break the connection between VMs
-and processes / VCPUs and threads: I don't know how easy it is to do
-it in Linux, but a VCPU might be backed by a kernel thread, operated
-on via ioctl()s, indicating that they've exited the guest by having
-their descriptors become readable (and either use read() or mmap() to
-pull off the reason why the VCPU exited).  This would allow for a
-variety of different programming styles for the VMM--I'm a fan of CSP
-model myself, but that's hard to do with the current API.
+Thanks
+Guennadi
 
-It'd be nice to be able to kick a VCPU out of the guest without
-messing around with signals.  One possibility would be to tie it to an
-eventfd; another might be to add a pseudo-register to indicate whether
-the VCPU is explicitly suspended.  (Combined with the decoupling idea,
-you'd want another pseudo-register to indicate whether the VMM is
-implicitly suspended due to an intercept; a single "runnable" bit is
-racy if both the VMM and VCPU are setting it.)
+> In this case, the value of power_up in the simple_tx_submit is 0,
+> the start_xfer() is not called. And then, even if the ld_queue is
+> not empty, the DMA doesn't start.
+> 
+> 
+> So, if I add codes like the following in the dma-simple.c,
+> the renesas_usbhs driver can work correctly without the driver changes.
+> If you think the code is good, would you merge it to your code?
+> ======= chan_irqt() =======
+> 	simple_chan_ld_cleanup(schan, false);
+> 
+> +	spin_lock_irq(&schan->chan_lock);
+> +	/* Next desc */
+> +	simple_chan_xfer_ld_queue(schan);
+> +	spin_unlock_irq(&schan->chan_lock);
+> 
+> 	return IRQ_HANDLED;
+> ==============
+> 
+> Best regards,
+> Yoshihiro Shimoda
+> 
+> > Thanks
+> > Guennadi
+> > 
+> >> For reference, if I changed the threaded IRQ to tasklet,
+> >> the 2 environment worked correctly:
+> >> ==============
+> >> diff --git a/drivers/dma/dma-simple.c b/drivers/dma/dma-simple.c
+> >> index 49d8f7d..65a5170 100644
+> >> --- a/drivers/dma/dma-simple.c
+> >> +++ b/drivers/dma/dma-simple.c
+> >> @@ -715,16 +715,18 @@ static irqreturn_t chan_irq(int irq, void *dev)
+> >>
+> >>  	spin_lock(&schan->chan_lock);
+> >>
+> >> -	ret = ops->chan_irq(schan, irq) ? IRQ_WAKE_THREAD : IRQ_NONE;
+> >> +	ret = ops->chan_irq(schan, irq) ? IRQ_HANDLED : IRQ_NONE;
+> >> +	if (ret == IRQ_HANDLED)
+> >> +		tasklet_schedule(&schan->tasklet);
+> >>
+> >>  	spin_unlock(&schan->chan_lock);
+> >>
+> >>  	return ret;
+> >>  }
+> >>
+> >> -static irqreturn_t chan_irqt(int irq, void *dev)
+> >> +static void chan_irqt(unsigned long dev)
+> >>  {
+> >> -	struct dma_simple_chan *schan = dev;
+> >> +	struct dma_simple_chan *schan = (struct dma_simple_chan *)dev;
+> >>  	const struct dma_simple_ops *ops =
+> >>  		to_simple_dev(schan->dma_chan.device)->ops;
+> >>  	struct dma_simple_desc *sdesc;
+> >> @@ -744,15 +746,13 @@ static irqreturn_t chan_irqt(int irq, void *dev)
+> >>  	spin_unlock_irq(&schan->chan_lock);
+> >>
+> >>  	simple_chan_ld_cleanup(schan, false);
+> >> -
+> >> -	return IRQ_HANDLED;
+> >>  }
+> >>
+> >>  int dma_simple_request_irq(struct dma_simple_chan *schan, int irq,
+> >>  			   unsigned long flags, const char *name)
+> >>  {
+> >> -	int ret = request_threaded_irq(irq, chan_irq, chan_irqt,
+> >> -				       flags, name, schan);
+> >> +	int ret = request_irq(irq, chan_irq, flags, name, schan);
+> >> +	tasklet_init(&schan->tasklet, chan_irqt, (unsigned long)schan);
+> >>
+> >>  	schan->irq = ret < 0 ? ret : irq;
+> >>
+> >> diff --git a/include/linux/dma-simple.h b/include/linux/dma-simple.h
+> >> index 5336674..beb1489 100644
+> >> --- a/include/linux/dma-simple.h
+> >> +++ b/include/linux/dma-simple.h
+> >> @@ -68,6 +68,7 @@ struct dma_simple_chan {
+> >>  	int id;				/* Raw id of this channel */
+> >>  	int irq;			/* Channel IRQ */
+> >>  	enum dma_simple_pm_state pm_state;
+> >> +	struct tasklet_struct tasklet;
+> >>  };
+> >>
+> >>  /**
+> >> ==============
+> >>
+> >> Best regards,
+> >> Yoshihiro Shimoda
+> >>
+> > 
+> > ---
+> > Guennadi Liakhovetski, Ph.D.
+> > Freelance Open-Source Software Developer
+> > http://www.open-technology.de/
+> > 
+> 
+> 
+> -- 
+> Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+> EC No.
+> 
 
-ioevent fds are definitely useful.  It might be cute if they could
-synchronously set the VIRTIO_USED_F_NOTIFY bit - the guest could do
-this itself, but that'd require giving the guest write access to the
-used side of the virtio queue, and I kind of like the idea that it
-doesn't need write access there.  Then again, I don't have any perf
-data to back up the need for this.
-
-The rest of it sounds great.
-
-)Rob
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
