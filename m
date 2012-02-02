@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab2BBDCe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 22:02:34 -0500
-Received: from fnarfbargle.com ([93.93.131.224]:50263 "EHLO fnarfbargle.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753586Ab2BBDCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 22:02:32 -0500
-Message-ID: <4F29FCB2.6040204@fnarfbargle.com>
-Date: Thu, 02 Feb 2012 11:02:10 +0800
-From: Brad Campbell <brad@fnarfbargle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: thomas@fjellstrom.ca
-CC: John Robinson <john.robinson@anonymous.org.uk>,
-        linux-raid <linux-raid@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: GRUB doesn't like ServeRAID M1015/LSI 9220-8i (was Re: mvsas
- with 3.1)
-References: <201201131144.58044.thomas@fjellstrom.ca> <201202010703.09833.thomas@fjellstrom.ca> <4F294E64.10204@anonymous.org.uk> <201202010742.07818.thomas@fjellstrom.ca>
-In-Reply-To: <201202010742.07818.thomas@fjellstrom.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754920Ab2BBDEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 22:04:04 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:45117 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab2BBDEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 22:04:01 -0500
+Message-ID: <1328151764.2342.118.camel@work-vm>
+Subject: [GIT PULL] Timekeeping changes for 3.4
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Date: Wed, 01 Feb 2012 19:02:44 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 192.168.2.80
-X-SA-Exim-Mail-From: brad@fnarfbargle.com
-X-SA-Exim-Scanned: No (on localhost); SAEximRunCond expanded to false
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020203-7408-0000-0000-00000255D99A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/12 22:42, Thomas Fjellstrom wrote:
->
-> Yeah, GRUB immediately throws an "out of memory. Aborted" error, its annoying,
-> but I reported the issue on GRUB's bug tracker after talking to a guy in #grub
-> on freenode. Hopefully someone looks at it soon. It appears it happens so
-> early in grub's startup that it can't even output any debug info (I was asked
-> to run: `grub-install --debug-image=all /dev/sdX`, and did so, I get debug
-> output when the card is not installed, but absolutely nothing when it is
-> installed.
+Hey Thomas,
+	Here's the first chunk of my big timekeeping change queue, for 3.4.
+Most of it should be fairly straight forward cleanups, moving values
+into the timekeeper structure and changing the locking away from
+xtime_lock.
 
-Just another data point. I've seen this issue also. It does not appear to be GRUB's fault. It 
-appears the BIOS on the card does something funky as it also prevents syslinux/isolinux/pxelinux and 
-its friends from properly detecting/reporting the machines memory. Machine has 16GB but a PXE boot 
-believes it has 3GB.
+Again, since tip/timers/core hasn't been updated since 3.3 was out,
+these are against Linus' head (actually, from a week or so ago). Let me
+know if you'd like me to base them off of something else.
 
-I "worked around" the problem by swapping out the mainboard for a later model with a different BIOS 
-and the problem went away. Not pretty, but it was the only way I could get the machine to boot with 
-those cards in it. I have 4 IBM cards in 2 machines and they work fine here. I still have the dodgy 
-mainboard and can set it up if you need help testing/reproducing the issue.
+Also, the more aggressive changes that will allow for reduced lock hold
+times, which I'm holding off for 3.5 or later, can be found here if you
+want to take a look at them, or possibly merge them earlier into a
+3.4-rt tree for extra testing:
+http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=shortlog;h=refs/heads/dev/xtime-breakup
 
-Regards,
-Brad
+thanks
+-john
 
+The patches are available in the git repository at:
+
+  git://git.linaro.org/people/jstultz/linux.git fortglx/3.4/time
+
+John Stultz (10):
+      time: Move total_sleep_time into the timekeeper structure
+      time: Move wall_to_monotonic into the timekeeper structure
+      time: Move xtime into timekeeeper structure
+      time: Move raw_time into timekeeper structure
+      time: Cleanup global variables and move them to the top
+      time: Add timekeeper lock
+      ntp: Cleanup timex.h
+      ntp: Access tick_length variable via ntp_tick_length()
+      ntp: Add ntp_lock to replace xtime_locking
+      time: Remove most of xtime_lock usage in timekeeping.c
+
+Thomas Gleixner (2):
+      time: Reorder so the hot data is together
+      time: Move common updates to a function
+
+ include/linux/timex.h     |   17 +--
+ kernel/time/ntp.c         |   83 +++++++++---
+ kernel/time/timekeeping.c |  338 ++++++++++++++++++++++++--------------------
+ 3 files changed, 248 insertions(+), 190 deletions(-)
 
