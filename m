@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208Ab2BBFOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 00:14:06 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:59246 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab2BBFOE (ORCPT
+	id S1751411Ab2BBFUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 00:20:43 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45478 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab2BBFUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 00:14:04 -0500
-X-Originating-IP: 217.70.178.133
-X-Originating-IP: 50.43.15.19
-Date: Wed, 1 Feb 2012 21:13:37 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 24/41] rcu: Check for idle-loop entry
- while in RCU read-side critical section
-Message-ID: <20120202051337.GP29058@leaf>
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-24-git-send-email-paulmck@linux.vnet.ibm.com>
+	Thu, 2 Feb 2012 00:20:42 -0500
+Date: Wed, 1 Feb 2012 21:20:18 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: PINTU KUMAR <pintu_agarwal@yahoo.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [Help] : RSS/PSS showing 0 during smaps for Xorg
+In-Reply-To: <1328107758.5077.YahooMailNeo@web162002.mail.bf1.yahoo.com>
+Message-ID: <alpine.LSU.2.00.1202012119180.31109@eggly.anvils>
+References: <1327310360.96918.YahooMailNeo@web162003.mail.bf1.yahoo.com> <1327313719.76517.YahooMailNeo@web162002.mail.bf1.yahoo.com> <alpine.LSU.2.00.1201231125200.1677@eggly.anvils> <1327468926.52380.YahooMailNeo@web162002.mail.bf1.yahoo.com>
+ <alpine.LSU.2.00.1201251623340.2141@eggly.anvils> <1327912964.12941.YahooMailNeo@web162006.mail.bf1.yahoo.com> <alpine.LSU.2.00.1201301034100.1884@eggly.anvils> <1328107758.5077.YahooMailNeo@web162002.mail.bf1.yahoo.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328125319-5205-24-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1541958601-1328160030=:31109"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 11:41:42AM -0800, Paul E. McKenney wrote:
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -366,6 +366,20 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
->  	atomic_inc(&rdtp->dynticks);
->  	smp_mb__after_atomic_inc();  /* Force ordering with next sojourn. */
->  	WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
-> +
-> +	/*
-> +	 * The idle task is not permitted to enter the idle loop while
-> +	 * in an RCU read-side critical section.
-> +	 */
-> +	rcu_lockdep_assert(!lock_is_held(&rcu_lock_map),
-> +			   "Illegal idle entry in RCU read-side "
-> +			   "critical section.");
-> +	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),
-> +			   "Illegal idle entry in RCU-bh read-side "
-> +			   "critical section.");
-> +	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
-> +			   "Illegal idle entry in RCU-sched read-side "
-> +			   "critical section.");
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Quoting a paragraph I added to Documentation/CodingStyle:
+--8323584-1541958601-1328160030=:31109
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-> Statements longer than 80 columns will be broken into sensible chunks, unless
-> exceeding 80 columns significantly increases readability and does not hide
-> information. Descendants are always substantially shorter than the parent and
-> are placed substantially to the right. The same applies to function headers
-> with a long argument list. However, never break user-visible strings such as
-> printk messages, because that breaks the ability to grep for them.
+On Wed, 1 Feb 2012, PINTU KUMAR wrote:
+> =A0
+> 2)=A0 But after doing all this also my menu-screen is not proper.
+>     Still I am getting colorful lines on the menu-screen.
+> =A0=A0=A0=A0Can you point me out what could be the problem??
 
-So, please don't break those strings across multiple lines.  The same
-goes for the similar rcu_lockdep_assert strings added in a previous
-patch in this series.
+Sorry, I do not know.
 
-- Josh Triplett
+Hugh
+--8323584-1541958601-1328160030=:31109--
