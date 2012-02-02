@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab2BBQ3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 11:29:24 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53228 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752488Ab2BBQ3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 11:29:22 -0500
-Date: Thu, 2 Feb 2012 08:27:55 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 04/41] rcu: Add diagnostic for
- misaligned rcu_head structures
-Message-ID: <20120202162755.GJ2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120202010146.GF29058@leaf>
+	id S1755308Ab2BBQaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 11:30:06 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:27380 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751278Ab2BBQaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 11:30:04 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: E_5XOq4VM1nxrbAOS5U6JAGcSDSe5ioBwRQWQypf2BAQlGm
+ RWBRBwcN4UfzPUd78qGZKqlgZy7Tb9ajtIrVv3fNNbCGw14.JDoNtHBJl2u.
+ Hcfjer6Zp8D0CTSE2TsJNIx3LxmdVXBr4iPVgFcBcwazert7Qfxayy1ZSW4i
+ sLsCSx97bRZh_mtZ6S4xcya5QFwqi5TjBuiEXInb0u734XhPihkTRoKpOpFl
+ wfSvQtQhtPN1xg1BFDL3.SxnfhD1OOmJ8R_6TWXWT7KhZtk18c69rLxg_vvu
+ 5Z0rKZsUM8o3Ru2cF_owxwqDdnALXTgZ_qmlqS1K6ql5aAZ4.pT8tU_.B0vO
+ 7E_HMxBneuOBy6tumpm8ELzNjuXARYGIcTM97LnVc8N3foeZeRTwB7KWwNrS
+ m
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 2 Feb 2012 10:29:57 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+In-Reply-To: <20120202162420.GE9071@somewhere.redhat.com>
+Message-ID: <alpine.DEB.2.00.1202021028120.6221@router.home>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327591185.2446.102.camel@twins> <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <20120201170443.GE6731@somewhere.redhat.com> <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+ <20120202162420.GE9071@somewhere.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202010146.GF29058@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020216-7182-0000-0000-000000A689EE
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-439244359-1328200202=:6221"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 05:01:46PM -0800, Josh Triplett wrote:
-> On Wed, Feb 01, 2012 at 11:41:22AM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> > 
-> > The push for energy efficiency will require that RCU tag rcu_head
-> > structures to indicate whether or not their invocation is time critical.
-> > This tagging is best carried out in the bottom bits of the ->next
-> > pointers in the rcu_head structures.  This tagging requires that the
-> > rcu_head structures be properly aligned, so this commit adds the required
-> > diagnostics.
-> > 
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/rcutree.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index d0f8e64..4655f3e 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1707,6 +1707,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
-> >  	unsigned long flags;
-> >  	struct rcu_data *rdp;
-> >  
-> > +	WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
-> >  	debug_rcu_head_queue(head);
-> 
-> Upon further checking:
-> 
-> static inline void debug_rcu_head_queue(struct rcu_head *head)
-> {
->         WARN_ON_ONCE((unsigned long)head & 0x3);
-> 
-> :)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Fair point!  I guess that we really only need one of these.  ;-)
+---1463811839-439244359-1328200202=:6221
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-I have kept the unconditional one and removed the one hidden under
-CONFIG_DEBUG_OBJECTS_RCU_HEAD, but in a separate commit with
-your Reported-by.
+On Thu, 2 Feb 2012, Frederic Weisbecker wrote:
 
-							Thanx, Paul
+> > Some pinned timers might be able to get special treatment as well - tak=
+e for
+> > example the vmstat=A0work being schedule every second, what should we d=
+o with
+> > it for CPU isolation?
+>
+> Right, I remember I saw these vmstat timers on my way when I tried to get=
+ 0
+> interrupts on a CPU.
+>
+> I think all these timers need to be carefully reviewed before doing anyth=
+ing.
+> But we certainly shouldn't adopt the behaviour of migrating timers by def=
+ault.
+>
+> Some timers really needs to stay on the expected CPU. Note that some
+> timers may be shutdown by CPU hotplug callbacks. Those wouldn't be migrat=
+ed
+> in case of CPU offlining. We need to keep them.
+>
+> > It makes sense to me to have that stop scheduling itself when we have t=
+he tick
+> > disabled for both idle and a nohz task.
 
+The vmstat timer only makes sense when the OS is doing something on the
+processor. Otherwise if no counters are incremented and the page and slab
+allocator caches are empty then there is no need to run the vmstat timer.
+---1463811839-439244359-1328200202=:6221--
