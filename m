@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab2BBRlk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 12:41:40 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35774 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932602Ab2BBRlh (ORCPT
+	id S932882Ab2BBRmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 12:42:37 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:55172 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754017Ab2BBRme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 12:41:37 -0500
-Date: Thu, 2 Feb 2012 23:11:20 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Ram Pai <linuxram@us.ibm.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai.lu@oracle.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [BUGFIX][PATCH] pci: set pci sriov page size before reading SRIOV BAR
-Message-ID: <20120202174120.GA3753@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
+	Thu, 2 Feb 2012 12:42:34 -0500
+Message-ID: <4F2AD89E.70805@xenotime.net>
+Date: Thu, 02 Feb 2012 10:40:30 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12020217-5816-0000-0000-00000121F028
+To: Manjunatha Halli <x0130808@ti.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Manjunatha Halli <manjunatha_halli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [PATCH] Re: linux-next: Tree for Feb 2 (media/radio/wl128x)
+References: <20120202144516.11b33e667a7cbb8d85d96226@canb.auug.org.au> <4F2AD0E4.6020801@xenotime.net> <4F2AC5F8.1000901@ti.com>
+In-Reply-To: <4F2AC5F8.1000901@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesse,
+On 02/02/2012 09:20 AM, Manjunatha Halli wrote:
+> Hi Randy Dunlap,
+> 
+> In config file you are missing the CONFIG_TI_ST config which builds the TI's shared transport driver upon which the FM driver works.
+> 
+> Please select this config in drivers/misc/ti-st/Kconfig which will solve the problem.
 
-The following patch fixes a regression introduced when an SRIOV card
-is used as a PF in a 64k base page size configuration.
+Wrong answer.
 
-Reference: https://lkml.org/lkml/2012/2/1/165
+The problem seems to be that GPIOLIB is not enabled, but wl128x Kconfig says:
 
-Please queue this bugfix patch for the current release cycle.
+config RADIO_WL128X
+	tristate "Texas Instruments WL128x FM Radio"
+	depends on VIDEO_V4L2 && RFKILL
+	select TI_ST if NET && GPIOLIB
 
-Thanks,
-Vaidy
+so TI_ST is not selected here.
+
+The Kconfig files should handle this properly.
+
+Here is one possible fix for you to consider.
+
 ---
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-    pci: set pci sriov page size before reading SRIOV BAR
-    
-    For an SRIOV device, PCI_SRIOV_SYS_PGSIZE should be set before
-    the PCI_SRIOV_BAR are queried.  The sys pagesize defaults to 4k,
-    so this change is required on powerpc box with 64k base page size.
-    
-    This is a regression caused due to moving SRIOV init to sriov_enable().
-    
-    | commit afd24ece5c76af87f6fc477f2747b83a764f161c
-    | Author: Ram Pai <linuxram@us.ibm.com>
-    
-    | PCI: delay configuration of SRIOV capability
-    | The SRIOV capability, namely page size and total_vfs of a device are
-    | configured during enumeration phase of the device.  This can potentially
-    | interfere with the PCI operations of the platform, if the IOV capability
-    | of the device is not enabled.
-    
-    Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-    Acked-by: Ram Pai <linuxram@us.ibm.com>
+Fix build errors when GPIOLIB is not enabled.
+Fix wl128x Kconfig to depend on GPIOLIB since TI_ST also
+depends on GPIOLIB.
 
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index 0321fa3..0dab5ec 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -347,8 +347,6 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
- 			return rc;
- 	}
- 
--	pci_write_config_dword(dev, iov->pos + PCI_SRIOV_SYS_PGSIZE, iov->pgsz);
--
- 	iov->ctrl |= PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
- 	pci_cfg_access_lock(dev);
- 	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
-@@ -466,6 +464,7 @@ found:
- 		return -EIO;
- 
- 	pgsz &= ~(pgsz - 1);
-+	pci_write_config_dword(dev, pos + PCI_SRIOV_SYS_PGSIZE, pgsz);
- 
- 	nres = 0;
- 	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+(.text+0xe6d60): undefined reference to `st_register'
+(.text+0xe7016): undefined reference to `st_unregister'
+(.text+0xe70ce): undefined reference to `st_unregister'
 
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Manjunatha Halli <manjunatha_halli@ti.com>
+---
+ drivers/media/radio/wl128x/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- linux-next-20120202.orig/drivers/media/radio/wl128x/Kconfig
++++ linux-next-20120202/drivers/media/radio/wl128x/Kconfig
+@@ -4,8 +4,8 @@
+ menu "Texas Instruments WL128x FM driver (ST based)"
+ config RADIO_WL128X
+ 	tristate "Texas Instruments WL128x FM Radio"
+-	depends on VIDEO_V4L2 && RFKILL
+-	select TI_ST if NET && GPIOLIB
++	depends on VIDEO_V4L2 && RFKILL && GPIOLIB
++	select TI_ST if NET
+ 	help
+ 	Choose Y here if you have this FM radio chip.
+ 
+
+> Regards
+> Manju
+> 
+> On 02/02/2012 12:07 PM, Randy Dunlap wrote:
+>> On 02/01/2012 07:45 PM, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20120201:
+>>
+>> drivers/built-in.o: In function `fmc_prepare':
+>> (.text+0xe6d60): undefined reference to `st_register'
+>> drivers/built-in.o: In function `fmc_prepare':
+>> (.text+0xe7016): undefined reference to `st_unregister'
+>> drivers/built-in.o: In function `fmc_release':
+>> (.text+0xe70ce): undefined reference to `st_unregister'
+>>
+>>
+>> Full randconfig file is attached.
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
