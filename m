@@ -1,291 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab2BBCxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 21:53:10 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:56590 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754692Ab2BBCxI (ORCPT
+	id S1754861Ab2BBCy2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 21:54:28 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:52516 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692Ab2BBCy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 21:53:08 -0500
-Message-ID: <4F2A0827.4080305@xenotime.net>
-Date: Wed, 01 Feb 2012 19:51:03 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Maxime Coquelin <maxime.coquelin@stericsson.com>
-CC: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Mel Gorman <mel@csn.ul.ie>, Ankita Garg <ankita@in.ibm.com>,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        andrea.gallo@stericsson.com, vincent.guittot@stericsson.com,
-        philippe.langlais@stericsson.com, loic.pallardy@stericsson.com
-Subject: Re: [RFCv1 5/6] PASR: Add Documentation
-References: <1327930436-10263-1-git-send-email-maxime.coquelin@stericsson.com> <1327930436-10263-6-git-send-email-maxime.coquelin@stericsson.com>
-In-Reply-To: <1327930436-10263-6-git-send-email-maxime.coquelin@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 1 Feb 2012 21:54:27 -0500
+Message-ID: <1328151229.2342.110.camel@work-vm>
+Subject: [GIT PULL] Clocksource changes for 3.4
+From: John Stultz <john.stultz@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Date: Wed, 01 Feb 2012 18:53:49 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020202-1780-0000-0000-000002CE7797
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000245; HX=3.00000181; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00110152; UDB=6.00027396; UTC=2012-02-02
+ 02:54:23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 05:33 AM, Maxime Coquelin wrote:
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@stericsson.com>
-> ---
->  Documentation/pasr.txt |  183 ++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 183 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/pasr.txt
-> 
-> diff --git a/Documentation/pasr.txt b/Documentation/pasr.txt
-> new file mode 100644
-> index 0000000..d40e3f6
-> --- /dev/null
-> +++ b/Documentation/pasr.txt
-> @@ -0,0 +1,183 @@
-> +Partial Array Self-Refresh Framework
-> +
-> +(C) 2012 Maxime Coquelin <maxime.coquelin@stericsson.com>, ST-Ericsson.
-> +
-> +CONTENT
-> +1. Introduction
-> +2. Command-line parameters
-> +3. Allocators patching
-> +4. PASR platform drivers
-> +
-> +
-> +1. Introduction
-> +
-> +PASR Frameworks brings support for the Partial Array Self-Refresh DDR power
+Hey Thomas,
+	Just wanted to send you my current 3.4 queue for clocksource changes.
+Since tip/timers/core hasn't been updated since 3.3 was out, these are
+against Linus' head (actually, from a week or so ago). Let me know if
+you'd like me to base them off of something else.
 
-  The PASR framework brings support
-
-> +management feature. PASR has been introduced in LP-DDR2, and is also present
-
-                            was introduced in LP-DDR2 and is also present
+thanks
+-john
 
 
-> +in DDR3.
-> +
-> +PASR provides 4 modes:
-> +
-> +* Single-Ended: Only 1/1, 1/2, 1/4 or 1/8 are refreshed, masking starting at
-> +  the end of the DDR die.
-> +
-> +* Double-Ended: Same as Single-Ended, but refresh-masking does not start
-> +  necessairly at the end of the DDR die.
+The patches are available in the git repository at:
+  git://git.linaro.org/people/jstultz/linux.git fortglx/3.4/clocksource
 
-     necessarily
+Arjan van de Ven (1):
+      clocksource: Load the ACPI PM clocksource asynchronously
 
-> +
-> +* Bank-Selective: Refresh of each bank of a die can be masked or unmasked via
-> +  a dedicated DDR register (MR16). This mode is convenient for DDR configured
-> +  in BRC (Bank-Row-Column) mode.
-> +
-> +* Segment-Selective: Refresh of each segment of a die can be masked or unmasked
-> +  via a dedicated DDR register (MR17). This mode is convenient for DDR configured
-> +  in RBC (Row-Bank-Column) mode.
-> +
-> +The role of this framework is to stop the refresh of unused memory to enhance
-> +DDR power consumption.
-> +
-> +It supports Bank-Selective and Segment-Selective modes, as the more adapted to
-> +modern OSes.
+Jim Cromie (1):
+      clocksource: scx200_hrt:  use pr_<level> instead of printk
 
-huh?  parse error above.
+John Stultz (1):
+      clocksource: scx200_hrt: Convert scx200 to use clocksource_register_hz
 
-> +
-> +At early boot stage, a representation of the physical DDR layout is built:
-> +
-> +             Die 0
-> +_______________________________
-> +| I--------------------------I |
-> +| I    Bank or Segment 0     I |
-> +| I--------------------------I |
-> +| I--------------------------I |
-> +| I    Bank or Segment 1     I |
-> +| I--------------------------I |
-> +| I--------------------------I |
-> +| I    Bank or Segment ...   I |
-> +| I--------------------------I |
-> +| I--------------------------I |
-> +| I    Bank or Segment n     I |
-> +| I--------------------------I |
-> +|______________________________|
-> +             ...
-> +
-> +             Die n
-> +_______________________________
-> +| I--------------------------I |
-> +| I    Bank or Segment 0     I |
-> +| I--------------------------I |
-> +| I--------------------------I |
-> +| I    Bank or Segment 1     I |
-> +| I--------------------------I |
-> +| I--------------------------I |
-> +| I    Bank or Segment ...   I |
-> +| I--------------------------I |
-> +| I--------------------------I |
-> +| I    Bank or Segment n     I |
-> +| I--------------------------I |
-> +|______________________________|
-> +
-> +The first level is a table where elements represent a die:
-> +* Base address,
-> +* Number of segments,
-> +* Table representing banks/segments,
-> +* MR16/MR17 refresh mask,
-> +* DDR Controller callback to update MR16/MR17 refresh mask.
-> +
-> +The second level is the section tables representing the banks or segments,
-> +depending on hardware configuration:
-> +* Base address,
-> +* Unused memory size counter,
-> +* Possible pointer to another section it depends on (E.g. Interleaving)
-> +
-> +When some memory becomes unused, the allocator owning this memory calls the PASR
-> +Framework's pasr_put(phys_addr, size) function. The framework finds the
-> +sections impacted and updates their counters accordingly.
-> +If a section counter reach the section size, the refresh of the section is
+Julia Lawall (1):
+      clocksource: cyclone: Add missing iounmap
 
-                        reaches
+Yong Zhang (2):
+      clocksource: dbx500: convert to clocksource_register_hz()
+      clocksource: Get rid of clocksource_calc_mult_shift()
 
-> +masked. If the corresponding section has a dependency with another section
-> +(E.g. because of DDR interleaving, see figure below), it checks the "paired" section is also
+ drivers/clocksource/acpi_pm.c             |   24 ++++++++++++++++--------
+ drivers/clocksource/clksrc-dbx500-prcmu.c |    5 +----
+ drivers/clocksource/cyclone.c             |    2 +-
+ drivers/clocksource/scx200_hrt.c          |   22 ++++++++--------------
+ include/linux/clocksource.h               |    7 -------
+ 5 files changed, 26 insertions(+), 34 deletions(-)
 
-                                                         it checks if the "paired" section is also
-
-> +unused before updating the refresh mask.
-> +
-> +When some unused memory is requested by the allocator, the allocator owning
-> +this memory calls the PASR Framework's pasr_get(phys_addr, size) function. The
-> +framework find the section impacted and updates their counters accordingly.
-
-             finds                     and updates its counter accordingly.
-or
-             find the sections impacted and updates their counters accordingly.
-
-
-> +If before the update, the section counter was to the section size, the refrewh
-
-                                             was equal to the section size, the refresh
-
-> +of the section is unmasked. If the corresponding section has a dependency with
-> +another section, it also unmask the refresh of the other section.
-
-                            unmasks
-
-> +
-> +Interleaving example:
-> +
-> +             Die 0
-> +_______________________________
-> +| I--------------------------I |
-> +| I    Bank or Segment 0     I |<----|
-> +| I--------------------------I |     |
-> +| I--------------------------I |     |
-> +| I    Bank or Segment 1     I |     |
-> +| I--------------------------I |     |
-> +| I--------------------------I |     |
-> +| I    Bank or Segment ...   I |     |
-> +| I--------------------------I |     |
-> +| I--------------------------I |     |
-> +| I    Bank or Segment n     I |     |
-> +| I--------------------------I |     |
-> +|______________________________|     |
-> +                                     |
-> +             Die 1                   |
-> +_______________________________      |
-> +| I--------------------------I |     |
-> +| I    Bank or Segment 0     I |<----|
-> +| I--------------------------I |
-> +| I--------------------------I |
-> +| I    Bank or Segment 1     I |
-> +| I--------------------------I |
-> +| I--------------------------I |
-> +| I    Bank or Segment ...   I |
-> +| I--------------------------I |
-> +| I--------------------------I |
-> +| I    Bank or Segment n     I |
-> +| I--------------------------I |
-> +|______________________________|
-> +
-> +In the above example, bank 0 of die 0 is interleaved with bank0 of die 0.
-
-                                                             bank 0 of die 1.
-
-> +The interleaving is done in HW by inverting some addresses lines. The goal is
-
-                            in hardware
-
-> +to improve DDR bandwidth.
-> +Practically, one buffer seen as contiguous by the kernel might be spread
-> +into two DDR dies physically.
-> +
-> +
-> +2. Command-line parameters
-> +
-> +To buid the DDR physical layout representation, two parameters are requested:
-
-      build
-
-> +
-> +* ddr_die (mandatory): Should be added for every DDR dies present in the system.
-
-                                                        die
-
-> +   - Usage: ddr_die=xxx[M|G]@yyy[M|G] where xxx represents the size and yyy
-> +     the base address of the die. E.g.: ddr_die=512M@0 ddr_die=512M@512M
-> +
-> +* interleaved (optionnal): Should be added for every interleaved dependencies.
-
-                 (optional):                  for all interleaved dependencies.
-
-
-> +   - Usage: interleaved=xxx[M|G]@yyy[M|G]:zzz[M|G] where xxx is the size of
-> +     the interleaved area between the adresses yyy and zzz. E.g
-> +     interleaved=256M@0:512M
-> +
-> +
-> +3. Allocator patching
-> +
-> +Any allocators might call the PASR Framework for DDR power savings. Currently,
-> +only Linux Buddy allocator is patched, but HWMEM and PMEM physically
-
-   only the Linux Buddy
-
-> +contiguous memory allocators will follow.
-> +
-> +Linux Buddy allocator porting uses Buddy specificities to reduce the overhead
-> +induced by the PASR Framework counter updates. Indeed, the PASR Framework is
-> +called only when MAX_ORDER (4MB page blocs by default) buddies are
-
-                                        blocks
-
-> +inserted/removed from the free lists.
-> +
-> +To port PASR FW into a new allocator:
-
-           the PASR framework
-
-> +
-> +* Call pasr_put(phys_addr, size) each time a memory chunk becomes unused.
-> +* Call pasr_get(phys_addr, size) each time a memory chunk becomes used.
-> +
-> +4. PASR platform drivers
-> +
-> +The MR16/MR17 PASR mask registers are generally accessible through the DDR
-> +controller. At probe time, the DDR controller driver should register the
-> +callback used by PASR Framework to apply the refresh mask for every DDR die
-> +using pasr_register_mask_function(die_addr, callback, cookie).
-> +
-> +The callback passed to apply mask must not sleep since it can me called in
-
-                                                             can be
-
-> +interrupt contexts.
-> +
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
