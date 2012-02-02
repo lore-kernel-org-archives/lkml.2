@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab2BBOx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:53:57 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48203 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932163Ab2BBOxz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:53:55 -0500
-Date: Thu, 2 Feb 2012 15:53:53 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: rtc-linux@googlegroups.com
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [rtc-linux] Re: [PATCH v3] rtc: ds1307: generalise ram size
- and offset
-Message-ID: <20120202145353.GC9648@pengutronix.de>
-References: <1326144071.3096.25.camel@pc786-ubu.gnet.global.vpn>
- <20120111110650.GC2605@pengutronix.de>
- <1326320516.3096.64.camel@pc786-ubu.gnet.global.vpn>
- <20120119194541.GA32483@pengutronix.de>
- <1328143057.3159.34.camel@pc786-ubu.gnet.global.vpn>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="96YOpH+ONegL0A3E"
-Content-Disposition: inline
-In-Reply-To: <1328143057.3159.34.camel@pc786-ubu.gnet.global.vpn>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S932098Ab2BBOyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:54:15 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:58274 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932145Ab2BBOxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 09:53:10 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: netdev@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3 v2] drivers/net/ethernet/ti: Move call to PTR_ERR after reassignment
+Date: Thu,  2 Feb 2012 15:53:01 +0100
+Message-Id: <1328194382-32465-3-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1328194382-32465-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1328194382-32465-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
---96YOpH+ONegL0A3E
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+PTR_ERR should be called before its argument is cleared.
 
-Hi Austin,
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-> I'm sorry about the slow response - I was away at linux.conf.au and then
-> haven't found enough time since I got back.=20
+// <smpl>
+@@
+expression e,e1;
+constant c;
+@@
 
-Don't worry, I understand.
+*e = c
+... when != e = e1
+    when != &e
+    when != true IS_ERR(e)
+*PTR_ERR(e)
+// </smpl>
 
-> > ... that nvram is static and we are changing it. Yeah, it is very unlik=
-ely but
-> > if we have two RTC with different nvram sizes, one of them will not wor=
-k correctly.
-> I see the issue. Am I right that it would only occur when you have two
-> I2C buses, each with one of the RTC chips supported by this driver?
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Reported-by: Josh Triplett <josh@joshtriplett.org>
 
-Basically yes. They could be on one bus, though, using different addresses.
+---
+v2: correct commit message.
 
-> The fix I thought of would be to add a 'struct bin_attribute' pointer to
-> 'struct ds1307' and then in the probe function allocate the structure,
-> set the size & callbacks, and pass it as an argument to
-> sysfs_create_bin_file. Do you think this is viable?=20
+ drivers/net/ethernet/ti/davinci_emac.c |    3 ++-
+ drivers/net/ethernet/ti/davinci_mdio.c |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-Yes.
+diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
+index efd4f3e..922a937 100644
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -1600,8 +1600,9 @@ static int emac_dev_open(struct net_device *ndev)
+ 		if (IS_ERR(priv->phydev)) {
+ 			dev_err(emac_dev, "could not connect to phy %s\n",
+ 				priv->phy_id);
++			ret = PTR_ERR(priv->phydev);
+ 			priv->phydev = NULL;
+-			return PTR_ERR(priv->phydev);
++			return ret;
+ 		}
+ 
+ 		priv->link = 0;
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index ef7c9c1..af8b8fc 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -318,9 +318,9 @@ static int __devinit davinci_mdio_probe(struct platform_device *pdev)
+ 
+ 	data->clk = clk_get(dev, NULL);
+ 	if (IS_ERR(data->clk)) {
+-		data->clk = NULL;
+ 		dev_err(dev, "failed to get device clock\n");
+ 		ret = PTR_ERR(data->clk);
++		data->clk = NULL;
+ 		goto bail_out;
+ 	}
+ 
 
-> It looks like Andrew Morton has already added this patch to the -mm
-> tree. Has he also grabbed the patches that this depends on?
-
-I will check that and mail him later today.
-
-Thanks,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---96YOpH+ONegL0A3E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk8qo4EACgkQD27XaX1/VRuueACfWhnJs4RbS+fAIowCA5TewxkE
-J3sAniRogPY2SRVAhAWP4dg3rYuyhZUi
-=z70c
------END PGP SIGNATURE-----
-
---96YOpH+ONegL0A3E--
