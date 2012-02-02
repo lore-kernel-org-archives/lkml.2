@@ -1,55 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933548Ab2BBWLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 17:11:21 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:45065 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab2BBWLT (ORCPT
+	id S1757580Ab2BBWNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 17:13:37 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43853 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756390Ab2BBWNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 17:11:19 -0500
-Date: Thu, 2 Feb 2012 14:11:14 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/11] blkcg: move refcnt to blkcg core
-Message-ID: <20120202221114.GA5865@google.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
- <1328131156-13290-7-git-send-email-tj@kernel.org>
- <20120202220714.GE1723@redhat.com>
+	Thu, 2 Feb 2012 17:13:36 -0500
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Subject: Re: [PATCH 06/11] nand/gpmi: add context parameter to prep_slave_sg calls
+Date: Thu, 2 Feb 2012 23:13:32 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Huang Shijie <b32955@freescale.com>,
+        Artem Bityutskiy <artem.bityutskiy@intel.com>
+References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-7-git-send-email-alexandre.bounine@idt.com>
+In-Reply-To: <1328218341-31436-7-git-send-email-alexandre.bounine@idt.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202220714.GE1723@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202022313.33164.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> Fixups for calls affected by adding the new context parameter to DMA_SLAVE
+> and DMA_CYCLIC interfaces.
 
-On Thu, Feb 02, 2012 at 05:07:14PM -0500, Vivek Goyal wrote:
-> On Wed, Feb 01, 2012 at 01:19:11PM -0800, Tejun Heo wrote:
-> > Currently, blkcg policy implementations manage blkg refcnt duplicating
-> > mostly identical code in both policies.  This patch moves refcnt to
-> > blkg and let blkcg core handle refcnt and freeing of blkgs.
-> > 
-> > * cfq blkgs now also get freed via RCU.
+Thanks!
 > 
-> This can lead to situation where cfq root group (policy data) is still
-> around (yet to be freed after rcu perioed) but cfq has gone away
-> (cfq_exit_queue() followed by cfq_exit()). Does it matter? If some future
-> code is accessing cfqg under rcu, it can become a problem.
-
-If RCU is being used, the scope of access allowed under it should be
-defined strictly.  It's basically adding another layer of locking and
-like any other locking, if the boundary isn't clearly defined, it's
-gonna cause a problem.  For blkcg, from the current usage, it's enough
-to guarantee access to blkg proper including policy specific data and
-under that scope, it doesn't matter whether request or cgroup goes
-away.
-
-Thanks.
-
--- 
-tejun
+> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Marek Vasut <marek.vasut@gmail.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Huang Shijie <b32955@freescale.com>
+> Cc: Artem Bityutskiy <artem.bityutskiy@intel.com>
+> ---
+>  drivers/mtd/nand/gpmi-nand/gpmi-lib.c |   25 +++++++++++++++----------
+>  1 files changed, 15 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c index 7f68042..c52964e 100644
+> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> @@ -827,7 +827,8 @@ int gpmi_send_command(struct gpmi_nand_data *this)
+>  	pio[1] = pio[2] = 0;
+>  	desc = channel->device->device_prep_slave_sg(channel,
+>  					(struct scatterlist *)pio,
+> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
+> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
+> +					0, NULL);
+>  	if (!desc) {
+>  		pr_err("step 1 error\n");
+>  		return -1;
+> @@ -839,7 +840,7 @@ int gpmi_send_command(struct gpmi_nand_data *this)
+>  	sg_init_one(sgl, this->cmd_buffer, this->command_length);
+>  	dma_map_sg(this->dev, sgl, 1, DMA_TO_DEVICE);
+>  	desc = channel->device->device_prep_slave_sg(channel,
+> -					sgl, 1, DMA_MEM_TO_DEV, 1);
+> +					sgl, 1, DMA_MEM_TO_DEV, 1, NULL);
+>  	if (!desc) {
+>  		pr_err("step 2 error\n");
+>  		return -1;
+> @@ -872,7 +873,8 @@ int gpmi_send_data(struct gpmi_nand_data *this)
+>  	pio[1] = 0;
+>  	desc = channel->device->device_prep_slave_sg(channel,
+>  					(struct scatterlist *)pio,
+> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
+> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
+> +					0, NULL);
+>  	if (!desc) {
+>  		pr_err("step 1 error\n");
+>  		return -1;
+> @@ -881,7 +883,7 @@ int gpmi_send_data(struct gpmi_nand_data *this)
+>  	/* [2] send DMA request */
+>  	prepare_data_dma(this, DMA_TO_DEVICE);
+>  	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
+> -						1, DMA_MEM_TO_DEV, 1);
+> +						1, DMA_MEM_TO_DEV, 1, NULL);
+>  	if (!desc) {
+>  		pr_err("step 2 error\n");
+>  		return -1;
+> @@ -908,7 +910,8 @@ int gpmi_read_data(struct gpmi_nand_data *this)
+>  	pio[1] = 0;
+>  	desc = channel->device->device_prep_slave_sg(channel,
+>  					(struct scatterlist *)pio,
+> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
+> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
+> +					0, NULL);
+>  	if (!desc) {
+>  		pr_err("step 1 error\n");
+>  		return -1;
+> @@ -917,7 +920,7 @@ int gpmi_read_data(struct gpmi_nand_data *this)
+>  	/* [2] : send DMA request */
+>  	prepare_data_dma(this, DMA_FROM_DEVICE);
+>  	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
+> -						1, DMA_DEV_TO_MEM, 1);
+> +						1, DMA_DEV_TO_MEM, 1, NULL);
+>  	if (!desc) {
+>  		pr_err("step 2 error\n");
+>  		return -1;
+> @@ -964,7 +967,8 @@ int gpmi_send_page(struct gpmi_nand_data *this,
+> 
+>  	desc = channel->device->device_prep_slave_sg(channel,
+>  					(struct scatterlist *)pio,
+> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
+> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
+> +					0, NULL);
+>  	if (!desc) {
+>  		pr_err("step 2 error\n");
+>  		return -1;
+> @@ -999,7 +1003,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
+>  	pio[1] = 0;
+>  	desc = channel->device->device_prep_slave_sg(channel,
+>  				(struct scatterlist *)pio, 2,
+> -				DMA_TRANS_NONE, 0);
+> +				DMA_TRANS_NONE, 0, NULL);
+>  	if (!desc) {
+>  		pr_err("step 1 error\n");
+>  		return -1;
+> @@ -1028,7 +1032,8 @@ int gpmi_read_page(struct gpmi_nand_data *this,
+>  	pio[5] = auxiliary;
+>  	desc = channel->device->device_prep_slave_sg(channel,
+>  					(struct scatterlist *)pio,
+> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 1);
+> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
+> +					1, NULL);
+>  	if (!desc) {
+>  		pr_err("step 2 error\n");
+>  		return -1;
+> @@ -1047,7 +1052,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
+>  	pio[1] = 0;
+>  	desc = channel->device->device_prep_slave_sg(channel,
+>  				(struct scatterlist *)pio, 2,
+> -				DMA_TRANS_NONE, 1);
+> +				DMA_TRANS_NONE, 1, NULL);
+>  	if (!desc) {
+>  		pr_err("step 3 error\n");
+>  		return -1;
