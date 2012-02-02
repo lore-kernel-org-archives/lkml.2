@@ -1,209 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab2BBBEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 20:04:51 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:60419 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778Ab2BBBEu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 20:04:50 -0500
-Date: Thu, 2 Feb 2012 11:34:09 +1030
-From: Christopher Yeoh <cyeoh@au1.ibm.com>
+	id S1753961Ab2BBBGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 20:06:12 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:45413 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752880Ab2BBBGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 20:06:10 -0500
+From: James Bottomley <jbottomley@parallels.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] Fix race in process_vm_rw_core
-Message-ID: <20120202113409.76813670@Gantu.yeoh.info>
-In-Reply-To: <20120201183836.1cf5fc52@Gantu.yeoh.info>
-References: <20120130124406.1567af7a@Gantu.yeoh.info>
-	<20120130150922.GA17643@redhat.com>
-	<20120201162330.43d421d3@Gantu.yeoh.info>
-	<CA+55aFxstU98L64xgoUiacsV0zwX5ioNv3cT5CH2rvBrUGaovw@mail.gmail.com>
-	<20120201183836.1cf5fc52@Gantu.yeoh.info>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12020114-6102-0000-0000-000000C12790
+CC: Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Hitoshi Mitake" <h.mitake@gmail.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without
+ readq/writeq
+Thread-Topic: [PATCH] NVMe: Fix compilation on architecturs without
+ readq/writeq
+Thread-Index: AQHM1xHls21BccflDEy/19ecM9NCB5YXBWeAgAB8iQCAABHVAIADFb2AgAAOjgCACNixgIAC0R4AgACVg4CAAALrAIAAAoEAgAABfYCAAk4YgIAAGTcA
+Date: Thu, 2 Feb 2012 01:05:56 +0000
+Message-ID: <1328144756.2768.57.camel@dabdike.int.hansenpartnership.com>
+References: <20120121082857.GC32134@elte.hu>
+	 <CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+	 <20120121165830.GA9216@elte.hu>
+	 <CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+	 <CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
+	 <CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
+	 <CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
+	 <20120131115855.5861bad7@pyramind.ukuu.org.uk>
+	 <20120131120922.GD32010@elte.hu>
+	 <20120131121820.58a1db97@pyramind.ukuu.org.uk>
+	 <20120131122339.GG32010@elte.hu>
+	 <CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
+In-Reply-To: <CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [76.243.235.53]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <2D582F8FDB749B4A94EA3B70838219A9@sw.swsoft.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1216GW3024765
 
-On Wed, 1 Feb 2012 18:38:36 +1030
-cyeoh@ozlabs.au.ibm.com wrote:
+On Wed, 2012-02-01 at 15:35 -0800, Linus Torvalds wrote:
+> On Tue, Jan 31, 2012 at 4:23 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > non-atomic sounds good to me too.
+> 
+> You both apparently missed the related discussion that some devices
+> really do care about order, even if they don't care about atomicity.
+> 
+> So we'd actually have two versions of the header file, one
+> little-endian, and one big-endian. Then the driver that knows it
+> doesn't need the atomic 'readq()' that is always defined, but wants a
+> low-bytes-first version would just do
+> 
+>    #include <linux/io64-little-endian.h>
+> 
+> (or "big-endian" if it wants to read/write high bits first). Most
+> drivers probably don't care, but apparently NVMe does.
 
-> On Tue, 31 Jan 2012 22:10:13 -0800
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> > On Tue, Jan 31, 2012 at 9:53 PM, Christopher Yeoh
-> > <cyeoh@au1.ibm.com> wrote:
-> > > + Â  Â  Â  mm = mm_access(task, PTRACE_MODE_ATTACH);
-> > > + Â  Â  Â  if (!mm || IS_ERR(mm)) {
-> > > + Â  Â  Â  Â  Â  Â  Â  if (!mm)
-> > > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  rc = -EINVAL;
-> > > + Â  Â  Â  Â  Â  Â  Â  else
-> > > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  rc = -EPERM;
-> > > Â  Â  Â  Â  Â  Â  Â  Â goto put_task_struct;
-> > 
-> > Btw, do you really want to throw away the error code?
-> > 
-> > IOW, maybe it should be
-> > 
-> >    rc = IS_ERR(mm) ? PTR_ERR(mm) : -EINVAL;
-> > 
-> > or something? Instead of forcing the EPERM? And the -EINVAL might be
-> > better off as an ESRCH? I dunno.
-> 
-> Yea, that probably makes more sense.
-> 
-> > Right now you turn all errors into EPERM, whether they were really
-> > about permission problems or not. And that just makes be a bit
-> > nervous. I wonder if we wouldn't be better off just returning EACCES
-> > (and any possible future problem) than try so hard to always return
-> > EPERM?
-> > 
-> > I dunno. I don't have any really *strong* opinion and I see why you
-> > do it, but my gut feel is still that the error number change really
-> > does seem a bit arbitrary.
-> 
-> I'm not super attached to returning EPERM instead of EACCES though I
-> do think it would look at bit odd from a user of the syscall view. Is
-> it too ugly to do:
-> 
->     rc = IS_ERR(mm) ? PTR_ERR(mm) : -ESRCH;
->     if (rc == -EACCES)
->             rc = -EPERM;
-> 
-> That way we avoid the problem of overwriting EINTR and if there are
-> changes in the future which return different error codes we won't
-> override those.
-> 
+And this was about the point I concluded last time that it simply wasn't
+worth it with the number of different possibilities for the primitives
+and trying to come up with a sensible naming scheme ... it's just easier
+to open code because then you get exactly what you meant.
 
-Here's an updated patch doing the above of mapping EACCES but only
-EACCES to EPERM.
+Incidentally, the last time this came up was with mpt fusion: for a
+write to a 64 bit register, it didn't care about order, but it did care
+about interleaving as in if you write one half of a 64 bit register and
+then write to another register, the 64 bit register effectively gets
+written with zeros in the part you didn't write to, so we had to put a
+spin lock in the open coded writeb/w/l/q() to make sure the card didn't
+get interleaved writes.
 
--- 
-cyeoh@au.ibm.com
-Signed-off-by: Chris Yeoh <yeohc@au1.ibm.com>
- fs/proc/base.c         |   20 --------------------
- include/linux/sched.h  |    6 ++++++
- kernel/fork.c          |   20 ++++++++++++++++++++
- mm/process_vm_access.c |   23 +++++++++--------------
- 4 files changed, 35 insertions(+), 34 deletions(-)
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 9cde9edf..2773412 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -198,26 +198,6 @@ static int proc_root_link(struct dentry *dentry, struct path *path)
- 	return result;
- }
- 
--static struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
--{
--	struct mm_struct *mm;
--	int err;
--
--	err =  mutex_lock_killable(&task->signal->cred_guard_mutex);
--	if (err)
--		return ERR_PTR(err);
--
--	mm = get_task_mm(task);
--	if (mm && mm != current->mm &&
--			!ptrace_may_access(task, mode)) {
--		mmput(mm);
--		mm = ERR_PTR(-EACCES);
--	}
--	mutex_unlock(&task->signal->cred_guard_mutex);
--
--	return mm;
--}
--
- struct mm_struct *mm_for_maps(struct task_struct *task)
- {
- 	return mm_access(task, PTRACE_MODE_READ);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 2234985..7d379a6 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2259,6 +2259,12 @@ static inline void mmdrop(struct mm_struct * mm)
- extern void mmput(struct mm_struct *);
- /* Grab a reference to a task's mm, if it is not already going away */
- extern struct mm_struct *get_task_mm(struct task_struct *task);
-+/*
-+ * Grab a reference to a task's mm, if it is not already going away
-+ * and ptrace_may_access with the mode parameter passed to it
-+ * succeeds.
-+ */
-+extern struct mm_struct *mm_access(struct task_struct *task, unsigned int mode);
- /* Remove the current tasks stale references to the old mm_struct */
- extern void mm_release(struct task_struct *, struct mm_struct *);
- /* Allocate a new mm structure and copy contents from tsk->mm */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 051f090..1b2ef3c 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -647,6 +647,26 @@ struct mm_struct *get_task_mm(struct task_struct *task)
- }
- EXPORT_SYMBOL_GPL(get_task_mm);
- 
-+struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
-+{
-+	struct mm_struct *mm;
-+	int err;
-+
-+	err =  mutex_lock_killable(&task->signal->cred_guard_mutex);
-+	if (err)
-+		return ERR_PTR(err);
-+
-+	mm = get_task_mm(task);
-+	if (mm && mm != current->mm &&
-+			!ptrace_may_access(task, mode)) {
-+		mmput(mm);
-+		mm = ERR_PTR(-EACCES);
-+	}
-+	mutex_unlock(&task->signal->cred_guard_mutex);
-+
-+	return mm;
-+}
-+
- /* Please note the differences between mmput and mm_release.
-  * mmput is called whenever we stop holding onto a mm_struct,
-  * error success whatever.
-diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
-index e920aa3..c20ff48 100644
---- a/mm/process_vm_access.c
-+++ b/mm/process_vm_access.c
-@@ -298,23 +298,18 @@ static ssize_t process_vm_rw_core(pid_t pid, const struct iovec *lvec,
- 		goto free_proc_pages;
- 	}
- 
--	task_lock(task);
--	if (__ptrace_may_access(task, PTRACE_MODE_ATTACH)) {
--		task_unlock(task);
--		rc = -EPERM;
--		goto put_task_struct;
--	}
--	mm = task->mm;
--
--	if (!mm || (task->flags & PF_KTHREAD)) {
--		task_unlock(task);
--		rc = -EINVAL;
-+	mm = mm_access(task, PTRACE_MODE_ATTACH);
-+	if (!mm || IS_ERR(mm)) {
-+		rc = IS_ERR(mm) ? PTR_ERR(mm) : -ESRCH;
-+		/*
-+		 * Explicitly map EACCES to EPERM as EPERM is a more a
-+		 * appropriate error code for process_vw_readv/writev
-+		 */
-+		if (rc == -EACCES)
-+			rc = -EPERM;
- 		goto put_task_struct;
- 	}
- 
--	atomic_inc(&mm->mm_users);
--	task_unlock(task);
--
- 	for (i = 0; i < riovcnt && iov_l_curr_idx < liovcnt; i++) {
- 		rc = process_vm_rw_single_vec(
- 			(unsigned long)rvec[i].iov_base, rvec[i].iov_len,
+James
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
