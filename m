@@ -1,119 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005Ab2BBUsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:48:51 -0500
-Received: from mail.tpi.com ([70.99.223.143]:3093 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756653Ab2BBUst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:48:49 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: Larry.Finger@lwfinger.net
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] rtlwifi: Fix PCI probe error path orphaned memory
-Date: Thu,  2 Feb 2012 13:48:06 -0700
-Message-Id: <1328215686-126550-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.8.3
+	id S1757159Ab2BBUuS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:50:18 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48621 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755448Ab2BBUuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:50:16 -0500
+To: Junio C Hamano <gitster@pobox.com>
+Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git 1.7.9
+References: <7vipjwzvc2.fsf@alter.siamese.dyndns.org>
+From: Jakub Narebski <jnareb@gmail.com>
+Date: Thu, 02 Feb 2012 12:50:14 -0800 (PST)
+In-Reply-To: <7vipjwzvc2.fsf@alter.siamese.dyndns.org>
+Message-ID: <m3y5slark1.fsf@localhost.localdomain>
+User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory allocated by ieee80211_alloc_hw() will get orphaned
-if any subsequent initializations fail.
+Junio C Hamano <gitster@pobox.com> writes:
 
-Also don't pci_set_drvdata(pdev, NULL) until just before disabling
-the PCI device. Functions called by rtl_deinit_core(hw) may eventually need
-the context (when its actually implemented).
+> The latest feature release Git 1.7.9 is now available at the usual
+> places.
+> 
+> The release tarballs are found at:
+> 
+>     http://code.google.com/p/git-core/downloads/list
+> 
+> and their SHA-1 checksums are:
+> 
+> ed51ef5ef250daaa6e98515cf2641820cd268d4c  git-1.7.9.tar.gz
+> c7b1fa20dc501beb2cb5091dd24dbfd2a0013a0c  git-htmldocs-1.7.9.tar.gz
+> 1ca1fc430b2814f9e9cf82ec3bf7f2eaf5209b7a  git-manpages-1.7.9.tar.gz
 
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Chaoming Li <chaoming_li@realsil.com.cn>
-Cc: John W. Linville <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/net/wireless/rtlwifi/pci.c |   19 ++++++++++++-------
- 1 files changed, 12 insertions(+), 7 deletions(-)
+When trying to rebuild RPM out of tarball with
 
-diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
-index 5cb2199..6b18063 100644
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -1760,8 +1760,8 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
- 		if (pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32))) {
- 			RT_ASSERT(false,
- 				  "Unable to obtain 32bit DMA for consistent allocations\n");
--			pci_disable_device(pdev);
--			return -ENOMEM;
-+			err = -ENOMEM;
-+			goto fail1;
- 		}
- 	}
- 
-@@ -1803,7 +1803,7 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
- 	err = pci_request_regions(pdev, KBUILD_MODNAME);
- 	if (err) {
- 		RT_ASSERT(false, "Can't obtain PCI resources\n");
--		goto fail2;
-+		goto fail1;
- 	}
- 
- 	pmem_start = pci_resource_start(pdev, rtlpriv->cfg->bar_id);
-@@ -1816,6 +1816,7 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
- 			rtlpriv->cfg->bar_id, pmem_len);
- 	if (rtlpriv->io.pci_mem_start == 0) {
- 		RT_ASSERT(false, "Can't map PCI mem\n");
-+		err = -ENOMEM;
- 		goto fail2;
- 	}
- 
-@@ -1832,8 +1833,10 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
- 	pci_write_config_byte(pdev, 0x04, 0x07);
- 
- 	/* find adapter */
--	if (!_rtl_pci_find_adapter(pdev, hw))
-+	if (!_rtl_pci_find_adapter(pdev, hw)) {
-+		err = -ENODEV;
- 		goto fail3;
-+	}
- 
- 	/* Init IO handler */
- 	_rtl_pci_io_handler_init(&pdev->dev, hw);
-@@ -1843,6 +1846,7 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
- 
- 	if (rtlpriv->cfg->ops->init_sw_vars(hw)) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Can't init_sw_vars\n");
-+		err = -ENODEV;
- 		goto fail3;
- 	}
- 
-@@ -1887,7 +1891,6 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
- 	return 0;
- 
- fail3:
--	pci_set_drvdata(pdev, NULL);
- 	rtl_deinit_core(hw);
- 	_rtl_pci_io_handler_release(hw);
- 
-@@ -1899,10 +1902,12 @@ fail2:
- 	complete(&rtlpriv->firmware_loading_complete);
- 
- fail1:
--
-+	if (hw)
-+		ieee80211_free_hw(hw);
-+	pci_set_drvdata(pdev, NULL);
- 	pci_disable_device(pdev);
- 
--	return -ENODEV;
-+	return err;
- 
- }
- EXPORT_SYMBOL(rtl_pci_probe);
+  $ rpmbuild -tb git-1.7.9.tar.gz
+
+I get the following error at the end of build phase:
+
+ RPM build errors:
+     Installed (but unpackaged) file(s) found:
+    /usr/share/locale/is/LC_MESSAGES/git.mo
+
+Shouldn't this file be put in git package, or in separate 
+git-i18n-is / git-i18n-Icelandic RPM package?
+
 -- 
-1.7.8.3
+Jakub Narebski
 
