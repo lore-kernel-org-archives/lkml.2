@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab2BBQtm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 11:49:42 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54723 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755496Ab2BBQti (ORCPT
+	id S1754262Ab2BBQzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 11:55:09 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:54079 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752874Ab2BBQzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 11:49:38 -0500
-Date: Thu, 2 Feb 2012 17:49:20 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
-        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 6/7] LPC32xx: clock.c: USB PLL fix
-Message-ID: <20120202164920.GC3219@pengutronix.de>
-References: <1327939327-7799-1-git-send-email-stigge@antcom.de>
- <1327939327-7799-6-git-send-email-stigge@antcom.de>
- <20120131103401.GJ2471@pengutronix.de>
- <4F293DAF.4050402@antcom.de>
+	Thu, 2 Feb 2012 11:55:07 -0500
+Message-ID: <4F2ACD7F.2020506@xenotime.net>
+Date: Thu, 02 Feb 2012 09:53:03 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2/5bycvrmDh4d1IB"
-Content-Disposition: inline
-In-Reply-To: <4F293DAF.4050402@antcom.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Borislav Petkov <bp@amd64.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-edac@vger.kernel.org
+Subject: Re: linux-next: Tree for Feb 1 (mce_amd.c)
+References: <20120201171643.cbf8263eded709a75e92f4ad@canb.auug.org.au> <4F298A6C.6010101@xenotime.net> <20120202142628.GA1052@aftab>
+In-Reply-To: <20120202142628.GA1052@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/02/2012 06:26 AM, Borislav Petkov wrote:
+> On Wed, Feb 01, 2012 at 10:54:36AM -0800, Randy Dunlap wrote:
+>> On 01/31/2012 10:16 PM, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20120131:
+>>
+>>
+>> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to `cpu_llc_shared_map'
+> 
+> Yeah, -rc2 has that problem too with your randconfig. The issue is with
+> CONFIG_SMP not being set.
+> 
+> The following chunk should cure it:
 
---2/5bycvrmDh4d1IB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-> Thanks for reviewing my patches! I collected (and applied) all your
-> suggestions and will re-post the series as a patch update for applying
-> to the mainline tree.
+Thanks.
 
-Yes, please repost this series with the updates. And without USB & MMC
-updates. Those updates should be in later series, when we actually add
-support for these devices.
+> --
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 5bed94e..63fcb8a 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -897,7 +897,7 @@ config X86_MCE_INTEL
+>  config X86_MCE_AMD
+>  	def_bool y
+>  	prompt "AMD MCE features"
+> -	depends on X86_MCE && X86_LOCAL_APIC
+> +	depends on X86_MCE && X86_LOCAL_APIC && SMP
+>  	---help---
+>  	   Additional support for AMD specific MCE features such as
+>  	   the DRAM Error Threshold.
+> --
+> 
+> Thanks.
+> 
 
-> What do you think about mainline-integrating it?
 
-See my comment there.
-
-First step, I'd suggest: After you repost this series, I'll create a
-branch with the relevant patches (defconfig, buildfixes, clock fixes)
-and send a pull-request to Arnd/Olof. You can decide which issue you
-want to tackle next. I'd think MMC or USB are more of the lower hanging
-fruits, but I leave that to you.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---2/5bycvrmDh4d1IB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk8qvpAACgkQD27XaX1/VRtpPwCeJOTT/dJaFEcLsBa/tP7GRk3h
-t94An39xHKslism8sCLvuBQKj/l8yCVN
-=A6r4
------END PGP SIGNATURE-----
-
---2/5bycvrmDh4d1IB--
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
