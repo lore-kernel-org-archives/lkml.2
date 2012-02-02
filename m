@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab2BBJyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 04:54:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39835 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755007Ab2BBJyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 04:54:41 -0500
-Date: Thu, 2 Feb 2012 10:54:40 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ogay@logitech.com, jzanone@logitech.com
-Subject: Re: [PATCH 1/1] FIX mask to enable DJ mode
-In-Reply-To: <1326797411-26520-1-git-send-email-nlopezcasad@logitech.com>
-Message-ID: <alpine.LNX.2.00.1202021054300.18918@pobox.suse.cz>
-References: <1326797411-26520-1-git-send-email-nlopezcasad@logitech.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755242Ab2BBJ4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 04:56:34 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:35256 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754623Ab2BBJ4c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 04:56:32 -0500
+Date: Thu, 2 Feb 2012 12:56:12 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: pawel.moll@arm.com
+Cc: linux-kernel@vger.kernel.org
+Subject: re: params: <level>_initcall-like kernel parameters
+Message-ID: <20120202095612.GA30632@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020209.4F2A5DC3.001C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jan 2012, Nestor Lopez Casado wrote:
+Hello Pawel Moll,
 
-> 
-> Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
-> ---
-> Hi everyone, 
-> 
-> This is a minor bug I discovered while developing the 'soon to be posted'
-> driver for the Logitech Unifying Wireless Touchpad.
-> 
-> The user can only experience the bug if she pairs 6 devices to a Unifying
-> receiver. The sixth paired device would not work.
-> 
-> The value changed is actually a bitmask that enables reporting from each
-> paired device. As the sixth bit was not set, the sixth device reports are
-> ignored by the receiver and never get to the driver.
-> 
-> Jiri, this is a minor change and a real bug fix which might be posted to 
-> stable, but as I anticipate that user impact will be really low I would say
-> that there is no problem on letting this fix going to your branch only.
-> 
-> Cheers, 
->     Nestor
-> 
->  drivers/hid/hid-logitech-dj.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-> index 38b12e4..2b56efc 100644
-> --- a/drivers/hid/hid-logitech-dj.c
-> +++ b/drivers/hid/hid-logitech-dj.c
-> @@ -445,7 +445,7 @@ static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
->  	dj_report.report_id = REPORT_ID_DJ_SHORT;
->  	dj_report.device_index = 0xFF;
->  	dj_report.report_type = REPORT_TYPE_CMD_SWITCH;
-> -	dj_report.report_params[CMD_SWITCH_PARAM_DEVBITFIELD] = 0x1F;
-> +	dj_report.report_params[CMD_SWITCH_PARAM_DEVBITFIELD] = 0x3F;
->  	dj_report.report_params[CMD_SWITCH_PARAM_TIMEOUT_SECONDS] = (u8)timeout;
->  	return logi_dj_recv_send_report(djrcv_dev, &dj_report);
+The patch b41c2e271944: "params: <level>_initcall-like kernel 
+parameters" from Dec 12, 2011, leads to the following warning:
+init/main.c:749 do_initcall_level()
+	 error: buffer overflow 'initcall_level_names' 7 <= 7
 
-I have applied the fix, thanks Nestor.
+   743  static void __init do_initcall_level(int level)
+   744  {
+   745          extern const struct kernel_param __start___param[], __stop___param[];
+   746          initcall_t *fn;
+   747  
+   748          strcpy(static_command_line, saved_command_line);
+   749          parse_args(initcall_level_names[level],
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+initcall_level_names[] has 7 elements so initcall_level_names[7] is past
+the end of the array.
 
--- 
-Jiri Kosina
-SUSE Labs
+   750                     static_command_line, __start___param,
+   751                     __stop___param - __start___param,
+   752                     level, level,
+   753                     ignore_unknown_bootoption);
+   754  
+   755          for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++)
+   756                  do_one_initcall(*fn);
+   757  }
+   758  
+   759  static void __init do_initcalls(void)
+   760  {
+   761          int level;
+   762  
+   763          for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+initcall_levels[] has 9 elements so level is 0-7 here.
+
+   764                  do_initcall_level(level);
+   765  }
+
+regards,
+dan carpenter
+
