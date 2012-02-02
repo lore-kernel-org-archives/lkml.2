@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933154Ab2BBSmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 13:42:47 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:57482 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932815Ab2BBSmq (ORCPT
+	id S933281Ab2BBSnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 13:43:22 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8629 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933192Ab2BBSnV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 13:42:46 -0500
-Date: Thu, 2 Feb 2012 10:42:09 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Re: Memory corruption due to word sharing
-Message-ID: <20120202184209.GD2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201151918.GC16714@quack.suse.cz>
- <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
- <1328118174.15992.6206.camel@triegel.csb>
- <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
- <1328128874.15992.6430.camel@triegel.csb>
- <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
- <20120201224554.GK2382@linux.vnet.ibm.com>
- <CA+55aFyzYO0CMZOgdrVV0PdG2DkbwTQG7eE7N3bp=0tQmruFEQ@mail.gmail.com>
+	Thu, 2 Feb 2012 13:43:21 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 02 Feb 2012 10:43:14 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Date: Thu, 2 Feb 2012 10:43:13 -0800
+Subject: RE: [PATCH] pinctrl: pin configuration states
+Thread-Topic: [PATCH] pinctrl: pin configuration states
+Thread-Index: AczhF7n0EtTZMJGyTQaDKXFBBwnA4AAwn/UA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E124AD2@HQMAIL01.nvidia.com>
+References: <1326725496-28928-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1780DAB15E@HQMAIL01.nvidia.com>
+ <CACRpkdZAofVVQ5_b_R2FUWy5AfWOge1NOuO61q7vFiLB4wUizQ@mail.gmail.com>
+In-Reply-To: <CACRpkdZAofVVQ5_b_R2FUWy5AfWOge1NOuO61q7vFiLB4wUizQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyzYO0CMZOgdrVV0PdG2DkbwTQG7eE7N3bp=0tQmruFEQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020218-4242-0000-0000-000000AC710F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 03:11:00PM -0800, Linus Torvalds wrote:
-> On Wed, Feb 1, 2012 at 2:45 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
+Linus Walleij wrote at Wednesday, February 01, 2012 12:29 PM:
+> On Thu, Jan 19, 2012 at 8:03 PM, Stephen Warren <swarren@nvidia.com> wrote:
+...
+> >> +     /*
+> >> +      * Make a copy of the config state array - string pointers will end up
+> > ...
+> >> +     pinconf_states = tmp;
+> >> +     pinconf_states_num += num_states;
 > >
-> > My (perhaps forlorn and naive) hope is that C++11 memory_order_relaxed
-> > will eventually allow ACCESS_ONCE() to be upgraded so that (for example)
-> > access-once increments can generate a single increment-memory instruction
-> > on x86.
+> > We need to allow multiple tables to be registered, for all the same
+> > reasons we do for the pinmux mapping table. This implementation only
+> > keeps the most recently registered table.
 > 
-> I don't think that is a semantic issue.
+> ? beats me.
 > 
-> gcc could do it *today* with volatile accesses. It doesn't, because
-> volatiles are scary and basically disables a lot of optimizations. Why
-> would memory ordering be substantially different just because it has a
-> different name?
+> Please check the code for how I realloc the tmp variable (in the v2
+> patch set), I cannot spot the problem. It was designed to allow exactly
+> multiple calls to add tables piece by piece.
 
-I too would much prefer that gcc volatile worked more sanely.
+Sorry, I must have been asleep when I wrote that...
 
-But several people, including me, pushed on that and consistently got back
-"the standard doesn't say we have to do that".
+I was expecting the implementation to copy each table separately and
+store them in a list (since this would allow easy dynamic removel of the
+entries too), hence when I saw the assignment to a single global, I
+assumed it was just over-writing it; I guess I didn't even look at the
+realloc above or noticed that it was assigning "tmp" not just the caller-
+supplied parameter:-(
 
-So I got together with the standards people and now there is something
-(memory_order_relaxed atomics) that is specified to work the way we want
-it to.  Of course, it will likely be quite some time before it appears
-in usable form in gcc, but probably quite a bit less time than we have
-been pushing on the gcc folks about volatile.
-
-> > New architectures might eventually might define things like atomic_inc()
-> > in terms of C++11 atomics, but let's start with the straightforward stuff
-> > as and if it makes sense.
-> 
-> SMP-atomic or percpu atomic? Or both?
-
-Only SMP-atomic.
-
-> We need both variants in the kernel. If the compiler generates one of
-> them for us, that doesn't really much help.
-
-I must admit that the non-x86 per-CPU atomics are, ummm, "interesting".
-
-							Thanx, Paul
+-- 
+nvpublic
 
