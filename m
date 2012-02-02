@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab2BBOxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:53:13 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:58269 "EHLO mgw2.diku.dk"
+	id S932314Ab2BBOxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:53:16 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:58279 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087Ab2BBOxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:53:09 -0500
+	id S932087Ab2BBOxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 09:53:14 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/3 v2] drivers/power/pda_power.c: Move call to PTR_ERR after reassignment
-Date: Thu,  2 Feb 2012 15:53:00 +0100
-Message-Id: <1328194382-32465-2-git-send-email-Julia.Lawall@lip6.fr>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org, mmarek@suse.cz
+Subject: [PATCH] scripts/coccinelle/misc/cstptr.cocci: semantic patch to check for PTR_ERR after reassignment
+Date: Thu,  2 Feb 2012 15:53:08 +0100
+Message-Id: <1328194388-32495-1-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1328194382-32465-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1328194382-32465-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-PTR_ERR should be called before its argument is cleared.
-
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-expression e,e1;
-constant c;
-@@
-
-*e = c
-... when != e = e1
-    when != &e
-    when != true IS_ERR(e)
-*PTR_ERR(e)
-// </smpl>
-
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Reported-by: Josh Triplett <josh@joshtriplett.org>
 
 ---
-This patch probably only half way solves the problem with this code.  It would
-seem that it should have a goto at the end, but I am not sure to where.
+ scripts/coccinelle/misc/cstptr.cocci |   41 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-v2: correct commit message.
-
- drivers/power/pda_power.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
-index fd49689..16611c3 100644
---- a/drivers/power/pda_power.c
-+++ b/drivers/power/pda_power.c
-@@ -316,8 +316,8 @@ static int pda_power_probe(struct platform_device *pdev)
- 	ac_draw = regulator_get(dev, "ac_draw");
- 	if (IS_ERR(ac_draw)) {
- 		dev_dbg(dev, "couldn't get ac_draw regulator\n");
--		ac_draw = NULL;
- 		ret = PTR_ERR(ac_draw);
-+		ac_draw = NULL;
- 	}
- 
- #ifdef CONFIG_USB_OTG_UTILS
+diff --git a/scripts/coccinelle/misc/cstptr.cocci b/scripts/coccinelle/misc/cstptr.cocci
+new file mode 100644
+index 0000000..d425644
+--- /dev/null
++++ b/scripts/coccinelle/misc/cstptr.cocci
+@@ -0,0 +1,41 @@
++/// PTR_ERR should be applied before its argument is reassigned, typically
++/// to NULL
++///
++// Confidence: High
++// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
++// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Comments:
++// Options: -no_includes -include_headers
++
++virtual org
++virtual report
++virtual context
++
++@r exists@
++expression e,e1;
++constant c;
++position p1,p2;
++@@
++
++*e@p1 = c
++... when != e = e1
++    when != &e
++    when != true IS_ERR(e)
++*PTR_ERR@p2(e)
++
++@script:python depends on org@
++p1 << r.p1;
++p2 << r.p2;
++@@
++
++cocci.print_main("PTR_ERR",p2)
++cocci.print_secs("assignment",p1)
++
++@script:python depends on report@
++p1 << r.p1;
++p2 << r.p2;
++@@
++
++msg = "ERROR: PTR_ERR applied after initialization to constant on line %s" % (p1[0].line)
++coccilib.report.print_report(p2[0],msg)
 
