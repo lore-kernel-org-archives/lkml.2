@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab2BBXXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 18:23:42 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44701 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab2BBXXk (ORCPT
+	id S1757556Ab2BBXZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 18:25:20 -0500
+Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:50067 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754175Ab2BBXZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 18:23:40 -0500
-Message-ID: <4F2B1AF8.2000000@suse.cz>
-Date: Fri, 03 Feb 2012 00:23:36 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120124 Thunderbird/10.0
+	Thu, 2 Feb 2012 18:25:18 -0500
+X-Greylist: delayed 1558 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Feb 2012 18:25:18 EST
+Date: Thu, 2 Feb 2012 23:59:17 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Chinmay V S <chinmay.v.s@pathpartnertech.com>
+Cc: linux-kernel@vger.kernel.org, cvs268@gmail.com, tglx@linutronix.de,
+        sebastian@breakpoint.cc, arjan@linux.intel.com,
+        jeff.chua.linux@gmail.com
+Subject: Re: [RFC] [PATCH] [timer] Optimise apply_slack() for size and speed.
+Message-ID: <20120202225917.GA1189@kibibi>
+References: <1328002652-7700-1-git-send-email-chinmay.v.s@pathpartnertech.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, alan@linux.intel.com
-Subject: Re: [PATCH 3/5] TTY: use tty_standard_install
-References: <1327954472-26594-1-git-send-email-jslaby@suse.cz> <1327954472-26594-3-git-send-email-jslaby@suse.cz> <20120202230518.GA18903@kroah.com>
-In-Reply-To: <20120202230518.GA18903@kroah.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1328002652-7700-1-git-send-email-chinmay.v.s@pathpartnertech.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2012 12:05 AM, Greg KH wrote:
-> On Mon, Jan 30, 2012 at 09:14:30PM +0100, Jiri Slaby wrote:
->> Use the helper in the rest of the tty drivers. This is a simple
->> replacement.
+* Chinmay V S | 2012-01-31 15:07:32 [+0530]:
+
+>This patch modifies the masking logic to a bit-shift logic, therby
+>reducing the complexity and number of operations. Thus obtaining a minor
+>speed-up.
+>diff --git a/kernel/timer.c b/kernel/timer.c
+>index a297ffc..0379658 100644
+>--- a/kernel/timer.c
+>+++ b/kernel/timer.c
+>@@ -785,9 +785,7 @@ EXPORT_SYMBOL(mod_timer_pending);
+>@@ -811,9 +809,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
 > 
-> It would be, if you actually built this patch, as it is, it breaks :(
-
-Yes, I replied to this patch that I sent you some broken bastard. Also I
-attached the correct version...
-
->> --- a/drivers/isdn/capi/capi.c
->> +++ b/drivers/isdn/capi/capi.c
->> @@ -1015,14 +1015,11 @@ capinc_tty_install(struct tty_driver *driver, struct tty_struct *tty)
->>  {
->>  	int idx = tty->index;
->>  	struct capiminor *mp = capiminor_get(idx);
->> -	int ret = tty_init_termios(tty);
->> +	int ret = tty_standard_install(tty);
+> 	bit = find_last_bit(&mask, BITS_PER_LONG);
 > 
-> This, and, all of the other calls in this patch, should be (driver, tty)
-> for the function arguments, right?
-> 
-> That seems to fix the build for me, so I've checked it in, but please
-> verify that I got it right.
+>-	mask = (1 << bit) - 1;
+>-
+>-	expires_limit = expires_limit & ~(mask);
+>+	expires_limit = (expires_limit >> bit) << bit;
 
-It is OK.
+The question is whether a shift left is more efficient compared to an
+and operation. Besides that you save atleast one operation because you
+don't need to load -1 into a register for creating a mask. So it looks
+like less code.
 
-Sorry for that.
-
-thanks,
--- 
-js
-suse labs
+Sebastian
