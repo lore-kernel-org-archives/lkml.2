@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab2BBKfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 05:35:03 -0500
-Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:2139 "EHLO
-	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224Ab2BBKfB (ORCPT
+	id S1755540Ab2BBKfY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 05:35:24 -0500
+Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:4055 "EHLO
+	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343Ab2BBKfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 05:35:01 -0500
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Feb 2012 05:35:01 EST
+	Thu, 2 Feb 2012 05:35:03 -0500
 From: Hans Verkuil <hverkuil@xs4all.nl>
 To: linux-media@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Jonathan Corbet <corbet@lwn.net>,
         Andrew Morton <akpm@linux-foundation.org>,
         Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Enke Chen <enkechen@cisco.com>
-Subject: [RFCv7 PATCH 0/4] Add poll_requested_events() function.
-Date: Thu,  2 Feb 2012 11:26:53 +0100
-Message-Id: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
+        Enke Chen <enkechen@cisco.com>, Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [RFCv7 PATCH 3/4] net/sock.h: use poll_does_not_wait() in sock_poll_wait()
+Date: Thu,  2 Feb 2012 11:26:56 +0100
+Message-Id: <d2c03c4e81aa4fbc8c621241e7016a2c4aa65382.1328176079.git.hans.verkuil@cisco.com>
 X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
+References: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
+In-Reply-To: <a92b9a00741769f3c38a54d3a6799509f9089452.1328176079.git.hans.verkuil@cisco.com>
+References: <a92b9a00741769f3c38a54d3a6799509f9089452.1328176079.git.hans.verkuil@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-This is the seventh version of this patch series (the fifth and sixth where
-never posted and where internal iterations only).
+In order to determine whether poll_wait() might actually wait the
+poll_table pointer was tested in sock_poll_wait(). This is no longer
+sufficient, instead poll_does_not_wait() should be called. That function
+also tests whether pt->pq_proc is non-NULL.
 
-Al Viro had concerns about silent API changes. I have made an extensive
-analysis of that in my comments in patch 2/4.
+Without this change smp_mb() could be called unnecessarily in some
+circumstances, causing a performance hit.
 
-This patch series is rebased to v3.3-rc2. The changes compared to the
-previously posted version are:
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+---
+ include/net/sock.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-- I have renamed the qproc field to pq_proc to prevent any driver that tries
-  to access that directly to fail. No kernel driver does this, BTW.
-
-- I added a new poll_does_not_wait() inline that returns true if it is known
-  that poll() will not wait on return. This removes the last reason for
-  looking inside the poll_table struct. include/net/sock.h has been adapted
-  to use this new inline (and it is the only place inside the kernel that
-  need this).
-
-I hope that the analysis I made answers any remaining concerns about possible
-silent API changes.
-
-This patch series is also available here:
-
-http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/refs/heads/pollv7
-
-It was suggested to me that creating a new poll system call might be an option
-as well. I've attempted that as well and code implementing that can be found
-here:
-
-http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/refs/heads/pollwithkey
-
-However, I think this turned out to be very messy. And because some drivers
-call the poll fop directly or through some framework I could not be certain I
-was not introducing any errors.
-
-If it is really required to change the API in some way, then I would suggest
-changing this:
-
-typedef struct poll_table_struct {
-        poll_queue_proc pq_proc;
-        unsigned long key;
-} poll_table;
-
-to this:
-
-struct poll_table {
-        poll_queue_proc pq_proc;
-        unsigned long key;
-};
-
-and adapting all users.
-
-However, I honestly do not think this is necessary at all. But if it is the
-only way to get this in, then I'll do the work. The media/video subsystem really
-needs this functionality. Also note that previous versions of this patch have
-been in linux-next for months now.
-
-The first version of this patch was posted July 1st, 2011. I really hope that
-it won't take another six months to get a review from a fs developer. As this
-LWN article (http://lwn.net/Articles/450658/) said: 'There has been little
-discussion of the patch; it doesn't seem like there is any real reason for it
-not to go in for 3.1.'
-
-The earliest this can go in now is 3.4. The only reason it takes so long is
-that it has been almost impossible to get a Ack or comments or even just a
-simple reply from the fs developers. That is really frustrating, I'm sorry
-to say.
-
-Anyway, comments, reviews, etc. are very welcome.
-
-Regards,
-
-	Hans
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 91c1c8b..da7f2ec 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1824,7 +1824,7 @@ static inline bool wq_has_sleeper(struct socket_wq *wq)
+ static inline void sock_poll_wait(struct file *filp,
+ 		wait_queue_head_t *wait_address, poll_table *p)
+ {
+-	if (p && wait_address) {
++	if (!poll_does_not_wait(p) && wait_address) {
+ 		poll_wait(filp, wait_address, p);
+ 		/*
+ 		 * We need to be sure we are in sync with the
+-- 
+1.7.8.3
 
