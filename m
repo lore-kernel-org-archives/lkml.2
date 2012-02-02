@@ -1,134 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab2BBIRH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 03:17:07 -0500
-Received: from exprod5og103.obsmtp.com ([64.18.0.145]:40472 "EHLO
-	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754409Ab2BBIRF convert rfc822-to-8bit (ORCPT
+	id S1754912Ab2BBIeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 03:34:13 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46023 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754832Ab2BBIeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 03:17:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120201145802.GF5650@redhat.com>
-References: <CAOwKts8zS1rYA+Y4k-vb8YAaR=aFd1BwryhhWWnWLQyrYrNqyA@mail.gmail.com>
-	<20120131154748.GA5650@redhat.com>
-	<CAOwKts_dTvc4LiCZUXN9oYzty1pkDEn_VQwPKY=EoVzk0n6tFA@mail.gmail.com>
-	<20120201145802.GF5650@redhat.com>
-Date: Thu, 2 Feb 2012 16:17:02 +0800
-Message-ID: <CAOwKts8S0EkUGcP3rYqZe+HdvyXD0+SR1f_3xWpu5FprKWuGhQ@mail.gmail.com>
-Subject: Re: In many cases softlockup can not be reported after disabling IRQ
- for long time
-From: TAO HU <tghk48@motorola.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-omap <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-CFilter-Loop: Reflected
+	Thu, 2 Feb 2012 03:34:09 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 2 Feb 2012 17:32:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
+Message-Id: <20120202173235.066b16b3.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1328160478-28346-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <20120130152212.3a6a2039.kamezawa.hiroyu@jp.fujitsu.com>
+	<1328160478-28346-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Don
+On Thu,  2 Feb 2012 00:27:58 -0500
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-My concern is not actually that the softlockup could not be reported
-while the IRQ is disabled.
-What bothering me is that even AFTER re-enable the IRQ, it will not
-give warning in many cases.
+> On Mon, Jan 30, 2012 at 03:22:12PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Fri, 27 Jan 2012 18:02:49 -0500
+> > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> >
+> > > Currently when we check if we can handle thp as it is or we need to
+> > > split it into regular sized pages, we hold page table lock prior to
+> > > check whether a given pmd is mapping thp or not. Because of this,
+> > > when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
+> > > To remove it, this patch introduces a optimized check function and
+> > > replace several similar logics with it.
+> > >
+> > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > > Cc: David Rientjes <rientjes@google.com>
+> > >
+> > > Changes since v3:
+> > >   - Fix likely/unlikely pattern in pmd_trans_huge_stable()
+> > >   - Change suffix from _stable to _lock
+> > >   - Introduce __pmd_trans_huge_lock() to avoid micro-regression
+> > >   - Return 1 when wait_split_huge_page path is taken
+> > >
+> > > Changes since v2:
+> > >   - Fix missing "return 0" in "thp under splitting" path
+> > >   - Remove unneeded comment
+> > >   - Change the name of check function to describe what it does
+> > >   - Add VM_BUG_ON(mmap_sem)
+> >
+> >
+> > > +/*
+> > > + * Returns 1 if a given pmd maps a stable (not under splitting) thp,
+> > > + * -1 if the pmd maps thp under splitting, 0 if the pmd does not map thp.
+> > > + *
+> > > + * Note that if it returns 1, this routine returns without unlocking page
+> > > + * table locks. So callers must unlock them.
+> > > + */
+> >
+> >
+> > Seems nice clean up but... why you need to return (-1, 0, 1) ?
+> >
+> > It seems the caller can't see the difference between -1 and 0.
+> >
+> > Why not just return 0 (not locked) or 1 (thp found and locked) ?
+> 
+> Sorry, I changed wrongly from v3.
+> We can do fine without return value of -1 if we remove else-if (!err)
+> {...} block after move_huge_pmd() call in move_page_tables(), right?
+> (split_huge_page_pmd() after wait_split_huge_page() do nothing...)
+> 
 
-In theory, disabling IRQ for long time (10s in my case) also implies
-the high priority thread (watchdog) is blocked
-as well.
-So the ideal case is that softlockup driver could give warning right
-after the IRQ is re-enabled.
-It does so occasionally but fails to be consistent.
+Hm ?
 
+               if (pmd_trans_huge(*old_pmd)) {
+                        int err = 0;
+                        if (extent == HPAGE_PMD_SIZE)
+                                err = move_huge_pmd(vma, new_vma, old_addr,
+                                                    new_addr, old_end,
+                                                    old_pmd, new_pmd);
+                        if (err > 0) {
+                                need_flush = true;
+                                continue;
+                        } else if (!err) {
+                                split_huge_page_pmd(vma->vm_mm, old_pmd);
+                        }
+                        VM_BUG_ON(pmd_trans_huge(*old_pmd));
+                }
 
-On Wed, Feb 1, 2012 at 10:58 PM, Don Zickus <dzickus@redhat.com> wrote:
-> On Wed, Feb 01, 2012 at 10:18:09AM +0800, TAO HU wrote:
->> Hi, Don
->>
->> Thanks for your feedback!
->>
->> Unfortunately, the hardlockup depends on NMI which is not available on
->> ARM (Cortex-A9) per my understanding.
->> Our system uses OMAP4430. Any more suggestions?
->
-> Ah.  I wrongly assumed this is x86. Sorry about that.
->
-> Ok, so this is what is going on.  The softlockup check is just a high
-> priority thread that periodically runs.  If preemption is disabled that
-> thread can't run (or any threads for that matter) and a softlockup
-> condition will exist.  However, in order to determine that, a periodic
-> hrtimer has to come along and do the actual check.
->
-> If that check fails, then the warning is printed out.  However that
-> accuracy is based on the resolution of that hrtimer which I set to about
-> 1/5 the watchdog threshold or 1 second in this case.
->
-> Unfortunately, if you disable the irqs, then that timer can't fire and now
-> we don't have a way to trigger the softlockup check until interrupts are
-> re-enabled.
->
-> On x86, we have a backup plan for disabled interrupts and that is the
-> hardlockup check which rely on NMIs (something that still fires even when
-> interrupts are disabled).
->
-> If on ARM you don't have NMIs, then it will be difficult to check for
-> softlockups when interrupts are disabled.  Though I do recall sparc doing
-> something clever like using IRQ0 as a special purpose IRQ to emulate an
-> NMI (IOW, software purposely avoided masking IRQ0).  So when an interrupt
-> came in on that irq, it was never blocked and always ran based on the irq
-> nesting rules.
->
-> I don't know ARM well enough to give any solution for your problem, but my
-> reason above is why it isn't working the way you intended.
->
-> Cheers,
-> Don
->
->>
->> On Tue, Jan 31, 2012 at 11:47 PM, Don Zickus <dzickus@redhat.com> wrote:
->> > On Tue, Jan 31, 2012 at 03:28:09PM +0800, TAO HU wrote:
->> >> Resend with a new subject
->> >>
->> >> On Wed, Jan 25, 2012 at 4:24 PM, TAO HU <tghk48@motorola.com> wrote:
->> >> > Hi, All
->> >> >
->> >> > While playing kernel 3.0.8 with below test code, it does NOT report
->> >> > any softlockup with 60%~70% chances.
->> >> > NOTE: the softlockup timeout is set to 10 seconds (i.e.
->> >> > watchdog_thresh=5) in my test.
->> >> > ... ...
->> >> > preempt_disable();
->> >> > local_irq_disable();
->> >> > for (i = 0; i < 20; i++)
->> >> >       mdelay(1000);
->> >> > local_irq_enable();
->> >> > preempt_enable();
->> >> > ... ...
->> >> >
->> >> > However, if I remove local_irq_disable()/local_irq_enable() it will
->> >> > report softlockup with no problem.
->> >> > I believe it is due to that after local_irq_enable()
->> >> > touch_softlockup_watchdog() is called prior softlockup timer.
->> >
->> > Hi Hu,
->> >
->> > Honestly, you should be getting hardlockup warnings if you are disabling
->> > interrupts.  Do you see anything in the console output?
->> >
->> > Cheers,
->> > Don
->>
->>
->>
->> --
->> Best Regards
->> Hu Tao
+I think you're right. BUG_ON() in wait_split_huge_page() 
+
+ #define wait_split_huge_page(__anon_vma, __pmd)                         \
+        do {                                                            \
+                pmd_t *____pmd = (__pmd);                               \
+                anon_vma_lock(__anon_vma);                              \
+                anon_vma_unlock(__anon_vma);                            \
+                BUG_ON(pmd_trans_splitting(*____pmd) ||                 \
+                       pmd_trans_huge(*____pmd));                       \
+        } while (0)
+
+says pmd is always splitted.
+
+Thanks,
+-Kame
 
 
 
--- 
-Best Regards
-Hu Tao
+
+
