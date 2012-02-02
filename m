@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2BBIEB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 03:04:01 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:46429 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab2BBID7 (ORCPT
+	id S1754334Ab2BBIMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 03:12:24 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52059 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048Ab2BBIMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 03:03:59 -0500
-Message-ID: <4F2A4361.2020404@linux.vnet.ibm.com>
-Date: Thu, 02 Feb 2012 13:33:45 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, arjanvandeven@gmail.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: x86: clean up smpboot.c's use of udelay+schedule
-References: <20120130205304.0e10b05e@infradead.org> <20120131124341.GC4408@elte.hu> <1328014076.2446.210.camel@twins> <20120131125331.GE4408@elte.hu> <1328014916.2446.217.camel@twins> <20120202003357.GP2382@linux.vnet.ibm.com>
-In-Reply-To: <20120202003357.GP2382@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 2 Feb 2012 03:12:23 -0500
+Message-ID: <1328170333.11502.1.camel@phoenix>
+Subject: [PATCH 1/2] backlight: lp855x_bl: Checking platform data in
+ lp855x_probe
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Richard Purdie <rpurdie@rpsys.net>, "Milo(Woogyom) Kim" <milo.kim@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 02 Feb 2012 16:12:13 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12020122-5140-0000-0000-000000AF593B
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 06:03 AM, Paul E. McKenney wrote:
+The reset of the code assumes pdata is not NULL.
+Add checking for pdata in lp855x_probe, this prevents NULL dereference if pdata
+is NULL.
 
-> On Tue, Jan 31, 2012 at 02:01:56PM +0100, Peter Zijlstra wrote:
->> On Tue, 2012-01-31 at 13:53 +0100, Ingo Molnar wrote:
->>> Wanna give a short TODO list to anyone wanting to work on that?
->>
->> I paged out most details again, but it goes something like:
->>
->>  - read and understand the current generic code
->>
->>  - and all architecture code, at which point you'll probably boggle
->>    at all the similarities that are all subtly different (there's
->>    about 3 actually different ways in the arch code).
->>
->>  - pick one, preferably one that keeps additional state and doesn't
->>    fully rely on the online bits and pull it into generic code and
->>    provide a small vector of arch specific functions.
->>
->>  - convert all archs over.
->>
->>
->> Also related:
->>
->>  - figure out why cpu_down needs kstopmachine, I'm not sure it does..
->>    we should be able to tear down a cpu using synchronize_sched() and a
->>    single stop_one_cpu(). (someday when there's time I might actually
->>    try to implement this).
-> 
-> Currently, a number of the CPU_DYING notifiers assume that they are
-> running in stop-machine context, including those of RCU.
-> 
-> However, this is not an inherent property of RCU -- DYNIX/ptx's
-> CPU-offline process did not stop the whole machine, after all, and RCU
-> (we called it rclock, but whatever) was happy with this arrangement.
-> In fact, if the outgoing CPU could be made to stop in that context
-> instead of returning to the scheduler and the idle loop, it would make
-> my life a bit easier.
-> 
-> My question is why aren't the notifiers executed in the opposite
-> order going down and coming up, with the coming-up order matching the
-> boot order?  Also, why can't the CPU's exit from this world be driven
-> out of the idle loop?  That way, the CPU wouldn't mark itself offline
-> (thus in theory to be ignored by CPU), and then immediately dive into
-> the scheduler and who knows what all else, using RCU all the time.  ;-)
-> 
-> (RCU handles this by keeping a separate set of books for online CPUs.
-> It considers a CPU online at CPU_UP_PREPARE time, and doesn't consider
-> it offline until CPU_DEAD time.  To handle the grace periods between,
-> force_quiescent_state() allows the grace period to run a few jiffies
-> before checking cpu_online_map, which allows a given CPU to safely use
-> RCU for at least one jiffy before marking itself online and for at least
-> one jiffy after marking itself offline.)
-> 
-> Yet another question is about races between CPU-hotplug events and
-> registering/unregistering cpu notifiers.  I don't believe that the
-> current code does what you would like in all cases.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/backlight/lp855x_bl.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-
-I beg to differ here. There is no race between CPU-hotplug and registering
-or unregistering of cpu notifiers. The pair cpu_maps_update_begin() and
-cpu_maps_update_done() is supposed to take care of that right?
-
-
-> The only way
-> I can imagine it really working would be to use generation numbers,
-> so that once a CPU-hotplug event started, it would invoke only those
-> notifiers marked with the generation that was in effect when the
-> event started, or with some earlier generation.
-> 
-
+diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+index 8f628b8..5ab9ec8 100644
+--- a/drivers/video/backlight/lp855x_bl.c
++++ b/drivers/video/backlight/lp855x_bl.c
+@@ -230,9 +230,14 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ {
+ 	struct lp855x *lp;
+ 	struct lp855x_platform_data *pdata = cl->dev.platform_data;
+-	enum lp855x_brightness_ctrl_mode mode = pdata->mode;
++	enum lp855x_brightness_ctrl_mode mode;
+ 	int ret;
  
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
++	if (!pdata) {
++		dev_err(&cl->dev, "no platform data supplied\n");
++		return -EINVAL;
++	}
++
+ 	if (!i2c_check_functionality(cl->adapter, I2C_FUNC_SMBUS_I2C_BLOCK))
+ 		return -EIO;
+ 
+@@ -240,6 +245,7 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 	if (!lp)
+ 		return -ENOMEM;
+ 
++	mode = pdata->mode;
+ 	lp->client = cl;
+ 	lp->dev = &cl->dev;
+ 	lp->pdata = pdata;
+-- 
+1.7.5.4
+
+
 
