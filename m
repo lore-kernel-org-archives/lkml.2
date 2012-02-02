@@ -1,134 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933558Ab2BBX0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 18:26:55 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:51221 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933430Ab2BBX0v (ORCPT
+	id S1755534Ab2BBX3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 18:29:16 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50372 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756549Ab2BBX3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 18:26:51 -0500
-Message-ID: <4F2B1BB7.6020608@lwfinger.net>
-Date: Thu, 02 Feb 2012 17:26:47 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Thu, 2 Feb 2012 18:29:15 -0500
+X-Originating-IP: 217.70.178.132
+X-Originating-IP: 50.43.15.19
+Date: Thu, 2 Feb 2012 15:29:08 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Woogyom Kim <milo.kim@ti.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: [PATCH] include/linux/lp8727.h: Remove executable bit
+Message-ID: <20120202232908.GA20195@leaf>
 MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtlwifi: Fix PCI probe error path orphaned memory
-References: <1328215686-126550-1-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1328215686-126550-1-git-send-email-tim.gardner@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 02:48 PM, Tim Gardner wrote:
-> Memory allocated by ieee80211_alloc_hw() will get orphaned
-> if any subsequent initializations fail.
->
-> Also don't pci_set_drvdata(pdev, NULL) until just before disabling
-> the PCI device. Functions called by rtl_deinit_core(hw) may eventually need
-> the context (when its actually implemented).
->
-> Cc: Larry Finger<Larry.Finger@lwfinger.net>
-> Cc: Chaoming Li<chaoming_li@realsil.com.cn>
-> Cc: John W. Linville<linville@tuxdriver.com>
-> Cc: linux-wireless@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
-> ---
->   drivers/net/wireless/rtlwifi/pci.c |   19 ++++++++++++-------
->   1 files changed, 12 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
-> index 5cb2199..6b18063 100644
-> --- a/drivers/net/wireless/rtlwifi/pci.c
-> +++ b/drivers/net/wireless/rtlwifi/pci.c
-> @@ -1760,8 +1760,8 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
->   		if (pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32))) {
->   			RT_ASSERT(false,
->   				  "Unable to obtain 32bit DMA for consistent allocations\n");
-> -			pci_disable_device(pdev);
-> -			return -ENOMEM;
-> +			err = -ENOMEM;
-> +			goto fail1;
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+First time I've sent a patch with this diffstat, but I assume git can
+properly apply it.
 
-I would probably added a new label after the ieee80211_free_hw() and used it 
-here to avoid the "if (hw)" test, but that is a matter of choice. In any case 
-this patch is correct.
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+ mode change 100755 => 100644 include/linux/lp8727.h
 
-ACKed-by: Larry Finger <Larry.Finger@lwfinger.net>
-
-Thanks,
-
-Larry
-
->   		}
->   	}
->
-> @@ -1803,7 +1803,7 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
->   	err = pci_request_regions(pdev, KBUILD_MODNAME);
->   	if (err) {
->   		RT_ASSERT(false, "Can't obtain PCI resources\n");
-> -		goto fail2;
-> +		goto fail1;
->   	}
->
->   	pmem_start = pci_resource_start(pdev, rtlpriv->cfg->bar_id);
-> @@ -1816,6 +1816,7 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
->   			rtlpriv->cfg->bar_id, pmem_len);
->   	if (rtlpriv->io.pci_mem_start == 0) {
->   		RT_ASSERT(false, "Can't map PCI mem\n");
-> +		err = -ENOMEM;
->   		goto fail2;
->   	}
->
-> @@ -1832,8 +1833,10 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
->   	pci_write_config_byte(pdev, 0x04, 0x07);
->
->   	/* find adapter */
-> -	if (!_rtl_pci_find_adapter(pdev, hw))
-> +	if (!_rtl_pci_find_adapter(pdev, hw)) {
-> +		err = -ENODEV;
->   		goto fail3;
-> +	}
->
->   	/* Init IO handler */
->   	_rtl_pci_io_handler_init(&pdev->dev, hw);
-> @@ -1843,6 +1846,7 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
->
->   	if (rtlpriv->cfg->ops->init_sw_vars(hw)) {
->   		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Can't init_sw_vars\n");
-> +		err = -ENODEV;
->   		goto fail3;
->   	}
->
-> @@ -1887,7 +1891,6 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
->   	return 0;
->
->   fail3:
-> -	pci_set_drvdata(pdev, NULL);
->   	rtl_deinit_core(hw);
->   	_rtl_pci_io_handler_release(hw);
->
-> @@ -1899,10 +1902,12 @@ fail2:
->   	complete(&rtlpriv->firmware_loading_complete);
->
->   fail1:
-> -
-> +	if (hw)
-> +		ieee80211_free_hw(hw);
-> +	pci_set_drvdata(pdev, NULL);
->   	pci_disable_device(pdev);
->
-> -	return -ENODEV;
-> +	return err;
->
->   }
->   EXPORT_SYMBOL(rtl_pci_probe);
+diff --git a/include/linux/lp8727.h b/include/linux/lp8727.h
+old mode 100755
+new mode 100644
+-- 
+1.7.9
 
