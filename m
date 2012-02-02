@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab2BBLKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 06:10:30 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47569 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152Ab2BBLK3 (ORCPT
+	id S1755685Ab2BBLLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 06:11:12 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40862 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab2BBLLJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 06:10:29 -0500
-Date: Thu, 2 Feb 2012 11:10:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Takuo Koguchi <takuo.koguchi.sw@hitachi.com>, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, mingo@redhat.com, jbaron@redhat.com,
-        yrl.pp-manager.tt@hitachi.com, mcgrathr@google.com
-Subject: Re: [PATCH] ARM: Wire up HAVE_SYSCALL_TRACEPOINTS
-Message-ID: <20120202111007.GF889@n2100.arm.linux.org.uk>
-References: <XNM1$5$0$1$$3$9$0$A$8005107U4ed75e6e@hitachi.com> <3743fd16323370925cf37c279f85d94a.squirrel@webmail.greenhost.nl> <4F2A55B6.4030006@hitachi.com> <06cd49dcb5a124722e042c308144d5b7.squirrel@webmail.greenhost.nl>
+	Thu, 2 Feb 2012 06:11:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <06cd49dcb5a124722e042c308144d5b7.squirrel@webmail.greenhost.nl>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120201151918.GC16714@quack.suse.cz>
+References: <20120201151918.GC16714@quack.suse.cz>
+Date: Thu, 2 Feb 2012 11:11:09 +0000
+Message-ID: <CAAMvbhEc8E39PCCoT1CyjUqSyph18FmPnaJYc7B3ZazYgUu2GQ@mail.gmail.com>
+Subject: Re: Memory corruption due to word sharing
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, dsterba@suse.cz,
+        ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 12:00:30PM +0100, Indan Zupancic wrote:
-> On Thu, February 2, 2012 10:21, Takuo Koguchi wrote:
-> > Right.  As Russel King suggested, this patch depends on those configs
-> > until very large NR_syscalls is properly handled by ftrace.
-> 
-> It has nothing to do with large NR_syscalls. Supporting OABI is hard,
+On 1 February 2012 15:19, Jan Kara <jack@suse.cz> wrote:
+>  Hello,
+>
+>  we've spotted the following mismatch between what kernel folks expect
+> from a compiler and what GCC really does, resulting in memory corruption on
+> some architectures. Consider the following structure:
+> struct x {
+>    long a;
+>    unsigned int b1;
+>    unsigned int b2:1;
+> };
+>
+> We have two processes P1 and P2 where P1 updates field b1 and P2 updates
+> bitfield b2. The code GCC generates for b2 = 1 e.g. on ia64 is:
+>   0:   09 00 21 40 00 21       [MMI]       adds r32=8,r32
+>   6:   00 00 00 02 00 e0                   nop.m 0x0
+>   c:   11 00 00 90                         mov r15=1;;
+>  10:   0b 70 00 40 18 10       [MMI]       ld8 r14=[r32];;
+>  16:   00 00 00 02 00 c0                   nop.m 0x0
+>  1c:   f1 70 c0 47                         dep r14=r15,r14,32,1;;
+>  20:   11 00 38 40 98 11       [MIB]       st8 [r32]=r14
+>  26:   00 00 00 02 00 80                   nop.i 0x0
+>  2c:   08 00 84 00                         br.ret.sptk.many b0;;
+>
+> Note that gcc used 64-bit read-modify-write cycle to update b2. Thus if P1
+> races with P2, update of b1 can get lost. BTW: I've just checked on x86_64
+> and there GCC uses 8-bit bitop to modify the bitfield.
+>
+> We actually spotted this race in practice in btrfs on structure
+> fs/btrfs/ctree.h:struct btrfs_block_rsv where spinlock content got
+> corrupted due to update of following bitfield and there seem to be other
+> places in kernel where this could happen.
+>
+> I've raised the issue with our GCC guys and they said to me that: "C does
+> not provide such guarantee, nor can you reliably lock different
+> structure fields with different locks if they share naturally aligned
+> word-size memory regions.  The C++11 memory model would guarantee this,
+> but that's not implemented nor do you build the kernel with a C++11
+> compiler."
+>
+> So it seems what C/GCC promises does not quite match with what kernel
+> expects. I'm not really an expert in this area so I wanted to report it
+> here so that more knowledgeable people can decide how to solve the issue...
+>
+>                                                                Honza
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
 
-That's rubbish if you're doing things correctly, where correctly is
-defined as 'not assuming that the syscall number is in r7, but reading
-it from the thread_info->syscall member.
-
-> e.g. it doesn't put the syscall nr in r7, it's encoded as part of the
-> syscall instruction. Also the ABI for some system calls is different,
-> with different arg layouts (alignment of 64 bit args is different).
-
-OABI is a lot more simple because you know how the args are layed out
-without needing a table to work out where the padding is.  You know
-if you have a 64-bit argument that it follows immediately after a
-32-bit argument without needing any alignment.
-
-So:
-
-next_arg_reg(current_arg_reg, next_size, oabi)
-{
-	if (oabi) {
-		/* OABI case */
-		next_arg_reg = current_arg_reg + 1;
-	} else {
-		/* EABI case */
-		next_arg_reg = current_arg_reg + 1;
-		if (next_size == 64 && next_arg_reg & 1)
-			next_arg_reg++;
-	}
-	return next_arg_reg;
-}
-
-Notice how the EABI case is a lot more complicated by the alignment
-rules than the OABI - not only do you need something like the above
-but also you need a table to describe the size of the arguments for
-every syscall in the system.
+What is the recommended work around for this problem?
