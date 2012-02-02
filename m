@@ -1,92 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab2BBUpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:45:33 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:54651 "EHLO mail.vyatta.com"
+	id S1756682Ab2BBUq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:46:58 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34675 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756004Ab2BBUpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:45:32 -0500
-Date: Thu, 2 Feb 2012 12:45:29 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Sudden kernel panic with skge in 3.3-rc2
-Message-ID: <20120202124529.3e274223@s6510.linuxnetplumber.net>
-In-Reply-To: <20120202192115.GA8480@elliptictech.com>
-References: <20120202192115.GA8480@elliptictech.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756597Ab2BBUq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:46:56 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] PM/Hibernate: Thaw kernel threads in hibernation_snapshot() in error/test path
+Date: Thu, 2 Feb 2012 21:50:37 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20120202003359.9930.9844.stgit@srivatsabhat.in.ibm.com> <201202022133.40009.rjw@sisk.pl> <4F2AF41F.3050304@linux.vnet.ibm.com>
+In-Reply-To: <4F2AF41F.3050304@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201202022150.37314.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Feb 2012 14:21:15 -0500
-Nick Bowler <nbowler@elliptictech.com> wrote:
+On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
+> On 02/03/2012 02:03 AM, Rafael J. Wysocki wrote:
+> 
+> > On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
+> >> On 02/03/2012 01:48 AM, Rafael J. Wysocki wrote:
+> >>
+> >>> On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
+> >>>> On 02/03/2012 12:41 AM, Rafael J. Wysocki wrote:
+> >>>>
+> >>>>> On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
+> >>>>>> In the hibernation call path, the kernel threads are frozen inside
+> >>>>>> hibernation_snapshot(). If we happen to encounter an error further down
+> >>>>>> the road or if we are exiting early due to a successful freezer test,
+> >>>>>> then thaw kernel threads before returning to the caller.
+> >>>>>>
+> >>>>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >>>>>> ---
+> >>>>>>
+> >>>>>>  kernel/power/hibernate.c |    6 ++++--
+> >>>>>>  kernel/power/user.c      |    8 ++------
+> >>>>>>  2 files changed, 6 insertions(+), 8 deletions(-)
+> >>>>>>
+> >>>>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> >>>>>> index a5d4cf0..c6dee73 100644
+> >>>>>> --- a/kernel/power/hibernate.c
+> >>>>>> +++ b/kernel/power/hibernate.c
+> >>>>>> @@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
+> >>>>>>  		 * successful freezer test.
+> >>>>>>  		 */
+> >>>>>>  		freezer_test_done = true;
+> >>>>>> -		goto Cleanup;
+> >>>>>> +		goto Thaw;
+> >>>>>>  	}
+> >>>>>>  
+> >>>>>>  	error = dpm_prepare(PMSG_FREEZE);
+> >>>>>>  	if (error) {
+> >>>>>>  		dpm_complete(PMSG_RECOVER);
+> >>>>>> -		goto Cleanup;
+> >>>>>> +		goto Thaw;
+> >>>>>>  	}
+> >>>>>>  
+> >>>>>>  	suspend_console();
+> >>>>>> @@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
+> >>>>>>  	platform_end(platform_mode);
+> >>>>>>  	return error;
+> >>>>>>  
+> >>>>>> + Thaw:
+> >>>>>> +	thaw_kernel_threads();
+> >>>>>
+> >>>>> Actaully, no.  You have to do swsusp_free() before thawing, otherwise
+> >>>>> some allocations made by the just thawed kernel threads may fail.
+> >>>>>
+> >>>> But then what about the case (in the existing code) when
+> >>>> freeze_kernel_threads() fails? It would first thaw kernel threads (in
+> >>>> fact it used to thaw even userspace tasks earlier!) before calling
+> >>>> swsusp_free(). So, the existing code itself seems to be brittle, considering
+> >>>> the point you raised. Right?
+> >>>
+> >>> Well, that's why freeze_kernel_threads() originally hadn't tried to thaw anything
+> >>> and started to do that after one of the Tejun's commits (and I forgot about
+> >>> this particular issue back then).
+> >>>
+> >>>>>>   Cleanup:
+> >>>>>>  	swsusp_free();
+> >>>>>>  	goto Close;
+> >>>>>> diff --git a/kernel/power/user.c b/kernel/power/user.c
+> >>>>>> index 3e10007..7bee91f 100644
+> >>>>>> --- a/kernel/power/user.c
+> >>>>>> +++ b/kernel/power/user.c
+> >>>>>> @@ -249,16 +249,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+> >>>>>>  		}
+> >>>>>>  		pm_restore_gfp_mask();
+> >>>>>>  		error = hibernation_snapshot(data->platform_support);
+> >>>>>> -		if (error) {
+> >>>>>> -			thaw_kernel_threads();
+> >>>>>> -		} else {
+> >>>>>> +		if (!error) {
+> >>>>>>  			error = put_user(in_suspend, (int __user *)arg);
+> >>>>>>  			if (!error && !freezer_test_done)
+> >>>>>>  				data->ready = 1;
+> >>>>>> -			if (freezer_test_done) {
+> >>>>>> +			if (freezer_test_done)
+> >>>>>>  				freezer_test_done = false;
+> >>>>>> -				thaw_kernel_threads();
+> >>>>>> -			}
+> >>>>>>  		}
+> >>>>>>  		break;
+> >>>>>
+> >>>>> Overall, this seems to be a cleanup, or is it a bug fix?
+> >>>>>
+> >>>>
+> >>>> This was intended as a cleanup only, not a bug fix. But now, (see my point
+> >>>> above), I am beginning to feel that the existing code itself is not robust
+> >>>> enough...
+> >>>
+> >>> Well, let's pretend that we think it is safe to thaw kernel threads before
+> >>> freeing memory (actually, they are frozen after the preallocation, so it
+> >>> really should be OK).
+> >>>
+> >>
+> >>
+> >> Yeah, even I had the same reasoning in mind when writing this patch.
+> >>
+> >>  
+> >>> So I think I'll apply your patch after all.
+> >>>
+> >> :-)
+> > 
+> > However, this one should probably be regarded as a regression fix:
+> > 
+> > http://marc.info/?l=linux-kernel&m=132813572708843&w=4
+> > 
+> > because thawing all processes before calling swsusp_free() is definitely not
+> > a good idea.
+> > 
+> 
+> 
+> Right, I agree. So we need to get this into stable as well then..
 
-> Hi,
-> 
-> I just saw this panic on 3.3-rc2 with skge.  I don't know whether it's
-> reproducible yet -- the machine crashed while I was not actively using
-> it.  We've had this type of card for a few years and I've never seen this
-> before so it may be a regression, but admittedly we don't use them all
-> that often.
-> 
-> At the time of the crash, the network interface in question was up, but
-> not configured with any addresses; mtu configured to (the default) 1500
-> bytes.  It was used for packet capture (tcpdump) shortly beforehand,
-> although this was not running at the time of the crash.  It's a PCI
-> gigabit ethernet card:
-> 
->   03:01.0 Ethernet controller: D-Link System Inc DGE-530T Gigabit Ethernet Adapter (rev 11) (rev 11)
-> 
-> In case it matters, the primary network interface of the system is an
-> onboard device using the sky2 driver:
-> 
->   02:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8057 PCI-E Gigabit Ethernet Controller (rev 10Ethernet controller: Marvell Technology Group Ltd. 88E8057 PCI-E Gigabit Ethernet Controller (rev 10)
-> 
-> I took a photo of the screen, but unfortuately the top few lines are
-> lost forever.  Posted at imgur because it seems a bit big for the
-> mailing lists: <http://i.imgur.com/xklGU.jpg>. Apologies for the
-> terrible quality; the best camera I could find around was in someone's
-> mobile phone.  I'll see about configuring a serial console in case it
-> crashes again.
-> 
-> For convenience (hopefully), here's the call trace retyped in plain text
-> (addresses elided, see photo for them).  The full code line is
-> reproduced by hand because it's almost unreadable in the photo (and
-> truncated to boot).
-> 
->   Call Trace:
->    <IRQ>
->    [...] net_rx_action+0xaa/0x1c0
->    [...] __do_softirq+0x7e/0x125
->    [...] ? _raw_spin_unlock+0x26/0x31
->    [...] call_softirq+0x1c/0x30
->    [...] do_softirq+0x33/0x68
->    [...] irq_exit+0x3f/0xb9
->    [...] do_IRQ+0x97/0xae
->    [...] common_interrupt+0x6b/0x6b
->    <EOI>
->    [...] ? hrtimer_start+0x13/0x15
->    [...] ? mwait_idle+0x6e/0x80
->    [...] ? mwait_idle+0x61/0x80
->    [...] cpu_idle+0x61/0xbd
->    [...] rest_init+0x8d/0x91
->    [...] start_kernel+0x338/0x343
->    [...] x86_64_start_reservations+0xb8/0xbd
->    [...] x86_64_start_kernel+0xed/0xf4
->   Code: 48 8b 40 30 48 85 c0 74 0a b9 02 00 00 00 4c 89 fa ff d0 49 8b 86 d0 00 00 00 49 8b 4d b4 48 89 c7 48 8b b2 d0 00 00 00 <f3> a4 31 ff 48 8b 03 49 8b 75 18 48 8b 40 08 48 85 c0 74 13 48
->   RIP  [...] skge_poll+0x367/0x5cd [skge]
-> 
-> Let me know if you need any more info,
+No, we don't, this is a 3.3 merge window fallout.
 
-Try reverting this commit, it seems problematic
-commit d0249e44432aa0ffcf710b64449b8eaa3722547e
-Author: stephen hemminger <shemminger@vyatta.com>
-Date:   Thu Jan 19 14:37:18 2012 +0000
+> Do you want me to re-spin the patch with the commit message explicitly stating
+> that this is a regression fix and so on or is the current patch good enough?
 
-    skge: check for PCI dma mapping errors
+Yes, it would be nice to rework the changelog to reflect the real importance
+of the patch.
 
+Thanks,
+Rafael
