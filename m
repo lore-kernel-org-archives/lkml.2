@@ -1,50 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2BBJfY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 04:35:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24971 "EHLO mx1.redhat.com"
+	id S1754865Ab2BBJfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 04:35:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38718 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282Ab2BBJfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 04:35:20 -0500
-Message-ID: <4F2A58A1.90800@redhat.com>
-Date: Thu, 02 Feb 2012 11:34:25 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1754282Ab2BBJfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 04:35:36 -0500
+Date: Thu, 2 Feb 2012 10:35:34 +0100 (CET)
+From: Richard Guenther <rguenther@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michael Matz <matz@suse.de>, Jiri Kosina <jkosina@suse.cz>,
+        Colin Walters <walters@verbum.org>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+In-Reply-To: <CA+55aFxt3rG8_HyoRqiMOKVDqaGTkRk=Kh+bAJTAxxdHAGzuVw@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1202021028360.4999@zhemvz.fhfr.qr>
+References: <20120201151918.GC16714@quack.suse.cz> <1328114266.5355.44.camel@lenny> <CA+55aFxmdskUXX1iBaPx7rUGD95UqNJxhe1BLeVtZjqHjBpsPA@mail.gmail.com> <alpine.LRH.2.00.1202011808240.22725@twin.jikos.cz> <Pine.LNX.4.64.1202011818570.25409@wotan.suse.de>
+ <CA+55aFxt3rG8_HyoRqiMOKVDqaGTkRk=Kh+bAJTAxxdHAGzuVw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Christoph Lameter <cl@linux.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327591185.2446.102.camel@twins> <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <1328117722.2446.262.camel@twins> <20120201184045.GG2382@linux.vnet.ibm.com> <alpine.DEB.2.00.1202011404500.2074@router.home> <20120201201336.GI2382@linux.vnet.ibm.com>
-In-Reply-To: <20120201201336.GI2382@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-292295540-1328175335=:4999"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2012 10:13 PM, Paul E. McKenney wrote:
-> > 
-> > Could we also apply the same approach to processors busy doing
-> > computational work? In that case the OS is also not needed. Interrupting
-> > these activities is impacting on performance and latency.
->
-> Yep, that is in fact what Frederic's dyntick-idle userspace work does.
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Running in a guest is a special case of running in userspace, so we'd
-need to extend this work to kvm as well.
+--8323584-292295540-1328175335=:4999
+Content-Type: TEXT/PLAIN; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 
--- 
-error compiling committee.c: too many arguments to function
+On Wed, 1 Feb 2012, Linus Torvalds wrote:
 
+> On Wed, Feb 1, 2012 at 9:41 AM, Michael Matz <matz@suse.de> wrote:
+> >
+> > One problem is that it's not a new problem, GCC emitted similar code since
+> > about forever, and still they turned up only now (well, probably because
+> > ia64 is dead, but sparc64 should have similar problems).  The bitfield
+> > handling code is _terribly_ complex and fixing it is quite involved.  So
+> > don't expect any quick fixes.
+> 
+> I agree that bitfields are nasty, I've had to handle them myself in
+> sparse. And we have actually had problems with bitfields before, to
+> the point where we've replaced use of bitfields with masking and
+> setting bits by hand.
+> 
+> But I also think that gcc is simply *buggy*, and has made them much
+> nastier than they should be. What gcc *should* have done is to turn
+> bitfield accesses into shift-and-masking of the underlying field as
+> early as possible, and then do all optimizations at that level.
+> 
+> In fact, there is another gcc bug outstanding (48696) where I complain
+> about absolutely horrible code generation, and that one was actually
+> the exact same issue except in reverse: gcc wouldn't take the
+> underlying size of the bitfield into account, and use the wrong
+> (smaller) size for the access, causing absolutely horrendous code
+> generation that mixes byte and word accesses, and causes slowdowns by
+> orders of magnitude.
+
+Yeah, sorry for dropping the ball on this one (and missing my original
+GCC 4.7 target ...)
+
+> And it really is the same issue: gcc has forgotten what the base type
+> is, and tries to "compute" some type using the actual bits. Which is
+> simply *wrong*. Always has been.
+> 
+> It's stupid, it generates bad code (both from performance *and* from a
+> correctness angle), and it has actually resulted in gcc having *extra*
+> complexity because it keeps the bitfield data around much too late.
+> 
+> > The other problem is specification.  While you think that the code you
+> > wrote is totally obvious it might not actually be so.  For instance, what
+> > about this struct:
+> >
+> > {long l:32; int i1:16; short s; int i2:1; char c:7; short s2:8; short s3;}
+> >
+> > What are the obviously correct accesses for various writes into this
+> > struct?
+> 
+> I really don't think that example matters. You should instead turn the
+> question around, and look at the real code examples, make *those*
+> generate good and obviously correct code, and then *after* you've done
+> that, you start looking at the mixed case where people do odd things.
+
+Well, it matters because it shows that simply using the declared type
+isn't going to work in the end.  What we instead need to do is
+remember the underlying objects the bitfield packing algorithm uses.
+It then simply becomes obvious how to implement the bitfield accesses.
+I hope to get back to this for GCC 4.8.
+
+> Quite frankly, the layout that makes *sense* for something like the
+> above is not to pack them. You'd just do
+
+Heh, but of course the ABI specifies they are supposed to be packed ...
+
+In the end we all agree GCC does something nasty (and I would call
+it a bug even), but any solution we find in GCC won't be backportable
+to earlier releases so you have to deal with the GCC bug for quite
+some time and devise workarounds in the kernel.  You'll hit the
+bug for all structure fields that share the largest aligned
+machine word with a bitfield (thus the size depends on the alignment
+of the full object, not that of the struct containing the bitfield
+in case that struct is nested inside another more aligned one).
+This situation should be easily(?) detectable with sparse.
+
+Thanks,
+Richard.
+--8323584-292295540-1328175335=:4999--
