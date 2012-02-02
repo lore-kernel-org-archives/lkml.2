@@ -1,61 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab2BBN5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 08:57:20 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19803 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab2BBN5S (ORCPT
+	id S1756270Ab2BBN7a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 08:59:30 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:36020 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756077Ab2BBN72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 08:57:18 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 02 Feb 2012 05:57:13 -0800
-Message-ID: <4F2A95F2.9000006@nvidia.com>
-Date: Thu, 2 Feb 2012 19:26:02 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH V1] mfd: tps65910: Initialize irq platform data properly
-References: <1326898156-11293-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1326898156-11293-1-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Thu, 2 Feb 2012 08:59:28 -0500
+Message-ID: <1328191165.3974.7.camel@odin>
+Subject: Re: [PATCH] regulator: Remove support for supplies specified by
+ struct device
+From: Liam Girdwood <lrg@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Date: Thu, 02 Feb 2012 13:59:25 +0000
+In-Reply-To: <1328182022-6218-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1328182022-6218-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 January 2012 08:19 PM, Laxman Dewangan wrote:
-> irq_base of the tps65910 irq platform data should be
-> initialized with the board provided irq_base data.
->
-> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+On Thu, 2012-02-02 at 11:27 +0000, Mark Brown wrote:
+> This has been deprecated for a very long time now.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 > ---
->   drivers/mfd/tps65910.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-> index c1da84b..8517481 100644
-> --- a/drivers/mfd/tps65910.c
-> +++ b/drivers/mfd/tps65910.c
-> @@ -168,7 +168,7 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
->   		goto err;
->
->   	init_data->irq = pmic_plat_data->irq;
-> -	init_data->irq_base = pmic_plat_data->irq;
-> +	init_data->irq_base = pmic_plat_data->irq_base;
->
->   	tps65910_gpio_init(tps65910, pmic_plat_data->gpio_base);
->
-Hi Samuel,
-Any feedback on this patch?
 
-Thanks,
-Laxman
-
+Acked-by: Liam Girdwood <lrg@ti.com>
 
