@@ -1,163 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab2BBDAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 22:00:47 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60284 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab2BBDAq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 22:00:46 -0500
+	id S1754897Ab2BBDCe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 22:02:34 -0500
+Received: from fnarfbargle.com ([93.93.131.224]:50263 "EHLO fnarfbargle.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753586Ab2BBDCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 22:02:32 -0500
+Message-ID: <4F29FCB2.6040204@fnarfbargle.com>
+Date: Thu, 02 Feb 2012 11:02:10 +0800
+From: Brad Campbell <brad@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <CAKPZvrb6gRDqU_iwK-mV5CbHZpmEKJ4=zig5c=VZvWBsnPXs5Q@mail.gmail.com>
-References: <CAKPZvrbFV5oR8tHJEYUzBhC7Z4pSaCXdG_3BGD0jK-6_A3nmiw@mail.gmail.com>
-	<1326192547.11926.5.camel@linux-s257.site>
-	<CAL-cBk011b4QbSRRuKxbZhNKxQQ-DkRHvq34Ua881h+AKXY_NQ@mail.gmail.com>
-	<CAKPZvrZdw_n_JRw=WvUXEwO6E8HtE=tgQo0G5MCERbwjOY+Fgw@mail.gmail.com>
-	<CAL-cBk1J-LWCHQxzqVuj1x7B2CxN-8+bBoNTBPCG_8SntHkQOg@mail.gmail.com>
-	<CAKPZvrZwvHRaWnvBxQyXiHTds+N7aUiWStdHgrDtLXPrSQRjrA@mail.gmail.com>
-	<CAKPZvrbrOze=DTsLQBEORj7+fmXHSxq477xnvLR6zKtTbEKiTg@mail.gmail.com>
-	<CAKPZvrb6gRDqU_iwK-mV5CbHZpmEKJ4=zig5c=VZvWBsnPXs5Q@mail.gmail.com>
-Date: Thu, 2 Feb 2012 11:00:45 +0800
-X-Google-Sender-Auth: HILj671wRdExRRCYLqnp825xQnE
-Message-ID: <CAL-cBk3+qR77JQwyZXzbAaE3c43TWvhnjsyA-E5Wyj=4OkXqkA@mail.gmail.com>
-Subject: Re: high speed cams are not working on usbip
-From: David Chang <dchang@suse.com>
-To: nagarjun kommineni <nagarjunkommineni@gmail.com>
-Cc: joeyli <jlee@suse.com>, linux-kernel@vger.kernel.org, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: 8BIT
+To: thomas@fjellstrom.ca
+CC: John Robinson <john.robinson@anonymous.org.uk>,
+        linux-raid <linux-raid@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: GRUB doesn't like ServeRAID M1015/LSI 9220-8i (was Re: mvsas
+ with 3.1)
+References: <201201131144.58044.thomas@fjellstrom.ca> <201202010703.09833.thomas@fjellstrom.ca> <4F294E64.10204@anonymous.org.uk> <201202010742.07818.thomas@fjellstrom.ca>
+In-Reply-To: <201202010742.07818.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.2.80
+X-SA-Exim-Mail-From: brad@fnarfbargle.com
+X-SA-Exim-Scanned: No (on localhost); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/02/12 22:42, Thomas Fjellstrom wrote:
+>
+> Yeah, GRUB immediately throws an "out of memory. Aborted" error, its annoying,
+> but I reported the issue on GRUB's bug tracker after talking to a guy in #grub
+> on freenode. Hopefully someone looks at it soon. It appears it happens so
+> early in grub's startup that it can't even output any debug info (I was asked
+> to run: `grub-install --debug-image=all /dev/sdX`, and did so, I get debug
+> output when the card is not installed, but absolutely nothing when it is
+> installed.
 
-在 2012年1月30日下午8:58，nagarjun kommineni <nagarjunkommineni@gmail.com> 寫道：
->
-> Hi,
->
-> I found that, beyond the resolution 352*288, network utilisation is beyond
-> 100Mbps.
->
+Just another data point. I've seen this issue also. It does not appear to be GRUB's fault. It 
+appears the BIOS on the card does something funky as it also prevents syslinux/isolinux/pxelinux and 
+its friends from properly detecting/reporting the machines memory. Machine has 16GB but a PXE boot 
+believes it has 3GB.
 
-If I remember correctly, the usbip sugget using gigabit ethernet.
-Since the maximum speed of usb 2.0 is 480Mb/s bigger than 100Mbps.
+I "worked around" the problem by swapping out the mainboard for a later model with a different BIOS 
+and the problem went away. Not pretty, but it was the only way I could get the machine to boot with 
+those cards in it. I have 4 IBM cards in 2 machines and they work fine here. I still have the dodgy 
+mainboard and can set it up if you need help testing/reproducing the issue.
 
 Regards,
-David
+Brad
 
->
-> 2012/1/20 nagarjun kommineni <nagarjunkommineni@gmail.com>
->>
->> Hi,
->>
->> I think we need to increase the depth of video buffers in UVC subsystem.
->>
->>
->> On 1/16/12, nagarjun kommineni <nagarjunkommineni@gmail.com> wrote:
->> > Hi,
->> >
->> > Both server and client are working at 100Mbps.
->> >
->> > On 1/16/12, David Chang <dchang@suse.com> wrote:
->> >> Hi,
->> >>
->> >> 在 2012年1月11日下午3:47，nagarjun kommineni <nagarjunkommineni@gmail.com> 寫道：
->> >>> hi,
->> >>> these are the my test specifications.
->> >>>
->> >>> OS:            Scientific Linux 6.1 (default kernel 2.6.32)
->> >>> Kernel:       3.1.4 (I have built it)
->> >>> Web Cam:  Logitech Pro 9000
->> >>> Test App:   Gstreamer
->> >>>
->> >>> To see the web cam output I have used the Gstreamer  with the
->> >>> following
->> >>> command.
->> >>> gst-launch v4l2src !
->> >>> video/x-raw-yuv,width=160,height=120,framerate=15/1
->> >>> !
->> >>> ffmpegcolorspace ! autovideosink
->> >>>
->> >>> my cam supported resloutions are 160*120, 176*144, 320*240, 352*288,
->> >>> 640*480, 800*600, 960*720, 1600*1200.
->> >>>
->> >>> it works fine upto 320*240, beyond this it doesn't work.
->> >>
->> >> What's the speed of server and client network interface?
->> >>
->> >> David
->> >>>
->> >>>
->> >>> 2012/1/10 David Chang <dchang@suse.com>
->> >>>>
->> >>>> Hi Joey,
->> >>>>
->> >>>> 2012/1/10 joeyli <jlee@suse.com>:
->> >>>> > 於 二，2012-01-10 於 13:46 +0530，nagarjun kommineni 提到：
->> >>>> >> Hi,
->> >>>> >>
->> >>>> >> problem with usbip in drivers/staging/usbip
->> >>>> >>
->> >>>> >>  I have configured one pc as server and one as client, with this
->> >>>> >> configuration high speed web cams are not working for higher
->> >>>> >> resolutions.
->> >>>> >>
->> >>>> >
->> >>>> > How "high" does this web's speed?
->> >>>> >
->> >>>> >> please have a look at this problem.
->> >>>> >>
->> >>>> >
->> >>>> > David,
->> >>>> > as I remember you test webcam in old kernel before? looks works
->> >>>> > fine.
->> >>>>
->> >>>> Yes, but I would suggest using lower resolution.
->> >>>>
->> >>>> Regards,
->> >>>> David
->> >>>> >
->> >>>> >
->> >>>> > Thanks
->> >>>> > Joey Lee
->> >>>> >
->> >>>> >
->> >>>> > --
->> >>>> > To unsubscribe from this list: send the line "unsubscribe
->> >>>> > linux-kernel"
->> >>>> > in
->> >>>> > the body of a message to majordomo@vger.kernel.org
->> >>>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >>>> > Please read the FAQ at  http://www.tux.org/lkml/
->> >>>
->> >>>
->> >>>
->> >>>
->> >>> --
->> >>> Regards,
->> >>> Nagarjuna Kommineni.
->> >>>
->> >>>
->> >>
->> >
->> >
->> > --
->> > Regards,
->> > Nagarjuna Kommineni.
->> >
->>
->>
->> --
->> Regards,
->> Nagarjuna Kommineni.
->
->
->
->
-> --
-> Regards,
-> Nagarjuna Kommineni.
->
->
+
