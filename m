@@ -1,124 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab2BBRcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 12:32:20 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47569 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756948Ab2BBRbd (ORCPT
+	id S932954Ab2BBRca (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 12:32:30 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16027 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932586Ab2BBRcZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 12:31:33 -0500
-From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: <grant.likely@secretlab.ca>, <khilman@ti.com>, <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Subject: [PATCH v9 19/25] gpio/omap: fix debounce clock handling
-Date: Thu, 2 Feb 2012 23:00:45 +0530
-Message-ID: <1328203851-20435-20-git-send-email-tarun.kanti@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
-References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
+	Thu, 2 Feb 2012 12:32:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 02 Feb 2012 09:32:13 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 2 Feb 2012 09:32:12 -0800
+Subject: RE: [PATCH v1 3/8] ARM: tegra: rework Tegra secondary CPU core
+ bringup
+Thread-Topic: [PATCH v1 3/8] ARM: tegra: rework Tegra secondary CPU core
+ bringup
+Thread-Index: AczczDbIaESii6t4S1qd9+3rsKA/kQFBDXXQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E124A8B@HQMAIL01.nvidia.com>
+References: <1327597641-7519-1-git-send-email-pdeschrijver@nvidia.com>
+ <1327597641-7519-4-git-send-email-pdeschrijver@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF178CB8246B@HQMAIL01.nvidia.com>
+ <20120127081802.GU29914@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20120127081802.GU29914@tbergstrom-lnx.Nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dbck_enable_mask indicates which all GPIOs within a bank have debounce
-enabled and dbck is enabled/disabled based upon this. But there is no
-mechanism to track the dbck state. In order to manage the dbck state we need
-additional flag and logic so that turning off/on dbck is synchronized with
-pm_runtime_put/get_sync calls.
+Peter De Schrijver wrote at Friday, January 27, 2012 1:18 AM:
+> On Thu, Jan 26, 2012 at 09:25:53PM +0100, Stephen Warren wrote:
+> > Peter De Schrijver wrote at Thursday, January 26, 2012 10:07 AM:
+> > > Prepare the Tegra secondary CPU core bringup code for other Tegra variants.
+> > > The reset handler is also generalized to allow for future introduction of
+> > > powersaving modes which turn off the CPU cores.
+> >
+> > > diff --git a/arch/arm/mach-tegra/headsmp.S b/arch/arm/mach-tegra/headsmp.S
+> >
+> > >  ENTRY(tegra_secondary_startup)
+> > ...
+> > > +	enable_coresight r0
+> >
+> > > +ENTRY(__tegra_cpu_reset_handler)
+> > > +
+> > > +#if DEBUG_CPU_RESET_HANDLER
+> > > +	enable_coresight r0
+> > > +	b	.
+> > > +#endif
+> >
+> > I'm not sure why the macro call enable_coresight is ifdef'd in one place
+> > but not the other... Should just the instruction "b ." be inside the
+> > ifdef?
+> 
+> This code path will also be used by LP2 and LP1 resume in the future, I'm not
+> sure we should unconditionally enable Coresight in that case.
 
-Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- drivers/gpio/gpio-omap.c |   29 +++++++++++++++++++----------
- 1 files changed, 19 insertions(+), 10 deletions(-)
+What I'm unclear on is why it's a good idea to unconditionally enable
+coresight in tegra_secondary_startup if it's not a good idea to
+unconditionally enable it in __tegra_cpu_reset_handler.
 
-diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-index 8b619fd..0ea3dc9 100644
---- a/drivers/gpio/gpio-omap.c
-+++ b/drivers/gpio/gpio-omap.c
-@@ -67,6 +67,7 @@ struct gpio_bank {
- 	struct clk *dbck;
- 	u32 mod_usage;
- 	u32 dbck_enable_mask;
-+	bool dbck_enabled;
- 	struct device *dev;
- 	bool is_mpuio;
- 	bool dbck_flag;
-@@ -158,6 +159,22 @@ static inline void _gpio_rmw(void __iomem *base, u32 reg, u32 mask, bool set)
- 	__raw_writel(l, base + reg);
- }
- 
-+static inline void _gpio_dbck_enable(struct gpio_bank *bank)
-+{
-+	if (bank->dbck_enable_mask && !bank->dbck_enabled) {
-+		clk_enable(bank->dbck);
-+		bank->dbck_enabled = true;
-+	}
-+}
-+
-+static inline void _gpio_dbck_disable(struct gpio_bank *bank)
-+{
-+	if (bank->dbck_enable_mask && bank->dbck_enabled) {
-+		clk_disable(bank->dbck);
-+		bank->dbck_enabled = false;
-+	}
-+}
-+
- /**
-  * _set_gpio_debounce - low level gpio debounce time
-  * @bank: the gpio bank we're acting upon
-@@ -1176,6 +1193,7 @@ save_gpio_context:
- 				bank->get_context_loss_count(bank->dev);
- 
- 	omap_gpio_save_context(bank);
-+	_gpio_dbck_disable(bank);
- 	spin_unlock_irqrestore(&bank->lock, flags);
- 
- 	return 0;
-@@ -1190,6 +1208,7 @@ static int omap_gpio_runtime_resume(struct device *dev)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&bank->lock, flags);
-+	_gpio_dbck_enable(bank);
- 	if (!bank->enabled_non_wakeup_gpios || !bank->workaround_enabled) {
- 		spin_unlock_irqrestore(&bank->lock, flags);
- 		return 0;
-@@ -1271,16 +1290,11 @@ void omap2_gpio_prepare_for_idle(int pwr_mode)
- 	struct gpio_bank *bank;
- 
- 	list_for_each_entry(bank, &omap_gpio_list, node) {
--		int j;
--
- 		if (!bank->mod_usage || !bank->loses_context)
- 			continue;
- 
- 		bank->power_mode = pwr_mode;
- 
--		for (j = 0; j < hweight_long(bank->dbck_enable_mask); j++)
--			clk_disable(bank->dbck);
--
- 		pm_runtime_put_sync_suspend(bank->dev);
- 	}
- }
-@@ -1290,14 +1304,9 @@ void omap2_gpio_resume_after_idle(void)
- 	struct gpio_bank *bank;
- 
- 	list_for_each_entry(bank, &omap_gpio_list, node) {
--		int j;
--
- 		if (!bank->mod_usage || !bank->loses_context)
- 			continue;
- 
--		for (j = 0; j < hweight_long(bank->dbck_enable_mask); j++)
--			clk_enable(bank->dbck);
--
- 		pm_runtime_get_sync(bank->dev);
- 	}
- }
 -- 
-1.7.0.4
+nvpublic
 
