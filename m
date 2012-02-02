@@ -1,173 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab2BBTfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:35:03 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34473 "EHLO ogre.sisk.pl"
+	id S1757317Ab2BBTgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:36:50 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:40912 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754988Ab2BBTfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:35:00 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM/Freezer: Thaw only kernel threads if freezing of kernel threads fails
-Date: Thu, 2 Feb 2012 20:38:41 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, pavel@ucw.cz, len.brown@intel.com,
-        linux-pm@vger.kernel.org,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Nigel Cunningham <nigel@tuxonice.net>
-References: <20120201223105.6669.12718.stgit@srivatsabhat.in.ibm.com> <20120201223647.GB19837@google.com> <4F29C3E3.1040108@linux.vnet.ibm.com>
-In-Reply-To: <4F29C3E3.1040108@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753315Ab2BBTgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:36:48 -0500
+Message-ID: <1328211236.2261.152.camel@groeck-laptop>
+Subject: Re: [PATCH v5 2/5] x86/platform: (TS-5500) add GPIO support
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Jean Delvare <khali@linux-fr.org>
+Date: Thu, 2 Feb 2012 11:33:56 -0800
+In-Reply-To: <20120201213025.53d820d2@pyramind.ukuu.org.uk>
+References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <1328130344-18836-3-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <20120201213025.53d820d2@pyramind.ukuu.org.uk>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202022038.42156.rjw@sisk.pl>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 01, 2012, Srivatsa S. Bhat wrote:
-> On 02/02/2012 04:06 AM, Tejun Heo wrote:
+On Wed, 2012-02-01 at 16:30 -0500, Alan Cox wrote:
+> > +obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
 > 
-> > On Thu, Feb 02, 2012 at 04:01:12AM +0530, Srivatsa S. Bhat wrote:
-> >> So, modify freeze_kernel_threads() to thaw only kernel threads in case of
-> >> freezing failure.
-> >>
-> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > 
-> > Acked-by: Tejun Heo <tj@kernel.org>
-> > 
+> Wants to be gpi-ts5500 and in the drivers/gpio directory.
 > 
-> 
-> Thanks a lot!
-> 
-> > with nits below,
-> > 
-> > 
-> > Heh, the original ?: code was scary.  That said, IMHO, the above seems
-> > a bit too verbose.  Functions usually shouldn't have side effects on
-> > failure and the above code is usual in that sense and it would be nice
-> > to mention the reformatting (from cryptic to sane) in the commit log.
-> 
-> 
-> Ok :-)
-> 
-> > Also, how many columns are you flowing the text to?  It seems quite
-> > narrower than they usually should be.
-> 
-> 
-> Oh right, I didn't give attention to that. I'll try to fit it in lesser
-> number of lines. But, should I really cut short on the explanation itself?
-> I remember Nigel had requested some comments on a different patch
-> on roughly similar code path https://lkml.org/lkml/2012/1/28/111.
-> So I thought it would be a good idea to explicitly document the differences,
-> to be clear...
-> 
-> Here is the updated patch:
-> 
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Subject: [PATCH] PM/Freezer: Thaw only kernel threads if freezing of kernel threads fails
-> 
-> If freezing of kernel threads fails, we are expected to automatically thaw
-> tasks in the error recovery path. However, at times, we encounter situations
-> in which we would like the automatic error recovery path to thaw only the
-> kernel threads, because we want to be able to do some more cleanup before
-> we thaw userspace. Something like:
-> 
-> error = freeze_kernel_threads();
-> if (error) {
-> 	/* Do some cleanup */
-> 
-> 	/* Only then thaw userspace tasks*/
-> 	thaw_processes();
-> }
-> 
-> An example of such a situation is where we freeze/thaw filesystems during
-> suspend/hibernation. There, if freezing of kernel threads fails, we would
-> like to thaw the frozen filesystems before thawing the userspace tasks.
-> 
-> So, modify freeze_kernel_threads() to thaw only kernel threads in case of
-> freezing failure. And change suspend_freeze_processes() accordingly.
-> (At the same time, let us also get rid of the rather cryptic usage of the
-> conditional operator (:?) in that function.)
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Acked-by: Tejun Heo <tj@kernel.org>
 
-Applied.
+I would agree, though there seem to be some disagreements about where
+such platform specific drivers should be located. From an earlier
+exchange I had with Vivien about this matter:
 
-Thanks,
-Rafael
+> > > would be the appropriate location for a driver like this. As
+> > > mentioned before, my strong preference is drivers/hwmon, but I
+> > > would like to hear from others.
+> > 
+> > We should either split every driver into corresponding
+> > subdirectories, or put everything in a common platform directory.
+> > My first RFC patches set has every driver separated. As they are
+> > really specific to the platform, people seem to agree with grouping
+> > them, mainly because they won't be shared. I changed that in the
+> > following patches sets, and X86 maintainers seemed to be ok with
+> > that.
+> > 
+> > I'm ok with both solutions, but we should all agree on one.
+> > Maybe we should have other maintainers view on this?
+> > 
+> That is what I had asked for. I thought the whole point of per-module 
+> directories was to have all drivers there. If that is no longer true,
+> fine with me; who am I to argue about something like that.
+> I'd just like to know.
+> 
 
+It looks like things are going back and forth a bit. If I were Vivien, I
+would be a bit frustrated by now and be close to giving up (Vivien, I
+really commend you for your patience).
 
-> ---
-> 
->  kernel/power/power.h   |   24 ++++++++++++++++++++++--
->  kernel/power/process.c |    7 +++++--
->  2 files changed, 27 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/power/power.h b/kernel/power/power.h
-> index 0c4defe..21724ee 100644
-> --- a/kernel/power/power.h
-> +++ b/kernel/power/power.h
-> @@ -231,8 +231,28 @@ extern int pm_test_level;
->  #ifdef CONFIG_SUSPEND_FREEZER
->  static inline int suspend_freeze_processes(void)
->  {
-> -	int error = freeze_processes();
-> -	return error ? : freeze_kernel_threads();
-> +	int error;
-> +
-> +	error = freeze_processes();
-> +
-> +	/*
-> +	 * freeze_processes() automatically thaws every task if freezing
-> +	 * fails. So we need not do anything extra upon error.
-> +	 */
-> +	if (error)
-> +		goto Finish;
-> +
-> +	error = freeze_kernel_threads();
-> +
-> +	/*
-> +	 * freeze_kernel_threads() thaws only kernel threads upon freezing
-> +	 * failure. So we have to thaw the userspace tasks ourselves.
-> +	 */
-> +	if (error)
-> +		thaw_processes();
-> +
-> + Finish:
-> +	return error;
->  }
->  
->  static inline void suspend_thaw_processes(void)
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index eeca003..7e42645 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -143,7 +143,10 @@ int freeze_processes(void)
->  /**
->   * freeze_kernel_threads - Make freezable kernel threads go to the refrigerator.
->   *
-> - * On success, returns 0.  On failure, -errno and system is fully thawed.
-> + * On success, returns 0.  On failure, -errno and only the kernel threads are
-> + * thawed, so as to give a chance to the caller to do additional cleanups
-> + * (if any) before thawing the userspace tasks. So, it is the responsibility
-> + * of the caller to thaw the userspace tasks, when the time is right.
->   */
->  int freeze_kernel_threads(void)
->  {
-> @@ -159,7 +162,7 @@ int freeze_kernel_threads(void)
->  	BUG_ON(in_atomic());
->  
->  	if (error)
-> -		thaw_processes();
-> +		thaw_kernel_threads();
->  	return error;
->  }
->  
-> 
-> 
-> 
-> 
+Is there a written guideline or policy people can look and point to
+if/when something like this comes up ? Otherwise we may have the
+LED/GPIO/xxx maintainers point one way, the X86 maintainers point the
+other way, and thus may have reached a complete deadlock.
+
+Guenter
+
 
