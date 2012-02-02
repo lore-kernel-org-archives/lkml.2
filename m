@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab2BBG0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 01:26:18 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:65464 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab2BBG0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 01:26:17 -0500
-Date: Thu, 2 Feb 2012 09:27:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        devel@driverdev.osuosl.org,
-        Christopher Lais <chris+android@zenthought.org>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/2] Staging: android: binder: Add some error checks
-Message-ID: <20120202062749.GD24652@mwanda>
-References: <1327118181-3542-1-git-send-email-arve@android.com>
- <1327118181-3542-2-git-send-email-arve@android.com>
- <20120121082208.GL3294@mwanda>
- <20120131185228.GA21481@kroah.com>
- <CAMP5XgedsSDtYa-bZCW--+Hj41sN94tDXQ8_d7c4=fT5bJ7mTQ@mail.gmail.com>
- <20120201065322.GA24652@mwanda>
- <CAMP5XgeV7R4JfRG+9qqkUN_BC0MvADKOngVXqK9mvmXcxisqYA@mail.gmail.com>
- <20120201224708.GA2643@kroah.com>
+	id S1752881Ab2BBGv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 01:51:26 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:50860 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039Ab2BBGvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 01:51:25 -0500
+Message-ID: <4F2A3305.9050009@cn.fujitsu.com>
+Date: Thu, 02 Feb 2012 14:53:57 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cHMo6Wbp1wrKhbfi"
-Content-Disposition: inline
-In-Reply-To: <20120201224708.GA2643@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4F2A2C85.0035,ss=1,re=0.000,fgs=0
+To: Tejun Heo <tj@kernel.org>
+CC: axboe@kernel.dk, vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/16] blkcg: make CONFIG_BLK_CGROUP bool
+References: <1328129429-11823-1-git-send-email-tj@kernel.org> <1328129429-11823-2-git-send-email-tj@kernel.org>
+In-Reply-To: <1328129429-11823-2-git-send-email-tj@kernel.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-02 14:49:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-02 14:49:56,
+	Serialize complete at 2012-02-02 14:49:56
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tejun Heo wrote:
+> Block cgroup core can be built as module; however, it isn't too useful
+> as blk-throttle can only be built-in and cfq-iosched is usually the
+> default built-in scheduler.  Scheduled blkcg cleanup requires calling
+> into blkcg from block core.  To simplify that, disallow building blkcg
+> as module by making CONFIG_BLK_CGROUP bool.
+> 
+> If building blkcg core as module really matters, which I doubt, we can
+> revisit it after blkcg API cleanup.
+> 
+> -v2: Vivek pointed out that IOSCHED_CFQ was incorrectly updated to
+>      depend on BLK_CGROUP.  Fixed.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/Kconfig.iosched |    4 ----
+>  block/blk-cgroup.c    |   17 -----------------
+>  block/blk-cgroup.h    |   10 ++--------
+>  init/Kconfig          |    2 +-
+>  4 files changed, 3 insertions(+), 30 deletions(-)
+> 
 
---cHMo6Wbp1wrKhbfi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+You can merge the following change with your patch.
 
-On Wed, Feb 01, 2012 at 02:47:08PM -0800, Greg KH wrote:
-> That looks good to me, as one patch, Dan?
+Moreover, some cgroup APIs were exported to allow blk-cgroup to be built
+as a module, and now they can be unexported.
 
-Looks good.
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index fa8f263..bc8ea70 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -55,9 +55,7 @@ struct cgroup_subsys blkio_subsys = {
+ 	.subsys_id = blkio_subsys_id,
+ #endif
+ 	.use_id = 1,
+-	.module = THIS_MODULE,
+ };
+-EXPORT_SYMBOL_GPL(blkio_subsys);
+ 
+ static inline void blkio_policy_insert_node(struct blkio_cgroup *blkcg,
+ 					    struct blkio_policy_node *pn)
+@@ -1594,8 +1592,6 @@ static void blkiocg_destroy(struct cgroup_subsys *subsys, struct cgroup *cgroup)
+ 
+ 	free_css_id(&blkio_subsys, &blkcg->css);
+ 	rcu_read_unlock();
+-	if (blkcg != &blkio_root_cgroup)
+-		kfree(blkcg);
+ }
+ 
+ static struct cgroup_subsys_state *
 
-Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-regards,
-dan carpenter
-
---cHMo6Wbp1wrKhbfi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPKizlAAoJEOnZkXI/YHqRV/sP/2d3usnTWqP7sPU9skRAtEou
-byA0NBzRi0V6ZJWtVtpDGLxKfCKYdeCpvNxl1nK3NT+kJUYK8JqdJEsgChUSHyi9
-N/GQd50MCE8JQFT9JfRSdVMW3suxMk5eYRXgqDDvUqUiQXxXMaiCLq0o6ap8GN3b
-3pCTy0Q2mt55MRj8qMqV0ylloQytImq+zL3gzUhyThoQbZxj9NWo/npEarZhT99S
-mY9B7sJES3biAbEJxAl8xjQPQ1HShFB6Z1VLRHpNTn8w3RTXv7A1wjGrCkciYtuP
-v4p0M+nk7h9WqbrEq6hB3EknoZprSKR76KwgIRBt44B6vkcB0LqFIoX9dhDX8stf
-3oMn78MEVBNzdq4Jt0AqgXlZ7WRImdIQ5ubD4knwI3bdrkTPl4UR7bOGOqqzMOGT
-Hnul1mo3ETiAPf96v9sXvF9IRxF75Gjybu1y73K0ybvGCS5mUHn9fkA2gEb6gDjk
-XyR17mCf4xOShYYDEMQuE/nNnuHEyZEQf2hCH7H/VuMQSjiEAa+PQkLJUNazGrsI
-Cyi7rBVqaHJYTNIzFlZ1UtLzMjDU84ynlDeyG1Rj8xf5A22z461Z3BZwR5LpeD2x
-ehiQ90GMqB6fd49v8S/vrvbP69uEaRNDw73KfXLszyzz5zwERYqXj1r3E047eU81
-oM4O79AFc7CF8+0d322U
-=jF7u
------END PGP SIGNATURE-----
-
---cHMo6Wbp1wrKhbfi--
