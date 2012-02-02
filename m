@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab2BBQ2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 11:28:48 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:65171 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751946Ab2BBQ2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 11:28:46 -0500
-Message-ID: <1328200126.3232.30.camel@deadeye>
-Subject: Re: [PATCH 3/4] sysctl: Comments to make the code clearer.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <netdev@vger.kernel.org>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Damien Millescamps <damien.millescamps@6wind.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Thu, 2 Feb 2012 16:28:46 +0000
-In-Reply-To: <m1pqdxvroc.fsf_-_@fess.ebiederm.org>
-References: <m1pqe5ah3z.fsf@fess.ebiederm.org>
-	 <m139atx6bs.fsf@fess.ebiederm.org> <m1pqdxvroc.fsf_-_@fess.ebiederm.org>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	id S1755061Ab2BBQ3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 11:29:24 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53228 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752488Ab2BBQ3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 11:29:22 -0500
+Date: Thu, 2 Feb 2012 08:27:55 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 04/41] rcu: Add diagnostic for
+ misaligned rcu_head structures
+Message-ID: <20120202162755.GJ2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120201194131.GA10028@linux.vnet.ibm.com>
+ <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1328125319-5205-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120202010146.GF29058@leaf>
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18684.005
-X-TM-AS-Result: No--16.648700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202010146.GF29058@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020216-7182-0000-0000-000000A689EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 19:29 -0800, Eric W. Biederman wrote:
-> Document get_subdir and that find_subdir alwasy takes a reference.
+On Wed, Feb 01, 2012 at 05:01:46PM -0800, Josh Triplett wrote:
+> On Wed, Feb 01, 2012 at 11:41:22AM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> > 
+> > The push for energy efficiency will require that RCU tag rcu_head
+> > structures to indicate whether or not their invocation is time critical.
+> > This tagging is best carried out in the bottom bits of the ->next
+> > pointers in the rcu_head structures.  This tagging requires that the
+> > rcu_head structures be properly aligned, so this commit adds the required
+> > diagnostics.
+> > 
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcutree.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index d0f8e64..4655f3e 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -1707,6 +1707,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+> >  	unsigned long flags;
+> >  	struct rcu_data *rdp;
+> >  
+> > +	WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
+> >  	debug_rcu_head_queue(head);
 > 
-> Suggested-by:  Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  fs/proc/proc_sysctl.c |   16 ++++++++++++++++
->  1 files changed, 16 insertions(+), 0 deletions(-)
+> Upon further checking:
 > 
-> diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-> index 722ec11..e5601dc 100644
-> --- a/fs/proc/proc_sysctl.c
-> +++ b/fs/proc/proc_sysctl.c
-> @@ -73,6 +73,7 @@ static int namecmp(const char *name1, int len1, const char *name2, int len2)
->  	return cmp;
->  }
->  
-> +/* Called under sysctl_lock */
->  static struct ctl_table *find_entry(struct ctl_table_header **phead,
->  	struct ctl_dir *dir, const char *name, int namelen)
->  {
-> @@ -864,6 +865,18 @@ static struct ctl_dir *new_dir(struct ctl_table_set *set,
->  	return new;
->  }
->  
-> +/**
-> + * get_subdir - find or create a subdir with the specified name.
-> + * @dir:  Directory to create the subdirectory in
-> + * @name: The name of the subdirectory to find or create
-> + * @namelen: The length of name
-> + *
-> + * Takes a directory with an elevated reference count so we know that
-> + * if we drop the lock the directory will not go away.  Upon success
-> + * the reference is moved from @dir to the returned subdirectory.
-> + * Upon error an error code is returned and the reference on @dir is
-> + * simply dropped.
-> + */
->  static struct ctl_dir *get_subdir(struct ctl_dir *dir,
->  				  const char *name, int namelen)
-[...]
+> static inline void debug_rcu_head_queue(struct rcu_head *head)
+> {
+>         WARN_ON_ONCE((unsigned long)head & 0x3);
+> 
+> :)
 
-Should static functions really have kernel-doc?  (Aside from static
-inlines defined in a header.)  This can pollute the documentation
-namespace.
+Fair point!  I guess that we really only need one of these.  ;-)
 
-Ben.
+I have kept the unconditional one and removed the one hidden under
+CONFIG_DEBUG_OBJECTS_RCU_HEAD, but in a separate commit with
+your Reported-by.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+							Thanx, Paul
 
