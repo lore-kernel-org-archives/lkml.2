@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab2BBAyB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 19:54:01 -0500
-Received: from mail4.aviatnet.com ([192.147.115.31]:10517 "EHLO
-	mail4.aviatnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab2BBAyA (ORCPT
+	id S1753879Ab2BBA4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 19:56:12 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:52953 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778Ab2BBA4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 19:54:00 -0500
-Subject: Re: [PATCH v3] rtc: ds1307: generalise ram size and offset
-From: Austin Boyle <Austin.Boyle@aviatnet.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <20120119194541.GA32483@pengutronix.de>
-References: <1326144071.3096.25.camel@pc786-ubu.gnet.global.vpn>
-	 <20120111110650.GC2605@pengutronix.de>
-	 <1326320516.3096.64.camel@pc786-ubu.gnet.global.vpn>
-	 <20120119194541.GA32483@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 2 Feb 2012 13:37:37 +1300
-Message-ID: <1328143057.3159.34.camel@pc786-ubu.gnet.global.vpn>
+	Wed, 1 Feb 2012 19:56:10 -0500
+X-Originating-IP: 217.70.178.138
+X-Originating-IP: 50.43.15.19
+Date: Wed, 1 Feb 2012 16:55:54 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu 03/41] rcu: Add lockdep-RCU checks for
+ simple self-deadlock
+Message-ID: <20120202005553.GD29058@leaf>
+References: <20120201194131.GA10028@linux.vnet.ibm.com>
+ <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1328125319-5205-3-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.16.1.34]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328125319-5205-3-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
-
-I'm sorry about the slow response - I was away at linux.conf.au and then
-haven't found enough time since I got back. 
-
-On Thu, 2012-01-19 at 20:45 +0100, Wolfram Sang wrote:
-> Sorry, found another thing.
+On Wed, Feb 01, 2012 at 11:41:21AM -0800, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> > +	if (chip) {
-> > +		if (chip->nvram_size)
-> > +			ds1307->nvram_size = chip->nvram_size;
-> > +		if (chip->nvram_offset)
-> > +			ds1307->nvram_offset = chip->nvram_offset;
-> > +	}
-> 
-> I moved only the assignments...
-> 
-> >  
-> >  	buf = ds1307->regs;
-> >  	if (i2c_check_functionality(adapter, I2C_FUNC_SMBUS_I2C_BLOCK)) {
-> > @@ -893,11 +907,12 @@ read_rtc:
-> >  		dev_dbg(&client->dev, "got IRQ %d\n", client->irq);
-> >  	}
-> >  
-> > -	if (chip && chip->nvram56) {
-> > +	if (chip && chip->nvram_size) {
-> 
-> .. to here when I saw...
-> 
-> > +		nvram.size = ds1307->nvram_size;
-> 
-> ... that nvram is static and we are changing it. Yeah, it is very unlikely but
-> if we have two RTC with different nvram sizes, one of them will not work correctly.
-I see the issue. Am I right that it would only occur when you have two
-I2C buses, each with one of the RTC chips supported by this driver?
+> It is illegal to have a grace period within a same-flavor RCU read-side
+> critical section, so this commit adds lockdep-RCU checks to splat when
+> such abuse is encountered.  This commit does not detect more elaborate
+> RCU deadlock situations.  These situations might be a job for lockdep
+> enhancements.
 
-The fix I thought of would be to add a 'struct bin_attribute' pointer to
-'struct ds1307' and then in the probe function allocate the structure,
-set the size & callbacks, and pass it as an argument to
-sysfs_create_bin_file. Do you think this is viable? 
+Since doing so also violates the prohibition on blocking within an RCU
+read-side critical section, wouldn't it suffice to call might_sleep() or
+equivalent, which also detects other problems?  (Obviously this doesn't
+apply to SRCU, but it applies to the other variants of RCU.)
 
-It looks like Andrew Morton has already added this patch to the -mm
-tree. Has he also grabbed the patches that this depends on?
+> --- a/kernel/rcutiny.c
+> +++ b/kernel/rcutiny.c
+> @@ -319,6 +319,9 @@ static void rcu_process_callbacks(struct softirq_action *unused)
+>   */
+>  void synchronize_sched(void)
+>  {
+> +	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
+> +			   "Illegal grace period in RCU read-side "
+> +			   "critical section");
 
-Thanks,
-Austin.
+This message doesn't seem entirely obvious to me.  A grace period didn't
+occur; a synchronize call did, which tried to request a grace period
+that can never happen.
 
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1816,6 +1816,9 @@ EXPORT_SYMBOL_GPL(call_rcu_bh);
+>   */
+>  void synchronize_sched(void)
+>  {
+> +	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
+> +			   "Illegal synchronize_sched() in RCU-sched "
+> +			   "read-side critical section");
+>  	if (rcu_blocking_is_gp())
+>  		return;
+>  	wait_rcu_gp(call_rcu_sched);
+> @@ -1833,6 +1836,9 @@ EXPORT_SYMBOL_GPL(synchronize_sched);
+>   */
+>  void synchronize_rcu_bh(void)
+>  {
+> +	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),
+> +			   "Illegal synchronize_sched() in RCU-bh "
+> +			   "read-side critical section");
 
+Copy-paste problem here: this should say synchronize_sched_bh.  (Or
+perhaps it should say __func__. :) )
 
+> --- a/kernel/srcu.c
+> +++ b/kernel/srcu.c
+> @@ -172,6 +172,10 @@ static void __synchronize_srcu(struct srcu_struct *sp, void (*sync_func)(void))
+>  {
+>  	int idx;
+>  
+> +	rcu_lockdep_assert(!lock_is_held(&sp->dep_map),
+> +			   "Illegal SRCU grace period in same-type "
+> +			   "SRCU read-side critical section");
+
+Same issue with the message: a grace period didn't occur, and it never
+will; a call to synchronize_srcu requesting a grace period occurred.
+
+- Josh Triplett
