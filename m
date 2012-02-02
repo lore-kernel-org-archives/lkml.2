@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792Ab2BBSST (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 13:18:19 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:46705 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab2BBSSR (ORCPT
+	id S1756828Ab2BBSUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 13:20:33 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50639 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab2BBSUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 13:18:17 -0500
-Date: Thu, 2 Feb 2012 10:18:05 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 32/41] rcu: Update stall-warning
- documentation
-Message-ID: <20120202181805.GZ2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-32-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120202055639.GS29058@leaf>
+	Thu, 2 Feb 2012 13:20:31 -0500
+Message-ID: <4F2AD3E9.1070804@ti.com>
+Date: Thu, 2 Feb 2012 12:20:25 -0600
+From: Manjunatha Halli <x0130808@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120127 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202055639.GS29058@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020218-1780-0000-0000-000002D28A4B
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000245; HX=3.00000181; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00110334; UDB=6.00027427; UTC=2012-02-02
- 18:18:16
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Manjunatha Halli <manjunatha_halli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] Re: linux-next: Tree for Feb 2 (media/radio/wl128x)
+References: <20120202144516.11b33e667a7cbb8d85d96226@canb.auug.org.au> <4F2AD0E4.6020801@xenotime.net> <4F2AC5F8.1000901@ti.com> <4F2AD89E.70805@xenotime.net>
+In-Reply-To: <4F2AD89E.70805@xenotime.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 09:56:39PM -0800, Josh Triplett wrote:
-> On Wed, Feb 01, 2012 at 11:41:50AM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> > 
-> > Add documentation of CONFIG_RCU_CPU_STALL_VERBOSE, CONFIG_RCU_CPU_STALL_INFO,
-> > and RCU_STALL_DELAY_DELTA.  Describe multiple stall-warning messages from
-> > a single stall, and the timing of the subsequent messages.  Add headings.
-> 
-> Don't some of these documentation changes go with earlier patches in
-> this series?
+On 02/02/2012 12:40 PM, Randy Dunlap wrote:
+> On 02/02/2012 09:20 AM, Manjunatha Halli wrote:
+>> Hi Randy Dunlap,
+>>
+>> In config file you are missing the CONFIG_TI_ST config which builds the TI's shared transport driver upon which the FM driver works.
+>>
+>> Please select this config in drivers/misc/ti-st/Kconfig which will solve the problem.
+> Wrong answer.
+>
+> The problem seems to be that GPIOLIB is not enabled, but wl128x Kconfig says:
+>
+> config RADIO_WL128X
+> 	tristate "Texas Instruments WL128x FM Radio"
+> 	depends on VIDEO_V4L2&&  RFKILL
+> 	select TI_ST if NET&&  GPIOLIB
+>
+> so TI_ST is not selected here.
+>
+> The Kconfig files should handle this properly.
+>
+> Here is one possible fix for you to consider.
+>
+> ---
+> From: Randy Dunlap<rdunlap@xenotime.net>
+>
+> Fix build errors when GPIOLIB is not enabled.
+> Fix wl128x Kconfig to depend on GPIOLIB since TI_ST also
+> depends on GPIOLIB.
+>
+> (.text+0xe6d60): undefined reference to `st_register'
+> (.text+0xe7016): undefined reference to `st_unregister'
+> (.text+0xe70ce): undefined reference to `st_unregister'
+>
+> Signed-off-by: Randy Dunlap<rdunlap@xenotime.net>
+> Cc: Manjunatha Halli<manjunatha_halli@ti.com>
+> ---
+>   drivers/media/radio/wl128x/Kconfig |    4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> --- linux-next-20120202.orig/drivers/media/radio/wl128x/Kconfig
+> +++ linux-next-20120202/drivers/media/radio/wl128x/Kconfig
+> @@ -4,8 +4,8 @@
+>   menu "Texas Instruments WL128x FM driver (ST based)"
+>   config RADIO_WL128X
+>   	tristate "Texas Instruments WL128x FM Radio"
+> -	depends on VIDEO_V4L2&&  RFKILL
+> -	select TI_ST if NET&&  GPIOLIB
+> +	depends on VIDEO_V4L2&&  RFKILL&&  GPIOLIB
+> +	select TI_ST if NET
+>   	help
+>   	Choose Y here if you have this FM radio chip.
+>
+>
+>> Regards
+>> Manju
+>>
+>> On 02/02/2012 12:07 PM, Randy Dunlap wrote:
+>>> On 02/01/2012 07:45 PM, Stephen Rothwell wrote:
+>>>> Hi all,
+>>>>
+>>>> Changes since 20120201:
+>>> drivers/built-in.o: In function `fmc_prepare':
+>>> (.text+0xe6d60): undefined reference to `st_register'
+>>> drivers/built-in.o: In function `fmc_prepare':
+>>> (.text+0xe7016): undefined reference to `st_unregister'
+>>> drivers/built-in.o: In function `fmc_release':
+>>> (.text+0xe70ce): undefined reference to `st_unregister'
+>>>
+>>>
+>>> Full randconfig file is attached.
+>
 
-Some could, but there is a fair amount of catch-up here.  Since we don't
-need documentation to be bisectable, it makes sense to do a single
-commit to update the documentation.
+This solutions seems fine for me...
 
-> Also, this commit message doesn't say anything about the removal of
-> RCU_SECONDS_TILL_STALL_RECHECK:
-> 
-> > --- a/Documentation/RCU/stallwarn.txt
-> > +++ b/Documentation/RCU/stallwarn.txt
-> > @@ -14,12 +14,36 @@ CONFIG_RCU_CPU_STALL_TIMEOUT
-> >  	issues an RCU CPU stall warning.  This time period is normally
-> >  	ten seconds.
-> >  
-> > -RCU_SECONDS_TILL_STALL_RECHECK
-> [...]
-> > -	This macro defines the period of time that RCU will wait after
-> > -	issuing a stall warning until it issues another stall warning
-> > -	for the same stall.  This time period is normally set to three
-> > -	times the check interval plus thirty seconds.
+My only concern is since TI_ST is already have GPIOLIB in its dependency 
+list is it OK to have the same thing in FM driver also?.
 
-It is now computed from CONFIG_RCU_CPU_STALL_TIMEOUT, which has an old
-value for default, which is now fixed.  I will add the rationale for
-removing CONFIG_RCU_SECONDS_TILL_STALL_RECHECK to the commit message.
-
-							Thanx, Paul
+Manju
 
