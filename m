@@ -1,151 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab2BBMDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 07:03:34 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57956 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828Ab2BBMDd (ORCPT
+	id S1755933Ab2BBMEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 07:04:16 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39827 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755881Ab2BBMEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 07:03:33 -0500
-Message-ID: <4F2A7B4D.4070509@mvista.com>
-Date: Thu, 02 Feb 2012 16:02:21 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Pasupathy, Visuvanadan" <vichu@ti.com>
-Subject: Re: RFC: usb: musb: Changes proposed for adding CPPI4.1 DMA
-References: <47CEF8C4B26E8C44B22B028A650E0EA9317C5B92@DBDE01.ent.ti.com> <4F22CC37.8010307@mvista.com> <47CEF8C4B26E8C44B22B028A650E0EA9317D2B9D@DBDE01.ent.ti.com> <4F27D011.8060203@mvista.com> <47CEF8C4B26E8C44B22B028A650E0EA9317D9346@DBDE01.ent.ti.com> <20120202090923.GC9948@legolas.emea.dhcp.ti.com> <4F2A6FAC.8010906@mvista.com> <20120202114911.GH29134@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20120202114911.GH29134@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Feb 2012 07:04:13 -0500
+Message-ID: <1328184370.28171.175.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: atmel_nand: fix access to 16 bit NAND devices
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "Voss, Nikolaus" <N.Voss@weinmann.de>,
+        Eric =?ISO-8859-1?Q?B=E9nard?= <eric@eukrea.com>
+Cc: "'linux-mtd@lists.infradead.org'" <linux-mtd@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Thu, 02 Feb 2012 14:06:10 +0200
+In-Reply-To: <4F265B7E.6060806@atmel.com>
+References: <201201251217.q0PCHmRe027024@gatekeeper.vosshq.de>
+	 <1327670996.26648.43.camel@sauron.fi.intel.com>
+	 <EF2E73589CA71846A15D0B2CDF79505D08AD3E5453@wm021.weinmann.com>
+	 <4F265B7E.6060806@atmel.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-54rCppJjPQZJ5ATAKunb"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 02-02-2012 15:49, Felipe Balbi wrote:
+--=-54rCppJjPQZJ5ATAKunb
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->>>>>>>> As a next step to dma-engine based cppi4.1 driver implementation
->>>>>>>> this RFC has the overview of changes in the musb driver.
->>>>>>>> RFC on CPPI slave driver changes will follow next.
+On Mon, 2012-01-30 at 09:57 +0100, Nicolas Ferre wrote:
+> Artem, do you want me to prepare a patch for reverting initial commit or
+> you just need my "Acked-by" (feel free to add though)?
 
->>>>>>>> Overview of changes in the musb driver
->>>>>>>> ======================================
+OK, thanks, just pushed this patch to l2-mtd.git and add Cc to -stable,
+please, validate.
 
->>>>>>>> 1)Add a dma-engine.c file in the drivers/usb/musb folder
->>>>>>>> 2)This file will host the current musb dma APIs and translates them to
->>>>>>>>      dmaengine APIs.
->>>>>>>> 3)This will help to keep the changes in drivers/usb/musb/musb* files
->>>>>>>>      minimal and also to retain compatibility other DMA (Mentor etc.)
->>>>>>>>      drivers which are yet to be moved to drivers/dma
->>>>>>>> 4)drivers/usb/musb/dma-engine.c, will wrap the dmaengine APIs to
->>>>>>>>      make existing musb APIs compatible.
->>>>>>>> 5)drivers/usb/musb/dma-engine.c file will implement the filter
->>>>>>>>      functions and also implement .dma_controller_create (allocates
->>>>>>>>      &     provides "dma_controller" object) and .dma_controller_delete
->>>>>>>> 6)CPPI4.1 DMA specific queue and buffer management will be internal
->>>>>>>>      to slave CPPI DMA driver implementation.
+I'll ask David to merge it to 3.3, but no guarantees - you should ping
+him directly if you want this to happen.
 
->>>>>>>       You mean drivers/dma/ driver?
+URL: http://git.infradead.org/users/dedekind/l2-mtd.git/commit/21c7726c9862=
+8016c868d803a2a8e6f2d5702519
 
->>>>>> yes.
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Date: Thu, 2 Feb 2012 13:54:25 +0200
+Subject: [PATCH] Revert "mtd: atmel_nand: optimize read/write buffer functi=
+ons"
 
->>>>>>> I think you are forgotting that CPPI 4.1 MUSB
->>>>>>> has some registers controlling DMA/interrupts beside those of CPPI 4.1
->>>>>>> controller and MUSB core itself. How do they fit in your scheme?
+This reverts commit fb5427508abbd635e877fabdf55795488119c2d6.
 
->>>>>> We have been discussing on how to handle these in slave driver and
+The reason is that it breaks 16 bits NAND flash as it was reported by
+Nikolaus Voss and confirmed by Eric B=C3=A9nard.
 
->>>>>      These certainly cannot be handled in the slave driver because the
->>>>> registers are different for every controller implementation and, the
->>>>> main thing, they don't belong to CPPI 4.1 as such.
+Nicolas Ferre <nicolas.ferre@atmel.com> alco confirmed:
+"After double checking with designers, I must admit that I misunderstood
+the way of optimizing accesses to SMC. 16 bit nand is not so common
+those days..."
 
->>>> Felipe suggested to use device tree for differences in register maps
->>>> among different platforms.
+Reported-by: Nikolaus Voss <n.voss@weinmann.de>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: stable@kernel.org [3.1+]
+---
+ drivers/mtd/nand/atmel_nand.c |   45 +++++++++++++++++++++++++++++++++++++=
+---
+ 1 files changed, 41 insertions(+), 4 deletions(-)
 
->>>> I do see issues in reading wrapper interrupt status register and then
->>>> calling musb_interrupt() [defined inside musb_core.c] from slave driver.
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index 4dd056e..35b4fb5 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -161,6 +161,37 @@ static int atmel_nand_device_ready(struct mtd_info *mt=
+d)
+                 !!host->board->rdy_pin_active_low;
+ }
+=20
++/*
++ * Minimal-overhead PIO for data access.
++ */
++static void atmel_read_buf8(struct mtd_info *mtd, u8 *buf, int len)
++{
++	struct nand_chip	*nand_chip =3D mtd->priv;
++
++	__raw_readsb(nand_chip->IO_ADDR_R, buf, len);
++}
++
++static void atmel_read_buf16(struct mtd_info *mtd, u8 *buf, int len)
++{
++	struct nand_chip	*nand_chip =3D mtd->priv;
++
++	__raw_readsw(nand_chip->IO_ADDR_R, buf, len / 2);
++}
++
++static void atmel_write_buf8(struct mtd_info *mtd, const u8 *buf, int len)
++{
++	struct nand_chip	*nand_chip =3D mtd->priv;
++
++	__raw_writesb(nand_chip->IO_ADDR_W, buf, len);
++}
++
++static void atmel_write_buf16(struct mtd_info *mtd, const u8 *buf, int len=
+)
++{
++	struct nand_chip	*nand_chip =3D mtd->priv;
++
++	__raw_writesw(nand_chip->IO_ADDR_W, buf, len / 2);
++}
++
+ static void dma_complete_func(void *completion)
+ {
+ 	complete(completion);
+@@ -235,27 +266,33 @@ err_buf:
+ static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
+ {
+ 	struct nand_chip *chip =3D mtd->priv;
++	struct atmel_nand_host *host =3D chip->priv;
+=20
+ 	if (use_dma && len > mtd->oobsize)
+ 		/* only use DMA for bigger than oob size: better performances */
+ 		if (atmel_nand_dma_op(mtd, buf, len, 1) =3D=3D 0)
+ 			return;
+=20
+-	/* if no DMA operation possible, use PIO */
+-	memcpy_fromio(buf, chip->IO_ADDR_R, len);
++	if (host->board->bus_width_16)
++		atmel_read_buf16(mtd, buf, len);
++	else
++		atmel_read_buf8(mtd, buf, len);
+ }
+=20
+ static void atmel_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
+ {
+ 	struct nand_chip *chip =3D mtd->priv;
++	struct atmel_nand_host *host =3D chip->priv;
+=20
+ 	if (use_dma && len > mtd->oobsize)
+ 		/* only use DMA for bigger than oob size: better performances */
+ 		if (atmel_nand_dma_op(mtd, (void *)buf, len, 0) =3D=3D 0)
+ 			return;
+=20
+-	/* if no DMA operation possible, use PIO */
+-	memcpy_toio(chip->IO_ADDR_W, buf, len);
++	if (host->board->bus_width_16)
++		atmel_write_buf16(mtd, buf, len);
++	else
++		atmel_write_buf8(mtd, buf, len);
+ }
+=20
+ /*
+--=20
+1.7.9
 
->>> I have been thinking about that lately. In the end of the day, I want to
->>> remove direct dependencies between musb_core and glue. So what I was
->>> thinking about goes like so:
+--=20
+Best Regards,
+Artem Bityutskiy
 
->>> Glue layer basically has to prepare musb->int_usb, musb->int_tx and
->>> musb->int_rx for musb. Maybe handle some glue specific stuff and so on,
->>> but the IRQ line still belongs to MUSB.
+--=-54rCppJjPQZJ5ATAKunb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
->>> So the idea would be to add something like:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
->>> musb_platform_read_intrusb()
->>> musb_platform_read_intrtx()
->>> musb_platform_read_intrrx()
+iQIcBAABAgAGBQJPKnwyAAoJECmIfjd9wqK0l40QAI/DIulYlOSybLLC6ONO+c4d
+3EBYSsWJKq3DjLPTuIT5ypSd9Q4V16T8wcXaM3dsq2weNG3dwI2z1K2OYunXNqGW
+ieadHTix2yuDjYC1uSqWV9xqcOliWTjNwu08VI/nCIeQ+EPd1L92CYRFpGIMNg1v
+1FzcxG/nbD5MlLxaLwsoBZPKv33EoJC6WTXxr38nB3EZSEeJVbgumaj+ihE6v+K/
+nEl9sz0bLLCqGHWtNm0/HtFqHoUT6K9ZS/pCO+JJmEzMmYpJmaC2UmFpR4WGyI/g
+hhyf3gJILDj1xQSxsHzB5sBB8sTsS0z4Y2N+NmPuptBrTnAiubCN3ubRfP1+0zLo
+IFWG+IS0P6wfSva/8K/ERSgKPgBKssvzJoYKSfAF/tYvRh4jvFJ2DDNRI73tBjeE
+cr/IJhWN+y54nbM7h/e+c3slh0sn+A69aIxgit4dJDWFa7G2QuDk6483EbFwjway
+mU/EgFovAN8xlCi5I5DqexAMu9MMp9AAKachiB+9mhgBrFV3xfvsWUJTRHDqV0Gv
+yfqkASnCW/sf9MlHKaTjmdv9ahHua2Q0dGes4xQR5W+rKFEoIcMbw2YLUJftj4FO
+KT/qYQYJKOaK4yEnZLYHsB+/02ZqspXRFmwnBahtXLmUWwx09M2OovnLdWxPySFd
+okIIPYHN1ujK1BkIO27X
+=BmQv
+-----END PGP SIGNATURE-----
 
->>> those would default to basic:
+--=-54rCppJjPQZJ5ATAKunb--
 
->>> musb_readb(musb->mregs, MUSB_INTRUSB);
->>> musb_readw(musb->mregs, MUSB_INTRTX);
->>> musb_readw(musb->mregs, MUSB_INTRRX);
-
->>> if platform ops aren't passed. So, it would look something like:
-
->>> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
->>> index 72a424d..ba0bcc2 100644
->>> --- a/drivers/usb/musb/musb_core.c
->>> +++ b/drivers/usb/musb/musb_core.c
->>> @@ -1488,9 +1488,9 @@ static irqreturn_t generic_interrupt(int irq, void *__hci)
->>>
->>>   	spin_lock_irqsave(&musb->lock, flags);
->>>
->>> -	musb->int_usb = musb_readb(musb->mregs, MUSB_INTRUSB);
->>> -	musb->int_tx = musb_readw(musb->mregs, MUSB_INTRTX);
->>> -	musb->int_rx = musb_readw(musb->mregs, MUSB_INTRRX);
->>> +	musb->int_usb = musb_platform_read_intusb(musb->controller);
->>> +	musb->int_tx = musb_platform_read_inttx(musb->controller);
->>> +	musb->int_rx = musb_platform_read_intrx(musb->controller);
->>>
->>>   	if (musb->int_usb || musb->int_tx || musb->int_rx)
->>>   		retval = musb_interrupt(musb);
-
->>> those would make sure to prepare the cached IRQ status registers for
->>> MUSB core.
-
->>> Keep in mind that this is only necessary because on
->>> DaVinci/OMAP-L13x/AM35x devices you guys have decided to make the
->>> wrapper read the IRQ status register from MUSB address space. And
->>> because those are clear-on-read, we're screwed.
-
->>> Oh well, this is the best I could come up with. Any problems you guys
->>> see ?
-
->>     On DaVinci/OMAP-L1x these 3 calls need to extract data from a
->> single 32-bit register, so that doesn't seem a good idea to me. The
-
-> that's a problem on DaVinci/OMAP-L1x.
-
->> current scheme seems OK to me. Or either implement a signle function
->> to read all 3 interrupt masks...
-
->> musb_platform_read_ints()
-
-> I wanted to avoid glue layer having to access the musb pointer directly.
-> If I implement musb_platform_read_ints() I will have to pass musb as
-> argument, or agree on another way to return the values. Thanks, but no
-> thanks.
-
-> I want to remove direct access of musb from glue layer, and at some
-> point I will have to do it in order to fix a few problems we might still
-> have with modules, basically because glue layer could be trying to
-> access memory which was freed already.
-
-    We can do:
-
-void musb_platform_read_ints(u8 *usb, u8 *tx, u8 *tx);
-
-    That's what I thought first about but then got lazy. :-)
-
-WBR, Sergei
