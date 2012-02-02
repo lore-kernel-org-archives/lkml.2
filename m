@@ -1,117 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab2BBK2l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 05:28:41 -0500
-Received: from smtp-vbr15.xs4all.nl ([194.109.24.35]:4469 "EHLO
-	smtp-vbr15.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755504Ab2BBK2i (ORCPT
+	id S1755493Ab2BBKfD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 05:35:03 -0500
+Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:2139 "EHLO
+	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755224Ab2BBKfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 05:28:38 -0500
+	Thu, 2 Feb 2012 05:35:01 -0500
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Feb 2012 05:35:01 EST
 From: Hans Verkuil <hverkuil@xs4all.nl>
 To: linux-media@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Jonathan Corbet <corbet@lwn.net>,
         Andrew Morton <akpm@linux-foundation.org>,
         Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Enke Chen <enkechen@cisco.com>, Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [RFCv7 PATCH 1/4] eventpoll: set key to the correct events mask.
-Date: Thu,  2 Feb 2012 11:26:54 +0100
-Message-Id: <a92b9a00741769f3c38a54d3a6799509f9089452.1328176079.git.hans.verkuil@cisco.com>
+        Enke Chen <enkechen@cisco.com>
+Subject: [RFCv7 PATCH 0/4] Add poll_requested_events() function.
+Date: Thu,  2 Feb 2012 11:26:53 +0100
+Message-Id: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
 X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
-References: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+Hi all,
 
-The eventpoll implementation always left the key field at ~0 instead of
-using the requested events mask.
+This is the seventh version of this patch series (the fifth and sixth where
+never posted and where internal iterations only).
 
-This was changed so the key field now contains the actual events that
-should be polled for as set by the caller.
+Al Viro had concerns about silent API changes. I have made an extensive
+analysis of that in my comments in patch 2/4.
 
-This information is needed by drivers that need to e.g. start DMA if the
-caller wants to poll for incoming data as opposed to, say, exceptions.
+This patch series is rebased to v3.3-rc2. The changes compared to the
+previously posted version are:
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
----
- fs/eventpoll.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
+- I have renamed the qproc field to pq_proc to prevent any driver that tries
+  to access that directly to fail. No kernel driver does this, BTW.
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index aabdfc3..ca47608 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -682,9 +682,12 @@ static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
- 			       void *priv)
- {
- 	struct epitem *epi, *tmp;
-+	poll_table pt;
- 
-+	init_poll_funcptr(&pt, NULL);
- 	list_for_each_entry_safe(epi, tmp, head, rdllink) {
--		if (epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
-+		pt.key = epi->event.events;
-+		if (epi->ffd.file->f_op->poll(epi->ffd.file, &pt) &
- 		    epi->event.events)
- 			return POLLIN | POLLRDNORM;
- 		else {
-@@ -1065,6 +1068,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
- 	/* Initialize the poll table using the queue callback */
- 	epq.epi = epi;
- 	init_poll_funcptr(&epq.pt, ep_ptable_queue_proc);
-+	epq.pt.key = event->events;
- 
- 	/*
- 	 * Attach the item to the poll hooks and get current event bits.
-@@ -1159,6 +1163,9 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- {
- 	int pwake = 0;
- 	unsigned int revents;
-+	poll_table pt;
-+
-+	init_poll_funcptr(&pt, NULL);
- 
- 	/*
- 	 * Set the new event interest mask before calling f_op->poll();
-@@ -1166,13 +1173,14 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- 	 * f_op->poll() call and the new event set registering.
- 	 */
- 	epi->event.events = event->events;
-+	pt.key = event->events;
- 	epi->event.data = event->data; /* protected by mtx */
- 
- 	/*
- 	 * Get current event bits. We can safely use the file* here because
- 	 * its usage count has been increased by the caller of this function.
- 	 */
--	revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL);
-+	revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt);
- 
- 	/*
- 	 * If the item is "hot" and it is not registered inside the ready
-@@ -1207,6 +1215,9 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
- 	unsigned int revents;
- 	struct epitem *epi;
- 	struct epoll_event __user *uevent;
-+	poll_table pt;
-+
-+	init_poll_funcptr(&pt, NULL);
- 
- 	/*
- 	 * We can loop without lock because we are passed a task private list.
-@@ -1219,7 +1230,8 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
- 
- 		list_del_init(&epi->rdllink);
- 
--		revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
-+		pt.key = epi->event.events;
-+		revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt) &
- 			epi->event.events;
- 
- 		/*
--- 
-1.7.8.3
+- I added a new poll_does_not_wait() inline that returns true if it is known
+  that poll() will not wait on return. This removes the last reason for
+  looking inside the poll_table struct. include/net/sock.h has been adapted
+  to use this new inline (and it is the only place inside the kernel that
+  need this).
+
+I hope that the analysis I made answers any remaining concerns about possible
+silent API changes.
+
+This patch series is also available here:
+
+http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/refs/heads/pollv7
+
+It was suggested to me that creating a new poll system call might be an option
+as well. I've attempted that as well and code implementing that can be found
+here:
+
+http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/refs/heads/pollwithkey
+
+However, I think this turned out to be very messy. And because some drivers
+call the poll fop directly or through some framework I could not be certain I
+was not introducing any errors.
+
+If it is really required to change the API in some way, then I would suggest
+changing this:
+
+typedef struct poll_table_struct {
+        poll_queue_proc pq_proc;
+        unsigned long key;
+} poll_table;
+
+to this:
+
+struct poll_table {
+        poll_queue_proc pq_proc;
+        unsigned long key;
+};
+
+and adapting all users.
+
+However, I honestly do not think this is necessary at all. But if it is the
+only way to get this in, then I'll do the work. The media/video subsystem really
+needs this functionality. Also note that previous versions of this patch have
+been in linux-next for months now.
+
+The first version of this patch was posted July 1st, 2011. I really hope that
+it won't take another six months to get a review from a fs developer. As this
+LWN article (http://lwn.net/Articles/450658/) said: 'There has been little
+discussion of the patch; it doesn't seem like there is any real reason for it
+not to go in for 3.1.'
+
+The earliest this can go in now is 3.4. The only reason it takes so long is
+that it has been almost impossible to get a Ack or comments or even just a
+simple reply from the fs developers. That is really frustrating, I'm sorry
+to say.
+
+Anyway, comments, reviews, etc. are very welcome.
+
+Regards,
+
+	Hans
 
