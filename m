@@ -1,47 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab2BBIoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 03:44:16 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46283 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab2BBIoO (ORCPT
+	id S1753722Ab2BBIqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 03:46:34 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64648 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302Ab2BBIqd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 03:44:14 -0500
-Date: Thu, 2 Feb 2012 08:43:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: TAO HU <tghk48@motorola.com>
-Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-omap <linux-omap@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: In many cases softlockup can not be reported after disabling
-	IRQ for long time
-Message-ID: <20120202084350.GB1275@n2100.arm.linux.org.uk>
-References: <CAOwKts8zS1rYA+Y4k-vb8YAaR=aFd1BwryhhWWnWLQyrYrNqyA@mail.gmail.com> <20120131154748.GA5650@redhat.com> <CAOwKts_dTvc4LiCZUXN9oYzty1pkDEn_VQwPKY=EoVzk0n6tFA@mail.gmail.com> <20120201145802.GF5650@redhat.com> <CAOwKts8S0EkUGcP3rYqZe+HdvyXD0+SR1f_3xWpu5FprKWuGhQ@mail.gmail.com>
+	Thu, 2 Feb 2012 03:46:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOwKts8S0EkUGcP3rYqZe+HdvyXD0+SR1f_3xWpu5FprKWuGhQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <20120201170443.GE6731@somewhere.redhat.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	<1327591185.2446.102.camel@twins>
+	<CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+	<20120201170443.GE6731@somewhere.redhat.com>
+Date: Thu, 2 Feb 2012 10:46:32 +0200
+Message-ID: <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-.sdrawkcab esra s'ti ,tsop pot t'noD
+On Wed, Feb 1, 2012 at 7:04 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+> On Sun, Jan 29, 2012 at 10:25:46AM +0200, Gilad Ben-Yossef wrote:
+>
+> > If this is of interest, I keep a list tracking global IPI and global
+> > task schedulers sources in the core kernel here:
+> > https://github.com/gby/linux/wiki.
+> >
+> > I plan to visit all these potential interference source to see if
+> > something can be done to lower their effect on
+> > isolated CPUs over time.
+>
+> Very nice especially as many people seem to be interested in
+> CPU isolation.
 
-(Don't top post, it's arse backwards.)
 
-On Thu, Feb 02, 2012 at 04:17:02PM +0800, TAO HU wrote:
-> My concern is not actually that the softlockup could not be reported
-> while the IRQ is disabled.
-> What bothering me is that even AFTER re-enable the IRQ, it will not
-> give warning in many cases.
+Yes, that is what drives me as well. I have a bare metal program
+I'm trying to kill here, I researched CPU isolation and ran into your
+nohz patch set and asked myself: "OK, if we disable the tick what else
+is on the way?"
 
-That's already been explained.
+>
+>
+> When we get the adaptive tickless feature in place, perhaps we'll
+> also need to think about some way to have more control on the
+> CPU affinity of some non pinned timers to avoid disturbing
+> adaptive tickless CPUs. We still need to consider their cache affinity
+> though.
 
-softlockups are detected by time passing.  Time can't properly advance
-with interrupts disabled, as the backing counter (assuming you're using
-the clocksource and clockevent stuff) could wrap.  If it wraps, the
-systems idea of time which has passed will be incorrect.
 
-So, if interrupts are disabled for a long period, the system loses track
-of time, and therefore can't know how long the system has been blocked for.
+Right. I'm thinking we can treat a CPU going in adaptive tick mode in a similar
+fashion to a CPU going offline for the purpose of timer migration.
+
+Some pinned timers might be able to get special treatment as well - take for
+example the vmstat work being schedule every second, what should we do with
+it for CPU isolation?
+
+It makes sense to me to have that stop scheduling itself when we have the tick
+disabled for both idle and a nohz task.
+
+A similar thing can be said for the clocksource watchdog for example - we might
+consider having it not trigger stuff on idle or nohz task CPUs
+
+Maybe we can have some notification mechanism when a task goes into nohz
+mode and back to let stuff disable itself and back if it makes sense.
+It seems more
+sensible then having all these individual pieces check for whether
+this CPU or other is
+in idle or nohz task mode.
+
+The question for nohz task then is when does the notification needs to go out?
+only when a task managed to go into nohz mode or when we add a cpu to an
+adaptive tick cpuset? because for stuff like vmstat, the very existence of the
+runnable workqueue thread can keep a task from going into nohz mode. bah.
+maybe we need two notifications...
+
+
+Thanks!
+Gilad
+--
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
