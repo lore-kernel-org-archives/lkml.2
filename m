@@ -1,143 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab2BBWNh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 17:13:37 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43853 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756390Ab2BBWNg (ORCPT
+	id S1757594Ab2BBWQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 17:16:30 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:52662 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757502Ab2BBWQ2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 17:13:36 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Subject: Re: [PATCH 06/11] nand/gpmi: add context parameter to prep_slave_sg calls
-Date: Thu, 2 Feb 2012 23:13:32 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Huang Shijie <b32955@freescale.com>,
-        Artem Bityutskiy <artem.bityutskiy@intel.com>
-References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-7-git-send-email-alexandre.bounine@idt.com>
-In-Reply-To: <1328218341-31436-7-git-send-email-alexandre.bounine@idt.com>
+	Thu, 2 Feb 2012 17:16:28 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202022313.33164.marek.vasut@gmail.com>
+In-Reply-To: <CAB9FdM9M2DWXBxxyG-ez_5igT61x5b7ptw+fKfgaqMBU_JS5aA@mail.gmail.com>
+References: <4F2AB552.2070909@redhat.com>
+	<CAB9FdM9M2DWXBxxyG-ez_5igT61x5b7ptw+fKfgaqMBU_JS5aA@mail.gmail.com>
+Date: Thu, 2 Feb 2012 14:16:27 -0800
+Message-ID: <CAB9FdM-oniPUOAPUJQ0Rr1uVK-MkzYQYU9c0G24sCHm8CpOdzg@mail.gmail.com>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+From: Rob Earhart <earhart@google.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Fixups for calls affected by adding the new context parameter to DMA_SLAVE
-> and DMA_CYCLIC interfaces.
+(Resending as plain text to appease vger.kernel.org :-)
 
-Thanks!
-> 
-> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Marek Vasut <marek.vasut@gmail.com>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Huang Shijie <b32955@freescale.com>
-> Cc: Artem Bityutskiy <artem.bityutskiy@intel.com>
-> ---
->  drivers/mtd/nand/gpmi-nand/gpmi-lib.c |   25 +++++++++++++++----------
->  1 files changed, 15 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c index 7f68042..c52964e 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> @@ -827,7 +827,8 @@ int gpmi_send_command(struct gpmi_nand_data *this)
->  	pio[1] = pio[2] = 0;
->  	desc = channel->device->device_prep_slave_sg(channel,
->  					(struct scatterlist *)pio,
-> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
-> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
-> +					0, NULL);
->  	if (!desc) {
->  		pr_err("step 1 error\n");
->  		return -1;
-> @@ -839,7 +840,7 @@ int gpmi_send_command(struct gpmi_nand_data *this)
->  	sg_init_one(sgl, this->cmd_buffer, this->command_length);
->  	dma_map_sg(this->dev, sgl, 1, DMA_TO_DEVICE);
->  	desc = channel->device->device_prep_slave_sg(channel,
-> -					sgl, 1, DMA_MEM_TO_DEV, 1);
-> +					sgl, 1, DMA_MEM_TO_DEV, 1, NULL);
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -872,7 +873,8 @@ int gpmi_send_data(struct gpmi_nand_data *this)
->  	pio[1] = 0;
->  	desc = channel->device->device_prep_slave_sg(channel,
->  					(struct scatterlist *)pio,
-> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
-> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
-> +					0, NULL);
->  	if (!desc) {
->  		pr_err("step 1 error\n");
->  		return -1;
-> @@ -881,7 +883,7 @@ int gpmi_send_data(struct gpmi_nand_data *this)
->  	/* [2] send DMA request */
->  	prepare_data_dma(this, DMA_TO_DEVICE);
->  	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
-> -						1, DMA_MEM_TO_DEV, 1);
-> +						1, DMA_MEM_TO_DEV, 1, NULL);
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -908,7 +910,8 @@ int gpmi_read_data(struct gpmi_nand_data *this)
->  	pio[1] = 0;
->  	desc = channel->device->device_prep_slave_sg(channel,
->  					(struct scatterlist *)pio,
-> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
-> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
-> +					0, NULL);
->  	if (!desc) {
->  		pr_err("step 1 error\n");
->  		return -1;
-> @@ -917,7 +920,7 @@ int gpmi_read_data(struct gpmi_nand_data *this)
->  	/* [2] : send DMA request */
->  	prepare_data_dma(this, DMA_FROM_DEVICE);
->  	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
-> -						1, DMA_DEV_TO_MEM, 1);
-> +						1, DMA_DEV_TO_MEM, 1, NULL);
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -964,7 +967,8 @@ int gpmi_send_page(struct gpmi_nand_data *this,
-> 
->  	desc = channel->device->device_prep_slave_sg(channel,
->  					(struct scatterlist *)pio,
-> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
-> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
-> +					0, NULL);
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -999,7 +1003,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
->  	pio[1] = 0;
->  	desc = channel->device->device_prep_slave_sg(channel,
->  				(struct scatterlist *)pio, 2,
-> -				DMA_TRANS_NONE, 0);
-> +				DMA_TRANS_NONE, 0, NULL);
->  	if (!desc) {
->  		pr_err("step 1 error\n");
->  		return -1;
-> @@ -1028,7 +1032,8 @@ int gpmi_read_page(struct gpmi_nand_data *this,
->  	pio[5] = auxiliary;
->  	desc = channel->device->device_prep_slave_sg(channel,
->  					(struct scatterlist *)pio,
-> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 1);
-> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
-> +					1, NULL);
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -1047,7 +1052,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
->  	pio[1] = 0;
->  	desc = channel->device->device_prep_slave_sg(channel,
->  				(struct scatterlist *)pio, 2,
-> -				DMA_TRANS_NONE, 1);
-> +				DMA_TRANS_NONE, 1, NULL);
->  	if (!desc) {
->  		pr_err("step 3 error\n");
->  		return -1;
+On Thu, Feb 2, 2012 at 8:09 AM, Avi Kivity <avi@redhat.com> wrote:
+>
+> The kvm api has been accumulating cruft for several years now.  This is
+> due to feature creep, fixing mistakes, experience gained by the
+> maintainers and developers on how to do things, ports to new
+> architectures, and simply as a side effect of a code base that is
+> developed slowly and incrementally.
+>
+> While I don't think we can justify a complete revamp of the API now, I'm
+> writing this as a thought experiment to see where a from-scratch API can
+> take us.  Of course, if we do implement this, the new and old APIs will
+> have to be supported side by side for several years.
+>
+> Syscalls
+> --------
+> kvm currently uses the much-loved ioctl() system call as its entry
+> point.  While this made it easy to add kvm to the kernel unintrusively,
+> it does have downsides:
+>
+> - overhead in the entry path, for the ioctl dispatch path and vcpu mutex
+> (low but measurable)
+> - semantic mismatch: kvm really wants a vcpu to be tied to a thread, and
+> a vm to be tied to an mm_struct, but the current API ties them to file
+> descriptors, which can move between threads and processes.  We check
+> that they don't, but we don't want to.
+>
+> Moving to syscalls avoids these problems, but introduces new ones:
+>
+> - adding new syscalls is generally frowned upon, and kvm will need several
+> - syscalls into modules are harder and rarer than into core kernel code
+> - will need to add a vcpu pointer to task_struct, and a kvm pointer to
+> mm_struct
+>
+> Syscalls that operate on the entire guest will pick it up implicitly
+> from the mm_struct, and syscalls that operate on a vcpu will pick it up
+> from current.
+>
+
+<snipped>
+
+I like the ioctl() interface.  If the overhead matters in your hot
+path, I suspect you're doing it wrong; use irq fds & ioevent fds.  You
+might fix the semantic mismatch by having a notion of a "current
+process's VM" and "current thread's VCPU", and just use the one
+/dev/kvm filedescriptor.
+
+Or you could go the other way, and break the connection between VMs
+and processes / VCPUs and threads: I don't know how easy it is to do
+it in Linux, but a VCPU might be backed by a kernel thread, operated
+on via ioctl()s, indicating that they've exited the guest by having
+their descriptors become readable (and either use read() or mmap() to
+pull off the reason why the VCPU exited).  This would allow for a
+variety of different programming styles for the VMM--I'm a fan of CSP
+model myself, but that's hard to do with the current API.
+
+It'd be nice to be able to kick a VCPU out of the guest without
+messing around with signals.  One possibility would be to tie it to an
+eventfd; another might be to add a pseudo-register to indicate whether
+the VCPU is explicitly suspended.  (Combined with the decoupling idea,
+you'd want another pseudo-register to indicate whether the VMM is
+implicitly suspended due to an intercept; a single "runnable" bit is
+racy if both the VMM and VCPU are setting it.)
+
+ioevent fds are definitely useful.  It might be cute if they could
+synchronously set the VIRTIO_USED_F_NOTIFY bit - the guest could do
+this itself, but that'd require giving the guest write access to the
+used side of the virtio queue, and I kind of like the idea that it
+doesn't need write access there.  Then again, I don't have any perf
+data to back up the need for this.
+
+The rest of it sounds great.
+
+)Rob
