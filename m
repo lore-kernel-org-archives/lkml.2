@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab2BBOA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 09:00:56 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:33040 "EHLO mgw2.diku.dk"
+	id S1756388Ab2BBOBT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 09:01:19 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:33049 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755421Ab2BBOAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 09:00:55 -0500
+	id S1756166Ab2BBOA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 09:00:56 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org, josh@joshtriplett.org
-Cc: kernel-janitors@vger.kernel.org, Julia Lawall <julia@diku.dk>
-Subject: [PATCH 1/3] drivers/power/pda_power.c: Move call to PTR_ERR after reassignment
-Date: Thu,  2 Feb 2012 15:00:45 +0100
-Message-Id: <1328191247-23792-2-git-send-email-Julia.Lawall@lip6.fr>
+To: Josh Triplett <josh@freedesktop.org>
+Cc: kernel-janitors@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
+Subject: [PATCH 3/3] kernel/rcutorture.c: Move call to PTR_ERR after reassignment
+Date: Thu,  2 Feb 2012 15:00:47 +0100
+Message-Id: <1328191247-23792-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1328191247-23792-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1328191247-23792-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -43,24 +45,28 @@ Signed-off-by: Julia Lawall <julia@diku.dk>
 Reported-by: Josh Triplett <josh@joshtriplett.org>
 
 ---
-This patch probably only half way solves the problem with this code.  It would
-seem that it should have a goto at the end, but I am not sure to where.
+ kernel/rcutorture.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
- drivers/power/pda_power.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
-index fd49689..16611c3 100644
---- a/drivers/power/pda_power.c
-+++ b/drivers/power/pda_power.c
-@@ -316,8 +316,8 @@ static int pda_power_probe(struct platform_device *pdev)
- 	ac_draw = regulator_get(dev, "ac_draw");
- 	if (IS_ERR(ac_draw)) {
- 		dev_dbg(dev, "couldn't get ac_draw regulator\n");
--		ac_draw = NULL;
- 		ret = PTR_ERR(ac_draw);
-+		ac_draw = NULL;
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index a58ac28..4b3cd87 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -1450,12 +1450,15 @@ rcu_torture_onoff(void *arg)
+ static int __cpuinit
+ rcu_torture_onoff_init(void)
+ {
++	int ret;
++
+ 	if (onoff_interval <= 0)
+ 		return 0;
+ 	onoff_task = kthread_run(rcu_torture_onoff, NULL, "rcu_torture_onoff");
+ 	if (IS_ERR(onoff_task)) {
++		ret = PTR_ERR(onoff_task);
+ 		onoff_task = NULL;
+-		return PTR_ERR(onoff_task);
++		return ret;
  	}
- 
- #ifdef CONFIG_USB_OTG_UTILS
+ 	return 0;
+ }
 
