@@ -1,96 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436Ab2BBTp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:45:57 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:53887 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932680Ab2BBTp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:45:56 -0500
-Date: Thu, 2 Feb 2012 21:45:50 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Felipe Balbi <balbi@ti.com>, Tarun Kanti DebBarma <tarun.kanti@ti.com>,
-        linux-omap@vger.kernel.org, khilman@ti.com, tony@atomide.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Charulatha V <charu@ti.com>
-Subject: Re: [PATCH v9 01/25] gpio/omap: remove dependency on gpio_bank_count
-Message-ID: <20120202194545.GA29351@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
- <1328203851-20435-2-git-send-email-tarun.kanti@ti.com>
- <20120202184106.GC29215@legolas.emea.dhcp.ti.com>
- <20120202191630.GT15343@ponder.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
-Content-Disposition: inline
-In-Reply-To: <20120202191630.GT15343@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933443Ab2BBTqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:46:37 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:45721 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757159Ab2BBTqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:46:35 -0500
+Subject: Re: [PATCH] scsi_dh_rdac: Fix for unbalanced reference count
+From: Chandra Seetharaman <sekharan@us.ibm.com>
+Reply-To: sekharan@us.ibm.com
+To: "Moger, Babu" <Babu.Moger@netapp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+In-Reply-To: <77471C95FAFD844C8CA02DD4F4C5FE2B01032D@SACEXCMBX02-PRD.hq.netapp.com>
+References: <77471C95FAFD844C8CA02DD4F4C5FE2B01032D@SACEXCMBX02-PRD.hq.netapp.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Thu, 02 Feb 2012 13:43:55 -0600
+Message-ID: <1328211835.2213.27.camel@chandra-lucid.austin.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020219-9360-0000-0000-0000030B35A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Reviewed-by: Chandra Seetharaman <sekharan@us.ibm.com>
 
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2012-02-02 at 15:21 +0000, Moger, Babu wrote:
+> Resubmitting it again(Probably last one had some format issues).
+> 
+> This patch fixes an unbalanced refcount issue.
+> 
+> Elevating the lock for both kref_put and also for controller node deletion.
+> Previously, controller deletion was protected but the not the kref_put. This was causing
+> the other thread to pick up the controller structure which was already kref'd zero.
+> 
+> This was causing the following BUG_ON and also sometimes panic.
+> 
+> WARNING: at lib/kref.c:43 kref_get+0x2d/0x30() (Not tainted)
+> Hardware name: IBM System x3655 -[7985AC1]-
+> Modules linked in: fuse scsi_dh_rdac autofs4 nfs lockd fscache nfs_acl
+> auth_rpcgss sunrpc 8021q garp stp llc ipv6 ib_srp(U) scsi_transport_srp
+> scsi_tgt ib_cm(U) ib_sa(U) ib_uverbs(U) ib_umad(U) mlx4_ib(U) mlx4_core(U)
+> ib_mthca(U) ib_mad(U) ib_core(U) dm_mirror dm_region_hash dm_log dm_round_robin
+> dm_multipath uinput bnx2 ses enclosure sg ibmpex ibmaem ipmi_msghandler
+> serio_raw k8temp hwmon amd64_edac_mod edac_core edac_mce_amd shpchp i2c_piix4
+> ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif sata_svw pata_acpi ata_generic
+> pata_serverworks aacraid radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core
+> dm_mod [last unloaded: freq_table]
+> Pid: 13735, comm: srp_daemon Not tainted 2.6.32-71.el6.x86_64 #1
+> Call Trace:
+> [<ffffffff8106b857>] warn_slowpath_common+0x87/0xc0
+> [<ffffffff8106b8aa>] warn_slowpath_null+0x1a/0x20
+> [<ffffffff8125c39d>] kref_get+0x2d/0x30
+> [<ffffffffa01b4029>] rdac_bus_attach+0x459/0x580 [scsi_dh_rdac]
+> [<ffffffff8135232a>] scsi_dh_handler_attach+0x2a/0x80
+> [<ffffffff81352c7b>] scsi_dh_notifier+0x9b/0xa0
+> [<ffffffff814cd7a5>] notifier_call_chain+0x55/0x80
+> [<ffffffff8109711a>] __blocking_notifier_call_chain+0x5a/0x80
+> [<ffffffff81097156>] blocking_notifier_call_chain+0x16/0x20
+> [<ffffffff8132bec5>] device_add+0x515/0x640
+> [<ffffffff813329e4>] ? attribute_container_device_trigger+0xc4/0xe0
+> [<ffffffff8134f659>] scsi_sysfs_add_sdev+0x89/0x2c0
+> [<ffffffff8134d096>] scsi_probe_and_add_lun+0xea6/0xed0
+> [<ffffffff8134beb2>] ? scsi_alloc_target+0x292/0x2d0
+> [<ffffffff8134d1e1>] __scsi_scan_target+0x121/0x750
+> [<ffffffff811df806>] ? sysfs_create_file+0x26/0x30
+> [<ffffffff8132b759>] ? device_create_file+0x19/0x20
+> [<ffffffff81332838>] ? attribute_container_add_attrs+0x78/0x90
+> [<ffffffff814b008c>] ? klist_next+0x4c/0xf0
+> [<ffffffff81332e30>] ? transport_configure+0x0/0x20
+> [<ffffffff813329e4>] ? attribute_container_device_trigger+0xc4/0xe0
+> [<ffffffff8134df40>] scsi_scan_target+0xd0/0xe0
+> [<ffffffffa02f053a>] srp_create_target+0x75a/0x890 [ib_srp]
+> [<ffffffff8132a130>] dev_attr_store+0x20/0x30
+> [<ffffffff811df145>] sysfs_write_file+0xe5/0x170
+> [<ffffffff8116c818>] vfs_write+0xb8/0x1a0
+> [<ffffffff810d40a2>] ? audit_syscall_entry+0x272/0x2a0
+> [<ffffffff8116d251>] sys_write+0x51/0x90
+> [<ffffffff81013172>] system_call_fastpath+0x16/0x1b
+> 
+> 
+> Signed-off-by: Babu Moger <babu.moger@netapp.com>
+> Acked-by: Mike Snitzer <snitzer@redhat.com>
+> ---
+> --- linux-3.3-rc1-new/drivers/scsi/device_handler/scsi_dh_rdac.c.orig	2012-01-19 17:04:48.000000000 -0600
+> +++ linux-3.3-rc1-new/drivers/scsi/device_handler/scsi_dh_rdac.c	2012-02-01 10:50:31.000000000 -0600
+> @@ -364,10 +364,7 @@ static void release_controller(struct kr
+>  	struct rdac_controller *ctlr;
+>  	ctlr = container_of(kref, struct rdac_controller, kref);
+> 
+> -	flush_workqueue(kmpath_rdacd);
+> -	spin_lock(&list_lock);
+>  	list_del(&ctlr->node);
+> -	spin_unlock(&list_lock);
+>  	kfree(ctlr);
+>  }
+> 
+> @@ -376,20 +373,17 @@ static struct rdac_controller *get_contr
+>  {
+>  	struct rdac_controller *ctlr, *tmp;
+> 
+> -	spin_lock(&list_lock);
+> -
+>  	list_for_each_entry(tmp, &ctlr_list, node) {
+>  		if ((memcmp(tmp->array_id, array_id, UNIQUE_ID_LEN) == 0) &&
+>  			  (tmp->index == index) &&
+>  			  (tmp->host == sdev->host)) {
+>  			kref_get(&tmp->kref);
+> -			spin_unlock(&list_lock);
+>  			return tmp;
+>  		}
+>  	}
+>  	ctlr = kmalloc(sizeof(*ctlr), GFP_ATOMIC);
+>  	if (!ctlr)
+> -		goto done;
+> +		return NULL;
+> 
+>  	/* initialize fields of controller */
+>  	memcpy(ctlr->array_id, array_id, UNIQUE_ID_LEN);
+> @@ -405,8 +399,7 @@ static struct rdac_controller *get_contr
+>  	INIT_WORK(&ctlr->ms_work, send_mode_select);
+>  	INIT_LIST_HEAD(&ctlr->ms_head);
+>  	list_add(&ctlr->node, &ctlr_list);
+> -done:
+> -	spin_unlock(&list_lock);
+> +
+>  	return ctlr;
+>  }
+> 
+> @@ -517,9 +510,12 @@ static int initialize_controller(struct
+>  			index = 0;
+>  		else
+>  			index = 1;
+> +
+> +		spin_lock(&list_lock);
+>  		h->ctlr = get_controller(index, array_name, array_id, sdev);
+>  		if (!h->ctlr)
+>  			err = SCSI_DH_RES_TEMP_UNAVAIL;
+> +		spin_unlock(&list_lock);
+>  	}
+>  	return err;
+>  }
+> @@ -906,7 +902,9 @@ static int rdac_bus_attach(struct scsi_d
+>  	return 0;
+> 
+>  clean_ctlr:
+> +	spin_lock(&list_lock);
+>  	kref_put(&h->ctlr->kref, release_controller);
+> +	spin_unlock(&list_lock);
+> 
+>  failed:
+>  	kfree(scsi_dh_data);
+> @@ -921,14 +919,19 @@ static void rdac_bus_detach( struct scsi
+>  	struct rdac_dh_data *h;
+>  	unsigned long flags;
+> 
+> -	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
+>  	scsi_dh_data = sdev->scsi_dh_data;
+> +	h = (struct rdac_dh_data *) scsi_dh_data->buf;
+> +	if (h->ctlr && h->ctlr->ms_queued)
+> +		flush_workqueue(kmpath_rdacd);
+> +
+> +	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
+>  	sdev->scsi_dh_data = NULL;
+>  	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
+> 
+> -	h = (struct rdac_dh_data *) scsi_dh_data->buf;
+> +	spin_lock(&list_lock);
+>  	if (h->ctlr)
+>  		kref_put(&h->ctlr->kref, release_controller);
+> +	spin_unlock(&list_lock);
+>  	kfree(scsi_dh_data);
+>  	module_put(THIS_MODULE);
+>  	sdev_printk(KERN_NOTICE, sdev, "%s: Detached\n", RDAC_NAME);
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-On Thu, Feb 02, 2012 at 12:16:30PM -0700, Grant Likely wrote:
-> On Thu, Feb 02, 2012 at 08:41:07PM +0200, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Thu, Feb 02, 2012 at 11:00:27PM +0530, Tarun Kanti DebBarma wrote:
-> > > diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-> > > index 0b05629..6ea7390 100644
-> > > --- a/drivers/gpio/gpio-omap.c
-> > > +++ b/drivers/gpio/gpio-omap.c
-> > > @@ -28,7 +28,10 @@
-> > >  #include <asm/gpio.h>
-> > >  #include <asm/mach/irq.h>
-> > > =20
-> > > +static LIST_HEAD(omap_gpio_list);
-> >=20
-> > I guess it's now too late because patch is acked and everything, but I
-> > think if you make the driver handle one bank alone and just instantiate
-> > it multiple times (omap_gpio.0, omap_gpio.1, omap_gpio.3, etc) driver
-> > would be faaaaaar simpler.
->=20
-> Is there any shared state between the banks?  On my very cursory glance it
-> looked like banks still have some interaction between them.  If not, then
-> yes I agree that multiple instances would be better.
 
-A quick glance at the TRM shows that banks have separate address spaces
-and IRQ lines. I think it's done this way because we can handoff one (or
-more) bank to other cores on the SoC, so they need to be pretty
-independent.
-
-I could be missing something though.
-
---=20
-balbi
-
---bp/iNruPH9dso1Pn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPKufpAAoJEIaOsuA1yqREhXoP/RNcQWnfcr5pv76ySF1cita9
-XzTgVo64I0pJ2FxrrEGDWT0YsFIkL9NMTyojZiGmvCaxdQYcGk+OWzEdIt02tsXu
-ezk3DrWRndxM4P3wLoiRqTVt0NzUxNAU3Rt+6fBs1u3Ofxig8BQOtg8RlM87D9O7
-RA6sU2KKM3H+yPWuW62CHu9DSqyIzjzgeEHeW1fiKAfzInMj04MwFvCV+bZ+PuOe
-KtlHAnIhyChq3wNubtErEX2w2n9ak/S/p0T9APWywZyWfJwhZ4Mmg9Hxna4gPnDr
-kTcuvHIwkcss7D4m96foEz7w2rtfTPSEhu8JNI/gk0vik6rNSMMe/k4ZVcTelPS9
-2Qy2LsAVKihwvD8s+rFHHTdUgfvks+PMpoQ5Gk869ORwiq9cGgq9tq+nn6bRZRJ+
-OIllCsLN178xA+sQRZSaTJxVjrMtg7IHSMhY6Vfclh+E098AJxP4aQGF4mJF/MUa
-xLADMHkPaUZh+lJKi8Rcs6Eu66ibNM9x7XeODmoE+oVpC8ycerHILJR3mUO5jdOi
-9Mk30AtJ9PfWWr6nJMkYzeWGahoE0XS31ozemUs62DJVAi6F64hoIlBQSU7hcuKV
-7Bvcxxj7V0XT/hE/b50FuYUSyfeTXR1reHabE/l4udugnpYw4VDsKKiEjHEGSUs7
-mIlmW4mzv6TChVen/lRe
-=atn8
------END PGP SIGNATURE-----
-
---bp/iNruPH9dso1Pn--
