@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab2BBBpf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 20:45:35 -0500
-Received: from mail-gy0-f202.google.com ([209.85.160.202]:63200 "EHLO
-	mail-gy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab2BBBnW (ORCPT
+	id S1754479Ab2BBBpd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 20:45:33 -0500
+Received: from mail-yw0-f74.google.com ([209.85.213.74]:54106 "EHLO
+	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab2BBBnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Feb 2012 20:43:22 -0500
-Subject: [RFC PATCH 09/14] sched: maintain runnable averages across throttled
-	periods
+Subject: [RFC PATCH 11/14] sched: refactor update_shares_cpu() ->
+	update_blocked_avgs()
 To: linux-kernel@vger.kernel.org
 From: Paul Turner <pjt@google.com>
 Cc: Venki Pallipadi <venki@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
@@ -18,7 +18,7 @@ Cc: Venki Pallipadi <venki@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 Date: Wed, 01 Feb 2012 17:38:27 -0800
-Message-ID: <20120202013826.20844.60605.stgit@kitami.mtv.corp.google.com>
+Message-ID: <20120202013827.20844.69770.stgit@kitami.mtv.corp.google.com>
 In-Reply-To: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
 References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -29,139 +29,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With bandwidth control tracked entities may cease execution according to user
-specified bandwidth limits.  Charging this time as either throttled or blocked
-however, is incorrect and would falsely skew in either direction.
+Now that running entities maintain their own load-averages the work we must do
+in update_shares() is largely restricted to the periodic decay of blocked
+entities.  This allows us to be a little less pessimistic regarding our
+occupancy on rq->lock and the associated rq->clock updates required.
 
-What we actually want is for any throttled periods to be "invisible" to
-load-tracking as they are removed from the system for that interval and
-contribute normally otherwise.
-
-Do this by moderating the progression of time to omit any periods in which the
-entity belonged to a throttled hierarchy.
+We also no longer use the instantaneous load to calculate group-entity
+load-weight.  This was previously required as a compromise since migrated load
+would remain in the parenting average while it decayed, however it leads to
+over-allocation of shares.
 
 Signed-off-by: Paul Turner <pjt@google.com>
 ---
- kernel/sched/fair.c  |   33 +++++++++++++++++++++++++++------
- kernel/sched/sched.h |    3 ++-
- 2 files changed, 29 insertions(+), 7 deletions(-)
+ kernel/sched/fair.c |   57 ++++++++++++++++++++++++++++-----------------------
+ 1 files changed, 31 insertions(+), 26 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 803c622..71c7410 100644
+index 46b3f98..5b6ee7a4 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1185,6 +1185,8 @@ static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
- 		cfs_rq->blocked_load_avg = 0;
- }
+@@ -823,7 +823,7 @@ static inline long calc_tg_weight(struct task_group *tg, struct cfs_rq *cfs_rq)
+ 	 */
+ 	tg_weight = atomic64_read(&tg->load_avg);
+ 	tg_weight -= cfs_rq->tg_load_contrib;
+-	tg_weight += cfs_rq->load.weight;
++	tg_weight += cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
  
-+static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq);
-+
- /* Update a sched_entity's runnable average */
- static inline void update_entity_load_avg(struct sched_entity *se,
- 					  int update_cfs_rq)
-@@ -1213,7 +1215,7 @@ static inline void update_entity_load_avg(struct sched_entity *se,
+ 	return tg_weight;
+ }
+@@ -833,7 +833,7 @@ static long calc_cfs_shares(struct cfs_rq *cfs_rq, struct task_group *tg)
+ 	long tg_weight, load, shares;
+ 
+ 	tg_weight = calc_tg_weight(tg, cfs_rq);
+-	load = cfs_rq->load.weight;
++	load = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
+ 
+ 	shares = (tg->shares * load);
+ 	if (tg_weight)
+@@ -3559,21 +3559,16 @@ out:
+ /*
+  * update tg->load_weight by folding this cpu's load_avg
   */
- static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+-static int update_shares_cpu(struct task_group *tg, int cpu)
++static void __update_blocked_averages_cpu(struct task_group *tg, int cpu)
  {
--	u64 now = rq_of(cfs_rq)->clock_task >> 20;
-+	u64 now = cfs_rq_clock_task(cfs_rq) >> 20;
- 	u64 decays;
+-	struct sched_entity *se;
+-	struct cfs_rq *cfs_rq;
+-	unsigned long flags;
++	struct sched_entity *se = tg->se[cpu];
++	struct cfs_rq *cfs_rq = tg->cfs_rq[cpu];
+ 	struct rq *rq;
  
- 	decays = now - cfs_rq->last_decay;
-@@ -1820,6 +1822,15 @@ static inline struct cfs_bandwidth *tg_cfs_bandwidth(struct task_group *tg)
- 	return &tg->cfs_bandwidth;
- }
++	/* throttled entities do not contribute to load */
++	if (throttled_hierarchy(cfs_rq))
++		return;
  
-+/* rq->task_clock normalized against any time this cfs_rq has spent throttled */
-+static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq)
-+{
-+	if (unlikely(cfs_rq->throttle_count))
-+		return cfs_rq->throttled_clock_task;
-+
-+	return rq_of(cfs_rq)->clock_task - cfs_rq->throttled_clock_task_time;
-+}
-+
- /* returns 0 on failure to allocate runtime */
- static int assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
- {
-@@ -1970,6 +1981,10 @@ static int tg_unthrottle_up(struct task_group *tg, void *data)
- 		cfs_rq->load_stamp += delta;
- 		cfs_rq->load_last += delta;
+-	rq = cpu_rq(cpu);
+-	se = tg->se[cpu];
+-	cfs_rq = tg->cfs_rq[cpu];
+-
+-	raw_spin_lock_irqsave(&rq->lock, flags);
+-
+-	update_rq_clock(rq);
+ 	update_cfs_rq_blocked_load(cfs_rq, 1);
  
-+		/* adjust cfs_rq_clock_task() */
-+		cfs_rq->throttled_clock_task_time += rq->clock_task -
-+					     cfs_rq->throttled_clock_task;
-+
- 		/* update entity weight now that we are on_rq again */
- 		update_cfs_shares(cfs_rq);
+ 	if (se) {
+@@ -3586,29 +3581,39 @@ static int update_shares_cpu(struct task_group *tg, int cpu)
+ 		else
+ 			list_del_leaf_cfs_rq(cfs_rq);
  	}
-@@ -1984,8 +1999,10 @@ static int tg_throttle_down(struct task_group *tg, void *data)
- 	struct cfs_rq *cfs_rq = tg->cfs_rq[cpu_of(rq)];
- 
- 	/* group is entering throttled state, record last load */
--	if (!cfs_rq->throttle_count)
-+	if (!cfs_rq->throttle_count) {
- 		update_cfs_load(cfs_rq, 0);
-+		cfs_rq->throttled_clock_task = rq->clock_task;
-+	}
- 	cfs_rq->throttle_count++;
- 
- 	return 0;
-@@ -2000,7 +2017,7 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
- 
- 	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
- 
--	/* account load preceding throttle */
-+	/* freeze hierarchy runnable averages while throttled */
- 	rcu_read_lock();
- 	walk_tg_tree_from(cfs_rq->tg, tg_throttle_down, tg_nop, (void *)rq);
- 	rcu_read_unlock();
-@@ -2024,7 +2041,7 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
- 		rq->nr_running -= task_delta;
- 
- 	cfs_rq->throttled = 1;
--	cfs_rq->throttled_timestamp = rq->clock;
-+	cfs_rq->throttled_clock = rq->clock;
- 	raw_spin_lock(&cfs_b->lock);
- 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
- 	raw_spin_unlock(&cfs_b->lock);
-@@ -2042,10 +2059,9 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
- 
- 	cfs_rq->throttled = 0;
- 	raw_spin_lock(&cfs_b->lock);
--	cfs_b->throttled_time += rq->clock - cfs_rq->throttled_timestamp;
-+	cfs_b->throttled_time += rq->clock - cfs_rq->throttled_clock;
- 	list_del_rcu(&cfs_rq->throttled_list);
- 	raw_spin_unlock(&cfs_b->lock);
--	cfs_rq->throttled_timestamp = 0;
- 
- 	update_rq_clock(rq);
- 	/* update hierarchical throttle state */
-@@ -2445,6 +2461,11 @@ void unthrottle_offline_cfs_rqs(struct rq *rq)
+-
+-	raw_spin_unlock_irqrestore(&rq->lock, flags);
+-
+-	return 0;
  }
  
- #else /* CONFIG_CFS_BANDWIDTH */
-+static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq)
-+{
-+	return rq_of(cfs_rq)->clock_task;
-+}
+-static void update_shares(int cpu)
++static void update_blocked_averages(int cpu)
+ {
+-	struct cfs_rq *cfs_rq;
+ 	struct rq *rq = cpu_rq(cpu);
++	struct cfs_rq *cfs_rq;
 +
- static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
- 				     unsigned long delta_exec) {}
- static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 57cc227..a823ca4 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -284,7 +284,8 @@ struct cfs_rq {
- 	u64 runtime_expires;
- 	s64 runtime_remaining;
++	unsigned long flags;
++	int num_updates = 0;
  
--	u64 throttled_timestamp;
-+	u64 throttled_clock, throttled_clock_task;
-+	u64 throttled_clock_task_time;
- 	int throttled, throttle_count;
- 	struct list_head throttled_list;
- #endif /* CONFIG_CFS_BANDWIDTH */
+ 	rcu_read_lock();
++	raw_spin_lock_irqsave(&rq->lock, flags);
++	update_rq_clock(rq);
+ 	/*
+ 	 * Iterates the task_group tree in a bottom up fashion, see
+ 	 * list_add_leaf_cfs_rq() for details.
+ 	 */
+ 	for_each_leaf_cfs_rq(rq, cfs_rq) {
+-		/* throttled entities do not contribute to load */
+-		if (throttled_hierarchy(cfs_rq))
+-			continue;
++		__update_blocked_averages_cpu(cfs_rq->tg, rq->cpu);
+ 
+-		update_shares_cpu(cfs_rq->tg, cpu);
++		/*
++		 * Periodically release the lock so that a cfs_rq with many
++		 * children cannot hold it for an arbitrary period of time.
++		 */
++		if (num_updates++ % 20 == 0) {
++			raw_spin_unlock_irqrestore(&rq->lock, flags);
++			cpu_relax();
++			raw_spin_lock_irqsave(&rq->lock, flags);
++			update_rq_clock(rq);
++		}
+ 	}
++
++	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 	rcu_read_unlock();
+ }
+ 
+@@ -3689,7 +3694,7 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 	return max_load_move - rem_load_move;
+ }
+ #else
+-static inline void update_shares(int cpu)
++static inline void update_blocked_averages(int cpu)
+ {
+ }
+ 
+@@ -4917,7 +4922,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	 */
+ 	raw_spin_unlock(&this_rq->lock);
+ 
+-	update_shares(this_cpu);
++	update_blocked_averages(this_cpu);
+ 	rcu_read_lock();
+ 	for_each_domain(this_cpu, sd) {
+ 		unsigned long interval;
+@@ -5258,7 +5263,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 	int update_next_balance = 0;
+ 	int need_serialize;
+ 
+-	update_shares(cpu);
++	update_blocked_averages(cpu);
+ 
+ 	rcu_read_lock();
+ 	for_each_domain(cpu, sd) {
 
 
