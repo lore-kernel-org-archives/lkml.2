@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab2BBKfY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 05:35:24 -0500
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:4055 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab2BBKfD (ORCPT
+	id S1755520Ab2BBKi5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 05:38:57 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:42401 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab2BBKi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 05:35:03 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: linux-media@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Enke Chen <enkechen@cisco.com>, Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [RFCv7 PATCH 3/4] net/sock.h: use poll_does_not_wait() in sock_poll_wait()
-Date: Thu,  2 Feb 2012 11:26:56 +0100
-Message-Id: <d2c03c4e81aa4fbc8c621241e7016a2c4aa65382.1328176079.git.hans.verkuil@cisco.com>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
-References: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
-In-Reply-To: <a92b9a00741769f3c38a54d3a6799509f9089452.1328176079.git.hans.verkuil@cisco.com>
-References: <a92b9a00741769f3c38a54d3a6799509f9089452.1328176079.git.hans.verkuil@cisco.com>
+	Thu, 2 Feb 2012 05:38:56 -0500
+Message-ID: <4F2A682C.7090109@oss.ntt.co.jp>
+Date: Thu, 02 Feb 2012 19:40:44 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
+        Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [test result] dirty logging without srcu update -- Re: [RFC][PATCH]
+ srcu: Implement call_srcu()
+References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com> <1328017807.2446.230.camel@twins> <20120131222447.GH2391@linux.vnet.ibm.com> <1328091749.2760.34.camel@laptop> <4F29178A.1090306@redhat.com> <4F2918D5.4050104@redhat.com> <4F291B56.30600@oss.ntt.co.jp> <4F291B92.8070402@redhat.com> <4F291E1F.3030505@oss.ntt.co.jp> <4F293D14.5030008@redhat.com> <20120202144633.1fc9b997.yoshikawa.takuya@oss.ntt.co.jp> <4F2A611E.6090005@redhat.com> <4F2A63B9.8000405@oss.ntt.co.jp> <4F2A63C6.7030301@redhat.com>
+In-Reply-To: <4F2A63C6.7030301@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+(2012/02/02 19:21), Avi Kivity wrote:
 
-In order to determine whether poll_wait() might actually wait the
-poll_table pointer was tested in sock_poll_wait(). This is no longer
-sufficient, instead poll_does_not_wait() should be called. That function
-also tests whether pt->pq_proc is non-NULL.
+>>
+>> I used "unsigned int" just because I wanted to use the current
+>> atomic_clear_mask() as is.
+>>
+>> We need to implement atomic_clear_mask_long() or use ...
+>
+> If we use cmpxchg8b/cmpxchg16b then this won't fit with the
+> atomic_*_long family.
+>
 
-Without this change smp_mb() could be called unnecessarily in some
-circumstances, causing a performance hit.
+OK, I will try.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
----
- include/net/sock.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 91c1c8b..da7f2ec 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1824,7 +1824,7 @@ static inline bool wq_has_sleeper(struct socket_wq *wq)
- static inline void sock_poll_wait(struct file *filp,
- 		wait_queue_head_t *wait_address, poll_table *p)
- {
--	if (p && wait_address) {
-+	if (!poll_does_not_wait(p) && wait_address) {
- 		poll_wait(filp, wait_address, p);
- 		/*
- 		 * We need to be sure we are in sync with the
--- 
-1.7.8.3
+I have one concern about correctness issue though:
 
+	concurrent rmap write protection may not be safe due to
+	delayed tlb flush ... cannot happen?
+
+
+	Takuya
