@@ -1,58 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab2BBQPu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 11:15:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752888Ab2BBQPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 11:15:49 -0500
-Message-ID: <4F2AB66C.2030309@redhat.com>
-Date: Thu, 02 Feb 2012 18:14:36 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753685Ab2BBQVS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 11:21:18 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:33913 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab2BBQVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 11:21:17 -0500
+Date: Thu, 2 Feb 2012 08:20:17 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu 03/41] rcu: Add lockdep-RCU checks for
+ simple self-deadlock
+Message-ID: <20120202162017.GH2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120201194131.GA10028@linux.vnet.ibm.com>
+ <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1328125319-5205-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120202005553.GD29058@leaf>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Christoph Lameter <cl@linux.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327591185.2446.102.camel@twins> <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <1328117722.2446.262.camel@twins> <20120201184045.GG2382@linux.vnet.ibm.com> <alpine.DEB.2.00.1202011404500.2074@router.home> <20120201201336.GI2382@linux.vnet.ibm.com> <4F2A58A1.90800@redhat.com> <20120202153437.GD2518@linux.vnet.ibm.com>
-In-Reply-To: <20120202153437.GD2518@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202005553.GD29058@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020216-2398-0000-0000-000003E2996B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 05:34 PM, Paul E. McKenney wrote:
-> On Thu, Feb 02, 2012 at 11:34:25AM +0200, Avi Kivity wrote:
-> > On 02/01/2012 10:13 PM, Paul E. McKenney wrote:
-> > > > 
-> > > > Could we also apply the same approach to processors busy doing
-> > > > computational work? In that case the OS is also not needed. Interrupting
-> > > > these activities is impacting on performance and latency.
-> > >
-> > > Yep, that is in fact what Frederic's dyntick-idle userspace work does.
+On Wed, Feb 01, 2012 at 04:55:54PM -0800, Josh Triplett wrote:
+> On Wed, Feb 01, 2012 at 11:41:21AM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > 
-> > Running in a guest is a special case of running in userspace, so we'd
-> > need to extend this work to kvm as well.
->
-> As long as rcu_idle_enter() is called at the appropriate time, RCU will
-> happily ignore the CPU.  ;-)
->
+> > It is illegal to have a grace period within a same-flavor RCU read-side
+> > critical section, so this commit adds lockdep-RCU checks to splat when
+> > such abuse is encountered.  This commit does not detect more elaborate
+> > RCU deadlock situations.  These situations might be a job for lockdep
+> > enhancements.
+> 
+> Since doing so also violates the prohibition on blocking within an RCU
+> read-side critical section, wouldn't it suffice to call might_sleep() or
+> equivalent, which also detects other problems?  (Obviously this doesn't
+> apply to SRCU, but it applies to the other variants of RCU.)
 
-It's not called (since the cpu is not idle).  Instead we call
-rcu_virt_note_context_switch().
+Yes, but...
 
--- 
-error compiling committee.c: too many arguments to function
+The advantage of the lockdep-RCU splat is that it gives you a better
+hint as to where the RCU read-side critical section was entered, which
+is very helpful when tracking these down, especially when they are
+intermittent.
+
+On of the downsides of the Linux kernel community being more RCU-savvy
+is that the errors they now tend to commit are more complex.  ;-)
+
+And yes, I should also well check for the other variants of RCU read-side
+critical section (other than RCU).  Done.
+
+I also glued the strings together to promote grepability as you suggest
+later.  (But I leave it to you to get checkpatch.pl upgraded -- it currently
+warns about long lines, but not about strings split across lines.)
+
+> > --- a/kernel/rcutiny.c
+> > +++ b/kernel/rcutiny.c
+> > @@ -319,6 +319,9 @@ static void rcu_process_callbacks(struct softirq_action *unused)
+> >   */
+> >  void synchronize_sched(void)
+> >  {
+> > +	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
+> > +			   "Illegal grace period in RCU read-side "
+> > +			   "critical section");
+> 
+> This message doesn't seem entirely obvious to me.  A grace period didn't
+> occur; a synchronize call did, which tried to request a grace period
+> that can never happen.
+
+I suppose I might as well make it consistent with the other messages.  ;-)
+
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -1816,6 +1816,9 @@ EXPORT_SYMBOL_GPL(call_rcu_bh);
+> >   */
+> >  void synchronize_sched(void)
+> >  {
+> > +	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
+> > +			   "Illegal synchronize_sched() in RCU-sched "
+> > +			   "read-side critical section");
+> >  	if (rcu_blocking_is_gp())
+> >  		return;
+> >  	wait_rcu_gp(call_rcu_sched);
+> > @@ -1833,6 +1836,9 @@ EXPORT_SYMBOL_GPL(synchronize_sched);
+> >   */
+> >  void synchronize_rcu_bh(void)
+> >  {
+> > +	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),
+> > +			   "Illegal synchronize_sched() in RCU-bh "
+> > +			   "read-side critical section");
+> 
+> Copy-paste problem here: this should say synchronize_sched_bh.  (Or
+> perhaps it should say __func__. :) )
+
+Fixed, but will pass on __func__ for the moment.  Cool though it might
+be to exercise varargs.  ;-)
+
+> > --- a/kernel/srcu.c
+> > +++ b/kernel/srcu.c
+> > @@ -172,6 +172,10 @@ static void __synchronize_srcu(struct srcu_struct *sp, void (*sync_func)(void))
+> >  {
+> >  	int idx;
+> >  
+> > +	rcu_lockdep_assert(!lock_is_held(&sp->dep_map),
+> > +			   "Illegal SRCU grace period in same-type "
+> > +			   "SRCU read-side critical section");
+> 
+> Same issue with the message: a grace period didn't occur, and it never
+> will; a call to synchronize_srcu requesting a grace period occurred.
+
+Good catch, fixed!
+
+							Thanx, Paul
 
