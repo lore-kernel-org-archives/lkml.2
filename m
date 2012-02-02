@@ -1,44 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411Ab2BBFUn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 00:20:43 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45478 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab2BBFUm (ORCPT
+	id S1751585Ab2BBFWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 00:22:32 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:33658 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab2BBFWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 00:20:42 -0500
-Date: Wed, 1 Feb 2012 21:20:18 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: PINTU KUMAR <pintu_agarwal@yahoo.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [Help] : RSS/PSS showing 0 during smaps for Xorg
-In-Reply-To: <1328107758.5077.YahooMailNeo@web162002.mail.bf1.yahoo.com>
-Message-ID: <alpine.LSU.2.00.1202012119180.31109@eggly.anvils>
-References: <1327310360.96918.YahooMailNeo@web162003.mail.bf1.yahoo.com> <1327313719.76517.YahooMailNeo@web162002.mail.bf1.yahoo.com> <alpine.LSU.2.00.1201231125200.1677@eggly.anvils> <1327468926.52380.YahooMailNeo@web162002.mail.bf1.yahoo.com>
- <alpine.LSU.2.00.1201251623340.2141@eggly.anvils> <1327912964.12941.YahooMailNeo@web162006.mail.bf1.yahoo.com> <alpine.LSU.2.00.1201301034100.1884@eggly.anvils> <1328107758.5077.YahooMailNeo@web162002.mail.bf1.yahoo.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 2 Feb 2012 00:22:31 -0500
+Message-ID: <4F2A1CF7.9020306@linux.vnet.ibm.com>
+Date: Thu, 02 Feb 2012 13:19:51 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1541958601-1328160030=:31109"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] hugetlb: try to search again if it is really needed
+References: <4F101904.8090405@linux.vnet.ibm.com> <4F101969.8050601@linux.vnet.ibm.com> <20120201144353.7c75b5b6.akpm@linux-foundation.org>
+In-Reply-To: <20120201144353.7c75b5b6.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12020119-6102-0000-0000-000000C18DBF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Andrew,
 
---8323584-1541958601-1328160030=:31109
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Thanks for your review!
 
-On Wed, 1 Feb 2012, PINTU KUMAR wrote:
-> =A0
-> 2)=A0 But after doing all this also my menu-screen is not proper.
->     Still I am getting colorful lines on the menu-screen.
-> =A0=A0=A0=A0Can you point me out what could be the problem??
+On 02/02/2012 06:43 AM, Andrew Morton wrote:
 
-Sorry, I do not know.
+> On Fri, 13 Jan 2012 19:45:45 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> 
+>> Search again only if some holes may be skipped in the first time
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/mm/hugetlbpage.c |    8 ++++----
+>>  1 files changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+>> index e12debc..6bf5735 100644
+>> --- a/arch/x86/mm/hugetlbpage.c
+>> +++ b/arch/x86/mm/hugetlbpage.c
+>> @@ -309,9 +309,8 @@ static unsigned long hugetlb_get_unmapped_area_topdown(struct file *file,
+>>  	struct hstate *h = hstate_file(file);
+>>  	struct mm_struct *mm = current->mm;
+>>  	struct vm_area_struct *vma;
+>> -	unsigned long base = mm->mmap_base, addr = addr0;
+>> +	unsigned long base = mm->mmap_base, addr = addr0, start_addr;
+> 
+> grr.  The multiple-definitions-per-line thing is ugly, makes for more
+> patch conflicts and reduces opportunities to add useful comments.
 
-Hugh
---8323584-1541958601-1328160030=:31109--
+
+Yes, thanks.
+
+>>  try_again:
+>> +	start_addr = mm->free_area_cache;
+>> +
+>>  	/* make sure it can fit in the remaining address space */
+>>  	if (mm->free_area_cache < len)
+>>  		goto fail;
+>> @@ -357,10 +358,9 @@ fail:
+>>  	 * if hint left us with no space for the requested
+>>  	 * mapping then try again:
+>>  	 */
+>> -	if (first_time) {
+>> +	if (start_addr != base) {
+>>  		mm->free_area_cache = base;
+>>  		largest_hole = 0;
+>> -		first_time = 0;
+>>  		goto try_again;
+> 
+> The code used to retry a single time.  With this change the retrying is
+> potentially infinite.  What is the reason for this change?  What is the
+> potential for causing a lockup?
+> 
+
+Actually, it is not infinite, after retry, we set "mm->free_area_cache = base",
+"start_addr" will set to "base" in the second search, so the condition of
+"goto try_again" will be unsatisfied.
+
