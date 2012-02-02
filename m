@@ -1,85 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933540Ab2BBT6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:58:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36799 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933526Ab2BBT6u (ORCPT
+	id S933555Ab2BBUBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:01:24 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:34703 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab2BBUBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:58:50 -0500
-Date: Thu, 2 Feb 2012 11:58:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Dave Young <hidave.darkstar@gmail.com>, Dave Young <dyoung@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] move vm tools from Documentation/vm/ to tools/
-Message-Id: <20120202115849.478b8513.akpm@linux-foundation.org>
-In-Reply-To: <4F2A3C27.5080504@gmail.com>
-References: <20120201063420.GA10204@darkstar.nay.redhat.com>
-	<20120201131746.07e2219e.akpm@linux-foundation.org>
-	<CABqxG0fyH89YP+jpZ5nJoVfzOQ++J4EfGP42FtjxAv7OY9o+5w@mail.gmail.com>
-	<4F2A3C27.5080504@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 2 Feb 2012 15:01:22 -0500
+Message-ID: <4F2AEB87.70908@linux.vnet.ibm.com>
+Date: Fri, 03 Feb 2012 01:31:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM/Hibernate: Thaw kernel threads in hibernation_snapshot()
+ in error/test path
+References: <20120202003359.9930.9844.stgit@srivatsabhat.in.ibm.com> <201202022011.55493.rjw@sisk.pl>
+In-Reply-To: <201202022011.55493.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12020220-5816-0000-0000-000001224E81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 02 Feb 2012 15:32:55 +0800
-Cong Wang <xiyou.wangcong@gmail.com> wrote:
+On 02/03/2012 12:41 AM, Rafael J. Wysocki wrote:
 
-> On 02/02/2012 10:13 AM, Dave Young wrote:
-> > On Thu, Feb 2, 2012 at 5:17 AM, Andrew Morton<akpm@linux-foundation.org>  wrote:
-> >> On Wed, 1 Feb 2012 14:34:20 +0800
-> >> Dave Young<dyoung@redhat.com>  wrote:
-> >>
-> >>> tools/ is the better place for vm tools which are used by many people.
-> >>> Moving them to tools also make them open to more users instead of hide in
-> >>> Documentation folder.
-> >>>
-> >>
-> >> It would be nice to covert these into simple pass/fail tests and
-> >> promote them to tools/testing/selftests/.
-> >
-> > Andrew, I'm not clear about this, do you means to selftest
-> > hugepage-mmap.c,  hugepage-shm.c  and map_hugetlb.c? I think slabinfo
-> > and page-types should stay in tools/vm/. Can you explain a bit?
-> >
+> On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
+>> In the hibernation call path, the kernel threads are frozen inside
+>> hibernation_snapshot(). If we happen to encounter an error further down
+>> the road or if we are exiting early due to a successful freezer test,
+>> then thaw kernel threads before returning to the caller.
+>>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+>>
+>>  kernel/power/hibernate.c |    6 ++++--
+>>  kernel/power/user.c      |    8 ++------
+>>  2 files changed, 6 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+>> index a5d4cf0..c6dee73 100644
+>> --- a/kernel/power/hibernate.c
+>> +++ b/kernel/power/hibernate.c
+>> @@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
+>>  		 * successful freezer test.
+>>  		 */
+>>  		freezer_test_done = true;
+>> -		goto Cleanup;
+>> +		goto Thaw;
+>>  	}
+>>  
+>>  	error = dpm_prepare(PMSG_FREEZE);
+>>  	if (error) {
+>>  		dpm_complete(PMSG_RECOVER);
+>> -		goto Cleanup;
+>> +		goto Thaw;
+>>  	}
+>>  
+>>  	suspend_console();
+>> @@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
+>>  	platform_end(platform_mode);
+>>  	return error;
+>>  
+>> + Thaw:
+>> +	thaw_kernel_threads();
 > 
-> Hey,
+> Actaully, no.  You have to do swsusp_free() before thawing, otherwise
+> some allocations made by the just thawed kernel threads may fail.
 > 
-> Check the comments in these files:
-> 
-> /*
->   * hugepage-mmap:
->   *
->   * Example of using huge page memory in a user application using the mmap
->   * system call.
-> 
-> 
-> /*
->   * hugepage-shm:
->   *
->   * Example of using huge page memory in a user application using Sys V 
-> shared
->   * memory system calls.  In this example the app is requesting 256MB of
->   * memory that is backed by huge pages.  The application uses the flag
->   * SHM_HUGETLB in the shmget system call to inform the kernel that it is
->   * requesting huge pages.
-> 
-> 
-> /*
->   * Example of using hugepage memory in a user application using the mmap
->   * system call with MAP_HUGETLB flag.
-> 
-> All of them are examples, not tests, not tools, thus Documentation/ is 
-> the best place for them.
 
-um, read the code?  All three programs are exactly pass/fail selftests.
 
-They are very simplistic selftests and perhaps one day we'll write more
-sophisticated selftest code.  If we were to do this then these files
-over in tools/vm would become obsolete.  So we should put these into
-tools/testing/selftests/ on day one.
+But then what about the case (in the existing code) when
+freeze_kernel_threads() fails? It would first thaw kernel threads (in
+fact it used to thaw even userspace tasks earlier!) before calling
+swsusp_free(). So, the existing code itself seems to be brittle, considering
+the point you raised. Right?
+
+>>   Cleanup:
+>>  	swsusp_free();
+>>  	goto Close;
+>> diff --git a/kernel/power/user.c b/kernel/power/user.c
+>> index 3e10007..7bee91f 100644
+>> --- a/kernel/power/user.c
+>> +++ b/kernel/power/user.c
+>> @@ -249,16 +249,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+>>  		}
+>>  		pm_restore_gfp_mask();
+>>  		error = hibernation_snapshot(data->platform_support);
+>> -		if (error) {
+>> -			thaw_kernel_threads();
+>> -		} else {
+>> +		if (!error) {
+>>  			error = put_user(in_suspend, (int __user *)arg);
+>>  			if (!error && !freezer_test_done)
+>>  				data->ready = 1;
+>> -			if (freezer_test_done) {
+>> +			if (freezer_test_done)
+>>  				freezer_test_done = false;
+>> -				thaw_kernel_threads();
+>> -			}
+>>  		}
+>>  		break;
+> 
+> Overall, this seems to be a cleanup, or is it a bug fix?
+> 
+
+
+This was intended as a cleanup only, not a bug fix. But now, (see my point
+above), I am beginning to feel that the existing code itself is not robust
+enough...
+ 
+Regards,
+Srivatsa S. Bhat
+
