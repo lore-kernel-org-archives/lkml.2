@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab2BBUYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:24:33 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47561 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218Ab2BBUYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:24:32 -0500
-Date: Thu, 2 Feb 2012 21:24:28 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] MCE, AMD: Select SMP explicitly
-Message-ID: <20120202202427.GA2234@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Nick Bowler <nbowler@elliptictech.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Randy Dunlap <rdunlap@xenotime.net>
-References: <1328209817-18913-1-git-send-email-bp@alien8.de>
- <20120202193702.GA9502@elliptictech.com>
+	id S1756418Ab2BBUZS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:25:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54930 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756329Ab2BBUZQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:25:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120202193702.GA9502@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120202185954.GA18225@samfundet.no>
+References: <1327243593-29215-1-git-send-email-fabio.baltieri@gmail.com>
+	<20120124191031.GA20164@samfundet.no>
+	<CABkP77eA9vMLA_V6E=LEy7vRZQP05DmKBRrje4eLbWNJwReyYg@mail.gmail.com>
+	<20120202185954.GA18225@samfundet.no>
+Date: Thu, 2 Feb 2012 21:25:15 +0100
+X-Google-Sender-Auth: ygYOMo6Rk0T6Fu1W4RvuKoE9otU
+Message-ID: <CABkP77d3rp2DEfzsj19j6FQcP1hQYjoGw0sJx9j9pcgGZtP49A@mail.gmail.com>
+Subject: Re: [PATCH] avr32: select generic atomic64_t support
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 02:37:02PM -0500, Nick Bowler wrote:
-> Hi,
-> 
-> On 2012-02-02 20:10 +0100, Borislav Petkov wrote:
-> > Randy Dunlap reported that building randconfigs which do not select
-> > CONFIG_SMP cause the following link error:
-> > 
-> > mce_amd.c:(.cpuinit.text+0x4723): undefined reference to `cpu_llc_shared_map'
-> > 
-> > Fix it.
-> > 
-> > Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-> > Link: http://lkml.kernel.org/r/4F298A6C.6010101@xenotime.net
-> > Signed-off-by: Borislav Petkov <bp@alien8.de>
-> [...]
-> >  config X86_MCE_AMD
-> >  	def_bool y
-> >  	prompt "AMD MCE features"
-> > -	depends on X86_MCE && X86_LOCAL_APIC
-> > +	depends on X86_MCE && X86_LOCAL_APIC && SMP
-> 
-> Is this feature truly irrelevant on UP systems?  I ask because I've
-> always enabled this option on my UP AMD systems in the past...
+On Thu, Feb 2, 2012 at 7:59 PM, Hans-Christian Egtvedt
+<egtvedt@samfundet.no> wrote:
+> Around Thu 02 Feb 2012 14:13:50 +0100 or thereabout, Fabio Baltieri wrote:
+>>   yes, I think so. Do you want me to re-send the patch to some
+>> specific address? (like trivial fixes or so...).
+>
+> Andrew does sometimes pick these small patches up, I would really like it to
+> go in as soon as possible. Try prefixing [RESEND] and add my Acked-by string.
 
-No, you're right. Thanks for the suggestion. Scratch that version, I'll
-think of a better fix.
+Ok, I just resent it with the new ack'ed tag and Andrew in CC.
 
-Thanks.
+> .oO(I really need to find a kernel developer here in Oslo, so I can get a
+> proper account again.)
+
+I hope you find someone... An AVR32 branch on kernel.org would be nice!
+
+Thanks!
 
 -- 
-Regards/Gruss,
-Boris.
+Fabio Baltieri
