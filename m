@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab2BBN04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 08:26:56 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59315 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab2BBN0y (ORCPT
+	id S1756031Ab2BBN2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 08:28:00 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40369 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753601Ab2BBN16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 08:26:54 -0500
+	Thu, 2 Feb 2012 08:27:58 -0500
+Date: Thu, 2 Feb 2012 13:27:50 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Liam Girdwood <lrg@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 2/7] MFD: twl6040: Convert to i2c driver, and separate it
+ from twl core
+Message-ID: <20120202132750.GM7428@opensource.wolfsonmicro.com>
+References: <1328185019-29575-1-git-send-email-peter.ujfalusi@ti.com>
+ <1328185019-29575-3-git-send-email-peter.ujfalusi@ti.com>
+ <20120202124828.GI7428@opensource.wolfsonmicro.com>
+ <4F2A8912.4070701@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1328130290-17607-1-git-send-email-swarren@nvidia.com>
-References: <1328130290-17607-1-git-send-email-swarren@nvidia.com>
-Date: Thu, 2 Feb 2012 14:26:54 +0100
-Message-ID: <CACRpkda+KCutSFgPwH2Xvd14h0OCrArFGXAidp3n_ZgG28KB5g@mail.gmail.com>
-Subject: Re: [PATCH V2 1/4] pinctrl: add a driver for NVIDIA Tegra
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LJm8egi4vkexsie5"
+Content-Disposition: inline
+In-Reply-To: <4F2A8912.4070701@ti.com>
+X-Cookie: Never give an inch!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 10:04 PM, Stephen Warren <swarren@nvidia.com> wrote:
 
-> This adds a driver for the Tegra pinmux, and required parameterization
-> data for Tegra20 and Tegra30.
+--LJm8egi4vkexsie5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-OK so I've applied this monster patch and the three others,
+On Thu, Feb 02, 2012 at 03:01:06PM +0200, Peter Ujfalusi wrote:
+> On 02/02/2012 02:48 PM, Mark Brown wrote:
 
-the diffstat looks like so:
+> > The calling convention here seems a bit weird too, you've got value then
+> > register but normally we have register then value for I2C/SPI devices.
 
-git diff --stat v3.3-rc2..HEAD
- arch/arm/mach-tegra/Kconfig                       |    4 +
- arch/arm/mach-tegra/Makefile                      |    3 -
- arch/arm/mach-tegra/board-harmony-pinmux.c        |  362 ++-
- arch/arm/mach-tegra/board-paz00-pinmux.c          |  362 ++-
- arch/arm/mach-tegra/board-pinmux.c                |   62 +-
- arch/arm/mach-tegra/board-pinmux.h                |   39 +-
- arch/arm/mach-tegra/board-seaboard-pinmux.c       |  442 ++-
- arch/arm/mach-tegra/board-trimslice-pinmux.c      |  366 ++-
- arch/arm/mach-tegra/include/mach/pinconf-tegra.h  |   63 +
- arch/arm/mach-tegra/include/mach/pinmux-tegra20.h |  184 -
- arch/arm/mach-tegra/include/mach/pinmux-tegra30.h |  320 --
- arch/arm/mach-tegra/include/mach/pinmux.h         |  302 --
- arch/arm/mach-tegra/pinmux-tegra20-tables.c       |  244 --
- arch/arm/mach-tegra/pinmux-tegra30-tables.c       |  376 ---
- arch/arm/mach-tegra/pinmux.c                      |  987 ------
- drivers/pinctrl/Kconfig                           |   15 +
- drivers/pinctrl/Makefile                          |    3 +
- drivers/pinctrl/pinctrl-tegra.c                   |  559 +++
- drivers/pinctrl/pinctrl-tegra.h                   |  163 +
- drivers/pinctrl/pinctrl-tegra20.c                 | 2860 ++++++++++++++++
- drivers/pinctrl/pinctrl-tegra30.c                 | 3726 +++++++++++++++++++++
- 21 files changed, 8482 insertions(+), 2960 deletions(-)
+> I have based these part on the twl-core's implementation. I should not
+> have done that, I know.. Let's see how it will look like with regmap.
 
-It's still pretty big, adding some 6000 lines in sum total, but you've made
-your case for having all information about the hardware in the driver
-quite clear so I've not got much more to say. Short story: the driver knows
-all about what the hardware can do, and the platform data or device
-tree will decide how these capabilities are employed on a certain
-system.
+Yeah, like I say...
 
-What is nice is to have this out of the ARM tree and under pinctrl
-subsystem control.
+> > Except when we don't :(
 
-Olof, Arnd: please verify that this is a direction you accept for the Tegra.
-(Olof has already ACK:ed it, mainly thinking about Arnd.)
+...it's not like we've been consistent so far.  I'm not that fussed
+either way, I probably wouldn't have mentioned it if I hadn't otherwise
+been commenting.
 
-I've created a separate branch named pinctrl-tegra-for-next for this
-series and merged it into my devel and for-next branches and pushed.
-As suggested by Olof devel and for-next may be rebased but the
-tegra branch will stay intact (fixes on top is OK).
+--LJm8egi4vkexsie5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Olof: I've published the pinctrl-tegra-for-next branch based on v3.3-rc2
-here:
-git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-pinctrl-tegra-for-next
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Yours,
-Linus Walleij
+iQIcBAEBAgAGBQJPKo9QAAoJEBus8iNuMP3d8C8P/2APfGHxR50k12kNTnlBiL8y
+n+pO+dZXR1k06mxGl4VRK5LKvtx0CJQj1ZmyiXyjTgcQk8W+HIuVm3UMIN2/X4yO
+mhunULuCrPxzfPyJIaFUejgS85xoQHhWylojfujdbCSlMzFaxBn2iVsu8J4R1t5m
+n/vC/OI8RXB64Bys/XyCAPvJGrRAr5J+S4RuKqImYcbxHtT2NT81h2Y8DiowN0Op
+VVKHOBc37QbHX6YUnDVPBwV4o35hTPh4jMBzGCbfj4Y0SDGfbM/8uIdmQ8IfD0ii
+xPWMgCNZRnxBpFRPZD+r5O/IcwcbT4Dv49CyrDshEqNZLTX94AC+gj3xYn+2Ve7m
+WC/AFT3qfDPGxiztAjjtb3qsnWAXyx3/l2yQrCaqL6b0SEmhJSSE4319kgSj2Ywm
+7cgDWmuiqHJpNaDvOVEb6GoH4QiIdTGiRxAXxihaea4zB9AlDvF8bs5gI1f7z9Q7
+2fl1k9e60J1/JAOiZiHyOzNqiNpBoYhS7MJXknvnzlDaKb2ooKRl8lF4pDH1apBm
+LCvaXxNsx+1Iv4cwBHLD37wJp8AK4HFFEX3PSjaHyzpqThWY7/km1FRCKtuSKyK9
+aNJW2treDVtRBTReVx7dSXeigULGSyX44OJ4Y2KOcm5g0Gyfwe7ThkldYdTfxfep
+HcOl2tNLGICDuTVwQQ1P
+=IGMO
+-----END PGP SIGNATURE-----
+
+--LJm8egi4vkexsie5--
