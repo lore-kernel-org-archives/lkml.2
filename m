@@ -1,180 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611Ab2BBWUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 17:20:00 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:55781 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab2BBWT6 (ORCPT
+	id S933455Ab2BBWWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 17:22:42 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35934 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932694Ab2BBWWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 17:19:58 -0500
-Date: Thu, 2 Feb 2012 23:19:45 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
-cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 1/7 v2] dmaengine: add a simple dma library
-In-Reply-To: <4F27CA7D.601@renesas.com>
-Message-ID: <Pine.LNX.4.64.1202022317560.13860@axis700.grange>
-References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
- <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de> <4F22624E.2090201@renesas.com>
- <Pine.LNX.4.64.1201270946150.32661@axis700.grange> <4F27CA7D.601@renesas.com>
+	Thu, 2 Feb 2012 17:22:41 -0500
+Date: Thu, 2 Feb 2012 22:22:06 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 11/11] sound/soc: add context parameter to prep_slave_sg
+ and prep_dma_cyclic calls
+Message-ID: <20120202222158.GA3112@opensource.wolfsonmicro.com>
+References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com>
+ <1328218341-31436-12-git-send-email-alexandre.bounine@idt.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:A/BGafrz5SnB5d+xv8H6j0NlXo0YEHxfhKKf/guQPoV
- PxX+nOXGrGRHNOpQwWEBNu3SWj0mY4/DIZom4ZlSSPaoOU6KEL
- +7d98mxWPluJKbgBg16lYaijFMkUZO3/ursKra/UasbLbpPvgH
- IDfd315Jn3FYamEFKSnwgvUWt/rKVbhkSkyMYSZ6mSz7f99yaV
- TyITNn/XJ1eBNlgDMDIuqaU3X1Wprgzf/UfLe3M5V+3l+/7EeL
- YZbaYq+tWZAOkRnUnp5UnQjfhzYnz0WJPJJ8trWBkbJfTwNeRb
- iGBoIKPArqxxTdC8eBuZwf79qFR7QJuk49hWcM6clVvwx26eOM
- H5FBIr3hmKmxFxUGiKyQ/7RpfvBr5sPu2ReysIE7IKzoV/OqAb
- aGyCh2Ix/tQsQ==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
+Content-Disposition: inline
+In-Reply-To: <1328218341-31436-12-git-send-email-alexandre.bounine@idt.com>
+X-Cookie: Exercise caution in your daily affairs.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shimoda-san
 
-On Tue, 31 Jan 2012, Shimoda, Yoshihiro wrote:
+--sdtB3X0nJg68CQEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Hi Guennadi-san,
-> 
-> 2012/01/27 17:48, Guennadi Liakhovetski wrote:
-> > Hi Shimoda-san
-> > 
-> > On Fri, 27 Jan 2012, Shimoda, Yoshihiro wrote:
-> [ snip ]
-> >>>
-> >>> 1. switch from using a tasklet to threaded IRQ, which allowed to
-> >>
-> >> I tested this driver on 2 environment, but it could not work correctly.
-> >>  - renesas_usbhs driver with shdma driver on the mackerel board
-> >>  - renesas_usbhs driver with experimental SUDMAC driver
-> >>
-> >> In this case, should we modify the renesas_usbhs driver?
-> > 
-> > Yes, you do. Please, see the respective version of the shdma patch. It 
-> > doesn't request channel IRQs any more directly, instead, it uses a 
-> > dma-simple wrapper function. Also operations change a bit.
-> 
-> Thank you for your comment.
-> 
-> I investigaed the issue. I found out the renesas_usbhs driver may
-> call tx_submit() in the callback() of the dma-simple finally.
+On Thu, Feb 02, 2012 at 04:32:21PM -0500, Alexandre Bounine wrote:
+> Fixups for calls affected by adding the new context parameter to DMA_SLAVE
+> and DMA_CYCLIC interfaces.
 
-Sorry, in my first reply to this your email I misread the renesas_usbhs 
-for an issue with your new SUDMAC driver. Since this is not the case and 
-my patch seems to be causing a regression, I'll look at it.
+This really ought to be squashed in with the original commit both to
+avoid build breaks in bisection and to let people review what this
+parameter does.
 
-Thanks
-Guennadi
+--sdtB3X0nJg68CQEu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> In this case, the value of power_up in the simple_tx_submit is 0,
-> the start_xfer() is not called. And then, even if the ld_queue is
-> not empty, the DMA doesn't start.
-> 
-> 
-> So, if I add codes like the following in the dma-simple.c,
-> the renesas_usbhs driver can work correctly without the driver changes.
-> If you think the code is good, would you merge it to your code?
-> ======= chan_irqt() =======
-> 	simple_chan_ld_cleanup(schan, false);
-> 
-> +	spin_lock_irq(&schan->chan_lock);
-> +	/* Next desc */
-> +	simple_chan_xfer_ld_queue(schan);
-> +	spin_unlock_irq(&schan->chan_lock);
-> 
-> 	return IRQ_HANDLED;
-> ==============
-> 
-> Best regards,
-> Yoshihiro Shimoda
-> 
-> > Thanks
-> > Guennadi
-> > 
-> >> For reference, if I changed the threaded IRQ to tasklet,
-> >> the 2 environment worked correctly:
-> >> ==============
-> >> diff --git a/drivers/dma/dma-simple.c b/drivers/dma/dma-simple.c
-> >> index 49d8f7d..65a5170 100644
-> >> --- a/drivers/dma/dma-simple.c
-> >> +++ b/drivers/dma/dma-simple.c
-> >> @@ -715,16 +715,18 @@ static irqreturn_t chan_irq(int irq, void *dev)
-> >>
-> >>  	spin_lock(&schan->chan_lock);
-> >>
-> >> -	ret = ops->chan_irq(schan, irq) ? IRQ_WAKE_THREAD : IRQ_NONE;
-> >> +	ret = ops->chan_irq(schan, irq) ? IRQ_HANDLED : IRQ_NONE;
-> >> +	if (ret == IRQ_HANDLED)
-> >> +		tasklet_schedule(&schan->tasklet);
-> >>
-> >>  	spin_unlock(&schan->chan_lock);
-> >>
-> >>  	return ret;
-> >>  }
-> >>
-> >> -static irqreturn_t chan_irqt(int irq, void *dev)
-> >> +static void chan_irqt(unsigned long dev)
-> >>  {
-> >> -	struct dma_simple_chan *schan = dev;
-> >> +	struct dma_simple_chan *schan = (struct dma_simple_chan *)dev;
-> >>  	const struct dma_simple_ops *ops =
-> >>  		to_simple_dev(schan->dma_chan.device)->ops;
-> >>  	struct dma_simple_desc *sdesc;
-> >> @@ -744,15 +746,13 @@ static irqreturn_t chan_irqt(int irq, void *dev)
-> >>  	spin_unlock_irq(&schan->chan_lock);
-> >>
-> >>  	simple_chan_ld_cleanup(schan, false);
-> >> -
-> >> -	return IRQ_HANDLED;
-> >>  }
-> >>
-> >>  int dma_simple_request_irq(struct dma_simple_chan *schan, int irq,
-> >>  			   unsigned long flags, const char *name)
-> >>  {
-> >> -	int ret = request_threaded_irq(irq, chan_irq, chan_irqt,
-> >> -				       flags, name, schan);
-> >> +	int ret = request_irq(irq, chan_irq, flags, name, schan);
-> >> +	tasklet_init(&schan->tasklet, chan_irqt, (unsigned long)schan);
-> >>
-> >>  	schan->irq = ret < 0 ? ret : irq;
-> >>
-> >> diff --git a/include/linux/dma-simple.h b/include/linux/dma-simple.h
-> >> index 5336674..beb1489 100644
-> >> --- a/include/linux/dma-simple.h
-> >> +++ b/include/linux/dma-simple.h
-> >> @@ -68,6 +68,7 @@ struct dma_simple_chan {
-> >>  	int id;				/* Raw id of this channel */
-> >>  	int irq;			/* Channel IRQ */
-> >>  	enum dma_simple_pm_state pm_state;
-> >> +	struct tasklet_struct tasklet;
-> >>  };
-> >>
-> >>  /**
-> >> ==============
-> >>
-> >> Best regards,
-> >> Yoshihiro Shimoda
-> >>
-> > 
-> > ---
-> > Guennadi Liakhovetski, Ph.D.
-> > Freelance Open-Source Software Developer
-> > http://www.open-technology.de/
-> > 
-> 
-> 
-> -- 
-> Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-> EC No.
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+iQIcBAEBAgAGBQJPKwx/AAoJEBus8iNuMP3dFf0P/01v08e45KsVsXJtMdRzt25C
+9tIIqTgv+aVztM/9zWOJ77XCmxV3u1Z5YpcJ4tKzX87uJropXx/TtsZcxdUXzFW/
++ejUP8dONCxNTR3/yLeAhx+SScAZlDmJ+0MjjmlExD2jtSPOUvAWuFZTXcgcCMeS
+0MtmgGds2ZSx73Z3Eo9g0EC0/wOv9UqO16/knWJ/JPauMIdSjwgQ9qFNueGZ21bd
+MW0JXt2JX4Zg6R37F1ek7J762Wz6RTN0f4uuc4m2FpVv/QuBClaRTaamKCOuz0jO
+lNJSjCAO3qFzGUZ91kUbNy2dKzixlP08l+g/5Ssc8FzV37XjjfFRlHQV30PdZQ3B
+usF3O4lAYnzl1ynD89VFKX3SJhwxX8HzKaY2w7c35z/psBHSsSie7vM3/b1Z+nGm
+bvXTTQ/TwkOGmSq66iy6fPeM7tsfedAJgTOhYaIf/CcfpdidCWYw//bwXqvXna0T
+/whZKCGBdBO32fMPWEzunLMPoR7Eaaa6sziJDjW/g1l/hK8Lm1opt0ogflShWIAI
+3tNapuiRJUq9gd6vroYVv5HeDGdm+YgV1/7ZkNL7Osq02Fqar5OVBzhovio3oh90
+DSUWC7M/Bc7BH04wn96c1KRbt45nLF51H8R/c3/7K6Kr8Vk36KG8vYZKNbC31Wl0
+JPoH25vBGJTA1PCTiW+8
+=sljo
+-----END PGP SIGNATURE-----
+
+--sdtB3X0nJg68CQEu--
