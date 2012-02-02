@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab2BBC25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 21:28:57 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:48646 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab2BBC2z (ORCPT
+	id S1754740Ab2BBCaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 21:30:55 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:43937 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab2BBCay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 21:28:55 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM/Freezer/Docs: Document the beauty of freeze/thaw semantics
-To: rjw@sisk.pl
-Cc: tj@kernel.org, pavel@ucw.cz, len.brown@intel.com, rdunlap@xenotime.net,
-        linux-pm@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 02 Feb 2012 07:58:33 +0530
-Message-ID: <20120202022829.13341.64259.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Wed, 1 Feb 2012 21:30:54 -0500
+X-Originating-IP: 217.70.178.132
+X-Originating-IP: 50.43.15.19
+Date: Wed, 1 Feb 2012 18:30:33 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH RFC tip/core/rcu 21/41] rcu: Inform RCU of irq_exit()
+ activity
+Message-ID: <20120202023033.GN29058@leaf>
+References: <20120201194131.GA10028@linux.vnet.ibm.com>
+ <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1328125319-5205-21-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12020116-1618-0000-0000-000000AFE747
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328125319-5205-21-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The way the different freeze/thaw functions encapsulate each other are quite
-lovely from a design point of view. And as a side-effect, the way in which
-they are invoked (cleaning up on failure for example) differs significantly
-from how usual functions are dealt with. This is because of the underlying
-semantics that govern the freezing and thawing of various tasks.
+On Wed, Feb 01, 2012 at 11:41:39AM -0800, Paul E. McKenney wrote:
+> [ Alternatively, delaying the ->rcu_read_lock_nesting decrement
+>   until after the special handling would make the thing more robust
+>   in the face of interrupts as well.  And there is a separate patch
+>   for that. ]
 
-This subtle aspect that differentiates these functions from the rest, is
-worth documenting.
+Where does that separate patch live, and should it replace this one?
 
-Many thanks to Tejun Heo for providing enlightenment on this topic.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- Documentation/power/freezing-of-tasks.txt |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
-index ebd7490..ec715cd 100644
---- a/Documentation/power/freezing-of-tasks.txt
-+++ b/Documentation/power/freezing-of-tasks.txt
-@@ -63,6 +63,27 @@ devices have been reinitialized, the function thaw_processes() is called in
- order to clear the PF_FROZEN flag for each frozen task.  Then, the tasks that
- have been frozen leave __refrigerator() and continue running.
- 
-+
-+Rationale behind the functions dealing with freezing and thawing of tasks:
-+-------------------------------------------------------------------------
-+
-+freeze_processes():
-+  - freezes only userspace tasks
-+
-+freeze_kernel_threads():
-+  - freezes all tasks (including kernel threads) because we can't freeze
-+    kernel threads without freezing userspace tasks
-+
-+thaw_kernel_threads():
-+  - thaws only kernel threads; this is particularly useful if we need to do
-+    anything special in between thawing of kernel threads and thawing of
-+    userspace tasks, or if we want to postpone the thawing of userspace tasks
-+
-+thaw_processes():
-+  - thaws all tasks (including kernel threads) because we can't thaw userspace
-+    tasks without thawing kernel threads
-+
-+
- III. Which kernel threads are freezable?
- 
- Kernel threads are not freezable by default.  However, a kernel thread may clear
-
+- Josh Triplett
