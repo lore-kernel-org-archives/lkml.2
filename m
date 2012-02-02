@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab2BBThI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 14:37:08 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:24945 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757016Ab2BBThG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 14:37:06 -0500
-Date: Thu, 2 Feb 2012 14:37:02 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] MCE, AMD: Select SMP explicitly
-Message-ID: <20120202193702.GA9502@elliptictech.com>
-References: <1328209817-18913-1-git-send-email-bp@alien8.de>
+	id S932907Ab2BBThr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 14:37:47 -0500
+Received: from antcom.de ([188.40.178.216]:33196 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932137Ab2BBThp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 14:37:45 -0500
+Message-ID: <4F2AE606.7090903@antcom.de>
+Date: Thu, 02 Feb 2012 20:37:42 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120104 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328209817-18913-1-git-send-email-bp@alien8.de>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
+        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: LPC32xx: Support for OHCI HCD
+References: <1328103028-20547-1-git-send-email-stigge@antcom.de> <20120202164114.GB3219@pengutronix.de>
+In-Reply-To: <20120202164114.GB3219@pengutronix.de>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On 2012-02-02 20:10 +0100, Borislav Petkov wrote:
-> Randy Dunlap reported that building randconfigs which do not select
-> CONFIG_SMP cause the following link error:
-> 
-> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to `cpu_llc_shared_map'
-> 
-> Fix it.
-> 
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-> Link: http://lkml.kernel.org/r/4F298A6C.6010101@xenotime.net
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
-[...]
->  config X86_MCE_AMD
->  	def_bool y
->  	prompt "AMD MCE features"
-> -	depends on X86_MCE && X86_LOCAL_APIC
-> +	depends on X86_MCE && X86_LOCAL_APIC && SMP
+On 02/02/2012 05:41 PM, Wolfram Sang wrote:
+> Okay, I asked for a patch to test USB, so thanks. It did not work 
+> for me, sadly, so there seems to be more work needed in that area.
 
-Is this feature truly irrelevant on UP systems?  I ask because I've
-always enabled this option on my UP AMD systems in the past...
+Of course, we need to first sort things out. :-)
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Already now, when you apply all my patches on top of each other, USB
+(and ethernet) works fine for me.
 
+Of course, the just re-posted base series ("v3") has priority, but if
+you are curious, you can have a look at the patches at
+http://antcom.de/lpc32xx/ and apply them on top of current mainline
+(3.3-rc2). You need to manually enable OHCI and the LPC-ETH drivers,
+based on our new defconfig, of course. If it still doesn't work,
+please tell me at which point it doesn't compile or boot.
+
+I just re-tested this with my PHYTEC3250 board, using NFS root and
+mounting USB mass storage.
+
+> also misses important mailing lists (usb).
+
+I posted the drivers for ethernet, usb and iio to the respective
+maintainers and mailing lists, separately.
+
+> May I ask if you read Documentation/development-process and/or 
+> Documentation/SubmittingPatches? If not, please do so.
+
+Good. Thanks for the hint. :-)
+
+We can do one step after another.
+
+Thanks for your involvement here!
+
+Roland
