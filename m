@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab2BBQlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 11:41:25 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:42076 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593Ab2BBQlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 11:41:23 -0500
-Date: Thu, 2 Feb 2012 08:34:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 05/41] rcu: Avoid waking up CPUs having
- only kfree_rcu() callbacks
-Message-ID: <20120202163435.GK2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-5-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120202011552.GG29058@leaf>
+	id S1754538Ab2BBQlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 11:41:36 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57107 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844Ab2BBQld (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 11:41:33 -0500
+Date: Thu, 2 Feb 2012 17:41:14 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: stigge@antcom.de
+Cc: bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
+        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: LPC32xx: Support for OHCI HCD
+Message-ID: <20120202164114.GB3219@pengutronix.de>
+References: <1328103028-20547-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
 Content-Disposition: inline
-In-Reply-To: <20120202011552.GG29058@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020216-1976-0000-0000-00000A12681F
+In-Reply-To: <1328103028-20547-1-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 05:15:52PM -0800, Josh Triplett wrote:
-> On Wed, Feb 01, 2012 at 11:41:23AM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> > 
-> > When CONFIG_RCU_FAST_NO_HZ is enabled, RCU will allow a given CPU to
-> > enter dyntick-idle mode even if it still has RCU callbacks queued.
-> > RCU avoids system hangs in this case by scheduling a timer for several
-> > jiffies in the future.  However, if all of the callbacks on that CPU
-> > are from kfree_rcu(), there is no reason to wake the CPU up, as it is
-> > not a problem to defer freeing of memory.
-> > 
-> > This commit therefore tracks the number of callbacks on a given CPU
-> > that are from kfree_rcu(), and avoids scheduling the timer if all of
-> > a given CPU's callbacks are from kfree_rcu().
-> 
-> Minor nit: I think it would make much more sense to track the number of
-> "strict" callbacks *not* from kfree_rcu, and check for that number != 0,
-> rather than tracking the number of "lazy" callbacks from kfree_rcu and
-> checking for all != lazy.  You can always compute one number from the
-> other, but since you only ever need to know the strict count, not the
-> lazy count, why not directly track the thing you care about?
 
-I will think about this.  My guess is that when I add call_rcu_lazy(),
-the naming will outweigh the slowpath subtraction, but will see.
+--+g7M9IMkV8truYOl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Also, any way this could hide the new kfree_call_rcu internally rather
-> than adding it as a new export?  In particular, why introduce a new
-> exported API only suitable for internal use or foot-shooting?
+On Wed, Feb 01, 2012 at 02:30:28PM +0100, stigge@antcom.de wrote:
+> This patch adds OHCI support to the LPC32xx ARM platform
+>=20
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-It is called from __kfree_rcu, which is a static inline in
-include/linux/rcupdate.h, so needs to be exported so that modules can
-use kfree_rcu().
+Okay, I asked for a patch to test USB, so thanks. It did not work for me,
+sadly, so there seems to be more work needed in that area.
 
-Of course, if I take the earlier patch that removes the first
-BUILD_BUG_ON() from __kfree_rcu(), then I could move __kfree_rcu()
-to rcupdate.c, and then I could move the export from kfree_call_rcu()
-to __kfree_rcu().  But either way I would be exporting a function that
-should not be invoked directly.
+Yet, even formally, this patch is not ready for mainline. It touches
+various subsystems in one patch (arch, usb), uses too much #ifdef and
+also misses important mailing lists (usb).
 
-My concern with the earlier patch is that someone might have something
-silly like a structure with an array with an rcu_head in each element.
-Calling kfree_rcu() on such a beast would be ill-advised.  This might
-just be me being overly paranoid, though, hence my lack of additional
-response to that patch.
+May I ask if you read Documentation/development-process and/or
+Documentation/SubmittingPatches? If not, please do so.
 
-							Thanx, Paul
+I'd suggest to work in smaller steps. Get LPC32xx build again and fix
+the elementary clock issues. Then, get USB to work (for example). Then,
+get the network driver accepted (for example). Also consider, that those
+drivers have not just been forgotten to be posted. They usually had
+issues which need to be fixed before mainlining. So, one task at a time
+will help to keep focused, I think.
 
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--+g7M9IMkV8truYOl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk8qvKoACgkQD27XaX1/VRsr6gCgryZNbU51QPkvqs1a2SwLZqnj
+2A4An2Acck3KG7WJbChs9oCN9GiVDwa2
+=sjTC
+-----END PGP SIGNATURE-----
+
+--+g7M9IMkV8truYOl--
