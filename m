@@ -1,201 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933212Ab2BBSOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 13:14:18 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37979 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932914Ab2BBSOQ (ORCPT
+	id S933233Ab2BBSRu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 13:17:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40583 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab2BBSRs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 13:14:16 -0500
-Date: Thu, 2 Feb 2012 19:14:12 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 5/7] ftrace, perf: Add support to use function tracepoint
- in perf
-Message-ID: <20120202181409.GH9071@somewhere.redhat.com>
-References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
- <1327776209-4883-1-git-send-email-jolsa@redhat.com>
- <1327776209-4883-6-git-send-email-jolsa@redhat.com>
+	Thu, 2 Feb 2012 13:17:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327776209-4883-6-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328028051-24271-9-git-send-email-pdeschrijver@nvidia.com>
+References: <1328028051-24271-1-git-send-email-pdeschrijver@nvidia.com>
+	<1328028051-24271-9-git-send-email-pdeschrijver@nvidia.com>
+Date: Thu, 2 Feb 2012 10:17:48 -0800
+X-Google-Sender-Auth: h8JK7C99mQZjU1CQWu0oBh2hSBw
+Message-ID: <CAMbhsRQf0fKbRA5cFvW=uArqPPDw-273zFHLVZAoTb_7qKxu=w@mail.gmail.com>
+Subject: Re: [PATCH v2 8/8] ARM: tegra: support for secondary cores on Tegra30
+From: Colin Cross <ccross@android.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 28, 2012 at 07:43:27PM +0100, Jiri Olsa wrote:
-> Adding perf registration support for the ftrace function event,
-> so it is now possible to register it via perf interface.
-> 
-> The perf_event struct statically contains ftrace_ops as a handle
-> for function tracer. The function tracer is registered/unregistered
-> in open/close actions.
-> 
-> To be efficient, we enable/disable ftrace_ops each time the traced
-> process is scheduled in/out (via TRACE_REG_PERF_(ADD|DELL) handlers).
-> This way tracing is enabled only when the process is running.
-> Intentionally using this way instead of the event's hw state
-> PERF_HES_STOPPED, which would not disable the ftrace_ops.
-> 
-> It is now possible to use function trace within perf commands
-> like:
-> 
->   perf record -e ftrace:function ls
->   perf stat -e ftrace:function ls
-> 
-> Allowed only for root.
-
-Good idea. We probably don't want to leak the rate of calls of a kernel
-function to userspace.
-
-[...]
-> +static void
-> +perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
-> +{
-> +	struct ftrace_entry *entry;
-> +	struct hlist_head *head;
-> +	struct pt_regs regs;
-> +	int rctx;
+On Tue, Jan 31, 2012 at 8:40 AM, Peter De Schrijver
+<pdeschrijver@nvidia.com> wrote:
+> Add support for bringing up secondary cores on Tegra30. On Tegra30 secondary
+> CPU cores are powergated, so we need to turn on the domains before we can bring
+> the CPU cores online. Bringing secondary cores online happens early during the
+> sytem boot, so we call powergating initialization from platform early_init
+> function.
+>
+> Based on work by:
+>
+> Scott Williams <scwilliams@nvidia.com>
+> Colin Cross <ccross@android.com>
+> Alex Frid <afrid@nvidia.com>
+>
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> ---
+>  arch/arm/mach-tegra/headsmp.S |   32 +++++++++++++++++++++++++
+>  arch/arm/mach-tegra/platsmp.c |   52 ++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 83 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/arm/mach-tegra/headsmp.S b/arch/arm/mach-tegra/headsmp.S
+> index bb13e22..925c4a0 100644
+> --- a/arch/arm/mach-tegra/headsmp.S
+> +++ b/arch/arm/mach-tegra/headsmp.S
+> @@ -188,6 +188,38 @@ __die:
+>        str     r1, [r7, #0x340]                @ CLK_RST_CPU_CMPLX_SET
+>  #endif
+>  1:
+> +#ifdef CONFIG_ARCH_TEGRA_3x_SOC
+> +       mov32   r6, TEGRA_FLOW_CTRL_BASE
 > +
-> +#define ENTRY_SIZE (ALIGN(sizeof(struct ftrace_entry) + sizeof(u32), \
-> +		    sizeof(u64)) - sizeof(u32))
+> +       cmp     r10, #0
+> +       moveq   r1, #FLOW_CTRL_HALT_CPU0_EVENTS
+> +       moveq   r2, #FLOW_CTRL_CPU0_CSR
+> +       movne   r1, r10, lsl #3
+> +       addne   r2, r1, #(FLOW_CTRL_CPU1_CSR-8)
+> +       addne   r1, r1, #(FLOW_CTRL_HALT_CPU1_EVENTS-8)
 > +
-> +	BUILD_BUG_ON(ENTRY_SIZE > PERF_MAX_TRACE_SIZE);
+> +       /* Clear CPU "event" and "interrupt" flags and power gate
+> +          it when halting but not before it is in the "WFI" state. */
+> +       ldr     r0, [r6, +r2]
+> +       orr     r0, r0, #FLOW_CTRL_CSR_INTR_FLAG | FLOW_CTRL_CSR_EVENT_FLAG
+> +       orr     r0, r0, #FLOW_CTRL_CSR_ENABLE
+> +       str     r0, [r6, +r2]
 > +
-> +	perf_fetch_caller_regs(&regs);
+> +       /* Unconditionally halt this CPU */
+> +       mov     r0, #FLOW_CTRL_WAITEVENT
+> +       str     r0, [r6, +r1]
+> +       ldr     r0, [r6, +r1]                   @ memory barrier
 > +
-> +	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, NULL, &rctx);
-> +	if (!entry)
-> +		return;
+> +       dsb
+> +       isb
+> +       wfi                                     @ CPU should be power gated here
 > +
-> +	entry->ip = ip;
-> +	entry->parent_ip = parent_ip;
+> +       /* If the CPU didn't power gate above just kill it's clock. */
 > +
-> +	head = this_cpu_ptr(event_function.perf_events);
-> +	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
-> +			      1, &regs, head);
-> +
-> +#undef ENTRY_SIZE
-> +}
-> +
-> +static int perf_ftrace_function_register(struct perf_event *event)
-> +{
-> +	struct ftrace_ops *ops = &event->ftrace_ops;
-> +
-> +	ops->flags |= FTRACE_OPS_FL_CONTROL;
-> +	ops->func = perf_ftrace_function_call;
-> +	return register_ftrace_function(ops);
-> +}
-> +
-> +static int perf_ftrace_function_unregister(struct perf_event *event)
-> +{
-> +	struct ftrace_ops *ops = &event->ftrace_ops;
-> +	return unregister_ftrace_function(ops);
-> +}
-> +
-> +static void perf_ftrace_function_enable(struct perf_event *event)
-> +{
-> +	ftrace_function_local_enable(&event->ftrace_ops);
-> +}
-> +
-> +static void perf_ftrace_function_disable(struct perf_event *event)
-> +{
-> +	ftrace_function_local_disable(&event->ftrace_ops);
-> +}
-> +
-> +int perf_ftrace_event_register(struct ftrace_event_call *call,
-> +			       enum trace_reg type, void *data)
-> +{
-> +	int etype = call->event.type;
-> +
-> +	if (etype != TRACE_FN)
-> +		return -EINVAL;
-> +
-> +	switch (type) {
-> +	case TRACE_REG_REGISTER:
-> +	case TRACE_REG_UNREGISTER:
-> +		break;
-> +	case TRACE_REG_PERF_REGISTER:
-> +	case TRACE_REG_PERF_UNREGISTER:
-> +		return 0;
-> +	case TRACE_REG_PERF_OPEN:
-> +		return perf_ftrace_function_register(data);
-> +	case TRACE_REG_PERF_CLOSE:
-> +		return perf_ftrace_function_unregister(data);
-> +	case TRACE_REG_PERF_ADD:
-> +		perf_ftrace_function_enable(data);
-> +		return 0;
-> +	case TRACE_REG_PERF_DEL:
-> +		perf_ftrace_function_disable(data);
-> +		return 0;
-> +	}
-> +
-> +	return -EINVAL;
-> +}
-
-All the above from perf_ftrace_function_call() to here should perhaps
-go to trace_function.c.
-
-> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-> index bbeec31..867653c 100644
-> --- a/kernel/trace/trace_export.c
-> +++ b/kernel/trace/trace_export.c
-> @@ -131,6 +131,28 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
->  
->  #include "trace_entries.h"
->  
-> +static int ftrace_event_class_register(struct ftrace_event_call *call,
-> +				       enum trace_reg type, void *data)
-> +{
-> +	switch (type) {
-> +	case TRACE_REG_PERF_REGISTER:
-> +	case TRACE_REG_PERF_UNREGISTER:
-> +		return 0;
-> +	case TRACE_REG_PERF_OPEN:
-> +	case TRACE_REG_PERF_CLOSE:
-> +	case TRACE_REG_PERF_ADD:
-> +	case TRACE_REG_PERF_DEL:
-> +#ifdef CONFIG_PERF_EVENTS
-> +		return perf_ftrace_event_register(call, type, data);
+> +       mov     r0, r11, lsl #8
+> +       str     r0, [r7, #348]                  @ CLK_CPU_CMPLX_SET
 > +#endif
-> +	case TRACE_REG_REGISTER:
-> +	case TRACE_REG_UNREGISTER:
-> +		break;
-> +	}
 > +
-> +	return -EINVAL;
-> +}
-
-Hmm, one day we'll need to demux here. What about adding an argument to
-FTRACE_ENTRY() to add the pointer to .reg ?
-
-> +
->  #undef __entry
->  #define __entry REC
->  
-> @@ -159,6 +181,7 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
->  	.system			= __stringify(TRACE_SYSTEM),		\
->  	.define_fields		= ftrace_define_fields_##call,		\
->  	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
-> +	.reg			= ftrace_event_class_register,		\
->  };									\
->  									\
->  struct ftrace_event_call __used event_##call = {			\
-> @@ -170,4 +193,9 @@ struct ftrace_event_call __used event_##call = {			\
->  struct ftrace_event_call __used						\
->  __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
->  
-> +int ftrace_event_is_function(struct ftrace_event_call *call)
+>        /* If the CPU still isn't dead, just spin here. */
+>        b       .
+>  ENDPROC(__tegra_cpu_reset_handler)
+> diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
+> index 79a241a..1fe3f58 100644
+> --- a/arch/arm/mach-tegra/platsmp.c
+> +++ b/arch/arm/mach-tegra/platsmp.c
+> @@ -24,7 +24,9 @@
+>  #include <asm/mach-types.h>
+>  #include <asm/smp_scu.h>
+>
+> +#include <mach/clk.h>
+>  #include <mach/iomap.h>
+> +#include <mach/powergate.h>
+>
+>  #include "fuse.h"
+>  #include "flowctrl.h"
+> @@ -42,6 +44,8 @@ static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
+>        (IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x340)
+>  #define CLK_RST_CONTROLLER_RST_CPU_CMPLX_CLR \
+>        (IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x344)
+> +#define CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR \
+> +       (IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x34c)
+>
+>  #define CPU_CLOCK(cpu) (0x1<<(8+cpu))
+>  #define CPU_RESET(cpu) (0x1111ul<<(cpu))
+> @@ -73,11 +77,54 @@ static int tegra20_power_up_cpu(unsigned int cpu)
+>        return 0;
+>  }
+>
+> +static int tegra30_power_up_cpu(unsigned int cpu)
 > +{
-> +	return call == &event_function;
+> +       u32 reg;
+> +       int ret, pwrgateid;
+> +       unsigned long timeout;
+> +
+> +       pwrgateid = tegra_cpu_powergate_id(cpu);
+> +       if (pwrgateid < 0)
+> +               return pwrgateid;
+> +
+> +       /* If this is the first boot, toggle powergates directly. */
+> +       if (!tegra_powergate_is_powered(pwrgateid)) {
+> +               ret = tegra_powergate_power_on(pwrgateid);
+> +               if (ret)
+> +                       return ret;
+> +
+> +               /* Wait for the power to come up. */
+> +               timeout = jiffies + 10*HZ;
+> +               do {
+> +                       if (tegra_powergate_is_powered(pwrgateid))
+> +                               goto remove_clamps;
+> +                       udelay(10);
+> +               } while (time_before(jiffies, timeout));
+> +               return -ETIMEDOUT;
+> +       }
+
+This loop + goto seems convoluted.  Why not untangle it:
+                timeout = jiffies + 10*HZ;
+                while (tegra_powergate_is_powered(pwrgateid)) {
+                        if (time_after(jiffies, timeout))
+                                return -ETIMEDOUT;
+                        udelay(10);
+                }
+
+> +
+> +remove_clamps:
+> +       /* CPU partition is powered. Enable the CPU clock. */
+> +       writel(CPU_CLOCK(cpu), CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
+> +       reg = readl(CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
+> +       udelay(10);
+> +
+> +       /* Remove I/O clamps. */
+> +       ret = tegra_powergate_remove_clamping(pwrgateid);
+> +       udelay(10);
+> +
+> +       /* Clear flow controller CSR. */
+> +       flowctrl_write_cpu_csr(cpu, 0);
+> +
+> +       return 0;
 > +}
 > +
->  #include "trace_entries.h"
-> -- 
-> 1.7.1
-> 
+>  int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  {
+>        int status;
+>
+> -       /* Force the CPU into reset. The CPU must remain in reset when the
+> +       /*
+> +        * Force the CPU into reset. The CPU must remain in reset when the
+>         * flow controller state is cleared (which will cause the flow
+>         * controller to stop driving reset if the CPU has been power-gated
+>         * via the flow controller). This will have no effect on first boot
+> @@ -98,6 +145,9 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+>        case TEGRA20:
+>                status = tegra20_power_up_cpu(cpu);
+>                break;
+> +       case TEGRA30:
+> +               status = tegra30_power_up_cpu(cpu);
+> +               break;
+>        default:
+>                status = -EINVAL;
+>                break;
+> --
+> 1.7.7.rc0.72.g4b5ea.dirty
+>
+
+Other than that, Acked-by: Colin Cross <ccross@android.com>
