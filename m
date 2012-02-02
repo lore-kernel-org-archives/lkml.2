@@ -1,146 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab2BBX5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 18:57:09 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:47558 "EHLO relay.sgi.com"
+	id S932716Ab2BBX5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 18:57:07 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:47557 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756044Ab2BBX4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756040Ab2BBX4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Feb 2012 18:56:52 -0500
-Message-Id: <20120202235650.884390443@gulag1.americas.sgi.com>
+Message-Id: <20120202235651.025794606@gulag1.americas.sgi.com>
 References: <20120202235650.563029146@gulag1.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Thu, 02 Feb 2012 17:56:52 -0600
+Date: Thu, 02 Feb 2012 17:56:53 -0600
 From: Mike Travis <travis@sgi.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Jack Steiner <steiner@sgi.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] x86, pci: Increase the number of iommus supported to be MAX_IO_APICS
-Content-Disposition: inline; filename=uv2-up-iommu-limit
+Subject: [PATCH 3/3] UV Update NMI handlers
+Content-Disposition: inline; filename=uv_update_nmi_handler
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The number of IOMMUs supported should be the same as the number of IO APICS.
-This limit comes into play when the IOMMUs are identity mapped, thus the
-number of possible IOMMUs in the "static identity" (si) domain should be
-this same number.
+These changes update the UV NMI handler to be compatible with the new
+NMI processing.
+
+In order to determine if an incoming NMI was generated externally
+by the BMC, the UV BIOS sets a flag in an MMR register.  Reading
+this register though is expensive especially when all CPU's on
+a blade share the same MMR.  Part of this patch reduces the number
+of readers to only the first CPU to enter the NMI handler.  The other
+problem was all CPUs on a blade were clearing the flag, when only
+one of them on each blade needs to clear the MMR bit.
+
+This greatly reduces the overhead to enter either KDB or print the
+trace, and also removes the possibility of some of the CPUs not
+entering into KDB correctly, leaving their state somewhat undefined,
+as some where not entering after KDB generated an IPI NMI.
+
+Note that this patch does not have the capability of entering KDB
+from the BMC NMI interrupt.  This will be in a separate patch.
 
 Signed-off-by: Mike Travis <travis@sgi.com>
-Signed-off-by: Jack Steiner <steiner@sgi.com>
 ---
- drivers/iommu/intel-iommu.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ arch/x86/kernel/apic/x2apic_uv_x.c |  132 +++++++++++++++++++++++++++++--------
+ 1 file changed, 105 insertions(+), 27 deletions(-)
 
---- linux.orig/drivers/iommu/intel-iommu.c
-+++ linux/drivers/iommu/intel-iommu.c
-@@ -357,7 +357,8 @@ static int hw_pass_through = 1;
- struct dmar_domain {
- 	int	id;			/* domain id */
- 	int	nid;			/* node id */
--	unsigned long iommu_bmp;	/* bitmap of iommus this domain uses*/
-+	DECLARE_BITMAP(iommu_bmp, MAX_IO_APICS);
-+					/* bitmap of iommus this domain uses*/
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -43,7 +43,17 @@
+ #define UVH_NMI_MMR				UVH_SCRATCH5
+ #define UVH_NMI_MMR_CLEAR			(UVH_NMI_MMR + 8)
+ #define UV_NMI_PENDING_MASK			(1UL << 63)
+-DEFINE_PER_CPU(unsigned long, cpu_last_nmi_count);
++static DEFINE_PER_CPU(unsigned long, cpu_nmi_count);
++
++static inline int check_nmi_mmr(void)
++{
++	return (uv_read_local_mmr(UVH_NMI_MMR & UV_NMI_PENDING_MASK) != 0);
++}
++
++static inline void clear_nmi_mmr(void)
++{
++	uv_write_local_mmr(UVH_NMI_MMR_CLEAR, UV_NMI_PENDING_MASK);
++}
  
- 	struct list_head devices; 	/* all devices' list */
- 	struct iova_domain iovad;	/* iova's that belong to this domain */
-@@ -569,7 +570,7 @@ static struct intel_iommu *domain_get_io
- 	BUG_ON(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE);
- 	BUG_ON(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY);
+ DEFINE_PER_CPU(int, x2apic_extra_bits);
  
--	iommu_id = find_first_bit(&domain->iommu_bmp, g_num_of_iommus);
-+	iommu_id = find_first_bit(domain->iommu_bmp, g_num_of_iommus);
- 	if (iommu_id < 0 || iommu_id >= g_num_of_iommus)
- 		return NULL;
+@@ -57,6 +67,7 @@ EXPORT_SYMBOL_GPL(uv_min_hub_revision_id
+ unsigned int uv_apicid_hibits;
+ EXPORT_SYMBOL_GPL(uv_apicid_hibits);
+ static DEFINE_SPINLOCK(uv_nmi_lock);
++static DEFINE_SPINLOCK(uv_nmi_reason_lock);
  
-@@ -582,7 +583,7 @@ static void domain_update_iommu_coherenc
+ static struct apic apic_x2apic_uv_x;
  
- 	domain->iommu_coherency = 1;
+@@ -672,52 +683,119 @@ void __cpuinit uv_cpu_init(void)
+ }
  
--	for_each_set_bit(i, &domain->iommu_bmp, g_num_of_iommus) {
-+	for_each_set_bit(i, domain->iommu_bmp, g_num_of_iommus) {
- 		if (!ecap_coherent(g_iommus[i]->ecap)) {
- 			domain->iommu_coherency = 0;
- 			break;
-@@ -596,7 +597,7 @@ static void domain_update_iommu_snooping
+ /*
+- * When NMI is received, print a stack trace.
++ * When an NMI from the BMC is received:
++ *	- call KDB if active (not yet implemented)
++ *	- print a stack trace if kdb is not active.
+  */
+-int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
++int uv_handle_nmi(unsigned int cmd, struct pt_regs *regs)
+ {
+-	unsigned long real_uv_nmi;
+-	int bid;
++	static int in_uv_nmi = -1;
++	static atomic_t nr_nmi_cpus;
++	int bid, handled = 0;
++
++	if (cmd != NMI_LOCAL && cmd != NMI_UNKNOWN)
++		return NMI_DONE;
++
++	if (in_crash_kexec)
++		/* do nothing if entering the crash kernel */
++		return NMI_DONE;
++
++	/* note which NMI this one is */
++	__this_cpu_inc(cpu_nmi_count);
  
- 	domain->iommu_snooping = 1;
+ 	/*
+ 	 * Each blade has an MMR that indicates when an NMI has been sent
+-	 * to cpus on the blade. If an NMI is detected, atomically
+-	 * clear the MMR and update a per-blade NMI count used to
+-	 * cause each cpu on the blade to notice a new NMI.
++	 * to cpus on the blade.  We optimize accesses to the MMR as the
++	 * read operation is expensive and only the first CPU to enter this
++	 * function needs to read the register and set a flag indicating
++	 * we are indeed servicing an external BMC NMI.  Once it's determined
++	 * whether or not this is a real NMI, the last responding CPU clears
++	 * the flag for the next NMI.
+ 	 */
+-	bid = uv_numa_blade_id();
+-	real_uv_nmi = (uv_read_local_mmr(UVH_NMI_MMR) & UV_NMI_PENDING_MASK);
++	if (in_uv_nmi < 0) {
++		spin_lock(&uv_nmi_reason_lock);
++		if (in_uv_nmi < 0) {
++			int nc = num_online_cpus();
++			atomic_set(&nr_nmi_cpus, nc);
++			in_uv_nmi = check_nmi_mmr();
++		}
++		spin_unlock(&uv_nmi_reason_lock);
++	}
++
++	if (likely(in_uv_nmi == 0)) {
++		if (atomic_sub_and_test(1, &nr_nmi_cpus) == 0)
++			in_uv_nmi = -1;
++		return NMI_DONE;
++	}
++
++	/* If we are here, we are processing a real BMC NMI */
++
++#ifdef CONFIG_KGDB_KDB_NOT_YET
++#include <linux/kdb.h>
++
++	/* Here we want to call KDB with reason == NMI */
++	if (kdb_on) {
++		static int controlling_cpu = -1;
++
++		spin_lock(&uv_nmi_lock);
++		if (controlling_cpu == -1) {
++			controlling_cpu = smp_processor_id();
++			spin_unlock(&uv_nmi_lock);
++			(void)kdb(LKDB_REASON_NMI, reason, regs);
++			controlling_cpu = -1;
++		} else {
++			spin_unlock(&uv_nmi_lock);
++			(void)kdb(LKDB_REASON_ENTER_SLAVE, reason, regs);
++			while (controlling_cpu != -1)
++				cpu_relax();
++		}
++		handled = 1;	/* handled by KDB */
++	}
++#endif
  
--	for_each_set_bit(i, &domain->iommu_bmp, g_num_of_iommus) {
-+	for_each_set_bit(i, domain->iommu_bmp, g_num_of_iommus) {
- 		if (!ecap_sc_support(g_iommus[i]->ecap)) {
- 			domain->iommu_snooping = 0;
- 			break;
-@@ -1332,7 +1333,7 @@ static struct dmar_domain *alloc_domain(
- 		return NULL;
- 
- 	domain->nid = -1;
--	memset(&domain->iommu_bmp, 0, sizeof(unsigned long));
-+	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
- 	domain->flags = 0;
- 
- 	return domain;
-@@ -1358,7 +1359,7 @@ static int iommu_attach_domain(struct dm
- 
- 	domain->id = num;
- 	set_bit(num, iommu->domain_ids);
--	set_bit(iommu->seq_id, &domain->iommu_bmp);
-+	set_bit(iommu->seq_id, domain->iommu_bmp);
- 	iommu->domains[num] = domain;
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- 
-@@ -1383,7 +1384,7 @@ static void iommu_detach_domain(struct d
- 
- 	if (found) {
- 		clear_bit(num, iommu->domain_ids);
--		clear_bit(iommu->seq_id, &domain->iommu_bmp);
-+		clear_bit(iommu->seq_id, domain->iommu_bmp);
- 		iommu->domains[num] = NULL;
- 	}
- 	spin_unlock_irqrestore(&iommu->lock, flags);
-@@ -1525,7 +1526,7 @@ static void domain_exit(struct dmar_doma
- 	dma_pte_free_pagetable(domain, 0, DOMAIN_MAX_PFN(domain->gaw));
- 
- 	for_each_active_iommu(iommu, drhd)
--		if (test_bit(iommu->seq_id, &domain->iommu_bmp))
-+		if (test_bit(iommu->seq_id, domain->iommu_bmp))
- 			iommu_detach_domain(domain, iommu);
- 
- 	free_domain_mem(domain);
-@@ -1651,7 +1652,7 @@ static int domain_context_mapping_one(st
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- 
- 	spin_lock_irqsave(&domain->iommu_lock, flags);
--	if (!test_and_set_bit(iommu->seq_id, &domain->iommu_bmp)) {
-+	if (!test_and_set_bit(iommu->seq_id, domain->iommu_bmp)) {
- 		domain->iommu_count++;
- 		if (domain->iommu_count == 1)
- 			domain->nid = iommu->node;
-@@ -3746,7 +3747,7 @@ static void domain_remove_one_dev_info(s
- 	if (found == 0) {
- 		unsigned long tmp_flags;
- 		spin_lock_irqsave(&domain->iommu_lock, tmp_flags);
--		clear_bit(iommu->seq_id, &domain->iommu_bmp);
-+		clear_bit(iommu->seq_id, domain->iommu_bmp);
- 		domain->iommu_count--;
- 		domain_update_iommu_cap(domain);
- 		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
-@@ -3788,7 +3789,7 @@ static void vm_domain_remove_all_dev_inf
- 		 */
- 		spin_lock_irqsave(&domain->iommu_lock, flags2);
- 		if (test_and_clear_bit(iommu->seq_id,
--				       &domain->iommu_bmp)) {
-+				       domain->iommu_bmp)) {
- 			domain->iommu_count--;
- 			domain_update_iommu_cap(domain);
+-	if (unlikely(real_uv_nmi)) {
++	/* Only one cpu per blade needs to clear the MMR BMC NMI flag */
++	bid = uv_numa_blade_id();
++	if (uv_blade_info[bid].nmi_count < __get_cpu_var(cpu_nmi_count)) {
+ 		spin_lock(&uv_blade_info[bid].nmi_lock);
+-		real_uv_nmi = (uv_read_local_mmr(UVH_NMI_MMR) & UV_NMI_PENDING_MASK);
+-		if (real_uv_nmi) {
+-			uv_blade_info[bid].nmi_count++;
+-			uv_write_local_mmr(UVH_NMI_MMR_CLEAR, UV_NMI_PENDING_MASK);
++		if (uv_blade_info[bid].nmi_count <
++						__get_cpu_var(cpu_nmi_count)) {
++			uv_blade_info[bid].nmi_count =
++						__get_cpu_var(cpu_nmi_count);
++			clear_nmi_mmr();
  		}
-@@ -3813,7 +3814,7 @@ static struct dmar_domain *iommu_alloc_v
+ 		spin_unlock(&uv_blade_info[bid].nmi_lock);
+ 	}
  
- 	domain->id = vm_domid++;
- 	domain->nid = -1;
--	memset(&domain->iommu_bmp, 0, sizeof(unsigned long));
-+	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
- 	domain->flags = DOMAIN_FLAG_VIRTUAL_MACHINE;
+-	if (likely(__get_cpu_var(cpu_last_nmi_count) == uv_blade_info[bid].nmi_count))
+-		return NMI_DONE;
++	/* If not handled by KDB, then print a process trace for each cpu */
++	if (!handled) {
++		int saved_console_loglevel = console_loglevel;
  
- 	return domain;
+-	__get_cpu_var(cpu_last_nmi_count) = uv_blade_info[bid].nmi_count;
++		/*
++		 * Use a lock so only one cpu prints at a time.
++		 * This prevents intermixed output.  We can reuse the
++		 * uv_nmi_lock since if KDB was called, then all the
++		 * CPUs have exited KDB, and if it was not called,
++		 * then the lock was not used.
++		 */
++		spin_lock(&uv_nmi_lock);
++		pr_err("== UV NMI process trace NMI %lu: ==\n",
++						__get_cpu_var(cpu_nmi_count));
++		console_loglevel = 15;
++		show_regs(regs);
++		console_loglevel = saved_console_loglevel;
++		spin_unlock(&uv_nmi_lock);
++	}
+ 
+-	/*
+-	 * Use a lock so only one cpu prints at a time.
+-	 * This prevents intermixed output.
+-	 */
+-	spin_lock(&uv_nmi_lock);
+-	pr_info("UV NMI stack dump cpu %u:\n", smp_processor_id());
+-	dump_stack();
+-	spin_unlock(&uv_nmi_lock);
++	/* last cpu resets the "in nmi" flag */
++	if (atomic_sub_and_test(1, &nr_nmi_cpus) == 0)
++		in_uv_nmi = -1;
+ 
+ 	return NMI_HANDLED;
+ }
+ 
+ void uv_register_nmi_notifier(void)
+ {
+-	if (register_nmi_handler(NMI_UNKNOWN, uv_handle_nmi, 0, "uv"))
++	if (register_nmi_handler(NMI_LOCAL, uv_handle_nmi, 0, "uv"))
+ 		printk(KERN_WARNING "UV NMI handler failed to register\n");
+ }
+ 
 
 -- 
