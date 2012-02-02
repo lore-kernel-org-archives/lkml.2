@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab2BBKi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 05:38:57 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:42401 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab2BBKi4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 05:38:56 -0500
-Message-ID: <4F2A682C.7090109@oss.ntt.co.jp>
-Date: Thu, 02 Feb 2012 19:40:44 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+	id S1755535Ab2BBKkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 05:40:25 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:35192 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754822Ab2BBKkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 05:40:24 -0500
+Message-ID: <4F2A67DE.1000909@parallels.com>
+Date: Thu, 2 Feb 2012 14:39:26 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
-        Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [test result] dirty logging without srcu update -- Re: [RFC][PATCH]
- srcu: Implement call_srcu()
-References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com> <1328017807.2446.230.camel@twins> <20120131222447.GH2391@linux.vnet.ibm.com> <1328091749.2760.34.camel@laptop> <4F29178A.1090306@redhat.com> <4F2918D5.4050104@redhat.com> <4F291B56.30600@oss.ntt.co.jp> <4F291B92.8070402@redhat.com> <4F291E1F.3030505@oss.ntt.co.jp> <4F293D14.5030008@redhat.com> <20120202144633.1fc9b997.yoshikawa.takuya@oss.ntt.co.jp> <4F2A611E.6090005@redhat.com> <4F2A63B9.8000405@oss.ntt.co.jp> <4F2A63C6.7030301@redhat.com>
-In-Reply-To: <4F2A63C6.7030301@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jason Wang <jasowang@redhat.com>
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <mst@redhat.com>
+Subject: Re: [v3.3-rc2+ PATCH] tcp: properly initialize tcp memory limits
+References: <20120202100700.38694.80000.stgit@amd-6168-8-1.englab.nay.redhat.com>
+In-Reply-To: <20120202100700.38694.80000.stgit@amd-6168-8-1.englab.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/02/02 19:21), Avi Kivity wrote:
-
->>
->> I used "unsigned int" just because I wanted to use the current
->> atomic_clear_mask() as is.
->>
->> We need to implement atomic_clear_mask_long() or use ...
+On 02/02/2012 02:07 PM, Jason Wang wrote:
+> Commit 4acb4190 tries to fix the using uninitialized value
+> introduced by commit 3dc43e3,  but it would make the
+> per-socket memory limits too small.
 >
-> If we use cmpxchg8b/cmpxchg16b then this won't fit with the
-> atomic_*_long family.
+> This patch fixes this and also remove the redundant codes
+> introduced in 4acb4190.
 >
+> Signed-off-by: Jason Wang<jasowang@redhat.com>
+Acked-by: Glauber Costa <glommer@parallels.com>
 
-OK, I will try.
+> ---
+>   net/ipv4/sysctl_net_ipv4.c |    5 -----
+>   net/ipv4/tcp.c             |    4 ++--
+>   2 files changed, 2 insertions(+), 7 deletions(-)
+>
+> diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+> index 4cb9cd2..1eb8caa 100644
+> --- a/net/ipv4/sysctl_net_ipv4.c
+> +++ b/net/ipv4/sysctl_net_ipv4.c
+> @@ -815,11 +815,6 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
+>   	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
+>
+>   	tcp_init_mem(net);
+> -	limit = nr_free_buffer_pages() / 8;
+> -	limit = max(limit, 128UL);
+> -	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
+> -	net->ipv4.sysctl_tcp_mem[1] = limit;
+> -	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
+>
+>   	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
+>   			net_ipv4_ctl_path, table);
+Ok, this is indeed a good change, since we avoid initializing it twice.
 
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index 06373b4..3a7514b 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -3218,7 +3218,6 @@ __setup("thash_entries=", set_thash_entries);
+>
+>   void tcp_init_mem(struct net *net)
+>   {
+> -	/* Set per-socket limits to no more than 1/128 the pressure threshold */
+>   	unsigned long limit = nr_free_buffer_pages() / 8;
+>   	limit = max(limit, 128UL);
+>   	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
+> @@ -3287,7 +3286,8 @@ void __init tcp_init(void)
+>   	sysctl_max_syn_backlog = max(128, cnt / 256);
+>
+>   	tcp_init_mem(&init_net);
+> -	limit = nr_free_buffer_pages() / 8;
+> +	/* Set per-socket limits to no more than 1/128 the pressure threshold */
+> +	limit = nr_free_buffer_pages()<<  (PAGE_SHIFT - 10);
+>   	limit = max(limit, 128UL);
+>   	max_share = min(4UL*1024*1024, limit);
 
-I have one concern about correctness issue though:
+Indeed, this ends up influencing the value of max_share used below to 
+initialize the other fields.
+I like your change because now the limit variable is being set 
+independently between the global (now per-cgroup) and the per-socket 
+limits. (it previously was limit = sysctl_tcp_mem[1] << (PAGE_SHIFT-7))
 
-	concurrent rmap write protection may not be safe due to
-	delayed tlb flush ... cannot happen?
+So in the end, I personally think this is even clearer than what we had 
+before.
 
-
-	Takuya
+Acked-by: Glauber Costa <glommer@parallels.com>
