@@ -1,55 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757159Ab2BBUuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:50:18 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48621 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755448Ab2BBUuQ (ORCPT
+	id S932209Ab2BBUuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:50:50 -0500
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:37345 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932119Ab2BBUut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:50:16 -0500
-To: Junio C Hamano <gitster@pobox.com>
-Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git 1.7.9
-References: <7vipjwzvc2.fsf@alter.siamese.dyndns.org>
-From: Jakub Narebski <jnareb@gmail.com>
-Date: Thu, 02 Feb 2012 12:50:14 -0800 (PST)
-In-Reply-To: <7vipjwzvc2.fsf@alter.siamese.dyndns.org>
-Message-ID: <m3y5slark1.fsf@localhost.localdomain>
-User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.4
+	Thu, 2 Feb 2012 15:50:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <alpine.LNX.2.00.1202022116280.16704@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1202022116280.16704@swampdragon.chaosbits.net>
+From: Roland Dreier <roland@kernel.org>
+Date: Thu, 2 Feb 2012 12:50:27 -0800
+X-Google-Sender-Auth: IkfMwW9RLewEm-myUD_P_fPzgHE
+Message-ID: <CAL1RGDWRB2AND0LO1K6+PFiqF=Tm7E+MG4uAu0TqaXLp+qPrKg@mail.gmail.com>
+Subject: Re: [PATCH] Infiniband: Remove unneeded version.h include from drivers/infiniband/ulp/srpt/ib_srpt.h
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-rdma@vger.kernel.org, Bart Van Assche <bvanassche@acm.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "Nicholas A. Bellinger" <nab@risingtidesystems.com>,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junio C Hamano <gitster@pobox.com> writes:
+Thanks, applied.
 
-> The latest feature release Git 1.7.9 is now available at the usual
-> places.
-> 
-> The release tarballs are found at:
-> 
->     http://code.google.com/p/git-core/downloads/list
-> 
-> and their SHA-1 checksums are:
-> 
-> ed51ef5ef250daaa6e98515cf2641820cd268d4c  git-1.7.9.tar.gz
-> c7b1fa20dc501beb2cb5091dd24dbfd2a0013a0c  git-htmldocs-1.7.9.tar.gz
-> 1ca1fc430b2814f9e9cf82ec3bf7f2eaf5209b7a  git-manpages-1.7.9.tar.gz
+Nic, I assume it's OK with you if I merge trivial srpt patches like this?
 
-When trying to rebuild RPM out of tarball with
-
-  $ rpmbuild -tb git-1.7.9.tar.gz
-
-I get the following error at the end of build phase:
-
- RPM build errors:
-     Installed (but unpackaged) file(s) found:
-    /usr/share/locale/is/LC_MESSAGES/git.mo
-
-Shouldn't this file be put in git package, or in separate 
-git-i18n-is / git-i18n-Icelandic RPM package?
-
--- 
-Jakub Narebski
-
+ - R.
