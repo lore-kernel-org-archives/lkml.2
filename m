@@ -1,54 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932971Ab2BBRe2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 12:34:28 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:47389 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932779Ab2BBRbZ (ORCPT
+	id S932989Ab2BBRel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 12:34:41 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47558 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932777Ab2BBRbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Feb 2012 12:31:25 -0500
-Date: Thu, 2 Feb 2012 09:30:39 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH RFC tip/core/rcu 21/41] rcu: Inform RCU of irq_exit()
- activity
-Message-ID: <20120202173039.GR2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328125319-5205-21-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120202023033.GN29058@leaf>
+From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <grant.likely@secretlab.ca>, <khilman@ti.com>, <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Subject: [PATCH v9 17/25] gpio/omap: optimize suspend and resume functions
+Date: Thu, 2 Feb 2012 23:00:43 +0530
+Message-ID: <1328203851-20435-18-git-send-email-tarun.kanti@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
+References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202023033.GN29058@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020217-2398-0000-0000-000003E31779
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 06:30:33PM -0800, Josh Triplett wrote:
-> On Wed, Feb 01, 2012 at 11:41:39AM -0800, Paul E. McKenney wrote:
-> > [ Alternatively, delaying the ->rcu_read_lock_nesting decrement
-> >   until after the special handling would make the thing more robust
-> >   in the face of interrupts as well.  And there is a separate patch
-> >   for that. ]
-> 
-> Where does that separate patch live, and should it replace this one?
+There is no need to operate on all the banks every time the function is called.
+Just operate on the current bank passed by the framework.
 
-It is #18 in this series: "rcu: Protect __rcu_read_unlock() against
-scheduler-using irq handlers".  Both are needed.  I will rework the
-commit message appropriately.
+Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ drivers/gpio/gpio-omap.c |   54 ++++++++++++++++++++++++---------------------
+ 1 files changed, 29 insertions(+), 25 deletions(-)
 
-							Thanx, Paul
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index b92a23f..9db892c 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -1052,6 +1052,8 @@ static int __devinit omap_gpio_probe(struct platform_device *pdev)
+ 		goto err_free;
+ 	}
+ 
++	platform_set_drvdata(pdev, bank);
++
+ 	pm_runtime_enable(bank->dev);
+ 	pm_runtime_irq_safe(bank->dev);
+ 	pm_runtime_get_sync(bank->dev);
+@@ -1079,44 +1081,46 @@ err_exit:
+ 
+ static int omap_gpio_suspend(struct device *dev)
+ {
+-	struct gpio_bank *bank;
++	struct platform_device *pdev = to_platform_device(dev);
++	struct gpio_bank *bank = platform_get_drvdata(pdev);
++	void __iomem *base = bank->base;
++	void __iomem *wakeup_enable;
++	unsigned long flags;
+ 
+-	list_for_each_entry(bank, &omap_gpio_list, node) {
+-		void __iomem *base = bank->base;
+-		void __iomem *wake_status;
+-		unsigned long flags;
++	if (!bank->mod_usage || !bank->loses_context)
++		return 0;
+ 
+-		if (!bank->regs->wkup_en)
+-			return 0;
++	if (!bank->regs->wkup_en || !bank->suspend_wakeup)
++		return 0;
+ 
+-		wake_status = bank->base + bank->regs->wkup_en;
++	wakeup_enable = bank->base + bank->regs->wkup_en;
+ 
+-		spin_lock_irqsave(&bank->lock, flags);
+-		bank->saved_wakeup = __raw_readl(wake_status);
+-		_gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
+-		_gpio_rmw(base, bank->regs->wkup_en, bank->suspend_wakeup, 1);
+-		spin_unlock_irqrestore(&bank->lock, flags);
+-	}
++	spin_lock_irqsave(&bank->lock, flags);
++	bank->saved_wakeup = __raw_readl(wakeup_enable);
++	_gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
++	_gpio_rmw(base, bank->regs->wkup_en, bank->suspend_wakeup, 1);
++	spin_unlock_irqrestore(&bank->lock, flags);
+ 
+ 	return 0;
+ }
+ 
+ static int omap_gpio_resume(struct device *dev)
+ {
+-	struct gpio_bank *bank;
++	struct platform_device *pdev = to_platform_device(dev);
++	struct gpio_bank *bank = platform_get_drvdata(pdev);
++	void __iomem *base = bank->base;
++	unsigned long flags;
+ 
+-	list_for_each_entry(bank, &omap_gpio_list, node) {
+-		void __iomem *base = bank->base;
+-		unsigned long flags;
++	if (!bank->mod_usage || !bank->loses_context)
++		return 0;
+ 
+-		if (!bank->regs->wkup_en)
+-			return 0;
++	if (!bank->regs->wkup_en || !bank->saved_wakeup)
++		return 0;
+ 
+-		spin_lock_irqsave(&bank->lock, flags);
+-		_gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
+-		_gpio_rmw(base, bank->regs->wkup_en, bank->saved_wakeup, 1);
+-		spin_unlock_irqrestore(&bank->lock, flags);
+-	}
++	spin_lock_irqsave(&bank->lock, flags);
++	_gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
++	_gpio_rmw(base, bank->regs->wkup_en, bank->saved_wakeup, 1);
++	spin_unlock_irqrestore(&bank->lock, flags);
+ 
+ 	return 0;
+ }
+-- 
+1.7.0.4
 
