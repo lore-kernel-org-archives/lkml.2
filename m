@@ -1,142 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab2BBUaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 15:30:00 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34617 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753823Ab2BBU36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 15:29:58 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM/Hibernate: Thaw kernel threads in hibernation_snapshot() in error/test path
-Date: Thu, 2 Feb 2012 21:33:39 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
+	id S1755384Ab2BBUd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 15:33:58 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36719 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab2BBUd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 15:33:57 -0500
+Date: Thu, 2 Feb 2012 12:33:52 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
         linux-kernel@vger.kernel.org
-References: <20120202003359.9930.9844.stgit@srivatsabhat.in.ibm.com> <201202022118.15863.rjw@sisk.pl> <4F2AEFB8.8060304@linux.vnet.ibm.com>
-In-Reply-To: <4F2AEFB8.8060304@linux.vnet.ibm.com>
+Subject: Re: [PATCH 01/11] blkcg: let blkio_group point to blkio_cgroup
+ directly
+Message-ID: <20120202203352.GG19837@google.com>
+References: <1328131156-13290-1-git-send-email-tj@kernel.org>
+ <1328131156-13290-2-git-send-email-tj@kernel.org>
+ <20120202200318.GB1723@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202022133.40009.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202200318.GB1723@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> On 02/03/2012 01:48 AM, Rafael J. Wysocki wrote:
-> 
-> > On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> >> On 02/03/2012 12:41 AM, Rafael J. Wysocki wrote:
-> >>
-> >>> On Thursday, February 02, 2012, Srivatsa S. Bhat wrote:
-> >>>> In the hibernation call path, the kernel threads are frozen inside
-> >>>> hibernation_snapshot(). If we happen to encounter an error further down
-> >>>> the road or if we are exiting early due to a successful freezer test,
-> >>>> then thaw kernel threads before returning to the caller.
-> >>>>
-> >>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> >>>> ---
-> >>>>
-> >>>>  kernel/power/hibernate.c |    6 ++++--
-> >>>>  kernel/power/user.c      |    8 ++------
-> >>>>  2 files changed, 6 insertions(+), 8 deletions(-)
-> >>>>
-> >>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> >>>> index a5d4cf0..c6dee73 100644
-> >>>> --- a/kernel/power/hibernate.c
-> >>>> +++ b/kernel/power/hibernate.c
-> >>>> @@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
-> >>>>  		 * successful freezer test.
-> >>>>  		 */
-> >>>>  		freezer_test_done = true;
-> >>>> -		goto Cleanup;
-> >>>> +		goto Thaw;
-> >>>>  	}
-> >>>>  
-> >>>>  	error = dpm_prepare(PMSG_FREEZE);
-> >>>>  	if (error) {
-> >>>>  		dpm_complete(PMSG_RECOVER);
-> >>>> -		goto Cleanup;
-> >>>> +		goto Thaw;
-> >>>>  	}
-> >>>>  
-> >>>>  	suspend_console();
-> >>>> @@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
-> >>>>  	platform_end(platform_mode);
-> >>>>  	return error;
-> >>>>  
-> >>>> + Thaw:
-> >>>> +	thaw_kernel_threads();
-> >>>
-> >>> Actaully, no.  You have to do swsusp_free() before thawing, otherwise
-> >>> some allocations made by the just thawed kernel threads may fail.
-> >>>
-> >> But then what about the case (in the existing code) when
-> >> freeze_kernel_threads() fails? It would first thaw kernel threads (in
-> >> fact it used to thaw even userspace tasks earlier!) before calling
-> >> swsusp_free(). So, the existing code itself seems to be brittle, considering
-> >> the point you raised. Right?
-> > 
-> > Well, that's why freeze_kernel_threads() originally hadn't tried to thaw anything
-> > and started to do that after one of the Tejun's commits (and I forgot about
-> > this particular issue back then).
-> > 
-> >>>>   Cleanup:
-> >>>>  	swsusp_free();
-> >>>>  	goto Close;
-> >>>> diff --git a/kernel/power/user.c b/kernel/power/user.c
-> >>>> index 3e10007..7bee91f 100644
-> >>>> --- a/kernel/power/user.c
-> >>>> +++ b/kernel/power/user.c
-> >>>> @@ -249,16 +249,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
-> >>>>  		}
-> >>>>  		pm_restore_gfp_mask();
-> >>>>  		error = hibernation_snapshot(data->platform_support);
-> >>>> -		if (error) {
-> >>>> -			thaw_kernel_threads();
-> >>>> -		} else {
-> >>>> +		if (!error) {
-> >>>>  			error = put_user(in_suspend, (int __user *)arg);
-> >>>>  			if (!error && !freezer_test_done)
-> >>>>  				data->ready = 1;
-> >>>> -			if (freezer_test_done) {
-> >>>> +			if (freezer_test_done)
-> >>>>  				freezer_test_done = false;
-> >>>> -				thaw_kernel_threads();
-> >>>> -			}
-> >>>>  		}
-> >>>>  		break;
-> >>>
-> >>> Overall, this seems to be a cleanup, or is it a bug fix?
-> >>>
-> >>
-> >> This was intended as a cleanup only, not a bug fix. But now, (see my point
-> >> above), I am beginning to feel that the existing code itself is not robust
-> >> enough...
-> > 
-> > Well, let's pretend that we think it is safe to thaw kernel threads before
-> > freeing memory (actually, they are frozen after the preallocation, so it
-> > really should be OK).
-> >
-> 
-> 
-> Yeah, even I had the same reasoning in mind when writing this patch.
-> 
->  
-> > So I think I'll apply your patch after all.
-> > 
-> 
-> 
-> :-)
+Hello,
 
-However, this one should probably be regarded as a regression fix:
+On Thu, Feb 02, 2012 at 03:03:18PM -0500, Vivek Goyal wrote:
+> > +static void blkiocg_destroy(struct cgroup_subsys *subsys, struct cgroup *cgroup)
+> > +{
+> > +	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+> > +
+> >  	if (blkcg != &blkio_root_cgroup)
+> >  		kfree(blkcg);
+> 
+> What makes sure that all the blkg are gone and they have dropped their
+> reference to blkcg? IIUC, pre-destroy will just make sure to decouple
+> blkg from request queue as well as blkcg list and also drop joint cgroup
+> and request queue reference.
+> 
+> But there could well be some IO queued in the group which might have
+> its own reference and will be dropped later when IO completes. So at
+> the time of blkiocg_destroy() it is not guranteed that there are
+> no reference holders to blkcg?
 
-http://marc.info/?l=linux-kernel&m=132813572708843&w=4
+Yeah, and that would wait till all css refs held by blkgs are gone,
+right?
 
-because thawing all processes before calling swsusp_free() is definitely not
-a good idea.
-
-Thanks,
-Rafael
+-- 
+tejun
