@@ -1,152 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2BBKKw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 05:10:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23449 "EHLO mx1.redhat.com"
+	id S1755401Ab2BBKLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 05:11:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8952 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755335Ab2BBKKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 05:10:49 -0500
-Message-ID: <4F2A611E.6090005@redhat.com>
-Date: Thu, 02 Feb 2012 12:10:38 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1754650Ab2BBKLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 05:11:01 -0500
+Subject: [v3.3-rc2+ PATCH] tcp: properly initialize tcp memory limits
+To: netdev@vger.kernel.org, jasowang@redhat.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, glommer@parallels.com
+From: Jason Wang <jasowang@redhat.com>
+Cc: mst@redhat.com
+Date: Thu, 02 Feb 2012 18:07:00 +0800
+Message-ID: <20120202100700.38694.80000.stgit@amd-6168-8-1.englab.nay.redhat.com>
+User-Agent: StGit/0.16-1-g60c4
 MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
-        Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [test result] dirty logging without srcu update -- Re: [RFC][PATCH]
- srcu: Implement call_srcu()
-References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com> <1328017807.2446.230.camel@twins> <20120131222447.GH2391@linux.vnet.ibm.com> <1328091749.2760.34.camel@laptop> <4F29178A.1090306@redhat.com> <4F2918D5.4050104@redhat.com> <4F291B56.30600@oss.ntt.co.jp> <4F291B92.8070402@redhat.com> <4F291E1F.3030505@oss.ntt.co.jp> <4F293D14.5030008@redhat.com> <20120202144633.1fc9b997.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120202144633.1fc9b997.yoshikawa.takuya@oss.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 07:46 AM, Takuya Yoshikawa wrote:
-> Avi Kivity <avi@redhat.com> wrote:
->
-> > >> That'll be great, numbers are better than speculation.
-> > >>
-> > >
-> > >
-> > > Yes, I already have some good numbers to show (and some patches).
-> > 
-> > Looking forward.
->
-> I made a patch to see if Avi's suggestion of getting rid of srcu
-> update for dirty logging is practical;  tested with my unit-test.
->
-> (I used a function to write protect a range of pages using rmap,
->  which is itself useful for optimizing the current code.)
->
-> 1. test result
->
-> on 32bit host (core i3 box)   // just for the unit-test ...
-> slot size: 256K pages (1GB memory)
->
->
-> Measured by dirty-log-perf (executed only once for each case)
->
-> Note: dirty pages are completely distributed
->       (no locality: worst case for my patch?)
->
-> =========================================================
-> # of dirty pages:  kvm.git (ns),  with this patch (ns)
-> 1:         102,077 ns      10,105 ns
-> 2:          47,197 ns       9,395 ns
-> 4:          43,563 ns       9,938 ns
-> 8:          41,239 ns      10,618 ns
-> 16:         42,988 ns      12,299 ns
-> 32:         45,503 ns      14,298 ns
-> 64:         50,915 ns      19,895 ns
-> 128:        61,087 ns      29,260 ns
-> 256:        81,007 ns      49,023 ns
-> 512:       132,776 ns      86,670 ns
-> 1024:      939,299 ns     131,496 ns
-> 2048:      992,209 ns     250,429 ns
-> 4096:      891,809 ns     479,280 ns
-> 8192:    1,027,280 ns     906,971 ns
-> (until now pretty good)
->
-> (ah, for every 32-bit atomic clear mask ...)
-> 16384:   1,270,972 ns   6,661,741 ns    //  1  1  1 ...  1
-> 32768:   1,581,335 ns   9,673,985 ns    //  ...
-> 65536:   2,161,604 ns  11,466,134 ns    //  ...
-> 131072:  3,253,027 ns  13,412,954 ns    //  ...
-> 262144:  5,663,002 ns  16,309,924 ns    // 31 31 31 ... 31
-> =========================================================
+Commit 4acb4190 tries to fix the using uninitialized value
+introduced by commit 3dc43e3,  but it would make the
+per-socket memory limits too small.
 
-On a 64-bit host, this will be twice as fast.  Or if we use cmpxchg16b,
-and there are no surprises, four times as fast.  It will still be slower
-than the original, but by a smaller margin.
+This patch fixes this and also remove the redundant codes
+introduced in 4acb4190.
 
-> According to a 2005 usenix paper, WWS with a 8sec window was
-> about 50,000 pages for a high dirtying rate program.
->
-> Taking into acount of another possible gains from the WWS locality
-> of real workloads, these numbers are not so bad IMO.
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ net/ipv4/sysctl_net_ipv4.c |    5 -----
+ net/ipv4/tcp.c             |    4 ++--
+ 2 files changed, 2 insertions(+), 7 deletions(-)
 
-I agree.
-
->
-> Furthermore the code has been made for initial test only and I did
-> not do any optimization:  I know what I should try.
->
-> So this seems worth more testing.
->
->
-> The new code also makes it possible to do find-grained get dirty log.
-> Live migration can be done like this ??? (not sure yet):
->
-> 	until the dirty rate becomes enough low
-> 		get dirty log for the first 32K pages (partial return is OK)
-> 		while sending
-> 		get dirty log for the next 32K pages  (partial return is OK)
-> 		while sending
-> 		...
-> 		get dirty log for the last 32K pages  (partial return is OK)
->
-> 	stop the guest and get dirty log (but no need to write protect now)
-> 	send the remaining pages
->
-> New API is needed for this as discussed before!
-
-Yeah.  But I think we should switch to srcu-less dirty logs regardless. 
-Here are you numbers, but normalized by the number of dirty pages.
-
-dirty pages                    old (ns/page)    new (ns/page)
-1    102077    10105
-2    23599    4698
-4    10891    2485
-8    5155    1327
-16    2687    769
-32    1422    447
-64    796    311
-128    477    229
-256    316    191
-512    259    169
-1024    917    128
-2048    484    122
-4096    218    117
-8192    125    111
-16384    78    407
-32768    48    295
-65536    33    175
-131072    25    102
-262144    22    62
-
-
-Your worst case, when considering a reasonable number of dirty pages, is
-407ns/page, which is still lower than what userspace will actually do to
-process the page, so it's reasonable.  The old method is often a lot
-worse than your worst case, by this metric.
-
-
-
--- 
-error compiling committee.c: too many arguments to function
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index 4cb9cd2..1eb8caa 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -815,11 +815,6 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
+ 	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
+ 
+ 	tcp_init_mem(net);
+-	limit = nr_free_buffer_pages() / 8;
+-	limit = max(limit, 128UL);
+-	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
+-	net->ipv4.sysctl_tcp_mem[1] = limit;
+-	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
+ 
+ 	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
+ 			net_ipv4_ctl_path, table);
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 06373b4..3a7514b 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3218,7 +3218,6 @@ __setup("thash_entries=", set_thash_entries);
+ 
+ void tcp_init_mem(struct net *net)
+ {
+-	/* Set per-socket limits to no more than 1/128 the pressure threshold */
+ 	unsigned long limit = nr_free_buffer_pages() / 8;
+ 	limit = max(limit, 128UL);
+ 	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
+@@ -3287,7 +3286,8 @@ void __init tcp_init(void)
+ 	sysctl_max_syn_backlog = max(128, cnt / 256);
+ 
+ 	tcp_init_mem(&init_net);
+-	limit = nr_free_buffer_pages() / 8;
++	/* Set per-socket limits to no more than 1/128 the pressure threshold */
++	limit = nr_free_buffer_pages() << (PAGE_SHIFT - 10);
+ 	limit = max(limit, 128UL);
+ 	max_share = min(4UL*1024*1024, limit);
+ 
 
