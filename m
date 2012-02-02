@@ -1,132 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab2BBLN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 06:13:58 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38118 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755509Ab2BBLN4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 06:13:56 -0500
-Message-ID: <4F2A6FAC.8010906@mvista.com>
-Date: Thu, 02 Feb 2012 15:12:44 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1755791Ab2BBLUG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 06:20:06 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36392 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755757Ab2BBLUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 06:20:03 -0500
+Date: Thu, 2 Feb 2012 12:19:41 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+Message-ID: <20120202111941.GA7714@elte.hu>
+References: <20120201151918.GC16714@quack.suse.cz>
+ <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+ <1328118174.15992.6206.camel@triegel.csb>
+ <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
+ <1328128874.15992.6430.camel@triegel.csb>
+ <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Pasupathy, Visuvanadan" <vichu@ti.com>
-Subject: Re: RFC: usb: musb: Changes proposed for adding CPPI4.1 DMA
-References: <47CEF8C4B26E8C44B22B028A650E0EA9317C5B92@DBDE01.ent.ti.com> <4F22CC37.8010307@mvista.com> <47CEF8C4B26E8C44B22B028A650E0EA9317D2B9D@DBDE01.ent.ti.com> <4F27D011.8060203@mvista.com> <47CEF8C4B26E8C44B22B028A650E0EA9317D9346@DBDE01.ent.ti.com> <20120202090923.GC9948@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20120202090923.GC9948@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 02-02-2012 13:09, Felipe Balbi wrote:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
->>>>>> As a next step to dma-engine based cppi4.1 driver implementation
->>>>>> this RFC has the overview of changes in the musb driver.
->>>>>> RFC on CPPI slave driver changes will follow next.
->>>
->>>>>> Overview of changes in the musb driver
->>>>>> ======================================
+> [...]
+> 
+> And I realize that compiler people tend to think that loop 
+> hoisting etc is absolutely critical for performance, and some 
+> big hammer like "barrier()" makes a compiler person wince. You 
+> think it results in horrible code generation problems.
+> 
+> It really doesn't. Loops are fairly unusual in the kernel to 
+> begin with, and the compiler barriers are a total non-issue. 
+> We have much more problems with the actual CPU barriers that 
+> can be *very* expensive on some architectures, and we work a 
+> lot at avoiding those and avoiding cacheline ping-pong issues 
+> etc.
 
->>>>>> 1)Add a dma-engine.c file in the drivers/usb/musb folder
->>>>>> 2)This file will host the current musb dma APIs and translates them to
->>>>>>      dmaengine APIs.
->>>>>> 3)This will help to keep the changes in drivers/usb/musb/musb* files
->>>>>>      minimal and also to retain compatibility other DMA (Mentor etc.)
->>>>>>      drivers which are yet to be moved to drivers/dma
->>>>>> 4)drivers/usb/musb/dma-engine.c, will wrap the dmaengine APIs to
->>>>>>      make existing musb APIs compatible.
->>>>>> 5)drivers/usb/musb/dma-engine.c file will implement the filter
->>>>>>      functions and also implement .dma_controller_create (allocates
->>>>>>      &    provides "dma_controller" object) and .dma_controller_delete
->>>>>> 6)CPPI4.1 DMA specific queue and buffer management will be internal
->>>>>>      to slave CPPI DMA driver implementation.
+Just to underline this point, if barriers caused optimization 
+problems when GCC builds the kernel then we'd expect to see 
+various code generation problems: for example the compiler would 
+not be able to cache things well enough and reorder it to make 
+the code faster and (often) more compact.
 
->>>>>       You mean drivers/dma/ driver?
+So to test that effect of Linus's claim I picked up a fairly 
+bleeding edge version of GCC:
 
->>>> yes.
+  gcc version 4.7.0 20120112 (Red Hat 4.7.0-0.6) (GCC)
 
->>>>> I think you are forgotting that CPPI 4.1 MUSB
->>>>> has some registers controlling DMA/interrupts beside those of CPPI 4.1
->>>>> controller and MUSB core itself. How do they fit in your scheme?
+and performed a test build of the kernel with the majority of 
+optimization barriers removed (using the v3.2 kernel, x86 
+defconfig, 64-bit, -O2 optimization level): 1600 barriers were 
+removed (!) and GCC's hands were thus freed to create more 
+optimal code [and a very broken kernel], if it could.
 
->>>> We have been discussing on how to handle these in slave driver and
+I compared the resulting kernel image to an unmodified kernel 
+image:
 
->>>      These certainly cannot be handled in the slave driver because the
->>> registers are different for every controller implementation and, the
->>> main thing, they don't belong to CPPI 4.1 as such.
+    text	   data	    bss	     dec	    hex	filename
+ 9781555	 982328	1118208	11882091	 b54e6b	vmlinux.vanilla
+ 9780972	 982328	1118208	11881508	 b54c24	vmlinux.no-barriers
 
->> Felipe suggested to use device tree for differences in register maps
->> among different platforms.
+So the barriers are costing us only a 0.06% size increase - 583 
+bytes on an almost 10 MB kernel image.
 
->> I do see issues in reading wrapper interrupt status register and then
->> calling musb_interrupt() [defined inside musb_core.c] from slave driver.
+To put that into perspectve: a *single* inline function inlining 
+decision by the compiler has a larger effect than that. Just a 
+couple of days ago we uninlined a function, which had an order 
+of magnitude larger effect than this.
 
-> I have been thinking about that lately. In the end of the day, I want to
-> remove direct dependencies between musb_core and glue. So what I was
-> thinking about goes like so:
+The other possible dimension would be the ordering of 
+instructions.
 
-> Glue layer basically has to prepare musb->int_usb, musb->int_tx and
-> musb->int_rx for musb. Maybe handle some glue specific stuff and so on,
-> but the IRQ line still belongs to MUSB.
+To test for that effect I disassembled the two kernel images and 
+performed a function by function, instruction by instruction 
+comparison of instruction ordering. The summary is that GCC was 
+able to remove only 86 instructions (0.005%) and reordered 
+around 2400 instructions (0.15%) - out of about 1,570,000 
+instructions.
 
-> So the idea would be to add something like:
+Or, put differently, for the 1600 barriers in this particular 
+kernel build, there's about 1.5 instructions reordered and 0.05 
+instructions removed.
 
-> musb_platform_read_intrusb()
-> musb_platform_read_intrtx()
-> musb_platform_read_intrrx()
+I also inspected the type of reordering: the overwhelming 
+majority of reordering happened within a jump-free basic block 
+of instructions and did not affect any loops.
 
-> those would default to basic:
+Thus much of the effect of barriers kernel is only the crutial 
+effect that we want them to have: to reorder code to have a 
+specific program order sequence - but in the process the 
+barriers() cause very, very small optimization quality side 
+effects.
 
-> musb_readb(musb->mregs, MUSB_INTRUSB);
-> musb_readw(musb->mregs, MUSB_INTRTX);
-> musb_readw(musb->mregs, MUSB_INTRRX);
+So the numbers support Linus's claim, the kernel incurs very 
+little optimization cost side effects from barriers.
+ 
+Thanks,
 
-> if platform ops aren't passed. So, it would look something like:
-
-> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-> index 72a424d..ba0bcc2 100644
-> --- a/drivers/usb/musb/musb_core.c
-> +++ b/drivers/usb/musb/musb_core.c
-> @@ -1488,9 +1488,9 @@ static irqreturn_t generic_interrupt(int irq, void *__hci)
->
->   	spin_lock_irqsave(&musb->lock, flags);
->
-> -	musb->int_usb = musb_readb(musb->mregs, MUSB_INTRUSB);
-> -	musb->int_tx = musb_readw(musb->mregs, MUSB_INTRTX);
-> -	musb->int_rx = musb_readw(musb->mregs, MUSB_INTRRX);
-> +	musb->int_usb = musb_platform_read_intusb(musb->controller);
-> +	musb->int_tx = musb_platform_read_inttx(musb->controller);
-> +	musb->int_rx = musb_platform_read_intrx(musb->controller);
->
->   	if (musb->int_usb || musb->int_tx || musb->int_rx)
->   		retval = musb_interrupt(musb);
->
-> those would make sure to prepare the cached IRQ status registers for
-> MUSB core.
->
-> Keep in mind that this is only necessary because on
-> DaVinci/OMAP-L13x/AM35x devices you guys have decided to make the
-> wrapper read the IRQ status register from MUSB address space. And
-> because those are clear-on-read, we're screwed.
-
-> Oh well, this is the best I could come up with. Any problems you guys
-> see ?
-
-    On DaVinci/OMAP-L1x these 3 calls need to extract data from a single 
-32-bit register, so that doesn't seem a good idea to me. The current scheme 
-seems OK to me. Or either implement a signle function to read all 3 interrupt 
-masks...
-
-musb_platform_read_ints()
-
-WBR, Sergei
+	Ingo
