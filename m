@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab2BBBkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 20:40:40 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:60854 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab2BBBki (ORCPT
+	id S1754117Ab2BBBmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 20:42:51 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46185 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab2BBBmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 20:40:38 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM/Hibernate: Refactor and simplify freezer_test_done
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Date: Thu, 02 Feb 2012 07:10:19 +0530
-Message-ID: <20120202014014.11863.86758.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12020201-2000-0000-0000-000006456FCA
+	Wed, 1 Feb 2012 20:42:50 -0500
+From: Marcos Paulo de Souza <marcos.mage@gmail.com>
+To: len.brown@intel.com
+Cc: pavel@ucw.cz, rjw@sisk.pl, linux-pm@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Marcos Paulo de Souza <marcos.mage@gmail.com>
+Subject: [PATCH] PM/Suspend: Avoid code duplication in suspend statistics update
+Date: Wed,  1 Feb 2012 23:39:36 -0200
+Message-Id: <1328146776-1766-1-git-send-email-marcos.mage@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code related to 'freezer_test_done' is needlessly convoluted.
-Refactor the code and simplify the implementation.
+The code
+       if (error) {
+               suspend_stats.fail++;
+               dpm_save_failed_errno(error);
+       } else
+               suspend_stats.success++;
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Appears in the kernel/power/main.c and kernel/power/suspend.c.
+
+This patch just creates a new function to avoid duplicated code.
+
+Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
 ---
+ include/linux/suspend.h |   16 ++++++++++++++++
+ kernel/power/main.c     |    6 +-----
+ kernel/power/suspend.c  |    6 +-----
+ 3 files changed, 18 insertions(+), 10 deletions(-)
 
- kernel/power/hibernate.c |   10 +++++-----
- kernel/power/user.c      |    4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index c6dee73..72baaf0 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -629,12 +629,8 @@ int hibernate(void)
- 		goto Finish;
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 91784a4..313fef1 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -91,6 +91,22 @@ static inline void dpm_save_failed_step(enum suspend_stat_step step)
+ }
  
- 	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
--	if (error)
--		goto Thaw;
--	if (freezer_test_done) {
--		freezer_test_done = false;
-+	if (error || freezer_test_done)
- 		goto Thaw;
--	}
- 
- 	if (in_suspend) {
- 		unsigned int flags = 0;
-@@ -659,6 +655,10 @@ int hibernate(void)
- 
-  Thaw:
- 	thaw_processes();
+ /**
++ * suspend_stats_update - Update success/failure statistics of suspend-to-ram
++ *
++ * @error: Value returned by enter_state() function
++ */
++static inline void suspend_stats_update(int error)
++{
++	if (error) {
++		suspend_stats.fail++;
++		dpm_save_failed_errno(error);
++	} else {
++		suspend_stats.success++;
++	}
++}
 +
-+	/* Don't bother checking whether freezer_test_done is true */
-+	freezer_test_done = false;
 +
-  Finish:
- 	free_basic_memory_bitmaps();
- 	usermodehelper_enable();
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 7bee91f..ea8b1c4 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -251,10 +251,10 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 		error = hibernation_snapshot(data->platform_support);
- 		if (!error) {
- 			error = put_user(in_suspend, (int __user *)arg);
--			if (!error && !freezer_test_done)
--				data->ready = 1;
- 			if (freezer_test_done)
- 				freezer_test_done = false;
-+			else if (!error)
-+				data->ready = 1;
- 		}
- 		break;
++/**
+  * struct platform_suspend_ops - Callbacks for managing platform dependent
+  *	system sleep states.
+  *
+diff --git a/kernel/power/main.c b/kernel/power/main.c
+index 9824b41e..83947af 100644
+--- a/kernel/power/main.c
++++ b/kernel/power/main.c
+@@ -292,11 +292,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 	}
+ 	if (state < PM_SUSPEND_MAX && *s) {
+ 		error = enter_state(state);
+-		if (error) {
+-			suspend_stats.fail++;
+-			dpm_save_failed_errno(error);
+-		} else
+-			suspend_stats.success++;
++		suspend_stats_update(error);
+ 	}
+ #endif
  
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 4fd51be..7fd84b5 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -321,11 +321,7 @@ int pm_suspend(suspend_state_t state)
+ 	int ret;
+ 	if (state > PM_SUSPEND_ON && state < PM_SUSPEND_MAX) {
+ 		ret = enter_state(state);
+-		if (ret) {
+-			suspend_stats.fail++;
+-			dpm_save_failed_errno(ret);
+-		} else
+-			suspend_stats.success++;
++		suspend_stats_update(ret);
+ 		return ret;
+ 	}
+ 	return -EINVAL;
+-- 
+1.7.7.6
 
