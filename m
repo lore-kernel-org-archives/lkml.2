@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933084Ab2BBX5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 18:57:10 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:47559 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756025Ab2BBX4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 18:56:52 -0500
-Message-Id: <20120202235650.736578988@gulag1.americas.sgi.com>
-References: <20120202235650.563029146@gulag1.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Thu, 02 Feb 2012 17:56:51 -0600
-From: Mike Travis <travis@sgi.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Jack Steiner <steiner@sgi.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Mike Habeck <habeck@sgi.com>
-Subject: [PATCH 1/3] x86 PCI: Fix identity mapping for sandy bridge
-Content-Disposition: inline; filename=fix-iommu-identity-mapping-for-sb
+	id S933665Ab2BBX5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 18:57:17 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49202 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933643Ab2BBX5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 18:57:13 -0500
+X-Sasl-enc: uJZJ6EnUt5fqbTmRy5HBFL/j9Wf0cklQr5obQICWGxsT 1328227031
+Date: Thu, 2 Feb 2012 15:48:48 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "zbr@ioremap.net" <zbr@ioremap.net>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 3/6] drivers: hv: Cleanup the kvp related state in
+ hyperv.h
+Message-ID: <20120202234848.GA26647@kroah.com>
+References: <1327708522-26914-1-git-send-email-kys@microsoft.com>
+ <1327708562-26964-1-git-send-email-kys@microsoft.com>
+ <1327708562-26964-3-git-send-email-kys@microsoft.com>
+ <20120202232936.GA9614@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481B70927D@TK5EX14MBXC128.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B70927D@TK5EX14MBXC128.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With SandyBridge, Intel has changed these Socket PCI devices to have a class
-type of "System Peripheral" & "Performance counter", rather than "HostBridge".
-So instead of using a "special" case to detect which devices will not be
-doing DMA, use the fact that a device that is not associated with an IOMMU,
-will not need an identity map.
+On Thu, Feb 02, 2012 at 11:41:29PM +0000, KY Srinivasan wrote:
+> > > +#ifndef __packed
+> > > +#define __packed __attribute__((packed))
+> > > +#endif
+> > 
+> > Why do this?
+> > 
+> > If you are so worried about this in userspace, then just change the
+> > values below to __attribute__((packed)), like all of the other public .h
+> > files do.
+> 
+> Greg,
+> 
+> When I ran the checkpatch script against these patches I got a warning that the
+> preferred directive was to use "__packed".
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Signed-off-by: Mike Habeck <habeck@sgi.com>
----
- drivers/iommu/intel-iommu.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+Well, checkpatch is stupid sometimes.
 
---- linux.orig/drivers/iommu/intel-iommu.c
-+++ linux/drivers/iommu/intel-iommu.c
-@@ -48,8 +48,6 @@
- #define ROOT_SIZE		VTD_PAGE_SIZE
- #define CONTEXT_SIZE		VTD_PAGE_SIZE
- 
--#define IS_BRIDGE_HOST_DEVICE(pdev) \
--			    ((pdev->class >> 8) == PCI_CLASS_BRIDGE_HOST)
- #define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
- #define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
- #define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
-@@ -2369,18 +2367,18 @@ static int __init iommu_prepare_static_i
- 		return -EFAULT;
- 
- 	for_each_pci_dev(pdev) {
--		/* Skip Host/PCI Bridge devices */
--		if (IS_BRIDGE_HOST_DEVICE(pdev))
--			continue;
- 		if (iommu_should_identity_map(pdev, 1)) {
--			printk(KERN_INFO "IOMMU: %s identity mapping for device %s\n",
--			       hw ? "hardware" : "software", pci_name(pdev));
--
- 			ret = domain_add_dev_info(si_domain, pdev,
--						     hw ? CONTEXT_TT_PASS_THROUGH :
--						     CONTEXT_TT_MULTI_LEVEL);
--			if (ret)
-+					     hw ? CONTEXT_TT_PASS_THROUGH :
-+						  CONTEXT_TT_MULTI_LEVEL);
-+			if (ret) {
-+				/* device not associated with an iommu */
-+				if (ret == -ENODEV)
-+					continue;
- 				return ret;
-+			}
-+			pr_info("IOMMU: %s identity mapping for device %s\n",
-+				hw ? "hardware" : "software", pci_name(pdev));
- 		}
- 	}
- 
+> So, for the header file that will be
+> consumed in the kernel, I chose to go with the __packed. For inclusion of this
+> header file in the user space daemon, I put in this definition here. So rather
+> than having numerous warnings, I now have a single warning. If you prefer,
+> I can move this definition to the daemon code where it is really needed.
 
--- 
+Please do it like all other public kernel header files do.
+
+greg k-h
