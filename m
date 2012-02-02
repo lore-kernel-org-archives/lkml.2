@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab2BBLGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 06:06:34 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51732 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755346Ab2BBLGd (ORCPT
+	id S1755674Ab2BBLJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 06:09:06 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52952 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab2BBLJF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 06:06:33 -0500
-Message-ID: <4F2A6DF1.8040505@mvista.com>
-Date: Thu, 02 Feb 2012 15:05:21 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Pasupathy, Visuvanadan" <vichu@ti.com>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: Re: RFC: usb: musb: Changes proposed for adding CPPI4.1 DMA
-References: <47CEF8C4B26E8C44B22B028A650E0EA9317C5B92@DBDE01.ent.ti.com> <4F22CC37.8010307@mvista.com> <47CEF8C4B26E8C44B22B028A650E0EA9317D2B9D@DBDE01.ent.ti.com> <4F27D011.8060203@mvista.com> <47CEF8C4B26E8C44B22B028A650E0EA9317D9346@DBDE01.ent.ti.com>
-In-Reply-To: <47CEF8C4B26E8C44B22B028A650E0EA9317D9346@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Feb 2012 06:09:05 -0500
+Message-ID: <1328180937.1888.18.camel@hornet.cambridge.arm.com>
+Subject: re: params: <level>_initcall-like kernel parameters
+From: Pawel Moll <pawel.moll@arm.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Date: Thu, 02 Feb 2012 11:08:57 +0000
+In-Reply-To: <20120202095612.GA30632@elgon.mountain>
+References: <20120202095612.GA30632@elgon.mountain>
+X-Mailer: Evolution 3.2.2-
+Mime-Version: 1.0
+X-OriginalArrivalTime: 02 Feb 2012 11:08:55.0120 (UTC) FILETIME=[0D98CD00:01CCE19B]
+X-MC-Unique: 112020211085702101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Morning,
 
-On 02-02-2012 8:57, Gupta, Ajay Kumar wrote:
+On Thu, 2012-02-02 at 09:56 +0000, Dan Carpenter wrote:
+> The patch b41c2e271944: "params: <level>_initcall-like kernel 
+> parameters" from Dec 12, 2011, leads to the following warning:
+> init/main.c:749 do_initcall_level()
+> 	 error: buffer overflow 'initcall_level_names' 7 <= 7
+> 
+>    743  static void __init do_initcall_level(int level)
+>    744  {
+>    745          extern const struct kernel_param __start___param[], __stop___param[];
+>    746          initcall_t *fn;
+>    747  
+>    748          strcpy(static_command_line, saved_command_line);
+>    749          parse_args(initcall_level_names[level],
+>                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> initcall_level_names[] has 7 elements so initcall_level_names[7] is past
+> the end of the array.
+> 
+>    750                     static_command_line, __start___param,
+>    751                     __stop___param - __start___param,
+>    752                     level, level,
+>    753                     ignore_unknown_bootoption);
+>    754  
+>    755          for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++)
+>    756                  do_one_initcall(*fn);
+>    757  }
+>    758  
+>    759  static void __init do_initcalls(void)
+>    760  {
+>    761          int level;
+>    762  
+>    763          for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++)
+>                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> initcall_levels[] has 9 elements so level is 0-7 here.
+> 
+>    764                  do_initcall_level(level);
+>    765  }
 
->>>>> As a next step to dma-engine based cppi4.1 driver implementation
->>>>> this RFC has the overview of changes in the musb driver.
->>>>> RFC on CPPI slave driver changes will follow next.
+You're right, of course! The initcall_level_names is missing "early
+parameters" string as the first element of the array. Well spotted - may
+I asked what tool did you use to get this message?
 
->>>>> Overview of changes in the musb driver
->>>>> ======================================
+Rusty, do you want me to re-send the patch with this string fixed? I
+think you have rebased it on top of your bool-param series?
 
->>>>> 1)Add a dma-engine.c file in the drivers/usb/musb folder
->>>>> 2)This file will host the current musb dma APIs and translates them to
->>>>>      dmaengine APIs.
->>>>> 3)This will help to keep the changes in drivers/usb/musb/musb* files
->>>>>      minimal and also to retain compatibility other DMA (Mentor etc.)
->>>>>      drivers which are yet to be moved to drivers/dma
->>>>> 4)drivers/usb/musb/dma-engine.c, will wrap the dmaengine APIs to
->>>>>      make existing musb APIs compatible.
->>>>> 5)drivers/usb/musb/dma-engine.c file will implement the filter
->>>>>      functions and also implement .dma_controller_create (allocates
->>>>>      &    provides "dma_controller" object) and .dma_controller_delete
->>>>> 6)CPPI4.1 DMA specific queue and buffer management will be internal
->>>>>      to slave CPPI DMA driver implementation.
+Thanks for your time!
 
->>>>       You mean drivers/dma/ driver?
+Paweł
 
->>> yes.
 
->>>> I think you are forgotting that CPPI 4.1 MUSB
->>>> has some registers controlling DMA/interrupts beside those of CPPI 4.1
->>>> controller and MUSB core itself. How do they fit in your scheme?
 
->>> We have been discussing on how to handle these in slave driver and
-
->>      These certainly cannot be handled in the slave driver because the
->> registers are different for every controller implementation and, the
->> main thing, they don't belong to CPPI 4.1 as such.
-
-> Felipe suggested to use device tree for differences in register maps
-> among different platforms.
-
-    I don't see how the device tree would magically help here.
-
-> I do see issues in reading wrapper interrupt status register and then
-> calling musb_interrupt() [defined inside musb_core.c] from slave driver.
-
->>> would post our proposal in RFC for slave driver design. Do you have
->>> any proposal?
-
->>      I think this will need hooks from dma-engine.c to the glue layers. I
->> was going to implement such in my version of MUSB CPPI 4.1 driver (in order
->> to also support AM35x) but lacked time.
-
-> That would mean a change in current drivers/dma API.
-
-    No, it doesn't. I'm proposing hooks from dma-engine.c which is situated in 
-drivers/usb/musb/ if I got you right. It just means that the calls to 
-dma-engine.c as MUSB DMA driver won't map to the calls to the DMA slave driver 
-as directly as you've presented before.
-
-> Ajay
-
->>> Regards,
->>> Ajay
-
-WBR, Sergei
