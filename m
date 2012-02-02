@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab2BBXBH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 18:01:07 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35766 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab2BBXBF (ORCPT
+	id S1757620Ab2BBXBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 18:01:54 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44151 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260Ab2BBXBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 18:01:05 -0500
+	Thu, 2 Feb 2012 18:01:53 -0500
+Date: Fri, 3 Feb 2012 00:01:50 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: bangaragiri.g@nxp.com, srinivas.bakki@nxp.com,
+        sundarapandian.andithevar@nxp.com, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 6/7] LPC32xx: clock.c: USB PLL fix
+Message-ID: <20120202230150.GA22458@pengutronix.de>
+References: <1327939327-7799-1-git-send-email-stigge@antcom.de>
+ <1327939327-7799-6-git-send-email-stigge@antcom.de>
+ <20120131103401.GJ2471@pengutronix.de>
+ <4F293DAF.4050402@antcom.de>
+ <20120202164920.GC3219@pengutronix.de>
+ <4F2AE1F0.2070200@antcom.de>
 MIME-Version: 1.0
-In-Reply-To: <4F2AB614.1060907@de.ibm.com>
-References: <4F2AB614.1060907@de.ibm.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Thu, 2 Feb 2012 18:00:45 -0500
-Message-ID: <CAHGf_=rm286b5FWVRQ8Ob0vakxNcNOHPUksCtnZj4PvOEz47Jg@mail.gmail.com>
-Subject: Re: ksm/memory hotplug: lockdep warning for ksm_thread_mutex vs. (memory_chain).rwsem
-To: gerald.schaefer@de.ibm.com
-Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <martin.schwidefsky@de.ibm.com>,
-        Heiko Carstens <h.carstens@de.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
+Content-Disposition: inline
+In-Reply-To: <4F2AE1F0.2070200@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/2 Gerald Schaefer <gerald.schaefer@de.ibm.com>:
-> Setting a memory block offline triggers the following lockdep warning. This
-> looks exactly like the issue reported by Kosaki Motohiro in
-> https://lkml.org/lkml/2010/10/25/110. Seems like the resulting commit a0b0f58cdd
-> did not fix the lockdep warning. I'm able to reproduce it with current 3.3.0-rc2
-> as well as 2.6.37-rc4-00147-ga0b0f58.
->
-> I'm not familiar with lockdep annotations, but I tried using down_read_nested()
-> for (memory_chain).rwsem, similar to the mutex_lock_nested() which was
-> introduced for ksm_thread_mutex, but that didn't help.
 
-Heh, interesting. Simple question, do you have any user visible buggy
-behavior? or just false positive warn issue?
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-*_nested() is just hacky trick. so, any change may break their lie.
-Anyway I'd like to dig this one. thanks for reporting.
+
+> I'd then first repost the GPIO fixes I posted previously and then look
+> after USB if that's fine for you. :-)
+
+Totally fine with me, it's all up to you :)
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk8rFd4ACgkQD27XaX1/VRsLGwCgy6zqK0JQ4GdAlUZeV6yOjISH
+zxUAn0TTc2YLUb8KCd1dt9iMqzEBvc0r
+=CBxg
+-----END PGP SIGNATURE-----
+
+--ew6BAiZeqk4r7MaW--
