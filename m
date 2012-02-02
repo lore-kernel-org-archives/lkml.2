@@ -1,41 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab2BBLCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 06:02:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48251 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754775Ab2BBLCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 06:02:48 -0500
-Message-ID: <4F2A6D46.6010406@redhat.com>
-Date: Thu, 02 Feb 2012 13:02:30 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1755637Ab2BBLEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 06:04:08 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49174 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755575Ab2BBLEG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 06:04:06 -0500
+Date: Thu, 2 Feb 2012 12:04:01 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu
+Subject: [PATCH] perf: remove deprecated warn_on_once()
+Message-ID: <20120202110401.GA30911@quad>
 MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
-        Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [test result] dirty logging without srcu update -- Re: [RFC][PATCH]
- srcu: Implement call_srcu()
-References: <1328016724.2446.229.camel@twins> <4F27F0E6.1040309@redhat.com> <1328017807.2446.230.camel@twins> <20120131222447.GH2391@linux.vnet.ibm.com> <1328091749.2760.34.camel@laptop> <4F29178A.1090306@redhat.com> <4F2918D5.4050104@redhat.com> <4F291B56.30600@oss.ntt.co.jp> <4F291B92.8070402@redhat.com> <4F291E1F.3030505@oss.ntt.co.jp> <4F293D14.5030008@redhat.com> <20120202144633.1fc9b997.yoshikawa.takuya@oss.ntt.co.jp> <4F2A611E.6090005@redhat.com> <4F2A63B9.8000405@oss.ntt.co.jp> <4F2A63C6.7030301@redhat.com> <4F2A682C.7090109@oss.ntt.co.jp>
-In-Reply-To: <4F2A682C.7090109@oss.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 12:40 PM, Takuya Yoshikawa wrote:
->
-> I have one concern about correctness issue though:
->
->     concurrent rmap write protection may not be safe due to
->     delayed tlb flush ... cannot happen?
 
-What do you mean by concurrent rmap write protection?
+With the new throttling/unthrottling code introduced with
+commit e050e3f, we hit two warn_on_once() in:
+  - intel_pmu_pebs_enable()
+  - intel_pmu_lbr_enable()
 
+The assertions are no longer problematic. There is a valid
+path where they can trigger but it is harmless.
 
--- 
-error compiling committee.c: too many arguments to function
+The assertion can be triggered with:
+  $ perf record -e instructions:pp ....
 
+Leading to paths:
+
+  intel_pmu_pebs_enable
+  intel_pmu_enable_event
+  x86_perf_event_set_period
+  x86_pmu_start
+  perf_adjust_freq_unthr_context
+  perf_event_task_tick
+  scheduler_tick
+
+And:
+
+  intel_pmu_lbr_enable
+  intel_pmu_enable_event
+  x86_perf_event_set_period
+  x86_pmu_start
+  perf_adjust_freq_unthr_context.
+  perf_event_task_tick
+  scheduler_tick
+
+cpuc->enabled is always on because when we get to
+perf_adjust_freq_unthr_context() the PMU is not totally
+disabled. Furthermore when we need to adjust a period,
+we only stop the event we need to change and not the
+entire PMU. Thus, when we re-enable, cpuc->enabled is
+already set. Note that when we stop the event, both
+pebs and lbr are stopped if necessary (and possible).
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 73da6b6..d6bd49f 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -439,7 +439,6 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+ 
+ 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
+-	WARN_ON_ONCE(cpuc->enabled);
+ 
+ 	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
+ 		intel_pmu_lbr_enable(event);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 3fab3de..47a7e63 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -72,8 +72,6 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+ 	if (!x86_pmu.lbr_nr)
+ 		return;
+ 
+-	WARN_ON_ONCE(cpuc->enabled);
+-
+ 	/*
+ 	 * Reset the LBR stack if we changed task context to
+ 	 * avoid data leaks.
