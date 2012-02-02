@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab2BBAeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Feb 2012 19:34:18 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42596 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab2BBAeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Feb 2012 19:34:15 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM/Hibernate: Thaw kernel threads in hibernation_snapshot()
- in error/test path
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Date: Thu, 02 Feb 2012 06:04:05 +0530
-Message-ID: <20120202003359.9930.9844.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S1753632Ab2BBAfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Feb 2012 19:35:21 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:59319 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753497Ab2BBAfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Feb 2012 19:35:20 -0500
+Date: Wed, 1 Feb 2012 16:33:57 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@infradead.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org, arjanvandeven@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: x86: clean up smpboot.c's use of udelay+schedule
+Message-ID: <20120202003357.GP2382@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120130205304.0e10b05e@infradead.org>
+ <20120131124341.GC4408@elte.hu>
+ <1328014076.2446.210.camel@twins>
+ <20120131125331.GE4408@elte.hu>
+ <1328014916.2446.217.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12020200-9574-0000-0000-000001336283
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328014916.2446.217.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020200-3534-0000-0000-0000051CCFE8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the hibernation call path, the kernel threads are frozen inside
-hibernation_snapshot(). If we happen to encounter an error further down
-the road or if we are exiting early due to a successful freezer test,
-then thaw kernel threads before returning to the caller.
+On Tue, Jan 31, 2012 at 02:01:56PM +0100, Peter Zijlstra wrote:
+> On Tue, 2012-01-31 at 13:53 +0100, Ingo Molnar wrote:
+> > Wanna give a short TODO list to anyone wanting to work on that?
+> 
+> I paged out most details again, but it goes something like:
+> 
+>  - read and understand the current generic code
+> 
+>  - and all architecture code, at which point you'll probably boggle
+>    at all the similarities that are all subtly different (there's
+>    about 3 actually different ways in the arch code).
+> 
+>  - pick one, preferably one that keeps additional state and doesn't
+>    fully rely on the online bits and pull it into generic code and
+>    provide a small vector of arch specific functions.
+> 
+>  - convert all archs over.
+> 
+> 
+> Also related:
+> 
+>  - figure out why cpu_down needs kstopmachine, I'm not sure it does..
+>    we should be able to tear down a cpu using synchronize_sched() and a
+>    single stop_one_cpu(). (someday when there's time I might actually
+>    try to implement this).
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Currently, a number of the CPU_DYING notifiers assume that they are
+running in stop-machine context, including those of RCU.
 
- kernel/power/hibernate.c |    6 ++++--
- kernel/power/user.c      |    8 ++------
- 2 files changed, 6 insertions(+), 8 deletions(-)
+However, this is not an inherent property of RCU -- DYNIX/ptx's
+CPU-offline process did not stop the whole machine, after all, and RCU
+(we called it rclock, but whatever) was happy with this arrangement.
+In fact, if the outgoing CPU could be made to stop in that context
+instead of returning to the scheduler and the idle loop, it would make
+my life a bit easier.
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index a5d4cf0..c6dee73 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -343,13 +343,13 @@ int hibernation_snapshot(int platform_mode)
- 		 * successful freezer test.
- 		 */
- 		freezer_test_done = true;
--		goto Cleanup;
-+		goto Thaw;
- 	}
- 
- 	error = dpm_prepare(PMSG_FREEZE);
- 	if (error) {
- 		dpm_complete(PMSG_RECOVER);
--		goto Cleanup;
-+		goto Thaw;
- 	}
- 
- 	suspend_console();
-@@ -385,6 +385,8 @@ int hibernation_snapshot(int platform_mode)
- 	platform_end(platform_mode);
- 	return error;
- 
-+ Thaw:
-+	thaw_kernel_threads();
-  Cleanup:
- 	swsusp_free();
- 	goto Close;
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 3e10007..7bee91f 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -249,16 +249,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 		}
- 		pm_restore_gfp_mask();
- 		error = hibernation_snapshot(data->platform_support);
--		if (error) {
--			thaw_kernel_threads();
--		} else {
-+		if (!error) {
- 			error = put_user(in_suspend, (int __user *)arg);
- 			if (!error && !freezer_test_done)
- 				data->ready = 1;
--			if (freezer_test_done) {
-+			if (freezer_test_done)
- 				freezer_test_done = false;
--				thaw_kernel_threads();
--			}
- 		}
- 		break;
- 
+My question is why aren't the notifiers executed in the opposite
+order going down and coming up, with the coming-up order matching the
+boot order?  Also, why can't the CPU's exit from this world be driven
+out of the idle loop?  That way, the CPU wouldn't mark itself offline
+(thus in theory to be ignored by CPU), and then immediately dive into
+the scheduler and who knows what all else, using RCU all the time.  ;-)
+
+(RCU handles this by keeping a separate set of books for online CPUs.
+It considers a CPU online at CPU_UP_PREPARE time, and doesn't consider
+it offline until CPU_DEAD time.  To handle the grace periods between,
+force_quiescent_state() allows the grace period to run a few jiffies
+before checking cpu_online_map, which allows a given CPU to safely use
+RCU for at least one jiffy before marking itself online and for at least
+one jiffy after marking itself offline.)
+
+Yet another question is about races between CPU-hotplug events and
+registering/unregistering cpu notifiers.  I don't believe that the
+current code does what you would like in all cases.  The only way
+I can imagine it really working would be to use generation numbers,
+so that once a CPU-hotplug event started, it would invoke only those
+notifiers marked with the generation that was in effect when the
+event started, or with some earlier generation.
+
+Hey, you asked!!!
+
+							Thanx, Paul
 
