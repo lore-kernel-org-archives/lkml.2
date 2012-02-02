@@ -1,75 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab2BBSnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 13:43:22 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8629 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933192Ab2BBSnV convert rfc822-to-8bit (ORCPT
+	id S933306Ab2BBSn3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 13:43:29 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37932 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756356Ab2BBSnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 13:43:21 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 02 Feb 2012 10:43:14 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Date: Thu, 2 Feb 2012 10:43:13 -0800
-Subject: RE: [PATCH] pinctrl: pin configuration states
-Thread-Topic: [PATCH] pinctrl: pin configuration states
-Thread-Index: AczhF7n0EtTZMJGyTQaDKXFBBwnA4AAwn/UA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178E124AD2@HQMAIL01.nvidia.com>
-References: <1326725496-28928-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF1780DAB15E@HQMAIL01.nvidia.com>
- <CACRpkdZAofVVQ5_b_R2FUWy5AfWOge1NOuO61q7vFiLB4wUizQ@mail.gmail.com>
-In-Reply-To: <CACRpkdZAofVVQ5_b_R2FUWy5AfWOge1NOuO61q7vFiLB4wUizQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Feb 2012 13:43:24 -0500
+Message-ID: <4F2AD945.5030001@gmail.com>
+Date: Fri, 03 Feb 2012 02:43:17 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] KVM: x86: add tracepoints to trace mmio begin
+ and complete
+References: <4F2AC707.7020801@gmail.com> <4F2AC790.1090805@gmail.com> <4F2AC9A0.7090904@redhat.com> <4F2ACE04.9040602@gmail.com> <4F2ACE46.4000307@redhat.com> <4F2AD58A.3090307@gmail.com>
+In-Reply-To: <4F2AD58A.3090307@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Wednesday, February 01, 2012 12:29 PM:
-> On Thu, Jan 19, 2012 at 8:03 PM, Stephen Warren <swarren@nvidia.com> wrote:
-...
-> >> +     /*
-> >> +      * Make a copy of the config state array - string pointers will end up
-> > ...
-> >> +     pinconf_states = tmp;
-> >> +     pinconf_states_num += num_states;
-> >
-> > We need to allow multiple tables to be registered, for all the same
-> > reasons we do for the pinmux mapping table. This implementation only
-> > keeps the most recently registered table.
+On 02/03/2012 02:27 AM, Xiao Guangrong wrote:
+
+> On 02/03/2012 01:56 AM, Avi Kivity wrote:
 > 
-> ? beats me.
+>> On 02/02/2012 07:55 PM, Xiao Guangrong wrote:
+>>> On 02/03/2012 01:36 AM, Avi Kivity wrote:
+>>>
+>>>> On 02/02/2012 07:27 PM, Xiao Guangrong wrote:
+>>>>> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>>>
+>>>>> 'perf kvm-events' will use kvm_exit and kvm_mmio(read...) to calculate
+>>>>> mmio read emulated time for the old kernel, in order to trace mmio read
+>>>>> event more exactly, we add kvm_mmio_begin to trace the time when mmio read
+>>>>> begins
+>>>>>
+>>>>> Also, add kvm_mmio_done to trace the time when mmio/pio is completed
+>>>>
+>>>> Previously, we discussed using the kvm_entry to do this.  This reduces
+>>>> the number of tracepoints, and is backwards compatible.  What was the
+>>>> conclusion?
+>>>>
+>>>
+>>>
+>>> Since using kvm_entry can cause lots of unnecessary calculated, these new two
+>>> tracepoints can let the result be exacter.
+>>
+>> Do you have numbers on the ratio between kvm_entry traces and
+>> kvm_mmio_begin/end traces?
+>>
 > 
-> Please check the code for how I realloc the tmp variable (in the v2
-> patch set), I cannot spot the problem. It was designed to allow exactly
-> multiple calls to add tables piece by piece.
+> 
+> 1: Using kvm_mmio_begin/end:
+> 
+> # ./perf kvm-events report --event mmio
+>   Warning: Error: expected type 5 but read 4
+>   Warning: Error: expected type 5 but read 0
+>   Warning: unknown op '}'
+> 
+> 
+> Analyze events for all VCPUs:
+> 
+>          MMIO Access    Samples  Samples%     Time%         Avg time
+> 
+>         0xfee00380:W      54926    58.45%    57.32%      3.90us ( +-   0.29% )
+>         0xfee00300:W      12906    13.73%    28.70%      8.32us ( +-   0.50% )
+>         0xfee00300:R      12906    13.73%     7.68%      2.23us ( +-   1.27% )
+>         0xfee00310:W      12906    13.73%     6.07%      1.76us ( +-   1.05% )
+>         0xfee00190:R        323     0.34%     0.23%      2.65us ( +-   2.85% )
+> 
+> Total Samples:93967, Total events handled time:374012.26us.
+> 
+> 2: kvm_mmio_begin/end is not used:
+> 
+> # ./perf kvm-events report --event mmio
+>   Warning: Error: expected type 5 but read 4
+>   Warning: Error: expected type 5 but read 0
+>   Warning: unknown op '}'
+> 
+> 
+> Analyze events for all VCPUs:
+> 
+>          MMIO Access    Samples  Samples%     Time%         Avg time
+> 
+>         0xfee00380:W      54926    58.45%    42.90%      3.90us ( +-   0.29% )
+>         0xfee00300:W      12906    13.73%    21.48%      8.32us ( +-   0.50% )
+>         0xfee00300:R      12906    13.73%    30.26%     11.72us ( +-   1.40% )
+>         0xfee00310:W      12906    13.73%     4.54%      1.76us ( +-   1.05% )
+>         0xfee00190:R        323     0.34%     0.82%     12.63us ( +-   2.85% )
+> 
+> Total Samples:93967, Total events handled time:499755.82us.
+> 
+> In this sample, the time of MMIO Read has big different,
+> in the case 1(new tracepoints), the time is calculated by kvm_mmio_begin -> kvm_mmio(read...)
+> in the case 2(existing tracepoints), the time is calculated by kvm_exit -> kvm_mmio(read...)
 
-Sorry, I must have been asleep when I wrote that...
 
-I was expecting the implementation to copy each table separately and
-store them in a list (since this would allow easy dynamic removel of the
-entries too), hence when I saw the assignment to a single global, I
-assumed it was just over-writing it; I guess I didn't even look at the
-realloc above or noticed that it was assigning "tmp" not just the caller-
-supplied parameter:-(
+And the pio result:
 
--- 
-nvpublic
+1: Using kvm_mmio_begin/end:
+# ./perf kvm-events report --event ioport --key time
+  Warning: Error: expected type 5 but read 4
+  Warning: Error: expected type 5 but read 0
+  Warning: unknown op '}'
 
+
+Analyze events for all VCPUs:
+
+      IO Port Access    Samples  Samples%     Time%         Avg time
+
+           0x1f0:PIN          3     0.00%     0.02%    115.91us ( +-  12.55% )
+          0xc026:PIN        645     0.32%     4.55%    105.21us ( +-  59.73% )
+            0x64:PIN        114     0.06%     0.14%     18.63us ( +-   5.02% )
+          0xc022:PIN        457     0.23%     0.53%     17.18us ( +-   4.15% )
+            0x60:PIN        114     0.06%     0.11%     14.56us ( +-   7.16% )
+         0xc000:POUT      22512    11.30%    17.21%     11.41us ( +-   6.84% )
+           0x1f7:PIN      30044    15.08%    22.53%     11.19us ( +-  10.37% )
+         0xc024:POUT          6     0.00%     0.00%     10.60us ( +-  54.28% )
+......
+
+2: kvm_mmio_begin/end is not used:
+# ./perf kvm-events report --event ioport --key time
+  Warning: Error: expected type 5 but read 4
+  Warning: Error: expected type 5 but read 0
+  Warning: unknown op '}'
+
+
+Analyze events for all VCPUs:
+
+      IO Port Access    Samples  Samples%     Time%         Avg time
+
+           0x1f0:PIN          3     0.00%     0.02%    118.37us ( +-  12.65% )
+          0xc026:PIN        645     0.32%     3.54%    107.89us ( +-  58.26% )
+            0x64:PIN        114     0.06%     0.13%     23.04us ( +-   6.44% )
+          0xc022:PIN        457     0.23%     0.48%     20.63us ( +-   3.65% )
+            0x60:PIN        114     0.06%     0.10%     17.70us ( +-   6.41% )
+         0xc000:POUT      22512    11.30%    16.19%     14.14us ( +-   6.27% )
+           0x1f7:PIN      30044    15.08%    21.18%     13.85us ( +-   8.39% )
+         0xc024:POUT          6     0.00%     0.00%     13.09us ( +-  47.40% )
+......
+
+The time of case 1 is calculated by kvm_pio -> kvm_mmio_done
+The time of case 2 is calculated by kvm_pio -> kvm_entry
