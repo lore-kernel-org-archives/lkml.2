@@ -1,88 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab2BBSZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 13:25:28 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:63889 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754314Ab2BBSZ0 (ORCPT
+	id S932614Ab2BBS1b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 13:27:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49346 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295Ab2BBS13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 13:25:26 -0500
-Date: Thu, 2 Feb 2012 19:25:15 +0100
-From: Karsten Keil <kkeil@linux-pingi.de>
-To: Danny Kukawka <danny.kukawka@bisect.de>
-Cc: David Laight <David.Laight@aculab.com>,
-        Karsten Keil <kkeil@linux-pingi.de>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Armin Schindler <mac@melware.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>
-Subject: Re: [PATCH 01/16] eicon: fix -Warray-bounds warning
-Message-ID: <20120202182515.GA11660@gw.linux-pingi.de>
-Mail-Followup-To: Danny Kukawka <danny.kukawka@bisect.de>,
-	David Laight <David.Laight@aculab.com>,
-	Karsten Keil <kkeil@linux-pingi.de>,
-	Ben Hutchings <bhutchings@solarflare.com>,
-	Armin Schindler <mac@melware.de>, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E45@saturn3.aculab.com>
- <201202011352.19539.danny.kukawka@bisect.de>
+	Thu, 2 Feb 2012 13:27:29 -0500
+Message-ID: <4F2AD58A.3090307@gmail.com>
+Date: Fri, 03 Feb 2012 02:27:22 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201202011352.19539.danny.kukawka@bisect.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:mUIk++qsDuDuAM256GWudT+O7vcwymzsWTDIjCRcC4b
- bpFre5FA3RHCaGhdPhgGw+Fca1O+l+cCxYxC7nGIx6F8+9wFiy
- kDiaCxbuLWGhX/viCEpy+Dz52pqyWaY7w6CThlSxzoI/jTAWJ3
- 57m9iOLg1IXqtfl87/CLupBHXq6cIwag800X6+2ON3gx3bIw5e
- gwAfp+Lm8MdUg5q5IKivAMVBTAQ94J8MUHQ4RYTRP6CzqmNCxo
- DXULfJKRDO1oaDKaAQmZV9PKSJhwPVRX5zqUQ/DtQ8E7Fdul6q
- nivCeA1I8aBfnWKbFdxUy4acYXiCF2wSxFPKFBkRMkJKan+J1o
- 0QncR5XgmDFmZjbvbrOiOTi+2MIEE4O5T5PJLXhGLlFCh4fgwA
- AfgyEoeeIYOkQ==
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] KVM: x86: add tracepoints to trace mmio begin
+ and complete
+References: <4F2AC707.7020801@gmail.com> <4F2AC790.1090805@gmail.com> <4F2AC9A0.7090904@redhat.com> <4F2ACE04.9040602@gmail.com> <4F2ACE46.4000307@redhat.com>
+In-Reply-To: <4F2ACE46.4000307@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 01:52:18PM +0100, Danny Kukawka wrote:
-> On Mittwoch, 1. Februar 2012, David Laight wrote:
-> > > -----Original Message-----
-> > > From: netdev-owner@vger.kernel.org
-> > > [mailto:netdev-owner@vger.kernel.org] On Behalf Of Danny Kukawka
-> > > Sent: 31 January 2012 17:04
-> > > To: Karsten Keil
-> > > Cc: Ben Hutchings; Armin Schindler;
-> > > linux-kernel@vger.kernel.org; netdev@vger.kernel.org; Karsten Keil
-> > > Subject: Re: [PATCH 01/16] eicon: fix -Warray-bounds warning
-> > >
-> > > On Dienstag, 31. Januar 2012, Karsten Keil wrote:
-> > > > On Mon, Jan 30, 2012 at 11:09:32PM +0000, Ben Hutchings wrote:
-> > > > > On Mon, 2012-01-30 at 23:00 +0100, Danny Kukawka wrote:
-> > > > > > Fix for a -Warray-bounds warning. mixer_notify_update() tries to
-> > > > > > write to ((CAPI_MSG *) msg)->info.facility_req.structs[3] while
-> > > > > > structs is defined as byte structs[1], define structs[1] as
-> > > > > > structs[4].
-> > > > >
-> > > > > I suspect that all the 'byte structs[1];' fields defined
-> > >
-> > > in that header
-> > >
-> > > > > are actually variable-length arrays.  In that case, there
-> > >
-> > > may be no
-> > >
-> > > > > reasonable bound you can specify.
-> > > >
-> > > > Yes, exactely, the structs is a ASN1 coded message so it
-> > >
-> > > can have any len.
-> > >
-> > > So, how can we get rid of the compiler warning then?
-> >
-> > Try defining it as a 'variable sized array' - byte structs[0].
+On 02/03/2012 01:56 AM, Avi Kivity wrote:
+
+> On 02/02/2012 07:55 PM, Xiao Guangrong wrote:
+>> On 02/03/2012 01:36 AM, Avi Kivity wrote:
+>>
+>>> On 02/02/2012 07:27 PM, Xiao Guangrong wrote:
+>>>> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>>
+>>>> 'perf kvm-events' will use kvm_exit and kvm_mmio(read...) to calculate
+>>>> mmio read emulated time for the old kernel, in order to trace mmio read
+>>>> event more exactly, we add kvm_mmio_begin to trace the time when mmio read
+>>>> begins
+>>>>
+>>>> Also, add kvm_mmio_done to trace the time when mmio/pio is completed
+>>>
+>>> Previously, we discussed using the kvm_entry to do this.  This reduces
+>>> the number of tracepoints, and is backwards compatible.  What was the
+>>> conclusion?
+>>>
+>>
+>>
+>> Since using kvm_entry can cause lots of unnecessary calculated, these new two
+>> tracepoints can let the result be exacter.
 > 
-> Okay, that works. I'll send an updated patch.
+> Do you have numbers on the ratio between kvm_entry traces and
+> kvm_mmio_begin/end traces?
 > 
 
-Nice, I did not know this way.
 
-Karsten
+1: Using kvm_mmio_begin/end:
+
+# ./perf kvm-events report --event mmio
+  Warning: Error: expected type 5 but read 4
+  Warning: Error: expected type 5 but read 0
+  Warning: unknown op '}'
+
+
+Analyze events for all VCPUs:
+
+         MMIO Access    Samples  Samples%     Time%         Avg time
+
+        0xfee00380:W      54926    58.45%    57.32%      3.90us ( +-   0.29% )
+        0xfee00300:W      12906    13.73%    28.70%      8.32us ( +-   0.50% )
+        0xfee00300:R      12906    13.73%     7.68%      2.23us ( +-   1.27% )
+        0xfee00310:W      12906    13.73%     6.07%      1.76us ( +-   1.05% )
+        0xfee00190:R        323     0.34%     0.23%      2.65us ( +-   2.85% )
+
+Total Samples:93967, Total events handled time:374012.26us.
+
+2: kvm_mmio_begin/end is not used:
+
+# ./perf kvm-events report --event mmio
+  Warning: Error: expected type 5 but read 4
+  Warning: Error: expected type 5 but read 0
+  Warning: unknown op '}'
+
+
+Analyze events for all VCPUs:
+
+         MMIO Access    Samples  Samples%     Time%         Avg time
+
+        0xfee00380:W      54926    58.45%    42.90%      3.90us ( +-   0.29% )
+        0xfee00300:W      12906    13.73%    21.48%      8.32us ( +-   0.50% )
+        0xfee00300:R      12906    13.73%    30.26%     11.72us ( +-   1.40% )
+        0xfee00310:W      12906    13.73%     4.54%      1.76us ( +-   1.05% )
+        0xfee00190:R        323     0.34%     0.82%     12.63us ( +-   2.85% )
+
+Total Samples:93967, Total events handled time:499755.82us.
+
+In this sample, the time of MMIO Read has big different,
+in the case 1(new tracepoints), the time is calculated by kvm_mmio_begin -> kvm_mmio(read...)
+in the case 2(existing tracepoints), the time is calculated by kvm_exit -> kvm_mmio(read...)
