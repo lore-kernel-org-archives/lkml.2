@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab2BCO7T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 09:59:19 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35020 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756771Ab2BCO7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 09:59:17 -0500
-From: Xi Wang <xi.wang@gmail.com>
-To: Sage Weil <sage@newdream.net>
-Cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xi Wang <xi.wang@gmail.com>
-Subject: [PATCH RESEND] ceph: avoid panic with mismatched symlink sizes in fill_inode()
-Date: Fri,  3 Feb 2012 09:55:36 -0500
-Message-Id: <1328280936-2688-1-git-send-email-xi.wang@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1756807Ab2BCPGc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:06:32 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:39668 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756634Ab2BCPGb convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Fri, 3 Feb 2012 10:06:31 -0500
+Message-Id: <4F2C06020200007800071066@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 03 Feb 2012 15:06:26 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: eliminate TICKET_MASK
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return -EINVAL rather than panic if iinfo->symlink_len and
-inode->i_size do not match.
+The definition of it being questionable already (unnecessarily
+including a cast), and it being used in a single place that can be
+written shorter without it, remove this #define.
 
-Also use kstrndup rather than kmalloc/memcpy.
+Along the same lines, simplify __ticket_spin_is_locked()'s main
+expression, which was the more convoluted way because of needs that
+went away with the recent type changes by Jeremy.
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
+This is pure cleanup, no functional change intended.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+
 ---
- fs/ceph/inode.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/spinlock.h       |    4 ++--
+ arch/x86/include/asm/spinlock_types.h |    1 -
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
-index 2c48937..6c0205d 100644
---- a/fs/ceph/inode.c
-+++ b/fs/ceph/inode.c
-@@ -677,18 +677,19 @@ static int fill_inode(struct inode *inode,
- 	case S_IFLNK:
- 		inode->i_op = &ceph_symlink_iops;
- 		if (!ci->i_symlink) {
--			int symlen = iinfo->symlink_len;
-+			u32 symlen = iinfo->symlink_len;
- 			char *sym;
+--- 3.3-rc2/arch/x86/include/asm/spinlock.h
++++ 3.3-rc2-x86-ticket-mask/arch/x86/include/asm/spinlock.h
+@@ -88,14 +88,14 @@ static inline int __ticket_spin_is_locke
+ {
+ 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
  
--			BUG_ON(symlen != inode->i_size);
- 			spin_unlock(&ci->i_ceph_lock);
+-	return !!(tmp.tail ^ tmp.head);
++	return tmp.tail != tmp.head;
+ }
  
-+			err = -EINVAL;
-+			if (symlen != inode->i_size)
-+				goto out;
-+
- 			err = -ENOMEM;
--			sym = kmalloc(symlen+1, GFP_NOFS);
-+			sym = kstrndup(iinfo->symlink, symlen, GFP_NOFS);
- 			if (!sym)
- 				goto out;
--			memcpy(sym, iinfo->symlink, symlen);
--			sym[symlen] = 0;
+ static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
+ {
+ 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
  
- 			spin_lock(&ci->i_ceph_lock);
- 			if (!ci->i_symlink)
--- 
-1.7.5.4
+-	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
++	return (__ticket_t)(tmp.tail - tmp.head) > 1;
+ }
+ 
+ #ifndef CONFIG_PARAVIRT_SPINLOCKS
+--- 3.3-rc2/arch/x86/include/asm/spinlock_types.h
++++ 3.3-rc2-x86-ticket-mask/arch/x86/include/asm/spinlock_types.h
+@@ -16,7 +16,6 @@ typedef u32 __ticketpair_t;
+ #endif
+ 
+ #define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
+-#define TICKET_MASK	((__ticket_t)((1 << TICKET_SHIFT) - 1))
+ 
+ typedef struct arch_spinlock {
+ 	union {
+
+
 
