@@ -1,258 +1,512 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab2BCRme (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 12:42:34 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41018 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756717Ab2BCRm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 12:42:29 -0500
-Date: Fri, 3 Feb 2012 09:32:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, arjanvandeven@gmail.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: x86: clean up smpboot.c's use of udelay+schedule
-Message-ID: <20120203173235.GA4642@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120130205304.0e10b05e@infradead.org>
- <20120131124341.GC4408@elte.hu>
- <1328014076.2446.210.camel@twins>
- <20120131125331.GE4408@elte.hu>
- <1328014916.2446.217.camel@twins>
- <20120202003357.GP2382@linux.vnet.ibm.com>
- <4F2A4361.2020404@linux.vnet.ibm.com>
- <20120202152334.GA2518@linux.vnet.ibm.com>
+	id S1757137Ab2BCRm2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 12:42:28 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56479 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756828Ab2BCRmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 12:42:25 -0500
+Date: Fri, 3 Feb 2012 21:42:18 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
+Message-ID: <20120203174218.GN11834@moon>
+References: <20120130140905.441199885@openvz.org>
+ <20120130141852.309402052@openvz.org>
+ <20120203074656.GC30543@elte.hu>
+ <20120203083530.GD1968@moon>
+ <20120203090929.GA23996@elte.hu>
+ <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+ <20120203092823.GE1968@moon>
+ <4F2C1A46.4010105@zytor.com>
+ <4F2C1AC9.7090509@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120202152334.GA2518@linux.vnet.ibm.com>
+In-Reply-To: <4F2C1AC9.7090509@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020317-5806-0000-0000-00001207D93A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 07:23:34AM -0800, Paul E. McKenney wrote:
-> On Thu, Feb 02, 2012 at 01:33:45PM +0530, Srivatsa S. Bhat wrote:
-> > On 02/02/2012 06:03 AM, Paul E. McKenney wrote:
-> > > On Tue, Jan 31, 2012 at 02:01:56PM +0100, Peter Zijlstra wrote:
-
-[ . . . ]
-
-> > >> Also related:
-> > >>
-> > >>  - figure out why cpu_down needs kstopmachine, I'm not sure it does..
-> > >>    we should be able to tear down a cpu using synchronize_sched() and a
-> > >>    single stop_one_cpu(). (someday when there's time I might actually
-> > >>    try to implement this).
-> > > 
-> > > Currently, a number of the CPU_DYING notifiers assume that they are
-> > > running in stop-machine context, including those of RCU.
-> > > 
-> > > However, this is not an inherent property of RCU -- DYNIX/ptx's
-> > > CPU-offline process did not stop the whole machine, after all, and RCU
-> > > (we called it rclock, but whatever) was happy with this arrangement.
-> > > In fact, if the outgoing CPU could be made to stop in that context
-> > > instead of returning to the scheduler and the idle loop, it would make
-> > > my life a bit easier.
-> > > 
-> > > My question is why aren't the notifiers executed in the opposite
-> > > order going down and coming up, with the coming-up order matching the
-> > > boot order?  Also, why can't the CPU's exit from this world be driven
-> > > out of the idle loop?  That way, the CPU wouldn't mark itself offline
-> > > (thus in theory to be ignored by CPU), and then immediately dive into
-> > > the scheduler and who knows what all else, using RCU all the time.  ;-)
-> > > 
-> > > (RCU handles this by keeping a separate set of books for online CPUs.
-> > > It considers a CPU online at CPU_UP_PREPARE time, and doesn't consider
-> > > it offline until CPU_DEAD time.  To handle the grace periods between,
-> > > force_quiescent_state() allows the grace period to run a few jiffies
-> > > before checking cpu_online_map, which allows a given CPU to safely use
-> > > RCU for at least one jiffy before marking itself online and for at least
-> > > one jiffy after marking itself offline.)
-> > > 
-> > > Yet another question is about races between CPU-hotplug events and
-> > > registering/unregistering cpu notifiers.  I don't believe that the
-> > > current code does what you would like in all cases.
-> > 
-> > I beg to differ here. There is no race between CPU-hotplug and registering
-> > or unregistering of cpu notifiers. The pair cpu_maps_update_begin() and
-> > cpu_maps_update_done() is supposed to take care of that right?
+On Fri, Feb 03, 2012 at 09:35:05AM -0800, H. Peter Anvin wrote:
+...
+> >How about:
+> >
+> >const int size = sizeof(cookies[0]);
+> >
+> >get_random_bytes(&cookies[i], size);
+> >
+> >... and skip the completely unnecessary for loop?
+> >
 > 
-> Yes, the integrity of the list itself is guaranteed.
+> Even better:
 > 
-> Unless I am missing something, cpu_maps_update_begin() does not cover
-> invocation of all of the notifiers (and for good reason).  One way to
-> handle this is to register your notifier early at boot time, so that
-> it cannot race with a group of notifications (which is what RCU does).
-> If your code is in a module and needs to track the currently online
-> CPUs, you might be in for a surprise.  ;-)
+> static __init int kcmp_cookie_init(void)
+> {
+> 	int i;
+> 
+> 	get_random_bytes(cookies, sizeof cookies);
+> 
+> 	for (i = 0; i < KCMP_TYPES; i++)
+> 		cookies[i][1] |= ~(~0UL >> 1) | 1;
+> }
+> 
 
-And never mind -- I was confused...  Miscounting underscores yet again.
-Please accept my apologies for my confusion.
+Oh, cool! It's a way simplier (I somehow forgot that
+get_random_bytes operates with stream of bytes).
 
-Starting from the top, what does CPU hotplug need to do?
+	Cyrill
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: syscalls, x86: Add __NR_kcmp syscall v8
 
-1.	preempt_disable() or something similarly lightweight and
-	unconditional must block removal of any CPU that was
-	in cpu_online_map at the start of the "critical section".
-	(I will identify these as hotplug read-side critical sections.)
+While doing the checkpoint-restore in the user space one need to determine
+whether various kernel objects (like mm_struct-s of file_struct-s) are shared
+between tasks and restore this state.
 
-	I don't believe that there is any prohibition against a CPU
-	appearing suddenly, but some auditing would be required to
-	confirm this.  But see below.
+The 2nd step can be solved by using appropriate CLONE_ flags and the unshare
+syscall, while there's currently no ways for solving the 1st one.
 
-2.	A subsystem not involved in the CPU-hotplug process must be able
-	to test if a CPU is online and be guaranteed that this test
-	remains valid (the CPU remains fully functional) for the duration
-	of the hotplug read-side critical section.
+One of the ways for checking whether two tasks share e.g. mm_struct is to
+provide some mm_struct ID of a task to its proc file, but showing such
+info considered to be not that good for security reasons.
 
-3.	If a subsystem needs to operate on all currently online CPUs,
-	then it must participate in the CPU-hotplug process.  My
-	belief is that if some code needs to test whether a CPU is
-	present, and needs an "offline" indication to persist, then
-	that code's subsystem must participate in CPU-hotplug operations.
+Thus after some debates we end up in conclusion that using that named
+'comparison' syscall might be the best candidate. So here is it --
+__NR_kcmp.
 
-4.	There must be a way to register/unregister for CPU-hotplug events.
-	This is currently cpu_notifier(), register_cpu_notifier(),
-	and unregister_cpu_notifier().
+It takes up to 5 arguments - the pids of the two tasks (which
+characteristics should be compared), the comparison type and
+(in case of comparison of files) two file descriptors.
 
-n-1.	CPU-hotplug operations should be reasonably fast.  Tens of
-	milliseconds is OK, multiple seconds not so much.
+Lookups for pids are done in the caller's PID namespace only.
 
-n.	(Your additional constraints here.)
+At moment only x86 is supported and tested.
 
-How to do this?  Here is one possible approach, probably full of holes:
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Andrey Vagin <avagin@openvz.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: H. Peter Anvin <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Glauber Costa <glommer@parallels.com>
+CC: Andi Kleen <andi@firstfloor.org>
+CC: Tejun Heo <tj@kernel.org>
+CC: Matt Helsley <matthltc@us.ibm.com>
+CC: Pekka Enberg <penberg@kernel.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Vasiliy Kulikov <segoon@openwall.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Valdis.Kletnieks@vt.edu
+CC: Michal Marek <mmarek@suse.cz>
+---
+ arch/x86/syscalls/syscall_32.tbl         |    1 
+ arch/x86/syscalls/syscall_64.tbl         |    1 
+ include/linux/kcmp.h                     |   17 +++
+ include/linux/syscalls.h                 |    2 
+ kernel/Makefile                          |    3 
+ kernel/kcmp.c                            |  155 +++++++++++++++++++++++++++++++
+ kernel/sys_ni.c                          |    3 
+ tools/testing/selftests/kcmp/Makefile    |   36 +++++++
+ tools/testing/selftests/kcmp/kcmp_test.c |   84 ++++++++++++++++
+ tools/testing/selftests/run_tests        |    2 
+ 10 files changed, 303 insertions(+), 1 deletion(-)
 
-a.	Maintain the cpu_online_map, as currently, but the meaning
-	of a set bit is that the CPU is fully functional.  If there
-	is any service that the CPU no longer offers, its bit is
-	cleared.
-
-b.	Continue to use preempt_enable()/preempt_disable() to mark
-	hotplug read-side critical sections.
-
-c.	Instead of using __stop_machine(), use a per-CPU variable that
-	is checked in the idle loop.  Possibly another TIF_ bit.
-
-d.	The CPU notifiers are like today, except that CPU_DYING() is
-	invoked by the CPU after it sees that its per-CPU variable
-	telling it to go offline.  As today, the CPU_DYING notifiers
-	are invoked with interrupts disabled, but other CPUs are still
-	running.  Of course, the CPU_DYING notifiers need to be audited
-	and repaired.  There are fewer than 20 of them, so not so bad.
-	RCU's is an easy fix:  Just re-introduce locking and the global
-	RCU callback orphanage.  My guesses for the others at the end.
-
-e.	Getting rid of __stop_machine() means that the final step of the
-	CPU going offline will no longer be seen as atomic by other CPUs.
-	This will require more careful tracking of dependencies among
-	different subsystems.  The required tracking can be reduced
-	by invoking notifiers in registration order for CPU-online
-	operations and invoking them in the reverse of registration
-	order for CPU-offline operations.
-
-	For example, the scheduler uses RCU.  If notifiers are invoked in
-	the same order for all CPU-hotplug operations, then on CPU-offline
-	operations, during the time between when RCU's notifier is invoked
-	and when the scheduler's notifier is invoked, the scheduler must
-	deal with a CPU on which RCU isn't working.  (RCU currently
-	works around this by allowing a one-jiffy time period after
-	notification when it still pays attention to the CPU.)
-
-	In contrast, if notifiers are invoked in reverse-registration
-	order for CPU-offline operations, then any time the scheduler
-	sees a CPU as online, RCU also is treating it as online.
-
-f.	There will be some circular dependencies.  For example, the
-	scheduler uses RCU, but in some configurations, RCU also uses
-	kthreads.  These dependencies must be handled on a case-by-case
-	basis.	For example, the scheduler could invoke an RCU API
-	to tell RCU when to shut down its per-CPU kthreads and when
-	to start them up.  Or RCU could deal with its kthreads in the
-	CPU_DOWN_PREPARE and CPU_ONLINE notifiers.  Either way, RCU
-	needs to correctly handle the interval when it cannot use
-	kthreads on a given CPU that it is still handling, for example,
-	by switching to running the RCU core code in softirq context.
-
-g.	Most subsystems participating in CPU-hotplug operations will need
-	to keep their own copy of CPU online/offline state.  For example,
-	RCU uses the ->qsmaskinit fields in the rcu_node structure for
-	this purpose.
-
-h.	So CPU-offline handling looks something like the following:
-
-	i.	Acquire the hotplug mutex.
-	
-	ii.	Invoke the CPU_DOWN_PREPARE notifiers.  If there
-		are objections, invoke the CPU_DOWN_FAILED notifiers
-		and return an error.
-
-	iii.	Clear the CPU's bit in cpu_online_map.
-	
-	iv.	Invoke synchronize_sched() to ensure that all future hotplug
-		read-side critical sections ignore the outgoing CPU.
-
-	v.	Set a per-CPU variable telling the CPU to take itself
-		offline.  There would need to be something here to
-		help the CPU get to idle quickly, possibly requiring
-		another round of notifiers.  CPU_DOWN?
-
-	vi.	When the dying CPU gets to the idle loop, it invokes the
-		CPU_DYING notifiers and updates its per-CPU variable to
-		indicate that it is ready to die.  It then spins in a
-		tight loop (or does some other architecture-specified
-		operation to wait to be turned off).
-
-		Note that there is no need for RCU to guess how long the
-		CPU might be executing RCU read-side critical sections.
-
-	vii.	When the task doing the offline operation sees the
-		updated per-CPU variable, it calls __cpu_die().
-
-	viii.	The CPU_DEAD notifiers are invoked.
-
-	ix.	Theeck_for_tasks() function is invoked.
-
-	x.	Release the hotplug mutex.
-
-	xi.	Invoke the CPU_POST_DEAD notifiers.
-
-i.	I do not believe that the CPU-offline handling needs to change
-	much.
-
-
-CPU_DYING notifiers as of 3.2:
-
-o	vfp_hotplug():  I believe that this works as-is.
-o	s390_nohz_notify():  I believe that this works as-is.
-o	x86_pmu_notifier():  I believe that this works as-is.
-o	perf_ibs_cpu_notifier():  I don't know enough about
-	APIC to say.
-o	tboot_cpu_callback():  I believe that this works as-is,
-	but this one returns NOTIFY_BAD to a CPU_DYING notifier,
-	which is badness.  But it looks like that case is a
-	"cannot happen" case.  Still needs to be fixed.
-o	clockevents_notify():  This one acquires a global lock,
-	so it should be safe as-is.
-o	console_cpu_notify():  This one takes the same action
-	for CPU_ONLINE, CPU_DEAD, CPU_DOWN_FAILED, and
-	CPU_UP_CANCELLED that it does for CPU_DYING, so it
-	should be OK.
-o	rcu_cpu_notify():  This one needs adjustment as noted
-	above, but nothing major.
-o	migration_call():  I defer to Peter on this one.
-	It looks to me like it is written to handle other
-	CPUs, but...
-o	workqueue_cpu_callback(): Might need help, does a
-	non-atomic OR.
-o	kvm_cpu_hotplug(): Uses a global spinlock, so should
-	be OK as-is.
-
-Thoughts?
-
-							Thanx, Paul
-
+Index: linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
+===================================================================
+--- linux-2.6.git.orig/arch/x86/syscalls/syscall_32.tbl
++++ linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
+@@ -355,3 +355,4 @@
+ 346	i386	setns			sys_setns
+ 347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
+ 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
++349	i386	kcmp			sys_kcmp
+Index: linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
+===================================================================
+--- linux-2.6.git.orig/arch/x86/syscalls/syscall_64.tbl
++++ linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
+@@ -318,3 +318,4 @@
+ 309	64	getcpu			sys_getcpu
+ 310	64	process_vm_readv	sys_process_vm_readv
+ 311	64	process_vm_writev	sys_process_vm_writev
++312	64	kcmp			sys_kcmp
+Index: linux-2.6.git/include/linux/kcmp.h
+===================================================================
+--- /dev/null
++++ linux-2.6.git/include/linux/kcmp.h
+@@ -0,0 +1,17 @@
++#ifndef _LINUX_KCMP_H
++#define _LINUX_KCMP_H
++
++/* Comparison type */
++enum kcmp_type {
++	KCMP_FILE,
++	KCMP_VM,
++	KCMP_FILES,
++	KCMP_FS,
++	KCMP_SIGHAND,
++	KCMP_IO,
++	KCMP_SYSVSEM,
++
++	KCMP_TYPES,
++};
++
++#endif /* _LINUX_KCMP_H */
+Index: linux-2.6.git/include/linux/syscalls.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/syscalls.h
++++ linux-2.6.git/include/linux/syscalls.h
+@@ -857,4 +857,6 @@ asmlinkage long sys_process_vm_writev(pi
+ 				      unsigned long riovcnt,
+ 				      unsigned long flags);
+ 
++asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
++			 unsigned long idx1, unsigned long idx2);
+ #endif
+Index: linux-2.6.git/kernel/Makefile
+===================================================================
+--- linux-2.6.git.orig/kernel/Makefile
++++ linux-2.6.git/kernel/Makefile
+@@ -25,6 +25,9 @@ endif
+ obj-y += sched/
+ obj-y += power/
+ 
++ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
++obj-$(CONFIG_X86) += kcmp.o
++endif
+ obj-$(CONFIG_FREEZER) += freezer.o
+ obj-$(CONFIG_PROFILING) += profile.o
+ obj-$(CONFIG_SYSCTL_SYSCALL_CHECK) += sysctl_check.o
+Index: linux-2.6.git/kernel/kcmp.c
+===================================================================
+--- /dev/null
++++ linux-2.6.git/kernel/kcmp.c
+@@ -0,0 +1,155 @@
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <linux/fdtable.h>
++#include <linux/string.h>
++#include <linux/random.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/cache.h>
++#include <linux/bug.h>
++#include <linux/err.h>
++#include <linux/kcmp.h>
++
++#include <asm/unistd.h>
++
++/*
++ * We don't expose real in-memory order of objects for security
++ * reasons, still the comparison results should be suitable for
++ * sorting. Thus, we obfuscate kernel pointers values and compare
++ * the production instead.
++ */
++static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
++
++static long kptr_obfuscate(long v, int type)
++{
++	return (v ^ cookies[type][0]) * cookies[type][1];
++}
++
++/*
++ * 0 - equal, i.e. v1 = v2
++ * 1 - less than, i.e. v1 < v2
++ * 2 - greater than, i.e. v1 > v2
++ * 3 - not equal but ordering unavailable (reserved for future)
++ */
++static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
++{
++	long ret;
++
++	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
++
++	return (ret < 0) | ((ret > 0) << 1);
++}
++
++/* The caller must have pinned the task */
++static struct file *
++get_file_raw_ptr(struct task_struct *task, unsigned int idx)
++{
++	struct fdtable *fdt;
++	struct file *file;
++
++	spin_lock(&task->files->file_lock);
++	fdt = files_fdtable(task->files);
++	if (idx < fdt->max_fds)
++		file = fdt->fd[idx];
++	else
++		file = NULL;
++	spin_unlock(&task->files->file_lock);
++
++	return file;
++}
++
++SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
++		unsigned long, idx1, unsigned long, idx2)
++{
++	struct task_struct *task1, *task2;
++	int ret;
++
++	rcu_read_lock();
++
++	/*
++	 * Tasks are looked up in caller's PID namespace only.
++	 */
++	task1 = find_task_by_vpid(pid1);
++	task2 = find_task_by_vpid(pid2);
++	if (!task1 || !task2)
++		goto err_no_task;
++
++	get_task_struct(task1);
++	get_task_struct(task2);
++
++	rcu_read_unlock();
++
++	/*
++	 * One should have enough rights to inspect task details.
++	 */
++	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
++	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
++		ret = -EACCES;
++		goto err;
++	}
++
++	switch (type) {
++	case KCMP_FILE: {
++		struct file *filp1, *filp2;
++
++		filp1 = get_file_raw_ptr(task1, idx1);
++		filp2 = get_file_raw_ptr(task2, idx2);
++
++		if (filp1 && filp2)
++			ret = kcmp_ptr(filp1, filp2, KCMP_FILE);
++		else
++			ret = -EBADF;
++		break;
++	}
++	case KCMP_VM:
++		ret = kcmp_ptr(task1->mm, task2->mm, KCMP_VM);
++		break;
++	case KCMP_FILES:
++		ret = kcmp_ptr(task1->files, task2->files, KCMP_FILES);
++		break;
++	case KCMP_FS:
++		ret = kcmp_ptr(task1->fs, task2->fs, KCMP_FS);
++		break;
++	case KCMP_SIGHAND:
++		ret = kcmp_ptr(task1->sighand, task2->sighand, KCMP_SIGHAND);
++		break;
++	case KCMP_IO:
++		ret = kcmp_ptr(task1->io_context, task2->io_context, KCMP_IO);
++		break;
++	case KCMP_SYSVSEM:
++#ifdef CONFIG_SYSVIPC
++		ret = kcmp_ptr(task1->sysvsem.undo_list,
++			       task2->sysvsem.undo_list,
++			       KCMP_SYSVSEM);
++#else
++		ret = -EOPNOTSUP;
++#endif
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++
++err:
++	put_task_struct(task1);
++	put_task_struct(task2);
++
++	return ret;
++
++err_no_task:
++	rcu_read_unlock();
++	return -ESRCH;
++}
++
++static __init int kcmp_cookies_init(void)
++{
++	int i;
++
++	get_random_bytes(cookies, sizeof(cookies));
++
++	for (i = 0; i < KCMP_TYPES; i++)
++		cookies[i][1] |= (~(~0UL >>  1) | 1);
++
++	return 0;
++}
++arch_initcall(kcmp_cookies_init);
+Index: linux-2.6.git/kernel/sys_ni.c
+===================================================================
+--- linux-2.6.git.orig/kernel/sys_ni.c
++++ linux-2.6.git/kernel/sys_ni.c
+@@ -203,3 +203,6 @@ cond_syscall(sys_fanotify_mark);
+ cond_syscall(sys_name_to_handle_at);
+ cond_syscall(sys_open_by_handle_at);
+ cond_syscall(compat_sys_open_by_handle_at);
++
++/* compare kernel pointers */
++cond_syscall(sys_kcmp);
+Index: linux-2.6.git/tools/testing/selftests/kcmp/Makefile
+===================================================================
+--- /dev/null
++++ linux-2.6.git/tools/testing/selftests/kcmp/Makefile
+@@ -0,0 +1,36 @@
++ifeq ($(strip $(V)),)
++	E = @echo
++	Q = @
++else
++	E = @\#
++	Q =
++endif
++export E Q
++
++uname_M := $(shell uname -m 2>/dev/null || echo not)
++ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
++ifeq ($(ARCH),i386)
++        ARCH := X86
++	CFLAGS := -DCONFIG_X86_32 -D__i386__
++endif
++ifeq ($(ARCH),x86_64)
++	ARCH := X86
++	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
++endif
++
++CFLAGS += -I../../../../arch/x86/include/generated/
++CFLAGS += -I../../../../include/
++CFLAGS += -I../../../../usr/include/
++
++all:
++ifeq ($(ARCH),X86)
++	$(E) "  CC run_test"
++	$(Q) gcc $(CFLAGS) kcmp_test.c -o run_test
++else
++	$(E) "Not an x86 target, can't build kcmp selftest"
++endif
++
++clean:
++	$(E) "  CLEAN"
++	$(Q) rm -fr ./run_test
++	$(Q) rm -fr ./test-file
+Index: linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c
+===================================================================
+--- /dev/null
++++ linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c
+@@ -0,0 +1,84 @@
++#define _GNU_SOURCE
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <limits.h>
++#include <unistd.h>
++#include <errno.h>
++#include <string.h>
++#include <fcntl.h>
++
++#include <linux/unistd.h>
++#include <linux/kcmp.h>
++
++#include <sys/syscall.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <sys/wait.h>
++
++static long sys_kcmp(int pid1, int pid2, int type, int fd1, int fd2)
++{
++	return syscall(__NR_kcmp, pid1, pid2, type, fd1, fd2);
++}
++
++int main(int argc, char **argv)
++{
++	const char kpath[] = "kcmp-test-file";
++	int pid1, pid2;
++	int fd1, fd2;
++	int status;
++
++	fd1 = open(kpath, O_RDWR | O_CREAT | O_TRUNC, 0644);
++	pid1 = getpid();
++
++	if (fd1 < 0) {
++		perror("Can't create file");
++		exit(1);
++	}
++
++	pid2 = fork();
++	if (pid2 < 0) {
++		perror("fork failed");
++		exit(1);
++	}
++
++	if (!pid2) {
++		int pid2 = getpid();
++		int ret;
++
++		fd2 = open(kpath, O_RDWR, 0644);
++		if (fd2 < 0) {
++			perror("Can't open file");
++			exit(1);
++		}
++
++		/* An example of output and arguments */
++		printf("pid1: %6d pid2: %6d FD: %2d FILES: %2d VM: %2d FS: %2d "
++		       "SIGHAND: %2d IO: %2d SYSVSEM: %2d INV: %2d\n",
++		       pid1, pid2,
++		       sys_kcmp(pid1, pid2, KCMP_FILE,		fd1, fd2),
++		       sys_kcmp(pid1, pid2, KCMP_FILES,		0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_VM,		0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_FS,		0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_SIGHAND,	0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_IO,		0, 0),
++		       sys_kcmp(pid1, pid2, KCMP_SYSVSEM,	0, 0),
++
++			/* This one should fail */
++		       sys_kcmp(pid1, pid2, KCMP_TYPES + 1,	0, 0));
++
++		/* This one should return same fd */
++		ret = sys_kcmp(pid1, pid2, KCMP_FILE, fd1, fd1);
++		if (ret) {
++			printf("FAIL: 0 expected but %d returned\n", ret);
++			ret = -1;
++		} else
++			printf("PASS: 0 returned as expected\n");
++		exit(ret);
++	}
++
++	waitpid(pid2, &status, P_ALL);
++
++	return 0;
++}
+Index: linux-2.6.git/tools/testing/selftests/run_tests
+===================================================================
+--- linux-2.6.git.orig/tools/testing/selftests/run_tests
++++ linux-2.6.git/tools/testing/selftests/run_tests
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ 
+-TARGETS=breakpoints
++TARGETS="breakpoints kcmp"
+ 
+ for TARGET in $TARGETS
+ do
