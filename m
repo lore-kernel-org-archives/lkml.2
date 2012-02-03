@@ -1,263 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab2BCUIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 15:08:07 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:54044 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819Ab2BCUIE (ORCPT
+	id S1756143Ab2BCUIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 15:08:45 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:63729 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab2BCUIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 15:08:04 -0500
-Date: Fri, 3 Feb 2012 15:05:08 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Cihula, Joseph" <joseph.cihula@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "x86@kernel.org" <x86@kernel.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "tboot-devel@lists.sourceforge.net" 
-	<tboot-devel@lists.sourceforge.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "liang.tang@oracle.com" <liang.tang@oracle.com>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 2/7] tboot: Add return values for tboot_sleep
-Message-ID: <20120203200508.GA1556@phenom.dumpdata.com>
-References: <1324075099-11397-1-git-send-email-konrad.wilk@oracle.com>
- <1324075099-11397-3-git-send-email-konrad.wilk@oracle.com>
- <9F57BF860713DF4BA3EFA4F8C6DFEDAC2420CBB9@ORSMSX101.amr.corp.intel.com>
- <20120112174958.GA22515@phenom.dumpdata.com>
- <20120112202308.GA2030@phenom.dumpdata.com>
- <9F57BF860713DF4BA3EFA4F8C6DFEDAC2D6870EE@ORSMSX101.amr.corp.intel.com>
+	Fri, 3 Feb 2012 15:08:43 -0500
+X-Greylist: delayed 14488 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Feb 2012 15:08:43 EST
+Message-ID: <4F2C0606.7000409@windriver.com>
+Date: Fri, 3 Feb 2012 11:06:30 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9F57BF860713DF4BA3EFA4F8C6DFEDAC2D6870EE@ORSMSX101.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090203.4F2C3E96.005E,ss=1,re=0.000,fgs=0
+To: Cong Wang <xiyou.wangcong@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Jamie Iles <jamie@jamieiles.com>, Stephen Warren <swarren@nvidia.com>,
+        <linux-serial@vger.kernel.org>
+Subject: Re: [Patch] tty: fix a build failure on sparc
+References: <1328246540-5824-1-git-send-email-xiyou.wangcong@gmail.com>
+In-Reply-To: <1328246540-5824-1-git-send-email-xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 12:16:39AM +0000, Cihula, Joseph wrote:
-> > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> > Sent: Thursday, January 12, 2012 12:23 PM
-> eturn values for tboot_sleep
-> > 
-> > On Thu, Jan 12, 2012 at 09:49:58AM -0800, Konrad Rzeszutek Wilk wrote:
-> > > On Tue, Jan 10, 2012 at 08:10:53PM +0000, Cihula, Joseph wrote:
-> > > > ACK, but tboot_sleep() calls tboot_shutdown() and there are error conditions in that which you
-> > are not reflecting upward--i.e. you should make tboot_shutdown() return an 'int' and propagate its
-> > errors through tboot_sleep().
-> > >
-> > > Hey Joe,
-> > >
-> > > Thanks for looking at the patches.
-> > >
-> > > Right now [with this patch applied] the code looks as so:
-> > >
-> > > 297
-> > > 298         tboot_shutdown(acpi_shutdown_map[sleep_state]);
-> > > 299         return 0;
-> > > 300 }
-> > >
-> > >
-> > > If we do make tboot_shutdown() return an int, there will be a need to
-> > > modify other callers: native_machine_emergency_restart,
-> > > native_machine_halt, native_machine_power_off, and native_play_dead as well.
-> > >
-> > > Perhaps that could be done in another patch and leave this one as is
-> > > where the 'tboot_sleep' would just return 0 instead of 'return
-> > > tboot_shutdown(...)' ?
-> > >
-> > > Perhaps another way to do this is to extract the common code of
-> > > tboot_sleep and tboot_shutdown?
+On 12-02-03 12:22 AM, Cong Wang wrote:
+> On sparc, there is a build failure:
 > 
-> I'd be happier to see the callers above changed to handle a tboot_shutdown() that returned an error than splitting this up and only checking the error in one path.
+> drivers/tty/serial/8250/8250.c:48:21: error: suncore.h: No such file or directory
+> drivers/tty/serial/8250/8250.c:3275: error: implicit declaration of function 'sunserial_register_minors'
+> drivers/tty/serial/8250/8250.c:3305: error: implicit declaration of function 'sunserial_unregister_minors'
+> 
+> this is due to commit 9bef3d4197379a995fa80f81950bbbf8d32e9e8b
+> (serial: group all the 8250 related code together) moved these files
+> into 8250/ subdirectory, but forgot to change the reference
+> to drivers/tty/serial/suncore.h.
 
-OK, so something like this then:
+Thanks, I explicitly left sunsu out of the move but missed
+that 8250 was sourcing its related header.  I did defconfig
+builds, but in going back to check, I see that neither sparc
+32/64 defconfig enable 8250 by default, so those builds didn't
+help me much at all...  :(
 
->From da60a441fd62aee83763758455c08c281893ae93 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 8 Dec 2011 17:14:08 +0800
-Subject: [PATCH] tboot: Add return values for tboot_sleep and consequently
- tboot_shutdown
+Acked-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-.. as appropiately. As tboot_sleep now returns values.
-remove tboot_sleep_wrapper.
-
-Suggested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-Acked-by: Joseph Cihula <joseph.cihula@intel.com>
-[v1: Return -1/0/+1 instead of ACPI_xx values]
-[v2: Also make tboot_shutdown return error code]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/kernel/reboot.c  |    6 +++---
- arch/x86/kernel/smpboot.c |    2 +-
- arch/x86/kernel/tboot.c   |   33 +++++++++++++++------------------
- include/linux/tboot.h     |    4 ++--
- 4 files changed, 21 insertions(+), 24 deletions(-)
-
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 37a458b..b29326a 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -549,7 +549,7 @@ static void native_machine_emergency_restart(void)
- 	if (reboot_emergency)
- 		emergency_vmx_disable_all();
- 
--	tboot_shutdown(TB_SHUTDOWN_REBOOT);
-+	WARN_ON(tboot_shutdown(TB_SHUTDOWN_REBOOT));
- 
- 	/* Tell the BIOS if we want cold or warm reboot */
- 	*((unsigned short *)__va(0x472)) = reboot_mode;
-@@ -684,7 +684,7 @@ static void native_machine_halt(void)
- 	/* stop other cpus and apics */
- 	machine_shutdown();
- 
--	tboot_shutdown(TB_SHUTDOWN_HALT);
-+	WARN_ON(tboot_shutdown(TB_SHUTDOWN_HALT));
- 
- 	/* stop this cpu */
- 	stop_this_cpu(NULL);
-@@ -698,7 +698,7 @@ static void native_machine_power_off(void)
- 		pm_power_off();
- 	}
- 	/* a fallback in case there is no PM info available */
--	tboot_shutdown(TB_SHUTDOWN_HALT);
-+	WARN_ON(tboot_shutdown(TB_SHUTDOWN_HALT));
- }
- 
- struct machine_ops machine_ops = {
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 66d250c..9aa903a 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1419,7 +1419,7 @@ static inline void hlt_play_dead(void)
- void native_play_dead(void)
- {
- 	play_dead_common();
--	tboot_shutdown(TB_SHUTDOWN_WFS);
-+	WARN_ON(tboot_shutdown(TB_SHUTDOWN_WFS));
- 
- 	mwait_play_dead();	/* Only returns on failure */
- 	hlt_play_dead();
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index 1a4ab7d..9504a7a 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -217,12 +217,12 @@ static int tboot_setup_sleep(void)
- 
- #endif
- 
--void tboot_shutdown(u32 shutdown_type)
-+int tboot_shutdown(u32 shutdown_type)
- {
- 	void (*shutdown)(void);
- 
- 	if (!tboot_enabled())
--		return;
-+		return 0;
- 
- 	/*
- 	 * if we're being called before the 1:1 mapping is set up then just
-@@ -230,13 +230,14 @@ void tboot_shutdown(u32 shutdown_type)
- 	 * due to very early panic()
- 	 */
- 	if (!tboot_pg_dir)
--		return;
-+		return 0;
- 
- 	/* if this is S3 then set regions to MAC */
--	if (shutdown_type == TB_SHUTDOWN_S3)
--		if (tboot_setup_sleep())
--			return;
--
-+	if (shutdown_type == TB_SHUTDOWN_S3) {
-+		int rc = tboot_setup_sleep();
-+		if (rc)
-+			return rc;
-+	}
- 	tboot->shutdown_type = shutdown_type;
- 
- 	switch_to_tboot_pt();
-@@ -247,6 +248,8 @@ void tboot_shutdown(u32 shutdown_type)
- 	/* should not reach here */
- 	while (1)
- 		halt();
-+
-+	return 0;
- }
- 
- static void tboot_copy_fadt(const struct acpi_table_fadt *fadt)
-@@ -272,7 +275,7 @@ static void tboot_copy_fadt(const struct acpi_table_fadt *fadt)
- 		offsetof(struct acpi_table_facs, firmware_waking_vector);
- }
- 
--void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
-+static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
- {
- 	static u32 acpi_shutdown_map[ACPI_S_STATE_COUNT] = {
- 		/* S0,1,2: */ -1, -1, -1,
-@@ -281,7 +284,7 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
- 		/* S5: */ TB_SHUTDOWN_S5 };
- 
- 	if (!tboot_enabled())
--		return;
-+		return 0;
- 
- 	tboot_copy_fadt(&acpi_gbl_FADT);
- 	tboot->acpi_sinfo.pm1a_cnt_val = pm1a_control;
-@@ -292,16 +295,10 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
- 	if (sleep_state >= ACPI_S_STATE_COUNT ||
- 	    acpi_shutdown_map[sleep_state] == -1) {
- 		pr_warning("unsupported sleep state 0x%x\n", sleep_state);
--		return;
-+		return -1;
- 	}
- 
--	tboot_shutdown(acpi_shutdown_map[sleep_state]);
--}
--static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
--			       u32 pm1b_control)
--{
--	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
--	return 0;
-+	return tboot_shutdown(acpi_shutdown_map[sleep_state]);
- }
- 
- static atomic_t ap_wfs_count;
-@@ -352,7 +349,7 @@ static __init int tboot_late_init(void)
- 	atomic_set(&ap_wfs_count, 0);
- 	register_hotcpu_notifier(&tboot_cpu_notifier);
- 
--	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
-+	acpi_os_set_prepare_sleep(&tboot_sleep);
- 	return 0;
- }
- 
-diff --git a/include/linux/tboot.h b/include/linux/tboot.h
-index c75128b..8f14fe0 100644
---- a/include/linux/tboot.h
-+++ b/include/linux/tboot.h
-@@ -142,7 +142,7 @@ static inline int tboot_enabled(void)
- }
- 
- extern void tboot_probe(void);
--extern void tboot_shutdown(u32 shutdown_type);
-+extern int tboot_shutdown(u32 shutdown_type);
- extern struct acpi_table_header *tboot_get_dmar_table(
- 				      struct acpi_table_header *dmar_tbl);
- extern int tboot_force_iommu(void);
-@@ -151,7 +151,7 @@ extern int tboot_force_iommu(void);
- 
- #define tboot_enabled()			0
- #define tboot_probe()			do { } while (0)
--#define tboot_shutdown(shutdown_type)	do { } while (0)
-+#define tboot_shutdown(shutdown_type)	0
- #define tboot_sleep(sleep_state, pm1a_control, pm1b_control)	\
- 					do { } while (0)
- #define tboot_get_dmar_table(dmar_tbl)	(dmar_tbl)
--- 
-1.7.7.5
-
+> 
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+> 
+> ---
+> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+> index 9f50c4e..9b7336f 100644
+> --- a/drivers/tty/serial/8250/8250.c
+> +++ b/drivers/tty/serial/8250/8250.c
+> @@ -45,7 +45,7 @@
+>  #include "8250.h"
+>  
+>  #ifdef CONFIG_SPARC
+> -#include "suncore.h"
+> +#include "../suncore.h"
+>  #endif
+>  
+>  /*
