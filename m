@@ -1,116 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab2BCQls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:41:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57903 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754193Ab2BCQlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:41:46 -0500
-References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org> <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu> <20120203161358.GA805@google.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120203161358.GA805@google.com>
+	id S1756973Ab2BCQm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:42:27 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33482 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754810Ab2BCQm0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 11:42:26 -0500
+Date: Fri, 3 Feb 2012 09:42:23 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Milton Miller <miltonm@bga.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 13/25] irq_domain: Remove 'new' irq_domain in favour
+ of the ppc one
+Message-ID: <20120203164223.GB3981@ponder.secretlab.ca>
+References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
+ <1327700179-17454-14-git-send-email-grant.likely@secretlab.ca>
+ <4F2BF3A9.8030200@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from 80 to 100 colums
-From: "hpanvin@gmail.com" <hpa@zytor.com>
-Date: Fri, 03 Feb 2012 08:39:38 -0800
-To: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <b4077a42-4909-4356-97ea-27b0ae3f406c@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2BF3A9.8030200@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-96 might be a better limit.  Why?  Because 80 and 96 are the easiest line lengths to achieve on a printer.  80 is typically the default, but with a 12 cpi font you get 96.
+On Fri, Feb 03, 2012 at 03:48:09PM +0100, Cousson, Benoit wrote:
+> Hi Grant,
+> 
+> I finally had the time to rebase most of the OMAP3 and OMAP4 DT
+> patches on your latest irq_domain series and found a couple of
+> minors regressions that breaks OMAP3 boot.
+> 
+> On 1/27/2012 10:36 PM, Grant Likely wrote:
+> 
+> [...]
+> 
+> >diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+> >index e04e04dd..aab236f 100644
+> >--- a/drivers/mfd/twl-core.c
+> >+++ b/drivers/mfd/twl-core.c
+> >@@ -263,8 +263,6 @@ struct twl_client {
+> >
+> >  static struct twl_client twl_modules[TWL_NUM_SLAVES];
+> >
+> >-static struct irq_domain domain;
+> >-
+> >  /* mapping the module id to slave id and base address */
+> >  struct twl_mapping {
+> >  	unsigned char sid;	/* Slave ID */
+> >@@ -1225,14 +1223,8 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+> >
+> >  	pdata->irq_base = status;
+> >  	pdata->irq_end = pdata->irq_base + nr_irqs;
+> >-
+> >-	domain.irq_base = pdata->irq_base;
+> >-	domain.nr_irq = nr_irqs;
+> >-#ifdef CONFIG_OF_IRQ
+> >-	domain.of_node = of_node_get(node);
+> >-	domain.ops =&irq_domain_simple_ops;
+> >-#endif
+> >-	irq_domain_add(&domain);
+> >+	irq_domain_add_legacy(node, nr_irqs, pdata->irq_base, 0,
+> >+			&irq_domain_simple_ops);
+> 
+> This commit cannot build due to the missing last parameter.
+> 
+> And in fact you fixed that in the next commit (#14), but the will
+> break git bisect and anyway that fix does not really belong to this
+> commit.
+> 
+> [PATCH v3 14/25] irq_domain: Remove irq_domain_add_simple()
+> 
+>  	irq_domain_add_legacy(node, nr_irqs, pdata->irq_base, 0,
+> -			      &irq_domain_simple_ops);
+> +			      &irq_domain_simple_ops, NULL);
 
-Tejun Heo <tj@kernel.org> wrote:
+Good catch, thanks.  I'll update the series to fix that.
 
->Hello,
->
->On Fri, Feb 03, 2012 at 11:07:43AM +0100, Ingo Molnar wrote:
->> 
->> * Ingo Molnar <mingo@elte.hu> wrote:
->> 
->> > > If we want to increase the standard to (say) 96 cols then 
->> > > fine, I'd be happy with that.  But until we do that we 
->> > > should not create such a gruesome mess for those who use 80 
->> > > cols.
->> > 
->> > The kernel has *already* become a gruesome mess for 80 col 
->> > users long ago. That was the main reason why I stopped using 
->> > 80 col terminals two years ago ...
->> > 
->> > So lets stop the pretense.
->
->I don't know.  In my experience, a lot of code, especially core part,
->mostly follows 80 col limit.  It shouldn't be too difficult to write
->up a script to count >80col lines in different parts of the kernel.
->
->> [PATCH] SubmittingPatches: Increase the line length limit from 80 to
->100 colums
->> 
->> The overwhelming majority of kernel developers have stopped 
->> using 80 col terminals years ago.
->> 
->> As far as I'm aware I was the last regular kernel contributor 
->> who still used a standard VGA text console, but both text 
->> consoles and using them to read the kernel source code has 
->> become increasingly gruesome years ago so I switched to a wider 
->> terminal two years ago.
->
->People usually place multiple windows horizontally so it's not like
->all those extra pixels go wasted.  80col might even have the benefit
->of giving overall higher density in terms of pixel usage.
->
->> Worse than that, people are actively uglifying the kernel code 
->> to fit things into 80 cols mechanically. They are using 
->> checkpatch and are interpreting the 80 col warnings the wrong 
->> way again and again, sucking up reviewer bandwidth that could be 
->> utilized better.
->> 
->> So lets increase the limit to 100 cols - this is a nice round 
->> limit, and it also happens to match with most developer xterm 
->> sizes. Code that goes over 100 cols for no good reasons will be 
->> arguably something worth fixing. (100 cols is also arguably 
->> closer to various brain limits such as vision of field and 
->> resolution restrictions, so we'll likely not have to increase 
->> this limit for a couple of million years, for all retro human 
->> genome users.)
->
->That said, yeah, 80col is a pain in the ass and lessening the pressure
->a bit might make it a non-problem and 100 is one of the nicer numbers
->which aren't power of two.
->
->For me, the biggest reason to stick to 80col has been that, while
->being widely disliked, it still was the most common limit people were
->using and consistency tends to be more beneficial on these issues.  If
->we're gonna do this, and I hope we do, let's proactively encourage /
->enforce it - ie. let's collectively nag so that 100col quickly becomes
->the standard.
->
->Acked-by: Tejun Heo <tj@kernel.org>
->
->Thanks.
->
->-- 
->tejun
+> 
+> 
+> Moreover, it looks like this new irq_domain code is checking the
+> number of hwirq and is not as lazy as the previous one :-)
+> 
+> Because of that and because of the wrong number of IRQs I put for
+> the twl4030 :-(, it does not handle properly the children of the
+> twl4030 now and print a big warning at boot time due to the
+> following check.
+> 
+>   WARN_ON(hwirq < first_hwirq || hwirq >= first_hwirq + size)
 
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Good! The warning is doing it's job.  :-)
+
+> In fact 8 was just the number for the core functionality, but that
+> chip does have some other interrupts for sub function like GPIOs and
+> power events.
+
+Okay, I'll add this patch to the series before patch 13.
+
+> 
+> With the following fix, it works fine.
+> 
+> Regards,
+> Benoit
+> 
+> 
+> ---
+> From 12781619d2ab8d6d724acabc6873954f0f9f4347 Mon Sep 17 00:00:00 2001
+> From: Benoit Cousson <b-cousson@ti.com>
+> Date: Fri, 3 Feb 2012 14:58:17 +0100
+> Subject: [PATCH] mfd: twl-core.c: Fix the number of interrupts
+> managed by twl4030
+> 
+> TWL4030 does handle 3 different interrupts ranges: 8 for the core, 8
+> for the power events and 18 for the GPIOs.
+> 
+> Change the total number of interrupts managed by TWL4030 from 8 to 34.
+> 
+> Signed-off-by: Benoit Cousson <b-cousson@ti.com>
+> ---
+>  drivers/mfd/twl-core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+> index e63b408..66f9bff 100644
+> --- a/drivers/mfd/twl-core.c
+> +++ b/drivers/mfd/twl-core.c
+> @@ -149,7 +149,7 @@
+> 
+>  #define TWL_MODULE_LAST TWL4030_MODULE_LAST
+> 
+> -#define TWL4030_NR_IRQS    8
+> +#define TWL4030_NR_IRQS    34 /* core:8, power:8, gpio: 18 */
+>  #define TWL6030_NR_IRQS    20
+> 
+>  /* Base Address defns for twl4030_map[] */
+> -- 
+> 1.7.0.4
+> 
+> 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
