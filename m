@@ -1,245 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab2BCP1Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:27:16 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48998 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169Ab2BCP07 (ORCPT
+	id S1755056Ab2BCP1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:27:18 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:49042 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754439Ab2BCP1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 10:26:59 -0500
-Message-Id: <20120203152650.894621377@openvz.org>
-User-Agent: quilt/0.48-1
-Date: Fri, 03 Feb 2012 19:19:32 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: [patch 4/4] c/r: prctl: Extend PR_SET_MM to set up more mm_struct entries
-References: <20120203151928.474036973@openvz.org>
-Content-Disposition: inline; filename=prctl-restore-mm-members-5
+	Fri, 3 Feb 2012 10:27:13 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: eZuVAU8VM1kUMcfEgRK1tL56YCxvgVh9d7zJMYaqcW8U3ei
+ MFQpFVKO8_4o3l7KcTvXOcIKJC6RqZhmt1KSOwnV1Z9PgY8MZ4.tVvbPFfa.
+ h4jDIybV5sF1bRDeASjKeB3no8LoNjLztOYDTS6AoCJci79kQaFqzzmpxN1L
+ kY44OsFmOQTLWngnGFd1I_r3adq5.jjSJsfMjMft3atbiL2TF4fuEcbXLzPn
+ I6k5L.JJFD2dKv02tkotTYuWL5nRDJwLpQIe4UzyhR1ytwvtyWUIbe6d2c8X
+ FtO6MtBno6D961M84dpP0LSQlURvrNpDIA84ntm5BevGUJTCjqLp2zToyQgr
+ dzQYQLxWSFDSj31agdTZjI0G_BAoxaAiHrF0pjHXAwUuirEOvq51V3Hm15hv
+ v2YLfGcvQev1HJIxvumc_nhRvLZ.PLqipIWYC
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 3 Feb 2012 09:27:10 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "Alex,Shi" <alex.shi@intel.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [rfc PATCH]slub: per cpu partial statistics change
+In-Reply-To: <1328256695.12669.24.camel@debian>
+Message-ID: <alpine.DEB.2.00.1202030920060.2420@router.home>
+References: <1328256695.12669.24.camel@debian>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During checkpoint we dump whole process memory to a file and
-the dump includes process stack memory. But among stack data
-itself, the stack carries additional parameters such as command
-line arguments, environment data and auxiliary vector.
+On Fri, 3 Feb 2012, Alex,Shi wrote:
 
-So when we do restore procedure and once we've restored stack
-data itself we need to setup mm_struct::arg_start/end,
-env_start/end, so restored process would be able to find
-command line arguments and environment data it had at checkpoint
-time. The same applies to auxiliary vector.
+> This patch split the cpu_partial_free into 2 parts: cpu_partial_node, PCP refilling
+> times from node partial; and same name cpu_partial_free, PCP refilling times in
+> slab_free slow path. A new statistic 'release_cpu_partial' is added to get PCP
+> release times. These info are useful when do PCP tunning.
 
-For this reason additional PR_SET_MM_(ARG_START | ARG_END |
-ENV_START | ENV_END | AUXV) codes are introduced.
+Releasing? The code where you inserted the new statistics counts the pages
+put on the cpu partial list when refilling from the node partial list.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- include/linux/prctl.h |    5 ++
- kernel/sys.c          |  105 +++++++++++++++++++++++++++++++++++---------------
- 2 files changed, 80 insertions(+), 30 deletions(-)
+See more below.
 
-Index: linux-2.6.git/include/linux/prctl.h
-===================================================================
---- linux-2.6.git.orig/include/linux/prctl.h
-+++ linux-2.6.git/include/linux/prctl.h
-@@ -113,5 +113,10 @@
- # define PR_SET_MM_START_STACK		5
- # define PR_SET_MM_START_BRK		6
- # define PR_SET_MM_BRK			7
-+# define PR_SET_MM_ARG_START		8
-+# define PR_SET_MM_ARG_END		9
-+# define PR_SET_MM_ENV_START		10
-+# define PR_SET_MM_ENV_END		11
-+# define PR_SET_MM_AUXV			12
- 
- #endif /* _LINUX_PRCTL_H */
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -1693,17 +1693,23 @@ SYSCALL_DEFINE1(umask, int, mask)
- }
- 
- #ifdef CONFIG_CHECKPOINT_RESTORE
-+static bool vma_flags_mismatch(struct vm_area_struct *vma,
-+			       unsigned long required,
-+			       unsigned long banned)
-+{
-+	return (vma->vm_flags & required) != required ||
-+		(vma->vm_flags & banned);
-+}
-+
- static int prctl_set_mm(int opt, unsigned long addr,
- 			unsigned long arg4, unsigned long arg5)
- {
- 	unsigned long rlim = rlimit(RLIMIT_DATA);
--	unsigned long vm_req_flags;
--	unsigned long vm_bad_flags;
-+	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma;
- 	int error = 0;
--	struct mm_struct *mm = current->mm;
- 
--	if (arg4 | arg5)
-+	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
- 		return -EINVAL;
- 
- 	if (!capable(CAP_SYS_ADMIN))
-@@ -1715,7 +1721,9 @@ static int prctl_set_mm(int opt, unsigne
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, addr);
- 
--	if (opt != PR_SET_MM_START_BRK && opt != PR_SET_MM_BRK) {
-+	if (opt != PR_SET_MM_START_BRK &&
-+	    opt != PR_SET_MM_BRK &&
-+	    opt != PR_SET_MM_AUXV) {
- 		/* It must be existing VMA */
- 		if (!vma || vma->vm_start > addr)
- 			goto out;
-@@ -1725,11 +1733,8 @@ static int prctl_set_mm(int opt, unsigne
- 	switch (opt) {
- 	case PR_SET_MM_START_CODE:
- 	case PR_SET_MM_END_CODE:
--		vm_req_flags = VM_READ | VM_EXEC;
--		vm_bad_flags = VM_WRITE | VM_MAYSHARE;
--
--		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
--		    (vma->vm_flags & vm_bad_flags))
-+		if (vma_flags_mismatch(vma, VM_READ | VM_EXEC,
-+				       VM_WRITE | VM_MAYSHARE))
- 			goto out;
- 
- 		if (opt == PR_SET_MM_START_CODE)
-@@ -1740,11 +1745,8 @@ static int prctl_set_mm(int opt, unsigne
- 
- 	case PR_SET_MM_START_DATA:
- 	case PR_SET_MM_END_DATA:
--		vm_req_flags = VM_READ | VM_WRITE;
--		vm_bad_flags = VM_EXEC | VM_MAYSHARE;
--
--		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
--		    (vma->vm_flags & vm_bad_flags))
-+		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE,
-+				       VM_EXEC | VM_MAYSHARE))
- 			goto out;
- 
- 		if (opt == PR_SET_MM_START_DATA)
-@@ -1753,19 +1755,6 @@ static int prctl_set_mm(int opt, unsigne
- 			mm->end_data = addr;
- 		break;
- 
--	case PR_SET_MM_START_STACK:
--
--#ifdef CONFIG_STACK_GROWSUP
--		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSUP;
--#else
--		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSDOWN;
--#endif
--		if ((vma->vm_flags & vm_req_flags) != vm_req_flags)
--			goto out;
--
--		mm->start_stack = addr;
--		break;
--
- 	case PR_SET_MM_START_BRK:
- 		if (addr <= mm->end_data)
- 			goto out;
-@@ -1790,16 +1779,72 @@ static int prctl_set_mm(int opt, unsigne
- 		mm->brk = addr;
- 		break;
- 
-+	/*
-+	 * If command line arguments and environment
-+	 * are placed somewhere else on stack, we can
-+	 * set them up here, ARG_START/END to setup
-+	 * command line argumets and ENV_START/END
-+	 * for environment.
-+	 */
-+	case PR_SET_MM_START_STACK:
-+	case PR_SET_MM_ARG_START:
-+	case PR_SET_MM_ARG_END:
-+	case PR_SET_MM_ENV_START:
-+	case PR_SET_MM_ENV_END:
-+#ifdef CONFIG_STACK_GROWSUP
-+		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE | VM_GROWSUP, 0))
-+#else
-+		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE | VM_GROWSDOWN, 0))
-+#endif
-+			goto out;
-+		if (opt == PR_SET_MM_START_STACK)
-+			mm->start_stack = addr;
-+		else if (opt == PR_SET_MM_ARG_START)
-+			mm->arg_start = addr;
-+		else if (opt == PR_SET_MM_ARG_END)
-+			mm->arg_end = addr;
-+		else if (opt == PR_SET_MM_ENV_START)
-+			mm->env_start = addr;
-+		else if (opt == PR_SET_MM_ENV_END)
-+			mm->env_end = addr;
-+		break;
-+
-+	/*
-+	 * This doesn't move auxiliary vector itself
-+	 * since it's pinned to mm_struct, but allow
-+	 * to fill vector with new values. It's up
-+	 * to a caller to provide sane values here
-+	 * otherwise user space tools which use this
-+	 * vector might be unhappy.
-+	 */
-+	case PR_SET_MM_AUXV: {
-+		unsigned long user_auxv[AT_VECTOR_SIZE];
-+
-+		if (arg4 > sizeof(mm->saved_auxv))
-+			goto out;
-+		up_read(&mm->mmap_sem);
-+
-+		if (copy_from_user(user_auxv, (const void __user *)addr, arg4))
-+			return -EFAULT;
-+
-+		/* Make sure the last entry is always AT_NULL */
-+		user_auxv[AT_VECTOR_SIZE - 2] = 0;
-+		user_auxv[AT_VECTOR_SIZE - 1] = 0;
-+
-+		task_lock(current);
-+		memcpy(mm->saved_auxv, user_auxv, arg4);
-+		task_unlock(current);
-+
-+		return 0;
-+	}
- 	default:
- 		error = -EINVAL;
- 		goto out;
- 	}
- 
- 	error = 0;
--
- out:
- 	up_read(&mm->mmap_sem);
--
- 	return error;
- }
- #else /* CONFIG_CHECKPOINT_RESTORE */
+>  struct kmem_cache_cpu {
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 4907563..5dd299c 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -1560,6 +1560,7 @@ static void *get_partial_node(struct kmem_cache *s,
+>  		} else {
+>  			page->freelist = t;
+>  			available = put_cpu_partial(s, page, 0);
+> +			stat(s, CPU_PARTIAL_NODE);
+
+This is refilling the per cpu partial list from the node list.
+
+>  		}
+>  		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
+>  			break;
+> @@ -1973,6 +1974,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>  				local_irq_restore(flags);
+>  				pobjects = 0;
+>  				pages = 0;
+> +				stat(s, RELEASE_CPU_PARTIAL);
+
+The callers count the cpu partial operations. Why is there now one in
+put_cpu_partial? It is moving a page to the cpu partial list. Not
+releasing it from the cpu partial list.
+
+>
+> @@ -2465,9 +2466,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>  		 * If we just froze the page then put it onto the
+>  		 * per cpu partial list.
+>  		 */
+> -		if (new.frozen && !was_frozen)
+> +		if (new.frozen && !was_frozen) {
+>  			put_cpu_partial(s, page, 1);
+> -
+> +			stat(s, CPU_PARTIAL_FREE);
+
+cpu partial list filled with a partial page created from a fully allocated
+slab (which therefore was not on any list before).
+
 
