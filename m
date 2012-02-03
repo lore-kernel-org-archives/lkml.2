@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab2BCBNh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 20:13:37 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60871 "EHLO e9.ny.us.ibm.com"
+	id S1756748Ab2BCBPX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 20:15:23 -0500
+Received: from mga14.intel.com ([143.182.124.37]:5244 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756550Ab2BCBNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 20:13:32 -0500
-Date: Thu, 2 Feb 2012 17:12:08 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: [PATCH RFC 0/3] Fix cpuidle_idle_call() RCU usage
-Message-ID: <20120203011208.GA2004@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020301-7182-0000-0000-000000A9C0D4
+	id S1754620Ab2BCBPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 20:15:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102692485"
+Subject: Re: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume,
+ COMRESET failed
+From: Lin Ming <ming.m.lin@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Norbert Preining <preining@logic.at>, linux-kernel@vger.kernel.org,
+        jeff@garzik.org, Tejun Heo <tj@kernel.org>,
+        "stern@rowland.harvard.edu >> Alan Stern" <stern@rowland.harvard.edu>,
+        linux-ide@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <4F2A4B7E.2090503@linux.vnet.ibm.com>
+References: <20120202051258.GA15550@gamma.logic.tuwien.ac.at>
+	 <4F2A4B7E.2090503@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 03 Feb 2012 09:15:16 +0800
+Message-ID: <1328231716.15079.15.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Thu, 2012-02-02 at 14:08 +0530, Srivatsa S. Bhat wrote:
+> Adding some Cc's.
+> 
+> On 02/02/2012 10:42 AM, Norbert Preining wrote:
+> 
+> > Dear all,
+> > 
+> > (please Cc)
+> > 
+> > since going from 3.2 to 3.3-rc1 I see a kind of regression wrt booting
+> > time, namely the detection of the CD drive hangs for 10sec (both
+> > dmesg were taken on the same hardware on the same day):
+> > 
+> > with 3.3-rc1 and rc2:
+> > [    3.694012] sd 0:0:0:0: [sda] Attached SCSI disk
+> > [    9.004013] ata2: link is slow to respond, please be patient (ready=0)
+> > [   13.652013] ata2: COMRESET failed (errno=-16)
+> > [   13.972022] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
 
-This patch series is a second attempt to fix the idle-loop uses of RCU,
-see https://lkml.org/lkml/2012/2/1/741 for v1.  Where the first series
-attempted to drive rcu_idle_enter() and rcu_idle_exit() further down
-into the Linux kernels multitude of idle loops, this patch instead
-marks specific idle-loop operations containing RCU read-side critical
-sections, as suggested by Nicolas Pitre and Steven Rostedt.  The possibility
-of code shared between idle and non-idle also requires the ability to nest
-rcu_idle_enter() calls.  The individual patches are as follows:
+I'm looking into this problem.
+But I can't reproduce this regression.
 
-1.	Allow nesting of rcu_idle_enter() and rcu_idle_exit().
-2.	Add an RCU_NONIDLE() macro to enclose idle-loop code that
-	contains RCU read-side critical sections.
-3.	Use RCU_NONIDLE() to protect cpuidle_idle_call()'s tracepoints.
+Could you attach the full 3.3-rc2 dmesg?
 
-This patchset has the distinct advantage of avoiding touching any
-architecture-specific code.  ;-)
+Thanks,
+Lin Ming
 
-							Thanx, Paul
+> > [   13.975721] ata2.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device (Stat=0x51 Err=0x04)
+> > [   13.977166] ata2.00: ATAPI: MATSHITADVD-RAM UJ862AS, 1.21, max UDMA/33
+> > [   13.981294] ata2.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device (Stat=0x51 Err=0x04)
+> > [   13.982734] ata2.00: configured for UDMA/33
+> > [   13.987964] scsi 1:0:0:0: CD-ROM            MATSHITA DVD-RAM UJ862AS  1.21 PQ: 0 ANSI: 5
+> > [   13.991482] sr0: scsi3-mmc drive: 24x/24x writer dvd-ram cd/rw xa/form2 cdda tray
+> > [   13.992971] cdrom: Uniform CD-ROM driver Revision: 3.20
+> > [   13.994574] sr 1:0:0:0: Attached scsi CD-ROM sr0
+> > [   13.994672] sr 1:0:0:0: Attached scsi generic sg1 type 5
+> > [   14.316021] ata5: SATA link down (SStatus 0 SControl 300)
+> > [   14.636019] ata6: SATA link down (SStatus 0 SControl 300)
+> > 
+> > with 3.2:
+> > [    3.218156] sd 0:0:0:0: [sda] Attached SCSI disk
+> > [    3.484023] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+> > [    3.487708] ata2.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device (Stat=0x51 Err=0x04)
+> > [    3.489156] ata2.00: ATAPI: MATSHITADVD-RAM UJ862AS, 1.21, max UDMA/33
+> > [    3.494321] ata2.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device (Stat=0x51 Err=0x04)
+> > [    3.495761] ata2.00: configured for UDMA/33
+> > [    3.501057] scsi 1:0:0:0: CD-ROM            MATSHITA DVD-RAM UJ862AS  1.21 PQ: 0 ANSI: 5
+> > [    3.504515] sr0: scsi3-mmc drive: 24x/24x writer dvd-ram cd/rw xa/form2 cdda tray
+> > [    3.505995] cdrom: Uniform CD-ROM driver Revision: 3.20
+> > [    3.507611] sr 1:0:0:0: Attached scsi CD-ROM sr0
+> > [    3.507715] sr 1:0:0:0: Attached scsi generic sg1 type 5
+> > [    3.828025] ata5: SATA link down (SStatus 0 SControl 300)
+> > [    4.148020] ata6: SATA link down (SStatus 0 SControl 300)
+> > 
+> > 
+> > Is there anything I can do here?
+> > 
+> 
 
-------------------------------------------------------------------------
-
- b/drivers/cpuidle/cpuidle.c |   12 ++++++++----
- b/include/linux/rcupdate.h  |   27 +++++++++++++++++++++++++++
- b/kernel/rcu.h              |   18 +++++++++++++++++-
- b/kernel/rcutiny.c          |   16 ++++++++++++----
- b/kernel/rcutree.c          |   19 +++++++++++++------
- kernel/rcutiny.c            |    2 ++
- kernel/rcutree.c            |    2 ++
- 7 files changed, 81 insertions(+), 15 deletions(-)
 
