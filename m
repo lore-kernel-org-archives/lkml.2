@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab2BCOw2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 09:52:28 -0500
-Received: from mga11.intel.com ([192.55.52.93]:26214 "EHLO mga11.intel.com"
+	id S1756763Ab2BCOxJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 09:53:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56907 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756034Ab2BCOw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 09:52:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="120328416"
-Message-ID: <4F2BF4A7.2070603@linux.intel.com>
-Date: Fri, 03 Feb 2012 06:52:23 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1751425Ab2BCOxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 09:53:07 -0500
+Date: Fri, 3 Feb 2012 15:53:04 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Geunsik Lim <geunsik.lim@gmail.com>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH] Handling of unused variable 'do-numainfo on compilation
+ time
+Message-ID: <20120203145304.GA18335@tiehlicka.suse.cz>
+References: <1328258627-2241-1-git-send-email-geunsik.lim@gmail.com>
+ <20120203133950.GA1690@cmpxchg.org>
 MIME-Version: 1.0
-To: Chinmay V S <chinmay.v.s@pathpartnertech.com>
-CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        linux-kernel@vger.kernel.org, cvs268@gmail.com, tglx@linutronix.de,
-        jeff.chua.linux@gmail.com
-Subject: Re: [RFC] [PATCH] [timer] Optimise apply_slack() for size and speed.
-References: <1328002652-7700-1-git-send-email-chinmay.v.s@pathpartnertech.com> <20120202225917.GA1189@kibibi> <CAKZbaaTDcfEVPa2JRSnkv_YCiScoTTqpmzaGQGWT98QJpYzZ8A@mail.gmail.com>
-In-Reply-To: <CAKZbaaTDcfEVPa2JRSnkv_YCiScoTTqpmzaGQGWT98QJpYzZ8A@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203133950.GA1690@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/2/2012 10:31 PM, Chinmay V S wrote:
-> Here is the dis-assembly (build for x86) :
-> 
-> Original code snippet :
-> mov    %eax,%ecx
-> mov    $0x1,%edx
-> shl    %cl,%edx
-> sub    $0x1,%edx
-> mov    %edx,-0x10(%ebp)
-> not    %edx
-> and    %esi,%edx
-> mov    %edx,-0x14(%ebp)
-> 
-> Patched code snippet :
-> mov    %eax,%ecx
-> shrl   %cl,-0x14(%ebp)
-> shll   %cl,-0x14(%ebp)
-> 
-> As is evident, we are able to reduce 5 instructions by using a bit-shift
-> logic (compared to a masking logic).
-> 
+On Fri 03-02-12 14:39:50, Johannes Weiner wrote:
+> Michal, this keeps coming up, please decide between the proposed
+> solutions ;-)
 
-this code is so not performance critical to this level, that we should
-optimize for readability, not for the output of a compiler.
+Hmm, I thought we already sorted this out https://lkml.org/lkml/2012/1/26/25 ?
 
+> 
+> On Fri, Feb 03, 2012 at 05:43:47PM +0900, Geunsik Lim wrote:
+> > Actually, Usage of the variable 'do_numainfo'is not suitable for gcc compiler.
+> > Declare the variable 'do_numainfo' if the number of NUMA nodes > 1.
+> > 
+> > Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+> > ---
+> >  mm/memcontrol.c |    5 ++++-
+> >  1 files changed, 4 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 556859f..4e17ac5 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -776,7 +776,10 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+> >  	/* threshold event is triggered in finer grain than soft limit */
+> >  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
+> >  						MEM_CGROUP_TARGET_THRESH))) {
+> > -		bool do_softlimit, do_numainfo;
+> > +		bool do_softlimit;
+> > +#if MAX_NUMNODES > 1
+> > +                bool do_numainfo;
+> > +#endif
+> >  
+> >  		do_softlimit = mem_cgroup_event_ratelimit(memcg,
+> >  						MEM_CGROUP_TARGET_SOFTLIMIT);
+> > -- 
+> > 1.7.8.1
+> > 
 
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
