@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab2BCQry (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:47:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49153 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756892Ab2BCQrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:47:53 -0500
-Date: Fri, 3 Feb 2012 17:41:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        linux-kernel@vger.kernel.org, Roland McGrath <roland@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
-Message-ID: <20120203164129.GA5341@redhat.com>
-References: <1328267483-3225342-1-git-send-email-avagin@openvz.org> <20120203162519.GB805@google.com> <20120203163025.GI11834@moon>
+	id S932078Ab2BCQsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:48:30 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44555 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756875Ab2BCQs2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 11:48:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203163025.GI11834@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120203160454.GA3092@redhat.com>
+References: <20120203154411.GB2471@osiris.boeblingen.de.ibm.com> <20120203160454.GA3092@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 3 Feb 2012 08:48:08 -0800
+X-Google-Sender-Auth: H8FHnPnq4H8-ARsbpNvHV3iWeGI
+Message-ID: <CA+55aFx0SxW5ST2H1TL6K-457nP1qtAva0+YcnJLNoUUz_PCdg@mail.gmail.com>
+Subject: Re: cgroup_release_agent() with call_usermodehelper() with
+ UMH_WAIT_EXEC may crash
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03, Cyrill Gorcunov wrote:
+On Fri, Feb 3, 2012 at 8:04 AM, Oleg Nesterov <oleg@redhat.com> wrote:
 >
-> On Fri, Feb 03, 2012 at 08:25:19AM -0800, Tejun Heo wrote:
->
-> > Ummm... this really doesn't fit in ptrace.  Cyrill, why not put it
-> > together with other params you're exporting?
+> Can't we simply move that code into flush_old_exec() ? (wrapped into
+> the new helper).
 
-I agree. And to me this looks strange: some info is exported via /proc,
-some things need ptrace.
+Sure. It would kind of make sense to do it as part of exec_mmap().
+That's what associates us with the new mm, after all.
 
-> We could add it to /proc/pid/stat (but I fear Andrew Morton shoot me then ;)
+That said, I think my *preferred* approach would be to still do the final
 
-may be you can add /proc/pid/misc_ugly^Wrandom_things_for_cr which
-you can extend as needed ;)
+    set_task_comm(current, tcomm);
 
-Oleg.
+in setup_new_exec(), because that's really when we set up the new mm.
 
+So my preferred solution would be to simply move the "char tcomm[];"
+array from the stack (currently automatic in setup_new_exec()) into
+the struct linux_binprm, and then copy it from the filename early. We
+could copy it arbitrarily early, perhaps in "prepare_binprm()".
+
+Hmm?
+
+                       Linus
