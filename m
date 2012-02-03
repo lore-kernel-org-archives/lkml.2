@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab2BCLMj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 06:12:39 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:45072 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755690Ab2BCLMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 06:12:37 -0500
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        avagin@openvz.org
-Subject: [PATCH] ptrace: add ability to get clear_tid_address
-Date: Fri,  3 Feb 2012 14:11:23 +0300
-Message-Id: <1328267483-3225342-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1756149Ab2BCLQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 06:16:57 -0500
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:36532 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756051Ab2BCLQ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 06:16:56 -0500
+X-AntiVirus: Checked by Dr.Web [version: 6.0.3.08040, engine: 6.0.200.12050, virus records: 2607051, updated:  3.02.2012]
+Message-ID: <4F2BC1E1.2080702@ru.mvista.com>
+Date: Fri, 03 Feb 2012 15:15:45 +0400
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Nicolas Pitre <nico@fluxnic.net>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
+References: <1328234629-32735-1-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.02.1202022110080.2759@xanadu.home> <4F2B4873.5030808@codeaurora.org> <alpine.LFD.2.02.1202022202470.2759@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1202022202470.2759@xanadu.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zero is written at clear_tid_address, when the process exits.
-This functionality is used by pthread_join().
+Hello.
 
-sys_set_tid_address() changes this address for current task.
+On 03-02-2012 7:04, Nicolas Pitre wrote:
 
-Before this patch clear_tid_address could not be got from user space.
-I want to dump a full state of a task, so I need this address.
-Also I think it may be useful for debugging a multithreading program.
+>>>>> If you simply disable/restore IRQs around the critical region then you
+>>>>> don't have to worry about __v7_setup.  Plus this will allow for
+>>>>> v7_flush_dcache_all to still be callable from atomic context.
+>>>> Ok. Here's a patch. I still need to test it. I'll send another patch
+>>>> series to cleanup the get_thread_info stuff (there's two of them?).
+>>>>
+>>>>   arch/arm/mm/cache-v7.S |    6 ++++++
+>>>>   1 files changed, 6 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/arch/arm/mm/cache-v7.S b/arch/arm/mm/cache-v7.S
+>>>> index 07c4bc8..654a5fc 100644
+>>>> --- a/arch/arm/mm/cache-v7.S
+>>>> +++ b/arch/arm/mm/cache-v7.S
+>>>> @@ -54,9 +54,15 @@ loop1:
+>>>>   	and	r1, r1, #7			@ mask of the bits for current cache only
+>>>>   	cmp	r1, #2				@ see what cache we have at this level
+>>>>   	blt	skip				@ skip if no cache, or just i-cache
+>>>> +#ifdef CONFIG_PREEMPT
+>>>> +	save_and_disable_irqs r9		@ make cssr&csidr read atomic
+>>>> +#endif
+>>>>   	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+>>>>   	isb					@ isb to sych the new cssr&csidr
+>>>>   	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
+>>>> +#ifdef CONFIG_PREEMPT
+>>>> +	restore_irqs r9
+>>>> +#endif
 
-I am not sure that ptrace is suitable place. It may be added in prctl,
-but I think it's a bit useless and strange. I can't image a real
-situation (avoid checkpointing) when a thread will want to get own
-clear_tid_address from itself, this address is used by parent ussually.
+>>> I'd suggest using restore_irqs_notrace instead.  The IRQ-off period is
+>>> so small that there is no point tracing it.
 
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- include/linux/ptrace.h |    3 +++
- kernel/ptrace.c        |    3 +++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+>> Thanks. I'll make sure to do that before uploading to the patch tracker.
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index c2f1f6a..79b84a3 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -51,6 +51,9 @@
- #define PTRACE_INTERRUPT	0x4207
- #define PTRACE_LISTEN		0x4208
- 
-+/* Get clear_child_tid address */
-+#define PTRACE_GET_TID_ADDRESS	0x4209
-+
- /* flags in @data for PTRACE_SEIZE */
- #define PTRACE_SEIZE_DEVEL	0x80000000 /* temp flag for development */
- 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 00ab2ca..ed7fbe7 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -845,6 +845,9 @@ int ptrace_request(struct task_struct *child, long request,
- 		break;
- 	}
- #endif
-+	case PTRACE_GET_TID_ADDRESS:
-+		return put_user(child->clear_child_tid, (int __user **) data);
-+
- 	default:
- 		break;
- 	}
--- 
-1.7.1
+> Might be worth flagging this for the stable kernels as well
+> (CC: stable@kernel.org).
 
+    The new address is stable@vger.kernel.org as Greg KH wrote.
+
+WBR, Sergei
