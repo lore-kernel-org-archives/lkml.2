@@ -1,153 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab2BCQm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:42:27 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33482 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754810Ab2BCQm0 (ORCPT
+	id S1756996Ab2BCQnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:43:35 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:47885 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756869Ab2BCQne convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:42:26 -0500
-Date: Fri, 3 Feb 2012 09:42:23 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Milton Miller <miltonm@bga.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 13/25] irq_domain: Remove 'new' irq_domain in favour
- of the ppc one
-Message-ID: <20120203164223.GB3981@ponder.secretlab.ca>
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
- <1327700179-17454-14-git-send-email-grant.likely@secretlab.ca>
- <4F2BF3A9.8030200@ti.com>
+	Fri, 3 Feb 2012 11:43:34 -0500
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F2BF3A9.8030200@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 11/11] sound/soc: add context parameter to prep_slave_sg and prep_dma_cyclic calls
+Date: Fri, 3 Feb 2012 08:41:54 -0800
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552028726FD@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <20120202222158.GA3112@opensource.wolfsonmicro.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 11/11] sound/soc: add context parameter to prep_slave_sg and prep_dma_cyclic calls
+Thread-Index: Aczh+lgFvFdntEQ7QCCmzXlH07C8OQAl88Fg
+References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-12-git-send-email-alexandre.bounine@idt.com> <20120202222158.GA3112@opensource.wolfsonmicro.com>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>, Liam Girdwood <lrg@ti.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Ralf Baechle <ralf@linux-mips.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 03:48:09PM +0100, Cousson, Benoit wrote:
-> Hi Grant,
+On Thu, Feb 02, 2012 at 5:22 PM, Mark Brown wrote:
 > 
-> I finally had the time to rebase most of the OMAP3 and OMAP4 DT
-> patches on your latest irq_domain series and found a couple of
-> minors regressions that breaks OMAP3 boot.
+> On Thu, Feb 02, 2012 at 04:32:21PM -0500, Alexandre Bounine wrote:
+> > Fixups for calls affected by adding the new context parameter to
+DMA_SLAVE
+> > and DMA_CYCLIC interfaces.
 > 
-> On 1/27/2012 10:36 PM, Grant Likely wrote:
-> 
-> [...]
-> 
-> >diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-> >index e04e04dd..aab236f 100644
-> >--- a/drivers/mfd/twl-core.c
-> >+++ b/drivers/mfd/twl-core.c
-> >@@ -263,8 +263,6 @@ struct twl_client {
-> >
-> >  static struct twl_client twl_modules[TWL_NUM_SLAVES];
-> >
-> >-static struct irq_domain domain;
-> >-
-> >  /* mapping the module id to slave id and base address */
-> >  struct twl_mapping {
-> >  	unsigned char sid;	/* Slave ID */
-> >@@ -1225,14 +1223,8 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
-> >
-> >  	pdata->irq_base = status;
-> >  	pdata->irq_end = pdata->irq_base + nr_irqs;
-> >-
-> >-	domain.irq_base = pdata->irq_base;
-> >-	domain.nr_irq = nr_irqs;
-> >-#ifdef CONFIG_OF_IRQ
-> >-	domain.of_node = of_node_get(node);
-> >-	domain.ops =&irq_domain_simple_ops;
-> >-#endif
-> >-	irq_domain_add(&domain);
-> >+	irq_domain_add_legacy(node, nr_irqs, pdata->irq_base, 0,
-> >+			&irq_domain_simple_ops);
-> 
-> This commit cannot build due to the missing last parameter.
-> 
-> And in fact you fixed that in the next commit (#14), but the will
-> break git bisect and anyway that fix does not really belong to this
-> commit.
-> 
-> [PATCH v3 14/25] irq_domain: Remove irq_domain_add_simple()
-> 
->  	irq_domain_add_legacy(node, nr_irqs, pdata->irq_base, 0,
-> -			      &irq_domain_simple_ops);
-> +			      &irq_domain_simple_ops, NULL);
+> This really ought to be squashed in with the original commit both to
+> avoid build breaks in bisection and to let people review what this
+> parameter does.
 
-Good catch, thanks.  I'll update the series to fix that.
+Agree. Will pack it together to resubmit if it will be decided to go
+ahead with this change.
+This will make quite large patch but it will help to track it properly.
 
-> 
-> 
-> Moreover, it looks like this new irq_domain code is checking the
-> number of hwirq and is not as lazy as the previous one :-)
-> 
-> Because of that and because of the wrong number of IRQs I put for
-> the twl4030 :-(, it does not handle properly the children of the
-> twl4030 now and print a big warning at boot time due to the
-> following check.
-> 
->   WARN_ON(hwirq < first_hwirq || hwirq >= first_hwirq + size)
-
-Good! The warning is doing it's job.  :-)
-
-> In fact 8 was just the number for the core functionality, but that
-> chip does have some other interrupts for sub function like GPIOs and
-> power events.
-
-Okay, I'll add this patch to the series before patch 13.
-
-> 
-> With the following fix, it works fine.
-> 
-> Regards,
-> Benoit
-> 
-> 
-> ---
-> From 12781619d2ab8d6d724acabc6873954f0f9f4347 Mon Sep 17 00:00:00 2001
-> From: Benoit Cousson <b-cousson@ti.com>
-> Date: Fri, 3 Feb 2012 14:58:17 +0100
-> Subject: [PATCH] mfd: twl-core.c: Fix the number of interrupts
-> managed by twl4030
-> 
-> TWL4030 does handle 3 different interrupts ranges: 8 for the core, 8
-> for the power events and 18 for the GPIOs.
-> 
-> Change the total number of interrupts managed by TWL4030 from 8 to 34.
-> 
-> Signed-off-by: Benoit Cousson <b-cousson@ti.com>
-> ---
->  drivers/mfd/twl-core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-> index e63b408..66f9bff 100644
-> --- a/drivers/mfd/twl-core.c
-> +++ b/drivers/mfd/twl-core.c
-> @@ -149,7 +149,7 @@
-> 
->  #define TWL_MODULE_LAST TWL4030_MODULE_LAST
-> 
-> -#define TWL4030_NR_IRQS    8
-> +#define TWL4030_NR_IRQS    34 /* core:8, power:8, gpio: 18 */
->  #define TWL6030_NR_IRQS    20
-> 
->  /* Base Address defns for twl4030_map[] */
-> -- 
-> 1.7.0.4
-> 
-> 
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
