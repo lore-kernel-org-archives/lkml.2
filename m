@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab2BCQnf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:43:35 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:47885 "EHLO mxout1.idt.com"
+	id S1757025Ab2BCQnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:43:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47079 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756869Ab2BCQne convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:43:34 -0500
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1757005Ab2BCQnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 11:43:40 -0500
+Date: Fri, 3 Feb 2012 17:36:51 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3] staging: android/lowmemorykiller: Don't grab
+	tasklist_lock
+Message-ID: <20120203163651.GB4190@redhat.com>
+References: <20120202171659.GA29378@oksana.dev.rtsoft.ru> <20120203000345.GA14338@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 11/11] sound/soc: add context parameter to prep_slave_sg and prep_dma_cyclic calls
-Date: Fri, 3 Feb 2012 08:41:54 -0800
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552028726FD@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <20120202222158.GA3112@opensource.wolfsonmicro.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 11/11] sound/soc: add context parameter to prep_slave_sg and prep_dma_cyclic calls
-Thread-Index: Aczh+lgFvFdntEQ7QCCmzXlH07C8OQAl88Fg
-References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-12-git-send-email-alexandre.bounine@idt.com> <20120202222158.GA3112@opensource.wolfsonmicro.com>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <linux-kernel@vger.kernel.org>, Liam Girdwood <lrg@ti.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Ralf Baechle <ralf@linux-mips.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203000345.GA14338@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 5:22 PM, Mark Brown wrote:
-> 
-> On Thu, Feb 02, 2012 at 04:32:21PM -0500, Alexandre Bounine wrote:
-> > Fixups for calls affected by adding the new context parameter to
-DMA_SLAVE
-> > and DMA_CYCLIC interfaces.
-> 
-> This really ought to be squashed in with the original commit both to
-> avoid build breaks in bisection and to let people review what this
-> parameter does.
+On 02/03, Anton Vorontsov wrote:
+>
+> @@ -132,7 +133,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+>  	}
+>  	selected_oom_adj = min_adj;
+>
+> -	read_lock(&tasklist_lock);
+> +	rcu_read_lock();
+>  	for_each_process(p) {
+>  		struct mm_struct *mm;
+>  		struct signal_struct *sig;
+> @@ -180,12 +181,12 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+>  		lowmem_deathpending = selected;
+>  		task_handoff_register(&task_nb);
+>  #endif
+> -		force_sig(SIGKILL, selected);
+> +		send_sig(SIGKILL, selected, 0);
+>  		rem -= selected_tasksize;
+>  	}
+>  	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
+>  		     sc->nr_to_scan, sc->gfp_mask, rem);
+> -	read_unlock(&tasklist_lock);
+> +	rcu_read_unlock();
 
-Agree. Will pack it together to resubmit if it will be decided to go
-ahead with this change.
-This will make quite large patch but it will help to track it properly.
+I think this is correct. As for ->mm check please look at
+find_lock_task_mm().
+
+You can also remove the !sig check.
+
+And, forgot to mention. There is another reason why mm != NULL
+check is wrong (send_sig_all too). A kernel thread can do use_mm().
+You should also check PF_KTHREAD.
+
+Oleg.
 
