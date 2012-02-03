@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab2BCT1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 14:27:14 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39305 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755391Ab2BCT1L (ORCPT
+	id S1755300Ab2BCT2h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 14:28:37 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:14519 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753916Ab2BCT2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 14:27:11 -0500
-Date: Fri, 3 Feb 2012 19:27:09 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tim Gardner <rtg.canonical@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: Linux 3.2.3
-Message-ID: <20120203192708.GC23505@opensource.wolfsonmicro.com>
-References: <20120203174758.GA18584@kroah.com> <4F2C2A40.1080601@canonical.com> <20120203185157.GA2865@kroah.com> <20120203185319.GA1710@kroah.com> <20120203185459.GA7321@kroah.com> <4F2C3161.5020807@canonical.com>
+	Fri, 3 Feb 2012 14:28:36 -0500
+Date: Fri, 3 Feb 2012 14:28:32 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Sudden kernel panic with skge in 3.3-rc2
+Message-ID: <20120203192832.GA19248@elliptictech.com>
+References: <20120202192115.GA8480@elliptictech.com>
+ <20120202124529.3e274223@s6510.linuxnetplumber.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F2C3161.5020807@canonical.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20120202124529.3e274223@s6510.linuxnetplumber.net>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 12:11:29PM -0700, Tim Gardner wrote:
-> On 02/03/2012 11:54 AM, Greg KH wrote:
+Hi Stephen,
 
->> Mark, any objection to me just reverting the SOC patch that causes this build
->> failure instead?
+On 2012-02-02 12:45 -0800, Stephen Hemminger wrote:
+> On Thu, 2 Feb 2012 14:21:15 -0500
+> Nick Bowler <nbowler@elliptictech.com> wrote:
+> > I just saw this panic on 3.3-rc2 with skge.  I don't know whether it's
+> > reproducible yet -- the machine crashed while I was not actively using
+> > it.  We've had this type of card for a few years and I've never seen this
+> > before so it may be a regression, but admittedly we don't use them all
+> > that often.
+[...]
+> 
+> Try reverting this commit, it seems problematic
+> commit d0249e44432aa0ffcf710b64449b8eaa3722547e
+> Author: stephen hemminger <shemminger@vyatta.com>
+> Date:   Thu Jan 19 14:37:18 2012 +0000
+> 
+>     skge: check for PCI dma mapping errors
 
-> I think you'll have to revert both WM5100 patches that came in with v3.2.3:
+Thanks for the pointer, I'll try that.  Unfortunately some other stuff
+has come up so I probably won't be able to test it until next week.
 
-Well, we should substitute in the version using the then-current APIs
-but that can easily be done as a revert then add.
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
-Sorry, I had misremembered and thought that the regmap conversion had
-been done in 3.2 along with the initial support for regmap devices in
-ASoC.  It must've been done but only actually applied in 3.3.
