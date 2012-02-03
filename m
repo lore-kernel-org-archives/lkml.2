@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758033Ab2BCWZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 17:25:29 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:37311 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753614Ab2BCWZ2 (ORCPT
+	id S1758049Ab2BCW2Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 17:28:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44865 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab2BCW2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 17:25:28 -0500
-Message-ID: <4F2C5EC8.8090203@metafoo.de>
-Date: Fri, 03 Feb 2012 23:25:12 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Fri, 3 Feb 2012 17:28:23 -0500
+Date: Fri, 3 Feb 2012 14:28:18 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH UPDATED 11/11] blkcg: unify blkg's for blkcg policies
+Message-ID: <20120203222818.GG14209@google.com>
+References: <1328131156-13290-1-git-send-email-tj@kernel.org>
+ <1328131156-13290-12-git-send-email-tj@kernel.org>
+ <20120202003730.GC19837@google.com>
+ <20120203194105.GA12616@redhat.com>
+ <20120203205910.GB14209@google.com>
+ <20120203214435.GC12616@redhat.com>
+ <20120203214719.GE14209@google.com>
+ <20120203215349.GF9683@redhat.com>
+ <20120203221409.GF14209@google.com>
+ <20120203222329.GG9683@redhat.com>
 MIME-Version: 1.0
-To: Seth Forshee <seth.forshee@canonical.com>
-CC: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 2/3] apple_bl: Rework in advance of gmux backlight support
-References: <1328300884-21551-1-git-send-email-seth.forshee@canonical.com> <1328300884-21551-3-git-send-email-seth.forshee@canonical.com>
-In-Reply-To: <1328300884-21551-3-git-send-email-seth.forshee@canonical.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203222329.GG9683@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2012 09:28 PM, Seth Forshee wrote:
-> Make it easier to support backlights without a fixed I/O range, and
-> remove use of global variables to allow having multiple backlights
-> concurrently.
+On Fri, Feb 03, 2012 at 05:23:29PM -0500, Vivek Goyal wrote:
+> Personally I consider it to be a debugging aid. User space applications
+> should do what you suggested and that is take delta between certain
+> periods.
 > 
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> ---
->  drivers/video/backlight/apple_bl.c |  163 +++++++++++++++++++-----------------
->  1 files changed, 85 insertions(+), 78 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/apple_bl.c b/drivers/video/backlight/apple_bl.c
-> index 66d5bec..e65b459 100644
-> --- a/drivers/video/backlight/apple_bl.c
-> +++ b/drivers/video/backlight/apple_bl.c
-> @@ -27,39 +27,30 @@
->  #include <linux/pci.h>
->  #include <linux/acpi.h>
-> [...]
-> + */
-> +static int apple_bl_get_brightness(struct backlight_device *bd)
-> +{
-> +	struct apple_bl_data *bl_data = bl_get_data(bd);
-> +	return bl_data->get_brightness(bl_data);
-> +}
-> +
-> +static int apple_bl_update_status(struct backlight_device *bd)
-> +{
-> +	struct apple_bl_data *bl_data = bl_get_data(bd);
-> +
-> +	bl_data->set_brightness(bl_data, bd->props.brightness);
-> +	return 0;
-> +}
-> +
-> +static const struct backlight_ops apple_bl_ops = {
-> +	.get_brightness = apple_bl_get_brightness,
-> +	.update_status = apple_bl_update_status,
->  };
+> Frankly speaking I have found it useful though. If I am debugging something,
+> I don't have to reboot the system to reset the stats and calculating the
+> difference from zero is easier for humans.
 
-Adding this extra indirection here isn't so nice and isn't necessary either.
-Just define one set of backlight ops for the intel case and one for the nvidia
-case and use it accordingly when registering the backlight device.
+There are many things different people may find useful but we
+shouldn't add userland visible interface with marginal usefulness like
+this one.  Seriously, you can write up a ten line python script to
+achieve what you want.  It's just sad. :(
 
+-- 
+tejun
