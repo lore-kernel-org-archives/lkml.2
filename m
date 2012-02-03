@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab2BCAxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 19:53:00 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:44845
+	id S1756594Ab2BCAws (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 19:52:48 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:44618
 	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755501Ab2BCAwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 19:52:54 -0500
+	id S1754816Ab2BCAwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 19:52:45 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org,
         ohering@suse.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 4/4] drivers: hv: Increase the number of VCPUs supported in the guest
-Date: Thu,  2 Feb 2012 16:56:51 -0800
-Message-Id: <1328230611-3315-4-git-send-email-kys@microsoft.com>
+Subject: [PATCH 1/4] drivers: hv: Cleanup the kvp related state in hyperv.h
+Date: Thu,  2 Feb 2012 16:56:48 -0800
+Message-Id: <1328230611-3315-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1328230611-3315-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1328230577-3263-1-git-send-email-kys@microsoft.com>
 References: <1328230577-3263-1-git-send-email-kys@microsoft.com>
- <1328230611-3315-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code arbirarily limited the number of CPUs the guest could have.
-Change that so that we can support the maximum number of CPUs the guest can
-support. While we use NR_CPUS to size the per-cpu state all we are allocating
-based on NR_CPUS are the  pointers to per-cpu state that will be allocatted in
-the context of the initializing CPU. This patch triggers a checkpatch warning
-for the usage of NR_CPU and since all we are allocating a couple of pointers
-per CPU, it should be ok.
+Now cleanup the hyperv.h with regards to KVP definitions.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/hv/hv.c           |    4 ++--
- drivers/hv/hyperv_vmbus.h |    5 ++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ include/linux/hyperv.h |   27 ++++++++++++++-------------
+ 1 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
-index 12aa97f..15956bd 100644
---- a/drivers/hv/hv.c
-+++ b/drivers/hv/hv.c
-@@ -155,9 +155,9 @@ int hv_init(void)
- 	union hv_x64_msr_hypercall_contents hypercall_msr;
- 	void *virtaddr = NULL;
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index 7332b3f..b822978 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -137,7 +137,6 @@ struct hv_ku_msg {
  
--	memset(hv_context.synic_event_page, 0, sizeof(void *) * MAX_NUM_CPUS);
-+	memset(hv_context.synic_event_page, 0, sizeof(void *) * NR_CPUS);
- 	memset(hv_context.synic_message_page, 0,
--	       sizeof(void *) * MAX_NUM_CPUS);
-+	       sizeof(void *) * NR_CPUS);
  
- 	if (!query_hypervisor_presence())
- 		goto cleanup;
-diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-index 6d7d286..699f0d8 100644
---- a/drivers/hv/hyperv_vmbus.h
-+++ b/drivers/hv/hyperv_vmbus.h
-@@ -457,7 +457,6 @@ static const uuid_le VMBUS_SERVICE_ID = {
- 	},
+ 
+-#ifdef __KERNEL__
+ 
+ /*
+  * Registry value types.
+@@ -163,28 +162,30 @@ enum hv_kvp_exchg_pool {
  };
  
--#define MAX_NUM_CPUS	32
+ struct hv_kvp_hdr {
+-	u8 operation;
+-	u8 pool;
+-};
++	__u8 operation;
++	__u8 pool;
++	__u16 pad;
++} __attribute__((packed));
  
+ struct hv_kvp_exchg_msg_value {
+-	u32 value_type;
+-	u32 key_size;
+-	u32 value_size;
+-	u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
+-	u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
+-};
++	__u32 value_type;
++	__u32 key_size;
++	__u32 value_size;
++	__u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
++	__u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
++} __attribute__((packed));
  
- struct hv_input_signal_event_buffer {
-@@ -483,8 +482,8 @@ struct hv_context {
- 	/* 8-bytes aligned of the buffer above */
- 	struct hv_input_signal_event *signal_event_param;
+ struct hv_kvp_msg_enumerate {
+-	u32 index;
++	__u32 index;
+ 	struct hv_kvp_exchg_msg_value data;
+-};
++} __attribute__((packed));
  
--	void *synic_message_page[MAX_NUM_CPUS];
--	void *synic_event_page[MAX_NUM_CPUS];
-+	void *synic_message_page[NR_CPUS];
-+	void *synic_event_page[NR_CPUS];
- };
+ struct hv_kvp_msg {
+ 	struct hv_kvp_hdr	kvp_hdr;
+ 	struct hv_kvp_msg_enumerate	kvp_data;
+-};
++} __attribute__((packed));
  
- extern struct hv_context hv_context;
++#ifdef __KERNEL__
+ #include <linux/scatterlist.h>
+ #include <linux/list.h>
+ #include <linux/uuid.h>
 -- 
 1.7.4.1
 
