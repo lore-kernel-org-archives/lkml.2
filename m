@@ -1,40 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab2BCXUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 18:20:49 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:47723 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753312Ab2BCXUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 18:20:48 -0500
-Message-ID: <1328311239.21255.24.camel@joe2Laptop>
-Subject: [PATCH] checkpatch: Warn on code with 6+ tab indentation
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Date: Fri, 03 Feb 2012 15:20:39 -0800
-In-Reply-To: <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
-References: <20120130140905.441199885@openvz.org>
-	 <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu>
-	 <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu>
-	 <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
-	 <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
-	 <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
+	id S1755651Ab2BCXik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 18:38:40 -0500
+Received: from gate.crashing.org ([63.228.1.57]:36736 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755261Ab2BCXij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 18:38:39 -0500
+Message-ID: <1328312292.30631.5.camel@pasglop>
+Subject: Re: [PATCH 02/15] PCI: Add iobusn_resource
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Date: Sat, 04 Feb 2012 10:38:12 +1100
+In-Reply-To: <CAErSpo44bef-Vj4LPB0QJ8HRjWxqRFK_=kpMq8hYEe=4t58zGQ@mail.gmail.com>
+References: <1328136242-17725-1-git-send-email-yinghai@kernel.org>
+	 <1328136242-17725-3-git-send-email-yinghai@kernel.org>
+	 <CAErSpo44bef-Vj4LPB0QJ8HRjWxqRFK_=kpMq8hYEe=4t58zGQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -43,81 +30,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Overly indented code should be refactored.
+On Fri, 2012-02-03 at 08:36 -0800, Bjorn Helgaas wrote:
+> On Wed, Feb 1, 2012 at 2:43 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > also add busn_res into struct pci_bus.
+> >
+> > will use them to have bus number resource tree.
+> 
+> Will you make this tree visible in /proc?  Seems like that would be
+> useful for debugging and for symmetry with /proc/iomem and
+> /proc/ioports.
 
-Suggest refactoring excessive indentation of
-of if/else/for/do/while/switch statements.
+To be honest that whole business with bus numbers in struct resource
+seems like gratuituous bloat & over engineering to me ...
 
-For example:
+Does it actually solve a specific problem or serve a purpose ?
 
-$ cat t.c
-#include <stdio.h>
-#include <stdlib.h>
+Cheers,
+Ben.
 
-int main(int argc, char **argv)
-{
-
-	if (1)
-		if (2)
-			if (3)
-				if (4)
-					if (5)
-						if (6)
-							if (7)
-								if (8)
-									;
-	return 0;
-}
-
-$ ./scripts/checkpatch.pl -f t.c
-WARNING: Too many leading tabs - consider code refactoring
-#12: FILE: t.c:12:
-+						if (6)
-
-WARNING: Too many leading tabs - consider code refactoring
-#13: FILE: t.c:13:
-+							if (7)
-
-WARNING: Too many leading tabs - consider code refactoring
-#14: FILE: t.c:14:
-+								if (8)
-
-total: 0 errors, 3 warnings, 17 lines checked
-
-t.c has style problems, please review.
-
-If any of these errors are false positives, please report
-them to the maintainer, see CHECKPATCH in MAINTAINERS.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
-On Fri, 2012-02-03 at 13:27 -0800, Linus Torvalds wrote:
-> So no, 100-char columns are not ok.
-
-Perhaps this is a reasonable alternative.
-
-Another might be to limit variable name length to something
-shorter than say 10 characters.
-
- scripts/checkpatch.pl |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 2b52aeb..89d24b3 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1924,6 +1924,12 @@ sub process {
- 			my $pre_ctx = "$1$2";
- 
- 			my ($level, @ctx) = ctx_statement_level($linenr, $realcnt, 0);
-+
-+			if ($line =~ /^\+\t{6,}/) {
-+				WARN("DEEP_INDENTATION",
-+				     "Too many leading tabs - consider code refactoring\n" . $herecurr);
-+			}
-+
- 			my $ctx_cnt = $realcnt - $#ctx - 1;
- 			my $ctx = join("\n", @ctx);
- 
+> 
+> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> > ---
+> >  include/linux/ioport.h |    1 +
+> >  include/linux/pci.h    |    1 +
+> >  kernel/resource.c      |    8 ++++++++
+> >  3 files changed, 10 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+> > index e885ba2..6fe9e19 100644
+> > --- a/include/linux/ioport.h
+> > +++ b/include/linux/ioport.h
+> > @@ -136,6 +136,7 @@ struct resource {
+> >  /* PC/ISA/whatever - the normal PC address spaces: IO and memory */
+> >  extern struct resource ioport_resource;
+> >  extern struct resource iomem_resource;
+> > +extern struct resource iobusn_resource;
+> >
+> >  extern struct resource *request_resource_conflict(struct resource *root, struct resource *new);
+> >  extern int request_resource(struct resource *root, struct resource *new);
+> > diff --git a/include/linux/pci.h b/include/linux/pci.h
+> > index f8caaab..94ad468 100644
+> > --- a/include/linux/pci.h
+> > +++ b/include/linux/pci.h
+> > @@ -419,6 +419,7 @@ struct pci_bus {
+> >        struct list_head slots;         /* list of slots on this bus */
+> >        struct resource *resource[PCI_BRIDGE_RESOURCE_NUM];
+> >        struct list_head resources;     /* address space routed to this bus */
+> > +       struct resource busn_res;       /* track registered bus num range */
+> 
+> Is this different from bus.secondary and bus.subordinate?  Do we need
+> both busn_res and secondary/subordinate?  If we need both, in what
+> circumstance with they contain different information?
+> 
+> >        struct pci_ops  *ops;           /* configuration access functions */
+> >        void            *sysdata;       /* hook for sys-specific extension */
+> > diff --git a/kernel/resource.c b/kernel/resource.c
+> > index 7640b3a..53b42f0 100644
+> > --- a/kernel/resource.c
+> > +++ b/kernel/resource.c
+> > @@ -38,6 +38,14 @@ struct resource iomem_resource = {
+> >  };
+> >  EXPORT_SYMBOL(iomem_resource);
+> >
+> > +struct resource iobusn_resource = {
+> > +       .name   = "PCI busn",
+> > +       .start  = 0,
+> > +       .end    = 0xffffff,
+> > +       .flags  = IORESOURCE_BUS,
+> > +};
+> > +EXPORT_SYMBOL(iobusn_resource);
+> > +
+> >  /* constraints to be met while allocating resources */
+> >  struct resource_constraint {
+> >        resource_size_t min, max, align;
+> > --
+> > 1.7.7
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
