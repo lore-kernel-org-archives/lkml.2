@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab2BCKmb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 05:42:31 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37962 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755794Ab2BCKma convert rfc822-to-8bit (ORCPT
+	id S1755996Ab2BCKvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 05:51:51 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49274 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755451Ab2BCKv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 05:42:30 -0500
+	Fri, 3 Feb 2012 05:51:26 -0500
+Date: Fri, 3 Feb 2012 10:51:24 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the sound-asoc tree
+Message-ID: <20120203105123.GB3151@opensource.wolfsonmicro.com>
+References: <20120203125902.558e273c84b339957869f281@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <4F2BB715.8090803@mvista.com>
-References: <1328255503-17575-1-git-send-email-xiyou.wangcong@gmail.com>
-	<4F2BB715.8090803@mvista.com>
-Date: Fri, 3 Feb 2012 11:42:29 +0100
-X-Google-Sender-Auth: 0VIJ_JdIqTzDV-8ukczOExntKlU
-Message-ID: <CAMuHMdVU4TNg=cdmRyH1DhhHKkhaBtcdS8Q+5wtUZTyV+nRg5g@mail.gmail.com>
-Subject: Re: [Patch] mips: do not redefine BUILD_BUG()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-mips@linux-mips.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ADZbWkCsHQ7r3kzd"
+Content-Disposition: inline
+In-Reply-To: <20120203125902.558e273c84b339957869f281@canb.auug.org.au>
+X-Cookie: You will be divorced within a year.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 11:29, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
->> include/linux/kernel.h:717:1: error: "BUILD_BUG" redefined
->> arch/mips/include/asm/page.h:43:1: error: this is the location of the
->> previous definition
 
->> --- a/arch/mips/include/asm/page.h
->> +++ b/arch/mips/include/asm/page.h
->> @@ -39,9 +39,7 @@
->>  #define HPAGE_MASK    (~(HPAGE_SIZE - 1))
->>  #define HUGETLB_PAGE_ORDER    (HPAGE_SHIFT - PAGE_SHIFT)
->>  #else /* !CONFIG_HUGETLB_PAGE */
->> -# ifndef BUILD_BUG
->
->   Not clear why we get the error if we're protected with #ifndef...
+--ADZbWkCsHQ7r3kzd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Because this is the first definition. It's redefined later.
+On Fri, Feb 03, 2012 at 12:59:02PM +1100, Stephen Rothwell wrote:
 
-Gr{oetje,eeting}s,
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-                        Geert
+That's the correct fix, thanks.  I'll resolve this in my tree once
+Linus' tree has merged the conflicting stuff.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+--ADZbWkCsHQ7r3kzd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPK7wfAAoJEBus8iNuMP3dIXIP/0liRWQui90L79w72G3igr9m
+MCH7HHsztVTNSMFFZYaak6Nn+AAtTxN0ZW9fM+3YP5Vgx6NhjFu9TTcN3DPcpqew
+SGN6Gw+iEtPzhrg/XAT/3ekLX1Gi/hrDQHIIxOmbdchMvMIFeVPSnAa09kaldV2t
+Up4KGsSynyAozvCftepRRDqAQI/NEgwnrM9iR/kjxGNMMF8J3JyDdRdrwuHBUOy/
+/AshEZUCFCG0LeCXD+QVELHVOLvivy3V+xPaiLTNM/QvXoTyQoPMd4y58MuzhpxC
+8c4khK5WGFItAIHKiBSZgGYrhxyscNLFc9aVzcz0U7ishQtO10dxU8I+WHz1KFTE
+j4RfgN7OZtFbYmVgF56nE6Cgm1iOYXJr4lW0BspUEl9EVfDDX+JgcOGl+1hNxG5+
+bBO4ZMN6m0D9G+QWA1XziNJcYmJULz54q2ZqjypucKzLwYilQ/XLN2hcULAxMRRj
+E/qEhVBQhKYDXlhaGT66IL/61nwBEWmrf8uVRIJg6+2D81yqN6C3f0dhKi/ulH2h
+/HXuvPTH3LzB0R9KCmlF3YdTt60Mc1NIVFVQ+4vquv31QFqYDUk+eYqSmrrPkMhK
+NrahP6p0voEuvI/GHY8fOn014Dx0gpAMA9u86TYYFKmVCh/llO4MWK1W8mtH07vQ
+gjl2OEipXWDAk3dIF4wL
+=jICq
+-----END PGP SIGNATURE-----
+
+--ADZbWkCsHQ7r3kzd--
