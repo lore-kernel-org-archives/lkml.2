@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab2BCQhm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:37:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54883 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754240Ab2BCQhl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:37:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120203152650.827624790@openvz.org>
-References: <20120203151928.474036973@openvz.org>
-	<20120203152650.827624790@openvz.org>
-Date: Fri, 3 Feb 2012 08:37:40 -0800
-X-Google-Sender-Auth: Q0RUfakBJCI88EC76UN7nBB4X0k
-Message-ID: <CAGXu5jKeF65oTHTzuWQ3m+Hne=JkMtSZMAKWPrneL0+v=Hjz7g@mail.gmail.com>
-Subject: Re: [patch 3/4] c/r: procfs: add arg_start/end, env_start/end and
- exit_code members to /proc/$pid/stat
-From: Kees Cook <keescook@chromium.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+	id S1756934Ab2BCQhs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:37:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754240Ab2BCQhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 11:37:45 -0500
+Date: Fri, 3 Feb 2012 17:30:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg KH <gregkh@suse.de>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] staging: android/lowmemorykiller: Don't grab
+	tasklist_lock
+Message-ID: <20120203163056.GA4190@redhat.com>
+References: <20120201043330.GA25511@oksana.dev.rtsoft.ru> <20120202125441.GA32229@redhat.com> <20120202171659.GA29378@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202171659.GA29378@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 7:19 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> We would like to have an ability to restore command line
-> arguments and program environment pointers but first we
-> need to obtain them somehow. Thus we put these values into
-> /proc/$pid/stat. The exit_code is needed to restore zombie
-> tasks.
+On 02/02, Anton Vorontsov wrote:
 >
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> On Thu, Feb 02, 2012 at 01:54:41PM +0100, Oleg Nesterov wrote:
+> >
+> > This has the same problem, force_sig() becomes unsafe.
+>
+> Ouch, I think I finally got it. So, lock_task_sighand() is trying to
+> gracefully grab the lock, checking if the sighand is not NULL (which means,
+> per __exit_signal(), that the task is halfway into the grave).
 
-Acked-by: Kees Cook <keescook@chromium.org>
+Yes.
 
--- 
-Kees Cook
-ChromeOS Security
+> Would the following fix work for the sysrq?
+>
+> - - - -
+> From: Anton Vorontsov <anton.vorontsov@linaro.org>
+> Subject: [PATCH] sysrq: Fix unsafe operations on tasks
+>
+> sysrq should grab the tasklist lock, otherwise calling force_sig() is
+> not safe, as it might race with exiting task, which ->sighand might be
+> set to NULL already.
+
+And there are other reasons for tasklist. It is not clear why
+for_each_process() itself is safe. OK, currently (afaics) the
+caller disables irqs, but in theory this doesn't imply rcu_lock.
+
+And it can race with fork() and miss the task, although mostly
+in theory.
+
+> --- a/drivers/tty/sysrq.c
+> +++ b/drivers/tty/sysrq.c
+> @@ -322,11 +322,13 @@ static void send_sig_all(int sig)
+>  {
+>  	struct task_struct *p;
+>
+> +	read_lock(&tasklist_lock);
+>  	for_each_process(p) {
+>  		if (p->mm && !is_global_init(p))
+>  			/* Not swapper, init nor kernel thread */
+>  			force_sig(sig, p);
+>  	}
+> +	read_unlock(&tasklist_lock);
+
+Agreed, but force_sig() should not be used anyway. It sends the
+signal to the thread, we need to kill the process. The main thread
+can exit.
+
+> > With or without this patch, sig == NULL is not possible but !mm is not right,
+> > there could be other other threads with mm != NULL.
+>
+> I'm not sure I completely follow. In the current LMK code, we check for !mm
+> because otherwise the potential victim is useless for us (i.e. killing it
+> will not free much memory anyway).
+
+This is the common mistake. Consider this program:
+
+	void *thread_func(...)
+	{
+		use_a_lot_of_memory();
+	}
+
+	int main(void)
+	{
+		pthread_create(..., thread_func, ...);
+		pthread_exit();
+	}
+
+lowmem_shrink() will skip this task because p->mm == NULL.
+
+Oleg.
+
