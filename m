@@ -1,121 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932878Ab2BCBka (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 20:40:30 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62881 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556Ab2BCBk3 (ORCPT
+	id S1757816Ab2BCBpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 20:45:40 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47036 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753615Ab2BCBpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 20:40:29 -0500
-Date: Thu, 2 Feb 2012 17:40:10 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Hillf Danton <dhillf@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: vmscan: handle isolated pages with lru lock
- released
-In-Reply-To: <20120116092745.7721ff31.kamezawa.hiroyu@jp.fujitsu.com>
-Message-ID: <alpine.LSU.2.00.1202021726410.31915@eggly.anvils>
-References: <CAJd=RBANeF+TTTtn=F_Yx3N5KkVb5vFPY6FNYEjVntB1pPSLBA@mail.gmail.com> <CAJd=RBAH4+nFQ35JcHju6eSPfDcQpbkJjMX6GBaZFECVaL2swA@mail.gmail.com> <20120116092745.7721ff31.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 2 Feb 2012 20:45:38 -0500
+Date: Fri, 3 Feb 2012 01:45:33 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joel Becker <jlbec@evilplan.org>, Chris Mason <chris.mason@oracle.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [RFC] killing boilerplate checks in ->link/->mkdir/->rename
+Message-ID: <20120203014533.GT23916@ZenIV.linux.org.uk>
+References: <m14nvc82jo.fsf@fess.ebiederm.org>
+ <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
+ <m1wr87ywex.fsf@fess.ebiederm.org>
+ <m1ehueyz20.fsf_-_@fess.ebiederm.org>
+ <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
+ <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
+ <20120202012258.GQ23916@ZenIV.linux.org.uk>
+ <20120202212400.GR23916@ZenIV.linux.org.uk>
+ <CA+55aFzHSv2eHKenVhxnSFMJMXtJCnxD2xu6QjMiMLEGLCZ2uQ@mail.gmail.com>
+ <20120203011612.GS23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203011612.GS23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hillf Danton <dhillf@gmail.com>
+On Fri, Feb 03, 2012 at 01:16:12AM +0000, Al Viro wrote:
 
-When shrinking inactive lru list, isolated pages are queued on locally private
-list, so the lock-hold time could be reduced if pages are counted without lock
-protection.
+> After looking a bit more: nlink_t is a f*cking mess.  Almost any code
+> using that type kernel-side is broken.  Crap galore:
+> 	* sometimes it's 32 bits, sometimes 16, sometimes 64.  Essentially
+> at random.
+> 	* almost all have it unsigned, except for sparc32, where it's
+> signed short [inherited from v7 via SunOS?  BTW, in v6 it used to be even
+> funnier - char, which is where ridiculous LINK_MAX == 127 comes from]
+> 
+> IOW, nlink_t is an attractive nuisance - it's nearly impossible to use in
+> a portable way and we are lucky that almost nobody tries to.
 
-To achieve that, firstly updating reclaim stat is delayed until the
-putback stage, after reacquiring the lru lock.
+Incidentally, why the hell do we have
+	typedef __kernel_nlink_t        nlink_t;
+anyway?  It's *not* exposed to userland and it's different from the
+userland nlink_t (which is unsigned int on 32bit and unsigned long on 64bit).
+Why not use __kernel_nlink_t (or explicitly-sized __uNN) in
+arch/*/include/asm/stat.h and declare nlink_t kernel-side as __u32?
 
-Secondly, operations related to vm and zone stats are now proteced with
-preemption disabled as they are per-cpu operations.
-
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
-KAMEZAWA-san and I both admired this patch from Hillf; Rik and David
-liked its precursor: I think we'd all be glad to see it in linux-next.
-
- mm/vmscan.c |   21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
-
---- a/mm/vmscan.c	Sat Jan 14 14:02:20 2012
-+++ b/mm/vmscan.c	Sat Jan 14 20:00:46 2012
-@@ -1414,7 +1414,6 @@ update_isolated_counts(struct mem_cgroup
- 		       unsigned long *nr_anon,
- 		       unsigned long *nr_file)
- {
--	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
- 	struct zone *zone = mz->zone;
- 	unsigned int count[NR_LRU_LISTS] = { 0, };
- 	unsigned long nr_active = 0;
-@@ -1435,6 +1434,7 @@ update_isolated_counts(struct mem_cgroup
- 		count[lru] += numpages;
- 	}
-
-+	preempt_disable();
- 	__count_vm_events(PGDEACTIVATE, nr_active);
-
- 	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-@@ -1449,8 +1449,9 @@ update_isolated_counts(struct mem_cgroup
- 	*nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
- 	*nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-
--	reclaim_stat->recent_scanned[0] += *nr_anon;
--	reclaim_stat->recent_scanned[1] += *nr_file;
-+	__mod_zone_page_state(zone, NR_ISOLATED_ANON, *nr_anon);
-+	__mod_zone_page_state(zone, NR_ISOLATED_FILE, *nr_file);
-+	preempt_enable();
- }
-
- /*
-@@ -1512,6 +1513,7 @@ shrink_inactive_list(unsigned long nr_to
- 	unsigned long nr_writeback = 0;
- 	isolate_mode_t reclaim_mode = ISOLATE_INACTIVE;
- 	struct zone *zone = mz->zone;
-+	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
-
- 	while (unlikely(too_many_isolated(zone, file, sc))) {
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
-@@ -1546,19 +1548,13 @@ shrink_inactive_list(unsigned long nr_to
- 			__count_zone_vm_events(PGSCAN_DIRECT, zone,
- 					       nr_scanned);
- 	}
-+	spin_unlock_irq(&zone->lru_lock);
-
--	if (nr_taken == 0) {
--		spin_unlock_irq(&zone->lru_lock);
-+	if (nr_taken == 0)
- 		return 0;
--	}
-
- 	update_isolated_counts(mz, &page_list, &nr_anon, &nr_file);
-
--	__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
--	__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
--
--	spin_unlock_irq(&zone->lru_lock);
--
- 	nr_reclaimed = shrink_page_list(&page_list, mz, sc, priority,
- 						&nr_dirty, &nr_writeback);
-
-@@ -1570,6 +1566,9 @@ shrink_inactive_list(unsigned long nr_to
- 	}
-
- 	spin_lock_irq(&zone->lru_lock);
-+
-+	reclaim_stat->recent_scanned[0] += nr_anon;
-+	reclaim_stat->recent_scanned[1] += nr_file;
-
- 	if (current_is_kswapd())
- 		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+Why do we have daddr_t, while we are at it?  There is exactly one user -
+fs/freevxfs and there we definitely want a fixed-sized type.
