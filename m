@@ -1,343 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab2BCB4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 20:56:13 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:50293
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754920Ab2BCB4K (ORCPT
+	id S1757834Ab2BCB6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 20:58:34 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:47784 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753615Ab2BCB6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 20:56:10 -0500
-X-SpamScore: -3
-X-BigFish: VS-3(zz1432Nzz1202h1082kzz8275bhz2dh2a8h668h839h941h35h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4F2B3F20.3060401@freescale.com>
-Date: Fri, 3 Feb 2012 09:57:52 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	Thu, 2 Feb 2012 20:58:33 -0500
+Message-ID: <351fa912f66bddd04792fec8dafe72ee.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20120203003220.GC14129@n2100.arm.linux.org.uk>
+References: <XNM1$5$0$1$$3$9$0$A$8005107U4ed75e6e@hitachi.com>
+    <3743fd16323370925cf37c279f85d94a.squirrel@webmail.greenhost.nl>
+    <4F2A55B6.4030006@hitachi.com>
+    <06cd49dcb5a124722e042c308144d5b7.squirrel@webmail.greenhost.nl>
+    <20120202111007.GF889@n2100.arm.linux.org.uk>
+    <5afe2282e055f172906087538bdb1f3d.squirrel@webmail.greenhost.nl>
+    <20120203003220.GC14129@n2100.arm.linux.org.uk>
+Date: Fri, 3 Feb 2012 02:58:25 +0100
+Subject: Re: [PATCH] ARM: Wire up HAVE_SYSCALL_TRACEPOINTS
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Cc: "Takuo Koguchi" <takuo.koguchi.sw@hitachi.com>,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        jbaron@redhat.com, yrl.pp-manager.tt@hitachi.com, mcgrathr@google.com
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Huang Shijie <b32955@freescale.com>
-CC: <vinod.koul@intel.com>, <shawn.guo@linaro.org>,
-        <artem.bityutskiy@intel.com>, <shijie8@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <w.sang@pengutronix.de>,
-        <LW@KARO-electronics.de>, <alsa-devel@alsa-project.org>,
-        <b29396@freescale.com>
-Subject: Re: [PATCH v2 2/2] mxs-dma : rewrite the last parameter of mxs_dma_prep_slave_sg()
-References: <1327044818-4464-1-git-send-email-b32955@freescale.com> <1327044818-4464-3-git-send-email-b32955@freescale.com>
-In-Reply-To: <1327044818-4464-3-git-send-email-b32955@freescale.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 01ccc3eb840dc35651f50b798cb06ae8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, February 3, 2012 01:32, Russell King - ARM Linux wrote:
+> On Fri, Feb 03, 2012 at 12:38:58AM +0100, Indan Zupancic wrote:
+>> On Thu, February 2, 2012 12:10, Russell King - ARM Linux wrote:
+>> > On Thu, Feb 02, 2012 at 12:00:30PM +0100, Indan Zupancic wrote:
+>> >> On Thu, February 2, 2012 10:21, Takuo Koguchi wrote:
+>> >> > Right.  As Russel King suggested, this patch depends on those configs
+>> >> > until very large NR_syscalls is properly handled by ftrace.
+>> >>
+>> >> It has nothing to do with large NR_syscalls. Supporting OABI is hard,
+>> >
+>> > That's rubbish if you're doing things correctly, where correctly is
+>> > defined as 'not assuming that the syscall number is in r7, but reading
+>> > it from the thread_info->syscall member.
+>>
+>> It was my impression that thread_info->syscall is only set in the ptrace
+>> path.
+>
+> Well, as ptrace is the only syscall tracing we have at the moment in
+> the kernel, then that's how its done.
 
-Due the DMA api changes, please ignore this patch.
+Fair enough.
 
+> What we don't have there for ptrace is a method to read that, so
+> tools such as strace have had to fiddle about to discover the syscall
+> number.  That's something I have had a patch for some time to 'fix'
+> (a PTRACE_GET_SYSCALL to complement PTRACE_SET_SYSCALL) but haven't
+> had the motivation to try to fix that.
+>
+>> Of course this can be changed, but it's tricky to do without adding
+>> instructions to the syscall entry path. One way would be to have a
+>> flag somewhere saying whether r7 or thread_info->syscall should be
+>> used, and also set thread_info->syscall for OABI calls. That at least
+>> won't slow down the EABI path.
+>
+> Why would you need to change the entry path?  We already have a hook
+> out of the syscall path for doing tracing (via syscall_trace()) but
+> the fact that it sits in ptrace.c isn't an argument to create something
+> new.
 
-thanks
+Will Drewry has a seccomp BPF syscall filtering patch which needs syscall.h,
+and then there's /proc/$PID/syscall, coredumps and ftrace that need a way
+to get the syscall number. So yes, right now it's just ptrace, but a few
+features would benefit from having a way to know the current syscall number
+outside of the ptrace path.
 
-Huang Shijie
-> [1] Background :
->     The GPMI does ECC read page operation with a DMA chain consist of three DMA
->     Command Structures. The middle one of the chain is used to enable the BCH,
->     and read out the NAND page.
+>> > Notice how the EABI case is a lot more complicated by the alignment
+>> > rules than the OABI - not only do you need something like the above
+>>
+>> Only when you go through the args sequentially like that.
 >
->     The WAIT4END(wait for command end) is a comunication signal between
->     the GPMI and MXS-DMA.
+> If you don't go through the args sequentially, then your only way of
+> deciding EABI args is via a table which describes the location of each
+> argument in the register set.
+
+But you need something like that anyway, even if you do go sequentially
+through the args. If you do anything with the args, you need to know what
+they mean, and that is system call specific. If you store the meaning of
+an arg then you automatically know its location. Having 64-bit args on a
+32-bit system isn't something you can handle automatically and generally
+without lookup tables or some other info.
+
+syscall.h is the wrong place to handle 64-bit args specially, it should
+just expose the raw syscall interface without interpretation.
+
+>> If only EABI is supported everything is simple, because everyone knows
+>> what to expect. If OABI is also supported then more changes are needed:
+>> The above, but also some way to tell ptrace and other users if it was
+>> an EABI or OABI system call. And currently with ptrace there is no race
+>> free way of figuring out the OABI system call number from user space.
 >
-> [2] The current DMA code sets the WAIT4END bit at the last one, such as:
->
->     +-----+               +-----+                      +-----+
->     | cmd | ------------> | cmd | ------------------>  | cmd |
->     +-----+               +-----+                      +-----+
->                                                           ^
->                                                           |
->                                                           |
->                                                      set WAIT4END here
->
->     This chain works fine in the mx23/mx28.
->
-> [3] But in the new GPMI version (used in MX50/MX60), the WAIT4END bit should
->     be set not only at the last DMA Command Structure,
->     but also at the middle one, such as:
->
->     +-----+               +-----+                      +-----+
->     | cmd | ------------> | cmd | ------------------>  | cmd |
->     +-----+               +-----+                      +-----+
->                              ^                            ^
->                              |                            |
->                              |                            |
->                         set WAIT4END here too        set WAIT4END here
->
->     If we do not set WAIT4END, the BCH maybe stalls in "ECC reading page" state.
->     In the next ECC write page operation, a DMA-timeout occurs.
->     This has been catched in the MX6Q board.
->
-> [4] In order to fix the bug, rewrite the last parameter of mxs_dma_prep_slave_sg(),
->     and use the dma_ctrl_flags:
->     ---------------------------------------------------------
->       DMA_PREP_INTERRUPT : append a new DMA Command Structrue.
->       DMA_CTRL_ACK       : set the WAIT4END bit for this DMA Command Structure.
->     ---------------------------------------------------------
->
-> [5] changes to the relative drivers:
->     <1> For mxs-mmc driver, just use the new flags, do not change any logic.
->     <2> For gpmi-nand driver, add new field `gpmi_version` to distinguish
->         different gpmi versions, and use the new flags.
->
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
-> ---
->  drivers/dma/mxs-dma.c                  |   32 ++++++++++++++++++++++++++++----
->  drivers/mmc/host/mxs-mmc.c             |   10 +++++-----
->  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  |   28 ++++++++++++++++++++++------
->  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |    4 ++++
->  drivers/mtd/nand/gpmi-nand/gpmi-regs.h |    2 ++
->  5 files changed, 61 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-> index c80fbed..7d7498b 100644
-> --- a/drivers/dma/mxs-dma.c
-> +++ b/drivers/dma/mxs-dma.c
-> @@ -349,10 +349,32 @@ static void mxs_dma_free_chan_resources(struct dma_chan *chan)
->  	clk_disable_unprepare(mxs_dma->clk);
->  }
->  
-> +/*
-> + * How to use the flags for ->device_prep_slave_sg() :
-> + *    [1] If there is only one DMA command in the DMA chain, the code should be:
-> + *            ......
-> + *            ->device_prep_slave_sg(DMA_CTRL_ACK);
-> + *            ......
-> + *    [2] If there are two DMA commands in the DMA chain, the code should be
-> + *            ......
-> + *            ->device_prep_slave_sg(0);
-> + *            ......
-> + *            ->device_prep_slave_sg(DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-> + *            ......
-> + *    [3] If there are more than two DMA commands in the DMA chain, the code
-> + *        should be:
-> + *            ......
-> + *            ->device_prep_slave_sg(0);                                // First
-> + *            ......
-> + *            ->device_prep_slave_sg(DMA_PREP_INTERRUPT [| DMA_CTRL_ACK]);
-> + *            ......
-> + *            ->device_prep_slave_sg(DMA_PREP_INTERRUPT | DMA_CTRL_ACK); // Last
-> + *            ......
-> + */
->  static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
->  		struct dma_chan *chan, struct scatterlist *sgl,
->  		unsigned int sg_len, enum dma_transfer_direction direction,
-> -		unsigned long append)
-> +		unsigned long flags)
->  {
->  	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
->  	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
-> @@ -360,6 +382,7 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
->  	struct scatterlist *sg;
->  	int i, j;
->  	u32 *pio;
-> +	bool append = flags & DMA_PREP_INTERRUPT;
->  	int idx = append ? mxs_chan->desc_count : 0;
->  
->  	if (mxs_chan->status == DMA_IN_PROGRESS && !append)
-> @@ -386,7 +409,6 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
->  		ccw->bits |= CCW_CHAIN;
->  		ccw->bits &= ~CCW_IRQ;
->  		ccw->bits &= ~CCW_DEC_SEM;
-> -		ccw->bits &= ~CCW_WAIT4END;
->  	} else {
->  		idx = 0;
->  	}
-> @@ -401,7 +423,8 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
->  		ccw->bits = 0;
->  		ccw->bits |= CCW_IRQ;
->  		ccw->bits |= CCW_DEC_SEM;
-> -		ccw->bits |= CCW_WAIT4END;
-> +		if (flags & DMA_CTRL_ACK)
-> +			ccw->bits |= CCW_WAIT4END;
->  		ccw->bits |= CCW_HALT_ON_TERM;
->  		ccw->bits |= CCW_TERM_FLUSH;
->  		ccw->bits |= BF_CCW(sg_len, PIO_NUM);
-> @@ -432,7 +455,8 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
->  				ccw->bits &= ~CCW_CHAIN;
->  				ccw->bits |= CCW_IRQ;
->  				ccw->bits |= CCW_DEC_SEM;
-> -				ccw->bits |= CCW_WAIT4END;
-> +				if (flags & DMA_CTRL_ACK)
-> +					ccw->bits |= CCW_WAIT4END;
->  			}
->  		}
->  	}
-> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-> index 1e18970..120669b 100644
-> --- a/drivers/mmc/host/mxs-mmc.c
-> +++ b/drivers/mmc/host/mxs-mmc.c
-> @@ -305,7 +305,7 @@ static irqreturn_t mxs_mmc_irq_handler(int irq, void *dev_id)
->  }
->  
->  static struct dma_async_tx_descriptor *mxs_mmc_prep_dma(
-> -	struct mxs_mmc_host *host, unsigned int append)
-> +	struct mxs_mmc_host *host, unsigned long flags)
->  {
->  	struct dma_async_tx_descriptor *desc;
->  	struct mmc_data *data = host->data;
-> @@ -325,7 +325,7 @@ static struct dma_async_tx_descriptor *mxs_mmc_prep_dma(
->  	}
->  
->  	desc = host->dmach->device->device_prep_slave_sg(host->dmach,
-> -				sgl, sg_len, host->slave_dirn, append);
-> +				sgl, sg_len, host->slave_dirn, flags);
->  	if (desc) {
->  		desc->callback = mxs_mmc_dma_irq_callback;
->  		desc->callback_param = host;
-> @@ -358,7 +358,7 @@ static void mxs_mmc_bc(struct mxs_mmc_host *host)
->  	host->ssp_pio_words[2] = cmd1;
->  	host->dma_dir = DMA_NONE;
->  	host->slave_dirn = DMA_TRANS_NONE;
-> -	desc = mxs_mmc_prep_dma(host, 0);
-> +	desc = mxs_mmc_prep_dma(host, DMA_CTRL_ACK);
->  	if (!desc)
->  		goto out;
->  
-> @@ -398,7 +398,7 @@ static void mxs_mmc_ac(struct mxs_mmc_host *host)
->  	host->ssp_pio_words[2] = cmd1;
->  	host->dma_dir = DMA_NONE;
->  	host->slave_dirn = DMA_TRANS_NONE;
-> -	desc = mxs_mmc_prep_dma(host, 0);
-> +	desc = mxs_mmc_prep_dma(host, DMA_CTRL_ACK);
->  	if (!desc)
->  		goto out;
->  
-> @@ -526,7 +526,7 @@ static void mxs_mmc_adtc(struct mxs_mmc_host *host)
->  	host->data = data;
->  	host->dma_dir = dma_data_dir;
->  	host->slave_dirn = slave_dirn;
-> -	desc = mxs_mmc_prep_dma(host, 1);
-> +	desc = mxs_mmc_prep_dma(host, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
->  	if (!desc)
->  		goto out;
->  
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> index 7f68042..2029995 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> @@ -133,6 +133,9 @@ int gpmi_init(struct gpmi_nand_data *this)
->  	if (ret)
->  		goto err_out;
->  
-> +	/* Read out the GPMI version */
-> +	this->gpmi_version = readl(r->gpmi_regs + HW_GPMI_VERSION);
-> +
->  	/* Choose NAND mode. */
->  	writel(BM_GPMI_CTRL1_GPMI_MODE, r->gpmi_regs + HW_GPMI_CTRL1_CLR);
->  
-> @@ -839,7 +842,9 @@ int gpmi_send_command(struct gpmi_nand_data *this)
->  	sg_init_one(sgl, this->cmd_buffer, this->command_length);
->  	dma_map_sg(this->dev, sgl, 1, DMA_TO_DEVICE);
->  	desc = channel->device->device_prep_slave_sg(channel,
-> -					sgl, 1, DMA_MEM_TO_DEV, 1);
-> +				sgl, 1, DMA_MEM_TO_DEV,
-> +				DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-> +
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -881,7 +886,8 @@ int gpmi_send_data(struct gpmi_nand_data *this)
->  	/* [2] send DMA request */
->  	prepare_data_dma(this, DMA_TO_DEVICE);
->  	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
-> -						1, DMA_MEM_TO_DEV, 1);
-> +					1, DMA_MEM_TO_DEV,
-> +					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -917,7 +923,8 @@ int gpmi_read_data(struct gpmi_nand_data *this)
->  	/* [2] : send DMA request */
->  	prepare_data_dma(this, DMA_FROM_DEVICE);
->  	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
-> -						1, DMA_DEV_TO_MEM, 1);
-> +					1, DMA_DEV_TO_MEM,
-> +					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -964,7 +971,8 @@ int gpmi_send_page(struct gpmi_nand_data *this,
->  
->  	desc = channel->device->device_prep_slave_sg(channel,
->  					(struct scatterlist *)pio,
-> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
-> +					ARRAY_SIZE(pio), DMA_TRANS_NONE,
-> +					DMA_CTRL_ACK);
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -984,6 +992,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
->  	struct dma_async_tx_descriptor *desc;
->  	struct dma_chan *channel = get_dma_chan(this);
->  	int chip = this->current_chip;
-> +	unsigned long flags;
->  	u32 pio[6];
->  
->  	/* [1] Wait for the chip to report ready. */
-> @@ -1026,9 +1035,14 @@ int gpmi_read_page(struct gpmi_nand_data *this,
->  	pio[3] = geo->page_size;
->  	pio[4] = payload;
->  	pio[5] = auxiliary;
-> +
-> +	/* Check GPMI's version, set DMA_CTRL_ACK if needed. */
-> +	flags = DMA_PREP_INTERRUPT;
-> +	if (this->gpmi_version == GPMI_VERSION_0501)
-> +		flags |= DMA_CTRL_ACK;
->  	desc = channel->device->device_prep_slave_sg(channel,
->  					(struct scatterlist *)pio,
-> -					ARRAY_SIZE(pio), DMA_TRANS_NONE, 1);
-> +					ARRAY_SIZE(pio), DMA_TRANS_NONE, flags);
->  	if (!desc) {
->  		pr_err("step 2 error\n");
->  		return -1;
-> @@ -1045,9 +1059,11 @@ int gpmi_read_page(struct gpmi_nand_data *this,
->  		| BF_GPMI_CTRL0_ADDRESS(address)
->  		| BF_GPMI_CTRL0_XFER_COUNT(geo->page_size);
->  	pio[1] = 0;
-> +	pio[2] = 0;
->  	desc = channel->device->device_prep_slave_sg(channel,
->  				(struct scatterlist *)pio, 2,
-> -				DMA_TRANS_NONE, 1);
-> +				DMA_TRANS_NONE,
-> +				DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
->  	if (!desc) {
->  		pr_err("step 3 error\n");
->  		return -1;
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-> index 1c7fdbb..5c277e3 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-> @@ -132,6 +132,10 @@ struct gpmi_nand_data {
->  	/* Flash Hardware */
->  	struct nand_timing	timing;
->  
-> +	/* GPMI hardware version */
-> +#define GPMI_VERSION_0501	(0x05010000)
-> +	u32			gpmi_version;
-> +
->  	/* BCH */
->  	struct bch_geometry	bch_geometry;
->  	struct completion	bch_done;
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-regs.h b/drivers/mtd/nand/gpmi-nand/gpmi-regs.h
-> index 8343124..f005b24 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-regs.h
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-regs.h
-> @@ -169,4 +169,6 @@
->  #define HW_GPMI_DEBUG					0x000000c0
->  #define MX23_BP_GPMI_DEBUG_READY0			28
->  #define MX23_BM_GPMI_DEBUG_READY0	(1 << MX23_BP_GPMI_DEBUG_READY0)
-> +
-> +#define HW_GPMI_VERSION					0x000000d0
->  #endif
+> Absolute tosh, that really is.  Of course there's a way of figuring it
+> out.  Tools such as strace have been doing it for _years_ and have been
+> doing it extremely well.
+
+I said "race free". Reading processs memory isn't race free. Other than
+that detail, yes it can be done.
+
+> Sure, some other thread may stamp over the syscall after you've entered
+> the kernel, but that's a bug in any case - if programs are doing that
+> then they're racy, and can't predict what system call they're going to
+> invoke.  So really that kind of race is not one to be concerned about.
+
+Except if you use ptrace for anything security sensitive, like process
+jailing.
+
+> And, in any case, using what's already there in syscall_trace() already
+> gives you a way to store and manipulate the syscall number.  So really
+> there's no argument over obtaining the syscall number from OABI at all.
+
+That would at least fix the race: Just read the info from user memory, and
+afterwards set the system call to the expected one. Only problem left is
+assuring that it is an EABI call or an OABI call. System call arguments
+are sometimes different, if they are different in a security sensitive way
+then there's still a problem. But looking at the affected system calls it
+seems it's fine. So you're right that no extra OABI info needs to be passed
+on. For the rare security sensitive software where it would matter it can
+always not support CONFIG_OABI_COMPAT kernels.
+
+Greetings,
+
+Indan
 
 
