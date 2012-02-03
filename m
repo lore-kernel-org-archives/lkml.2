@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab2BCUzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 15:55:08 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:59698 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab2BCUzG (ORCPT
+	id S1757800Ab2BCU6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 15:58:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50637 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757696Ab2BCU5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 15:55:06 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19otigFjrE0KOn1xoHldSMw
-Subject: [PATCH 0/2] Initial DT only generic pinctrl-simple driver
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-From: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Dong Aisheng <dongas86@gmail.com>
-Date: Fri, 03 Feb 2012 12:54:58 -0800
-Message-ID: <20120203205049.4089.74610.stgit@kaulin.local>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 3 Feb 2012 15:57:24 -0500
+Date: Fri, 3 Feb 2012 12:57:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from
+ 80 to 100 colums
+Message-Id: <20120203125715.0e9dfb1d.akpm@linux-foundation.org>
+In-Reply-To: <20120203100743.GA3334@elte.hu>
+References: <20120130140905.441199885@openvz.org>
+	<20120130141852.309402052@openvz.org>
+	<20120203074656.GC30543@elte.hu>
+	<20120203083530.GD1968@moon>
+	<20120203090929.GA23996@elte.hu>
+	<20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+	<20120203095227.GA13162@elte.hu>
+	<20120203100743.GA3334@elte.hu>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, 3 Feb 2012 11:07:43 +0100
+Ingo Molnar <mingo@elte.hu> wrote:
 
-Here's finally something that mostly works for omap2/3/4, this
-is now using a minimal subset of the mux bindings posted earlier
-by Stephen Warren.
+> [PATCH] SubmittingPatches: Increase the line length limit from 80 to 100 colums
+> 
+> The overwhelming majority of kernel developers have stopped 
+> using 80 col terminals years ago.
+> 
+> As far as I'm aware I was the last regular kernel contributor 
+> who still used a standard VGA text console, but both text 
+> consoles and using them to read the kernel source code has 
+> become increasingly gruesome years ago so I switched to a wider 
+> terminal two years ago.
 
-No support for alternative modes at this point, bunch of features
-missing.. And the map allocation is copying things unnecessarily
-right now. But basically this is what I promised to post few
-weeks ago as pinmux-simple.
+I always use 80-cols, everywhere.  Not because I particularly like it -
+I find it a bit too small.  I use it because it is the standard, and
+using it helps me see where and how badly we violate the standard.
 
-Hmm, how should we mark the pinmux hogs in .dts?
+We've actually done pretty well - linewrap in 80 cols rarely causes me
+problems.  It's sufficiently rare that when it *does* happen, it really
+stands out.
 
-Regards,
+IOW, the changelog is quite the exaggeration.
 
-Tony
+> So lets increase the limit to 100 cols
 
----
+I think that's going too far - 96 will be enough and it's a multiple of 8.
 
-Tony Lindgren (2):
-      pinmux: Export pinmux_register_mappings for pinmux modules
-      pinctrl: Add simple pinmux driver using device tree data
+The multiple-of-8 thing seems pleasing but probably doesn't matter
+much.  It means that things like
 
 
- .../devicetree/bindings/pinmux/pinctrl-simple.txt  |   62 +
- drivers/pinctrl/Kconfig                            |    6 
- drivers/pinctrl/Makefile                           |    1 
- drivers/pinctrl/pinctrl-simple.c                   | 1286 ++++++++++++++++++++
- drivers/pinctrl/pinmux.c                           |    3 
- 5 files changed, 1357 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pinmux/pinctrl-simple.txt
- create mode 100644 drivers/pinctrl/pinctrl-simple.c
+if (foo) {
+	if (foo) {
+		if (foo) {
+			if (foo) {
+				if (foo) {
+					if (foo) {
+						if (foo) {
+							if (foo) {
+								if (foo) {
+									if (foo) {
+										if (foo) {
+											if (foo) {
+												if (foo) {
+													if (foo) {
+														if (foo) {
+												
 
--- 
-Signature
+will line up properly.
+
+
+If we really want to improve the world we should jump into a time
+machine and set tabstops to 4.  Sigh.
+
