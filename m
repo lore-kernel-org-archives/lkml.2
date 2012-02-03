@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab2BCMWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 07:22:48 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:9816 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab2BCMTI (ORCPT
+	id S1754002Ab2BCMTH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 07:19:07 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:14440 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab2BCMTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 07:19:08 -0500
+	Fri, 3 Feb 2012 07:19:04 -0500
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Fri, 03 Feb 2012 13:18:50 +0100
+Date: Fri, 03 Feb 2012 13:18:45 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 07/15] mm: page_alloc: change fallbacks array handling
+Subject: [PATCH 02/15] mm: compaction: introduce isolate_migratepages_range().
 In-reply-to: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -31,7 +31,7 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>,
         Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Message-id: <1328271538-14502-8-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1328271538-14502-3-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.7.3
 References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,11 +40,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-This commit adds a row for MIGRATE_ISOLATE type to the fallbacks array
-which was missing from it.  It also, changes the array traversal logic
-a little making MIGRATE_RESERVE an end marker.  The letter change,
-removes the implicit MIGRATE_UNMOVABLE from the end of each row which
-was read by __rmqueue_fallback() function.
+This commit introduces isolate_migratepages_range() function which
+extracts functionality from isolate_migratepages() so that it can be
+used on arbitrary PFN ranges.
+
+isolate_migratepages() function is implemented as a simple wrapper
+around isolate_migratepages_range().
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
@@ -53,43 +54,123 @@ Tested-by: Rob Clark <rob.clark@linaro.org>
 Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
 Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 ---
- mm/page_alloc.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ mm/compaction.c |   75 +++++++++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 54 insertions(+), 21 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9006e69..238fcec 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -875,11 +875,12 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
-  * This array describes the order lists are fallen back to when
-  * the free lists for the desirable migrate type are depleted
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 71a58f6..62902b6 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -250,31 +250,34 @@ typedef enum {
+ 	ISOLATE_SUCCESS,	/* Pages isolated, migrate */
+ } isolate_migrate_t;
+ 
+-/*
+- * Isolate all pages that can be migrated from the block pointed to by
+- * the migrate scanner within compact_control.
++/**
++ * isolate_migratepages_range() - isolate all migrate-able pages in range.
++ * @zone:	Zone pages are in.
++ * @cc:		Compaction control structure.
++ * @low_pfn:	The first PFN of the range.
++ * @end_pfn:	The one-past-the-last PFN of the range.
++ *
++ * Isolate all pages that can be migrated from the range specified by
++ * [low_pfn, end_pfn).  Returns zero if there is a fatal signal
++ * pending), otherwise PFN of the first page that was not scanned
++ * (which may be both less, equal to or more then end_pfn).
++ *
++ * Assumes that cc->migratepages is empty and cc->nr_migratepages is
++ * zero.
++ *
++ * Apart from cc->migratepages and cc->nr_migratetypes this function
++ * does not modify any cc's fields, in particular it does not modify
++ * (or read for that matter) cc->migrate_pfn.
   */
--static int fallbacks[MIGRATE_TYPES][MIGRATE_TYPES-1] = {
-+static int fallbacks[MIGRATE_TYPES][3] = {
- 	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
- 	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
- 	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
--	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE,     MIGRATE_RESERVE,   MIGRATE_RESERVE }, /* Never used */
-+	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
-+	[MIGRATE_ISOLATE]     = { MIGRATE_RESERVE }, /* Never used */
- };
+-static isolate_migrate_t isolate_migratepages(struct zone *zone,
+-					struct compact_control *cc)
++static unsigned long
++isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
++			   unsigned long low_pfn, unsigned long end_pfn)
+ {
+-	unsigned long low_pfn, end_pfn;
+ 	unsigned long last_pageblock_nr = 0, pageblock_nr;
+ 	unsigned long nr_scanned = 0, nr_isolated = 0;
+ 	struct list_head *migratelist = &cc->migratepages;
+ 	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
  
- /*
-@@ -974,12 +975,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
- 	/* Find the largest possible block of pages in the other list */
- 	for (current_order = MAX_ORDER-1; current_order >= order;
- 						--current_order) {
--		for (i = 0; i < MIGRATE_TYPES - 1; i++) {
-+		for (i = 0;; i++) {
- 			migratetype = fallbacks[start_migratetype][i];
+-	/* Do not scan outside zone boundaries */
+-	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+-
+-	/* Only scan within a pageblock boundary */
+-	end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
+-
+-	/* Do not cross the free scanner or scan within a memory hole */
+-	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
+-		cc->migrate_pfn = end_pfn;
+-		return ISOLATE_NONE;
+-	}
+-
+ 	/*
+ 	 * Ensure that there are not too many pages isolated from the LRU
+ 	 * list by either parallel reclaimers or compaction. If there are,
+@@ -283,12 +286,12 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	while (unlikely(too_many_isolated(zone))) {
+ 		/* async migration should just abort */
+ 		if (!cc->sync)
+-			return ISOLATE_ABORT;
++			return 0;
  
- 			/* MIGRATE_RESERVE handled later if necessary */
- 			if (migratetype == MIGRATE_RESERVE)
--				continue;
-+				break;
+ 		congestion_wait(BLK_RW_ASYNC, HZ/10);
  
- 			area = &(zone->free_area[current_order]);
- 			if (list_empty(&area->free_list[migratetype]))
+ 		if (fatal_signal_pending(current))
+-			return ISOLATE_ABORT;
++			return 0;
+ 	}
+ 
+ 	/* Time to isolate some pages for migration */
+@@ -374,10 +377,40 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	acct_isolated(zone, cc);
+ 
+ 	spin_unlock_irq(&zone->lru_lock);
+-	cc->migrate_pfn = low_pfn;
+ 
+ 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+ 
++	return low_pfn;
++}
++
++/*
++ * Isolate all pages that can be migrated from the block pointed to by
++ * the migrate scanner within compact_control.
++ */
++static isolate_migrate_t isolate_migratepages(struct zone *zone,
++					struct compact_control *cc)
++{
++	unsigned long low_pfn, end_pfn;
++
++	/* Do not scan outside zone boundaries */
++	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
++
++	/* Only scan within a pageblock boundary */
++	end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
++
++	/* Do not cross the free scanner or scan within a memory hole */
++	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
++		cc->migrate_pfn = end_pfn;
++		return ISOLATE_NONE;
++	}
++
++	/* Perform the isolation */
++	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn);
++	if (!low_pfn)
++		return ISOLATE_ABORT;
++
++	cc->migrate_pfn = low_pfn;
++
+ 	return ISOLATE_SUCCESS;
+ }
+ 
 -- 
 1.7.1.569.g6f426
 
