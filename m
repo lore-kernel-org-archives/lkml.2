@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757893Ab2BCVHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 16:07:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59557 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757752Ab2BCVHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 16:07:37 -0500
-Message-ID: <4F2C4C68.80302@zytor.com>
-Date: Fri, 03 Feb 2012 13:06:48 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1757907Ab2BCVH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 16:07:56 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:54466 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757896Ab2BCVHy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 16:07:54 -0500
+Message-ID: <4F2C5A35.1050407@xenotime.net>
+Date: Fri, 03 Feb 2012 14:05:41 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+To: Borislav Petkov <bp@alien8.de>, Nick Bowler <nbowler@elliptictech.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from
- 80 to 100 colums
-References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org> <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu> <20120203125715.0e9dfb1d.akpm@linux-foundation.org>
-In-Reply-To: <20120203125715.0e9dfb1d.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
+        LKML <linux-kernel@vger.kernel.org>,
+        Kevin Winchester <kjwinchester@gmail.com>
+Subject: Re: MCE, AMD: Hide smp-only code around CONFIG_SMP
+References: <1328209817-18913-1-git-send-email-bp@alien8.de> <20120202193702.GA9502@elliptictech.com> <20120202202427.GA2234@x1.osrc.amd.com> <20120203191801.GA2846@x1.osrc.amd.com>
+In-Reply-To: <20120203191801.GA2846@x1.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2012 12:57 PM, Andrew Morton wrote:
+On 02/03/2012 11:18 AM, Borislav Petkov wrote:
+> On Thu, Feb 02, 2012 at 09:24:28PM +0100, Borislav Petkov wrote:
+>>> Is this feature truly irrelevant on UP systems?  I ask because I've
+>>> always enabled this option on my UP AMD systems in the past...
+>>
+>> No, you're right. Thanks for the suggestion. Scratch that version, I'll
+>> think of a better fix.
 > 
-> I always use 80-cols, everywhere.  Not because I particularly like it -
-> I find it a bit too small.  I use it because it is the standard, and
-> using it helps me see where and how badly we violate the standard.
+> Ok, I think I got it, pls take a look and scream if something's amiss.
 > 
+> @Randy: it builds fine with your randconfig and with mine default one;
+> I'd appreciate if you could run it too, just in case.
 
-Width matters to me more for printing than it does on the screen.
-80-column text can be printed on a landscape piece of paper two columns
-wide without being too hard to read (e.g. enscript -2r).  I haven't
-tried that with 96 columns, but more than that would almost certainly be
-illegible.
+Yes, it's fine for me also.
+Thanks.
 
-	-hpa
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+
+> Thanks.
+> 
+> --
+> From: Borislav Petkov <bp@alien8.de>
+> Date: Fri, 3 Feb 2012 18:07:54 +0100
+> Subject: [PATCH] MCE, AMD: Hide smp-only code around CONFIG_SMP
+> 
+> 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
+> 'struct cpuinfo_x86'") removed a bunch of CONFIG_SMP ifdefs around code
+> touching struct cpuinfo_x86 members but also caused the following build
+> error with Randy's randconfigs:
+> 
+> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to `cpu_llc_shared_map'
+> 
+> Restore the #ifdef in threshold_create_bank() which creates symlinks on
+> the non-BSP CPUs.
+> 
+> Cc: Kevin Winchester <kjwinchester@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Link: http://lkml.kernel.org/r/4F298A6C.6010101@xenotime.net
+> Signed-off-by: Borislav Petkov <bp@alien8.de>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce_amd.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> index 786e76a..e4eeaaf 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> @@ -528,6 +528,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+>  
+>  	sprintf(name, "threshold_bank%i", bank);
+>  
+> +#ifdef CONFIG_SMP
+>  	if (cpu_data(cpu).cpu_core_id && shared_bank[bank]) {	/* symlink */
+>  		i = cpumask_first(cpu_llc_shared_mask(cpu));
+>  
+> @@ -553,6 +554,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+>  
+>  		goto out;
+>  	}
+> +#endif
+>  
+>  	b = kzalloc(sizeof(struct threshold_bank), GFP_KERNEL);
+>  	if (!b) {
+
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
