@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab2BCVAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 16:00:38 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:43951 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752819Ab2BCVAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 16:00:37 -0500
-Message-ID: <4F2C4AF0.3000907@sgi.com>
-Date: Fri, 03 Feb 2012 13:00:32 -0800
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
+	id S1757853Ab2BCVBX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 16:01:23 -0500
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:35817 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753848Ab2BCVBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 16:01:22 -0500
+From: Kevin Hilman <khilman@ti.com>
+To: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Cc: <linux-omap@vger.kernel.org>, tony@atomide.com,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v9 00/25] gpio/omap: driver cleanup and fixes
+Organization: Texas Instruments, Inc.
+References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
+Date: Fri, 03 Feb 2012 13:01:16 -0800
+In-Reply-To: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com> (Tarun
+	Kanti DebBarma's message of "Thu, 2 Feb 2012 23:00:26 +0530")
+Message-ID: <87pqdv4oo3.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Jack Steiner <steiner@sgi.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org, Mike Habeck <habeck@sgi.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Chris Wright <chrisw@sous-sol.org>, Daniel Rahn <drahn@suse.com>
-Subject: [PATCH 1/3] x86 PCI: Fix identity mapping for sandy bridge
-References: <20120202235650.563029146@gulag1.americas.sgi.com>
-In-Reply-To: <20120202235650.563029146@gulag1.americas.sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding some more folks to the CC list for their comments.]
+Hi Tarun,
 
-With SandyBridge, Intel has changed these Socket PCI devices to have a class
-type of "System Peripheral" & "Performance counter", rather than "HostBridge".
-So instead of using a "special" case to detect which devices will not be
-doing DMA, use the fact that a device that is not associated with an IOMMU,
-will not need an identity map.
+Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Signed-off-by: Mike Habeck <habeck@sgi.com>
----
- drivers/iommu/intel-iommu.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+> The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
+>   Linus Torvalds (1):
+>         Linux 3.3-rc2
+>
+> are available in the git repository at:
+> http://gitorious.org/~tarunkanti/omap-sw-develoment/tarunkantis-linux-omap-dev
+> Branch: for_3.4/gpio_cleanup_fixes_v9
+>
+> This series is continuation of cleanup of OMAP GPIO driver and fixes.
+> The cleanup include getting rid of cpu_is_* checks wherever possible,
+> use of gpio_bank list instead of static array, use of unique platform
+> specific value associated data member to OMAP platforms to avoid
+> cpu_is_* checks. The series also include PM runtime support.
 
---- linux.orig/drivers/iommu/intel-iommu.c
-+++ linux/drivers/iommu/intel-iommu.c
-@@ -48,8 +48,6 @@
- #define ROOT_SIZE		VTD_PAGE_SIZE
- #define CONTEXT_SIZE		VTD_PAGE_SIZE
- -#define IS_BRIDGE_HOST_DEVICE(pdev) \
--			    ((pdev->class >> 8) == PCI_CLASS_BRIDGE_HOST)
- #define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
- #define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
- #define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
-@@ -2369,18 +2367,18 @@ static int __init iommu_prepare_static_i
- 		return -EFAULT;
-  	for_each_pci_dev(pdev) {
--		/* Skip Host/PCI Bridge devices */
--		if (IS_BRIDGE_HOST_DEVICE(pdev))
--			continue;
- 		if (iommu_should_identity_map(pdev, 1)) {
--			printk(KERN_INFO "IOMMU: %s identity mapping for device %s\n",
--			       hw ? "hardware" : "software", pci_name(pdev));
--
- 			ret = domain_add_dev_info(si_domain, pdev,
--						     hw ? CONTEXT_TT_PASS_THROUGH :
--						     CONTEXT_TT_MULTI_LEVEL);
--			if (ret)
-+					     hw ? CONTEXT_TT_PASS_THROUGH :
-+						  CONTEXT_TT_MULTI_LEVEL);
-+			if (ret) {
-+				/* device not associated with an iommu */
-+				if (ret == -ENODEV)
-+					continue;
- 				return ret;
-+			}
-+			pr_info("IOMMU: %s identity mapping for device %s\n",
-+				hw ? "hardware" : "software", pci_name(pdev));
- 		}
- 	}
- 
--- 
+This version is looking pretty good, and I'm almost ready to queue it up
+for Grant.
+
+However, one more minor nit.  Please fix up the compile warnings when
+built without CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME.
+
+The definitons of the dev_pm_ops callbacks need to be conditional when
+using the SET_*_PM_OPS() macros, otherwise you get these warnings:
+
+  CC      drivers/gpio/gpio-omap.o
+/work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1142:12: warning: 'omap_gpio_suspend' defined but not used [-Wunused-function]
+/work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1167:12: warning: 'omap_gpio_resume' defined but not used [-Wunused-function]
+/work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1191:12: warning: 'omap_gpio_runtime_suspend' defined but not used [-Wunused-function]
+/work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1237:12: warning: 'omap_gpio_runtime_resume' defined but not used [-Wunused-function]
+
+
+Thanks,
+
+Kevin
