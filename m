@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab2BCQ4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:56:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54459 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672Ab2BCQ4V convert rfc822-to-8bit (ORCPT
+	id S1757128Ab2BCQ43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:56:29 -0500
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:59189 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757084Ab2BCQ41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:56:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120203152650.894621377@openvz.org>
-References: <20120203151928.474036973@openvz.org>
-	<20120203152650.894621377@openvz.org>
-Date: Fri, 3 Feb 2012 08:56:20 -0800
-X-Google-Sender-Auth: cAxjw-wc1ajhb18pugsssr3iKoM
-Message-ID: <CAGXu5jKsFoMS4XgfOQBZYabrD_5BJAyaXn=5tW9xFd4GuBXTQg@mail.gmail.com>
-Subject: Re: [patch 4/4] c/r: prctl: Extend PR_SET_MM to set up more mm_struct entries
-From: Kees Cook <keescook@chromium.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 3 Feb 2012 11:56:27 -0500
+From: Simon Glass <sjg@chromium.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Simon Glass <sjg@chromium.org>
+Subject: [PATCH 0/3] arm: tegra: dts: USB Updates for Tegra legacy mode / OTG
+Date: Fri,  3 Feb 2012 08:56:09 -0800
+Message-Id: <1328288172-8059-1-git-send-email-sjg@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 7:19 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> +       case PR_SET_MM_AUXV: {
-> +               unsigned long user_auxv[AT_VECTOR_SIZE];
-> +
-> +               if (arg4 > sizeof(mm->saved_auxv))
-> +                       goto out;
+This little series brings in some bindings that seem useful for U-Boot.
 
-While these are both AT_VECTOR_SIZE, I think it might be better to use
-sizeof(mm->saved_auxv) instead of AT_VECTOR_SIZE, just so that they
-can never get out sync and there's a single reference for the size.
+I am working mostly in U-Boot, but since there is no shared .dts repo
+I was asked to commit these changes to the kernel. I do not propose to
+update the Linux USB drivers to match.
 
--Kees
+
+Simon Glass (3):
+  arm: tegra: dts: Support host/device selection and legacy mode
+  arm: tegra: dts: Add legacy mode support to Tegra2x USB1 port
+  arm: tegra: dts: Mark USB1 as an OTG port on Seaboard
+
+ .../devicetree/bindings/usb/tegra-usb.txt          |   13 +++++++++++++
+ arch/arm/boot/dts/tegra-seaboard.dts               |    1 +
+ arch/arm/boot/dts/tegra20.dtsi                     |    1 +
+ 3 files changed, 15 insertions(+), 0 deletions(-)
 
 -- 
-Kees Cook
-ChromeOS Security
+1.7.7.3
+
