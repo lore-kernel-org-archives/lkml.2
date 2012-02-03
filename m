@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab2BCUIp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 15:08:45 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:63729 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2BCUIn (ORCPT
+	id S1756247Ab2BCUKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 15:10:38 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40776 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938Ab2BCUKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 15:08:43 -0500
-X-Greylist: delayed 14488 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Feb 2012 15:08:43 EST
-Message-ID: <4F2C0606.7000409@windriver.com>
-Date: Fri, 3 Feb 2012 11:06:30 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Cong Wang <xiyou.wangcong@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Jamie Iles <jamie@jamieiles.com>, Stephen Warren <swarren@nvidia.com>,
-        <linux-serial@vger.kernel.org>
-Subject: Re: [Patch] tty: fix a build failure on sparc
-References: <1328246540-5824-1-git-send-email-xiyou.wangcong@gmail.com>
-In-Reply-To: <1328246540-5824-1-git-send-email-xiyou.wangcong@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Fri, 3 Feb 2012 15:10:35 -0500
+X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=JWdsGIDjgj4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ybhEY36hXgcA9dyJ_jIA:9 a=PUjeQqilurYA:10 a=5sSclSeBaXwgqdo3:21 a=AZXu_MlKgeb8xAl5:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328299833.5882.211.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH RT 2/2 v4] preempt-rt/x86: Delay calling signals in int3
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Andi Kleen <ak@linux.intel.com>, Clark Williams <williams@redhat.com>,
+        Luis Goncalves <lgoncalv@redhat.com>, stable-rt@vger.kernel.org
+Date: Fri, 03 Feb 2012 15:10:33 -0500
+In-Reply-To: <20120203184016.GA10413@redhat.com>
+References: <20120203182853.547078531@goodmis.org>
+	 <20120203183041.427463295@goodmis.org> <20120203184016.GA10413@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-02-03 12:22 AM, Cong Wang wrote:
-> On sparc, there is a build failure:
-> 
-> drivers/tty/serial/8250/8250.c:48:21: error: suncore.h: No such file or directory
-> drivers/tty/serial/8250/8250.c:3275: error: implicit declaration of function 'sunserial_register_minors'
-> drivers/tty/serial/8250/8250.c:3305: error: implicit declaration of function 'sunserial_unregister_minors'
-> 
-> this is due to commit 9bef3d4197379a995fa80f81950bbbf8d32e9e8b
-> (serial: group all the 8250 related code together) moved these files
-> into 8250/ subdirectory, but forgot to change the reference
-> to drivers/tty/serial/suncore.h.
+On Fri, 2012-02-03 at 19:40 +0100, Oleg Nesterov wrote:
 
-Thanks, I explicitly left sunsu out of the move but missed
-that 8250 was sourcing its related header.  I did defconfig
-builds, but in going back to check, I see that neither sparc
-32/64 defconfig enable 8250 by default, so those builds didn't
-help me much at all...  :(
+> Stupid question. Do we really need to send the signal from here?
 
-Acked-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+If we can do it correctly elsewhere, I'm fine with that too :-)
 
 > 
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+> Why force_sig(rt => T) can't set TIF_NOTIFY_RESUME instead? Then
+> we can change do_notify_resume() to check TIF_FORCE_SIG_TRAP. And
+> perhaps we can even avoid the new TIF_FORCE_SIG_TRAP, we could
+> check task->stored_info_set.
+
+You know the signal code much better than I do. If that works, I'm all
+for that too. I really don't like the entry_64 solution, but it was what
+I knew would work.
+
 > 
-> ---
-> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
-> index 9f50c4e..9b7336f 100644
-> --- a/drivers/tty/serial/8250/8250.c
-> +++ b/drivers/tty/serial/8250/8250.c
-> @@ -45,7 +45,7 @@
->  #include "8250.h"
->  
->  #ifdef CONFIG_SPARC
-> -#include "suncore.h"
-> +#include "../suncore.h"
->  #endif
->  
->  /*
+> In fact I feel this can be simplified even more, but I am not sure.
+
+My strengths are in the entry_64.S code, not the signal code, so I fixed
+it the best way that I felt. This does not imply my fix is the best. If
+we can solve this in a clean way using the existing signal
+infrastructure, I'm all for that.
+
+-- Steve
+
+
