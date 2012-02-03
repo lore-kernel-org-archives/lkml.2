@@ -1,254 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab2BCWJv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 17:09:51 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34561 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753498Ab2BCWJu (ORCPT
+	id S1758023Ab2BCWMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 17:12:16 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46504 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757730Ab2BCWMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 17:09:50 -0500
-X-Sasl-enc: ApOECyNsYNpADNwVC7jmFs9ZOcNXT+ALs7Z0c/t76EZ+ 1328306989
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Feb  3 14:07:29 2012
-Message-Id: <20120203220729.505885003@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Fri, 03 Feb 2012 14:05:59 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [1/1] PCI: Rework ASPM disable code
-In-Reply-To: <20120203220739.GA3660@kroah.com>
+	Fri, 3 Feb 2012 17:12:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <201202031855.20589.arnd@arndb.de>
+References: <1328130290-17607-1-git-send-email-swarren@nvidia.com>
+	<201202021533.14650.arnd@arndb.de>
+	<CACRpkdbMPrvN80cLyVLUNvTjx4ZV4iLeHcJaJyM_qvTHHAfWww@mail.gmail.com>
+	<201202031855.20589.arnd@arndb.de>
+Date: Fri, 3 Feb 2012 23:12:12 +0100
+Message-ID: <CACRpkdbtPjDPb=hJkW99jvfaSTZZoeg91XArhjo3RMUcEfkRBg@mail.gmail.com>
+Subject: Re: [PATCH V2 1/4] pinctrl: add a driver for NVIDIA Tegra
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        ext Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        linux-tegra@vger.kernel.org, Dong Aisheng <dong.aisheng@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Feb 3, 2012 at 7:55 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 03 February 2012, Linus Walleij wrote:
+>>
+>> So I'm taking this branch off from -next until we resolve this.
+>
+> That is the opposite of what I intended :(
 
-------------------
+OK I might put it back in next week after conferring with some
+of the involved people. I just want a credible story for my
+pull request at the end of the day and that's all.
 
-From: Matthew Garrett <mjg@redhat.com>
+> I really meant that you don't need my Ack: the Tegra changes got an
+> Ack from the subarch maintainers and the drivers/pinctrl changes are
+> for you to judge.
 
-commit 3c076351c4027a56d5005a39a0b518a4ba393ce2 upstream.
+OK so this was more from the point of "the ARM stuff is
+growing wild again" point of view, and Mr. Torvalds has made it
+pretty clear to me that he don't like it growing anywhere, no
+matter whether that is under arch/arm/* or any place else,
+like drivers/pinctrl/*.
 
-Right now we forcibly clear ASPM state on all devices if the BIOS indicates
-that the feature isn't supported. Based on the Microsoft presentation
-"PCI Express In Depth for Windows Vista and Beyond", I'm starting to think
-that this may be an error. The implication is that unless the platform
-grants full control via _OSC, Windows will not touch any PCIe features -
-including ASPM. In that case clearing ASPM state would be an error unless
-the platform has granted us that control.
+If I had a few Atom, MIPS, Blackfin or CRIS pin controllers in
+tree or in the pipe, it wouldn't be so much of an ARM issue, but
+currently it sort of is, that's basically why I want to involve
+you guys.
 
-This patch reworks the ASPM disabling code such that the actual clearing
-of state is triggered by a successful handoff of PCIe control to the OS.
-The general ASPM code undergoes some changes in order to ensure that the
-ability to clear the bits isn't overridden by ASPM having already been
-disabled. Further, this theoretically now allows for situations where
-only a subset of PCIe roots hand over control, leaving the others in the
-BIOS state.
+BTW does anyone know of some inherent muxing in Intel
+hardware like the Langwell PCH?
 
-It's difficult to know for sure that this is the right thing to do -
-there's zero public documentation on the interaction between all of these
-components. But enough vendors enable ASPM on platforms and then set this
-bit that it seems likely that they're expecting the OS to leave them alone.
+> I don't have the resources to look into every patch
+> with the level of detail required to make a final decision, I really
+> have to rely on someone I trust like you to decide if something goes
+> in or not. Of course I can offer an opinion when you ask me, which
+> I did, but also didn't feel I understand the patch well enough to
+> ack them -- even though it looks reasonable to me.
 
-Measured to save around 5W on an idle Thinkpad X220.
+OK sorry it wasn't meant to stress you.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Regarding the process, you have my full Ack on the plan to merge
+> them into mainline through your tree when you find them good enough
+> and also put a copy into the arm-soc tree if needed to resolve
+> any dependencies or conflicts with other stuff in arm-soc.
 
----
- drivers/acpi/pci_root.c  |    7 +++++
- drivers/pci/pci-acpi.c   |    1 
- drivers/pci/pcie/aspm.c  |   58 +++++++++++++++++++++++++++++------------------
- include/linux/pci-aspm.h |    4 +--
- 4 files changed, 46 insertions(+), 24 deletions(-)
+Yes, well the patches are a *real* *good* pinctrl driver, there is
+no question of that.
 
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -596,6 +596,13 @@ static int __devinit acpi_pci_root_add(s
- 		if (ACPI_SUCCESS(status)) {
- 			dev_info(root->bus->bridge,
- 				"ACPI _OSC control (0x%02x) granted\n", flags);
-+			if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
-+				/*
-+				 * We have ASPM control, but the FADT indicates
-+				 * that it's unsupported. Clear it.
-+				 */
-+				pcie_clear_aspm(root->bus);
-+			}
- 		} else {
- 			dev_info(root->bus->bridge,
- 				"ACPI _OSC request failed (%s), "
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -395,7 +395,6 @@ static int __init acpi_pci_init(void)
- 
- 	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
- 		printk(KERN_INFO"ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
--		pcie_clear_aspm();
- 		pcie_no_aspm();
- 	}
- 
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -68,7 +68,7 @@ struct pcie_link_state {
- 	struct aspm_latency acceptable[8];
- };
- 
--static int aspm_disabled, aspm_force, aspm_clear_state;
-+static int aspm_disabled, aspm_force;
- static bool aspm_support_enabled = true;
- static DEFINE_MUTEX(aspm_lock);
- static LIST_HEAD(link_list);
-@@ -500,9 +500,6 @@ static int pcie_aspm_sanity_check(struct
- 	int pos;
- 	u32 reg32;
- 
--	if (aspm_clear_state)
--		return -EINVAL;
--
- 	/*
- 	 * Some functions in a slot might not all be PCIe functions,
- 	 * very strange. Disable ASPM for the whole slot
-@@ -574,9 +571,6 @@ void pcie_aspm_init_link_state(struct pc
- 	    pdev->pcie_type != PCI_EXP_TYPE_DOWNSTREAM)
- 		return;
- 
--	if (aspm_disabled && !aspm_clear_state)
--		return;
--
- 	/* VIA has a strange chipset, root port is under a bridge */
- 	if (pdev->pcie_type == PCI_EXP_TYPE_ROOT_PORT &&
- 	    pdev->bus->self)
-@@ -608,7 +602,7 @@ void pcie_aspm_init_link_state(struct pc
- 	 * the BIOS's expectation, we'll do so once pci_enable_device() is
- 	 * called.
- 	 */
--	if (aspm_policy != POLICY_POWERSAVE || aspm_clear_state) {
-+	if (aspm_policy != POLICY_POWERSAVE) {
- 		pcie_config_aspm_path(link);
- 		pcie_set_clkpm(link, policy_to_clkpm_state(link));
- 	}
-@@ -649,8 +643,7 @@ void pcie_aspm_exit_link_state(struct pc
- 	struct pci_dev *parent = pdev->bus->self;
- 	struct pcie_link_state *link, *root, *parent_link;
- 
--	if ((aspm_disabled && !aspm_clear_state) || !pci_is_pcie(pdev) ||
--	    !parent || !parent->link_state)
-+	if (!pci_is_pcie(pdev) || !parent || !parent->link_state)
- 		return;
- 	if ((parent->pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
- 	    (parent->pcie_type != PCI_EXP_TYPE_DOWNSTREAM))
-@@ -734,13 +727,18 @@ void pcie_aspm_powersave_config_link(str
-  * pci_disable_link_state - disable pci device's link state, so the link will
-  * never enter specific states
-  */
--static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem)
-+static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem,
-+				     bool force)
- {
- 	struct pci_dev *parent = pdev->bus->self;
- 	struct pcie_link_state *link;
- 
--	if (aspm_disabled || !pci_is_pcie(pdev))
-+	if (aspm_disabled && !force)
-+		return;
-+
-+	if (!pci_is_pcie(pdev))
- 		return;
-+
- 	if (pdev->pcie_type == PCI_EXP_TYPE_ROOT_PORT ||
- 	    pdev->pcie_type == PCI_EXP_TYPE_DOWNSTREAM)
- 		parent = pdev;
-@@ -768,16 +766,31 @@ static void __pci_disable_link_state(str
- 
- void pci_disable_link_state_locked(struct pci_dev *pdev, int state)
- {
--	__pci_disable_link_state(pdev, state, false);
-+	__pci_disable_link_state(pdev, state, false, false);
- }
- EXPORT_SYMBOL(pci_disable_link_state_locked);
- 
- void pci_disable_link_state(struct pci_dev *pdev, int state)
- {
--	__pci_disable_link_state(pdev, state, true);
-+	__pci_disable_link_state(pdev, state, true, false);
- }
- EXPORT_SYMBOL(pci_disable_link_state);
- 
-+void pcie_clear_aspm(struct pci_bus *bus)
-+{
-+	struct pci_dev *child;
-+
-+	/*
-+	 * Clear any ASPM setup that the firmware has carried out on this bus
-+	 */
-+	list_for_each_entry(child, &bus->devices, bus_list) {
-+		__pci_disable_link_state(child, PCIE_LINK_STATE_L0S |
-+					 PCIE_LINK_STATE_L1 |
-+					 PCIE_LINK_STATE_CLKPM,
-+					 false, true);
-+	}
-+}
-+
- static int pcie_aspm_set_policy(const char *val, struct kernel_param *kp)
- {
- 	int i;
-@@ -935,6 +948,7 @@ void pcie_aspm_remove_sysfs_dev_files(st
- static int __init pcie_aspm_disable(char *str)
- {
- 	if (!strcmp(str, "off")) {
-+		aspm_policy = POLICY_DEFAULT;
- 		aspm_disabled = 1;
- 		aspm_support_enabled = false;
- 		printk(KERN_INFO "PCIe ASPM is disabled\n");
-@@ -947,16 +961,18 @@ static int __init pcie_aspm_disable(char
- 
- __setup("pcie_aspm=", pcie_aspm_disable);
- 
--void pcie_clear_aspm(void)
--{
--	if (!aspm_force)
--		aspm_clear_state = 1;
--}
--
- void pcie_no_aspm(void)
- {
--	if (!aspm_force)
-+	/*
-+	 * Disabling ASPM is intended to prevent the kernel from modifying
-+	 * existing hardware state, not to clear existing state. To that end:
-+	 * (a) set policy to POLICY_DEFAULT in order to avoid changing state
-+	 * (b) prevent userspace from changing policy
-+	 */
-+	if (!aspm_force) {
-+		aspm_policy = POLICY_DEFAULT;
- 		aspm_disabled = 1;
-+	}
- }
- 
- /**
---- a/include/linux/pci-aspm.h
-+++ b/include/linux/pci-aspm.h
-@@ -29,7 +29,7 @@ extern void pcie_aspm_pm_state_change(st
- extern void pcie_aspm_powersave_config_link(struct pci_dev *pdev);
- extern void pci_disable_link_state(struct pci_dev *pdev, int state);
- extern void pci_disable_link_state_locked(struct pci_dev *pdev, int state);
--extern void pcie_clear_aspm(void);
-+extern void pcie_clear_aspm(struct pci_bus *bus);
- extern void pcie_no_aspm(void);
- #else
- static inline void pcie_aspm_init_link_state(struct pci_dev *pdev)
-@@ -47,7 +47,7 @@ static inline void pcie_aspm_powersave_c
- static inline void pci_disable_link_state(struct pci_dev *pdev, int state)
- {
- }
--static inline void pcie_clear_aspm(void)
-+static inline void pcie_clear_aspm(struct pci_bus *bus)
- {
- }
- static inline void pcie_no_aspm(void)
+The only issue is size and open-coding.
 
+I am open to any smart ideas on how to get rid of excess tables,
+I just happen to have run out of them myself, all sort of comes
+to the point of wanting the C preprocessor to have loop
+statements...
 
+I'm leaning toward creating a pin and group specification
+language and put that into the kbuild to generate headers with
+them to cut the open-coded data down.
+
+>> Tony had made it possible to have pinctrl drivers as modules,
+>> but some systems may need their pin control up before
+>> they even bring up the filesystem :-(
+>>
+>> Booting from initramfs and switchroot can solve the above
+>> but will slow down boot I believe, and ARM systems
+>> usually don't like that.
+>
+> Sounds good enough for me. Anyone who wants a single kernel that runs on
+> a lot different machines (distros like ubuntu, fedora, debian, opensuse)
+> typically relies on initramfs already, the others can have the code built-in.
+
+Yep single uImage mandates modules, I thought so for long
+but now I'm ever more certain of it.
+
+Yours,
+Linus Walleij
