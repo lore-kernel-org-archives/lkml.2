@@ -1,142 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab2BCSee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 13:34:34 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:53882 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757449Ab2BCSec (ORCPT
+	id S1757469Ab2BCShm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 13:37:42 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:53729 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753300Ab2BCShl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 13:34:32 -0500
-Date: Fri, 3 Feb 2012 10:33:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: rcu warnings cause stack overflow
-Message-ID: <20120203183334.GG2382@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
- <20120201151445.GA6731@somewhere.redhat.com>
- <20120202122742.GA2745@osiris.boeblingen.de.ibm.com>
- <20120202145219.GD9071@somewhere.redhat.com>
- <20120202191116.GF2518@linux.vnet.ibm.com>
- <20120203093214.GA2471@osiris.boeblingen.de.ibm.com>
+	Fri, 3 Feb 2012 13:37:41 -0500
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203093214.GA2471@osiris.boeblingen.de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020318-3352-0000-0000-0000025FABBF
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 05/11] mmc/host: add context parameter for DMA_SLAVEand DMA_CYCLIC
+Date: Fri, 3 Feb 2012 10:36:04 -0800
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55202872788@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <20120203170153.GA15891@flint.arm.linux.org.uk>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 05/11] mmc/host: add context parameter for DMA_SLAVEand DMA_CYCLIC
+Thread-Index: AczilarCTj9K9aq0RpKtmk8F62tXUwACdFEA
+References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-6-git-send-email-alexandre.bounine@idt.com> <4F2BA6C0.10100@stericsson.com> <0CE8B6BE3C4AD74AB97D9D29BD24E5520287270D@CORPEXCH1.na.ads.idt.com> <20120203170153.GA15891@flint.arm.linux.org.uk>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Russell King <rmk@arm.linux.org.uk>
+CC: Ulf Hansson <ulf.hansson@stericsson.com>, <vinod.koul@intel.com>,
+        <dan.j.williams@intel.com>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Ian Molton <ian@mnementh.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Per FORLIN <per.forlin@stericsson.com>,
+        "Sascha Hauer" <s.hauer@pengutronix.de>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Viresh KUMAR <viresh.kumar@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 10:32:14AM +0100, Heiko Carstens wrote:
-> On Thu, Feb 02, 2012 at 11:11:16AM -0800, Paul E. McKenney wrote:
-> > On Thu, Feb 02, 2012 at 03:52:20PM +0100, Frederic Weisbecker wrote:
-> > > On Thu, Feb 02, 2012 at 01:27:42PM +0100, Heiko Carstens wrote:
-> > > > On Wed, Feb 01, 2012 at 04:14:48PM +0100, Frederic Weisbecker wrote:
-> > > > > > Removing the WARN_ON_ONCE will fix this and, if lockdep is turned on, still
-> > > > > > will find illegal uses. But it won't work for lockdep off configs...
-> > > > > > So we probably want something better than the patch below.
-> > > > > 
-> > > > > Ah ok. Hmm, but why are you using an exception to implement WARN_ON()
-> > > > > in s390? Is it to have a whole new stack for the warning path in order
-> > > > > to avoid stack overflow from the place that called the WARN_ON() ?
-> > > > 
-> > > > The reason was to reduce the code footprint of the WARN_ON() and also
-> > > > be able to print the register contents at the time the warning happened.
-> > > 
-> > > Ah ok, makes sense.
-> > 
-> > So Frederic should push his anti-recursion patch, then?
+On Fri, Feb 03, 2012 at 12:02 PM, Russell King wrote:
 > 
-> Yes, please.
+> On Fri, Feb 03, 2012 at 08:52:07AM -0800, Bounine, Alexandre wrote:
+> > If these API changes will be approved I will resubmit these changes
+> > as one patch.
 > 
-> Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> I'd like to suggest an alternative approach, if you still want to add
+a
+> void * parameter to this.
 > 
-> It still generates recursive warnings because the WARNON_ONCE is inlined and
-> every different usage will generate an exception, but it didn't produce a
-> stack overflow anymore.
-> To avoid the recursive warning the patch below would help. Not sure if it's
-> worth it...
+> 1. A patch which adds this, and convert users over to it:
 > 
-> Subject: [PATCH] rcu: move rcu_is_cpu_idle() check warning into C file
+> static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_sg(
+> 	struct dma_chan *chan, struct scatterlist *sg, unsigned sg_len,
+> 	enum dma_transfer_direction direction, unsigned long flags)
+> {
+> 	return chan->device->device_prep_slave_sg(chan, sg, sglen, dir,
+> flags);
+> }
 > 
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> 2. Change device->device_prep_slave_sg() to have a new prototype, and
+>    update the above inline function to cope with the change.  This API
+>    change is then restricted to just the DMA engine code.
 > 
-> rcu_read_lock() and rcu_read_unlock() generate a warning if a cpu is in
-> extended quiescant state. Since these functions are inlined this can cause
-> a lot of warnings if in the processing of the WARN_ON_ONCE() there is
-> another usage of e.g. rcu_read_lock(). To make sure we only get one
-> warning (and avoid possible stack overflows) uninline the check.
+> 3. Introduce a new inline function to deal with rapidio slave sg
+>    submission.
 > 
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
->  include/linux/rcupdate.h |    9 +++++++--
->  kernel/rcupdate.c        |    6 ++++++
->  2 files changed, 13 insertions(+), 2 deletions(-)
+> This means all drivers which aren't capable of using the special
+> rapidio
+> features get to ignore the new details about rapidio entirely.
 > 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 81c04f4..9fe7be5 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -230,22 +230,27 @@ static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
-> 
->  #ifdef CONFIG_PROVE_RCU
->  extern int rcu_is_cpu_idle(void);
-> +extern void rcu_warn_if_is_cpu_idle(void);
->  #else /* !CONFIG_PROVE_RCU */
->  static inline int rcu_is_cpu_idle(void)
->  {
->  	return 0;
->  }
-> +
-> +static inline void rcu_warn_if_is_cpu_idle(void)
-> +{
-> +}
->  #endif /* else !CONFIG_PROVE_RCU */
-> 
->  static inline void rcu_lock_acquire(struct lockdep_map *map)
->  {
-> -	WARN_ON_ONCE(rcu_is_cpu_idle());
-> +	rcu_warn_if_is_cpu_idle();
 
-Thank you for the patch, but this WARN_ON_ONCE() has now been removed
-in favor of lockdep-RCU checks elsewhere.  This has the advantage of
-leveraging lockdep's splat-once and anti-recursion facilities.
+This looks like a great improvement to the original proposal.
+I will just add another inline function (with specific type for
+parameter)
+inside of RapidIO subsystem.
 
-So I believe that current -rcu covers this.  (And yes, I do need to
-push my most recent changes out.)
+If DMA engine maintainers agree with this approach, I will build a new
+patch within next week (changes to existing drivers first, RapidIO to
+follow).
 
-							Thanx, Paul
+Thank you,
 
->  	lock_acquire(map, 0, 0, 2, 1, NULL, _THIS_IP_);
->  }
-> 
->  static inline void rcu_lock_release(struct lockdep_map *map)
->  {
-> -	WARN_ON_ONCE(rcu_is_cpu_idle());
-> +	rcu_warn_if_is_cpu_idle();
->  	lock_release(map, 1, _THIS_IP_);
->  }
-> 
-> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-> index 2bc4e13..5deca18 100644
-> --- a/kernel/rcupdate.c
-> +++ b/kernel/rcupdate.c
-> @@ -141,6 +141,12 @@ int rcu_my_thread_group_empty(void)
->  	return thread_group_empty(current);
->  }
->  EXPORT_SYMBOL_GPL(rcu_my_thread_group_empty);
-> +
-> +void rcu_warn_if_is_cpu_idle(void)
-> +{
-> +	WARN_ON_ONCE(rcu_is_cpu_idle());
-> +}
-> +EXPORT_SYMBOL_GPL(rcu_warn_if_is_cpu_idle);
->  #endif /* #ifdef CONFIG_PROVE_RCU */
-> 
->  #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+Alex.
 
