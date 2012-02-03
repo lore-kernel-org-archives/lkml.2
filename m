@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab2BCOxJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 09:53:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56907 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425Ab2BCOxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 09:53:07 -0500
-Date: Fri, 3 Feb 2012 15:53:04 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Geunsik Lim <geunsik.lim@gmail.com>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH] Handling of unused variable 'do-numainfo on compilation
- time
-Message-ID: <20120203145304.GA18335@tiehlicka.suse.cz>
-References: <1328258627-2241-1-git-send-email-geunsik.lim@gmail.com>
- <20120203133950.GA1690@cmpxchg.org>
+	id S1756712Ab2BCOy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 09:54:26 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:43788 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab2BCOyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 09:54:25 -0500
+Message-ID: <4F2BF512.4020602@atmel.com>
+Date: Fri, 03 Feb 2012 15:54:10 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203133950.GA1690@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] at91: at91sam9x5 family basic support
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 03-02-12 14:39:50, Johannes Weiner wrote:
-> Michal, this keeps coming up, please decide between the proposed
-> solutions ;-)
+Hi,
 
-Hmm, I thought we already sorted this out https://lkml.org/lkml/2012/1/26/25 ?
+Here is the pull request for inclusion of at91sam9x5 family basic support.
+I add the cover letter of the patch series that I sent some time ago:
 
-> 
-> On Fri, Feb 03, 2012 at 05:43:47PM +0900, Geunsik Lim wrote:
-> > Actually, Usage of the variable 'do_numainfo'is not suitable for gcc compiler.
-> > Declare the variable 'do_numainfo' if the number of NUMA nodes > 1.
-> > 
-> > Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
-> > ---
-> >  mm/memcontrol.c |    5 ++++-
-> >  1 files changed, 4 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 556859f..4e17ac5 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -776,7 +776,10 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
-> >  	/* threshold event is triggered in finer grain than soft limit */
-> >  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
-> >  						MEM_CGROUP_TARGET_THRESH))) {
-> > -		bool do_softlimit, do_numainfo;
-> > +		bool do_softlimit;
-> > +#if MAX_NUMNODES > 1
-> > +                bool do_numainfo;
-> > +#endif
-> >  
-> >  		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> >  						MEM_CGROUP_TARGET_SOFTLIMIT);
-> > -- 
-> > 1.7.8.1
-> > 
+The at91sam9x5 family is an ARM926 based SoC family from Atmel.
+five different products are available: sam9g15, sam9g25, sam9g35 sam9x25 and sam9x35.
+Evaluation Kits are composed of a CPU Module and a carrier board (with optional screen).
+The use of the Device Tree is reducing the amount of code needed for an AT91 based SoC: sam9x5 are the first AT91 SoC that only rely on DT for their hardware configuration.
 
+This pull request goes on top of the at91-3.4-base branch.
+
+The following changes since commit 9918ceafd4a9e013572e03983f528017c29bb1cb:
+
+  ARM: at91: code removal of CAP9 SoC (2012-02-03 13:33:05 +0100)
+
+are available in the git repository at:
+  git://github.com/at91linux/linux-at91.git at91-3.4-base+9x5
+
+Dan Liang (2):
+      ARM: at91/at91sam9x5: overall definition
+      ARM: at91/at91sam9x5: SoC basic support
+
+Nicolas Ferre (4):
+      ARM: at91/at91sam9x5: PMC header file
+      ARM: at91/at91sam9x5: clock management for at91sam9x5 chip family
+      ARM: at91/at91sam9x5: Configuration and Makefile
+      ARM: at91/at91sam9x5: Device tree definition files
+
+ arch/arm/boot/dts/at91sam9g25ek.dts                |   37 ++
+ arch/arm/boot/dts/at91sam9x5.dtsi                  |  172 +++++++++
+ arch/arm/boot/dts/at91sam9x5cm.dtsi                |   14 +
+ arch/arm/mach-at91/Kconfig                         |    9 +
+ arch/arm/mach-at91/Makefile                        |    1 +
+ arch/arm/mach-at91/at91sam9x5.c                    |  373 ++++++++++++++++++++
+ arch/arm/mach-at91/board-dt.c                      |    1 +
+ arch/arm/mach-at91/clock.c                         |   83 ++++-
+ arch/arm/mach-at91/include/mach/at91_pmc.h         |   60 +++-
+ arch/arm/mach-at91/include/mach/at91sam9x5.h       |   80 +++++
+ .../arm/mach-at91/include/mach/at91sam9x5_matrix.h |   53 +++
+ arch/arm/mach-at91/include/mach/hardware.h         |    2 +
+ 12 files changed, 854 insertions(+), 31 deletions(-)
+ create mode 100644 arch/arm/boot/dts/at91sam9g25ek.dts
+ create mode 100644 arch/arm/boot/dts/at91sam9x5.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9x5cm.dtsi
+ create mode 100644 arch/arm/mach-at91/at91sam9x5.c
+ create mode 100644 arch/arm/mach-at91/include/mach/at91sam9x5.h
+ create mode 100644 arch/arm/mach-at91/include/mach/at91sam9x5_matrix.h
+
+Thanks, best regards,
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Nicolas Ferre
