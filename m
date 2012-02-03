@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab2BCPSd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:18:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41852 "EHLO mx1.redhat.com"
+	id S1753558Ab2BCPSc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:18:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20433 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573Ab2BCPS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 10:18:29 -0500
+	id S1750970Ab2BCPS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 10:18:28 -0500
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Matthew Garrett <mjg@redhat.com>, linux-acpi@vger.kernel.org,
         lenb@kernel.org
-Subject: [PATCH 2/3] ACPI: Provide config option to control automatic brightness switching
-Date: Fri,  3 Feb 2012 10:18:12 -0500
-Message-Id: <1328282293-16551-2-git-send-email-mjg@redhat.com>
-In-Reply-To: <1328282293-16551-1-git-send-email-mjg@redhat.com>
-References: <1328282293-16551-1-git-send-email-mjg@redhat.com>
+Subject: [PATCH 1/3] ACPI: Provide config option to disable BIOS brightness changes on power events
+Date: Fri,  3 Feb 2012 10:18:11 -0500
+Message-Id: <1328282293-16551-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
 X-SA-Exim-Connect-IP: 209.6.41.104
 X-SA-Exim-Mail-From: mjg@redhat.com
@@ -23,58 +21,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI backlight driver will optionally automatically respond to ACPI
-brightness key events. This is unique amongst backlight drivers and makes
-it more difficult for userspace to provide a consistent backlight policy.
-Add support for disabling this behaviour by default.
+The default ACPI behaviour is to instruct the BIOS to automatically change
+brightness on power events. This may be undesirable for distributions who
+manage brightness in userspace. Provide a config option that disables this
+behaviour and leaves brightness control up to the OS.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Cc: linux-acpi@vger.kernel.org
 Cc: lenb@kernel.org
 ---
- drivers/acpi/Kconfig |   11 +++++++++++
- drivers/acpi/video.c |    6 +++++-
+ drivers/acpi/Kconfig |    8 ++++++++
+ drivers/acpi/video.c |    9 ++++++++-
  2 files changed, 16 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 5354290..27212e0 100644
+index 7556913..5354290 100644
 --- a/drivers/acpi/Kconfig
 +++ b/drivers/acpi/Kconfig
-@@ -171,6 +171,17 @@ config ACPI_VIDEO_DISABLE_BIOS_POWER_BRIGHTNESS
- 	  Many laptops will automatically change brightness on AC/battery
- 	  status changes. Choose Y here to disable this.
+@@ -163,6 +163,14 @@ config ACPI_VIDEO
+ 	  To compile this driver as a module, choose M here:
+ 	  the module will be called video.
  
-+config ACPI_VIDEO_BRIGHTNESS_SWITCH_ENABLED
-+        bool "Automatically change brightness on ACPI key events"
-+	depends on ACPI_VIDEO
-+	default y
-+	help
-+	  If this option is enabled the kernel will change brightness
-+	  automatically in response to ACPI video key events. If it is
-+	  disabled, the keys will be reported to userspace but no further
-+	  action will be taken by the kernel. It is then up to userspace
-+	  to respond to the events.
++config ACPI_VIDEO_DISABLE_BIOS_POWER_BRIGHTNESS
++        bool "Disable BIOS brightness changes on power events"
++        depends on ACPI_VIDEO
++        default n
++        help
++	  Many laptops will automatically change brightness on AC/battery
++	  status changes. Choose Y here to disable this.
 +
  config ACPI_FAN
  	tristate "Fan"
  	select THERMAL
 diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 4b42938..2b85046 100644
+index eaef02a..4b42938 100644
 --- a/drivers/acpi/video.c
 +++ b/drivers/acpi/video.c
-@@ -69,7 +69,11 @@ MODULE_AUTHOR("Bruno Ducrot");
- MODULE_DESCRIPTION("ACPI Video Driver");
- MODULE_LICENSE("GPL");
+@@ -86,6 +86,13 @@ module_param(allow_duplicates, bool, 0644);
+ static bool use_bios_initial_backlight = 1;
+ module_param(use_bios_initial_backlight, bool, 0644);
  
--static bool brightness_switch_enabled = 1;
-+#ifdef CONFIG_ACPI_VIDEO_BRIGHTNESS_SWITCH_ENABLED
-+static bool brightness_switch_enabled = true;
++#ifdef CONFIG_ACPI_VIDEO_DISABLE_BIOS_POWER_BRIGHTNESS
++static bool disable_bios_power_change = true;
 +#else
-+static bool brightness_switch_enabled;
++static bool disable_bios_power_change;
 +#endif
- module_param(brightness_switch_enabled, bool, 0644);
++module_param(disable_bios_power_change, bool, 0644);
++
+ static int register_count = 0;
+ static int acpi_video_bus_add(struct acpi_device *device);
+ static int acpi_video_bus_remove(struct acpi_device *device, int type);
+@@ -1421,7 +1428,7 @@ static int acpi_video_bus_put_devices(struct acpi_video_bus *video)
  
- /*
+ static int acpi_video_bus_start_devices(struct acpi_video_bus *video)
+ {
+-	return acpi_video_bus_DOS(video, 0, 0);
++	return acpi_video_bus_DOS(video, 0, disable_bios_power_change);
+ }
+ 
+ static int acpi_video_bus_stop_devices(struct acpi_video_bus *video)
 -- 
 1.7.7.6
 
