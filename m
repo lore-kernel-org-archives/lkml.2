@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab2BCTqV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 14:46:21 -0500
-Received: from mail.windriver.com ([147.11.1.11]:50517 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab2BCTqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 14:46:20 -0500
-Date: Fri, 3 Feb 2012 14:46:09 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
-        Stephen Warren <swarren@nvidia.com>, <linux-serial@vger.kernel.org>
-Subject: Re: [Patch] tty: fix a build failure on sparc
-Message-ID: <20120203194608.GA23948@windriver.com>
-References: <1328246540-5824-1-git-send-email-xiyou.wangcong@gmail.com>
+	id S1755891Ab2BCTrb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 14:47:31 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:43154 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754941Ab2BCTra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 14:47:30 -0500
+Message-ID: <1328298346.2261.196.camel@groeck-laptop>
+Subject: Re: [PATCH 1/3] mfd: Add LPC driver for Intel ICH chipsets
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Aaron Sierra <asierra@xes-inc.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>
+Date: Fri, 3 Feb 2012 11:45:46 -0800
+In-Reply-To: <098d7a9f-a5f9-4908-9253-f2134f08d932@zimbra>
+References: <098d7a9f-a5f9-4908-9253-f2134f08d932@zimbra>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1328246540-5824-1-git-send-email-xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24)
- Gecko/20111109 Thunderbird/3.1.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Resending with updated address for Greg]
-
-On 12-02-03 12:22 AM, Cong Wang wrote:
-> On sparc, there is a build failure:
+On Fri, 2012-02-03 at 14:35 -0500, Aaron Sierra wrote:
+> > I ended up making all the changes suggested above (plus the matching
+> > changes needed in the subsequent patches) while I rebased the code to
+> > 3.3-rc2. Right now I have an (untested) patchset which applies to
+> > 3.3-rc2. Please let me know how you would like to proceed; I can send
+> > it to you if you like, or to the list.
 > 
-> drivers/tty/serial/8250/8250.c:48:21: error: suncore.h: No such file or directory
-> drivers/tty/serial/8250/8250.c:3275: error: implicit declaration of function 'sunserial_register_minors'
-> drivers/tty/serial/8250/8250.c:3305: error: implicit declaration of function 'sunserial_unregister_minors'
+> Hey Guenter,
+> If you want to send me your patchset directly, I can test it out on
+> some of our hardware (Ibex Peak and Cougar Point). I can work on
+> implementing some of your other suggestions as well before
+> resubmitting to the list.
 > 
-> this is due to commit 9bef3d4197379a995fa80f81950bbbf8d32e9e8b
-> (serial: group all the 8250 related code together) moved these files
-> into 8250/ subdirectory, but forgot to change the reference
-> to drivers/tty/serial/suncore.h.
+Done. You should have received a series of four patches, your three plus
+one with a number of changes I made on top of your first patch. The last
+two patches are essentially yours modified to compile with 3.3-rc2 and
+to work (hopefully ;) with my patch.
 
-Thanks, I explicitly left sunsu out of the move but missed
-that 8250 was sourcing its related header.  I did defconfig
-builds, but in going back to check, I see that neither sparc
-32/64 defconfig enable 8250 by default, so those builds didn't
-help me much at all...  :(
+Thanks,
+Guenter
 
-Acked-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-> 
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-> 
-> ---
-> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
-> index 9f50c4e..9b7336f 100644
-> --- a/drivers/tty/serial/8250/8250.c
-> +++ b/drivers/tty/serial/8250/8250.c
-> @@ -45,7 +45,7 @@
->  #include "8250.h"
->  
->  #ifdef CONFIG_SPARC
-> -#include "suncore.h"
-> +#include "../suncore.h"
->  #endif
->  
->  /*
