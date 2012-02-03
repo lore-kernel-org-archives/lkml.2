@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab2BCTSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 14:18:09 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47526 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754063Ab2BCTSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 14:18:07 -0500
-Date: Fri, 3 Feb 2012 20:18:01 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Nick Bowler <nbowler@elliptictech.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kevin Winchester <kjwinchester@gmail.com>
-Subject: MCE, AMD: Hide smp-only code around CONFIG_SMP
-Message-ID: <20120203191801.GA2846@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Nick Bowler <nbowler@elliptictech.com>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Kevin Winchester <kjwinchester@gmail.com>
-References: <1328209817-18913-1-git-send-email-bp@alien8.de>
- <20120202193702.GA9502@elliptictech.com>
- <20120202202427.GA2234@x1.osrc.amd.com>
+	id S1754980Ab2BCTWW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 14:22:22 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60709 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754865Ab2BCTWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 14:22:20 -0500
+X-Sasl-enc: vgD1rM5i0lHhWop5tLxgGWK2UzwaxSDTnGqEBcNQO0u0 1328296939
+Date: Fri, 3 Feb 2012 11:22:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: tim.gardner@canonical.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: Linux 3.2.3
+Message-ID: <20120203192216.GA12724@kroah.com>
+References: <20120203174758.GA18584@kroah.com>
+ <4F2C2A40.1080601@canonical.com>
+ <20120203185157.GA2865@kroah.com>
+ <20120203185319.GA1710@kroah.com>
+ <20120203185459.GA7321@kroah.com>
+ <20120203191439.GB23505@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120202202427.GA2234@x1.osrc.amd.com>
+In-Reply-To: <20120203191439.GB23505@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 09:24:28PM +0100, Borislav Petkov wrote:
-> > Is this feature truly irrelevant on UP systems?  I ask because I've
-> > always enabled this option on my UP AMD systems in the past...
+On Fri, Feb 03, 2012 at 07:14:39PM +0000, Mark Brown wrote:
+> On Fri, Feb 03, 2012 at 10:54:59AM -0800, Greg KH wrote:
+> > On Fri, Feb 03, 2012 at 10:53:19AM -0800, Greg KH wrote:
 > 
-> No, you're right. Thanks for the suggestion. Scratch that version, I'll
-> think of a better fix.
+> > > Yes, the above commit fixes the build for me, thanks, I'll go release
+> > > 3.2.4 with this build fix in it, thanks Tim for letting me know.
+> 
+> > Hm, no, I don't think I'll really trust that patch for a -stable
+> > release, it looks like:
+> 
+> That's not -stable material at all.  The functions concerned will need
+> to be replaced with their snd_soc equivalents:
+> 
+> 	regache_cache_bypass -> assign to codec->cache_bypass
+> 	regcache_cache_only -> assign to codec->cache_only
+> 
+> It may be Monday before I can cook up a patch.
 
-Ok, I think I got it, pls take a look and scream if something's amiss.
+How about I just revert the 2 patches Tim pointed out, which will get
+3.2.3 building properly, and then you can resend them when you get them
+reworked sometime in the future?
 
-@Randy: it builds fine with your randconfig and with mine default one;
-I'd appreciate if you could run it too, just in case.
+thanks,
 
-Thanks.
-
---
-From: Borislav Petkov <bp@alien8.de>
-Date: Fri, 3 Feb 2012 18:07:54 +0100
-Subject: [PATCH] MCE, AMD: Hide smp-only code around CONFIG_SMP
-
-141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
-'struct cpuinfo_x86'") removed a bunch of CONFIG_SMP ifdefs around code
-touching struct cpuinfo_x86 members but also caused the following build
-error with Randy's randconfigs:
-
-mce_amd.c:(.cpuinit.text+0x4723): undefined reference to `cpu_llc_shared_map'
-
-Restore the #ifdef in threshold_create_bank() which creates symlinks on
-the non-BSP CPUs.
-
-Cc: Kevin Winchester <kjwinchester@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Link: http://lkml.kernel.org/r/4F298A6C.6010101@xenotime.net
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- arch/x86/kernel/cpu/mcheck/mce_amd.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-index 786e76a..e4eeaaf 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -528,6 +528,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 
- 	sprintf(name, "threshold_bank%i", bank);
- 
-+#ifdef CONFIG_SMP
- 	if (cpu_data(cpu).cpu_core_id && shared_bank[bank]) {	/* symlink */
- 		i = cpumask_first(cpu_llc_shared_mask(cpu));
- 
-@@ -553,6 +554,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 
- 		goto out;
- 	}
-+#endif
- 
- 	b = kzalloc(sizeof(struct threshold_bank), GFP_KERNEL);
- 	if (!b) {
--- 
-1.7.9
-
-
--- 
-Regards/Gruss,
-Boris.
+greg k-h
