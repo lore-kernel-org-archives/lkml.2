@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab2BCPiM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:38:12 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:38676 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab2BCPiK (ORCPT
+	id S1756485Ab2BCPlA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:41:00 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51917 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab2BCPk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 10:38:10 -0500
-Message-ID: <4F2BFF4C.5050905@de.ibm.com>
-Date: Fri, 03 Feb 2012 16:37:48 +0100
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Reply-To: gerald.schaefer@de.ibm.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <martin.schwidefsky@de.ibm.com>,
-        Heiko Carstens <h.carstens@de.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: ksm/memory hotplug: lockdep warning for ksm_thread_mutex vs.
- (memory_chain).rwsem
-References: <4F2AB614.1060907@de.ibm.com> <CAHGf_=rm286b5FWVRQ8Ob0vakxNcNOHPUksCtnZj4PvOEz47Jg@mail.gmail.com>
-In-Reply-To: <CAHGf_=rm286b5FWVRQ8Ob0vakxNcNOHPUksCtnZj4PvOEz47Jg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 Feb 2012 10:40:59 -0500
+X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=mkvx9NrORpUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=LE_D0_u6xnaNxx-u_dMA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328283656.5882.157.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 2/2] trace,x86: Add x86 irq vector entry/exit tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Fri, 03 Feb 2012 10:40:56 -0500
+In-Reply-To: <20111214163407.GE10791@somewhere.redhat.com>
+References: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
+	 <1311983978-10350-3-git-send-email-vnagarnaik@google.com>
+	 <5C4C569E8A4B9B42A84A977CF070A35B2C57EE47BC@USINDEVS01.corp.hds.com>
+	 <20111213192556.GD2421@somewhere.redhat.com>
+	 <5C4C569E8A4B9B42A84A977CF070A35B2C57F7A6D7@USINDEVS01.corp.hds.com>
+	 <20111214163407.GE10791@somewhere.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12020315-0542-0000-0000-000000E442B6
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.02.2012 00:00, KOSAKI Motohiro wrote:
-> 2012/2/2 Gerald Schaefer<gerald.schaefer@de.ibm.com>:
->> Setting a memory block offline triggers the following lockdep warning. This
->> looks exactly like the issue reported by Kosaki Motohiro in
->> https://lkml.org/lkml/2010/10/25/110. Seems like the resulting commit a0b0f58cdd
->> did not fix the lockdep warning. I'm able to reproduce it with current 3.3.0-rc2
->> as well as 2.6.37-rc4-00147-ga0b0f58.
->>
->> I'm not familiar with lockdep annotations, but I tried using down_read_nested()
->> for (memory_chain).rwsem, similar to the mutex_lock_nested() which was
->> introduced for ksm_thread_mutex, but that didn't help.
-> 
-> Heh, interesting. Simple question, do you have any user visible buggy
-> behavior? or just false positive warn issue?
-> 
-> *_nested() is just hacky trick. so, any change may break their lie.
-> Anyway I'd like to dig this one. thanks for reporting.
+On Wed, 2011-12-14 at 17:34 +0100, Frederic Weisbecker wrote:
 
-There is no real deadlock and no user visible buggy behaviour, the memory is
-being offlined as requested. I think your conclusion from last time is still
-valid, that both locks are inside mem_hotplug_mutex and there can't be a
-deadlock. Question is how to convince lockdep of this.
+> Well ftrace is a whole subsystem that includes the function tracer and also an interface
+> for tracepoints in debugfs. I was rather suggesting the latter one. This is a good
+> choice for background tracing. And it supports stacktraces. If those generate too much
+> overhead perhaps you can tune the number of entries in the stacktrace, I don't remember
+> if we can do that currently but this can be an interesting feature.
+
+Setting individual stack tracing does sound like a neat feature. Maybe
+even determine a limit of how much to backtrace. Trace the full stack,
+or just trace a given amount of frames.
+
+This shouldn't be too hard to implement.
+
+-- Steve
+
 
