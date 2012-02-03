@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab2BCSN4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 13:13:56 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35616 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab2BCSNz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 13:13:55 -0500
+	id S1754683Ab2BCSPm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 13:15:42 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:47048 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750964Ab2BCSPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 13:15:41 -0500
+Date: Fri, 3 Feb 2012 10:05:27 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu 03/41] rcu: Add lockdep-RCU checks for
+ simple self-deadlock
+Message-ID: <20120203180527.GF2382@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120201194131.GA10028@linux.vnet.ibm.com>
+ <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1328125319-5205-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120202005553.GD29058@leaf>
+ <20120202162017.GH2518@linux.vnet.ibm.com>
+ <20120202195638.GA9279@leaf>
+ <20120202204206.GH2518@linux.vnet.ibm.com>
+ <20120203090449.GG3008@leaf>
 MIME-Version: 1.0
-In-Reply-To: <20120203173205.GB1426@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
-	<20120201143530.GA2203@S2101-09.ap.freescale.net>
-	<74CDBE0F657A3D45AFBB94109FB122FF178E124AC5@HQMAIL01.nvidia.com>
-	<CAA+hA=RpkP-FFAr8wqVPjSKEMvO_sRHmOK_9nUYfuW=ps0O_=Q@mail.gmail.com>
-	<20120203173205.GB1426@atomide.com>
-Date: Sat, 4 Feb 2012 02:13:54 +0800
-Message-ID: <CAA+hA=QFB7x0yv65LMuLx1exmiUAuB98D+9Fyyk9oeVu+7F2QQ@mail.gmail.com>
-Subject: Re: Pinmux bindings proposal V2
-From: Dong Aisheng <dongas86@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203090449.GG3008@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020318-5112-0000-0000-000004B25F37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 4, 2012 at 1:32 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Dong Aisheng <dongas86@gmail.com> [120202 11:36]:
->>
->> Actually i think i'd rather do not use config property, then i could
->> be more compact:
->> (anyway it's another issue and is flexible to be controlled by #pinmux-cells)
->> pinctrl_usdhc4: pinconfig-usdhc4 {
->>         /* 0: pin 1: group */
->>         mux-entity = <0>;
->>         func-name = "usdhc4func";
->>         grp-name = "usdhc4grp";
->
-> The func-name and grp-name should be optional here.
-> This mux entry is already the group, and can be used as
-> the group name.
-For the case i discussed here, the mux entry is PIN.
-(the mux-entity value is 0).
-we introduce this value here for treating all pins is one group.
-When do map parsing, only one pinmux map will be created.
-So we need a grp-name.
-And we also need a func-name here for construct pinmux map.
+On Fri, Feb 03, 2012 at 01:04:49AM -0800, Josh Triplett wrote:
+> On Thu, Feb 02, 2012 at 12:42:06PM -0800, Paul E. McKenney wrote:
+> > On Thu, Feb 02, 2012 at 11:56:38AM -0800, Josh Triplett wrote:
+> > > On Thu, Feb 02, 2012 at 08:20:17AM -0800, Paul E. McKenney wrote:
+> > > > On Wed, Feb 01, 2012 at 04:55:54PM -0800, Josh Triplett wrote:
+> > > > > On Wed, Feb 01, 2012 at 11:41:21AM -0800, Paul E. McKenney wrote:
+> > > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > > > 
+> > > > > > It is illegal to have a grace period within a same-flavor RCU read-side
+> > > > > > critical section, so this commit adds lockdep-RCU checks to splat when
+> > > > > > such abuse is encountered.  This commit does not detect more elaborate
+> > > > > > RCU deadlock situations.  These situations might be a job for lockdep
+> > > > > > enhancements.
+> > > > > 
+> > > > > Since doing so also violates the prohibition on blocking within an RCU
+> > > > > read-side critical section, wouldn't it suffice to call might_sleep() or
+> > > > > equivalent, which also detects other problems?  (Obviously this doesn't
+> > > > > apply to SRCU, but it applies to the other variants of RCU.)
+> > > > 
+> > > > Yes, but...
+> > > > 
+> > > > The advantage of the lockdep-RCU splat is that it gives you a better
+> > > > hint as to where the RCU read-side critical section was entered, which
+> > > > is very helpful when tracking these down, especially when they are
+> > > > intermittent.
+> > > 
+> > > Ah, fair enough.
+> > > 
+> > > > And yes, I should also well check for the other variants of RCU read-side
+> > > > critical section (other than RCU).  Done.
+> > > 
+> > > Oh?  What hadn't you checked for?
+> > 
+> > Things like synchronize_sched() in rcu_read_lock() critical section
+> > and vice versa.
+> 
+> Ouch.  Good idea.
+> 
+> That also suggests another interesting possibility: lockdep could tag
+> pointers used in the flavor-specific rcu_dereference variants and
+> pointers used in the call_rcu variants to make sure nobody uses multiple
+> variants on the same pointer. :)  (Assuming we don't want
+> flavor-specific __rcu_* pointer tags.)
 
-> And the function name can be generated
-> dynamically in most cases. I'm currently using np->full_name
-> of the driver claiming these pins as the function name.
->
-Why i did not use np->name as function name is because the np->name
-can be different
-while actually these nodes may represent the same function but just
-different pins, so the function name should be same.
+Indeed, the last attempt to produce flavor-specific __rcu_* pointer tags
+turned into quite a mess.  The other issue with it is that it looks like 
+there are reasonable use cases for protecting a given pointer with multiple
+flavors of RCU.  I don't know if any of them have actually made it into
+mainline, but there have been a number of discussions involving them.
 
->>         mux =
->>                 <MX6Q_SD4_CMD  0 MX6Q_USDHC_PAD_CTRL>
->>                 <MX6Q_SD4_CLK  0 MX6Q_USDHC_PAD_CTRL>
->>                 <MX6Q_SD4_DAT0 1 MX6Q_USDHC_PAD_CTRL>
->>                 <MX6Q_SD4_DAT1 1 MX6Q_USDHC_PAD_CTRL>
->>                 <MX6Q_SD4_DAT2 1 MX6Q_USDHC_PAD_CTRL>
->>                 <MX6Q_SD4_DAT3 1 MX6Q_USDHC_PAD_CTRL>
->>                 <MX6Q_SD4_DAT4 1 MX6Q_USDHC_PAD_CTRL>
->>                 <MX6Q_SD4_DAT5 1 MX6Q_USDHC_PAD_CTRL>
->>                 <MX6Q_SD4_DAT6 1 MX6Q_USDHC_PAD_CTRL>
->>                 <MX6Q_SD4_DAT7 1 MX6Q_USDHC_PAD_CTRL>;
->> };
->
-> For listing basic pins this format works fine for me. It seems
-> to have low overhead for parsing. And the width of the array
-> can be driver specific.
->
-> Looks like it's the binding for altenative states that's still a
-> bit open..
->
-Yes, it does not have states support.
+> Speaking of which, could kfree_rcu require its argument to have the
+> __rcu type annotation?  We can't necessarily guarantee that for call_rcu
+> in all cases, but I think we can for kfree_rcu.
 
-> So how about let's first standardize on the mux format above?
->
-I'm afraid it may be hard for us to standardize the mux format for a
-standard binding in pinctrl core due to  hw difference.
-I'm think the new way which i sent in this thread after the mail you replied.
-You can refer to them to see if it's reasonable for you too.
+It might make sense -- I have added it to my list of things to think
+about for RCU.
 
-Regards
-Dong Aisheng
+							Thanx, Paul
+
