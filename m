@@ -1,58 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab2BCSeO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 13:34:14 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53367 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755007Ab2BCSeM (ORCPT
+	id S1757475Ab2BCSee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 13:34:34 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:53882 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757449Ab2BCSec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 13:34:12 -0500
+	Fri, 3 Feb 2012 13:34:32 -0500
+Date: Fri, 3 Feb 2012 10:33:35 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: rcu warnings cause stack overflow
+Message-ID: <20120203183334.GG2382@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
+ <20120201151445.GA6731@somewhere.redhat.com>
+ <20120202122742.GA2745@osiris.boeblingen.de.ibm.com>
+ <20120202145219.GD9071@somewhere.redhat.com>
+ <20120202191116.GF2518@linux.vnet.ibm.com>
+ <20120203093214.GA2471@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com>
-References: <20120116163106.GC7180@jl-vm1.vm.bytemark.co.uk>
-	<1326776095-2629-1-git-send-email-siddhesh.poyarekar@gmail.com>
-	<CAAHN_R2g9zaujw30+zLf91AGDHNqE6HDc8Z4yJbrzgJcJYFkXg@mail.gmail.com>
-	<4F2B02BC.8010308@gmail.com>
-	<CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com>
-	<CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com>
-Date: Sat, 4 Feb 2012 00:04:11 +0530
-Message-ID: <CAAHN_R0+ExGcdpLM7KwC_KsPOemVOiRrmyWcowiu5_cWW3BPLQ@mail.gmail.com>
-Subject: Re: [RESEND][PATCH] Mark thread stack correctly in proc/<pid>/maps
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Jamie Lokier <jamie@shareable.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203093214.GA2471@osiris.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020318-3352-0000-0000-0000025FABBF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 1:31 PM, KOSAKI Motohiro
-<kosaki.motohiro@gmail.com> wrote:
-> The fact is, now process stack and pthread stack clearly behave
-> different dance. libc don't expect pthread stack grow automatically.
-> So, your patch will break userland. Just only change display thing.
+On Fri, Feb 03, 2012 at 10:32:14AM +0100, Heiko Carstens wrote:
+> On Thu, Feb 02, 2012 at 11:11:16AM -0800, Paul E. McKenney wrote:
+> > On Thu, Feb 02, 2012 at 03:52:20PM +0100, Frederic Weisbecker wrote:
+> > > On Thu, Feb 02, 2012 at 01:27:42PM +0100, Heiko Carstens wrote:
+> > > > On Wed, Feb 01, 2012 at 04:14:48PM +0100, Frederic Weisbecker wrote:
+> > > > > > Removing the WARN_ON_ONCE will fix this and, if lockdep is turned on, still
+> > > > > > will find illegal uses. But it won't work for lockdep off configs...
+> > > > > > So we probably want something better than the patch below.
+> > > > > 
+> > > > > Ah ok. Hmm, but why are you using an exception to implement WARN_ON()
+> > > > > in s390? Is it to have a whole new stack for the warning path in order
+> > > > > to avoid stack overflow from the place that called the WARN_ON() ?
+> > > > 
+> > > > The reason was to reduce the code footprint of the WARN_ON() and also
+> > > > be able to print the register contents at the time the warning happened.
+> > > 
+> > > Ah ok, makes sense.
+> > 
+> > So Frederic should push his anti-recursion patch, then?
+> 
+> Yes, please.
+> 
+> Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> 
+> It still generates recursive warnings because the WARNON_ONCE is inlined and
+> every different usage will generate an exception, but it didn't produce a
+> stack overflow anymore.
+> To avoid the recursive warning the patch below would help. Not sure if it's
+> worth it...
+> 
+> Subject: [PATCH] rcu: move rcu_is_cpu_idle() check warning into C file
+> 
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> 
+> rcu_read_lock() and rcu_read_unlock() generate a warning if a cpu is in
+> extended quiescant state. Since these functions are inlined this can cause
+> a lot of warnings if in the processing of the WARN_ON_ONCE() there is
+> another usage of e.g. rcu_read_lock(). To make sure we only get one
+> warning (and avoid possible stack overflows) uninline the check.
+> 
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> ---
+>  include/linux/rcupdate.h |    9 +++++++--
+>  kernel/rcupdate.c        |    6 ++++++
+>  2 files changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 81c04f4..9fe7be5 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -230,22 +230,27 @@ static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
+> 
+>  #ifdef CONFIG_PROVE_RCU
+>  extern int rcu_is_cpu_idle(void);
+> +extern void rcu_warn_if_is_cpu_idle(void);
+>  #else /* !CONFIG_PROVE_RCU */
+>  static inline int rcu_is_cpu_idle(void)
+>  {
+>  	return 0;
+>  }
+> +
+> +static inline void rcu_warn_if_is_cpu_idle(void)
+> +{
+> +}
+>  #endif /* else !CONFIG_PROVE_RCU */
+> 
+>  static inline void rcu_lock_acquire(struct lockdep_map *map)
+>  {
+> -	WARN_ON_ONCE(rcu_is_cpu_idle());
+> +	rcu_warn_if_is_cpu_idle();
 
-The change should not make thread stacks (as implemented by glibc)
-grow automatically in the general case since it has to implement guard
-page(s) at the beginning of the mapped memory for stack using
-mprotect(top, size, PROT_NONE). Due to this, the program will crash
-before it ever has a chance to cause a page fault to make the stack
-grow. This is of course assuming that the program doesn't purposely
-jump over the guard page(s) by setting %sp beyond them and then
-causing a page fault. So the only case in which a thread stack will
-grow automatically is if the stackguard is set to 0:
+Thank you for the patch, but this WARN_ON_ONCE() has now been removed
+in favor of lockdep-RCU checks elsewhere.  This has the advantage of
+leveraging lockdep's splat-once and anti-recursion facilities.
 
-http://pubs.opengroup.org/onlinepubs/007904975/functions/pthread_attr_setguardsize.html
+So I believe that current -rcu covers this.  (And yes, I do need to
+push my most recent changes out.)
 
-I have also dropped an email on the libc-alpha list here to solicit
-comments from libc maintainers on this:
+							Thanx, Paul
 
-http://sourceware.org/ml/libc-alpha/2012-02/msg00036.html
+>  	lock_acquire(map, 0, 0, 2, 1, NULL, _THIS_IP_);
+>  }
+> 
+>  static inline void rcu_lock_release(struct lockdep_map *map)
+>  {
+> -	WARN_ON_ONCE(rcu_is_cpu_idle());
+> +	rcu_warn_if_is_cpu_idle();
+>  	lock_release(map, 1, _THIS_IP_);
+>  }
+> 
+> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+> index 2bc4e13..5deca18 100644
+> --- a/kernel/rcupdate.c
+> +++ b/kernel/rcupdate.c
+> @@ -141,6 +141,12 @@ int rcu_my_thread_group_empty(void)
+>  	return thread_group_empty(current);
+>  }
+>  EXPORT_SYMBOL_GPL(rcu_my_thread_group_empty);
+> +
+> +void rcu_warn_if_is_cpu_idle(void)
+> +{
+> +	WARN_ON_ONCE(rcu_is_cpu_idle());
+> +}
+> +EXPORT_SYMBOL_GPL(rcu_warn_if_is_cpu_idle);
+>  #endif /* #ifdef CONFIG_PROVE_RCU */
+> 
+>  #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
 
-
--- 
-Siddhesh Poyarekar
-http://siddhesh.in
