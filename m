@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab2BCOfe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 09:35:34 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:62261 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756678Ab2BCOfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756697Ab2BCOfd (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 3 Feb 2012 09:35:33 -0500
-Message-ID: <4F2BF09C.3040208@atmel.com>
-Date: Fri, 03 Feb 2012 15:35:08 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+Received: from acsinet15.oracle.com ([141.146.126.227]:46934 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755269Ab2BCOfb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 09:35:31 -0500
+Date: Fri, 3 Feb 2012 09:21:19 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: make do_writepages() use plugging
+Message-ID: <20120203142119.GM16796@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Christoph Hellwig <hch@infradead.org>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	Amit Sahrawat <amit.sahrawat83@gmail.com>, Jan Kara <jack@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Johannes Weiner <jweiner@redhat.com>,
+	Amit Sahrawat <a.sahrawat@samsung.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org
+References: <1328275626-5322-1-git-send-email-amit.sahrawat83@gmail.com>
+ <20120203133823.GB17571@localhost>
+ <20120203140834.GA15495@infradead.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Wu, Josh" <Josh.wu@atmel.com>, Hong XU <hong.xu@atmel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Maxim Osipov <maxim.osipov@gmail.com>
-Subject: [GIT PULL] at91: devices and boards files update for 3.4
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203140834.GA15495@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4F2BF09A.0079,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, Feb 03, 2012 at 09:08:34AM -0500, Christoph Hellwig wrote:
+> On Fri, Feb 03, 2012 at 09:38:23PM +0800, Wu Fengguang wrote:
+> > On Fri, Feb 03, 2012 at 06:57:06PM +0530, Amit Sahrawat wrote:
+> > > This will cover all the invocations for writepages to be called with
+> > > plugging support.
+> >  
+> > Thanks.  I'll test it on the major filesystems. But would you
+> > name a few filesystems that are expected to benefit from it?
+> > It's not obvious because some FS ->writepages eventually calls
+> > generic_writepages() which already does plugging.
+> 
+> Ant that's exactly where it should stay instead of beeing sprinkled all
+> over the VM code.
+> 
+> NAK to the patch.
 
-This is the "rebased" devices and boards update material that did not make it during 3.3 merge window. Like any other AT91 patch series for 3.4, it is based on top of the at91-3.4-base branch (that includes the "CAP9 removal" patch on top of 3.3-rc2 + depends/rmk/for-armsoc).
+We've actually had problems with plugging in the higher layers.
+writepages is queueing up lots and lots and lots of pages for IO, and
+especially on SSDs we want these IOs sent sooner rather than later.
 
-The following changes since commit 9918ceafd4a9e013572e03983f528017c29bb1cb:
+I'm not sure yet how to make the plugs aware of the
+please-feed-me-right-away demands of lower storage, but I'd rather not
+add more high level plugs that the filesystems can't control.
 
-  ARM: at91: code removal of CAP9 SoC (2012-02-03 13:33:05 +0100)
+-chris
 
-are available in the git repository at:
-  git://github.com/at91linux/linux-at91.git at91-3.4-base+device_board
-
-Hong Xu (1):
-      ARM: at91: Update struct atmel_nand_data to support PMECC
-
-Josh Wu (2):
-      ARM: at91: add clock selection parameter for at91_add_device_isi()
-      ARM: at91: add Atmel ISI and ov2640 support on sam9m10g45 board
-
-Maxim Osipov (1):
-      ARM: at91: Add external RTC for Flexibity board
-
-Nicolas Ferre (2):
-      ARM: at91/dma: remove platform data from DMA controller
-      ARM: at91/dma: DMA controller registering with DT support
-
- arch/arm/mach-at91/at91sam9263_devices.c |   13 +++-
- arch/arm/mach-at91/at91sam9g45_devices.c |  113 +++++++++++++++++++++++++++---
- arch/arm/mach-at91/at91sam9rl_devices.c  |    8 +--
- arch/arm/mach-at91/board-flexibity.c     |   12 +++-
- arch/arm/mach-at91/board-sam9m10g45ek.c  |   80 ++++++++++++++++++++-
- arch/arm/mach-at91/include/mach/board.h  |    6 ++-
- 6 files changed, 209 insertions(+), 23 deletions(-)
-
-Thanks, best regards,
--- 
-Nicolas Ferre
