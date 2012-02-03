@@ -1,90 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab2BCP1S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:27:18 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:49042 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754439Ab2BCP1N (ORCPT
+	id S1755498Ab2BCP1p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:27:45 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60549 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab2BCP07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 10:27:13 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: eZuVAU8VM1kUMcfEgRK1tL56YCxvgVh9d7zJMYaqcW8U3ei
- MFQpFVKO8_4o3l7KcTvXOcIKJC6RqZhmt1KSOwnV1Z9PgY8MZ4.tVvbPFfa.
- h4jDIybV5sF1bRDeASjKeB3no8LoNjLztOYDTS6AoCJci79kQaFqzzmpxN1L
- kY44OsFmOQTLWngnGFd1I_r3adq5.jjSJsfMjMft3atbiL2TF4fuEcbXLzPn
- I6k5L.JJFD2dKv02tkotTYuWL5nRDJwLpQIe4UzyhR1ytwvtyWUIbe6d2c8X
- FtO6MtBno6D961M84dpP0LSQlURvrNpDIA84ntm5BevGUJTCjqLp2zToyQgr
- dzQYQLxWSFDSj31agdTZjI0G_BAoxaAiHrF0pjHXAwUuirEOvq51V3Hm15hv
- v2YLfGcvQev1HJIxvumc_nhRvLZ.PLqipIWYC
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 3 Feb 2012 09:27:10 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Alex,Shi" <alex.shi@intel.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [rfc PATCH]slub: per cpu partial statistics change
-In-Reply-To: <1328256695.12669.24.camel@debian>
-Message-ID: <alpine.DEB.2.00.1202030920060.2420@router.home>
-References: <1328256695.12669.24.camel@debian>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 3 Feb 2012 10:26:59 -0500
+Message-Id: <20120203152650.827624790@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 03 Feb 2012 19:19:31 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Kees Cook <keescook@chromium.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: [patch 3/4] c/r: procfs: add arg_start/end, env_start/end and exit_code members to /proc/$pid/stat
+References: <20120203151928.474036973@openvz.org>
+Content-Disposition: inline; filename=fs-proc-extend-state-2-linux-next
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Feb 2012, Alex,Shi wrote:
+We would like to have an ability to restore command line
+arguments and program environment pointers but first we
+need to obtain them somehow. Thus we put these values into
+/proc/$pid/stat. The exit_code is needed to restore zombie
+tasks.
 
-> This patch split the cpu_partial_free into 2 parts: cpu_partial_node, PCP refilling
-> times from node partial; and same name cpu_partial_free, PCP refilling times in
-> slab_free slow path. A new statistic 'release_cpu_partial' is added to get PCP
-> release times. These info are useful when do PCP tunning.
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ Documentation/filesystems/proc.txt |    5 +++++
+ fs/proc/array.c                    |   20 +++++++++++++++++---
+ 2 files changed, 22 insertions(+), 3 deletions(-)
 
-Releasing? The code where you inserted the new statistics counts the pages
-put on the cpu partial list when refilling from the node partial list.
-
-See more below.
-
->  struct kmem_cache_cpu {
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 4907563..5dd299c 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -1560,6 +1560,7 @@ static void *get_partial_node(struct kmem_cache *s,
->  		} else {
->  			page->freelist = t;
->  			available = put_cpu_partial(s, page, 0);
-> +			stat(s, CPU_PARTIAL_NODE);
-
-This is refilling the per cpu partial list from the node list.
-
->  		}
->  		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
->  			break;
-> @@ -1973,6 +1974,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->  				local_irq_restore(flags);
->  				pobjects = 0;
->  				pages = 0;
-> +				stat(s, RELEASE_CPU_PARTIAL);
-
-The callers count the cpu partial operations. Why is there now one in
-put_cpu_partial? It is moving a page to the cpu partial list. Not
-releasing it from the cpu partial list.
-
->
-> @@ -2465,9 +2466,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->  		 * If we just froze the page then put it onto the
->  		 * per cpu partial list.
->  		 */
-> -		if (new.frozen && !was_frozen)
-> +		if (new.frozen && !was_frozen) {
->  			put_cpu_partial(s, page, 1);
-> -
-> +			stat(s, CPU_PARTIAL_FREE);
-
-cpu partial list filled with a partial page created from a fully allocated
-slab (which therefore was not on any list before).
-
+Index: linux-2.6.git/Documentation/filesystems/proc.txt
+===================================================================
+--- linux-2.6.git.orig/Documentation/filesystems/proc.txt
++++ linux-2.6.git/Documentation/filesystems/proc.txt
+@@ -311,6 +311,11 @@ Table 1-4: Contents of the stat files (a
+   start_data    address above which program data+bss is placed
+   end_data      address below which program data+bss is placed
+   start_brk     address above which program heap can be expanded with brk()
++  arg_start     address above which program command line is placed
++  arg_end       address below which program command line is placed
++  env_start     address above which program environment is placed
++  env_end       address below which program environment is placed
++  exit_code     the thread's exit_code in the form reported by the waitpid system call
+ ..............................................................................
+ 
+ The /proc/PID/maps file containing the currently mapped memory regions and
+Index: linux-2.6.git/fs/proc/array.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/array.c
++++ linux-2.6.git/fs/proc/array.c
+@@ -508,9 +508,23 @@ static int do_task_stat(struct seq_file
+ 	seq_put_decimal_ull(m, ' ', delayacct_blkio_ticks(task));
+ 	seq_put_decimal_ull(m, ' ', cputime_to_clock_t(gtime));
+ 	seq_put_decimal_ll(m, ' ', cputime_to_clock_t(cgtime));
+-	seq_put_decimal_ull(m, ' ', (mm && permitted) ? mm->start_data : 0);
+-	seq_put_decimal_ull(m, ' ', (mm && permitted) ? mm->end_data : 0);
+-	seq_put_decimal_ull(m, ' ', (mm && permitted) ? mm->start_brk : 0);
++
++	if (mm && permitted) {
++		seq_put_decimal_ull(m, ' ', mm->start_data);
++		seq_put_decimal_ull(m, ' ', mm->end_data);
++		seq_put_decimal_ull(m, ' ', mm->start_brk);
++		seq_put_decimal_ull(m, ' ', mm->arg_start);
++		seq_put_decimal_ull(m, ' ', mm->arg_end);
++		seq_put_decimal_ull(m, ' ', mm->env_start);
++		seq_put_decimal_ull(m, ' ', mm->env_end);
++	} else
++		seq_printf(m, " 0 0 0 0 0 0 0");
++
++	if (permitted)
++		seq_put_decimal_ll(m, ' ', task->exit_code);
++	else
++		seq_put_decimal_ll(m, ' ', 0);
++
+ 	seq_putc(m, '\n');
+ 	if (mm)
+ 		mmput(mm);
 
