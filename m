@@ -1,58 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816Ab2BCBpk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 20:45:40 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47036 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753615Ab2BCBpi (ORCPT
+	id S1757823Ab2BCByk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 20:54:40 -0500
+Received: from mtv-iport-4.cisco.com ([173.36.130.15]:60053 "EHLO
+	mtv-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755085Ab2BCByi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 20:45:38 -0500
-Date: Fri, 3 Feb 2012 01:45:33 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joel Becker <jlbec@evilplan.org>, Chris Mason <chris.mason@oracle.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [RFC] killing boilerplate checks in ->link/->mkdir/->rename
-Message-ID: <20120203014533.GT23916@ZenIV.linux.org.uk>
-References: <m14nvc82jo.fsf@fess.ebiederm.org>
- <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
- <m1wr87ywex.fsf@fess.ebiederm.org>
- <m1ehueyz20.fsf_-_@fess.ebiederm.org>
- <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
- <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
- <20120202012258.GQ23916@ZenIV.linux.org.uk>
- <20120202212400.GR23916@ZenIV.linux.org.uk>
- <CA+55aFzHSv2eHKenVhxnSFMJMXtJCnxD2xu6QjMiMLEGLCZ2uQ@mail.gmail.com>
- <20120203011612.GS23916@ZenIV.linux.org.uk>
+	Thu, 2 Feb 2012 20:54:38 -0500
+X-IronPort-AV: E=Sophos;i="4.73,349,1325462400"; 
+   d="scan'208";a="28315423"
+Message-ID: <4F2B3F53.7040601@cisco.com>
+Date: Thu, 02 Feb 2012 17:58:43 -0800
+From: Enke Chen <enkechen@cisco.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203011612.GS23916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hans Verkuil <hverkuil@xs4all.nl>
+CC: linux-media@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Enke Chen <enkechen@cisco.com>
+Subject: Re: [RFCv7 PATCH 0/4] Add poll_requested_events() function.
+References: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
+In-Reply-To: <1328178417-3876-1-git-send-email-hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 01:16:12AM +0000, Al Viro wrote:
+Hi, folks:
 
-> After looking a bit more: nlink_t is a f*cking mess.  Almost any code
-> using that type kernel-side is broken.  Crap galore:
-> 	* sometimes it's 32 bits, sometimes 16, sometimes 64.  Essentially
-> at random.
-> 	* almost all have it unsigned, except for sparc32, where it's
-> signed short [inherited from v7 via SunOS?  BTW, in v6 it used to be even
-> funnier - char, which is where ridiculous LINK_MAX == 127 comes from]
-> 
-> IOW, nlink_t is an attractive nuisance - it's nearly impossible to use in
-> a portable way and we are lucky that almost nobody tries to.
+I would like to voice my support for Hans' patch.
 
-Incidentally, why the hell do we have
-	typedef __kernel_nlink_t        nlink_t;
-anyway?  It's *not* exposed to userland and it's different from the
-userland nlink_t (which is unsigned int on 32bit and unsigned long on 64bit).
-Why not use __kernel_nlink_t (or explicitly-sized __uNN) in
-arch/*/include/asm/stat.h and declare nlink_t kernel-side as __u32?
+1) The functionality provided by this patch is needed.  I have been 
+involved in an app that implements a use-land sockets (using FUSE). 
+Passing the accurate poll events is essential in the app.  We have been 
+using a local patch that is similar (but not identical) for more than a 
+year.  IMO the functionality of passing accurate and consistent events 
+to a driver is basic, and should be provided by Linux.
 
-Why do we have daddr_t, while we are at it?  There is exactly one user -
-fs/freevxfs and there we definitely want a fixed-sized type.
+2) The patch is safe as far as I can tell.  Without the patch, unwanted 
+events may be passed to a driver. However once the poll returns to the 
+kernel, the unwanted events would be masked out by the kernel anyway and 
+would not be passed to an app.  Thus a driver that relies on the 
+unwanted events would not work anyway.
+
+Thanks.   -- Enke
+
+On 2/2/12 2:26 AM, Hans Verkuil wrote:
+> Hi all,
+>
+> This is the seventh version of this patch series (the fifth and sixth where
+> never posted and where internal iterations only).
+>
+> Al Viro had concerns about silent API changes. I have made an extensive
+> analysis of that in my comments in patch 2/4.
+>
+> This patch series is rebased to v3.3-rc2. The changes compared to the
+> previously posted version are:
+>
+> - I have renamed the qproc field to pq_proc to prevent any driver that tries
+>    to access that directly to fail. No kernel driver does this, BTW.
+>
+> - I added a new poll_does_not_wait() inline that returns true if it is known
+>    that poll() will not wait on return. This removes the last reason for
+>    looking inside the poll_table struct. include/net/sock.h has been adapted
+>    to use this new inline (and it is the only place inside the kernel that
+>    need this).
+>
+> I hope that the analysis I made answers any remaining concerns about possible
+> silent API changes.
+>
+> This patch series is also available here:
+>
+> http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/refs/heads/pollv7
+>
+> It was suggested to me that creating a new poll system call might be an option
+> as well. I've attempted that as well and code implementing that can be found
+> here:
+>
+> http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/refs/heads/pollwithkey
+>
+> However, I think this turned out to be very messy. And because some drivers
+> call the poll fop directly or through some framework I could not be certain I
+> was not introducing any errors.
+>
+> If it is really required to change the API in some way, then I would suggest
+> changing this:
+>
+> typedef struct poll_table_struct {
+>          poll_queue_proc pq_proc;
+>          unsigned long key;
+> } poll_table;
+>
+> to this:
+>
+> struct poll_table {
+>          poll_queue_proc pq_proc;
+>          unsigned long key;
+> };
+>
+> and adapting all users.
+>
+> However, I honestly do not think this is necessary at all. But if it is the
+> only way to get this in, then I'll do the work. The media/video subsystem really
+> needs this functionality. Also note that previous versions of this patch have
+> been in linux-next for months now.
+>
+> The first version of this patch was posted July 1st, 2011. I really hope that
+> it won't take another six months to get a review from a fs developer. As this
+> LWN article (http://lwn.net/Articles/450658/) said: 'There has been little
+> discussion of the patch; it doesn't seem like there is any real reason for it
+> not to go in for 3.1.'
+>
+> The earliest this can go in now is 3.4. The only reason it takes so long is
+> that it has been almost impossible to get a Ack or comments or even just a
+> simple reply from the fs developers. That is really frustrating, I'm sorry
+> to say.
+>
+> Anyway, comments, reviews, etc. are very welcome.
+>
+> Regards,
+>
+> 	Hans
+>
+
