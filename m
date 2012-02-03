@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab2BCNkE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 08:40:04 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:60702 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756168Ab2BCNkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 08:40:03 -0500
-Date: Fri, 3 Feb 2012 14:39:50 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Geunsik Lim <geunsik.lim@gmail.com>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH] Handling of unused variable 'do-numainfo on compilation
- time
-Message-ID: <20120203133950.GA1690@cmpxchg.org>
-References: <1328258627-2241-1-git-send-email-geunsik.lim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328258627-2241-1-git-send-email-geunsik.lim@gmail.com>
+	id S1756458Ab2BCNkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 08:40:37 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38527 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab2BCNkg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 08:40:36 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=ravTz9YwjkQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=jtGhZiCYFVg4XfqOlzsA:9 a=O8tZ53Qv79EBIG0Ne-0A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328276434.5882.141.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 2/7] ftrace: Add enable/disable ftrace_ops control
+ interface
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Date: Fri, 03 Feb 2012 08:40:34 -0500
+In-Reply-To: <1327776209-4883-3-git-send-email-jolsa@redhat.com>
+References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+	 <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+	 <1327776209-4883-3-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal, this keeps coming up, please decide between the proposed
-solutions ;-)
-
-On Fri, Feb 03, 2012 at 05:43:47PM +0900, Geunsik Lim wrote:
-> Actually, Usage of the variable 'do_numainfo'is not suitable for gcc compiler.
-> Declare the variable 'do_numainfo' if the number of NUMA nodes > 1.
-> 
-> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
-> ---
->  mm/memcontrol.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 556859f..4e17ac5 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -776,7 +776,10 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
->  	/* threshold event is triggered in finer grain than soft limit */
->  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_THRESH))) {
-> -		bool do_softlimit, do_numainfo;
-> +		bool do_softlimit;
-> +#if MAX_NUMNODES > 1
-> +                bool do_numainfo;
-> +#endif
+On Sat, 2012-01-28 at 19:43 +0100, Jiri Olsa wrote:
 >  
->  		do_softlimit = mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_SOFTLIMIT);
-> -- 
-> 1.7.8.1
-> 
+> +/*
+> + * FTRACE_OPS_FL_* bits denote the state of ftrace_ops struct and are
+> + * set in the flags member.
+> + *
+> + * ENABLED - set/unset when ftrace_ops is registered/unregistered
+> + * GLOBAL  - set manualy by ftrace_ops user to denote the ftrace_ops
+> + *           is part of the global tracers sharing the same filter
+> + *           via set_ftrace_* debugfs files.
+> + * DYNAMIC - set when ftrace_ops is registered to denote dynamically
+> + *           allocated ftrace_ops which need special care
+> + * CONTROL - set manualy by ftrace_ops user to denote the ftrace_ops
+> + *           could be controled by following calls:
+> + *           ftrace_function_enable, ftrace_function_disable
+> + */
+>  enum {
+>  	FTRACE_OPS_FL_ENABLED		= 1 << 0,
+>  	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
+>  	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
+> +	FTRACE_OPS_FL_CONTROL		= 1 << 3,
+>  };
+>  
+
+Nicely written :-)
+
+
+-- Steve
+
+
