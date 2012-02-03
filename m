@@ -1,154 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab2BCPsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:48:21 -0500
-Received: from vms173001pub.verizon.net ([206.46.173.1]:56120 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab2BCPsT (ORCPT
+	id S1755161Ab2BCPsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:48:30 -0500
+Received: from vms173003pub.verizon.net ([206.46.173.3]:50199 "EHLO
+	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754938Ab2BCPs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 10:48:19 -0500
+	Fri, 3 Feb 2012 10:48:28 -0500
 From: Corey Minyard <cminyard@mvista.com>
 To: Andrew Morton <akpm@osdl.org>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
         OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
+        Srinivas_Gowda <srinivas_g_gowda@dell.com>,
         Corey Minyard <cminyard@mvista.com>
-Subject: [PATCH 5/6] ipmi: Simplify locking
-Date: Fri, 03 Feb 2012 09:47:58 -0600
-Message-id: <1328284079-5489-5-git-send-email-cminyard@mvista.com>
+Subject: [PATCH 1/6] ipmi: decreases the IPMI message transaction time in
+ interrupt mode
+Date: Fri, 03 Feb 2012 09:47:54 -0600
+Message-id: <1328284079-5489-1-git-send-email-cminyard@mvista.com>
 X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1328284079-5489-1-git-send-email-cminyard@mvista.com>
-References: <1328284079-5489-1-git-send-email-cminyard@mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the the IPMI driver is using a tasklet, we can simplify
-the locking in the driver and get rid of the message lock.
+From: Srinivas_Gowda <srinivas_g_gowda@dell.com>
 
+Call the event handler immediately after starting the next message.
+
+This change considerably decreases the IPMI transaction time (cuts off
+~9ms for a single ipmitool transaction).
+
+From: Srinivas_Gowda <srinivas_g_gowda@dell.com>
+Signed-off-by: Srinivas_Gowda <srinivas_g_gowda@dell.com>
 Signed-off-by: Corey Minyard <cminyard@mvista.com>
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   54 ++++++++++++++-----------------------
- 1 files changed, 21 insertions(+), 33 deletions(-)
+ drivers/char/ipmi/ipmi_si_intf.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 01e53cd..3c7e693 100644
+index 50fcf9c..73ebbb1 100644
 --- a/drivers/char/ipmi/ipmi_si_intf.c
 +++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -171,7 +171,6 @@ struct smi_info {
- 	struct si_sm_handlers  *handlers;
- 	enum si_type           si_type;
- 	spinlock_t             si_lock;
--	spinlock_t             msg_lock;
- 	struct list_head       xmit_msgs;
- 	struct list_head       hp_xmit_msgs;
- 	struct ipmi_smi_msg    *curr_msg;
-@@ -350,13 +349,6 @@ static enum si_sm_result start_next_msg(struct smi_info *smi_info)
- 	struct timeval t;
- #endif
+@@ -932,8 +932,10 @@ static void sender(void                *send_info,
+ 	spin_unlock_irqrestore(&smi_info->msg_lock, flags);
  
--	/*
--	 * No need to save flags, we aleady have interrupts off and we
--	 * already hold the SMI lock.
--	 */
--	if (!smi_info->run_to_completion)
--		spin_lock(&(smi_info->msg_lock));
--
- 	/* Pick the high priority queue first. */
- 	if (!list_empty(&(smi_info->hp_xmit_msgs))) {
- 		entry = smi_info->hp_xmit_msgs.next;
-@@ -394,9 +386,6 @@ static enum si_sm_result start_next_msg(struct smi_info *smi_info)
- 		rv = SI_SM_CALL_WITHOUT_DELAY;
- 	}
-  out:
--	if (!smi_info->run_to_completion)
--		spin_unlock(&(smi_info->msg_lock));
--
- 	return rv;
- }
- 
-@@ -879,19 +868,6 @@ static void sender(void                *send_info,
- 	printk("**Enqueue: %d.%9.9d\n", t.tv_sec, t.tv_usec);
- #endif
- 
--	/*
--	 * last_timeout_jiffies is updated here to avoid
--	 * smi_timeout() handler passing very large time_diff
--	 * value to smi_event_handler() that causes
--	 * the send command to abort.
--	 */
--	smi_info->last_timeout_jiffies = jiffies;
--
--	mod_timer(&smi_info->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
--
--	if (smi_info->thread)
--		wake_up_process(smi_info->thread);
--
- 	if (smi_info->run_to_completion) {
- 		/*
- 		 * If we are running to completion, then throw it in
-@@ -914,15 +890,26 @@ static void sender(void                *send_info,
- 		return;
- 	}
- 
--	spin_lock_irqsave(&smi_info->msg_lock, flags);
-+	spin_lock_irqsave(&smi_info->si_lock, flags);
- 	if (priority > 0)
- 		list_add_tail(&msg->link, &smi_info->hp_xmit_msgs);
- 	else
- 		list_add_tail(&msg->link, &smi_info->xmit_msgs);
--	spin_unlock_irqrestore(&smi_info->msg_lock, flags);
- 
--	spin_lock_irqsave(&smi_info->si_lock, flags);
- 	if (smi_info->si_state == SI_NORMAL && smi_info->curr_msg == NULL) {
-+		/*
-+		 * last_timeout_jiffies is updated here to avoid
-+		 * smi_timeout() handler passing very large time_diff
-+		 * value to smi_event_handler() that causes
-+		 * the send command to abort.
-+		 */
-+		smi_info->last_timeout_jiffies = jiffies;
-+
-+		mod_timer(&smi_info->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
-+
-+		if (smi_info->thread)
-+			wake_up_process(smi_info->thread);
-+
+ 	spin_lock_irqsave(&smi_info->si_lock, flags);
+-	if (smi_info->si_state == SI_NORMAL && smi_info->curr_msg == NULL)
++	if (smi_info->si_state == SI_NORMAL && smi_info->curr_msg == NULL) {
  		start_next_msg(smi_info);
- 		smi_event_handler(smi_info, 0);
- 	}
-@@ -1026,16 +1013,19 @@ static int ipmi_thread(void *data)
- static void poll(void *send_info)
- {
- 	struct smi_info *smi_info = send_info;
--	unsigned long flags;
-+	unsigned long flags = 0;
-+	int run_to_completion = smi_info->run_to_completion;
- 
- 	/*
- 	 * Make sure there is some delay in the poll loop so we can
- 	 * drive time forward and timeout things.
- 	 */
- 	udelay(10);
--	spin_lock_irqsave(&smi_info->si_lock, flags);
-+	if (!run_to_completion)
-+		spin_lock_irqsave(&smi_info->si_lock, flags);
- 	smi_event_handler(smi_info, 10);
--	spin_unlock_irqrestore(&smi_info->si_lock, flags);
-+	if (!run_to_completion)
-+		spin_unlock_irqrestore(&smi_info->si_lock, flags);
- }
- 
- static void request_events(void *send_info)
-@@ -1672,10 +1662,8 @@ static struct smi_info *smi_info_alloc(void)
- {
- 	struct smi_info *info = kzalloc(sizeof(*info), GFP_KERNEL);
- 
--	if (info) {
-+	if (info)
- 		spin_lock_init(&info->si_lock);
--		spin_lock_init(&info->msg_lock);
--	}
- 	return info;
++		smi_event_handler(smi_info, 0);
++	}
+ 	spin_unlock_irqrestore(&smi_info->si_lock, flags);
  }
  
 -- 
