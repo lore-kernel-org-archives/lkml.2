@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab2BCMWb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 07:22:31 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:14440 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab2BCMTI (ORCPT
+	id S1755946Ab2BCMWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 07:22:48 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:9816 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126Ab2BCMTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Feb 2012 07:19:08 -0500
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Fri, 03 Feb 2012 13:18:47 +0100
+Date: Fri, 03 Feb 2012 13:18:50 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 04/15] mm: compaction: introduce isolate_freepages_range()
+Subject: [PATCH 07/15] mm: page_alloc: change fallbacks array handling
 In-reply-to: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -31,7 +31,7 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>,
         Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Message-id: <1328271538-14502-5-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1328271538-14502-8-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.7.3
 References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,11 +40,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-This commit introduces isolate_freepages_range() function which
-generalises isolate_freepages_block() so that it can be used on
-arbitrary PFN ranges.
-
-isolate_freepages_block() is left with only minor changes.
+This commit adds a row for MIGRATE_ISOLATE type to the fallbacks array
+which was missing from it.  It also, changes the array traversal logic
+a little making MIGRATE_RESERVE an end marker.  The letter change,
+removes the implicit MIGRATE_UNMOVABLE from the end of each row which
+was read by __rmqueue_fallback() function.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
@@ -53,177 +53,43 @@ Tested-by: Rob Clark <rob.clark@linaro.org>
 Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
 Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 ---
- mm/compaction.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 93 insertions(+), 18 deletions(-)
+ mm/page_alloc.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 9bbcc53..9fef891 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -54,24 +54,20 @@ static unsigned long release_freepages(struct list_head *freelist)
- 	return count;
- }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9006e69..238fcec 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -875,11 +875,12 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+  * This array describes the order lists are fallen back to when
+  * the free lists for the desirable migrate type are depleted
+  */
+-static int fallbacks[MIGRATE_TYPES][MIGRATE_TYPES-1] = {
++static int fallbacks[MIGRATE_TYPES][3] = {
+ 	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
+ 	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
+ 	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
+-	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE,     MIGRATE_RESERVE,   MIGRATE_RESERVE }, /* Never used */
++	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
++	[MIGRATE_ISOLATE]     = { MIGRATE_RESERVE }, /* Never used */
+ };
  
--/* Isolate free pages onto a private freelist. Must hold zone->lock */
--static unsigned long isolate_freepages_block(struct zone *zone,
--				unsigned long blockpfn,
--				struct list_head *freelist)
-+/*
-+ * Isolate free pages onto a private freelist. Caller must hold zone->lock.
-+ * If @strict is true, will abort returning 0 on any invalid PFNs or non-free
-+ * pages inside of the pageblock (even though it may still end up isolating
-+ * some pages).
-+ */
-+static unsigned long isolate_freepages_block(unsigned long blockpfn,
-+				unsigned long end_pfn,
-+				struct list_head *freelist,
-+				bool strict)
- {
--	unsigned long zone_end_pfn, end_pfn;
- 	int nr_scanned = 0, total_isolated = 0;
- 	struct page *cursor;
+ /*
+@@ -974,12 +975,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 	/* Find the largest possible block of pages in the other list */
+ 	for (current_order = MAX_ORDER-1; current_order >= order;
+ 						--current_order) {
+-		for (i = 0; i < MIGRATE_TYPES - 1; i++) {
++		for (i = 0;; i++) {
+ 			migratetype = fallbacks[start_migratetype][i];
  
--	/* Get the last PFN we should scan for free pages at */
--	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
--	end_pfn = min(blockpfn + pageblock_nr_pages, zone_end_pfn);
--
--	/* Find the first usable PFN in the block to initialse page cursor */
--	for (; blockpfn < end_pfn; blockpfn++) {
--		if (pfn_valid_within(blockpfn))
--			break;
--	}
- 	cursor = pfn_to_page(blockpfn);
+ 			/* MIGRATE_RESERVE handled later if necessary */
+ 			if (migratetype == MIGRATE_RESERVE)
+-				continue;
++				break;
  
- 	/* Isolate free pages. This assumes the block is valid */
-@@ -79,15 +75,23 @@ static unsigned long isolate_freepages_block(struct zone *zone,
- 		int isolated, i;
- 		struct page *page = cursor;
- 
--		if (!pfn_valid_within(blockpfn))
-+		if (!pfn_valid_within(blockpfn)) {
-+			if (strict)
-+				return 0;
- 			continue;
-+		}
- 		nr_scanned++;
- 
--		if (!PageBuddy(page))
-+		if (!PageBuddy(page)) {
-+			if (strict)
-+				return 0;
- 			continue;
-+		}
- 
- 		/* Found a free page, break it into order-0 pages */
- 		isolated = split_free_page(page);
-+		if (!isolated && strict)
-+			return 0;
- 		total_isolated += isolated;
- 		for (i = 0; i < isolated; i++) {
- 			list_add(&page->lru, freelist);
-@@ -105,6 +109,73 @@ static unsigned long isolate_freepages_block(struct zone *zone,
- 	return total_isolated;
- }
- 
-+/**
-+ * isolate_freepages_range() - isolate free pages.
-+ * @start_pfn: The first PFN to start isolating.
-+ * @end_pfn:   The one-past-last PFN.
-+ *
-+ * Non-free pages, invalid PFNs, or zone boundaries within the
-+ * [start_pfn, end_pfn) range are considered errors, cause function to
-+ * undo its actions and return zero.
-+ *
-+ * Otherwise, function returns one-past-the-last PFN of isolated page
-+ * (which may be greater then end_pfn if end fell in a middle of
-+ * a free page).
-+ */
-+static unsigned long
-+isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	unsigned long isolated, pfn, block_end_pfn, flags;
-+	struct zone *zone = NULL;
-+	LIST_HEAD(freelist);
-+
-+	if (pfn_valid(start_pfn))
-+		zone = page_zone(pfn_to_page(start_pfn));
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
-+		if (!pfn_valid(pfn) || zone != page_zone(pfn_to_page(pfn)))
-+			break;
-+
-+		/*
-+		 * On subsequent iterations ALIGN() is actually not needed,
-+		 * but we keep it that we not to complicate the code.
-+		 */
-+		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
-+		block_end_pfn = min(block_end_pfn, end_pfn);
-+
-+		spin_lock_irqsave(&zone->lock, flags);
-+		isolated = isolate_freepages_block(pfn, block_end_pfn,
-+						   &freelist, true);
-+		spin_unlock_irqrestore(&zone->lock, flags);
-+
-+		/*
-+		 * In strict mode, isolate_freepages_block() returns 0 if
-+		 * there are any holes in the block (ie. invalid PFNs or
-+		 * non-free pages).
-+		 */
-+		if (!isolated)
-+			break;
-+
-+		/*
-+		 * If we managed to isolate pages, it is always (1 << n) *
-+		 * pageblock_nr_pages for some non-negative n.  (Max order
-+		 * page may span two pageblocks).
-+		 */
-+	}
-+
-+	/* split_free_page does not map the pages */
-+	map_pages(&freelist);
-+
-+	if (pfn < end_pfn) {
-+		/* Loop terminated early, cleanup. */
-+		release_freepages(&freelist);
-+		return 0;
-+	}
-+
-+	/* We don't use freelists for anything. */
-+	return pfn;
-+}
-+
- /* Returns true if the page is within a block suitable for migration to */
- static bool suitable_migration_target(struct page *page)
- {
-@@ -145,7 +216,7 @@ static void isolate_freepages(struct zone *zone,
- 				struct compact_control *cc)
- {
- 	struct page *page;
--	unsigned long high_pfn, low_pfn, pfn;
-+	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
- 	unsigned long flags;
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
-@@ -165,6 +236,8 @@ static void isolate_freepages(struct zone *zone,
- 	 */
- 	high_pfn = min(low_pfn, pfn);
- 
-+	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-+
- 	/*
- 	 * Isolate free pages until enough are available to migrate the
- 	 * pages on cc->migratepages. We stop searching if the migrate
-@@ -201,7 +274,9 @@ static void isolate_freepages(struct zone *zone,
- 		isolated = 0;
- 		spin_lock_irqsave(&zone->lock, flags);
- 		if (suitable_migration_target(page)) {
--			isolated = isolate_freepages_block(zone, pfn, freelist);
-+			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
-+			isolated = isolate_freepages_block(pfn, end_pfn,
-+							   freelist, false);
- 			nr_freepages += isolated;
- 		}
- 		spin_unlock_irqrestore(&zone->lock, flags);
+ 			area = &(zone->free_area[current_order]);
+ 			if (list_empty(&area->free_list[migratetype]))
 -- 
 1.7.1.569.g6f426
 
