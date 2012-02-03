@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab2BCNP7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 08:15:59 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:34980
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754255Ab2BCNP6 (ORCPT
+	id S1756189Ab2BCNXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 08:23:18 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51538 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab2BCNXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 08:15:58 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: andrew.vasquez@qlogic.com, linux-driver@qlogic.com,
-        linux-scsi@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] qla2xxx: Fix typo in qla_bsg.c
-Date: Fri,  3 Feb 2012 22:15:25 +0900
-Message-Id: <1328274925-1809-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Fri, 3 Feb 2012 08:23:17 -0500
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>
+Cc: Amit Sahrawat <a.sahrawat@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH 2/2] mm: make do_writepages() use plugging
+Date: Fri,  3 Feb 2012 18:57:06 +0530
+Message-Id: <1328275626-5322-1-git-send-email-amit.sahrawat83@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "curent" to "current" in
-drivers/scsi/qla2xxx/qla_bsg.c
+This will cover all the invocations for writepages to be called with
+plugging support.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- drivers/scsi/qla2xxx/qla_bsg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/page-writeback.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_bsg.c b/drivers/scsi/qla2xxx/qla_bsg.c
-index b1d0f93..a1c6a16 100644
---- a/drivers/scsi/qla2xxx/qla_bsg.c
-+++ b/drivers/scsi/qla2xxx/qla_bsg.c
-@@ -745,7 +745,7 @@ qla2x00_process_loopback(struct fc_bsg_job *bsg_job)
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 363ba70..2bea32c 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1866,14 +1866,18 @@ EXPORT_SYMBOL(generic_writepages);
  
- 			if (elreq.options != EXTERNAL_LOOPBACK) {
- 				ql_dbg(ql_dbg_user, vha, 0x7020,
--				    "Internal: curent port config = %x\n",
-+				    "Internal: current port config = %x\n",
- 				    config[0]);
- 				if (qla81xx_set_internal_loopback(vha, config,
- 					new_config)) {
+ int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
+ {
++	struct blk_plug plug;
+ 	int ret;
+ 
+ 	if (wbc->nr_to_write <= 0)
+ 		return 0;
++
++	blk_start_plug(&plug);
+ 	if (mapping->a_ops->writepages)
+ 		ret = mapping->a_ops->writepages(mapping, wbc);
+ 	else
+ 		ret = generic_writepages(mapping, wbc);
++	blk_finish_plug(&plug);
+ 	return ret;
+ }
+ 
 -- 
-1.7.6.5
+1.7.2.3
 
