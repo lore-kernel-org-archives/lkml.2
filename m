@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab2BCAAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 19:00:21 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53309 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756006Ab2BCAAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 19:00:18 -0500
-Date: Thu, 2 Feb 2012 15:58:52 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH RFC 0/41] RCU commits for 3.4
-Message-ID: <20120202235852.GO2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120201194131.GA10028@linux.vnet.ibm.com>
- <871uqcc0p9.fsf@ti.com>
+	id S932799Ab2BCADv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 19:03:51 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34921 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755214Ab2BCADu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 19:03:50 -0500
+Date: Fri, 3 Feb 2012 04:03:45 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg KH <gregkh@linuxfoundation.org>, Oleg Nesterov <oleg@redhat.com>
+Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v3] staging: android/lowmemorykiller: Don't grab tasklist_lock
+Message-ID: <20120203000345.GA14338@oksana.dev.rtsoft.ru>
+References: <20120202171659.GA29378@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <871uqcc0p9.fsf@ti.com>
+In-Reply-To: <20120202171659.GA29378@oksana.dev.rtsoft.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020300-7182-0000-0000-000000A9931C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 02:47:14PM -0800, Kevin Hilman wrote:
-> Hi Paul,
-> 
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
-> 
-> > This patchset makes RCU more aggressive about entering dyntick-idle mode
-> > in order to improve energy efficiency, 
-> 
-> I gave this series a spin on an ARM/SMP platform (OMAP4) and the boot
-> hung (tail end of boot log below.)  I then realized that had isolcpus=1
-> on the cmdline from a previous experiment.  Removing isolcpus from the
-> cmdline got me back to a working boot.
-> 
-> IIRC, some want to remove isolcpus, so I'm not sure if it's expected to
-> work with your series, but thought you'd want to know.
+Grabbing tasklist_lock has its disadvantages, i.e. it blocks
+process creation and destruction. If there are lots of processes,
+blocking doesn't sound as a great idea.
 
-Not expected behavior, thank you for testing!
+For LMK, it is sufficient to surround tasks list traverse with
+rcu_read_{,un}lock().
 
-Could you please share your .config?
+>From now on using force_sig() is not safe, as it can race with an
+already exiting task, so we use send_sig() now. As a downside, it
+won't kill PID namespace init processes, but that's not what we
+want anyway.
 
-							Thanx, Paul
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ drivers/staging/android/lowmemorykiller.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-> Kevin
-> 
-> 
-> 
-> [    1.105834] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
-> [    1.353942] omap_uart.0: ttyO0 at MMIO 0x4806a000 (irq = 104) is a OMAP UART0
-> [    1.462707] omap_uart.1: ttyO1 at MMIO 0x4806c000 (irq = 105) is a OMAP UART1
-> [    1.548614] omap_uart.2: ttyO2 at MMIO 0x48020000 (irq = 106) is a OMAP UART2
-> [    1.556304] console [ttyO2] enabled, bootconsole disabled
-> [    1.556304] console [ttyO2] enabled, bootconsole disabled
-> [   61.587493] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=7682 jiffies)
-> [   61.596649] INFO: Stall ended before state dump start
-> 
-
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+index 2d8d2b7..63da844 100644
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -34,6 +34,7 @@
+ #include <linux/mm.h>
+ #include <linux/oom.h>
+ #include <linux/sched.h>
++#include <linux/rcupdate.h>
+ #include <linux/profile.h>
+ #include <linux/notifier.h>
+ 
+@@ -132,7 +133,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 	}
+ 	selected_oom_adj = min_adj;
+ 
+-	read_lock(&tasklist_lock);
++	rcu_read_lock();
+ 	for_each_process(p) {
+ 		struct mm_struct *mm;
+ 		struct signal_struct *sig;
+@@ -180,12 +181,12 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 		lowmem_deathpending = selected;
+ 		task_handoff_register(&task_nb);
+ #endif
+-		force_sig(SIGKILL, selected);
++		send_sig(SIGKILL, selected, 0);
+ 		rem -= selected_tasksize;
+ 	}
+ 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
+ 		     sc->nr_to_scan, sc->gfp_mask, rem);
+-	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
+ 	return rem;
+ }
+ 
+-- 
+1.7.7.6
