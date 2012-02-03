@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab2BCIhQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 03:37:16 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33199 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab2BCIhM (ORCPT
+	id S1754974Ab2BCIhw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 03:37:52 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:46119 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab2BCIhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 03:37:12 -0500
-Date: Fri, 3 Feb 2012 00:37:08 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Dima Zavin <dima@android.com>
-Cc: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: evdev - fix variable initialisation
-Message-ID: <20120203083707.GC24226@core.coreip.homeip.net>
-References: <201201312224.46360.heiko@sntech.de>
- <CAPz4a6DDwt2uEX1o3ULSESjnVqMA1gBWoFP27XCviaOXd1-fpw@mail.gmail.com>
+	Fri, 3 Feb 2012 03:37:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPz4a6DDwt2uEX1o3ULSESjnVqMA1gBWoFP27XCviaOXd1-fpw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 3 Feb 2012 09:37:48 +0100
+Message-ID: <CACKLOr26BuTh8Qr8pFHoTJoyCW9ty4-Kg-YRisXmN3=spzY6_Q@mail.gmail.com>
+Subject: [dmaengine] [Q] jiffies value does not increase in dma_sync_wait()
+From: javier Martin <javier.martin@vista-silicon.com>
+To: linux-kernel@vger.kernel.org
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 01:40:42PM -0800, Dima Zavin wrote:
-> ugh, thanks for fixing this.
-> 
-> On Tue, Jan 31, 2012 at 1:24 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> > Commit 509f87c5f564 (evdev - do not block waiting for an event if fd
-> > is nonblock) created a code path were it was possible to use retval
-> > uninitialized.
-> >
-> > This could lead to the xorg evdev input driver getting corrupt data
-> > and refusing to work with log messages like
-> >        AUO-Pixcir touchscreen: Read error: Success
-> >        sg060_keys: Read error: Success
-> >        AUO-Pixcir touchscreen: Read error: Success
-> >        sg060_keys: Read error: Success
-> > (for drivers auo-pixcir-ts and gpio-keys).
-> >
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> 
-> Acked-by: Dima Zavin <dima@android.com>
-> 
+Hi,
+I have a Visstrim_M10 board, based on i.MX27, and I'm developing a
+v4l2 driver for deinterlacing video frames.
 
-Applied, thank you.
+Whenever I start a new dma transfer I call the function
+"dma_wait_for_async_tx()" which internally ends up calling
+"dma_sync_wait()":
 
+http://lxr.linux.no/#linux+v3.2.2/drivers/dma/dmaengine.c#L255
+
+In this function, there is a "do while" loop, which checks for dma
+completion, with a timeout. However, when the system is too loaded
+this function enters this "do while" loop and never gets out of it,
+blocking the system.
+
+I've introduced a couple of printk() to check why this timeout is not
+triggered and I've found that the value of jiffies does not increase
+between loop iterations (i. e. it's like time didn't advance).
+
+Does anyobody know what reasons could make jiffies not being updated?
+
+Regards.
 -- 
-Dmitry
+Javier Martin
+Vista Silicon S.L.
+CDTUC - FASE C - Oficina S-345
+Avda de los Castros s/n
+39005- Santander. Cantabria. Spain
++34 942 25 32 60
+www.vista-silicon.com
