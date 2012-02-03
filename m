@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab2BCHw5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 02:52:57 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51991 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754075Ab2BCHw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 02:52:56 -0500
-Date: Fri, 3 Feb 2012 08:52:50 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH] sched: reduce /proc/schedstat access times
-Message-ID: <20120203075250.GD30543@elte.hu>
-References: <1328216139.2480.24.camel@edumazet-laptop>
+	id S1754657Ab2BCIB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 03:01:57 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34555 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab2BCIB4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 03:01:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328216139.2480.24.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+In-Reply-To: <CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com>
+References: <20120116163106.GC7180@jl-vm1.vm.bytemark.co.uk>
+ <1326776095-2629-1-git-send-email-siddhesh.poyarekar@gmail.com>
+ <CAAHN_R2g9zaujw30+zLf91AGDHNqE6HDc8Z4yJbrzgJcJYFkXg@mail.gmail.com>
+ <4F2B02BC.8010308@gmail.com> <CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Fri, 3 Feb 2012 03:01:35 -0500
+Message-ID: <CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com>
+Subject: Re: [RESEND][PATCH] Mark thread stack correctly in proc/<pid>/maps
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Cc: Jamie Lokier <jamie@shareable.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Right now MAP_STACK does not mean anything since it is ignored. The
+> intention of this behaviour change is to make MAP_STACK mean that the
+> map is going to be used as a stack and hence, set it up like a stack
+> ought to be. I could not really think of a valid case for fixed size
+> stacks; it looks like a limitation in the pthread implementation in
+> glibc rather than a feature. So this patch will actually result in
+> uniform behaviour across threads when it comes to stacks.
+>
+> This does change vm accounting since thread stacks were earlier
+> accounted as anon memory.
 
-* Eric Dumazet <eric.dumazet@gmail.com> wrote:
-
-> On a 16 cpus NUMA machine, we can have quite a long /proc/schedstat
-> 
-> # wc -c /proc/schedstat 
-> 8355 /proc/schedstat
-
-Btw., the long-term goal would be to make the schedstats info 
-fully available via perf and integrate it into 'perf sched' - or 
-'perf stat --sched' or 'perf schedstat' (whichever variant suits 
-the person who first implements it).
-
-> @@ -47,9 +43,9 @@ static int show_schedstat(struct seq_file *seq, void *v)
->  		for_each_domain(cpu, sd) {
->  			enum cpu_idle_type itype;
->  
-> -			cpumask_scnprintf(mask_str, mask_len,
-> -					  sched_domain_span(sd));
-> -			seq_printf(seq, "domain%d %s", dcount++, mask_str);
-> +			seq_printf(seq, "domain%d ", dcount++);
-> +			seq_bitmap(seq, cpumask_bits(sched_domain_span(sd)),
-> +				   nr_cpumask_bits);
->  			for (itype = CPU_IDLE; itype < CPU_MAX_IDLE_TYPES;
->  					itype++) {
->  				seq_printf(seq, " %u %u %u %u %u %u %u %u",
-
-that way, via perf, all information gets passed in a binary 
-fashion through the perf ring-buffer, so there's no formatting 
-overhead (only during post-processing), no restart artifacts due 
-to seqfile limitations, etc.
-
-Thanks,
-
-	Ingo
+The fact is, now process stack and pthread stack clearly behave
+different dance. libc don't expect pthread stack grow automatically.
+So, your patch will break userland. Just only change display thing.
