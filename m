@@ -1,134 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2BCIdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 03:33:39 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46935 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab2BCIdh (ORCPT
+	id S1754878Ab2BCIfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 03:35:37 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63074 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab2BCIfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 03:33:37 -0500
-Date: Fri, 3 Feb 2012 16:46:04 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Dong Aisheng <dongas86@gmail.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Pinmux bindings proposal V2
-Message-ID: <20120203084600.GA12508@S2101-09.ap.freescale.net>
-References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
- <20120201143530.GA2203@S2101-09.ap.freescale.net>
- <74CDBE0F657A3D45AFBB94109FB122FF178E124AC5@HQMAIL01.nvidia.com>
+	Fri, 3 Feb 2012 03:35:36 -0500
+Date: Fri, 3 Feb 2012 12:35:30 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
+Message-ID: <20120203083530.GD1968@moon>
+References: <20120130140905.441199885@openvz.org>
+ <20120130141852.309402052@openvz.org>
+ <20120203074656.GC30543@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178E124AC5@HQMAIL01.nvidia.com>
+In-Reply-To: <20120203074656.GC30543@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 10:36:54AM -0800, Stephen Warren wrote:
-> Shawn Guo wrote at Wednesday, February 01, 2012 7:36 AM:
-> ...
-> > I had a talk with Dong about this binding, and we think that it should
-> > work well for imx if we have a couple of small pieces added.
-> > 
-> > On Fri, Jan 20, 2012 at 02:22:20PM -0800, Stephen Warren wrote:
-> > ...
-> > >                 pmx_sdhci: pinconfig-sdhci {
-> > >                         /*
-> > >                          * The mux property is a list of muxable entities
-> > >                          * and the mux function to select for it. The number
-> > >                          * of cells in each entry is the pin controller's
-> > >                          * #pinmux-cells property. The pin controller's
-> > >                          * binding defines what the cells mean. The pinctrl
-> > >                          * driver is responsible for mapping this data to
-> > >                          * the (group, function) pair required to fill in
-> > >                          * the pinctrl subsystem's pinmux mapping table.
-> > >                          */
-> > >                         mux =
-> > >                                 <TEGRA_PMX_PG_DTA TEGRA_PMX_MUX_SDIO1>
-> > >                                 <TEGRA_PMX_PG_DTD TEGRA_PMX_MUX_SDIO1>;
-> > 
-> > We need a property like 'mux-unit' whose value can be either 'pin' or
-> > 'pingroup' to reflect something you mentioned as muxable entity.
+On Fri, Feb 03, 2012 at 08:46:56AM +0100, Ingo Molnar wrote:
 > 
-> I'm not sure I agree; see below.
+> * Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 > 
-> > The reason behind this is the DT logic inside pinctrl core needs to
-> > know how the pinmux_map should be constructed from device tree.
+> > +/* Comparision type */
 > 
-> As a general statement, yes.
+> > + * We don't expose real in-memory order of objects for security
+> > + * reasons, still the comparision results should be suitable for
+> > + * sorting. Thus, we obfuscate kernel pointers values (using random
+> > + * cookies obtaned at early boot stage) and compare the production
+> > + * instead.
 > 
-> > In tegra case, the 'mux-unit' is 'pingroup', the core should construct
-> > pinmux_map entry for each row/element of 'mux'.
+> > + * 0 - equal
+> > + * 1 - less than
+> > + * 2 - greater than
+> > + * 3 - not equal but ordering unavailable (reserved for future)
 > 
-> Yes.
-> 
-> > In imx case, the 'mux-unit' will be 'pin',
-> 
-> OK.
-> 
-> Just a note: Tegra30 also has per-pin muxability. Only Tegra20 muxes pins
-> in groups. (although Tegra30 does some if its pin configuration in groups)
-> 
-> > and we would expect core construct only
-> > one pinmux_map entry there, with all the pins listed in 'mux' composing
-> > the group that pinmux_map needs.
-> 
-> This is where I disagree.
-> 
-So what I read is you disagree how pinctrl core uses property 'mux-unit'
-not the property itself.
+> Broken spelling in each of those comment blocks. Are these 
+> comments write-only?
 
-> If the pinmux_map should only contain a single entry, wouldn't the DT
-> mux property only contain a single entry?
+No, they are not write-only. I've fixed typos in first comment block,
+though I don't understand what is wrong with 0,1,2,3 comments.
+
 > 
-So you are saying we should have a pinmux_map for each entry in the
-mux property?  I disagree with that.  For imx usdhc example, we have
-10 entries in mux property representing 10 pins and their mux values.
-What we need is one pinmux_map rather than 10 for just one client
-device.
-
-> The reason being that if there's a single entry in the pinmux_map, the
-> group name used in that entry must be a group that's supported directly
-> by the pinctrl driver (that's just the way pinctrl works). As such, why
-> not just write the device tree in terms of those groups?
+> > +	/*
+> > +	 * Tasks are looked up in caller's
+> > +	 * PID namespace only.
+> > +	 */
 > 
-> The only way I can see this not being true is if your pinctrl driver is
-> also parsing these mux properties, and dynamically creating the groups
-> that it exposes based on the list of pins in the mux property.
-
-Yes, that's exactly what we are trying to do for imx.
-
-> However,
-> that seems like the wrong approach;
-
-Where does it go wrong exactly?
-
-> If you're dynamically defining groups
-> in DT, I'd expect separate explicit driver-specific properties/nodes to
-> define those groups, such that the pinctrl core's processing of the mux
-> property to be identical in all cases.
+> Could be a single line.
 > 
-It's not imx specific.  It's generally useful for any soc that has pin
-as the muxable entity.  I think it should be the common part of this
-binding and implemented in pinctrl core DT support. 
 
--- 
-Regards,
-Shawn
+Ok, will do so.
+
+> > +
+> > +	task1 = find_task_by_vpid(pid1);
+> > +	if (!task1) {
+> > +		rcu_read_unlock();
+> > +		return -ESRCH;
+> > +	}
+> > +
+> > +	task2 = find_task_by_vpid(pid2);
+> > +	if (!task2) {
+> > +		put_task_struct(task1);
+> > +		rcu_read_unlock();
+> > +		return -ESRCH;
+> > +	}
+> 
+> This is not the standard pattern of how we do error paths ...
+
+OK, I'll try to make it in standart way.
+
+> 
+> > +	/*
+> > +	 * Note for all cases but the KCMP_FILE we
+> > +	 * don't take any locks in a sake of speed.
+> > +	 */
+> 
+> Spelling.
+
+Not sure what you mean here, but I'll drop this comment
+to eliminate this problem.
+
+> 
+> > +			get_random_bytes(&cookies[i][j],
+> > +					 sizeof(cookies[i][j]));
+> 
+> ugly line break.
+> 
+
+Why? Looks pretty good to me. But sure I'll change it.
+
+> > +late_initcall(kcmp_cookie_init);
+> 
+> any particular reason why this needs to be a late initcall?
+> 
+
+Grr! The late_initcall remained here from versions where I've
+been playing with crypto hashes. Thanks, Ingo, I'll fix!
+
+> > +
+> > +clean:
+> > +	$(E) "  CLEAN"
+> > +	$(Q) rm -fr ./run_test
+> > +	$(Q) rm -fr ./test-file
+> 
+> Needs buy-in from the kbuild guys.
+
+I took breakpoint test as example. Maybe I should
+send this test case code as a separate patch?
+
+> 
+> > +#ifdef CONFIG_X86_64
+> > +#include <asm/unistd_64.h>
+> > +#else
+> > +#include <asm/unistd_32.h>
+> > +#endif
+> 
+> Why is asm/unistd.h not good?
+> 
+
+With asm/unistd.h it fails to build because it requires the headers
+to be installed first (ie headers_install target) so I though this
+way would be more convenient, no?
+
+> > +static long sys_kcmp(int pid1, int pid2, int type, int fd1, int fd2)
+> > +{
+> > +	return syscall(__NR_kcmp, (long)pid1, (long)pid2,
+> > +		       (long)type, (long)fd1, (long)fd2);
+> > +}
+> 
+> Why is a syscall that takes long arguments defined and called 
+> with int and then cast over to long again?
+> 
+
+Just a habit, the args will be converted to long anyway,
+so I don't see a problem here. Still I can drop them.
+
+> > +		int pid2 = getpid();
+> > +		int ret;
+> > +
+> > +		fd2 = open("test-file", O_RDWR, 0644);
+> > +		if (fd2 < 0) {
+> > +			perror("Can't open file");
+> > +			exit(1);
+> > +		}
+> > +
+> > +		/* An example of output and arguments */
+> > +                printf("pid1: %6d pid2: %6d FD: %2d FILES: %2d VM: %2d FS: %2d "
+> > +		       "SIGHAND: %2d IO: %2d SYSVSEM: %2d INV: %2d\n",
+> 
+> Visibly stray whitespaces.
+> 
+> > +		/* This one should return same fd */
+> > +		ret = sys_kcmp(pid1, pid2, KCMP_FILE, fd1, fd1);
+> > +		if (ret) {
+> > +			printf("FAIL: 0 expected but %d returned\n", ret);
+> > +			ret = -1;
+> > +		} else
+> > +			printf("PASS: 0 returned as expected\n");
+> > +		exit(ret);
+> 
+> this is main(), what's wrong with the standard pattern of return 
+> ret?
+> 
+
+It's fork'ed children.
+
+> I don't know whether this code is correct, but the high amount 
+> of basic cleanliness problems makes me worry about that.
+> 
+
+Code is correct. I'll clean up the nits you pointed.
+
+	Cyrill
