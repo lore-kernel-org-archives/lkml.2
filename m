@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab2BCWOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 17:14:15 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:40101 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757515Ab2BCWON (ORCPT
+	id S1758003Ab2BCWRu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 17:17:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49844 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab2BCWRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 17:14:13 -0500
-Date: Fri, 3 Feb 2012 14:14:09 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED 11/11] blkcg: unify blkg's for blkcg policies
-Message-ID: <20120203221409.GF14209@google.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
- <1328131156-13290-12-git-send-email-tj@kernel.org>
- <20120202003730.GC19837@google.com>
- <20120203194105.GA12616@redhat.com>
- <20120203205910.GB14209@google.com>
- <20120203214435.GC12616@redhat.com>
- <20120203214719.GE14209@google.com>
- <20120203215349.GF9683@redhat.com>
+	Fri, 3 Feb 2012 17:17:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203215349.GF9683@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120202230317.GA1426@atomide.com>
+References: <1328124889-9780-1-git-send-email-linus.walleij@stericsson.com>
+	<20120202230317.GA1426@atomide.com>
+Date: Fri, 3 Feb 2012 23:17:48 +0100
+Message-ID: <CACRpkdYEjdX+nNb=fhU3ANFeJwMguEsbGC7Rsqq7g2F-tmE4Sw@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: pin configuration states
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 04:53:49PM -0500, Vivek Goyal wrote:
-> Hmm... then blkiocg_reset_stats() will run into lock ordering issue. Can't
-> hold queue lock inside blkcg lock. I guess you will do some kind of
-> locking trick again as you did for io context logic.
+On Fri, Feb 3, 2012 at 12:03 AM, Tony Lindgren <tony@atomide.com> wrote:
+> [Me]
+>> +For simple systems that just configure the pins on boot and then forget about
+>> +them, the first configuration table may be sufficient. However some systems
+>> +may need to switch configuration states at runtime, and in that case the
+>> +system may want to ground both pins by simply calling:
+>> +
+>> +ret = pinconf_activate_state("pinctrl-foo", "idle");
+>
+> For dynamic changing of pin states during runtime we should not change
+> the states based on string parsing. This is because some of these pins
+> may need to be changed every time when entering and exiting idle.
 
-Ummm... I don't know the details yet but decisions like making
-policies per-queue are much higher level than locking details.  There
-are cases where implementation details become problematic enough and
-high level decisions are affected but I don't really think that would
-be the case here.  It's not like reset stats is a hot path.  In fact,
-I don't even understand why the hell we have it.  I guess it's another
-blkcg braindamage.
+So pinmuxes get a handle back using a get/put pair, and
+have enable/disable semantics as well.
 
-If userland is interested in delta between certain periods, it's
-supposed to read values at the start and end of the period and
-subtract.  Allowing reset might make sense if there's single bearded
-admin looking at the raw numbers, but it breaks as soon as tools and
-automation are involved.  How would you decide who owns those
-counters?
+I avoided this for pin config since it would mean that you have
+to keep some opaque cookie around, like we currently do with
+pinmux. And pin config states are simpler in that you simply
+move from one state to the other, no bookkeeping is involved.
 
-And we sadly can't even remove that at this point. Ugh................
+I never took into consideration that it may be a performance
+issue to do that string parsing and you have a point there.
 
--- 
-tejun
+So would you prefer something like:
+
+astat = pinconf_get_state("pinctrl-foo", "idle");
+istat = pinconf_get_state("pinctrl-foo", "idle");
+
+pinconf_activate_state(astat);
+pinconf_activate_state(istat);
+...
+
+If this is what people want I can sure do it like that instead.
+
+Yours,
+linus Walleij
