@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab2BCRf4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 12:35:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58257 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757272Ab2BCRfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 12:35:55 -0500
-Message-ID: <4F2C1AC9.7090509@zytor.com>
-Date: Fri, 03 Feb 2012 09:35:05 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1757351Ab2BCRgM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 12:36:12 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:34242
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757286Ab2BCRgK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 12:36:10 -0500
+X-SpamScore: -13
+X-BigFish: VPS-13(zz1447M1432N98dKzz1202hzz8275bhz2ei2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+Date: Fri, 3 Feb 2012 12:36:04 -0500
+From: Chad Dupuis <chad.dupuis@qlogic.com>
+To: Masanari Iida <standby24x7@gmail.com>
+CC: Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Dept-ENG Linux Driver <Linux-Driver@qlogic.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "trivial@kernel.org" <trivial@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [trivial] qla2xxx: Fix typo in qla_bsg.c
+In-Reply-To: <1328274925-1809-1-git-send-email-standby24x7@gmail.com>
+Message-ID: <alpine.WNT.2.00.1202031234580.2256@N5102REMCQXM4BS.qlogic.org>
+References: <1328274925-1809-1-git-send-email-standby24x7@gmail.com>
+User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+X-X-Sender: cdupuis@qlm.qlogic.com
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org> <20120203092823.GE1968@moon> <4F2C1A46.4010105@zytor.com>
-In-Reply-To: <4F2C1A46.4010105@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2012 09:32 AM, H. Peter Anvin wrote:
-> On 02/03/2012 01:28 AM, Cyrill Gorcunov wrote:
->> static __init int kcmp_cookie_init(void)
->> {
->> int i, j;
->>
->> for (i = 0; i< KCMP_TYPES; i++) {
->> for (j = 0; j< 2; j++)
->> get_random_bytes(&cookies[i][j], sizeof(long));
->> cookies[i][1] |= (~(~0UL>> 1) | 1);
->> }
->>
->> return 0;
->> }
->>
->> I thought in first place that sizeof(cookies[i][j]) would allow me
->> to change type of cookies in one place (ie at declaration) but
->> if cookies type will be changed -- the code will need careful review
->> anway, so sizeof(long) will be enough I think.
->>
->> On the other hands, maybe more clean variant will be
->>
->> static __init int kcmp_cookie_init(void)
->> {
->> const int size = sizeof(cookies[0][0]);
->> int i, j;
->>
->> for (i = 0; i< KCMP_TYPES; i++) {
->> for (j = 0; j< 2; j++)
->> get_random_bytes(&cookies[i][j], size);
->> cookies[i][1] |= (~(~0UL>> 1) | 1);
->> }
->>
+
+Looks good. Thanks for the catch.
+
+Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
+
+On Fri, 3 Feb 2012, Masanari Iida wrote:
+
+> Correct spelling "curent" to "current" in
+> drivers/scsi/qla2xxx/qla_bsg.c
 >
-> How about:
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+> drivers/scsi/qla2xxx/qla_bsg.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> const int size = sizeof(cookies[0]);
+> diff --git a/drivers/scsi/qla2xxx/qla_bsg.c b/drivers/scsi/qla2xxx/qla_bsg.c
+> index b1d0f93..a1c6a16 100644
+> --- a/drivers/scsi/qla2xxx/qla_bsg.c
+> +++ b/drivers/scsi/qla2xxx/qla_bsg.c
+> @@ -745,7 +745,7 @@ qla2x00_process_loopback(struct fc_bsg_job *bsg_job)
 >
-> get_random_bytes(&cookies[i], size);
->
-> ... and skip the completely unnecessary for loop?
+>                       if (elreq.options != EXTERNAL_LOOPBACK) {
+>                               ql_dbg(ql_dbg_user, vha, 0x7020,
+> -                                 "Internal: curent port config = %x\n",
+> +                                 "Internal: current port config = %x\n",
+>                                   config[0]);
+>                               if (qla81xx_set_internal_loopback(vha, config,
+>                                       new_config)) {
 >
 
-Even better:
-
-static __init int kcmp_cookie_init(void)
-{
-	int i;
-
-	get_random_bytes(cookies, sizeof cookies);
-
-	for (i = 0; i < KCMP_TYPES; i++)
-		cookies[i][1] |= ~(~0UL >> 1) | 1;
-}
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
