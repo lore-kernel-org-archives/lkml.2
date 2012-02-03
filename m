@@ -1,196 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab2BCIfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 03:35:37 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63074 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab2BCIfg (ORCPT
+	id S1754891Ab2BCIhA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 03:37:00 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33199 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab2BCIg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 03:35:36 -0500
-Date: Fri, 3 Feb 2012 12:35:30 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-Message-ID: <20120203083530.GD1968@moon>
-References: <20120130140905.441199885@openvz.org>
- <20120130141852.309402052@openvz.org>
- <20120203074656.GC30543@elte.hu>
+	Fri, 3 Feb 2012 03:36:58 -0500
+Date: Fri, 3 Feb 2012 00:36:53 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.3-rc2
+Message-ID: <20120203083653.GA24226@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
 Content-Disposition: inline
-In-Reply-To: <20120203074656.GC30543@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 08:46:56AM +0100, Ingo Molnar wrote:
-> 
-> * Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> 
-> > +/* Comparision type */
-> 
-> > + * We don't expose real in-memory order of objects for security
-> > + * reasons, still the comparision results should be suitable for
-> > + * sorting. Thus, we obfuscate kernel pointers values (using random
-> > + * cookies obtaned at early boot stage) and compare the production
-> > + * instead.
-> 
-> > + * 0 - equal
-> > + * 1 - less than
-> > + * 2 - greater than
-> > + * 3 - not equal but ordering unavailable (reserved for future)
-> 
-> Broken spelling in each of those comment blocks. Are these 
-> comments write-only?
 
-No, they are not write-only. I've fixed typos in first comment block,
-though I don't understand what is wrong with 0,1,2,3 comments.
+--zhXaljGHf11kAtnf
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> > +	/*
-> > +	 * Tasks are looked up in caller's
-> > +	 * PID namespace only.
-> > +	 */
-> 
-> Could be a single line.
-> 
+Hi Linus,
 
-Ok, will do so.
+Please pull from:
 
-> > +
-> > +	task1 = find_task_by_vpid(pid1);
-> > +	if (!task1) {
-> > +		rcu_read_unlock();
-> > +		return -ESRCH;
-> > +	}
-> > +
-> > +	task2 = find_task_by_vpid(pid2);
-> > +	if (!task2) {
-> > +		put_task_struct(task1);
-> > +		rcu_read_unlock();
-> > +		return -ESRCH;
-> > +	}
-> 
-> This is not the standard pattern of how we do error paths ...
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-OK, I'll try to make it in standart way.
+to receive updates for the input subsystem.
 
-> 
-> > +	/*
-> > +	 * Note for all cases but the KCMP_FILE we
-> > +	 * don't take any locks in a sake of speed.
-> > +	 */
-> 
-> Spelling.
+You will get a fix for evdev that was recently broken with regard to
+non-blocking reads, a few fixups to drivers, and input properties
+documentation from Henrik.
 
-Not sure what you mean here, but I'll drop this comment
-to eliminate this problem.
+Thanks!
 
-> 
-> > +			get_random_bytes(&cookies[i][j],
-> > +					 sizeof(cookies[i][j]));
-> 
-> ugly line break.
-> 
+Changelog:
+---------
 
-Why? Looks pretty good to me. But sure I'll change it.
+Che-Liang Chiou (1):
+      Input: serio_raw - return proper result when serio_raw_read fails
 
-> > +late_initcall(kcmp_cookie_init);
-> 
-> any particular reason why this needs to be a late initcall?
-> 
+Felipe Contreras (1):
+      Input: twl4030_keypad - fix comment (trivial)
 
-Grr! The late_initcall remained here from versions where I've
-been playing with crypto hashes. Thanks, Ingo, I'll fix!
+Heiko St=FCbner (2):
+      Input: evdev - fix variable initialisation
+      Input: gpio_keys - fix struct device declared inside parameter list
 
-> > +
-> > +clean:
-> > +	$(E) "  CLEAN"
-> > +	$(Q) rm -fr ./run_test
-> > +	$(Q) rm -fr ./test-file
-> 
-> Needs buy-in from the kbuild guys.
+Henrik Rydberg (1):
+      Input: document device properties
 
-I took breakpoint test as example. Maybe I should
-send this test case code as a separate patch?
+Igor Murzov (1):
+      Input: i8042 - add Lenovo Ideapad U455 to 'reset' blacklist
 
-> 
-> > +#ifdef CONFIG_X86_64
-> > +#include <asm/unistd_64.h>
-> > +#else
-> > +#include <asm/unistd_32.h>
-> > +#endif
-> 
-> Why is asm/unistd.h not good?
-> 
 
-With asm/unistd.h it fails to build because it requires the headers
-to be installed first (ie headers_install target) so I though this
-way would be more convenient, no?
+Diffstat:
+--------
 
-> > +static long sys_kcmp(int pid1, int pid2, int type, int fd1, int fd2)
-> > +{
-> > +	return syscall(__NR_kcmp, (long)pid1, (long)pid2,
-> > +		       (long)type, (long)fd1, (long)fd2);
-> > +}
-> 
-> Why is a syscall that takes long arguments defined and called 
-> with int and then cast over to long again?
-> 
+ Documentation/input/event-codes.txt     |   72 +++++++++++++++++++++++++++=
+---
+ drivers/input/evdev.c                   |    2 +-
+ drivers/input/keyboard/twl4030_keypad.c |    4 +-
+ drivers/input/serio/i8042-x86ia64io.h   |    7 +++
+ drivers/input/serio/serio_raw.c         |   15 ++++---
+ include/linux/gpio_keys.h               |    2 +
+ 6 files changed, 84 insertions(+), 18 deletions(-)
 
-Just a habit, the args will be converted to long anyway,
-so I don't see a problem here. Still I can drop them.
+--=20
+Dmitry
 
-> > +		int pid2 = getpid();
-> > +		int ret;
-> > +
-> > +		fd2 = open("test-file", O_RDWR, 0644);
-> > +		if (fd2 < 0) {
-> > +			perror("Can't open file");
-> > +			exit(1);
-> > +		}
-> > +
-> > +		/* An example of output and arguments */
-> > +                printf("pid1: %6d pid2: %6d FD: %2d FILES: %2d VM: %2d FS: %2d "
-> > +		       "SIGHAND: %2d IO: %2d SYSVSEM: %2d INV: %2d\n",
-> 
-> Visibly stray whitespaces.
-> 
-> > +		/* This one should return same fd */
-> > +		ret = sys_kcmp(pid1, pid2, KCMP_FILE, fd1, fd1);
-> > +		if (ret) {
-> > +			printf("FAIL: 0 expected but %d returned\n", ret);
-> > +			ret = -1;
-> > +		} else
-> > +			printf("PASS: 0 returned as expected\n");
-> > +		exit(ret);
-> 
-> this is main(), what's wrong with the standard pattern of return 
-> ret?
-> 
+--zhXaljGHf11kAtnf
+Content-Type: application/pgp-signature
 
-It's fork'ed children.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> I don't know whether this code is correct, but the high amount 
-> of basic cleanliness problems makes me worry about that.
-> 
+iQIcBAEBAgAGBQJPK5ylAAoJEH70+W8r6ZYq2xoQAKntRzcJjdsNcNbYypmNbxAW
+Y5kcNstYNs04jbeO05xUt7gSSR/dV2QylMg5IxIQDsFLKOsR8NCEqz47ftqYgjLX
+5RyZbWvunadcjag4qTH1nYfn33tqAr0XcKaVNqsiIux2Ib+qasVAjHBPnV9iwpiB
+dGkfRnWqd8ZiQ4dtn/dZ81xH6OBS7j2vOC4Hihq/SwJvBXR0M0k/oyuP9IAAtWNx
+bMGwzNqbLhJw9oOMMLZq5DqW6zHfOIZMjx0mGSIhKIiWgTu8eUTMGQ1CGS1SQ8dk
+ON548oGDM1eqivc6A7SJr0l/IR4res05TojC4C2/L/3ZU1VepISn+b+lFldAKxai
+aNTZrmSEK0XQ/2LsBF/WDJfjZP1LjIc2t7g1xFEj1G1hJLO9WX7/p7BcBEkPhbXD
+Ml/YchNw6H2SKDlTGm2ABEztq+ioszLUHMnk6kwboZ/6cO0Hb+mnUjb/vEQfUv7K
+CacA3X1uUv+uStcl96T7TIQ9PKxpDHPk9hmJA4aZPfM9xTE3+ToOjM89C+H2V17X
+AvIiAFmxUIxQw9eUPLG6+Fw8hQpSBzrvBJhdKxs/UrhOiBVjPCWAsUC+cglZE2UN
+CesDk8t/x2IimxiYCbZCuKiBQTCc3cwDpkI1bYfBkXxKH+Aa7KHzwk+j+0mQSsI2
+Qs7FqKS/AhpTbaaobxio
+=4yyY
+-----END PGP SIGNATURE-----
 
-Code is correct. I'll clean up the nits you pointed.
-
-	Cyrill
+--zhXaljGHf11kAtnf--
