@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab2BCWXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 17:23:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43716 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab2BCWXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 17:23:34 -0500
-Date: Fri, 3 Feb 2012 17:23:29 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+	id S1758052Ab2BCWYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 17:24:08 -0500
+Received: from lunge.queued.net ([173.255.254.236]:46151 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758032Ab2BCWXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 17:23:46 -0500
+Date: Fri, 3 Feb 2012 14:15:20 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED 11/11] blkcg: unify blkg's for blkcg policies
-Message-ID: <20120203222329.GG9683@redhat.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
- <1328131156-13290-12-git-send-email-tj@kernel.org>
- <20120202003730.GC19837@google.com>
- <20120203194105.GA12616@redhat.com>
- <20120203205910.GB14209@google.com>
- <20120203214435.GC12616@redhat.com>
- <20120203214719.GE14209@google.com>
- <20120203215349.GF9683@redhat.com>
- <20120203221409.GF14209@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203221409.GF14209@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH] of: add some debugging statements if initrd isn't found
+Message-ID: <20120203141520.4900a23b@debxo>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 02:14:09PM -0800, Tejun Heo wrote:
-> On Fri, Feb 03, 2012 at 04:53:49PM -0500, Vivek Goyal wrote:
-> > Hmm... then blkiocg_reset_stats() will run into lock ordering issue. Can't
-> > hold queue lock inside blkcg lock. I guess you will do some kind of
-> > locking trick again as you did for io context logic.
-> 
-> Ummm... I don't know the details yet but decisions like making
-> policies per-queue are much higher level than locking details.  There
-> are cases where implementation details become problematic enough and
-> high level decisions are affected but I don't really think that would
-> be the case here.  It's not like reset stats is a hot path.  In fact,
-> I don't even understand why the hell we have it.  I guess it's another
-> blkcg braindamage.
 
-git commit of when it was added.
+While debugging initrd problems in a FDT blob, it's nice to both terminate
+the "Looking for initrd properties... " with a newline, as well as letting us
+know which property wasn't found.
 
-commit 84c124da9ff50bd71fab9c939ee5b7cd8bef2bd9
-Author: Divyesh Shah <dpshah@google.com>
-Date:   Fri Apr 9 08:31:19 2010 +0200
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/of/fdt.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-..
-o add a separate reset_stats interface
-..
-
-> 
-> If userland is interested in delta between certain periods, it's
-> supposed to read values at the start and end of the period and
-> subtract.  Allowing reset might make sense if there's single bearded
-> admin looking at the raw numbers, but it breaks as soon as tools and
-> automation are involved.  How would you decide who owns those
-> counters?
-> 
-
-Personally I consider it to be a debugging aid. User space applications
-should do what you suggested and that is take delta between certain
-periods.
-
-Frankly speaking I have found it useful though. If I am debugging something,
-I don't have to reboot the system to reset the stats and calculating the
-difference from zero is easier for humans.
-
-Thanks
-Vivek
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index ea2bd1b..92234f7 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -561,13 +561,17 @@ void __init early_init_dt_check_for_initrd(unsigned long node)
+ 	pr_debug("Looking for initrd properties... ");
+ 
+ 	prop = of_get_flat_dt_prop(node, "linux,initrd-start", &len);
+-	if (!prop)
++	if (!prop) {
++		pr_debug("couldn't find linux,initrd-start\n");
+ 		return;
++	}
+ 	start = of_read_ulong(prop, len/4);
+ 
+ 	prop = of_get_flat_dt_prop(node, "linux,initrd-end", &len);
+-	if (!prop)
++	if (!prop) {
++		pr_debug("couldn't find linux,initrd-end\n");
+ 		return;
++	}
+ 	end = of_read_ulong(prop, len/4);
+ 
+ 	early_init_dt_setup_initrd_arch(start, end);
+-- 
+1.7.2.5
