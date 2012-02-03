@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab2BCTo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 14:44:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49390 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab2BCToZ (ORCPT
+	id S1755831Ab2BCTqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 14:46:21 -0500
+Received: from mail.windriver.com ([147.11.1.11]:50517 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126Ab2BCTqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 14:44:25 -0500
-Date: Fri, 3 Feb 2012 11:44:14 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Corey Minyard <cminyard@mvista.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
-Subject: Re: [PATCH 3/6] ipmi: use a tasklet for handling received messages
-Message-Id: <20120203114414.0f9ae99a.akpm@linux-foundation.org>
-In-Reply-To: <1328284079-5489-3-git-send-email-cminyard@mvista.com>
-References: <1328284079-5489-1-git-send-email-cminyard@mvista.com>
-	<1328284079-5489-3-git-send-email-cminyard@mvista.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Feb 2012 14:46:20 -0500
+Date: Fri, 3 Feb 2012 14:46:09 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
+        Stephen Warren <swarren@nvidia.com>, <linux-serial@vger.kernel.org>
+Subject: Re: [Patch] tty: fix a build failure on sparc
+Message-ID: <20120203194608.GA23948@windriver.com>
+References: <1328246540-5824-1-git-send-email-xiyou.wangcong@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1328246540-5824-1-git-send-email-xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24)
+ Gecko/20111109 Thunderbird/3.1.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 Feb 2012 09:47:56 -0600
-Corey Minyard <cminyard@mvista.com> wrote:
+[Resending with updated address for Greg]
 
-> The IPMI driver would release a lock, deliver a message, then relock.
-> This is obviously ugly, and this patch converts the message handler
-> interface to use a tasklet to schedule work.  This lets the receive
-> handler be called from an interrupt handler with interrupts enabled.
+On 12-02-03 12:22 AM, Cong Wang wrote:
+> On sparc, there is a build failure:
 > 
-> ...
->
-> +/*
-> + * If there are messages in the queue or pretimeouts, handle them.
-> + */
-> +static void handle_new_recv_msgs(ipmi_smi_t intf)
-> +{
-> +	struct ipmi_smi_msg  *smi_msg;
-> +	unsigned long        flags = 0;
-> +	int                  rv;
-> +	int                  run_to_completion = intf->run_to_completion;
-> +
-> +	/* See if any waiting messages need to be processed. */
-> +	if (!run_to_completion)
-> +		spin_lock_irqsave(&intf->waiting_msgs_lock, flags);
-> +	while (!list_empty(&intf->waiting_msgs)) {
-> +		smi_msg = list_entry(intf->waiting_msgs.next,
-> +				     struct ipmi_smi_msg, link);
-> +		list_del(&smi_msg->link);
-> +		if (!run_to_completion)
-> +			spin_unlock_irqrestore(&intf->waiting_msgs_lock, flags);
+> drivers/tty/serial/8250/8250.c:48:21: error: suncore.h: No such file or directory
+> drivers/tty/serial/8250/8250.c:3275: error: implicit declaration of function 'sunserial_register_minors'
+> drivers/tty/serial/8250/8250.c:3305: error: implicit declaration of function 'sunserial_unregister_minors'
+> 
+> this is due to commit 9bef3d4197379a995fa80f81950bbbf8d32e9e8b
+> (serial: group all the 8250 related code together) moved these files
+> into 8250/ subdirectory, but forgot to change the reference
+> to drivers/tty/serial/suncore.h.
 
-Yikes, what's going on here?  How is the list protected if the spinlock
-isn't taken?
+Thanks, I explicitly left sunsu out of the move but missed
+that 8250 was sourcing its related header.  I did defconfig
+builds, but in going back to check, I see that neither sparc
+32/64 defconfig enable 8250 by default, so those builds didn't
+help me much at all...  :(
 
-I went to the comment over ipmi_smi.run_to_completion but it doesn't
-explain how it governs the locking strategy at all.  If there's some
-other way in which the reader is supposed to grok IPMI locking, please
-clue me in ;)
+Acked-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
->
-> ...
->
+> 
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+> 
+> ---
+> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+> index 9f50c4e..9b7336f 100644
+> --- a/drivers/tty/serial/8250/8250.c
+> +++ b/drivers/tty/serial/8250/8250.c
+> @@ -45,7 +45,7 @@
+>  #include "8250.h"
+>  
+>  #ifdef CONFIG_SPARC
+> -#include "suncore.h"
+> +#include "../suncore.h"
+>  #endif
+>  
+>  /*
