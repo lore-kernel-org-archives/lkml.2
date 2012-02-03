@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab2BCVxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 16:53:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757950Ab2BCVxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 16:53:53 -0500
-Date: Fri, 3 Feb 2012 16:53:49 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED 11/11] blkcg: unify blkg's for blkcg policies
-Message-ID: <20120203215349.GF9683@redhat.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
- <1328131156-13290-12-git-send-email-tj@kernel.org>
- <20120202003730.GC19837@google.com>
- <20120203194105.GA12616@redhat.com>
- <20120203205910.GB14209@google.com>
- <20120203214435.GC12616@redhat.com>
- <20120203214719.GE14209@google.com>
+	id S1755672Ab2BCWFR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 17:05:17 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51814 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab2BCWFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 17:05:16 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=4xDcOe4IjvRdPVVETi+CqA==:17 a=TRgVYD6ZyiEA:10 a=JPAMeckE3gIA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=Br9LfDWDAAAA:8 a=yQdBAQUQAAAA:8 a=ENDg0BzhAAAA:8 a=0kfPXhj2sIOgl_UdjV0A:9 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=4xDcOe4IjvRdPVVETi+CqA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 75.81.36.228
+Date: Fri, 03 Feb 2012 16:05:13 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: r8712u: Fix problem when CONFIG_R8712_AP is set
+Message-ID: <4f2c5a19.QjadJQo4AjFmGNIm%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203214719.GE14209@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 01:47:19PM -0800, Tejun Heo wrote:
-> On Fri, Feb 03, 2012 at 04:44:35PM -0500, Vivek Goyal wrote:
-> > Ok, looks like now it is needed because blkcg lock will just gurantee that
-> > blkg is around but blkg->pd[plid] can disappear if you are not holding
-> > blkio_list lock (update_root_blkgs).
-> > 
-> > I am wondering if we should take blkcg->lock if blkg is on blkcg list and
-> > is being modified in place. That way, once we are switching elevator,
-> > we should be able to shoot down the policy data without taking blkio_list
-> > lock.
-> 
-> I think it gotta become something per-queue, not global, and if we
-> make it per-queue, it should be able to live inside queue_lock.
+When this driver was upgraded to the vendor 20100831 version in
+commit 93c55dda092c7 et al,, one listhead initialization was missed.
+This broke complete operation of the driver whenever AP mode was
+enabled.
 
-Hmm... then blkiocg_reset_stats() will run into lock ordering issue. Can't
-hold queue lock inside blkcg lock. I guess you will do some kind of
-locking trick again as you did for io context logic.
+This patch fixes https://bugs.archlinux.org/task/27996.
 
-Thanks
-Vivek
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Stable <stable@vger.stable.org>
+---
+
+Index: staging/drivers/staging/rtl8712/rtl871x_sta_mgt.c
+===================================================================
+--- staging.orig/drivers/staging/rtl8712/rtl871x_sta_mgt.c
++++ staging/drivers/staging/rtl8712/rtl871x_sta_mgt.c
+@@ -43,6 +43,7 @@ static void _init_stainfo(struct sta_inf
+ 	_r8712_init_sta_xmit_priv(&psta->sta_xmitpriv);
+ 	_r8712_init_sta_recv_priv(&psta->sta_recvpriv);
+ #ifdef CONFIG_R8712_AP
++	_init_listhead(&psta->asoc_list);
+ 	_init_listhead(&psta->auth_list);
+ #endif
+ }
