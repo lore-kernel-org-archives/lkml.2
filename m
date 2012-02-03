@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab2BCCyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 21:54:45 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46883 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab2BCCyo (ORCPT
+	id S1755838Ab2BCDEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 22:04:07 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:18175 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157Ab2BCDEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 21:54:44 -0500
-Date: Fri, 3 Feb 2012 13:54:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: linux-next: build failure after merge of the gpio tree
-Message-Id: <20120203135432.e9ab5f0d41805bff0df10333@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__3_Feb_2012_13_54_32_+1100_9veh/wvfeF/W.YA4"
+	Thu, 2 Feb 2012 22:04:05 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Thu, 02 Feb 2012 22:04:04 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
+In-reply-to: <4F2B4873.5030808@codeaurora.org>
+Message-id: <alpine.LFD.2.02.1202022202470.2759@xanadu.home>
+References: <1328234629-32735-1-git-send-email-sboyd@codeaurora.org>
+ <alpine.LFD.2.02.1202022110080.2759@xanadu.home>
+ <4F2B4873.5030808@codeaurora.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__3_Feb_2012_13_54_32_+1100_9veh/wvfeF/W.YA4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2 Feb 2012, Stephen Boyd wrote:
 
-Hi Grant,
+> On 02/02/12 18:35, Nicolas Pitre wrote:
+> > On Thu, 2 Feb 2012, Stephen Boyd wrote:
+> >> On 02/02/12 17:18, Nicolas Pitre wrote:
+> >>> If you simply disable/restore IRQs around the critical region then you 
+> >>> don't have to worry about __v7_setup.  Plus this will allow for 
+> >>> v7_flush_dcache_all to still be callable from atomic context.
+> >> Ok. Here's a patch. I still need to test it. I'll send another patch
+> >> series to cleanup the get_thread_info stuff (there's two of them?).
+> >>
+> >>  arch/arm/mm/cache-v7.S |    6 ++++++
+> >>  1 files changed, 6 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/arch/arm/mm/cache-v7.S b/arch/arm/mm/cache-v7.S
+> >> index 07c4bc8..654a5fc 100644
+> >> --- a/arch/arm/mm/cache-v7.S
+> >> +++ b/arch/arm/mm/cache-v7.S
+> >> @@ -54,9 +54,15 @@ loop1:
+> >>  	and	r1, r1, #7			@ mask of the bits for current cache only
+> >>  	cmp	r1, #2				@ see what cache we have at this level
+> >>  	blt	skip				@ skip if no cache, or just i-cache
+> >> +#ifdef CONFIG_PREEMPT
+> >> +	save_and_disable_irqs r9		@ make cssr&csidr read atomic
+> >> +#endif
+> >>  	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+> >>  	isb					@ isb to sych the new cssr&csidr
+> >>  	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
+> >> +#ifdef CONFIG_PREEMPT
+> >> +	restore_irqs r9
+> >> +#endif
+> > I'd suggest using restore_irqs_notrace instead.  The IRQ-off period is 
+> > so small that there is no point tracing it.
+> 
+> Thanks. I'll make sure to do that before uploading to the patch tracker.
 
-After merging the gpio tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Might be worth flagging this for the stable kernels as well
+(CC: stable@kernel.org).
 
-drivers/i2c/busses/i2c-gpio.c:18:22: fatal error: asm/gpio.h: No such file =
-or directory
-drivers/input/mouse/gpio_mouse.c:17:22: fatal error: asm/gpio.h: No such fi=
-le or directory
-drivers/leds/leds-gpio.c:23:22: fatal error: asm/gpio.h: No such file or di=
-rectory
 
-Caused by commit 4f79dfb562c2 ("gpiolib/arches: Centralise bolierplate
-asm/gpio.h").  Grep is your friend ...
-
-I have used the gpio tree from next-20120202 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__3_Feb_2012_13_54_32_+1100_9veh/wvfeF/W.YA4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPK0xoAAoJEECxmPOUX5FExMoQAICXLqtAXY7mLUb5ZLsKOs94
-bSUJH0Nv7e8Qy2mG1pqqOEuUvu/7ajg60qOEI3+8cCLVEKZOvbNkelaNtEhmayN2
-v9fOtysXASnXmyZTaKNuNgBUI8c5ZJuHwMbNK3q80nW3mSUDHMVtJ/nq41lt+yKX
-KaBZo1z1FeTUQBmlWLMtBpVjOFCqEh0KfIEK2FLm4leiy0BrU762nJtjYpmWahWn
-u25+A5LIKejKL3/fjJydjYaO7M4KhMenF+cgGa6kfC+VrVZO2TjEXEbxG++TJVA8
-WFek74FTE0HjSh25phRRw6fTOYbIpqqDzkS01j0fEz1u7tKKMd6Th2yR2A4BPIBp
-aG2qxIEOwp8xWYkij/7Onqx8wfEO7015ORtgiuM/cdkb/HuSSB0A6+Beuh+i01bn
-EFnAMy406oAHxZ/vPfiedaqBsRvD+wr4KA02roc77N/TNGcioMZKuTfWrjS5FCxO
-P3Ao8FD7/lrftuVMfm5kloXj/358agucrjdsA0134KHmO61XHwYoHZNZKcaxlxk7
-EsxgmQf4OcW6BFj9Dv6Iu5sz8C1CYzRsBX451bu2OlagYTyhkZLHOtJ3iTJRR+5W
-79vaqZER/0v+wG13Z7krCXswpqgoOWKFA3LIvLxigb+ojwXjbI8tgVd9L59frwoE
-djAyH7ujfUhbsvFoiuCX
-=xVKh
------END PGP SIGNATURE-----
-
---Signature=_Fri__3_Feb_2012_13_54_32_+1100_9veh/wvfeF/W.YA4--
+Nicolas
