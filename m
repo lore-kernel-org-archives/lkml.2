@@ -1,137 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab2BCTRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 14:17:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43574 "EHLO mx1.redhat.com"
+	id S1754813Ab2BCTSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 14:18:09 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47526 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754063Ab2BCTRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 14:17:35 -0500
-Message-ID: <4F2C329B.2080107@redhat.com>
-Date: Fri, 03 Feb 2012 14:16:43 -0500
-From: Andrew MacLeod <amacleod@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Thunderbird/3.1.10
+	id S1754063Ab2BCTSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 14:18:07 -0500
+Date: Fri, 3 Feb 2012 20:18:01 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Nick Bowler <nbowler@elliptictech.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kevin Winchester <kjwinchester@gmail.com>
+Subject: MCE, AMD: Hide smp-only code around CONFIG_SMP
+Message-ID: <20120203191801.GA2846@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Nick Bowler <nbowler@elliptictech.com>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Kevin Winchester <kjwinchester@gmail.com>
+References: <1328209817-18913-1-git-send-email-bp@alien8.de>
+ <20120202193702.GA9502@elliptictech.com>
+ <20120202202427.GA2234@x1.osrc.amd.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: paulmck@linux.vnet.ibm.com, Torvald Riegel <triegel@redhat.com>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
-        rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Re: Memory corruption due to word sharing
-References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com> <1328118174.15992.6206.camel@triegel.csb> <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com> <1328128874.15992.6430.camel@triegel.csb> <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com> <20120201224554.GK2382@linux.vnet.ibm.com> <CA+55aFyzYO0CMZOgdrVV0PdG2DkbwTQG7eE7N3bp=0tQmruFEQ@mail.gmail.com> <20120202184209.GD2518@linux.vnet.ibm.com> <CA+55aFyYxzED4OoYvb3nbET7_zyP5mGhEa2w_QCvQOx55bVjHg@mail.gmail.com> <20120202193747.GG2518@linux.vnet.ibm.com> <4F2C0D8A.70103@redhat.com> <CA+55aFx1NjR9XMQ9iLyVk05Erwtqgf7hfZkBCMJzkCMFJS8CHw@mail.gmail.com>
-In-Reply-To: <CA+55aFx1NjR9XMQ9iLyVk05Erwtqgf7hfZkBCMJzkCMFJS8CHw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120202202427.GA2234@x1.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2012 12:16 PM, Linus Torvalds wrote:
->
-> So we have several atomics we use in the kernel, with the more common being
->
->   - add (and subtract) and cmpchg of both 'int' and 'long'
-This would be __atomic_fetch_add, __atomic_fetch_sub, and 
-__atomic_compare_exchange.
+On Thu, Feb 02, 2012 at 09:24:28PM +0100, Borislav Petkov wrote:
+> > Is this feature truly irrelevant on UP systems?  I ask because I've
+> > always enabled this option on my UP AMD systems in the past...
+> 
+> No, you're right. Thanks for the suggestion. Scratch that version, I'll
+> think of a better fix.
 
-For 4.8 __atomic_compare_exchange is planned to be better optimized then 
-it is now...  ie, it currently uses the same form as c++ requires:
+Ok, I think I got it, pls take a look and scream if something's amiss.
 
-  atomic_compare_exchange (&var, &expected, value, weak/strong, 
-memorymodel).
+@Randy: it builds fine with your randconfig and with mine default one;
+I'd appreciate if you could run it too, just in case.
 
-'expected' is updated in place with the current value if it doesn't 
-match.  With the address of expected taken, we dont always do a good job 
-generating code for it... I plan to remedy that in 4.8 so that it is 
-efficient and doesn't impact optimization of 'expected' elsewhere.
->   - add_return (add and return new value)
-__atomic_add_fetch returns the new value. (__atomic_fetch_add returns 
-the old value).   If it isn't as efficient as it needs to be, the RTL 
-pattern can be fixed.    what sequence do you currently use for this?  
-The compiler currently generates the equivilent of
+Thanks.
 
-lock; xadd
-add
+--
+From: Borislav Petkov <bp@alien8.de>
+Date: Fri, 3 Feb 2012 18:07:54 +0100
+Subject: [PATCH] MCE, AMD: Hide smp-only code around CONFIG_SMP
 
-ie, it performs the atomic add then re-adds the same value to the 
-previous value to get the atomic post-add value.  If there is something 
-more efficient, we ought to be able to do the same.
->   - special cases of the above:
->        dec_and_test (decrement and test result for zero)
->        inc_and_test (decrement and test result for zero)
->        add_negative (add and check if result is negative)
->
->     The special cases are because older x86 cannot do the generic
-> "add_return" efficiently - it needs xadd - but can do atomic versions
-> that test the end result and give zero or sign information.
-Since these are older x86 only, could you use add_return() always and 
-then have the compiler use new peephole optimizations to detect those 
-usage patterns and change the instruction sequence for x86 when 
-required?  would that be acceptable?    Or maybe you don't trust the 
-compiler :-)   Or maybe I can innocently ask if the performance impact 
-on older x86 matters enough any more? :-)
->   - atomic_add_unless() - basically an optimized cmpxchg.
+141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
+'struct cpuinfo_x86'") removed a bunch of CONFIG_SMP ifdefs around code
+touching struct cpuinfo_x86 members but also caused the following build
+error with Randy's randconfigs:
 
-is this the reverse of a compare_exchange and add?  Ie, add if the value 
-ISN'T expected?   or some form of compare_exchange_and_add?    This 
-might require a new atomic builltin.
+mce_amd.c:(.cpuinit.text+0x4723): undefined reference to `cpu_llc_shared_map'
 
-What exactly does it do?
+Restore the #ifdef in threshold_create_bank() which creates symlinks on
+the non-BSP CPUs.
 
->   - atomic bit array operations (bit set, clear, set-and-test,
-> clear-and-test). We do them on "unsigned long" exclusively, and in
-> fact we do them on arrays of unsigned long, ie we have the whole "bts
-> reg,mem" semantics. I'm not sure we really care about the atomic
-> versions for the arrays, so it's possible we only really care about a
-> single long.
->
->     The only complication with the bit setting is that we have a
-> concept of "set/clear bit with memory barrier before or after the bit"
-> (for locking). We don't do the whole release/acquire thing, though.
-Are these functions wrappers to a  tight load, mask, cmpxchg loop? or 
-something else?  These could also require new built-ins if they can't be 
-constructed from the existing operations...
->
->   - compare_xchg_double
->
-> We also do byte/word atomic increments and decrements, but that' sin
-> the x86 spinlock implementation, so it's not a generic need.
-The existing __atomic builtins will work on 1,2,4,8 or 16 byte values 
-regardless of type, as long as the hardware supports those sizes.  so 
-x86-64 can do a 16 byte cmpxchg.
+Cc: Kevin Winchester <kjwinchester@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Link: http://lkml.kernel.org/r/4F298A6C.6010101@xenotime.net
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-In theory, the add_fetch and sub_fetch are suppose to use INC/DEC if the 
-operand is 1/-1 and the result isn't used.  If it isnt doing this right 
-now, I will fix it.
-> We also do the add version in particular as CPU-local optimizations
-> that do not need to be SMP-safe, but do need to be interrupt-safe. On
-> x86, this is just an r-m-w op, on most other architectures it ends up
-> being the usual load-locked/store-conditional.
->
-It may be possible to add modifier extensions to the memory model 
-component for such a thing. ie
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index 786e76a..e4eeaaf 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -528,6 +528,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 
+ 	sprintf(name, "threshold_bank%i", bank);
+ 
++#ifdef CONFIG_SMP
+ 	if (cpu_data(cpu).cpu_core_id && shared_bank[bank]) {	/* symlink */
+ 		i = cpumask_first(cpu_llc_shared_mask(cpu));
+ 
+@@ -553,6 +554,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 
+ 		goto out;
+ 	}
++#endif
+ 
+ 	b = kzalloc(sizeof(struct threshold_bank), GFP_KERNEL);
+ 	if (!b) {
+-- 
+1.7.9
 
-v = __atomic_add_fetch (&v, __ATOMIC_RELAXED | __ATOMIC_CPU_LOCAL)
 
-which will allow fine tuning for something more specific like this. 
-Targets which dont care can ignore it, but x86 could have atomic_add  
-avoid the lock when the CPU_LOCAL modifier flag is present.
-
-> I think that's pretty much it, but maybe I'm missing something.
->
-> Of course, locking itself tends to be special cases of the above with
-> extra memory barriers, but it's usually hidden in asm for other
-> reasons (the bit-op + barrier being a special case).
-
-All of the __atomic operations are currently optimization barriers in 
-both directions, the optimizers tend to treat them like function calls.  
-I hope to enable some sorts of optimizations eventually, especially 
-based on memory model... but for now we play it safe.
-
-Synchronization barriers are inserted based on the memory model used.  
-If it can be determined that something additional is required that the 
-existing memory model doesn't cover, it could be possible to add 
-extensions beyond the c++11 memory model.. ( ie add new 
-__ATOMIC_OTHER_BARRIER_KIND models)
-
-Andrew
-
+-- 
+Regards/Gruss,
+Boris.
