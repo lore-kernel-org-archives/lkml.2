@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab2BCTno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 14:43:44 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:45179 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab2BCTnn (ORCPT
+	id S1755777Ab2BCTo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 14:44:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49390 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754711Ab2BCToZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 14:43:43 -0500
-From: <messaging.hpitsecurity@hp.com>
-To: <josh@joshtriplett.org>
-CC: <linux-kernel@vger.kernel.org>, <mingo@elte.hu>, <laijs@cn.fujitsu.com>,
-        <dipankar@in.ibm.com>, <akpm@linux-foundation.org>,
-        <mathieu.desnoyers@polymtl.ca>, <niv@us.ibm.com>, <tglx@linutronix.de>,
-        <peterz@infradead.org>, <rostedt@goodmis.org>,
-        <Valdis.Kletnieks@vt.edu>, <dhowells@redhat>
-Subject: Microsoft Forefront Server Security forwarded attachment
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="ANTIGEN-11102-8270-22297-6996-22651-30830"
-Message-ID: <42e75edb-94d7-4339-beb6-5fc6d559f6e2@G1W0403.americas.hpqcorp.net>
-Date: Fri, 3 Feb 2012 19:42:46 +0000
+	Fri, 3 Feb 2012 14:44:25 -0500
+Date: Fri, 3 Feb 2012 11:44:14 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
+Subject: Re: [PATCH 3/6] ipmi: use a tasklet for handling received messages
+Message-Id: <20120203114414.0f9ae99a.akpm@linux-foundation.org>
+In-Reply-To: <1328284079-5489-3-git-send-email-cminyard@mvista.com>
+References: <1328284079-5489-1-git-send-email-cminyard@mvista.com>
+	<1328284079-5489-3-git-send-email-cminyard@mvista.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ANTIGEN-11102-8270-22297-6996-22651-30830
-Content-Type: text/plain; charset="utf-7"
-Content-Transfer-Encoding: quoted-printable
+On Fri, 03 Feb 2012 09:47:56 -0600
+Corey Minyard <cminyard@mvista.com> wrote:
 
+> The IPMI driver would release a lock, deliver a message, then relock.
+> This is obviously ugly, and this patch converts the message handler
+> interface to use a tasklet to schedule work.  This lets the receive
+> handler be called from an interrupt handler with interrupts enabled.
+> 
+> ...
+>
+> +/*
+> + * If there are messages in the queue or pretimeouts, handle them.
+> + */
+> +static void handle_new_recv_msgs(ipmi_smi_t intf)
+> +{
+> +	struct ipmi_smi_msg  *smi_msg;
+> +	unsigned long        flags = 0;
+> +	int                  rv;
+> +	int                  run_to_completion = intf->run_to_completion;
+> +
+> +	/* See if any waiting messages need to be processed. */
+> +	if (!run_to_completion)
+> +		spin_lock_irqsave(&intf->waiting_msgs_lock, flags);
+> +	while (!list_empty(&intf->waiting_msgs)) {
+> +		smi_msg = list_entry(intf->waiting_msgs.next,
+> +				     struct ipmi_smi_msg, link);
+> +		list_del(&smi_msg->link);
+> +		if (!run_to_completion)
+> +			spin_unlock_irqrestore(&intf->waiting_msgs_lock, flags);
 
-The body from the message +ACI-Re: +AFs-PATCH RFC tip/core/rcu 14/41+AF0- rcu: Limit lazy-callback duration+ACI-, originally sent to you by linux-kernel-owner+AEA-vger.kernel.org (linux-kernel-owner+AEA-vger.kernel.org), has been forwarded to you from the Microsoft Forefront Server Security Quarantine area.
-This message body may have been re-scanned by Microsoft Forefront Server Security and handled according to the appropriate scan job's settings.
+Yikes, what's going on here?  How is the list protected if the spinlock
+isn't taken?
 
+I went to the comment over ipmi_smi.run_to_completion but it doesn't
+explain how it governs the locking strategy at all.  If there's some
+other way in which the reader is supposed to grok IPMI locking, please
+clue me in ;)
 
-
-
-<<Body of Message>>
-
---ANTIGEN-11102-8270-22297-6996-22651-30830
-Content-Type: application/octet-stream
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Body of Message"
-
-T24gVGh1LCBGZWIgMDIsIDIwMTIgYXQgMDg6MDc6NTFQTSAtMDgwMCwgSm9zaCBUcmlwbGV0dCB3
-cm90ZToNCj4gT24gVGh1LCBGZWIgMDIsIDIwMTIgYXQgMDk6MTM6NDJBTSAtMDgwMCwgUGF1bCBF
-LiBNY0tlbm5leSB3cm90ZToNCj4gPiBPbiBXZWQsIEZlYiAwMSwgMjAxMiBhdCAwNjowMzo1NlBN
-IC0wODAwLCBKb3NoIFRyaXBsZXR0IHdyb3RlOg0KPiA+ID4gT24gV2VkLCBGZWIgMDEsIDIwMTIg
-YXQgMTE6NDE6MzJBTSAtMDgwMCwgUGF1bCBFLiBNY0tlbm5leSB3cm90ZToNCj4gPiA+ID4gQ3Vy
-cmVudGx5LCBhIGdpdmVuIENQVSBpcyBwZXJtaXR0ZWQgdG8gcmVtYWluIGluIGR5bnRpY2staWRs
-ZSBtb2RlDQo+ID4gPiA+IGluZGVmaW5pdGVseSBpZiBpdCBoYXMgb25seSBsYXp5IFJDVSBjYWxs
-YmFja3MgcXVldWVkLiAgVGhpcyBpcyB2dWxuZXJhYmxlDQo+ID4gPiA+IHRvIGNvcm5lciBjYXNl
-cyBpbiBOVU1BIHN5c3RlbXMsIHNvIGxpbWl0IHRoZSB0aW1lIHRvIHNpeCBzZWNvbmRzIGJ5DQo+
-ID4gPiA+IGRlZmF1bHQuICAoQ3VycmVudGx5IGNvbnRyb2xsZWQgYnkgYSBjcHAgbWFjcm8uKQ0K
-PiA+ID4gDQo+ID4gPiBJIHdvbmRlcjogc2hvdWxkIHRoaXMgc2NhbGUgd2l0aCB0aGUgbnVtYmVy
-IG9mIGNhbGxiYWNrcywgb3IgZG8gd2Ugbm90DQo+ID4gPiB3YW50IHRvIG1ha2UgZXN0aW1hdGVz
-IGFib3V0IG1lbW9yeSB1c2FnZSBiYXNlZCBvbiB0aGF0Pw0KPiA+IA0KPiA+IEludGVyZXN0aW5n
-LiAgV2hpY2ggd2F5IHdvdWxkIHlvdSBzY2FsZSBpdD8gIDstKQ0KPiANCj4gSGVoLCBJJ2QgZmln
-dXJlZCAiZG9uJ3Qgd2FpdCB0b28gbG9uZyBpZiB5b3UgaGF2ZSBhIGdpYW50IHBpbGUgb2YNCj4g
-Y2FsbGJhY2tzIiwgYnV0IEkgY2FuIHNlZSBob3cgdGhlIG90aGVyIGRpcmVjdGlvbiBjb3VsZCBt
-YWtlIHNlbnNlIGFzDQo+IHdlbGwuIDopDQoNCjstKQ0KDQo+ID4gPiBJbnRlcmVzdGluZ2x5LCB3
-aXRoIGtmcmVlX3JjdSwgd2UgYWN0dWFsbHkga25vdyBhdCBjYWxsYmFjayBxdWV1aW5nIHRpbWUN
-Cj4gPiA+ICpleGFjdGx5KiBob3cgbXVjaCBtZW1vcnkgd2UnbGwgZ2V0IGJhY2sgYnkgY2FsbGlu
-ZyB0aGUgY2FsbGJhY2ssIGFuZCB3ZQ0KPiA+ID4gY291bGQgc3VtIHVwIHRob3NlIG51bWJlcnMu
-DQo+ID4gDQo+ID4gV2UgY2FuIGluZGVlZCBjYWxjdWxhdGUgZm9yIGtmcmVlX3JjdSgpLCBidXQg
-d2Ugd29uJ3QgYmUgYWJsZSB0byBmb3INCj4gPiBjYWxsX3JjdV9sYXp5KCksIHdoaWNoIGlzIG15
-IGN1cnJlbnQgYXBwcm9hY2ggZm9yIGNhc2VzIHdoZXJlIHlvdSBjYW5ub3QNCj4gPiB1c2Uga2Zy
-ZWVfcmN1KCkgZHVlIHRvIChmb3IgZXhhbXBsZSkgZnJlZWluZyB1cCBhIGxpbmtlZCBzdHJ1Y3R1
-cmUuDQo+ID4gQSB2ZXJ5IGxhcmdlIGZyYWN0aW9uIG9mIHRoZSBjYWxsX3JjdSgpcyBpbiB0aGUg
-a2VybmVsIGNvdWxkIGJlY29tZQ0KPiA+IGNhbGxfcmN1X2xhenkoKS4NCj4gDQo+IFNvLCBkb2lu
-ZyBhbnl0aGluZyBvdGhlciB0aGFuIGZyZWVpbmcgbWVtb3J5IG1ha2VzIGEgY2FsbGJhY2sgbm9u
-LWxhenk/DQo+IEJhc2VkIG9uIHRoYXQsIEknZCBmaW5kIGl0IGF0IGxlYXN0IHNvbWV3aGF0IHN1
-cnByaXNpbmcgaWYgYW55IG9mIHRoZQ0KPiBjdXJyZW50IGNhbGxlcnMgb2YgY2FsbF9yY3UgKG90
-aGVyIHRoYW4gc3luY2hyb25pemVfcmN1KCkgYW5kIHNpbWlsYXIpDQo+IGhhZCBub24tbGF6eSBj
-YWxsYmFja3MuDQoNClllcCEgIEJ1dCB0aGUgY2FsbGVyIGhhcyB0byB0ZWxsIG1lLg0KDQpTb21l
-dGhpbmcgbGlrZSA5MCUgb2YgdGhlIGNhbGxfcmN1KClzIGNvdWxkIGJlIGNhbGxfcmN1X2xhenko
-KSwgYnV0IHRoZXJlDQphcmUgYSBzaWduaWZpY2FudCBudW1iZXIgdGhhdCB3YWtlIHNvbWVvbmUg
-dXAsIG1hbmlwdWxhdGUgYSByZWZlcmVuY2UNCmNvdW50ZXIgdGhhdCBzb21lb25lIGVsc2UgaXMg
-cGF5aW5nIGF0dGVudGlvbiB0bywgZXRjLg0KDQo+ID4gQXQgc29tZSBwb2ludCBpbiB0aGUgZnV0
-dXJlLCBpdCBtaWdodCBtYWtlIHNlbnNlIHRvIHRpZSBpbnRvIHRoZQ0KPiA+IGxvdy1tZW1vcnkg
-bm90aWZpZXIsIHdoaWNoIGNvdWxkIHBvdGVudGlhbGx5IGFsbG93IHRoZSBsb25nZXIgdGltZW91
-dA0KPiA+IHRvIGJlIG9taXR0ZWQuDQo+IA0KPiBFeGFjdGx5IHRoZSBraW5kIG9mIHRoaW5nIHRo
-YXQgbWFkZSBtZSB3b25kZXIgYWJvdXQgdHJhY2tpbmcgdGhlIGFjdHVhbA0KPiBhbW91bnQgb2Yg
-bWVtb3J5IHRvIGZyZWUuICBTdGlsbCBzZWVtcyBsaWtlIGEgcG90ZW50aWFsbHkgdXNlZnVsDQo+
-IHN0YXRpc3RpYyB0byB0cmFjayBvbiBpdHMgb3duLg0KDQpUaGVyZSBpcyB0aGUgcWxlbiBzdGF0
-aXN0aWMgaW4gdGhlIGRlYnVnZnMgdHJhY2luZywgdHJhY2tlZCBvbiBhIHBlci1DUFUNCmJhc2lz
-LiAgQnV0IHVubGVzcyBpdCBpcyBrZnJlZV9yY3UoKSwgSSBoYXZlIG5vIHdheSB0byB0ZWxsIGhv
-dyBtdWNoDQptZW1vcnkgYSBnaXZlbiBjYWxsYmFjayBmcmVlcy4NCg0KPiA+IE15IGN1cnJlbnQg
-Z3Vlc3MgaXMgdGhhdCB0aGUgcmVjZW50IGNoYW5nZSBhbGxvd2luZyBpZGxlIENQVXMgdG8NCj4g
-PiBleGhhdXN0IHRoZWlyIGNhbGxiYWNrIGxpc3RzIHdpbGwgbWFrZSB0aGlzIGtpbmQgb2YgZmlu
-ZS10dW5pbmcNCj4gPiB1bm5lY2Vzc2FyeSwgYnV0IHdlIHdpbGwgc2VlIQ0KPiANCj4gR29vZCBw
-b2ludDsgZ2l2ZW4gdGhhdCBmaXgsIGlkbGUgQ1BVcyBzaG91bGQgbmV2ZXIgbmVlZCB0byB3YWtl
-IHVwIGZvcg0KPiBjYWxsYmFja3MgYXQgYWxsLg0KDQpIZXJlIGlzIGhvcGluZyEgIDstKQ0KDQoJ
-CQkJCQkJVGhhbngsIFBhdWwNCg0KLS0NClRvIHVuc3Vic2NyaWJlIGZyb20gdGhpcyBsaXN0OiBz
-ZW5kIHRoZSBsaW5lICJ1bnN1YnNjcmliZSBsaW51eC1rZXJuZWwiIGluDQp0aGUgYm9keSBvZiBh
-IG1lc3NhZ2UgdG8gbWFqb3Jkb21vQHZnZXIua2VybmVsLm9yZw0KTW9yZSBtYWpvcmRvbW8gaW5m
-byBhdCAgaHR0cDovL3ZnZXIua2VybmVsLm9yZy9tYWpvcmRvbW8taW5mby5odG1sDQpQbGVhc2Ug
-cmVhZCB0aGUgRkFRIGF0ICBodHRwOi8vd3d3LnR1eC5vcmcvbGttbC8NCg==
-
---ANTIGEN-11102-8270-22297-6996-22651-30830--
+>
+> ...
+>
