@@ -1,156 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab2BCPnb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:43:31 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:55675 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab2BCPn3 (ORCPT
+	id S1756826Ab2BCPop (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:44:45 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:39298 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753906Ab2BCPoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 10:43:29 -0500
-Date: Fri, 3 Feb 2012 16:43:20 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
-cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH/RFC] usb: fix renesas_usbhs to not schedule in atomic context
-In-Reply-To: <4F2B9F34.60308@renesas.com>
-Message-ID: <Pine.LNX.4.64.1202031623000.6211@axis700.grange>
-References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
- <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de> <4F22624E.2090201@renesas.com>
- <Pine.LNX.4.64.1201270946150.32661@axis700.grange> <4F27CA7D.601@renesas.com>
- <Pine.LNX.4.64.1202022317560.13860@axis700.grange> <4F2B9F34.60308@renesas.com>
+	Fri, 3 Feb 2012 10:44:44 -0500
+Date: Fri, 3 Feb 2012 16:44:11 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Menage <paul@paulmenage.org>
+Cc: linux-kernel@vger.kernel.org, Sebastian Ott <sebott@linux.vnet.ibm.com>
+Subject: cgroup_release_agent() with call_usermodehelper() with UMH_WAIT_EXEC
+ may crash
+Message-ID: <20120203154411.GB2471@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:+H+szjX02aA6IolFp8XyOaQMTyZpzZoW9MFIibTat7Z
- PpXjsTLmiBwFH8kM1lHdziiVtKdTfx8vrBSg12jclsNzjCEj5O
- 3/AXS1AJJdYCPPGZ0oCTv/CHWLjEyPWmQrgO56Fn8GvffM5pDW
- Eb6bH7+nlq7VgvbaK8DKBBqCwhZFwq7AhjMWhB5ecVjo44UgFd
- cNyDOHN9FlyOnmMvHfU7RYpJ60AZWjEy1jg1fDStrbfuJGXJyH
- rnuFBKayuFZI2kaB/xykjiwOU4AMcdWmNEL7+UIDCMFD+aVbYz
- oBsDdxhzIw6ngIE/Kdc5rJNPGGbzk/JMb1Flo2irlkyZthZKpS
- YfnoLoZZPgiYll26yUC/vfjWYui9ITJbyA7+ZHbRFYTDiIRKzN
- FiQEtbFSnlDzg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12020315-5024-0000-0000-00000198A936
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current renesas_usbhs driver triggers
+Hi all,
 
-BUG: scheduling while atomic: ksoftirqd/0/3/0x00000102
+Sebastian today sent me a dump with this crash:
 
-with enabled CONFIG_DEBUG_ATOMIC_SLEEP, by submitting DMA transfers from 
-an atomic (tasklet) context, which is not supported by the shdma dmaengine 
-driver. Fix it by switching to a work. Also simplify some list 
-manipulations.
+[    9.642907] Unable to handle kernel pointer dereference at virtual kernel address 0000000039768000
+[    9.642918] Oops: 0011 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[    9.642934] Modules linked in: qeth_l3 lcs ctcm fsm vmur qeth ccwgroup autofs4 [last unloaded: scsi_wait_scan]
+[    9.642965] CPU: 0 Not tainted 3.3.0-rc2-00037-gbd3ce7d-dirty #48
+[    9.643011] Process kworker/u:3 (pid: 245, task: 000000003a3dc840, ksp: 0000000039453818)
+[    9.643015] Krnl PSW : 0704000180000000 0000000000282e94 (setup_new_exec+0xa0/0x374)
+[    9.643026]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:0 PM:0 EA:3
+[    9.643032] Krnl GPRS: 0000000030844dcb fffffffffffffffd 0000000039768000 0000000000000000
+[    9.643039]            00000000000000cd 0000000000243c18 00000000000001f8 0000000039453dd0
+[    9.643045]            000000003dc55220 0000000000000000 00000000006f4800 000000003dc55220
+[    9.643051]            0000000000000000 00000000005dd958 00000000002830f0 0000000039453a18
+[    9.643067] Krnl Code: 0000000000282e84: c0e5ffffff52        brasl   %r14,282d28
+[    9.643079]            0000000000282e8a: e320b0c80004        lg      %r2,200(%r11)
+[    9.643092]           #0000000000282e90: a7380000            lhi     %r3,0
+[    9.643108]           >0000000000282e94: e31020000090        llgc    %r1,0(%r2)
+[    9.643123]            0000000000282e9a: 41202001            la      %r2,1(%r2)
+[    9.643162]            0000000000282e9e: 1241                ltr     %r4,%r1
+[    9.643168]            0000000000282ea0: a7840018            brc     8,282ed0
+[    9.643175]            0000000000282ea4: a74e002f            chi     %r4,47
+[    9.643183] Call Trace:
+[    9.643186] ([<0000000000282e2c>] setup_new_exec+0x38/0x374)
+[    9.643192]  [<00000000002dd12e>] load_elf_binary+0x402/0x1bf4
+[    9.643201]  [<0000000000280a42>] search_binary_handler+0x38e/0x5bc
+[    9.643210]  [<0000000000282b6c>] do_execve_common+0x410/0x514
+[    9.643218]  [<0000000000282cb6>] do_execve+0x46/0x58
+[    9.643225]  [<00000000005bce58>] kernel_execve+0x28/0x70
+[    9.643236]  [<000000000014ba2e>] ____call_usermodehelper+0x102/0x140
+[    9.643245]  [<00000000005bc8da>] kernel_thread_starter+0x6/0xc
+[    9.643254]  [<00000000005bc8d4>] kernel_thread_starter+0x0/0xc
+[    9.643264] INFO: lockdep is turned off.
+[    9.643269] Last Breaking-Event-Address:
+[    9.643275]  [<00000000002830f0>] setup_new_exec+0x2fc/0x374
+[    9.643311]  
+[    9.643315] Kernel panic - not syncing: Fatal exception: panic_on_oops
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
+As it happens it is a use-after-free bug. It crashes in setup_new_exec() when
+trying to dereference name:
 
-Shimoda-san, this is the problem, that you were observing. However, it 
-exists with the present version of shdma just as well as with the new one 
-- on top of the simple DMA library. I marked it an RFC because (1) I only 
-lightly tested it with the gadget device on mackerel with the mass storage 
-gadget, and (2) I am somewhat concerned about races. Currently the work 
-function runs with no locking and there are no usual cancel_work_sync() 
-points in the patch. However, it has also been like this before with the 
-tasklet implementation, which is not much better, and it looks like there 
-are no asynchronous operations on the same packets like timeouts. Only 
-asynchronous events, that I can think about are things like unloading the 
-driver or unplugging the cable, but these have been there before too. It 
-would become worse on SMP, I think. Comments welcome.
+setup_new_exec(...)
+	[...]
+	name = bprm->filename;
 
-diff --git a/drivers/usb/renesas_usbhs/fifo.c b/drivers/usb/renesas_usbhs/fifo.c
-index 72339bd..4d739ec 100644
---- a/drivers/usb/renesas_usbhs/fifo.c
-+++ b/drivers/usb/renesas_usbhs/fifo.c
-@@ -75,8 +75,7 @@ void usbhs_pkt_push(struct usbhs_pipe *pipe, struct usbhs_pkt *pkt,
- 		pipe->handler = &usbhsf_null_handler;
- 	}
- 
--	list_del_init(&pkt->node);
--	list_add_tail(&pkt->node, &pipe->list);
-+	list_move_tail(&pkt->node, &pipe->list);
- 
- 	/*
- 	 * each pkt must hold own handler.
-@@ -106,7 +105,7 @@ static struct usbhs_pkt *__usbhsf_pkt_get(struct usbhs_pipe *pipe)
- 	if (list_empty(&pipe->list))
- 		return NULL;
- 
--	return list_entry(pipe->list.next, struct usbhs_pkt, node);
-+	return list_first_entry(&pipe->list, struct usbhs_pkt, node);
- }
- 
- struct usbhs_pkt *usbhs_pkt_pop(struct usbhs_pipe *pipe, struct usbhs_pkt *pkt)
-@@ -762,9 +761,9 @@ static int __usbhsf_dma_map_ctrl(struct usbhs_pkt *pkt, int map)
- }
- 
- static void usbhsf_dma_complete(void *arg);
--static void usbhsf_dma_prepare_tasklet(unsigned long data)
-+static void xfer_work(struct work_struct *work)
- {
--	struct usbhs_pkt *pkt = (struct usbhs_pkt *)data;
-+	struct usbhs_pkt *pkt = container_of(work, struct usbhs_pkt, work);
- 	struct usbhs_pipe *pipe = pkt->pipe;
- 	struct usbhs_fifo *fifo = usbhs_pipe_to_fifo(pipe);
- 	struct usbhs_priv *priv = usbhs_pipe_to_priv(pipe);
-@@ -844,11 +843,8 @@ static int usbhsf_dma_prepare_push(struct usbhs_pkt *pkt, int *is_done)
- 
- 	pkt->trans = len;
- 
--	tasklet_init(&fifo->tasklet,
--		     usbhsf_dma_prepare_tasklet,
--		     (unsigned long)pkt);
--
--	tasklet_schedule(&fifo->tasklet);
-+	INIT_WORK(&pkt->work, xfer_work);
-+	schedule_work(&pkt->work);
- 
- 	return 0;
- 
-@@ -938,11 +934,8 @@ static int usbhsf_dma_try_pop(struct usbhs_pkt *pkt, int *is_done)
- 
- 	pkt->trans = len;
- 
--	tasklet_init(&fifo->tasklet,
--		     usbhsf_dma_prepare_tasklet,
--		     (unsigned long)pkt);
--
--	tasklet_schedule(&fifo->tasklet);
-+	INIT_WORK(&pkt->work, xfer_work);
-+	schedule_work(&pkt->work);
- 
- 	return 0;
- 
-diff --git a/drivers/usb/renesas_usbhs/fifo.h b/drivers/usb/renesas_usbhs/fifo.h
-index f68609c..c31731a 100644
---- a/drivers/usb/renesas_usbhs/fifo.h
-+++ b/drivers/usb/renesas_usbhs/fifo.h
-@@ -19,6 +19,7 @@
- 
- #include <linux/interrupt.h>
- #include <linux/sh_dma.h>
-+#include <linux/workqueue.h>
- #include <asm/dma.h>
- #include "pipe.h"
- 
-@@ -31,7 +32,6 @@ struct usbhs_fifo {
- 	u32 ctr;	/* xFIFOCTR */
- 
- 	struct usbhs_pipe	*pipe;
--	struct tasklet_struct	tasklet;
- 
- 	struct dma_chan		*tx_chan;
- 	struct dma_chan		*rx_chan;
-@@ -53,6 +53,7 @@ struct usbhs_pkt {
- 	struct usbhs_pkt_handle *handler;
- 	void (*done)(struct usbhs_priv *priv,
- 		     struct usbhs_pkt *pkt);
-+	struct work_struct work;
- 	dma_addr_t dma;
- 	void *buf;
- 	int length;
+	/* Copies the binary name from after last slash */
+	for (i=0; (ch = *(name++)) != '\0';) {	<-- crashes here
+		if (ch == '/')
+
+Looking into the dump I was able to tell that the piece of memory got freed
+by cgroup_release_agent().
+Which has the following code sequence:
+
+static void cgroup_release_agent(struct work_struct *work)
+{
+		[...]
+		agentbuf = kstrdup(cgrp->root->release_agent_path, GFP_KERNEL);
+		[...]
+		i = 0;
+		argv[i++] = agentbuf;
+		[...]
+		call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+		[...]
+		kfree(agentbuf);
+		[...]
+}
+
+So obviously cgroup_release_agent() freed the filename before do_execve()
+was finished.
+
+call_usermodehelper() will enqueue a struct work which will call
+__call_usermodehelper() which in turn will create a kernel_thread which
+executes ____call_usermodehelper(). Here it sets the flag CLONE_VFORK to
+ensure that all needed structures stay alive until the code from
+____call_usermodehelper() gets replaced by the to be executed process.
+
+So due to CLONE_VFORK kernel_thread() will block until the child process
+has replaced it's mm, which happens in
+load_elf_binary() -> flush_old_exec() -> exec_mmap() -> mm_release()
+and which subsequently wakes up the parent again. So the parent will
+continue and in the end return from call_usermodehelper() and free
+the passed path (aka agentbuf).
+
+However the call to flush_old_exec() happens right _before_ the call
+to setup_new_exec() which still needs the path and may crash if
+it got freed (like it did this time).
+
+So the question is: what is broken? The cgroup stuff which doesn't take
+into account that the passed path may still be in use and hence can't
+be freed (simple fix would be to simply use UMH_WAIT_PROC instead).
+Or is it that call_usermodehelper() still uses the passed path after
+it returned?
+
