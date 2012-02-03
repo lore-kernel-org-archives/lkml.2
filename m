@@ -1,96 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab2BCPSa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:18:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44151 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851Ab2BCPS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 10:18:28 -0500
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>, linux-pci@vger.kernel.org,
-        jbarnes@virtuousgeek.org
-Subject: [PATCH 3/3] pcie: Add support for setting default ASPM policy
-Date: Fri,  3 Feb 2012 10:18:13 -0500
-Message-Id: <1328282293-16551-3-git-send-email-mjg@redhat.com>
-In-Reply-To: <1328282293-16551-1-git-send-email-mjg@redhat.com>
-References: <1328282293-16551-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.41.104
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1754017Ab2BCPTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:19:18 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:53056 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab2BCPTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 10:19:12 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vinayak Holikatti <vinholikatti@gmail.com>
+Subject: Re: [PATCH 1/4] [SCSI] ufshcd: UFS Host controller driver
+Date: Fri, 3 Feb 2012 15:19:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, saugata.das@linaro.org,
+        venkat@linaro.org, girish.shivananjappa@linaro.org,
+        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com,
+        Santosh Yaraganavi <santoshsy@gmail.com>
+References: <1328158649-4137-1-git-send-email-vinholikatti@gmail.com> <1328158649-4137-2-git-send-email-vinholikatti@gmail.com>
+In-Reply-To: <1328158649-4137-2-git-send-email-vinholikatti@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202031519.02296.arnd@arndb.de>
+X-Provags-ID: V02:K0:FWFtabS81Nf2t+jNlifdyFQFziiMABX/7KenqArjpic
+ 3r2euAg+oAH4eYGh9PKONlfwOVkMK39y4ZqC8ksqdC2sEncIIi
+ Z859P4F56mbXUIdaA0y2ouM3wVecs1SAZbgPefgJzfclJBPXDZ
+ g/x55+2aA7djQog3lvZ0mK+Mkno4LSEGRUR2Ao9yRG+ugM8LgW
+ UMJKI5vjN7GArRGmH0Ss3Q9dd5GAh+ecnrTKAA+aJwUhtI/0G0
+ E1cOLllrD6jC72KTOtBS4v/e2TIGlEmUAzWi8t2jVVMMnJFGeW
+ VUXiY9X6x9slo0LFFozqXxbQXcYnqauogZTe5PN2iUpamnWOes
+ aIX7o3O3JJoGDkUwy5f0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Distributions may wish to provide different defaults for PCIE ASPM
-depending on their target audience. Provide a configuration option for
-choosing the default policy.
+On Thursday 02 February 2012, Vinayak Holikatti wrote:
+> From: Santosh Yaraganavi <santoshsy@gmail.com>
+> 
+> This patch adds support for Universal Flash Storage(UFS)
+> host controllers. The UFS host controller driver
+> includes host controller initialization method.
+> 
+> The Initialization process involves following steps:
+>  - Initiate UFS Host Controller initialization process by writing
+>    to Host controller enable register
+>  - Configure UFS Host controller registers with host memory space
+>    datastructure offsets.
+>  - Unipro link startup procedure
+>  - Check for connected device
+>  - Configure UFS host controller to process requests
+>  - Enable required interrupts
+>  - Configure interrupt aggregation
+> 
+> Signed-off-by: Santosh Yaraganavi <santoshsy@gmail.com>
+> Signed-off-by: Vinayak Holikatti <vinholikatti@gmail.com>
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> Reviewed-by: Saugata Das <saugata.das@linaro.org>
+> Reviewed-by: Vishak G <vishak.g@samsung.com>
+> Reviewed-by: Girish K S <girish.shivananjappa@linaro.org>
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: linux-pci@vger.kernel.org
-Cc: jbarnes@virtuousgeek.org
----
- drivers/pci/pcie/Kconfig |   25 +++++++++++++++++++++++++
- drivers/pci/pcie/aspm.c  |    8 ++++++++
- 2 files changed, 33 insertions(+), 0 deletions(-)
+Thanks for posting this here. Note that while I did review the patches
+in private email, I did not reply with a "Reviewed-by" tag, so you should
+not add it yourself. In particular, I had made some additional comments
+about the ufshcd_memory_alloc() function that have not been addressed.
 
-diff --git a/drivers/pci/pcie/Kconfig b/drivers/pci/pcie/Kconfig
-index 72962cc..6c8bc58 100644
---- a/drivers/pci/pcie/Kconfig
-+++ b/drivers/pci/pcie/Kconfig
-@@ -55,6 +55,31 @@ config PCIEASPM_DEBUG
- 	  This enables PCI Express ASPM debug support. It will add per-device
- 	  interface to control ASPM.
- 
-+choice
-+	prompt "Default ASPM policy"
-+	default PCIEASPM_DEFAULT
-+	depends on PCIEASPM
-+
-+config PCIEASPM_DEFAULT
-+        bool "BIOS default"
-+	depends on PCIEASPM
-+	help
-+	  Use the BIOS defaults for PCI Express ASPM.
-+
-+config PCIEASPM_POWERSAVE
-+        bool "Powersave"
-+	depends on PCIEASPM
-+	help
-+	  Enable PCI Express ASPM L0s and L1 where possible, even if the
-+	  BIOS did not.
-+
-+config PCIEASPM_PERFORMANCE
-+        bool "Performance"
-+	depends on PCIEASPM
-+	help
-+	  Disable PCI Express ASPM L0s and L1, even if the BIOS enabled them.
-+endchoice
-+
- config PCIE_PME
- 	def_bool y
- 	depends on PCIEPORTBUS && PM_RUNTIME && EXPERIMENTAL && ACPI
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index 1cfbf22..a0de5e1 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -76,7 +76,15 @@ static LIST_HEAD(link_list);
- #define POLICY_DEFAULT 0	/* BIOS default setting */
- #define POLICY_PERFORMANCE 1	/* high performance */
- #define POLICY_POWERSAVE 2	/* high power saving */
-+
-+#ifdef CONFIG_PCIEASPM_PERFORMANCE
-+static int aspm_policy = POLICY_PERFORMANCE;
-+#elif defined CONFIG_PCIEASPM_POWERSAVE
-+static int aspm_policy = POLICY_POWERSAVE;
-+#else
- static int aspm_policy;
-+#endif
-+
- static const char *policy_str[] = {
- 	[POLICY_DEFAULT] = "default",
- 	[POLICY_PERFORMANCE] = "performance",
--- 
-1.7.7.6
+Getting the code changed will certainly not be a problem, but please
+be careful with assigning those tags in the future.
 
+The only major thing that I see missing is a review from James or
+someone else who is familiar with other scsi device drivers. Saugata
+and I have (in private) commented on a a number of more general issues
+and the comments were addressed before this patch set got sent out.
+
+Unless there are important concerns from the SCSI side, I believe this
+is going to be ready to get merged very soon, after the usual nitpicking
+is done ;-)
+
+Speaking of nitpicking:
+
+>--- /dev/null
+>+++ b/drivers/scsi/ufs/Kconfig
+>+
+>+#ifndef NULL
+>+#define NULL 0
+>+#endif  /* NULL */
+
+Please remove this #define, NULL is defined in <linux/stddef.h>
+
+>+#define BYTES_TO_DWORDS(p)     (p >> 2)
+>+#define UFSHCD_MMIO_BASE       (hba->mmio_base)
+
+Better remove these macros, too: The are clearly longer than the
+expanded text, and less clear.
+
+>+struct ufs_hba {
+>+       /* Virtual memory reference */
+>+       void *ucdl_virt_addr;
+>+       void *utrdl_virt_addr;
+>+       void *utmrdl_virt_addr;
+>+       void *utrdl_virt_addr_aligned;
+>+       void *utmrdl_virt_addr_aligned;
+>+       void *ucdl_virt_addr_aligned;
+>+
+>+       size_t ucdl_size;
+>+       size_t utrdl_size;
+>+       size_t utmrdl_size;
+>+
+>+       /* DMA memory reference */
+>+       dma_addr_t ucdl_dma_addr;
+>+       dma_addr_t utrdl_dma_addr;
+>+       dma_addr_t utmrdl_dma_addr;
+>+       dma_addr_t utrdl_dma_addr_aligned;
+>+       dma_addr_t utmrdl_dma_addr_aligned;
+>+       dma_addr_t ucdl_dma_addr_aligned;
+
+You can remove most of these members by simplifying the allocation:
+
+- remove the _aligned variables and use WARN_ON to test that
+  the allocated buffers are aligned (they always are)
+- remove the sizes because they are computed from the number of
+  descriptors
+- if possible, remove the _dma_addr members by referencing them only
+  in the ufshcd_host_memory_configure() function that can get merged
+  into ufshcd_memory_alloc()
+- while you're here, change the type of the *_virt_addr to
+  struct utp_task_req_desc/utp_transfer_req_desc/utp_transfer_req_cmd_desc
+  and remove the _virt_addr postfix.
+
+>+       if (NULL == hba->ucdl_virt_addr) {
+
+Here and in many other places, it's better to use the common kernel style
+
+	if (!hba->ucdl_virt_addr) {
+
+to check the validity of an object.
+
+>+static int ufshcd_make_hba_operational(struct ufs_hba *hba)
+>+{
+>+       u32 reg;
+>+
+>+       /* check if device present */
+>+       reg = readl((UFSHCD_MMIO_BASE + REG_CONTROLLER_STATUS));
+>+       if (ufshcd_is_device_present(reg)) {
+>+               dev_err(&hba->pdev->dev, "cc: Device not present\n");
+>+               return -EINVAL;
+>+       }
+>+
+>+       /*
+>+        * UCRDY, UTMRLDY and UTRLRDY bits must be 1
+>+        * DEI, HEI bits must be 0
+>+        */
+>+       if (!(ufshcd_get_lists_status(reg))) {
+>+               writel(UTP_TASK_REQ_LIST_RUN_STOP_BIT,
+>+                      (UFSHCD_MMIO_BASE +
+>+                       REG_UTP_TASK_REQ_LIST_RUN_STOP));
+>+               writel(UTP_TRANSFER_REQ_LIST_RUN_STOP_BIT,
+>+                      (UFSHCD_MMIO_BASE +
+>+                       REG_UTP_TRANSFER_REQ_LIST_RUN_STOP));
+>+       } else {
+>+               dev_err(&hba->pdev->dev,
+>+                       "Host controller not ready to process requests");
+>+               return -EINVAL;
+>+       }
+
+I guess ENXIO or EIO would be more fitting here than EINVAL, because you
+are not referring to incorrect user input.
+
+>+#ifdef CONFIG_PM
+>+/**
+>+ * ufshcd_suspend - suspend power management function
+>+ * @pdev: pointer to PCI device handle
+>+ * @state: power state
+>+ *
+>+ * Returns -ENOSYS
+>+ */
+>+static int ufshcd_suspend(struct pci_dev *pdev, pm_message_t state)
+>+{
+>+       return -ENOSYS;
+>+}
+>+
+>+/**
+>+ * ufshcd_resume - resume power management function
+>+ * @pdev: pointer to PCI device handle
+>+ *
+>+ * Returns -ENOSYS
+>+ */
+>+static int ufshcd_resume(struct pci_dev *pdev)
+>+{
+>+       return -ENOSYS;
+>+}
+>+#endif /* CONFIG_PM */
+
+These look wrong. Are you planning to fill them in a later patch? If not,
+it's probably better to just remove these functions.
+
+	Arnd
