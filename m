@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2BCPSc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:18:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20433 "EHLO mx1.redhat.com"
+	id S1753139Ab2BCPSa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:18:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44151 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab2BCPS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750851Ab2BCPS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Feb 2012 10:18:28 -0500
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>, linux-acpi@vger.kernel.org,
-        lenb@kernel.org
-Subject: [PATCH 1/3] ACPI: Provide config option to disable BIOS brightness changes on power events
-Date: Fri,  3 Feb 2012 10:18:11 -0500
-Message-Id: <1328282293-16551-1-git-send-email-mjg@redhat.com>
+Cc: Matthew Garrett <mjg@redhat.com>, linux-pci@vger.kernel.org,
+        jbarnes@virtuousgeek.org
+Subject: [PATCH 3/3] pcie: Add support for setting default ASPM policy
+Date: Fri,  3 Feb 2012 10:18:13 -0500
+Message-Id: <1328282293-16551-3-git-send-email-mjg@redhat.com>
+In-Reply-To: <1328282293-16551-1-git-send-email-mjg@redhat.com>
+References: <1328282293-16551-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
 X-SA-Exim-Connect-IP: 209.6.41.104
 X-SA-Exim-Mail-From: mjg@redhat.com
@@ -21,65 +23,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default ACPI behaviour is to instruct the BIOS to automatically change
-brightness on power events. This may be undesirable for distributions who
-manage brightness in userspace. Provide a config option that disables this
-behaviour and leaves brightness control up to the OS.
+Distributions may wish to provide different defaults for PCIE ASPM
+depending on their target audience. Provide a configuration option for
+choosing the default policy.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: linux-acpi@vger.kernel.org
-Cc: lenb@kernel.org
+Cc: linux-pci@vger.kernel.org
+Cc: jbarnes@virtuousgeek.org
 ---
- drivers/acpi/Kconfig |    8 ++++++++
- drivers/acpi/video.c |    9 ++++++++-
- 2 files changed, 16 insertions(+), 1 deletions(-)
+ drivers/pci/pcie/Kconfig |   25 +++++++++++++++++++++++++
+ drivers/pci/pcie/aspm.c  |    8 ++++++++
+ 2 files changed, 33 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 7556913..5354290 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -163,6 +163,14 @@ config ACPI_VIDEO
- 	  To compile this driver as a module, choose M here:
- 	  the module will be called video.
+diff --git a/drivers/pci/pcie/Kconfig b/drivers/pci/pcie/Kconfig
+index 72962cc..6c8bc58 100644
+--- a/drivers/pci/pcie/Kconfig
++++ b/drivers/pci/pcie/Kconfig
+@@ -55,6 +55,31 @@ config PCIEASPM_DEBUG
+ 	  This enables PCI Express ASPM debug support. It will add per-device
+ 	  interface to control ASPM.
  
-+config ACPI_VIDEO_DISABLE_BIOS_POWER_BRIGHTNESS
-+        bool "Disable BIOS brightness changes on power events"
-+        depends on ACPI_VIDEO
-+        default n
-+        help
-+	  Many laptops will automatically change brightness on AC/battery
-+	  status changes. Choose Y here to disable this.
++choice
++	prompt "Default ASPM policy"
++	default PCIEASPM_DEFAULT
++	depends on PCIEASPM
 +
- config ACPI_FAN
- 	tristate "Fan"
- 	select THERMAL
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index eaef02a..4b42938 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -86,6 +86,13 @@ module_param(allow_duplicates, bool, 0644);
- static bool use_bios_initial_backlight = 1;
- module_param(use_bios_initial_backlight, bool, 0644);
- 
-+#ifdef CONFIG_ACPI_VIDEO_DISABLE_BIOS_POWER_BRIGHTNESS
-+static bool disable_bios_power_change = true;
++config PCIEASPM_DEFAULT
++        bool "BIOS default"
++	depends on PCIEASPM
++	help
++	  Use the BIOS defaults for PCI Express ASPM.
++
++config PCIEASPM_POWERSAVE
++        bool "Powersave"
++	depends on PCIEASPM
++	help
++	  Enable PCI Express ASPM L0s and L1 where possible, even if the
++	  BIOS did not.
++
++config PCIEASPM_PERFORMANCE
++        bool "Performance"
++	depends on PCIEASPM
++	help
++	  Disable PCI Express ASPM L0s and L1, even if the BIOS enabled them.
++endchoice
++
+ config PCIE_PME
+ 	def_bool y
+ 	depends on PCIEPORTBUS && PM_RUNTIME && EXPERIMENTAL && ACPI
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index 1cfbf22..a0de5e1 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -76,7 +76,15 @@ static LIST_HEAD(link_list);
+ #define POLICY_DEFAULT 0	/* BIOS default setting */
+ #define POLICY_PERFORMANCE 1	/* high performance */
+ #define POLICY_POWERSAVE 2	/* high power saving */
++
++#ifdef CONFIG_PCIEASPM_PERFORMANCE
++static int aspm_policy = POLICY_PERFORMANCE;
++#elif defined CONFIG_PCIEASPM_POWERSAVE
++static int aspm_policy = POLICY_POWERSAVE;
 +#else
-+static bool disable_bios_power_change;
+ static int aspm_policy;
 +#endif
-+module_param(disable_bios_power_change, bool, 0644);
 +
- static int register_count = 0;
- static int acpi_video_bus_add(struct acpi_device *device);
- static int acpi_video_bus_remove(struct acpi_device *device, int type);
-@@ -1421,7 +1428,7 @@ static int acpi_video_bus_put_devices(struct acpi_video_bus *video)
- 
- static int acpi_video_bus_start_devices(struct acpi_video_bus *video)
- {
--	return acpi_video_bus_DOS(video, 0, 0);
-+	return acpi_video_bus_DOS(video, 0, disable_bios_power_change);
- }
- 
- static int acpi_video_bus_stop_devices(struct acpi_video_bus *video)
+ static const char *policy_str[] = {
+ 	[POLICY_DEFAULT] = "default",
+ 	[POLICY_PERFORMANCE] = "performance",
 -- 
 1.7.7.6
 
