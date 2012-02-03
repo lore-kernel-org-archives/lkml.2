@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab2BCWR6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 17:17:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50723 "EHLO mx2.suse.de"
+	id S1757946Ab2BCWXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 17:23:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43716 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab2BCWR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 17:17:56 -0500
-Date: Fri, 3 Feb 2012 23:17:53 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Masanari Iida <standby24x7@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] [trivial] media: Fix typo in mixer_drv.c and
- hdmi_drv.c
-In-Reply-To: <CAH9JG2USF-FYX0SL-y0Gby8oNvA=sFBV7uyvP+4oaa1nxRU5qA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1202032317420.25026@pobox.suse.cz>
-References: <1327841453-1674-1-git-send-email-standby24x7@gmail.com> <CAH9JG2USF-FYX0SL-y0Gby8oNvA=sFBV7uyvP+4oaa1nxRU5qA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753628Ab2BCWXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 17:23:34 -0500
+Date: Fri, 3 Feb 2012 17:23:29 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH UPDATED 11/11] blkcg: unify blkg's for blkcg policies
+Message-ID: <20120203222329.GG9683@redhat.com>
+References: <1328131156-13290-1-git-send-email-tj@kernel.org>
+ <1328131156-13290-12-git-send-email-tj@kernel.org>
+ <20120202003730.GC19837@google.com>
+ <20120203194105.GA12616@redhat.com>
+ <20120203205910.GB14209@google.com>
+ <20120203214435.GC12616@redhat.com>
+ <20120203214719.GE14209@google.com>
+ <20120203215349.GF9683@redhat.com>
+ <20120203221409.GF14209@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203221409.GF14209@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jan 2012, Kyungmin Park wrote:
+On Fri, Feb 03, 2012 at 02:14:09PM -0800, Tejun Heo wrote:
+> On Fri, Feb 03, 2012 at 04:53:49PM -0500, Vivek Goyal wrote:
+> > Hmm... then blkiocg_reset_stats() will run into lock ordering issue. Can't
+> > hold queue lock inside blkcg lock. I guess you will do some kind of
+> > locking trick again as you did for io context logic.
+> 
+> Ummm... I don't know the details yet but decisions like making
+> policies per-queue are much higher level than locking details.  There
+> are cases where implementation details become problematic enough and
+> high level decisions are affected but I don't really think that would
+> be the case here.  It's not like reset stats is a hot path.  In fact,
+> I don't even understand why the hell we have it.  I guess it's another
+> blkcg braindamage.
 
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+git commit of when it was added.
 
-Applied, thanks.
+commit 84c124da9ff50bd71fab9c939ee5b7cd8bef2bd9
+Author: Divyesh Shah <dpshah@google.com>
+Date:   Fri Apr 9 08:31:19 2010 +0200
 
-> > Correct typo "sucessful" to "successful" in
-> > drivers/media/video/s5p-tv/mixer_drv.c
-> > drivers/media/video/s5p-tv/hdmi_drv.c
-> >
-> > Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> > ---
-> >  drivers/media/video/s5p-tv/hdmi_drv.c  |    4 ++--
-> >  drivers/media/video/s5p-tv/mixer_drv.c |    2 +-
-> >  2 files changed, 3 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/media/video/s5p-tv/hdmi_drv.c
-> > b/drivers/media/video/s5p-tv/hdmi_drv.c
-> > index 8b41a04..3e0dd09 100644
-> > --- a/drivers/media/video/s5p-tv/hdmi_drv.c
-> > +++ b/drivers/media/video/s5p-tv/hdmi_drv.c
-> > @@ -962,7 +962,7 @@ static int __devinit hdmi_probe(struct platform_device
-> > *pdev)
-> >  	/* storing subdev for call that have only access to struct device */
-> >  	dev_set_drvdata(dev, sd);
-> >
-> > -	dev_info(dev, "probe sucessful\n");
-> > +	dev_info(dev, "probe successful\n");
-> >
-> >  	return 0;
-> >
-> > @@ -1000,7 +1000,7 @@ static int __devexit hdmi_remove(struct
-> > platform_device *pdev)
-> >  	iounmap(hdmi_dev->regs);
-> >  	hdmi_resources_cleanup(hdmi_dev);
-> >  	kfree(hdmi_dev);
-> > -	dev_info(dev, "remove sucessful\n");
-> > +	dev_info(dev, "remove successful\n");
-> >
-> >  	return 0;
-> >  }
-> > diff --git a/drivers/media/video/s5p-tv/mixer_drv.c
-> > b/drivers/media/video/s5p-tv/mixer_drv.c
-> > index 0064309..a2c0c25 100644
-> > --- a/drivers/media/video/s5p-tv/mixer_drv.c
-> > +++ b/drivers/media/video/s5p-tv/mixer_drv.c
-> > @@ -444,7 +444,7 @@ static int __devexit mxr_remove(struct platform_device
-> > *pdev)
-> >
-> >  	kfree(mdev);
-> >
-> > -	dev_info(dev, "remove sucessful\n");
-> > +	dev_info(dev, "remove successful\n");
-> >  	return 0;
-> >  }
+..
+o add a separate reset_stats interface
+..
 
--- 
-Jiri Kosina
-SUSE Labs
+> 
+> If userland is interested in delta between certain periods, it's
+> supposed to read values at the start and end of the period and
+> subtract.  Allowing reset might make sense if there's single bearded
+> admin looking at the raw numbers, but it breaks as soon as tools and
+> automation are involved.  How would you decide who owns those
+> counters?
+> 
+
+Personally I consider it to be a debugging aid. User space applications
+should do what you suggested and that is take delta between certain
+periods.
+
+Frankly speaking I have found it useful though. If I am debugging something,
+I don't have to reboot the system to reset the stats and calculating the
+difference from zero is easier for humans.
+
+Thanks
+Vivek
