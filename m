@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab2BCWFv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 17:05:51 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47913 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757980Ab2BCWF2 (ORCPT
+	id S1754987Ab2BCWIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 17:08:17 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33570 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753179Ab2BCWIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 17:05:28 -0500
+	Fri, 3 Feb 2012 17:08:15 -0500
+X-Sasl-enc: v4WO905D+QaRY7wt9imQcouOZA7p8O4SpAcXITwgQ3kB 1328306894
+Date: Fri, 3 Feb 2012 14:07:39 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [0/1] 3.2.5-stable review
+Message-ID: <20120203220739.GA3660@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20120202124529.3e274223@s6510.linuxnetplumber.net>
-References: <20120202192115.GA8480@elliptictech.com>
-	<20120202124529.3e274223@s6510.linuxnetplumber.net>
-Date: Fri, 3 Feb 2012 23:05:26 +0100
-Message-ID: <CAA879TM1i7prdY_=o2NYPYd5U2NuyyvMstT-qFoF1===qfQekA@mail.gmail.com>
-Subject: Re: Sudden kernel panic with skge in 3.3-rc2
-From: Guillaume Chazarain <guichaz@gmail.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 2, 2012 at 9:45 PM, Stephen Hemminger <shemminger@vyatta.com> wrote:
-> Try reverting this commit, it seems problematic
-> commit d0249e44432aa0ffcf710b64449b8eaa3722547e
+This is the start of the stable review cycle for the 3.2.5 release.
 
-Reverting this commit fixed skge for me. The NIC stopped working after
-a kernel upgrade with nothing interesting in dmesg:
+It's a bit different from other stable review cycles in that it only has
+one patch.
 
-skge: 1.14 addr 0xfbffc000 irq 18 chip Yukon-Lite rev 9
-skge 0000:03:00.0: eth0: addr 00:15:f2:46:d3:3b
-skge 0000:03:00.0: eth0: enabling interface
-ADDRCONF(NETDEV_UP): eth0: link is not ready
-skge 0000:03:00.0: eth0: Link is up at 100 Mbps, full duplex, flow control both
-ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-eth0: no IPv6 routers present
+It's a fix to decrease power consumption on a wide range of different
+machines.  I wanted to make this a separate release to make it easier
+for people to test it out in a simple way.  This patch has been shipping
+in the Fedora kernels for a while now, so I'm pretty confident about it,
+but I'm doing it this way just to be sure.
 
-NetworkManager would Oops during shutting down: http://i.imgur.com/eAFgM.jpg
+Please let me know if anyone has any problems with it as soon as
+possible.
 
--- 
-Guillaume
+Responses should be made by Monday, February 6, 2012, 20:00:00 UTC.
+Anything received after that time might be too late.
+
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.5-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+
+ Makefile                 |    4 +-
+ drivers/acpi/pci_root.c  |    7 +++++
+ drivers/pci/pci-acpi.c   |    1 -
+ drivers/pci/pcie/aspm.c  |   58 +++++++++++++++++++++++++++++----------------
+ include/linux/pci-aspm.h |    4 +-
+ 5 files changed, 48 insertions(+), 26 deletions(-)
