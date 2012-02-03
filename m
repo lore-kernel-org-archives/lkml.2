@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab2BCVHD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 16:07:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53713 "EHLO mx1.redhat.com"
+	id S1757893Ab2BCVHj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 16:07:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59557 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753920Ab2BCVHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 16:07:01 -0500
-Date: Fri, 3 Feb 2012 16:06:56 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED 11/11] blkcg: unify blkg's for blkcg policies
-Message-ID: <20120203210656.GB12616@redhat.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
- <1328131156-13290-12-git-send-email-tj@kernel.org>
- <20120202003730.GC19837@google.com>
+	id S1757752Ab2BCVHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 16:07:37 -0500
+Message-ID: <4F2C4C68.80302@zytor.com>
+Date: Fri, 03 Feb 2012 13:06:48 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120202003730.GC19837@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from
+ 80 to 100 colums
+References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org> <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu> <20120203125715.0e9dfb1d.akpm@linux-foundation.org>
+In-Reply-To: <20120203125715.0e9dfb1d.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 04:37:30PM -0800, Tejun Heo wrote:
-> Currently, blkg is per cgroup-queue-policy combination.  This is
-> unnatural and leads to various convolutions in partially used
-> duplicate fields in blkg, config / stat access, and general management
-> of blkgs.
+On 02/03/2012 12:57 PM, Andrew Morton wrote:
 > 
-> This patch make blkg's per cgroup-queue and let them serve all
-> policies.  blkgs are now created and destroyed by blkcg core proper.
-> This will allow further consolidation of common management logic into
-> blkcg core and API with better defined semantics and layering.
+> I always use 80-cols, everywhere.  Not because I particularly like it -
+> I find it a bit too small.  I use it because it is the standard, and
+> using it helps me see where and how badly we violate the standard.
 > 
-> As a transitional step to untangle blkg management, elvswitch and
-> policy [de]registration, all blkgs except the root blkg are being shot
-> down during elvswitch and bypass.  This patch adds blkg_root_update()
-> to update root blkg in place on policy change.  This is hacky and racy
-> but should be good enough as interim step until we get locking
-> simplified and switch over to proper in-place update for all blkgs.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> ---
-> I was thinking root blkgs should be updated on policy changes and
-> commit message and comments were written that way too but for some
-> reason I wrote code which updates on elvswitch, which leads to oops on
-> root blkg access after policy changes (ie. insmod cfq-iosched.ko).
-> Fixed.  git branch updated accordingly.
 
-Tejun,
+Width matters to me more for printing than it does on the screen.
+80-column text can be printed on a landscape piece of paper two columns
+wide without being too hard to read (e.g. enscript -2r).  I haven't
+tried that with 96 columns, but more than that would almost certainly be
+illegible.
 
-Shouldn't we shoot down root group policy data upon elevator switch?
-Otherwise once the elevator comes back, it will continue to use old
-policy data (old stats, overwrite old weigts etc.).
+	-hpa
 
-Thanks
-Vivek
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
