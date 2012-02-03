@@ -1,45 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab2BCUkA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 15:40:00 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:43091 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756389Ab2BCUj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 15:39:59 -0500
-Message-ID: <1328301590.18218.8.camel@joe2Laptop>
-Subject: Re: [PATCH 1/3] apple_bl: Convert printks to pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Matthew Garrett <mjg@redhat.com>
-Date: Fri, 03 Feb 2012 12:39:50 -0800
-In-Reply-To: <1328300884-21551-2-git-send-email-seth.forshee@canonical.com>
-References: <1328300884-21551-1-git-send-email-seth.forshee@canonical.com>
-	 <1328300884-21551-2-git-send-email-seth.forshee@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1757619Ab2BCUtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 15:49:13 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43952 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755631Ab2BCUtM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 15:49:12 -0500
+Subject: Re: [PATCH RESEND] ceph: avoid panic with mismatched symlink sizes in fill_inode()
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Xi Wang <xi.wang@gmail.com>
+In-Reply-To: <1328300672.21405.90.camel@doink>
+Date: Fri, 3 Feb 2012 15:49:07 -0500
+Cc: Sage Weil <sage@newdream.net>, ceph-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <972F971B-171E-467D-8E64-C1C49CB94622@gmail.com>
+References: <1328280936-2688-1-git-send-email-xi.wang@gmail.com> <1328300672.21405.90.camel@doink>
+To: elder@dreamhost.com
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-03 at 14:28 -0600, Seth Forshee wrote:
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-[]
-> diff --git a/drivers/video/backlight/apple_bl.c b/drivers/video/backlight/apple_bl.c
-> @@ -58,9 +53,7 @@ static int intel_chipset_send_intensity(struct backlight_device *bd)
->  {
->  	int intensity = bd->props.brightness;
->  
-> -	if (debug)
-> -		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
-> -		       intensity);
-> +	pr_debug("setting brightness to %d\n", intensity);
+On Feb 3, 2012, at 3:24 PM, Alex Elder wrote:
+> Looks good, though it might good to at least call
+> WARN_ON().  What do you think?
 
-You may need to add "#define DEBUG" somewhere for
-this to work as you might expect it to.
+Sounds good to me.  I will send a v2.  Thanks.
 
-An "allyesconfig" does effectively add one.
-
-
+- xi
