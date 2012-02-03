@@ -1,73 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab2BCUBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 15:01:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58563 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755084Ab2BCUBp (ORCPT
+	id S1756085Ab2BCUIH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 15:08:07 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:54044 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab2BCUIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 15:01:45 -0500
-Message-ID: <4F2C3D25.8040909@mvista.com>
-Date: Fri, 03 Feb 2012 14:01:41 -0600
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
+	Fri, 3 Feb 2012 15:08:04 -0500
+Date: Fri, 3 Feb 2012 15:05:08 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Cihula, Joseph" <joseph.cihula@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "x86@kernel.org" <x86@kernel.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "tboot-devel@lists.sourceforge.net" 
+	<tboot-devel@lists.sourceforge.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "liang.tang@oracle.com" <liang.tang@oracle.com>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH 2/7] tboot: Add return values for tboot_sleep
+Message-ID: <20120203200508.GA1556@phenom.dumpdata.com>
+References: <1324075099-11397-1-git-send-email-konrad.wilk@oracle.com>
+ <1324075099-11397-3-git-send-email-konrad.wilk@oracle.com>
+ <9F57BF860713DF4BA3EFA4F8C6DFEDAC2420CBB9@ORSMSX101.amr.corp.intel.com>
+ <20120112174958.GA22515@phenom.dumpdata.com>
+ <20120112202308.GA2030@phenom.dumpdata.com>
+ <9F57BF860713DF4BA3EFA4F8C6DFEDAC2D6870EE@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
-Subject: Re: [PATCH 3/6] ipmi: use a tasklet for handling received messages
-References: <1328284079-5489-1-git-send-email-cminyard@mvista.com>	<1328284079-5489-3-git-send-email-cminyard@mvista.com> <20120203114414.0f9ae99a.akpm@linux-foundation.org>
-In-Reply-To: <20120203114414.0f9ae99a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9F57BF860713DF4BA3EFA4F8C6DFEDAC2D6870EE@ORSMSX101.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4F2C3E96.005E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2012 01:44 PM, Andrew Morton wrote:
-> On Fri, 03 Feb 2012 09:47:56 -0600
-> Corey Minyard<cminyard@mvista.com>  wrote:
->
->> The IPMI driver would release a lock, deliver a message, then relock.
->> This is obviously ugly, and this patch converts the message handler
->> interface to use a tasklet to schedule work.  This lets the receive
->> handler be called from an interrupt handler with interrupts enabled.
->>
->> ...
->>
->> +/*
->> + * If there are messages in the queue or pretimeouts, handle them.
->> + */
->> +static void handle_new_recv_msgs(ipmi_smi_t intf)
->> +{
->> +	struct ipmi_smi_msg  *smi_msg;
->> +	unsigned long        flags = 0;
->> +	int                  rv;
->> +	int                  run_to_completion = intf->run_to_completion;
->> +
->> +	/* See if any waiting messages need to be processed. */
->> +	if (!run_to_completion)
->> +		spin_lock_irqsave(&intf->waiting_msgs_lock, flags);
->> +	while (!list_empty(&intf->waiting_msgs)) {
->> +		smi_msg = list_entry(intf->waiting_msgs.next,
->> +				     struct ipmi_smi_msg, link);
->> +		list_del(&smi_msg->link);
->> +		if (!run_to_completion)
->> +			spin_unlock_irqrestore(&intf->waiting_msgs_lock, flags);
-> Yikes, what's going on here?  How is the list protected if the spinlock
-> isn't taken?
->
-> I went to the comment over ipmi_smi.run_to_completion but it doesn't
-> explain how it governs the locking strategy at all.  If there's some
-> other way in which the reader is supposed to grok IPMI locking, please
-> clue me in ;)
->
-The "run_to_completion" mode is designed to run at panic time so that 
-the watchdog timer can be extended and panic information can be stored 
-in the IPMI event log.  In that case locks are irrelevant and can cause 
-hangs, so they are skipped.
+On Thu, Jan 26, 2012 at 12:16:39AM +0000, Cihula, Joseph wrote:
+> > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> > Sent: Thursday, January 12, 2012 12:23 PM
+> eturn values for tboot_sleep
+> > 
+> > On Thu, Jan 12, 2012 at 09:49:58AM -0800, Konrad Rzeszutek Wilk wrote:
+> > > On Tue, Jan 10, 2012 at 08:10:53PM +0000, Cihula, Joseph wrote:
+> > > > ACK, but tboot_sleep() calls tboot_shutdown() and there are error conditions in that which you
+> > are not reflecting upward--i.e. you should make tboot_shutdown() return an 'int' and propagate its
+> > errors through tboot_sleep().
+> > >
+> > > Hey Joe,
+> > >
+> > > Thanks for looking at the patches.
+> > >
+> > > Right now [with this patch applied] the code looks as so:
+> > >
+> > > 297
+> > > 298         tboot_shutdown(acpi_shutdown_map[sleep_state]);
+> > > 299         return 0;
+> > > 300 }
+> > >
+> > >
+> > > If we do make tboot_shutdown() return an int, there will be a need to
+> > > modify other callers: native_machine_emergency_restart,
+> > > native_machine_halt, native_machine_power_off, and native_play_dead as well.
+> > >
+> > > Perhaps that could be done in another patch and leave this one as is
+> > > where the 'tboot_sleep' would just return 0 instead of 'return
+> > > tboot_shutdown(...)' ?
+> > >
+> > > Perhaps another way to do this is to extract the common code of
+> > > tboot_sleep and tboot_shutdown?
+> 
+> I'd be happier to see the callers above changed to handle a tboot_shutdown() that returned an error than splitting this up and only checking the error in one path.
 
-This is documented a little better in ipmi_si_intf.c, but you are right, 
-it's not terribly complete.
+OK, so something like this then:
 
--corey
+>From da60a441fd62aee83763758455c08c281893ae93 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 8 Dec 2011 17:14:08 +0800
+Subject: [PATCH] tboot: Add return values for tboot_sleep and consequently
+ tboot_shutdown
+
+.. as appropiately. As tboot_sleep now returns values.
+remove tboot_sleep_wrapper.
+
+Suggested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Acked-by: Joseph Cihula <joseph.cihula@intel.com>
+[v1: Return -1/0/+1 instead of ACPI_xx values]
+[v2: Also make tboot_shutdown return error code]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/kernel/reboot.c  |    6 +++---
+ arch/x86/kernel/smpboot.c |    2 +-
+ arch/x86/kernel/tboot.c   |   33 +++++++++++++++------------------
+ include/linux/tboot.h     |    4 ++--
+ 4 files changed, 21 insertions(+), 24 deletions(-)
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 37a458b..b29326a 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -549,7 +549,7 @@ static void native_machine_emergency_restart(void)
+ 	if (reboot_emergency)
+ 		emergency_vmx_disable_all();
+ 
+-	tboot_shutdown(TB_SHUTDOWN_REBOOT);
++	WARN_ON(tboot_shutdown(TB_SHUTDOWN_REBOOT));
+ 
+ 	/* Tell the BIOS if we want cold or warm reboot */
+ 	*((unsigned short *)__va(0x472)) = reboot_mode;
+@@ -684,7 +684,7 @@ static void native_machine_halt(void)
+ 	/* stop other cpus and apics */
+ 	machine_shutdown();
+ 
+-	tboot_shutdown(TB_SHUTDOWN_HALT);
++	WARN_ON(tboot_shutdown(TB_SHUTDOWN_HALT));
+ 
+ 	/* stop this cpu */
+ 	stop_this_cpu(NULL);
+@@ -698,7 +698,7 @@ static void native_machine_power_off(void)
+ 		pm_power_off();
+ 	}
+ 	/* a fallback in case there is no PM info available */
+-	tboot_shutdown(TB_SHUTDOWN_HALT);
++	WARN_ON(tboot_shutdown(TB_SHUTDOWN_HALT));
+ }
+ 
+ struct machine_ops machine_ops = {
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 66d250c..9aa903a 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1419,7 +1419,7 @@ static inline void hlt_play_dead(void)
+ void native_play_dead(void)
+ {
+ 	play_dead_common();
+-	tboot_shutdown(TB_SHUTDOWN_WFS);
++	WARN_ON(tboot_shutdown(TB_SHUTDOWN_WFS));
+ 
+ 	mwait_play_dead();	/* Only returns on failure */
+ 	hlt_play_dead();
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index 1a4ab7d..9504a7a 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -217,12 +217,12 @@ static int tboot_setup_sleep(void)
+ 
+ #endif
+ 
+-void tboot_shutdown(u32 shutdown_type)
++int tboot_shutdown(u32 shutdown_type)
+ {
+ 	void (*shutdown)(void);
+ 
+ 	if (!tboot_enabled())
+-		return;
++		return 0;
+ 
+ 	/*
+ 	 * if we're being called before the 1:1 mapping is set up then just
+@@ -230,13 +230,14 @@ void tboot_shutdown(u32 shutdown_type)
+ 	 * due to very early panic()
+ 	 */
+ 	if (!tboot_pg_dir)
+-		return;
++		return 0;
+ 
+ 	/* if this is S3 then set regions to MAC */
+-	if (shutdown_type == TB_SHUTDOWN_S3)
+-		if (tboot_setup_sleep())
+-			return;
+-
++	if (shutdown_type == TB_SHUTDOWN_S3) {
++		int rc = tboot_setup_sleep();
++		if (rc)
++			return rc;
++	}
+ 	tboot->shutdown_type = shutdown_type;
+ 
+ 	switch_to_tboot_pt();
+@@ -247,6 +248,8 @@ void tboot_shutdown(u32 shutdown_type)
+ 	/* should not reach here */
+ 	while (1)
+ 		halt();
++
++	return 0;
+ }
+ 
+ static void tboot_copy_fadt(const struct acpi_table_fadt *fadt)
+@@ -272,7 +275,7 @@ static void tboot_copy_fadt(const struct acpi_table_fadt *fadt)
+ 		offsetof(struct acpi_table_facs, firmware_waking_vector);
+ }
+ 
+-void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
++static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+ {
+ 	static u32 acpi_shutdown_map[ACPI_S_STATE_COUNT] = {
+ 		/* S0,1,2: */ -1, -1, -1,
+@@ -281,7 +284,7 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+ 		/* S5: */ TB_SHUTDOWN_S5 };
+ 
+ 	if (!tboot_enabled())
+-		return;
++		return 0;
+ 
+ 	tboot_copy_fadt(&acpi_gbl_FADT);
+ 	tboot->acpi_sinfo.pm1a_cnt_val = pm1a_control;
+@@ -292,16 +295,10 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+ 	if (sleep_state >= ACPI_S_STATE_COUNT ||
+ 	    acpi_shutdown_map[sleep_state] == -1) {
+ 		pr_warning("unsupported sleep state 0x%x\n", sleep_state);
+-		return;
++		return -1;
+ 	}
+ 
+-	tboot_shutdown(acpi_shutdown_map[sleep_state]);
+-}
+-static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
+-			       u32 pm1b_control)
+-{
+-	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
+-	return 0;
++	return tboot_shutdown(acpi_shutdown_map[sleep_state]);
+ }
+ 
+ static atomic_t ap_wfs_count;
+@@ -352,7 +349,7 @@ static __init int tboot_late_init(void)
+ 	atomic_set(&ap_wfs_count, 0);
+ 	register_hotcpu_notifier(&tboot_cpu_notifier);
+ 
+-	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
++	acpi_os_set_prepare_sleep(&tboot_sleep);
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/tboot.h b/include/linux/tboot.h
+index c75128b..8f14fe0 100644
+--- a/include/linux/tboot.h
++++ b/include/linux/tboot.h
+@@ -142,7 +142,7 @@ static inline int tboot_enabled(void)
+ }
+ 
+ extern void tboot_probe(void);
+-extern void tboot_shutdown(u32 shutdown_type);
++extern int tboot_shutdown(u32 shutdown_type);
+ extern struct acpi_table_header *tboot_get_dmar_table(
+ 				      struct acpi_table_header *dmar_tbl);
+ extern int tboot_force_iommu(void);
+@@ -151,7 +151,7 @@ extern int tboot_force_iommu(void);
+ 
+ #define tboot_enabled()			0
+ #define tboot_probe()			do { } while (0)
+-#define tboot_shutdown(shutdown_type)	do { } while (0)
++#define tboot_shutdown(shutdown_type)	0
+ #define tboot_sleep(sleep_state, pm1a_control, pm1b_control)	\
+ 					do { } while (0)
+ #define tboot_get_dmar_table(dmar_tbl)	(dmar_tbl)
+-- 
+1.7.7.5
+
