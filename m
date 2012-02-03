@@ -1,512 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757137Ab2BCRm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 12:42:28 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56479 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756828Ab2BCRmZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 12:42:25 -0500
-Date: Fri, 3 Feb 2012 21:42:18 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-Message-ID: <20120203174218.GN11834@moon>
-References: <20120130140905.441199885@openvz.org>
- <20120130141852.309402052@openvz.org>
- <20120203074656.GC30543@elte.hu>
- <20120203083530.GD1968@moon>
- <20120203090929.GA23996@elte.hu>
- <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
- <20120203092823.GE1968@moon>
- <4F2C1A46.4010105@zytor.com>
- <4F2C1AC9.7090509@zytor.com>
+	id S1757401Ab2BCRrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 12:47:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7092 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755058Ab2BCRrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 12:47:08 -0500
+Date: Fri, 3 Feb 2012 15:42:08 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        kosaki.motohiro@jp.fujitsu.com, tj@kernel.org, x86@kernel.org,
+        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        Rik van Riel <riel@redhat.com>, "avi@redhat.com" <avi@redhat.com>
+Subject: Re: Need advice how to fix an access to uninitialized per_cpu clock
+Message-ID: <20120203174208.GA4529@amt.cnet>
+References: <4F2A76C4.2010601@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F2C1AC9.7090509@zytor.com>
+In-Reply-To: <4F2A76C4.2010601@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 09:35:05AM -0800, H. Peter Anvin wrote:
-...
-> >How about:
-> >
-> >const int size = sizeof(cookies[0]);
-> >
-> >get_random_bytes(&cookies[i], size);
-> >
-> >... and skip the completely unnecessary for loop?
-> >
+On Thu, Feb 02, 2012 at 12:43:00PM +0100, Igor Mammedov wrote:
+> While playing with kvm cpu hot-plug, I've probably stumbled on general
+> kernel bug. So I'm lookng for advice on approach to fix it.
 > 
-> Even better:
+> When kvm guest uses kvmclock, it may hang on cpu hot-plug at
 > 
-> static __init int kcmp_cookie_init(void)
-> {
-> 	int i;
+>     BSP:
+>      smp_apic_timer_interrupt
+>        ...
+>          -> do_timer
+>            -> update_wall_time
 > 
-> 	get_random_bytes(cookies, sizeof cookies);
+> and a being on-lined CPU at waiting on sync with BSP at:
+>      start_secondary:
+>        while (!cpumask_test_cpu(smp_processor_id(), cpu_active_mask))
+>                     cpu_relax();
 > 
-> 	for (i = 0; i < KCMP_TYPES; i++)
-> 		cookies[i][1] |= ~(~0UL >> 1) | 1;
-> }
+> because of unusually big value returned by clock->read(clock) in
+> update_wall_time.
+> This happens due to overflow in pvclock_get_nsec_offset
 > 
+>         u64 delta = tsc - shadow->tsc_timestamp;
+> 
+> when shadow->tsc_timestamp is bigger than tsc.
+> And since pvclock_clocksource_read remembers and returns largest
+> value of any clock that ever was returned, clock for affected guest
+> virtually freezes.
+> 
+> Overflow happens due to reading undefined values from uninitialized
+> per_cpu variable hv_clock. In case of cpu hot-plug, clock is read at
+> least once on being on-lined cpu before it is initialized for this
+> cpu:
+> 
+>       start_secondary
+>         |-> smp_callin
+>         |  ->  smp_store_cpu_info
+>         |    -> identify_secondary_cpu
+>         |      -> mtrr_ap_init
+>         |        -> mtrr_restore
+>         |          -> stop_machine_from_inactive_cpu
+>         |            -> queue_stop_cpus_work
+>         |              ...
+>         |                -> kvm_clock_read
+>         |...
+>         |x86_cpuinit.setup_percpu_clockev
+> 
+> full call chain is below:
+> [    0.002999]  [<ffffffff8102fc74>] pvclock_clocksource_read+0x9f/0x275
+> [    0.002999]  [<ffffffff81071f9e>] ? check_preempt_wakeup+0x11c/0x1c2
+> [    0.002999]  [<ffffffff8102f05d>] kvm_clock_read+0x21/0xd3
+> [    0.002999]  [<ffffffff810154b1>] sched_clock+0x9/0xd
+> [    0.002999]  [<ffffffff81070509>] sched_clock_local+0x12/0x75
+> [    0.002999]  [<ffffffff8107065e>] sched_clock_cpu+0x84/0xc6
+> [    0.002999]  [<ffffffff8106bfd3>] update_rq_clock+0x28/0x108
+> [    0.002999]  [<ffffffff8106c15e>] enqueue_task+0x1d/0x64
+> [    0.002999]  [<ffffffff8106c500>] activate_task+0x22/0x24
+> [    0.002999]  [<ffffffff8106c90c>] ttwu_do_activate.constprop.39+0x32/0x61
+> [    0.002999]  [<ffffffff8106cd0c>] try_to_wake_up+0x17e/0x1e1
+> [    0.002999]  [<ffffffff8106cd98>] wake_up_process+0x15/0x17
+> [    0.002999]  [<ffffffff8109ebbf>] cpu_stop_queue_work+0x3d/0x5f
+> [    0.002999]  [<ffffffff8109ec6c>] queue_stop_cpus_work+0x8b/0xb6
+> [    0.002999]  [<ffffffff8109f0e3>] stop_machine_from_inactive_cpu+0xb4/0xed
+> [    0.002999]  [<ffffffff81023896>] ? mtrr_restore+0x4a/0x4a
+> [    0.002999]  [<ffffffff81023eb3>] mtrr_ap_init+0x5a/0x5c
+> [    0.002999]  [<ffffffff814b95f7>] identify_secondary_cpu+0x19/0x1b
+> [    0.002999]  [<ffffffff814bc0d3>] smp_store_cpu_info+0x3c/0x3e
+> [    0.002999]  [<ffffffff814bc4ed>] start_secondary+0x122/0x263
+> 
+> Looking at native_smp_prepare_cpus in arch/x86/kernel/smpboot.c
+> I see that it unconditionally calls set_mtrr_aps_delayed_init which
+> in turn effectively converts calls to mtrr_ap_init to nop ops.
+> And later call to native_smp_cpus_done -> mtrr_aps_init completes
+> mtrr initialization.
+> 
+> The same pattern might be noticed in suspend/hibernate handlers, that
+> call enable_nonboot_cpus.
+> 
+>   enable_nonboot_cpus
+>     -> arch_enable_nonboot_cpus_begin
+>          -> set_mtrr_aps_delayed_init
+> 
+>     -> boot secondary cpus
+> 
+>     -> arch_enable_nonboot_cpus_end
+>          -> mtrr_aps_init
+> 
+> So question is if the calling mtrr_ap_init so early in
+> identify_secondary_cpu is really necessary?
+> From current code it looks like it is never called at normal smp
+> boot/resume time. And only path that triggers it is cpu hot-plug one.
+> 
+> I see following possible solutions:
+> 
+> 1. Could the call to mtrr_ap_init be just moved from identify_secondary_cpu
+> to start_secondary right after x86_cpuinit.setup_percpu_clockev call?
+>
+> This will prevent an access to uninitialized per_cpu clock. Or move
+> x86_cpuinit.setup_percpu_clockev before smp_callin?
+> 
+> 2. Another way to prevent access to uninitialized per_cpu clock is to
+> introduce hook.early_percpu_clock_init that will be called before
+> smp_callin or right before mtrr_ap_init.
+> 
+> I hope to see opinions about this matter from a more experienced people than me.
 
-Oh, cool! It's a way simplier (I somehow forgot that
-get_random_bytes operates with stream of bytes).
+It would be more robust to introduce x86_cpuinit.early_percpu_clock_init
+and use it for KVM, replacing setup_percpu_clockev hook.
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: syscalls, x86: Add __NR_kcmp syscall v8
+setup_percpu_clockev initializes the APIC timer, but clearly sched_clock
+should be functional before that, for example for ftrace (in addition to
+sched_clock from scheduler as in the trace above).
 
-While doing the checkpoint-restore in the user space one need to determine
-whether various kernel objects (like mm_struct-s of file_struct-s) are shared
-between tasks and restore this state.
-
-The 2nd step can be solved by using appropriate CLONE_ flags and the unshare
-syscall, while there's currently no ways for solving the 1st one.
-
-One of the ways for checking whether two tasks share e.g. mm_struct is to
-provide some mm_struct ID of a task to its proc file, but showing such
-info considered to be not that good for security reasons.
-
-Thus after some debates we end up in conclusion that using that named
-'comparison' syscall might be the best candidate. So here is it --
-__NR_kcmp.
-
-It takes up to 5 arguments - the pids of the two tasks (which
-characteristics should be compared), the comparison type and
-(in case of comparison of files) two file descriptors.
-
-Lookups for pids are done in the caller's PID namespace only.
-
-At moment only x86 is supported and tested.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Andrey Vagin <avagin@openvz.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: H. Peter Anvin <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Glauber Costa <glommer@parallels.com>
-CC: Andi Kleen <andi@firstfloor.org>
-CC: Tejun Heo <tj@kernel.org>
-CC: Matt Helsley <matthltc@us.ibm.com>
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Vasiliy Kulikov <segoon@openwall.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Valdis.Kletnieks@vt.edu
-CC: Michal Marek <mmarek@suse.cz>
----
- arch/x86/syscalls/syscall_32.tbl         |    1 
- arch/x86/syscalls/syscall_64.tbl         |    1 
- include/linux/kcmp.h                     |   17 +++
- include/linux/syscalls.h                 |    2 
- kernel/Makefile                          |    3 
- kernel/kcmp.c                            |  155 +++++++++++++++++++++++++++++++
- kernel/sys_ni.c                          |    3 
- tools/testing/selftests/kcmp/Makefile    |   36 +++++++
- tools/testing/selftests/kcmp/kcmp_test.c |   84 ++++++++++++++++
- tools/testing/selftests/run_tests        |    2 
- 10 files changed, 303 insertions(+), 1 deletion(-)
-
-Index: linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
-===================================================================
---- linux-2.6.git.orig/arch/x86/syscalls/syscall_32.tbl
-+++ linux-2.6.git/arch/x86/syscalls/syscall_32.tbl
-@@ -355,3 +355,4 @@
- 346	i386	setns			sys_setns
- 347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
- 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
-+349	i386	kcmp			sys_kcmp
-Index: linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
-===================================================================
---- linux-2.6.git.orig/arch/x86/syscalls/syscall_64.tbl
-+++ linux-2.6.git/arch/x86/syscalls/syscall_64.tbl
-@@ -318,3 +318,4 @@
- 309	64	getcpu			sys_getcpu
- 310	64	process_vm_readv	sys_process_vm_readv
- 311	64	process_vm_writev	sys_process_vm_writev
-+312	64	kcmp			sys_kcmp
-Index: linux-2.6.git/include/linux/kcmp.h
-===================================================================
---- /dev/null
-+++ linux-2.6.git/include/linux/kcmp.h
-@@ -0,0 +1,17 @@
-+#ifndef _LINUX_KCMP_H
-+#define _LINUX_KCMP_H
-+
-+/* Comparison type */
-+enum kcmp_type {
-+	KCMP_FILE,
-+	KCMP_VM,
-+	KCMP_FILES,
-+	KCMP_FS,
-+	KCMP_SIGHAND,
-+	KCMP_IO,
-+	KCMP_SYSVSEM,
-+
-+	KCMP_TYPES,
-+};
-+
-+#endif /* _LINUX_KCMP_H */
-Index: linux-2.6.git/include/linux/syscalls.h
-===================================================================
---- linux-2.6.git.orig/include/linux/syscalls.h
-+++ linux-2.6.git/include/linux/syscalls.h
-@@ -857,4 +857,6 @@ asmlinkage long sys_process_vm_writev(pi
- 				      unsigned long riovcnt,
- 				      unsigned long flags);
- 
-+asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
-+			 unsigned long idx1, unsigned long idx2);
- #endif
-Index: linux-2.6.git/kernel/Makefile
-===================================================================
---- linux-2.6.git.orig/kernel/Makefile
-+++ linux-2.6.git/kernel/Makefile
-@@ -25,6 +25,9 @@ endif
- obj-y += sched/
- obj-y += power/
- 
-+ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
-+obj-$(CONFIG_X86) += kcmp.o
-+endif
- obj-$(CONFIG_FREEZER) += freezer.o
- obj-$(CONFIG_PROFILING) += profile.o
- obj-$(CONFIG_SYSCTL_SYSCALL_CHECK) += sysctl_check.o
-Index: linux-2.6.git/kernel/kcmp.c
-===================================================================
---- /dev/null
-+++ linux-2.6.git/kernel/kcmp.c
-@@ -0,0 +1,155 @@
-+#include <linux/kernel.h>
-+#include <linux/syscalls.h>
-+#include <linux/fdtable.h>
-+#include <linux/string.h>
-+#include <linux/random.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/cache.h>
-+#include <linux/bug.h>
-+#include <linux/err.h>
-+#include <linux/kcmp.h>
-+
-+#include <asm/unistd.h>
-+
-+/*
-+ * We don't expose real in-memory order of objects for security
-+ * reasons, still the comparison results should be suitable for
-+ * sorting. Thus, we obfuscate kernel pointers values and compare
-+ * the production instead.
-+ */
-+static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
-+
-+static long kptr_obfuscate(long v, int type)
-+{
-+	return (v ^ cookies[type][0]) * cookies[type][1];
-+}
-+
-+/*
-+ * 0 - equal, i.e. v1 = v2
-+ * 1 - less than, i.e. v1 < v2
-+ * 2 - greater than, i.e. v1 > v2
-+ * 3 - not equal but ordering unavailable (reserved for future)
-+ */
-+static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
-+{
-+	long ret;
-+
-+	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
-+
-+	return (ret < 0) | ((ret > 0) << 1);
-+}
-+
-+/* The caller must have pinned the task */
-+static struct file *
-+get_file_raw_ptr(struct task_struct *task, unsigned int idx)
-+{
-+	struct fdtable *fdt;
-+	struct file *file;
-+
-+	spin_lock(&task->files->file_lock);
-+	fdt = files_fdtable(task->files);
-+	if (idx < fdt->max_fds)
-+		file = fdt->fd[idx];
-+	else
-+		file = NULL;
-+	spin_unlock(&task->files->file_lock);
-+
-+	return file;
-+}
-+
-+SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
-+		unsigned long, idx1, unsigned long, idx2)
-+{
-+	struct task_struct *task1, *task2;
-+	int ret;
-+
-+	rcu_read_lock();
-+
-+	/*
-+	 * Tasks are looked up in caller's PID namespace only.
-+	 */
-+	task1 = find_task_by_vpid(pid1);
-+	task2 = find_task_by_vpid(pid2);
-+	if (!task1 || !task2)
-+		goto err_no_task;
-+
-+	get_task_struct(task1);
-+	get_task_struct(task2);
-+
-+	rcu_read_unlock();
-+
-+	/*
-+	 * One should have enough rights to inspect task details.
-+	 */
-+	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
-+	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
-+		ret = -EACCES;
-+		goto err;
-+	}
-+
-+	switch (type) {
-+	case KCMP_FILE: {
-+		struct file *filp1, *filp2;
-+
-+		filp1 = get_file_raw_ptr(task1, idx1);
-+		filp2 = get_file_raw_ptr(task2, idx2);
-+
-+		if (filp1 && filp2)
-+			ret = kcmp_ptr(filp1, filp2, KCMP_FILE);
-+		else
-+			ret = -EBADF;
-+		break;
-+	}
-+	case KCMP_VM:
-+		ret = kcmp_ptr(task1->mm, task2->mm, KCMP_VM);
-+		break;
-+	case KCMP_FILES:
-+		ret = kcmp_ptr(task1->files, task2->files, KCMP_FILES);
-+		break;
-+	case KCMP_FS:
-+		ret = kcmp_ptr(task1->fs, task2->fs, KCMP_FS);
-+		break;
-+	case KCMP_SIGHAND:
-+		ret = kcmp_ptr(task1->sighand, task2->sighand, KCMP_SIGHAND);
-+		break;
-+	case KCMP_IO:
-+		ret = kcmp_ptr(task1->io_context, task2->io_context, KCMP_IO);
-+		break;
-+	case KCMP_SYSVSEM:
-+#ifdef CONFIG_SYSVIPC
-+		ret = kcmp_ptr(task1->sysvsem.undo_list,
-+			       task2->sysvsem.undo_list,
-+			       KCMP_SYSVSEM);
-+#else
-+		ret = -EOPNOTSUP;
-+#endif
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+err:
-+	put_task_struct(task1);
-+	put_task_struct(task2);
-+
-+	return ret;
-+
-+err_no_task:
-+	rcu_read_unlock();
-+	return -ESRCH;
-+}
-+
-+static __init int kcmp_cookies_init(void)
-+{
-+	int i;
-+
-+	get_random_bytes(cookies, sizeof(cookies));
-+
-+	for (i = 0; i < KCMP_TYPES; i++)
-+		cookies[i][1] |= (~(~0UL >>  1) | 1);
-+
-+	return 0;
-+}
-+arch_initcall(kcmp_cookies_init);
-Index: linux-2.6.git/kernel/sys_ni.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys_ni.c
-+++ linux-2.6.git/kernel/sys_ni.c
-@@ -203,3 +203,6 @@ cond_syscall(sys_fanotify_mark);
- cond_syscall(sys_name_to_handle_at);
- cond_syscall(sys_open_by_handle_at);
- cond_syscall(compat_sys_open_by_handle_at);
-+
-+/* compare kernel pointers */
-+cond_syscall(sys_kcmp);
-Index: linux-2.6.git/tools/testing/selftests/kcmp/Makefile
-===================================================================
---- /dev/null
-+++ linux-2.6.git/tools/testing/selftests/kcmp/Makefile
-@@ -0,0 +1,36 @@
-+ifeq ($(strip $(V)),)
-+	E = @echo
-+	Q = @
-+else
-+	E = @\#
-+	Q =
-+endif
-+export E Q
-+
-+uname_M := $(shell uname -m 2>/dev/null || echo not)
-+ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
-+ifeq ($(ARCH),i386)
-+        ARCH := X86
-+	CFLAGS := -DCONFIG_X86_32 -D__i386__
-+endif
-+ifeq ($(ARCH),x86_64)
-+	ARCH := X86
-+	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
-+endif
-+
-+CFLAGS += -I../../../../arch/x86/include/generated/
-+CFLAGS += -I../../../../include/
-+CFLAGS += -I../../../../usr/include/
-+
-+all:
-+ifeq ($(ARCH),X86)
-+	$(E) "  CC run_test"
-+	$(Q) gcc $(CFLAGS) kcmp_test.c -o run_test
-+else
-+	$(E) "Not an x86 target, can't build kcmp selftest"
-+endif
-+
-+clean:
-+	$(E) "  CLEAN"
-+	$(Q) rm -fr ./run_test
-+	$(Q) rm -fr ./test-file
-Index: linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c
-===================================================================
---- /dev/null
-+++ linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c
-@@ -0,0 +1,84 @@
-+#define _GNU_SOURCE
-+
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <signal.h>
-+#include <limits.h>
-+#include <unistd.h>
-+#include <errno.h>
-+#include <string.h>
-+#include <fcntl.h>
-+
-+#include <linux/unistd.h>
-+#include <linux/kcmp.h>
-+
-+#include <sys/syscall.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <sys/wait.h>
-+
-+static long sys_kcmp(int pid1, int pid2, int type, int fd1, int fd2)
-+{
-+	return syscall(__NR_kcmp, pid1, pid2, type, fd1, fd2);
-+}
-+
-+int main(int argc, char **argv)
-+{
-+	const char kpath[] = "kcmp-test-file";
-+	int pid1, pid2;
-+	int fd1, fd2;
-+	int status;
-+
-+	fd1 = open(kpath, O_RDWR | O_CREAT | O_TRUNC, 0644);
-+	pid1 = getpid();
-+
-+	if (fd1 < 0) {
-+		perror("Can't create file");
-+		exit(1);
-+	}
-+
-+	pid2 = fork();
-+	if (pid2 < 0) {
-+		perror("fork failed");
-+		exit(1);
-+	}
-+
-+	if (!pid2) {
-+		int pid2 = getpid();
-+		int ret;
-+
-+		fd2 = open(kpath, O_RDWR, 0644);
-+		if (fd2 < 0) {
-+			perror("Can't open file");
-+			exit(1);
-+		}
-+
-+		/* An example of output and arguments */
-+		printf("pid1: %6d pid2: %6d FD: %2d FILES: %2d VM: %2d FS: %2d "
-+		       "SIGHAND: %2d IO: %2d SYSVSEM: %2d INV: %2d\n",
-+		       pid1, pid2,
-+		       sys_kcmp(pid1, pid2, KCMP_FILE,		fd1, fd2),
-+		       sys_kcmp(pid1, pid2, KCMP_FILES,		0, 0),
-+		       sys_kcmp(pid1, pid2, KCMP_VM,		0, 0),
-+		       sys_kcmp(pid1, pid2, KCMP_FS,		0, 0),
-+		       sys_kcmp(pid1, pid2, KCMP_SIGHAND,	0, 0),
-+		       sys_kcmp(pid1, pid2, KCMP_IO,		0, 0),
-+		       sys_kcmp(pid1, pid2, KCMP_SYSVSEM,	0, 0),
-+
-+			/* This one should fail */
-+		       sys_kcmp(pid1, pid2, KCMP_TYPES + 1,	0, 0));
-+
-+		/* This one should return same fd */
-+		ret = sys_kcmp(pid1, pid2, KCMP_FILE, fd1, fd1);
-+		if (ret) {
-+			printf("FAIL: 0 expected but %d returned\n", ret);
-+			ret = -1;
-+		} else
-+			printf("PASS: 0 returned as expected\n");
-+		exit(ret);
-+	}
-+
-+	waitpid(pid2, &status, P_ALL);
-+
-+	return 0;
-+}
-Index: linux-2.6.git/tools/testing/selftests/run_tests
-===================================================================
---- linux-2.6.git.orig/tools/testing/selftests/run_tests
-+++ linux-2.6.git/tools/testing/selftests/run_tests
-@@ -1,6 +1,6 @@
- #!/bin/bash
- 
--TARGETS=breakpoints
-+TARGETS="breakpoints kcmp"
- 
- for TARGET in $TARGETS
- do
