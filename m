@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab2BCAws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 19:52:48 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:44618
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754816Ab2BCAwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 19:52:45 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/4] drivers: hv: Cleanup the kvp related state in hyperv.h
-Date: Thu,  2 Feb 2012 16:56:48 -0800
-Message-Id: <1328230611-3315-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1328230577-3263-1-git-send-email-kys@microsoft.com>
-References: <1328230577-3263-1-git-send-email-kys@microsoft.com>
+	id S1755574Ab2BCBFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 20:05:12 -0500
+Received: from sr-smtp.usish.com ([210.5.144.203]:43027 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab2BCBFK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 20:05:10 -0500
+X-Greylist: delayed 1002 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Feb 2012 20:05:10 EST
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Masanari Iida'" <standby24x7@gmail.com>, <lindar_liu@usish.com>,
+        <linux-scsi@vger.kernel.org>
+Cc: <trivial@kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1328203522-3862-1-git-send-email-standby24x7@gmail.com>
+Subject: RE: [PATCH v2] [trivial] pm8001: Fix typo in pm8001_hwi.c
+Date: Fri, 3 Feb 2012 08:46:32 +0800
+Message-ID: <63F9BE2E1F114ADA8301965998CCDE03@usish.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+In-Reply-To: <1328203522-3862-1-git-send-email-standby24x7@gmail.com>
+Thread-Index: Aczh0CXE5v4/YUYLQxGAtbCbjRG+nAAPQEIg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now cleanup the hyperv.h with regards to KVP definitions.
+Oh, thanks for fix.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- include/linux/hyperv.h |   27 ++++++++++++++-------------
- 1 files changed, 14 insertions(+), 13 deletions(-)
-
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 7332b3f..b822978 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -137,7 +137,6 @@ struct hv_ku_msg {
- 
- 
- 
--#ifdef __KERNEL__
- 
- /*
-  * Registry value types.
-@@ -163,28 +162,30 @@ enum hv_kvp_exchg_pool {
- };
- 
- struct hv_kvp_hdr {
--	u8 operation;
--	u8 pool;
--};
-+	__u8 operation;
-+	__u8 pool;
-+	__u16 pad;
-+} __attribute__((packed));
- 
- struct hv_kvp_exchg_msg_value {
--	u32 value_type;
--	u32 key_size;
--	u32 value_size;
--	u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
--	u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
--};
-+	__u32 value_type;
-+	__u32 key_size;
-+	__u32 value_size;
-+	__u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
-+	__u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
-+} __attribute__((packed));
- 
- struct hv_kvp_msg_enumerate {
--	u32 index;
-+	__u32 index;
- 	struct hv_kvp_exchg_msg_value data;
--};
-+} __attribute__((packed));
- 
- struct hv_kvp_msg {
- 	struct hv_kvp_hdr	kvp_hdr;
- 	struct hv_kvp_msg_enumerate	kvp_data;
--};
-+} __attribute__((packed));
- 
-+#ifdef __KERNEL__
- #include <linux/scatterlist.h>
- #include <linux/list.h>
- #include <linux/uuid.h>
--- 
-1.7.4.1
+Acked-by : Jack Wang <jack_wang@usish.com>
+> 
+> Correct typo "unresgister" to "unregister" and "deviece" to
+> "device" in drivers/scsi/pm8001/pm8001_hwi.c
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+>  drivers/scsi/pm8001/pm8001_hwi.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/pm8001/pm8001_hwi.c
+> b/drivers/scsi/pm8001/pm8001_hwi.c
+> index b7b92f7..e12c4f6 100644
+> --- a/drivers/scsi/pm8001/pm8001_hwi.c
+> +++ b/drivers/scsi/pm8001/pm8001_hwi.c
+> @@ -3532,7 +3532,7 @@ static void process_one_iomb(struct pm8001_hba_info
+> *pm8001_ha, void *piomb)
+>  		break;
+>  	case OPC_OUB_DEREG_DEV:
+>  		PM8001_MSG_DBG(pm8001_ha,
+> -			pm8001_printk("unresgister the deviece\n"));
+> +			pm8001_printk("unregister the device\n"));
+>  		mpi_dereg_resp(pm8001_ha, piomb);
+>  		break;
+>  	case OPC_OUB_GET_DEV_HANDLE:
+> --
+> 1.7.6.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
