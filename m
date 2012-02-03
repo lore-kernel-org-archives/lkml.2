@@ -1,138 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab2BCJww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 04:52:52 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52511 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755486Ab2BCJwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 04:52:49 -0500
-Date: Fri, 3 Feb 2012 10:52:27 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-Message-ID: <20120203095227.GA13162@elte.hu>
-References: <20120130140905.441199885@openvz.org>
- <20120130141852.309402052@openvz.org>
- <20120203074656.GC30543@elte.hu>
- <20120203083530.GD1968@moon>
- <20120203090929.GA23996@elte.hu>
- <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+	id S1755554Ab2BCJ4C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 04:56:02 -0500
+Received: from ngcobalt07.manitu.net ([217.11.48.107]:53830 "EHLO
+	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab2BCJz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 04:55:57 -0500
+X-manitu-Original-Sender-IP: 86.32.213.40
+X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
+Date: Fri, 3 Feb 2012 10:55:50 +0100
+From: Roland Eggner <edvx1@systemanalysen.net>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] fs/vfat: add *.cmd to filenames listed as
+ executable by mount option "showexec"
+Message-ID: <20120203095550.GA12435@mobil.systemanalysen.net>
+Reply-To: Roland Eggner <edvx1@systemanalysen.net>
+References: <20120203064055.GA7184@mobil.systemanalysen.net>
+ <8762foe543.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
 Content-Disposition: inline
-In-Reply-To: <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+In-Reply-To: <8762foe543.fsf@devron.myhome.or.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Fri, 3 Feb 2012 10:09:29 +0100 Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > 
-> > * Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > 
-> > > > > +			get_random_bytes(&cookies[i][j],
-> > > > > +					 sizeof(cookies[i][j]));
-> > > > 
-> > > > ugly line break.
-> > > > 
-> > > 
-> > > Why? Looks pretty good to me. But sure I'll change it.
-> > 
-> > It's ugly because it serves no purpose other than pacifying 
-> > checkpatch and makes the code *uglier*.
-> 
-> No it doesn't.  For 80-col displays the code is *already 
-> wrapped*.  And that wrapping to column 0 is vastly worse than 
-> the above.
+On 2012-02-03 Fr 16:41:16 +0900, OGAWA Hirofumi wrote:
+> Roland Eggner <edvx1@systemanalysen.net> writes:
+>=20
+> > The mount option "showexec" provides a somewhat more native view of vfat
+> > filesystems:  only filenames *.exe *.com *.bat are listed as executable=
+, rather
+> > than all files.  This patch adds filenames *.cmd to those listed as exe=
+cutable.
+> > *.cmd are usually scripts associated with the shell "cmd.exe", which ha=
+s been
+> > the default shell in several OS versions of its vendor.
+> >
+> > Signed-off-by: Roland Eggner <edvx1@systemanalysen.net>
+> > ---
+>=20
+> Hm, this may be good for someone, but this may not be for someone. So,
+> this probably should be option if someone really care it.
+>=20
+> I'm not thinking about how though...
+>=20
+Think of VM images of recent versions of the FAT originating OS:  currently
+"showexec" will miss roughly half of the files, for which it is intended fo=
+r.
+IMHO this patch provides a very cheap completion of a feature of the vfat k=
+ernel
+module.  Cheap in terms of only 9 characters additional source code.
 
-Have you actually checked how this actual line would look like 
-in an 80 cols terminal, if not broken up? I have, it's exactly 
-80 cols so it looks just fine.
+If you really see an advantage in the current, incomplete state of the
+"showexec" feature, compared to the proposed, completed state:  please elab=
+orate
+your objection.
 
-( It was probably broken up when it was longer and then left 
-  this way - making things permanently worse not just by the 
-  linebreak but also by the unnecessary curly braces around the 
-  inner loop. )
+> > --- a/Documentation/filesystems/vfat.txt	2011-10-24 09:10:05.000000000 =
++0200
+> > +++ b/Documentation/filesystems/vfat.txt	2012-02-03 07:26:30.457441230 =
++0100
+> > @@ -114,7 +114,7 @@
+> > =20
+> >  showexec      -- If set, the execute permission bits of the file will =
+be
+> >  		 allowed only if the extension part of the name is .EXE,
+> > -		 .COM, or .BAT. Not set by default.
+> > +		 .COM, .BAT or .CMD.  Not set by default.
+> > =20
+> >  debug         -- Can be set, but unused by the current implementation.
+> > =20
+> > --- a/fs/fat/inode.c	2012-02-03 06:23:35.721409360 +0100
+> > +++ b/fs/fat/inode.c	2012-01-23 01:35:29.000000000 +0100
+> > @@ -326,7 +326,7 @@ struct inode *fat_iget(struct super_bloc
+> > =20
+> >  static int is_exec(unsigned char *extension)
+> >  {
+> > -	unsigned char *exe_extensions =3D "EXECOMBAT", *walk;
+> > +	unsigned char *exe_extensions =3D "EXECOMBATCMD", *walk;
+> > =20
+> >  	for (walk =3D exe_extensions; *walk; walk +=3D 3)
+> >  		if (!strncmp(extension, walk, 3))
 
-But more importantly, even if the line was genuinely longer, how 
-many people are looking at things in an 80-col display? By my 
-experience, from looking at what kinds of terminals kernel 
-people use, it's below 1%. (I was one of the last ones holding 
-out because text consoles are so much faster than just about any 
-usable xterm app - but I switched to a larger terminal some two 
-years ago.)
+--=20
+Roland Eggner <edvx1@systemanalysen.net>
 
-Shouldnt't we concentrate on the 99% case which gets uglified by 
-the systematic linebreaks?
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature
 
-Also, there are clearly cases where breaking the line 
-intelligently improves things. Such as:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-+               /* An example of output and arguments */
-+               printf("pid1: %6d pid2: %6d FD: %2d FILES: %2d VM: %2d FS: %2d "
-+                      "SIGHAND: %2d IO: %2d SYSVSEM: %2d INV: %2d\n",
-+                      pid1, pid2,
-+                      sys_kcmp(pid1, pid2, KCMP_FILE,          fd1, fd2),
-+                      sys_kcmp(pid1, pid2, KCMP_FILES,         0, 0),
-+                      sys_kcmp(pid1, pid2, KCMP_VM,            0, 0),
-+                      sys_kcmp(pid1, pid2, KCMP_FS,            0, 0),
-+                      sys_kcmp(pid1, pid2, KCMP_SIGHAND,	0, 0),
-+                      sys_kcmp(pid1, pid2, KCMP_IO,            0, 0),
-+                      sys_kcmp(pid1, pid2, KCMP_SYSVSEM,	0, 0),
-+
-+                       /* This one should fail */
-+                      sys_kcmp(pid1, pid2, KCMP_TYPES + 1,     0, 0));
+iEUEARECAAYFAk8rryYACgkQdN/hKfT7G/KomgCgor3Oi+7o0UvlhS715nw5yBnX
+PcAAmLYx6NkdR9ddeogCBMKRy0e1Gl0=
+=JgT9
+-----END PGP SIGNATURE-----
 
-this is vastly more readable because the arguments are lined up 
-vertically not just at the beginning but nicely tabulated along 
-the way.
-
-Oh, and note that 
-
-Breaking lines is a tool that should be used on a case by case 
-basis, not a hard limit.
-
-> If we want to increase the standard to (say) 96 cols then 
-> fine, I'd be happy with that.  But until we do that we should 
-> not create such a gruesome mess for those who use 80 cols.
-
-The kernel has *already* become a gruesome mess for 80 col users 
-long ago. That was the main reason why I stopped using 80 col 
-terminals two years ago ...
-
-So lets stop the pretense.
-
-> > It's a disease. When checkpatch tells you "this line is too 
-> > long" then consider it a code cleanliness warning!
-> 
-> Well yes, if it can be fixed by other means then great.
-
-Yes it can.
-
-Thanks,
-
-	Ingo
+--XsQoSWH+UP9D9v3l--
