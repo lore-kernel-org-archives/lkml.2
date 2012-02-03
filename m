@@ -1,47 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab2BCAHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 19:07:47 -0500
-Received: from plane.gmane.org ([80.91.229.3]:40028 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753460Ab2BCAHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 19:07:46 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Mantas <grawity@gmail.com>
-Subject: Re: could modify sillyrename to put files in /tmp
-Date: Fri, 03 Feb 2012 02:07:25 +0200
-Message-ID: <jgf8ft$rg5$1@dough.gmane.org>
-References: <201202021018234324363@300.cn>
+	id S1755154Ab2BCAKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 19:10:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38713 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab2BCAKU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 19:10:20 -0500
+Date: Thu, 2 Feb 2012 16:10:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: serge.hallyn@canonical.com, oleg@redhat.com,
+        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
+        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
+Subject: Re: [PATCH 1/1][V5] Add reboot_pid_ns to handle the reboot syscall
+Message-Id: <20120202161018.e3c62965.akpm@linux-foundation.org>
+In-Reply-To: <1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
+References: <1325754410-32600-1-git-send-email-daniel.lezcano@free.fr>
+	<1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 78-60-211-195.static.zebra.lt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-In-Reply-To: <201202021018234324363@300.cn>
-Cc: linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-02 04:18, wangjing wrote:
-> In nfs v3 ,if mulity process visit nfs mount nfs dir ,there sometimes occour .nfsXXX can't delete .
+On Thu,  5 Jan 2012 10:06:50 +0100
+Daniel Lezcano <daniel.lezcano@free.fr> wrote:
+
+> In the case of a child pid namespace, rebooting the system does not
+> really makes sense. When the pid namespace is used in conjunction
+> with the other namespaces in order to create a linux container, the
+> reboot syscall leads to some problems.
 > 
-> If modify sillyrename to put files in /tmp ,it will be more friendly to nfs user.
-
-What would then happen if /tmp was on a separate filesystem than the
-original file?
-
-> the background
->    1、Linux fs has   /nfsmnt/work_pub/web and /nfsmnt/work_inwork/web ，they use NFS V3 mount
->    2、there is many process will read and write files in the dir /nfsmnt/work_pub/web 
->    3、cron will del  all files in dir  /nfsmnt/work_pub/web in period，and will copy all the files which in the dir /nfsmnt/work_inwork/web 
+> A container can reboot the host. That can be fixed by dropping
+> the sys_reboot capability but we are unable to correctly to poweroff/
+> halt/reboot a container and the container stays stuck at the shutdown
+> time with the container's init process waiting indefinitively.
 > 
-> in some times delete all files in  /nfsmnt/work_pub/web will faild ,because there is some .nfsXXXX
+> After several attempts, no solution from userspace was found to reliabily
+> handle the shutdown from a container.
+> 
+> This patch propose to make the init process of the child pid namespace to
+> exit with a signal status set to : SIGINT if the child pid namespace called
+> "halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
+> When the reboot syscall is called and we are not in the initial
+> pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
+> and "RESTART2". Otherwise we return EINVAL.
+> 
+> Returning EINVAL is also an easy way to check if this feature is supported
+> by the kernel when invoking another 'reboot' option like CAD.
+> 
+> By this way the parent process of the child pid namespace knows if
+> it rebooted or not and can take the right decision.
 
-Then modify the cron job to ignore ".nfs*" files.
+Looks OK, although the comments need help.  Is the below still true?
 
--- 
-Mantas M.
+Do you think it would be feasible to put your testcase into
+tools/testing/selftests?  I'm thinking "no", because running the test
+needs elevated permissions and might reboot the user's machine(!).
+
+
+--- a/include/linux/pid_namespace.h~pidns-add-reboot_pid_ns-to-handle-the-reboot-syscall-fix
++++ a/include/linux/pid_namespace.h
+@@ -32,7 +32,7 @@ struct pid_namespace {
+ #endif
+ 	gid_t pid_gid;
+ 	int hide_pid;
+-	int reboot;
++	int reboot;	/* group exit code if this pidns was rebooted */
+ };
+ 
+ extern struct pid_namespace init_pid_ns;
+--- a/kernel/sys.c~pidns-add-reboot_pid_ns-to-handle-the-reboot-syscall-fix
++++ a/kernel/sys.c
+@@ -444,9 +444,10 @@ SYSCALL_DEFINE4(reboot, int, magic1, int
+ 	                magic2 != LINUX_REBOOT_MAGIC2C))
+ 		return -EINVAL;
+ 
+-	/* In case the pid namespaces are enabled, the current task is in a
+-	 * child pid_namespace and the command is handled by 'reboot_pid_ns',
+-	 * this one will invoke 'do_exit'.
++	/*
++	 * If pid namespaces are enabled and the current task is in a child
++	 * pid_namespace, the command is handled by reboot_pid_ns() which will
++	 * call do_exit().
+ 	 */
+ 	ret = reboot_pid_ns(task_active_pid_ns(current), cmd);
+ 	if (ret)
+
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -32,6 +32,7 @@ struct pid_namespace {
+>  #endif
+>  	gid_t pid_gid;
+>  	int hide_pid;
+> +	int reboot;
+>  };
+
+This was particuarly distressing.  The field was poorly named and other
+people forgotting to document their data structures doesn't mean that
+we should continue to do this!
+
 
