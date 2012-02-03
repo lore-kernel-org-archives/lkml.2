@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab2BCQ4h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:56:37 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:37670 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757140Ab2BCQ4f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:56:35 -0500
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Simon Glass <sjg@chromium.org>
-Subject: [PATCH 1/3] arm: tegra: dts: Support host/device selection and legacy mode
-Date: Fri,  3 Feb 2012 08:56:10 -0800
-Message-Id: <1328288172-8059-2-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1328288172-8059-1-git-send-email-sjg@chromium.org>
-References: <1328288172-8059-1-git-send-email-sjg@chromium.org>
+	id S1757152Ab2BCQ6B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:58:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756875Ab2BCQ6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 11:58:00 -0500
+Date: Fri, 3 Feb 2012 17:51:32 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pavel Emelyanov <xemul@parallels.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Pedro Alves <pedro@codesourcery.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Roland McGrath <roland@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
+Message-ID: <20120203165132.GA5636@redhat.com>
+References: <1328267483-3225342-1-git-send-email-avagin@openvz.org> <20120203162519.GB805@google.com> <4F2C0F13.70709@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2C0F13.70709@parallels.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some USB ports can support host and device operation. We add the dr_mode
-property (as found in Freescale) for this.
+On 02/03, Pavel Emelyanov wrote:
+>
+> On 02/03/2012 08:25 PM, Tejun Heo wrote:
+> > On Fri, Feb 03, 2012 at 02:11:23PM +0300, Andrew Vagin wrote:
+> >> Zero is written at clear_tid_address, when the process exits.
+> >> This functionality is used by pthread_join().
+> >>
+> >> sys_set_tid_address() changes this address for current task.
+> >>
+> >> Before this patch clear_tid_address could not be got from user space.
+> >> I want to dump a full state of a task, so I need this address.
+> >> Also I think it may be useful for debugging a multithreading program.
+> >>
+> >> I am not sure that ptrace is suitable place. It may be added in prctl,
+> >> but I think it's a bit useless and strange. I can't image a real
+> >> situation (avoid checkpointing) when a thread will want to get own
+> >> clear_tid_address from itself, this address is used by parent ussually.
+> >>
+> >> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> >
+> > Ummm... this really doesn't fit in ptrace.  Cyrill, why not put it
+> > together with other params you're exporting?
+>
+> Because there's no need for current to get this value of himself, but can
+> be useful for e.g. gdb.
 
-One USB port has a 'legacy mode', left over from the days of pre-Tegra
-chips. I don't believe this is actually used, except that we must know
-to turn this off in the driver.
+OK, perhaps this makes sense, I do not know.
 
-Signed-off-by: Simon Glass <sjg@chromium.org>
----
- .../devicetree/bindings/usb/tegra-usb.txt          |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+Jan, Pedro, do you think gdb can use PTRACE_GET_TID_ADDRESS (returns
+tracee->clear_child_tid) ?
 
-diff --git a/Documentation/devicetree/bindings/usb/tegra-usb.txt b/Documentation/devicetree/bindings/usb/tegra-usb.txt
-index 035d63d..007005d 100644
---- a/Documentation/devicetree/bindings/usb/tegra-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/tegra-usb.txt
-@@ -11,3 +11,16 @@ Required properties :
-  - phy_type : Should be one of "ulpi" or "utmi".
-  - nvidia,vbus-gpio : If present, specifies a gpio that needs to be
-    activated for the bus to be powered.
-+
-+Optional properties:
-+  - dr_mode : dual role mode. Indicates the working mode for
-+   nvidia,tegra20-ehci compatible controllers.  Can be "host", "peripheral",
-+   or "otg".  Default to "host" if not defined for backward compatibility.
-+      host means this is a host controller
-+      peripheral means it is device controller
-+      otg means it can operate as either ("on the go")
-+  - nvidia,has-legacy-mode : boolean indicates whether this controller can
-+    operate in legacy mode (as APX 2500 / 2600). In legacy mode some
-+    registers are accessed through the APB_MISC base address instead of
-+    the USB controller. Since this is a legacy issue it probably does not
-+    warrant a compatible string of its own.
--- 
-1.7.7.3
+Oleg.
 
