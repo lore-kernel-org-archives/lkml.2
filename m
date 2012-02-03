@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab2BCW6G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 17:58:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1630 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753685Ab2BCW6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 17:58:04 -0500
-Date: Fri, 3 Feb 2012 17:57:40 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>, Chen Gong <gong.chen@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <ying.huang@intel.com>,
-        "'ak@linux.intel.com'" <ak@linux.intel.com>,
-        "'hughd@chromium.org'" <hughd@chromium.org>,
-        "'mingo@elte.hu'" <mingo@elte.hu>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
- smp_send_stop()
-Message-ID: <20120203225740.GO5650@redhat.com>
-References: <4F0BAB33.2090201@linux.intel.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C583163B0@USINDEVS01.corp.hds.com>
- <4F0D3A0B.4090709@linux.intel.com>
- <20120111172544.GS5650@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28FD61F@ORSMSX104.amr.corp.intel.com>
- <32727E9A83EE9A42A1F0906295A3A77B2C78F49973@USINDEVS01.corp.hds.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2DA7B65F2A@USINDEVS01.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F0275EE@ORSMSX104.amr.corp.intel.com>
- <20120203171809.GL5650@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28F02B380@ORSMSX104.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F02B380@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754961Ab2BCXMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 18:12:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51822 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab2BCXMb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 18:12:31 -0500
+Date: Fri, 3 Feb 2012 15:12:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: huge debug_objects_cache. swapping but 25% mem free
+Message-Id: <20120203151218.59ceb1c1.akpm@linux-foundation.org>
+In-Reply-To: <20120201182932.GA15518@sig21.net>
+References: <20120130154048.GA421@sig21.net>
+	<20120201182932.GA15518@sig21.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 10:32:31PM +0000, Luck, Tony wrote:
-> > What if we send the REBOOT_IPI first and let it block for up to a second.
-> > Most code paths that are done with spin_locks will use
-> > spin_lock_irqrestore.  As soon as the interrupts are re-enabled the
-> > REBOOT_IPI comes in and takes the processor.  If after a second the cpu
-> > still is blocking interrupts, just use the NMI as a big hammer to shut it
-> > down.
+On Wed, 1 Feb 2012 19:29:32 +0100
+Johannes Stezenbach <js@sig21.net> wrote:
+
+> On Mon, Jan 30, 2012 at 04:40:48PM +0100, Johannes Stezenbach wrote:
+> > 
+> > According to slabtop debug_objects_cache eats half the
+> > memory, is this expected?  The Kconfig help text does not
+> > suggest it.
 > 
-> This looks good - it certainly deals with my "if we just let them run
-> a bit, they'd release the locks" quibble.  One second sounds very
-> generous - but I'm not going to bikeshed that (so long as it is a total
-> of one second - not one second per cpu). So the pseudo-code is:
-
-This is how the stop_cpus is implemented on x86 and the one second comes
-from there
-
-arch/x86/kernel/smp.c::native_irq_stop_other_cpus and
-native_nmi_stop_other_cpus
-
+> FWIW, today after running full backup using rsync:
 > 
-> 	send_reboot_ipi_to_everyone_else()
+>   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+> 4025450 4025447  99%    0.36K 183977       22   1471816K debug_objects_cache
+> 170266  87241  51%    1.74K   9645       18    308640K ext3_inode_cache
+>  54855  40215  73%    0.58K   2034       27     32544K dentry
+>  38124  12474  32%    0.42K   2119       18     16952K buffer_head
+>  17794  17464  98%    0.51K    574       31      9184K sysfs_dir_cache
+>  11434   8494  74%    0.87K    713       18     11408K radix_tree_node
+>  11400   5570  48%    0.38K    570       20      4560K kmalloc-64
 > 
-> 	wait_1_second()
+> /sys/kernel/debug/debug_objects/stats:
+> max_chain     :870
+> warnings      :0
+> fixups        :0
+> pool_free     :258
+> pool_min_free :252
+> pool_used     :4025193
+> pool_max_used :4025195
 > 
-> 	for_each_cpu_that_didnt_respond_to_reboot_ipi {
-> 		hit_that_cpu_with_NMI()
-> 	}
 > 
-> Perhaps a notification printk() if we had to use the NMI hammer?
+> then after "echo 3 >/proc/sys/vm/drop_caches":
+> 
+>   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+> 4030488 4030485  99%    0.36K 184206       22   1473648K debug_objects_cache
+>  17955   9071  50%    0.58K    665       27     10640K dentry
+>  17763  17455  98%    0.51K    573       31      9168K sysfs_dir_cache
+>   9408   9156  97%    0.33K    392       24      3136K kmalloc-8
+> 
+> 
+> I'm still not sure if this is normal behaviour of DEBUG_OBJECTS or a bug?
 
-Yes.
+Bug.  It appears that you hadn't been using CONFIG_DEBUG_OBJECTS before
+3.2 so we don't know if it is a regression.
 
-Again this is for x86, but I guess that is our common case with pstore.
-
-Cheers,
-Don
