@@ -1,174 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab2BCM0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 07:26:39 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:61000 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab2BCM0g (ORCPT
+	id S1754305Ab2BCMvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 07:51:39 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:38782 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778Ab2BCMvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 07:26:36 -0500
+	Fri, 3 Feb 2012 07:51:38 -0500
+X-Greylist: delayed 1050 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Feb 2012 07:51:37 EST
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Roland Eggner <edvx1@systemanalysen.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] fs/vfat: add *.cmd to filenames listed as executable by mount option "showexec"
+References: <20120203064055.GA7184@mobil.systemanalysen.net>
+	<8762foe543.fsf@devron.myhome.or.jp>
+	<20120203095550.GA12435@mobil.systemanalysen.net>
+Date: Fri, 03 Feb 2012 21:34:03 +0900
+In-Reply-To: <20120203095550.GA12435@mobil.systemanalysen.net> (Roland
+	Eggner's message of "Fri, 3 Feb 2012 10:55:50 +0100")
+Message-ID: <871uqcdrk4.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.93 (gnu/linux)
 MIME-Version: 1.0
-Date: Fri, 3 Feb 2012 17:56:34 +0530
-Message-ID: <CADDb1s0kq0ukQstCc-eNKB6+TPuFxLdguhC1U0YHs4k7L_QVUA@mail.gmail.com>
-Subject: PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal routine fails
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: jgarzik@pobox.com, JBottomley@parallels.com, Jeff Garzik <jeff@garzik.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Nam-Jae Jeon <namjae.jeon@samsung.com>, a.sahrawat@samsung.com,
-        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has been observed that a number of USB HDD's do not respond correctly
-to SCSI mode sense command(retrieve caching pages) which results in their
-Write Cache being discarded by queue requests i.e., WCE if left set to
-'0'(disabled).
-This results in a number of Filesystem corruptions, when the device
-is unplugged abruptly.
+Roland Eggner <edvx1@systemanalysen.net> writes:
 
-So, in order to identify the devices correctly - give it
-a last try using ATA_16 after failure from normal routine.
+> On 2012-02-03 Fr 16:41:16 +0900, OGAWA Hirofumi wrote:
+>> Roland Eggner <edvx1@systemanalysen.net> writes:
+>> 
+>> > The mount option "showexec" provides a somewhat more native view of vfat
+>> > filesystems: only filenames *.exe *.com *.bat are listed as
+>> > executable, rather
+>> > than all files.  This patch adds filenames *.cmd to those listed
+>> > as executable.
+>> > *.cmd are usually scripts associated with the shell "cmd.exe",
+>> > which has been
+>> > the default shell in several OS versions of its vendor.
+>> >
+>> > Signed-off-by: Roland Eggner <edvx1@systemanalysen.net>
+>> > ---
+>> 
+>> Hm, this may be good for someone, but this may not be for someone. So,
+>> this probably should be option if someone really care it.
+>> 
+>> I'm not thinking about how though...
+>> 
+> Think of VM images of recent versions of the FAT originating OS:  currently
+> "showexec" will miss roughly half of the files, for which it is intended for.
+> IMHO this patch provides a very cheap completion of a feature of the vfat kernel
+> module.  Cheap in terms of only 9 characters additional source code.
+>
+> If you really see an advantage in the current, incomplete state of the
+> "showexec" feature, compared to the proposed, completed state:  please elaborate
+> your objection.
 
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+You would be happy with adding "cmd", and may think enough. But Someone
+is not happy with it. And someone want to add "sh", "py", and "pl".
 
----
- drivers/ata/libata-scsi.c |   51 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/scsi/sd.c         |   17 +++++++++++++++
- include/linux/libata.h    |    3 ++
- 3 files changed, 71 insertions(+), 0 deletions(-)
+If I have to tackle it, why I have to make happy only your state? I'm
+not saying current has advantage, I'm saying your patch doesn't make
+guys happy like current one. It is just moving a place of happiness from
+a group to an another group, right?
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 508a60b..d5b00e6 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -562,6 +562,57 @@ error:
- }
-
- /**
-+ *      ata_get_cachestatus - Handler for to get WriteCache Status
-+ *                      using ATA_16 scsi command
-+ *      @scsidev: Device to which we are issuing command
-+ *
-+ *      LOCKING:
-+ *      Defined by the SCSI layer.  We don't really care.
-+ *
-+ *      RETURNS:
-+ *      '0' for Write Cache Disabled and on any error.
-+ *      '1' for Write Cache enabled
-+ */
-+int ata_get_cachestatus(struct scsi_device *scsidev)
-+{
-+	int rc = 0;
-+	u8 scsi_cmd[MAX_COMMAND_SIZE] = {0};
-+	u8 *sensebuf = NULL, *argbuf = NULL;
-+	enum dma_data_direction data_dir;
-+
-+	sensebuf = kzalloc(SCSI_SENSE_BUFFERSIZE, GFP_NOIO);
-+	if (!sensebuf)
-+		return rc;
-+
-+	argbuf = kmalloc(ATA_SECT_SIZE, GFP_KERNEL);
-+	if (argbuf == NULL)
-+		goto error;
-+
-+	scsi_cmd[0] = ATA_16;
-+	scsi_cmd[1]  = (4 << 1); /* PIO Data-in */
-+	scsi_cmd[2]  = 0x0e;     /* no off.line or cc, read from dev,
-+				block count in sector count field */
-+	data_dir = DMA_FROM_DEVICE;
-+	scsi_cmd[14] = ATA_IDENTIFY_DEV;
-+
-+	if (!scsi_execute(scsidev, scsi_cmd, data_dir, argbuf, ATA_SECT_SIZE,
-+				sensebuf, (10*HZ), 5, 0, NULL)) {
-+		/*
-+		 * '6th' Bit in Word 85 Corresponds to Write Cache
-+		 * being Enabled/disabled, Word 85 represnets the
-+		 * features supported
-+		 */
-+		if (le16_to_cpu(((unsigned short *)argbuf)[85]) & 0x20)
-+			rc = 1;
-+	}
-+
-+error:
-+	kfree(sensebuf);
-+	kfree(argbuf);
-+	return rc;
-+}
-+
-+/**
-  *	ata_task_ioctl - Handler for HDIO_DRIVE_TASK ioctl
-  *	@scsidev: Device to which we are issuing command
-  *	@arg: User provided data for issuing command
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index c691fb5..a6b887d 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -50,6 +50,11 @@
- #include <linux/string_helpers.h>
- #include <linux/async.h>
- #include <linux/slab.h>
-+
-+#ifdef CONFIG_ATA
-+#include <linux/libata.h>
-+#endif
-+
- #include <linux/pm_runtime.h>
- #include <asm/uaccess.h>
- #include <asm/unaligned.h>
-@@ -2129,7 +2134,11 @@ sd_read_cache_type(struct scsi_disk *sdkp,
-unsigned char *buffer)
- 		if (modepage == 0x3F) {
- 			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
- 				  "present\n");
-+#ifdef CONFIG_ATA
-+			goto WCE_USING_ATA;
-+#else
- 			goto defaults;
-+#endif
- 		} else if ((buffer[offset] & 0x3f) != modepage) {
- 			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
- 			goto defaults;
-@@ -2149,6 +2158,14 @@ sd_read_cache_type(struct scsi_disk *sdkp,
-unsigned char *buffer)
- 				  "Uses READ/WRITE(6), disabling FUA\n");
- 			sdkp->DPOFUA = 0;
- 		}
-+#ifdef CONFIG_ATA
-+WCE_USING_ATA:
-+		if (!sdp->removable && !sdkp->WCE) {
-+			sd_printk(KERN_NOTICE, sdkp, "Try to check write cache "
-+				"enable/disable using ATA command\n");
-+			sdkp->WCE = ata_get_cachestatus(sdp);
-+		}
-+#endif
-
- 		if (sdkp->first_scan || old_wce != sdkp->WCE ||
- 		    old_rcd != sdkp->RCD || old_dpofua != sdkp->DPOFUA)
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index cafc09a..33fc73f 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -84,6 +84,8 @@
- 	}							\
- })
-
-+#define ATA_IDENTIFY_DEV	0xEC
-+
- /* NEW: debug levels */
- #define HAVE_LIBATA_MSG 1
-
-@@ -990,6 +992,7 @@ extern void ata_host_init(struct ata_host *,
-struct device *,
- 			  unsigned long, struct ata_port_operations *);
- extern int ata_scsi_detect(struct scsi_host_template *sht);
- extern int ata_scsi_ioctl(struct scsi_device *dev, int cmd, void __user *arg);
-+extern int ata_get_cachestatus(struct scsi_device *scsidev);
- extern int ata_scsi_queuecmd(struct Scsi_Host *h, struct scsi_cmnd *cmd);
- extern int ata_sas_scsi_ioctl(struct ata_port *ap, struct scsi_device *dev,
- 			    int cmd, void __user *arg);
+Thanks.
 -- 
-1.7.2.3
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
