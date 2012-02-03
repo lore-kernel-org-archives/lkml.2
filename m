@@ -1,57 +1,590 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab2BCUTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 15:19:46 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:50240 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851Ab2BCUTo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 15:19:44 -0500
-Date: Fri, 3 Feb 2012 12:19:11 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew MacLeod <amacleod@redhat.com>, Torvald Riegel <triegel@redhat.com>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
-        rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Re: Memory corruption due to word sharing
-Message-ID: <20120203201911.GL2382@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
- <20120201224554.GK2382@linux.vnet.ibm.com>
- <CA+55aFyzYO0CMZOgdrVV0PdG2DkbwTQG7eE7N3bp=0tQmruFEQ@mail.gmail.com>
- <20120202184209.GD2518@linux.vnet.ibm.com>
- <CA+55aFyYxzED4OoYvb3nbET7_zyP5mGhEa2w_QCvQOx55bVjHg@mail.gmail.com>
- <20120202193747.GG2518@linux.vnet.ibm.com>
- <4F2C0D8A.70103@redhat.com>
- <CA+55aFx1NjR9XMQ9iLyVk05Erwtqgf7hfZkBCMJzkCMFJS8CHw@mail.gmail.com>
- <4F2C329B.2080107@redhat.com>
- <CA+55aFxoW0zexd4Zy33gToK9V0UU6wbQFFogEyFPPiGuNq2GGQ@mail.gmail.com>
+	id S1756631Ab2BCUVb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 15:21:31 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:45700 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754851Ab2BCUV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 15:21:29 -0500
+Message-ID: <1328300388.2261.211.camel@groeck-laptop>
+Subject: Re: [PATCH 2/3] gpio: Add support for Intel ICHx/3100/Series[56]
+ GPIO
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Aaron Sierra <asierra@xes-inc.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>
+Date: Fri, 3 Feb 2012 12:19:48 -0800
+In-Reply-To: <e5096016-12a5-4f44-94fc-1f88e0ce00d4@zimbra>
+References: <e5096016-12a5-4f44-94fc-1f88e0ce00d4@zimbra>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxoW0zexd4Zy33gToK9V0UU6wbQFFogEyFPPiGuNq2GGQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020320-3270-0000-0000-000003B7C381
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 12:00:03PM -0800, Linus Torvalds wrote:
-> On Fri, Feb 3, 2012 at 11:16 AM, Andrew MacLeod <amacleod@redhat.com> wrote:
+Hi Aaron,
 
-[ . . . ]
+On Thu, 2012-02-02 at 18:27 -0500, Aaron Sierra wrote:
+> This driver works on many Intel chipsets, including the ICH6, ICH7,
+> ICH8, ICH9, ICH10, 3100, Series 5/3400 (Ibex Peak), Series 6/C200
+> (Cougar Point), and NM10 (Tiger Point).
+> 
+> Additional Intel chipsets should be easily supported if needed, eg the
+> ICH1-5, EP80579, etc.
+> 
+> Tested on QM67 (Cougar Point), QM57 (Ibex Peak), 3100 (Whitmore Lake),
+> and NM10 (Tiger Point).
+> 
+> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
 
-> Having access to __ATOMIC_ACQUIRE would actually be an improvement -
-> it's just that the architectures that really care about things like
-> that simply don't matter enough for us to really worry about them
-> (ia64 being the prime example), and everybody else either doesn't need
-> extra barriers at all (x86), or might as well use a full barrier (most
-> everything else).
+Needs rebase to 3.3.
 
-I believe that version 8 of the ARM architecture will provide load-acquire
-and store-release instructions.
+s/ich_gpio/gpio-ich/ for file names.
 
-							Thanx, Paul
+I already commented on the way parameters are passed from the mfd
+driver.
+
+> ---
+>  MAINTAINERS             |    6 +
+>  drivers/gpio/Kconfig    |   16 ++
+>  drivers/gpio/Makefile   |    1 +
+>  drivers/gpio/ich_gpio.c |  433 +++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 456 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/gpio/ich_gpio.c
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 5738c8b..4905dd9 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -3160,6 +3160,12 @@ W:       http://www.developer.ibm.com/welcome/netfinity/serveraid.html
+>  S:     Supported
+>  F:     drivers/scsi/ips.*
+> 
+> +ICH LPC DRIVER
+> +M:     Peter Tyser <ptyser@xes-inc.com>
+> +S:     Maintained
+> +F:     drivers/mfd/ich_lpc.c
+> +F:     drivers/gpio/ich_gpio.c
+> +
+>  IDE SUBSYSTEM
+>  M:     "David S. Miller" <davem@davemloft.net>
+>  L:     linux-ide@vger.kernel.org
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 2967002..5ae654d 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -140,6 +140,22 @@ config GPIO_SCH
+>           This driver can also be built as a module. If so, the module
+>           will be called sch-gpio.
+> 
+> +config GPIO_ICH
+> +       tristate "Intel ICH GPIO"
+> +       depends on PCI && X86
+> +       select MFD_CORE
+> +       select LPC_ICH
+> +       help
+> +         Say yes here to support the GPIO functionality of a number of Intel
+> +         ICH-based chipsets.  Currently supported devices: ICH6, ICH7, ICH8
+> +         ICH9, ICH10, Series 5/3400 (eg Ibex Peak), Series 6/C200 (eg
+> +         Cougar Point), NM10 (Tiger Point), and 3100 (Whitmore Lake).
+> +
+> +         If unsure, say N.
+> +
+> +         This driver can also be built as a module. If so, the module
+> +         will be called ich-gpio.
+> +
+>  config GPIO_VX855
+>         tristate "VIA VX855/VX875 GPIO"
+>         depends on MFD_SUPPORT && PCI
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index b605f8e..840a654 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -39,6 +39,7 @@ obj-$(CONFIG_GPIO_WM831X)     += wm831x-gpio.o
+>  obj-$(CONFIG_GPIO_WM8350)      += wm8350-gpiolib.o
+>  obj-$(CONFIG_GPIO_WM8994)      += wm8994-gpio.o
+>  obj-$(CONFIG_GPIO_SCH)         += sch_gpio.o
+> +obj-$(CONFIG_GPIO_ICH)         += ich_gpio.o
+>  obj-$(CONFIG_MACH_U300)                += gpio-u300.o
+>  obj-$(CONFIG_PLAT_NOMADIK)     += gpio-nomadik.o
+>  obj-$(CONFIG_GPIO_RDC321X)     += rdc321x-gpio.o
+> diff --git a/drivers/gpio/ich_gpio.c b/drivers/gpio/ich_gpio.c
+> new file mode 100644
+> index 0000000..f7feca1
+> --- /dev/null
+> +++ b/drivers/gpio/ich_gpio.c
+> @@ -0,0 +1,433 @@
+> +/*
+> + * Intel ICH6-10, Series 5 and 6 GPIO driver
+> + *
+> + * Copyright (C) 2010 Extreme Engineering Solutions.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> + */
+> +
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+> +#include <linux/module.h>
+> +#include <linux/pci.h>
+> +#include <linux/gpio.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/mfd/lpc_ich.h>
+> +
+> +#define DRV_NAME "ich_gpio"
+> +
+> +/* PCI config register offsets into LPC I/F - D31:F0 */
+> +#define PCI_ICHX_ACPI_BAR      0x40
+> +#define PCI_ICHX_GPIO_BAR      0x48
+> +#define PCI_ICHX_GPIO_CTRL     0x4C
+> +
+> +/*
+> + * GPIO register offsets in GPIO I/O space.
+> + * Each chunk of 32 GPIOs is manipulated via its own USE_SELx, IO_SELx, and
+> + * LVLx registers.  Logic in the read/write functions takes a register and
+> + * an absolute bit number and determines the proper register offset and bit
+> + * number in that register.  For example, to read the value of GPIO bit 50
+> + * the code would access offset ichx_regs[2(=GPIO_LVL)][1(=50/32)],
+> + * bit 18 (50%32).
+> + */
+> +enum GPIO_REG {
+> +       GPIO_USE_SEL = 0,
+> +       GPIO_IO_SEL,
+> +       GPIO_LVL,
+> +};
+> +
+> +static const u8 ichx_regs[3][3] = {
+> +       {0x00, 0x30, 0x40},     /* USE_SEL[1-3] offsets */
+> +       {0x04, 0x34, 0x44},     /* IO_SEL[1-3] offsets */
+> +       {0x0c, 0x38, 0x48},     /* LVL[1-3] offsets */
+> +};
+> +
+> +#define ICHX_GPIO_WRITE(val, reg)      outl(val, (reg) + ichx_priv.gpio_base.start)
+> +#define ICHX_GPIO_READ(reg)            inl((reg) + ichx_priv.gpio_base.start)
+> +#define ICHX_PM_WRITE(val, reg)                outl(val, (reg) + ichx_priv.pm_base.start)
+> +#define ICHX_PM_READ(reg)              inl((reg) + ichx_priv.pm_base.start)
+> +
+> +/* Convenient wrapper to make our PCI ID table */
+> +#define ICHX_GPIO_PCI_DEVICE(dev, data) \
+> +       .vendor = PCI_VENDOR_ID_INTEL,  \
+> +       .device = dev,                  \
+> +       .subvendor = PCI_ANY_ID,        \
+> +       .subdevice = PCI_ANY_ID,        \
+> +       .class = 0,                     \
+> +       .class_mask = 0,                \
+> +       .driver_data = (ulong)data
+> +
+Leftover define ?
+
+> +struct ichx_desc {
+> +       /* Max GPIO pins the chipset can have */
+> +       uint ngpio;
+> +
+> +       /* The offset of GPE0_STS in the PM IO region, 0 if unneeded */
+> +       uint gpe0_sts_ofs;
+> +
+> +       /* USE_SEL is bogus on some chipsets, eg 3100 */
+> +       u32 use_sel_ignore[3];
+> +
+> +       /* Some chipsets have quirks, let these use their own request/get */
+> +       int (*request)(struct gpio_chip *chip, unsigned offset);
+> +       int (*get)(struct gpio_chip *chip, unsigned offset);
+> +};
+> +
+> +static struct {
+> +       spinlock_t lock;
+> +       struct platform_device *dev;
+> +       struct pci_dev *pdev;
+> +       struct gpio_chip chip;
+> +       struct resource gpio_base;      /* GPIO IO base */
+> +       struct resource pm_base;        /* Power Mangagment IO base */
+> +       struct ichx_desc *desc; /* Pointer to chipset-specific description */
+> +       u32 orig_gpio_ctrl;     /* Orig CTRL value, used to restore on exit */
+> +} ichx_priv;
+> +
+> +static int modparam_gpiobase = -1;     /* dynamic */
+> +module_param_named(gpiobase, modparam_gpiobase, int, 0444);
+> +MODULE_PARM_DESC(gpiobase, "The GPIO number base. -1 means dynamic, "
+> +                          "which is the default.");
+> +
+> +static int ichx_write_bit(int reg, unsigned nr, int val, int verify)
+> +{
+> +       unsigned long flags;
+> +       u32 data;
+> +       int reg_nr = nr / 32;
+> +       int bit = nr & 0x1f;
+> +       int ret = 0;
+> +
+> +       spin_lock_irqsave(&ichx_priv.lock, flags);
+> +
+> +       data = ICHX_GPIO_READ(ichx_regs[reg][reg_nr]);
+> +       data = (data & ~(1 << bit)) | (val << bit);
+> +       ICHX_GPIO_WRITE(data, ichx_regs[reg][reg_nr]);
+> +       if (verify && (data != ICHX_GPIO_READ(ichx_regs[reg][reg_nr])))
+> +               ret = -EPERM;
+> +
+> +       spin_unlock_irqrestore(&ichx_priv.lock, flags);
+> +
+> +       return ret;
+> +}
+> +
+> +static int ichx_read_bit(int reg, unsigned nr)
+> +{
+> +       unsigned long flags;
+> +       u32 data;
+> +       int reg_nr = nr / 32;
+> +       int bit = nr & 0x1f;
+> +
+> +       spin_lock_irqsave(&ichx_priv.lock, flags);
+> +
+> +       data = ICHX_GPIO_READ(ichx_regs[reg][reg_nr]);
+> +
+> +       spin_unlock_irqrestore(&ichx_priv.lock, flags);
+> +
+> +       return data & (1 << bit) ? 1 : 0;
+> +}
+> +
+> +static int ichx_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
+> +{
+> +       /*
+> +        * Try setting pin as an input and verify it worked since many pins
+> +        * are output-only.
+> +        */
+> +       if (ichx_write_bit(GPIO_IO_SEL, nr, 1, 1))
+> +               return -EINVAL;
+> +
+> +       return 0;
+> +}
+> +
+> +static int ichx_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
+> +                                       int val)
+> +{
+> +       /* Set GPIO output value. */
+> +       ichx_write_bit(GPIO_LVL, nr, val, 0);
+> +
+> +       /*
+> +        * Try setting pin as an output and verify it worked since many pins
+> +        * are input-only.
+> +        */
+> +       if (ichx_write_bit(GPIO_IO_SEL, nr, 0, 1))
+> +               return -EINVAL;
+> +
+> +       return 0;
+> +}
+> +
+> +static int ichx_gpio_get(struct gpio_chip *chip, unsigned nr)
+> +{
+> +       return ichx_read_bit(GPIO_LVL, nr);
+> +}
+> +
+> +static int ich6_gpio_get(struct gpio_chip *chip, unsigned nr)
+> +{
+> +       unsigned long flags;
+> +       u32 data;
+> +
+> +       /*
+> +        * GPI 0 - 15 need to be read from the power management registers on
+> +        * a ICH6/3100 bridge.
+> +        */
+> +       if (nr < 16) {
+> +               spin_lock_irqsave(&ichx_priv.lock, flags);
+> +
+> +               /* GPI 0 - 15 are latched, write 1 to clear*/
+> +               ICHX_PM_WRITE(1 << (16 + nr), ichx_priv.desc->gpe0_sts_ofs);
+> +
+> +               data = ICHX_PM_READ(ichx_priv.desc->gpe0_sts_ofs);
+> +
+> +               spin_unlock_irqrestore(&ichx_priv.lock, flags);
+> +
+> +               return (data >> 16) & (1 << nr) ? 1 : 0;
+> +       } else {
+> +               return ichx_gpio_get(chip, nr);
+> +       }
+> +}
+> +
+> +static int ichx_gpio_request(struct gpio_chip *chip, unsigned nr)
+> +{
+> +       /*
+> +        * Note we assume the BIOS properly set a bridge's USE value.  Some
+> +        * chips (eg Intel 3100) have bogus USE values though, so first see if
+> +        * the chipset's USE value can be trusted for this specific bit.
+> +        * If it can't be trusted, assume that the pin can be used as a GPIO.
+> +        */
+> +       if (ichx_priv.desc->use_sel_ignore[nr / 32] & (1 << (nr & 0x1f)))
+> +               return 1;
+> +
+> +       return ichx_read_bit(GPIO_USE_SEL, nr) ? 0 : -ENODEV;
+> +}
+> +
+> +static int ich6_gpio_request(struct gpio_chip *chip, unsigned nr)
+> +{
+> +       /*
+> +        * Fixups for bits 16 and 17 are necessary on the Intel ICH6/3100
+> +        * bridge as they are controlled by USE register bits 0 and 1.  See
+> +        * "Table 704 GPIO_USE_SEL1 register" in the i3100 datasheet for
+> +        * additional info.
+> +        */
+> +       if ((nr == 16) || (nr == 17))
+> +               nr -= 16;
+> +
+> +       return ichx_gpio_request(chip, nr);
+> +}
+> +
+> +static void ichx_gpio_set(struct gpio_chip *chip, unsigned nr, int val)
+> +{
+> +       ichx_write_bit(GPIO_LVL, nr, val, 0);
+> +}
+> +
+> +static void __devinit ichx_gpiolib_setup(struct gpio_chip *chip)
+> +{
+> +       chip->owner = THIS_MODULE;
+> +       chip->label = DRV_NAME;
+> +
+> +       /* Allow chip-specific overrides of request()/get() */
+> +       chip->request = ichx_priv.desc->request ?
+> +               ichx_priv.desc->request : ichx_gpio_request;
+> +       chip->get = ichx_priv.desc->get ?
+> +               ichx_priv.desc->get : ichx_gpio_get;
+> +
+> +       chip->set = ichx_gpio_set;
+> +       chip->direction_input = ichx_gpio_direction_input;
+> +       chip->direction_output = ichx_gpio_direction_output;
+> +       chip->base = modparam_gpiobase;
+> +       chip->ngpio = ichx_priv.desc->ngpio;
+> +       chip->can_sleep = 0;
+> +       chip->dbg_show = NULL;
+> +}
+> +
+> +/* ICH6-based, 631xesb-based */
+> +static struct ichx_desc ich6_desc = {
+> +       /* Bridges using the ICH6 controller need fixups for GPIO 0 - 17 */
+> +       .request = ich6_gpio_request,
+> +       .get = ich6_gpio_get,
+> +
+> +       /* GPIO 0-15 are read in the GPE0_STS PM register */
+> +       .gpe0_sts_ofs = 0x28,
+> +
+> +       .ngpio = 50,
+> +};
+> +
+> +/* Intel 3100 */
+> +static struct ichx_desc i3100_desc = {
+> +       /*
+> +        * Bits 16,17, 20 of USE_SEL and bit 16 of USE_SEL2 always read 0 on
+> +        * the Intel 3100.  See "Table 712. GPIO Summary Table" of 3100
+> +        * Datasheet for more info.
+> +        */
+> +       .use_sel_ignore = {0x00130000, 0x00010000, 0x0},
+> +
+> +       /* The 3100 needs fixups for GPIO 0 - 17 */
+> +       .request = ich6_gpio_request,
+> +       .get = ich6_gpio_get,
+> +
+> +       /* GPIO 0-15 are read in the GPE0_STS PM register */
+> +       .gpe0_sts_ofs = 0x28,
+> +
+> +       .ngpio = 50,
+> +};
+> +
+> +/* ICH7 and ICH8-based */
+> +static struct ichx_desc ich7_desc = {
+> +       .ngpio = 50,
+> +};
+> +
+> +/* ICH9-based */
+> +static struct ichx_desc ich9_desc = {
+> +       .ngpio = 61,
+> +};
+> +
+> +/* ICH10-based - Consumer/corporate versions have different amount of GPIO */
+> +static struct ichx_desc ich10_cons_desc = {
+> +       .ngpio = 51,
+> +};
+> +static struct ichx_desc ich10_corp_desc = {
+> +       .ngpio = 72,
+> +};
+> +
+> +/* Intel 5 series, 6 series, 3400 series, and C200 series */
+> +static struct ichx_desc intel5_desc = {
+> +       .ngpio = 76,
+> +};
+> +
+> +static int __devinit ichx_gpio_probe(struct platform_device *pdev)
+> +{
+> +       struct resource *res_base, *res_pm;
+> +       size_t sz_base;
+> +       int id;
+> +       int err;
+> +
+> +       id = pdev->id;
+> +       if (!id)
+> +               return -ENODEV;
+> +
+> +       switch (lpc_chipset_info[id].gpio_version) {
+> +               case 0x401:
+> +                       ichx_priv.desc = &i3100_desc;
+> +                       break;
+> +               case 0x501:
+> +                       ichx_priv.desc = &intel5_desc;
+> +                       break;
+> +               case 0x601:
+> +                       ichx_priv.desc = &ich6_desc;
+> +                       break;
+> +               case 0x701:
+> +                       ichx_priv.desc = &ich7_desc;
+> +                       break;
+> +               case 0x801:
+> +                       ichx_priv.desc = &ich9_desc;
+> +                       break;
+> +               case 0xa01:
+> +                       ichx_priv.desc = &ich10_corp_desc;
+> +                       break;
+> +               case 0xa11:
+> +                       ichx_priv.desc = &ich10_cons_desc;
+> +                       break;
+> +               default:
+> +                       goto base_err;
+> +       }
+> +
+> +       res_base = platform_get_resource(pdev, IORESOURCE_IO, ICH_RES_GPIO);
+> +       if (!res_base)
+> +               goto base_err;
+> +
+> +       sz_base = ichx_priv.desc->ngpio > 64 ? resource_size(res_base) : 64;
+> +       if (!request_region(res_base->start, sz_base, pdev->name))
+> +               goto base_err;
+> +
+> +       memcpy(&ichx_priv.gpio_base, res_base, sizeof(struct resource));
+
+Would it make sense to use a pointer ?
+
+> +       ichx_priv.gpio_base.end = ichx_priv.gpio_base.end + sz_base;
+> +
+> +       /*
+> +        * If necessary, determine the I/O address of ACPI/power management
+> +        * registers which are needed to read the the GPE0 register for GPI pins
+> +        * 0 - 15 on some chipsets.
+> +        */
+> +       if (!ichx_priv.desc->gpe0_sts_ofs)
+> +               goto init;
+> +
+> +       res_pm = platform_get_resource(pdev, IORESOURCE_IO, ICH_RES_GPE0);
+> +       if (!res_pm) {
+> +               pr_warn("ACPI BAR not enumerated, GPI 0 - 15 "
+> +                       "unusable\n");
+> +               goto init;
+> +       }
+> +
+> +       if (!request_region(res_pm->start, resource_size(res_pm),
+> +                       pdev->name)) {
+> +               pr_warn("ACPI BAR not enumerated, GPI 0 - 15 "
+> +                       "unusable\n");
+> +               goto init;
+> +       }
+
+Shouldn't something to happen in this case besides not copying res_pm ?
+pm_base will be uninitialized in this case, yet as far as I can see you
+still try to use it later on.
+
+Also, do you need to release the regions when exiting ?
+
+> +
+> +       memcpy(&ichx_priv.pm_base, res_pm, sizeof(struct resource));
+> +
+Can you use a pointer instead ?
+
+> +init:
+> +       ichx_gpiolib_setup(&ichx_priv.chip);
+> +       err = gpiochip_add(&ichx_priv.chip);
+> +       if (err) {
+> +               pr_err("Failed to register GPIOs\n");
+
+Do you need to release memory regions here ?
+
+> +               return err;
+> +       }
+> +
+> +       pr_info("GPIO from %d to %d on %s\n", ichx_priv.chip.base,
+> +              ichx_priv.chip.base + ichx_priv.chip.ngpio - 1, DRV_NAME);
+> +
+> +       return 0;
+> +
+> +base_err:
+> +       return -ENODEV;
+> +}
+> +
+> +static int __devexit ichx_gpio_remove(struct platform_device *pdev)
+> +{
+> +       int err;
+> +
+> +       err = gpiochip_remove(&ichx_priv.chip);
+> +       if (err)
+> +               dev_err(&pdev->dev, "%s failed, %d\n",
+> +                               "gpiochip_remove()", err);
+> +
+> +       err = release_resource(&ichx_priv.gpio_base);
+> +
+Should this be release_region instead ? And how about pm_base ? 
+
+Also, this results in the first error - if there was one - being
+overwritten.
+
+> +       return err;
+> +}
+> +
+> +static struct platform_driver ichx_gpio_driver = {
+> +       .driver         = {
+> +               .owner  = THIS_MODULE,
+> +               .name   = DRV_NAME,
+> +       },
+> +       .probe          = ichx_gpio_probe,
+> +       .remove         = __devexit_p(ichx_gpio_remove),
+> +};
+> +
+> +static int __devinit ichx_gpio_init_module(void)
+> +{
+> +       return platform_driver_register(&ichx_gpio_driver);
+> +}
+> +
+> +static void __devexit ichx_gpio_exit_module(void)
+> +{
+> +       platform_driver_unregister(&ichx_gpio_driver);
+> +}
+> +
+> +module_init(ichx_gpio_init_module);
+
+Might be a good idea to replace module_init with subsys_initcall. Some
+other drivers such as i2c-gpio may depend on this one being loaded
+early. That only applies if the driver is built into the kernel, but it
+seems to be quite common for other gpio drivers.
+
+> +module_exit(ichx_gpio_exit_module);
+> +
+> +MODULE_AUTHOR("Peter Tyser <ptyser@xes-inc.com>");
+> +MODULE_DESCRIPTION("GPIO interface for Intel ICH series");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:ich_gpio");
+> --
+> 1.7.0.4
+
+Thanks,
+
+Guenter
+
 
