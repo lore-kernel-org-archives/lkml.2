@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab2BCVK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 16:10:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51212 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757919Ab2BCVK6 (ORCPT
+	id S1757939Ab2BCVQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 16:16:51 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64264 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab2BCVQt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 16:10:58 -0500
-Date: Fri, 3 Feb 2012 13:10:54 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED 11/11] blkcg: unify blkg's for blkcg policies
-Message-ID: <20120203211054.GD14209@google.com>
-References: <1328131156-13290-1-git-send-email-tj@kernel.org>
- <1328131156-13290-12-git-send-email-tj@kernel.org>
- <20120202003730.GC19837@google.com>
- <20120203210656.GB12616@redhat.com>
- <20120203210922.GC14209@google.com>
+	Fri, 3 Feb 2012 16:16:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203210922.GC14209@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87d39vajq4.fsf@ti.com>
+References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
+ <20120202194258.GU15343@ponder.secretlab.ca> <87d39vajq4.fsf@ti.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 3 Feb 2012 14:16:29 -0700
+X-Google-Sender-Auth: hLfGZ7QKQbiWdCXYCJyCpQ5fFIU
+Message-ID: <CACxGe6uLR2ou7+TQdHubrEuHtonbgVtO1ow3iQV5V-jVSx=LWA@mail.gmail.com>
+Subject: Re: [PATCH v9 00/25] gpio/omap: driver cleanup and fixes
+To: Kevin Hilman <khilman@ti.com>
+Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>, linux-omap@vger.kernel.org,
+        tony@atomide.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 01:09:22PM -0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Fri, Feb 03, 2012 at 04:06:56PM -0500, Vivek Goyal wrote:
-> > Shouldn't we shoot down root group policy data upon elevator switch?
-> > Otherwise once the elevator comes back, it will continue to use old
-> > policy data (old stats, overwrite old weigts etc.).
-> 
-> It's racy and hacky but we do shoot down policy specific data and
-> reinit them.  The behavior should be fine although implementation is
-> seriously ugly for now.
+On Fri, Feb 3, 2012 at 10:51 AM, Kevin Hilman <khilman@ti.com> wrote:
+> Grant Likely <grant.likely@secretlab.ca> writes:
+>
+>> On Thu, Feb 02, 2012 at 11:00:26PM +0530, Tarun Kanti DebBarma wrote:
+>>> The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
+>>>   Linus Torvalds (1):
+>>>         Linux 3.3-rc2
+>>>
+>>> are available in the git repository at:
+>>> http://gitorious.org/~tarunkanti/omap-sw-develoment/tarunkantis-linux-omap-dev
+>>> Branch: for_3.4/gpio_cleanup_fixes_v9
+>>
+>> Bad git url.  I had to replace 'http:' with 'git:'.
+>>
+>> I've merged this series into my gpio/next branch.  It should show up in
+>> linux-next in a couple of days.
+>
+> Grant, this series isn't quite ready for merge, and shouldn't be
+> considered a pull request.
 
-Oops, sorry, got confused again about elvswitch and pol registration.
-Hmmm... yeah, we should probably be doing about the same thing on
-elvswitch.  I'll look into it.
+No problem.  I'll drop it from my tree.
 
-Thanks.
-
--- 
-tejun
+g.
