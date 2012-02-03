@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab2BCKvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 05:51:51 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49274 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755451Ab2BCKv0 (ORCPT
+	id S1755969Ab2BCKvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 05:51:16 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53747 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451Ab2BCKvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 05:51:26 -0500
-Date: Fri, 3 Feb 2012 10:51:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the sound-asoc tree
-Message-ID: <20120203105123.GB3151@opensource.wolfsonmicro.com>
-References: <20120203125902.558e273c84b339957869f281@canb.auug.org.au>
+	Fri, 3 Feb 2012 05:51:15 -0500
+Message-ID: <4F2BBBDA.90900@mvista.com>
+Date: Fri, 03 Feb 2012 14:50:02 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ADZbWkCsHQ7r3kzd"
-Content-Disposition: inline
-In-Reply-To: <20120203125902.558e273c84b339957869f281@canb.auug.org.au>
-X-Cookie: You will be divorced within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH 3/3] pch_udc: Specifies GPI port number at configuration.
+References: <1328253259-9343-1-git-send-email-tomoya.rohm@gmail.com> <1328253259-9343-3-git-send-email-tomoya.rohm@gmail.com>
+In-Reply-To: <1328253259-9343-3-git-send-email-tomoya.rohm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---ADZbWkCsHQ7r3kzd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 03-02-2012 11:14, Tomoya MORINAGA wrote:
 
-On Fri, Feb 03, 2012 at 12:59:02PM +1100, Stephen Rothwell wrote:
+> Problem:
+>   The GPIO ports used for detecting VBUS may be different
+>   on each platform.
+>   This should be easily modifiable.
+> Solution:
+>   In configuration, GPI port number is specified.
 
-> I fixed it up (I think - see below) and can carry the fix as necessary.
+    Isn't it better to pass this with driver's platform data.
 
-That's the correct fix, thanks.  I'll resolve this in my tree once
-Linus' tree has merged the conflicting stuff.
+> Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
---ADZbWkCsHQ7r3kzd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPK7wfAAoJEBus8iNuMP3dIXIP/0liRWQui90L79w72G3igr9m
-MCH7HHsztVTNSMFFZYaak6Nn+AAtTxN0ZW9fM+3YP5Vgx6NhjFu9TTcN3DPcpqew
-SGN6Gw+iEtPzhrg/XAT/3ekLX1Gi/hrDQHIIxOmbdchMvMIFeVPSnAa09kaldV2t
-Up4KGsSynyAozvCftepRRDqAQI/NEgwnrM9iR/kjxGNMMF8J3JyDdRdrwuHBUOy/
-/AshEZUCFCG0LeCXD+QVELHVOLvivy3V+xPaiLTNM/QvXoTyQoPMd4y58MuzhpxC
-8c4khK5WGFItAIHKiBSZgGYrhxyscNLFc9aVzcz0U7ishQtO10dxU8I+WHz1KFTE
-j4RfgN7OZtFbYmVgF56nE6Cgm1iOYXJr4lW0BspUEl9EVfDDX+JgcOGl+1hNxG5+
-bBO4ZMN6m0D9G+QWA1XziNJcYmJULz54q2ZqjypucKzLwYilQ/XLN2hcULAxMRRj
-E/qEhVBQhKYDXlhaGT66IL/61nwBEWmrf8uVRIJg6+2D81yqN6C3f0dhKi/ulH2h
-/HXuvPTH3LzB0R9KCmlF3YdTt60Mc1NIVFVQ+4vquv31QFqYDUk+eYqSmrrPkMhK
-NrahP6p0voEuvI/GHY8fOn014Dx0gpAMA9u86TYYFKmVCh/llO4MWK1W8mtH07vQ
-gjl2OEipXWDAk3dIF4wL
-=jICq
------END PGP SIGNATURE-----
-
---ADZbWkCsHQ7r3kzd--
+WBR, Sergei
