@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933618Ab2BCCAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 21:00:32 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35129 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932779Ab2BCCAa convert rfc822-to-8bit (ORCPT
+	id S933628Ab2BCCDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 21:03:52 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:59878 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab2BCCDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 21:00:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120203014533.GT23916@ZenIV.linux.org.uk>
-References: <m14nvc82jo.fsf@fess.ebiederm.org> <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
- <m1wr87ywex.fsf@fess.ebiederm.org> <m1ehueyz20.fsf_-_@fess.ebiederm.org>
- <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
- <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
- <20120202012258.GQ23916@ZenIV.linux.org.uk> <20120202212400.GR23916@ZenIV.linux.org.uk>
- <CA+55aFzHSv2eHKenVhxnSFMJMXtJCnxD2xu6QjMiMLEGLCZ2uQ@mail.gmail.com>
- <20120203011612.GS23916@ZenIV.linux.org.uk> <20120203014533.GT23916@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 2 Feb 2012 18:00:10 -0800
-X-Google-Sender-Auth: TL3gptPkt3xiM5nwrhuZQMTdfyA
-Message-ID: <CA+55aFxfV0pTqxNN5yV5YsvMVxF2Dir6rwjk-AyRV6s94g10AA@mail.gmail.com>
-Subject: Re: [RFC] killing boilerplate checks in ->link/->mkdir/->rename
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joel Becker <jlbec@evilplan.org>, Chris Mason <chris.mason@oracle.com>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Feb 2012 21:03:51 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6608"; a="157854874"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
+Date: Thu,  2 Feb 2012 18:03:49 -0800
+Message-Id: <1328234629-32735-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.48.g85da4d
+In-reply-to: <alpine.LFD.2.02.1202022016480.2759@xanadu.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 2, 2012 at 5:45 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+armv7's flush_cache_all() flushes caches via set/way. To
+determine the cache attributes (line size, number of sets,
+etc.) the assembly first writes the CSSELR register to select a
+cache level and then reads the CCSIDR register. The CSSELR register
+is banked per-cpu and is used to determine which cache level CCSIDR
+reads. If the task is migrated between when the CSSELR is written and
+the CCSIDR is read the CCSIDR value may be for an unexpected cache
+level (for example L1 instead of L2) and incorrect cache flushing
+could occur.
+
+Disable interrupts across the write and read so that the correct
+cache attributes are read and used for the cache flushing
+routine. We disable interrupts instead of disabling preemption
+because the critical section is only 3 instructions and we want
+to call v7_dcache_flush_all from __v7_setup which doesn't have a
+full kernel stack with a struct thread_info.
+
+This fixes a problem we see in scm_call() when flush_cache_all()
+is called from preemptible context and sometimes the L2 cache is
+not properly flushed out.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+---
+
+On 02/02/12 17:18, Nicolas Pitre wrote:
+>>> If that's too much, then the simple method in assembly to quickly disable
+>>> preemption over a very few set of instructions is using mrs/msr and cpsid i.
+>>> That'll be far cheaper than fiddling about with preempt counters or
+>>> messing about with veneers in C code.
+>>
+>> I'll try the macros. So far it isn't bad, just the __v7_setup to resolve.
 >
-> Incidentally, why the hell do we have
->        typedef __kernel_nlink_t        nlink_t;
-> anyway?  It's *not* exposed to userland and it's different from the
-> userland nlink_t (which is unsigned int on 32bit and unsigned long on 64bit).
-> Why not use __kernel_nlink_t (or explicitly-sized __uNN) in
-> arch/*/include/asm/stat.h and declare nlink_t kernel-side as __u32?
+> If you simply disable/restore IRQs around the critical region then you 
+> don't have to worry about __v7_setup.  Plus this will allow for 
+> v7_flush_dcache_all to still be callable from atomic context.
 
-Probably hysterical raisins, and just converted to the whole
-__kernel_nlink_t form together with other, more relevant things.
+Ok. Here's a patch. I still need to test it. I'll send another patch
+series to cleanup the get_thread_info stuff (there's two of them?).
 
-Feel free to remove it.
+ arch/arm/mm/cache-v7.S |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-> Why do we have daddr_t, while we are at it?  There is exactly one user -
-> fs/freevxfs and there we definitely want a fixed-sized type.
+diff --git a/arch/arm/mm/cache-v7.S b/arch/arm/mm/cache-v7.S
+index 07c4bc8..654a5fc 100644
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -54,9 +54,15 @@ loop1:
+ 	and	r1, r1, #7			@ mask of the bits for current cache only
+ 	cmp	r1, #2				@ see what cache we have at this level
+ 	blt	skip				@ skip if no cache, or just i-cache
++#ifdef CONFIG_PREEMPT
++	save_and_disable_irqs r9		@ make cssr&csidr read atomic
++#endif
+ 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+ 	isb					@ isb to sych the new cssr&csidr
+ 	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
++#ifdef CONFIG_PREEMPT
++	restore_irqs r9
++#endif
+ 	and	r2, r1, #7			@ extract the length of the cache lines
+ 	add	r2, r2, #4			@ add 4 (line length offset)
+ 	ldr	r4, =0x3ff
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-I think it's something that probably came from freevxfs and BSD roots
-or similar. It's a BSD'ism, afaik.
-
-                    Linus
