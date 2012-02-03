@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab2BCLAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 06:00:45 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51974 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755922Ab2BCLAo (ORCPT
+	id S1756016Ab2BCLCi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 06:02:38 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:52583 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab2BCLCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 06:00:44 -0500
-X-Originating-IP: 217.70.178.136
-X-Originating-IP: 50.43.15.19
-Date: Fri, 3 Feb 2012 03:00:36 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Viktar Palstsiuk <viktar.palstsiuk@promwad.com>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Michail Kurachkin <michail.kurachkin@promwad.com>,
-        Ivan Kuten <ivan.kuten@promwad.com>
-Subject: Re: TDM bus support in Linux Kernel
-Message-ID: <20120203110036.GA7732@leaf>
-References: <CAKa7sPRgROFY2RfeVW0G_1EWzWXakuWu50tGQ2QuzrvEimU3FQ@mail.gmail.com>
+	Fri, 3 Feb 2012 06:02:36 -0500
+Message-ID: <4F2BBEB3.7080802@linux.vnet.ibm.com>
+Date: Fri, 03 Feb 2012 16:32:11 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKa7sPRgROFY2RfeVW0G_1EWzWXakuWu50tGQ2QuzrvEimU3FQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Kevin Hilman <khilman@ti.com>, Len Brown <len.brown@intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH RFC tip/core/rcu 3/3] cpuidle: Inform RCU of read-side
+ critical sections
+References: <20120203011208.GA2004@linux.vnet.ibm.com> <1328231568-2971-1-git-send-email-paulmck@linux.vnet.ibm.com> <1328231568-2971-3-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1328231568-2971-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12020300-1396-0000-0000-0000009FB0F4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 11:59:10AM +0300, Viktar Palstsiuk wrote:
-> We are designing custom hardware board where processor is connected
-> with analog telephony
-> SLIC via TDM bus.
-> During investigation of Linux kernel we did not find any corresponding TDM code.
-> So decided to write a new TDM subsystem in drivers/tdm (like SPI).
-> The subsystem consists of tdm_core.c which implements TDM bus routines,
-> e.g. tdm_register_board_info(), tdm_add_device(),
-> tdm_controller_register() etc, and
-> someplatform_tdm.c which implements platform specific TDM contoller.
+On 02/03/2012 06:42 AM, Paul E. McKenney wrote:
+
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 > 
-> Any suggestion if we have chosen right direction and our approach
-> conforms Linux kernel architecture?
+> The cpuidle_idle_call() function is invoked in the inner idle loop,
+> after the call to rcu_idle_enter() and before the call to rcu_idle_exit().
+> This means that RCU is ignoring the CPU at this point.  Unfortunately,
+> cpuidle_idle_call() nevertheless contains tracepoints (important ones
+> used by powertop) that expect RCU to be paying attention.  The consequences
+> of using RCU read-side critical sections on CPUs that RCU is ignoring
+> can be severe, including random corruption of random memory.
+> 
+> Therefore, this commit uses the new RCU_NONIDLE() macro to let RCU
+> do its job with respect to the tracepoints.
+> 
+> Suggested-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Trinabh Gupta <g.trinabh@gmail.com>
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+> ---
+>  drivers/cpuidle/cpuidle.c |   12 ++++++++----
+>  1 files changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 59f4261..cd8a553 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -94,13 +94,17 @@ int cpuidle_idle_call(void)
+> 
+>  	target_state = &drv->states[next_state];
+> 
+> -	trace_power_start(POWER_CSTATE, next_state, dev->cpu);
+> -	trace_cpu_idle(next_state, dev->cpu);
+> +	RCU_NONIDLE(
+> +		trace_power_start(POWER_CSTATE, next_state, dev->cpu);
+> +		trace_cpu_idle(next_state, dev->cpu)
+> +	);
+> 
+>  	entered_state = target_state->enter(dev, drv, next_state);
+> 
+> -	trace_power_end(dev->cpu);
+> -	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
+> +	RCU_NONIDLE(
+> +		trace_power_end(dev->cpu);
+> +		trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
+> +	);
+> 
+>  	if (entered_state >= 0) {
+>  		/* Update cpuidle counters */
 
-Disclaimer: not a telephony expert.
 
->From the information you've provided in this mail, it *sounds* like you
-probably have the right approach.  You've definitely done the right
-thing by asking for architectural review sooner rather than later, and
-it sounds like you've created a nicely abstracted subsystem modeled
-after existing Linux subsystems rather than building an entire stack
-directly into your driver, which would already put you well ahead of
-most hardware vendors.  :)
+Cleaner design esp by moving away from architecture specific
+tweaking is much appreciated :)
 
-You should post your code to LKML so that developers can review it.  You
-should also CC any potentially interested developers, so they actually
-see it.  In addition to CCing anyone specifically interested in
-telephony, since you've developed a new subsystem I'd suggest CCing Greg
-Kroah-Hartman <gregkh@linuxfoundation.org> as the maintainer of the
-driver core.
+Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 
-Also, I don't know whether the TDM bus allows device probing or whether
-you have to magically know in advance what devices you expect on a
-particular platform.  If the former, you probably want to make sure you
-support and use an appropriate MODULE_DEVICE_TABLE for your drivers, so
-you can easily look up the right driver for any given device.  If the
-latter, you may potentially want to look into the "flattened device
-tree" mechanism, which provides a standard means of providing
-"hardcoded" hardware configuration information to the kernel at boot
-time.  If as the maker of the hardware you have any control over this,
-go with the former. :)
-
-> May be there were already some preliminary work for this?
-
-In-kernel, it looks like a "slicoss" driver exists in staging, and
-drivers/isdn exists, but AFAICT neither one has had any non-bugfix
-development in a long time; the latter has some references to TDM,
-though I don't know to what extent it might prove relevant to you.
-
-Outside the kernel, you may want to look at
-http://wiki.freeswitch.org/wiki/FreeTDM ; it currently seems to rely on
-various out-of-tree and proprietary drivers of dubious status, but you
-might still want to look it over, to find out if it has useful ideas or
-if you might want to add support for your hardware.
-
-I don't know of any efforts specifically trying to provide a
-standardized interface for the TDM bus.  I suspect you'll end up getting
-to lead the way here.
-
-Hope that helps,
-Josh Triplett
