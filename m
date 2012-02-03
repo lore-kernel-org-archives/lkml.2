@@ -1,172 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab2BCMzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 07:55:25 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51151 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab2BCMzX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 07:55:23 -0500
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Jeff Garzik <jgarzik@pobox.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Nam-Jae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal routine fails
-Date: Fri,  3 Feb 2012 18:29:14 +0530
-Message-Id: <1328273954-5010-1-git-send-email-amit.sahrawat83@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1756133Ab2BCNAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 08:00:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753276Ab2BCNAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 08:00:53 -0500
+Date: Fri, 3 Feb 2012 14:00:43 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCH 5/7] ftrace, perf: Add support to use function tracepoint
+ in perf
+Message-ID: <20120203130043.GC1531@m.brq.redhat.com>
+References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+ <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+ <1327776209-4883-6-git-send-email-jolsa@redhat.com>
+ <20120202181409.GH9071@somewhere.redhat.com>
+ <20120203125413.GB1531@m.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203125413.GB1531@m.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has been observed that a number of USB HDD's do not respond correctly
-to SCSI mode sense command(retrieve caching pages) which results in their
-Write Cache being discarded by queue requests i.e., WCE if left set to
-'0'(disabled).
-This results in a number of Filesystem corruptions, when the device
-is unplugged abruptly.
+On Fri, Feb 03, 2012 at 01:54:13PM +0100, Jiri Olsa wrote:
+> On Thu, Feb 02, 2012 at 07:14:12PM +0100, Frederic Weisbecker wrote:
+> > On Sat, Jan 28, 2012 at 07:43:27PM +0100, Jiri Olsa wrote:
+> > > Adding perf registration support for the ftrace function event,
+> > > so it is now possible to register it via perf interface.
+> > > 
+> > > The perf_event struct statically contains ftrace_ops as a handle
+> > > for function tracer. The function tracer is registered/unregistered
+> > > in open/close actions.
+> > > 
+> > > To be efficient, we enable/disable ftrace_ops each time the traced
+> 
+> SNIP
+> 
+> > > +
+> > > +	return -EINVAL;
+> > > +}
+> > 
+> > All the above from perf_ftrace_function_call() to here should perhaps
+> > go to trace_function.c.
+> 
+> hm, I'd call it rather trace_perf_function.c 
+> 
+> > 
+> > > diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+> > > index bbeec31..867653c 100644
+> > > --- a/kernel/trace/trace_export.c
+> > > +++ b/kernel/trace/trace_export.c
+> > > @@ -131,6 +131,28 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+> > >  
+> > >  #include "trace_entries.h"
+> > >  
+> > > +static int ftrace_event_class_register(struct ftrace_event_call *call,
+> > > +				       enum trace_reg type, void *data)
+> > > +{
+> > > +	switch (type) {
+> > > +	case TRACE_REG_PERF_REGISTER:
+> > > +	case TRACE_REG_PERF_UNREGISTER:
+> > > +		return 0;
+> > > +	case TRACE_REG_PERF_OPEN:
+> > > +	case TRACE_REG_PERF_CLOSE:
+> > > +	case TRACE_REG_PERF_ADD:
+> > > +	case TRACE_REG_PERF_DEL:
+> > > +#ifdef CONFIG_PERF_EVENTS
+> > > +		return perf_ftrace_event_register(call, type, data);
+> > > +#endif
+> > > +	case TRACE_REG_REGISTER:
+> > > +	case TRACE_REG_UNREGISTER:
+> > > +		break;
+> > > +	}
+> > > +
+> > > +	return -EINVAL;
+> > > +}
+> > 
+> > Hmm, one day we'll need to demux here. What about adding an argument to
+> > FTRACE_ENTRY() to add the pointer to .reg ?
+> 
+> ok, would something like the attached change be ok?
+> 
+> thanks,
+> jirka
 
-So, in order to identify the devices correctly - give it
-a last try using ATA_16 after failure from normal routine.
+and use FTRACE_ENTRY_REG for ftrace event like:
 
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+FTRACE_ENTRY_REG(function, ftrace_entry,
+        TRACE_FN,
+        F_STRUCT(
+                __field(        unsigned long,  ip              )
+                __field(        unsigned long,  parent_ip       )
+        ),
+        F_printk(" %lx <-- %lx", __entry->ip, __entry->parent_ip),
+        perf_ftrace_event_register
+);
 
----
- drivers/ata/libata-scsi.c |   51 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/scsi/sd.c         |   17 +++++++++++++++
- include/linux/libata.h    |    3 ++
- 3 files changed, 71 insertions(+), 0 deletions(-)
+jirka
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 508a60b..d5b00e6 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -562,6 +562,57 @@ error:
- }
- 
- /**
-+ *      ata_get_cachestatus - Handler for to get WriteCache Status
-+ *                      using ATA_16 scsi command
-+ *      @scsidev: Device to which we are issuing command
-+ *
-+ *      LOCKING:
-+ *      Defined by the SCSI layer.  We don't really care.
-+ *
-+ *      RETURNS:
-+ *      '0' for Write Cache Disabled and on any error.
-+ *      '1' for Write Cache enabled
-+ */
-+int ata_get_cachestatus(struct scsi_device *scsidev)
-+{
-+	int rc = 0;
-+	u8 scsi_cmd[MAX_COMMAND_SIZE] = {0};
-+	u8 *sensebuf = NULL, *argbuf = NULL;
-+	enum dma_data_direction data_dir;
-+
-+	sensebuf = kzalloc(SCSI_SENSE_BUFFERSIZE, GFP_NOIO);
-+	if (!sensebuf)
-+		return rc;
-+
-+	argbuf = kmalloc(ATA_SECT_SIZE, GFP_KERNEL);
-+	if (argbuf == NULL)
-+		goto error;
-+
-+	scsi_cmd[0] = ATA_16;
-+	scsi_cmd[1]  = (4 << 1); /* PIO Data-in */
-+	scsi_cmd[2]  = 0x0e;     /* no off.line or cc, read from dev,
-+				block count in sector count field */
-+	data_dir = DMA_FROM_DEVICE;
-+	scsi_cmd[14] = ATA_IDENTIFY_DEV;
-+
-+	if (!scsi_execute(scsidev, scsi_cmd, data_dir, argbuf, ATA_SECT_SIZE,
-+				sensebuf, (10*HZ), 5, 0, NULL)) {
-+		/*
-+		 * '6th' Bit in Word 85 Corresponds to Write Cache
-+		 * being Enabled/disabled, Word 85 represnets the
-+		 * features supported
-+		 */
-+		if (le16_to_cpu(((unsigned short *)argbuf)[85]) & 0x20)
-+			rc = 1;
-+	}
-+
-+error:
-+	kfree(sensebuf);
-+	kfree(argbuf);
-+	return rc;
-+}
-+
-+/**
-  *	ata_task_ioctl - Handler for HDIO_DRIVE_TASK ioctl
-  *	@scsidev: Device to which we are issuing command
-  *	@arg: User provided data for issuing command
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index c691fb5..a6b887d 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -50,6 +50,11 @@
- #include <linux/string_helpers.h>
- #include <linux/async.h>
- #include <linux/slab.h>
-+
-+#ifdef CONFIG_ATA
-+#include <linux/libata.h>
-+#endif
-+
- #include <linux/pm_runtime.h>
- #include <asm/uaccess.h>
- #include <asm/unaligned.h>
-@@ -2129,7 +2134,11 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
- 		if (modepage == 0x3F) {
- 			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
- 				  "present\n");
-+#ifdef CONFIG_ATA
-+			goto WCE_USING_ATA;
-+#else
- 			goto defaults;
-+#endif
- 		} else if ((buffer[offset] & 0x3f) != modepage) {
- 			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
- 			goto defaults;
-@@ -2149,6 +2158,14 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
- 				  "Uses READ/WRITE(6), disabling FUA\n");
- 			sdkp->DPOFUA = 0;
- 		}
-+#ifdef CONFIG_ATA
-+WCE_USING_ATA:
-+		if (!sdp->removable && !sdkp->WCE) {
-+			sd_printk(KERN_NOTICE, sdkp, "Try to check write cache "
-+				"enable/disable using ATA command\n");
-+			sdkp->WCE = ata_get_cachestatus(sdp);
-+		}
-+#endif
- 
- 		if (sdkp->first_scan || old_wce != sdkp->WCE ||
- 		    old_rcd != sdkp->RCD || old_dpofua != sdkp->DPOFUA)
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index cafc09a..33fc73f 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -84,6 +84,8 @@
- 	}							\
- })
- 
-+#define ATA_IDENTIFY_DEV	0xEC
-+
- /* NEW: debug levels */
- #define HAVE_LIBATA_MSG 1
- 
-@@ -990,6 +992,7 @@ extern void ata_host_init(struct ata_host *, struct device *,
- 			  unsigned long, struct ata_port_operations *);
- extern int ata_scsi_detect(struct scsi_host_template *sht);
- extern int ata_scsi_ioctl(struct scsi_device *dev, int cmd, void __user *arg);
-+extern int ata_get_cachestatus(struct scsi_device *scsidev);
- extern int ata_scsi_queuecmd(struct Scsi_Host *h, struct scsi_cmnd *cmd);
- extern int ata_sas_scsi_ioctl(struct ata_port *ap, struct scsi_device *dev,
- 			    int cmd, void __user *arg);
--- 
-1.7.2.3
-
+> 
+> 
+> ---
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 55c6ea0..638476a 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -68,6 +68,10 @@ enum trace_type {
+>  #undef FTRACE_ENTRY_DUP
+>  #define FTRACE_ENTRY_DUP(name, name_struct, id, tstruct, printk)
+>  
+> +#undef FTRACE_ENTRY_REG
+> +#define FTRACE_ENTRY_REG(name, struct_name, id, tstruct, print, regfn) \
+> +	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print))
+> +
+>  #include "trace_entries.h"
+>  
+>  /*
+> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+> index bbeec31..f74de86 100644
+> --- a/kernel/trace/trace_export.c
+> +++ b/kernel/trace/trace_export.c
+> @@ -18,6 +18,14 @@
+>  #undef TRACE_SYSTEM
+>  #define TRACE_SYSTEM	ftrace
+>  
+> +/*
+> + * The FTRACE_ENTRY_REG macro allows ftrace entry to define register
+> + * function and thus become accesible via perf.
+> + */
+> +#undef FTRACE_ENTRY_REG
+> +#define FTRACE_ENTRY_REG(name, struct_name, id, tstruct, print, regfn) \
+> +	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print))
+> +
+>  /* not needed for this file */
+>  #undef __field_struct
+>  #define __field_struct(type, item)
+> @@ -152,13 +160,14 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+>  #undef F_printk
+>  #define F_printk(fmt, args...) #fmt ", "  __stringify(args)
+>  
+> -#undef FTRACE_ENTRY
+> -#define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
+> +#undef FTRACE_ENTRY_REG
+> +#define FTRACE_ENTRY_REG(call, struct_name, etype, tstruct, print, regfn)\
+>  									\
+>  struct ftrace_event_class event_class_ftrace_##call = {			\
+>  	.system			= __stringify(TRACE_SYSTEM),		\
+>  	.define_fields		= ftrace_define_fields_##call,		\
+>  	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
+> +	.reg			= regfn,				\
+>  };									\
+>  									\
+>  struct ftrace_event_call __used event_##call = {			\
+> @@ -170,4 +179,9 @@ struct ftrace_event_call __used event_##call = {			\
+>  struct ftrace_event_call __used						\
+>  __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
+>  
+> +#undef FTRACE_ENTRY
+> +#define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
+> +	FTRACE_ENTRY_REG(call, struct_name, etype,			\
+> +			 PARAMS(tstruct), PARAMS(print), NULL)
+> +
+>  #include "trace_entries.h"
