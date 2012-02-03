@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab2BCJ3s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 04:29:48 -0500
-Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:3927 "EHLO
-	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab2BCJ3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 04:29:46 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: linux-media@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Enke Chen <enkechen@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH 0/6] Add poll_requested_events() function.
-Date: Fri,  3 Feb 2012 10:28:39 +0100
-Message-Id: <1328261325-8452-1-git-send-email-hverkuil@xs4all.nl>
-X-Mailer: git-send-email 1.7.8.3
+	id S1755404Ab2BCJh3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 04:37:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40607 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752558Ab2BCJh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 04:37:26 -0500
+Date: Fri, 3 Feb 2012 10:37:22 +0100 (CET)
+From: Richard Guenther <rguenther@suse.de>
+To: DJ Delorie <dj@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, dsterba@suse.cz,
+        ptesarik@suse.cz, gcc@gcc.gnu.org
+Subject: Re: Memory corruption due to word sharing
+In-Reply-To: <xnbopg8lex.fsf@greed.delorie.com>
+Message-ID: <alpine.LNX.2.00.1202031034450.4999@zhemvz.fhfr.qr>
+References: <20120201151918.GC16714@quack.suse.cz> <xnbopg8lex.fsf@greed.delorie.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, 3 Feb 2012, DJ Delorie wrote:
 
-This is the eighth version of this patch series and the last as far as
-I am concerned.
+> 
+> Jan Kara <jack@suse.cz> writes:
+> >   we've spotted the following mismatch between what kernel folks expect
+> > from a compiler and what GCC really does, resulting in memory corruption on
+> > some architectures. Consider the following structure:
+> > struct x {
+> >     long a;
+> >     unsigned int b1;
+> >     unsigned int b2:1;
+> > };
+> 
+> If this structure were volatile, you could try
+> -fstrict-volatile-bitfields, which forces GCC to use the C type to
+> define the access width, instead of doing whatever it thinks is optimal.
+> 
+> Note: that flag is enabled by default for some targets already, most
+> notably ARM.
 
-See this link for the previous version and the associated thread:
+Note that -fstrict-volatile-bitfields does not work for
 
-http://www.gossamer-threads.com/lists/linux/kernel/1486261
+volatile struct S {
+    int i : 1;
+    char c;
+} s;
+int main()
+{
+  s.i = 1;
+  s.c = 2;
+}
 
-The changes compared to version 7 are:
+where it accesses s.i using SImode.  -fstrict-volatile-bitfields
+falls foul of all the games bitfield layout plays and the
+irrelevantness of the declared bitfield type (but maybe the
+ARM ABI exactly specifies it that way).
 
-- rebased to the linux-media staging/for_v3.4 branch.
-- renamed the poll_table fields to _qproc and _key as per Andrew's suggestion.
-- all poll changes are back in one patch (the first). With the renaming of
-  fields it made more sense to have it as one patch.
-- added the video4linux changes as well that depend on this new poll
-  behavior. This makes it ready to be merged in linux-media and linux-next.
+So no, I would not recommend -fstrict-volatile-bitfields.
 
-Mauro, can you get this patch series in linux-next as soon as possible?
-
-If anyone has any problems/comments/remarks regarding this patch series,
-then please speak up now and not one day before the 3.4 merge window opens...
-
-Regards,
-
-	Hans
-
+Richard.
