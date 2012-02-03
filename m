@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab2BCAwu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 19:52:50 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:45599
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S932463Ab2BCAw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 19:52:58 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:45893
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755501Ab2BCAwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 19:52:45 -0500
+	id S932223Ab2BCAwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 19:52:55 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org,
         ohering@suse.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 2/4] tools: hv: Use hyperv.h to get the KVP definitions
-Date: Thu,  2 Feb 2012 16:56:49 -0800
-Message-Id: <1328230611-3315-2-git-send-email-kys@microsoft.com>
+Subject: [PATCH 3/4] drivers: hv: kvp: Cleanup the kernel/user protocol
+Date: Thu,  2 Feb 2012 16:56:50 -0800
+Message-Id: <1328230611-3315-3-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1328230611-3315-1-git-send-email-kys@microsoft.com>
 References: <1328230577-3263-1-git-send-email-kys@microsoft.com>
@@ -24,74 +24,254 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now use hyperv.h to get the KVP defines in the KVP user-mode code.
+Now, cleanup the user/kernel KVP protocol by using the same structure
+definition that is used for host/guest KVP protocol. This simplifies the code.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- tools/hv/hv_kvp_daemon.c |   28 +---------------------------
- 1 files changed, 1 insertions(+), 27 deletions(-)
+ drivers/hv/hv_kvp.c      |   41 +++++++++++++++++++++++++----------------
+ include/linux/hyperv.h   |   30 +++++-------------------------
+ tools/hv/hv_kvp_daemon.c |   30 +++++++++++++++---------------
+ 3 files changed, 45 insertions(+), 56 deletions(-)
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 2b6a2d9..b75523c 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -34,17 +34,12 @@
- #include <errno.h>
- #include <arpa/inet.h>
- #include <linux/connector.h>
-+#include <linux/hyperv.h>
- #include <linux/netlink.h>
- #include <ifaddrs.h>
- #include <netdb.h>
- #include <syslog.h>
+diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+index 4a6971e..0ef4c1f 100644
+--- a/drivers/hv/hv_kvp.c
++++ b/drivers/hv/hv_kvp.c
+@@ -71,15 +71,20 @@ kvp_register(void)
+ {
+ 
+ 	struct cn_msg *msg;
++	struct hv_kvp_msg *kvp_msg;
++	char *version;
+ 
+-	msg = kzalloc(sizeof(*msg) + strlen(HV_DRV_VERSION) + 1 , GFP_ATOMIC);
++	msg = kzalloc(sizeof(*msg) + sizeof(struct hv_kvp_msg), GFP_ATOMIC);
+ 
+ 	if (msg) {
++		kvp_msg = (struct hv_kvp_msg *)msg->data;
++		version = kvp_msg->body.kvp_version;
+ 		msg->id.idx =  CN_KVP_IDX;
+ 		msg->id.val = CN_KVP_VAL;
+-		msg->seq = KVP_REGISTER;
+-		strcpy(msg->data, HV_DRV_VERSION);
+-		msg->len = strlen(HV_DRV_VERSION) + 1;
++
++		kvp_msg->kvp_hdr.operation = KVP_OP_REGISTER;
++		strcpy(version, HV_DRV_VERSION);
++		msg->len = sizeof(struct hv_kvp_msg);
+ 		cn_netlink_send(msg, 0, GFP_ATOMIC);
+ 		kfree(msg);
+ 	}
+@@ -101,23 +106,24 @@ kvp_work_func(struct work_struct *dummy)
+ static void
+ kvp_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
+ {
+-	struct hv_ku_msg *message;
++	struct hv_kvp_msg *message;
++	struct hv_kvp_msg_enumerate *data;
+ 
+-	message = (struct hv_ku_msg *)msg->data;
+-	if (msg->seq == KVP_REGISTER) {
++	message = (struct hv_kvp_msg *)msg->data;
++	if (message->kvp_hdr.operation == KVP_OP_REGISTER) {
+ 		pr_info("KVP: user-mode registering done.\n");
+ 		kvp_register();
+ 	}
+ 
+-	if (msg->seq == KVP_USER_SET) {
++	if (message->kvp_hdr.operation == KVP_OP_ENUMERATE) {
++		data = &message->body.kvp_enum_data;
+ 		/*
+ 		 * Complete the transaction by forwarding the key value
+ 		 * to the host. But first, cancel the timeout.
+ 		 */
+ 		if (cancel_delayed_work_sync(&kvp_work))
+-			kvp_respond_to_host(message->kvp_key,
+-						message->kvp_value,
+-						!strlen(message->kvp_key));
++			kvp_respond_to_host(data->data.key, data->data.value,
++					!strlen(data->data.key));
+ 	}
+ }
+ 
+@@ -125,6 +131,7 @@ static void
+ kvp_send_key(struct work_struct *dummy)
+ {
+ 	struct cn_msg *msg;
++	struct hv_kvp_msg *message;
+ 	int index = kvp_transaction.index;
+ 
+ 	msg = kzalloc(sizeof(*msg) + sizeof(struct hv_kvp_msg) , GFP_ATOMIC);
+@@ -132,9 +139,11 @@ kvp_send_key(struct work_struct *dummy)
+ 	if (msg) {
+ 		msg->id.idx =  CN_KVP_IDX;
+ 		msg->id.val = CN_KVP_VAL;
+-		msg->seq = KVP_KERNEL_GET;
+-		((struct hv_ku_msg *)msg->data)->kvp_index = index;
+-		msg->len = sizeof(struct hv_ku_msg);
++
++		message = (struct hv_kvp_msg *)msg->data;
++		message->kvp_hdr.operation = KVP_OP_ENUMERATE;
++		message->body.kvp_enum_data.index = index;
++		msg->len = sizeof(struct hv_kvp_msg);
+ 		cn_netlink_send(msg, 0, GFP_ATOMIC);
+ 		kfree(msg);
+ 	}
+@@ -191,7 +200,7 @@ kvp_respond_to_host(char *key, char *value, int error)
+ 	kvp_msg = (struct hv_kvp_msg *)
+ 			&recv_buffer[sizeof(struct vmbuspipe_hdr) +
+ 			sizeof(struct icmsg_hdr)];
+-	kvp_data = &kvp_msg->kvp_data;
++	kvp_data = &kvp_msg->body.kvp_enum_data;
+ 	key_name = key;
+ 
+ 	/*
+@@ -266,7 +275,7 @@ void hv_kvp_onchannelcallback(void *context)
+ 				sizeof(struct vmbuspipe_hdr) +
+ 				sizeof(struct icmsg_hdr)];
+ 
+-			kvp_data = &kvp_msg->kvp_data;
++			kvp_data = &kvp_msg->body.kvp_enum_data;
+ 
+ 			/*
+ 			 * We only support the "get" operation on
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index b822978..75aee67 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -113,30 +113,6 @@
+  * (not supported), a NULL key string is returned.
+  */
  
 -/*
 - *
-- * The following definitions are shared with the in-kernel component; do not
+- * The following definitions are shared with the user-mode component; do not
 - * change any of this without making the corresponding changes in
-- * the KVP kernel component.
+- * the KVP user-mode component.
 - */
- 
- /*
-  * KVP protocol: The user mode component first registers with the
-@@ -56,25 +51,8 @@
-  * We use this infrastructure for also supporting queries from user mode
-  * application for state that may be maintained in the KVP kernel component.
-  *
-- * XXXKYS: Have a shared header file between the user and kernel (TODO)
-  */
- 
--enum kvp_op {
--	KVP_REGISTER = 0, /* Register the user mode component*/
--	KVP_KERNEL_GET, /*Kernel is requesting the value for the specified key*/
--	KVP_KERNEL_SET, /*Kernel is providing the value for the specified key*/
--	KVP_USER_GET, /*User is requesting the value for the specified key*/
--	KVP_USER_SET /*User is providing the value for the specified key*/
+-
+-enum hv_ku_op {
+-	KVP_REGISTER = 0, /* Register the user mode component */
+-	KVP_KERNEL_GET, /* Kernel is requesting the value */
+-	KVP_KERNEL_SET, /* Kernel is providing the value */
+-	KVP_USER_GET,  /* User is requesting the value */
+-	KVP_USER_SET  /* User is providing the value */
 -};
 -
--#define HV_KVP_EXCHANGE_MAX_KEY_SIZE	512
--#define HV_KVP_EXCHANGE_MAX_VALUE_SIZE	2048
--
 -struct hv_ku_msg {
--	__u32	kvp_index;
+-	__u32 kvp_index; /* Key index */
 -	__u8  kvp_key[HV_KVP_EXCHANGE_MAX_KEY_SIZE]; /* Key name */
 -	__u8  kvp_value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE]; /* Key  value */
 -};
+-
+-
+-
+-
  
- enum key_index {
- 	FullyQualifiedDomainName = 0,
-@@ -89,10 +67,6 @@ enum key_index {
- 	ProcessorArchitecture
+ /*
+  * Registry value types.
+@@ -149,6 +125,7 @@ enum hv_kvp_exchg_op {
+ 	KVP_OP_SET,
+ 	KVP_OP_DELETE,
+ 	KVP_OP_ENUMERATE,
++	KVP_OP_REGISTER,
+ 	KVP_OP_COUNT /* Number of operations, must be last. */
  };
  
--/*
-- * End of shared definitions.
-- */
--
- static char kvp_send_buffer[4096];
- static char kvp_recv_buffer[4096];
- static struct sockaddr_nl addr;
+@@ -182,7 +159,10 @@ struct hv_kvp_msg_enumerate {
+ 
+ struct hv_kvp_msg {
+ 	struct hv_kvp_hdr	kvp_hdr;
+-	struct hv_kvp_msg_enumerate	kvp_data;
++	union {
++		struct hv_kvp_msg_enumerate     kvp_enum_data;
++		char    kvp_version[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
++	} body;
+ } __attribute__((packed));
+ 
+ #ifdef __KERNEL__
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index b75523c..4ebf703 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -302,7 +302,7 @@ int main(void)
+ 	struct pollfd pfd;
+ 	struct nlmsghdr *incoming_msg;
+ 	struct cn_msg	*incoming_cn_msg;
+-	struct hv_ku_msg *hv_msg;
++	struct hv_kvp_msg *hv_msg;
+ 	char	*p;
+ 	char	*key_value;
+ 	char	*key_name;
+@@ -340,9 +340,11 @@ int main(void)
+ 	message = (struct cn_msg *)kvp_send_buffer;
+ 	message->id.idx = CN_KVP_IDX;
+ 	message->id.val = CN_KVP_VAL;
+-	message->seq = KVP_REGISTER;
++
++	hv_msg = (struct hv_kvp_msg *)message->data;
++	hv_msg->kvp_hdr.operation = KVP_OP_REGISTER;
+ 	message->ack = 0;
+-	message->len = 0;
++	message->len = sizeof(struct hv_kvp_msg);
+ 
+ 	len = netlink_send(fd, message);
+ 	if (len < 0) {
+@@ -368,14 +370,15 @@ int main(void)
+ 
+ 		incoming_msg = (struct nlmsghdr *)kvp_recv_buffer;
+ 		incoming_cn_msg = (struct cn_msg *)NLMSG_DATA(incoming_msg);
++		hv_msg = (struct hv_kvp_msg *)incoming_cn_msg->data;
+ 
+-		switch (incoming_cn_msg->seq) {
+-		case KVP_REGISTER:
++		switch (hv_msg->kvp_hdr.operation) {
++		case KVP_OP_REGISTER:
+ 			/*
+ 			 * Driver is registering with us; stash away the version
+ 			 * information.
+ 			 */
+-			p = (char *)incoming_cn_msg->data;
++			p = (char *)hv_msg->body.kvp_version;
+ 			lic_version = malloc(strlen(p) + 1);
+ 			if (lic_version) {
+ 				strcpy(lic_version, p);
+@@ -386,17 +389,15 @@ int main(void)
+ 			}
+ 			continue;
+ 
+-		case KVP_KERNEL_GET:
+-			break;
+ 		default:
+-			continue;
++			break;
+ 		}
+ 
+-		hv_msg = (struct hv_ku_msg *)incoming_cn_msg->data;
+-		key_name = (char *)hv_msg->kvp_key;
+-		key_value = (char *)hv_msg->kvp_value;
++		hv_msg = (struct hv_kvp_msg *)incoming_cn_msg->data;
++		key_name = (char *)hv_msg->body.kvp_enum_data.data.key;
++		key_value = (char *)hv_msg->body.kvp_enum_data.data.value;
+ 
+-		switch (hv_msg->kvp_index) {
++		switch (hv_msg->body.kvp_enum_data.index) {
+ 		case FullyQualifiedDomainName:
+ 			kvp_get_domain_name(key_value,
+ 					HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
+@@ -456,9 +457,8 @@ int main(void)
+ 
+ 		incoming_cn_msg->id.idx = CN_KVP_IDX;
+ 		incoming_cn_msg->id.val = CN_KVP_VAL;
+-		incoming_cn_msg->seq = KVP_USER_SET;
+ 		incoming_cn_msg->ack = 0;
+-		incoming_cn_msg->len = sizeof(struct hv_ku_msg);
++		incoming_cn_msg->len = sizeof(struct hv_kvp_msg);
+ 
+ 		len = netlink_send(fd, incoming_cn_msg);
+ 		if (len < 0) {
 -- 
 1.7.4.1
 
