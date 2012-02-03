@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab2BCQL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:11:29 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40529 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab2BCQL0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:11:26 -0500
-From: Javier Martin <javier.martin@vista-silicon.com>
-To: linux-kernel@vger.kernel.org
-Cc: dan.j.williams@intel.com, vinod.koul@intel.com,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        kernel@pengutronix.de, Javier Martin <javier.martin@vista-silicon.com>
-Subject: [PATCH 2/2] dmaengine: i.MX: Add support for interleaved transfers.
-Date: Fri,  3 Feb 2012 17:11:14 +0100
-Message-Id: <1328285474-26365-2-git-send-email-javier.martin@vista-silicon.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1328285474-26365-1-git-send-email-javier.martin@vista-silicon.com>
-References: <1328285474-26365-1-git-send-email-javier.martin@vista-silicon.com>
+	id S1755014Ab2BCQLl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:11:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754811Ab2BCQLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 11:11:37 -0500
+Date: Fri, 3 Feb 2012 17:04:54 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>
+Subject: Re: cgroup_release_agent() with call_usermodehelper() with
+	UMH_WAIT_EXEC may crash
+Message-ID: <20120203160454.GA3092@redhat.com>
+References: <20120203154411.GB2471@osiris.boeblingen.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203154411.GB2471@osiris.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i.MX2 and i.MX1 chips have the possibility to do
-interleaved transfers with one constraint: only one
-chunk can be used (i.e. only 2D transfers are allowed).
+On 02/03, Heiko Carstens wrote:
+>
+> setup_new_exec(...)
+> 	[...]
+> 	name = bprm->filename;
+>
+> 	/* Copies the binary name from after last slash */
+> 	for (i=0; (ch = *(name++)) != '\0';) {	<-- crashes here
+> 		if (ch == '/')
 
-Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
----
- drivers/dma/imx-dma.c |   53 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 53 insertions(+), 0 deletions(-)
+Ough, and this happens after flush_old_exec()...
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 9aa6e85..366a248 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -359,6 +359,57 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
- 	return &imxdmac->desc;
- }
- 
-+static struct dma_async_tx_descriptor *imxdma_prep_dma_interleaved(
-+	struct dma_chan *chan, struct dma_interleaved_template *xt,
-+	unsigned long flags)
-+{
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-+	struct imxdma_engine *imxdma = imxdmac->imxdma;
-+	unsigned int src_config, dst_config;
-+	unsigned int x, y, w;
-+	int ret;
-+
-+	dev_dbg(imxdma->dev, "%s channel: %d src_start=0x%x dst_start=0x%x\n"
-+		"   src_sgl=%s dst_sgl=%s numf=%d frame_size=%d\n", __func__,
-+		imxdmac->channel, xt->src_start, xt->dst_start,
-+		xt->src_sgl ? "true" : "false", xt->dst_sgl ? "true" : "false",
-+		xt->numf, xt->frame_size);
-+
-+	if (imxdmac->status == DMA_IN_PROGRESS)
-+		return NULL;
-+	imxdmac->status = DMA_IN_PROGRESS;
-+
-+
-+	if (xt->frame_size != 1 || xt->numf <= 0 || xt->dir != DMA_MEM_TO_MEM)
-+		return NULL;
-+
-+	y = xt->numf;
-+	x = xt->sgl[0].size;
-+	w = xt->sgl[0].icg + x;
-+	ret = imx_dma_config_2d(imxdmac->imxdma_channel, x, y, w);
-+	if (ret)
-+		return NULL;
-+
-+	src_config = IMX_DMA_MEMSIZE_32;
-+	dst_config = IMX_DMA_MEMSIZE_32;
-+	if (xt->src_sgl)
-+		src_config |= IMX_DMA_TYPE_2D;
-+	if (xt->dst_sgl)
-+		dst_config |= IMX_DMA_TYPE_2D;
-+
-+	ret = imx_dma_config_channel(imxdmac->imxdma_channel,
-+				     dst_config, src_config, 0, 0);
-+	if (ret)
-+		return NULL;
-+
-+	ret = imx_dma_setup_single(imxdmac->imxdma_channel, xt->src_start,
-+				   x * y, xt->dst_start, DMA_MODE_WRITE);
-+	if (ret)
-+		return NULL;
-+
-+	return &imxdmac->desc;
-+}
-+
- static void imxdma_issue_pending(struct dma_chan *chan)
- {
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-@@ -381,6 +432,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
- 	dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
- 	dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
-+	dma_cap_set(DMA_INTERLEAVE, imxdma->dma_device.cap_mask);
- 
- 	/* Initialize channel parameters */
- 	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-@@ -415,6 +467,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
- 	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
- 	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
-+	imxdma->dma_device.device_prep_interleaved_dma = imxdma_prep_dma_interleaved;
- 	imxdma->dma_device.device_control = imxdma_control;
- 	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
- 
--- 
-1.7.0.4
+> Looking into the dump I was able to tell that the piece of memory got freed
+> by cgroup_release_agent().
+> Which has the following code sequence:
+>
+> static void cgroup_release_agent(struct work_struct *work)
+> {
+> 		[...]
+> 		agentbuf = kstrdup(cgrp->root->release_agent_path, GFP_KERNEL);
+> 		[...]
+> 		i = 0;
+> 		argv[i++] = agentbuf;
+> 		[...]
+> 		call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+> 		[...]
+> 		kfree(agentbuf);
+> 		[...]
+> }
+>
+> So obviously cgroup_release_agent() freed the filename before do_execve()
+> was finished.
+
+Good catch.
+
+> So the question is: what is broken? The cgroup stuff which doesn't take
+> into account that the passed path may still be in use and hence can't
+> be freed (simple fix would be to simply use UMH_WAIT_PROC instead).
+> Or is it that call_usermodehelper() still uses the passed path after
+> it returned?
+
+Well, it seems that do_coredump() has the same problem.
+
+Can't we simply move that code into flush_old_exec() ? (wrapped into
+the new helper).
+
+Oleg.
 
