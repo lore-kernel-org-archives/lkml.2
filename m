@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab2BCSrU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 13:47:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37239 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757449Ab2BCSrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 13:47:18 -0500
-Date: Fri, 3 Feb 2012 19:40:16 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Andi Kleen <ak@linux.intel.com>, Clark Williams <williams@redhat.com>,
-        Luis Goncalves <lgoncalv@redhat.com>, stable-rt@vger.kernel.org
-Subject: Re: [PATCH RT 2/2 v4] preempt-rt/x86: Delay calling signals in int3
-Message-ID: <20120203184016.GA10413@redhat.com>
-References: <20120203182853.547078531@goodmis.org> <20120203183041.427463295@goodmis.org>
+	id S1757533Ab2BCSwc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 13:52:32 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36125 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757375Ab2BCSwb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 13:52:31 -0500
+X-Sasl-enc: 81zsSftPijcmSCrGYCBCpNSRvvbbJHvYTj38SoMuFo0N 1328295121
+Date: Fri, 3 Feb 2012 10:51:57 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: tim.gardner@canonical.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: Linux 3.2.3
+Message-ID: <20120203185157.GA2865@kroah.com>
+References: <20120203174758.GA18584@kroah.com>
+ <4F2C2A40.1080601@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120203183041.427463295@goodmis.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F2C2A40.1080601@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven, I guess I need to actually read the patch before asking the
-questions... I'll try later, but
+On Fri, Feb 03, 2012 at 11:41:04AM -0700, Tim Gardner wrote:
+> On 02/03/2012 10:47 AM, Greg KH wrote:
+> >I'm announcing the release of the 3.2.3 kernel.
+> >
+> >All users of the 3.2 kernel series must upgrade.
+> >
+> >The updated 3.2.y git tree can be found at:
+> >         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.2.y
+> >and can be browsed at the normal kernel.org git web browser:
+> >         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
+> 
+> Build failure in vanilla Linux 3.2.3:
+> 
+>   CC [M]  sound/soc/codecs/wm5100.o
+> sound/soc/codecs/wm5100.c: In function ‘wm5100_set_bias_level’:
+> sound/soc/codecs/wm5100.c:1382:33: error: ‘struct wm5100_priv’ has
+> no member named ‘regmap’
+> sound/soc/codecs/wm5100.c:1398:33: error: ‘struct wm5100_priv’ has
+> no member named ‘regmap’
+> sound/soc/codecs/wm5100.c:1409:29: error: ‘struct wm5100_priv’ has
+> no member named ‘regmap’
+> make[5]: *** [sound/soc/codecs/wm5100.o] Error 1
+> 
+> Looks like it depends on bd132ec585c498ee27d7eedf8569703606743928
+> "ASoC: Convert wm5100 to direct regmap API usage", but I haven't
+> re-built with it yet.
+> 
+> See attached config.
 
-On 02/03, Steven Rostedt wrote:
->
-> --- linux-rt.git.orig/arch/x86/kernel/entry_64.S
-> +++ linux-rt.git/arch/x86/kernel/entry_64.S
-> @@ -1391,6 +1391,14 @@ paranoid_userspace:
->  paranoid_schedule:
->  	TRACE_IRQS_ON
->  	ENABLE_INTERRUPTS(CLBR_ANY)
-> +#ifdef CONFIG_PREEMPT_RT_FULL
-> +	GET_THREAD_INFO(%rcx)
-> +	movl TI_flags(%rcx),%ebx
-> +	testl $_TIF_FORCE_SIG_TRAP,%ebx
-> +	jz paranoid_do_schedule
-> +	call do_force_sig_trap
-> +paranoid_do_schedule:
-> +#endif
+Ugh, I didn't have CONFIG_SND_SOC=m in my test config files, I'll go fix
+that now and see what needs to be done here, thanks for letting me know.
 
-Stupid question. Do we really need to send the signal from here?
+Mark any hints?
 
-Why force_sig(rt => T) can't set TIF_NOTIFY_RESUME instead? Then
-we can change do_notify_resume() to check TIF_FORCE_SIG_TRAP. And
-perhaps we can even avoid the new TIF_FORCE_SIG_TRAP, we could
-check task->stored_info_set.
+thanks,
 
-In fact I feel this can be simplified even more, but I am not sure.
-
-Oleg.
-
+greg k-h
