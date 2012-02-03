@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab2BCVmb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 16:42:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49374 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757928Ab2BCVm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 16:42:29 -0500
-Date: Fri, 3 Feb 2012 22:42:27 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH][Trivial] Fix up version number reference in
- include/trace/events/power.h
-In-Reply-To: <alpine.LNX.2.00.1201152210300.13389@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1202032241380.25026@pobox.suse.cz>
-References: <alpine.LNX.2.00.1201152146570.13389@swampdragon.chaosbits.net> <1326661784.7642.140.camel@gandalf.stny.rr.com> <alpine.LNX.2.00.1201152210300.13389@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757962Ab2BCVml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 16:42:41 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50024 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751913Ab2BCVmj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 16:42:39 -0500
+X-Sasl-enc: wXDaKtbA1Nle5tPjXVC5lRT3lEPe8198xWEN36nZ9hmK 1328305358
+Date: Fri, 3 Feb 2012 13:42:35 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: kobject (ffff88003ffbb4b8): tried to init an initialized object,
+ something is seriously wrong.
+Message-ID: <20120203214235.GA10549@kroah.com>
+References: <20120203205953.GA2897@phenom.dumpdata.com>
+ <20120203213949.GC8196@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203213949.GC8196@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Jan 2012, Jesper Juhl wrote:
-
-> > > -/* This code will be removed after deprecation time exceeded (2.6.41) */
-> > > +/* This code will be removed after deprecation time exceeded (3.1) */
+On Fri, Feb 03, 2012 at 01:39:49PM -0800, Greg KH wrote:
+> On Fri, Feb 03, 2012 at 03:59:53PM -0500, Konrad Rzeszutek Wilk wrote:
+> > Hey Greg,
 > > 
-> > Shouldn't the real fix be to remove this code? What's the use of
-> > changing the version number that this code will be removed from, when
-> > the change won't get in until after the version that this code should
-> > have been removed?
+> > With or without your previous patch (the one that added an cpu_device_release
+> > function) I am getting this in 3.3-rc2.  I did not get this in 3.2.
 > > 
-> > This is like updating 2014 calendars to say the world will end in 2012.
+> > I added some extra printks to make sure that the handle_vcpu_hotplug_event
+> > code actually did call 'arch_unregister_cpu' which is certainly looks
+> > to be doing.
 > > 
-> Heh, yeah, in a way you are right. But we have lots of code in the kernel 
-> that says it will be removed at <some date in the past>, so I just figured 
-> that if this code ends up hanging around it should at least display the 
-> correct version number for when it /should/ have been removed.
-> The actual removal I'll leave up to others.
+> > I hadn't done a bisection yet, but was wondering if this is related
+> > to the previous issues with the sysdev. Or kobject getting more observant.
+> 
+> No, it's related to the previous issue, let me knock up a patch to fix
+> this as well...
 
-Funny thing. Okay, this doesn't seem to be in linux-next, so I am taking 
-it.
+Does this patch solve the problem for you?
 
-Steven, planning to drop the code in a near future? :)
+thanks,
 
--- 
-Jiri Kosina
-SUSE Labs
+greg k-h
+
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 23f2c4c..4dabf50 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -240,6 +240,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ 	int error;
+ 
+ 	cpu->node_id = cpu_to_node(num);
++	memset(&cpu->dev, 0x00, sizeof(struct device));
+ 	cpu->dev.id = num;
+ 	cpu->dev.bus = &cpu_subsys;
+ 	cpu->dev.release = cpu_device_release;
