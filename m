@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab2BCNmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 08:42:42 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39868 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109Ab2BCNml (ORCPT
+	id S1756443Ab2BCNnR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 08:43:17 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54642 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756242Ab2BCNnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 08:42:41 -0500
-X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=ravTz9YwjkQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=FI9SWDrMZs8yI32vDKIA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328276560.5882.142.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/7] ftrace: Add enable/disable ftrace_ops control
- interface
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@redhat.com,
-        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Date: Fri, 03 Feb 2012 08:42:40 -0500
-In-Reply-To: <20120130091832.GA1552@m.brq.redhat.com>
-References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
-	 <1327776209-4883-1-git-send-email-jolsa@redhat.com>
-	 <1327776209-4883-3-git-send-email-jolsa@redhat.com>
-	 <20120130055906.GC22447@somewhere> <20120130091832.GA1552@m.brq.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 3 Feb 2012 08:43:15 -0500
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Ram Pai <linuxram@us.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [Patch] resource: move EXPORT_SYMBOL right after definition
+Date: Fri,  3 Feb 2012 21:42:39 +0800
+Message-Id: <1328276573-15265-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-30 at 10:18 +0100, Jiri Olsa wrote:
+EXPORT_SYMBOL(adjust_resource) should be right after adjust_resource().
 
-> attached new patch :)
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-When attaching a new patch, please also include the change log and the
-Signed-off-by. I actually can't take this patch without the SOB.
-
-Thanks,
-
--- Steve
-
-
+---
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 7640b3a..7e8ea66 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -749,6 +749,7 @@ int adjust_resource(struct resource *res, resource_size_t start, resource_size_t
+ 	write_unlock(&resource_lock);
+ 	return result;
+ }
++EXPORT_SYMBOL(adjust_resource);
+ 
+ static void __init __reserve_region_with_split(struct resource *root,
+ 		resource_size_t start, resource_size_t end,
+@@ -792,8 +793,6 @@ void __init reserve_region_with_split(struct resource *root,
+ 	write_unlock(&resource_lock);
+ }
+ 
+-EXPORT_SYMBOL(adjust_resource);
+-
+ /**
+  * resource_alignment - calculate resource's alignment
+  * @res: resource pointer
