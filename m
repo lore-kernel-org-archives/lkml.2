@@ -1,143 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab2BCSnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 13:43:50 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36946 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab2BCSnt (ORCPT
+	id S1757521Ab2BCSnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 13:43:55 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:42529 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757381Ab2BCSnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 13:43:49 -0500
-X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=KxEtQHhCDlcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=ybivv0icvZh4HuPIrq4A:9 a=edg8-AA_IcHvL8d_Vp0A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328294627.5882.170.camel@gandalf.stny.rr.com>
-Subject: [PATCH RT] futex: Fix bug on when a requeued RT task times out
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        stable-rt@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <clark@redhat.com>,
-        niv <niv@us.ibm.com>, John Kacur <jkacur@redhat.com>,
-        Carsten Emde <cbe@osadl.org>, Darren Hart <dvhart@linux.intel.com>
-Date: Fri, 03 Feb 2012 13:43:47 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 3 Feb 2012 13:43:53 -0500
+Date: Fri, 3 Feb 2012 13:43:53 -0500
+From: Edward Donovan <edward.donovan@numble.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] genirq: better error messages for disabled IRQs
+Message-ID: <20120203184353.GB18471@Brahman>
+References: <1328238951-15059-1-git-send-email-edward.donovan@numble.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328238951-15059-1-git-send-email-edward.donovan@numble.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When an unhandled IRQ is disabled, we tell the user, "try booting
+with the irqpoll option."  Right now, we do this even when they
+*have* tried it.  We can see perfectly well what boot args they
+used, so let's make the log more helpful and accurate.  (This
+would have helped me, and plenty of other users I've seen.)
 
-Requeue with timeout causes a bug with PREEMPT_RT_FULL.
+The error message is already in an 'if' statement, and this patch
+just adds a couple branches to it.  It checks whether 'irqfixup'
+or 'irqpoll' were called, and has three versions of the error
+message, accordingly.
 
-The bug comes from a timed out condition.
+The main thing is to acknowledge when these options have not
+worked, so users are not left wondering if their boot parameters
+are being read, or why the kernel is not listening to them.
 
+The second thing is to suggest irqfixup, before irqpoll.  It
+takes less CPU, and is meant as the first recourse.  The docs
+recommend it first; now we do, too.
 
-	TASK 1				TASK 2
-	------				------
-    futex_wait_requeue_pi()
-	futex_wait_queue_me()
-	<timed out>
+I have tried to make the wording clear, but two things are
+debatable:
 
-					double_lock_hb();
+* When irqpoll has not been enough, a few different things could
+be happening.  I left it at "most likely the firmware is too
+broken".  We could say more or less, as desired.
 
-	raw_spin_lock(pi_lock);
-	if (current->pi_blocked_on) { 
-	} else {
-	    current->pi_blocked_on = PI_WAKE_INPROGRESS;
-	    run_spin_unlock(pi_lock);
-	    spin_lock(hb->lock); <-- blocked!
+More questionable:
 
+* We're communicating to users who are often in over their heads
+at this point.  So I think clarity is very important.  For
+clarity's sake, I'd prefer to change "nobody cared" to "not
+handled".  But I wouldn't want to cut the tie to archived
+discussions.  So I left "nobody cared", in parentheses, in the
+initial message.  Perhaps that continuity is the most important
+thing, and it should still always say "nobody cared".  I don't
+know.
 
-					plist_for_each_entry_safe(this) {
-					    rt_mutex_start_proxy_lock();
-						task_blocks_on_rt_mutex();
-						BUG_ON(task->pi_blocked_on)!!!!
+Signed-off-by: Edward Donovan <edward.donovan@numble.net>
+---
+ kernel/irq/spurious.c |   15 ++++++++++++---
+ 1 files changed, 12 insertions(+), 3 deletions(-)
 
-The BUG_ON() actually has a check for PI_WAKE_INPROGRESS, but the
-problem is that, after TASK 1 sets PI_WAKE_INPROGRESS, it then tries to
-grab the hb->lock, which it fails to do so. As the hb->lock is a mutex,
-it will block and set the "pi_blocked_on" to the hb->lock.
-
-When TASK 2 goes to requeue it, the check for PI_WAKE_INPROGESS fails
-because the task1's pi_blocked_on is no longer set to that, but instead,
-set to the hb->lock.
-
-The fix:
-
-When calling rt_mutex_start_proxy_lock() a check is made to see
-if the proxy tasks pi_blocked_on is set. If so, exit out early.
-Otherwise set it to a new flag PI_REQUEUE_INPROGRESS, which notifies
-the proxy task that it is being requeued, and will handle things
-appropriately.
-
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index 991bc7f..9850dc0 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -75,7 +75,8 @@ static void fixup_rt_mutex_waiters(struct rt_mutex *lock)
- 
- static int rt_mutex_real_waiter(struct rt_mutex_waiter *waiter)
- {
--	return waiter && waiter != PI_WAKEUP_INPROGRESS;
-+	return waiter && waiter != PI_WAKEUP_INPROGRESS &&
-+		waiter != PI_REQUEUE_INPROGRESS;
+diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+index 611cd60..e855222 100644
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -194,9 +194,18 @@ __report_bad_irq(unsigned int irq, struct irq_desc *desc,
+ 	if (bad_action_ret(action_ret)) {
+ 		printk(KERN_ERR "irq event %d: bogus return value %x\n",
+ 				irq, action_ret);
++	} else if (irqfixup == 1) {
++		printk(KERN_ERR "irq %d not handled, even with \"irqfixup\": "
++				"try booting with the \"irqpoll\" option.\n",
++				irq);
++	} else if (irqfixup == 2) {
++		printk(KERN_ERR "irq %d not handled, even with \"irqpoll\": "
++				"most likely the firmware is too broken.\n",
++				irq);
+ 	} else {
+-		printk(KERN_ERR "irq %d: nobody cared (try booting with "
+-				"the \"irqpoll\" option)\n", irq);
++		printk(KERN_ERR "irq %d not handled (nobody cared): try "
++				"booting with the \"irqfixup\" option.\n",
++				irq);
+ 	}
+ 	dump_stack();
+ 	printk(KERN_ERR "handlers:\n");
+@@ -325,7 +334,7 @@ void note_interrupt(unsigned int irq, struct irq_desc *desc,
+ 	desc->irqs_unhandled = 0;
  }
  
- /*
-@@ -1353,6 +1354,35 @@ int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
- 		return 1;
- 	}
+-bool noirqdebug __read_mostly;
++int noirqdebug __read_mostly;
  
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+	/*
-+	 * In PREEMPT_RT there's an added race.
-+	 * If the task, that we are about to requeue, times out,
-+	 * it can set the PI_WAKEUP_INPROGRESS. This tells the requeue
-+	 * to skip this task. But right after the task sets
-+	 * its pi_blocked_on to PI_WAKEUP_INPROGRESS it can then
-+	 * block on the spin_lock(&hb->lock), which in RT is an rtmutex.
-+	 * This will replace the PI_WAKEUP_INPROGRESS with the actual
-+	 * lock that it blocks on. We *must not* place this task
-+	 * on this proxy lock in that case.
-+	 *
-+	 * To prevent this race, we first take the task's pi_lock
-+	 * and check if it has updated its pi_blocked_on. If it has,
-+	 * we assume that it woke up and we return -EAGAIN.
-+	 * Otherwise, we set the task's pi_blocked_on to
-+	 * PI_REQUEUE_INPROGRESS, so that if the task is waking up
-+	 * it will know that we are in the process of requeuing it.
-+	 */
-+	raw_spin_lock(&task->pi_lock);
-+	if (task->pi_blocked_on) {
-+		raw_spin_unlock(&task->pi_lock);
-+		raw_spin_unlock(&lock->wait_lock);
-+		return -EAGAIN;
-+	}
-+	task->pi_blocked_on = PI_REQUEUE_INPROGRESS;
-+	raw_spin_unlock(&task->pi_lock);
-+#endif
-+
- 	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
- 
- 	if (ret && !rt_mutex_owner(lock)) {
-diff --git a/kernel/rtmutex_common.h b/kernel/rtmutex_common.h
-index a688a29..6ec3dc1 100644
---- a/kernel/rtmutex_common.h
-+++ b/kernel/rtmutex_common.h
-@@ -105,6 +105,7 @@ static inline struct task_struct *rt_mutex_owner(struct rt_mutex *lock)
-  * PI-futex support (proxy locking functions, etc.):
-  */
- #define PI_WAKEUP_INPROGRESS	((struct rt_mutex_waiter *) 1)
-+#define PI_REQUEUE_INPROGRESS	((struct rt_mutex_waiter *) 2)
- 
- extern struct task_struct *rt_mutex_next_owner(struct rt_mutex *lock);
- extern void rt_mutex_init_proxy_locked(struct rt_mutex *lock,
-
-
-
+ int noirqdebug_setup(char *str)
+ {
+-- 
+1.7.8.3
 
