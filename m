@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab2BCK3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 05:29:11 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:41249 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755276Ab2BCK3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 05:29:09 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [RESEND][PATCH] Mark thread stack correctly in proc/<pid>/maps
-Date: Fri, 3 Feb 2012 05:29:10 -0500
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        Jamie Lokier <jamie@shareable.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org
-References: <20120116163106.GC7180@jl-vm1.vm.bytemark.co.uk> <CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com> <CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com>
-In-Reply-To: <CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com>
+	id S1755850Ab2BCKaz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 05:30:55 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54017 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451Ab2BCKax (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 05:30:53 -0500
+Message-ID: <4F2BB715.8090803@mvista.com>
+Date: Fri, 03 Feb 2012 14:29:41 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1483786.6JLQCoWP0J";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Cong Wang <xiyou.wangcong@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-mips@linux-mips.org
+Subject: Re: [Patch] mips: do not redefine BUILD_BUG()
+References: <1328255503-17575-1-git-send-email-xiyou.wangcong@gmail.com>
+In-Reply-To: <1328255503-17575-1-git-send-email-xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202030529.14209.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1483786.6JLQCoWP0J
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Hello.
 
-On Friday 03 February 2012 03:01:35 KOSAKI Motohiro wrote:
-> > Right now MAP_STACK does not mean anything since it is ignored. The
-> > intention of this behaviour change is to make MAP_STACK mean that the
-> > map is going to be used as a stack and hence, set it up like a stack
-> > ought to be. I could not really think of a valid case for fixed size
-> > stacks; it looks like a limitation in the pthread implementation in
-> > glibc rather than a feature. So this patch will actually result in
-> > uniform behaviour across threads when it comes to stacks.
-> >=20
-> > This does change vm accounting since thread stacks were earlier
-> > accounted as anon memory.
->=20
-> The fact is, now process stack and pthread stack clearly behave
-> different dance. libc don't expect pthread stack grow automatically.
-> So, your patch will break userland. Just only change display thing.
+On 03-02-2012 11:51, Cong Wang wrote:
 
-does it though ?  glibc doesn't keep track of the unused address space ...=
-=20
-that's what the kernel is for.  pthread_attr_setstacksize explicitly operat=
-es=20
-on the *minimum* stack size, not the *exact* size.
+> On mips, we got
 
-where exactly do you think userland would break ?
+> include/linux/kernel.h:717:1: error: "BUILD_BUG" redefined
+> arch/mips/include/asm/page.h:43:1: error: this is the location of the previous definition
+> make[3]: *** [arch/mips/sgi-ip27/ip27-console.o] Error 1
+> make[2]: *** [arch/mips/sgi-ip27] Error 2
+> make[1]: *** [arch/mips] Error 2
+> make: *** [sub-make] Error 2
 
-http://pubs.opengroup.org/onlinepubs/9699919799/functions/pthread_attr_sets=
-tacksize.html
-=2Dmike
+> use generic BUILD_BUG() instead of re-defining one.
 
---nextPart1483786.6JLQCoWP0J
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> Signed-off-by: WANG Cong<xiyou.wangcong@gmail.com>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+> ---
+> diff --git a/arch/mips/include/asm/page.h b/arch/mips/include/asm/page.h
+> index d417909..e14121a 100644
+> --- a/arch/mips/include/asm/page.h
+> +++ b/arch/mips/include/asm/page.h
+> @@ -39,9 +39,7 @@
+>   #define HPAGE_MASK	(~(HPAGE_SIZE - 1))
+>   #define HUGETLB_PAGE_ORDER	(HPAGE_SHIFT - PAGE_SHIFT)
+>   #else /* !CONFIG_HUGETLB_PAGE */
+> -# ifndef BUILD_BUG
 
-iQIcBAABAgAGBQJPK7b6AAoJEEFjO5/oN/WBTmEP/jxIHOJyzTBS9tMQigWzFfJJ
-rGxabFz8/JE9HpyuyrW0BLTX2umsYkxSzVxcZendQO3Hgk3zt3TXLIVYXjx52q+2
-nSmAQcbZRD0unjFy0giJdIApxU50UEaKsEhg2tzot+h6gBMRKuNVCuwGZruG5kV5
-gLvfSMJrQDunrjsyrATFBGDQYsPR8nwXTUILBHRqGQrBiAyzEOmpfxEkTDEQKviX
-ABb/+QDUoBInHBx8eBmHV8ziZs2gLp4XebUDNj5ybWjt93FS3mwqb1u217MdOdCP
-cq8ip0Q5UAh++lq5W8Zs3e9g7HfkjDF3T/SaZu2zBNR+SXKawz4Xu8uwj4k7GLln
-oTOFUqBCYk2lOSLAygLdSQWQGQI0x/EXvw+B+80Q7jlvKa2qU8dshaWGcnneSvwe
-xbSPhn08qNdjnekmy9Yu66/O3uVqd+eZDV5LL1maBV4bJ6da2ijItzrUoKE4gbZk
-1qxNutwDf68cA4W78fdmytcDCK8L7U7tyLCsMNFH4SwXDhjX3EG3BFdnNd0m6ynI
-/A1EbmljMet9OzTpDOESpKLBYkRmDFPxx7utmMRWdAh8GDw88k52bc9g7AW8vf69
-QNASE1hFgqf7x13FY9seJWokGj4oPGvfw9/fEk4igkvQXSFy5uxj9rqTNQtP/7Ce
-6hF9hkyy8/CvD3kuZO3s
-=BEta
------END PGP SIGNATURE-----
+    Not clear why we get the error if we're protected with #ifndef...
 
---nextPart1483786.6JLQCoWP0J--
+> -#  define BUILD_BUG() do { extern void __build_bug(void); __build_bug(); } while (0)
+> -# endif
+> +#include<linux/kernel.h>
+
+    Do not do #include among the #define's...
+
+>   #define HPAGE_SHIFT	({BUILD_BUG(); 0; })
+>   #define HPAGE_SIZE	({BUILD_BUG(); 0; })
+>   #define HPAGE_MASK	({BUILD_BUG(); 0; })
+
+WBR, Sergei
