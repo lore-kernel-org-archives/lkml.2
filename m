@@ -1,144 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab2BCQnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:43:45 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:5161 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757005Ab2BCQnn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:43:43 -0500
-From: <messaging.hpitsecurity@hp.com>
-To: <rusty@rustcorp.com.au>
-CC: <eric.dumazet@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linaro-dev@lists.linaro.org>, <patches@linaro.org>,
-        <dmitry.antipov@linaro.org>
-Subject: Microsoft Forefront Server Security forwarded attachment
+	id S1757020Ab2BCQpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:45:21 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:34624 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756872Ab2BCQpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 11:45:20 -0500
+Message-ID: <4F2C0F13.70709@parallels.com>
+Date: Fri, 03 Feb 2012 20:45:07 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="ANTIGEN-10334-5530-18521-20982-23558-25552"
-Message-ID: <5489b95b-8d5c-44eb-80eb-79fb706bce20@G1W0403.americas.hpqcorp.net>
-Date: Fri, 3 Feb 2012 16:43:06 +0000
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Vagin <avagin@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
+References: <1328267483-3225342-1-git-send-email-avagin@openvz.org> <20120203162519.GB805@google.com>
+In-Reply-To: <20120203162519.GB805@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ANTIGEN-10334-5530-18521-20982-23558-25552
-Content-Type: text/plain; charset="utf-7"
-Content-Transfer-Encoding: quoted-printable
+On 02/03/2012 08:25 PM, Tejun Heo wrote:
+> On Fri, Feb 03, 2012 at 02:11:23PM +0300, Andrew Vagin wrote:
+>> Zero is written at clear_tid_address, when the process exits.
+>> This functionality is used by pthread_join().
+>>
+>> sys_set_tid_address() changes this address for current task.
+>>
+>> Before this patch clear_tid_address could not be got from user space.
+>> I want to dump a full state of a task, so I need this address.
+>> Also I think it may be useful for debugging a multithreading program.
+>>
+>> I am not sure that ptrace is suitable place. It may be added in prctl,
+>> but I think it's a bit useless and strange. I can't image a real
+>> situation (avoid checkpointing) when a thread will want to get own
+>> clear_tid_address from itself, this address is used by parent ussually.
+>>
+>> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> 
+> Ummm... this really doesn't fit in ptrace.  Cyrill, why not put it
+> together with other params you're exporting?
 
+Because there's no need for current to get this value of himself, but can
+be useful for e.g. gdb. But we don't insist. Prctl extension is just fine.
 
-The body from the message +ACIAWw-PATCH+AF0- module: debugging check for runaway kthreads+ACI-, originally sent to you by linux-kernel-owner+AEA-vger.kernel.org (linux-kernel-owner+AEA-vger.kernel.org), has been forwarded to you from the Microsoft Forefront Server Security Quarantine area.
-This message body may have been re-scanned by Microsoft Forefront Server Security and handled according to the appropriate scan job's settings.
+> Thanks.
+> 
 
-
-
-
-<<Body of Message>>
-
---ANTIGEN-10334-5530-18521-20982-23558-25552
-Content-Type: application/octet-stream
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Body of Message"
-
-RGVidWdnaW5nIG9wdGlvbiBDT05GSUdfTU9EVUxFX0tUSFJFQURfQ0hFQ0sgcHJvdmlkZXMgYSB3
-YXkgdG8gY2hlY2sNCndoZXRoZXIgYWxsIGtlcm5lbCB0aHJlYWRzIGNyZWF0ZWQgYnkgdGhlIG1v
-ZHVsZSBhbmQgaGF2ZSB1c2VkIG1vZHVsZQ0KY29kZSBhcyBhIHRocmVhZCB3b3JrZXIgZnVuY3Rp
-b24gYXJlIHJlYWxseSBleGl0ZWQgd2hlbiB0aGUgbW9kdWxlIGlzDQp1bmxvYWRlZC4NCg0KU2Vl
-IGh0dHA6Ly9tYXJjLmluZm8vP2w9bGludXgta2VybmVsJm09MTMyODExMjc2MTMxNzY3Jnc9MiB0
-byBjaGVjaw0Kd2h5IGl0IG1pZ2h0IGJlIHVzZWZ1bC4NCg0KU2lnbmVkLW9mZi1ieTogRG1pdHJ5
-IEFudGlwb3YgPGRtaXRyeS5hbnRpcG92QGxpbmFyby5vcmc+DQotLS0NCiBpbmNsdWRlL2xpbnV4
-L2t0aHJlYWQuaCB8ICAgIDUgKysrKysNCiBpbml0L0tjb25maWcgICAgICAgICAgICB8ICAgIDkg
-KysrKysrKysrDQoga2VybmVsL2t0aHJlYWQuYyAgICAgICAgfCAgIDI0ICsrKysrKysrKysrKysr
-KysrKysrKysrKw0KIGtlcm5lbC9tb2R1bGUuYyAgICAgICAgIHwgICA0NSArKysrKysrKysrKysr
-KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysNCiA0IGZpbGVzIGNoYW5nZWQsIDgzIGlu
-c2VydGlvbnMoKyksIDAgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4
-L2t0aHJlYWQuaCBiL2luY2x1ZGUvbGludXgva3RocmVhZC5oDQppbmRleCAwNzE0YjI0Li4zMzg5
-N2MzIDEwMDY0NA0KLS0tIGEvaW5jbHVkZS9saW51eC9rdGhyZWFkLmgNCisrKyBiL2luY2x1ZGUv
-bGludXgva3RocmVhZC5oDQpAQCAtMTMsNiArMTMsMTEgQEAgc3RydWN0IHRhc2tfc3RydWN0ICpr
-dGhyZWFkX2NyZWF0ZV9vbl9ub2RlKGludCAoKnRocmVhZGZuKSh2b2lkICpkYXRhKSwNCiAjZGVm
-aW5lIGt0aHJlYWRfY3JlYXRlKHRocmVhZGZuLCBkYXRhLCBuYW1lZm10LCBhcmcuLi4pIFwNCiAJ
-a3RocmVhZF9jcmVhdGVfb25fbm9kZSh0aHJlYWRmbiwgZGF0YSwgLTEsIG5hbWVmbXQsICMjYXJn
-KQ0KIA0KKyNpZmRlZiBDT05GSUdfTU9EVUxFX0tUSFJFQURfQ0hFQ0sNCit1bnNpZ25lZCBsb25n
-IGdldF9rdGhyZWFkX2Z1bmMoc3RydWN0IHRhc2tfc3RydWN0ICp0c2spOw0KKyNlbHNlDQorI2Rl
-ZmluZSBnZXRfa3RocmVhZF9mdW5jKHRzaywgYWRkciwgbW9kKSAoMCkNCisjZW5kaWYNCiANCiAv
-KioNCiAgKiBrdGhyZWFkX3J1biAtIGNyZWF0ZSBhbmQgd2FrZSBhIHRocmVhZC4NCmRpZmYgLS1n
-aXQgYS9pbml0L0tjb25maWcgYi9pbml0L0tjb25maWcNCmluZGV4IDNmNDJjZDYuLmZhN2M2ZTAg
-MTAwNjQ0DQotLS0gYS9pbml0L0tjb25maWcNCisrKyBiL2luaXQvS2NvbmZpZw0KQEAgLTEzOTcs
-NiArMTM5NywxNSBAQCBjb25maWcgTU9EVUxFX0ZPUkNFX1VOTE9BRA0KIAkgIHJtbW9kKS4gIFRo
-aXMgaXMgbWFpbmx5IGZvciBrZXJuZWwgZGV2ZWxvcGVycyBhbmQgZGVzcGVyYXRlIHVzZXJzLg0K
-IAkgIElmIHVuc3VyZSwgc2F5IE4uDQogDQorY29uZmlnIE1PRFVMRV9LVEhSRUFEX0NIRUNLDQor
-CWJvb2wgIkNoZWNrIGZvciBydW5hd2F5IGtlcm5lbCB0aHJlYWRzIGF0IG1vZHVsZSB1bmxvYWQi
-DQorCWRlcGVuZHMgb24gTU9EVUxFX1VOTE9BRCAmJiBFWFBFUklNRU5UQUwgJiYgREVCVUdfS0VS
-TkVMDQorCWhlbHANCisJICBUaGlzIG9wdGlvbiBhbGxvd3MgeW91IHRvIGNoZWNrIHdoZXRoZXIg
-YWxsIGtlcm5lbCB0aHJlYWRzIGNyZWF0ZWQNCisJICBieSB0aGUgbW9kdWxlIGFuZCBoYXZlIHVz
-ZWQgbW9kdWxlIGNvZGUgYXMgYSB0aHJlYWQgd29ya2VyIGZ1bmN0aW9uDQorCSAgYXJlIHJlYWxs
-eSBleGl0ZWQgd2hlbiB0aGUgbW9kdWxlIGlzIHVubG9hZGVkLiBUaGlzIGlzIG1haW5seSBmb3IN
-CisJICBtb2R1bGUgZGV2ZWxvcGVycy4gSWYgaW5zdXJlLCBzYXkgTi4NCisNCiBjb25maWcgTU9E
-VkVSU0lPTlMNCiAJYm9vbCAiTW9kdWxlIHZlcnNpb25pbmcgc3VwcG9ydCINCiAJaGVscA0KZGlm
-ZiAtLWdpdCBhL2tlcm5lbC9rdGhyZWFkLmMgYi9rZXJuZWwva3RocmVhZC5jDQppbmRleCAzZDNk
-ZTYzLi41YzUzODE3IDEwMDY0NA0KLS0tIGEva2VybmVsL2t0aHJlYWQuYw0KKysrIGIva2VybmVs
-L2t0aHJlYWQuYw0KQEAgLTM4LDYgKzM4LDkgQEAgc3RydWN0IGt0aHJlYWRfY3JlYXRlX2luZm8N
-CiANCiBzdHJ1Y3Qga3RocmVhZCB7DQogCWludCBzaG91bGRfc3RvcDsNCisjaWZkZWYgQ09ORklH
-X01PRFVMRV9LVEhSRUFEX0NIRUNLDQorCXZvaWQgKmZuOw0KKyNlbmRpZg0KIAl2b2lkICpkYXRh
-Ow0KIAlzdHJ1Y3QgY29tcGxldGlvbiBleGl0ZWQ7DQogfTsNCkBAIC00NSw2ICs0OCwyNCBAQCBz
-dHJ1Y3Qga3RocmVhZCB7DQogI2RlZmluZSB0b19rdGhyZWFkKHRzaykJXA0KIAljb250YWluZXJf
-b2YoKHRzayktPnZmb3JrX2RvbmUsIHN0cnVjdCBrdGhyZWFkLCBleGl0ZWQpDQogDQorI2lmZGVm
-IENPTkZJR19NT0RVTEVfS1RIUkVBRF9DSEVDSw0KKw0KK3Vuc2lnbmVkIGxvbmcgZ2V0X2t0aHJl
-YWRfZnVuYyhzdHJ1Y3QgdGFza19zdHJ1Y3QgKnRzaykNCit7DQorCXN0cnVjdCBrdGhyZWFkICpr
-dDsNCisJdW5zaWduZWQgbG9uZyBhZGRyOw0KKw0KKwlnZXRfdGFza19zdHJ1Y3QodHNrKTsNCisJ
-QlVHX09OKCEodHNrLT5mbGFncyAmIFBGX0tUSFJFQUQpKTsNCisJa3QgPSB0b19rdGhyZWFkKHRz
-ayk7DQorCWJhcnJpZXIoKTsNCisJYWRkciA9IHRzay0+dmZvcmtfZG9uZSA/ICh1bnNpZ25lZCBs
-b25nKWt0LT5mbiA6IDBVTDsNCisJcHV0X3Rhc2tfc3RydWN0KHRzayk7DQorCXJldHVybiBhZGRy
-Ow0KK30NCisNCisjZW5kaWYgLyogQ09ORklHX01PRFVMRV9LVEhSRUFEX0NIRUNLICovDQorDQog
-LyoqDQogICoga3RocmVhZF9zaG91bGRfc3RvcCAtIHNob3VsZCB0aGlzIGt0aHJlYWQgcmV0dXJu
-IG5vdz8NCiAgKg0KQEAgLTEwNiw2ICsxMjcsOSBAQCBzdGF0aWMgaW50IGt0aHJlYWQodm9pZCAq
-X2NyZWF0ZSkNCiAJaW50IHJldDsNCiANCiAJc2VsZi5zaG91bGRfc3RvcCA9IDA7DQorI2lmZGVm
-IENPTkZJR19NT0RVTEVfS1RIUkVBRF9DSEVDSw0KKwlzZWxmLmZuID0gdGhyZWFkZm47DQorI2Vu
-ZGlmDQogCXNlbGYuZGF0YSA9IGRhdGE7DQogCWluaXRfY29tcGxldGlvbigmc2VsZi5leGl0ZWQp
-Ow0KIAljdXJyZW50LT52Zm9ya19kb25lID0gJnNlbGYuZXhpdGVkOw0KZGlmZiAtLWdpdCBhL2tl
-cm5lbC9tb2R1bGUuYyBiL2tlcm5lbC9tb2R1bGUuYw0KaW5kZXggMmM5MzI3Ni4uZmU2NjM3YiAx
-MDA2NDQNCi0tLSBhL2tlcm5lbC9tb2R1bGUuYw0KKysrIGIva2VybmVsL21vZHVsZS5jDQpAQCAt
-NDUsNiArNDUsNyBAQA0KICNpbmNsdWRlIDxsaW51eC9zdHJpbmcuaD4NCiAjaW5jbHVkZSA8bGlu
-dXgvbXV0ZXguaD4NCiAjaW5jbHVkZSA8bGludXgvcmN1bGlzdC5oPg0KKyNpbmNsdWRlIDxsaW51
-eC9rdGhyZWFkLmg+DQogI2luY2x1ZGUgPGFzbS91YWNjZXNzLmg+DQogI2luY2x1ZGUgPGFzbS9j
-YWNoZWZsdXNoLmg+DQogI2luY2x1ZGUgPGFzbS9tbXVfY29udGV4dC5oPg0KQEAgLTc2NCw2ICs3
-NjUsNDkgQEAgc3RhdGljIHZvaWQgd2FpdF9mb3JfemVyb19yZWZjb3VudChzdHJ1Y3QgbW9kdWxl
-ICptb2QpDQogCW11dGV4X2xvY2soJm1vZHVsZV9tdXRleCk7DQogfQ0KIA0KKyNpZmRlZiBDT05G
-SUdfS0FMTFNZTVMNCitzdGF0aWMgY29uc3QgY2hhciAqZ2V0X2tzeW1ib2woc3RydWN0IG1vZHVs
-ZSAqbW9kLCB1bnNpZ25lZCBsb25nIGFkZHIsDQorCQkJICAgICAgIHVuc2lnbmVkIGxvbmcgKnNp
-emUsIHVuc2lnbmVkIGxvbmcgKm9mZnNldCk7DQorI2Vsc2UNCisjZGVmaW5lIGdldF9rc3ltYm9s
-KG1vZCwgYWRkciwgc2l6ZSwgb2Zmc2V0KSBOVUxMDQorI2VuZGlmDQorDQorI2lmZGVmIENPTkZJ
-R19NT0RVTEVfS1RIUkVBRF9DSEVDSw0KKw0KK3N0YXRpYyB2b2lkIGNoZWNrX2t0aHJlYWRzKHN0
-cnVjdCBtb2R1bGUgKm1vZCkNCit7DQorCXVuc2lnbmVkIGxvbmcgZmxhZ3M7DQorCXN0cnVjdCB0
-YXNrX3N0cnVjdCAqZywgKnA7DQorDQorCXJlYWRfbG9ja19pcnFzYXZlKCZ0YXNrbGlzdF9sb2Nr
-LCBmbGFncyk7DQorCWRvX2VhY2hfdGhyZWFkKGcsIHApIHsNCisJCWNvbnN0IGNoYXIgKm5hbWU7
-DQorCQl1bnNpZ25lZCBsb25nIGFkZHIsIG9mZnNldCwgc2l6ZTsNCisNCisJCS8qIE5vdGUga3Ro
-cmVhZGQgaXMgc3BlY2lhbC4gT3RoZXIga3RocmVhZHMgc2hvdWxkDQorCQkgICBoYXZlIHRoZWly
-ICdzdHJ1Y3Qga3RocmVhZCcgb24gdGhlIHN0YWNrIHVudGlsDQorCQkgICBkb19leGl0KCkgY2Fs
-bHMgc2NoZWR1bGUoKSBmb3IgdGhlIGxhc3QgdGltZS4gKi8NCisJCWlmIChwLT5tbSB8fCBwID09
-IGt0aHJlYWRkX3Rhc2spDQorCQkJY29udGludWU7DQorDQorCQlhZGRyID0gZ2V0X2t0aHJlYWRf
-ZnVuYyhwKTsNCisJCWlmIChfX21vZHVsZV90ZXh0X2FkZHJlc3MoYWRkcikgPT0gbW9kKSB7DQor
-CQkJbmFtZSA9IGdldF9rc3ltYm9sKG1vZCwgYWRkciwgJnNpemUsICZvZmZzZXQpOw0KKwkJCXBy
-aW50ayhLRVJOX1dBUk5JTkcgImtocmVhZCAlcFslczolZF0gcnVubmluZyAiDQorCQkJICAgICAg
-ICIweCVseCglcykgaXMgc3RpbGwgYWxpdmUsIGZpeCBtb2R1bGUgJXMsICINCisJCQkgICAgICAg
-ImNyYXNoIHBvc3NpYmxlXG4iLCBwLCBwLT5jb21tLCBwLT5waWQsIGFkZHIsDQorCQkJICAgICAg
-IChuYW1lID8gbmFtZSA6ICI8dW5rbm93bj4iKSwgbW9kLT5uYW1lKTsNCisJCX0NCisJfSB3aGls
-ZV9lYWNoX3RocmVhZChnLCBwKTsNCisJcmVhZF91bmxvY2tfaXJxcmVzdG9yZSgmdGFza2xpc3Rf
-bG9jaywgZmxhZ3MpOw0KK30NCisNCisjZWxzZQ0KKw0KKyNkZWZpbmUgY2hlY2tfa3RocmVhZHMo
-bW9kKSBkbyB7IH0gd2hpbGUgKDApDQorDQorI2VuZGlmIC8qIENPTkZJR19NT0RVTEVfS1RIUkVB
-RF9DSEVDSyAqLw0KKw0KIFNZU0NBTExfREVGSU5FMihkZWxldGVfbW9kdWxlLCBjb25zdCBjaGFy
-IF9fdXNlciAqLCBuYW1lX3VzZXIsDQogCQl1bnNpZ25lZCBpbnQsIGZsYWdzKQ0KIHsNCkBAIC04
-MzEsNiArODc1LDcgQEAgU1lTQ0FMTF9ERUZJTkUyKGRlbGV0ZV9tb2R1bGUsIGNvbnN0IGNoYXIg
-X191c2VyICosIG5hbWVfdXNlciwNCiAJYmxvY2tpbmdfbm90aWZpZXJfY2FsbF9jaGFpbigmbW9k
-dWxlX25vdGlmeV9saXN0LA0KIAkJCQkgICAgIE1PRFVMRV9TVEFURV9HT0lORywgbW9kKTsNCiAJ
-YXN5bmNfc3luY2hyb25pemVfZnVsbCgpOw0KKwljaGVja19rdGhyZWFkcyhtb2QpOw0KIA0KIAkv
-KiBTdG9yZSB0aGUgbmFtZSBvZiB0aGUgbGFzdCB1bmxvYWRlZCBtb2R1bGUgZm9yIGRpYWdub3N0
-aWMgcHVycG9zZXMgKi8NCiAJc3RybGNweShsYXN0X3VubG9hZGVkX21vZHVsZSwgbW9kLT5uYW1l
-LCBzaXplb2YobGFzdF91bmxvYWRlZF9tb2R1bGUpKTsNCi0tIA0KMS43LjcuNg0KDQotLQ0KVG8g
-dW5zdWJzY3JpYmUgZnJvbSB0aGlzIGxpc3Q6IHNlbmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIGxp
-bnV4LWtlcm5lbCIgaW4NCnRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5r
-ZXJuZWwub3JnDQpNb3JlIG1ham9yZG9tbyBpbmZvIGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3Jn
-L21ham9yZG9tby1pbmZvLmh0bWwNClBsZWFzZSByZWFkIHRoZSBGQVEgYXQgIGh0dHA6Ly93d3cu
-dHV4Lm9yZy9sa21sLw0K
-
---ANTIGEN-10334-5530-18521-20982-23558-25552--
