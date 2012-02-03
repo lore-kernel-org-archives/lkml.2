@@ -1,141 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab2BCRrM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 12:47:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7092 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755058Ab2BCRrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 12:47:08 -0500
-Date: Fri, 3 Feb 2012 15:42:08 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        kosaki.motohiro@jp.fujitsu.com, tj@kernel.org, x86@kernel.org,
-        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        Rik van Riel <riel@redhat.com>, "avi@redhat.com" <avi@redhat.com>
-Subject: Re: Need advice how to fix an access to uninitialized per_cpu clock
-Message-ID: <20120203174208.GA4529@amt.cnet>
-References: <4F2A76C4.2010601@redhat.com>
+	id S1757407Ab2BCRtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 12:49:12 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49484 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756962Ab2BCRtJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 12:49:09 -0500
+X-Sasl-enc: 7npb7GmLkAnzhbnQjZ6VtWEBB6N5u/1BV0m2nC98KC9M 1328291348
+Date: Fri, 3 Feb 2012 09:38:31 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 3.0.19
+Message-ID: <20120203173831.GA18014@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
 Content-Disposition: inline
-In-Reply-To: <4F2A76C4.2010601@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 12:43:00PM +0100, Igor Mammedov wrote:
-> While playing with kvm cpu hot-plug, I've probably stumbled on general
-> kernel bug. So I'm lookng for advice on approach to fix it.
-> 
-> When kvm guest uses kvmclock, it may hang on cpu hot-plug at
-> 
->     BSP:
->      smp_apic_timer_interrupt
->        ...
->          -> do_timer
->            -> update_wall_time
-> 
-> and a being on-lined CPU at waiting on sync with BSP at:
->      start_secondary:
->        while (!cpumask_test_cpu(smp_processor_id(), cpu_active_mask))
->                     cpu_relax();
-> 
-> because of unusually big value returned by clock->read(clock) in
-> update_wall_time.
-> This happens due to overflow in pvclock_get_nsec_offset
-> 
->         u64 delta = tsc - shadow->tsc_timestamp;
-> 
-> when shadow->tsc_timestamp is bigger than tsc.
-> And since pvclock_clocksource_read remembers and returns largest
-> value of any clock that ever was returned, clock for affected guest
-> virtually freezes.
-> 
-> Overflow happens due to reading undefined values from uninitialized
-> per_cpu variable hv_clock. In case of cpu hot-plug, clock is read at
-> least once on being on-lined cpu before it is initialized for this
-> cpu:
-> 
->       start_secondary
->         |-> smp_callin
->         |  ->  smp_store_cpu_info
->         |    -> identify_secondary_cpu
->         |      -> mtrr_ap_init
->         |        -> mtrr_restore
->         |          -> stop_machine_from_inactive_cpu
->         |            -> queue_stop_cpus_work
->         |              ...
->         |                -> kvm_clock_read
->         |...
->         |x86_cpuinit.setup_percpu_clockev
-> 
-> full call chain is below:
-> [    0.002999]  [<ffffffff8102fc74>] pvclock_clocksource_read+0x9f/0x275
-> [    0.002999]  [<ffffffff81071f9e>] ? check_preempt_wakeup+0x11c/0x1c2
-> [    0.002999]  [<ffffffff8102f05d>] kvm_clock_read+0x21/0xd3
-> [    0.002999]  [<ffffffff810154b1>] sched_clock+0x9/0xd
-> [    0.002999]  [<ffffffff81070509>] sched_clock_local+0x12/0x75
-> [    0.002999]  [<ffffffff8107065e>] sched_clock_cpu+0x84/0xc6
-> [    0.002999]  [<ffffffff8106bfd3>] update_rq_clock+0x28/0x108
-> [    0.002999]  [<ffffffff8106c15e>] enqueue_task+0x1d/0x64
-> [    0.002999]  [<ffffffff8106c500>] activate_task+0x22/0x24
-> [    0.002999]  [<ffffffff8106c90c>] ttwu_do_activate.constprop.39+0x32/0x61
-> [    0.002999]  [<ffffffff8106cd0c>] try_to_wake_up+0x17e/0x1e1
-> [    0.002999]  [<ffffffff8106cd98>] wake_up_process+0x15/0x17
-> [    0.002999]  [<ffffffff8109ebbf>] cpu_stop_queue_work+0x3d/0x5f
-> [    0.002999]  [<ffffffff8109ec6c>] queue_stop_cpus_work+0x8b/0xb6
-> [    0.002999]  [<ffffffff8109f0e3>] stop_machine_from_inactive_cpu+0xb4/0xed
-> [    0.002999]  [<ffffffff81023896>] ? mtrr_restore+0x4a/0x4a
-> [    0.002999]  [<ffffffff81023eb3>] mtrr_ap_init+0x5a/0x5c
-> [    0.002999]  [<ffffffff814b95f7>] identify_secondary_cpu+0x19/0x1b
-> [    0.002999]  [<ffffffff814bc0d3>] smp_store_cpu_info+0x3c/0x3e
-> [    0.002999]  [<ffffffff814bc4ed>] start_secondary+0x122/0x263
-> 
-> Looking at native_smp_prepare_cpus in arch/x86/kernel/smpboot.c
-> I see that it unconditionally calls set_mtrr_aps_delayed_init which
-> in turn effectively converts calls to mtrr_ap_init to nop ops.
-> And later call to native_smp_cpus_done -> mtrr_aps_init completes
-> mtrr initialization.
-> 
-> The same pattern might be noticed in suspend/hibernate handlers, that
-> call enable_nonboot_cpus.
-> 
->   enable_nonboot_cpus
->     -> arch_enable_nonboot_cpus_begin
->          -> set_mtrr_aps_delayed_init
-> 
->     -> boot secondary cpus
-> 
->     -> arch_enable_nonboot_cpus_end
->          -> mtrr_aps_init
-> 
-> So question is if the calling mtrr_ap_init so early in
-> identify_secondary_cpu is really necessary?
-> From current code it looks like it is never called at normal smp
-> boot/resume time. And only path that triggers it is cpu hot-plug one.
-> 
-> I see following possible solutions:
-> 
-> 1. Could the call to mtrr_ap_init be just moved from identify_secondary_cpu
-> to start_secondary right after x86_cpuinit.setup_percpu_clockev call?
->
-> This will prevent an access to uninitialized per_cpu clock. Or move
-> x86_cpuinit.setup_percpu_clockev before smp_callin?
-> 
-> 2. Another way to prevent access to uninitialized per_cpu clock is to
-> introduce hook.early_percpu_clock_init that will be called before
-> smp_callin or right before mtrr_ap_init.
-> 
-> I hope to see opinions about this matter from a more experienced people than me.
 
-It would be more robust to introduce x86_cpuinit.early_percpu_clock_init
-and use it for KVM, replacing setup_percpu_clockev hook.
+--pWyiEgJYm5f9v55/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-setup_percpu_clockev initializes the APIC timer, but clearly sched_clock
-should be functional before that, for example for ftrace (in addition to
-sched_clock from scheduler as in the trace above).
+I'm announcing the release of the 3.0.19 kernel.
 
+All users of the 3.0 kernel series must upgrade.
+
+The updated 3.0.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                |    2=20
+ arch/arm/mach-ux500/Kconfig             |    1=20
+ arch/arm/mm/proc-v7.S                   |    6 -
+ arch/x86/include/asm/uv/uv_hub.h        |    4 -
+ arch/x86/kernel/microcode_amd.c         |   24 ++++++-
+ arch/x86/net/bpf_jit_comp.c             |   36 ++++++----
+ crypto/sha512_generic.c                 |   62 ++++++++++--------
+ drivers/gpu/drm/drm_auth.c              |    6 +
+ drivers/gpu/drm/drm_fops.c              |    5 +
+ drivers/gpu/drm/i915/intel_sdvo.c       |    8 --
+ drivers/gpu/drm/radeon/radeon_irq_kms.c |    6 +
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c     |    2=20
+ drivers/hwmon/f71805f.c                 |   10 +-
+ drivers/hwmon/sht15.c                   |    3=20
+ drivers/hwmon/w83627ehf.c               |    6 +
+ drivers/net/bonding/bond_alb.c          |   27 ++------
+ drivers/tty/serial/amba-pl011.c         |   14 ++++
+ drivers/tty/serial/jsm/jsm_driver.c     |    1=20
+ drivers/tty/tty_port.c                  |   12 ++-
+ drivers/usb/class/cdc-wdm.c             |   59 +++++++++++------
+ drivers/usb/host/ehci-fsl.c             |    2=20
+ drivers/usb/host/xhci-ring.c            |    6 +
+ drivers/usb/misc/usbsevseg.c            |    2=20
+ drivers/usb/serial/cp210x.c             |  107 ++++++++++++++++++++++-----=
+-----
+ drivers/usb/serial/ftdi_sio.c           |   14 ++--
+ drivers/usb/serial/ftdi_sio_ids.h       |   19 +++++
+ drivers/usb/serial/io_ti.c              |   10 --
+ drivers/usb/serial/option.c             |    5 +
+ drivers/usb/serial/qcaux.c              |    7 +-
+ fs/ecryptfs/crypto.c                    |   49 +-------------
+ fs/ecryptfs/inode.c                     |   48 ++++++++++----
+ fs/ecryptfs/miscdev.c                   |   56 +++++++++++-----
+ fs/ecryptfs/read_write.c                |   19 ++++-
+ fs/xfs/linux-2.6/xfs_discard.c          |    4 -
+ fs/xfs/xfs_vnodeops.c                   |    3=20
+ include/drm/drmP.h                      |    1=20
+ include/net/netns/generic.h             |    1=20
+ kernel/printk.c                         |    6 +
+ kernel/trace/ftrace.c                   |   76 ++++++++++++++--------
+ net/caif/caif_dev.c                     |   11 +--
+ net/caif/cfcnfg.c                       |    1=20
+ net/core/net_namespace.c                |   31 ++++-----
+ net/ipv4/ah4.c                          |    2=20
+ net/ipv4/tcp_ipv4.c                     |    2=20
+ net/ipv4/tcp_output.c                   |    6 -
+ net/ipv6/ah6.c                          |    2=20
+ net/ipv6/tcp_ipv6.c                     |    2=20
+ net/l2tp/l2tp_ip.c                      |    5 -
+ net/rds/af_rds.c                        |   20 ++---
+ sound/pci/hda/patch_realtek.c           |   11 +++
+ sound/pci/hda/patch_sigmatel.c          |    8 +-
+ 51 files changed, 507 insertions(+), 323 deletions(-)
+
+--pWyiEgJYm5f9v55/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPLBuXAAoJEDjbvchgkmk+dEEQAJevJinqe1T97ZDu0yZzDdJ3
+OzZ5qBSFGgY/j5VIVtEhZQ/qE+n5GJJ9yz7FpqL3EJz+bKMeL4DzXmt53FQsd373
+meaxX3F0wvw5N9pExJJlbF6CNqn29OTex25kfW1VHEhk3SKjWw5VzQJwoI5IkpKg
+U3uN8GzSZR5W69Ikq9nL7UYic0eCm28Q2Q34vIH+hWU0GG+nQlHOZO3Uu/ctXNgq
+Y0KrxmmVrKlgHJrUQ7Z1q5QjaErWn1nE7Qf0nyK9PJidv0LFY5FWi45hhYR0d3dw
+JVE3/+2+jcbxWu2eR2ogeyg+5De9/yAc7YoaMgxpuns5I/ZBkVJ+s7O3YPBaM9Ck
+eA8KFzXPayRDQ03FRQCUrrs9x7KdMfy8tZCIkgLABb/0Diq+XdMu0kr/4FLfSeLG
+6Mb6NIzLfX01THT9q+UshapGdOhKsOYEL0yLHvs8A0Q+FnsvU8Q30r17tzDGKPhQ
+/3KqF7N3UCnU78Qzb0gjE++ynYx0ViHaHYy21zqzx4947iO7M6o5LhctFQSSzTYL
+Rotemj7+DepwRP7fxOLLXMOqEpnueFNqhzVxOsLJDiEDSzz5FQcR+upCTqOgSrlR
+Aj6Kl2aOmjH80CECudKDK7xYeZen8YZ9wvxVotmmSxA1am0UrB4aPmg/Lk4Qau1p
+PM/kIPo1SKcjRrP8uVhd
+=JqN2
+-----END PGP SIGNATURE-----
+
+--pWyiEgJYm5f9v55/--
