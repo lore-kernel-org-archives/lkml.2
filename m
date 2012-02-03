@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab2BCNnR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 08:43:17 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54642 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756242Ab2BCNnP (ORCPT
+	id S1756513Ab2BCNqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 08:46:16 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47443 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756412Ab2BCNqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 08:43:15 -0500
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Ram Pai <linuxram@us.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [Patch] resource: move EXPORT_SYMBOL right after definition
-Date: Fri,  3 Feb 2012 21:42:39 +0800
-Message-Id: <1328276573-15265-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 3 Feb 2012 08:46:15 -0500
+From: amit.sahrawat83@gmail.com
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Amit Sahrawat <a.sahrawat@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH 3/3] bio-integrity: use kmem_cache_zalloc in bio_integrity_alloc_bioset()
+Date: Fri,  3 Feb 2012 19:20:19 +0530
+Message-Id: <4f2be526.8706440a.5b8d.2713@mx.google.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EXPORT_SYMBOL(adjust_resource) should be right after adjust_resource().
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
 
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+Use advantage of kmem_cache_zalloc() to remove memset() call in
+bio_integrity_alloc_bioset()
 
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 7640b3a..7e8ea66 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -749,6 +749,7 @@ int adjust_resource(struct resource *res, resource_size_t start, resource_size_t
- 	write_unlock(&resource_lock);
- 	return result;
- }
-+EXPORT_SYMBOL(adjust_resource);
+ fs/bio-integrity.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index c2183f3..836e34b 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -93,7 +93,7 @@ struct bio_integrity_payload *bio_integrity_alloc_bioset(struct bio *bio,
  
- static void __init __reserve_region_with_split(struct resource *root,
- 		resource_size_t start, resource_size_t end,
-@@ -792,8 +793,6 @@ void __init reserve_region_with_split(struct resource *root,
- 	write_unlock(&resource_lock);
- }
+ 	/* Lower order allocations come straight from slab */
+ 	if (!use_bip_pool(idx))
+-		bip = kmem_cache_alloc(bip_slab[idx].slab, gfp_mask);
++		bip = kmem_cache_zalloc(bip_slab[idx].slab, gfp_mask);
  
--EXPORT_SYMBOL(adjust_resource);
+ 	/* Use mempool if lower order alloc failed or max vecs were requested */
+ 	if (bip == NULL) {
+@@ -106,8 +106,6 @@ struct bio_integrity_payload *bio_integrity_alloc_bioset(struct bio *bio,
+ 		}
+ 	}
+ 
+-	memset(bip, 0, sizeof(*bip));
 -
- /**
-  * resource_alignment - calculate resource's alignment
-  * @res: resource pointer
+ 	bip->bip_slab = idx;
+ 	bip->bip_bio = bio;
+ 	bio->bi_integrity = bip;
+-- 
+1.7.2.3
+
