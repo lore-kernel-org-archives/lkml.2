@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab2BCJVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 04:21:33 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:40882 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755262Ab2BCJV3 (ORCPT
+	id S1755341Ab2BCJWH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 04:22:07 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51308 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754993Ab2BCJWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 04:21:29 -0500
-Message-ID: <4F2BA6C0.10100@stericsson.com>
-Date: Fri, 3 Feb 2012 10:20:00 +0100
-From: Ulf Hansson <ulf.hansson@stericsson.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 3 Feb 2012 04:22:01 -0500
 MIME-Version: 1.0
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Ian Molton <ian@mnementh.co.uk>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Per FORLIN <per.forlin@stericsson.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Viresh KUMAR <viresh.kumar@st.com>
-Subject: Re: [PATCH 05/11] mmc/host: add context parameter for DMA_SLAVE and
- DMA_CYCLIC
-References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-6-git-send-email-alexandre.bounine@idt.com>
-In-Reply-To: <1328218341-31436-6-git-send-email-alexandre.bounine@idt.com>
-Content-Type: text/plain; charset="iso-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120203091038.GI889@n2100.arm.linux.org.uk>
+References: <CACKLOr26BuTh8Qr8pFHoTJoyCW9ty4-Kg-YRisXmN3=spzY6_Q@mail.gmail.com>
+	<20120203091038.GI889@n2100.arm.linux.org.uk>
+Date: Fri, 3 Feb 2012 10:22:00 +0100
+Message-ID: <CACKLOr3_nsWy7z3QQejFbmgJJ78Nhv8J6fHFe=WjeAtghoCa5w@mail.gmail.com>
+Subject: Re: [dmaengine] [Q] jiffies value does not increase in dma_sync_wait()
+From: javier Martin <javier.martin@vista-silicon.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexandre Bounine wrote:
-> Fixups for calls affected by adding the new context parameter to DMA_SLAVE
-> and DMA_CYCLIC interfaces.
-> 
-> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Chris Ball <cjb@laptop.org>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Ian Molton <ian@mnementh.co.uk>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Ulf Hansson <ulf.hansson@stericsson.com>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Viresh Kumar <viresh.kumar@st.com>
-> ---
->  drivers/mmc/host/atmel-mci.c    |    2 +-
->  drivers/mmc/host/mmci.c         |    2 +-
->  drivers/mmc/host/mxcmmc.c       |    2 +-
->  drivers/mmc/host/mxs-mmc.c      |    2 +-
->  drivers/mmc/host/sh_mmcif.c     |    6 ++++--
->  drivers/mmc/host/tmio_mmc_dma.c |    4 ++--
->  6 files changed, 10 insertions(+), 8 deletions(-)
-> 
+Hi Russell,
 
-I have not been following the patches for changing the API. But does 
-that mean that before this patch we are getting compile errors/warnings? 
-Is so, the complete API change should have been included in this patch 
-as well, right?
+On 3 February 2012 10:10, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Feb 03, 2012 at 09:37:48AM +0100, javier Martin wrote:
+>> I've introduced a couple of printk() to check why this timeout is not
+>> triggered and I've found that the value of jiffies does not increase
+>> between loop iterations (i. e. it's like time didn't advance).
+>>
+>> Does anyobody know what reasons could make jiffies not being updated?
+>
+> Are interrupts disabled?
 
-Otherwise, looks good to me!
+Apparently not but, how could I check it for sure? Is
+"irqs_disabled()" suitable for that purpose?
 
-Acked-by: Ulf Hansson <ulf.hansson@stericsson.com>
+http://lxr.linux.no/#linux+v3.2.2/include/linux/irqflags.h#L120
+
+-- 
+Javier Martin
+Vista Silicon S.L.
+CDTUC - FASE C - Oficina S-345
+Avda de los Castros s/n
+39005- Santander. Cantabria. Spain
++34 942 25 32 60
+www.vista-silicon.com
