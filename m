@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab2BCWIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 17:08:17 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33570 "EHLO
+	id S1757992Ab2BCWIZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 17:08:25 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47171 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753179Ab2BCWIP (ORCPT
+	by vger.kernel.org with ESMTP id S1753552Ab2BCWIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 17:08:15 -0500
-X-Sasl-enc: v4WO905D+QaRY7wt9imQcouOZA7p8O4SpAcXITwgQ3kB 1328306894
-Date: Fri, 3 Feb 2012 14:07:39 -0800
+	Fri, 3 Feb 2012 17:08:17 -0500
+X-Sasl-enc: l2aGlYH6N7IldAUjDX8TbAlhRD1rLXsWxc54JJW1PVGR 1328306896
+Date: Fri, 3 Feb 2012 14:07:45 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk
-Subject: [0/1] 3.2.5-stable review
-Message-ID: <20120203220739.GA3660@kroah.com>
+Subject: [0/1] 3.0.20-stable review
+Message-ID: <20120203220745.GA3459@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.2.5 release.
+This is the start of the stable review cycle for the 3.0.20 release.
 
 It's a bit different from other stable review cycles in that it only has
 one patch.
@@ -34,20 +34,18 @@ for people to test it out in a simple way.  This patch has been shipping
 in the Fedora kernels for a while now, so I'm pretty confident about it,
 but I'm doing it this way just to be sure.
 
-Please let me know if anyone has any problems with it as soon as
-possible.
+Please let me know if anyone has any problems with it as soon as possible.
 
 Responses should be made by Monday, February 6, 2012, 20:00:00 UTC.
 Anything received after that time might be too late.
 
 The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.5-rc1.gz
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.20-rc1.gz
 and the diffstat can be found below.
 
 thanks,
 
 greg k-h
-
 
  Makefile                 |    4 +-
  drivers/acpi/pci_root.c  |    7 +++++
