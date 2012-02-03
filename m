@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab2BCQac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:30:32 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62014 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943Ab2BCQab (ORCPT
+	id S1756890Ab2BCQgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:36:25 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52816 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240Ab2BCQgX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:30:31 -0500
-Date: Fri, 3 Feb 2012 20:30:25 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
-Message-ID: <20120203163025.GI11834@moon>
-References: <1328267483-3225342-1-git-send-email-avagin@openvz.org>
- <20120203162519.GB805@google.com>
+	Fri, 3 Feb 2012 11:36:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203162519.GB805@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328136242-17725-3-git-send-email-yinghai@kernel.org>
+References: <1328136242-17725-1-git-send-email-yinghai@kernel.org> <1328136242-17725-3-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 3 Feb 2012 08:36:02 -0800
+Message-ID: <CAErSpo44bef-Vj4LPB0QJ8HRjWxqRFK_=kpMq8hYEe=4t58zGQ@mail.gmail.com>
+Subject: Re: [PATCH 02/15] PCI: Add iobusn_resource
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 08:25:19AM -0800, Tejun Heo wrote:
-> On Fri, Feb 03, 2012 at 02:11:23PM +0300, Andrew Vagin wrote:
-> > Zero is written at clear_tid_address, when the process exits.
-> > This functionality is used by pthread_join().
-> > 
-> > sys_set_tid_address() changes this address for current task.
-> > 
-> > Before this patch clear_tid_address could not be got from user space.
-> > I want to dump a full state of a task, so I need this address.
-> > Also I think it may be useful for debugging a multithreading program.
-> > 
-> > I am not sure that ptrace is suitable place. It may be added in prctl,
-> > but I think it's a bit useless and strange. I can't image a real
-> > situation (avoid checkpointing) when a thread will want to get own
-> > clear_tid_address from itself, this address is used by parent ussually.
-> > 
-> > Signed-off-by: Andrew Vagin <avagin@openvz.org>
-> 
-> Ummm... this really doesn't fit in ptrace.  Cyrill, why not put it
-> together with other params you're exporting?
-> 
+On Wed, Feb 1, 2012 at 2:43 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> also add busn_res into struct pci_bus.
+>
+> will use them to have bus number resource tree.
 
-We could add it to /proc/pid/stat (but I fear Andrew Morton shoot me then ;)
+Will you make this tree visible in /proc?  Seems like that would be
+useful for debugging and for symmetry with /proc/iomem and
+/proc/ioports.
 
-	Cyrill
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  include/linux/ioport.h |    1 +
+>  include/linux/pci.h    |    1 +
+>  kernel/resource.c      |    8 ++++++++
+>  3 files changed, 10 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+> index e885ba2..6fe9e19 100644
+> --- a/include/linux/ioport.h
+> +++ b/include/linux/ioport.h
+> @@ -136,6 +136,7 @@ struct resource {
+>  /* PC/ISA/whatever - the normal PC address spaces: IO and memory */
+>  extern struct resource ioport_resource;
+>  extern struct resource iomem_resource;
+> +extern struct resource iobusn_resource;
+>
+>  extern struct resource *request_resource_conflict(struct resource *root, struct resource *new);
+>  extern int request_resource(struct resource *root, struct resource *new);
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index f8caaab..94ad468 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -419,6 +419,7 @@ struct pci_bus {
+>        struct list_head slots;         /* list of slots on this bus */
+>        struct resource *resource[PCI_BRIDGE_RESOURCE_NUM];
+>        struct list_head resources;     /* address space routed to this bus */
+> +       struct resource busn_res;       /* track registered bus num range */
+
+Is this different from bus.secondary and bus.subordinate?  Do we need
+both busn_res and secondary/subordinate?  If we need both, in what
+circumstance with they contain different information?
+
+>        struct pci_ops  *ops;           /* configuration access functions */
+>        void            *sysdata;       /* hook for sys-specific extension */
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index 7640b3a..53b42f0 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -38,6 +38,14 @@ struct resource iomem_resource = {
+>  };
+>  EXPORT_SYMBOL(iomem_resource);
+>
+> +struct resource iobusn_resource = {
+> +       .name   = "PCI busn",
+> +       .start  = 0,
+> +       .end    = 0xffffff,
+> +       .flags  = IORESOURCE_BUS,
+> +};
+> +EXPORT_SYMBOL(iobusn_resource);
+> +
+>  /* constraints to be met while allocating resources */
+>  struct resource_constraint {
+>        resource_size_t min, max, align;
+> --
+> 1.7.7
+>
