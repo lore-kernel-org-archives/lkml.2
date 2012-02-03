@@ -1,141 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab2BCBTc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 20:19:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59622 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756423Ab2BCBT3 convert rfc822-to-8bit (ORCPT
+	id S1757782Ab2BCBWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 20:22:41 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:54322 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757608Ab2BCBWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 20:19:29 -0500
+	Thu, 2 Feb 2012 20:22:39 -0500
+Message-ID: <4F2B4471.8020203@xenotime.net>
+Date: Thu, 02 Feb 2012 18:20:33 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20120201180705.GA20936@e102568-lin.cambridge.arm.com>
-References: <1324426147-16735-1-git-send-email-ccross@android.com>
-	<4F1929E9.7070707@linaro.org>
-	<CAMbhsRTbVqV6p0py9NGZrpFPf2yvp-B0dr+o-m7qbdja_-Lfzw@mail.gmail.com>
-	<CAKfTPtAsO8z_8AnR8zSGZ9cm_7orDNxB3r09JAFk+2jdezUVmQ@mail.gmail.com>
-	<CAMbhsRQYVXTZ2pX4mBrM6=SyGTqn_GY8xsW4rt_e21zerEzctA@mail.gmail.com>
-	<CAKfTPtB3Kcy41H9g9u3u81kEHJeypi=GvOfOjcpdztzqN991nA@mail.gmail.com>
-	<20120201145934.GA20421@e102568-lin.cambridge.arm.com>
-	<CAMbhsRTFzc8aGsSGUs2==4FiqBb7zOit4cO=6U698k+RCE+kqQ@mail.gmail.com>
-	<20120201180705.GA20936@e102568-lin.cambridge.arm.com>
-Date: Thu, 2 Feb 2012 17:19:28 -0800
-X-Google-Sender-Auth: _DJOjjRcdyt0yQdxTFZFvPmg75s
-Message-ID: <CAMbhsRSBqyTaCBMjJL-izMK=HSVwY6yQQqPyg0enddo2vymyxA@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/3] coupled cpuidle state support
-From: Colin Cross <ccross@android.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kevin Hilman <khilman@ti.com>, Len Brown <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-X-System-Of-Record: true
+To: Brian Norris <computersforpeace@gmail.com>
+CC: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>, linux-next@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] jffs2: update to new MTD interface (missed a few)
+References: <1328228469-10539-1-git-send-email-computersforpeace@gmail.com>
+In-Reply-To: <1328228469-10539-1-git-send-email-computersforpeace@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 10:07 AM, Lorenzo Pieralisi
-<lorenzo.pieralisi@arm.com> wrote:
-> On Wed, Feb 01, 2012 at 05:30:15PM +0000, Colin Cross wrote:
->> On Wed, Feb 1, 2012 at 6:59 AM, Lorenzo Pieralisi
->> <lorenzo.pieralisi@arm.com> wrote:
->> > On Wed, Feb 01, 2012 at 12:13:26PM +0000, Vincent Guittot wrote:
->> >
->> > [...]
->> >
->> >> >> In your patch, you put in safe state (WFI for most of platform) the
->> >> >> cpus that become idle and these cpus are woken up each time a new cpu
->> >> >> of the cluster becomes idle. Then, the cluster state is chosen and the
->> >> >> cpus enter the selected C-state. On ux500, we are using another
->> >> >> behavior for synchronizing  the cpus. The cpus are prepared to enter
->> >> >> the c-state that has been chosen by the governor and the last cpu,
->> >> >> that enters idle, chooses the final cluster state (according to cpus'
->> >> >> C-state). The main advantage of this solution is that you don't need
->> >> >> to wake other cpus to enter the C-state of a cluster. This can be
->> >> >> quite worth full when tasks mainly run on one cpu. Have you also think
->> >> >> about such behavior when developing the coupled cpuidle driver ? It
->> >> >> could be interesting to add such behavior.
->> >> >
->> >> > Waking up the cpus that are in the safe state is not done just to
->> >> > choose the target state, it's done to allow the cpus to take
->> >> > themselves to the target low power state.  On ux500, are you saying
->> >> > you take the cpus directly from the safe state to a lower power state
->> >> > without ever going back to the active state?  I once implemented Tegra
->> >>
->> >> yes it is
->> >
->> > But if there is a single power rail for the entire cluster, when a CPU
->> > is "prepared" for shutdown this means that you have to save the context and
->> > clean L1, maybe for nothing since if other CPUs are up and running the
->> > CPU going idle can just enter a simple standby wfi (clock-gated but power on).
->> >
->> > With Colin's approach, context is saved and L1 cleaned only when it is
->> > almost certain the cluster is powered off (so the CPUs).
->> >
->> > It is a trade-off, I am not saying one approach is better than the
->> > other; we just have to make sure that preparing the CPU for "possible" shutdown
->> > is better than sending IPIs to take CPUs out of wfi and synchronize
->> > them (this happens if and only if CPUs enter coupled C-states).
->> >
->> > As usual this will depend on use cases (and silicon implementations :) )
->> >
->> > It is definitely worth benchmarking them.
->> >
->>
->> I'm less worried about performance, and more worried about race
->> conditions.  How do you deal with the following situation:
->> CPU0 goes to WFI, and saves its state
->> CPU1 goes idle, and selects a deep idle state that powers down CPU0
->> CPU1 saves is state, and is about to trigger the power down
->> CPU0 gets an interrupt, restores its state, and modifies state (maybe
->> takes a spinlock during boot)
->> CPU1 cuts the power to CPU0
->>
->> On OMAP4, the race is handled in hardware.  When CPU1 tries to cut the
->> power to the blocks shared by CPU0 the hardware will ignore the
->> request if CPU0 is not in WFI.  On Tegra2, there is no hardware
->> support and I had to handle it with a spinlock implemented in scratch
->> registers because CPU0 is out of coherency when it starts booting and
->> ldrex/strex don't work.  I'm not convinced my implementation is
->> correct, and I'd be curious to see any other implementations.
->
-> That's a problem you solved with coupled C-states (ie your example in
-> the cover letter), where the primary waits for other CPUs to be reset
-> before issuing the power down command, right ? At that point in time
-> secondaries cannot wake up (?) and if wfi (ie power down) aborts you just
-> take the secondaries out of reset and restart executing simultaneously,
-> correct ? It mirrors the suspend behaviour, which is easier to deal with
-> than completely random idle paths.
+On 02/02/2012 04:21 PM, Brian Norris wrote:
+> There were a few instances of the old MTD interface remaining for JFFS2. We
+> fix one error that shows up (only when CONFIG_JFFS2_FS_WRITEBUFFER is not
+> defined) like this:
+> 
+>   fs/jffs2/read.c: In function 'jffs2_read_dnode':
+>   fs/jffs2/read.c:36:8: error: 'struct mtd_info' has no member named 'read'
+>   fs/jffs2/read.c:112:8: error: 'struct mtd_info' has no member named 'read'
+>   ...
+> 
+> We also simply remove two macros that are not in use, were not updated to
+> the new MTD interface, and don't even utilize the old interface properly.
+> (That means they weren't used since commit 8593fbc6, year 2006; almost 6
+> years ago, for those who don't want to do the math)
+> 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 
-Yes, anything that supports hotplug and suspend should support coupled
-cpuidle states fairly easily.  The only thing required that is not
-already used by hotplug/suspend is the ability to save and restore
-context on cpu1, but most implementations end up doing that already.
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-> It is true that this should be managed by the PM HW; if HW is not
-> capable of managing these situations things get nasty as you highlighted.
+Thanks.
 
-Yes - on some platforms, the HW is not designed to handle it.  On
-others, it is designed to, but due to HW bugs it cannot be used.
+> ---
+> This fixes some linux-next build errors seen by Randy Dunlap
+> 
+>  fs/jffs2/os-linux.h |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/jffs2/os-linux.h b/fs/jffs2/os-linux.h
+> index ab65ee3..1cd3aec 100644
+> --- a/fs/jffs2/os-linux.h
+> +++ b/fs/jffs2/os-linux.h
+> @@ -76,7 +76,7 @@ static inline void jffs2_init_inode_info(struct jffs2_inode_info *f)
+>  #define jffs2_write_nand_cleanmarker(c,jeb) (-EIO)
+>  
+>  #define jffs2_flash_write(c, ofs, len, retlen, buf) jffs2_flash_direct_write(c, ofs, len, retlen, buf)
+> -#define jffs2_flash_read(c, ofs, len, retlen, buf) ((c)->mtd->read((c)->mtd, ofs, len, retlen, buf))
+> +#define jffs2_flash_read(c, ofs, len, retlen, buf) (mtd_read((c)->mtd, ofs, len, retlen, buf))
+>  #define jffs2_flush_wbuf_pad(c) ({ do{} while(0); (void)(c), 0; })
+>  #define jffs2_flush_wbuf_gc(c, i) ({ do{} while(0); (void)(c), (void) i, 0; })
+>  #define jffs2_write_nand_badblock(c,jeb,bad_offset) (1)
+> @@ -108,8 +108,6 @@ static inline void jffs2_init_inode_info(struct jffs2_inode_info *f)
+>  
+>  #define jffs2_cleanmarker_oob(c) (c->mtd->type == MTD_NANDFLASH)
+>  
+> -#define jffs2_flash_write_oob(c, ofs, len, retlen, buf) ((c)->mtd->write_oob((c)->mtd, ofs, len, retlen, buf))
+> -#define jffs2_flash_read_oob(c, ofs, len, retlen, buf) ((c)->mtd->read_oob((c)->mtd, ofs, len, retlen, buf))
+>  #define jffs2_wbuf_dirty(c) (!!(c)->wbuf_len)
+>  
+>  /* wbuf.c */
 
-> And it is also true ldrex/strex on cacheable memory might not be available in
-> those early warm-boot stages. I came up with a locking algorithm on
-> strongly ordered memory to deal with that, but I am still not sure it is
-> something we really really need.
 
-I did the same, but with device memory.
-
-> I will test coupled C-state code ASAP, and come back with feedback.
->
-> Thanks,
-> Lorenzo
->
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
