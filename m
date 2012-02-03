@@ -1,36 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab2BCJK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 04:10:58 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37335 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab2BCJKt (ORCPT
+	id S1755292Ab2BCJSQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 04:18:16 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:46517 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755162Ab2BCJRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 04:10:49 -0500
-Date: Fri, 3 Feb 2012 09:10:38 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: javier Martin <javier.martin@vista-silicon.com>
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [dmaengine] [Q] jiffies value does not increase in
-	dma_sync_wait()
-Message-ID: <20120203091038.GI889@n2100.arm.linux.org.uk>
-References: <CACKLOr26BuTh8Qr8pFHoTJoyCW9ty4-Kg-YRisXmN3=spzY6_Q@mail.gmail.com>
+	Fri, 3 Feb 2012 04:17:47 -0500
+X-Originating-IP: 217.70.178.142
+X-Originating-IP: 50.43.15.19
+Date: Fri, 3 Feb 2012 01:17:36 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 38/41] rcu: Rework detection of use of
+ RCU by offline CPUs
+Message-ID: <20120203091736.GH3008@leaf>
+References: <20120201194131.GA10028@linux.vnet.ibm.com>
+ <1328125319-5205-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1328125319-5205-38-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120202061106.GU29058@leaf>
+ <20120202183122.GC2518@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACKLOr26BuTh8Qr8pFHoTJoyCW9ty4-Kg-YRisXmN3=spzY6_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120202183122.GC2518@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 09:37:48AM +0100, javier Martin wrote:
-> I've introduced a couple of printk() to check why this timeout is not
-> triggered and I've found that the value of jiffies does not increase
-> between loop iterations (i. e. it's like time didn't advance).
+On Thu, Feb 02, 2012 at 10:31:22AM -0800, Paul E. McKenney wrote:
+> On Wed, Feb 01, 2012 at 10:11:06PM -0800, Josh Triplett wrote:
+> > On Wed, Feb 01, 2012 at 11:41:56AM -0800, Paul E. McKenney wrote:
+> > > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> > > 
+> > > Because newly offlined CPUs continue executing after completing the
+> > > CPU_DYING notifiers, they legitimately enter the scheduler and use
+> > > RCU while appearing to be offline.  This calls for a more sophisticated
+> > > approach as follows:
+> > > 
+> > > 1.	RCU marks the CPU online during the CPU_UP_PREPARE phase.
+> > > 
+> > > 2.	RCU marks the CPU offline during the CPU_DEAD phase.
+> > > 
+> > > 3.	Diagnostics regarding use of read-side RCU by offline CPUs use
+> > > 	RCU's accounting rather than the cpu_online_map.  (Note that
+> > > 	__call_rcu() still uses cpu_online_map to detect illegal
+> > > 	invocations within CPU_DYING notifiers.)
+> > > 
+> > > 4.	Offline CPUs are prevented from hanging the system by
+> > > 	force_quiescent_state(), which pays attention to cpu_online_map.
+> > > 	Some additional work (in a later commit) will be needed to
+> > > 	guarantee that force_quiescent_state() waits a full jiffy before
+> > > 	assuming that a CPU is offline, for example, when called from
+> > > 	idle entry.
+> > > 
+> > > This approach avoids the false positives encountered when attempting to
+> > > use more exact classification of CPU online/offline state.
+> > 
+> > Doesn't this fix need to happen *before* the earlier patches in this
+> > series that add splats for RCU usage while offline?  Otherwise,
+> > bisection can hit those splats.
 > 
-> Does anyobody know what reasons could make jiffies not being updated?
+> If someone actually does hit the splats during a real bisection, I will
+> buy you the beverage of your choice.  ;-)
 
-Are interrupts disabled?
+Funny, but while the likelihood of any particular bug getting hit during
+bisection remains relatively low simply due to the chance of hitting
+the small range of commits where it can happen, I still think it would
+make sense to reorder the patch series so it can't happen at all. :)
+
+- Josh Triplett
