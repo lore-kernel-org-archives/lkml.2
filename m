@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab2BCVBX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 16:01:23 -0500
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:35817 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753848Ab2BCVBW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 16:01:22 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Cc: <linux-omap@vger.kernel.org>, tony@atomide.com,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v9 00/25] gpio/omap: driver cleanup and fixes
-Organization: Texas Instruments, Inc.
-References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
-Date: Fri, 03 Feb 2012 13:01:16 -0800
-In-Reply-To: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com> (Tarun
-	Kanti DebBarma's message of "Thu, 2 Feb 2012 23:00:26 +0530")
-Message-ID: <87pqdv4oo3.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1757869Ab2BCVBc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 16:01:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59502 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757737Ab2BCVB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 16:01:29 -0500
+Message-ID: <4F2C4AE1.70309@zytor.com>
+Date: Fri, 03 Feb 2012 13:00:17 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from
+ 80 to 100 colums
+References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org> <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu> <20120203125715.0e9dfb1d.akpm@linux-foundation.org>
+In-Reply-To: <20120203125715.0e9dfb1d.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tarun,
+On 02/03/2012 12:57 PM, Andrew Morton wrote:
+> 
+> If we really want to improve the world we should jump into a time
+> machine and set tabstops to 4.  Sigh.
+> 
 
-Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
+Most editors these days will happy do 4-space stops expanded to 8-space
+tab characters.
 
-> The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
->   Linus Torvalds (1):
->         Linux 3.3-rc2
->
-> are available in the git repository at:
-> http://gitorious.org/~tarunkanti/omap-sw-develoment/tarunkantis-linux-omap-dev
-> Branch: for_3.4/gpio_cleanup_fixes_v9
->
-> This series is continuation of cleanup of OMAP GPIO driver and fixes.
-> The cleanup include getting rid of cpu_is_* checks wherever possible,
-> use of gpio_bank list instead of static array, use of unique platform
-> specific value associated data member to OMAP platforms to avoid
-> cpu_is_* checks. The series also include PM runtime support.
+I have adopted the "Linux kernel formatting with 4-space indentation"
+for most of my projects these days.
 
-This version is looking pretty good, and I'm almost ready to queue it up
-for Grant.
+	-hpa
 
-However, one more minor nit.  Please fix up the compile warnings when
-built without CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-The definitons of the dev_pm_ops callbacks need to be conditional when
-using the SET_*_PM_OPS() macros, otherwise you get these warnings:
-
-  CC      drivers/gpio/gpio-omap.o
-/work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1142:12: warning: 'omap_gpio_suspend' defined but not used [-Wunused-function]
-/work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1167:12: warning: 'omap_gpio_resume' defined but not used [-Wunused-function]
-/work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1191:12: warning: 'omap_gpio_runtime_suspend' defined but not used [-Wunused-function]
-/work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1237:12: warning: 'omap_gpio_runtime_resume' defined but not used [-Wunused-function]
-
-
-Thanks,
-
-Kevin
