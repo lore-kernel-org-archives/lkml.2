@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab2BCWJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 17:09:05 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54840 "EHLO
+	id S1757797Ab2BCWJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 17:09:51 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34561 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753419Ab2BCWJD (ORCPT
+	by vger.kernel.org with ESMTP id S1753498Ab2BCWJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 17:09:03 -0500
-X-Sasl-enc: kXnB18e5KfBaff9CZnzpzkL/HIbR83ua5pZZl775qbRo 1328306942
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Feb  3 14:05:22 2012
-Message-Id: <20120203220522.455360680@clark.kroah.org>
+	Fri, 3 Feb 2012 17:09:50 -0500
+X-Sasl-enc: ApOECyNsYNpADNwVC7jmFs9ZOcNXT+ALs7Z0c/t76EZ+ 1328306989
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Feb  3 14:07:29 2012
+Message-Id: <20120203220729.505885003@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 03 Feb 2012 14:01:34 -0800
+Date: Fri, 03 Feb 2012 14:05:59 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
         Jesse Barnes <jbarnes@virtuousgeek.org>
 Subject: [1/1] PCI: Rework ASPM disable code
-In-Reply-To: <20120203220745.GA3459@kroah.com>
+In-Reply-To: <20120203220739.GA3660@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -67,7 +67,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/acpi/pci_root.c
 +++ b/drivers/acpi/pci_root.c
-@@ -595,6 +595,13 @@ static int __devinit acpi_pci_root_add(s
+@@ -596,6 +596,13 @@ static int __devinit acpi_pci_root_add(s
  		if (ACPI_SUCCESS(status)) {
  			dev_info(root->bus->bridge,
  				"ACPI _OSC control (0x%02x) granted\n", flags);
@@ -83,7 +83,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  				"ACPI _OSC request failed (%s), "
 --- a/drivers/pci/pci-acpi.c
 +++ b/drivers/pci/pci-acpi.c
-@@ -393,7 +393,6 @@ static int __init acpi_pci_init(void)
+@@ -395,7 +395,6 @@ static int __init acpi_pci_init(void)
  
  	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
  		printk(KERN_INFO"ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
