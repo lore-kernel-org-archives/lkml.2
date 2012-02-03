@@ -1,87 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab2BCADv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 19:03:51 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34921 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab2BCADu (ORCPT
+	id S933657Ab2BCAEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 19:04:08 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32842 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706Ab2BCAEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 19:03:50 -0500
-Date: Fri, 3 Feb 2012 04:03:45 +0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg KH <gregkh@linuxfoundation.org>, Oleg Nesterov <oleg@redhat.com>
-Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, kernel-team@android.com,
-        linaro-kernel@lists.linaro.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v3] staging: android/lowmemorykiller: Don't grab tasklist_lock
-Message-ID: <20120203000345.GA14338@oksana.dev.rtsoft.ru>
-References: <20120202171659.GA29378@oksana.dev.rtsoft.ru>
+	Thu, 2 Feb 2012 19:04:05 -0500
+Message-ID: <4F2B24AC.1020408@gmail.com>
+Date: Fri, 03 Feb 2012 01:05:00 +0100
+From: Chase Douglas <chasedouglas@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120119 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120202171659.GA29378@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Input: Add EVIOC mechanism for MT slots
+References: <1328036403-2827-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1328036403-2827-1-git-send-email-rydberg@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grabbing tasklist_lock has its disadvantages, i.e. it blocks
-process creation and destruction. If there are lots of processes,
-blocking doesn't sound as a great idea.
+On 01/31/2012 08:00 PM, Henrik Rydberg wrote:
+> This patch adds the ability to extract MT slot data via a new ioctl,
+> EVIOCGMTSLOTS. The function returns an array of slot values for the
+> specified ABS_MT event type.
+> 
+> Example of user space usage:
+> 
+> struct INPUT_MT_REQUEST(64) req;
+> req.code = ABS_MT_POSITION_X;
+> if (ioctl(fd, EVIOCGMTSLOTS(sizeof(req)), &req) < 0)
+> 	return -1;
+> for (i = 0; i < 64; i++)
+> 	printf("slot %d: %d\n", i, req.values[i]);
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+> Hi Dmitry,
+> 
+> Here is v3 of the EVIOC patch for MT slots. The number of slots if
+> gone, the struct is simplified, targeting userland, and calling the
+> ioctl with a smaller struct will return the first set of slots.
+> 
+> Cheers,
+> Henrik
+> 
+> 
+>  drivers/input/evdev.c |   27 ++++++++++++++++++++++++++-
+>  include/linux/input.h |   23 +++++++++++++++++++++++
+>  2 files changed, 49 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> index 76457d5..e4cad16 100644
+> --- a/drivers/input/evdev.c
+> +++ b/drivers/input/evdev.c
+> @@ -20,7 +20,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+> -#include <linux/input.h>
+> +#include <linux/input/mt.h>
+>  #include <linux/major.h>
+>  #include <linux/device.h>
+>  #include "input-compat.h"
+> @@ -623,6 +623,28 @@ static int evdev_handle_set_keycode_v2(struct input_dev *dev, void __user *p)
+>  	return input_set_keycode(dev, &ke);
+>  }
+>  
+> +static int evdev_handle_mt_request(struct input_dev *dev,
+> +				   unsigned int size,
+> +				   int __user *ip)
+> +{
+> +	const struct input_mt_slot *mt = dev->mt;
+> +	unsigned int code;
+> +	int max_slots;
+> +	int i;
+> +
+> +	if (get_user(code, &ip[0]))
+> +		return -EFAULT;
+> +	if (!input_is_mt_value(code))
+> +		return -EINVAL;
+> +
+> +	max_slots = (size - sizeof(__u32)) / sizeof(__s32);
+> +	for (i = 0; i < dev->mtsize && i < max_slots; i++)
+> +		if (put_user(input_mt_get_value(&mt[i], code), &ip[1 + i]))
+> +			return -EFAULT;
+> +
+> +	return 0;
+> +}
+> +
+>  static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+>  			   void __user *p, int compat_mode)
+>  {
+> @@ -708,6 +730,9 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+>  		return bits_to_user(dev->propbit, INPUT_PROP_MAX,
+>  				    size, p, compat_mode);
+>  
+> +	case EVIOCGMTSLOTS(0):
+> +		return evdev_handle_mt_request(dev, size, ip);
+> +
+>  	case EVIOCGKEY(0):
+>  		return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
+>  
+> diff --git a/include/linux/input.h b/include/linux/input.h
+> index 3862e32..1e7e2e5 100644
+> --- a/include/linux/input.h
+> +++ b/include/linux/input.h
+> @@ -99,6 +99,28 @@ struct input_keymap_entry {
+>  	__u8  scancode[32];
+>  };
+>  
+> +/**
+> + * struct INPUT_MT_REQUEST(num_slots) - used by EVIOCGMTSLOTS ioctl
+> + * @code: ABS_MT code to read
+> + * @values: value array, one value per slot
+> + *
+> + * The struct definition is used to create an appropriate MT slot message
+> + * buffer in userland. Before the call, code is set to the wanted ABS_MT
+> + * event type. On return, the value array is filled with the slot values
+> + * for the specified ABS_MT code.
+> + *
+> + * The call argument (len) is the size of the return buffer, which should
+> + * satisfy len >= sizeof(struct INPUT_MT_REQUEST(num_slots)).  If len is
+> + * too small to fit all available slots, the first num_slots are returned.
+> + *
+> + * If the request code is not an ABS_MT value, -EINVAL is returned.
+> + */
+> +#define INPUT_MT_REQUEST(num_slots)					\
+> +	{								\
+> +		__u32 code;						\
+> +		__s32 values[num_slots];				\
 
-For LMK, it is sufficient to surround tasks list traverse with
-rcu_read_{,un}lock().
+I think this assumes a userspace C compiler that can handle variable
+length arrays. This would require only compiling in C source code at the
+C99 standard or later. It looks like C++ doesn't even allow variable
+length arrays, though gcc handles it. According to:
 
->From now on using force_sig() is not safe, as it can race with an
-already exiting task, so we use send_sig() now. As a downside, it
-won't kill PID namespace init processes, but that's not what we
-want anyway.
+http://www.cplusplus.com/forum/beginner/1601/
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- drivers/staging/android/lowmemorykiller.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+it looks like Borland c++ compilers may not be able to compile this :(.
 
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index 2d8d2b7..63da844 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -34,6 +34,7 @@
- #include <linux/mm.h>
- #include <linux/oom.h>
- #include <linux/sched.h>
-+#include <linux/rcupdate.h>
- #include <linux/profile.h>
- #include <linux/notifier.h>
- 
-@@ -132,7 +133,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 	}
- 	selected_oom_adj = min_adj;
- 
--	read_lock(&tasklist_lock);
-+	rcu_read_lock();
- 	for_each_process(p) {
- 		struct mm_struct *mm;
- 		struct signal_struct *sig;
-@@ -180,12 +181,12 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 		lowmem_deathpending = selected;
- 		task_handoff_register(&task_nb);
- #endif
--		force_sig(SIGKILL, selected);
-+		send_sig(SIGKILL, selected, 0);
- 		rem -= selected_tasksize;
- 	}
- 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
- 		     sc->nr_to_scan, sc->gfp_mask, rem);
--	read_unlock(&tasklist_lock);
-+	rcu_read_unlock();
- 	return rem;
- }
- 
--- 
-1.7.7.6
+-- Chase
