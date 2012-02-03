@@ -1,91 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933628Ab2BCCDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 21:03:52 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:59878 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755203Ab2BCCDv (ORCPT
+	id S1757842Ab2BCCJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 21:09:32 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:43000 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752612Ab2BCCJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 21:03:51 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6608"; a="157854874"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Nicolas Pitre <nico@fluxnic.net>
-Subject: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
-Date: Thu,  2 Feb 2012 18:03:49 -0800
-Message-Id: <1328234629-32735-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.48.g85da4d
-In-reply-to: <alpine.LFD.2.02.1202022016480.2759@xanadu.home>
+	Thu, 2 Feb 2012 21:09:30 -0500
+Message-ID: <4F2B41D6.8020603@codemonkey.ws>
+Date: Thu, 02 Feb 2012 20:09:26 -0600
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+References: <4F2AB552.2070909@redhat.com>
+In-Reply-To: <4F2AB552.2070909@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-armv7's flush_cache_all() flushes caches via set/way. To
-determine the cache attributes (line size, number of sets,
-etc.) the assembly first writes the CSSELR register to select a
-cache level and then reads the CCSIDR register. The CSSELR register
-is banked per-cpu and is used to determine which cache level CCSIDR
-reads. If the task is migrated between when the CSSELR is written and
-the CCSIDR is read the CCSIDR value may be for an unexpected cache
-level (for example L1 instead of L2) and incorrect cache flushing
-could occur.
-
-Disable interrupts across the write and read so that the correct
-cache attributes are read and used for the cache flushing
-routine. We disable interrupts instead of disabling preemption
-because the critical section is only 3 instructions and we want
-to call v7_dcache_flush_all from __v7_setup which doesn't have a
-full kernel stack with a struct thread_info.
-
-This fixes a problem we see in scm_call() when flush_cache_all()
-is called from preemptible context and sometimes the L2 cache is
-not properly flushed out.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>
----
-
-On 02/02/12 17:18, Nicolas Pitre wrote:
->>> If that's too much, then the simple method in assembly to quickly disable
->>> preemption over a very few set of instructions is using mrs/msr and cpsid i.
->>> That'll be far cheaper than fiddling about with preempt counters or
->>> messing about with veneers in C code.
->>
->> I'll try the macros. So far it isn't bad, just the __v7_setup to resolve.
+On 02/02/2012 10:09 AM, Avi Kivity wrote:
+> The kvm api has been accumulating cruft for several years now.  This is
+> due to feature creep, fixing mistakes, experience gained by the
+> maintainers and developers on how to do things, ports to new
+> architectures, and simply as a side effect of a code base that is
+> developed slowly and incrementally.
 >
-> If you simply disable/restore IRQs around the critical region then you 
-> don't have to worry about __v7_setup.  Plus this will allow for 
-> v7_flush_dcache_all to still be callable from atomic context.
+> While I don't think we can justify a complete revamp of the API now, I'm
+> writing this as a thought experiment to see where a from-scratch API can
+> take us.  Of course, if we do implement this, the new and old APIs will
+> have to be supported side by side for several years.
+>
+> Syscalls
+> --------
+> kvm currently uses the much-loved ioctl() system call as its entry
+> point.  While this made it easy to add kvm to the kernel unintrusively,
+> it does have downsides:
+>
+> - overhead in the entry path, for the ioctl dispatch path and vcpu mutex
+> (low but measurable)
+> - semantic mismatch: kvm really wants a vcpu to be tied to a thread, and
+> a vm to be tied to an mm_struct, but the current API ties them to file
+> descriptors, which can move between threads and processes.  We check
+> that they don't, but we don't want to.
+>
+> Moving to syscalls avoids these problems, but introduces new ones:
+>
+> - adding new syscalls is generally frowned upon, and kvm will need several
+> - syscalls into modules are harder and rarer than into core kernel code
+> - will need to add a vcpu pointer to task_struct, and a kvm pointer to
+> mm_struct
+>
+> Syscalls that operate on the entire guest will pick it up implicitly
+> from the mm_struct, and syscalls that operate on a vcpu will pick it up
+> from current.
 
-Ok. Here's a patch. I still need to test it. I'll send another patch
-series to cleanup the get_thread_info stuff (there's two of them?).
+This seems like the natural progression.
 
- arch/arm/mm/cache-v7.S |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> State accessors
+> ---------------
+> Currently vcpu state is read and written by a bunch of ioctls that
+> access register sets that were added (or discovered) along the years.
+> Some state is stored in the vcpu mmap area.  These will be replaced by a
+> pair of syscalls that read or write the entire state, or a subset of the
+> state, in a tag/value format.  A register will be described by a tuple:
+>
+>    set: the register set to which it belongs; either a real set (GPR,
+> x87, SSE/AVX, segment, cpuid, MSRs) or a fake set (for
+> eflags/rip/IDT/interrupt shadow/pending exception/etc.)
+>    number: register number within a set
+>    size: for self-description, and to allow expanding registers like
+> SSE->AVX or eax->rax
+>    attributes: read-write, read-only, read-only for guest but read-write
+> for host
+>    value
 
-diff --git a/arch/arm/mm/cache-v7.S b/arch/arm/mm/cache-v7.S
-index 07c4bc8..654a5fc 100644
---- a/arch/arm/mm/cache-v7.S
-+++ b/arch/arm/mm/cache-v7.S
-@@ -54,9 +54,15 @@ loop1:
- 	and	r1, r1, #7			@ mask of the bits for current cache only
- 	cmp	r1, #2				@ see what cache we have at this level
- 	blt	skip				@ skip if no cache, or just i-cache
-+#ifdef CONFIG_PREEMPT
-+	save_and_disable_irqs r9		@ make cssr&csidr read atomic
-+#endif
- 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
- 	isb					@ isb to sych the new cssr&csidr
- 	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
-+#ifdef CONFIG_PREEMPT
-+	restore_irqs r9
-+#endif
- 	and	r2, r1, #7			@ extract the length of the cache lines
- 	add	r2, r2, #4			@ add 4 (line length offset)
- 	ldr	r4, =0x3ff
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+I do like the idea a lot of being able to read one register at a time as often 
+times that's all you need.
+
+>
+> Device model
+> ------------
+> Currently kvm virtualizes or emulates a set of x86 cores, with or
+> without local APICs, a 24-input IOAPIC, a PIC, a PIT, and a number of
+> PCI devices assigned from the host.  The API allows emulating the local
+> APICs in userspace.
+>
+> The new API will do away with the IOAPIC/PIC/PIT emulation and defer
+> them to userspace.
+
+I'm a big fan of this.
+
+> Note: this may cause a regression for older guests
+> that don't support MSI or kvmclock.  Device assignment will be done
+> using VFIO, that is, without direct kvm involvement.
+>
+> Local APICs will be mandatory, but it will be possible to hide them from
+> the guest.  This means that it will no longer be possible to emulate an
+> APIC in userspace, but it will be possible to virtualize an APIC-less
+> core - userspace will play with the LINT0/LINT1 inputs (configured as
+> EXITINT and NMI) to queue interrupts and NMIs.
+
+I think this makes sense.  An interesting consequence of this is that it's no 
+longer necessary to associate the VCPU context with an MMIO/PIO operation.  I'm 
+not sure if there's an obvious benefit to that but it's interesting nonetheless.
+
+> The communications between the local APIC and the IOAPIC/PIC will be
+> done over a socketpair, emulating the APIC bus protocol.
+>
+> Ioeventfd/irqfd
+> ---------------
+> As the ioeventfd/irqfd mechanism has been quite successful, it will be
+> retained, and perhaps supplemented with a way to assign an mmio region
+> to a socketpair carrying transactions.  This allows a device model to be
+> implemented out-of-process.  The socketpair can also be used to
+> implement a replacement for coalesced mmio, by not waiting for responses
+> on write transactions when enabled.  Synchronization of coalesced mmio
+> will be implemented in the kernel, not userspace as now: when a
+> non-coalesced mmio is needed, the kernel will first flush the coalesced
+> mmio queue(s).
+>
+> Guest memory management
+> -----------------------
+> Instead of managing each memory slot individually, a single API will be
+> provided that replaces the entire guest physical memory map atomically.
+> This matches the implementation (using RCU) and plugs holes in the
+> current API, where you lose the dirty log in the window between the last
+> call to KVM_GET_DIRTY_LOG and the call to KVM_SET_USER_MEMORY_REGION
+> that removes the slot.
+>
+> Slot-based dirty logging will be replaced by range-based and work-based
+> dirty logging; that is "what pages are dirty in this range, which may be
+> smaller than a slot" and "don't return more than N pages".
+>
+> We may want to place the log in user memory instead of kernel memory, to
+> reduce pinned memory and increase flexibility.
+
+Since we really only support 64-bit hosts, what about just pointing the kernel 
+at a address/size pair and rely on userspace to mmap() the range appropriately?
+
+> vcpu fd mmap area
+> -----------------
+> Currently we mmap() a few pages of the vcpu fd for fast user/kernel
+> communications.  This will be replaced by a more orthodox pointer
+> parameter to sys_kvm_enter_guest(), that will be accessed using
+> get_user() and put_user().  This is slower than the current situation,
+> but better for things like strace.
+
+Look pretty interesting overall.
+
+Regards,
+
+Anthony Liguori
+
+>
 
