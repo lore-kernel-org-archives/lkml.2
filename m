@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab2BCP1A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:27:00 -0500
+	id S1754887Ab2BCP1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:27:16 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:48998 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636Ab2BCP05 (ORCPT
+	with ESMTP id S1754169Ab2BCP07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 10:26:57 -0500
-Message-Id: <20120203152650.647578587@openvz.org>
+	Fri, 3 Feb 2012 10:26:59 -0500
+Message-Id: <20120203152650.894621377@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 03 Feb 2012 19:19:29 +0400
+Date: Fri, 03 Feb 2012 19:19:32 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -18,233 +18,228 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
         Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v9
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: [patch 4/4] c/r: prctl: Extend PR_SET_MM to set up more mm_struct entries
 References: <20120203151928.474036973@openvz.org>
-Content-Disposition: inline; filename=fs-proc-tid-children-13
+Content-Disposition: inline; filename=prctl-restore-mm-members-5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we do checkpoint of a task we need to know the list of children
-the task, has but there is no easy and fast way to generate reverse
-parent->children chain from arbitrary <pid> (while a parent pid is
-provided in "PPid" field of /proc/<pid>/status).
+During checkpoint we dump whole process memory to a file and
+the dump includes process stack memory. But among stack data
+itself, the stack carries additional parameters such as command
+line arguments, environment data and auxiliary vector.
 
-So instead of walking over all pids in the system (creating one big process
-tree in memory, just to figure out which children a task has) -- we add
-explicit /proc/<pid>/task/<tid>/children entry, because the kernel already has
-this kind of information but it is not yet exported.
+So when we do restore procedure and once we've restored stack
+data itself we need to setup mm_struct::arg_start/end,
+env_start/end, so restored process would be able to find
+command line arguments and environment data it had at checkpoint
+time. The same applies to auxiliary vector.
 
-This is a first level children, not the whole process tree.
+For this reason additional PR_SET_MM_(ARG_START | ARG_END |
+ENV_START | ENV_END | AUXV) codes are introduced.
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Vagin <avagin@openvz.org>
 Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- Documentation/filesystems/proc.txt |   18 +++++
- fs/proc/array.c                    |  123 +++++++++++++++++++++++++++++++++++++
- fs/proc/base.c                     |    3 
- fs/proc/internal.h                 |    1 
- 4 files changed, 145 insertions(+)
+ include/linux/prctl.h |    5 ++
+ kernel/sys.c          |  105 +++++++++++++++++++++++++++++++++++---------------
+ 2 files changed, 80 insertions(+), 30 deletions(-)
 
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
+Index: linux-2.6.git/include/linux/prctl.h
 ===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -40,6 +40,7 @@ Table of Contents
-   3.4	/proc/<pid>/coredump_filter - Core dump filtering settings
-   3.5	/proc/<pid>/mountinfo - Information about mounts
-   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
-+  3.7   /proc/<pid>/task/<tid>/children - Information about task children
+--- linux-2.6.git.orig/include/linux/prctl.h
++++ linux-2.6.git/include/linux/prctl.h
+@@ -113,5 +113,10 @@
+ # define PR_SET_MM_START_STACK		5
+ # define PR_SET_MM_START_BRK		6
+ # define PR_SET_MM_BRK			7
++# define PR_SET_MM_ARG_START		8
++# define PR_SET_MM_ARG_END		9
++# define PR_SET_MM_ENV_START		10
++# define PR_SET_MM_ENV_END		11
++# define PR_SET_MM_AUXV			12
  
-   4	Configuring procfs
-   4.1	Mount options
-@@ -1549,6 +1550,23 @@ then the kernel's TASK_COMM_LEN (current
- comm value.
- 
- 
-+3.7	/proc/<pid>/task/<tid>/children - Information about task children
-+-------------------------------------------------------------------------
-+This file provides a fast way to retrieve first level children pids
-+of a task pointed by <pid>/<tid> pair. The format is a space separated
-+stream of pids.
-+
-+Note the "first level" here -- if a child has own children they will
-+not be listed here, one needs to read /proc/<children-pid>/task/<tid>/children
-+to obtain the descendants.
-+
-+Since this interface is intended to be fast and cheap it doesn't
-+guarantee to provide precise results and some children might be
-+skipped, especially if they've exited right after we printed their
-+pids, so one need to either stop or freeze processes being inspected
-+if precise results are needed.
-+
-+
- ------------------------------------------------------------------------------
- Configuring procfs
- ------------------------------------------------------------------------------
-Index: linux-2.6.git/fs/proc/array.c
+ #endif /* _LINUX_PRCTL_H */
+Index: linux-2.6.git/kernel/sys.c
 ===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -556,3 +556,126 @@ int proc_pid_statm(struct seq_file *m, s
- 
- 	return 0;
+--- linux-2.6.git.orig/kernel/sys.c
++++ linux-2.6.git/kernel/sys.c
+@@ -1693,17 +1693,23 @@ SYSCALL_DEFINE1(umask, int, mask)
  }
-+
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+static struct pid *
-+get_children_pid(struct inode *inode, struct pid *pid_prev, loff_t pos)
-+{
-+	struct task_struct *start, *task;
-+	struct pid *pid = NULL;
-+
-+	read_lock(&tasklist_lock);
-+
-+	start = pid_task(proc_pid(inode), PIDTYPE_PID);
-+	if (!start)
-+		goto out;
-+
-+	/*
-+	 * Lets try to continue searching first, this gives
-+	 * us significant speedup on children-rich processes.
-+	 */
-+	if (pid_prev) {
-+		task = pid_task(pid_prev, PIDTYPE_PID);
-+		if (task && task->real_parent == start &&
-+		    !(list_empty(&task->sibling))) {
-+			if (list_is_last(&task->sibling, &start->children))
-+				goto out;
-+			task = list_first_entry(&task->sibling,
-+						struct task_struct, sibling);
-+			pid = get_pid(task_pid(task));
-+			goto out;
-+		}
-+	}
-+
-+	/*
-+	 * Slow search case.
-+	 *
-+	 * We might miss some children here if children
-+	 * are exited while we were not holding the lock,
-+	 * but it was never promised to be accurate that
-+	 * much.
-+	 *
-+	 * "Just suppose that the parent sleeps, but N children
-+	 *  exit after we printed their tids. Now the slow paths
-+	 *  skips N extra children, we miss N tasks." (c)
-+	 *
-+	 * So one need to stop or freeze the leader and all
-+	 * its children to get a precise result.
-+	 */
-+	list_for_each_entry(task, &start->children, sibling) {
-+		if (pos-- == 0) {
-+			pid = get_pid(task_pid(task));
-+			break;
-+		}
-+	}
-+
-+out:
-+	read_unlock(&tasklist_lock);
-+	return pid;
-+}
-+
-+static int children_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct inode *inode = seq->private;
-+	pid_t pid;
-+
-+	pid = pid_nr_ns(v, inode->i_sb->s_fs_info);
-+	return seq_printf(seq, "%d ", pid);
-+}
-+
-+static void *children_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	return get_children_pid(seq->private, NULL, *pos);
-+}
-+
-+static void *children_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	struct pid *pid;
-+
-+	pid = get_children_pid(seq->private, v, *pos + 1);
-+	put_pid(v);
-+
-+	++*pos;
-+	return pid;
-+}
-+
-+static void children_seq_stop(struct seq_file *seq, void *v)
-+{
-+	put_pid(v);
-+}
-+
-+static const struct seq_operations children_seq_ops = {
-+	.start	= children_seq_start,
-+	.next	= children_seq_next,
-+	.stop	= children_seq_stop,
-+	.show	= children_seq_show,
-+};
-+
-+static int children_seq_open(struct inode *inode, struct file *file)
-+{
-+	struct seq_file *m;
-+	int ret;
-+
-+	ret = seq_open(file, &children_seq_ops);
-+	if (ret)
-+		return ret;
-+
-+	m = file->private_data;
-+	m->private = inode;
-+
-+	return ret;
-+}
-+
-+int children_seq_release(struct inode *inode, struct file *file)
-+{
-+	seq_release(inode, file);
-+	return 0;
-+}
-+
-+const struct file_operations proc_tid_children_operations = {
-+	.open    = children_seq_open,
-+	.read    = seq_read,
-+	.llseek  = seq_lseek,
-+	.release = children_seq_release,
-+};
-+#endif /* CONFIG_CHECKPOINT_RESTORE */
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -3350,6 +3350,9 @@ static const struct pid_entry tid_base_s
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
- 	ONE("statm",     S_IRUGO, proc_pid_statm),
- 	REG("maps",      S_IRUGO, proc_maps_operations),
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+	REG("children",  S_IRUGO, proc_tid_children_operations),
-+#endif
- #ifdef CONFIG_NUMA
- 	REG("numa_maps", S_IRUGO, proc_numa_maps_operations),
- #endif
-Index: linux-2.6.git/fs/proc/internal.h
-===================================================================
---- linux-2.6.git.orig/fs/proc/internal.h
-+++ linux-2.6.git/fs/proc/internal.h
-@@ -53,6 +53,7 @@ extern int proc_pid_statm(struct seq_fil
- 				struct pid *pid, struct task_struct *task);
- extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
  
-+extern const struct file_operations proc_tid_children_operations;
- extern const struct file_operations proc_maps_operations;
- extern const struct file_operations proc_numa_maps_operations;
- extern const struct file_operations proc_smaps_operations;
+ #ifdef CONFIG_CHECKPOINT_RESTORE
++static bool vma_flags_mismatch(struct vm_area_struct *vma,
++			       unsigned long required,
++			       unsigned long banned)
++{
++	return (vma->vm_flags & required) != required ||
++		(vma->vm_flags & banned);
++}
++
+ static int prctl_set_mm(int opt, unsigned long addr,
+ 			unsigned long arg4, unsigned long arg5)
+ {
+ 	unsigned long rlim = rlimit(RLIMIT_DATA);
+-	unsigned long vm_req_flags;
+-	unsigned long vm_bad_flags;
++	struct mm_struct *mm = current->mm;
+ 	struct vm_area_struct *vma;
+ 	int error = 0;
+-	struct mm_struct *mm = current->mm;
+ 
+-	if (arg4 | arg5)
++	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
+ 		return -EINVAL;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+@@ -1715,7 +1721,9 @@ static int prctl_set_mm(int opt, unsigne
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_vma(mm, addr);
+ 
+-	if (opt != PR_SET_MM_START_BRK && opt != PR_SET_MM_BRK) {
++	if (opt != PR_SET_MM_START_BRK &&
++	    opt != PR_SET_MM_BRK &&
++	    opt != PR_SET_MM_AUXV) {
+ 		/* It must be existing VMA */
+ 		if (!vma || vma->vm_start > addr)
+ 			goto out;
+@@ -1725,11 +1733,8 @@ static int prctl_set_mm(int opt, unsigne
+ 	switch (opt) {
+ 	case PR_SET_MM_START_CODE:
+ 	case PR_SET_MM_END_CODE:
+-		vm_req_flags = VM_READ | VM_EXEC;
+-		vm_bad_flags = VM_WRITE | VM_MAYSHARE;
+-
+-		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
+-		    (vma->vm_flags & vm_bad_flags))
++		if (vma_flags_mismatch(vma, VM_READ | VM_EXEC,
++				       VM_WRITE | VM_MAYSHARE))
+ 			goto out;
+ 
+ 		if (opt == PR_SET_MM_START_CODE)
+@@ -1740,11 +1745,8 @@ static int prctl_set_mm(int opt, unsigne
+ 
+ 	case PR_SET_MM_START_DATA:
+ 	case PR_SET_MM_END_DATA:
+-		vm_req_flags = VM_READ | VM_WRITE;
+-		vm_bad_flags = VM_EXEC | VM_MAYSHARE;
+-
+-		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
+-		    (vma->vm_flags & vm_bad_flags))
++		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE,
++				       VM_EXEC | VM_MAYSHARE))
+ 			goto out;
+ 
+ 		if (opt == PR_SET_MM_START_DATA)
+@@ -1753,19 +1755,6 @@ static int prctl_set_mm(int opt, unsigne
+ 			mm->end_data = addr;
+ 		break;
+ 
+-	case PR_SET_MM_START_STACK:
+-
+-#ifdef CONFIG_STACK_GROWSUP
+-		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSUP;
+-#else
+-		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSDOWN;
+-#endif
+-		if ((vma->vm_flags & vm_req_flags) != vm_req_flags)
+-			goto out;
+-
+-		mm->start_stack = addr;
+-		break;
+-
+ 	case PR_SET_MM_START_BRK:
+ 		if (addr <= mm->end_data)
+ 			goto out;
+@@ -1790,16 +1779,72 @@ static int prctl_set_mm(int opt, unsigne
+ 		mm->brk = addr;
+ 		break;
+ 
++	/*
++	 * If command line arguments and environment
++	 * are placed somewhere else on stack, we can
++	 * set them up here, ARG_START/END to setup
++	 * command line argumets and ENV_START/END
++	 * for environment.
++	 */
++	case PR_SET_MM_START_STACK:
++	case PR_SET_MM_ARG_START:
++	case PR_SET_MM_ARG_END:
++	case PR_SET_MM_ENV_START:
++	case PR_SET_MM_ENV_END:
++#ifdef CONFIG_STACK_GROWSUP
++		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE | VM_GROWSUP, 0))
++#else
++		if (vma_flags_mismatch(vma, VM_READ | VM_WRITE | VM_GROWSDOWN, 0))
++#endif
++			goto out;
++		if (opt == PR_SET_MM_START_STACK)
++			mm->start_stack = addr;
++		else if (opt == PR_SET_MM_ARG_START)
++			mm->arg_start = addr;
++		else if (opt == PR_SET_MM_ARG_END)
++			mm->arg_end = addr;
++		else if (opt == PR_SET_MM_ENV_START)
++			mm->env_start = addr;
++		else if (opt == PR_SET_MM_ENV_END)
++			mm->env_end = addr;
++		break;
++
++	/*
++	 * This doesn't move auxiliary vector itself
++	 * since it's pinned to mm_struct, but allow
++	 * to fill vector with new values. It's up
++	 * to a caller to provide sane values here
++	 * otherwise user space tools which use this
++	 * vector might be unhappy.
++	 */
++	case PR_SET_MM_AUXV: {
++		unsigned long user_auxv[AT_VECTOR_SIZE];
++
++		if (arg4 > sizeof(mm->saved_auxv))
++			goto out;
++		up_read(&mm->mmap_sem);
++
++		if (copy_from_user(user_auxv, (const void __user *)addr, arg4))
++			return -EFAULT;
++
++		/* Make sure the last entry is always AT_NULL */
++		user_auxv[AT_VECTOR_SIZE - 2] = 0;
++		user_auxv[AT_VECTOR_SIZE - 1] = 0;
++
++		task_lock(current);
++		memcpy(mm->saved_auxv, user_auxv, arg4);
++		task_unlock(current);
++
++		return 0;
++	}
+ 	default:
+ 		error = -EINVAL;
+ 		goto out;
+ 	}
+ 
+ 	error = 0;
+-
+ out:
+ 	up_read(&mm->mmap_sem);
+-
+ 	return error;
+ }
+ #else /* CONFIG_CHECKPOINT_RESTORE */
 
