@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab2BCIB5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 03:01:57 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34555 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab2BCIB4 (ORCPT
+	id S1754671Ab2BCIDy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 03:03:54 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:62162 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab2BCIDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 03:01:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com>
-References: <20120116163106.GC7180@jl-vm1.vm.bytemark.co.uk>
- <1326776095-2629-1-git-send-email-siddhesh.poyarekar@gmail.com>
- <CAAHN_R2g9zaujw30+zLf91AGDHNqE6HDc8Z4yJbrzgJcJYFkXg@mail.gmail.com>
- <4F2B02BC.8010308@gmail.com> <CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Fri, 3 Feb 2012 03:01:35 -0500
-Message-ID: <CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com>
-Subject: Re: [RESEND][PATCH] Mark thread stack correctly in proc/<pid>/maps
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Cc: Jamie Lokier <jamie@shareable.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 Feb 2012 03:03:53 -0500
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: [Patch] cris: select GENERIC_ATOMIC64
+Date: Fri,  3 Feb 2012 16:03:34 +0800
+Message-Id: <1328256214-18772-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Right now MAP_STACK does not mean anything since it is ignored. The
-> intention of this behaviour change is to make MAP_STACK mean that the
-> map is going to be used as a stack and hence, set it up like a stack
-> ought to be. I could not really think of a valid case for fixed size
-> stacks; it looks like a limitation in the pthread implementation in
-> glibc rather than a feature. So this patch will actually result in
-> uniform behaviour across threads when it comes to stacks.
->
-> This does change vm accounting since thread stacks were earlier
-> accounted as anon memory.
+Cris doesn't implement atomic64 operations neither,
+should select GENERIC_ATOMIC64.
 
-The fact is, now process stack and pthread stack clearly behave
-different dance. libc don't expect pthread stack grow automatically.
-So, your patch will break userland. Just only change display thing.
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+---
+diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
+index b3abfb0..1d2b611 100644
+--- a/arch/cris/Kconfig
++++ b/arch/cris/Kconfig
+@@ -49,6 +49,7 @@ config CRIS
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_IOMAP
++	select GENERIC_ATOMIC64
+ 
+ config HZ
+ 	int
