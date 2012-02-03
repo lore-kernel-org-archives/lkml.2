@@ -1,70 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab2BCQjY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 11:39:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22933 "EHLO mx1.redhat.com"
+	id S1756917Ab2BCQls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 11:41:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57903 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753943Ab2BCQjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 11:39:22 -0500
-Message-ID: <4F2C0D8A.70103@redhat.com>
-Date: Fri, 03 Feb 2012 11:38:34 -0500
-From: Andrew MacLeod <amacleod@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Thunderbird/3.1.10
+	id S1754193Ab2BCQlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 11:41:46 -0500
+References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org> <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu> <20120203161358.GA805@google.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120203161358.GA805@google.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Torvald Riegel <triegel@redhat.com>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ia64@vger.kernel.org,
-        dsterba@suse.cz, ptesarik@suse.cz, rguenther@suse.de, gcc@gcc.gnu.org
-Subject: Re: Memory corruption due to word sharing
-References: <20120201151918.GC16714@quack.suse.cz> <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com> <1328118174.15992.6206.camel@triegel.csb> <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com> <1328128874.15992.6430.camel@triegel.csb> <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com> <20120201224554.GK2382@linux.vnet.ibm.com> <CA+55aFyzYO0CMZOgdrVV0PdG2DkbwTQG7eE7N3bp=0tQmruFEQ@mail.gmail.com> <20120202184209.GD2518@linux.vnet.ibm.com> <CA+55aFyYxzED4OoYvb3nbET7_zyP5mGhEa2w_QCvQOx55bVjHg@mail.gmail.com> <20120202193747.GG2518@linux.vnet.ibm.com>
-In-Reply-To: <20120202193747.GG2518@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from 80 to 100 colums
+From: "hpanvin@gmail.com" <hpa@zytor.com>
+Date: Fri, 03 Feb 2012 08:39:38 -0800
+To: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Message-ID: <b4077a42-4909-4356-97ea-27b0ae3f406c@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+96 might be a better limit.  Why?  Because 80 and 96 are the easiest line lengths to achieve on a printer.  80 is typically the default, but with a 12 cpi font you get 96.
 
->> And I assume that since the compiler does them, that would now make it
->> impossible for us to gather a list of all the 'lock' prefixes so that
->> we can undo them if it turns out that we are running on a UP machine.
->>
->> When we do SMP operations, we don't just add a "lock" prefix to it. We do this:
->>
->>    #define LOCK_PREFIX_HERE \
->>                  ".section .smp_locks,\"a\"\n"   \
->>                  ".balign 4\n"                   \
->>                  ".long 671f - .\n" /* offset */ \
->>                  ".previous\n"                   \
->>                  "671:"
->>
->>    #define LOCK_PREFIX LOCK_PREFIX_HERE "\n\tlock; "
->>
+Tejun Heo <tj@kernel.org> wrote:
 
-I don't see why  we cant do something  similar when the compiler issues 
-a lock on an atomic operation.  I would guess we'd want to put it under 
-some sort of flag control (something like -fatomic-lock-list ) since 
-most applications aren't going to want that section.  It certainly seems 
-plausible to me anyway.
->> and I'm sure you know that, but I'm not sure the gcc people realize
->> the kinds of games we play to make things work better.
->>
-No, but someone just needs to tell us -)
-
->>>> We need both variants in the kernel. If the compiler generates one of
->>>> them for us, that doesn't really much help.
->>> I must admit that the non-x86 per-CPU atomics are, ummm, "interesting".
->> Most non-x86 cpu's would probably be better off treating them the same
->> as smp-atomics (load-locked + store-conditional), but right now we
->> have this insane generic infrastructure for having versions that are
->> irq-safe by disabling interrupts etc. Ugh. Mainly because nobody
->> really is willing to work on and fix up the 25 architectures that
->> really don't matter.
+>Hello,
 >
-The atomic intrinsics were created for c++11  memory model compliance, 
-but I am certainly open to enhancements that would make them more 
-useful.   I am planning some enhancements for 4.8 now, and it sounds 
-like you may have some suggestions...
+>On Fri, Feb 03, 2012 at 11:07:43AM +0100, Ingo Molnar wrote:
+>> 
+>> * Ingo Molnar <mingo@elte.hu> wrote:
+>> 
+>> > > If we want to increase the standard to (say) 96 cols then 
+>> > > fine, I'd be happy with that.  But until we do that we 
+>> > > should not create such a gruesome mess for those who use 80 
+>> > > cols.
+>> > 
+>> > The kernel has *already* become a gruesome mess for 80 col 
+>> > users long ago. That was the main reason why I stopped using 
+>> > 80 col terminals two years ago ...
+>> > 
+>> > So lets stop the pretense.
+>
+>I don't know.  In my experience, a lot of code, especially core part,
+>mostly follows 80 col limit.  It shouldn't be too difficult to write
+>up a script to count >80col lines in different parts of the kernel.
+>
+>> [PATCH] SubmittingPatches: Increase the line length limit from 80 to
+>100 colums
+>> 
+>> The overwhelming majority of kernel developers have stopped 
+>> using 80 col terminals years ago.
+>> 
+>> As far as I'm aware I was the last regular kernel contributor 
+>> who still used a standard VGA text console, but both text 
+>> consoles and using them to read the kernel source code has 
+>> become increasingly gruesome years ago so I switched to a wider 
+>> terminal two years ago.
+>
+>People usually place multiple windows horizontally so it's not like
+>all those extra pixels go wasted.  80col might even have the benefit
+>of giving overall higher density in terms of pixel usage.
+>
+>> Worse than that, people are actively uglifying the kernel code 
+>> to fit things into 80 cols mechanically. They are using 
+>> checkpatch and are interpreting the 80 col warnings the wrong 
+>> way again and again, sucking up reviewer bandwidth that could be 
+>> utilized better.
+>> 
+>> So lets increase the limit to 100 cols - this is a nice round 
+>> limit, and it also happens to match with most developer xterm 
+>> sizes. Code that goes over 100 cols for no good reasons will be 
+>> arguably something worth fixing. (100 cols is also arguably 
+>> closer to various brain limits such as vision of field and 
+>> resolution restrictions, so we'll likely not have to increase 
+>> this limit for a couple of million years, for all retro human 
+>> genome users.)
+>
+>That said, yeah, 80col is a pain in the ass and lessening the pressure
+>a bit might make it a non-problem and 100 is one of the nicer numbers
+>which aren't power of two.
+>
+>For me, the biggest reason to stick to 80col has been that, while
+>being widely disliked, it still was the most common limit people were
+>using and consistency tends to be more beneficial on these issues.  If
+>we're gonna do this, and I hope we do, let's proactively encourage /
+>enforce it - ie. let's collectively nag so that 100col quickly becomes
+>the standard.
+>
+>Acked-by: Tejun Heo <tj@kernel.org>
+>
+>Thanks.
+>
+>-- 
+>tejun
 
-Andrew
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
