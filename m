@@ -1,49 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab2BCL3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 06:29:38 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63384 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab2BCL3h (ORCPT
+	id S1754775Ab2BCL3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 06:29:49 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:60889 "HELO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753325Ab2BCL3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 06:29:37 -0500
+	Fri, 3 Feb 2012 06:29:47 -0500
+Message-ID: <4F2BC528.6030708@ti.com>
+Date: Fri, 03 Feb 2012 13:29:44 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20120106 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <1328255503-17575-1-git-send-email-xiyou.wangcong@gmail.com>
-References: <1328255503-17575-1-git-send-email-xiyou.wangcong@gmail.com>
-Date: Fri, 3 Feb 2012 16:59:35 +0530
-Message-ID: <CA+7sy7C34f8MVAhf_+95Cm==-ZcSwxG3ybMcdEyXVHaUVFgNxA@mail.gmail.com>
-Subject: Re: [Patch] mips: do not redefine BUILD_BUG()
-From: "Jayachandran C." <c.jayachandran@gmail.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-mips@linux-mips.org
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Balaji T K <balajitk@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: twl-core: Don't specify regulator consumers by struct
+ device
+References: <1328267137-4816-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1328267137-4816-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 1:21 PM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
-> On mips, we got
->
-> include/linux/kernel.h:717:1: error: "BUILD_BUG" redefined
-> arch/mips/include/asm/page.h:43:1: error: this is the location of the previous definition
-> make[3]: *** [arch/mips/sgi-ip27/ip27-console.o] Error 1
-> make[2]: *** [arch/mips/sgi-ip27] Error 2
-> make[1]: *** [arch/mips] Error 2
-> make: *** [sub-make] Error 2
->
-> use generic BUILD_BUG() instead of re-defining one.
->
-> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+On 02/03/2012 01:05 PM, Mark Brown wrote:
+> This has been deprecated for considerable time now and support has been
+> removed from the regulator API. dev_name should be used instead.
 
-This is already fixed in linux-mips.org repository:
-
-commit 2f5d5510507626ee799b6d1304d154569b6dfe05
-Author: Ralf Baechle <ralf@linux-mips.org>
-Date:   Mon Jan 16 12:38:05 2012 +0100
-
-    MIPS: Remove temporary kludge from <asm/page.h>
-
-JC.
+Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
