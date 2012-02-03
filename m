@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2BCTrb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 14:47:31 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:43154 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754941Ab2BCTra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 14:47:30 -0500
-Message-ID: <1328298346.2261.196.camel@groeck-laptop>
-Subject: Re: [PATCH 1/3] mfd: Add LPC driver for Intel ICH chipsets
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Aaron Sierra <asierra@xes-inc.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>
-Date: Fri, 3 Feb 2012 11:45:46 -0800
-In-Reply-To: <098d7a9f-a5f9-4908-9253-f2134f08d932@zimbra>
-References: <098d7a9f-a5f9-4908-9253-f2134f08d932@zimbra>
-Organization: Ericsson
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1755961Ab2BCTue (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 14:50:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49488 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755865Ab2BCTuc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 14:50:32 -0500
+Date: Fri, 3 Feb 2012 11:50:26 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 2/6] ipmi: Increase KCS timeouts
+Message-Id: <20120203115026.9e2a357f.akpm@linux-foundation.org>
+In-Reply-To: <1328284079-5489-2-git-send-email-cminyard@mvista.com>
+References: <1328284079-5489-1-git-send-email-cminyard@mvista.com>
+	<1328284079-5489-2-git-send-email-cminyard@mvista.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-03 at 14:35 -0500, Aaron Sierra wrote:
-> > I ended up making all the changes suggested above (plus the matching
-> > changes needed in the subsequent patches) while I rebased the code to
-> > 3.3-rc2. Right now I have an (untested) patchset which applies to
-> > 3.3-rc2. Please let me know how you would like to proceed; I can send
-> > it to you if you like, or to the list.
+On Fri, 03 Feb 2012 09:47:55 -0600
+Corey Minyard <cminyard@mvista.com> wrote:
+
+> From: Matthew Garrett <mjg@redhat.com>
 > 
-> Hey Guenter,
-> If you want to send me your patchset directly, I can test it out on
-> some of our hardware (Ibex Peak and Cougar Point). I can work on
-> implementing some of your other suggestions as well before
-> resubmitting to the list.
-> 
-Done. You should have received a series of four patches, your three plus
-one with a number of changes I made on top of your first patch. The last
-two patches are essentially yours modified to compile with 3.3-rc2 and
-to work (hopefully ;) with my patch.
+> We currently time out and retry KCS transactions after 1 second of waiting
+> for IBF or OBF. This appears to be too short for some hardware. The IPMI
+> spec says "All system software wait loops should include error timeouts. For
+> simplicity, such timeouts are not shown explicitly in the flow diagrams. A
+> five-second timeout or greater is recommended". Change the timeout to five
+> seconds to satisfy the slow hardware.
 
-Thanks,
-Guenter
+Several of these patches fix bugs/problems, but there isn't enough info
+here for me to decide whether we should patch 3.3 or earlier kernels. 
+I'm assuming "3.4 only".
 
+> From: Matthew Garrett <mjg@redhat.com>
 
+A dupe.  The first one was correct.
