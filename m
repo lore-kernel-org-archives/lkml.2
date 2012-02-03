@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab2BCUNu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 15:13:50 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:30470 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2BCUNt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 15:13:49 -0500
-From: <messaging.hpitsecurity@hp.com>
-To: <travis@sgi.com>
-CC: <akpm@linux-foundation.org>, <steiner@sgi.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Microsoft Forefront Server Security forwarded attachment
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="ANTIGEN-9603-22719-14642-4751-6853-30701"
-Message-ID: <2c6a9445-2f58-4fed-845f-b6f320bc1880@G1W0403.americas.hpqcorp.net>
-Date: Fri, 3 Feb 2012 20:12:49 +0000
+	id S1756358Ab2BCUSv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 15:18:51 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:39185 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755956Ab2BCUSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 15:18:50 -0500
+Date: Fri, 3 Feb 2012 12:18:47 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tags: fix regex passed to etags
+Message-ID: <20120203121847.1b01f4b5@s6510.linuxnetplumber.net>
+In-Reply-To: <4F2C38BD.1060109@codeaurora.org>
+References: <20120203112701.1c12b12c@s6510.linuxnetplumber.net>
+	<4F2C38BD.1060109@codeaurora.org>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ANTIGEN-9603-22719-14642-4751-6853-30701
-Content-Type: text/plain; charset="utf-7"
-Content-Transfer-Encoding: quoted-printable
+On Fri, 03 Feb 2012 11:42:53 -0800
+Stephen Boyd <sboyd@codeaurora.org> wrote:
 
+> On 02/03/12 11:27, Stephen Hemminger wrote:
+> > Several of the regular expressions passed to etags where incorrect
+> > and missing the backslash before the closing parenthesis, causing warning:
+> >   etags: Unmatched ( or \( while compiling pattern
+> >
+> > Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+> >
+> 
+> I'm confused how ctags didn't complain at me. It worked for me when I
+> tried it. Next time I'll try both. Thanks.
+> 
 
-The body from the message +ACI-Re: +AFs-PATCH 3/3+AF0- UV Update NMI handlers+ACI-, originally sent to you by linux-kernel-owner+AEA-vger.kernel.org (linux-kernel-owner+AEA-vger.kernel.org), has been forwarded to you from the Microsoft Forefront Server Security Quarantine area.
-This message body may have been re-scanned by Microsoft Forefront Server Security and handled according to the appropriate scan job's settings.
-
-
-
-
-<<Body of Message>>
-
---ANTIGEN-9603-22719-14642-4751-6853-30701
-Content-Type: application/octet-stream
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Body of Message"
-
-DQoqIE1pa2UgVHJhdmlzIDx0cmF2aXNAc2dpLmNvbT4gd3JvdGU6DQoNCj4gLS0tDQo+ICBhcmNo
-L3g4Ni9rZXJuZWwvYXBpYy94MmFwaWNfdXZfeC5jIHwgIDEzMiArKysrKysrKysrKysrKysrKysr
-KysrKysrKysrKy0tLS0tLS0tDQo+ICAxIGZpbGUgY2hhbmdlZCwgMTA1IGluc2VydGlvbnMoKyks
-IDI3IGRlbGV0aW9ucygtKQ0KDQpUaGlzIHBhdGNoIGlzIHN0b2NrIGZ1bGwgb2YgYmFzaWMgY29k
-ZSBjbGVhbmxpbmVzcyB2aW9sYXRpb25zIC0gDQppdCdzIGEgaGlnaGx5IGVkdWNhdGlvbmFsIGNv
-bGxlY3Rpb24gb2YgdmFyaW91cyB1Z2xpZXMgc28gSSdtIA0KZ29pbmcgdG8gaWdub3JlIGl0Lg0K
-DQpUaGFua3MsDQoNCglJbmdvDQotLQ0KVG8gdW5zdWJzY3JpYmUgZnJvbSB0aGlzIGxpc3Q6IHNl
-bmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIGxpbnV4LWtlcm5lbCIgaW4NCnRoZSBib2R5IG9mIGEg
-bWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5rZXJuZWwub3JnDQpNb3JlIG1ham9yZG9tbyBpbmZv
-IGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3JnL21ham9yZG9tby1pbmZvLmh0bWwNClBsZWFzZSBy
-ZWFkIHRoZSBGQVEgYXQgIGh0dHA6Ly93d3cudHV4Lm9yZy9sa21sLw0K
-
---ANTIGEN-9603-22719-14642-4751-6853-30701--
+Most likely a new check in newer version of the tags command.
