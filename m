@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933287Ab2BCC21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Feb 2012 21:28:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53393 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754157Ab2BCC20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Feb 2012 21:28:26 -0500
-Message-ID: <4F2B45F6.7020704@zytor.com>
-Date: Thu, 02 Feb 2012 18:27:02 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [patch cr 2/4] [RFC] syscalls, x86: Add __NR_kcmp syscall v7
-References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120202152632.c356719a.akpm@linux-foundation.org>
-In-Reply-To: <20120202152632.c356719a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753008Ab2BCCgB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Feb 2012 21:36:01 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:15018 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab2BCCgA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Feb 2012 21:36:00 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Thu, 02 Feb 2012 21:35:59 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
+In-reply-to: <1328234629-32735-1-git-send-email-sboyd@codeaurora.org>
+Message-id: <alpine.LFD.2.02.1202022110080.2759@xanadu.home>
+References: <1328234629-32735-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 03:26 PM, Andrew Morton wrote:
->>
->> --- linux-2.6.git.orig/kernel/Makefile
->> +++ linux-2.6.git/kernel/Makefile
->> @@ -25,6 +25,7 @@ endif
->>   obj-y += sched/
->>   obj-y += power/
->>
->> +obj-$(CONFIG_X86) += kcmp.o
->
-> Can we turn this into obj-$(CONFIG_CHECKPOINT_RESTART) and add the
-> cond_syscall to sys_ni.c?
->
-> I keep saying this, because "hey, we can delete it all again" figures
-> largely in my rationale for merging your code ;)
->
+On Thu, 2 Feb 2012, Stephen Boyd wrote:
+> On 02/02/12 17:18, Nicolas Pitre wrote:
+> > If you simply disable/restore IRQs around the critical region then you 
+> > don't have to worry about __v7_setup.  Plus this will allow for 
+> > v7_flush_dcache_all to still be callable from atomic context.
+> 
+> Ok. Here's a patch. I still need to test it. I'll send another patch
+> series to cleanup the get_thread_info stuff (there's two of them?).
+> 
+>  arch/arm/mm/cache-v7.S |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mm/cache-v7.S b/arch/arm/mm/cache-v7.S
+> index 07c4bc8..654a5fc 100644
+> --- a/arch/arm/mm/cache-v7.S
+> +++ b/arch/arm/mm/cache-v7.S
+> @@ -54,9 +54,15 @@ loop1:
+>  	and	r1, r1, #7			@ mask of the bits for current cache only
+>  	cmp	r1, #2				@ see what cache we have at this level
+>  	blt	skip				@ skip if no cache, or just i-cache
+> +#ifdef CONFIG_PREEMPT
+> +	save_and_disable_irqs r9		@ make cssr&csidr read atomic
+> +#endif
+>  	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+>  	isb					@ isb to sych the new cssr&csidr
+>  	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
+> +#ifdef CONFIG_PREEMPT
+> +	restore_irqs r9
+> +#endif
 
-Ah, yes please.
+I'd suggest using restore_irqs_notrace instead.  The IRQ-off period is 
+so small that there is no point tracing it.
 
-	-hpa
+Withthat change:
 
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+
+
+Nicolas
