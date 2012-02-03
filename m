@@ -1,95 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2BCPr1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 10:47:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58727 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab2BCPr0 (ORCPT
+	id S1754871Ab2BCPsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 10:48:21 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:56120 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab2BCPsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 10:47:26 -0500
-Date: Fri, 3 Feb 2012 09:47:17 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: Andrew Morton <akpm@linux-foundation.org>, oleg@redhat.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
-Subject: Re: [PATCH 1/1][V5] Add reboot_pid_ns to handle the reboot syscall
-Message-ID: <20120203154717.GA4389@sergelap>
-References: <1325754410-32600-1-git-send-email-daniel.lezcano@free.fr>
- <1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
- <20120202161018.e3c62965.akpm@linux-foundation.org>
- <4F2BA1EA.7060901@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F2BA1EA.7060901@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 3 Feb 2012 10:48:19 -0500
+From: Corey Minyard <cminyard@mvista.com>
+To: Andrew Morton <akpm@osdl.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
+        Corey Minyard <cminyard@mvista.com>
+Subject: [PATCH 5/6] ipmi: Simplify locking
+Date: Fri, 03 Feb 2012 09:47:58 -0600
+Message-id: <1328284079-5489-5-git-send-email-cminyard@mvista.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1328284079-5489-1-git-send-email-cminyard@mvista.com>
+References: <1328284079-5489-1-git-send-email-cminyard@mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Daniel Lezcano (daniel.lezcano@free.fr):
-> On 02/03/2012 01:10 AM, Andrew Morton wrote:
-> >On Thu,  5 Jan 2012 10:06:50 +0100
-> >Daniel Lezcano<daniel.lezcano@free.fr>  wrote:
-> >
-> >>In the case of a child pid namespace, rebooting the system does not
-> >>really makes sense. When the pid namespace is used in conjunction
-> >>with the other namespaces in order to create a linux container, the
-> >>reboot syscall leads to some problems.
-> >>
-> >>A container can reboot the host. That can be fixed by dropping
-> >>the sys_reboot capability but we are unable to correctly to poweroff/
-> >>halt/reboot a container and the container stays stuck at the shutdown
-> >>time with the container's init process waiting indefinitively.
-> >>
-> >>After several attempts, no solution from userspace was found to reliabily
-> >>handle the shutdown from a container.
-> >>
-> >>This patch propose to make the init process of the child pid namespace to
-> >>exit with a signal status set to : SIGINT if the child pid namespace called
-> >>"halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
-> >>When the reboot syscall is called and we are not in the initial
-> >>pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
-> >>and "RESTART2". Otherwise we return EINVAL.
-> >>
-> >>Returning EINVAL is also an easy way to check if this feature is supported
-> >>by the kernel when invoking another 'reboot' option like CAD.
-> >>
-> >>By this way the parent process of the child pid namespace knows if
-> >>it rebooted or not and can take the right decision.
-> >Looks OK, although the comments need help.  Is the below still true?
-> 
-> Yes, thanks for fixing this.
-> 
-> >
-> >Do you think it would be feasible to put your testcase into
-> >tools/testing/selftests?  I'm thinking "no", because running the test
-> >needs elevated permissions and might reboot the user's machine(!).
-> 
-> Yes, right. I don't think the user will be happy with that.
-> Unfortunately, I don't see how to test this feature without falling
-> into a reboot on failure. On the other side, this very specific
-> feature is used in the container environment and if it fails that
-> will be spotted immediately and fixed. So I don't think that does
-> make sense to add this test in tools/testing/selftests.
+Now that the the IPMI driver is using a tasklet, we can simplify
+the locking in the driver and get rid of the message lock.
 
-In fact I can add Daniel's testcase to my lxc testsuite to run
-separately, apart from lxc.  I haven't yet hooked it up into our
-jenkins qa rig, but that's planned.
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+---
+ drivers/char/ipmi/ipmi_si_intf.c |   54 ++++++++++++++-----------------------
+ 1 files changed, 21 insertions(+), 33 deletions(-)
 
-> [ ... ]
-> 
-> >  	gid_t pid_gid;
-> >  	int hide_pid;
-> >+	int reboot;
-> >  };
-> >This was particuarly distressing.  The field was poorly named and other
-> >people forgotting to document their data structures doesn't mean that
-> >we should continue to do this!
-> 
-> Thanks again for adding the description. I will take care next time
-> to add a simple description when the field name is not self-explicit
-> or ambiguous.
-> 
->   -- Daniel
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 01e53cd..3c7e693 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -171,7 +171,6 @@ struct smi_info {
+ 	struct si_sm_handlers  *handlers;
+ 	enum si_type           si_type;
+ 	spinlock_t             si_lock;
+-	spinlock_t             msg_lock;
+ 	struct list_head       xmit_msgs;
+ 	struct list_head       hp_xmit_msgs;
+ 	struct ipmi_smi_msg    *curr_msg;
+@@ -350,13 +349,6 @@ static enum si_sm_result start_next_msg(struct smi_info *smi_info)
+ 	struct timeval t;
+ #endif
+ 
+-	/*
+-	 * No need to save flags, we aleady have interrupts off and we
+-	 * already hold the SMI lock.
+-	 */
+-	if (!smi_info->run_to_completion)
+-		spin_lock(&(smi_info->msg_lock));
+-
+ 	/* Pick the high priority queue first. */
+ 	if (!list_empty(&(smi_info->hp_xmit_msgs))) {
+ 		entry = smi_info->hp_xmit_msgs.next;
+@@ -394,9 +386,6 @@ static enum si_sm_result start_next_msg(struct smi_info *smi_info)
+ 		rv = SI_SM_CALL_WITHOUT_DELAY;
+ 	}
+  out:
+-	if (!smi_info->run_to_completion)
+-		spin_unlock(&(smi_info->msg_lock));
+-
+ 	return rv;
+ }
+ 
+@@ -879,19 +868,6 @@ static void sender(void                *send_info,
+ 	printk("**Enqueue: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+ #endif
+ 
+-	/*
+-	 * last_timeout_jiffies is updated here to avoid
+-	 * smi_timeout() handler passing very large time_diff
+-	 * value to smi_event_handler() that causes
+-	 * the send command to abort.
+-	 */
+-	smi_info->last_timeout_jiffies = jiffies;
+-
+-	mod_timer(&smi_info->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
+-
+-	if (smi_info->thread)
+-		wake_up_process(smi_info->thread);
+-
+ 	if (smi_info->run_to_completion) {
+ 		/*
+ 		 * If we are running to completion, then throw it in
+@@ -914,15 +890,26 @@ static void sender(void                *send_info,
+ 		return;
+ 	}
+ 
+-	spin_lock_irqsave(&smi_info->msg_lock, flags);
++	spin_lock_irqsave(&smi_info->si_lock, flags);
+ 	if (priority > 0)
+ 		list_add_tail(&msg->link, &smi_info->hp_xmit_msgs);
+ 	else
+ 		list_add_tail(&msg->link, &smi_info->xmit_msgs);
+-	spin_unlock_irqrestore(&smi_info->msg_lock, flags);
+ 
+-	spin_lock_irqsave(&smi_info->si_lock, flags);
+ 	if (smi_info->si_state == SI_NORMAL && smi_info->curr_msg == NULL) {
++		/*
++		 * last_timeout_jiffies is updated here to avoid
++		 * smi_timeout() handler passing very large time_diff
++		 * value to smi_event_handler() that causes
++		 * the send command to abort.
++		 */
++		smi_info->last_timeout_jiffies = jiffies;
++
++		mod_timer(&smi_info->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
++
++		if (smi_info->thread)
++			wake_up_process(smi_info->thread);
++
+ 		start_next_msg(smi_info);
+ 		smi_event_handler(smi_info, 0);
+ 	}
+@@ -1026,16 +1013,19 @@ static int ipmi_thread(void *data)
+ static void poll(void *send_info)
+ {
+ 	struct smi_info *smi_info = send_info;
+-	unsigned long flags;
++	unsigned long flags = 0;
++	int run_to_completion = smi_info->run_to_completion;
+ 
+ 	/*
+ 	 * Make sure there is some delay in the poll loop so we can
+ 	 * drive time forward and timeout things.
+ 	 */
+ 	udelay(10);
+-	spin_lock_irqsave(&smi_info->si_lock, flags);
++	if (!run_to_completion)
++		spin_lock_irqsave(&smi_info->si_lock, flags);
+ 	smi_event_handler(smi_info, 10);
+-	spin_unlock_irqrestore(&smi_info->si_lock, flags);
++	if (!run_to_completion)
++		spin_unlock_irqrestore(&smi_info->si_lock, flags);
+ }
+ 
+ static void request_events(void *send_info)
+@@ -1672,10 +1662,8 @@ static struct smi_info *smi_info_alloc(void)
+ {
+ 	struct smi_info *info = kzalloc(sizeof(*info), GFP_KERNEL);
+ 
+-	if (info) {
++	if (info)
+ 		spin_lock_init(&info->si_lock);
+-		spin_lock_init(&info->msg_lock);
+-	}
+ 	return info;
+ }
+ 
+-- 
+1.7.4.1
+
