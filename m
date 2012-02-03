@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab2BCUKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 15:10:38 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40776 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938Ab2BCUKf (ORCPT
+	id S1756387Ab2BCUNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 15:13:50 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:30470 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab2BCUNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 15:10:35 -0500
-X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=JWdsGIDjgj4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ybhEY36hXgcA9dyJ_jIA:9 a=PUjeQqilurYA:10 a=5sSclSeBaXwgqdo3:21 a=AZXu_MlKgeb8xAl5:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328299833.5882.211.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RT 2/2 v4] preempt-rt/x86: Delay calling signals in int3
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Andi Kleen <ak@linux.intel.com>, Clark Williams <williams@redhat.com>,
-        Luis Goncalves <lgoncalv@redhat.com>, stable-rt@vger.kernel.org
-Date: Fri, 03 Feb 2012 15:10:33 -0500
-In-Reply-To: <20120203184016.GA10413@redhat.com>
-References: <20120203182853.547078531@goodmis.org>
-	 <20120203183041.427463295@goodmis.org> <20120203184016.GA10413@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 3 Feb 2012 15:13:49 -0500
+From: <messaging.hpitsecurity@hp.com>
+To: <travis@sgi.com>
+CC: <akpm@linux-foundation.org>, <steiner@sgi.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Microsoft Forefront Server Security forwarded attachment
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="ANTIGEN-9603-22719-14642-4751-6853-30701"
+Message-ID: <2c6a9445-2f58-4fed-845f-b6f320bc1880@G1W0403.americas.hpqcorp.net>
+Date: Fri, 3 Feb 2012 20:12:49 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-03 at 19:40 +0100, Oleg Nesterov wrote:
-
-> Stupid question. Do we really need to send the signal from here?
-
-If we can do it correctly elsewhere, I'm fine with that too :-)
-
-> 
-> Why force_sig(rt => T) can't set TIF_NOTIFY_RESUME instead? Then
-> we can change do_notify_resume() to check TIF_FORCE_SIG_TRAP. And
-> perhaps we can even avoid the new TIF_FORCE_SIG_TRAP, we could
-> check task->stored_info_set.
-
-You know the signal code much better than I do. If that works, I'm all
-for that too. I really don't like the entry_64 solution, but it was what
-I knew would work.
-
-> 
-> In fact I feel this can be simplified even more, but I am not sure.
-
-My strengths are in the entry_64.S code, not the signal code, so I fixed
-it the best way that I felt. This does not imply my fix is the best. If
-we can solve this in a clean way using the existing signal
-infrastructure, I'm all for that.
-
--- Steve
+--ANTIGEN-9603-22719-14642-4751-6853-30701
+Content-Type: text/plain; charset="utf-7"
+Content-Transfer-Encoding: quoted-printable
 
 
+The body from the message +ACI-Re: +AFs-PATCH 3/3+AF0- UV Update NMI handlers+ACI-, originally sent to you by linux-kernel-owner+AEA-vger.kernel.org (linux-kernel-owner+AEA-vger.kernel.org), has been forwarded to you from the Microsoft Forefront Server Security Quarantine area.
+This message body may have been re-scanned by Microsoft Forefront Server Security and handled according to the appropriate scan job's settings.
+
+
+
+
+<<Body of Message>>
+
+--ANTIGEN-9603-22719-14642-4751-6853-30701
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Body of Message"
+
+DQoqIE1pa2UgVHJhdmlzIDx0cmF2aXNAc2dpLmNvbT4gd3JvdGU6DQoNCj4gLS0tDQo+ICBhcmNo
+L3g4Ni9rZXJuZWwvYXBpYy94MmFwaWNfdXZfeC5jIHwgIDEzMiArKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKy0tLS0tLS0tDQo+ICAxIGZpbGUgY2hhbmdlZCwgMTA1IGluc2VydGlvbnMoKyks
+IDI3IGRlbGV0aW9ucygtKQ0KDQpUaGlzIHBhdGNoIGlzIHN0b2NrIGZ1bGwgb2YgYmFzaWMgY29k
+ZSBjbGVhbmxpbmVzcyB2aW9sYXRpb25zIC0gDQppdCdzIGEgaGlnaGx5IGVkdWNhdGlvbmFsIGNv
+bGxlY3Rpb24gb2YgdmFyaW91cyB1Z2xpZXMgc28gSSdtIA0KZ29pbmcgdG8gaWdub3JlIGl0Lg0K
+DQpUaGFua3MsDQoNCglJbmdvDQotLQ0KVG8gdW5zdWJzY3JpYmUgZnJvbSB0aGlzIGxpc3Q6IHNl
+bmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIGxpbnV4LWtlcm5lbCIgaW4NCnRoZSBib2R5IG9mIGEg
+bWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5rZXJuZWwub3JnDQpNb3JlIG1ham9yZG9tbyBpbmZv
+IGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3JnL21ham9yZG9tby1pbmZvLmh0bWwNClBsZWFzZSBy
+ZWFkIHRoZSBGQVEgYXQgIGh0dHA6Ly93d3cudHV4Lm9yZy9sa21sLw0K
+
+--ANTIGEN-9603-22719-14642-4751-6853-30701--
