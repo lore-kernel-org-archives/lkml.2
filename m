@@ -1,35 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab2BCUbW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 15:31:22 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:44802 "EHLO
+	id S1757577Ab2BCUbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 15:31:45 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:45135 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757299Ab2BCUbC (ORCPT
+	by vger.kernel.org with ESMTP id S1756754Ab2BCUa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 15:31:02 -0500
-X-Sasl-enc: BvfEGrPyLBoOTIyfWBk5jLT9Wo6dHVtNmu/ghUSkKKWi 1328301061
-Date: Fri, 3 Feb 2012 12:30:53 -0800
+	Fri, 3 Feb 2012 15:30:59 -0500
+X-Sasl-enc: LaXd2c8qjWVeYvNfY871aloVox1HSv81UqIFVCIhMcg/ 1328301058
+Date: Fri, 3 Feb 2012 12:29:36 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net
-Subject: Re: Linux 3.2.3
-Message-ID: <20120203203053.GA21269@kroah.com>
-References: <20120203174758.GA18584@kroah.com>
+Subject: Re: Linux 2.6.32.56
+Message-ID: <20120203202936.GA16466@kroah.com>
+References: <20120203174843.GA18600@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120203174758.GA18584@kroah.com>
+In-Reply-To: <20120203174843.GA18600@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 09:47:58AM -0800, Greg KH wrote:
-> I'm announcing the release of the 3.2.3 kernel.
+On Fri, Feb 03, 2012 at 09:48:43AM -0800, Greg KH wrote:
+> I'm announcing the release of the 2.6.32.56 kernel.
 
-And here's the shortlog:
+I forgot to include the shortlog for this release, so here it is.
 
 Alan Cox (1):
       USB: ftdi_sio: Add more identifiers
