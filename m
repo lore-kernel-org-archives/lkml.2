@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab2BCVv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 16:51:29 -0500
-Received: from mga02.intel.com ([134.134.136.20]:24335 "EHLO mga02.intel.com"
+	id S1758000Ab2BCVxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 16:53:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21375 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757959Ab2BCVv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 16:51:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="106092955"
-Message-ID: <4F2C56D9.8010801@linux.intel.com>
-Date: Fri, 03 Feb 2012 13:51:21 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1757950Ab2BCVxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 16:53:53 -0500
+Date: Fri, 3 Feb 2012 16:53:49 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH UPDATED 11/11] blkcg: unify blkg's for blkcg policies
+Message-ID: <20120203215349.GF9683@redhat.com>
+References: <1328131156-13290-1-git-send-email-tj@kernel.org>
+ <1328131156-13290-12-git-send-email-tj@kernel.org>
+ <20120202003730.GC19837@google.com>
+ <20120203194105.GA12616@redhat.com>
+ <20120203205910.GB14209@google.com>
+ <20120203214435.GC12616@redhat.com>
+ <20120203214719.GE14209@google.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Jesper Juhl <jj@chaosbits.net>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH][Trivial] Fix up version number reference in include/trace/events/power.h
-References: <alpine.LNX.2.00.1201152146570.13389@swampdragon.chaosbits.net> <1326661784.7642.140.camel@gandalf.stny.rr.com> <alpine.LNX.2.00.1201152210300.13389@swampdragon.chaosbits.net> <alpine.LNX.2.00.1202032241380.25026@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1202032241380.25026@pobox.suse.cz>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120203214719.GE14209@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/3/2012 1:42 PM, Jiri Kosina wrote:
-> On Sun, 15 Jan 2012, Jesper Juhl wrote:
+On Fri, Feb 03, 2012 at 01:47:19PM -0800, Tejun Heo wrote:
+> On Fri, Feb 03, 2012 at 04:44:35PM -0500, Vivek Goyal wrote:
+> > Ok, looks like now it is needed because blkcg lock will just gurantee that
+> > blkg is around but blkg->pd[plid] can disappear if you are not holding
+> > blkio_list lock (update_root_blkgs).
+> > 
+> > I am wondering if we should take blkcg->lock if blkg is on blkcg list and
+> > is being modified in place. That way, once we are switching elevator,
+> > we should be able to shoot down the policy data without taking blkio_list
+> > lock.
 > 
->>>> -/* This code will be removed after deprecation time exceeded (2.6.41) */
->>>> +/* This code will be removed after deprecation time exceeded (3.1) */
->>>
->>> Shouldn't the real fix be to remove this code? What's the use of
->>> changing the version number that this code will be removed from, when
->>> the change won't get in until after the version that this code should
->>> have been removed?
->>>
->>> This is like updating 2014 calendars to say the world will end in 2012.
->>>
->> Heh, yeah, in a way you are right. But we have lots of code in the kernel 
->> that says it will be removed at <some date in the past>, so I just figured 
->> that if this code ends up hanging around it should at least display the 
->> correct version number for when it /should/ have been removed.
->> The actual removal I'll leave up to others.
-> 
-> Funny thing. Okay, this doesn't seem to be in linux-next, so I am taking 
-> it.
-> 
-> Steven, planning to drop the code in a near future? :)
+> I think it gotta become something per-queue, not global, and if we
+> make it per-queue, it should be able to live inside queue_lock.
 
-we shouldn't be dropping these yet.. tools are still using them.
-and there really is no cost to keeping them either.
+Hmm... then blkiocg_reset_stats() will run into lock ordering issue. Can't
+hold queue lock inside blkcg lock. I guess you will do some kind of
+locking trick again as you did for io context logic.
+
+Thanks
+Vivek
