@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab2BCOGk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 09:06:40 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59840 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755929Ab2BCOGj (ORCPT
+	id S1756542Ab2BCOHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 09:07:44 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40630 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755424Ab2BCOHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 09:06:39 -0500
-Date: Fri, 3 Feb 2012 14:06:21 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: Kautuk Consul <consul.kautuk@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Mohd. Faris" <mohdfarisq2010@gmail.com>
-Subject: Re: [PATCH 1/1] arm: vfp: Raising SIGFPE on invalid floating point
-	operation
-Message-ID: <20120203140621.GK889@n2100.arm.linux.org.uk>
-References: <1328258184-23082-1-git-send-email-consul.kautuk@gmail.com> <20267.57822.537801.969721@pilspetsen.it.uu.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20267.57822.537801.969721@pilspetsen.it.uu.se>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 3 Feb 2012 09:07:43 -0500
+X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=p8-UtJQVZEYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=P2PrIL1Zq98MBjUml6MA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328278061.5882.144.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 5/7] ftrace, perf: Add support to use function
+ tracepoint in perf
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Date: Fri, 03 Feb 2012 09:07:41 -0500
+In-Reply-To: <20120203130043.GC1531@m.brq.redhat.com>
+References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+	 <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+	 <1327776209-4883-6-git-send-email-jolsa@redhat.com>
+	 <20120202181409.GH9071@somewhere.redhat.com>
+	 <20120203125413.GB1531@m.brq.redhat.com>
+	 <20120203130043.GC1531@m.brq.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 02:32:14PM +0100, Mikael Pettersson wrote:
-> No, a SIGFPE delivered at the wrong point in time with the wrong
-> context in its sigframe is MUCH worse than not getting a SIGFPE
-> at all.  (And likewise for all other trap signals, SEGV, ILL, etc.)
+On Fri, 2012-02-03 at 14:00 +0100, Jiri Olsa wrote:
 
-If your FP is pipelined, then you won't get a SIGFPE for a div0 situation
-as soon as the instruction appears in the program.  Think about what's
-happening.
+> and use FTRACE_ENTRY_REG for ftrace event like:
+> 
+> FTRACE_ENTRY_REG(function, ftrace_entry,
+>         TRACE_FN,
+>         F_STRUCT(
+>                 __field(        unsigned long,  ip              )
+>                 __field(        unsigned long,  parent_ip       )
+>         ),
+>         F_printk(" %lx <-- %lx", __entry->ip, __entry->parent_ip),
+>         perf_ftrace_event_register
+> );
 
-1. The FP hardware may be occupied with a computation.
-2. The program issues the divide instruction, the FP hardware accepts
-   this.  Meanwhile, the integer part of the core continues processing
-   instructions.
-3. The FP hardware completes its computation, and gets to execute the
-   divide instruction.
-4. The FP hardware discovers a divide-by-zero situation, and flags it
-   in its status register.
+This should be fine.
 
-At this point, there's no way for the FP hardware to flag that situation
-to the integer core (there's no interrupt.)  The failure gets flagged
-when the program executes the next FP instruction, and is raised by the
-FP hardware refusing to accept that instruction with an exception status.
+-- Steve
 
-The kernel can't back-track the execution path to find out where the
-divide instruction was, and the hardware doesn't tell you what address
-the instruction was (the FP hardware effectively just gets to listen to
-the integer core's instruction stream when the integer core sees a
-'co-processor' instruction.)
 
-The only way FP would be able to abort a divide-by-zero immediately is
-if it halted the integer core while it started the divide operation,
-preventing it from running integer computations in parallel with the FP
-hardware.
