@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab2BDByv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:54:51 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:34190 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756388Ab2BDBpv (ORCPT
+	id S1758245Ab2BDByt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:54:49 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39076 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756490Ab2BDBpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Feb 2012 20:45:51 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,197 +15,121 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 40/47] rcu: Call out dangers of expedited RCU primitives
-Date: Fri,  3 Feb 2012 17:45:15 -0800
-Message-Id: <1328319922-30828-40-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 46/47] rcu: Add RCU_NONIDLE() for idle-loop RCU read-side critical sections
+Date: Fri,  3 Feb 2012 17:45:21 -0800
+Message-Id: <1328319922-30828-46-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120204014452.GA29811@linux.vnet.ibm.com>
  <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020401-1780-0000-0000-000002DC2FDF
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000245; HX=3.00000181; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00110708; UDB=6.00027489; UTC=2012-02-04
- 01:45:49
+x-cbid: 12020401-5518-0000-0000-000001FD8B02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-The expedited RCU primitives can be quite useful, but they have some
-high costs as well.  This commit updates and creates docbook comments
-calling out the costs, and updates the RCU documentation as well.
+RCU, RCU-bh, and RCU-sched read-side critical sections are forbidden
+in the inner idle loop, that is, between the rcu_idle_enter() and the
+rcu_idle_exit() -- RCU will happily ignore any such read-side critical
+sections.  However, things like powertop need tracepoints in the inner
+idle loop.
 
+This commit therefore provides an RCU_NONIDLE() macro that can be used to
+wrap code in the idle loop that requires RCU read-side critical sections.
+
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 ---
- Documentation/RCU/checklist.txt |   14 ++++++++++++++
- include/linux/rcutree.h         |   16 ++++++++++++++++
- kernel/rcutree.c                |   22 ++++++++++++++--------
- kernel/rcutree_plugin.h         |   20 ++++++++++++++++----
- kernel/srcu.c                   |   27 +++++++++++++++++----------
- 5 files changed, 77 insertions(+), 22 deletions(-)
+ include/linux/rcupdate.h |   27 +++++++++++++++++++++++++++
+ kernel/rcutiny.c         |    2 ++
+ kernel/rcutree.c         |    2 ++
+ 3 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/RCU/checklist.txt b/Documentation/RCU/checklist.txt
-index bff2d8b..5c8d749 100644
---- a/Documentation/RCU/checklist.txt
-+++ b/Documentation/RCU/checklist.txt
-@@ -180,6 +180,20 @@ over a rather long period of time, but improvements are always welcome!
- 	operations that would not normally be undertaken while a real-time
- 	workload is running.
- 
-+	In particular, if you find yourself invoking one of the expedited
-+	primitives repeatedly in a loop, please do everyone a favor:
-+	Restructure your code so that it batches the updates, allowing
-+	a single non-expedited primitive to cover the entire batch.
-+	This will very likely be faster than the loop containing the
-+	expedited primitive, and will be much much easier on the rest
-+	of the system, especially to real-time workloads running on
-+	the rest of the system.
-+
-+	In addition, it is illegal to call the expedited forms from
-+	a CPU-hotplug notifier, or while holding a lock that is acquired
-+	by a CPU-hotplug notifier.  Failing to observe this restriction
-+	will result in deadlock.
-+
- 7.	If the updater uses call_rcu() or synchronize_rcu(), then the
- 	corresponding readers must use rcu_read_lock() and
- 	rcu_read_unlock().  If the updater uses call_rcu_bh() or
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 7389248..e8ee5dd 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -63,6 +63,22 @@ extern void synchronize_rcu_expedited(void);
- 
- void kfree_call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 6ee663c..9372174 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -190,6 +190,33 @@ extern void rcu_idle_exit(void);
+ extern void rcu_irq_enter(void);
+ extern void rcu_irq_exit(void);
  
 +/**
-+ * synchronize_rcu_bh_expedited - Brute-force RCU-bh grace period
++ * RCU_NONIDLE - Indicate idle-loop code that needs RCU readers
++ * @a: Code that RCU needs to pay attention to.
 + *
-+ * Wait for an RCU-bh grace period to elapse, but use a "big hammer"
-+ * approach to force the grace period to end quickly.  This consumes
-+ * significant time on all CPUs and is unfriendly to real-time workloads,
-+ * so is thus not recommended for any sort of common-case code.  In fact,
-+ * if you are using synchronize_rcu_bh_expedited() in a loop, please
-+ * restructure your code to batch your updates, and then use a single
-+ * synchronize_rcu_bh() instead.
++ * RCU, RCU-bh, and RCU-sched read-side critical sections are forbidden
++ * in the inner idle loop, that is, between the rcu_idle_enter() and
++ * the rcu_idle_exit() -- RCU will happily ignore any such read-side
++ * critical sections.  However, things like powertop need tracepoints
++ * in the inner idle loop.
 + *
-+ * Note that it is illegal to call this function while holding any lock
-+ * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-+ * to call this function from a CPU-hotplug notifier.  Failing to observe
-+ * these restriction will result in deadlock.
++ * This macro provides the way out:  RCU_NONIDLE(do_something_with_RCU())
++ * will tell RCU that it needs to pay attending, invoke its argument
++ * (in this example, a call to the do_something_with_RCU() function),
++ * and then tell RCU to go back to ignoring this CPU.  It is permissible
++ * to nest RCU_NONIDLE() wrappers, but the nesting level is currently
++ * quite limited.  If deeper nesting is required, it will be necessary
++ * to adjust DYNTICK_TASK_NESTING_VALUE accordingly.
++ *
++ * This macro may be used from process-level code only.
 + */
- static inline void synchronize_rcu_bh_expedited(void)
- {
- 	synchronize_sched_expedited();
++#define RCU_NONIDLE(a) \
++	do { \
++		rcu_idle_exit(); \
++		do { a; } while (0); \
++		rcu_idle_enter(); \
++	} while (0)
++
+ /*
+  * Infrastructure to implement the synchronize_() primitives in
+  * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index c8b0e15..37a5444 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -97,6 +97,7 @@ void rcu_idle_enter(void)
+ 	rcu_idle_enter_common(oldval);
+ 	local_irq_restore(flags);
+ }
++EXPORT_SYMBOL_GPL(rcu_idle_enter);
+ 
+ /*
+  * Exit an interrupt handler towards idle.
+@@ -153,6 +154,7 @@ void rcu_idle_exit(void)
+ 	rcu_idle_exit_common(oldval);
+ 	local_irq_restore(flags);
+ }
++EXPORT_SYMBOL_GPL(rcu_idle_exit);
+ 
+ /*
+  * Enter an interrupt handler, moving away from idle.
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 708469a..df0e3c1 100644
+index 92b4776..eacc10b 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -1961,15 +1961,21 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
- 	return 0;
+@@ -402,6 +402,7 @@ void rcu_idle_enter(void)
+ 	rcu_idle_enter_common(rdtp, oldval);
+ 	local_irq_restore(flags);
  }
- 
--/*
-- * Wait for an rcu-sched grace period to elapse, but use "big hammer"
-- * approach to force grace period to end quickly.  This consumes
-- * significant time on all CPUs, and is thus not recommended for
-- * any sort of common-case code.
-+/**
-+ * synchronize_sched_expedited - Brute-force RCU-sched grace period
-+ *
-+ * Wait for an RCU-sched grace period to elapse, but use a "big hammer"
-+ * approach to force the grace period to end quickly.  This consumes
-+ * significant time on all CPUs and is unfriendly to real-time workloads,
-+ * so is thus not recommended for any sort of common-case code.  In fact,
-+ * if you are using synchronize_sched_expedited() in a loop, please
-+ * restructure your code to batch your updates, and then use a single
-+ * synchronize_sched() instead.
-  *
-- * Note that it is illegal to call this function while holding any
-- * lock that is acquired by a CPU-hotplug notifier.  Failing to
-- * observe this restriction will result in deadlock.
-+ * Note that it is illegal to call this function while holding any lock
-+ * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-+ * to call this function from a CPU-hotplug notifier.  Failing to observe
-+ * these restriction will result in deadlock.
-  *
-  * This implementation can be thought of as an application of ticket
-  * locking to RCU, with sync_sched_expedited_started and
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 2daa7b9..2779f8c 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -835,10 +835,22 @@ sync_rcu_preempt_exp_init(struct rcu_state *rsp, struct rcu_node *rnp)
- 		rcu_report_exp_rnp(rsp, rnp, false); /* Don't wake self. */
- }
- 
--/*
-- * Wait for an rcu-preempt grace period, but expedite it.  The basic idea
-- * is to invoke synchronize_sched_expedited() to push all the tasks to
-- * the ->blkd_tasks lists and wait for this list to drain.
-+/**
-+ * synchronize_rcu_expedited - Brute-force RCU grace period
-+ *
-+ * Wait for an RCU-preempt grace period, but expedite it.  The basic
-+ * idea is to invoke synchronize_sched_expedited() to push all the tasks to
-+ * the ->blkd_tasks lists and wait for this list to drain.  This consumes
-+ * significant time on all CPUs and is unfriendly to real-time workloads,
-+ * so is thus not recommended for any sort of common-case code.
-+ * In fact, if you are using synchronize_rcu_expedited() in a loop,
-+ * please restructure your code to batch your updates, and then Use a
-+ * single synchronize_rcu() instead.
-+ *
-+ * Note that it is illegal to call this function while holding any lock
-+ * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-+ * to call this function from a CPU-hotplug notifier.  Failing to observe
-+ * these restriction will result in deadlock.
-  */
- void synchronize_rcu_expedited(void)
- {
-diff --git a/kernel/srcu.c b/kernel/srcu.c
-index 3f99fa0..ba35f3a 100644
---- a/kernel/srcu.c
-+++ b/kernel/srcu.c
-@@ -286,19 +286,26 @@ void synchronize_srcu(struct srcu_struct *sp)
- EXPORT_SYMBOL_GPL(synchronize_srcu);
++EXPORT_SYMBOL_GPL(rcu_idle_enter);
  
  /**
-- * synchronize_srcu_expedited - like synchronize_srcu, but less patient
-+ * synchronize_srcu_expedited - Brute-force SRCU grace period
-  * @sp: srcu_struct with which to synchronize.
-  *
-- * Flip the completed counter, and wait for the old count to drain to zero.
-- * As with classic RCU, the updater must use some separate means of
-- * synchronizing concurrent updates.  Can block; must be called from
-- * process context.
-+ * Wait for an SRCU grace period to elapse, but use a "big hammer"
-+ * approach to force the grace period to end quickly.  This consumes
-+ * significant time on all CPUs and is unfriendly to real-time workloads,
-+ * so is thus not recommended for any sort of common-case code.  In fact,
-+ * if you are using synchronize_srcu_expedited() in a loop, please
-+ * restructure your code to batch your updates, and then use a single
-+ * synchronize_srcu() instead.
-  *
-- * Note that it is illegal to call synchronize_srcu_expedited()
-- * from the corresponding SRCU read-side critical section; doing so
-- * will result in deadlock.  However, it is perfectly legal to call
-- * synchronize_srcu_expedited() on one srcu_struct from some other
-- * srcu_struct's read-side critical section.
-+ * Note that it is illegal to call this function while holding any lock
-+ * that is acquired by a CPU-hotplug notifier.  And yes, it is also illegal
-+ * to call this function from a CPU-hotplug notifier.  Failing to observe
-+ * these restriction will result in deadlock.  It is also illegal to call
-+ * synchronize_srcu_expedited() from the corresponding SRCU read-side
-+ * critical section; doing so will result in deadlock.  However, it is
-+ * perfectly legal to call synchronize_srcu_expedited() on one srcu_struct
-+ * from some other srcu_struct's read-side critical section, as long as
-+ * the resulting graph of srcu_structs is acyclic.
-  */
- void synchronize_srcu_expedited(struct srcu_struct *sp)
- {
+  * rcu_irq_exit - inform RCU that current CPU is exiting irq towards idle
+@@ -493,6 +494,7 @@ void rcu_idle_exit(void)
+ 	rcu_idle_exit_common(rdtp, oldval);
+ 	local_irq_restore(flags);
+ }
++EXPORT_SYMBOL_GPL(rcu_idle_exit);
+ 
+ /**
+  * rcu_irq_enter - inform RCU that current CPU is entering irq away from idle
 -- 
 1.7.8
 
