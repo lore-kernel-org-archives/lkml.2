@@ -1,76 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab2BDBhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:37:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52716 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab2BDBhb (ORCPT
+	id S1754648Ab2BDBpC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:45:02 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:35704 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244Ab2BDBo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 20:37:31 -0500
-Date: Fri, 3 Feb 2012 17:37:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@shadowen.org>,
-        Ingo Molnar <mingo@elte.hu>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] checkpatch: Warn on code with 6+ tab indentation
-Message-Id: <20120203173750.1ea9e7f0.akpm@linux-foundation.org>
-In-Reply-To: <CA+55aFxHih0+P=aNromTy+f_Rt+++QWgaEdvqLsXg_q_hu_q2A@mail.gmail.com>
-References: <20120130140905.441199885@openvz.org>
-	<20120130141852.309402052@openvz.org>
-	<20120203074656.GC30543@elte.hu>
-	<20120203083530.GD1968@moon>
-	<20120203090929.GA23996@elte.hu>
-	<20120203012241.bcd3d0c8.akpm@linux-foundation.org>
-	<20120203095227.GA13162@elte.hu>
-	<20120203100743.GA3334@elte.hu>
-	<CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
-	<1328311239.21255.24.camel@joe2Laptop>
-	<CA+55aFxHih0+P=aNromTy+f_Rt+++QWgaEdvqLsXg_q_hu_q2A@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Feb 2012 20:44:59 -0500
+Date: Fri, 3 Feb 2012 17:44:52 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: [PATCH tip/core/rcu 0/N] v2 RCU commits for 3.4
+Message-ID: <20120204014452.GA29811@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020401-4242-0000-0000-000000AEC588
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Feb 2012 17:27:36 -0800 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Hello!
 
-> On Fri, Feb 3, 2012 at 3:20 PM, Joe Perches <joe@perches.com> wrote:
-> > Overly indented code should be refactored.
-> >
-> > Suggest refactoring excessive indentation of
-> > of if/else/for/do/while/switch statements.
-> 
-> I hate this patch.
-> 
-> Why? Because mindless checks like this would just lead to people
-> making things worse and intermixing spaces there instead.
-> 
-> That's the same reason the 80-character check has been a total
-> disaster. People shut it up by splitting long strings etc, and we've
-> had to change that 80-character test many times just to avoid the
-> crazy workarounds.
-> 
-> Don't warn about things that will just result in people working around
-> the warnings with worse code!
-> 
+This is v2 of this patchset.  Earlier versions may be found at
+https://lkml.org/lkml/2012/2/1/354 and https://lkml.org/lkml/2012/2/2/575.
+A big "thank you" to all the reviewers, particularly Josh Triplett, for the
+excellent feedback.
 
-Sampling bias ;) You notice the 80-col fixups which resulted in
-poor-looking code and not the fixups which resulted in decent-looking
-code.
+This patchset makes RCU more aggressive about entering dyntick-idle mode
+in order to improve energy efficiency, converts a few more call_rcu()s to
+kfree_rcu(), applies a number of rcutree fixes and cleanups to rcutiny,
+removes CONFIG_SMP #ifdef from treercu, allows RCU CPU stall times to
+be set via sysfs, add CPU-stall capability to rcutorture, adds more
+RCU-abuse diagnostics, updates documentation, and yet more fixes from
+the still-ongoing top-to-bottom inspection of RCU with a special focus
+on the CPU-hotplug code path.  The patches are as follows:
+
+1,26,31,33,41,40.
+	Documentation upgrades.
+2.	Improve synchronize_rcu() diagnostics, courtesy of
+	Frederic Weisbecker.
+3.	Add lockdep-RCU checks for simple self deadlock, such as calling
+	synchronize_rcu() while in an RCU read-side critical section.
+4.	Add a diagnostic for misaligned rcu_head structures.  This is
+	preparation for a call_rcu_lazy() for added energy efficiency.
+5,14,37.
+	Upgrades to CONFIG_RCU_FAST_NO_HZ.
+6.	Move CONFIG_RCU_TRACE to lib/Kconfig.debug: not for production use.
+7-11.	Convert several call_rcu() primitives to kfree_rcu().
+12,13,15,16,35,38,39.
+	Fixes to and streamlining of CPU-hotplug handling based on review.
+17.	Remove dubious single-rcu_node optimization from rcu_start_gp().
+18-22.	Apply prior rcutree fixes to rcutiny.
+23.	Catch rcu_preempt_needs_cpu()'s name up with 2011.
+24.	Check for idle-loop entry while in an RCU read-side critical section.
+25.	Check for sleeping in TREE_RCU read-side critical sections.
+27,36.	Remove "#ifdef CONFIG_SMP" from treercu, move code accordingly.
+28.	Allow RCU CPU stall times to be adjusted at runtime via sysfs.
+29.	Print scheduling-clock timer information on RCU CPU stall warning
+	messages if requested by CONFIG_RCU_CPU_STALL_INFO config parameter.
+30.	Allow rcutorture to be told to hold off CPU-hotplug operations during
+	early boot.
+32.	Allow rcutorture to generate CPU stalls in order to test RCU CPU
+	stall warning facility.
+34.	Silence module-parameter warnings by converting a couple of
+	rcutorture's module parameters to bool.
+41.	Fix misplaced NULL-pointer check in rcutorture.
+42.	Convert WARN_ON_ONCE() in rcu_lock_acquire() to lockdep, in
+	part courtesy of Heiko Carstens.
+43.	Fix botched PTR_ERR() call, courtesy of Julia Lawall.
+44.	Remove now-redundant check for rcu_head misalignment.
+45-47.	Fix incorrect uses of RCU from the idle loop.  Note that patch
+	47 will likely be replaced by some event-tracing upgrades from
+	Steven Rostedt.
+
+For a testing-only version of this patchset from git, please see the
+following subject-to-rebase branch:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ Documentation/RCU/torture.txt      |   20 
+ b/Documentation/RCU/RTFP.txt       | 1902 +++++++++++++++++++++++++++++++++----
+ b/Documentation/RCU/checklist.txt  |   14 
+ b/Documentation/RCU/stallwarn.txt  |   87 +
+ b/Documentation/RCU/torture.txt    |   13 
+ b/Documentation/RCU/trace.txt      |   36 
+ b/arch/s390/kernel/irq.c           |    9 
+ b/drivers/cpuidle/cpuidle.c        |   12 
+ b/drivers/target/tcm_fc/tfc_sess.c |   12 
+ b/include/linux/rcupdate.h         |    2 
+ b/include/linux/rcutiny.h          |    6 
+ b/include/linux/rcutree.h          |    1 
+ b/include/linux/sched.h            |    3 
+ b/include/linux/srcu.h             |   11 
+ b/include/trace/events/rcu.h       |   63 -
+ b/init/Kconfig                     |    9 
+ b/kernel/lockdep.c                 |    8 
+ b/kernel/rcu.h                     |    4 
+ b/kernel/rcupdate.c                |    5 
+ b/kernel/rcutiny.c                 |    4 
+ b/kernel/rcutiny_plugin.h          |    5 
+ b/kernel/rcutorture.c              |    4 
+ b/kernel/rcutree.c                 |    8 
+ b/kernel/rcutree.h                 |    3 
+ b/kernel/rcutree_plugin.h          |    4 
+ b/kernel/rcutree_trace.c           |    8 
+ b/kernel/srcu.c                    |    6 
+ b/lib/Kconfig.debug                |   10 
+ b/net/ipv4/cipso_ipv4.c            |   11 
+ b/net/ipv4/ip_sockglue.c           |    7 
+ b/net/mac80211/mesh_pathtbl.c      |    8 
+ include/linux/rcupdate.h           |   81 +
+ include/linux/rcutiny.h            |    4 
+ include/linux/rcutree.h            |   18 
+ include/linux/srcu.h               |    4 
+ kernel/rcu.h                       |   22 
+ kernel/rcutiny.c                   |   22 
+ kernel/rcutiny_plugin.h            |   72 +
+ kernel/rcutorture.c                |   91 +
+ kernel/rcutree.c                   |  661 ++++++++----
+ kernel/rcutree.h                   |   24 
+ kernel/rcutree_plugin.h            |  443 +++++---
+ kernel/rcutree_trace.c             |    6 
+ kernel/srcu.c                      |   27 
+ lib/Kconfig.debug                  |   14 
+ 45 files changed, 3055 insertions(+), 729 deletions(-)
 
