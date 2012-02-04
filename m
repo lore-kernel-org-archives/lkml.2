@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab2BDBxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:53:41 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:39085 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756793Ab2BDBpw (ORCPT
+	id S1758239Ab2BDBxj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:53:39 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:35377 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757078Ab2BDBpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Feb 2012 20:45:52 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -17,111 +17,92 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 30/47] rcutorture: Permit holding off CPU-hotplug operations during boot
-Date: Fri,  3 Feb 2012 17:45:05 -0800
-Message-Id: <1328319922-30828-30-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 22/47] rcu: Simplify unboosting checks
+Date: Fri,  3 Feb 2012 17:44:57 -0800
+Message-Id: <1328319922-30828-22-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120204014452.GA29811@linux.vnet.ibm.com>
  <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020401-5518-0000-0000-000001FD8B00
+x-cbid: 12020401-3270-0000-0000-000003B92201
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-When rcutorture is started automatically at boot time, it might well
-also start CPU-hotplug operations at that time, which might not be
-desirable.  This commit therefore adds an rcutorture parameter that
-allows CPU-hotplug operations to be held off for the specified number
-of seconds after the start of boot.
+This is a port of commit #82e78d80 from TREE_PREEMPT_RCU to
+TINY_PREEMPT_RCU.
+
+This commit uses the fact that current->rcu_boost_mutex is set
+any time that the RCU_READ_UNLOCK_BOOSTED flag is set in the
+current->rcu_read_unlock_special bitmask.  This allows tests of
+the bit to be changed to tests of the pointer, which in turn allows
+the RCU_READ_UNLOCK_BOOSTED flag to be eliminated.
+
+Please note that the check of current->rcu_read_unlock_special need not
+change because any time that RCU_READ_UNLOCK_BOOSTED was set, so was
+RCU_READ_UNLOCK_BLOCKED.  Therefore, __rcu_read_unlock() can continue
+testing current->rcu_read_unlock_special for non-zero, as before.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/torture.txt |   13 +++++++++++--
- kernel/rcutorture.c           |   12 ++++++++++--
- 2 files changed, 21 insertions(+), 4 deletions(-)
+ include/linux/sched.h   |    3 +--
+ kernel/rcutiny_plugin.h |   10 ++++++----
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/RCU/torture.txt b/Documentation/RCU/torture.txt
-index d67068d..01a809b 100644
---- a/Documentation/RCU/torture.txt
-+++ b/Documentation/RCU/torture.txt
-@@ -69,6 +69,13 @@ onoff_interval
- 		CPU-hotplug operations regardless of what value is
- 		specified for onoff_interval.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4032ec1..1db119f 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1864,8 +1864,7 @@ extern void task_clear_jobctl_pending(struct task_struct *task,
+ #ifdef CONFIG_PREEMPT_RCU
  
-+onoff_holdoff	The number of seconds to wait until starting CPU-hotplug
-+		operations.  This would normally only be used when
-+		rcutorture was built into the kernel and started
-+		automatically at boot time, in which case it is useful
-+		in order to avoid confusing boot-time code with CPUs
-+		coming and going.
-+
- shuffle_interval
- 		The number of seconds to keep the test threads affinitied
- 		to a particular subset of the CPUs, defaults to 3 seconds.
-@@ -277,5 +284,7 @@ The following script may be used to torture RCU:
+ #define RCU_READ_UNLOCK_BLOCKED (1 << 0) /* blocked while in RCU read-side. */
+-#define RCU_READ_UNLOCK_BOOSTED (1 << 1) /* boosted while in RCU read-side. */
+-#define RCU_READ_UNLOCK_NEED_QS (1 << 2) /* RCU core needs CPU response. */
++#define RCU_READ_UNLOCK_NEED_QS (1 << 1) /* RCU core needs CPU response. */
  
- The output can be manually inspected for the error flag of "!!!".
- One could of course create a more elaborate script that automatically
--checked for such errors.  The "rmmod" command forces a "SUCCESS" or
--"FAILURE" indication to be printk()ed.
-+checked for such errors.  The "rmmod" command forces a "SUCCESS",
-+"FAILURE", or "RCU_HOTPLUG" indication to be printk()ed.  The first
-+two are self-explanatory, while the last indicates that while there
-+were no RCU failures, CPU-hotplug problems were detected.
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index a94eaef..eeafbd0 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -65,6 +65,7 @@ static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
- static int fqs_holdoff;		/* Hold time within burst (us). */
- static int fqs_stutter = 3;	/* Wait time between bursts (s). */
- static int onoff_interval;	/* Wait time between CPU hotplugs, 0=disable. */
-+static int onoff_holdoff;	/* Seconds after boot before CPU hotplugs. */
- static int shutdown_secs;	/* Shutdown time (s).  <=0 for no shutdown. */
- static int test_boost = 1;	/* Test RCU prio boost: 0=no, 1=maybe, 2=yes. */
- static int test_boost_interval = 7; /* Interval between boost tests, seconds. */
-@@ -95,6 +96,8 @@ module_param(fqs_stutter, int, 0444);
- MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
- module_param(onoff_interval, int, 0444);
- MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
-+module_param(onoff_holdoff, int, 0444);
-+MODULE_PARM_DESC(onoff_holdoff, "Time after boot before CPU hotplugs (s)");
- module_param(shutdown_secs, int, 0444);
- MODULE_PARM_DESC(shutdown_secs, "Shutdown time (s), zero to disable.");
- module_param(test_boost, int, 0444);
-@@ -1300,13 +1303,13 @@ rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
- 		"fqs_duration=%d fqs_holdoff=%d fqs_stutter=%d "
- 		"test_boost=%d/%d test_boost_interval=%d "
- 		"test_boost_duration=%d shutdown_secs=%d "
--		"onoff_interval=%d\n",
-+		"onoff_interval=%d onoff_holdoff=%d\n",
- 		torture_type, tag, nrealreaders, nfakewriters,
- 		stat_interval, verbose, test_no_idle_hz, shuffle_interval,
- 		stutter, irqreader, fqs_duration, fqs_holdoff, fqs_stutter,
- 		test_boost, cur_ops->can_boost,
- 		test_boost_interval, test_boost_duration, shutdown_secs,
--		onoff_interval);
-+		onoff_interval, onoff_holdoff);
- }
+ static inline void rcu_copy_process(struct task_struct *p)
+ {
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index 387c275..22ecea0 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -318,7 +318,6 @@ static int rcu_boost(void)
+ 	t = container_of(tb, struct task_struct, rcu_node_entry);
+ 	rt_mutex_init_proxy_locked(&mtx, t);
+ 	t->rcu_boost_mutex = &mtx;
+-	t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BOOSTED;
+ 	raw_local_irq_restore(flags);
+ 	rt_mutex_lock(&mtx);
+ 	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
+@@ -550,6 +549,9 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
+ 	int empty_exp;
+ 	unsigned long flags;
+ 	struct list_head *np;
++#ifdef CONFIG_RCU_BOOST
++	struct rt_mutex *rbmp = NULL;
++#endif /* #ifdef CONFIG_RCU_BOOST */
+ 	int special;
  
- static struct notifier_block rcutorture_shutdown_nb = {
-@@ -1410,6 +1413,11 @@ rcu_torture_onoff(void *arg)
- 	for_each_online_cpu(cpu)
- 		maxcpu = cpu;
- 	WARN_ON(maxcpu < 0);
-+	if (onoff_holdoff > 0) {
-+		VERBOSE_PRINTK_STRING("rcu_torture_onoff begin holdoff");
-+		schedule_timeout_interruptible(onoff_holdoff * HZ);
-+		VERBOSE_PRINTK_STRING("rcu_torture_onoff end holdoff");
-+	}
- 	while (!kthread_should_stop()) {
- 		cpu = (rcu_random(&rand) >> 4) % (maxcpu + 1);
- 		if (cpu_online(cpu) && cpu_is_hotpluggable(cpu)) {
+ 	/*
+@@ -615,10 +617,10 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
+ 	}
+ #ifdef CONFIG_RCU_BOOST
+ 	/* Unboost self if was boosted. */
+-	if (special & RCU_READ_UNLOCK_BOOSTED) {
+-		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BOOSTED;
+-		rt_mutex_unlock(t->rcu_boost_mutex);
++	if (t->rcu_boost_mutex != NULL) {
++		rbmp = t->rcu_boost_mutex;
+ 		t->rcu_boost_mutex = NULL;
++		rt_mutex_unlock(rbmp);
+ 	}
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ 	local_irq_restore(flags);
 -- 
 1.7.8
 
