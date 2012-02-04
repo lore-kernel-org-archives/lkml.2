@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187Ab2BDBwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:52:01 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:34235 "EHLO
+	id S1757826Ab2BDBwh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:52:37 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:34224 "EHLO
 	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757410Ab2BDBp7 (ORCPT
+	with ESMTP id S1756253Ab2BDBp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 20:45:59 -0500
+	Fri, 3 Feb 2012 20:45:57 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,71 +15,120 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 43/47] PTR_ERR should be called before its argument is cleared.
-Date: Fri,  3 Feb 2012 17:45:18 -0800
-Message-Id: <1328319922-30828-43-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 16/47] rcu: Don't make callbacks go through second full grace period
+Date: Fri,  3 Feb 2012 17:44:51 -0800
+Message-Id: <1328319922-30828-16-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120204014452.GA29811@linux.vnet.ibm.com>
  <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020401-1780-0000-0000-000002DC3006
+x-cbid: 12020401-1780-0000-0000-000002DC2FF8
 X-IBM-ISS-SpamDetectors: 
 X-IBM-ISS-DetailInfo: BY=3.00000245; HX=3.00000181; KW=3.00000007;
  PH=3.00000001; SC=3.00000001; SDB=6.00110708; UDB=6.00027489; UTC=2012-02-04
- 01:45:57
+ 01:45:56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+RCU's current CPU-offline code path dumps all of the outgoing CPU's
+callbacks onto the RCU_NEXT_TAIL portion of the surviving CPU's
+callback list.  This means that all the ready-to-invoke callbacks from
+the outgoing CPU must wait for another full RCU grace period.  This was
+just fine when CPU-hotplug events were rare, but there is increasing
+evidence that users are planning to make increasing use of CPU hotplug.
 
-// <smpl>
-@@
-expression e,e1;
-constant c;
-@@
+Therefore, this commit changes the callback-dumping procedure so that
+callbacks that are ready to invoke are moved to the RCU_DONE_TAIL
+portion of the surviving CPU's callback list.  This avoids running
+these callbacks through a second unnecessary grace period.
 
-*e = c
-... when != e = e1
-    when != &e
-    when != true IS_ERR(e)
-*PTR_ERR(e)
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Reported-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutorture.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ kernel/rcutree.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 46 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index fdac008..e0fe148 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -1465,12 +1465,15 @@ rcu_torture_onoff(void *arg)
- static int
- rcu_torture_onoff_init(void)
- {
-+	int ret;
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index ac3a810..7789e66 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1270,24 +1270,64 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+ 	struct rcu_data *receive_rdp = per_cpu_ptr(rsp->rda, receive_cpu);
+ 	struct rcu_node *rnp = rdp->mynode; /* For dying CPU. */
+ 
+-	/* Move callbacks to some other CPU. */
++	/* First, adjust the counts. */
++	if (rdp->nxtlist != NULL) {
++		receive_rdp->qlen_lazy += rdp->qlen_lazy;
++		receive_rdp->qlen += rdp->qlen;
++		rdp->qlen_lazy = 0;
++		rdp->qlen = 0;
++	}
 +
- 	if (onoff_interval <= 0)
- 		return 0;
- 	onoff_task = kthread_run(rcu_torture_onoff, NULL, "rcu_torture_onoff");
- 	if (IS_ERR(onoff_task)) {
-+		ret = PTR_ERR(onoff_task);
- 		onoff_task = NULL;
--		return PTR_ERR(onoff_task);
-+		return ret;
++	/*
++	 * Next, move ready-to-invoke callbacks to be invoked on some
++	 * other CPU.  These will not be required to pass through another
++	 * grace period:  They are done, regardless of CPU.
++	 */
++	if (rdp->nxtlist != NULL &&
++	    rdp->nxttail[RCU_DONE_TAIL] != &rdp->nxtlist) {
++		struct rcu_head *oldhead;
++		struct rcu_head **oldtail;
++		struct rcu_head **newtail;
++
++		oldhead = rdp->nxtlist;
++		oldtail = receive_rdp->nxttail[RCU_DONE_TAIL];
++		rdp->nxtlist = *rdp->nxttail[RCU_DONE_TAIL];
++		*rdp->nxttail[RCU_DONE_TAIL] = *oldtail;
++		*receive_rdp->nxttail[RCU_DONE_TAIL] = oldhead;
++		newtail = rdp->nxttail[RCU_DONE_TAIL];
++		for (i = RCU_DONE_TAIL; i < RCU_NEXT_SIZE; i++) {
++			if (receive_rdp->nxttail[i] == oldtail)
++				receive_rdp->nxttail[i] = newtail;
++			if (rdp->nxttail[i] == newtail)
++				rdp->nxttail[i] = &rdp->nxtlist;
++		}
++	}
++
++	/*
++	 * Finally, put the rest of the callbacks at the end of the list.
++	 * The ones that made it partway through get to start over:  We
++	 * cannot assume that grace periods are synchronized across CPUs.
++	 * (We could splice RCU_WAIT_TAIL into RCU_NEXT_READY_TAIL, but
++	 * this does not seem compelling.  Not yet, anyway.)
++	 */
+ 	if (rdp->nxtlist != NULL) {
+ 		*receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
+ 		receive_rdp->nxttail[RCU_NEXT_TAIL] =
+ 				rdp->nxttail[RCU_NEXT_TAIL];
+-		receive_rdp->qlen_lazy += rdp->qlen_lazy;
+-		receive_rdp->qlen += rdp->qlen;
+ 		receive_rdp->n_cbs_adopted += rdp->qlen;
+ 		rdp->n_cbs_orphaned += rdp->qlen;
+ 
+ 		rdp->nxtlist = NULL;
+ 		for (i = 0; i < RCU_NEXT_SIZE; i++)
+ 			rdp->nxttail[i] = &rdp->nxtlist;
+-		rdp->qlen_lazy = 0;
+-		rdp->qlen = 0;
  	}
- 	return 0;
- }
+ 
+-	/* Record a quiescent state for the dying CPU. */
++	/*
++	 * Record a quiescent state for the dying CPU.  This is safe
++	 * only because we have already cleared out the callbacks.
++	 * (Otherwise, the RCU core might try to schedule the invocation
++	 * of callbacks on this now-offline CPU, which would be bad.)
++	 */
+ 	mask = rdp->grpmask;	/* rnp->grplo is constant. */
+ 	trace_rcu_grace_period(rsp->name,
+ 			       rnp->gpnum + 1 - !!(rnp->qsmask & mask),
 -- 
 1.7.8
 
