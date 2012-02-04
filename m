@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab2BDEfp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 23:35:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53753 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754139Ab2BDEfo (ORCPT
+	id S1754523Ab2BDEpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 23:45:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43738 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab2BDEpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 23:35:44 -0500
-Date: Fri, 3 Feb 2012 20:36:05 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: xi.wang@gmail.com, linux-nilfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, haogangchen@gmail.com
-Subject: Re: [PATCH] nilfs2: avoid overflowing segment numbers in
- nilfs_ioctl_clean_segments()
-Message-Id: <20120203203605.da735392.akpm@linux-foundation.org>
-In-Reply-To: <20120204.121302.227986518.ryusuke@osrg.net>
-References: <1328282767-13158-1-git-send-email-xi.wang@gmail.com>
-	<20120204.121302.227986518.ryusuke@osrg.net>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Feb 2012 23:45:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <1328311239.21255.24.camel@joe2Laptop>
+References: <20120130140905.441199885@openvz.org>
+	<20120130141852.309402052@openvz.org>
+	<20120203074656.GC30543@elte.hu>
+	<20120203083530.GD1968@moon>
+	<20120203090929.GA23996@elte.hu>
+	<20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+	<20120203095227.GA13162@elte.hu>
+	<20120203100743.GA3334@elte.hu>
+	<CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
+	<1328311239.21255.24.camel@joe2Laptop>
+Date: Fri, 3 Feb 2012 20:45:31 -0800
+X-Google-Sender-Auth: yuT806xhCeirMCXeSkrdJuCW70A
+Message-ID: <CA+8MBbLeWJ1ifBcJfj1MEO15tAuMBYHvu9kk7NNuUivOsNCWxw@mail.gmail.com>
+Subject: Re: [PATCH] checkpatch: Warn on code with 6+ tab indentation
+From: Tony Luck <tony.luck@intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 04 Feb 2012 12:13:02 +0900 (JST) Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp> wrote:
+On Fri, Feb 3, 2012 at 3:20 PM, Joe Perches <joe@perches.com> wrote:
+> Another might be to limit variable name length to something
+> shorter than say 10 characters.
 
-> On Fri,  3 Feb 2012 10:26:07 -0500, Xi Wang wrote:
-> > nsegs is read from userspace.  Limit its value and avoid overflowing
-> > nsegs * sizeof(__u64) in the subsequent call to memdup_user().
-> > 
-> > This patch complements 481fe17e973fb97aa3edf17c69557afe88d8334f.
-> > 
-> > Signed-off-by: Xi Wang <xi.wang@gmail.com>
-> > Cc: Haogang Chen <haogangchen@gmail.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > ---
-> >  fs/nilfs2/ioctl.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-> 
-> 
-> Thank you for posting this fix.
-> 
-> Andrew, could you send this uptream in this cycle ?
+10? We have a few cases of variables over 100 (not sure how you are supposed
+to use them with an 80 character max line length). Current longest is:
 
-I sure can.
+eOpenLogicalChannelAck_reverseLogicalChannelParameters_multiplexParameters_h2250LogicalChannelParameters
+
+at 104 characters.
+
+-Tony
