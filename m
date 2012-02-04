@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757826Ab2BDBwh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:52:37 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:34224 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756253Ab2BDBp5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 20:45:57 -0500
+	id S1758205Ab2BDBwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:52:54 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:41826 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754399Ab2BDBpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 20:45:54 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,118 +16,363 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 16/47] rcu: Don't make callbacks go through second full grace period
-Date: Fri,  3 Feb 2012 17:44:51 -0800
-Message-Id: <1328319922-30828-16-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 29/47] rcu: Print scheduling-clock information on RCU CPU stall-warning messages
+Date: Fri,  3 Feb 2012 17:45:04 -0800
+Message-Id: <1328319922-30828-29-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120204014452.GA29811@linux.vnet.ibm.com>
  <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020401-1780-0000-0000-000002DC2FF8
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000245; HX=3.00000181; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00110708; UDB=6.00027489; UTC=2012-02-04
- 01:45:56
+x-cbid: 12020401-9360-0000-0000-000003198C83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-RCU's current CPU-offline code path dumps all of the outgoing CPU's
-callbacks onto the RCU_NEXT_TAIL portion of the surviving CPU's
-callback list.  This means that all the ready-to-invoke callbacks from
-the outgoing CPU must wait for another full RCU grace period.  This was
-just fine when CPU-hotplug events were rare, but there is increasing
-evidence that users are planning to make increasing use of CPU hotplug.
-
-Therefore, this commit changes the callback-dumping procedure so that
-callbacks that are ready to invoke are moved to the RCU_DONE_TAIL
-portion of the surviving CPU's callback list.  This avoids running
-these callbacks through a second unnecessary grace period.
+There have been situations where RCU CPU stall warnings were caused by
+issues in scheduling-clock timer initialization.  To make it easier to
+track these down, this commit causes the RCU CPU stall-warning messages
+to print out the number of scheduling-clock interrupts taken in the
+current grace period for each stalled CPU.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 46 insertions(+), 6 deletions(-)
+ kernel/rcutree.c        |   33 +++++++----
+ kernel/rcutree.h        |   11 ++++
+ kernel/rcutree_plugin.h |  150 ++++++++++++++++++++++++++++++++++++++++++++++-
+ lib/Kconfig.debug       |   14 +++++
+ 4 files changed, 194 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index ac3a810..7789e66 100644
+index cfdab98..dccd2f7 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -1270,24 +1270,64 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
- 	struct rcu_data *receive_rdp = per_cpu_ptr(rsp->rda, receive_cpu);
- 	struct rcu_node *rnp = rdp->mynode; /* For dying CPU. */
- 
--	/* Move callbacks to some other CPU. */
-+	/* First, adjust the counts. */
-+	if (rdp->nxtlist != NULL) {
-+		receive_rdp->qlen_lazy += rdp->qlen_lazy;
-+		receive_rdp->qlen += rdp->qlen;
-+		rdp->qlen_lazy = 0;
-+		rdp->qlen = 0;
-+	}
-+
-+	/*
-+	 * Next, move ready-to-invoke callbacks to be invoked on some
-+	 * other CPU.  These will not be required to pass through another
-+	 * grace period:  They are done, regardless of CPU.
-+	 */
-+	if (rdp->nxtlist != NULL &&
-+	    rdp->nxttail[RCU_DONE_TAIL] != &rdp->nxtlist) {
-+		struct rcu_head *oldhead;
-+		struct rcu_head **oldtail;
-+		struct rcu_head **newtail;
-+
-+		oldhead = rdp->nxtlist;
-+		oldtail = receive_rdp->nxttail[RCU_DONE_TAIL];
-+		rdp->nxtlist = *rdp->nxttail[RCU_DONE_TAIL];
-+		*rdp->nxttail[RCU_DONE_TAIL] = *oldtail;
-+		*receive_rdp->nxttail[RCU_DONE_TAIL] = oldhead;
-+		newtail = rdp->nxttail[RCU_DONE_TAIL];
-+		for (i = RCU_DONE_TAIL; i < RCU_NEXT_SIZE; i++) {
-+			if (receive_rdp->nxttail[i] == oldtail)
-+				receive_rdp->nxttail[i] = newtail;
-+			if (rdp->nxttail[i] == newtail)
-+				rdp->nxttail[i] = &rdp->nxtlist;
-+		}
-+	}
-+
-+	/*
-+	 * Finally, put the rest of the callbacks at the end of the list.
-+	 * The ones that made it partway through get to start over:  We
-+	 * cannot assume that grace periods are synchronized across CPUs.
-+	 * (We could splice RCU_WAIT_TAIL into RCU_NEXT_READY_TAIL, but
-+	 * this does not seem compelling.  Not yet, anyway.)
-+	 */
- 	if (rdp->nxtlist != NULL) {
- 		*receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
- 		receive_rdp->nxttail[RCU_NEXT_TAIL] =
- 				rdp->nxttail[RCU_NEXT_TAIL];
--		receive_rdp->qlen_lazy += rdp->qlen_lazy;
--		receive_rdp->qlen += rdp->qlen;
- 		receive_rdp->n_cbs_adopted += rdp->qlen;
- 		rdp->n_cbs_orphaned += rdp->qlen;
- 
- 		rdp->nxtlist = NULL;
- 		for (i = 0; i < RCU_NEXT_SIZE; i++)
- 			rdp->nxttail[i] = &rdp->nxtlist;
--		rdp->qlen_lazy = 0;
--		rdp->qlen = 0;
+@@ -689,12 +689,6 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 		return;
  	}
+ 	rsp->jiffies_stall = jiffies + 3 * jiffies_till_stall_check() + 3;
+-
+-	/*
+-	 * Now rat on any tasks that got kicked up to the root rcu_node
+-	 * due to CPU offlining.
+-	 */
+-	ndetected = rcu_print_task_stall(rnp);
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
  
--	/* Record a quiescent state for the dying CPU. */
+ 	/*
+@@ -702,8 +696,9 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 	 * See Documentation/RCU/stallwarn.txt for info on how to debug
+ 	 * RCU CPU stall warnings.
+ 	 */
+-	printk(KERN_ERR "INFO: %s detected stalls on CPUs/tasks: {",
++	printk(KERN_ERR "INFO: %s detected stalls on CPUs/tasks:",
+ 	       rsp->name);
++	print_cpu_stall_info_begin();
+ 	rcu_for_each_leaf_node(rsp, rnp) {
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		ndetected += rcu_print_task_stall(rnp);
+@@ -712,11 +707,22 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 			continue;
+ 		for (cpu = 0; cpu <= rnp->grphi - rnp->grplo; cpu++)
+ 			if (rnp->qsmask & (1UL << cpu)) {
+-				printk(" %d", rnp->grplo + cpu);
++				print_cpu_stall_info(rsp, rnp->grplo + cpu);
+ 				ndetected++;
+ 			}
+ 	}
+-	printk("} (detected by %d, t=%ld jiffies)\n",
++
 +	/*
-+	 * Record a quiescent state for the dying CPU.  This is safe
-+	 * only because we have already cleared out the callbacks.
-+	 * (Otherwise, the RCU core might try to schedule the invocation
-+	 * of callbacks on this now-offline CPU, which would be bad.)
++	 * Now rat on any tasks that got kicked up to the root rcu_node
++	 * due to CPU offlining.
 +	 */
- 	mask = rdp->grpmask;	/* rnp->grplo is constant. */
- 	trace_rcu_grace_period(rsp->name,
- 			       rnp->gpnum + 1 - !!(rnp->qsmask & mask),
++	rnp = rcu_get_root(rsp);
++	raw_spin_lock_irqsave(&rnp->lock, flags);
++	ndetected = rcu_print_task_stall(rnp);
++	raw_spin_unlock_irqrestore(&rnp->lock, flags);
++
++	print_cpu_stall_info_end();
++	printk(KERN_CONT "(detected by %d, t=%ld jiffies)\n",
+ 	       smp_processor_id(), (long)(jiffies - rsp->gp_start));
+ 	if (ndetected == 0)
+ 		printk(KERN_ERR "INFO: Stall ended before state dump start\n");
+@@ -740,8 +746,11 @@ static void print_cpu_stall(struct rcu_state *rsp)
+ 	 * See Documentation/RCU/stallwarn.txt for info on how to debug
+ 	 * RCU CPU stall warnings.
+ 	 */
+-	printk(KERN_ERR "INFO: %s detected stall on CPU %d (t=%lu jiffies)\n",
+-	       rsp->name, smp_processor_id(), jiffies - rsp->gp_start);
++	printk(KERN_ERR "INFO: %s self-detected stall on CPU", rsp->name);
++	print_cpu_stall_info_begin();
++	print_cpu_stall_info(rsp, smp_processor_id());
++	print_cpu_stall_info_end();
++	printk(KERN_CONT " (t=%lu jiffies)\n", jiffies - rsp->gp_start);
+ 	if (!trigger_all_cpu_backtrace())
+ 		dump_stack();
+ 
+@@ -831,6 +840,7 @@ static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct
+ 			rdp->passed_quiesce = 0;
+ 		} else
+ 			rdp->qs_pending = 0;
++		zero_cpu_stall_ticks(rdp);
+ 	}
+ }
+ 
+@@ -1496,6 +1506,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ void rcu_check_callbacks(int cpu, int user)
+ {
+ 	trace_rcu_utilization("Start scheduler-tick");
++	increment_cpu_stall_ticks();
+ 	if (user || rcu_is_cpu_rrupt_from_idle()) {
+ 
+ 		/*
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 0328a53..e2ac8ee 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -239,6 +239,12 @@ struct rcu_data {
+ 	bool		preemptible;	/* Preemptible RCU? */
+ 	struct rcu_node *mynode;	/* This CPU's leaf of hierarchy */
+ 	unsigned long grpmask;		/* Mask to apply to leaf qsmask. */
++#ifdef CONFIG_RCU_CPU_STALL_INFO
++	unsigned long	ticks_this_gp;	/* The number of scheduling-clock */
++					/*  ticks this CPU has handled */
++					/*  during and after the last grace */
++					/* period it is aware of. */
++#endif /* #ifdef CONFIG_RCU_CPU_STALL_INFO */
+ 
+ 	/* 2) batch handling */
+ 	/*
+@@ -466,5 +472,10 @@ static void __cpuinit rcu_prepare_kthreads(int cpu);
+ static void rcu_prepare_for_idle_init(int cpu);
+ static void rcu_cleanup_after_idle(int cpu);
+ static void rcu_prepare_for_idle(int cpu);
++static void print_cpu_stall_info_begin(void);
++static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
++static void print_cpu_stall_info_end(void);
++static void zero_cpu_stall_ticks(struct rcu_data *rdp);
++static void increment_cpu_stall_ticks(void);
+ 
+ #endif /* #ifndef RCU_TREE_NONCORE */
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 1b305ba..7044750 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -63,7 +63,10 @@ static void __init rcu_bootup_announce_oddness(void)
+ 	printk(KERN_INFO "\tRCU torture testing starts during boot.\n");
+ #endif
+ #if defined(CONFIG_TREE_PREEMPT_RCU) && !defined(CONFIG_RCU_CPU_STALL_VERBOSE)
+-	printk(KERN_INFO "\tVerbose stalled-CPUs detection is disabled.\n");
++	printk(KERN_INFO "\tDump stacks of tasks blocking RCU-preempt GP.\n");
++#endif
++#if defined(CONFIG_RCU_CPU_STALL_INFO)
++	printk(KERN_INFO "\tAdditional per-CPU info printed with stalls.\n");
+ #endif
+ #if NUM_RCU_LVL_4 != 0
+ 	printk(KERN_INFO "\tExperimental four-level hierarchy is enabled.\n");
+@@ -490,6 +493,31 @@ static void rcu_print_detail_task_stall(struct rcu_state *rsp)
+ 
+ #endif /* #else #ifdef CONFIG_RCU_CPU_STALL_VERBOSE */
+ 
++#ifdef CONFIG_RCU_CPU_STALL_INFO
++
++static void rcu_print_task_stall_begin(struct rcu_node *rnp)
++{
++	printk(KERN_ERR "\tTasks blocked on level-%d rcu_node (CPUs %d-%d):",
++	       rnp->level, rnp->grplo, rnp->grphi);
++}
++
++static void rcu_print_task_stall_end(void)
++{
++	printk(KERN_CONT "\n");
++}
++
++#else /* #ifdef CONFIG_RCU_CPU_STALL_INFO */
++
++static void rcu_print_task_stall_begin(struct rcu_node *rnp)
++{
++}
++
++static void rcu_print_task_stall_end(void)
++{
++}
++
++#endif /* #else #ifdef CONFIG_RCU_CPU_STALL_INFO */
++
+ /*
+  * Scan the current list of tasks blocked within RCU read-side critical
+  * sections, printing out the tid of each.
+@@ -501,12 +529,14 @@ static int rcu_print_task_stall(struct rcu_node *rnp)
+ 
+ 	if (!rcu_preempt_blocked_readers_cgp(rnp))
+ 		return 0;
++	rcu_print_task_stall_begin(rnp);
+ 	t = list_entry(rnp->gp_tasks,
+ 		       struct task_struct, rcu_node_entry);
+ 	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry) {
+-		printk(" P%d", t->pid);
++		printk(KERN_CONT " P%d", t->pid);
+ 		ndetected++;
+ 	}
++	rcu_print_task_stall_end();
+ 	return ndetected;
+ }
+ 
+@@ -2004,7 +2034,7 @@ static void rcu_cleanup_after_idle(int cpu)
+ }
+ 
+ /*
+- * Do the idle-entry grace-period work, which, because CONFIG_RCU_FAST_NO_HZ=y,
++ * Do the idle-entry grace-period work, which, because CONFIG_RCU_FAST_NO_HZ=n,
+  * is nothing.
+  */
+ static void rcu_prepare_for_idle(int cpu)
+@@ -2273,3 +2303,117 @@ static void rcu_prepare_for_idle(int cpu)
+ }
+ 
+ #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
++
++#ifdef CONFIG_RCU_CPU_STALL_INFO
++
++#ifdef CONFIG_RCU_FAST_NO_HZ
++
++static void print_cpu_stall_fast_no_hz(char *cp, int cpu)
++{
++	struct hrtimer *hrtp = &per_cpu(rcu_idle_gp_timer, cpu);
++
++	sprintf(cp, "drain=%d %c timer=%lld",
++		per_cpu(rcu_dyntick_drain, cpu),
++		per_cpu(rcu_dyntick_holdoff, cpu) == jiffies ? 'H' : '.',
++		hrtimer_active(hrtp)
++			? ktime_to_us(hrtimer_get_remaining(hrtp))
++			: -1);
++}
++
++#else /* #ifdef CONFIG_RCU_FAST_NO_HZ */
++
++static void print_cpu_stall_fast_no_hz(char *cp, int cpu)
++{
++}
++
++#endif /* #else #ifdef CONFIG_RCU_FAST_NO_HZ */
++
++/* Initiate the stall-info list. */
++static void print_cpu_stall_info_begin(void)
++{
++	printk(KERN_CONT "\n");
++}
++
++/*
++ * Print out diagnostic information for the specified stalled CPU.
++ *
++ * If the specified CPU is aware of the current RCU grace period
++ * (flavor specified by rsp), then print the number of scheduling
++ * clock interrupts the CPU has taken during the time that it has
++ * been aware.  Otherwise, print the number of RCU grace periods
++ * that this CPU is ignorant of, for example, "1" if the CPU was
++ * aware of the previous grace period.
++ *
++ * Also print out idle and (if CONFIG_RCU_FAST_NO_HZ) idle-entry info.
++ */
++static void print_cpu_stall_info(struct rcu_state *rsp, int cpu)
++{
++	char fast_no_hz[72];
++	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
++	struct rcu_dynticks *rdtp = rdp->dynticks;
++	char *ticks_title;
++	unsigned long ticks_value;
++
++	if (rsp->gpnum == rdp->gpnum) {
++		ticks_title = "ticks this GP";
++		ticks_value = rdp->ticks_this_gp;
++	} else {
++		ticks_title = "GPs behind";
++		ticks_value = rsp->gpnum - rdp->gpnum;
++	}
++	print_cpu_stall_fast_no_hz(fast_no_hz, cpu);
++	printk(KERN_ERR "\t%d: (%lu %s) idle=%03x/%llx/%d %s\n",
++	       cpu, ticks_value, ticks_title,
++	       atomic_read(&rdtp->dynticks) & 0xfff,
++	       rdtp->dynticks_nesting, rdtp->dynticks_nmi_nesting,
++	       fast_no_hz);
++}
++
++/* Terminate the stall-info list. */
++static void print_cpu_stall_info_end(void)
++{
++	printk(KERN_ERR "\t");
++}
++
++/* Zero ->ticks_this_gp for all flavors of RCU. */
++static void zero_cpu_stall_ticks(struct rcu_data *rdp)
++{
++	rdp->ticks_this_gp = 0;
++}
++
++/* Increment ->ticks_this_gp for all flavors of RCU. */
++static void increment_cpu_stall_ticks(void)
++{
++	__get_cpu_var(rcu_sched_data).ticks_this_gp++;
++	__get_cpu_var(rcu_bh_data).ticks_this_gp++;
++#ifdef CONFIG_TREE_PREEMPT_RCU
++	__get_cpu_var(rcu_preempt_data).ticks_this_gp++;
++#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
++}
++
++#else /* #ifdef CONFIG_RCU_CPU_STALL_INFO */
++
++static void print_cpu_stall_info_begin(void)
++{
++	printk(KERN_CONT " {");
++}
++
++static void print_cpu_stall_info(struct rcu_state *rsp, int cpu)
++{
++	printk(KERN_CONT " %d", cpu);
++}
++
++static void print_cpu_stall_info_end(void)
++{
++	printk(KERN_CONT "} ");
++}
++
++static void zero_cpu_stall_ticks(struct rcu_data *rdp)
++{
++}
++
++static void increment_cpu_stall_ticks(void)
++{
++}
++
++#endif /* #else #ifdef CONFIG_RCU_CPU_STALL_INFO */
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 3cc419d..d27a2aa 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -927,6 +927,20 @@ config RCU_CPU_STALL_VERBOSE
+ 
+ 	  Say Y if you want to enable such checks.
+ 
++config RCU_CPU_STALL_INFO
++	bool "Print additional diagnostics on RCU CPU stall"
++	depends on (TREE_RCU || TREE_PREEMPT_RCU) && DEBUG_KERNEL
++	default n
++	help
++	  For each stalled CPU that is aware of the current RCU grace
++	  period, print out additional per-CPU diagnostic information
++	  regarding scheduling-clock ticks, idle state, and,
++	  for RCU_FAST_NO_HZ kernels, idle-entry state.
++
++	  Say N if you are unsure.
++
++	  Say Y if you want to enable such diagnostics.
++
+ config RCU_TRACE
+ 	bool "Enable tracing for RCU"
+ 	depends on DEBUG_KERNEL
 -- 
 1.7.8
 
