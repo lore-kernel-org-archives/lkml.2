@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab2BDDDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 22:03:23 -0500
-Received: from sandeen.net ([63.231.237.45]:39081 "EHLO mail.sandeen.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab2BDDDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 22:03:21 -0500
-Message-ID: <4F2C9FF8.2010207@sandeen.net>
-Date: Fri, 03 Feb 2012 21:03:20 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	id S1753864Ab2BDDKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 22:10:03 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54177 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab2BDDKA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 22:10:00 -0500
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-fsdevel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/8] fs: Improve filesystem freezing handling
-References: <1327091686-23177-1-git-send-email-jack@suse.cz> <1327091686-23177-2-git-send-email-jack@suse.cz>
-In-Reply-To: <1327091686-23177-2-git-send-email-jack@suse.cz>
-X-Enigmail-Version: 1.3.5
+In-Reply-To: <1328319226.21255.28.camel@joe2Laptop>
+References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org>
+ <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon>
+ <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+ <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
+ <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
+ <1328311239.21255.24.camel@joe2Laptop> <CA+55aFxHih0+P=aNromTy+f_Rt+++QWgaEdvqLsXg_q_hu_q2A@mail.gmail.com>
+ <1328319226.21255.28.camel@joe2Laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 3 Feb 2012 19:09:37 -0800
+X-Google-Sender-Auth: RdPrmbdN2Zhj-epc8wqRq8LrQm0
+Message-ID: <CA+55aFxqWFRNgR_C9sRCOQ6Vh9PF8anomZsfGD9HP49JgAb57A@mail.gmail.com>
+Subject: Re: [PATCH] checkpatch: Warn on code with 6+ tab indentation
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@shadowen.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/20/12 2:34 PM, Jan Kara wrote:
-> vfs_check_frozen() tests are racy since the filesystem can be frozen just after
-> the test is performed. Thus in write paths we can end up marking some pages or
-> inodes dirty even though filesystem is already frozen. This creates problems
-> with flusher thread hanging on frozen filesystem.
-> 
-> Another problem is that exclusion between ->page_mkwrite() and filesystem
-> freezing has been handled by setting page dirty and then verifying s_frozen.
-> This guaranteed that either the freezing code sees the faulted page, writes it,
-> and writeprotects it again or we see s_frozen set and bail out of page fault.
-> This works to protect from page being marked writeable while filesystem
-> freezing is running but has an unpleasant artefact of leaving dirty (although
-> unmodified and writeprotected) pages on frozen filesystem resulting in similar
-> problems with flusher thread as the first problem.
-> 
-> This patch aims at providing exclusion between write paths and filesystem
-> freezing. We implement a writer-freeze read-write semaphores in the superblock
-> for each freezing level (currently there are two - SB_FREEZE_WRITE for data and
-> SB_FREEZE_TRANS for metadata). Write paths which should block freezing on given
-> level (e.g. ->block_page_mkwrite(), ->aio_write() for SB_FREEZE_WRITE level;
-> transaction lifetime for SB_FREEZE_TRANS level) hold reader side of the
-> semaphore. Code freezing the filesystem to a given level takes the writer side.
-> 
-> Only that we don't really want to bounce cachelines of the semaphore between
-> CPUs for each write happening. So we implement the reader side of the semaphore
-> as a per-cpu counter and the writer side is implemented using s_frozen
-> superblock field.
-> 
-> Acked-by: "Theodore Ts'o" <tytso@mit.edu>
-> Signed-off-by: Jan Kara <jack@suse.cz>
+On Fri, Feb 3, 2012 at 5:33 PM, Joe Perches <joe@perches.com> wrote:
+>
+> You liked the same premise, but a worse
+> implementation, a couple years ago.
+> https://lkml.org/lkml/2009/12/18/289
 
-...
+I have grown to dislike debatable parts of checkpatch over the years,
+which probably colors my reaction to things like this.
 
-> @@ -135,6 +157,11 @@ static struct super_block *alloc_super(struct file_system_type *type)
->  #else
->  		INIT_LIST_HEAD(&s->s_files);
->  #endif
-> +		if (init_sb_writers(s, SB_FREEZE_WRITE, "sb_writers_write"))
-> +			goto err_out;
-> +		if (init_sb_writers(s, SB_FREEZE_TRANS, "sb_writers_trans"))
-> +			goto err_out;
-> +
->  		s->s_bdi = &default_backing_dev_info;
->  		INIT_LIST_HEAD(&s->s_instances);
->  		INIT_HLIST_BL_HEAD(&s->s_anon);
-> @@ -186,6 +213,17 @@ static struct super_block *alloc_super(struct file_system_type *type)
->  	}
->  out:
->  	return s;
-> +err_out:
-> +	security_sb_free(s);
-> +#ifdef CONFIG_SMP
-> +	if (s->s_files)
-> +		free_percpu(s->s_files);
-> +#endif
-> +	destroy_sb_writers(s, SB_FREEZE_WRITE);
-> +	destroy_sb_writers(s, SB_FREEZE_TRANS);
+I'd prefer for checkpatch to check things that are fairly black-and-white.
 
-You probably ran into this already but the writer percpu vars need
-to be torn down in destroy_super() as well.
+>> Why? Because mindless checks like this would just lead to people
+>> making things worse and intermixing spaces there instead.
+>
+> Can't happen.
+> They'll get a different warning about mixing tabs
+> and spaces or starting a line with spaces only.
 
--Eric
+Ok,. fair enough. That makes it more likely to work.
 
+That said, I did a grep for six tabs, and we do seem to have quite a
+bit of code like that. 67 _thousand_ lines just in C files, if I did
+my grep right.
 
+And many of them seem reasonable. Quite a lot of them seem to be to
+just line things up with the previous line. Although some really are
+due to excessively deep indentation. But it doesn't seem exactly
+black-and-white to me.
+
+                       Linus
