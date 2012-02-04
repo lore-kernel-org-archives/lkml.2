@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab2BDNgf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 08:36:35 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:54573 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559Ab2BDNgd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 08:36:33 -0500
-Message-ID: <4F2D3455.4020505@linux.vnet.ibm.com>
-Date: Sat, 04 Feb 2012 19:06:21 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1754399Ab2BDNv2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 08:51:28 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57897 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159Ab2BDNv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Feb 2012 08:51:27 -0500
+Date: Sat, 4 Feb 2012 14:51:10 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephane Eranian <eranian@google.com>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: WARNING: at arch/x86/kernel/cpu/perf_event.c:989
+Message-ID: <20120204135110.GA6437@elte.hu>
+References: <20120202211709.GA1642@x4>
+ <20120202213220.GB1642@x4>
+ <CABPqkBTutb5TuNVXZ4o+MzXczVSwk3NtsJh73KZS58xmrd=tbg@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM/Hibernate: Refactor and simplify freezer_test_done
-References: <20120202014014.11863.86758.stgit@srivatsabhat.in.ibm.com> <20120202171727.GE19837@google.com>
-In-Reply-To: <20120202171727.GE19837@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12020413-2000-0000-0000-0000064CE405
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTutb5TuNVXZ4o+MzXczVSwk3NtsJh73KZS58xmrd=tbg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 10:47 PM, Tejun Heo wrote:
 
-> On Thu, Feb 02, 2012 at 07:10:19AM +0530, Srivatsa S. Bhat wrote:
->> @@ -251,10 +251,10 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
->>  		error = hibernation_snapshot(data->platform_support);
->>  		if (!error) {
->>  			error = put_user(in_suspend, (int __user *)arg);
->> -			if (!error && !freezer_test_done)
->> -				data->ready = 1;
->>  			if (freezer_test_done)
->>  				freezer_test_done = false;
->> +			else if (!error)
->> +				data->ready = 1;
-> 
-> Hmmm... how about..
-> 
-> 	data->ready = !freezer_test_done && !error;
-> 	freezer_test_done = false;
-> 
+there's yet another one triggering at:
 
+[89214.962603] ------------[ cut here ]------------
+[89214.967441] WARNING: at arch/x86/kernel/cpu/perf_event.c:995 x86_pmu_start+0x79/0xd4()
+[89214.975825] Hardware name: X8DTN
+[89214.979268] Modules linked in:
+[89214.982560] Pid: 0, comm: swapper/6 Not tainted 3.3.0-rc2-tip+ #1
+[89214.988865] Call Trace:
+[89214.991533]  <IRQ>  [<ffffffff81065cc7>] warn_slowpath_common+0x7e/0x97
+[89214.998379]  [<ffffffff81065cf5>] warn_slowpath_null+0x15/0x17
+[89215.004428]  [<ffffffff8103f626>] x86_pmu_start+0x79/0xd4
+[89215.010042]  [<ffffffff810e30d1>] perf_adjust_freq_unthr_context.part.63+0xef/0x123
+[89215.018123]  [<ffffffff810e318c>] perf_event_task_tick+0x87/0x1c1
+[89215.024463]  [<ffffffff810a2370>] ? tick_nohz_handler+0xda/0xda
+[89215.030595]  [<ffffffff8108b819>] scheduler_tick+0xd1/0xf3
+[89215.036296]  [<ffffffff810720b0>] update_process_times+0x5e/0x6f
+[89215.042512]  [<ffffffff810a23e0>] tick_sched_timer+0x70/0x99
+[89215.048387]  [<ffffffff810823f9>] __run_hrtimer+0x8c/0x148
+[89215.054087]  [<ffffffff81082add>] hrtimer_interrupt+0xc1/0x18c
 
-That looks even better, thanks!
+Thanks,
 
-Here is the updated patch:
-
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM/Hibernate: Refactor and simplify freezer_test_done
-
-The code related to 'freezer_test_done' is needlessly convoluted.
-Refactor the code and simplify the implementation.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- kernel/power/hibernate.c |   10 +++++-----
- kernel/power/user.c      |    6 ++----
- 2 files changed, 7 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index c6dee73..72baaf0 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -629,12 +629,8 @@ int hibernate(void)
- 		goto Finish;
- 
- 	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
--	if (error)
--		goto Thaw;
--	if (freezer_test_done) {
--		freezer_test_done = false;
-+	if (error || freezer_test_done)
- 		goto Thaw;
--	}
- 
- 	if (in_suspend) {
- 		unsigned int flags = 0;
-@@ -659,6 +655,10 @@ int hibernate(void)
- 
-  Thaw:
- 	thaw_processes();
-+
-+	/* Don't bother checking whether freezer_test_done is true */
-+	freezer_test_done = false;
-+
-  Finish:
- 	free_basic_memory_bitmaps();
- 	usermodehelper_enable();
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 7bee91f..33c4329 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -251,10 +251,8 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 		error = hibernation_snapshot(data->platform_support);
- 		if (!error) {
- 			error = put_user(in_suspend, (int __user *)arg);
--			if (!error && !freezer_test_done)
--				data->ready = 1;
--			if (freezer_test_done)
--				freezer_test_done = false;
-+			data->ready = !freezer_test_done && !error;
-+			freezer_test_done = false;
- 		}
- 		break;
- 
-
-
+	Ingo
