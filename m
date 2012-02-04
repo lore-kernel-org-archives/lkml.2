@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab2BDJJN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 04:09:13 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62197 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab2BDJJD (ORCPT
+	id S1753117Ab2BDJ4s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 04:56:48 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:41686 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751024Ab2BDJ4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 04:09:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <op.v830ygma3l0zgt@mpn-glaptop>
-References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
-	<1328271538-14502-9-git-send-email-m.szyprowski@samsung.com>
-	<CAJd=RBByc_wLEJTK66J4eY03CWnCoCRiwAeEYjXCZ5xEZhp3ag@mail.gmail.com>
-	<op.v830ygma3l0zgt@mpn-glaptop>
-Date: Sat, 4 Feb 2012 17:09:02 +0800
-Message-ID: <CAJd=RBD765rmiCDiCz87Vf8vf8Wp-AiW=gZ3Nw5LjTPw70ZO7g@mail.gmail.com>
-Subject: Re: [PATCH 08/15] mm: mmzone: MIGRATE_CMA migration type added
-From: Hillf Danton <dhillf@gmail.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 4 Feb 2012 04:56:46 -0500
+From: Gerard Snitselaar <dev@snitselaar.org>
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Kbuild: Makefile: clean up samples directory
+Date: Sat,  4 Feb 2012 02:55:59 -0700
+Message-Id: <1328349359-29524-1-git-send-email-dev@snitselaar.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/3 Michal Nazarewicz <mina86@mina86.com>:
->>> +static inline bool migrate_async_suitable(int migratetype)
->
-> On Fri, 03 Feb 2012 15:19:54 +0100, Hillf Danton <dhillf@gmail.com> wrote:
->>
->> Just nitpick, since the helper is not directly related to what async
->> means,
->> how about migrate_suitable(int migrate_type) ?
->
->
-> I feel current name is better suited since it says that it's OK to scan this
-> block if it's an asynchronous compaction run.
->
+Playing around with make randconfig I ended up with CONFIG_SAMPLES
+set. After cleaning up the build I noticed that git status was
+showing samples/hidraw/hid-example as an untracked file.
 
-The input is the migrate type of page considered, and the async is only one
-of the modes that compaction should be carried out. Plus the helper is
-also used in other cases where async is entirely not concerned.
+Adding samples to clean-dirs seems to solve the problem, but
+I don't know if that is the correct way to solve the issue.
 
-That said, the naming is not clear, if not misleading.
+Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
+---
+ Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index e3b23e8..0a83480 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1170,7 +1170,7 @@ MRPROPER_FILES += .config .config.old .version .old_version             \
+ #
+ clean: rm-dirs  := $(CLEAN_DIRS)
+ clean: rm-files := $(CLEAN_FILES)
+-clean-dirs      := $(addprefix _clean_, . $(vmlinux-alldirs) Documentation)
++clean-dirs      := $(addprefix _clean_, . $(vmlinux-alldirs) Documentation samples)
+ 
+ PHONY += $(clean-dirs) clean archclean
+ $(clean-dirs):
+-- 
+1.7.7.6
+
