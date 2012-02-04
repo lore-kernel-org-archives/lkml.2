@@ -1,115 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab2BDNNk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 08:13:40 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62366 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab2BDNNj (ORCPT
+	id S1754299Ab2BDNWB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 08:22:01 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:37706 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab2BDNWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 08:13:39 -0500
-Date: Sat, 4 Feb 2012 14:13:35 +0100
+	Sat, 4 Feb 2012 08:22:00 -0500
+Date: Sat, 4 Feb 2012 14:21:56 +0100
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: rcu warnings cause stack overflow
-Message-ID: <20120204131333.GB13382@somewhere>
-References: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
- <20120201151445.GA6731@somewhere.redhat.com>
- <20120202122742.GA2745@osiris.boeblingen.de.ibm.com>
- <20120202145219.GD9071@somewhere.redhat.com>
- <20120202191116.GF2518@linux.vnet.ibm.com>
- <20120203093214.GA2471@osiris.boeblingen.de.ibm.com>
- <20120203183334.GG2382@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCH 5/7] ftrace, perf: Add support to use function tracepoint
+ in perf
+Message-ID: <20120204132153.GC13382@somewhere>
+References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+ <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+ <1327776209-4883-6-git-send-email-jolsa@redhat.com>
+ <20120202181409.GH9071@somewhere.redhat.com>
+ <20120203125413.GB1531@m.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120203183334.GG2382@linux.vnet.ibm.com>
+In-Reply-To: <20120203125413.GB1531@m.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 10:33:35AM -0800, Paul E. McKenney wrote:
-> On Fri, Feb 03, 2012 at 10:32:14AM +0100, Heiko Carstens wrote:
-> > On Thu, Feb 02, 2012 at 11:11:16AM -0800, Paul E. McKenney wrote:
-> > > On Thu, Feb 02, 2012 at 03:52:20PM +0100, Frederic Weisbecker wrote:
-> > > > On Thu, Feb 02, 2012 at 01:27:42PM +0100, Heiko Carstens wrote:
-> > > > > On Wed, Feb 01, 2012 at 04:14:48PM +0100, Frederic Weisbecker wrote:
-> > > > > > > Removing the WARN_ON_ONCE will fix this and, if lockdep is turned on, still
-> > > > > > > will find illegal uses. But it won't work for lockdep off configs...
-> > > > > > > So we probably want something better than the patch below.
-> > > > > > 
-> > > > > > Ah ok. Hmm, but why are you using an exception to implement WARN_ON()
-> > > > > > in s390? Is it to have a whole new stack for the warning path in order
-> > > > > > to avoid stack overflow from the place that called the WARN_ON() ?
-> > > > > 
-> > > > > The reason was to reduce the code footprint of the WARN_ON() and also
-> > > > > be able to print the register contents at the time the warning happened.
-> > > > 
-> > > > Ah ok, makes sense.
+On Fri, Feb 03, 2012 at 01:54:13PM +0100, Jiri Olsa wrote:
+> On Thu, Feb 02, 2012 at 07:14:12PM +0100, Frederic Weisbecker wrote:
+> > On Sat, Jan 28, 2012 at 07:43:27PM +0100, Jiri Olsa wrote:
+> > > Adding perf registration support for the ftrace function event,
+> > > so it is now possible to register it via perf interface.
 > > > 
-> > > So Frederic should push his anti-recursion patch, then?
-> > 
-> > Yes, please.
-> > 
-> > Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> > 
-> > It still generates recursive warnings because the WARNON_ONCE is inlined and
-> > every different usage will generate an exception, but it didn't produce a
-> > stack overflow anymore.
-> > To avoid the recursive warning the patch below would help. Not sure if it's
-> > worth it...
-> > 
-> > Subject: [PATCH] rcu: move rcu_is_cpu_idle() check warning into C file
-> > 
-> > From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> > 
-> > rcu_read_lock() and rcu_read_unlock() generate a warning if a cpu is in
-> > extended quiescant state. Since these functions are inlined this can cause
-> > a lot of warnings if in the processing of the WARN_ON_ONCE() there is
-> > another usage of e.g. rcu_read_lock(). To make sure we only get one
-> > warning (and avoid possible stack overflows) uninline the check.
-> > 
-> > Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> > ---
-> >  include/linux/rcupdate.h |    9 +++++++--
-> >  kernel/rcupdate.c        |    6 ++++++
-> >  2 files changed, 13 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 81c04f4..9fe7be5 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -230,22 +230,27 @@ static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
-> > 
-> >  #ifdef CONFIG_PROVE_RCU
-> >  extern int rcu_is_cpu_idle(void);
-> > +extern void rcu_warn_if_is_cpu_idle(void);
-> >  #else /* !CONFIG_PROVE_RCU */
-> >  static inline int rcu_is_cpu_idle(void)
-> >  {
-> >  	return 0;
-> >  }
-> > +
-> > +static inline void rcu_warn_if_is_cpu_idle(void)
-> > +{
-> > +}
-> >  #endif /* else !CONFIG_PROVE_RCU */
-> > 
-> >  static inline void rcu_lock_acquire(struct lockdep_map *map)
-> >  {
-> > -	WARN_ON_ONCE(rcu_is_cpu_idle());
-> > +	rcu_warn_if_is_cpu_idle();
+> > > The perf_event struct statically contains ftrace_ops as a handle
+> > > for function tracer. The function tracer is registered/unregistered
+> > > in open/close actions.
+> > > 
+> > > To be efficient, we enable/disable ftrace_ops each time the traced
 > 
-> Thank you for the patch, but this WARN_ON_ONCE() has now been removed
-> in favor of lockdep-RCU checks elsewhere.  This has the advantage of
-> leveraging lockdep's splat-once and anti-recursion facilities.
+> SNIP
 > 
-> So I believe that current -rcu covers this.  (And yes, I do need to
-> push my most recent changes out.)
+> > > +
+> > > +	return -EINVAL;
+> > > +}
+> > 
+> > All the above from perf_ftrace_function_call() to here should perhaps
+> > go to trace_function.c.
+> 
+> hm, I'd call it rather trace_perf_function.c 
 
-This still uncovers cases where we call rcu_read_lock() without matching
-rcu_dereference(). Amongst this we have rcu_dereference_raw(), conditional
-rcu_dereference() and may be cases where we simply have no rcu_dereference*
-but we use rcu_read_lock() alone for some reason...
+Yeah looks fine.
+
+> 
+> > 
+> > > diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+> > > index bbeec31..867653c 100644
+> > > --- a/kernel/trace/trace_export.c
+> > > +++ b/kernel/trace/trace_export.c
+> > > @@ -131,6 +131,28 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+> > >  
+> > >  #include "trace_entries.h"
+> > >  
+> > > +static int ftrace_event_class_register(struct ftrace_event_call *call,
+> > > +				       enum trace_reg type, void *data)
+> > > +{
+> > > +	switch (type) {
+> > > +	case TRACE_REG_PERF_REGISTER:
+> > > +	case TRACE_REG_PERF_UNREGISTER:
+> > > +		return 0;
+> > > +	case TRACE_REG_PERF_OPEN:
+> > > +	case TRACE_REG_PERF_CLOSE:
+> > > +	case TRACE_REG_PERF_ADD:
+> > > +	case TRACE_REG_PERF_DEL:
+> > > +#ifdef CONFIG_PERF_EVENTS
+> > > +		return perf_ftrace_event_register(call, type, data);
+> > > +#endif
+> > > +	case TRACE_REG_REGISTER:
+> > > +	case TRACE_REG_UNREGISTER:
+> > > +		break;
+> > > +	}
+> > > +
+> > > +	return -EINVAL;
+> > > +}
+> > 
+> > Hmm, one day we'll need to demux here. What about adding an argument to
+> > FTRACE_ENTRY() to add the pointer to .reg ?
+> 
+> ok, would something like the attached change be ok?
+> 
+> thanks,
+> jirka
+> 
+> 
+> ---
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 55c6ea0..638476a 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -68,6 +68,10 @@ enum trace_type {
+>  #undef FTRACE_ENTRY_DUP
+>  #define FTRACE_ENTRY_DUP(name, name_struct, id, tstruct, printk)
+>  
+> +#undef FTRACE_ENTRY_REG
+> +#define FTRACE_ENTRY_REG(name, struct_name, id, tstruct, print, regfn) \
+> +	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print))
+> +
+>  #include "trace_entries.h"
+>  
+>  /*
+> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+> index bbeec31..f74de86 100644
+> --- a/kernel/trace/trace_export.c
+> +++ b/kernel/trace/trace_export.c
+> @@ -18,6 +18,14 @@
+>  #undef TRACE_SYSTEM
+>  #define TRACE_SYSTEM	ftrace
+>  
+> +/*
+> + * The FTRACE_ENTRY_REG macro allows ftrace entry to define register
+> + * function and thus become accesible via perf.
+> + */
+> +#undef FTRACE_ENTRY_REG
+> +#define FTRACE_ENTRY_REG(name, struct_name, id, tstruct, print, regfn) \
+> +	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print))
+> +
+>  /* not needed for this file */
+>  #undef __field_struct
+>  #define __field_struct(type, item)
+> @@ -152,13 +160,14 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+>  #undef F_printk
+>  #define F_printk(fmt, args...) #fmt ", "  __stringify(args)
+>  
+> -#undef FTRACE_ENTRY
+> -#define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
+> +#undef FTRACE_ENTRY_REG
+> +#define FTRACE_ENTRY_REG(call, struct_name, etype, tstruct, print, regfn)\
+>  									\
+>  struct ftrace_event_class event_class_ftrace_##call = {			\
+>  	.system			= __stringify(TRACE_SYSTEM),		\
+>  	.define_fields		= ftrace_define_fields_##call,		\
+>  	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
+> +	.reg			= regfn,				\
+>  };									\
+>  									\
+>  struct ftrace_event_call __used event_##call = {			\
+> @@ -170,4 +179,9 @@ struct ftrace_event_call __used event_##call = {			\
+>  struct ftrace_event_call __used						\
+>  __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
+>  
+> +#undef FTRACE_ENTRY
+> +#define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
+> +	FTRACE_ENTRY_REG(call, struct_name, etype,			\
+> +			 PARAMS(tstruct), PARAMS(print), NULL)
+> +
+>  #include "trace_entries.h"
+
+
+Yeah looks good. I wouldn't mind having only FTRACE_ENTRY() with one
+more parameter but I'm fine with the two macros as well.
