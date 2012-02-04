@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab2BDWSE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 17:18:04 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34009 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab2BDWSC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 17:18:02 -0500
-Date: Sat, 4 Feb 2012 22:17:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 00/25] irq_domain generalization and refinement
-Message-ID: <20120204221748.GN14129@n2100.arm.linux.org.uk>
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
+	id S1753251Ab2BDWX1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 17:23:27 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37163 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab2BDWXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Feb 2012 17:23:25 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH Updated] PM/Freezer: Thaw only kernel threads if freezing of kernel threads fails
+Date: Sat, 4 Feb 2012 23:27:09 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Tejun Heo <tj@kernel.org>, pavel@ucw.cz, len.brown@intel.com,
+        linux-pm@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Nigel Cunningham <nigel@tuxonice.net>
+References: <20120201223105.6669.12718.stgit@srivatsabhat.in.ibm.com> <4F29C3E3.1040108@linux.vnet.ibm.com> <4F2D3C90.3000708@linux.vnet.ibm.com>
+In-Reply-To: <4F2D3C90.3000708@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202042327.10045.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 27, 2012 at 02:35:54PM -0700, Grant Likely wrote:
-> Hey everyone,
+On Saturday, February 04, 2012, Srivatsa S. Bhat wrote:
+> On 02/02/2012 04:29 AM, Srivatsa S. Bhat wrote:
 > 
-> This patch series is ready for much wider consumption now.  I'd like
-> to get it into linux-next ASAP because there will be ARM board support
-> depending on it.  I'll wait a few days before I ask Stephen to pull
-> this in.
+> > 
+> > From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > Subject: [PATCH] PM/Freezer: Thaw only kernel threads if freezing of kernel threads fails
+> > 
+> > If freezing of kernel threads fails, we are expected to automatically thaw
+> > tasks in the error recovery path. However, at times, we encounter situations
+> > in which we would like the automatic error recovery path to thaw only the
+> > kernel threads, because we want to be able to do some more cleanup before
+> > we thaw userspace. Something like:
+> > 
+> > error = freeze_kernel_threads();
+> > if (error) {
+> > 	/* Do some cleanup */
+> > 
+> > 	/* Only then thaw userspace tasks*/
+> > 	thaw_processes();
+> > }
+> > 
+> > An example of such a situation is where we freeze/thaw filesystems during
+> > suspend/hibernation. There, if freezing of kernel threads fails, we would
+> > like to thaw the frozen filesystems before thawing the userspace tasks.
+> > 
+> > So, modify freeze_kernel_threads() to thaw only kernel threads in case of
+> > freezing failure. And change suspend_freeze_processes() accordingly.
+> > (At the same time, let us also get rid of the rather cryptic usage of the
+> > conditional operator (:?) in that function.)
+> > 
+> > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > Acked-by: Tejun Heo <tj@kernel.org>
+> > ---
+> 
+> 
+> Hi Rafael,
+> 
+> I have reworked the changelog of this patch to indicate that this fixes a
+> regression. Here is the updated patch:
 
-Grant,
+Well, I've already fixed that up in my tree, but thanks anyway. :-)
 
-Can you answer me this: does this irqdomain support require DT?
-
-The question comes up because OMAP has converted some of their support
-to require irq domain support for their PMICs, and it seems irq domain
-support requires DT.  This seems to have made the whole of OMAP
-essentially become a DT-only platform.
-
-Removing the dependency on IRQ_DOMAIN brings up these build errors
-in the twl-core code (that being the PMIC for OMAP CPUs):
-
-drivers/mfd/twl-core.c: In function 'twl_probe':
-drivers/mfd/twl-core.c:1229: error: invalid use of undefined type 'struct irq_domain'
-drivers/mfd/twl-core.c:1230: error: invalid use of undefined type 'struct irq_domain'
-drivers/mfd/twl-core.c:1235: error: implicit declaration of function 'irq_domain_add'
-
-That's a bit of a problem, because afaik there aren't the DT descriptions
-for the boards I have yet, so it's causing me to see regressions when
-building and booting kernels with CONFIG_OF=n.
-
-The more core-code we end up with which requires DT, the worse this
-problem is going to become - and obviously saying "everyone must now
-convert to DT" is, even today, a mammoth task.
-
-Now, here's the thing: I believe that IRQ domains - at least as far as
-the hwirq stuff - should be available irrespective of whether we have
-the rest of the IRQ domain support code in place, so that IRQ support
-code doesn't have to keep playing games to decode from the global
-space to the per-controller number space.
-
-I believe that would certainly help the current OMAP problems, where
-the current lack of CONFIG_IRQ_DOMAIN basically makes the kernel oops
-on boot.
-
-How we fix this regression for 3.4 I've no idea at present, I'm trying
-to work out what the real dependencies are for OMAP on this stuff.
-
-Finally, do we need asm/irq.h in our asm/prom.h ?  That's causing
-fragility between DT and non-DT builds, because people are finding
-that their DT builds work without their mach/irqs.h includes but
-fail when built with non-DT.  The only thing which DT might need -
-at the most - is NR_IRQS, but I'd hope with things like irq domains
-it doesn't actually require it.
+Rafael
