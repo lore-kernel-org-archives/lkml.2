@@ -1,36 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab2BDAYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 19:24:42 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56920 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab2BDAYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 19:24:41 -0500
-Date: Sat, 4 Feb 2012 03:24:35 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.0 does not survive make -j [sic] on a kernel tree
-Message-ID: <20120204002435.GA3054@p183.telecom.by>
-References: <CALCETrVYSo+5mHjQp54YFrmHXXf0ugj2N4D4aFek-vMvZ5QD9Q@mail.gmail.com>
+	id S1756535Ab2BDA0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 19:26:25 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756308Ab2BDA0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 19:26:24 -0500
+Message-ID: <4F2C7B27.6020707@nod.at>
+Date: Sat, 04 Feb 2012 01:26:15 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVYSo+5mHjQp54YFrmHXXf0ugj2N4D4aFek-vMvZ5QD9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] um: Cleanup headers files
+References: <20120130192552.GL23916@ZenIV.linux.org.uk> <1328311063-17630-1-git-send-email-richard@nod.at> <20120204001431.GY23916@ZenIV.linux.org.uk>
+In-Reply-To: <20120204001431.GY23916@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigA7508D302424D1A487BC3CC8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 03, 2012 at 04:18:28PM -0800, Andy Lutomirski wrote:
-> make clean ; make -j hangs quickly, 100% reproducibly.  The system
-> answers pings but is otherwise completely unresponsive.  The
-> softlockup detector output and eventual oom is below.  The system does
-> not appear to recover.
-> 
-> The correct answer is "don't do that".  But this seems like poor behavior.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigA7508D302424D1A487BC3CC8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-"make -j" is like fork bomb.
-But if you turn on heavy debugging options, system might actually survive
-to the completion.
+Am 04.02.2012 01:14, schrieb Al Viro:
+> On Sat, Feb 04, 2012 at 12:17:43AM +0100, Richard Weinberger wrote:
+>> Many header files can be replaced by generic variants.
+>=20
+> FWIW, I've rebased my local queue to current and pushed it to kernel.or=
+g
+> again; it's on git.kernel.org/pub/scm/linux/kernel/git/viro/um-headers.=
+git
+
+Hmm ok, you did already the cleanup...
+
+Thanks,
+//richard
+
+
+--------------enigA7508D302424D1A487BC3CC8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPLHstAAoJEN9758yqZn9eOUwH/2+AsOzHgDuQrtjahWgAk9xo
+I3WcBDhj9BNDphGoHWvzEhpZ5IV1Y6MVqbdHhX++ARLEaIyn+QU8mj9tj4nou4Wf
+5KaheRglMJV4nSEX8Cz33iPOhia8JZfyIHIvqZ4m0Ljv1KhgMfxRY5wYBQNxl1d4
+qCHxVZwfcEREdVvHJdNCV04Dby5y22i0SXcDALdcLYiC8+TB95Mkp3oDArmiYfTR
+ozyHQH8UaMm44usFEi6qbOGbKQCpmc2nyss2kFRLHi7hfsFU68QTgg5riCXrptr4
+Tq14H0vVlyrgdym60wA1V7PgZxYtFUZglco8pnrzoz1OvPDlAsMMNA5YyvRNp5g=
+=o9sp
+-----END PGP SIGNATURE-----
+
+--------------enigA7508D302424D1A487BC3CC8--
