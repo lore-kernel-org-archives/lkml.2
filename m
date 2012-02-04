@@ -1,11 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268Ab2BDB4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:56:41 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:39066 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271Ab2BDBpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758233Ab2BDB4k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:56:40 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:57586 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756284Ab2BDBpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Feb 2012 20:45:50 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -15,57 +14,63 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 24/47] rcu: Check for idle-loop entry while in RCU read-side critical section
-Date: Fri,  3 Feb 2012 17:44:59 -0800
-Message-Id: <1328319922-30828-24-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 26/47] rcu: Note that rcu_access_pointer() can be used for teardown
+Date: Fri,  3 Feb 2012 17:45:01 -0800
+Message-Id: <1328319922-30828-26-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120204014452.GA29811@linux.vnet.ibm.com>
  <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020401-5518-0000-0000-000001FD8AFB
+x-cbid: 12020401-3534-0000-0000-000005320252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The inner idle loop is an extended quiescent state for all flavors
-of RCU, but there have been recent bug involving use of RCU read-side
-primitives from within the idle loop.  Therefore, this commit enlists
-lockdep-RCU to detect attempts to enter the inner idle loop while in
-an RCU read-side critical section, emitting a lockdep-RCU splat if so.
+There is no convenient expression for rcu_deference_protected()
+when it is used in tearing down multilinked structures following
+a grace period.  For example, suppose that an element containing an
+RCU-protected pointer to a second element is removed from an enclosing
+RCU-protected data structure, then the write-side lock is released,
+and finally synchronize_rcu() is invoked to wait for a grace period.
+Then it is necessary to traverse the pointer in order to free up the
+second element.  But we are not in an RCU read-side critical section
+and we are holding no locks, so the usual rcu_dereference_check() and
+rcu_dereference_protected() primitives are not appropriate.  Neither
+is rcu_dereference_raw(), as it is intended for use in data structures
+where the user defines the locking design (for example, list_head).
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+So this responsibility is added to rcu_access_pointer()'s list, and
+this commit updates rcu_assign_pointer()'s header comment accordingly.
+
+Suggested-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: David Howells <dhowells@redhat.com>
 ---
- kernel/rcutree.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ include/linux/rcupdate.h |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 0569ba1..195bf1f 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -366,6 +366,17 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
- 	atomic_inc(&rdtp->dynticks);
- 	smp_mb__after_atomic_inc();  /* Force ordering with next sojourn. */
- 	WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
-+
-+	/*
-+	 * The idle task is not permitted to enter the idle loop while
-+	 * in an RCU read-side critical section.
-+	 */
-+	rcu_lockdep_assert(!lock_is_held(&rcu_lock_map),
-+			   "Illegal idle entry in RCU read-side critical section.");
-+	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),
-+			   "Illegal idle entry in RCU-bh read-side critical section.");
-+	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
-+			   "Illegal idle entry in RCU-sched read-side critical section.");
- }
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 6df0ae1..f409529 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -484,6 +484,13 @@ static inline void rcu_preempt_sleep_check(void)
+  * NULL.  Although rcu_access_pointer() may also be used in cases where
+  * update-side locks prevent the value of the pointer from changing, you
+  * should instead use rcu_dereference_protected() for this use case.
++ *
++ * It is also permissible to use rcu_access_pointer() when read-side
++ * access to the pointer was removed at least one grace period ago, as
++ * is the case in the context of the RCU callback that is freeing up
++ * the data, or after a synchronize_rcu() returns.  This can be useful
++ * when tearing down multi-linked structures after a grace period
++ * has elapsed.
+  */
+ #define rcu_access_pointer(p) __rcu_access_pointer((p), __rcu)
  
- /**
 -- 
 1.7.8
 
