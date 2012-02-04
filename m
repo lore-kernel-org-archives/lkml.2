@@ -1,15 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2BDDVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 22:21:40 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:42872 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750889Ab2BDDVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 22:21:39 -0500
-Message-ID: <1328325697.21255.41.camel@joe2Laptop>
+	id S1753727Ab2BDDgG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 22:36:06 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37578 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab2BDDgD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 22:36:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <1328325697.21255.41.camel@joe2Laptop>
+References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org>
+ <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon>
+ <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+ <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
+ <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
+ <1328311239.21255.24.camel@joe2Laptop> <CA+55aFxHih0+P=aNromTy+f_Rt+++QWgaEdvqLsXg_q_hu_q2A@mail.gmail.com>
+ <1328319226.21255.28.camel@joe2Laptop> <CA+55aFxqWFRNgR_C9sRCOQ6Vh9PF8anomZsfGD9HP49JgAb57A@mail.gmail.com>
+ <1328325697.21255.41.camel@joe2Laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 3 Feb 2012 19:35:40 -0800
+X-Google-Sender-Auth: gFqxRAddm4VRPPP_Tpy1Uwbv1ts
+Message-ID: <CA+55aFxGVS8+F+7nLJ90tuwj5_3wqJ3=bdRAx9XUQ95vOb2VyQ@mail.gmail.com>
 Subject: Re: [PATCH] checkpatch: Warn on code with 6+ tab indentation
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
 Cc: Andy Whitcroft <apw@shadowen.org>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
         Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
@@ -27,52 +40,39 @@ Cc: Andy Whitcroft <apw@shadowen.org>, Ingo Molnar <mingo@elte.hu>,
         Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Date: Fri, 03 Feb 2012 19:21:37 -0800
-In-Reply-To: <CA+55aFxqWFRNgR_C9sRCOQ6Vh9PF8anomZsfGD9HP49JgAb57A@mail.gmail.com>
-References: <20120130140905.441199885@openvz.org>
-	 <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu>
-	 <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu>
-	 <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
-	 <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
-	 <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
-	 <1328311239.21255.24.camel@joe2Laptop>
-	 <CA+55aFxHih0+P=aNromTy+f_Rt+++QWgaEdvqLsXg_q_hu_q2A@mail.gmail.com>
-	 <1328319226.21255.28.camel@joe2Laptop>
-	 <CA+55aFxqWFRNgR_C9sRCOQ6Vh9PF8anomZsfGD9HP49JgAb57A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-03 at 19:09 -0800, Linus Torvalds wrote:
-> On Fri, Feb 3, 2012 at 5:33 PM, Joe Perches <joe@perches.com> wrote:
-> > You liked the same premise, but a worse
-> > implementation, a couple years ago.
-> > https://lkml.org/lkml/2009/12/18/289
-> I have grown to dislike debatable parts of checkpatch over the years,
-> which probably colors my reaction to things like this.
-> I'd prefer for checkpatch to check things that are fairly black-and-white.
-> >> Why? Because mindless checks like this would just lead to people
-> >> making things worse and intermixing spaces there instead.
-> > Can't happen.
-> > They'll get a different warning about mixing tabs
-> > and spaces or starting a line with spaces only.
-> Ok,. fair enough. That makes it more likely to work.
-> That said, I did a grep for six tabs, and we do seem to have quite a
-> bit of code like that. 67 _thousand_ lines just in C files, if I did
-> my grep right
+On Fri, Feb 3, 2012 at 7:21 PM, Joe Perches <joe@perches.com> wrote:
+>
+> I think that's a bad test.
+> It finds a _lot_ of line continuations.
+>
+> The right test is _only_ for 6 or more tabs
+> followed by (if|for|while|do|else|switch)
 
-I think that's a bad test.
-It finds a _lot_ of line continuations.
+Fair enough.
 
-The right test is _only_ for 6 or more tabs
-followed by (if|for|while|do|else|switch)
+And I have to admit that doing your grep with an additional -4 to see
+some context does make a fairly strong argument for your patch.
 
-$ grep -rP --include=*.[ch] "^\t{6,}(if|for|while|do|else|switch)" * | \
-  wc -l
-1509
+The code in drivers/isdn/hisax/hfc_usb.c that triggers is absolutely
+disgusting, and does crazy things due to the long lines.
 
+As is some other code that grep shows.
 
+In fact, I think that grep convinced me that you are right about this
+particular pattern. Brr. Now I need to go dig my eyes out with a
+spoon.
+
+                    Linus
+
+>
+> $ grep -rP --include=*.[ch] "^\t{6,}(if|for|while|do|else|switch)" * | \
+>  wc -l
+> 1509
+>
+>
