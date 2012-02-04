@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab2BDByp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:54:45 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:39081 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756604Ab2BDBpv (ORCPT
+	id S1758253Ab2BDBz5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:55:57 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51616 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756338Ab2BDBpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 20:45:51 -0500
+	Fri, 3 Feb 2012 20:45:50 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,43 +16,124 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 31/47] rcu: Make documentation give more realistic rcutorture duration
-Date: Fri,  3 Feb 2012 17:45:06 -0800
-Message-Id: <1328319922-30828-31-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 03/47] rcu: Add lockdep-RCU checks for simple self-deadlock
+Date: Fri,  3 Feb 2012 17:44:38 -0800
+Message-Id: <1328319922-30828-3-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120204014452.GA29811@linux.vnet.ibm.com>
  <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020401-5518-0000-0000-000001FD8AF9
+x-cbid: 12020401-7282-0000-0000-000006315560
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The torture.txt documentation gives an example rcutorture run with a
-100-second duration.  This is ridiculously short, unless maybe testing
-a fix for a egregious bug.  Use a more-realistic one-hour duration for
-the example.
+It is illegal to have a grace period within a same-flavor RCU read-side
+critical section, so this commit adds lockdep-RCU checks to splat when
+such abuse is encountered.  This commit does not detect more elaborate
+RCU deadlock situations.  These situations might be a job for lockdep
+enhancements.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/torture.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/rcutiny.c        |    4 ++++
+ kernel/rcutiny_plugin.h |    5 +++++
+ kernel/rcutree.c        |    8 ++++++++
+ kernel/rcutree_plugin.h |    4 ++++
+ kernel/srcu.c           |    6 ++++++
+ 5 files changed, 27 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/RCU/torture.txt b/Documentation/RCU/torture.txt
-index 01a809b..d25be87 100644
---- a/Documentation/RCU/torture.txt
-+++ b/Documentation/RCU/torture.txt
-@@ -278,7 +278,7 @@ The following script may be used to torture RCU:
- 	#!/bin/sh
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 977296d..8e00d46 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -319,6 +319,10 @@ static void rcu_process_callbacks(struct softirq_action *unused)
+  */
+ void synchronize_sched(void)
+ {
++	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map) &&
++			   !lock_is_held(&rcu_lock_map) &&
++			   !lock_is_held(&rcu_sched_lock_map),
++			   "Illegal synchronize_sched() in RCU read-side critical section");
+ 	cond_resched();
+ }
+ EXPORT_SYMBOL_GPL(synchronize_sched);
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index 9cb1ae4..4b90540 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -706,6 +706,11 @@ EXPORT_SYMBOL_GPL(call_rcu);
+  */
+ void synchronize_rcu(void)
+ {
++	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map) &&
++			   !lock_is_held(&rcu_lock_map) &&
++			   !lock_is_held(&rcu_sched_lock_map),
++			   "Illegal synchronize_rcu() in RCU read-side critical section");
++
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	if (!rcu_scheduler_active)
+ 		return;
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 6c4a672..3cf713a 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1816,6 +1816,10 @@ EXPORT_SYMBOL_GPL(call_rcu_bh);
+  */
+ void synchronize_sched(void)
+ {
++	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map) &&
++			   !lock_is_held(&rcu_lock_map) &&
++			   !lock_is_held(&rcu_sched_lock_map),
++			   "Illegal synchronize_sched() in RCU-sched read-side critical section");
+ 	if (rcu_blocking_is_gp())
+ 		return;
+ 	wait_rcu_gp(call_rcu_sched);
+@@ -1833,6 +1837,10 @@ EXPORT_SYMBOL_GPL(synchronize_sched);
+  */
+ void synchronize_rcu_bh(void)
+ {
++	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map) &&
++			   !lock_is_held(&rcu_lock_map) &&
++			   !lock_is_held(&rcu_sched_lock_map),
++			   "Illegal synchronize_rcu_bh() in RCU-bh read-side critical section");
+ 	if (rcu_blocking_is_gp())
+ 		return;
+ 	wait_rcu_gp(call_rcu_bh);
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 8bb35d7..3680b6b 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -688,6 +688,10 @@ EXPORT_SYMBOL_GPL(call_rcu);
+  */
+ void synchronize_rcu(void)
+ {
++	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map) &&
++			   !lock_is_held(&rcu_lock_map) &&
++			   !lock_is_held(&rcu_sched_lock_map),
++			   "Illegal synchronize_rcu() in RCU read-side critical section");
+ 	if (!rcu_scheduler_active)
+ 		return;
+ 	wait_rcu_gp(call_rcu);
+diff --git a/kernel/srcu.c b/kernel/srcu.c
+index 0febf61..3f99fa0 100644
+--- a/kernel/srcu.c
++++ b/kernel/srcu.c
+@@ -172,6 +172,12 @@ static void __synchronize_srcu(struct srcu_struct *sp, void (*sync_func)(void))
+ {
+ 	int idx;
  
- 	modprobe rcutorture
--	sleep 100
-+	sleep 3600
- 	rmmod rcutorture
- 	dmesg | grep torture:
++	rcu_lockdep_assert(!lock_is_held(&sp->dep_map) &&
++			   !lock_is_held(&rcu_bh_lock_map) &&
++			   !lock_is_held(&rcu_lock_map) &&
++			   !lock_is_held(&rcu_sched_lock_map),
++			   "Illegal synchronize_srcu() in same-type SRCU (or RCU) read-side critical section");
++
+ 	idx = sp->completed;
+ 	mutex_lock(&sp->mutex);
  
 -- 
 1.7.8
