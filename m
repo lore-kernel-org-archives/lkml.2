@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729Ab2BDA4u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 19:56:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:2103 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab2BDA4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 19:56:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="113905063"
-Message-ID: <4F2C824E.8080501@intel.com>
-Date: Sat, 04 Feb 2012 08:56:46 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1756803Ab2BDBGQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:06:16 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51647 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab2BDBGO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 20:06:14 -0500
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [rfc PATCH]slub: per cpu partial statistics change
-References: <1328256695.12669.24.camel@debian> <alpine.DEB.2.00.1202030920060.2420@router.home>
-In-Reply-To: <alpine.DEB.2.00.1202030920060.2420@router.home>
+In-Reply-To: <CABqD9hY0O+QU_0yD8C1GFkqo-i1fmJEwKHWwUrCBoUERxHzLqA@mail.gmail.com>
+References: <1327788715-24076-1-git-send-email-wad@chromium.org>
+ <20120202152900.GA4583@sergelap> <CABqD9hY0O+QU_0yD8C1GFkqo-i1fmJEwKHWwUrCBoUERxHzLqA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 3 Feb 2012 17:05:53 -0800
+X-Google-Sender-Auth: l9qrHgvDCmDE-AgaxwykYJ30LVs
+Message-ID: <CA+55aFzxxtEfiEhzqrrMK-YA4xznkZJJE=A6rTDs-2a0Eodacg@mail.gmail.com>
+Subject: Re: [PATCH v6 1/3] seccomp: kill the seccomp_t typedef
+To: Will Drewry <wad@chromium.org>
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk, indan@nul.nu, mcgrathr@chromium.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2012 11:27 PM, Christoph Lameter wrote:
-
-> On Fri, 3 Feb 2012, Alex,Shi wrote:
-> 
->> This patch split the cpu_partial_free into 2 parts: cpu_partial_node, PCP refilling
->> times from node partial; and same name cpu_partial_free, PCP refilling times in
->> slab_free slow path. A new statistic 'release_cpu_partial' is added to get PCP
->> release times. These info are useful when do PCP tunning.
-> 
-> Releasing? The code where you inserted the new statistics counts the pages
-> put on the cpu partial list when refilling from the node partial list.
-
-
-Ops, are we talking the same base kernel: Linus' tree?  :)
-Here the Releasing code only be called in slow free path and the PCP is
-full at the same time, not in PCP refilling from node partial.
-
-explanations more below.
-
-> See more below.
-
+On Fri, Feb 3, 2012 at 3:16 PM, Will Drewry <wad@chromium.org> wrote:
 >
+> task_struct {
+>  ...
+>  struct seccomp seccomp;
+> }
+>
+> was as ideal.  I've noticed that almost all of the duplicate names in
+> the task struct use redundancy to differentiate the naming, but I'm
+> happy enough to rename if appropriate.
 
->>  struct kmem_cache_cpu {
->> diff --git a/mm/slub.c b/mm/slub.c
->> index 4907563..5dd299c 100644
->> --- a/mm/slub.c
->> +++ b/mm/slub.c
->> @@ -1560,6 +1560,7 @@ static void *get_partial_node(struct kmem_cache *s,
->>  		} else {
->>  			page->freelist = t;
->>  			available = put_cpu_partial(s, page, 0);
->> +			stat(s, CPU_PARTIAL_NODE);
-> 
-> This is refilling the per cpu partial list from the node list.
+The redundant "struct xyz_struct" naming is traditional, but we try to
+avoid it these days. The reason for it is that I long long ago was a
+bit confused about the C namespace rules, so for the longest time I
+made struct names unique for no really good reason. The struct/union
+namespace is separate from the other namespaces, so trying to make
+things unique really has no good reason.
 
+And obviously "struct task_struct" is one of those very old things,
+and then the "struct xyz_struct" naming kind of spread from there.
 
-Yes. and same as my explanation in patch:
--       CPU_PARTIAL_FREE,       /* USed cpu partial on free */
-+       CPU_PARTIAL_FREE,       /* Refill cpu partial on free */
-+       CPU_PARTIAL_NODE,       /* Refill cpu partial from node partial */
+I think "struct seccomp" is fine, and even if "struct x x" looks a bit
+odd, it's at least _less_ repetition than "struct x_struct x" which is
+just really repetitive.
 
-> 
->>  		}
->>  		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
->>  			break;
->> @@ -1973,6 +1974,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->>  				local_irq_restore(flags);
->>  				pobjects = 0;
->>  				pages = 0;
->> +				stat(s, RELEASE_CPU_PARTIAL);
-> 
-> The callers count the cpu partial operations. Why is there now one in
-> put_cpu_partial? It is moving a page to the cpu partial list. Not
-> releasing it from the cpu partial list.
+That said, just to make "grep" easier, please do the whole "struct
+xyz" always together, and always with just a single space in between
+them, so that
 
+   git grep "struct xyz"
 
-All old PCP will drain out on running CPU by unfreeze_partials() even it
-is not accurate here. The new one is not lost counting. It still be
-counted as CPU_PARTIAL_FREE in the following change as before.
+does the right thing. And for the same reason, when declaring a
+struct, people should always use "struct xyz {", with that exact
+spacing. The exact details of spacing obviously has no semantic
+meaning, but making it easy to grep for use and for definition is
+really convenient.
 
-If release is right, maybe named as drain_cpu_partial or
-unfreeze_cpu_partial?
-
-> 
->>
->> @@ -2465,9 +2466,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->>  		 * If we just froze the page then put it onto the
->>  		 * per cpu partial list.
->>  		 */
->> -		if (new.frozen && !was_frozen)
->> +		if (new.frozen && !was_frozen) {
->>  			put_cpu_partial(s, page, 1);
->> -
->> +			stat(s, CPU_PARTIAL_FREE);
-> 
-> cpu partial list filled with a partial page created from a fully allocated
-> slab (which therefore was not on any list before).
-
-
-Yes, but the counting is not new here. It just moved out of
-put_cpu_partial().
-
-> 
-> 
-
-
+                   Linus
