@@ -1,348 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab2BDQIN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 11:08:13 -0500
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:58526 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753069Ab2BDQIM (ORCPT
+	id S1754122Ab2BDQJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 11:09:09 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63042 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639Ab2BDQJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 11:08:12 -0500
-Date: Sat, 4 Feb 2012 18:08:04 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: balbi@ti.com, "Cousson, Benoit" <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>, linux-omap@vger.kernel.org,
-        tony@atomide.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Charulatha V <charu@ti.com>
-Subject: Re: [PATCH v9 01/25] gpio/omap: remove dependency on gpio_bank_count
-Message-ID: <20120204160802.GA10818@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1328203851-20435-2-git-send-email-tarun.kanti@ti.com>
- <20120202184106.GC29215@legolas.emea.dhcp.ti.com>
- <20120202191630.GT15343@ponder.secretlab.ca>
- <20120202194545.GA29351@legolas.emea.dhcp.ti.com>
- <4F2AF68D.1000505@ti.com>
- <20120202214907.GA22888@legolas.emea.dhcp.ti.com>
- <20120202215350.GB22888@legolas.emea.dhcp.ti.com>
- <4F2B078B.1040709@ti.com>
- <20120202220744.GA23092@legolas.emea.dhcp.ti.com>
- <87liojajs4.fsf@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
-Content-Disposition: inline
-In-Reply-To: <87liojajs4.fsf@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 4 Feb 2012 11:09:07 -0500
+From: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>,
+        Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 2/3] HID: multitouch: add control of the feature "Maximum Contact Number"
+Date: Sat,  4 Feb 2012 17:08:49 +0100
+Message-Id: <1328371730-10944-3-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1328371730-10944-1-git-send-email-benjamin.tissoires@gmail.com>
+References: <1328371730-10944-1-git-send-email-benjamin.tissoires@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 
---VbJkn9YxBvnuCH5J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Some devices, like Perixx Peripad 701 do not work if the feature
+"Maximum Contact Number" is not set to the right value.
+This patch allows hid-multitouch to control this feature.
 
-Hi,
+If the programmer fills the field maxcontacts in the mt_class,
+then the driver will set the feature to this value. It is safe
+for current drivers as the feature is read/write in the HID norm
+and all devices should implement the norm.
 
-On Fri, Feb 03, 2012 at 09:50:19AM -0800, Kevin Hilman wrote:
-> Felipe Balbi <balbi@ti.com> writes:
->=20
-> [...]
->=20
-> >> >This question remains. Why do we need those funtions ?
-> >>=20
-> >> These functions are called from the CPUIdle path so outside the scope
-> >> of the GPIO driver. These are part of a bunch of nasty PM hacks we
-> >> are doing in the CPU idle loop. We are in the process of getting rid
-> >> of most of them, but it looks like some are still needed.
-> >
-> > Too bad. I can see that the gpio pm implementation seems a bit
-> > "peculiar". I mean, pm does reference counting and yet the driver has
-> > checks to prevent multiple gets and puts on a single bank (meaning that
-> > pm counter will be either 0 or 1 at any point in time).
-> >
-> > To me it looks like those functions are there in order to forcefully put
-> > PER power domain in OFF because drivers are always holding a reference
-> > to their gpios (drivers generally gpio_request() on probe() and
-> > gpio_free() on remove()).
-> >
-> > Looks like the entire pm implementation on OMAP gpio driver has always
-> > considered only the fact that gpios can be requested and freed, but
-> > never that we want the system to go to OFF even while gpios are
-> > requested, because we have I/O PAD wakeups. At some point that has to be
-> > sorted out because that HACK is quite ugly :-)
-> >
-> > I'll see if I find some time to go over the interactions between
-> > gpio-omap.c and pm24x.c and pm34xx.c any of these days, but I can't
-> > promise anything ;-)
->=20
-> If you look at the state of these prepare/resume hacks at the end of
-> this series, you'll see that they are significantly cleaner and do
-> nothing but call the runtime PM hooks.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+---
+ drivers/hid/hid-multitouch.c |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-sure, definitely.
-
-> We have explored several ways to get rid of them completely in the idle
-> path but have not yet come up with a clean way, but this series gets us
-> a long ways towards that goal.
-
-have you thought about being a bit more aggressive at when to
-runtime_get and runtime_put ?
-
-I didn't test below (will do probably on monday), but I think this will
-help keeping GPIO block always suspended, and only wake it up when truly
-needed. That way, you could, at some point, remove that list_head
-because by the time you reach CPUIdle path, GPIO module is already
-suspended. That's the theory at least, gotta run it first on silicon to
-be sure
-
-diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-index 4273401..2dd9ced 100644
---- a/drivers/gpio/gpio-omap.c
-+++ b/drivers/gpio/gpio-omap.c
-@@ -537,12 +537,7 @@ static int omap_gpio_request(struct gpio_chip *chip, u=
-nsigned offset)
- 	struct gpio_bank *bank =3D container_of(chip, struct gpio_bank, chip);
- 	unsigned long flags;
-=20
--	/*
--	 * If this is the first gpio_request for the bank,
--	 * enable the bank module.
--	 */
--	if (!bank->mod_usage)
--		pm_runtime_get_sync(bank->dev);
-+	pm_runtime_get_sync(bank->dev);
-=20
- 	spin_lock_irqsave(&bank->lock, flags);
- 	/* Set trigger to none. You need to enable the desired trigger with
-@@ -572,6 +567,8 @@ static int omap_gpio_request(struct gpio_chip *chip, un=
-signed offset)
-=20
- 	spin_unlock_irqrestore(&bank->lock, flags);
-=20
-+	pm_runtime_put(bank->dev);
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 4c69749..825759e 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -77,6 +77,8 @@ struct mt_device {
+ 	unsigned last_slot_field;	/* the last field of a slot */
+ 	int last_mt_collection;	/* last known mt-related collection */
+ 	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
++	__s8 maxcontact_report_id;	/* Maximum Contact Number HID feature,
++				   -1 if non-existent */
+ 	__u8 num_received;	/* how many contacts we received */
+ 	__u8 num_expected;	/* expected last contact index */
+ 	__u8 maxcontacts;
+@@ -242,6 +244,7 @@ static void mt_feature_mapping(struct hid_device *hdev,
+ 		td->inputmode = field->report->id;
+ 		break;
+ 	case HID_DG_CONTACTMAX:
++		td->maxcontact_report_id = field->report->id;
+ 		td->maxcontacts = field->value[0];
+ 		if (td->mtclass.maxcontacts)
+ 			/* check if the maxcontacts is given by the class */
+@@ -606,6 +609,32 @@ static void mt_set_input_mode(struct hid_device *hdev)
+ 	}
+ }
+ 
++static void mt_set_maxcontacts(struct hid_device *hdev)
++{
++	struct mt_device *td = hid_get_drvdata(hdev);
++	struct hid_report *r;
++	struct hid_report_enum *re;
++	int fieldmax, max;
 +
- 	return 0;
- }
-=20
-@@ -581,6 +578,8 @@ static void omap_gpio_free(struct gpio_chip *chip, unsi=
-gned offset)
- 	void __iomem *base =3D bank->base;
- 	unsigned long flags;
-=20
-+	pm_runtime_get_sync(bank->dev);
++	if (td->maxcontact_report_id < 0)
++		return;
 +
- 	spin_lock_irqsave(&bank->lock, flags);
-=20
- 	if (bank->regs->wkup_en) {
-@@ -606,12 +605,7 @@ static void omap_gpio_free(struct gpio_chip *chip, uns=
-igned offset)
- 	_reset_gpio(bank, bank->chip.base + offset);
- 	spin_unlock_irqrestore(&bank->lock, flags);
-=20
--	/*
--	 * If this is the last gpio to be freed in the bank,
--	 * disable the bank module.
--	 */
--	if (!bank->mod_usage)
--		pm_runtime_put(bank->dev);
-+	pm_runtime_put(bank->dev);
- }
-=20
- /*
-@@ -707,9 +701,11 @@ static void gpio_irq_shutdown(struct irq_data *d)
- 	struct gpio_bank *bank =3D irq_data_get_irq_chip_data(d);
- 	unsigned long flags;
-=20
-+	pm_runtime_get_sync(bank->dev);
- 	spin_lock_irqsave(&bank->lock, flags);
- 	_reset_gpio(bank, gpio);
- 	spin_unlock_irqrestore(&bank->lock, flags);
-+	pm_runtime_put(bank->dev);
- }
-=20
- static void gpio_ack_irq(struct irq_data *d)
-@@ -717,7 +713,9 @@ static void gpio_ack_irq(struct irq_data *d)
- 	unsigned int gpio =3D d->irq - IH_GPIO_BASE;
- 	struct gpio_bank *bank =3D irq_data_get_irq_chip_data(d);
-=20
-+	pm_runtime_get_sync(bank->dev);
- 	_clear_gpio_irqstatus(bank, gpio);
-+	pm_runtime_put(bank->dev);
- }
-=20
- static void gpio_mask_irq(struct irq_data *d)
-@@ -726,10 +724,12 @@ static void gpio_mask_irq(struct irq_data *d)
- 	struct gpio_bank *bank =3D irq_data_get_irq_chip_data(d);
- 	unsigned long flags;
-=20
-+	pm_runtime_get_sync(bank->dev);
- 	spin_lock_irqsave(&bank->lock, flags);
- 	_set_gpio_irqenable(bank, gpio, 0);
- 	_set_gpio_triggering(bank, GPIO_INDEX(bank, gpio), IRQ_TYPE_NONE);
- 	spin_unlock_irqrestore(&bank->lock, flags);
-+	pm_runtime_put(bank->dev);
- }
-=20
- static void gpio_unmask_irq(struct irq_data *d)
-@@ -740,6 +740,7 @@ static void gpio_unmask_irq(struct irq_data *d)
- 	u32 trigger =3D irqd_get_trigger_type(d);
- 	unsigned long flags;
-=20
-+	pm_runtime_get_sync(bank->dev);
- 	spin_lock_irqsave(&bank->lock, flags);
- 	if (trigger)
- 		_set_gpio_triggering(bank, GPIO_INDEX(bank, gpio), trigger);
-@@ -753,6 +754,7 @@ static void gpio_unmask_irq(struct irq_data *d)
-=20
- 	_set_gpio_irqenable(bank, gpio, 1);
- 	spin_unlock_irqrestore(&bank->lock, flags);
-+	pm_runtime_put(bank->dev);
- }
-=20
- static struct irq_chip gpio_irq_chip =3D {
-@@ -836,17 +838,26 @@ static int gpio_input(struct gpio_chip *chip, unsigne=
-d offset)
- 	unsigned long flags;
-=20
- 	bank =3D container_of(chip, struct gpio_bank, chip);
-+	pm_runtime_get_sync(bank->dev);
++	if (!td->mtclass.maxcontacts)
++		return;
 +
- 	spin_lock_irqsave(&bank->lock, flags);
- 	_set_gpio_direction(bank, offset, 1);
- 	spin_unlock_irqrestore(&bank->lock, flags);
-+	pm_runtime_put(bank->dev);
++	re = &hdev->report_enum[HID_FEATURE_REPORT];
++	r = re->report_id_hash[td->maxcontact_report_id];
++	if (r) {
++		max = td->mtclass.maxcontacts;
++		fieldmax = r->field[0]->logical_maximum;
++		max = min(fieldmax, max);
++		if (r->field[0]->value[0] != max) {
++			r->field[0]->value[0] = max;
++			usbhid_submit_report(hdev, r, USB_DIR_OUT);
++		}
++	}
++}
 +
- 	return 0;
- }
-=20
- static int gpio_is_input(struct gpio_bank *bank, int mask)
+ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
  {
- 	void __iomem *reg =3D bank->base + bank->regs->direction;
-+	u32 val;
-=20
--	return __raw_readl(reg) & mask;
-+	pm_runtime_get_sync(bank->dev);
-+	val =3D __raw_readl(reg) & mask;
-+	pm_runtime_put(bank->dev);
-+
-+	return val;
- }
-=20
- static int gpio_get(struct gpio_chip *chip, unsigned offset)
-@@ -856,15 +867,20 @@ static int gpio_get(struct gpio_chip *chip, unsigned =
-offset)
- 	int gpio;
- 	u32 mask;
-=20
-+	int val;
- 	gpio =3D chip->base + offset;
- 	bank =3D container_of(chip, struct gpio_bank, chip);
- 	reg =3D bank->base;
- 	mask =3D GPIO_BIT(bank, gpio);
-=20
-+	pm_runtime_get_sync(bank->dev);
- 	if (gpio_is_input(bank, mask))
--		return _get_gpio_datain(bank, gpio);
-+		val =3D _get_gpio_datain(bank, gpio);
- 	else
--		return _get_gpio_dataout(bank, gpio);
-+		val =3D _get_gpio_dataout(bank, gpio);
-+	pm_runtime_put(bank->dev);
-+
-+	return val;
- }
-=20
- static int gpio_output(struct gpio_chip *chip, unsigned offset, int value)
-@@ -873,10 +889,14 @@ static int gpio_output(struct gpio_chip *chip, unsign=
-ed offset, int value)
- 	unsigned long flags;
-=20
- 	bank =3D container_of(chip, struct gpio_bank, chip);
-+
-+	pm_runtime_get_sync(bank->dev);
- 	spin_lock_irqsave(&bank->lock, flags);
- 	bank->set_dataout(bank, offset, value);
- 	_set_gpio_direction(bank, offset, 0);
- 	spin_unlock_irqrestore(&bank->lock, flags);
-+	pm_runtime_put(bank->dev);
-+
+ 	int ret, i;
+@@ -631,6 +660,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	}
+ 	td->mtclass = *mtclass;
+ 	td->inputmode = -1;
++	td->maxcontact_report_id = -1;
+ 	td->last_mt_collection = -1;
+ 	hid_set_drvdata(hdev, td);
+ 
+@@ -653,6 +683,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 
+ 	ret = sysfs_create_group(&hdev->dev.kobj, &mt_attribute_group);
+ 
++	mt_set_maxcontacts(hdev);
+ 	mt_set_input_mode(hdev);
+ 
+ 	return 0;
+@@ -665,6 +696,7 @@ fail:
+ #ifdef CONFIG_PM
+ static int mt_reset_resume(struct hid_device *hdev)
+ {
++	mt_set_maxcontacts(hdev);
+ 	mt_set_input_mode(hdev);
  	return 0;
  }
-=20
-@@ -894,9 +914,11 @@ static int gpio_debounce(struct gpio_chip *chip, unsig=
-ned offset,
- 			dev_err(bank->dev, "Could not get gpio dbck\n");
- 	}
-=20
-+	pm_runtime_get_sync(bank->dev);
- 	spin_lock_irqsave(&bank->lock, flags);
- 	_set_gpio_debounce(bank, offset, debounce);
- 	spin_unlock_irqrestore(&bank->lock, flags);
-+	pm_runtime_put(bank->dev);
-=20
- 	return 0;
- }
-@@ -907,9 +929,12 @@ static void gpio_set(struct gpio_chip *chip, unsigned =
-offset, int value)
- 	unsigned long flags;
-=20
- 	bank =3D container_of(chip, struct gpio_bank, chip);
-+
-+	pm_runtime_get_sync(bank->dev);
- 	spin_lock_irqsave(&bank->lock, flags);
- 	bank->set_dataout(bank, offset, value);
- 	spin_unlock_irqrestore(&bank->lock, flags);
-+	pm_runtime_put(bank->dev);
- }
-=20
- static int gpio_2irq(struct gpio_chip *chip, unsigned offset)
-@@ -1330,7 +1355,8 @@ void omap2_gpio_prepare_for_idle(int pwr_mode)
-=20
- 		bank->power_mode =3D pwr_mode;
-=20
--		pm_runtime_put_sync_suspend(bank->dev);
-+		if (!pm_runtime_suspended(bank->dev))
-+			pm_runtime_suspend(bank->dev);
- 	}
- }
-=20
-@@ -1342,7 +1368,8 @@ void omap2_gpio_resume_after_idle(void)
- 		if (!bank->mod_usage || !bank->loses_context)
- 			continue;
-=20
--		pm_runtime_get_sync(bank->dev);
-+		if (pm_runtime_suspended(bank->dev))
-+			pm_runtime_resume(bank->dev);
- 	}
- }
-=20
+-- 
+1.7.7.6
 
---=20
-balbi
-
---VbJkn9YxBvnuCH5J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPLVfiAAoJEIaOsuA1yqREHKcP/2DUMfd3yJcFkETOUAan9G63
-EI/q51HqrLX+2frxMAfsbFWJoghAcXeUCnl/4Wfx2wuTCM54HnFPsfmo6OzQGSux
-LtU9z7Zvl1HkIb3kKZeebZl+gTkFrcP6FqsSEK1D7rXGhu2oYM1nldaqYH7ISIQ0
-6fXo3Djr0B/sVl814S4JVrBzniocecvKtHCAsbOLPv90aMnCK70bhP7vOzvbPFnT
-MGbpTwaJ2zsg/QaY3hhwWzQStCvpdRkEBU6PLby8hzyYq/yioFfz45m0qgg1BN8/
-nXl9ALcLf8k+uIBj5I703zAjaBBX4tMB74ix0YPr3CFD+/5O2UrytveOI0+erZdz
-Q3FXe89qPhAKm/Vapr0CkkBpy5OhffWBG1WITjkkiGBKPbm9oAtqWdNK+WMNSu3a
-oX4S03+zdS4PasYOi98DVPNyRwP31lhB97PIjL3pzODLLa56WrkeCPcw6UTSyky9
-9iwdlGEGRPmE5HctKkf1lH9qfOGIvLhar7z3YJ7AczE1Aqh64tT57YjpPei4a4ML
-oIiYOPKWPFbO7ZC9dZ1VTCwAFVnT7Sacg4YWo9eL60lw401jBNDTiJQ1CuP/RCuK
-q89gMHW7Sh0W52byqufHB8lHwQSCGaxNsDwHkbTpKfIyz87lqNKpLNyOjhSJ+hnq
-rD+rQa2SXct9uZrQPfBW
-=gemU
------END PGP SIGNATURE-----
-
---VbJkn9YxBvnuCH5J--
