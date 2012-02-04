@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab2BDMK3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 07:10:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41320 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751125Ab2BDMK2 (ORCPT
+	id S1753511Ab2BDMQe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 07:16:34 -0500
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:50232 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751972Ab2BDMQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 07:10:28 -0500
-Date: Sat, 4 Feb 2012 12:10:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the gpio tree
-Message-ID: <20120204121024.GA8042@opensource.wolfsonmicro.com>
-References: <20120203135432.e9ab5f0d41805bff0df10333@canb.auug.org.au>
- <CACxGe6uaxKoqKVyVZsaXZ6s-J3urJ7i_SxP2S-6sXQ7ZqXrYFw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bg08WKrSYDhXBjb5"
-Content-Disposition: inline
-In-Reply-To: <CACxGe6uaxKoqKVyVZsaXZ6s-J3urJ7i_SxP2S-6sXQ7ZqXrYFw@mail.gmail.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 4 Feb 2012 07:16:33 -0500
+From: Aneesh V <aneesh@ti.com>
+To: linux-omap@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Aneesh V <aneesh@ti.com>
+Subject: [RFC PATCH 0/8] Add TI EMIF SDRAM controller driver
+Date: Sat,  4 Feb 2012 17:46:03 +0530
+Message-Id: <1328357771-31644-1-git-send-email-aneesh@ti.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add a driver for the EMIF SDRAM controller used in TI SoCs
 
---bg08WKrSYDhXBjb5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+EMIF is an SDRAM controller that supports, based on its revision,
+one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
+for LPDDR2.
 
-On Fri, Feb 03, 2012 at 04:18:08PM -0700, Grant Likely wrote:
+The driver supports the following features:
+- Calculates the DDR AC timing parameters to be set in EMIF
+  registers using data from the device data-sheets and based
+  on the DDR frequency. If data from data-sheets is not available
+  default timing values from the JEDEC spec are used. These
+  will be safe, but not necessarily optimal
+- API for changing timings during DVFS or at boot-up
+- Temperature alert configuration and handling of temperature
+  alerts, if any for LPDDR2 devices
+  * temperature alert is based on periodic polling of MR4 mode
+    register in DDR devices automatically performed by hardware
+  * timings are de-rated and brought back to nominal when
+    temperature raises and falls respectively
+- Cache of calculated register values to avoid re-calculating
+  them
 
-> I've dropped the patch from my tree.  Looks like there are still a few
-> drivers that need to be either fixed up or made "depends on
-> ARCH_HAVE_CUSTOM_GPIO_H".
+The driver will need some minor updates when it is eventually
+integrated with DVFS. This can not be done now as DVFS support
+is not available yet in mainline.
 
-Would it not be better to add a followup patch replacing the removed
-headers with something like:
+Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
+were immensely helpful in shaping up the interfaces. Vibhore Vardhan
+<vvardhan@gmail.com> did the initial code snippet for thermal
+handling.
 
-  #ifndef __LINUX_GPIO_H
-  #warn Don't include asm/gpio.h directly, include linux/gpio.h instead
-  #endif
+Testing: 
+- The driver is tested on OMAP4430 SDP.
+- The driver in a slightly adapted form is also tested on OMAP5.
+- Since mainline kernel doesn't have DVFS support yet,
+  testing was done using a test module.
+- Temperature alert handling was tested with simulated interrupts
+  and faked temperature values as testing all cases in real-life
+  scenarios is difficult.
 
-instead?  Perhaps even without the ifdef.  That will mean we still get
-rid of the boilerplate and will encourage fixups to drivers, nothing
-that hits these can be relying on a custom implementation since all the
-headers concerned are boilerplate ones.
+Aneesh V (7):
+  misc: ddr: add LPDDR2 data from JESD209-2
+  misc: emif: add register definitions for EMIF
+  misc: emif: add basic infrastructure for EMIF driver
+  misc: emif: handle frequency and voltage change events
+  misc: emif: add interrupt and temperature handling
+  misc: emif: add one-time settings
+  misc: emif: add debugfs entries for emif
 
---bg08WKrSYDhXBjb5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Benoit Cousson (1):
+  OMAP4: hwmod: add EMIF hw mod data
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  110 ++
+ drivers/misc/Kconfig                       |   20 +
+ drivers/misc/Makefile                      |    2 +
+ drivers/misc/emif.c                        | 1522 ++++++++++++++++++++++++++++
+ drivers/misc/emif_regs.h                   |  461 +++++++++
+ drivers/misc/jedec_ddr_data.c              |  141 +++
+ include/linux/emif.h                       |  257 +++++
+ include/linux/jedec_ddr.h                  |  174 ++++
+ 8 files changed, 2687 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/emif.c
+ create mode 100644 drivers/misc/emif_regs.h
+ create mode 100644 drivers/misc/jedec_ddr_data.c
+ create mode 100644 include/linux/emif.h
+ create mode 100644 include/linux/jedec_ddr.h
 
-iQIcBAEBAgAGBQJPLSApAAoJEBus8iNuMP3duIgP/1WTnWcvXNzny933H8oug/wr
-gGtbMjFLi4l1xlEjSKApsEoTtIxq4xMmpqvF5cfsR+gf8Ste3G1GlaXZze+iCzSy
-M6m9lAohX92tfiokx84UqJpAe9ZrtaExITxj0LCmXs3E95K/s1NmcGZdOxHB4V9e
-h1ntoNBDJ2o6Cq5AZ4UZbTg3rUVrcZJMQ+Thh0654KWXKp726sRN4qCJMZBx9SUB
-lnH0ZS6tbRgmBh9LgB8ObzKkrctaADXlyWkOCJ21eQQVDf3FfUOn7kOUYzP8Sa9y
-k1cDGMgPmIrQ0Dut/CG36VMVfVR85h6AuNzoqlHQdyHFkdDXDxNZxb6+wN5c6XDF
-aHgshISVX/5zM/gBO73h/xnCvDHBvYI7FQxribkuGKAh71GrqkkLUskUrVpNWU/W
-2YvBpdR8/oYQS10lYwDRZ25fqmnTHgwDDzNPpM6QcHskKAnUMJNAoUuP1rFnWTKz
-lhIt0dnvZcpjDK0lWijICbUKTAs/u3PsNDbkwnkA3h4plYQeQUfXbqKO/3u7Pqnh
-6w0W6mM02XzZyAdAJ5QosCR95ujNnjbkVTK5/3Q/dIGgQnY+s0cLrwpFP4ZdQ9jv
-OwICkBxxwFPQe9H24dV0MzHg4ZoWjcnrMSz/iJpn/CGxDXjK+1GVkHi8lCR6ixKI
-1OHdpbiirYMngQ1IUtb+
-=S4jT
------END PGP SIGNATURE-----
-
---bg08WKrSYDhXBjb5--
