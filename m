@@ -1,76 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab2BDAzq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 19:55:46 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:14587 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab2BDAzo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 19:55:44 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+4jzGf/LEfcJkVEIDnF4QY
-Date: Fri, 3 Feb 2012 16:55:39 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Dong Aisheng <dongas86@gmail.com>
-Subject: Re: [PATCH 2/2] pinctrl: Add simple pinmux driver using device
- tree data
-Message-ID: <20120204005539.GI20333@atomide.com>
-References: <20120203205049.4089.74610.stgit@kaulin.local>
- <20120203205508.4089.35304.stgit@kaulin.local>
- <CACRpkdaDOZ3X0AkWH4B4ZGCXHPxh0CkSg3xi=jHC5L+kJr1d=w@mail.gmail.com>
+	id S1756729Ab2BDA4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 19:56:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:2103 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754237Ab2BDA4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 19:56:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="113905063"
+Message-ID: <4F2C824E.8080501@intel.com>
+Date: Sat, 04 Feb 2012 08:56:46 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaDOZ3X0AkWH4B4ZGCXHPxh0CkSg3xi=jHC5L+kJr1d=w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Lameter <cl@linux.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [rfc PATCH]slub: per cpu partial statistics change
+References: <1328256695.12669.24.camel@debian> <alpine.DEB.2.00.1202030920060.2420@router.home>
+In-Reply-To: <alpine.DEB.2.00.1202030920060.2420@router.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [120203 14:18]:
-> On Fri, Feb 3, 2012 at 9:55 PM, Tony Lindgren <tony@atomide.com> wrote:
+On 02/03/2012 11:27 PM, Christoph Lameter wrote:
+
+> On Fri, 3 Feb 2012, Alex,Shi wrote:
 > 
-> > Add simple pinmux driver using device tree data.
-> >
-> > Currently this driver only works on omap2+ series of
-> > processors, where there is either an 8 or 16-bit mux
-> > register for each pin. Support for other similar pinmux
-> > controllers could be added.
+>> This patch split the cpu_partial_free into 2 parts: cpu_partial_node, PCP refilling
+>> times from node partial; and same name cpu_partial_free, PCP refilling times in
+>> slab_free slow path. A new statistic 'release_cpu_partial' is added to get PCP
+>> release times. These info are useful when do PCP tunning.
 > 
-> So since it's not named pinctrl-omap I guess you intend it
-> to be fully generic for simple muxes, which is nice!
-> If people start ACK:ing this I will be happy with it too,
-> because it's very easy to understand.
+> Releasing? The code where you inserted the new statistics counts the pages
+> put on the cpu partial list when refilling from the node partial list.
 
-Yes the idea is that it should stay generic. I don't know
-how easy or hard it would be to enhance it to support
-also other type mux cases, like multiple mux registers per
-pin, but I guess we'll see.
- 
-> > Note that this patch does not yet support pinconf_ops
-> > or GPIO. Further, alternative mux modes are not yet
-> > handled.
+
+Ops, are we talking the same base kernel: Linus' tree?  :)
+Here the Releasing code only be called in slow free path and the PCP is
+full at the same time, not in PCP refilling from node partial.
+
+explanations more below.
+
+> See more below.
+
+>
+
+>>  struct kmem_cache_cpu {
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index 4907563..5dd299c 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -1560,6 +1560,7 @@ static void *get_partial_node(struct kmem_cache *s,
+>>  		} else {
+>>  			page->freelist = t;
+>>  			available = put_cpu_partial(s, page, 0);
+>> +			stat(s, CPU_PARTIAL_NODE);
 > 
-> Do you want to evolve the patch for these features
-> or do you want to refactor it in later?
+> This is refilling the per cpu partial list from the node list.
 
-Well I'd like to test it a bit more first as I've only
-done minimal testing so far. So maybe let's assume there
-will be one more iteration at least.
 
-Regards,
+Yes. and same as my explanation in patch:
+-       CPU_PARTIAL_FREE,       /* USed cpu partial on free */
++       CPU_PARTIAL_FREE,       /* Refill cpu partial on free */
++       CPU_PARTIAL_NODE,       /* Refill cpu partial from node partial */
 
-Tony
+> 
+>>  		}
+>>  		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
+>>  			break;
+>> @@ -1973,6 +1974,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>>  				local_irq_restore(flags);
+>>  				pobjects = 0;
+>>  				pages = 0;
+>> +				stat(s, RELEASE_CPU_PARTIAL);
+> 
+> The callers count the cpu partial operations. Why is there now one in
+> put_cpu_partial? It is moving a page to the cpu partial list. Not
+> releasing it from the cpu partial list.
+
+
+All old PCP will drain out on running CPU by unfreeze_partials() even it
+is not accurate here. The new one is not lost counting. It still be
+counted as CPU_PARTIAL_FREE in the following change as before.
+
+If release is right, maybe named as drain_cpu_partial or
+unfreeze_cpu_partial?
+
+> 
+>>
+>> @@ -2465,9 +2466,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>>  		 * If we just froze the page then put it onto the
+>>  		 * per cpu partial list.
+>>  		 */
+>> -		if (new.frozen && !was_frozen)
+>> +		if (new.frozen && !was_frozen) {
+>>  			put_cpu_partial(s, page, 1);
+>> -
+>> +			stat(s, CPU_PARTIAL_FREE);
+> 
+> cpu partial list filled with a partial page created from a fully allocated
+> slab (which therefore was not on any list before).
+
+
+Yes, but the counting is not new here. It just moved out of
+put_cpu_partial().
+
+> 
+> 
+
+
