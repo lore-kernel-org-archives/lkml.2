@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab2BDA0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 19:26:54 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:55745 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756329Ab2BDA0x (ORCPT
+	id S1756292Ab2BDA3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 19:29:40 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:57886 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab2BDA3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 19:26:53 -0500
-Message-ID: <4F2C88D6.6000104@xenotime.net>
-Date: Fri, 03 Feb 2012 17:24:38 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from
- 80 to 100 colums
-References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org> <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu> <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
-In-Reply-To: <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 Feb 2012 19:29:38 -0500
+Date: Fri, 03 Feb 2012 19:29:33 -0500 (EST)
+Message-Id: <20120203.192933.510206531351047222.davem@davemloft.net>
+To: steweg@ynet.sk
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [patch v1, kernel version 3.2.1] rtnetlink workaround around
+ the skb buff size issue
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <10521320.3761328279061644.JavaMail.root@5-MeO-DMT.ynet.sk>
+References: <5422254.3711328278789768.JavaMail.root@5-MeO-DMT.ynet.sk>
+	<10521320.3761328279061644.JavaMail.root@5-MeO-DMT.ynet.sk>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 03 Feb 2012 16:29:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2012 01:27 PM, Linus Torvalds wrote:
-> On Fri, Feb 3, 2012 at 2:07 AM, Ingo Molnar <mingo@elte.hu> wrote:
->>
->> The overwhelming majority of kernel developers have stopped
->> using 80 col terminals years ago.
+From: Stefan Gula <steweg@ynet.sk>
+Date: Fri, 3 Feb 2012 15:24:21 +0100 (CET)
 
-There was more interesting text there.  ;)
-
-> Quite frankly, I think we should still keep it at 80 columns.
+> From: Stefan Gula <steweg@gmail.com>
 > 
-...
-
+> Adding new rtnetlink ops and command for getting more information about
+> network devices, which are not able to fit inside predefined SKB structures
+> (e.g. PAGE_SIZE limit). DEVDUMP command allows to call specific device driver
+> code for complete handling this netlink message. Useful if devices needed to
+> list some addition dynamic structures like hlists and doesn't require to have
+> complete set of codes for it new PF families.
 > 
-> So no, 100-char columns are not ok.
+> Signed-off-by: Stefan Gula <steweg@gmail.com>
 
-Thank you.
+This is not how we're going to fix this.  I already stated the desired
+way to fix this, which is to make the existing dump request have a way
+for the requestor to enable extended parts of the device dump.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+This is just like netlink diag socket dumps, where the dump request
+specifies what the user wants to see.
+
+In this case we'd add a netlink attribute to the dump request which
+is just a u32 bitmask or similar.
+
+The Intel engineer who added the VF dump support said he would work on
+this fix so why don't you just wait patiently for him to do the work?
