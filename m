@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab2BDIqA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 03:46:00 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:29861 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139Ab2BDIp7 (ORCPT
+	id S1752985Ab2BDI7u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 03:59:50 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56614 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab2BDI7t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 03:45:59 -0500
-Date: Sat, 4 Feb 2012 09:45:43 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Aaron Sierra <asierra@xes-inc.com>
-Cc: guenter roeck <guenter.roeck@ericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>
-Subject: Re: [PATCH 1/3] mfd: Add LPC driver for Intel ICH chipsets
-Message-ID: <20120204094543.75e3c0b6@endymion.delvare>
-In-Reply-To: <eab6c0bf-4908-454c-b7fa-606e70050793@zimbra>
-References: <1328298346.2261.196.camel@groeck-laptop>
-	<eab6c0bf-4908-454c-b7fa-606e70050793@zimbra>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 4 Feb 2012 03:59:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAEik5nOEBgtEf766CxcRPTXb5CnTdwn1JYm+yaaqV1aOTjpJ0g@mail.gmail.com>
+References: <CAEik5nNsct2CL0Pfu8XaBGpZ4UOc-6EWtbk_LO5AxGzK9Vajjg@mail.gmail.com>
+ <4F2C96F7.9070307@cavium.com> <CAEik5nOEBgtEf766CxcRPTXb5CnTdwn1JYm+yaaqV1aOTjpJ0g@mail.gmail.com>
+From: Sorin Dumitru <dumitru.sorin87@gmail.com>
+Date: Sat, 4 Feb 2012 10:59:28 +0200
+Message-ID: <CAB6DaTO3nVHG7mhxKZDXEaTbV10UQ62qVBgTJDCQuY_ERREggA@mail.gmail.com>
+Subject: Re: [perf] perf top segfaulting
+To: Dan McGee <dpmcgee@gmail.com>
+Cc: David Daney <david.daney@cavium.com>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aaron,
+On Sat, Feb 4, 2012 at 4:46 AM, Dan McGee <dpmcgee@gmail.com> wrote:
+> On Fri, Feb 3, 2012 at 8:24 PM, David Daney <david.daney@cavium.com> wrote:
+>> On 02/03/2012 04:45 PM, Dan McGee wrote:
+>>>
+>>> On i686, version 3.2-2, but looks like annotate.c hasn't changed much
+>>> since. It sometimes happens within 5 seconds of starting perf,
+>>> sometimes much later, but almost always if I leave it running I well
+>>> come back to it having segfaulted. When ran with gdb here it took
+>>> about 3 minutes; I had a 5 second segfault and a 5 minute segfault
+>>> before and after this run as well. I'm not sure what triggers it other
+>>> than it isn't user input, as I can start `perf top`, not touch it, and
+>>> it will eventually segfault.
+>>>
+>>
+>>
+>> I have seen the same thing (basically the same stack trace), so I think what
+>> I see is probably closely related.  My failures however are on mips64 based
+>> systems.
+>>
+>> My debugging suggests that this happens when the ABIs used by the running
+>> processes are heterogeneous (A mixture of 32-bit and 64-bit processes).
+>>  What I see is that all processes use a library with a common name, but
+>> differing in paths (/lib32/libc-2.11.3.so and /lib64/libc-2.11.3.so for
+>> example).  It looks like perf is confusing the offsets it caches from one
+>> library to look up information in the other and since the symbols are in
+>> different locations, the resulting erroneous address calculations result in
+>> accesses to unmapped portions of perf's address space and you get SIGSEGV.
+>>
+>> I haven't dug into the code enough to suggest a fix, but I think that at a
+>> high hand-waving level, this is what is happening.  I have never observed
+>> the failure when using only a single ABI on the system
+>
+> Note that in this case, it is a pure 32-bit x86 system, and no library
+> changes were going on in the background. So I wouldn't be surprised if
+> the causes are similar (or the same), but I don't think I can chalk it
+> up to being a single ABI vs multiple ABI problem; i686 only has one
+> ABI.
+>
+> -Dan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-On Fri, 03 Feb 2012 16:50:28 -0600 (CST), Aaron Sierra wrote:
-> I received and applied your patches. I had to compile with ACPI
-> disabled because 3.3-rc2 now reports a resource conflict between the
-> WDAT structure (that we report for Microsoft Windows watchdog timer
-> support) and the TCO watchdog portion of lpc_ich:
-> 
-> ACPI Warning: 0x00000460-0x0000047f SystemIO conflicts with
-> Region \PMIO 1 (20120111/utaddress-251)
-> ACPI: If an ACPI driver is available for this device, you should use
-> it instead of the native driver
-> lpc_ich: probe of 0000:00:1f.0 failed with error -16
-> 
-> We may have to submit a driver in the future to utilize the WDAT
-> ACPI table, but that's another topic.
-> 
-> Do you think it's worth modifying lcp_ich to register all of the
-> resources that it can and only populate the mfd_cells that have
-> all of their required resources? That would prevent the entire
-> driver from bombing out in situations like this. I can't imagine
-> our BIOS is the only one implementing the WDAT table.
+I've seen this same problem on a pure 32-bit x86 system. So it definitely isn't
+an ABI problem.
+>From what i can tell the problem is in perf_event__process_sample. When calling
+perf_event__process_sample, we set al->sym based on al->address. The symbol
+in the hist_entry is set to the one from al but in the call to
+perf_top__record_precise_ip
+we pass in the address from the event struct which is sometimes
+different than the one
+in the al structure. When this situation occurs, when calculating the offset in
+symbol__inc_addr_samples, because addr is not in the symbol [start,end] range,
+we get a very big value which causes the segfault when we use it to
+index something.
+I've sent a patch that works for me, but i don't know if it's the
+right solution at [1].
 
-Yes, definitely. One subdevice being unavailable shouldn't have any
-impact on other subdevices. The lpc_sch driver suffers from the same
-issue, I had sent a patch one 10 months ago but it was never applied.
-I'll update it and resend it.
-
-To mention another ACPI resource conflict that can happen, I see the
-following on my Asus Z8NA-D6:
-
-ACPI Warning: 0x0000000000000500-0x000000000000053f SystemIO conflicts with Region \_SI_.LEDR 1 (20120111/utaddress-251)
-ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
-i801_gpio: probe of 0000:00:1f.0 failed with error -16
-
-        OperationRegion (LEDR, SystemIO, 0x051A, One)
-        Field (LEDR, ByteAcc, NoLock, Preserve)
-        {
-            LEDY,   8
-        }
-
-This is with my own GPIO driver, no MFD involved, so that's a different
-problem but your driver will likely show the same. This might mean that
-we have to fine-tune which I/O ports to request. In my case ACPI wants
-to access only the "GPIO Blink Enable" register, which neither my
-driver nor yours uses, so the conflict could be avoided.
-
-> Anyway, after compiling without ACPI the lpc_ich driver registered
-> as expected and the gpio-ich and iTCO_wdt drivers detected and
-> configured their associated resources. I have verified that the
-> watchdog timer still works as expected. I need to track down some
-> other hardware to properly test the GPIO.
-
-Note that for testing purpose only, it can be more convenient to boot
-with acpi_enforce_resources=lax rather than rebuilding the kernel
-without ACPI support.
-
--- 
-Jean Delvare
+[1] https://lkml.org/lkml/2012/1/29/59
