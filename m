@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab2BDRGi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 12:06:38 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:18480 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab2BDRGf (ORCPT
+	id S1752283Ab2BDRP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 12:15:28 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:59037 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab2BDRP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 12:06:35 -0500
-Date: Sat, 4 Feb 2012 18:06:32 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-arch@vger.kernel.org,
-        linux-mips@linux-mips.org, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] gpiolib/arches: Centralise bolierplate asm/gpio.h
-Message-ID: <20120204170632.GA3615@merkur.ravnborg.org>
-References: <1328370879-18523-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Sat, 4 Feb 2012 12:15:27 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+Tqi0fwUBFfKwNWG/tnNeL
+Date: Sat, 4 Feb 2012 09:15:15 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Dong Aisheng <dongas86@gmail.com>
+Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Pinmux bindings proposal V2
+Message-ID: <20120204171515.GJ20333@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF1780DAB4CE@HQMAIL01.nvidia.com>
+ <20120201143530.GA2203@S2101-09.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF178E124AC5@HQMAIL01.nvidia.com>
+ <CAA+hA=RpkP-FFAr8wqVPjSKEMvO_sRHmOK_9nUYfuW=ps0O_=Q@mail.gmail.com>
+ <20120203173205.GB1426@atomide.com>
+ <CAA+hA=QFB7x0yv65LMuLx1exmiUAuB98D+9Fyyk9oeVu+7F2QQ@mail.gmail.com>
+ <20120203210545.GE1426@atomide.com>
+ <CAA+hA=ThTuGnedNk_KnYLpquZ7EG+b6yU+GSoiS8qiWUB=_0fw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1328370879-18523-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAA+hA=ThTuGnedNk_KnYLpquZ7EG+b6yU+GSoiS8qiWUB=_0fw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 04, 2012 at 03:54:39PM +0000, Mark Brown wrote:
-> Rather than requiring architectures that use gpiolib but don't have any
-> need to define anything custom to copy an asm/gpio.h provide a Kconfig
-> symbol which architectures must select in order to include gpio.h and
-> for other architectures just provide the trivial implementation directly.
+* Dong Aisheng <dongas86@gmail.com> [120204 08:24]:
+> On Sat, Feb 4, 2012 at 5:05 AM, Tony Lindgren <tony@atomide.com> wrote:
+> ....
+> >> I'm think the new way which i sent in this thread after the mail you replied.
+> >> You can refer to them to see if it's reasonable for you too.
+> >
+> > Hmm, sorry now I'm confused. Got a link for that mail as so
+> > many have been posted?
+> >
+> Pls see:
+> https://lkml.org/lkml/2012/2/3/276
+> 
+> For a simple example, you can refer to.
+> https://lkml.org/lkml/2012/2/2/405
 
-Hi Mark.
+Thanks for clarifying. Yes I'm using something that's a subset
+of that already, except I'm creating the functions and groups
+automatically.
 
-There is an even simpler solution.
+> Shawn and me will attend Linaro connect meeting on Feb 6th.
+> If you also attend, we may discuss it together with Linus and Stephen.
 
-For each arch that uses asm-generic/gpio.h add a line
-to arch/$ARCH/include/asm/Kbuild like this:
+Yes let's talk more there, I won't be there until on Tuesday
+the 7th though.
 
+Regards,
 
-    generic-y += gpio.h
-
-This will then make this arch pick up the asm-generic version when
-you do #include <asm/gpio.h>.
-
-And you avoid the kconfig games.
-
-iFor the archs which require their own asm/gpio.h file - just
-add it to the asm/ dir - and do not add the generic-y assignment.
-
-	Sam
+Tony
