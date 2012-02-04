@@ -1,138 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab2BDNJU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 08:09:20 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53260 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753278Ab2BDNJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 08:09:19 -0500
-Date: Sat, 4 Feb 2012 14:08:59 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from
- 80 to 100 colums
-Message-ID: <20120204130859.GB30198@elte.hu>
-References: <20120130140905.441199885@openvz.org>
- <20120130141852.309402052@openvz.org>
- <20120203074656.GC30543@elte.hu>
- <20120203083530.GD1968@moon>
- <20120203090929.GA23996@elte.hu>
- <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
- <20120203095227.GA13162@elte.hu>
- <20120203100743.GA3334@elte.hu>
- <20120203125715.0e9dfb1d.akpm@linux-foundation.org>
+	id S1754264Ab2BDNNk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 08:13:40 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62366 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab2BDNNj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Feb 2012 08:13:39 -0500
+Date: Sat, 4 Feb 2012 14:13:35 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: rcu warnings cause stack overflow
+Message-ID: <20120204131333.GB13382@somewhere>
+References: <20120201100652.GA2922@osiris.boeblingen.de.ibm.com>
+ <20120201151445.GA6731@somewhere.redhat.com>
+ <20120202122742.GA2745@osiris.boeblingen.de.ibm.com>
+ <20120202145219.GD9071@somewhere.redhat.com>
+ <20120202191116.GF2518@linux.vnet.ibm.com>
+ <20120203093214.GA2471@osiris.boeblingen.de.ibm.com>
+ <20120203183334.GG2382@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120203125715.0e9dfb1d.akpm@linux-foundation.org>
+In-Reply-To: <20120203183334.GG2382@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Fri, 3 Feb 2012 11:07:43 +0100
-> Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > [PATCH] SubmittingPatches: Increase the line length limit from 80 to 100 colums
+On Fri, Feb 03, 2012 at 10:33:35AM -0800, Paul E. McKenney wrote:
+> On Fri, Feb 03, 2012 at 10:32:14AM +0100, Heiko Carstens wrote:
+> > On Thu, Feb 02, 2012 at 11:11:16AM -0800, Paul E. McKenney wrote:
+> > > On Thu, Feb 02, 2012 at 03:52:20PM +0100, Frederic Weisbecker wrote:
+> > > > On Thu, Feb 02, 2012 at 01:27:42PM +0100, Heiko Carstens wrote:
+> > > > > On Wed, Feb 01, 2012 at 04:14:48PM +0100, Frederic Weisbecker wrote:
+> > > > > > > Removing the WARN_ON_ONCE will fix this and, if lockdep is turned on, still
+> > > > > > > will find illegal uses. But it won't work for lockdep off configs...
+> > > > > > > So we probably want something better than the patch below.
+> > > > > > 
+> > > > > > Ah ok. Hmm, but why are you using an exception to implement WARN_ON()
+> > > > > > in s390? Is it to have a whole new stack for the warning path in order
+> > > > > > to avoid stack overflow from the place that called the WARN_ON() ?
+> > > > > 
+> > > > > The reason was to reduce the code footprint of the WARN_ON() and also
+> > > > > be able to print the register contents at the time the warning happened.
+> > > > 
+> > > > Ah ok, makes sense.
+> > > 
+> > > So Frederic should push his anti-recursion patch, then?
 > > 
-> > The overwhelming majority of kernel developers have stopped 
-> > using 80 col terminals years ago.
+> > Yes, please.
 > > 
-> > As far as I'm aware I was the last regular kernel 
-> > contributor who still used a standard VGA text console, but 
-> > both text consoles and using them to read the kernel source 
-> > code has become increasingly gruesome years ago so I 
-> > switched to a wider terminal two years ago.
+> > Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > 
+> > It still generates recursive warnings because the WARNON_ONCE is inlined and
+> > every different usage will generate an exception, but it didn't produce a
+> > stack overflow anymore.
+> > To avoid the recursive warning the patch below would help. Not sure if it's
+> > worth it...
+> > 
+> > Subject: [PATCH] rcu: move rcu_is_cpu_idle() check warning into C file
+> > 
+> > From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > 
+> > rcu_read_lock() and rcu_read_unlock() generate a warning if a cpu is in
+> > extended quiescant state. Since these functions are inlined this can cause
+> > a lot of warnings if in the processing of the WARN_ON_ONCE() there is
+> > another usage of e.g. rcu_read_lock(). To make sure we only get one
+> > warning (and avoid possible stack overflows) uninline the check.
+> > 
+> > Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > ---
+> >  include/linux/rcupdate.h |    9 +++++++--
+> >  kernel/rcupdate.c        |    6 ++++++
+> >  2 files changed, 13 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 81c04f4..9fe7be5 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -230,22 +230,27 @@ static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
+> > 
+> >  #ifdef CONFIG_PROVE_RCU
+> >  extern int rcu_is_cpu_idle(void);
+> > +extern void rcu_warn_if_is_cpu_idle(void);
+> >  #else /* !CONFIG_PROVE_RCU */
+> >  static inline int rcu_is_cpu_idle(void)
+> >  {
+> >  	return 0;
+> >  }
+> > +
+> > +static inline void rcu_warn_if_is_cpu_idle(void)
+> > +{
+> > +}
+> >  #endif /* else !CONFIG_PROVE_RCU */
+> > 
+> >  static inline void rcu_lock_acquire(struct lockdep_map *map)
+> >  {
+> > -	WARN_ON_ONCE(rcu_is_cpu_idle());
+> > +	rcu_warn_if_is_cpu_idle();
 > 
-> I always use 80-cols, everywhere.  Not because I particularly 
-> like it - I find it a bit too small.  I use it because it is 
-> the standard, and using it helps me see where and how badly we 
-> violate the standard.
+> Thank you for the patch, but this WARN_ON_ONCE() has now been removed
+> in favor of lockdep-RCU checks elsewhere.  This has the advantage of
+> leveraging lockdep's splat-once and anti-recursion facilities.
 > 
-> We've actually done pretty well - linewrap in 80 cols rarely 
-> causes me problems.  It's sufficiently rare that when it 
-> *does* happen, it really stands out.
+> So I believe that current -rcu covers this.  (And yes, I do need to
+> push my most recent changes out.)
 
-Maybe it got better after the introduction of checkpatch - I 
-stopped using 80col terminals because the situation *was* 
-getting so bad and because i did not feel like fighting a 
-thousand other kernel developers who had different preferences 
-;-)
-
-> IOW, the changelog is quite the exaggeration.
-
-You are right about that.
-
-> > So lets increase the limit to 100 cols
-> 
-> I think that's going too far - 96 will be enough and it's a 
-> multiple of 8.
-> 
-> The multiple-of-8 thing seems pleasing but probably doesn't 
-> matter much.  It means that things like
-> 
-> 
-> if (foo) {
-> 	if (foo) {
-> 		if (foo) {
-> 			if (foo) {
-> 				if (foo) {
-> 					if (foo) {
-> 						if (foo) {
-> 							if (foo) {
-> 								if (foo) {
-> 									if (foo) {
-> 										if (foo) {
-> 											if (foo) {
-> 												if (foo) {
-> 													if (foo) {
-> 														if (foo) {
-> 												
-> 
-> will line up properly.
-> 
-> If we really want to improve the world we should jump into a 
-> time machine and set tabstops to 4.  Sigh.
-
-I think that would be a distinctly bad decision - people could 
-have crazy, 10 levels nesting in a function and be technically 
-'compliant'.
-
-8 col tabs _forces clean code_ more often than not. I know about 
-very few functions in the kernel that legitimately need more 
-than 3 or 4 levels of nesting.
-
-And that is why I agree with the 6-tab based warning approach - 
-then we can remove the 80col warning which is really making 
-things actively worse.
-
-Thanks,
-
-	Ingo
+This still uncovers cases where we call rcu_read_lock() without matching
+rcu_dereference(). Amongst this we have rcu_dereference_raw(), conditional
+rcu_dereference() and may be cases where we simply have no rcu_dereference*
+but we use rcu_read_lock() alone for some reason...
