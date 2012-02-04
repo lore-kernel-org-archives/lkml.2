@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab2BDCqZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 21:46:25 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:49484 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751276Ab2BDCqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 21:46:23 -0500
-Message-ID: <1328323579.21255.34.camel@joe2Laptop>
-Subject: Re: [PATCH] checkpatch: Warn on code with 6+ tab indentation
-From: Joe Perches <joe@perches.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Date: Fri, 03 Feb 2012 18:46:20 -0800
-In-Reply-To: <m1k443nwx8.fsf@fess.ebiederm.org>
-References: <20120130140905.441199885@openvz.org>
-	 <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu>
-	 <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu>
-	 <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
-	 <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
-	 <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
-	 <1328311239.21255.24.camel@joe2Laptop> <m1k443nwx8.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753754Ab2BDCqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 21:46:33 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48946 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab2BDCqY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 21:46:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F2C96F7.9070307@cavium.com>
+References: <CAEik5nNsct2CL0Pfu8XaBGpZ4UOc-6EWtbk_LO5AxGzK9Vajjg@mail.gmail.com>
+	<4F2C96F7.9070307@cavium.com>
+Date: Fri, 3 Feb 2012 20:46:23 -0600
+Message-ID: <CAEik5nOEBgtEf766CxcRPTXb5CnTdwn1JYm+yaaqV1aOTjpJ0g@mail.gmail.com>
+Subject: Re: [perf] perf top segfaulting
+From: Dan McGee <dpmcgee@gmail.com>
+To: David Daney <david.daney@cavium.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-03 at 18:40 -0800, Eric W. Biederman wrote:
-> Joe Perches <joe@perches.com> writes:
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> > @@ -1924,6 +1924,12 @@ sub process {
-[]
-> > +
-> > +			if ($line =~ /^\+\t{6,}/) {
-> > +				WARN("DEEP_INDENTATION",
-> > +				     "Too many leading tabs - consider code refactoring\n" . $herecurr);
-> > +			}
-> By any chance have you run this patch against itself?
+On Fri, Feb 3, 2012 at 8:24 PM, David Daney <david.daney@cavium.com> wrote:
+> On 02/03/2012 04:45 PM, Dan McGee wrote:
+>>
+>> On i686, version 3.2-2, but looks like annotate.c hasn't changed much
+>> since. It sometimes happens within 5 seconds of starting perf,
+>> sometimes much later, but almost always if I leave it running I well
+>> come back to it having segfaulted. When ran with gdb here it took
+>> about 3 minutes; I had a 5 second segfault and a 5 minute segfault
+>> before and after this run as well. I'm not sure what triggers it other
+>> than it isn't user input, as I can start `perf top`, not touch it, and
+>> it will eventually segfault.
+>>
+>
+>
+> I have seen the same thing (basically the same stack trace), so I think what
+> I see is probably closely related.  My failures however are on mips64 based
+> systems.
+>
+> My debugging suggests that this happens when the ABIs used by the running
+> processes are heterogeneous (A mixture of 32-bit and 64-bit processes).
+>  What I see is that all processes use a library with a common name, but
+> differing in paths (/lib32/libc-2.11.3.so and /lib64/libc-2.11.3.so for
+> example).  It looks like perf is confusing the offsets it caches from one
+> library to look up information in the other and since the symbols are in
+> different locations, the resulting erroneous address calculations result in
+> accesses to unmapped portions of perf's address space and you get SIGSEGV.
+>
+> I haven't dug into the code enough to suggest a fix, but I think that at a
+> high hand-waving level, this is what is happening.  I have never observed
+> the failure when using only a single ABI on the system
 
-Nope.  perl isn't a c.  Logic doesn't apply.
-Some might claim perl logic an oxymoron.
+Note that in this case, it is a pure 32-bit x86 system, and no library
+changes were going on in the background. So I wouldn't be surprised if
+the causes are similar (or the same), but I don't think I can chalk it
+up to being a single ABI vs multiple ABI problem; i686 only has one
+ABI.
 
-checkpatch should be used for c sources only.
-
-> I find it comical
-> that there is a line 104 characters long suggesting people use shorter
-> lines.
-
-You're welcome to line wrap it if you like...
-I don't actually use checkpatch much.
-
-cheers, Joe
-
+-Dan
