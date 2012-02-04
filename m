@@ -1,173 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab2BDLd4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 06:33:56 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60769 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab2BDLdy (ORCPT
+	id S1753308Ab2BDLkE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 06:40:04 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51019 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab2BDLkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 06:33:54 -0500
-Date: Sat, 4 Feb 2012 11:33:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arm-kernel@lists.infradead.org,
-        linux-c6x-dev@linux-c6x.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] irq: make SPARSE_IRQ an optionally hidden option
-Message-ID: <20120204113336.GS889@n2100.arm.linux.org.uk>
-References: <1327546727-31681-1-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327546727-31681-1-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sat, 4 Feb 2012 06:40:01 -0500
+Date: Sat, 4 Feb 2012 11:41:01 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Michael D Labriola <michael.d.labriola@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>, David Airlie <airlied@linux.ie>,
+        Michael D Labriola <mlabriol@gdeb.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: gma500: invalid frequency for monitor
+Message-ID: <20120204114101.28b90fdf@pyramind.ukuu.org.uk>
+In-Reply-To: <85aa4zs1q8.fsf@gmail.com>
+References: <85aa4zs1q8.fsf@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So that everyone who received this patch knows...
+> My system boots up, loads drm, loads gma500_gfx, and then my monitor's
+> OSD says "Out of Frequency".  Pretty much the same behavior with the
+> old psb_gfx module and the new gma500_gfx module.
 
-I've just pulled Rob's series, which includes this patch, into a stable
-branch in my tree and it is my intention to send this during the 3.4
-merge window.  This means that there is a patch in my tree which touches
-other architectures' Kconfig files.
+They are all basically the same logic until the most recent release which
+at least queries the monitor for the actual system ports it knows how to.
+> 
+> My system is configured with a LVDS-VGA adapter board, which is
+> plugged into the VGA port on a 1680x1050 LCD.  The BIOS for the Ocelot
+> is configured for a 1280x1024 LVDS panel, which seems like a
+> resolution my monitor should be able to handle.  I've attached
+> relevant kernel log with drm.debug set to 999.
 
-If there's any objections, please let me know asap.
+I don't have a setup with an LVDS-VGA adapter board to test, but my guess
+would be that even if we pick a mode the panel can do we'll pick a clock
+rate that it cannot.
 
-Thanks.
+> I think my setup is correct, because the vesa frambuffer seems to work
+> correctly.  All is well unless I load the gma500_gfx driver and let it
+> set the mode.
 
-On Wed, Jan 25, 2012 at 08:58:47PM -0600, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> On ARM, we don't want SPARSE_IRQ to be a user visible option. Make
-> SPARSE_IRQ visible based on MAY_HAVE_SPARSE_IRQ instead of depending
-> on HAVE_SPARSE_IRQ.
-> 
-> With this, SPARSE_IRQ is not visible on C6X and ARM.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Mark Salter <msalter@redhat.com>
-> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-c6x-dev@linux-c6x.org
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: linux-sh@vger.kernel.org
-> ---
-> 
-> This is part of an irq include consolidation series for ARM:
-> 
-> http://www.spinics.net/lists/arm-kernel/msg156492.html
-> 
-> Rob
-> 
->  arch/arm/Kconfig     |    1 -
->  arch/c6x/Kconfig     |    2 +-
->  arch/powerpc/Kconfig |    2 +-
->  arch/sh/Kconfig      |    2 +-
->  arch/x86/Kconfig     |    1 -
->  kernel/irq/Kconfig   |    5 ++---
->  6 files changed, 5 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 24626b0..30e7840 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -28,7 +28,6 @@ config ARM
->  	select HAVE_HW_BREAKPOINT if (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7))
->  	select HAVE_C_RECORDMCOUNT
->  	select HAVE_GENERIC_HARDIRQS
-> -	select HAVE_SPARSE_IRQ
->  	select GENERIC_IRQ_SHOW
->  	select CPU_PM if (SUSPEND || CPU_IDLE)
->  	select GENERIC_PCI_IOMAP
-> diff --git a/arch/c6x/Kconfig b/arch/c6x/Kconfig
-> index 26e67f0..2f58c61 100644
-> --- a/arch/c6x/Kconfig
-> +++ b/arch/c6x/Kconfig
-> @@ -11,7 +11,7 @@ config TMS320C6X
->  	select HAVE_DMA_API_DEBUG
->  	select HAVE_GENERIC_HARDIRQS
->  	select HAVE_MEMBLOCK
-> -	select HAVE_SPARSE_IRQ
-> +	select SPARSE_IRQ
->  	select OF
->  	select OF_EARLY_FLATTREE
->  
-> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> index 1919634..06c1cf0 100644
-> --- a/arch/powerpc/Kconfig
-> +++ b/arch/powerpc/Kconfig
-> @@ -133,7 +133,7 @@ config PPC
->  	select HAVE_REGS_AND_STACK_ACCESS_API
->  	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
->  	select HAVE_GENERIC_HARDIRQS
-> -	select HAVE_SPARSE_IRQ
-> +	select MAY_HAVE_SPARSE_IRQ
->  	select IRQ_PER_CPU
->  	select GENERIC_IRQ_SHOW
->  	select GENERIC_IRQ_SHOW_LEVEL
-> diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-> index 3c8db65..21b82a8 100644
-> --- a/arch/sh/Kconfig
-> +++ b/arch/sh/Kconfig
-> @@ -22,7 +22,7 @@ config SUPERH
->  	select HAVE_SYSCALL_TRACEPOINTS
->  	select HAVE_REGS_AND_STACK_ACCESS_API
->  	select HAVE_GENERIC_HARDIRQS
-> -	select HAVE_SPARSE_IRQ
-> +	select MAY_HAVE_SPARSE_IRQ
->  	select IRQ_FORCED_THREADING
->  	select RTC_LIB
->  	select GENERIC_ATOMIC64
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 864cc6e..fb2da44 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -69,7 +69,6 @@ config X86
->  	select HAVE_ARCH_JUMP_LABEL
->  	select HAVE_TEXT_POKE_SMP
->  	select HAVE_GENERIC_HARDIRQS
-> -	select HAVE_SPARSE_IRQ
->  	select SPARSE_IRQ
->  	select GENERIC_FIND_FIRST_BIT
->  	select GENERIC_IRQ_PROBE
-> diff --git a/kernel/irq/Kconfig b/kernel/irq/Kconfig
-> index 5a38bf4..1f2dece 100644
-> --- a/kernel/irq/Kconfig
-> +++ b/kernel/irq/Kconfig
-> @@ -13,7 +13,7 @@ config GENERIC_HARDIRQS
->  # Options selectable by the architecture code
->  
->  # Make sparse irq Kconfig switch below available
-> -config HAVE_SPARSE_IRQ
-> +config MAY_HAVE_SPARSE_IRQ
->         bool
->  
->  # Enable the generic irq autoprobe mechanism
-> @@ -61,8 +61,7 @@ config IRQ_FORCED_THREADING
->         bool
->  
->  config SPARSE_IRQ
-> -	bool "Support sparse irq numbering"
-> -	depends on HAVE_SPARSE_IRQ
-> +	bool "Support sparse irq numbering" if MAY_HAVE_SPARSE_IRQ
->  	---help---
->  
->  	  Sparse irq numbering is useful for distro kernels that want
-> -- 
-> 1.7.5.4
-> 
+What mode is the vesa driver using and if you set the same mode what
+happens ?
+
+> [  110.197942] ioremap error for 0x7f7f8000-0x7f7fb000, requested 0x10, got 0x0
+
+That is expected
+
+> [  110.206418] [drm:drm_mode_debug_printmodeline], Modeline 0:"1280x1024" 0 108000 1280 1328 1440 1688 1024 1025 1028 1072 0x8 0x0
+
+So we picked 1280x1024
+
+> [  110.257714] [drm:drm_sysfs_connector_add], adding "LVDS-1" to sysfs
+> [  110.257932] [drm:drm_sysfs_hotplug_event], generating hotplug event
+> [  110.269604] [drm:psb_intel_sdvo_read_byte], i2c transfer returned -6
+> [  110.269633] [drm:psb_intel_sdvo_init], No SDVO device found on SDVOB
+
+We found the LVDS, we found nothing on the SDVO
+
+> [  110.561304] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:7:LVDS-1]
+> [  110.586242] [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:7:LVDS-1] probed modes :
+> [  110.586274] [drm:drm_mode_debug_printmodeline], Modeline 10:"1280x1024" 40 71500 1280 1328 1440 1688 1024 1025 1028 1072 0x8 0x0
+
+And we probed a 1280x1024 mode with a clock of 71.5 (which might be a bit
+high for the panel ?)
+
+> [  110.637467] [drm:drm_crtc_helper_set_config], crtc has no fb, full mode set
+> [  110.637484] [drm:drm_crtc_helper_set_config], modes are different, full mode set
+
+We didn't have a mode before, we have one now.
+
+> [  110.637500] [drm:drm_mode_debug_printmodeline], Modeline 0:"" 0 0 0 0 0 0 0 0 0 0 0x0 0x0
+> [  110.637529] [drm:drm_mode_debug_printmodeline], Modeline 11:"1280x1024" 40 71500 1280 1328 1440 1688 1024 1025 1028 1072 0x8 0x0
+> [  110.637564] [drm:drm_crtc_helper_set_config], encoder changed, full mode switch
+> [  110.637580] [drm:drm_crtc_helper_set_config], crtc changed, full mode switch
+> [  110.637599] [drm:drm_crtc_helper_set_config], [CONNECTOR:7:LVDS-1] to [CRTC:4]
+
+Do a full load
+
+> [  110.637618] [drm:drm_crtc_helper_set_config], attempting to set mode from userspace
+> [  110.637634] [drm:drm_mode_debug_printmodeline], Modeline 11:"1280x1024" 40 71500 1280 1328 1440 1688 1024 1025 1028 1072 0x8 0x0
+> [  110.637678] [drm:drm_crtc_helper_set_mode], [CRTC:4]
+> [  110.658501] [drm:drm_mode_debug_printmodeline], Modeline 11:"1280x1024" 40 71500 1280 1328 1440 1688 1024 1025 1028 1072 0x8 0x0
+> [  110.699109] [drm:drm_crtc_helper_set_mode], [ENCODER:8:LVDS-8] set [MODE:11:1280x1024]
+> [  110.977395] [drm:drm_calc_timestamping_constants], crtc 4: hwmode: htotal 1688, vtotal 1072, vdisplay 1024
+> [  110.977415] [drm:drm_calc_timestamping_constants], crtc 4: clock 71500 kHz framedur 25307776 linedur 23608, pixeldur 13
+
+We set it all up and seem happy.
+
+> [  110.977439] [drm:drm_crtc_helper_set_config], Setting connector DPMS state to on
+> [  110.977453] [drm:drm_crtc_helper_set_config], 	[CONNECTOR:7:LVDS-1] set DPMS on
+> [  111.032366] Console: switching to colour frame buffer device 160x64
+> [  111.064932] fb0: psbfb frame buffer device
+> [  111.064944] drm: registered panic notifier
+> [  111.066827] gma500 0000:00:02.0: Backlight lvds set brightness 7a120000
+> [  111.066860] [drm] Initialized gma500 1.0.0 2011-06-06 for 0000:00:02.0 on minor 0
+
+Do you have a different monitor around to try and also hand setting lower
+modes ?
+
