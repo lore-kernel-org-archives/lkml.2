@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238Ab2BDOg5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 09:36:57 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:44205 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751226Ab2BDOg4 convert rfc822-to-8bit (ORCPT
+	id S1752881Ab2BDPPR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 10:15:17 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54763 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab2BDPPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 09:36:56 -0500
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX19M8uAinZhMWnTl7vG4zdSf4WgiZ1Iow+TCZw9QKE
-	5z4yiJvbLs7SjA
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: Johannes Stezenbach <js@sig21.net>
-Subject: Re: swap storm since kernel 3.2.x
-Date: Sat, 4 Feb 2012 15:36:51 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.3; KDE/4.8.0; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201202041109.53003.toralf.foerster@gmx.de> <20120204133331.GA13223@sig21.net>
-In-Reply-To: <20120204133331.GA13223@sig21.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202041536.52189.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+	Sat, 4 Feb 2012 10:15:15 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=VjYjH05F8U0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=buDcl2YXr5dIslTPh0MA:9 a=4fFcp_7zPeixjvLFB-AA:7 a=PUjeQqilurYA:10 a=-Kq2HLBH2XRvGPUL:21 a=YHU8BXc-ErAkUPPT:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328368512.5882.215.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH][Trivial] Fix up version number reference in
+ include/trace/events/power.h
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Jesper Juhl <jj@chaosbits.net>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Sat, 04 Feb 2012 10:15:12 -0500
+In-Reply-To: <4F2C56D9.8010801@linux.intel.com>
+References: <alpine.LNX.2.00.1201152146570.13389@swampdragon.chaosbits.net>
+	 <1326661784.7642.140.camel@gandalf.stny.rr.com>
+	 <alpine.LNX.2.00.1201152210300.13389@swampdragon.chaosbits.net>
+	 <alpine.LNX.2.00.1202032241380.25026@pobox.suse.cz>
+	 <4F2C56D9.8010801@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Johannes Stezenbach wrote at 14:33:31
-> On Sat, Feb 04, 2012 at 11:09:52AM +0100, Toralf Förster wrote:
-> > Within the last few weeks I'm observing sometimes a swap storm at my
-> > ThinkPad while compiling/installing new packages at my Gentoo Linux -
-> > the load is often something like :
+On Fri, 2012-02-03 at 13:51 -0800, Arjan van de Ven wrote:
+> On 2/3/2012 1:42 PM, Jiri Kosina wrote:
+> > On Sun, 15 Jan 2012, Jesper Juhl wrote:
 > > 
-> > Load avg: 13.6, 20.6, 20.9
+> >>>> -/* This code will be removed after deprecation time exceeded (2.6.41) */
+> >>>> +/* This code will be removed after deprecation time exceeded (3.1) */
+> >>>
+> >>> Shouldn't the real fix be to remove this code? What's the use of
+> >>> changing the version number that this code will be removed from, when
+> >>> the change won't get in until after the version that this code should
+> >>> have been removed?
+> >>>
+> >>> This is like updating 2014 calendars to say the world will end in 2012.
+> >>>
+> >> Heh, yeah, in a way you are right. But we have lots of code in the kernel 
+> >> that says it will be removed at <some date in the past>, so I just figured 
+> >> that if this code ends up hanging around it should at least display the 
+> >> correct version number for when it /should/ have been removed.
+> >> The actual removal I'll leave up to others.
 > > 
-> > I'm wondering whether this is related to kernel 3.2.x /Gentoo specific or
-> > related to my system only.
+> > Funny thing. Okay, this doesn't seem to be in linux-next, so I am taking 
+> > it.
+> > 
+> > Steven, planning to drop the code in a near future? :)
 > 
-> Do you happen to have CONFIG_DEBUG_OBJECTS enabled?  For me it
-> ate lots of memory with 3.2.2, easily visible in slabtop.
-> 
-> 
-> Johannes
+> we shouldn't be dropping these yet.. tools are still using them.
+> and there really is no cost to keeping them either.
 
-No, I've these settings :
+Then the correct fix is to remove the comment, as it is incorrect.
 
-tfoerste@n22 ~ $ zgrep -e OBJ -e SLAB -e SLUB /proc/config.gz  | grep -v '#'
-CONFIG_SLUB_DEBUG=y
-CONFIG_SLUB=y
-CONFIG_SLABINFO=y
+-- Steve
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
