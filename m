@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2BDPjE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 10:39:04 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:39590 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750847Ab2BDPjB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 10:39:01 -0500
+	id S1753475Ab2BDPtU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 10:49:20 -0500
+Received: from home.keithp.com ([63.227.221.253]:38612 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752058Ab2BDPtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Feb 2012 10:49:18 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Alan Stern <stern@rowland.harvard.edu>, Greg KH <greg@kroah.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] USB: debugging code shouldn't alter control flow
+In-Reply-To: <Pine.LNX.4.44L0.1202021536080.1389-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1202021536080.1389-100000@iolanthe.rowland.org>
+User-Agent: Notmuch/0.11 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sat, 04 Feb 2012 16:49:06 +0100
+Message-ID: <86r4yatx8t.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <4F2AA642.1030400@linux.intel.com>
-References: <20120121082857.GC32134@elte.hu>
-	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
-	<20120121165830.GA9216@elte.hu>
-	<CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
-	<CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
-	<CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
-	<CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
-	<20120131115855.5861bad7@pyramind.ukuu.org.uk>
-	<20120131120922.GD32010@elte.hu>
-	<20120131121820.58a1db97@pyramind.ukuu.org.uk>
-	<20120131122339.GG32010@elte.hu>
-	<CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
-	<1328144756.2768.57.camel@dabdike.int.hansenpartnership.com>
-	<4F2AA642.1030400@linux.intel.com>
-Date: Sun, 5 Feb 2012 00:39:00 +0900
-Message-ID: <CAMO-S2joH0fwEyOOCSFGM+Lc=xgiarNxm3Rj9DgWJNeoRD+QRQ@mail.gmail.com>
-Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: James Bottomley <jbottomley@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 00:05, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 02/01/2012 05:05 PM, James Bottomley wrote:
->>
->>
->> Incidentally, the last time this came up was with mpt fusion: for a
->> write to a 64 bit register, it didn't care about order, but it did care
->> about interleaving as in if you write one half of a 64 bit register and
->> then write to another register, the 64 bit register effectively gets
->> written with zeros in the part you didn't write to, so we had to put a
->> spin lock in the open coded writeb/w/l/q() to make sure the card didn't
->> get interleaved writes.
->>
->
-> There are always going to be hardware which have specific needs, and for
-> those open-coding makes sense, but the littleendian/bigendian pair is going
-> to cover ~90% of users and make sense to can.
->
-> I worked myself on a driver (which sadly never shipped) which had an WC
-> window and a UC window... the final write in a series had a completion bit
-> in it and would go to the UC window after setting up a whole chunk of
-> operations in the WC window (writing UC memory flushes WC memory ahead of
-> it.)
->
-> Thus, the two-part breakdown of writeq() to the UC window had to write the
-> low half to the WC window instead.  This is clearly not generic.
->
->        -hpa
->
->
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Because of my ignorant, I don't know the words "UC window" and "WC window"
-in this context. Could you teach me?
+On Thu, 2 Feb 2012 15:38:14 -0500 (EST), Alan Stern <stern@rowland.harvard.=
+edu> wrote:
 
--- 
-Hitoshi Mitake
-h.mitake@gmail.com
+> -	urb->transfer_flags &=3D allowed;
+> +	allowed &=3D urb->transfer_flags;
+
+Minor bikeshed here, but 'allowed' is not the right name for the value
+at this point; perhaps just
+=20=20=20=20=20=20=20=20
+	/* warn if submitter gave bogus flags */
+	if ((urb->transfer_flags & allowed) !=3D urb->transfer_flags)
+
+might be better?
+
+Otherwise, this looks nice to me.
+
+Acked-by: Keith Packard <keithp@keithp.com>
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTy1TcjYtFsjWk68qAQjvag/8Do4M+cqolVolpsjc0qt9fthqf/NZuNwn
+KksyIkXDdaziFgPEQRTUtwFCiNXyaOeYpswY7n85EVsGIC2u9FlYWPm+Z4Q7V5E1
+5v3vDfnuPiPxQbxAYu+ankYuVaGTTG7jKIdu/+ZX/f+kZ0PbczmwqsZNKGL4o2Pu
+Pj3wUb8eevb9f6GVfK4P5jmya7uY7g/abi2XlzmXsXr34drw6kYJGUHGYvP17NE9
+HPpCUtHdgBwSQh2Zcql5IlvT7wlGdNUoVKX+3qZpcvOfp2pKvxtZt4WVUmp1ilmk
+nYxQmzedQgALvGEQnpSTHB+t2YJ+hTOQ6vcBl+GGvZFHDh7OyUQjv+djP7bu/xwD
+FkGyEdUwYFZSDNXhGEThUVpbDo0WGAuPn4VEM6P3+LZYY4MJnIY7+RS0R+rRSYrt
+QVL8vjBiusLM+KcTysL+GWtTAq40K56+U8Wf1z0yWG+ICbSbIbNbCZLMj1Cn5Zvb
+piXZ4CVfxB+sV0oxvT0iMNoB9uypWu0M0ayPpnLEZhYi20+V3AenxWAA6ul24kn9
+06gfKrU3AI8eeGZFi8ss0sKiUk5Ipb1/FzNJvpSdWPPn/OwOF4rSDxSV83W7Mo7q
+kT2FuyFXNMMxuOd1WXEvOYG/c9wMUdip0qy/U+x8iGw1hUqQ7bl+iiiRHFdlsPMv
+hQnkax1ifFM=
+=FrhN
+-----END PGP SIGNATURE-----
+--=-=-=--
