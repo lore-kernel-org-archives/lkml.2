@@ -1,88 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab2BDMQe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 07:16:34 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:50232 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751972Ab2BDMQd (ORCPT
+	id S1753638Ab2BDMQm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 07:16:42 -0500
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:53447 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751972Ab2BDMQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 07:16:33 -0500
+	Sat, 4 Feb 2012 07:16:40 -0500
 From: Aneesh V <aneesh@ti.com>
 To: linux-omap@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Aneesh V <aneesh@ti.com>
-Subject: [RFC PATCH 0/8] Add TI EMIF SDRAM controller driver
-Date: Sat,  4 Feb 2012 17:46:03 +0530
-Message-Id: <1328357771-31644-1-git-send-email-aneesh@ti.com>
+        Benoit Cousson <b-cousson@ti.com>
+Subject: [RFC PATCH 1/8] OMAP4: hwmod: add EMIF hw mod data
+Date: Sat,  4 Feb 2012 17:46:04 +0530
+Message-Id: <1328357771-31644-2-git-send-email-aneesh@ti.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1328357771-31644-1-git-send-email-aneesh@ti.com>
+References: <1328357771-31644-1-git-send-email-aneesh@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a driver for the EMIF SDRAM controller used in TI SoCs
+From: Benoit Cousson <b-cousson@ti.com>
 
-EMIF is an SDRAM controller that supports, based on its revision,
-one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
-for LPDDR2.
+Signed-off-by: Benoit Cousson <b-cousson@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  110 ++++++++++++++++++++++++++++
+ 1 files changed, 110 insertions(+), 0 deletions(-)
 
-The driver supports the following features:
-- Calculates the DDR AC timing parameters to be set in EMIF
-  registers using data from the device data-sheets and based
-  on the DDR frequency. If data from data-sheets is not available
-  default timing values from the JEDEC spec are used. These
-  will be safe, but not necessarily optimal
-- API for changing timings during DVFS or at boot-up
-- Temperature alert configuration and handling of temperature
-  alerts, if any for LPDDR2 devices
-  * temperature alert is based on periodic polling of MR4 mode
-    register in DDR devices automatically performed by hardware
-  * timings are de-rated and brought back to nominal when
-    temperature raises and falls respectively
-- Cache of calculated register values to avoid re-calculating
-  them
-
-The driver will need some minor updates when it is eventually
-integrated with DVFS. This can not be done now as DVFS support
-is not available yet in mainline.
-
-Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
-were immensely helpful in shaping up the interfaces. Vibhore Vardhan
-<vvardhan@gmail.com> did the initial code snippet for thermal
-handling.
-
-Testing: 
-- The driver is tested on OMAP4430 SDP.
-- The driver in a slightly adapted form is also tested on OMAP5.
-- Since mainline kernel doesn't have DVFS support yet,
-  testing was done using a test module.
-- Temperature alert handling was tested with simulated interrupts
-  and faked temperature values as testing all cases in real-life
-  scenarios is difficult.
-
-Aneesh V (7):
-  misc: ddr: add LPDDR2 data from JESD209-2
-  misc: emif: add register definitions for EMIF
-  misc: emif: add basic infrastructure for EMIF driver
-  misc: emif: handle frequency and voltage change events
-  misc: emif: add interrupt and temperature handling
-  misc: emif: add one-time settings
-  misc: emif: add debugfs entries for emif
-
-Benoit Cousson (1):
-  OMAP4: hwmod: add EMIF hw mod data
-
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  110 ++
- drivers/misc/Kconfig                       |   20 +
- drivers/misc/Makefile                      |    2 +
- drivers/misc/emif.c                        | 1522 ++++++++++++++++++++++++++++
- drivers/misc/emif_regs.h                   |  461 +++++++++
- drivers/misc/jedec_ddr_data.c              |  141 +++
- include/linux/emif.h                       |  257 +++++
- include/linux/jedec_ddr.h                  |  174 ++++
- 8 files changed, 2687 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/emif.c
- create mode 100644 drivers/misc/emif_regs.h
- create mode 100644 drivers/misc/jedec_ddr_data.c
- create mode 100644 include/linux/emif.h
- create mode 100644 include/linux/jedec_ddr.h
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index f9f1510..2b107c7 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -5480,6 +5480,111 @@ static struct omap_hwmod omap44xx_usb_tll_hs_hwmod = {
+ 	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_tll_hs_slaves),
+ };
+ 
++/*
++ * 'emif' class
++ * external memory interface no1
++ */
++
++static struct omap_hwmod_class omap44xx_emif_hwmod_class = {
++	.name	= "emif",
++};
++
++/* emif1 */
++static struct omap_hwmod omap44xx_emif1_hwmod;
++static struct omap_hwmod_irq_info omap44xx_emif1_irqs[] = {
++	{ .irq = 110 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_addr_space omap44xx_emif1_addrs[] = {
++	{
++		.pa_start	= 0x4c000000,
++		.pa_end		= 0x4c0000ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{ }
++};
++
++/* emif_fw -> emif1 */
++static struct omap_hwmod_ocp_if omap44xx_emif_fw__emif1 = {
++	.master		= &omap44xx_emif_fw_hwmod,
++	.slave		= &omap44xx_emif1_hwmod,
++	.clk		= "l3_div_ck",
++	.addr		= omap44xx_emif1_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++/* emif1 slave ports */
++static struct omap_hwmod_ocp_if *omap44xx_emif1_slaves[] = {
++	&omap44xx_emif_fw__emif1,
++};
++
++static struct omap_hwmod omap44xx_emif1_hwmod = {
++	.name		= "emif1",
++	.class		= &omap44xx_emif_hwmod_class,
++	.flags		= HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET,
++	.mpu_irqs	= omap44xx_emif1_irqs,
++	.main_clk	= "emif1_fck",
++	.clkdm_name	= "l3_emif_clkdm",
++	.prcm		= {
++		.omap4 = {
++			.clkctrl_offs = OMAP4_CM_MEMIF_EMIF_1_CLKCTRL_OFFSET,
++			.context_offs = OMAP4_RM_MEMIF_EMIF_1_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_HWCTRL,
++		},
++	},
++	.slaves		= omap44xx_emif1_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_emif1_slaves),
++};
++
++/* emif2 */
++static struct omap_hwmod omap44xx_emif2_hwmod;
++static struct omap_hwmod_irq_info omap44xx_emif2_irqs[] = {
++	{ .irq = 111 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_addr_space omap44xx_emif2_addrs[] = {
++	{
++		.pa_start	= 0x4d000000,
++		.pa_end		= 0x4d0000ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{ }
++};
++
++/* emif_fw -> emif2 */
++static struct omap_hwmod_ocp_if omap44xx_emif_fw__emif2 = {
++	.master		= &omap44xx_emif_fw_hwmod,
++	.slave		= &omap44xx_emif2_hwmod,
++	.clk		= "l3_div_ck",
++	.addr		= omap44xx_emif2_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++/* emif2 slave ports */
++static struct omap_hwmod_ocp_if *omap44xx_emif2_slaves[] = {
++	&omap44xx_emif_fw__emif2,
++};
++
++static struct omap_hwmod omap44xx_emif2_hwmod = {
++	.name		= "emif2",
++	.class		= &omap44xx_emif_hwmod_class,
++	.flags		= HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET,
++	.mpu_irqs	= omap44xx_emif2_irqs,
++	.main_clk	= "emif2_fck",
++	.clkdm_name	= "l3_emif_clkdm",
++	.prcm		= {
++		.omap4 = {
++			.clkctrl_offs = OMAP4_CM_MEMIF_EMIF_1_CLKCTRL_OFFSET,
++			.context_offs = OMAP4_RM_MEMIF_EMIF_1_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_HWCTRL,
++		}
++	},
++	.slaves		= omap44xx_emif2_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_emif2_slaves),
++};
++
+ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 
+ 	/* dmm class */
+@@ -5629,6 +5734,11 @@ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 	/* wd_timer class */
+ 	&omap44xx_wd_timer2_hwmod,
+ 	&omap44xx_wd_timer3_hwmod,
++
++	/* emif class */
++	&omap44xx_emif1_hwmod,
++	&omap44xx_emif2_hwmod,
++
+ 	NULL,
+ };
+ 
+-- 
+1.7.1
 
