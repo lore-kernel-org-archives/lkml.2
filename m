@@ -1,90 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab2BDCIZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 21:08:25 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58341 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab2BDCIX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 21:08:23 -0500
-Date: Sat, 4 Feb 2012 11:08:17 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-Message-Id: <20120204110817.30e1a4c62754f074a8a5064d@gmail.com>
-In-Reply-To: <4F2B41D6.8020603@codemonkey.ws>
-References: <4F2AB552.2070909@redhat.com>
-	<4F2B41D6.8020603@codemonkey.ws>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755950Ab2BDCNR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 21:13:17 -0500
+Received: from sandeen.net ([63.231.237.45]:38567 "EHLO mail.sandeen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753905Ab2BDCNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 21:13:14 -0500
+Message-ID: <4F2C9438.1020000@sandeen.net>
+Date: Fri, 03 Feb 2012 20:13:12 -0600
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 6/8] xfs: Use generic writers counter instead of m_active_trans
+ counter
+References: <1327091686-23177-1-git-send-email-jack@suse.cz> <1327091686-23177-7-git-send-email-jack@suse.cz> <20120124080511.GN15102@dastard>
+In-Reply-To: <20120124080511.GN15102@dastard>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hope to get comments from live migration developers,
-
-Anthony Liguori <anthony@codemonkey.ws> wrote:
-
-> > Guest memory management
-> > -----------------------
-> > Instead of managing each memory slot individually, a single API will be
-> > provided that replaces the entire guest physical memory map atomically.
-> > This matches the implementation (using RCU) and plugs holes in the
-> > current API, where you lose the dirty log in the window between the last
-> > call to KVM_GET_DIRTY_LOG and the call to KVM_SET_USER_MEMORY_REGION
-> > that removes the slot.
-> >
-> > Slot-based dirty logging will be replaced by range-based and work-based
-> > dirty logging; that is "what pages are dirty in this range, which may be
-> > smaller than a slot" and "don't return more than N pages".
-> >
-> > We may want to place the log in user memory instead of kernel memory, to
-> > reduce pinned memory and increase flexibility.
+On 1/24/12 2:05 AM, Dave Chinner wrote:
+> On Fri, Jan 20, 2012 at 09:34:44PM +0100, Jan Kara wrote:
+>> m_active_trans counter is racy wrt filesystem freezing. The patch replaces it
+>> with generic counter of running transactions which is properly synchronized
+>> with filesystem freezing. Things are a bit more complex because we need to log
+>> a dummy transaction and free block counters after the filesystem is frozen so
+>> we need to pass information to _xfs_trans_alloc() whether the transaction is
+>> part of filesystem freezing or not.
+>>
+>> Signed-off-by: Jan Kara <jack@suse.cz>
+>> ---
+>>  fs/xfs/xfs_fsops.c |    5 +++--
+>>  fs/xfs/xfs_fsops.h |    2 +-
+>>  fs/xfs/xfs_iomap.c |    4 ++--
+>>  fs/xfs/xfs_mount.c |    2 +-
+>>  fs/xfs/xfs_mount.h |    2 --
+>>  fs/xfs/xfs_super.c |    3 +--
+>>  fs/xfs/xfs_sync.c  |   13 +++----------
+>>  fs/xfs/xfs_trans.c |   19 ++++++++++++-------
+>>  fs/xfs/xfs_trans.h |    3 ++-
+>>  9 files changed, 25 insertions(+), 28 deletions(-)
+>>
+>> diff --git a/fs/xfs/xfs_fsops.c b/fs/xfs/xfs_fsops.c
+>> index 1c6fdeb..503fdfa 100644
+>> --- a/fs/xfs/xfs_fsops.c
+>> +++ b/fs/xfs/xfs_fsops.c
+>> @@ -645,12 +645,13 @@ out:
+>>   */
+>>  int
+>>  xfs_fs_log_dummy(
+>> -	xfs_mount_t	*mp)
+>> +	xfs_mount_t	*mp,
+>> +	bool		for_freeze)
 > 
-> Since we really only support 64-bit hosts, what about just pointing the kernel 
-> at a address/size pair and rely on userspace to mmap() the range appropriately?
+> What does "for_freeze" mean? If it is true, does it mean we are in a
+> freeze or not in a freeze? I can't really tell from the code,
+> because it just passed true or false, and in one case the code
+> always passes false even though the code can be called after
+> SB_FREEZE_WRITE is set (xfs_quiesce_data() via sync_filesystem())
+
+Is that a problem?  This is all about the FREEZE_TRANS context right?
+So whether we are under FREEZE_WRITE (during freeze_super) or not
+(during i.e. sys_sync) I think it's ok, no?  See more below...
+
+>>  #endif	/* __XFS_FSOPS_H__ */
+>> diff --git a/fs/xfs/xfs_iomap.c b/fs/xfs/xfs_iomap.c
+>> index 9afa282..fd47f6e 100644
+>> --- a/fs/xfs/xfs_iomap.c
+>> +++ b/fs/xfs/xfs_iomap.c
+>> @@ -679,8 +679,8 @@ xfs_iomap_write_unwritten(
+>>  		 * the same inode that we complete here and might deadlock
+>>  		 * on the iolock.
+>>  		 */
+>> -		xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
+>> -		tp = _xfs_trans_alloc(mp, XFS_TRANS_STRAT_WRITE, KM_NOFS);
+>> +		tp = _xfs_trans_alloc(mp, XFS_TRANS_STRAT_WRITE,
+>> +				KM_NOFS, false);
 > 
+> This is a documentation regression - the code was clearly self
+> documenting w.r.t. frozen filesystem behaviour. It isn't anymore.
+> 
+> I'd suggest that we need:
+> 
+> #define XFS_WAIT_FOR_FREEZE	false
+> #define XFS_IGNORE_FROZEN_SB	true
 
-Seems reasonable but the real problem is not how to set up the memory:
-the problem is how to set a bit in user-space.
+>From my reading those are confusing as well.  What the flag controls is:
 
-We need two things:
-	- introducing set_bit_user()
-	- changing mmu_lock from spin_lock to mutex_lock
-	  (mark_page_dirty() can be called with mmu_lock held)
+false: do sb_start_write(SB_FREEZE_TRANS) in trans alloc (will call sb_stop_write in trans free)
+true: skip sb_start_write & set flag to skip sb_stop_write(SB_FREEZE_TRANS) in trans free
 
-The former is straightforward and I sent a patch last year.
-The latter needs a fundamental change:  I heard (from Avi) that we can
-change mmu_lock to mutex_lock if mmu_notifier becomes preemptible.
+so maybe:
 
-So I was planning to restart this work when Peter's
-	"mm: Preemptibility"
-	http://lkml.org/lkml/2011/4/1/141
-gets finished.
+#define XFS_HONOR_FREEZE_TRANS	false
+#define XFS_IGNORE_FREEZE_TRANS	true
 
-But even if we cannot achieve "without pinned memory" we may also want
-to make the user-space know how many pages are getting dirty.
+would be a little clearer?  Or maybe:
 
-For example think about the last step of live migration.  We stop the
-guest and send the remaining pages.  For this we do not need to write
-protect them any more, just want to know which ones are dirty.
+#define XFS_INC_FREEZE_TRANS	false
+#define XFS_NOINC_FREEZE_TRANS	true
 
-If user-space can read the bitmap, it does not need to do GET_DIRTY_LOG
-because the guest is already stopped, so we can reduce the downtime.
+or
 
-Is this correct?
+#define XFS_TRANS_START_WRITE		false
+#define XFS_NO_TRANS_START_WRITE	true
+
+bleah, ok, step away from the bike shed....
+
+> as the parameters here to makeit extremely clear when reading the
+> code exactly what that last parameter means. i.e. it is self
+> documenting. That will help clear up a lot of the confusion on what
+> these magic boolean parameters are supposed to mean....
+> 
+>> @@ -312,7 +311,6 @@ void xfs_do_force_shutdown(struct xfs_mount *mp, int flags, char *fname,
+>>  #define SHUTDOWN_DEVICE_REQ	0x0020	/* failed all paths to the device */
+>>  
+>>  #define xfs_test_for_freeze(mp)		((mp)->m_super->s_frozen)
+> 
+> I'd remove this, too, and just open code it.
+> 
+>> diff --git a/fs/xfs/xfs_sync.c b/fs/xfs/xfs_sync.c
+>> index aa3dc1a..24f4d7c 100644
+>> --- a/fs/xfs/xfs_sync.c
+>> +++ b/fs/xfs/xfs_sync.c
+>> @@ -373,7 +373,7 @@ xfs_quiesce_data(
+>>  
+>>  	/* mark the log as covered if needed */
+>>  	if (xfs_log_need_covered(mp))
+>> -		error2 = xfs_fs_log_dummy(mp);
+>> +		error2 = xfs_fs_log_dummy(mp, false);
+> 
+> This is the call that can occur inside SB_FREEZE_WRITE context as
+> well as outside it.
+
+Somehow I'm missing the problem here.  This basically means that we will
+always increment the metadata writer count for the new transaction, and drop
+it when done.  But I _think_ that's ok in both spots, no?  Neither is called
+inside of a FREEZE_TRANS.
+
+-Eric
 
 
-So I think we can do this in two steps:
-	1. just move the bitmap to user-space and (pin it)
-	2. un-pin it when the time comes
+>>  
+>>  	/* flush data-only devices */
+>>  	if (mp->m_rtdev_targp)
+>> @@ -421,18 +421,11 @@ xfs_quiesce_attr(
+>>  	int	error = 0;
+>>  
+>>  	/* wait for all modifications to complete */
+>> -	while (atomic_read(&mp->m_active_trans) > 0)
+>> -		delay(100);
+>> +	sb_wait_write(mp->m_super, SB_FREEZE_TRANS);
+>>  
+>>  	/* flush inodes and push all remaining buffers out to disk */
+>>  	xfs_quiesce_fs(mp);
+>>  
+>> -	/*
+>> -	 * Just warn here till VFS can correctly support
+>> -	 * read-only remount without racing.
+>> -	 */
+>> -	WARN_ON(atomic_read(&mp->m_active_trans) != 0);
+>> -
+> 
+> Now there's an interesting question. Does this break read-only
+> remount?
+> 
+> /me checks the sb_wait_write() code
+> 
+> No, it looks like it should be fine.
+> 
+>>  	/* Push the superblock and write an unmount record */
+>>  	error = xfs_log_sbcount(mp);
+>>  	if (error)
+>> @@ -467,7 +460,7 @@ xfs_sync_worker(
+>>  		/* dgc: errors ignored here */
+>>  		if (mp->m_super->s_frozen == SB_UNFROZEN &&
+>>  		    xfs_log_need_covered(mp))
+>> -			error = xfs_fs_log_dummy(mp);
+>> +			error = xfs_fs_log_dummy(mp, false);
+>>  		else
+>>  			xfs_log_force(mp, 0);
+>>  		error = xfs_qm_sync(mp, SYNC_TRYLOCK);
+>> diff --git a/fs/xfs/xfs_trans.c b/fs/xfs/xfs_trans.c
+>> index 1f35b2f..e97014b 100644
+>> --- a/fs/xfs/xfs_trans.c
+>> +++ b/fs/xfs/xfs_trans.c
+>> @@ -577,24 +577,28 @@ xfs_trans_alloc(
+>>  	xfs_mount_t	*mp,
+>>  	uint		type)
+>>  {
+>> -	xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
+>> -	return _xfs_trans_alloc(mp, type, KM_SLEEP);
+>> +	return _xfs_trans_alloc(mp, type, KM_SLEEP, false);
+>>  }
+>>  
+>>  xfs_trans_t *
+>>  _xfs_trans_alloc(
+>>  	xfs_mount_t	*mp,
+>>  	uint		type,
+>> -	uint		memflags)
+>> +	uint		memflags,
+>> +	bool		freezing)
+>>  {
+>>  	xfs_trans_t	*tp;
+>>  
+>> -	atomic_inc(&mp->m_active_trans);
+>> -
+>> +	if (!freezing)
+>> +		sb_start_write(mp->m_super, SB_FREEZE_TRANS);
+>> +	else
+>> +		WARN_ON(xfs_test_for_freeze(mp) != SB_FREEZE_TRANS);
+> 
+> Just open code xfs_test_for_freeze() and add a line of whitespace
+> after this.
+> 
+>>  	tp = kmem_zone_zalloc(xfs_trans_zone, memflags);
+>>  	tp->t_magic = XFS_TRANS_MAGIC;
+>>  	tp->t_type = type;
+>>  	tp->t_mountp = mp;
+>> +	if (freezing)
+>> +		tp->t_flags |= XFS_TRANS_FREEZING;
+> 
+> Simply assign the value - tp->t_flags is guaranteed to be 0 right
+> now.
+> 
+>>  	INIT_LIST_HEAD(&tp->t_items);
+>>  	INIT_LIST_HEAD(&tp->t_busy);
+>>  	return tp;
+>> @@ -611,7 +615,8 @@ xfs_trans_free(
+>>  	xfs_alloc_busy_sort(&tp->t_busy);
+>>  	xfs_alloc_busy_clear(tp->t_mountp, &tp->t_busy, false);
+>>  
+>> -	atomic_dec(&tp->t_mountp->m_active_trans);
+>> +	if (!(tp->t_flags & XFS_TRANS_FREEZING))
+>> +		sb_end_write(tp->t_mountp->m_super, SB_FREEZE_TRANS);
+>>  	xfs_trans_free_dqinfo(tp);
+>>  	kmem_zone_free(xfs_trans_zone, tp);
+>>  }
+>> @@ -654,7 +659,7 @@ xfs_trans_dup(
+>>  
+>>  	xfs_trans_dup_dqinfo(tp, ntp);
+>>  
+>> -	atomic_inc(&tp->t_mountp->m_active_trans);
+>> +	sb_dup_write(tp->t_mountp->m_super, SB_FREEZE_TRANS);
+> 
+> That's strangly named. Isn't the normal thing to do here use a "__"
+> prefix for operations that just need an extra reference because they
+> already have one (i.e. __sb_start_write())?
+> 
+> This also looks broken with repsect to the new XFS_TRANS_FREEZING
+> flag. If it is set on the parent, it needs to be set on the
+> duplicated transaction. And if it is set, then no extra reference
+> should be taken.
+> 
+> Cheers,
+> 
+> Dave.
 
-I can start 1 after "srcu-less dirty logging" gets finished.
-
-
-	Takuya
