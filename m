@@ -1,209 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab2BDMR2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 07:17:28 -0500
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:35914 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753943Ab2BDMR0 (ORCPT
+	id S1753762Ab2BDMXO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 07:23:14 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50445 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab2BDMXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 07:17:26 -0500
-From: Aneesh V <aneesh@ti.com>
-To: linux-omap@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Aneesh V <aneesh@ti.com>
-Subject: [RFC PATCH 8/8] misc: emif: add debugfs entries for emif
-Date: Sat,  4 Feb 2012 17:46:11 +0530
-Message-Id: <1328357771-31644-9-git-send-email-aneesh@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1328357771-31644-1-git-send-email-aneesh@ti.com>
-References: <1328357771-31644-1-git-send-email-aneesh@ti.com>
+	Sat, 4 Feb 2012 07:23:13 -0500
+Date: Sat, 4 Feb 2012 12:22:46 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: TAO HU <tghk48@motorola.com>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-omap <linux-omap@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: In many cases softlockup can not be reported after disabling
+	IRQ for long time
+Message-ID: <20120204122246.GG1275@n2100.arm.linux.org.uk>
+References: <CAOwKts8zS1rYA+Y4k-vb8YAaR=aFd1BwryhhWWnWLQyrYrNqyA@mail.gmail.com> <20120131154748.GA5650@redhat.com> <CAOwKts_dTvc4LiCZUXN9oYzty1pkDEn_VQwPKY=EoVzk0n6tFA@mail.gmail.com> <20120201145802.GF5650@redhat.com> <CAOwKts8S0EkUGcP3rYqZe+HdvyXD0+SR1f_3xWpu5FprKWuGhQ@mail.gmail.com> <20120202084350.GB1275@n2100.arm.linux.org.uk> <CAOwKts--CDpmiMunfYKrYsnWovmQhAC7Vp0P-9MeNVy6vx-Wvw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOwKts--CDpmiMunfYKrYsnWovmQhAC7Vp0P-9MeNVy6vx-Wvw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add debug entries for:
-	1. calculated registers per frequency
-	2. last polled value of MR4(temperature level
-	   of LPDDR2 memory)
+On Thu, Feb 02, 2012 at 10:05:22PM +0800, TAO HU wrote:
+> I don't know it's already been discussed.
+> Appreciate if you could point out existing discussion thread.
+> 
+> I agree it is impossible to detect "timeout" when using jiffies which
+> relies on timer.
+> 
+> For timestamp, softlockup (watchdog) use cpu_clock() whcih eventually calls
+> sched_clock().
+> And sched_clock() is implemented to read out the value of a 32K
+> timer/counter on OMAP4430.
+> That means the timestamp will be still updated while the IRQ is disabled.
 
-Signed-off-by: Aneesh V <aneesh@ti.com>
----
- drivers/misc/emif.c |  129 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 129 insertions(+), 0 deletions(-)
+Yes, and it'll take 131072 seconds to wrap.
 
-diff --git a/drivers/misc/emif.c b/drivers/misc/emif.c
-index 9d24cc7..f67a9e7 100644
---- a/drivers/misc/emif.c
-+++ b/drivers/misc/emif.c
-@@ -18,6 +18,7 @@
- #include <linux/platform_device.h>
- #include <linux/interrupt.h>
- #include <linux/slab.h>
-+#include <linux/debugfs.h>
- #include <linux/seq_file.h>
- #include <linux/module.h>
- #include <linux/spinlock.h>
-@@ -47,6 +48,7 @@
-  *				frequency change (i.e. corresponding to the
-  *				frequency in effect at the moment)
-  * @plat_data:			Pointer to saved platform data.
-+ * @debugfs_root:		dentry to the root folder for EMIF in debugfs
-  */
- struct emif_data {
- 	u8				duplicate;
-@@ -59,11 +61,136 @@ struct emif_data {
- 	struct emif_regs		*regs_cache[EMIF_MAX_NUM_FREQUENCIES];
- 	struct emif_regs		*curr_regs;
- 	struct emif_platform_data	*plat_data;
-+	struct dentry			*debugfs_root;
- };
- 
- static struct emif_data *emif1;
- static u32 t_ck; /* DDR clock period in ps */
- 
-+static void do_emif_regdump_show(struct seq_file *s, struct emif_data *emif,
-+	struct emif_regs *regs)
-+{
-+	u32 type = emif->plat_data->device_info->type;
-+	u32 ip_rev = emif->plat_data->ip_rev;
-+
-+	seq_printf(s, "EMIF register cache dump for %dMHz\n",
-+		regs->freq/100000);
-+
-+	seq_printf(s, "ref_ctrl_shdw\t: 0x%08x\n", regs->ref_ctrl_shdw);
-+	seq_printf(s, "sdram_tim1_shdw\t: 0x%08x\n", regs->sdram_tim1_shdw);
-+	seq_printf(s, "sdram_tim2_shdw\t: 0x%08x\n", regs->sdram_tim2_shdw);
-+	seq_printf(s, "sdram_tim3_shdw\t: 0x%08x\n", regs->sdram_tim3_shdw);
-+
-+	if (ip_rev == EMIF_4D) {
-+		seq_printf(s, "read_idle_ctrl_shdw_normal\t: 0x%08x\n",
-+			regs->read_idle_ctrl_shdw_normal);
-+		seq_printf(s, "read_idle_ctrl_shdw_volt_ramp\t: 0x%08x\n",
-+			regs->read_idle_ctrl_shdw_volt_ramp);
-+	} else if (ip_rev == EMIF_4D5) {
-+		seq_printf(s, "dll_calib_ctrl_shdw_normal\t: 0x%08x\n",
-+			regs->dll_calib_ctrl_shdw_normal);
-+		seq_printf(s, "dll_calib_ctrl_shdw_volt_ramp\t: 0x%08x\n",
-+			regs->dll_calib_ctrl_shdw_volt_ramp);
-+	}
-+
-+	if (type == DDR_TYPE_LPDDR2_S2 || type == DDR_TYPE_LPDDR2_S4) {
-+		seq_printf(s, "ref_ctrl_shdw_derated\t: 0x%08x\n",
-+			regs->ref_ctrl_shdw_derated);
-+		seq_printf(s, "sdram_tim1_shdw_derated\t: 0x%08x\n",
-+			regs->sdram_tim1_shdw_derated);
-+		seq_printf(s, "sdram_tim3_shdw_derated\t: 0x%08x\n",
-+			regs->sdram_tim3_shdw_derated);
-+	}
-+}
-+
-+static int emif_regdump_show(struct seq_file *s, void *unused)
-+{
-+	struct emif_data	*emif	= s->private;
-+	struct emif_regs	**regs_cache;
-+	int			i;
-+
-+	if (emif->duplicate)
-+		regs_cache = emif1->regs_cache;
-+	else
-+		regs_cache = emif->regs_cache;
-+
-+	for (i = 0; i < EMIF_MAX_NUM_FREQUENCIES && regs_cache[i]; i++) {
-+		do_emif_regdump_show(s, emif, regs_cache[i]);
-+		seq_printf(s, "\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static int emif_regdump_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, emif_regdump_show, inode->i_private);
-+}
-+
-+static const struct file_operations emif_regdump_fops = {
-+	.open			= emif_regdump_open,
-+	.read			= seq_read,
-+	.release		= single_release,
-+};
-+
-+static int emif_mr4_show(struct seq_file *s, void *unused)
-+{
-+	struct emif_data *emif = s->private;
-+
-+	seq_printf(s, "MR4=%d\n", emif->temperature_level);
-+	return 0;
-+}
-+
-+static int emif_mr4_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, emif_mr4_show, inode->i_private);
-+}
-+
-+static const struct file_operations emif_mr4_fops = {
-+	.open			= emif_mr4_open,
-+	.read			= seq_read,
-+	.release		= single_release,
-+};
-+
-+static int __init emif_debugfs_init(struct emif_data *emif)
-+{
-+	struct dentry	*dentry;
-+	int		ret;
-+
-+	dentry = debugfs_create_dir(dev_name(emif->dev), NULL);
-+	if (IS_ERR(dentry)) {
-+		ret = PTR_ERR(dentry);
-+		goto err0;
-+	}
-+	emif->debugfs_root = dentry;
-+
-+	dentry = debugfs_create_file("regcache_dump", S_IRUGO,
-+			emif->debugfs_root, emif, &emif_regdump_fops);
-+	if (IS_ERR(dentry)) {
-+		ret = PTR_ERR(dentry);
-+		goto err1;
-+	}
-+
-+	dentry = debugfs_create_file("mr4", S_IRUGO,
-+			emif->debugfs_root, emif, &emif_mr4_fops);
-+	if (IS_ERR(dentry)) {
-+		ret = PTR_ERR(dentry);
-+		goto err1;
-+	}
-+
-+	return 0;
-+err1:
-+	debugfs_remove_recursive(emif->debugfs_root);
-+err0:
-+	return ret;
-+}
-+
-+static void __exit emif_debugfs_exit(struct emif_data *emif)
-+{
-+	debugfs_remove_recursive(emif->debugfs_root);
-+	emif->debugfs_root = NULL;
-+}
-+
- /*
-  * Calculate the period of DDR clock from frequency value
-  */
-@@ -1114,6 +1241,7 @@ static int __init emif_probe(struct platform_device *pdev)
- 
- 	disable_and_clear_all_interrupts(emif);
- 	emif_onetime_settings(emif);
-+	emif_debugfs_init(emif);
- 
- 	dev_info(&pdev->dev, "Device configured with addr = %p and IRQ%d\n",
- 			emif->base, emif->irq);
-@@ -1129,6 +1257,7 @@ static int __exit emif_remove(struct platform_device *pdev)
- {
- 	struct emif_data *emif = platform_get_drvdata(pdev);
- 
-+	emif_debugfs_exit(emif);
- 	cleanup_emif(emif);
- 
- 	return 0;
--- 
-1.7.1
+> So when IRQ is re-enabled, softlockup code will be able to read a "fresh"
+> timestamp which can be used to
+> detect the timeout.
+> 
+> 
+> static unsigned long get_timestamp(int this_cpu)
+> {
+> return cpu_clock(this_cpu) >> 30LL; /* 2^30 ~= 10^9 */
+> }
+> 
+> unsigned long long __attribute__((weak)) sched_clock(void)
+> {
+> return (unsigned long long)(jiffies - INITIAL_JIFFIES)
+> * (NSEC_PER_SEC / HZ);
+> }
+> 
+> #ifndef CONFIG_OMAP_MPU_TIMER
+> unsigned long long notrace sched_clock(void)
+> {
+> return _omap_32k_sched_clock();
+> }
+> #else
+> unsigned long long notrace omap_32k_sched_clock(void)
+> {
+> return _omap_32k_sched_clock();
+> }
+> #endif
 
+I guess someone needs to do some tracing to see what's going on, and
+get a feel for the order in which things happen.  (Or add some printks.)
+
+Is there a ready-prepared bit of code I can try?
