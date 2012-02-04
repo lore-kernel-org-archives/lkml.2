@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab2BDDKD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 22:10:03 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54177 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab2BDDKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 22:10:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <1328319226.21255.28.camel@joe2Laptop>
-References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org>
- <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon>
- <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
- <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
- <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
- <1328311239.21255.24.camel@joe2Laptop> <CA+55aFxHih0+P=aNromTy+f_Rt+++QWgaEdvqLsXg_q_hu_q2A@mail.gmail.com>
- <1328319226.21255.28.camel@joe2Laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 3 Feb 2012 19:09:37 -0800
-X-Google-Sender-Auth: RdPrmbdN2Zhj-epc8wqRq8LrQm0
-Message-ID: <CA+55aFxqWFRNgR_C9sRCOQ6Vh9PF8anomZsfGD9HP49JgAb57A@mail.gmail.com>
-Subject: Re: [PATCH] checkpatch: Warn on code with 6+ tab indentation
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@shadowen.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753991Ab2BDDNN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 22:13:13 -0500
+Received: from sh.osrg.net ([192.16.179.4]:54426 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753512Ab2BDDNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 22:13:11 -0500
+Date: Sat, 04 Feb 2012 12:13:02 +0900 (JST)
+Message-Id: <20120204.121302.227986518.ryusuke@osrg.net>
+To: xi.wang@gmail.com, akpm@linux-foundation.org
+Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        haogangchen@gmail.com
+Subject: Re: [PATCH] nilfs2: avoid overflowing segment numbers in
+ nilfs_ioctl_clean_segments()
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <1328282767-13158-1-git-send-email-xi.wang@gmail.com>
+References: <1328282767-13158-1-git-send-email-xi.wang@gmail.com>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.7 (sh.osrg.net [192.16.179.4]); Sat, 04 Feb 2012 12:13:03 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 5:33 PM, Joe Perches <joe@perches.com> wrote:
->
-> You liked the same premise, but a worse
-> implementation, a couple years ago.
-> https://lkml.org/lkml/2009/12/18/289
+On Fri,  3 Feb 2012 10:26:07 -0500, Xi Wang wrote:
+> nsegs is read from userspace.  Limit its value and avoid overflowing
+> nsegs * sizeof(__u64) in the subsequent call to memdup_user().
+> 
+> This patch complements 481fe17e973fb97aa3edf17c69557afe88d8334f.
+> 
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> Cc: Haogang Chen <haogangchen@gmail.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  fs/nilfs2/ioctl.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 
-I have grown to dislike debatable parts of checkpatch over the years,
-which probably colors my reaction to things like this.
+Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-I'd prefer for checkpatch to check things that are fairly black-and-white.
 
->> Why? Because mindless checks like this would just lead to people
->> making things worse and intermixing spaces there instead.
->
-> Can't happen.
-> They'll get a different warning about mixing tabs
-> and spaces or starting a line with spaces only.
+Thank you for posting this fix.
 
-Ok,. fair enough. That makes it more likely to work.
+Andrew, could you send this uptream in this cycle ?
 
-That said, I did a grep for six tabs, and we do seem to have quite a
-bit of code like that. 67 _thousand_ lines just in C files, if I did
-my grep right.
+Ryusuke Konishi
 
-And many of them seem reasonable. Quite a lot of them seem to be to
-just line things up with the previous line. Although some really are
-due to excessively deep indentation. But it doesn't seem exactly
-black-and-white to me.
-
-                       Linus
+> diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
+> index 8866496..2a70fce 100644
+> --- a/fs/nilfs2/ioctl.c
+> +++ b/fs/nilfs2/ioctl.c
+> @@ -603,6 +603,8 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
+>  	nsegs = argv[4].v_nmembs;
+>  	if (argv[4].v_size != argsz[4])
+>  		goto out;
+> +	if (nsegs > UINT_MAX / sizeof(__u64))
+> +		goto out;
+>  
+>  	/*
+>  	 * argv[4] points to segment numbers this ioctl cleans.  We
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
