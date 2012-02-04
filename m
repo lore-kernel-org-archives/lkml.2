@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab2BDCqd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 21:46:33 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48946 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab2BDCqY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 21:46:24 -0500
+	id S1753903Ab2BDDDX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 22:03:23 -0500
+Received: from sandeen.net ([63.231.237.45]:39081 "EHLO mail.sandeen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751066Ab2BDDDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 22:03:21 -0500
+Message-ID: <4F2C9FF8.2010207@sandeen.net>
+Date: Fri, 03 Feb 2012 21:03:20 -0600
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <4F2C96F7.9070307@cavium.com>
-References: <CAEik5nNsct2CL0Pfu8XaBGpZ4UOc-6EWtbk_LO5AxGzK9Vajjg@mail.gmail.com>
-	<4F2C96F7.9070307@cavium.com>
-Date: Fri, 3 Feb 2012 20:46:23 -0600
-Message-ID: <CAEik5nOEBgtEf766CxcRPTXb5CnTdwn1JYm+yaaqV1aOTjpJ0g@mail.gmail.com>
-Subject: Re: [perf] perf top segfaulting
-From: Dan McGee <dpmcgee@gmail.com>
-To: David Daney <david.daney@cavium.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jan Kara <jack@suse.cz>
+CC: linux-fsdevel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
+        Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/8] fs: Improve filesystem freezing handling
+References: <1327091686-23177-1-git-send-email-jack@suse.cz> <1327091686-23177-2-git-send-email-jack@suse.cz>
+In-Reply-To: <1327091686-23177-2-git-send-email-jack@suse.cz>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 8:24 PM, David Daney <david.daney@cavium.com> wrote:
-> On 02/03/2012 04:45 PM, Dan McGee wrote:
->>
->> On i686, version 3.2-2, but looks like annotate.c hasn't changed much
->> since. It sometimes happens within 5 seconds of starting perf,
->> sometimes much later, but almost always if I leave it running I well
->> come back to it having segfaulted. When ran with gdb here it took
->> about 3 minutes; I had a 5 second segfault and a 5 minute segfault
->> before and after this run as well. I'm not sure what triggers it other
->> than it isn't user input, as I can start `perf top`, not touch it, and
->> it will eventually segfault.
->>
->
->
-> I have seen the same thing (basically the same stack trace), so I think what
-> I see is probably closely related.  My failures however are on mips64 based
-> systems.
->
-> My debugging suggests that this happens when the ABIs used by the running
-> processes are heterogeneous (A mixture of 32-bit and 64-bit processes).
->  What I see is that all processes use a library with a common name, but
-> differing in paths (/lib32/libc-2.11.3.so and /lib64/libc-2.11.3.so for
-> example).  It looks like perf is confusing the offsets it caches from one
-> library to look up information in the other and since the symbols are in
-> different locations, the resulting erroneous address calculations result in
-> accesses to unmapped portions of perf's address space and you get SIGSEGV.
->
-> I haven't dug into the code enough to suggest a fix, but I think that at a
-> high hand-waving level, this is what is happening.  I have never observed
-> the failure when using only a single ABI on the system
+On 1/20/12 2:34 PM, Jan Kara wrote:
+> vfs_check_frozen() tests are racy since the filesystem can be frozen just after
+> the test is performed. Thus in write paths we can end up marking some pages or
+> inodes dirty even though filesystem is already frozen. This creates problems
+> with flusher thread hanging on frozen filesystem.
+> 
+> Another problem is that exclusion between ->page_mkwrite() and filesystem
+> freezing has been handled by setting page dirty and then verifying s_frozen.
+> This guaranteed that either the freezing code sees the faulted page, writes it,
+> and writeprotects it again or we see s_frozen set and bail out of page fault.
+> This works to protect from page being marked writeable while filesystem
+> freezing is running but has an unpleasant artefact of leaving dirty (although
+> unmodified and writeprotected) pages on frozen filesystem resulting in similar
+> problems with flusher thread as the first problem.
+> 
+> This patch aims at providing exclusion between write paths and filesystem
+> freezing. We implement a writer-freeze read-write semaphores in the superblock
+> for each freezing level (currently there are two - SB_FREEZE_WRITE for data and
+> SB_FREEZE_TRANS for metadata). Write paths which should block freezing on given
+> level (e.g. ->block_page_mkwrite(), ->aio_write() for SB_FREEZE_WRITE level;
+> transaction lifetime for SB_FREEZE_TRANS level) hold reader side of the
+> semaphore. Code freezing the filesystem to a given level takes the writer side.
+> 
+> Only that we don't really want to bounce cachelines of the semaphore between
+> CPUs for each write happening. So we implement the reader side of the semaphore
+> as a per-cpu counter and the writer side is implemented using s_frozen
+> superblock field.
+> 
+> Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+> Signed-off-by: Jan Kara <jack@suse.cz>
 
-Note that in this case, it is a pure 32-bit x86 system, and no library
-changes were going on in the background. So I wouldn't be surprised if
-the causes are similar (or the same), but I don't think I can chalk it
-up to being a single ABI vs multiple ABI problem; i686 only has one
-ABI.
+...
 
--Dan
+> @@ -135,6 +157,11 @@ static struct super_block *alloc_super(struct file_system_type *type)
+>  #else
+>  		INIT_LIST_HEAD(&s->s_files);
+>  #endif
+> +		if (init_sb_writers(s, SB_FREEZE_WRITE, "sb_writers_write"))
+> +			goto err_out;
+> +		if (init_sb_writers(s, SB_FREEZE_TRANS, "sb_writers_trans"))
+> +			goto err_out;
+> +
+>  		s->s_bdi = &default_backing_dev_info;
+>  		INIT_LIST_HEAD(&s->s_instances);
+>  		INIT_HLIST_BL_HEAD(&s->s_anon);
+> @@ -186,6 +213,17 @@ static struct super_block *alloc_super(struct file_system_type *type)
+>  	}
+>  out:
+>  	return s;
+> +err_out:
+> +	security_sb_free(s);
+> +#ifdef CONFIG_SMP
+> +	if (s->s_files)
+> +		free_percpu(s->s_files);
+> +#endif
+> +	destroy_sb_writers(s, SB_FREEZE_WRITE);
+> +	destroy_sb_writers(s, SB_FREEZE_TRANS);
+
+You probably ran into this already but the writer percpu vars need
+to be torn down in destroy_super() as well.
+
+-Eric
+
+
