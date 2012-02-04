@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab2BDD6i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 22:58:38 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:33613 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753442Ab2BDD6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 22:58:37 -0500
-Message-ID: <1328327915.21255.45.camel@joe2Laptop>
-Subject: Re: [PATCH] checkpatch: Warn on code with 6+ tab indentation
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu,
-        Andy Whitcroft <apw@shadowen.org>, Ingo Molnar <mingo@elte.hu>
-Date: Fri, 03 Feb 2012 19:58:35 -0800
-In-Reply-To: <CA+55aFxGVS8+F+7nLJ90tuwj5_3wqJ3=bdRAx9XUQ95vOb2VyQ@mail.gmail.com>
-References: <20120130140905.441199885@openvz.org>
-	 <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu>
-	 <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu>
-	 <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
-	 <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
-	 <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
-	 <1328311239.21255.24.camel@joe2Laptop>
-	 <CA+55aFxHih0+P=aNromTy+f_Rt+++QWgaEdvqLsXg_q_hu_q2A@mail.gmail.com>
-	 <1328319226.21255.28.camel@joe2Laptop>
-	 <CA+55aFxqWFRNgR_C9sRCOQ6Vh9PF8anomZsfGD9HP49JgAb57A@mail.gmail.com>
-	 <1328325697.21255.41.camel@joe2Laptop>
-	 <CA+55aFxGVS8+F+7nLJ90tuwj5_3wqJ3=bdRAx9XUQ95vOb2VyQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1754237Ab2BDEaJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 23:30:09 -0500
+Received: from sandeen.net ([63.231.237.45]:40922 "EHLO mail.sandeen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950Ab2BDEaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 23:30:07 -0500
+Message-ID: <4F2CB44D.4060006@sandeen.net>
+Date: Fri, 03 Feb 2012 22:30:05 -0600
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
+MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>
+CC: linux-fsdevel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
+        Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>
+Subject: Re: [PATCH 5/8] xfs: Protect xfs_file_aio_write() & xfs_setattr_size()
+ with sb_start_write - sb_end_write
+References: <1327091686-23177-1-git-send-email-jack@suse.cz> <1327091686-23177-6-git-send-email-jack@suse.cz>
+In-Reply-To: <1327091686-23177-6-git-send-email-jack@suse.cz>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-03 at 19:35 -0800, Linus Torvalds wrote:
-> I think that grep convinced me that you are right about this
-> particular pattern.
+On 1/20/12 2:34 PM, Jan Kara wrote:
+> Replace racy xfs_wait_for_freeze() check in xfs_file_aio_write() with
+> a reliable sb_start_write() - sb_end_write() locking.
 
-Oh good.
+Here's what I'm running with now.  With this and my modified
+patch6, I can pass xfstests 068 on xfs.
 
-> Brr. Now I need to go dig my eyes out with a
-> spoon.
+-Eric
 
-Maybe you can keep that thought for your next
-Halloween display for the local urchins...
 
+
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index 7e5bc87..f1cacdc 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -874,11 +874,11 @@ xfs_file_aio_write(
+ 	if (ocount == 0)
+ 		return 0;
+ 
+-	xfs_wait_for_freeze(ip->i_mount, SB_FREEZE_WRITE);
+-
+ 	if (XFS_FORCED_SHUTDOWN(ip->i_mount))
+ 		return -EIO;
+ 
++	sb_start_write(inode->i_sb, SB_FREEZE_WRITE);
++
+ 	if (unlikely(file->f_flags & O_DIRECT))
+ 		ret = xfs_file_dio_aio_write(iocb, iovp, nr_segs, pos, ocount);
+ 	else
+@@ -895,6 +895,7 @@ xfs_file_aio_write(
+ 		if (err < 0)
+ 			ret = err;
+ 	}
++	sb_end_write(inode->i_sb, SB_FREEZE_WRITE);
+ 
+ 	return ret;
+ }
+diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+index ab30253..7f3fa17 100644
+--- a/fs/xfs/xfs_iops.c
++++ b/fs/xfs/xfs_iops.c
+@@ -773,6 +773,7 @@ xfs_setattr_size(
+ 			ATTR_MTIME_SET|ATTR_KILL_SUID|ATTR_KILL_SGID|
+ 			ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
+ 
++	sb_start_write(inode->i_sb, SB_FREEZE_WRITE);
+ 	lock_flags = XFS_ILOCK_EXCL;
+ 	if (!(flags & XFS_ATTR_NOLOCK))
+ 		lock_flags |= XFS_IOLOCK_EXCL;
+@@ -792,6 +793,7 @@ xfs_setattr_size(
+ 		 * Use the regular setattr path to update the timestamps.
+ 		 */
+ 		xfs_iunlock(ip, lock_flags);
++		sb_end_write(inode->i_sb, SB_FREEZE_WRITE);
+ 		iattr->ia_valid &= ~ATTR_SIZE;
+ 		return xfs_setattr_nonsize(ip, iattr, 0);
+ 	}
+@@ -938,6 +940,7 @@ xfs_setattr_size(
+ out_unlock:
+ 	if (lock_flags)
+ 		xfs_iunlock(ip, lock_flags);
++	sb_end_write(inode->i_sb, SB_FREEZE_WRITE);
+ 	return error;
+ 
+ out_trans_abort:
 
