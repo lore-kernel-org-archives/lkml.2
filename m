@@ -1,76 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2BDM7S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 07:59:18 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35765 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab2BDM7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 07:59:17 -0500
-Date: Sat, 4 Feb 2012 12:59:04 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Myron Stowe <mstowe@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Mike Rapoport <mike@compulab.co.il>
-Subject: [BUG] Multiple definition of pcibios_max_latency
-Message-ID: <20120204125904.GU889@n2100.arm.linux.org.uk>
+	id S1754052Ab2BDNEP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 08:04:15 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50032 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753278Ab2BDNEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Feb 2012 08:04:13 -0500
+Date: Sat, 4 Feb 2012 14:03:30 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Joe Perches <joe@perches.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Subject: [PATCH, v2] checkpatch: Warn on code with 6+ tab indentation, remove
+ 80col warning
+Message-ID: <20120204130330.GA30198@elte.hu>
+References: <20120130140905.441199885@openvz.org>
+ <20120130141852.309402052@openvz.org>
+ <20120203074656.GC30543@elte.hu>
+ <20120203083530.GD1968@moon>
+ <20120203090929.GA23996@elte.hu>
+ <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+ <20120203095227.GA13162@elte.hu>
+ <20120203100743.GA3334@elte.hu>
+ <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
+ <1328311239.21255.24.camel@joe2Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1328311239.21255.24.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While building my test PXA configuration, I came across:
 
-drivers/built-in.o:(.data+0x230): multiple definition of `pcibios_max_latency'
-arch/arm/common/built-in.o:(.data+0x40c): first defined here
-make[1]: *** [vmlinux.o] Error 1
+* Joe Perches <joe@perches.com> wrote:
 
-This was introduced by:
+> Overly indented code should be refactored.
 
-commit 96c5590058d7fded14f43af2ab521436cecf3125
-Author: Myron Stowe <mstowe@redhat.com>
-Date:   Fri Oct 28 15:48:38 2011 -0600
+_AND_ the 80 cols warning should be removed. The overwhelming 
+majority of developers either ignore the 80 cols warning or make 
+the code worse as a result of the warning.
 
-    PCI: Pull PCI 'latency timer' setup up into the core
+So something like the patch below.
 
-    The 'latency timer' of PCI devices, both Type 0 and Type 1,
-    is setup in architecture-specific code [see: 'pcibios_set_master()'].
-    There are two approaches being taken by all the architectures - check
-    if the 'latency timer' is currently set between 16 and 255 and if not
-    bring it within bounds, or, do nothing (and then there is the
-    gratuitously different PA-RISC implementation).
+Thanks,
 
-    There is nothing architecture-specific about PCI's 'latency timer' so
-    this patch pulls its setup functionality up into the PCI core by
-    creating a generic 'pcibios_set_master()' function using the '__weak'
-    attribute which can be used by all architectures as a default which,
-    if necessary, can then be over-ridden by architecture-specific code.
+	Ingo
 
-    No functional change.
+--------------------->
+Subject: checkpatch: Warn on code with 6+ tab indentation, remove 80col warning
 
-    Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+It's better to warn about too deeply indented code than about 
+too long lines, as the too long line tends to cause people to 
+think about *that line*, instead of the surrounding code, fixing 
+it by breaking the line unnecessarily, etc.
 
-which moved the handling of pcibios_set_master() into core code for
-everyone but ARM:
+If we warn about too deep indentation then the fix will be a 
+natural one: people will reduce code complexity, which is an 
+almost black and white good thing.
 
- arch/blackfin/include/asm/pci.h         |    4 ----
- arch/frv/mb93090-mb00/pci-frv.c         |    6 ------
- arch/frv/mb93090-mb00/pci-frv.h         |    2 --
- arch/h8300/include/asm/pci.h            |    5 -----
- arch/mips/pci/pci.c                     |    6 ------
- arch/mn10300/unit-asb2305/pci-asb2305.c |    6 ------
- arch/mn10300/unit-asb2305/pci-asb2305.h |    2 --
- arch/sh/drivers/pci/pci.c               |    6 ------
- arch/x86/include/asm/pci_x86.h          |    2 --
- arch/x86/pci/i386.c                     |    6 ------
- drivers/pci/pci.c                       |   29 +++++++++++++++++++++++++++++
- include/linux/pci.h                     |    3 +++
- 12 files changed, 32 insertions(+), 45 deletions(-)
+The few false positives can be ignored.
 
-I think the right solution is to delete the (now duplicate) definition 
-of pcibios_max_latency in arch/arm/common/it8152.c.  Please comment.
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index e3bfcbe..5406011 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1726,17 +1726,6 @@ sub process {
+ # check we are in a valid source file if not then ignore this hunk
+ 		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
+ 
+-#80 column limit
+-		if ($line =~ /^\+/ && $prevrawline !~ /\/\*\*/ &&
+-		    $rawline !~ /^.\s*\*\s*\@$Ident\s/ &&
+-		    !($line =~ /^\+\s*$logFunctions\s*\(\s*(?:(KERN_\S+\s*|[^"]*))?"[X\t]*"\s*(?:|,|\)\s*;)\s*$/ ||
+-		    $line =~ /^\+\s*"[^"]*"\s*(?:\s*|,|\)\s*;)\s*$/) &&
+-		    $length > 80)
+-		{
+-			WARN("LONG_LINE",
+-			     "line over 80 characters\n" . $herecurr);
+-		}
+-
+ # check for spaces before a quoted newline
+ 		if ($rawline =~ /^.*\".*\s\\n/) {
+ 			WARN("QUOTED_WHITESPACE_BEFORE_NEWLINE",
+@@ -1924,6 +1913,12 @@ sub process {
+ 			my $pre_ctx = "$1$2";
+ 
+ 			my ($level, @ctx) = ctx_statement_level($linenr, $realcnt, 0);
++
++			if ($line =~ /^\+\t{6,}/) {
++				WARN("DEEP_INDENTATION",
++				     "Too many leading tabs - code should probably be split up\n" . $herecurr);
++			}
++
+ 			my $ctx_cnt = $realcnt - $#ctx - 1;
+ 			my $ctx = join("\n", @ctx);
+ 
