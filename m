@@ -1,130 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab2BDOcc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 09:32:32 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40957 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab2BDOcb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 09:32:31 -0500
-Date: Sat, 4 Feb 2012 15:32:25 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 14/47] rcu: Limit lazy-callback duration
-Message-ID: <20120204143223.GF13382@somewhere>
-References: <20120204014452.GA29811@linux.vnet.ibm.com>
- <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1328319922-30828-14-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120204135456.GE13382@somewhere>
- <20120204143022.GB2467@linux.vnet.ibm.com>
+	id S1752555Ab2BDOew (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 09:34:52 -0500
+Received: from vostochny.stro.at ([78.47.22.85]:46157 "EHLO vostochny.stro.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788Ab2BDOeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Feb 2012 09:34:50 -0500
+Date: Sat, 4 Feb 2012 15:34:49 +0100
+From: maximilian attems <max@stro.at>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Michal Marek <mmarek@suse.cz>, Joerg Roedel <joerg.roedel@amd.com>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        debian-kernel@lists.debian.org
+Subject: Re: [PATCH] kbuild: Fix link to headers in 'make deb-pkg'
+Message-ID: <20120204143449.GA28068@stro.at>
+Mail-Followup-To: Ben Hutchings <ben@decadent.org.uk>,
+	Michal Marek <mmarek@suse.cz>, Joerg Roedel <joerg.roedel@amd.com>,
+	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+	debian-kernel@lists.debian.org
+References: <1327318828-12984-1-git-send-email-joerg.roedel@amd.com>
+ <4F1D8810.1040501@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120204143022.GB2467@linux.vnet.ibm.com>
+In-Reply-To: <4F1D8810.1040501@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 04, 2012 at 06:30:22AM -0800, Paul E. McKenney wrote:
-> On Sat, Feb 04, 2012 at 02:54:58PM +0100, Frederic Weisbecker wrote:
-> > On Fri, Feb 03, 2012 at 05:44:49PM -0800, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> > > 
-> > > Currently, a given CPU is permitted to remain in dyntick-idle mode
-> > > indefinitely if it has only lazy RCU callbacks queued.  This is vulnerable
-> > > to corner cases in NUMA systems, so limit the time to six seconds by
-> > > default.  (Currently controlled by a cpp macro.)
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > ---
-> > >  kernel/rcutree_plugin.h |   12 +++++++++++-
-> > >  1 files changed, 11 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > > index eeb2cc6..8041310 100644
-> > > --- a/kernel/rcutree_plugin.h
-> > > +++ b/kernel/rcutree_plugin.h
-> > > @@ -2050,6 +2050,9 @@ static void rcu_prepare_for_idle(int cpu)
-> > >   *	number, be warned: Setting RCU_IDLE_GP_DELAY too high can hang your
-> > >   *	system.  And if you are -that- concerned about energy efficiency,
-> > >   *	just power the system down and be done with it!
-> > > + * RCU_IDLE_LAZY_GP_DELAY gives the number of jiffies that a CPU is
-> > > + *	permitted to sleep in dyntick-idle mode with only lazy RCU
-> > > + *	callbacks pending.  Setting this too high can OOM your system.
-> > >   *
-> > >   * The values below work well in practice.  If future workloads require
-> > >   * adjustment, they can be converted into kernel config parameters, though
-> > > @@ -2058,11 +2061,13 @@ static void rcu_prepare_for_idle(int cpu)
-> > >  #define RCU_IDLE_FLUSHES 5		/* Number of dyntick-idle tries. */
-> > >  #define RCU_IDLE_OPT_FLUSHES 3		/* Optional dyntick-idle tries. */
-> > >  #define RCU_IDLE_GP_DELAY 6		/* Roughly one grace period. */
-> > > +#define RCU_IDLE_LAZY_GP_DELAY (6 * HZ)	/* Roughly six seconds. */
-> > >  
-> > >  static DEFINE_PER_CPU(int, rcu_dyntick_drain);
-> > >  static DEFINE_PER_CPU(unsigned long, rcu_dyntick_holdoff);
-> > >  static DEFINE_PER_CPU(struct hrtimer, rcu_idle_gp_timer);
-> > > -static ktime_t rcu_idle_gp_wait;
-> > > +static ktime_t rcu_idle_gp_wait;	/* If some non-lazy callbacks. */
-> > > +static ktime_t rcu_idle_lazy_gp_wait;	/* If only lazy callbacks. */
-> > >  
-> > >  /*
-> > >   * Allow the CPU to enter dyntick-idle mode if either: (1) There are no
-> > > @@ -2151,6 +2156,8 @@ static void rcu_prepare_for_idle_init(int cpu)
-> > >  		unsigned int upj = jiffies_to_usecs(RCU_IDLE_GP_DELAY);
-> > >  
-> > >  		rcu_idle_gp_wait = ns_to_ktime(upj * (u64)1000);
-> > > +		upj = jiffies_to_usecs(6 * HZ);
-> > 
-> > I think you meant to use RCU_IDLE_LAZY_GP_DELAY here?
-> 
-> Good catch!!!  Indeed I do, fixed.
-> 
-> > 
-> > > +		rcu_idle_lazy_gp_wait = ns_to_ktime(upj * (u64)1000);
-> > >  		firsttime = 0;
-> > >  	}
-> > >  }
-> > > @@ -2225,6 +2232,9 @@ static void rcu_prepare_for_idle(int cpu)
-> > >  		if (rcu_cpu_has_nonlazy_callbacks(cpu))
-> > >  			hrtimer_start(&per_cpu(rcu_idle_gp_timer, cpu),
-> > >  				      rcu_idle_gp_wait, HRTIMER_MODE_REL);
-> > > +		else
-> > > +			hrtimer_start(&per_cpu(rcu_idle_gp_timer, cpu),
-> > > +				      rcu_idle_lazy_gp_wait, HRTIMER_MODE_REL);
-> > 
-> > Might be a good idea to cancel it from rcu_cleanup_after_idle() to avoid
-> > needless hrtimer interrupt (if something else woke up from idle before it
-> > triggered).
-> 
-> Very much so!  And rcu_cleanup_after_idle() is in fact defined as:
-> 
-> static void rcu_cleanup_after_idle(int cpu)
-> {
-> 	hrtimer_cancel(&per_cpu(rcu_idle_gp_timer, cpu));
-> }
-> 
-> The reason this does not appear in this patch is that it is already in
-> mainline.
+adding bwh + debian-kernel
 
-Oh I saw that in your branch but didn't realize this is the same timer that
-can carry different functions. I see.
+On Mon, 23 Jan 2012, Michal Marek wrote:
 
-Thanks.
- 
-> > >  		return; /* Nothing more to do immediately. */
-> > >  	} else if (--per_cpu(rcu_dyntick_drain, cpu) <= 0) {
-> > >  		/* We have hit the limit, so time to give up. */
-> > > -- 
-> > > 1.7.8
-> > > 
-> > 
+> (adding max to CC)
 > 
+> On 23.1.2012 12:40, Joerg Roedel wrote:
+> > The Link to the kernel header files in the debian packages
+> > point to the original build directory. This is a bad choice
+> > if the packages were installed on a different machine. Fix
+> > this in by manually re-creating the link in the builddeb
+> > script.
+> > With this patch applied the lib/modules/$version dir always
+> > exists, so move the "$ARCH = um" check out of the modules
+> > check too.
+> > 
+> > Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> > ---
+> >  scripts/package/builddeb |   13 +++++++++----
+> >  1 files changed, 9 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+> > index f6cbc3d..46f63dc 100644
+> > --- a/scripts/package/builddeb
+> > +++ b/scripts/package/builddeb
+> > @@ -91,6 +91,7 @@ fi
+> >  rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
+> >  mkdir -m 755 -p "$tmpdir/DEBIAN"
+> >  mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
+> > +mkdir -p  "$tmpdir/lib/modules/$version"
+> >  mkdir -m 755 -p "$fwdir/DEBIAN"
+> >  mkdir -p "$fwdir/lib" "$fwdir/usr/share/doc/$fwpackagename"
+> >  mkdir -m 755 -p "$libc_headers_dir/DEBIAN"
+> > @@ -121,10 +122,14 @@ fi
+> >  
+> >  if grep -q '^CONFIG_MODULES=y' .config ; then
+> >  	INSTALL_MOD_PATH="$tmpdir" make KBUILD_SRC= modules_install
+> > -	if [ "$ARCH" = "um" ] ; then
+> > -		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
+> > -		rmdir "$tmpdir/lib/modules/$version"
+> > -	fi
+> > +fi
+> > +
+> > +# Make sure link to the headers is correct
+> > +ln -snf "/usr/src/$kernel_headers_packagename" "$tmpdir/lib/modules/$version/build"
+> > +
+> > +if [ "$ARCH" = "um" ] ; then
+> > +	mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
+> > +	rmdir "$tmpdir/lib/modules/$version"
+> >  fi
+> >  
+> >  make headers_check
+
+I'm a bit sceptical that it is correct, but passing on to Ben Hutchings,
+as I never used external modules. He did quite some cleanup in this
+confusing area, lately for the upcoming debian release.
+
+-- 
+maks
