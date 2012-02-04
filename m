@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab2BDBtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:49:17 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:57165 "EHLO
+	id S1758145Ab2BDBuh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:50:37 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57103 "EHLO
 	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757832Ab2BDBqc (ORCPT
+	with ESMTP id S1757770Ab2BDBqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 20:46:32 -0500
+	Fri, 3 Feb 2012 20:46:30 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,50 +16,85 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 15/47] rcu: Check for callback invocation from offline CPUs
-Date: Fri,  3 Feb 2012 17:44:50 -0800
-Message-Id: <1328319922-30828-15-git-send-email-paulmck@linux.vnet.ibm.com>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [PATCH tip/core/rcu 09/47] ipv4: Convert call_rcu() to kfree_rcu(), drop opt_kfree_rcu()
+Date: Fri,  3 Feb 2012 17:44:44 -0800
+Message-Id: <1328319922-30828-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120204014452.GA29811@linux.vnet.ibm.com>
  <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020401-2398-0000-0000-000003ED6A28
+x-cbid: 12020401-2398-0000-0000-000003ED6A37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-Because quiescent states are now reported from offline CPUs in
-CPU_DYING state, there is some possibility that such a CPU might
-note the end of a grace period and attempt to start invoking
-callbacks.  This would be a very bad thing, and is supposed to
-be prevented by the fact that the CPU_DYING CPU gets rid of all
-its callbacks before reporting the quiescent state.  However,
-there is other CPU-offline code in the kernel, and it is quite
-possible that someone will invoke RCU core processing from that
-code.  Therefore, this commit adds a warning for this case.
+Because opt_kfree_rcu() just calls kfree(), all call_rcu() uses of it
+may be converted to kfree_rcu().  This permits opt_kfree_rcu() to
+be eliminated.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org
 ---
- kernel/rcutree.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ net/ipv4/cipso_ipv4.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 575f91d..ac3a810 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1373,6 +1373,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
- 	 * races with call_rcu() from interrupt handlers.
- 	 */
- 	local_irq_save(flags);
-+	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
- 	bl = rdp->blimit;
- 	trace_rcu_batch_start(rsp->name, rdp->qlen_lazy, rdp->qlen, bl);
- 	list = rdp->nxtlist;
+diff --git a/net/ipv4/cipso_ipv4.c b/net/ipv4/cipso_ipv4.c
+index 86f3b88..c48adc5 100644
+--- a/net/ipv4/cipso_ipv4.c
++++ b/net/ipv4/cipso_ipv4.c
+@@ -1857,11 +1857,6 @@ static int cipso_v4_genopt(unsigned char *buf, u32 buf_len,
+ 	return CIPSO_V4_HDR_LEN + ret_val;
+ }
+ 
+-static void opt_kfree_rcu(struct rcu_head *head)
+-{
+-	kfree(container_of(head, struct ip_options_rcu, rcu));
+-}
+-
+ /**
+  * cipso_v4_sock_setattr - Add a CIPSO option to a socket
+  * @sk: the socket
+@@ -1938,7 +1933,7 @@ int cipso_v4_sock_setattr(struct sock *sk,
+ 	}
+ 	rcu_assign_pointer(sk_inet->inet_opt, opt);
+ 	if (old)
+-		call_rcu(&old->rcu, opt_kfree_rcu);
++		kfree_rcu(old, rcu);
+ 
+ 	return 0;
+ 
+@@ -2005,7 +2000,7 @@ int cipso_v4_req_setattr(struct request_sock *req,
+ 	req_inet = inet_rsk(req);
+ 	opt = xchg(&req_inet->opt, opt);
+ 	if (opt)
+-		call_rcu(&opt->rcu, opt_kfree_rcu);
++		kfree_rcu(opt, rcu);
+ 
+ 	return 0;
+ 
+@@ -2075,7 +2070,7 @@ static int cipso_v4_delopt(struct ip_options_rcu **opt_ptr)
+ 		 * remove the entire option struct */
+ 		*opt_ptr = NULL;
+ 		hdr_delta = opt->opt.optlen;
+-		call_rcu(&opt->rcu, opt_kfree_rcu);
++		kfree_rcu(opt, rcu);
+ 	}
+ 
+ 	return hdr_delta;
 -- 
 1.7.8
 
