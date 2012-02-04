@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab2BDMRY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 07:17:24 -0500
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:47789 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753943Ab2BDMRU (ORCPT
+	id S1754133Ab2BDMRT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 07:17:19 -0500
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:42399 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753943Ab2BDMRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 07:17:20 -0500
+	Sat, 4 Feb 2012 07:17:14 -0500
 From: Aneesh V <aneesh@ti.com>
 To: linux-omap@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         Aneesh V <aneesh@ti.com>
-Subject: [RFC PATCH 7/8] misc: emif: add one-time settings
-Date: Sat,  4 Feb 2012 17:46:10 +0530
-Message-Id: <1328357771-31644-8-git-send-email-aneesh@ti.com>
+Subject: [RFC PATCH 6/8] misc: emif: add interrupt and temperature handling
+Date: Sat,  4 Feb 2012 17:46:09 +0530
+Message-Id: <1328357771-31644-7-git-send-email-aneesh@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1328357771-31644-1-git-send-email-aneesh@ti.com>
 References: <1328357771-31644-1-git-send-email-aneesh@ti.com>
@@ -21,193 +21,290 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add settings that are not dependent on frequency
-or any other transient parameters
+Add an ISR for EMIF that:
+	1. reports details of access errors
+	2. takes action on thermal events
+
+On thermal events SDRAM timing parameters are
+adjusted to ensure safe operation
+
+Also clear all interrupts on shut-down. Pending IRQs
+may casue problems during warm-reset.
 
 Signed-off-by: Aneesh V <aneesh@ti.com>
 ---
- drivers/misc/emif.c |  147 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 147 insertions(+), 0 deletions(-)
+ drivers/misc/emif.c |  209 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 207 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/misc/emif.c b/drivers/misc/emif.c
-index 5c2b0ae..9d24cc7 100644
+index 36ba6f4..5c2b0ae 100644
 --- a/drivers/misc/emif.c
 +++ b/drivers/misc/emif.c
-@@ -74,6 +74,24 @@ static void set_ddr_clk_period(u32 freq)
+@@ -500,6 +500,45 @@ static u32 get_pwr_mgmt_ctrl(u32 freq, struct emif_data *emif, u32 ip_rev)
  }
  
  /*
-+ * Get bus width used by EMIF. Note that this may be different from the
-+ * bus width of the DDR devices used. For instance two 16-bit DDR devices
-+ * may be connected to a given CS of EMIF. In this case bus width as far
-+ * as EMIF is concerned is 32, where as the DDR bus width is 16 bits.
++ * Get the temperature level of the EMIF instance:
++ * Reads the MR4 register of attached SDRAM parts to find out the temperature
++ * level. If there are two parts attached(one on each CS), then the temperature
++ * level for the EMIF instance is the higher of the two temperatures.
 + */
-+static u32 get_emif_bus_width(struct emif_data *emif)
++static void get_temperature_level(struct emif_data *emif)
 +{
-+	u32		width;
-+	void __iomem	*base = emif->base;
++	u32		temp, temperature_level;
++	unsigned long	irqs;
++	void __iomem	*base;
 +
-+	width = (readl(base + EMIF_SDRAM_CONFIG) & NARROW_MODE_MASK)
-+			>> NARROW_MODE_SHIFT;
-+	width = width == 0 ? 32 : 16;
++	base = emif->base;
 +
-+	return width;
++	/* Read mode register 4 */
++	writel(DDR_MR4, base + EMIF_LPDDR2_MODE_REG_CONFIG);
++	temperature_level = readl(base + EMIF_LPDDR2_MODE_REG_DATA);
++	temperature_level = (temperature_level & MR4_SDRAM_REF_RATE_MASK) >>
++				MR4_SDRAM_REF_RATE_SHIFT;
++
++	if (emif->plat_data->device_info->cs1_used) {
++		writel(DDR_MR4 | CS_MASK, base + EMIF_LPDDR2_MODE_REG_CONFIG);
++		temp = readl(base + EMIF_LPDDR2_MODE_REG_DATA);
++		temp = (temp & MR4_SDRAM_REF_RATE_MASK)
++				>> MR4_SDRAM_REF_RATE_SHIFT;
++		temperature_level = max(temp, temperature_level);
++	}
++
++	spin_lock_irqsave(&emif->lock, irqs);
++	/* treat everything less than nominal(3) in MR4 as nominal */
++	if (unlikely(temperature_level < SDRAM_TEMP_NOMINAL))
++		temperature_level = SDRAM_TEMP_NOMINAL;
++
++	/* if we get reserved value in MR4 persist with the existing value */
++	if (likely(temperature_level != SDRAM_TEMP_RESERVED_4))
++		emif->temperature_level = temperature_level;
++	spin_unlock_irqrestore(&emif->lock, irqs);
 +}
 +
 +/*
-  * Get the CL from SDRAM_CONFIG register
+  * Program EMIF shadow registers that are not dependent on temperature
+  * or voltage
   */
- static u32 get_cl(struct emif_data *emif)
-@@ -331,6 +349,70 @@ static u32 get_sdram_tim_3_shdw(const struct lpddr2_timings *timings,
- 	return tim3;
- }
- 
-+static u32 get_zq_config_reg(const struct lpddr2_addressing *addressing,
-+		bool cs1_used, bool cal_resistors_per_cs)
-+{
-+	u32 zq = 0, val = 0;
-+
-+	val = EMIF_ZQCS_INTERVAL_US * 1000 / addressing->tREFI_ns;
-+	zq |= val << ZQ_REFINTERVAL_SHIFT;
-+
-+	val = DIV_ROUND_UP(T_ZQCL_DEFAULT_NS, T_ZQCS_DEFAULT_NS) - 1;
-+	zq |= val << ZQ_ZQCL_MULT_SHIFT;
-+
-+	val = DIV_ROUND_UP(T_ZQINIT_DEFAULT_NS, T_ZQCL_DEFAULT_NS) - 1;
-+	zq |= val << ZQ_ZQINIT_MULT_SHIFT;
-+
-+	zq |= ZQ_SFEXITEN_ENABLE << ZQ_SFEXITEN_SHIFT;
-+
-+	if (cal_resistors_per_cs)
-+		zq |= ZQ_DUALCALEN_ENABLE << ZQ_DUALCALEN_SHIFT;
-+	else
-+		zq |= ZQ_DUALCALEN_DISABLE << ZQ_DUALCALEN_SHIFT;
-+
-+	zq |= ZQ_CS0EN_MASK; /* CS0 is used for sure */
-+
-+	val = cs1_used ? 1 : 0;
-+	zq |= val << ZQ_CS1EN_SHIFT;
-+
-+	return zq;
-+}
-+
-+static u32 get_temp_alert_config(const struct lpddr2_addressing *addressing,
-+		const struct emif_custom_configs *custom_configs, bool cs1_used,
-+		u32 sdram_io_width, u32 emif_bus_width)
-+{
-+	u32 alert = 0, interval, devcnt;
-+
-+	if (custom_configs && (custom_configs->mask &
-+				EMIF_CUSTOM_CONFIG_TEMP_ALERT_POLL_INTERVAL))
-+		interval = custom_configs->temp_alert_poll_interval_ms;
-+	else
-+		interval = TEMP_ALERT_POLL_INTERVAL_DEFAULT_MS;
-+
-+	interval *= 1000000;			/* Convert to ns */
-+	interval /= addressing->tREFI_ns;	/* Convert to refresh cycles */
-+	alert |= (interval << TA_REFINTERVAL_SHIFT);
-+
-+	/*
-+	 * sdram_io_width is in 'log2(x) - 1' form. Convert emif_bus_width
-+	 * also to this form and subtract to get TA_DEVCNT, which is
-+	 * in log2(x) form.
-+	 */
-+	emif_bus_width = __fls(emif_bus_width) - 1;
-+	devcnt = emif_bus_width - sdram_io_width;
-+	alert |= devcnt << TA_DEVCNT_SHIFT;
-+
-+	/* DEVWDT is in 'log2(x) - 3' form */
-+	alert |= (sdram_io_width - 2) << TA_DEVWDT_SHIFT;
-+
-+	alert |= 1 << TA_SFEXITEN_SHIFT;
-+	alert |= 1 << TA_CS0EN_SHIFT;
-+	alert |= (cs1_used ? 1 : 0) << TA_CS1EN_SHIFT;
-+
-+	return alert;
-+}
-+
- static u32 get_read_idle_ctrl_shdw(u8 volt_ramp)
+@@ -553,7 +592,8 @@ static void setup_volt_sensitive_regs(struct emif_data *emif,
+ static void setup_temperature_sensitive_regs(struct emif_data *emif,
+ 		struct emif_regs *regs)
  {
- 	u32 idle = 0, val = 0;
-@@ -771,6 +853,70 @@ static int __init setup_interrupts(struct emif_data *emif)
+-	u32		tim1, tim3, ref_ctrl, type, irqs;
++	u32		tim1, tim3, ref_ctrl, type;
++	unsigned long	irqs;
+ 	void __iomem	*base = emif->base;
+ 	u32		temperature;
  
+@@ -568,7 +608,7 @@ static void setup_temperature_sensitive_regs(struct emif_data *emif,
+ 	if (type != DDR_TYPE_LPDDR2_S2 && type != DDR_TYPE_LPDDR2_S4)
+ 		goto out;
+ 
+-	temperature_level = emif->temperature_level;
++	temperature = emif->temperature_level;
+ 	if (temperature == SDRAM_TEMP_HIGH_DERATE_REFRESH) {
+ 		ref_ctrl = regs->ref_ctrl_shdw_derated;
+ 	} else if (temperature == SDRAM_TEMP_HIGH_DERATE_REFRESH_AND_TIMINGS) {
+@@ -584,6 +624,153 @@ out:
+ 	spin_unlock_irqrestore(&emif->lock, irqs);
  }
  
-+static void __init emif_onetime_settings(struct emif_data *emif)
++static irqreturn_t handle_temp_alert(void __iomem *base, struct emif_data *emif)
 +{
-+	u32				pwr_mgmt_ctrl, zq, temp_alert_cfg;
-+	void __iomem			*base = emif->base;
-+	const struct lpddr2_addressing	*addressing;
-+	const struct ddr_device_info	*device_info;
++	u32		old_temp_level;
 +
-+	device_info = emif->plat_data->device_info;
-+	addressing = get_addressing_table(device_info);
-+
-+	/*
-+	 * Init power management settings
-+	 * We don't know the frequency yet. Use a high frequency
-+	 * value for a conservative timeout setting
-+	 */
-+	pwr_mgmt_ctrl = get_pwr_mgmt_ctrl(1000000000, emif,
-+			emif->plat_data->ip_rev);
-+	writel(pwr_mgmt_ctrl, base + EMIF_POWER_MANAGEMENT_CONTROL);
-+
-+	/* Init ZQ calibration settings */
-+	zq = get_zq_config_reg(addressing, device_info->cs1_used,
-+		device_info->cal_resistors_per_cs);
-+	writel(zq, base + EMIF_SDRAM_OUTPUT_IMPEDANCE_CALIBRATION_CONFIG);
-+
-+	/* Check temperature level temperature level*/
++	old_temp_level = emif->temperature_level;
 +	get_temperature_level(emif);
-+	if (emif->temperature_level == SDRAM_TEMP_VERY_HIGH_SHUTDOWN)
-+		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
 +
-+	/* Init temperature polling */
-+	temp_alert_cfg = get_temp_alert_config(addressing,
-+		emif->plat_data->custom_configs, device_info->cs1_used,
-+		device_info->io_width, get_emif_bus_width(emif));
-+	writel(temp_alert_cfg, base + EMIF_TEMPERATURE_ALERT_CONFIG);
++	if (unlikely(emif->temperature_level == old_temp_level))
++		goto handled;
++
++	if (emif->temperature_level < old_temp_level ||
++		emif->temperature_level == SDRAM_TEMP_VERY_HIGH_SHUTDOWN) {
++		/*
++		 * Temperature coming down - defer handling to thread OR
++		 * Temperature far too high - do kernel_power_off() from
++		 * thread context
++		 */
++		goto thread;
++	} else {
++		/* Temperature is going up - handle immediately */
++		if (!emif->curr_regs) {
++			dev_err(emif->dev, "temperature alert before registers are calculated, not de-rating timings\n");
++			goto handled;
++		}
++		setup_temperature_sensitive_regs(emif, emif->curr_regs);
++		do_freq_update();
++	}
++
++handled:
++	return IRQ_HANDLED;
++thread:
++	return IRQ_WAKE_THREAD;
++}
++
++static irqreturn_t emif_interrupt_handler(int irq, void *dev_id)
++{
++	u32			interrupts;
++	struct emif_data	*emif = dev_id;
++	void __iomem		*base = emif->base;
++	struct device		*dev = emif->dev;
++	irqreturn_t		ret = IRQ_HANDLED;
++
++	/* Save the status and clear it */
++	interrupts = readl(base + EMIF_SYSTEM_OCP_INTERRUPT_STATUS);
++	writel(interrupts, base + EMIF_SYSTEM_OCP_INTERRUPT_STATUS);
 +
 +	/*
-+	 * Program external PHY control registers that are not frequency
-+	 * dependent
++	 * Handle temperature alert
++	 * Temperature alert should be same for all ports
++	 * So, it's enough to process it only for one of the ports
 +	 */
-+	if (emif->plat_data->phy_type != EMIF_PHY_TYPE_INTELLIPHY)
-+		return;
-+	writel(EMIF_EXT_PHY_CTRL_1_VAL, base + EMIF_EXT_PHY_CTRL_1_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_5_VAL, base + EMIF_EXT_PHY_CTRL_5_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_6_VAL, base + EMIF_EXT_PHY_CTRL_6_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_7_VAL, base + EMIF_EXT_PHY_CTRL_7_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_8_VAL, base + EMIF_EXT_PHY_CTRL_8_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_9_VAL, base + EMIF_EXT_PHY_CTRL_9_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_10_VAL, base + EMIF_EXT_PHY_CTRL_10_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_11_VAL, base + EMIF_EXT_PHY_CTRL_11_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_12_VAL, base + EMIF_EXT_PHY_CTRL_12_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_13_VAL, base + EMIF_EXT_PHY_CTRL_13_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_14_VAL, base + EMIF_EXT_PHY_CTRL_14_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_15_VAL, base + EMIF_EXT_PHY_CTRL_15_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_16_VAL, base + EMIF_EXT_PHY_CTRL_16_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_17_VAL, base + EMIF_EXT_PHY_CTRL_17_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_18_VAL, base + EMIF_EXT_PHY_CTRL_18_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_19_VAL, base + EMIF_EXT_PHY_CTRL_19_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_20_VAL, base + EMIF_EXT_PHY_CTRL_20_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_21_VAL, base + EMIF_EXT_PHY_CTRL_21_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_22_VAL, base + EMIF_EXT_PHY_CTRL_22_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_23_VAL, base + EMIF_EXT_PHY_CTRL_23_SHDW);
-+	writel(EMIF_EXT_PHY_CTRL_24_VAL, base + EMIF_EXT_PHY_CTRL_24_SHDW);
++	if (interrupts & TA_SYS_MASK)
++		ret = handle_temp_alert(base, emif);
++
++	if (interrupts & ERR_SYS_MASK)
++		dev_err(dev, "Access error from SYS port - %x\n", interrupts);
++
++	if (emif->plat_data->hw_caps & EMIF_HW_CAPS_LL_INTERFACE) {
++		/* Save the status and clear it */
++		interrupts = readl(base + EMIF_LL_OCP_INTERRUPT_STATUS);
++		writel(interrupts, base + EMIF_LL_OCP_INTERRUPT_STATUS);
++
++		if (interrupts & ERR_LL_MASK)
++			dev_err(dev, "Access error from LL port - %x\n",
++				interrupts);
++	}
++
++	return ret;
++}
++
++static irqreturn_t emif_threaded_isr(int irq, void *dev_id)
++{
++	struct emif_data	*emif = dev_id;
++
++	if (emif->temperature_level == SDRAM_TEMP_VERY_HIGH_SHUTDOWN) {
++		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
++		kernel_power_off();
++		return IRQ_HANDLED;
++	}
++
++	if (emif->curr_regs) {
++		setup_temperature_sensitive_regs(emif, emif->curr_regs);
++		do_freq_update();
++	} else {
++		dev_err(emif->dev, "temperature alert before registers are calculated, not de-rating timings\n");
++	}
++
++	return IRQ_HANDLED;
++}
++
++static void clear_all_interrupts(struct emif_data *emif)
++{
++	void __iomem	*base = emif->base;
++
++	writel(readl(base + EMIF_SYSTEM_OCP_INTERRUPT_STATUS),
++		base + EMIF_SYSTEM_OCP_INTERRUPT_STATUS);
++	if (emif->plat_data->hw_caps & EMIF_HW_CAPS_LL_INTERFACE)
++		writel(readl(base + EMIF_LL_OCP_INTERRUPT_STATUS),
++			base + EMIF_LL_OCP_INTERRUPT_STATUS);
++}
++
++static void disable_and_clear_all_interrupts(struct emif_data *emif)
++{
++	void __iomem		*base = emif->base;
++
++	/* Disable all interrupts */
++	writel(readl(base + EMIF_SYSTEM_OCP_INTERRUPT_ENABLE_SET),
++		base + EMIF_SYSTEM_OCP_INTERRUPT_ENABLE_CLEAR);
++	if (emif->plat_data->hw_caps & EMIF_HW_CAPS_LL_INTERFACE)
++		writel(readl(base + EMIF_LL_OCP_INTERRUPT_ENABLE_SET),
++			base + EMIF_LL_OCP_INTERRUPT_ENABLE_CLEAR);
++
++	/* Clear all interrupts */
++	clear_all_interrupts(emif);
++}
++
++static int __init setup_interrupts(struct emif_data *emif)
++{
++	u32		interrupts, type;
++	void __iomem	*base = emif->base;
++
++	type = emif->plat_data->device_info->type;
++
++	clear_all_interrupts(emif);
++
++	/* Enable interrupts for SYS interface */
++	interrupts = EN_ERR_SYS_MASK;
++	if (type == DDR_TYPE_LPDDR2_S2 || type == DDR_TYPE_LPDDR2_S4)
++		interrupts |= EN_TA_SYS_MASK;
++	writel(interrupts, base + EMIF_SYSTEM_OCP_INTERRUPT_ENABLE_SET);
++
++	/* Enable interrupts for LL interface */
++	if (emif->plat_data->hw_caps & EMIF_HW_CAPS_LL_INTERFACE) {
++		/* TA need not be enabled for LL */
++		interrupts = EN_ERR_LL_MASK;
++		writel(interrupts, base + EMIF_LL_OCP_INTERRUPT_ENABLE_SET);
++	}
++
++	/* setup IRQ handlers */
++	return request_threaded_irq(emif->irq,
++				    emif_interrupt_handler,
++				    emif_threaded_isr,
++				    0, dev_name(emif->dev),
++				    emif);
++
 +}
 +
  static void __exit cleanup_emif(struct emif_data *emif)
  {
  	if (emif) {
-@@ -967,6 +1113,7 @@ static int __init emif_probe(struct platform_device *pdev)
+@@ -779,6 +966,8 @@ static int __init emif_probe(struct platform_device *pdev)
+ 		goto error;
  	emif->irq = res->start;
  
- 	disable_and_clear_all_interrupts(emif);
-+	emif_onetime_settings(emif);
- 
++	disable_and_clear_all_interrupts(emif);
++
  	dev_info(&pdev->dev, "Device configured with addr = %p and IRQ%d\n",
  			emif->base, emif->irq);
+ 	return 0;
+@@ -798,6 +987,13 @@ static int __exit emif_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static void emif_shutdown(struct platform_device *pdev)
++{
++	struct emif_data	*emif = platform_get_drvdata(pdev);
++
++	disable_and_clear_all_interrupts(emif);
++}
++
+ static int get_emif_reg_values(struct emif_data *emif, u32 freq,
+ 		struct emif_regs *regs)
+ {
+@@ -1002,6 +1198,14 @@ static void __attribute__((unused)) do_freq_pre_notify_handling(void *emif_data,
+ 	if (!regs)
+ 		return;
+ 
++	/*
++	 * As soon as registers are calculated for the first time
++	 * setup interrupts. We are ready to handle the thermal events
++	 * now.
++	 */
++	if (!emif->curr_regs)
++		setup_interrupts(emif);
++
+ 	emif->curr_regs = regs;
+ 
+ 	/*
+@@ -1018,6 +1222,7 @@ static void __attribute__((unused)) do_freq_pre_notify_handling(void *emif_data,
+ 
+ static struct platform_driver emif_driver = {
+ 	.remove		= __exit_p(emif_remove),
++	.shutdown	= emif_shutdown,
+ 	.driver = {
+ 		.name = "emif",
+ 	},
 -- 
 1.7.1
 
