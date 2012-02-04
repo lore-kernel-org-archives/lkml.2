@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245Ab2BDByt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:54:49 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:39076 "EHLO
+	id S1758211Ab2BDByr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:54:47 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39077 "EHLO
 	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756490Ab2BDBpv (ORCPT
+	with ESMTP id S1756563Ab2BDBpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Feb 2012 20:45:51 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -17,119 +17,302 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 46/47] rcu: Add RCU_NONIDLE() for idle-loop RCU read-side critical sections
-Date: Fri,  3 Feb 2012 17:45:21 -0800
-Message-Id: <1328319922-30828-46-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 36/47] rcu: Move synchronize_sched_expedited() to rcutree.c
+Date: Fri,  3 Feb 2012 17:45:11 -0800
+Message-Id: <1328319922-30828-36-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120204014452.GA29811@linux.vnet.ibm.com>
  <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020401-5518-0000-0000-000001FD8B02
+x-cbid: 12020401-5518-0000-0000-000001FD8AFF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-RCU, RCU-bh, and RCU-sched read-side critical sections are forbidden
-in the inner idle loop, that is, between the rcu_idle_enter() and the
-rcu_idle_exit() -- RCU will happily ignore any such read-side critical
-sections.  However, things like powertop need tracepoints in the inner
-idle loop.
+Now that TREE_RCU and TREE_PREEMPT_RCU no longer do anything different
+for the single-CPU case, there is no need for multiple definitions of
+synchronize_sched_expedited().  It is no longer in any sense a plug-in,
+so move it from kernel/rcutree_plugin.h to kernel/rcutree.c.
 
-This commit therefore provides an RCU_NONIDLE() macro that can be used to
-wrap code in the idle loop that requires RCU read-side critical sections.
-
-Suggested-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |   27 +++++++++++++++++++++++++++
- kernel/rcutiny.c         |    2 ++
- kernel/rcutree.c         |    2 ++
- 3 files changed, 31 insertions(+), 0 deletions(-)
+ kernel/rcutree.c        |  117 +++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/rcutree_plugin.h |  116 ----------------------------------------------
+ 2 files changed, 117 insertions(+), 116 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 6ee663c..9372174 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -190,6 +190,33 @@ extern void rcu_idle_exit(void);
- extern void rcu_irq_enter(void);
- extern void rcu_irq_exit(void);
- 
-+/**
-+ * RCU_NONIDLE - Indicate idle-loop code that needs RCU readers
-+ * @a: Code that RCU needs to pay attention to.
-+ *
-+ * RCU, RCU-bh, and RCU-sched read-side critical sections are forbidden
-+ * in the inner idle loop, that is, between the rcu_idle_enter() and
-+ * the rcu_idle_exit() -- RCU will happily ignore any such read-side
-+ * critical sections.  However, things like powertop need tracepoints
-+ * in the inner idle loop.
-+ *
-+ * This macro provides the way out:  RCU_NONIDLE(do_something_with_RCU())
-+ * will tell RCU that it needs to pay attending, invoke its argument
-+ * (in this example, a call to the do_something_with_RCU() function),
-+ * and then tell RCU to go back to ignoring this CPU.  It is permissible
-+ * to nest RCU_NONIDLE() wrappers, but the nesting level is currently
-+ * quite limited.  If deeper nesting is required, it will be necessary
-+ * to adjust DYNTICK_TASK_NESTING_VALUE accordingly.
-+ *
-+ * This macro may be used from process-level code only.
-+ */
-+#define RCU_NONIDLE(a) \
-+	do { \
-+		rcu_idle_exit(); \
-+		do { a; } while (0); \
-+		rcu_idle_enter(); \
-+	} while (0)
-+
- /*
-  * Infrastructure to implement the synchronize_() primitives in
-  * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index c8b0e15..37a5444 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -97,6 +97,7 @@ void rcu_idle_enter(void)
- 	rcu_idle_enter_common(oldval);
- 	local_irq_restore(flags);
- }
-+EXPORT_SYMBOL_GPL(rcu_idle_enter);
- 
- /*
-  * Exit an interrupt handler towards idle.
-@@ -153,6 +154,7 @@ void rcu_idle_exit(void)
- 	rcu_idle_exit_common(oldval);
- 	local_irq_restore(flags);
- }
-+EXPORT_SYMBOL_GPL(rcu_idle_exit);
- 
- /*
-  * Enter an interrupt handler, moving away from idle.
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 92b4776..eacc10b 100644
+index bcf7db2..05470d4 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -402,6 +402,7 @@ void rcu_idle_enter(void)
- 	rcu_idle_enter_common(rdtp, oldval);
- 	local_irq_restore(flags);
- }
-+EXPORT_SYMBOL_GPL(rcu_idle_enter);
+@@ -50,6 +50,8 @@
+ #include <linux/wait.h>
+ #include <linux/kthread.h>
+ #include <linux/prefetch.h>
++#include <linux/delay.h>
++#include <linux/stop_machine.h>
  
- /**
-  * rcu_irq_exit - inform RCU that current CPU is exiting irq towards idle
-@@ -493,6 +494,7 @@ void rcu_idle_exit(void)
- 	rcu_idle_exit_common(rdtp, oldval);
- 	local_irq_restore(flags);
+ #include "rcutree.h"
+ #include <trace/events/rcu.h>
+@@ -1918,6 +1920,121 @@ void synchronize_rcu_bh(void)
  }
-+EXPORT_SYMBOL_GPL(rcu_idle_exit);
+ EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
  
- /**
-  * rcu_irq_enter - inform RCU that current CPU is entering irq away from idle
++static atomic_t sync_sched_expedited_started = ATOMIC_INIT(0);
++static atomic_t sync_sched_expedited_done = ATOMIC_INIT(0);
++
++static int synchronize_sched_expedited_cpu_stop(void *data)
++{
++	/*
++	 * There must be a full memory barrier on each affected CPU
++	 * between the time that try_stop_cpus() is called and the
++	 * time that it returns.
++	 *
++	 * In the current initial implementation of cpu_stop, the
++	 * above condition is already met when the control reaches
++	 * this point and the following smp_mb() is not strictly
++	 * necessary.  Do smp_mb() anyway for documentation and
++	 * robustness against future implementation changes.
++	 */
++	smp_mb(); /* See above comment block. */
++	return 0;
++}
++
++/*
++ * Wait for an rcu-sched grace period to elapse, but use "big hammer"
++ * approach to force grace period to end quickly.  This consumes
++ * significant time on all CPUs, and is thus not recommended for
++ * any sort of common-case code.
++ *
++ * Note that it is illegal to call this function while holding any
++ * lock that is acquired by a CPU-hotplug notifier.  Failing to
++ * observe this restriction will result in deadlock.
++ *
++ * This implementation can be thought of as an application of ticket
++ * locking to RCU, with sync_sched_expedited_started and
++ * sync_sched_expedited_done taking on the roles of the halves
++ * of the ticket-lock word.  Each task atomically increments
++ * sync_sched_expedited_started upon entry, snapshotting the old value,
++ * then attempts to stop all the CPUs.  If this succeeds, then each
++ * CPU will have executed a context switch, resulting in an RCU-sched
++ * grace period.  We are then done, so we use atomic_cmpxchg() to
++ * update sync_sched_expedited_done to match our snapshot -- but
++ * only if someone else has not already advanced past our snapshot.
++ *
++ * On the other hand, if try_stop_cpus() fails, we check the value
++ * of sync_sched_expedited_done.  If it has advanced past our
++ * initial snapshot, then someone else must have forced a grace period
++ * some time after we took our snapshot.  In this case, our work is
++ * done for us, and we can simply return.  Otherwise, we try again,
++ * but keep our initial snapshot for purposes of checking for someone
++ * doing our work for us.
++ *
++ * If we fail too many times in a row, we fall back to synchronize_sched().
++ */
++void synchronize_sched_expedited(void)
++{
++	int firstsnap, s, snap, trycount = 0;
++
++	/* Note that atomic_inc_return() implies full memory barrier. */
++	firstsnap = snap = atomic_inc_return(&sync_sched_expedited_started);
++	get_online_cpus();
++	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
++
++	/*
++	 * Each pass through the following loop attempts to force a
++	 * context switch on each CPU.
++	 */
++	while (try_stop_cpus(cpu_online_mask,
++			     synchronize_sched_expedited_cpu_stop,
++			     NULL) == -EAGAIN) {
++		put_online_cpus();
++
++		/* No joy, try again later.  Or just synchronize_sched(). */
++		if (trycount++ < 10)
++			udelay(trycount * num_online_cpus());
++		else {
++			synchronize_sched();
++			return;
++		}
++
++		/* Check to see if someone else did our work for us. */
++		s = atomic_read(&sync_sched_expedited_done);
++		if (UINT_CMP_GE((unsigned)s, (unsigned)firstsnap)) {
++			smp_mb(); /* ensure test happens before caller kfree */
++			return;
++		}
++
++		/*
++		 * Refetching sync_sched_expedited_started allows later
++		 * callers to piggyback on our grace period.  We subtract
++		 * 1 to get the same token that the last incrementer got.
++		 * We retry after they started, so our grace period works
++		 * for them, and they started after our first try, so their
++		 * grace period works for us.
++		 */
++		get_online_cpus();
++		snap = atomic_read(&sync_sched_expedited_started);
++		smp_mb(); /* ensure read is before try_stop_cpus(). */
++	}
++
++	/*
++	 * Everyone up to our most recent fetch is covered by our grace
++	 * period.  Update the counter, but only if our work is still
++	 * relevant -- which it won't be if someone who started later
++	 * than we did beat us to the punch.
++	 */
++	do {
++		s = atomic_read(&sync_sched_expedited_done);
++		if (UINT_CMP_GE((unsigned)s, (unsigned)snap)) {
++			smp_mb(); /* ensure test happens before caller kfree */
++			break;
++		}
++	} while (atomic_cmpxchg(&sync_sched_expedited_done, s, snap) != s);
++
++	put_online_cpus();
++}
++EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
++
+ /*
+  * Check to see if there is any immediate RCU-related work to be done
+  * by the current CPU, for the specified type of RCU, returning 1 if so.
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 7addcdf..30eaf14 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -25,7 +25,6 @@
+  */
+ 
+ #include <linux/delay.h>
+-#include <linux/stop_machine.h>
+ 
+ #define RCU_KTHREAD_PRIO 1
+ 
+@@ -1888,121 +1887,6 @@ static void __cpuinit rcu_prepare_kthreads(int cpu)
+ 
+ #endif /* #else #ifdef CONFIG_RCU_BOOST */
+ 
+-static atomic_t sync_sched_expedited_started = ATOMIC_INIT(0);
+-static atomic_t sync_sched_expedited_done = ATOMIC_INIT(0);
+-
+-static int synchronize_sched_expedited_cpu_stop(void *data)
+-{
+-	/*
+-	 * There must be a full memory barrier on each affected CPU
+-	 * between the time that try_stop_cpus() is called and the
+-	 * time that it returns.
+-	 *
+-	 * In the current initial implementation of cpu_stop, the
+-	 * above condition is already met when the control reaches
+-	 * this point and the following smp_mb() is not strictly
+-	 * necessary.  Do smp_mb() anyway for documentation and
+-	 * robustness against future implementation changes.
+-	 */
+-	smp_mb(); /* See above comment block. */
+-	return 0;
+-}
+-
+-/*
+- * Wait for an rcu-sched grace period to elapse, but use "big hammer"
+- * approach to force grace period to end quickly.  This consumes
+- * significant time on all CPUs, and is thus not recommended for
+- * any sort of common-case code.
+- *
+- * Note that it is illegal to call this function while holding any
+- * lock that is acquired by a CPU-hotplug notifier.  Failing to
+- * observe this restriction will result in deadlock.
+- *
+- * This implementation can be thought of as an application of ticket
+- * locking to RCU, with sync_sched_expedited_started and
+- * sync_sched_expedited_done taking on the roles of the halves
+- * of the ticket-lock word.  Each task atomically increments
+- * sync_sched_expedited_started upon entry, snapshotting the old value,
+- * then attempts to stop all the CPUs.  If this succeeds, then each
+- * CPU will have executed a context switch, resulting in an RCU-sched
+- * grace period.  We are then done, so we use atomic_cmpxchg() to
+- * update sync_sched_expedited_done to match our snapshot -- but
+- * only if someone else has not already advanced past our snapshot.
+- *
+- * On the other hand, if try_stop_cpus() fails, we check the value
+- * of sync_sched_expedited_done.  If it has advanced past our
+- * initial snapshot, then someone else must have forced a grace period
+- * some time after we took our snapshot.  In this case, our work is
+- * done for us, and we can simply return.  Otherwise, we try again,
+- * but keep our initial snapshot for purposes of checking for someone
+- * doing our work for us.
+- *
+- * If we fail too many times in a row, we fall back to synchronize_sched().
+- */
+-void synchronize_sched_expedited(void)
+-{
+-	int firstsnap, s, snap, trycount = 0;
+-
+-	/* Note that atomic_inc_return() implies full memory barrier. */
+-	firstsnap = snap = atomic_inc_return(&sync_sched_expedited_started);
+-	get_online_cpus();
+-	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+-
+-	/*
+-	 * Each pass through the following loop attempts to force a
+-	 * context switch on each CPU.
+-	 */
+-	while (try_stop_cpus(cpu_online_mask,
+-			     synchronize_sched_expedited_cpu_stop,
+-			     NULL) == -EAGAIN) {
+-		put_online_cpus();
+-
+-		/* No joy, try again later.  Or just synchronize_sched(). */
+-		if (trycount++ < 10)
+-			udelay(trycount * num_online_cpus());
+-		else {
+-			synchronize_sched();
+-			return;
+-		}
+-
+-		/* Check to see if someone else did our work for us. */
+-		s = atomic_read(&sync_sched_expedited_done);
+-		if (UINT_CMP_GE((unsigned)s, (unsigned)firstsnap)) {
+-			smp_mb(); /* ensure test happens before caller kfree */
+-			return;
+-		}
+-
+-		/*
+-		 * Refetching sync_sched_expedited_started allows later
+-		 * callers to piggyback on our grace period.  We subtract
+-		 * 1 to get the same token that the last incrementer got.
+-		 * We retry after they started, so our grace period works
+-		 * for them, and they started after our first try, so their
+-		 * grace period works for us.
+-		 */
+-		get_online_cpus();
+-		snap = atomic_read(&sync_sched_expedited_started);
+-		smp_mb(); /* ensure read is before try_stop_cpus(). */
+-	}
+-
+-	/*
+-	 * Everyone up to our most recent fetch is covered by our grace
+-	 * period.  Update the counter, but only if our work is still
+-	 * relevant -- which it won't be if someone who started later
+-	 * than we did beat us to the punch.
+-	 */
+-	do {
+-		s = atomic_read(&sync_sched_expedited_done);
+-		if (UINT_CMP_GE((unsigned)s, (unsigned)snap)) {
+-			smp_mb(); /* ensure test happens before caller kfree */
+-			break;
+-		}
+-	} while (atomic_cmpxchg(&sync_sched_expedited_done, s, snap) != s);
+-
+-	put_online_cpus();
+-}
+-EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+-
+ #if !defined(CONFIG_RCU_FAST_NO_HZ)
+ 
+ /*
 -- 
 1.7.8
 
