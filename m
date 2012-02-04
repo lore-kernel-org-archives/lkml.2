@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab2BDCnB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 21:43:01 -0500
-Received: from sandeen.net ([63.231.237.45]:38884 "EHLO mail.sandeen.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783Ab2BDCm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 21:42:59 -0500
-Message-ID: <4F2C9B30.1030902@sandeen.net>
-Date: Fri, 03 Feb 2012 20:42:56 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-fsdevel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 6/8] xfs: Use generic writers counter instead of m_active_trans
- counter
-References: <1327091686-23177-1-git-send-email-jack@suse.cz> <1327091686-23177-7-git-send-email-jack@suse.cz>
-In-Reply-To: <1327091686-23177-7-git-send-email-jack@suse.cz>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753565Ab2BDCqZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 21:46:25 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:49484 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751276Ab2BDCqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 21:46:23 -0500
+Message-ID: <1328323579.21255.34.camel@joe2Laptop>
+Subject: Re: [PATCH] checkpatch: Warn on code with 6+ tab indentation
+From: Joe Perches <joe@perches.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
+Date: Fri, 03 Feb 2012 18:46:20 -0800
+In-Reply-To: <m1k443nwx8.fsf@fess.ebiederm.org>
+References: <20120130140905.441199885@openvz.org>
+	 <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu>
+	 <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu>
+	 <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+	 <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
+	 <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
+	 <1328311239.21255.24.camel@joe2Laptop> <m1k443nwx8.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/20/12 2:34 PM, Jan Kara wrote:
-> m_active_trans counter is racy wrt filesystem freezing. The patch replaces it
-> with generic counter of running transactions which is properly synchronized
-> with filesystem freezing. Things are a bit more complex because we need to log
-> a dummy transaction and free block counters after the filesystem is frozen so
-> we need to pass information to _xfs_trans_alloc() whether the transaction is
-> part of filesystem freezing or not.
-> 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
+On Fri, 2012-02-03 at 18:40 -0800, Eric W. Biederman wrote:
+> Joe Perches <joe@perches.com> writes:
+> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+[]
+> > @@ -1924,6 +1924,12 @@ sub process {
+[]
+> > +
+> > +			if ($line =~ /^\+\t{6,}/) {
+> > +				WARN("DEEP_INDENTATION",
+> > +				     "Too many leading tabs - consider code refactoring\n" . $herecurr);
+> > +			}
+> By any chance have you run this patch against itself?
 
-...
+Nope.  perl isn't a c.  Logic doesn't apply.
+Some might claim perl logic an oxymoron.
 
->  xfs_trans_t *
->  _xfs_trans_alloc(
->  	xfs_mount_t	*mp,
->  	uint		type,
-> -	uint		memflags)
-> +	uint		memflags,
-> +	bool		freezing)
->  {
->  	xfs_trans_t	*tp;
->  
-> -	atomic_inc(&mp->m_active_trans);
-> -
-> +	if (!freezing)
-> +		sb_start_write(mp->m_super, SB_FREEZE_TRANS);
-> +	else
-> +		WARN_ON(xfs_test_for_freeze(mp) != SB_FREEZE_TRANS);
+checkpatch should be used for c sources only.
 
-Hm this could be an issue because for both the umount path and the 
-freeze / xfs_quiesce_attr path, we call xfs_log_sbcount which sends
-"true" for freezing and we'll trip up here because we won't be
-in SB_FREEZE_TRANS during umount.
+> I find it comical
+> that there is a line 104 characters long suggesting people use shorter
+> lines.
 
-I think we have to push the flag all the way up to xfs_log_sbcount
-callers?
+You're welcome to line wrap it if you like...
+I don't actually use checkpatch much.
 
--Eric
+cheers, Joe
+
