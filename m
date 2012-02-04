@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab2BDPeo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 10:34:44 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:45700 "EHLO
+	id S1753284Ab2BDPjE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 10:39:04 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:39590 "EHLO
 	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750847Ab2BDPen convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1750847Ab2BDPjB convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 10:34:43 -0500
+	Sat, 4 Feb 2012 10:39:01 -0500
 MIME-Version: 1.0
-In-Reply-To: <1328144756.2768.57.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <4F2AA642.1030400@linux.intel.com>
 References: <20120121082857.GC32134@elte.hu>
 	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
 	<20120121165830.GA9216@elte.hu>
@@ -22,69 +22,57 @@ References: <20120121082857.GC32134@elte.hu>
 	<20120131122339.GG32010@elte.hu>
 	<CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
 	<1328144756.2768.57.camel@dabdike.int.hansenpartnership.com>
-Date: Sun, 5 Feb 2012 00:34:42 +0900
-Message-ID: <CAMO-S2hCjvcDHheVETr5=+0Ks+G+NyYvr3mnxUV8jQSKzEgVGA@mail.gmail.com>
+	<4F2AA642.1030400@linux.intel.com>
+Date: Sun, 5 Feb 2012 00:39:00 +0900
+Message-ID: <CAMO-S2joH0fwEyOOCSFGM+Lc=xgiarNxm3Rj9DgWJNeoRD+QRQ@mail.gmail.com>
 Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
 From: Hitoshi Mitake <h.mitake@gmail.com>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Matthew Wilcox <matthew.r.wilcox@intel.com>,
         Roland Dreier <roland@purestorage.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 2, 2012 at 10:05, James Bottomley <jbottomley@parallels.com> wrote:
-> On Wed, 2012-02-01 at 15:35 -0800, Linus Torvalds wrote:
->> On Tue, Jan 31, 2012 at 4:23 AM, Ingo Molnar <mingo@elte.hu> wrote:
->> >
->> > non-atomic sounds good to me too.
+On Fri, Feb 3, 2012 at 00:05, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 02/01/2012 05:05 PM, James Bottomley wrote:
 >>
->> You both apparently missed the related discussion that some devices
->> really do care about order, even if they don't care about atomicity.
 >>
->> So we'd actually have two versions of the header file, one
->> little-endian, and one big-endian. Then the driver that knows it
->> doesn't need the atomic 'readq()' that is always defined, but wants a
->> low-bytes-first version would just do
+>> Incidentally, the last time this came up was with mpt fusion: for a
+>> write to a 64 bit register, it didn't care about order, but it did care
+>> about interleaving as in if you write one half of a 64 bit register and
+>> then write to another register, the 64 bit register effectively gets
+>> written with zeros in the part you didn't write to, so we had to put a
+>> spin lock in the open coded writeb/w/l/q() to make sure the card didn't
+>> get interleaved writes.
 >>
->>    #include <linux/io64-little-endian.h>
->>
->> (or "big-endian" if it wants to read/write high bits first). Most
->> drivers probably don't care, but apparently NVMe does.
 >
-> And this was about the point I concluded last time that it simply wasn't
-> worth it with the number of different possibilities for the primitives
-> and trying to come up with a sensible naming scheme ... it's just easier
-> to open code because then you get exactly what you meant.
+> There are always going to be hardware which have specific needs, and for
+> those open-coding makes sense, but the littleendian/bigendian pair is going
+> to cover ~90% of users and make sense to can.
 >
-> Incidentally, the last time this came up was with mpt fusion: for a
-> write to a 64 bit register, it didn't care about order, but it did care
-> about interleaving as in if you write one half of a 64 bit register and
-> then write to another register, the 64 bit register effectively gets
-> written with zeros in the part you didn't write to, so we had to put a
-> spin lock in the open coded writeb/w/l/q() to make sure the card didn't
-> get interleaved writes.
+> I worked myself on a driver (which sadly never shipped) which had an WC
+> window and a UC window... the final write in a series had a completion bit
+> in it and would go to the UC window after setting up a whole chunk of
+> operations in the WC window (writing UC memory flushes WC memory ahead of
+> it.)
 >
-> James
+> Thus, the two-part breakdown of writeq() to the UC window had to write the
+> low half to the WC window instead.  This is clearly not generic.
+>
+>        -hpa
+>
 >
 
-As you say, readq/writeq without any description about the semantics
-of atomicity will cause confusion in such a case.
-
-But new plan for non-atomic readq/writeq is defining non-atomic readq/writeq
-in the header file like asm-generic/io-nonatomic-hi-lo.h, and the file name
-is a good documentation for the description.
-
-The drivers which use readq/writeq without the line like
-#include <asm-generic/io-nonatomic-hi-lo.h>
-will cause compile error in the 32-bit environment.
+Because of my ignorant, I don't know the words "UC window" and "WC window"
+in this context. Could you teach me?
 
 -- 
 Hitoshi Mitake
