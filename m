@@ -1,11 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab2BDBxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 20:53:36 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:35382 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757100Ab2BDBpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758220Ab2BDBxe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 20:53:34 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:41823 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757123Ab2BDBpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Feb 2012 20:45:52 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -17,108 +16,80 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 20/47] rcu: Prevent RCU callbacks from executing before scheduler initialized
-Date: Fri,  3 Feb 2012 17:44:55 -0800
-Message-Id: <1328319922-30828-20-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 14/47] rcu: Limit lazy-callback duration
+Date: Fri,  3 Feb 2012 17:44:49 -0800
+Message-Id: <1328319922-30828-14-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120204014452.GA29811@linux.vnet.ibm.com>
  <1328319922-30828-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020401-3270-0000-0000-000003B92205
+x-cbid: 12020401-9360-0000-0000-000003198C75
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-This is a port of commit #b0d3041 from TREE_RCU to TREE_PREEMPT_RCU.
-
-Under some rare but real combinations of configuration parameters, RCU
-callbacks are posted during early boot that use kernel facilities that are
-not yet initialized.  Therefore, when these callbacks are invoked, hard
-hangs and crashes ensue.  This commit therefore prevents RCU callbacks
-from being invoked until after the scheduler is fully up and running,
-as in after multiple tasks have been spawned.
-
-It might well turn out that a better approach is to identify the specific
-RCU callbacks that are causing this problem, but that discussion will
-wait until such time as someone really needs an RCU callback to be invoked
-(as opposed to merely registered) during early boot.
+Currently, a given CPU is permitted to remain in dyntick-idle mode
+indefinitely if it has only lazy RCU callbacks queued.  This is vulnerable
+to corner cases in NUMA systems, so limit the time to six seconds by
+default.  (Currently controlled by a cpp macro.)
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcutiny.h |    4 ----
- kernel/rcutiny_plugin.h |   15 ++++++++++++---
- 2 files changed, 12 insertions(+), 7 deletions(-)
+ kernel/rcutree_plugin.h |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index 51bf29c..e93df77 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -27,13 +27,9 @@
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index eeb2cc6..8041310 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2050,6 +2050,9 @@ static void rcu_prepare_for_idle(int cpu)
+  *	number, be warned: Setting RCU_IDLE_GP_DELAY too high can hang your
+  *	system.  And if you are -that- concerned about energy efficiency,
+  *	just power the system down and be done with it!
++ * RCU_IDLE_LAZY_GP_DELAY gives the number of jiffies that a CPU is
++ *	permitted to sleep in dyntick-idle mode with only lazy RCU
++ *	callbacks pending.  Setting this too high can OOM your system.
+  *
+  * The values below work well in practice.  If future workloads require
+  * adjustment, they can be converted into kernel config parameters, though
+@@ -2058,11 +2061,13 @@ static void rcu_prepare_for_idle(int cpu)
+ #define RCU_IDLE_FLUSHES 5		/* Number of dyntick-idle tries. */
+ #define RCU_IDLE_OPT_FLUSHES 3		/* Optional dyntick-idle tries. */
+ #define RCU_IDLE_GP_DELAY 6		/* Roughly one grace period. */
++#define RCU_IDLE_LAZY_GP_DELAY (6 * HZ)	/* Roughly six seconds. */
  
- #include <linux/cache.h>
+ static DEFINE_PER_CPU(int, rcu_dyntick_drain);
+ static DEFINE_PER_CPU(unsigned long, rcu_dyntick_holdoff);
+ static DEFINE_PER_CPU(struct hrtimer, rcu_idle_gp_timer);
+-static ktime_t rcu_idle_gp_wait;
++static ktime_t rcu_idle_gp_wait;	/* If some non-lazy callbacks. */
++static ktime_t rcu_idle_lazy_gp_wait;	/* If only lazy callbacks. */
  
--#ifdef CONFIG_RCU_BOOST
- static inline void rcu_init(void)
- {
- }
--#else /* #ifdef CONFIG_RCU_BOOST */
--void rcu_init(void);
--#endif /* #else #ifdef CONFIG_RCU_BOOST */
- 
- static inline void rcu_barrier_bh(void)
- {
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index b58a320..95df60e 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -914,7 +914,8 @@ static void rcu_preempt_process_callbacks(void)
- static void invoke_rcu_callbacks(void)
- {
- 	have_rcu_kthread_work = 1;
--	wake_up(&rcu_kthread_wq);
-+	if (rcu_kthread_task != NULL)
-+		wake_up(&rcu_kthread_wq);
- }
- 
- #ifdef CONFIG_RCU_TRACE
-@@ -975,12 +976,16 @@ early_initcall(rcu_spawn_kthreads);
- 
- #else /* #ifdef CONFIG_RCU_BOOST */
- 
-+/* Hold off callback invocation until early_initcall() time. */
-+static int rcu_scheduler_fully_active __read_mostly;
-+
  /*
-  * Start up softirq processing of callbacks.
-  */
- void invoke_rcu_callbacks(void)
- {
--	raise_softirq(RCU_SOFTIRQ);
-+	if (rcu_scheduler_fully_active)
-+		raise_softirq(RCU_SOFTIRQ);
+  * Allow the CPU to enter dyntick-idle mode if either: (1) There are no
+@@ -2151,6 +2156,8 @@ static void rcu_prepare_for_idle_init(int cpu)
+ 		unsigned int upj = jiffies_to_usecs(RCU_IDLE_GP_DELAY);
+ 
+ 		rcu_idle_gp_wait = ns_to_ktime(upj * (u64)1000);
++		upj = jiffies_to_usecs(6 * HZ);
++		rcu_idle_lazy_gp_wait = ns_to_ktime(upj * (u64)1000);
+ 		firsttime = 0;
+ 	}
  }
- 
- #ifdef CONFIG_RCU_TRACE
-@@ -995,10 +1000,14 @@ static bool rcu_is_callbacks_kthread(void)
- 
- #endif /* #ifdef CONFIG_RCU_TRACE */
- 
--void rcu_init(void)
-+static int __init rcu_scheduler_really_started(void)
- {
-+	rcu_scheduler_fully_active = 1;
- 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
-+	raise_softirq(RCU_SOFTIRQ);  /* Invoke any callbacks from early boot. */
-+	return 0;
- }
-+early_initcall(rcu_scheduler_really_started);
- 
- #endif /* #else #ifdef CONFIG_RCU_BOOST */
- 
+@@ -2225,6 +2232,9 @@ static void rcu_prepare_for_idle(int cpu)
+ 		if (rcu_cpu_has_nonlazy_callbacks(cpu))
+ 			hrtimer_start(&per_cpu(rcu_idle_gp_timer, cpu),
+ 				      rcu_idle_gp_wait, HRTIMER_MODE_REL);
++		else
++			hrtimer_start(&per_cpu(rcu_idle_gp_timer, cpu),
++				      rcu_idle_lazy_gp_wait, HRTIMER_MODE_REL);
+ 		return; /* Nothing more to do immediately. */
+ 	} else if (--per_cpu(rcu_dyntick_drain, cpu) <= 0) {
+ 		/* We have hit the limit, so time to give up. */
 -- 
 1.7.8
 
