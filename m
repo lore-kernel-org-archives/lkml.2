@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab2BDChn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Feb 2012 21:37:43 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:39015 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636Ab2BDChm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Feb 2012 21:37:42 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Joe Perches <joe@perches.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] checkpatch: Warn on code with 6+ tab indentation
-References: <20120130140905.441199885@openvz.org>
-	<20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu>
-	<20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu>
-	<20120203012241.bcd3d0c8.akpm@linux-foundation.org>
-	<20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
-	<CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
-	<1328311239.21255.24.camel@joe2Laptop>
-Date: Fri, 03 Feb 2012 18:40:19 -0800
-In-Reply-To: <1328311239.21255.24.camel@joe2Laptop> (Joe Perches's message of
-	"Fri, 03 Feb 2012 15:20:39 -0800")
-Message-ID: <m1k443nwx8.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753296Ab2BDCnB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Feb 2012 21:43:01 -0500
+Received: from sandeen.net ([63.231.237.45]:38884 "EHLO mail.sandeen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750783Ab2BDCm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Feb 2012 21:42:59 -0500
+Message-ID: <4F2C9B30.1030902@sandeen.net>
+Date: Fri, 03 Feb 2012 20:42:56 -0600
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/DMzygj9ZXPYRE//Y64Mf5Q7L/KvdA4yE=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+To: Jan Kara <jack@suse.cz>
+CC: linux-fsdevel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
+        Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 6/8] xfs: Use generic writers counter instead of m_active_trans
+ counter
+References: <1327091686-23177-1-git-send-email-jack@suse.cz> <1327091686-23177-7-git-send-email-jack@suse.cz>
+In-Reply-To: <1327091686-23177-7-git-send-email-jack@suse.cz>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+On 1/20/12 2:34 PM, Jan Kara wrote:
+> m_active_trans counter is racy wrt filesystem freezing. The patch replaces it
+> with generic counter of running transactions which is properly synchronized
+> with filesystem freezing. Things are a bit more complex because we need to log
+> a dummy transaction and free block counters after the filesystem is frozen so
+> we need to pass information to _xfs_trans_alloc() whether the transaction is
+> part of filesystem freezing or not.
+> 
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 2b52aeb..89d24b3 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -1924,6 +1924,12 @@ sub process {
->  			my $pre_ctx = "$1$2";
+...
+
+>  xfs_trans_t *
+>  _xfs_trans_alloc(
+>  	xfs_mount_t	*mp,
+>  	uint		type,
+> -	uint		memflags)
+> +	uint		memflags,
+> +	bool		freezing)
+>  {
+>  	xfs_trans_t	*tp;
 >  
->  			my ($level, @ctx) = ctx_statement_level($linenr, $realcnt, 0);
-> +
-> +			if ($line =~ /^\+\t{6,}/) {
-> +				WARN("DEEP_INDENTATION",
-> +				     "Too many leading tabs - consider code refactoring\n" . $herecurr);
-> +			}
+> -	atomic_inc(&mp->m_active_trans);
+> -
+> +	if (!freezing)
+> +		sb_start_write(mp->m_super, SB_FREEZE_TRANS);
+> +	else
+> +		WARN_ON(xfs_test_for_freeze(mp) != SB_FREEZE_TRANS);
 
-By any chance have you run this patch against itself? I find it comical
-that there is a line 104 characters long suggesting people use shorter
-lines.
+Hm this could be an issue because for both the umount path and the 
+freeze / xfs_quiesce_attr path, we call xfs_log_sbcount which sends
+"true" for freezing and we'll trip up here because we won't be
+in SB_FREEZE_TRANS during umount.
 
->  			my $ctx_cnt = $realcnt - $#ctx - 1;
->  			my $ctx = join("\n", @ctx);
->  
+I think we have to push the flag all the way up to xfs_log_sbcount
+callers?
 
-Eric
+-Eric
