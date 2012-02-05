@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab2BEWlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:41:09 -0500
-Received: from 1wt.eu ([62.212.114.60]:61978 "EHLO 1wt.eu"
+	id S1754472Ab2BEWle (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:41:34 -0500
+Received: from 1wt.eu ([62.212.114.60]:61982 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754086Ab2BEW0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:36 -0500
-Message-Id: <20120205220951.887731371@pcw.home.local>
+	id S1754100Ab2BEW0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:35 -0500
+Message-Id: <20120205220950.939819397@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:46 +0100
+Date: Sun, 05 Feb 2012 23:10:24 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Andrew Worsley <amworsley@gmail.com>, Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 57/91] USB: Fix Corruption issue in USB ftdi driver ftdi_sio.c
+Cc: gnb@fmeh.org, "J. Bruce Fields" <bfields@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 35/91] svcrpc: fix list-corrupting race on nfsd shutdown
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,65 +23,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit b1ffb4c851f185e9051ba837c16d9b84ef688d26 upstream.
+commit ebc63e531cc6a457595dd110b07ac530eae788c3 upstream.
 
-Fix for ftdi_set_termios() glitching output
+After commit 3262c816a3d7fb1eaabce633caa317887ed549ae "[PATCH] knfsd:
+split svc_serv into pools", svc_delete_xprt (then svc_delete_socket) no
+longer removed its xpt_ready (then sk_ready) field from whatever list it
+was on, noting that there was no point since the whole list was about to
+be destroyed anyway.
 
-ftdi_set_termios() is constantly setting the baud rate, data bits and parity
-unnecessarily on every call, . When called while characters are being
-transmitted can cause the FTDI chip to corrupt the serial port bit stream
-output by stalling the output half a bit during the output of a character.
-Simple fix by skipping this setting if the baud rate/data bits/parity are
-unchanged.
+That was mostly true, but forgot that a few svc_xprt_enqueue()'s might
+still be hanging around playing with the about-to-be-destroyed list, and
+could get themselves into trouble writing to freed memory if we left
+this xprt on the list after freeing it.
 
-Signed-off-by: Andrew Worsley <amworsley@gmail.com>
+(This is actually functionally identical to a patch made first by Ben
+Greear, but with more comments.)
+
+Cc: gnb@fmeh.org
+Reported-by: Ben Greear <greearb@candelatech.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/usb/serial/ftdi_sio.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
+ net/sunrpc/svc_xprt.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-Index: longterm-2.6.27/drivers/usb/serial/ftdi_sio.c
+Index: longterm-2.6.27/net/sunrpc/svc_xprt.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/usb/serial/ftdi_sio.c	2012-02-05 22:34:33.270914634 +0100
-+++ longterm-2.6.27/drivers/usb/serial/ftdi_sio.c	2012-02-05 22:34:42.983916543 +0100
-@@ -2109,13 +2109,19 @@
+--- longterm-2.6.27.orig/net/sunrpc/svc_xprt.c	2012-02-05 22:34:33.947915241 +0100
++++ longterm-2.6.27/net/sunrpc/svc_xprt.c	2012-02-05 22:34:39.823917910 +0100
+@@ -830,12 +830,13 @@
+ 	if (!test_and_set_bit(XPT_DETACHED, &xprt->xpt_flags))
+ 		list_del_init(&xprt->xpt_list);
+ 	/*
+-	 * We used to delete the transport from whichever list
+-	 * it's sk_xprt.xpt_ready node was on, but we don't actually
+-	 * need to.  This is because the only time we're called
+-	 * while still attached to a queue, the queue itself
+-	 * is about to be destroyed (in svc_destroy).
++	 * The only time we're called while xpt_ready is still on a list
++	 * is while the list itself is about to be destroyed (in
++	 * svc_destroy).  BUT svc_xprt_enqueue could still be attempting
++	 * to add new entries to the sp_sockets list, so we can't leave
++	 * a freed xprt on it.
+ 	 */
++	list_del_init(&xprt->xpt_ready);
+ 	if (test_bit(XPT_TEMP, &xprt->xpt_flags))
+ 		serv->sv_tmpcnt--;
  
- 	cflag = termios->c_cflag;
- 
--	/* FIXME -For this cut I don't care if the line is really changing or
--	   not  - so just do the change regardless  - should be able to
--	   compare old_termios and tty->termios */
-+	if (old_termios->c_cflag == termios->c_cflag
-+	    && old_termios->c_ispeed == termios->c_ispeed
-+	    && old_termios->c_ospeed == termios->c_ospeed)
-+		goto no_c_cflag_changes;
-+
- 	/* NOTE These routines can get interrupted by
- 	   ftdi_sio_read_bulk_callback  - need to examine what this means -
- 	   don't see any problems yet */
- 
-+	if ((old_termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)) ==
-+	    (termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)))
-+		goto no_data_parity_stop_changes;
-+
- 	/* Set number of data bits, parity, stop bits */
- 
- 	termios->c_cflag &= ~CMSPAR;
-@@ -2151,6 +2157,7 @@
- 	}
- 
- 	/* Now do the baudrate */
-+no_data_parity_stop_changes:
- 	if ((cflag & CBAUD) == B0) {
- 		/* Disable flow control */
- 		if (usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-@@ -2173,6 +2180,7 @@
- 
- 	/* Set flow control */
- 	/* Note device also supports DTR/CD (ugh) and Xon/Xoff in hardware */
-+no_c_cflag_changes:
- 	if (cflag & CRTSCTS) {
- 		dbg("%s Setting to CRTSCTS flow control", __func__);
- 		if (usb_control_msg(dev,
 
 
