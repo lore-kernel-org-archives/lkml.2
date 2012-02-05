@@ -1,577 +1,634 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab2BEMu7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 07:50:59 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35081 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab2BEMu5 (ORCPT
+	id S1754576Ab2BEMv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 07:51:29 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:53125 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754146Ab2BEMv0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 07:50:57 -0500
-From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Pradeep A Dalvi <netdev@pradeepdalvi.com>
-Subject: [PATCH v5 3/5] netdev: ethernet dev_alloc_skb to netdev_alloc_skb
-Date: Sun,  5 Feb 2012 18:20:38 +0530
-Message-Id: <ef62da964e8660dfdf2a25cd643631bb15914ecf.1328445742.git.netdev@pradeepdalvi.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <cf736034e7bd407297e2ea9fbf247fb410eb7b39.1328445742.git.netdev@pradeepdalvi.com>
-References: <cf736034e7bd407297e2ea9fbf247fb410eb7b39.1328445742.git.netdev@pradeepdalvi.com>
+	Sun, 5 Feb 2012 07:51:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <1328158649-4137-3-git-send-email-vinholikatti@gmail.com>
+References: <1328158649-4137-1-git-send-email-vinholikatti@gmail.com>
+	<1328158649-4137-3-git-send-email-vinholikatti@gmail.com>
+Date: Sun, 5 Feb 2012 21:51:24 +0900
+Message-ID: <CAKYAXd-F6XruHB_fSs=tBYagf_iYFHHBYN5bGYsLh2H5fXtfkw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] [SCSI] ufshcd: UFS UTP Transfer requests handling
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Vinayak Holikatti <vinholikatti@gmail.com>,
+        Santosh Yaraganavi <santoshsy@gmail.com>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, saugata.das@linaro.org,
+        arnd@arndb.de, venkat@linaro.org, girish.shivananjappa@linaro.org,
+        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pradeep A Dalvi <netdev@pradeepdalvi.com>
+2012/2/2 Vinayak Holikatti <vinholikatti@gmail.com>:
+> From: Santosh Yaraganavi <santoshsy@gmail.com>
+>
+> This patch adds support for Transfer request handling.
+>
+> ufshcd includes following implementations:
+>  - SCSI queuecommand
+>  - Compose UPIU(UFS Protocol information unit)
+>  - Issue commands to UFS host controller
+>  - Handle completed commands
+>
+> Signed-off-by: Santosh Yaraganavi <santoshsy@gmail.com>
+> Signed-off-by: Vinayak Holikatti <vinholikatti@gmail.com>
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> Reviewed-by: Saugata Das <saugata.das@linaro.org>
+> Reviewed-by: Vishak G <vishak.g@samsung.com>
+> Reviewed-by: Girish K S <girish.shivananjappa@linaro.org>
+> ---
+>  drivers/scsi/ufs/ufshcd.c |  447 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 447 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+> index c82eeea..23d758b 100644
+> --- a/drivers/scsi/ufs/ufshcd.c
+> +++ b/drivers/scsi/ufs/ufshcd.c
+> @@ -62,6 +62,7 @@
+>  #include <scsi/scsi.h>
+>  #include <scsi/scsi_cmnd.h>
+>  #include <scsi/scsi_host.h>
+> +#include <scsi/scsi_tcq.h>
+>  #include <scsi/scsi_dbg.h>
+>
+>  #include "ufs.h"
+> @@ -81,6 +82,7 @@ enum {
+>        UFSHCD_MAX_CHANNEL      = 1,
+>        UFSHCD_MAX_ID           = 1,
+>        UFSHCD_MAX_LUNS         = 8,
+> +       UFSHCD_CMD_PER_LUN      = 16,
+>        UFSHCD_CAN_QUEUE        = 32,
+>        BYTES_128               = 128,
+>        BYTES_1024              = 1024
+> @@ -146,6 +148,7 @@ struct uic_command {
+>  * @host: Scsi_Host instance of the driver
+>  * @pdev: PCI device handle
+>  * @lrb: local reference block
+> + * @outstanding_reqs: Bits representing outstanding transfer requests
+>  * @capabilities: UFS Controller Capabilities
+>  * @nutrs: Transfer Request Queue depth supported by controller
+>  * @nutmrs: Task Management Queue depth supported by controller
+> @@ -184,6 +187,8 @@ struct ufs_hba {
+>
+>        struct ufshcd_lrb *lrb;
+>
+> +       u32 outstanding_reqs;
+> +
+>        u32 capabilities;
+>        int nutrs;
+>        int nutmrs;
+> @@ -204,12 +209,28 @@ struct ufs_hba {
+>  * @ucd_cmd_ptr: UCD address of the command
+>  * @ucd_rsp_ptr: Response UPIU address for this command
+>  * @ucd_prdt_ptr: PRDT address of the command
+> + * @cmd: pointer to scsi command
+> + * @sense_buffer: pointer sense buffer address of the scsi command
+> + * @sense_bufflen: Length of the sense buffer
+> + * @scsi_status: SCSI status of the command
+> + * @command_type: SCSI, UFS, Query.
+> + * @task_tag: Task tag of the command
+> + * @lun: LUN of the command
+>  */
+>  struct ufshcd_lrb {
+>        struct utp_transfer_req_desc *utr_descriptor_ptr;
+>        struct utp_upiu_cmd *ucd_cmd_ptr;
+>        struct utp_upiu_rsp *ucd_rsp_ptr;
+>        struct ufshcd_sg_entry *ucd_prdt_ptr;
+> +
+> +       struct scsi_cmnd *cmd;
+> +       u8 *sense_buffer;
+> +       unsigned int sense_bufflen;
+> +       int scsi_status;
+> +
+> +       int command_type;
+> +       int task_tag;
+> +       int lun;
+>  };
+>
+>  /**
+> @@ -236,6 +257,18 @@ static inline int ufshcd_is_device_present(u32 reg_hcs)
+>  }
+>
+>  /**
+> + * ufshcd_get_tr_ocs - Get the UTRD Overall Command Status
+> + * @lrb: pointer to local command reference block
+> + *
+> + * This function is used to get the OCS field from UTRD
+> + * Returns the OCS field in the UTRD
+> + */
+> +static inline int ufshcd_get_tr_ocs(struct ufshcd_lrb *lrbp)
+> +{
+> +       return lrbp->utr_descriptor_ptr->header.dword_2 & MASK_OCS;
+> +}
+> +
+> +/**
+>  * ufshcd_get_lists_status - Check UCRDY, UTRLRDY and UTMRLRDY
+>  * @reg: Register value of host controller status
+>  *
+> @@ -303,6 +336,36 @@ static inline void ufshcd_free_hba_memory(struct ufs_hba *hba)
+>  }
+>
+>  /**
+> + * ufshcd_is_valid_req_rsp - checks if controller TR response is valid
+> + * @ucd_rsp_ptr: pointer to response UPIU
+> + *
+> + * This function checks the response UPIU for valid transaction type in
+> + * response field
+> + * Returns 0 on success, non-zero on failure
+> + */
+> +static inline int
+> +ufshcd_is_valid_req_rsp(struct utp_upiu_rsp *ucd_rsp_ptr)
+> +{
+> +       return ((be32_to_cpu(ucd_rsp_ptr->header.dword_0) >> 24) ==
+> +                UPIU_TRANSACTION_RESPONSE) ? 0 :
+> +                                             (DID_ERROR << 16 |
+> +                                              COMMAND_COMPLETE << 8);
+> +}
+> +
+> +/**
+> + * ufshcd_get_rsp_upiu_result - Get the result from response UPIU
+> + * @ucd_rsp_ptr: pointer to response UPIU
+> + *
+> + * This function gets the response status and scsi_status from response UPIU
+> + * Returns the response result code.
+> + */
+> +static inline int
+> +ufshcd_get_rsp_upiu_result(struct utp_upiu_rsp *ucd_rsp_ptr)
+> +{
+> +       return be32_to_cpu(ucd_rsp_ptr->header.dword_1) & MASK_RSP_UPIU_RESULT;
+> +}
+> +
+> +/**
+>  * ufshcd_config_int_aggr - Configure interrupt aggregation values
+>  *             currently there is no use case where we want to configure
+>  *             interrupt aggregation dynamically. So to configure interrupt
+> @@ -342,6 +405,34 @@ static inline void ufshcd_hba_stop(struct ufs_hba *hba)
+>  }
+>
+>  /**
+> + * ufshcd_send_command - Send SCSI or device management commands
+> + * @hba: per adapter instance
+> + * @task_tag: Task tag of the command
+> + */
+> +static inline
+> +void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
+> +{
+> +       hba->outstanding_reqs |= (1 << task_tag);
+> +       writel((1 << task_tag),
+> +              (UFSHCD_MMIO_BASE + REG_UTP_TRANSFER_REQ_DOOR_BELL));
+> +}
+> +
+> +/**
+> + * ufshcd_copy_sense_data - Copy sense data in case of check condition
+> + * @lrb - pointer to local reference block
+> + */
+> +static inline void ufshcd_copy_sense_data(struct ufshcd_lrb *lrbp)
+> +{
+> +       int len;
+> +       if (lrbp->sense_buffer != NULL) {
+> +               len = be16_to_cpu(lrbp->ucd_rsp_ptr->sense_data_len);
+> +               memcpy(lrbp->sense_buffer,
+> +                       lrbp->ucd_rsp_ptr->sense_data,
+> +                       min_t(int, len, SCSI_SENSE_BUFFERSIZE));
+> +       }
+> +}
+> +
+> +/**
+>  * ufshcd_hba_capabilities - Read controller capabilities
+>  * @hba: per adapter instance
+>  */
+> @@ -385,6 +476,42 @@ ufshcd_send_uic_command(struct ufs_hba *hba, struct uic_command *uic_cmnd)
+>  }
+>
+>  /**
+> + * ufshcd_map_sg - Map scatter-gather list to prdt
+> + * @lrbp - pointer to local reference block
+> + */
+> +static void ufshcd_map_sg(struct ufshcd_lrb *lrbp)
+> +{
+> +       struct ufshcd_sg_entry *prd_table;
+> +       struct scatterlist *sg;
+> +       struct scsi_cmnd *cmd;
+> +       int sg_segments;
+> +       int i;
+> +
+> +       cmd = lrbp->cmd;
+> +       sg_segments = scsi_dma_map(cmd);
+> +
+> +       BUG_ON(sg_segments < 0);
+> +
+> +       if (sg_segments) {
+> +               lrbp->utr_descriptor_ptr->prd_table_length =
+> +                                       cpu_to_le16((u16) (sg_segments));
+> +
+> +               prd_table = (struct ufshcd_sg_entry *)lrbp->ucd_prdt_ptr;
+> +
+> +               scsi_for_each_sg(cmd, sg, sg_segments, i) {
+> +                       prd_table[i].size  =
+> +                               cpu_to_le32(((u32) sg_dma_len(sg))-1);
+> +                       prd_table[i].base_addr =
+> +                               cpu_to_le32(sg->dma_address);
+> +                       prd_table[i].upper_addr =
+> +                               cpu_to_le32((sg->dma_address >> 32));
+> +               }
+> +       } else {
+> +               lrbp->utr_descriptor_ptr->prd_table_length = 0;
+> +       }
+> +}
+> +
+> +/**
+>  * ufshcd_int_config - enable/disable interrupts
+>  * @hba: per adapter instance
+>  * @option: interrupt option
+> @@ -410,6 +537,124 @@ static void ufshcd_int_config(struct ufs_hba *hba, u32 option)
+>  }
+>
+>  /**
+> + * ufshcd_compose_upiu - form UFS Protocol Information Unit(UPIU)
+> + * @hba: per adapter instance
+> + * @lrb - pointer to local reference block
+> + */
+> +static void ufshcd_compose_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+> +{
+> +       struct utp_transfer_req_desc *req_desc;
+> +       struct utp_upiu_cmd *ucd_cmd_ptr;
+> +       u32 data_direction;
+> +       u32 upiu_flags;
+> +
+> +       ucd_cmd_ptr = lrbp->ucd_cmd_ptr;
+> +       req_desc = lrbp->utr_descriptor_ptr;
+> +
+> +       memset(ucd_cmd_ptr, 0, sizeof(struct utp_upiu_cmd));
+> +
+> +       switch (lrbp->command_type) {
+> +       case UTP_CMD_TYPE_SCSI:
+> +               if (DMA_FROM_DEVICE == lrbp->cmd->sc_data_direction) {
+> +                       data_direction = UTP_DEVICE_TO_HOST;
+> +                       upiu_flags = UPIU_CMD_FLAGS_READ;
+> +               } else if (DMA_TO_DEVICE == lrbp->cmd->sc_data_direction) {
+> +                       data_direction = UTP_HOST_TO_DEVICE;
+> +                       upiu_flags = UPIU_CMD_FLAGS_WRITE;
+> +               } else {
+> +                       data_direction = UTP_NO_DATA_TRANSFER;
+> +                       upiu_flags = 0;
+I think that we can add some enum value for like UTP_NO_DATA_TRANSFER.
+> +               }
+> +
+> +               /*
+> +                * Transfer request desc header fields
+> +                * set interrupt bit if interrupt aggregation is disabled
+> +                */
+> +               req_desc->header.dword_0 = cpu_to_le32(data_direction |
+> +                                                      UTP_SCSI_COMMAND);
+> +
+> +               /*
+> +                * assigning invalid value for command status. Controller
+> +                * updates OCS on command completion, with the command
+> +                * status
+> +                */
+> +               req_desc->header.dword_2 =
+> +                       cpu_to_le32(OCS_INVALID_COMMAND_STATUS);
+> +
+> +               /* command descriptor fields */
+> +               ucd_cmd_ptr->exp_data_transfer_len =
+> +                       cpu_to_be32(lrbp->cmd->transfersize);
+> +               memcpy(ucd_cmd_ptr->cdb, lrbp->cmd->cmnd,
+> +                     (min_t(unsigned short,
+> +                            lrbp->cmd->cmd_len,
+> +                            (unsigned short)MAX_CDB_SIZE)));
+Is there any reason type casting for MAX_CDB_SIZE ?
 
-Replaced deprecating dev_alloc_skb with netdev_alloc_skb in drivers/net/ethernet
-  - Removed extra skb->dev = dev after netdev_alloc_skb
-
-Signed-off-by: Pradeep A Dalvi <netdev@pradeepdalvi.com>
----
- drivers/net/ethernet/fujitsu/eth16i.c      |    2 +-
- drivers/net/ethernet/fujitsu/fmvj18x_cs.c  |    2 +-
- drivers/net/ethernet/hp/hp100.c            |    5 ++---
- drivers/net/ethernet/i825xx/3c505.c        |    2 +-
- drivers/net/ethernet/i825xx/3c507.c        |    2 +-
- drivers/net/ethernet/i825xx/3c523.c        |    2 +-
- drivers/net/ethernet/i825xx/3c527.c        |    4 ++--
- drivers/net/ethernet/i825xx/82596.c        |    8 +++-----
- drivers/net/ethernet/i825xx/eepro.c        |    2 +-
- drivers/net/ethernet/i825xx/eexpress.c     |    2 +-
- drivers/net/ethernet/i825xx/ether1.c       |    2 +-
- drivers/net/ethernet/i825xx/lp486e.c       |    2 +-
- drivers/net/ethernet/i825xx/ni52.c         |    2 +-
- drivers/net/ethernet/i825xx/sun3_82586.c   |    2 +-
- drivers/net/ethernet/i825xx/znet.c         |    2 +-
- drivers/net/ethernet/icplus/ipg.c          |    3 ---
- drivers/net/ethernet/lantiq_etop.c         |    2 +-
- drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
- drivers/net/ethernet/marvell/pxa168_eth.c  |    2 +-
- drivers/net/ethernet/mellanox/mlx4/en_rx.c |    3 +--
- drivers/net/ethernet/micrel/ks8695net.c    |    4 ++--
- drivers/net/ethernet/micrel/ks8851_mll.c   |    2 +-
- drivers/net/ethernet/micrel/ksz884x.c      |    6 +++---
- drivers/net/ethernet/microchip/enc28j60.c  |    3 +--
- drivers/net/ethernet/mipsnet.c             |    2 +-
- drivers/net/ethernet/natsemi/ibmlana.c     |    2 +-
- drivers/net/ethernet/natsemi/natsemi.c     |    5 ++---
- drivers/net/ethernet/natsemi/sonic.c       |    4 ++--
- drivers/net/ethernet/neterion/s2io.c       |    6 +++---
- 29 files changed, 39 insertions(+), 48 deletions(-)
-
-diff --git a/drivers/net/ethernet/fujitsu/eth16i.c b/drivers/net/ethernet/fujitsu/eth16i.c
-index b0e2313..c3f0178 100644
---- a/drivers/net/ethernet/fujitsu/eth16i.c
-+++ b/drivers/net/ethernet/fujitsu/eth16i.c
-@@ -1164,7 +1164,7 @@ static void eth16i_rx(struct net_device *dev)
- 		else {   /* Ok so now we should have a good packet */
- 			struct sk_buff *skb;
- 
--			skb = dev_alloc_skb(pkt_len + 3);
-+			skb = netdev_alloc_skb(dev, pkt_len + 3);
- 			if( skb == NULL ) {
- 				printk(KERN_WARNING "%s: Could'n allocate memory for packet (len %d)\n",
- 				       dev->name, pkt_len);
-diff --git a/drivers/net/ethernet/fujitsu/fmvj18x_cs.c b/drivers/net/ethernet/fujitsu/fmvj18x_cs.c
-index ee84b47..0230319 100644
---- a/drivers/net/ethernet/fujitsu/fmvj18x_cs.c
-+++ b/drivers/net/ethernet/fujitsu/fmvj18x_cs.c
-@@ -1002,7 +1002,7 @@ static void fjn_rx(struct net_device *dev)
- 		dev->stats.rx_errors++;
- 		break;
- 	    }
--	    skb = dev_alloc_skb(pkt_len+2);
-+	    skb = netdev_alloc_skb(dev, pkt_len + 2);
- 	    if (skb == NULL) {
- 		netdev_notice(dev, "Memory squeeze, dropping packet (len %d)\n",
- 			      pkt_len);
-diff --git a/drivers/net/ethernet/hp/hp100.c b/drivers/net/ethernet/hp/hp100.c
-index 6a5ee07..fc9e4b5 100644
---- a/drivers/net/ethernet/hp/hp100.c
-+++ b/drivers/net/ethernet/hp/hp100.c
-@@ -1274,7 +1274,7 @@ static int hp100_build_rx_pdl(hp100_ring_t * ringptr,
- 	/* Note: This depends on the alloc_skb functions allocating more
- 	 * space than requested, i.e. aligning to 16bytes */
- 
--	ringptr->skb = dev_alloc_skb(roundup(MAX_ETHER_SIZE + 2, 4));
-+	ringptr->skb = netdev_alloc_skb(dev, roundup(MAX_ETHER_SIZE + 2, 4));
- 
- 	if (NULL != ringptr->skb) {
- 		/*
-@@ -1284,7 +1284,6 @@ static int hp100_build_rx_pdl(hp100_ring_t * ringptr,
- 		 */
- 		skb_reserve(ringptr->skb, 2);
- 
--		ringptr->skb->dev = dev;
- 		ringptr->skb->data = (u_char *) skb_put(ringptr->skb, MAX_ETHER_SIZE);
- 
- 		/* ringptr->pdl points to the beginning of the PDL, i.e. the PDH */
-@@ -1817,7 +1816,7 @@ static void hp100_rx(struct net_device *dev)
- #endif
- 
- 		/* Now we allocate the skb and transfer the data into it. */
--		skb = dev_alloc_skb(pkt_len+2);
-+		skb = netdev_alloc_skb(dev, pkt_len + 2);
- 		if (skb == NULL) {	/* Not enough memory->drop packet */
- #ifdef HP100_DEBUG
- 			printk("hp100: %s: rx: couldn't allocate a sk_buff of size %d\n",
-diff --git a/drivers/net/ethernet/i825xx/3c505.c b/drivers/net/ethernet/i825xx/3c505.c
-index ba82a26..6a5c21b 100644
---- a/drivers/net/ethernet/i825xx/3c505.c
-+++ b/drivers/net/ethernet/i825xx/3c505.c
-@@ -583,7 +583,7 @@ static void receive_packet(struct net_device *dev, int len)
- 	unsigned long flags;
- 
- 	rlen = (len + 1) & ~1;
--	skb = dev_alloc_skb(rlen + 2);
-+	skb = netdev_alloc_skb(dev, rlen + 2);
- 
- 	if (!skb) {
- 		pr_warning("%s: memory squeeze, dropping packet\n", dev->name);
-diff --git a/drivers/net/ethernet/i825xx/3c507.c b/drivers/net/ethernet/i825xx/3c507.c
-index 1e94555..ed6925f 100644
---- a/drivers/net/ethernet/i825xx/3c507.c
-+++ b/drivers/net/ethernet/i825xx/3c507.c
-@@ -851,7 +851,7 @@ static void el16_rx(struct net_device *dev)
- 			struct sk_buff *skb;
- 
- 			pkt_len &= 0x3fff;
--			skb = dev_alloc_skb(pkt_len+2);
-+			skb = netdev_alloc_skb(dev, pkt_len + 2);
- 			if (skb == NULL) {
- 				pr_err("%s: Memory squeeze, dropping packet.\n",
- 				       dev->name);
-diff --git a/drivers/net/ethernet/i825xx/3c523.c b/drivers/net/ethernet/i825xx/3c523.c
-index d70d3df..8451ecd 100644
---- a/drivers/net/ethernet/i825xx/3c523.c
-+++ b/drivers/net/ethernet/i825xx/3c523.c
-@@ -983,7 +983,7 @@ static void elmc_rcv_int(struct net_device *dev)
- 			if ((totlen = rbd->status) & RBD_LAST) {	/* the first and the last buffer? */
- 				totlen &= RBD_MASK;	/* length of this frame */
- 				rbd->status = 0;
--				skb = (struct sk_buff *) dev_alloc_skb(totlen + 2);
-+				skb = netdev_alloc_skb(dev, totlen + 2);
- 				if (skb != NULL) {
- 					skb_reserve(skb, 2);	/* 16 byte alignment */
- 					skb_put(skb,totlen);
-diff --git a/drivers/net/ethernet/i825xx/3c527.c b/drivers/net/ethernet/i825xx/3c527.c
-index 474b5e7..ef43f3e 100644
---- a/drivers/net/ethernet/i825xx/3c527.c
-+++ b/drivers/net/ethernet/i825xx/3c527.c
-@@ -1169,7 +1169,7 @@ static void mc32_rx_ring(struct net_device *dev)
- 			/* Try to save time by avoiding a copy on big frames */
- 
- 			if ((length > RX_COPYBREAK) &&
--			    ((newskb=dev_alloc_skb(1532)) != NULL))
-+			    ((newskb = netdev_alloc_skb(dev, 1532)) != NULL))
- 			{
- 				skb=lp->rx_ring[rx_ring_tail].skb;
- 				skb_put(skb, length);
-@@ -1180,7 +1180,7 @@ static void mc32_rx_ring(struct net_device *dev)
- 			}
- 			else
- 			{
--				skb=dev_alloc_skb(length+2);
-+				skb = netdev_alloc_skb(dev, length + 2);
- 
- 				if(skb==NULL) {
- 					dev->stats.rx_dropped++;
-diff --git a/drivers/net/ethernet/i825xx/82596.c b/drivers/net/ethernet/i825xx/82596.c
-index f2408a4..6aa927a 100644
---- a/drivers/net/ethernet/i825xx/82596.c
-+++ b/drivers/net/ethernet/i825xx/82596.c
-@@ -549,14 +549,13 @@ static inline int init_rx_bufs(struct net_device *dev)
- 	/* First build the Receive Buffer Descriptor List */
- 
- 	for (i = 0, rbd = lp->rbds; i < rx_ring_size; i++, rbd++) {
--		struct sk_buff *skb = dev_alloc_skb(PKT_BUF_SZ);
-+		struct sk_buff *skb = netdev_alloc_skb(dev, PKT_BUF_SZ);
- 
- 		if (skb == NULL) {
- 			remove_rx_bufs(dev);
- 			return -ENOMEM;
- 		}
- 
--		skb->dev = dev;
- 		rbd->v_next = rbd+1;
- 		rbd->b_next = WSWAPrbd(virt_to_bus(rbd+1));
- 		rbd->b_addr = WSWAPrbd(virt_to_bus(rbd));
-@@ -810,7 +809,7 @@ static inline int i596_rx(struct net_device *dev)
- 				struct sk_buff *newskb;
- 
- 				/* Get fresh skbuff to replace filled one. */
--				newskb = dev_alloc_skb(PKT_BUF_SZ);
-+				newskb = netdev_alloc_skb(dev, PKT_BUF_SZ);
- 				if (newskb == NULL) {
- 					skb = NULL;	/* drop pkt */
- 					goto memory_squeeze;
-@@ -819,7 +818,6 @@ static inline int i596_rx(struct net_device *dev)
- 				skb_put(skb, pkt_len);
- 				rx_in_place = 1;
- 				rbd->skb = newskb;
--				newskb->dev = dev;
- 				rbd->v_data = newskb->data;
- 				rbd->b_data = WSWAPchar(virt_to_bus(newskb->data));
- #ifdef __mc68000__
-@@ -827,7 +825,7 @@ static inline int i596_rx(struct net_device *dev)
- #endif
- 			}
- 			else
--				skb = dev_alloc_skb(pkt_len + 2);
-+				skb = netdev_alloc_skb(dev, pkt_len + 2);
- memory_squeeze:
- 			if (skb == NULL) {
- 				/* XXX tulip.c can defer packets here!! */
-diff --git a/drivers/net/ethernet/i825xx/eepro.c b/drivers/net/ethernet/i825xx/eepro.c
-index 114cda77..7a4ad4a 100644
---- a/drivers/net/ethernet/i825xx/eepro.c
-+++ b/drivers/net/ethernet/i825xx/eepro.c
-@@ -1563,7 +1563,7 @@ eepro_rx(struct net_device *dev)
- 
- 			dev->stats.rx_bytes+=rcv_size;
- 			rcv_size &= 0x3fff;
--			skb = dev_alloc_skb(rcv_size+5);
-+			skb = netdev_alloc_skb(dev, rcv_size + 5);
- 			if (skb == NULL) {
- 				printk(KERN_NOTICE "%s: Memory squeeze, dropping packet.\n", dev->name);
- 				dev->stats.rx_dropped++;
-diff --git a/drivers/net/ethernet/i825xx/eexpress.c b/drivers/net/ethernet/i825xx/eexpress.c
-index 3a9580f..3fc649e 100644
---- a/drivers/net/ethernet/i825xx/eexpress.c
-+++ b/drivers/net/ethernet/i825xx/eexpress.c
-@@ -955,7 +955,7 @@ static void eexp_hw_rx_pio(struct net_device *dev)
- 			{
- 				struct sk_buff *skb;
- 				pkt_len &= 0x3fff;
--				skb = dev_alloc_skb(pkt_len+16);
-+				skb = netdev_alloc_skb(dev, pkt_len + 16);
- 				if (skb == NULL)
- 				{
- 					printk(KERN_WARNING "%s: Memory squeeze, dropping packet\n",dev->name);
-diff --git a/drivers/net/ethernet/i825xx/ether1.c b/drivers/net/ethernet/i825xx/ether1.c
-index 42e90a9..406a12b 100644
---- a/drivers/net/ethernet/i825xx/ether1.c
-+++ b/drivers/net/ethernet/i825xx/ether1.c
-@@ -867,7 +867,7 @@ ether1_recv_done (struct net_device *dev)
- 			struct sk_buff *skb;
- 
- 			length = (length + 1) & ~1;
--			skb = dev_alloc_skb (length + 2);
-+			skb = netdev_alloc_skb(dev, length + 2);
- 
- 			if (skb) {
- 				skb_reserve (skb, 2);
-diff --git a/drivers/net/ethernet/i825xx/lp486e.c b/drivers/net/ethernet/i825xx/lp486e.c
-index 414044b..2ad5f10 100644
---- a/drivers/net/ethernet/i825xx/lp486e.c
-+++ b/drivers/net/ethernet/i825xx/lp486e.c
-@@ -658,7 +658,7 @@ i596_rx_one(struct net_device *dev, struct i596_private *lp,
- 	if (rfd->stat & RFD_STAT_OK) {
- 		/* a good frame */
- 		int pkt_len = (rfd->count & 0x3fff);
--		struct sk_buff *skb = dev_alloc_skb(pkt_len);
-+		struct sk_buff *skb = netdev_alloc_skb(dev, pkt_len);
- 
- 		(*frames)++;
- 
-diff --git a/drivers/net/ethernet/i825xx/ni52.c b/drivers/net/ethernet/i825xx/ni52.c
-index c089371..272976e 100644
---- a/drivers/net/ethernet/i825xx/ni52.c
-+++ b/drivers/net/ethernet/i825xx/ni52.c
-@@ -964,7 +964,7 @@ static void ni52_rcv_int(struct net_device *dev)
- 				/* the first and the last buffer? */
- 				totlen &= RBD_MASK; /* length of this frame */
- 				writew(0x00, &rbd->status);
--				skb = (struct sk_buff *)dev_alloc_skb(totlen+2);
-+				skb = netdev_alloc_skb(dev, totlen + 2);
- 				if (skb != NULL) {
- 					skb_reserve(skb, 2);
- 					skb_put(skb, totlen);
-diff --git a/drivers/net/ethernet/i825xx/sun3_82586.c b/drivers/net/ethernet/i825xx/sun3_82586.c
-index 6ef5e11..5a523dc 100644
---- a/drivers/net/ethernet/i825xx/sun3_82586.c
-+++ b/drivers/net/ethernet/i825xx/sun3_82586.c
-@@ -779,7 +779,7 @@ static void sun3_82586_rcv_int(struct net_device *dev)
- 				{
- 					totlen &= RBD_MASK; /* length of this frame */
- 					rbd->status = 0;
--					skb = (struct sk_buff *) dev_alloc_skb(totlen+2);
-+					skb = netdev_alloc_skb(dev, totlen + 2);
- 					if(skb != NULL)
- 					{
- 						skb_reserve(skb,2);
-diff --git a/drivers/net/ethernet/i825xx/znet.c b/drivers/net/ethernet/i825xx/znet.c
-index 962b4c4..a436497 100644
---- a/drivers/net/ethernet/i825xx/znet.c
-+++ b/drivers/net/ethernet/i825xx/znet.c
-@@ -762,7 +762,7 @@ static void znet_rx(struct net_device *dev)
- 			/* Malloc up new buffer. */
- 			struct sk_buff *skb;
- 
--			skb = dev_alloc_skb(pkt_len);
-+			skb = netdev_alloc_skb(dev, pkt_len);
- 			if (skb == NULL) {
- 				if (znet_debug)
- 				  printk(KERN_WARNING "%s: Memory squeeze, dropping packet.\n", dev->name);
-diff --git a/drivers/net/ethernet/icplus/ipg.c b/drivers/net/ethernet/icplus/ipg.c
-index 075451d..2e6c756 100644
---- a/drivers/net/ethernet/icplus/ipg.c
-+++ b/drivers/net/ethernet/icplus/ipg.c
-@@ -744,9 +744,6 @@ static int ipg_get_rxbuff(struct net_device *dev, int entry)
- 		return -ENOMEM;
- 	}
- 
--	/* Associate the receive buffer with the IPG NIC. */
--	skb->dev = dev;
--
- 	/* Save the address of the sk_buff structure. */
- 	sp->rx_buff[entry] = skb;
- 
-diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
-index 85e2c6c..ce54778 100644
---- a/drivers/net/ethernet/lantiq_etop.c
-+++ b/drivers/net/ethernet/lantiq_etop.c
-@@ -114,7 +114,7 @@ struct ltq_etop_priv {
- static int
- ltq_etop_alloc_skb(struct ltq_etop_chan *ch)
- {
--	ch->skb[ch->dma.desc] = dev_alloc_skb(MAX_DMA_DATA_LEN);
-+	ch->skb[ch->dma.desc] = netdev_alloc_skb(ch->netdev, MAX_DMA_DATA_LEN);
- 	if (!ch->skb[ch->dma.desc])
- 		return -ENOMEM;
- 	ch->dma.desc_base[ch->dma.desc].addr = dma_map_single(NULL,
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index 9edecfa..f702d0d 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -667,7 +667,7 @@ static int rxq_refill(struct rx_queue *rxq, int budget)
- 
- 		skb = __skb_dequeue(&mp->rx_recycle);
- 		if (skb == NULL)
--			skb = dev_alloc_skb(mp->skb_size);
-+			skb = netdev_alloc_skb(mp->dev, mp->skb_size);
- 
- 		if (skb == NULL) {
- 			mp->oom = 1;
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index 953ba58..a76bf553 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -350,7 +350,7 @@ static void rxq_refill(struct net_device *dev)
- 	while (pep->rx_desc_count < pep->rx_ring_size) {
- 		int size;
- 
--		skb = dev_alloc_skb(pep->skb_size);
-+		skb = netdev_alloc_skb(dev, pep->skb_size);
- 		if (!skb)
- 			break;
- 		if (SKB_DMA_REALIGN)
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_rx.c b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-index 971d4b6..700f802 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-@@ -464,12 +464,11 @@ static struct sk_buff *mlx4_en_rx_skb(struct mlx4_en_priv *priv,
- 	int used_frags;
- 	dma_addr_t dma;
- 
--	skb = dev_alloc_skb(SMALL_PACKET_SIZE + NET_IP_ALIGN);
-+	skb = netdev_alloc_skb(priv->dev, SMALL_PACKET_SIZE + NET_IP_ALIGN);
- 	if (!skb) {
- 		en_dbg(RX_ERR, priv, "Failed allocating skb\n");
- 		return NULL;
- 	}
--	skb->dev = priv->dev;
- 	skb_reserve(skb, NET_IP_ALIGN);
- 	skb->len = length;
- 
-diff --git a/drivers/net/ethernet/micrel/ks8695net.c b/drivers/net/ethernet/micrel/ks8695net.c
-index ab81c0d..bce9acc 100644
---- a/drivers/net/ethernet/micrel/ks8695net.c
-+++ b/drivers/net/ethernet/micrel/ks8695net.c
-@@ -278,7 +278,8 @@ ks8695_refill_rxbuffers(struct ks8695_priv *ksp)
- 
- 	for (buff_n = 0; buff_n < MAX_RX_DESC; ++buff_n) {
- 		if (!ksp->rx_buffers[buff_n].skb) {
--			struct sk_buff *skb = dev_alloc_skb(MAX_RXBUF_SIZE);
-+			struct sk_buff *skb =
-+				netdev_alloc_skb(ksp->ndev, MAX_RXBUF_SIZE);
- 			dma_addr_t mapping;
- 
- 			ksp->rx_buffers[buff_n].skb = skb;
-@@ -299,7 +300,6 @@ ks8695_refill_rxbuffers(struct ks8695_priv *ksp)
- 				break;
- 			}
- 			ksp->rx_buffers[buff_n].dma_ptr = mapping;
--			skb->dev = ksp->ndev;
- 			ksp->rx_buffers[buff_n].length = MAX_RXBUF_SIZE;
- 
- 			/* Record this into the DMA ring */
-diff --git a/drivers/net/ethernet/micrel/ks8851_mll.c b/drivers/net/ethernet/micrel/ks8851_mll.c
-index e58e78e..076996f 100644
---- a/drivers/net/ethernet/micrel/ks8851_mll.c
-+++ b/drivers/net/ethernet/micrel/ks8851_mll.c
-@@ -796,7 +796,7 @@ static void ks_rcv(struct ks_net *ks, struct net_device *netdev)
- 
- 	frame_hdr = ks->frame_head_info;
- 	while (ks->frame_cnt--) {
--		skb = dev_alloc_skb(frame_hdr->len + 16);
-+		skb = netdev_alloc_skb(netdev, frame_hdr->len + 16);
- 		if (likely(skb && (frame_hdr->sts & RXFSHR_RXFV) &&
- 			(frame_hdr->len < RX_BUF_SIZE) && frame_hdr->len)) {
- 			skb_reserve(skb, 2);
-diff --git a/drivers/net/ethernet/micrel/ksz884x.c b/drivers/net/ethernet/micrel/ksz884x.c
-index e52cd31..04276c9 100644
---- a/drivers/net/ethernet/micrel/ksz884x.c
-+++ b/drivers/net/ethernet/micrel/ksz884x.c
-@@ -4863,7 +4863,7 @@ static netdev_tx_t netdev_tx(struct sk_buff *skb, struct net_device *dev)
- 				memset(&skb->data[skb->len], 0, 50 - skb->len);
- 				skb->len = 50;
- 			} else {
--				skb = dev_alloc_skb(50);
-+				skb = netdev_alloc_skb(dev, 50);
- 				if (!skb)
- 					return NETDEV_TX_BUSY;
- 				memcpy(skb->data, org_skb->data, org_skb->len);
-@@ -4885,7 +4885,7 @@ static netdev_tx_t netdev_tx(struct sk_buff *skb, struct net_device *dev)
- 				(ETH_P_IPV6 == htons(skb->protocol)))) {
- 			struct sk_buff *org_skb = skb;
- 
--			skb = dev_alloc_skb(org_skb->len);
-+			skb = netdev_alloc_skb(dev, org_skb->len);
- 			if (!skb) {
- 				rc = NETDEV_TX_BUSY;
- 				goto unlock;
-@@ -5019,7 +5019,7 @@ static inline int rx_proc(struct net_device *dev, struct ksz_hw* hw,
- 
- 	do {
- 		/* skb->data != skb->head */
--		skb = dev_alloc_skb(packet_len + 2);
-+		skb = netdev_alloc_skb(dev, packet_len + 2);
- 		if (!skb) {
- 			dev->stats.rx_dropped++;
- 			return -ENOMEM;
-diff --git a/drivers/net/ethernet/microchip/enc28j60.c b/drivers/net/ethernet/microchip/enc28j60.c
-index 50055e0..4125478 100644
---- a/drivers/net/ethernet/microchip/enc28j60.c
-+++ b/drivers/net/ethernet/microchip/enc28j60.c
-@@ -954,14 +954,13 @@ static void enc28j60_hw_rx(struct net_device *ndev)
- 		if (len > MAX_FRAMELEN)
- 			ndev->stats.rx_over_errors++;
- 	} else {
--		skb = dev_alloc_skb(len + NET_IP_ALIGN);
-+		skb = netdev_alloc_skb(ndev, len + NET_IP_ALIGN);
- 		if (!skb) {
- 			if (netif_msg_rx_err(priv))
- 				dev_err(&ndev->dev,
- 					"out of memory for Rx'd frame\n");
- 			ndev->stats.rx_dropped++;
- 		} else {
--			skb->dev = ndev;
- 			skb_reserve(skb, NET_IP_ALIGN);
- 			/* copy the packet from the receive buffer */
- 			enc28j60_mem_read(priv,
-diff --git a/drivers/net/ethernet/mipsnet.c b/drivers/net/ethernet/mipsnet.c
-index d05b0c9..dbc666a 100644
---- a/drivers/net/ethernet/mipsnet.c
-+++ b/drivers/net/ethernet/mipsnet.c
-@@ -152,7 +152,7 @@ static inline ssize_t mipsnet_get_fromdev(struct net_device *dev, size_t len)
- 	if (!len)
- 		return len;
- 
--	skb = dev_alloc_skb(len + NET_IP_ALIGN);
-+	skb = netdev_alloc_skb(dev, len + NET_IP_ALIGN);
- 	if (!skb) {
- 		dev->stats.rx_dropped++;
- 		return -ENOMEM;
-diff --git a/drivers/net/ethernet/natsemi/ibmlana.c b/drivers/net/ethernet/natsemi/ibmlana.c
-index 999407f..3f94ddb 100644
---- a/drivers/net/ethernet/natsemi/ibmlana.c
-+++ b/drivers/net/ethernet/natsemi/ibmlana.c
-@@ -589,7 +589,7 @@ static void irqrx_handler(struct net_device *dev)
- 
- 			/* fetch buffer */
- 
--			skb = dev_alloc_skb(rda.length + 2);
-+			skb = netdev_alloc_skb(dev, rda.length + 2);
- 			if (skb == NULL)
- 				dev->stats.rx_dropped++;
- 			else {
-diff --git a/drivers/net/ethernet/natsemi/natsemi.c b/drivers/net/ethernet/natsemi/natsemi.c
-index ac7b16b..d38e48d 100644
---- a/drivers/net/ethernet/natsemi/natsemi.c
-+++ b/drivers/net/ethernet/natsemi/natsemi.c
-@@ -1934,11 +1934,10 @@ static void refill_rx(struct net_device *dev)
- 		int entry = np->dirty_rx % RX_RING_SIZE;
- 		if (np->rx_skbuff[entry] == NULL) {
- 			unsigned int buflen = np->rx_buf_sz+NATSEMI_PADDING;
--			skb = dev_alloc_skb(buflen);
-+			skb = netdev_alloc_skb(dev, buflen);
- 			np->rx_skbuff[entry] = skb;
- 			if (skb == NULL)
- 				break; /* Better luck next round. */
--			skb->dev = dev; /* Mark as being used by this device. */
- 			np->rx_dma[entry] = pci_map_single(np->pci_dev,
- 				skb->data, buflen, PCI_DMA_FROMDEVICE);
- 			np->rx_ring[entry].addr = cpu_to_le32(np->rx_dma[entry]);
-@@ -2344,7 +2343,7 @@ static void netdev_rx(struct net_device *dev, int *work_done, int work_to_do)
- 			/* Check if the packet is long enough to accept
- 			 * without copying to a minimally-sized skbuff. */
- 			if (pkt_len < rx_copybreak &&
--			    (skb = dev_alloc_skb(pkt_len + RX_OFFSET)) != NULL) {
-+			    (skb = netdev_alloc_skb(dev, pkt_len + RX_OFFSET)) != NULL) {
- 				/* 16 byte align the IP header */
- 				skb_reserve(skb, RX_OFFSET);
- 				pci_dma_sync_single_for_cpu(np->pci_dev,
-diff --git a/drivers/net/ethernet/natsemi/sonic.c b/drivers/net/ethernet/natsemi/sonic.c
-index 26e25d7..0452e296 100644
---- a/drivers/net/ethernet/natsemi/sonic.c
-+++ b/drivers/net/ethernet/natsemi/sonic.c
-@@ -51,7 +51,7 @@ static int sonic_open(struct net_device *dev)
- 		printk("sonic_open: initializing sonic driver.\n");
- 
- 	for (i = 0; i < SONIC_NUM_RRS; i++) {
--		struct sk_buff *skb = dev_alloc_skb(SONIC_RBSIZE + 2);
-+		struct sk_buff *skb = netdev_alloc_skb(dev, SONIC_RBSIZE + 2);
- 		if (skb == NULL) {
- 			while(i > 0) { /* free any that were allocated successfully */
- 				i--;
-@@ -422,7 +422,7 @@ static void sonic_rx(struct net_device *dev)
- 		status = sonic_rda_get(dev, entry, SONIC_RD_STATUS);
- 		if (status & SONIC_RCR_PRX) {
- 			/* Malloc up new buffer. */
--			new_skb = dev_alloc_skb(SONIC_RBSIZE + 2);
-+			new_skb = netdev_alloc_skb(SONIC_RBSIZE + 2);
- 			if (new_skb == NULL) {
- 				printk(KERN_ERR "%s: Memory squeeze, dropping packet.\n", dev->name);
- 				lp->stats.rx_dropped++;
-diff --git a/drivers/net/ethernet/neterion/s2io.c b/drivers/net/ethernet/neterion/s2io.c
-index 97f63e1..4ef38ed 100644
---- a/drivers/net/ethernet/neterion/s2io.c
-+++ b/drivers/net/ethernet/neterion/s2io.c
-@@ -2524,7 +2524,7 @@ static int fill_rx_buffers(struct s2io_nic *nic, struct ring_info *ring,
- 			size = ring->mtu + ALIGN_SIZE + BUF0_LEN + 4;
- 
- 		/* allocate skb */
--		skb = dev_alloc_skb(size);
-+		skb = netdev_alloc_skb(nic->dev, size);
- 		if (!skb) {
- 			DBG_PRINT(INFO_DBG, "%s: Could not allocate skb\n",
- 				  ring->dev->name);
-@@ -6820,7 +6820,7 @@ static int set_rxd_buffer_pointer(struct s2io_nic *sp, struct RxD_t *rxdp,
- 			 */
- 			rxdp1->Buffer0_ptr = *temp0;
- 		} else {
--			*skb = dev_alloc_skb(size);
-+			*skb = netdev_alloc_skb(dev, size);
- 			if (!(*skb)) {
- 				DBG_PRINT(INFO_DBG,
- 					  "%s: Out of memory to allocate %s\n",
-@@ -6849,7 +6849,7 @@ static int set_rxd_buffer_pointer(struct s2io_nic *sp, struct RxD_t *rxdp,
- 			rxdp3->Buffer0_ptr = *temp0;
- 			rxdp3->Buffer1_ptr = *temp1;
- 		} else {
--			*skb = dev_alloc_skb(size);
-+			*skb = netdev_alloc_skb(dev, size);
- 			if (!(*skb)) {
- 				DBG_PRINT(INFO_DBG,
- 					  "%s: Out of memory to allocate %s\n",
+> +
+> +               ucd_cmd_ptr->header.dword_0 =
+> +                       cpu_to_be32(UPIU_HEADER_DWORD(UPIU_TRANSACTION_COMMAND,
+> +                                                     upiu_flags,
+> +                                                     lrbp->lun,
+> +                                                     lrbp->task_tag));
+> +               ucd_cmd_ptr->header.dword_1 =
+> +                       cpu_to_be32(
+> +                               UPIU_HEADER_DWORD(UPIU_COMMAND_SET_TYPE_SCSI,
+> +                                                 0,
+> +                                                 0,
+> +                                                 0));
+> +
+> +               /* set command response to zero */
+> +               memset(lrbp->ucd_rsp_ptr, 0, sizeof(struct utp_upiu_rsp));
+Why did you set ucd_rsp_ptr to zero afte adding value ?
+And plz add break here.
+> +       case UTP_CMD_TYPE_DEV_MANAGE:
+> +               /* For query function implementation */
+> +               break;
+> +       case UTP_CMD_TYPE_UFS:
+> +               /* For UFS native command implementation */
+> +               break;
+> +       } /* end of switch, command_type */
+> +}
+> +
+> +/**
+> + * ufshcd_queuecommand - main entry point for SCSI requests
+> + * @cmd: command from SCSI Midlayer
+> + * @done: call back function
+> + *
+> + * Retruns 0 for success, SCSI Midlayer specific error in case of failure
+> + */
+> +static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
+> +{
+> +       struct ufshcd_lrb *lrbp;
+> +       struct ufs_hba *hba;
+> +       unsigned long flags;
+> +       int tag;
+> +
+> +       hba = (struct ufs_hba *) &host->hostdata[0];
+> +
+> +       tag = cmd->request->tag;
+> +
+> +       if (UFSHCD_STATE_OPERATIONAL != hba->ufshcd_state)
+> +               return SCSI_MLQUEUE_HOST_BUSY;
+> +
+> +       lrbp = &hba->lrb[tag];
+> +
+> +       lrbp->cmd = cmd;
+> +       lrbp->sense_bufflen = SCSI_SENSE_BUFFERSIZE;
+> +       lrbp->sense_buffer = cmd->sense_buffer;
+> +       lrbp->task_tag = tag;
+> +       lrbp->lun = cmd->device->lun;
+> +
+> +       lrbp->command_type = UTP_CMD_TYPE_SCSI;
+> +
+> +       /* form UPIU before issuing the command */
+> +       ufshcd_compose_upiu(hba, lrbp);
+> +       ufshcd_map_sg(lrbp);
+> +
+> +       /* issue command to the controller */
+> +       spin_lock_irqsave(host->host_lock, flags);
+> +       ufshcd_send_command(hba, tag);
+> +       spin_unlock_irqrestore(host->host_lock, flags);
+> +       return 0;
+> +}
+> +
+> +/**
+>  * ufshcd_memory_alloc - allocate memory for host memory space data structures
+>  * @hba: per adapter instance
+>  *
+> @@ -680,6 +925,7 @@ static int ufshcd_make_hba_operational(struct ufs_hba *hba)
+>        ufshcd_config_int_aggr(hba, INT_AGGR_CONFIG);
+>
+>        hba->ufshcd_state = UFSHCD_STATE_OPERATIONAL;
+> +       scsi_scan_host(hba->host);
+>
+>        return 0;
+>  }
+> @@ -763,6 +1009,190 @@ static int ufshcd_initialize_hba(struct ufs_hba *hba)
+>  }
+>
+>  /**
+> + * ufshcd_slave_alloc - handle initial scsi devie configurations
+> + * @sdev: pointer to scsi device
+> + *
+> + * Returns success
+> + */
+> +static int ufshcd_slave_alloc(struct scsi_device *sdev)
+> +{
+> +       struct ufs_hba *hba;
+> +
+> +       hba = (struct ufs_hba *)sdev->host->hostdata;
+> +       sdev->tagged_supported = 1;
+> +       scsi_set_tag_type(sdev, MSG_SIMPLE_TAG);
+> +       scsi_activate_tcq(sdev, hba->nutrs);
+> +
+> +       return 0;
+> +}
+> +
+> +/**
+> + * ufshcd_slave_destroy - remove scsi device configurations
+> + * @sdev: pointer to scsi device
+> + */
+> +static void ufshcd_slave_destroy(struct scsi_device *sdev)
+> +{
+> +       struct ufs_hba *hba;
+> +
+> +       hba = (struct ufs_hba *)sdev->host->hostdata;
+> +       scsi_deactivate_tcq(sdev, hba->nutrs);
+> +}
+> +
+> +/**
+> + * ufshcd_scsi_cmd_status - Update SCSI command result based on scsi status
+> + * @lrb: pointer to local reference block of completed command
+> + * @scsi_status: SCSI command status
+> + *
+> + * Returns value base on SCSI command status
+> + */
+> +static inline int
+> +ufshcd_scsi_cmd_status(struct ufshcd_lrb *lrbp, int scsi_status)
+> +{
+> +       int result = 0;
+> +
+> +       switch (scsi_status) {
+> +       case SAM_STAT_GOOD:
+> +               result |= DID_OK << 16 |
+> +                         COMMAND_COMPLETE << 8 |
+> +                         SAM_STAT_GOOD;
+> +               break;
+> +       case SAM_STAT_CHECK_CONDITION:
+> +               result |= DRIVER_SENSE << 24 |
+> +                         COMMAND_COMPLETE << 8 |
+> +                         SAM_STAT_CHECK_CONDITION;
+> +               ufshcd_copy_sense_data(lrbp);
+> +               break;
+> +       case SAM_STAT_BUSY:
+> +               result |= DID_BUS_BUSY << 16 |
+> +                         SAM_STAT_BUSY;
+> +               break;
+> +       case SAM_STAT_TASK_SET_FULL:
+> +               result |= DID_OK << 16 |
+> +                         COMMAND_COMPLETE << 8 |
+> +                         SAM_STAT_TASK_SET_FULL;
+> +               break;
+> +       case SAM_STAT_TASK_ABORTED:
+> +               result |=  DID_ABORT << 16 |
+> +                          ABORT_TASK << 8 |
+> +                          SAM_STAT_TASK_ABORTED;
+plz add break here also.
+> +       default:
+> +               result |= DID_ERROR << 16;
+> +               break;
+> +       } /* end of switch */
+> +
+> +       return result;
+> +}
+> +
+> +/**
+> + * ufshcd_transfer_rsp_status - Get overall status of the response
+> + * @lrb: pointer to local reference block of completed command
+> + *
+> + * Returns result of the command to notify SCSI midlayer
+> + */
+> +static inline int ufshcd_transfer_rsp_status(struct ufshcd_lrb *lrbp)
+> +{
+> +       int result = 0;
+> +       int scsi_status;
+> +       int ocs;
+> +
+> +       /* overall command status of utrd */
+> +       ocs = ufshcd_get_tr_ocs(lrbp);
+> +
+> +       switch (ocs) {
+> +       case OCS_SUCCESS:
+> +
+> +               /* check if the returned transfer response is valid */
+> +               result = ufshcd_is_valid_req_rsp(lrbp->ucd_rsp_ptr);
+> +               if (result) {
+> +                       pr_err(UFSHCD ":Invalid Response\n");
+> +                       break;
+> +               }
+> +
+> +               /*
+> +                * get the response UPIU result to extract
+> +                * the SCSI command status
+> +                */
+> +               result = ufshcd_get_rsp_upiu_result(lrbp->ucd_rsp_ptr);
+> +
+> +               /*
+> +                * get the result based on SCSI status response
+> +                * to notify the SCSI midlayer of the command status
+> +                */
+> +               scsi_status = result & MASK_SCSI_STATUS;
+> +               result = ufshcd_scsi_cmd_status(lrbp, scsi_status);
+> +               break;
+> +       case OCS_INVALID_CMD_TABLE_ATTR:
+> +               result |= DID_ERROR << 16 | COMMAND_COMPLETE << 8;
+> +               break;
+> +       case OCS_INVALID_PRDT_ATTR:
+> +               result |= DID_ERROR << 16 | COMMAND_COMPLETE << 8;
+> +               break;
+> +       case OCS_MISMATCH_DATA_BUF_SIZE:
+> +               result |= DID_ERROR << 16 | COMMAND_COMPLETE << 8;
+> +               break;
+> +       case OCS_MISMATCH_RESP_UPIU_SIZE:
+> +               result |= DID_ERROR << 16 | COMMAND_COMPLETE << 8;
+> +               break;
+> +       case OCS_PEER_COMM_FAILURE:
+> +               result |= DID_ERROR << 16 | COMMAND_COMPLETE << 8;
+> +               break;
+> +       case OCS_ABORTED:
+> +               result |= DID_ABORT << 16 | ABORT_TASK << 8;
+> +               break;
+> +       case OCS_FATAL_ERROR:
+> +               result |= DID_ERROR << 16 | COMMAND_COMPLETE << 8;
+> +               break;
+> +       default:
+> +               /* should not come here */
+> +               result |= DID_ERROR << 16 | COMMAND_COMPLETE << 8;
+> +               pr_err(UFSHCD ":Invalid OCS from controller\n");
+> +               break;
+> +       } /* end of switch */
+> +
+> +       return result;
+> +}
+> +
+> +/**
+> + * ufshcd_transfer_req_compl - handle SCSI and query command completion
+> + * @hba: per adapter instance
+> + */
+> +static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
+> +{
+> +       struct ufshcd_lrb *lrb;
+> +       u32 completed_reqs;
+> +       u32 tr_doorbell;
+> +       int result;
+> +       int index;
+> +
+> +       lrb = hba->lrb;
+> +       tr_doorbell =
+> +               readl(hba->mmio_base + REG_UTP_TRANSFER_REQ_DOOR_BELL);
+> +       completed_reqs = tr_doorbell ^ hba->outstanding_reqs;
+> +
+> +       /* clear completed commands from outstanding_reqs */
+> +       hba->outstanding_reqs ^= completed_reqs;
+> +
+> +       for (index = 0; index < hba->nutrs; index++) {
+> +               if (completed_reqs & (1 << index)) {
+> +
+> +                       result = ufshcd_transfer_rsp_status(&lrb[index]);
+> +
+> +                       if (NULL != lrb[index].cmd) {
+> +                               scsi_dma_unmap(lrb[index].cmd);
+> +                               lrb[index].cmd->result = result;
+> +                               lrb[index].cmd->scsi_done(lrb[index].cmd);
+> +
+> +                               /* Mark completed command as NULL in LRB */
+> +                               lrb[index].cmd = NULL;
+> +                       }
+> +               } /* end of if */
+> +       } /* end of for */
+> +
+> +       /* Reset interrupt aggregation counters */
+> +       ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
+> +}
+> +
+> +/**
+>  * ufshcd_uic_cc_handler - handle UIC command completion
+>  * @work: pointer to a work queue structure
+>  *
+> @@ -793,6 +1223,9 @@ static void ufshcd_sl_intr(struct ufs_hba *hba, u32 intr_status)
+>  {
+>        if (intr_status & UIC_COMMAND_COMPL)
+>                schedule_work(&hba->uic_workq);
+> +
+> +       if (intr_status & UTP_TRANSFER_REQ_COMPL)
+> +               ufshcd_transfer_req_compl(hba);
+>  }
+>
+>  /**
+> @@ -830,7 +1263,13 @@ static struct scsi_host_template ufshcd_driver_template = {
+>        .module                 = THIS_MODULE,
+>        .name                   = UFSHCD,
+>        .proc_name              = UFSHCD,
+> +       .queuecommand           = ufshcd_queuecommand,
+> +       .slave_alloc            = ufshcd_slave_alloc,
+> +       .slave_destroy          = ufshcd_slave_destroy,
+>        .this_id                = -1,
+> +       .sg_tablesize           = SG_ALL,
+> +       .cmd_per_lun            = UFSHCD_CMD_PER_LUN,
+> +       .can_queue              = UFSHCD_CAN_QUEUE
+>  };
+>
+>  /**
+> @@ -1003,6 +1442,7 @@ ufshcd_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>        host->max_lun = UFSHCD_MAX_LUNS;
+>        host->max_channel = UFSHCD_MAX_CHANNEL;
+>        host->unique_id = host->host_no;
+> +       host->max_cmd_len = MAX_CDB_SIZE;
+>
+>        /* Initialize work queues */
+>        INIT_WORK(&hba->uic_workq, ufshcd_uic_cc_handler);
+> @@ -1014,6 +1454,13 @@ ufshcd_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>                goto out_lrb_free;
+>        }
+>
+> +       /* Enable scsi tag mapping */
+> +       err = scsi_init_shared_tag_map(host, host->can_queue);
+> +       if (err) {
+> +               dev_err(&pdev->dev, "init shared queue failed\n");
+> +               goto out_free_irq;
+> +       }
+> +
+>        pci_set_drvdata(pdev, hba);
+>
+>        err = scsi_add_host(host, &pdev->dev);
+> --
+> 1.7.5.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
