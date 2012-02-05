@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab2BEDGA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 22:06:00 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50914 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab2BEDF7 (ORCPT
+	id S1754783Ab2BEDvD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 22:51:03 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34484 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681Ab2BEDvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 22:05:59 -0500
+	Sat, 4 Feb 2012 22:51:00 -0500
+Date: Sat, 4 Feb 2012 19:50:57 -0800
+From: mark gross <markgross@thegnar.org>
+To: "Pihet-XID, Jean" <j-pihet@ti.com>
+Cc: Venkatesh Pallipadi <venki@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        markgross <markgross@thegnar.org>, Kevin Hilman <khilman@ti.com>,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH] CPU C-state breakage with PM Qos change
+Message-ID: <20120205035057.GA4948@gs62>
+Reply-To: markgross@thegnar.org
+References: <1328227065-22045-1-git-send-email-venki@google.com>
+ <1328228079-20716-1-git-send-email-venki@google.com>
+ <CAN5iSWo-n7OER4i1tPoeGBhY_RY-nX=7n4B3mFv1f0JK074bhQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120204114101.28b90fdf@pyramind.ukuu.org.uk>
-References: <85aa4zs1q8.fsf@gmail.com>
-	<20120204114101.28b90fdf@pyramind.ukuu.org.uk>
-Date: Sat, 4 Feb 2012 22:05:58 -0500
-Message-ID: <CAOQxz3x=FYKJJA8LdDwLMBi0VNDvVO5OD--X2G=jTGqFxUM_gg@mail.gmail.com>
-Subject: Re: gma500: invalid frequency for monitor
-From: Michael Labriola <michael.d.labriola@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Alan Cox <alan@linux.intel.com>, David Airlie <airlied@linux.ie>,
-        Michael D Labriola <mlabriol@gdeb.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN5iSWo-n7OER4i1tPoeGBhY_RY-nX=7n4B3mFv1f0JK074bhQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/4/12, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-*snip*
->> I think my setup is correct, because the vesa frambuffer seems to work
->> correctly.  All is well unless I load the gma500_gfx driver and let it
->> set the mode.
->
-> What mode is the vesa driver using and if you set the same mode what
-> happens ?
+On Fri, Feb 03, 2012 at 03:04:43PM +0100, Pihet-XID, Jean wrote:
+> Looping in linux-pm
+> 
+> On Fri, Feb 3, 2012 at 1:14 AM, Venkatesh Pallipadi <venki@google.com> wrote:
+> > Looks like change "PM QoS: Move and rename the implementation files"
+> > made pm_qos depend on CONFIG_PM which depends on
+> > PM_SLEEP || PM_RUNTIME
+> >
+> > That breaks CPU C-states with kernels not having these CONFIGs, causing CPUs
+> > to spend time in Polling loop idle instead of going into deep C-states,
+> > consuming way way more power. This is with either acpi idle or intel idle
+> > enabled.
+> >
+> > Either CONFIG_PM should be enabled with any pm_qos users or
+> > the !CONFIG_PM pm_qos_request() should return sane defaults not to break
+> > the existing users. Here's is the patch for the latter option.
+> I think the real question is whether PM QoS should be functional in
+> all cases (as is ACPI) or whether only if certain options are set
+> (CONFIG_PM).
+> In the current code if CONFIG_PM is not enabled, a dummy PM QoS API is
+> provided as function stubs in order for the build to succeed.
+> 
+> Rafael, Mark,
+> What do you think? Should PM QoS be enabled in all cases? Are there
+> any known dependencies with CONFIG_PM?
 
-The vesa driver was using a resolution of 1280x1024x32... is there a
-way to get a whole modeline out of that?
+Yes I do think pm_qos interfaces should be enabled all the time and be
+independent of CONFIG_PM.  Also, I still am not a fan of the renaming
+patch but, as the argument for and against renaming cannot be based on
+quantifiable things I've chosen not to let it bother me.
 
-*snip*
->> [  110.586242] [drm:drm_helper_probe_single_connector_modes],
->> [CONNECTOR:7:LVDS-1] probed modes :
->> [  110.586274] [drm:drm_mode_debug_printmodeline], Modeline 10:"1280x1024"
->> 40 71500 1280 1328 1440 1688 1024 1025 1028 1072 0x8 0x0
->
-> And we probed a 1280x1024 mode with a clock of 71.5 (which might be a bit
-> high for the panel ?)
+I think Venki's change is a band aid and we should fix it right by not
+having a dependency on config_pm for the interface to behave.
 
-I'm assuming the clock is at fault, yes.
+I'll take a look at why there is now a dependency before I have more to
+say.
 
-*snip*
->
-> Do you have a different monitor around to try and also hand setting lower
-> modes ?
-
-Compiling on my home system overnight (these atom boards are pretty
-slick, but slow as dirt at compiling the kernel).  I've got a
-different monitor at home to try, so we'll see what happens.  How do I
-hand set the mode that gma500 uses?
+--mark
