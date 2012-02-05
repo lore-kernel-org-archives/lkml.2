@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab2BEWuu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:50:50 -0500
-Received: from 1wt.eu ([62.212.114.60]:61820 "EHLO 1wt.eu"
+	id S1753963Ab2BEWxZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:53:25 -0500
+Received: from 1wt.eu ([62.212.114.60]:62232 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab2BEW0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:09 -0500
-Message-Id: <20120205220949.536346997@pcw.home.local>
-User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:09:51 +0100
+	id S1752339Ab2BEWxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:53:24 -0500
+Date: Sun, 5 Feb 2012 23:53:14 +0100
 From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 02/91] slub: fix panic with DISCONTIGMEM
-In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 90/91] block: fail SCSI passthrough ioctls on partition devices
+Message-ID: <20120205225314.GF8334@1wt.eu>
+References: <0635750f5f06ed2ca212b91fcb5c4483@local> <20120205220953.312427771@pcw.home.local> <4F2F0669.3000601@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2F0669.3000601@redhat.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-longterm review patch.  If anyone has any objections, please let us know.
+Hi Paolo,
 
-------------------
+On Sun, Feb 05, 2012 at 11:44:57PM +0100, Paolo Bonzini wrote:
+> On 02/05/2012 11:11 PM, Willy Tarreau wrote:
+> >Signed-off-by: Ben Hutchings<ben@decadent.org.uk>
+> >Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+> >[wt: no scsi_cmd_blk_ioctl in 2.6.27, change callers instead. cciss is OK,
+> >  ub,virtio_blk,ide-floppy,sd need fixing, cdrom&st can be ignored ]
+> 
+> NACK, you aren't fixing virtio-blk to call scsi_verify_blk_ioctl, are you?
+> 
+> You need to backport the patch that introduced scsi_cmd_blk_ioctl, 
+> which, in fact was in the same patch series as this one.
 
-commit 4a5fa3590f09999f6db41bc386bce40848fa9f63 upstream.
+Thanks for this report, I missed this patch. I thought the reason for the lack
+of scsi_cmd_blk_ioctl() it was one of the differences between 2.6.27 and 2.6.32,
+so I have adapted the callers I identified to perform the same test as what's
+in scsi_cmd_blk_ioctl(). I *think* I did it correctly, but it would be safer
+to apply the original patch, of course. Now I see the patch (618 in my queue).
+ I'll merge it and it will simplify the backport.
 
-Slub makes assumptions about page_to_nid() which are violated by
-DISCONTIGMEM and !NUMA.  This violation results in a panic because
-page_to_nid() can be non-zero for pages in the discontiguous ranges and
-this leads to a null return by get_node().  The assertion by the
-maintainer is that DISCONTIGMEM should only be allowed when NUMA is also
-defined.  However, at least six architectures: alpha, ia64, m32r, m68k,
-mips, parisc violate this.  The panic is a regression against slab, so
-just mark slub broken in the problem configuration to prevent users
-reporting these panics.
-
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- init/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-Index: longterm-2.6.27/init/Kconfig
-===================================================================
---- longterm-2.6.27.orig/init/Kconfig	2012-02-05 22:34:35.012915163 +0100
-+++ longterm-2.6.27/init/Kconfig	2012-02-05 22:34:35.225915821 +0100
-@@ -747,6 +747,7 @@
- 	  a slab allocator.
- 
- config SLUB
-+	depends on BROKEN || NUMA || !DISCONTIGMEM
- 	bool "SLUB (Unqueued Allocator)"
- 	help
- 	   SLUB is a slab allocator that minimizes cache line usage
-
+Thank you,
+Willy
 
