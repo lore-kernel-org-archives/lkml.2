@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab2BEQgM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 11:36:12 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38156 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab2BEQgL (ORCPT
+	id S1754167Ab2BEQ7i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 11:59:38 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:58556 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab2BEQ7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 11:36:11 -0500
-Message-ID: <4F2EAFF6.7030006@codemonkey.ws>
-Date: Sun, 05 Feb 2012 10:36:06 -0600
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	Sun, 5 Feb 2012 11:59:37 -0500
+Date: Sun, 5 Feb 2012 08:59:27 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+Message-ID: <20120205165927.GH2467@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120201184045.GG2382@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1202011404500.2074@router.home>
+ <20120201201336.GI2382@linux.vnet.ibm.com>
+ <4F2A58A1.90800@redhat.com>
+ <20120202153437.GD2518@linux.vnet.ibm.com>
+ <4F2AB66C.2030309@redhat.com>
+ <20120202170134.GM2518@linux.vnet.ibm.com>
+ <4F2AC69B.7000704@redhat.com>
+ <20120202175155.GV2518@linux.vnet.ibm.com>
+ <4F2E7311.8060808@redhat.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-References: <4F2AB552.2070909@redhat.com> <20120205093723.GQ23536@redhat.com>	<4F2E4F8B.8090504@redhat.com> <20120205095153.GA29265@redhat.com>
-In-Reply-To: <20120205095153.GA29265@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2E7311.8060808@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020516-5518-0000-0000-000002038FB1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2012 03:51 AM, Gleb Natapov wrote:
-> On Sun, Feb 05, 2012 at 11:44:43AM +0200, Avi Kivity wrote:
->> On 02/05/2012 11:37 AM, Gleb Natapov wrote:
->>> On Thu, Feb 02, 2012 at 06:09:54PM +0200, Avi Kivity wrote:
->>>> Device model
->>>> ------------
->>>> Currently kvm virtualizes or emulates a set of x86 cores, with or
->>>> without local APICs, a 24-input IOAPIC, a PIC, a PIT, and a number of
->>>> PCI devices assigned from the host.  The API allows emulating the local
->>>> APICs in userspace.
->>>>
->>>> The new API will do away with the IOAPIC/PIC/PIT emulation and defer
->>>> them to userspace.  Note: this may cause a regression for older guests
->>>> that don't support MSI or kvmclock.  Device assignment will be done
->>>> using VFIO, that is, without direct kvm involvement.
->>>>
->>> So are we officially saying that KVM is only for modern guest
->>> virtualization?
->>
->> No, but older guests may have reduced performance in some workloads
->> (e.g. RHEL4 gettimeofday() intensive workloads).
->>
-> Reduced performance is what I mean. Obviously old guests will continue working.
+On Sun, Feb 05, 2012 at 02:16:17PM +0200, Avi Kivity wrote:
+> On 02/02/2012 07:51 PM, Paul E. McKenney wrote:
+> > On Thu, Feb 02, 2012 at 07:23:39PM +0200, Avi Kivity wrote:
+> > > On 02/02/2012 07:01 PM, Paul E. McKenney wrote:
+> > > > > 
+> > > > > It's not called (since the cpu is not idle).  Instead we call
+> > > > > rcu_virt_note_context_switch().
+> > > >
+> > > > Frederic's work checks to see if there is only one runnable user task
+> > > > on a given CPU.  If there is only one, then the scheduling-clock interrupt
+> > > > is turned off for that CPU, and RCU is told to ignore it while it is
+> > > > executing in user space.  Not sure whether this covers KVM guests.
+> > > 
+> > > Conceptually it's the same.  Maybe it needs adjustments, since kvm
+> > > enters a guest in a different way than the kernel exits to userspace.
+> > > 
+> > > > In any case, this is not yet in mainline.
+> > > 
+> > > Let me know when it's in, and I'll have a look.
+> >
+> > Could you please touch base with Frederic Weisbecker to make sure that
+> > what he is doing works for you?
+> 
+> Looks like there are new rcu_user_enter() and rcu_user_exit() APIs which
+> we can use.  Hopefully they subsume rcu_virt_note_context_switch() so we
+> only need one set of APIs.
 
-An interesting solution to this problem would be an in-kernel device VM.
+Now that you mention it, that is a good goal.  However, it requires
+coordination with Frederic's code as well, so some investigation
+is required.  Bad things happen if you tell RCU you are idle when you
+really are not and vice versa!
 
-Most of the time, the hot register is just one register within a more complex 
-device.  The reads are often side-effect free and trivially computed from some 
-device state + host time.
+							Thanx, Paul
 
-If userspace had a way to upload bytecode to the kernel that was executed for a 
-PIO operation, it could either pass the operation to userspace or handle it 
-within the kernel when possible without taking a heavy weight exit.
-
-If the bytecode can access variables in a shared memory area, it could be pretty 
-efficient to work with.
-
-This means that the kernel never has to deal with specific in-kernel devices but 
-that userspace can accelerator as many of its devices as it sees fit.
-
-This could replace ioeventfd as a mechanism (which would allow clearing the 
-notify flag before writing to an eventfd).
-
-We could potentially just use BPF for this.
-
-Regards,
-
-Anthony Liguori
