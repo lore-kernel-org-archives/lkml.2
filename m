@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab2BEXae (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 18:30:34 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44472 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab2BEXaJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 18:30:09 -0500
+	id S1754358Ab2BEXla (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 18:41:30 -0500
+Received: from mga14.intel.com ([143.182.124.37]:22999 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753393Ab2BEXl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 18:41:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="103594698"
+Date: Mon, 6 Feb 2012 07:31:21 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH] writeback: fix dereferencing NULL bdi->dev on
+ trace_writeback_queue
+Message-ID: <20120205233121.GA30168@localhost>
+References: <20120115152806.GA32106@debian>
+ <20120117033253.GA399@localhost>
+ <CAH+eYFDR8wpdo2RayfH6G30rnSm6T5g3qSBiC8eVvn1j98sQ6w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120205215824.GA5071@comet.dominikbrodowski.net>
-References: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
-	<1327140517-14811-19-git-send-email-yinghai@kernel.org>
-	<20120127102311.6027ea2c@jbarnes-desktop>
-	<CAE9FiQXQPFYU45rctaNX4kSqh7JGCnds8U-Bh1N93xVieuqz5Q@mail.gmail.com>
-	<20120205215824.GA5071@comet.dominikbrodowski.net>
-Date: Sun, 5 Feb 2012 15:30:09 -0800
-X-Google-Sender-Auth: k_QzGLLtf9be6DjJTVOd-VaJ9EY
-Message-ID: <CAE9FiQXvU-GCDSVMGvUT23WMMVmbyHpQOApuAp5mV+=UOPf_1Q@mail.gmail.com>
-Subject: Re: [PATCH 18/21] PCI: Fix cardbus bridge resources as optional size handling
-From: Yinghai Lu <yinghai@kernel.org>
-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Ram Pai <linuxram@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAH+eYFDR8wpdo2RayfH6G30rnSm6T5g3qSBiC8eVvn1j98sQ6w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 5, 2012 at 1:58 PM, Dominik Brodowski
-<linux@dominikbrodowski.net> wrote:
-> On Fri, Jan 27, 2012 at 01:37:44PM -0800, Yinghai Lu wrote:
->> On Fri, Jan 27, 2012 at 10:23 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
->> > On Sat, 21 Jan 2012 02:08:34 -0800
->> > Yinghai Lu <yinghai@kernel.org> wrote:
->> >
->> >> We should not set the requested size to -2.
->> >>
->> >> that will confuse the resource list sorting with align when SIZEALIGN is used.
->> >>
->> >> Change to STARTALIGN and pass align from start.
->> >>
->> >> We are safe to do that just as we do that regular pci bridge.
->> >>
->> >> In the long run, we should just treat cardbus like regular pci bridge.
->> >>
->> >> Also fix when realloc is not passed, should keep the requested size.
->> >>
->> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> >
->> > I'd like to see some testing on this one... Dominik?
->>
->> Dominik,
->>
->> Can you please test branch at
->>
->> � � � git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->> for-pci2
->
-> Tested this on my limited test systems (COUNT=1), and seems to work fine.
->
+On Thu, Jan 19, 2012 at 01:39:21AM +0530, Rabin Vincent wrote:
+> On Tue, Jan 17, 2012 at 09:02, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > On Sun, Jan 15, 2012 at 08:58:06PM +0530, Rabin Vincent wrote:
+> >>  Unable to handle kernel NULL pointer dereference at virtual address 0000002c
+> >>  pgd = c0004000
+> >>  [0000002c] *pgd=00000000
+> >>  Internal error: Oops: 17 [#1] PREEMPT SMP
+> >>  PC is at ftrace_raw_event_writeback_single_inode_template+0x60/0xe4
+> >>  LR is at ftrace_raw_event_writeback_single_inode_template+0x50/0xe4
+> >>
+> >> The full trace+log is attached.  My kernel (current linus) has a delay
+> >> inserted in __mark_inode_dirty, to easily trigger the condition:
+> >
+> > Rabin, thanks for showing the helpful details! It should be fixable by
+> > the use of inode_to_bdi():
+> 
+> Thanks, this fixes that one.
+> 
+> However, I've found one more race condition leading to a crash when
+> tracing is enabled, this time from the writeback:queue trace point from
+> bdi_queue_work().  The cause is the same, i.e.  bdi->dev is NULL.  This
+> was produced with the help of the following delay patch.  trace+log is
+> attached.
 
-Thanks a lot.
+Rabin, this should fix the bug. Note that I take no efforts to remove
+the to-be-queued and already-queued works. I'm also a bit afraid if
+the traces in the balance_dirty_pages() path (trace_balance_dirty_pages,
+trace_bdi_dirty_ratelimit and writeback_wake_background) will have
+similar NULL dereference bug. Do you test it by physically hot
+removing a SD card, or with some detach command or emulation?
 
-Thought that you should have bunch of systems (laptop) with pci cardbus slots.
+Thanks,
+Fengguang
 
-Found another regression by one commit already got into linus' tree.
+---
+Subject: writeback: fix dereferencing NULL bdi->dev on trace_writeback_queue 
+Date: Sat Feb 04 20:54:03 CST 2012
 
-and should be fixed by
+When the SD card is hot removed without umount, del_gendisk() will call
+bdi_unregister() but not destroy/free it. This leaves the bdi in the
+bdi->dev = NULL, bdi->wb.task = NULL, bdi->bdi_list removed state.
 
-[PATCH] pci: Fix pci cardbus removal
+If someone gets the bdi before bdi_unregister() and calls
+bdi_queue_work() after the unregister, trace_writeback_queue will be
+dereferencing the NULL bdi->dev. Fix it with a simple test for NULL.
 
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=patch;h=29834f2faeed3cb87dea984a3d411337752e6b7c
+LKML-reference: http://lkml.org/lkml/2012/1/18/346
+Reported-by: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/trace/events/writeback.h |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-please double check
-
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci3
-
-or
-
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-pci-busn-alloc
-
-Yinghai
+--- linux-next.orig/include/trace/events/writeback.h	2012-02-04 20:51:01.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2012-02-04 20:54:00.000000000 +0800
+@@ -47,7 +47,10 @@ DECLARE_EVENT_CLASS(writeback_work_class
+ 		__field(int, reason)
+ 	),
+ 	TP_fast_assign(
+-		strncpy(__entry->name, dev_name(bdi->dev), 32);
++		struct device *dev = bdi->dev;
++		if (!dev)
++			dev = default_backing_dev_info.dev;
++		strncpy(__entry->name, dev_name(dev), 32);
+ 		__entry->nr_pages = work->nr_pages;
+ 		__entry->sb_dev = work->sb ? work->sb->s_dev : 0;
+ 		__entry->sync_mode = work->sync_mode;
