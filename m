@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab2BEW1J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:27:09 -0500
-Received: from 1wt.eu ([62.212.114.60]:62140 "EHLO 1wt.eu"
+	id S1754781Ab2BEWdH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:33:07 -0500
+Received: from 1wt.eu ([62.212.114.60]:62125 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab2BEW1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:27:06 -0500
-Message-Id: <20120205220952.569838491@pcw.home.local>
+	id S1754449Ab2BEW1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:27:03 -0500
+Message-Id: <20120205220953.356092520@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:11:02 +0100
+Date: Sun, 05 Feb 2012 23:11:20 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 73/91] nfsd: Fix oops when parsing a 0 length export
+Cc: Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 91/91] dm: do not forward ioctls from logical volumes to the underlying device
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,79 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit b2ea70afade7080360ac55c4e64ff7a5fafdb67b upstream.
+commit ec8013beddd717d1740cfefb1a9b900deef85462 upstream.
 
-expkey_parse() oopses when handling a 0 length export. This is easily
-triggerable from usermode by writing 0 bytes into
-'/proc/[proc id]/net/rpc/nfsd.fh/channel'.
+A logical volume can map to just part of underlying physical volume.
+In this case, it must be treated like a partition.
 
-Below is the log:
+Based on a patch from Alasdair G Kergon.
 
-[ 1402.286893] BUG: unable to handle kernel paging request at ffff880077c49fff
-[ 1402.287632] IP: [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632] PGD 2206063 PUD 1fdfd067 PMD 1ffbc067 PTE 8000000077c49160
-[ 1402.287632] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1402.287632] CPU 1
-[ 1402.287632] Pid: 20198, comm: trinity Not tainted 3.2.0-rc2-sasha-00058-gc65cd37 #6
-[ 1402.287632] RIP: 0010:[<ffffffff812b4b99>]  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632] RSP: 0018:ffff880077f0fd68  EFLAGS: 00010292
-[ 1402.287632] RAX: ffff880077c49fff RBX: 00000000ffffffea RCX: 0000000001043400
-[ 1402.287632] RDX: 0000000000000000 RSI: ffff880077c4a000 RDI: ffffffff82283de0
-[ 1402.287632] RBP: ffff880077f0fe18 R08: 0000000000000001 R09: ffff880000000000
-[ 1402.287632] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880077c4a000
-[ 1402.287632] R13: ffffffff82283de0 R14: 0000000001043400 R15: ffffffff82283de0
-[ 1402.287632] FS:  00007f25fec3f700(0000) GS:ffff88007d400000(0000) knlGS:0000000000000000
-[ 1402.287632] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1402.287632] CR2: ffff880077c49fff CR3: 0000000077e1d000 CR4: 00000000000406e0
-[ 1402.287632] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1402.287632] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1402.287632] Process trinity (pid: 20198, threadinfo ffff880077f0e000, task ffff880077db17b0)
-[ 1402.287632] Stack:
-[ 1402.287632]  ffff880077db17b0 ffff880077c4a000 ffff880077f0fdb8 ffffffff810b411e
-[ 1402.287632]  ffff880000000000 ffff880077db17b0 ffff880077c4a000 ffffffff82283de0
-[ 1402.287632]  0000000001043400 ffffffff82283de0 ffff880077f0fde8 ffffffff81111f63
-[ 1402.287632] Call Trace:
-[ 1402.287632]  [<ffffffff810b411e>] ? lock_release+0x1af/0x1bc
-[ 1402.287632]  [<ffffffff81111f63>] ? might_fault+0x97/0x9e
-[ 1402.287632]  [<ffffffff81111f1a>] ? might_fault+0x4e/0x9e
-[ 1402.287632]  [<ffffffff81a8bcf2>] cache_do_downcall+0x3e/0x4f
-[ 1402.287632]  [<ffffffff81a8c950>] cache_write.clone.16+0xbb/0x130
-[ 1402.287632]  [<ffffffff81a8c9df>] ? cache_write_pipefs+0x1a/0x1a
-[ 1402.287632]  [<ffffffff81a8c9f8>] cache_write_procfs+0x19/0x1b
-[ 1402.287632]  [<ffffffff8118dc54>] proc_reg_write+0x8e/0xad
-[ 1402.287632]  [<ffffffff8113fe81>] vfs_write+0xaa/0xfd
-[ 1402.287632]  [<ffffffff8114142d>] ? fget_light+0x35/0x9e
-[ 1402.287632]  [<ffffffff8113ff8b>] sys_write+0x48/0x6f
-[ 1402.287632]  [<ffffffff81bbdb92>] system_call_fastpath+0x16/0x1b
-[ 1402.287632] Code: c0 c9 c3 55 48 63 d2 48 89 e5 48 8d 44 32 ff 41 57 41 56 41 55 41 54 53 bb ea ff ff ff 48 81 ec 88 00 00 00 48 89 b5 58 ff ff ff
-[ 1402.287632]  38 0a 0f 85 89 02 00 00 c6 00 00 48 8b 3d 44 4a e5 01 48 85
-[ 1402.287632] RIP  [<ffffffff812b4b99>] expkey_parse+0x28/0x2e1
-[ 1402.287632]  RSP <ffff880077f0fd68>
-[ 1402.287632] CR2: ffff880077c49fff
-[ 1402.287632] ---[ end trace 368ef53ff773a5e3 ]---
-
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alasdair G Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backport to 2.6.32 - drop change to drivers/md/dm-flakey.c]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/nfsd/export.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/md/dm-linear.c |   12 +++++++++++-
+ drivers/md/dm-mpath.c  |    6 ++++++
+ 2 files changed, 17 insertions(+), 1 deletions(-)
 
-Index: longterm-2.6.27/fs/nfsd/export.c
+Index: longterm-2.6.27/drivers/md/dm-linear.c
 ===================================================================
---- longterm-2.6.27.orig/fs/nfsd/export.c	2012-02-05 22:34:32.786915116 +0100
-+++ longterm-2.6.27/fs/nfsd/export.c	2012-02-05 22:34:45.243916126 +0100
-@@ -101,7 +101,7 @@
- 	struct svc_expkey key;
- 	struct svc_expkey *ek;
+--- longterm-2.6.27.orig/drivers/md/dm-linear.c	2012-02-05 22:34:32.148917626 +0100
++++ longterm-2.6.27/drivers/md/dm-linear.c	2012-02-05 22:34:47.932914720 +0100
+@@ -118,12 +118,20 @@
+ 	struct block_device *bdev = lc->dev->bdev;
+ 	struct file fake_file = {};
+ 	struct dentry fake_dentry = {};
++	int r = 0;
  
--	if (mesg[mlen-1] != '\n')
-+	if (mlen < 1 || mesg[mlen-1] != '\n')
- 		return -EINVAL;
- 	mesg[mlen-1] = 0;
+ 	fake_file.f_mode = lc->dev->mode;
+ 	fake_file.f_path.dentry = &fake_dentry;
+ 	fake_dentry.d_inode = bdev->bd_inode;
  
+-	return blkdev_driver_ioctl(bdev->bd_inode, &fake_file, bdev->bd_disk, cmd, arg);
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (lc->start ||
++	    ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
++
++	return r ? : blkdev_driver_ioctl(bdev->bd_inode, &fake_file, bdev->bd_disk, cmd, arg);
+ }
+ 
+ static int linear_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
+Index: longterm-2.6.27/drivers/md/dm-mpath.c
+===================================================================
+--- longterm-2.6.27.orig/drivers/md/dm-mpath.c	2012-02-05 22:34:32.145914857 +0100
++++ longterm-2.6.27/drivers/md/dm-mpath.c	2012-02-05 22:34:47.937916536 +0100
+@@ -1421,6 +1421,12 @@
+ 
+ 	spin_unlock_irqrestore(&m->lock, flags);
+ 
++	/*
++	 * Only pass ioctls through if the device sizes match exactly.
++	 */
++	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
++		r = scsi_verify_blk_ioctl(NULL, cmd);
++
+ 	return r ? : blkdev_driver_ioctl(bdev->bd_inode, &fake_file,
+ 					 bdev->bd_disk, cmd, arg);
+ }
 
 
