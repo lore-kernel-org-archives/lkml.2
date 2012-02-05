@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358Ab2BEXla (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 18:41:30 -0500
-Received: from mga14.intel.com ([143.182.124.37]:22999 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753393Ab2BEXl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 18:41:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="103594698"
-Date: Mon, 6 Feb 2012 07:31:21 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] writeback: fix dereferencing NULL bdi->dev on
- trace_writeback_queue
-Message-ID: <20120205233121.GA30168@localhost>
-References: <20120115152806.GA32106@debian>
- <20120117033253.GA399@localhost>
- <CAH+eYFDR8wpdo2RayfH6G30rnSm6T5g3qSBiC8eVvn1j98sQ6w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAH+eYFDR8wpdo2RayfH6G30rnSm6T5g3qSBiC8eVvn1j98sQ6w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754290Ab2BEXyl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 18:54:41 -0500
+Received: from nm37-vm6.bullet.mail.bf1.yahoo.com ([72.30.238.206]:27498 "HELO
+	nm37-vm6.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752899Ab2BEXyk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 18:54:40 -0500
+X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Feb 2012 18:54:40 EST
+X-Yahoo-Newman-Id: 784830.58188.bm@omp1028.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=DKIM-Signature:X-Yahoo-Newman-Property:X-YMail-OSG:X-Yahoo-SMTP:Received:References:Mime-Version:In-Reply-To:X-Apple-Yahoo-Original-Message-Folder:Content-Type:Content-Transfer-Encoding:Message-Id:Cc:X-Mailer:From:X-Apple-Yahoo-Replied-Msgid:Subject:Date:To;
+  b=gYVHL0wY0HDZhQv+9CQZphvNfOkAipORVpr/9ykJg9ahZanf0ikqg1zAnQDlP8UykH7MY9BqVvbar97NHawpNI7ZOnokB9Ybw/LYKe10ZqvKMsQSTVKYqB+Sc6zVX9qTK1Ox7KioSpbMVLV+wwRWCMGyZFfRN2psjVnYY8QNXdY=  ;
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 5Amdbq8VM1nqIgxND1EBU5x90CzXoGbiA9t2W8Tn17UJzZm
+ jwEe57PH9cwU2nAhEj_6cX6cWwBzIs_g.yBuD_TXUS4iqhEcX0oQkQw55j.2
+ xIUv.FGjEkOZ0bR3_5zAz2rA0Y6M0S3qOSCQi121dQVpKq_nbCH9blqwf.Os
+ KcX88yOWFIcGIz28S.TBuJPjiJfNTVsrZaLKJkZNK27mNYmGXnozgk8C0rwY
+ gWTOVYXWtfy0t.v42BG.JCeBg1knoYl5GQBThGOZQh2OhhIrL_59WRhI.SjY
+ t3jK.xaqdqPvrX0uwU5SxmHkqS8iwOxf_TyxHA5msjlXiqRrp4y721VL9896
+ fL8Ne.OvyVOydEt00Q6zXpLNCQlWdJC587lPWThazYq3TUZhbI3PsXuFHJxT
+ ewOKjr9TsDA5wcz9p9LLvkza3EVfDqDPkDCITn_mg7WlyVmLYEGTiRnibYA-
+ -
+X-Yahoo-SMTP: Jr5mEQOswBBUeQ6oSnePwwxoZ1M-
+References: <20120205220950.812864962@pcw.home.local>
+Mime-Version: 1.0 (iPhone Mail 8J2)
+In-Reply-To: <20120205220950.812864962@pcw.home.local>
+X-Apple-Yahoo-Original-Message-Folder: Inbox
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4C7B5EA1-AE40-4E64-92CC-24277900A99E@yahoo.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+X-Mailer: iPhone Mail (8J2)
+From: Luben Tuikov <ltuikov@yahoo.com>
+X-Apple-Yahoo-Replied-Msgid: 2_0_0_1_8995447_AEHPjkQAABTYTy8CVQp7Hl4n/a8
+Subject: Re: [PATCH 32/91] libsas: remove expander from dev list on error
+Date: Sun, 5 Feb 2012 15:48:27 -0800
+To: Willy Tarreau <w@1wt.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 19, 2012 at 01:39:21AM +0530, Rabin Vincent wrote:
-> On Tue, Jan 17, 2012 at 09:02, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > On Sun, Jan 15, 2012 at 08:58:06PM +0530, Rabin Vincent wrote:
-> >>  Unable to handle kernel NULL pointer dereference at virtual address 0000002c
-> >>  pgd = c0004000
-> >>  [0000002c] *pgd=00000000
-> >>  Internal error: Oops: 17 [#1] PREEMPT SMP
-> >>  PC is at ftrace_raw_event_writeback_single_inode_template+0x60/0xe4
-> >>  LR is at ftrace_raw_event_writeback_single_inode_template+0x50/0xe4
-> >>
-> >> The full trace+log is attached.  My kernel (current linus) has a delay
-> >> inserted in __mark_inode_dirty, to easily trigger the condition:
-> >
-> > Rabin, thanks for showing the helpful details! It should be fixable by
-> > the use of inode_to_bdi():
+Isn't this my patch? Are you submitting it as your own?
+
+        Luben
+
+
+On Feb 5, 2012, at 14:10, Willy Tarreau <w@1wt.eu> wrote:
+
+> 2.6.27-longterm review patch.  If anyone has any objections, please let us know.
 > 
-> Thanks, this fixes that one.
+> ------------------
 > 
-> However, I've found one more race condition leading to a crash when
-> tracing is enabled, this time from the writeback:queue trace point from
-> bdi_queue_work().  The cause is the same, i.e.  bdi->dev is NULL.  This
-> was produced with the help of the following delay patch.  trace+log is
-> attached.
-
-Rabin, this should fix the bug. Note that I take no efforts to remove
-the to-be-queued and already-queued works. I'm also a bit afraid if
-the traces in the balance_dirty_pages() path (trace_balance_dirty_pages,
-trace_bdi_dirty_ratelimit and writeback_wake_background) will have
-similar NULL dereference bug. Do you test it by physically hot
-removing a SD card, or with some detach command or emulation?
-
-Thanks,
-Fengguang
-
----
-Subject: writeback: fix dereferencing NULL bdi->dev on trace_writeback_queue 
-Date: Sat Feb 04 20:54:03 CST 2012
-
-When the SD card is hot removed without umount, del_gendisk() will call
-bdi_unregister() but not destroy/free it. This leaves the bdi in the
-bdi->dev = NULL, bdi->wb.task = NULL, bdi->bdi_list removed state.
-
-If someone gets the bdi before bdi_unregister() and calls
-bdi_queue_work() after the unregister, trace_writeback_queue will be
-dereferencing the NULL bdi->dev. Fix it with a simple test for NULL.
-
-LKML-reference: http://lkml.org/lkml/2012/1/18/346
-Reported-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/trace/events/writeback.h |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- linux-next.orig/include/trace/events/writeback.h	2012-02-04 20:51:01.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2012-02-04 20:54:00.000000000 +0800
-@@ -47,7 +47,10 @@ DECLARE_EVENT_CLASS(writeback_work_class
- 		__field(int, reason)
- 	),
- 	TP_fast_assign(
--		strncpy(__entry->name, dev_name(bdi->dev), 32);
-+		struct device *dev = bdi->dev;
-+		if (!dev)
-+			dev = default_backing_dev_info.dev;
-+		strncpy(__entry->name, dev_name(dev), 32);
- 		__entry->nr_pages = work->nr_pages;
- 		__entry->sb_dev = work->sb ? work->sb->s_dev : 0;
- 		__entry->sync_mode = work->sync_mode;
+> commit 5911e963d3718e306bcac387b83e259aa4228896 upstream.
+> 
+> If expander discovery fails (sas_discover_expander()), remove the
+> expander from the port device list (sas_ex_discover_expander()),
+> before freeing it. Else the list is corrupted and, e.g., when we
+> attempt to send SMP commands to other devices, the kernel oopses.
+> 
+> Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+> Reviewed-by: Jack Wang <jack_wang@usish.com>
+> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> ---
+> drivers/scsi/libsas/sas_expander.c |    3 +++
+> 1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> Index: longterm-2.6.27/drivers/scsi/libsas/sas_expander.c
+> ===================================================================
+> --- longterm-2.6.27.orig/drivers/scsi/libsas/sas_expander.c    2012-02-05 22:34:34.059914940 +0100
+> +++ longterm-2.6.27/drivers/scsi/libsas/sas_expander.c    2012-02-05 22:34:39.404915902 +0100
+> @@ -839,6 +839,9 @@
+> 
+>    res = sas_discover_expander(child);
+>    if (res) {
+> +        spin_lock_irq(&parent->port->dev_list_lock);
+> +        list_del(&child->dev_list_node);
+> +        spin_unlock_irq(&parent->port->dev_list_lock);
+>        kfree(child);
+>        return NULL;
+>    }
+> 
+> 
