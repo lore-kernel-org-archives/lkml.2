@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab2BETxi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 14:53:38 -0500
-Received: from nbd.name ([46.4.11.11]:60983 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753260Ab2BETxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 14:53:37 -0500
-Message-ID: <4F2EDE23.5070505@openwrt.org>
-Date: Sun, 05 Feb 2012 20:53:07 +0100
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1752129Ab2BEUcj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 15:32:39 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:47476 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751626Ab2BEUch (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 15:32:37 -0500
+Message-ID: <4F2EE762.1030801@xenotime.net>
+Date: Sun, 05 Feb 2012 12:32:34 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Jurica Vukadin <u.ra604@googlemail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: regression, 3.2.2 stable: ath9k won't associate anymore
-References: <CANtv1eXSbOSp90BEfuWdL+6_7CFPJ5Hpn=Va3Jopbr7s011JLg@mail.gmail.com>
-In-Reply-To: <CANtv1eXSbOSp90BEfuWdL+6_7CFPJ5Hpn=Va3Jopbr7s011JLg@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
+To: Manjunatha Halli <x0130808@ti.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Manjunatha Halli <manjunatha_halli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] Re: linux-next: Tree for Feb 2 (media/radio/wl128x)
+References: <20120202144516.11b33e667a7cbb8d85d96226@canb.auug.org.au> <4F2AD0E4.6020801@xenotime.net> <4F2AC5F8.1000901@ti.com> <4F2AD89E.70805@xenotime.net> <4F2AD3E9.1070804@ti.com>
+In-Reply-To: <4F2AD3E9.1070804@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-05 8:45 PM, Jurica Vukadin wrote:
-> Hi,
+On 02/02/2012 10:20 AM, Manjunatha Halli wrote:
+> On 02/02/2012 12:40 PM, Randy Dunlap wrote:
+>> On 02/02/2012 09:20 AM, Manjunatha Halli wrote:
+>>> Hi Randy Dunlap,
+>>>
+>>> In config file you are missing the CONFIG_TI_ST config which builds the TI's shared transport driver upon which the FM driver works.
+>>>
+>>> Please select this config in drivers/misc/ti-st/Kconfig which will solve the problem.
+>> Wrong answer.
+>>
+>> The problem seems to be that GPIOLIB is not enabled, but wl128x Kconfig says:
+>>
+>> config RADIO_WL128X
+>>     tristate "Texas Instruments WL128x FM Radio"
+>>     depends on VIDEO_V4L2&&  RFKILL
+>>     select TI_ST if NET&&  GPIOLIB
+>>
+>> so TI_ST is not selected here.
+>>
+>> The Kconfig files should handle this properly.
+>>
+>> Here is one possible fix for you to consider.
+>>
+>> ---
+>> From: Randy Dunlap<rdunlap@xenotime.net>
+>>
+>> Fix build errors when GPIOLIB is not enabled.
+>> Fix wl128x Kconfig to depend on GPIOLIB since TI_ST also
+>> depends on GPIOLIB.
+>>
+>> (.text+0xe6d60): undefined reference to `st_register'
+>> (.text+0xe7016): undefined reference to `st_unregister'
+>> (.text+0xe70ce): undefined reference to `st_unregister'
+>>
+>> Signed-off-by: Randy Dunlap<rdunlap@xenotime.net>
+>> Cc: Manjunatha Halli<manjunatha_halli@ti.com>
+>> ---
+>>   drivers/media/radio/wl128x/Kconfig |    4 ++--
+>>   1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> --- linux-next-20120202.orig/drivers/media/radio/wl128x/Kconfig
+>> +++ linux-next-20120202/drivers/media/radio/wl128x/Kconfig
+>> @@ -4,8 +4,8 @@
+>>   menu "Texas Instruments WL128x FM driver (ST based)"
+>>   config RADIO_WL128X
+>>       tristate "Texas Instruments WL128x FM Radio"
+>> -    depends on VIDEO_V4L2&&  RFKILL
+>> -    select TI_ST if NET&&  GPIOLIB
+>> +    depends on VIDEO_V4L2&&  RFKILL&&  GPIOLIB
+>> +    select TI_ST if NET
+>>       help
+>>       Choose Y here if you have this FM radio chip.
+>>
+>>
+>>> Regards
+>>> Manju
+>>>
+>>> On 02/02/2012 12:07 PM, Randy Dunlap wrote:
+>>>> On 02/01/2012 07:45 PM, Stephen Rothwell wrote:
+>>>>> Hi all,
+>>>>>
+>>>>> Changes since 20120201:
+>>>> drivers/built-in.o: In function `fmc_prepare':
+>>>> (.text+0xe6d60): undefined reference to `st_register'
+>>>> drivers/built-in.o: In function `fmc_prepare':
+>>>> (.text+0xe7016): undefined reference to `st_unregister'
+>>>> drivers/built-in.o: In function `fmc_release':
+>>>> (.text+0xe70ce): undefined reference to `st_unregister'
+>>>>
+>>>>
+>>>> Full randconfig file is attached.
+>>
 > 
-> commit "b4a82a0 ath9k_hw: fix interpretation of the rx KeyMiss flag"
-> caused my card to stop associating with the router.
-> Reverting it fixes the issue. Encryption is WEP, if that matters; I
-> haven't tried others.
+> This solutions seems fine for me...
 > 
-> The device is "10:00.0 Network controller: Atheros Communications Inc.
-> AR9287 Wireless Network Adapter (PCI-Express) (rev 01)"
-> 
-> excerpt from dmesg before the revert:
-> Feb  5 20:00:56 smaug kernel: [    7.468770] ath9k 0000:10:00.0: PCI
-> INT A -> GSI 17 (level, low) -> IRQ 17
-> Feb  5 20:00:56 smaug kernel: [    7.468787] ath9k 0000:10:00.0:
-> setting latency timer to 64
-> Feb  5 20:00:56 smaug kernel: [    7.558116] ath: EEPROM regdomain: 0x6a
-> Feb  5 20:00:56 smaug kernel: [    7.558118] ath: EEPROM indicates we
-> should expect a direct regpair map
-> Feb  5 20:00:56 smaug kernel: [    7.558121] ath: Country alpha2 being used: 00
-> Feb  5 20:00:56 smaug kernel: [    7.558122] ath: Regpair used: 0x6a
-> Feb  5 20:00:56 smaug kernel: [    8.044750] ieee80211 phy0: Selected
-> rate control algorithm 'ath9k_rate_control'
-> Feb  5 20:00:56 smaug kernel: [    8.045371] Registered led device: ath9k-phy0
-> Feb  5 20:01:01 smaug kernel: [   16.161078] wlan0: authenticate with
-> 00:01:e3:4a:9e:be (try 1)
-> Feb  5 20:01:01 smaug kernel: [   16.163159] wlan0: authenticated
-> Feb  5 20:01:01 smaug kernel: [   16.197844] wlan0: associate with
-> 00:01:e3:4a:9e:be (try 1)
-> Feb  5 20:01:01 smaug kernel: [   16.200307] wlan0: RX AssocResp from
-> 00:01:e3:4a:9e:be (capab=0x431 status=0 aid=4)
-> Feb  5 20:01:01 smaug kernel: [   16.200312] wlan0: associated
-> Feb  5 20:01:31 smaug kernel: [   46.185930] wlan0: deauthenticating
-> from 00:01:e3:4a:9e:be by local choice (reason=3)
-The issue is WEP specific, a fix has been found and confirmed. I'll
-submit it for inclusion soon.
+> My only concern is since TI_ST is already have GPIOLIB in its dependency list is it OK to have the same thing in FM driver also?.
 
-- Felix
+Sure, it's OK.
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
