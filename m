@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab2BERCW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 12:02:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50590 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab2BERCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 12:02:20 -0500
-Message-ID: <4F2EB618.7050503@gmail.com>
-Date: Sun, 05 Feb 2012 10:02:16 -0700
-From: "Berck E. Nash" <flyboy@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120104 Icedove/8.0
-MIME-Version: 1.0
-To: skeggsb@gmail.com
-CC: Dave Airlie <airlied@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jak@jak-linux.org
-Subject: Re: DRM nouveau crash with 3.2.0-rc5
-References: <4EE2E9BB.8060801@gmail.com> 		<CAPM=9tzVxGbsE4+EgTd0apvGBCUcvtnjSH-ydbr-MOVSTf1QaQ@mail.gmail.com> 	 <CACAvsv6g+qz+-ja+4Qfinz04rr0EAyxwxQpFyfcE1fAtqQyuEA@mail.gmail.com> 	 <4EE42ADA.5000406@gmail.com> <1323590203.31951.2.camel@nisroch>  <4EE564CF.8090203@gmail.com> <1323753537.10514.0.camel@nisroch>
-In-Reply-To: <1323753537.10514.0.camel@nisroch>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/mixed;
- boundary="------------090508060007070000000603"
+	id S1754764Ab2BERLW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 12:11:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42303 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751799Ab2BERLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 12:11:21 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] perf, tool: Fix prefix matching for kernel maps
+Date: Sun,  5 Feb 2012 18:11:05 +0100
+Message-Id: <1328461865-6127-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090508060007070000000603
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In some perf ancient versions we used '[kernel.kallsyms._text]' as
+the name for the kernel map.
 
-On 12/12/2011 10:18 PM, Ben Skeggs wrote:
-> Are you able to bisect this back to a commit?  I've attempted on a few
-> different cards to cause this and I'm not seeing it.
+This got changed with commit:
+  perf: 'perf kvm' tool for monitoring guest performance from host
+  commit a1645ce12adb6c9cc9e19d7695466204e3f017fe
+  Author: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
 
-Okay, after one of the most time-consuming git bisects ever, I think
-I've found it:
+and we started to use following name '[kernel.kallsyms]_text'.
 
-0b1076c4b2a06e517fafbb2b4704f23e69b05386 is the first bad commit
-commit 0b1076c4b2a06e517fafbb2b4704f23e69b05386
-Author: Julian Andres Klode <jak@jak-linux.org>
-Date:   Tue Sep 27 19:00:48 2011 +0200
+This name change is important for the report code dealing with ancient
+perf data. When processing the kernel map event, we need to recognize
+the old naming (dont match the last ']') and initialize the kernel map
+correctly.
 
-    staging: nvec: Introduce new internal API for msg alloc/free
+The subsequent call to maps__set_kallsyms_ref_reloc_sym deals with the
+superfluous ']' to get correct symbol name.
 
-    Introduce two new functions nvec_msg_alloc() and nvec_msg_free()
-    that allocate and free message buffers from the internal pool
-    of messages.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-    Signed-off-by: Julian Andres Klode <jak@jak-linux.org>
-    Acked-by: Marc Dietrich <marvin24@gmx.de>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 73ddaf0..2044324 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -554,7 +554,7 @@ static int perf_event__process_kernel_mmap(struct perf_tool *tool __used,
+ 
+ 	is_kernel_mmap = memcmp(event->mmap.filename,
+ 				kmmap_prefix,
+-				strlen(kmmap_prefix)) == 0;
++				strlen(kmmap_prefix) - 1) == 0;
+ 	if (event->mmap.filename[0] == '/' ||
+ 	    (!is_kernel_mmap && event->mmap.filename[0] == '[')) {
+ 
+-- 
+1.7.4.4
 
-Since you guys have probably forgotten about this since it took so long,
-I'll recap:
-
-While watching video with mplayer, the nouveau driver crashes rendering
-X totally non-responsive, though the system still behaves normally via
-ssh or serial console.  Dmesg attached, and I've cc'ed the author of the
-first bad commit.
-
-Berck
-
---------------090508060007070000000603
-Content-Type: text/plain;
- name="drm-crash3.log"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="drm-crash3.log"
-
-WyAzMzQ5LjE2MDAxM10gW2RybV0gbm91dmVhdSAwMDAwOjAxOjAwLjA6IFBHUkFQSCAtIFRS
-QVBfVkZFVENIIEZBVUxUClsgMzM0OS4xNjY2MDZdIFtkcm1dIG5vdXZlYXUgMDAwMDowMTow
-MC4wOiBQR1JBUEggLSBUUkFQX1ZGRVRDSCAwMGYwMDAwMCAwMDAwZmUwYyAwMDAwMDAwMCAw
-MDAwMDAwMApbIDMzNDkuMTc1OTc4XSBbZHJtXSBub3V2ZWF1IDAwMDA6MDE6MDAuMDogUEdS
-QVBIIC0gVFJBUApbIDMzNDkuMTgxMjE3XSBbZHJtXSBub3V2ZWF1IDAwMDA6MDE6MDAuMDog
-UEdSQVBIIC0gY2ggNSAoMHgwMDBjMmQzMDAwKSBzdWJjIDUgY2xhc3MgMHg4Mjk3IG10aGQg
-MHgwZjA0IGRhdGEgMHgwMDAwMDAwMApbIDMzNDkuMTkyMDg0XSBbZHJtXSBub3V2ZWF1IDAw
-MDA6MDE6MDAuMDogVk06IHRyYXBwZWQgcmVhZCBhdCAweDAwMDAwMDAwMDAgb24gY2ggMiBb
-MHgwMDAwMGQwM10gUEdSQVBIL1ZGRVRDSC8wMCByZWFzb246IFBUX05PVF9QUkVTRU5UClsg
-NTc2NC43NTEzODldIFtkcm1dIG5vdXZlYXUgMDAwMDowMTowMC4wOiBQRklGT19ETUFfUFVT
-SEVSIC0gQ2ggMiBHZXQgMHgwMDIwMDI3M2YwIFB1dCAweDAwMjAwMjc0M2MgSWJHZXQgMHgw
-MDAwMDA3MSBJYlB1dCAweDAwMDAwMDdlIFN0YXRlIDB4ODAwMDQyOTAgKGVycjogSU5WQUxJ
-RF9DTUQpIFB1c2ggMHgwMDQwNjA0MApbIDU3NjQuNzY4MzI1XSBbZHJtXSBub3V2ZWF1IDAw
-MDA6MDE6MDAuMDogUEdSQVBIIC0gREFUQV9FUlJPUiBJTlZBTElEX1ZBTFVFClsgNTc2NC43
-NzUzNjBdIFtkcm1dIG5vdXZlYXUgMDAwMDowMTowMC4wOiBQR1JBUEggLSBEQVRBX0VSUk9S
-ClsgNTc2NC43ODExNjldIFtkcm1dIG5vdXZlYXUgMDAwMDowMTowMC4wOiBQR1JBUEggLSBj
-aCAyICgweDAwMDBkMDMwMDApIHN1YmMgMiBjbGFzcyAweDUwMmQgbXRoZCAweDAyODggZGF0
-YSAweDAwMGNiNTc0ClsgNjgwOC4xNjU4MzhdIFtkcm1dIG5vdXZlYXUgMDAwMDowMTowMC4w
-OiBQR1JBUEggLSBEQVRBX0VSUk9SIElOVkFMSURfVkFMVUUKWyA2ODA4LjE3MjY3Ml0gW2Ry
-bV0gbm91dmVhdSAwMDAwOjAxOjAwLjA6IFBHUkFQSCAtIERBVEFfRVJST1IKWyA2ODA4LjE3
-ODMwOF0gW2RybV0gbm91dmVhdSAwMDAwOjAxOjAwLjA6IFBHUkFQSCAtIGNoIDIgKDB4MDAw
-MGQwMzAwMCkgc3ViYyAyIGNsYXNzIDB4NTAyZCBtdGhkIDB4MDI4NCBkYXRhIDB4MDAwNGFm
-MDAKWzEwOTM4LjM2MDg1NF0gW2RybV0gbm91dmVhdSAwMDAwOjAxOjAwLjA6IFBHUkFQSCAt
-IERBVEFfRVJST1IgSU5WQUxJRF9WQUxVRQpbMTA5MzguMzY3OTQ3XSBbZHJtXSBub3V2ZWF1
-IDAwMDA6MDE6MDAuMDogUEdSQVBIIC0gREFUQV9FUlJPUgpbMTA5MzguMzczNzQwXSBbZHJt
-XSBub3V2ZWF1IDAwMDA6MDE6MDAuMDogUEdSQVBIIC0gY2ggMiAoMHgwMDAwZDAzMDAwKSBz
-dWJjIDIgY2xhc3MgMHg1MDJkIG10aGQgMHgwMjhjIGRhdGEgMHgyMDAzMTAwMAo=
---------------090508060007070000000603--
