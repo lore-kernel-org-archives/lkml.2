@@ -1,77 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab2BEH5y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 02:57:54 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:50457 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765Ab2BEH5w (ORCPT
+	id S1752920Ab2BEINi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 03:13:38 -0500
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:35521 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751799Ab2BEINg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 02:57:52 -0500
-X-SENDER-IP: [85.230.170.239]
-X-LISTENER: [smtp.bredband.net]
+	Sun, 5 Feb 2012 03:13:36 -0500
+X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqlKAC42Lk9V5qrvPGdsb2JhbABCiValWhkBAQEBHhkNJYFyAQEEATocIwULCANGFCUKGogPA60QE4tXAgIJBQwHBgEEAQEJBBQHBA8GgnYCCwMEGgQCgQkSglZjBJUnhWiMdQ
-X-IronPort-AV: E=Sophos;i="4.73,363,1325458800"; 
-   d="scan'208";a="1803758023"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sun, 5 Feb 2012 08:59:06 +0100
-To: Chase Douglas <chasedouglas@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Input: Add EVIOC mechanism for MT slots
-Message-ID: <20120205075906.GA7698@polaris.bitmath.org>
-References: <1328036403-2827-1-git-send-email-rydberg@euromail.se>
- <4F2B24AC.1020408@gmail.com>
- <20120203072725.GA6914@polaris.bitmath.org>
- <4F2D7730.3090704@gmail.com>
+X-IronPort-Anti-Spam-Result: AosHADo5Lk9XQCTA/2dsb2JhbABCgxGsH4EGgXIBAQUnER4jEAsVAwkaCw8CEBgeBg0BBQIBAYd7rRGIFYNPAQQCAQICCQQBDQQGAQEBgzcZBAMMAxQFVxgbAgEEBIMvBJsAg1eBW4dS
+Message-ID: <4F2E39F6.70803@computer.org>
+Date: Sun, 05 Feb 2012 09:12:38 +0100
+From: Jan Ceuleers <jan.ceuleers@computer.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F2D7730.3090704@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Devendra.Naga" <devendra.aaru@gmail.com>
+CC: Larry.Finger@lwfinger.net, chaoming_li@realsil.com.cn,
+        linville@tuxdriver.com, paul.gortmaker@windriver.com, joe@perches.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] wireless: move ifs' in _rtl92c_store_pwrIndex_diffrate_offset
+ into elseif statements
+References: <1327906245-8200-1-git-send-email-devendra.aaru@gmail.com>
+In-Reply-To: <1327906245-8200-1-git-send-email-devendra.aaru@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This is resolved on the preprocessor level, so C99 or not does not
-> > enter the problem. Compile-time constant, as you can see in the code
-> > example in the patch summary.
-> 
-> You're right, I didn't catch that. It will be compatible with all C
-> compilers if you use a static number of slots.
+On 01/30/2012 07:50 AM, Devendra.Naga wrote:
+> From: "Devendra.Naga"<devendra.aaru@gmail.com>
+>
+>          The regaddr is compared against different rates in each case and the powerlevels are set
+>          accordingly. as this can match for the first if and we still check for other powerlevels too,
+>          use else if ratherthan using if statements
+> Signed-off-by: Devendra.Naga<devendra.aaru@gmail.com>
+If this is correct, and I'm not saying it is or isn't, would it not be 
+clearer to turn this whole section into a switch statement? The cases 
+that requiring fiddling with the bitmask would need to be dealt with in 
+the default: case.
 
-Yes, but this statement is merely repeating something that has been
-true since the sixties.
+Why was it written as a series of if statements to begin with: can (or 
+could) any of these if statements change the value of regaddr such that 
+later ifs evaluate differently? From reading only the patch the answer 
+seems to be "no", so that looks good.
 
-> However, it will break if you use a non-C99 C compiler and the code
-> wants to do dynamic number of slots calculations.
+Or what about turning this into a data-driven section? It looks like 
+values of regaddr are being translated into offsets into 
+rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt]. Can this be done with a lookup 
+table?
 
-Of course, which is why C99 cannot be used for portable code. And it
-still has nothing to do with this patch.
+> ---
+>   drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |   47 +++++++------------
+>   1 files changed, 17 insertions(+), 30 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
+> index 22e998d..cb11e5a 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
+> @@ -260,106 +260,93 @@ void _rtl92c_store_pwrIndex_diffrate_offset(struct ieee80211_hw *hw,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][0] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][0]);
+> -	}
+> -	if (regaddr == RTXAGC_A_RATE54_24) {
+> +	} else if (regaddr == RTXAGC_A_RATE54_24) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][1] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][1] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][1]);
+> -	}
+> -	if (regaddr == RTXAGC_A_CCK1_MCS32) {
+> +	} else if (regaddr == RTXAGC_A_CCK1_MCS32) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][6] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][6] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][6]);
+> -	}
+> -	if (regaddr == RTXAGC_B_CCK11_A_CCK2_11&&  bitmask == 0xffffff00) {
+> +	} else if (regaddr == RTXAGC_B_CCK11_A_CCK2_11&&
+> +		bitmask == 0xffffff00) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][7] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][7] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][7]);
+> -	}
+> -	if (regaddr == RTXAGC_A_MCS03_MCS00) {
+> +	} else if (regaddr == RTXAGC_A_MCS03_MCS00) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][2] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][2] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][2]);
+> -	}
+> -	if (regaddr == RTXAGC_A_MCS07_MCS04) {
+> +	} else if (regaddr == RTXAGC_A_MCS07_MCS04) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][3] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][3] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][3]);
+> -	}
+> -	if (regaddr == RTXAGC_A_MCS11_MCS08) {
+> +	} else if (regaddr == RTXAGC_A_MCS11_MCS08) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][4] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][4] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][4]);
+> -	}
+> -	if (regaddr == RTXAGC_A_MCS15_MCS12) {
+> +	} else if (regaddr == RTXAGC_A_MCS15_MCS12) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][5] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][5] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][5]);
+> -	}
+> -	if (regaddr == RTXAGC_B_RATE18_06) {
+> +	} else if (regaddr == RTXAGC_B_RATE18_06) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][8] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][8] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][8]);
+> -	}
+> -	if (regaddr == RTXAGC_B_RATE54_24) {
+> +	} else if (regaddr == RTXAGC_B_RATE54_24) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][9] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][9] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][9]);
+> -	}
+> -	if (regaddr == RTXAGC_B_CCK1_55_MCS32) {
+> +	} else if (regaddr == RTXAGC_B_CCK1_55_MCS32) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][14] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][14] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][14]);
+> -	}
+> -	if (regaddr == RTXAGC_B_CCK11_A_CCK2_11&&  bitmask == 0x000000ff) {
+> +	} else if (regaddr == RTXAGC_B_CCK11_A_CCK2_11&&
+> +		bitmask == 0x000000ff) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][15] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][15] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][15]);
+> -	}
+> -	if (regaddr == RTXAGC_B_MCS03_MCS00) {
+> +	} else if (regaddr == RTXAGC_B_MCS03_MCS00) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][10] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][10] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][10]);
+> -	}
+> -	if (regaddr == RTXAGC_B_MCS07_MCS04) {
+> +	} else if (regaddr == RTXAGC_B_MCS07_MCS04) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][11] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][11] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][11]);
+> -	}
+> -	if (regaddr == RTXAGC_B_MCS11_MCS08) {
+> +	} else if (regaddr == RTXAGC_B_MCS11_MCS08) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][12] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][12] = 0x%x\n",
+>   			 rtlphy->pwrgroup_cnt,
+>   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][12]);
+> -	}
+> -	if (regaddr == RTXAGC_B_MCS15_MCS12) {
+> +	} else if (regaddr == RTXAGC_B_MCS15_MCS12) {
+>   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][13] = data;
+>   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+>   			 "MCSTxPowerLevelOriginalOffset[%d][13] = 0x%x\n",
 
-> I imagine most callers would do:
-> 
-> EVIOCGABS call on ABS_MT_SLOT;
-> int num_slots = ABS_MT_SLOT.max - ABS_MT_SLOT.min
-> struct INPUT_MT_REQUEST(num_slots) req;
-
-Besides leaving a possible giant stack crash in your code, it assumes
-memory is somehow magically allocated. Not good practise in low-level
-programming. You wouldn't use a template this way, would you?
-
-> This will break on non-C99 C compilers and other language compilers.
-
-Of course, since you use the C99 dynamic stack construct, which,
-again, is not portable.
-
-> It also will lead to head-scratcher bugs when someone compiles it
-> just fine in their C99 project, copies the code to another project
-> with a different compiler, and is confronted with the issue.
-
-No, since people how know C do not do things like that.
-
-> I think this issue should be enough to rethink the interface.
-
-No, since your issues with C99 has nothing to do with this patch.
-
-Henrik
