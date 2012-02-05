@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab2BEWkj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:40:39 -0500
-Received: from 1wt.eu ([62.212.114.60]:61989 "EHLO 1wt.eu"
+	id S1754244Ab2BEW0i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:26:38 -0500
+Received: from 1wt.eu ([62.212.114.60]:61951 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754117Ab2BEW0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:39 -0500
-Message-Id: <20120205220951.929556284@pcw.home.local>
+	id S1754023Ab2BEW0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:31 -0500
+Message-Id: <20120205220951.588883629@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:47 +0100
+Date: Sun, 05 Feb 2012 23:10:39 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Robert Richter <robert.richter@amd.com>,
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 58/91] oprofile, x86: Fix crash when unloading module (nmi timer mode)
+Subject: [PATCH 50/91] NLM: Dont hang forever on NLM unlock requests
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,89 +23,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 97f7f8189fe54e3cfe324ef9ad35064f3d2d3bff upstream.
+commit 0b760113a3a155269a3fba93a409c640031dd68f upstream.
 
-If oprofile uses the nmi timer interrupt there is a crash while
-unloading the module. The bug can be triggered with oprofile build as
-module and kernel parameter nolapic set. This patch fixes this.
+If the NLM daemon is killed on the NFS server, we can currently end up
+hanging forever on an 'unlock' request, instead of aborting. Basically,
+if the rpcbind request fails, or the server keeps returning garbage, we
+really want to quit instead of retrying.
 
-oprofile: using NMI timer interrupt.
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-IP: [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
-PGD 42dbca067 PUD 41da6a067 PMD 0
-Oops: 0002 [#1] PREEMPT SMP
-CPU 5
-Modules linked in: oprofile(-) [last unloaded: oprofile]
-
-Pid: 2518, comm: modprobe Not tainted 3.1.0-rc7-00019-gb2fb49d #19 Advanced Micro Device Anaheim/Anaheim
-RIP: 0010:[<ffffffff8123c226>]  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
-RSP: 0018:ffff88041ef71e98  EFLAGS: 00010296
-RAX: 0000000000000000 RBX: ffffffffa0017100 RCX: dead000000200200
-RDX: 0000000000000000 RSI: dead000000100100 RDI: ffffffff8178c620
-RBP: ffff88041ef71ea8 R08: 0000000000000001 R09: 0000000000000082
-R10: 0000000000000000 R11: ffff88041ef71de8 R12: 0000000000000080
-R13: fffffffffffffff5 R14: 0000000000000001 R15: 0000000000610210
-FS:  00007fc902f20700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000008 CR3: 000000041cdb6000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process modprobe (pid: 2518, threadinfo ffff88041ef70000, task ffff88041d348040)
-Stack:
- ffff88041ef71eb8 ffffffffa0017790 ffff88041ef71eb8 ffffffffa0013532
- ffff88041ef71ec8 ffffffffa00132d6 ffff88041ef71ed8 ffffffffa00159b2
- ffff88041ef71f78 ffffffff81073115 656c69666f72706f 0000000000610200
-Call Trace:
- [<ffffffffa0013532>] op_nmi_exit+0x15/0x17 [oprofile]
- [<ffffffffa00132d6>] oprofile_arch_exit+0xe/0x10 [oprofile]
- [<ffffffffa00159b2>] oprofile_exit+0x1e/0x20 [oprofile]
- [<ffffffff81073115>] sys_delete_module+0x1c3/0x22f
- [<ffffffff811bf09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff8148070b>] system_call_fastpath+0x16/0x1b
-Code: 20 c6 78 81 e8 c5 cc 23 00 48 8b 13 48 8b 43 08 48 be 00 01 10 00 00 00 ad de 48 b9 00 02 20 00 00 00 ad de 48 c7 c7 20 c6 78 81
- 89 42 08 48 89 10 48 89 33 48 89 4b 08 e8 a6 c0 23 00 5a 5b
-RIP  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
- RSP <ffff88041ef71e98>
-CR2: 0000000000000008
----[ end trace 43a541a52956b7b0 ]---
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Tested-by: Vasily Averin <vvs@sw.ru>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/oprofile/init.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ fs/lockd/clntproc.c          |    8 +++++++-
+ include/linux/sunrpc/sched.h |    4 ++--
+ net/sunrpc/clnt.c            |    3 +++
+ net/sunrpc/sched.c           |    1 +
+ 4 files changed, 13 insertions(+), 3 deletions(-)
 
-Index: longterm-2.6.27/arch/x86/oprofile/init.c
+Index: longterm-2.6.27/fs/lockd/clntproc.c
 ===================================================================
---- longterm-2.6.27.orig/arch/x86/oprofile/init.c	2012-02-05 22:34:33.209915247 +0100
-+++ longterm-2.6.27/arch/x86/oprofile/init.c	2012-02-05 22:34:43.123914870 +0100
-@@ -21,6 +21,7 @@
- extern void op_nmi_exit(void);
- extern void x86_backtrace(struct pt_regs * const regs, unsigned int depth);
+--- longterm-2.6.27.orig/fs/lockd/clntproc.c	2012-02-05 22:34:33.509914670 +0100
++++ longterm-2.6.27/fs/lockd/clntproc.c	2012-02-05 22:34:41.942915002 +0100
+@@ -709,7 +709,13 @@
  
-+static int nmi_timer;
+ 	if (task->tk_status < 0) {
+ 		dprintk("lockd: unlock failed (err = %d)\n", -task->tk_status);
+-		goto retry_rebind;
++		switch (task->tk_status) {
++		case -EACCES:
++		case -EIO:
++			goto die;
++		default:
++			goto retry_rebind;
++		}
+ 	}
+ 	if (status == NLM_LCK_DENIED_GRACE_PERIOD) {
+ 		rpc_delay(task, NLMCLNT_GRACE_WAIT);
+Index: longterm-2.6.27/include/linux/sunrpc/sched.h
+===================================================================
+--- longterm-2.6.27.orig/include/linux/sunrpc/sched.h	2012-02-05 22:34:33.497915064 +0100
++++ longterm-2.6.27/include/linux/sunrpc/sched.h	2012-02-05 22:34:41.949914805 +0100
+@@ -84,8 +84,8 @@
+ 	long			tk_rtt;		/* round-trip time (jiffies) */
  
- int __init oprofile_arch_init(struct oprofile_operations *ops)
- {
-@@ -31,8 +32,9 @@
- #ifdef CONFIG_X86_LOCAL_APIC
- 	ret = op_nmi_init(ops);
+ 	pid_t			tk_owner;	/* Process id for batching tasks */
+-	unsigned char		tk_priority : 2;/* Task priority */
+-
++	unsigned char		tk_priority : 2,/* Task priority */
++				tk_rebind_retry : 2;
+ #ifdef RPC_DEBUG
+ 	unsigned short		tk_pid;		/* debugging aid */
  #endif
-+	nmi_timer = (ret != 0);
- #ifdef CONFIG_X86_IO_APIC
--	if (ret < 0)
-+	if (nmi_timer)
- 		ret = op_nmi_timer_init(ops);
- #endif
- 	ops->backtrace = x86_backtrace;
-@@ -44,6 +46,7 @@
- void oprofile_arch_exit(void)
- {
- #ifdef CONFIG_X86_LOCAL_APIC
--	op_nmi_exit();
-+	if (!nmi_timer)
-+		op_nmi_exit();
- #endif
- }
+Index: longterm-2.6.27/net/sunrpc/clnt.c
+===================================================================
+--- longterm-2.6.27.orig/net/sunrpc/clnt.c	2012-02-05 22:34:33.501914879 +0100
++++ longterm-2.6.27/net/sunrpc/clnt.c	2012-02-05 22:34:41.957914825 +0100
+@@ -955,6 +955,9 @@
+ 			status = -EOPNOTSUPP;
+ 			break;
+ 		}
++		if (task->tk_rebind_retry == 0)
++			break;
++		task->tk_rebind_retry--;
+ 		rpc_delay(task, 3*HZ);
+ 		goto retry_timeout;
+ 	case -ETIMEDOUT:
+Index: longterm-2.6.27/net/sunrpc/sched.c
+===================================================================
+--- longterm-2.6.27.orig/net/sunrpc/sched.c	2012-02-05 22:34:33.505915115 +0100
++++ longterm-2.6.27/net/sunrpc/sched.c	2012-02-05 22:34:41.963916236 +0100
+@@ -786,6 +786,7 @@
+ 	/* Initialize retry counters */
+ 	task->tk_garb_retry = 2;
+ 	task->tk_cred_retry = 2;
++	task->tk_rebind_retry = 2;
+ 
+ 	task->tk_priority = task_setup_data->priority - RPC_PRIORITY_LOW;
+ 	task->tk_owner = current->tgid;
 
 
