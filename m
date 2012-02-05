@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab2BEW0t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:26:49 -0500
-Received: from 1wt.eu ([62.212.114.60]:62030 "EHLO 1wt.eu"
+	id S1754764Ab2BEWjf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:39:35 -0500
+Received: from 1wt.eu ([62.212.114.60]:62048 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754314Ab2BEW0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:44 -0500
-Message-Id: <20120205220952.314304561@pcw.home.local>
+	id S1754381Ab2BEW0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:48 -0500
+Message-Id: <20120205220952.019376250@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:56 +0100
+Date: Sun, 05 Feb 2012 23:10:49 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        =?ISO-8859-15?q?Moritz=20M=FChlenhoff?= <jmm@inutil.org>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 67/91] offb: Fix bug in calculating requested vram size
+Subject: [PATCH 60/91] Make TASKSTATS require root access
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,29 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit c055fe0797b7bd8f6f21a13598a55a16d5c13ae7 upstream.
+commit 1a51410abe7d0ee4b1d112780f46df87d3621043 upstream.
 
-We used to try to request 8 times more vram than needed, which would
-fail if the card has a too small BAR (observed with qemu & kvm).
+Ok, this isn't optimal, since it means that 'iotop' needs admin
+capabilities, and we may have to work on this some more.  But at the
+same time it is very much not acceptable to let anybody just read
+anybody elses IO statistics quite at this level.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Use of the GENL_ADMIN_PERM suggested by Johannes Berg as an alternative
+to checking the capabilities by hand.
+
+Reported-by: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Johannes Berg <johannes.berg@intel.com>
+Acked-by: Balbir Singh <bsingharora@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Moritz Mühlenhoff <jmm@inutil.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/video/offb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/taskstats.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Index: longterm-2.6.27/drivers/video/offb.c
+Index: longterm-2.6.27/kernel/taskstats.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/video/offb.c	2012-02-05 22:34:44.268915456 +0100
-+++ longterm-2.6.27/drivers/video/offb.c	2012-02-05 22:34:44.406915262 +0100
-@@ -368,7 +368,7 @@
- 				int pitch, unsigned long address,
- 				int foreign_endian, struct device_node *dp)
- {
--	unsigned long res_size = pitch * height * (depth + 7) / 8;
-+	unsigned long res_size = pitch * height;
- 	struct offb_par *par = &default_par;
- 	unsigned long res_start = address;
- 	struct fb_fix_screeninfo *fix;
+--- longterm-2.6.27.orig/kernel/taskstats.c	2012-02-05 22:34:33.153915196 +0100
++++ longterm-2.6.27/kernel/taskstats.c	2012-02-05 22:34:43.419915481 +0100
+@@ -574,6 +574,7 @@
+ 	.cmd		= TASKSTATS_CMD_GET,
+ 	.doit		= taskstats_user_cmd,
+ 	.policy		= taskstats_cmd_get_policy,
++	.flags		= GENL_ADMIN_PERM,
+ };
+ 
+ static struct genl_ops cgroupstats_ops = {
 
 
