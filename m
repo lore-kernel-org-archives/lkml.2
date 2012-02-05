@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab2BEWnj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:43:39 -0500
-Received: from 1wt.eu ([62.212.114.60]:61900 "EHLO 1wt.eu"
+	id S1753849Ab2BEW0V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:26:21 -0500
+Received: from 1wt.eu ([62.212.114.60]:61800 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753859Ab2BEW0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:23 -0500
-Message-Id: <20120205220951.077338767@pcw.home.local>
+	id S1753238Ab2BEW0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:06 -0500
+Message-Id: <20120205220949.578775063@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:27 +0100
+Date: Sun, 05 Feb 2012 23:09:52 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Takashi Iwai <tiwai@suse.de>, Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 38/91] ALSA: timer - Fix Oops at closing slave timer
+Cc: David Rientjes <rientjes@google.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 03/91] set memory ranges in N_NORMAL_MEMORY when onlined
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,32 +24,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 0584ffa548b6e59aceb027112f23a55f0133400e upstream.
+commit d9b41e0b54fd7e164daf1e9c539c1070398aa02e upstream.
 
-A slave-timer instance has no timer reference, and this results in
-NULL-dereference at stopping the timer, typically called at closing
-the device.
+When a DISCONTIGMEM memory range is brought online as a NUMA node, it
+also needs to have its bet set in N_NORMAL_MEMORY.  This is necessary for
+generic kernel code that utilizes N_NORMAL_MEMORY as a subset of N_ONLINE
+for memory savings.
 
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=40682
+These types of hacks can hopefully be removed once DISCONTIGMEM is either
+removed or abstracted away from CONFIG_NUMA.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes a panic in the slub code which only initializes structures for
+N_NORMAL_MEMORY to save memory:
+
+	Backtrace:
+	 [<000000004021c938>] add_partial+0x28/0x98
+	 [<000000004021faa0>] __slab_free+0x1d0/0x1d8
+	 [<000000004021fd04>] kmem_cache_free+0xc4/0x128
+	 [<000000004033bf9c>] ida_get_new_above+0x21c/0x2c0
+	 [<00000000402a8980>] sysfs_new_dirent+0xd0/0x238
+	 [<00000000402a974c>] create_dir+0x5c/0x168
+	 [<00000000402a9ab0>] sysfs_create_dir+0x98/0x128
+	 [<000000004033d6c4>] kobject_add_internal+0x114/0x258
+	 [<000000004033d9ac>] kobject_add_varg+0x7c/0xa0
+	 [<000000004033df20>] kobject_add+0x50/0x90
+	 [<000000004033dfb4>] kobject_create_and_add+0x54/0xc8
+	 [<00000000407862a0>] cgroup_init+0x138/0x1f0
+	 [<000000004077ce50>] start_kernel+0x5a0/0x840
+	 [<000000004011fa3c>] start_parisc+0xa4/0xb8
+	 [<00000000404bb034>] packet_ioctl+0x16c/0x208
+	 [<000000004049ac30>] ip_mroute_setsockopt+0x260/0xf20
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- sound/core/timer.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/parisc/mm/init.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Index: longterm-2.6.27/sound/core/timer.c
+Index: longterm-2.6.27/arch/parisc/mm/init.c
 ===================================================================
---- longterm-2.6.27.orig/sound/core/timer.c	2012-02-05 22:34:33.866915229 +0100
-+++ longterm-2.6.27/sound/core/timer.c	2012-02-05 22:34:40.244919877 +0100
-@@ -527,6 +527,8 @@
- 	if (err < 0)
- 		return err;
- 	timer = timeri->timer;
-+	if (!timer)
-+		return -EINVAL;
- 	spin_lock_irqsave(&timer->lock, flags);
- 	timeri->cticks = timeri->ticks;
- 	timeri->pticks = 0;
+--- longterm-2.6.27.orig/arch/parisc/mm/init.c	2012-02-05 22:34:34.989914901 +0100
++++ longterm-2.6.27/arch/parisc/mm/init.c	2012-02-05 22:34:35.362915231 +0100
+@@ -265,8 +265,10 @@
+ 	}
+ 	memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
+ 
+-	for (i = 0; i < npmem_ranges; i++)
++	for (i = 0; i < npmem_ranges; i++) {
++		node_set_state(i, N_NORMAL_MEMORY);
+ 		node_set_online(i);
++	}
+ #endif
+ 
+ 	/*
 
 
