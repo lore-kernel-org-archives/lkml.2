@@ -1,398 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab2BEGhQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 01:37:16 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54069 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab2BEGhO (ORCPT
+	id S1752228Ab2BEGxl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 01:53:41 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:49384 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab2BEGxk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 01:37:14 -0500
-Date: Sun, 5 Feb 2012 06:37:10 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Joe Thornber <thornber@redhat.com>
-Cc: Neil Brown <neilb@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH] namespace conflict - struct node
-Message-ID: <20120205063710.GC23916@ZenIV.linux.org.uk>
+	Sun, 5 Feb 2012 01:53:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMO-S2joH0fwEyOOCSFGM+Lc=xgiarNxm3Rj9DgWJNeoRD+QRQ@mail.gmail.com>
+References: <20120121082857.GC32134@elte.hu>
+	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+	<20120121165830.GA9216@elte.hu>
+	<CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+	<CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
+	<CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
+	<CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
+	<20120131115855.5861bad7@pyramind.ukuu.org.uk>
+	<20120131120922.GD32010@elte.hu>
+	<20120131121820.58a1db97@pyramind.ukuu.org.uk>
+	<20120131122339.GG32010@elte.hu>
+	<CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
+	<1328144756.2768.57.camel@dabdike.int.hansenpartnership.com>
+	<4F2AA642.1030400@linux.intel.com>
+	<CAMO-S2joH0fwEyOOCSFGM+Lc=xgiarNxm3Rj9DgWJNeoRD+QRQ@mail.gmail.com>
+Date: Sun, 5 Feb 2012 07:53:39 +0100
+X-Google-Sender-Auth: A3Od6HM0Vxs-wdyHa_YQKeAuAjk
+Message-ID: <CAMuHMdXvv_fvaUq_64_kOHCJ4+04uM_iw7aYxwOPU-Tg+g00-A@mail.gmail.com>
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Hitoshi Mitake <h.mitake@gmail.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-include/linux/node.h vs. drivers/md/persistent-data; IMO the former should
-be the one to keep name, since it's less local.
+On Sat, Feb 4, 2012 at 16:39, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>> I worked myself on a driver (which sadly never shipped) which had an WC
+>> window and a UC window... the final write in a series had a completion bit
+>> in it and would go to the UC window after setting up a whole chunk of
+>> operations in the WC window (writing UC memory flushes WC memory ahead of
+>> it.)
+>>
+>> Thus, the two-part breakdown of writeq() to the UC window had to write the
+>> low half to the WC window instead.  This is clearly not generic.
+>
+> Because of my ignorant, I don't know the words "UC window" and "WC window"
+> in this context. Could you teach me?
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+UN = uncached, WC = writecombining.
 
-diff --git a/drivers/md/persistent-data/dm-btree-internal.h b/drivers/md/persistent-data/dm-btree-internal.h
-index d279c76..acba54e 100644
---- a/drivers/md/persistent-data/dm-btree-internal.h
-+++ b/drivers/md/persistent-data/dm-btree-internal.h
-@@ -36,13 +36,13 @@ struct node_header {
- 	__le32 padding;
- } __packed;
- 
--struct node {
-+struct btree_node {
- 	struct node_header header;
- 	__le64 keys[0];
- } __packed;
- 
- 
--void inc_children(struct dm_transaction_manager *tm, struct node *n,
-+void inc_children(struct dm_transaction_manager *tm, struct btree_node *n,
- 		  struct dm_btree_value_type *vt);
- 
- int new_block(struct dm_btree_info *info, struct dm_block **result);
-@@ -64,7 +64,7 @@ struct ro_spine {
- void init_ro_spine(struct ro_spine *s, struct dm_btree_info *info);
- int exit_ro_spine(struct ro_spine *s);
- int ro_step(struct ro_spine *s, dm_block_t new_child);
--struct node *ro_node(struct ro_spine *s);
-+struct btree_node *ro_node(struct ro_spine *s);
- 
- struct shadow_spine {
- 	struct dm_btree_info *info;
-@@ -98,12 +98,12 @@ int shadow_root(struct shadow_spine *s);
- /*
-  * Some inlines.
-  */
--static inline __le64 *key_ptr(struct node *n, uint32_t index)
-+static inline __le64 *key_ptr(struct btree_node *n, uint32_t index)
- {
- 	return n->keys + index;
- }
- 
--static inline void *value_base(struct node *n)
-+static inline void *value_base(struct btree_node *n)
- {
- 	return &n->keys[le32_to_cpu(n->header.max_entries)];
- }
-@@ -111,7 +111,7 @@ static inline void *value_base(struct node *n)
- /*
-  * FIXME: Now that value size is stored in node we don't need the third parm.
-  */
--static inline void *value_ptr(struct node *n, uint32_t index, size_t value_size)
-+static inline void *value_ptr(struct btree_node *n, uint32_t index, size_t value_size)
- {
- 	BUG_ON(value_size != le32_to_cpu(n->header.value_size));
- 	return value_base(n) + (value_size * index);
-@@ -120,7 +120,7 @@ static inline void *value_ptr(struct node *n, uint32_t index, size_t value_size)
- /*
-  * Assumes the values are suitably-aligned and converts to core format.
-  */
--static inline uint64_t value64(struct node *n, uint32_t index)
-+static inline uint64_t value64(struct btree_node *n, uint32_t index)
- {
- 	__le64 *values_le = value_base(n);
- 
-@@ -130,7 +130,7 @@ static inline uint64_t value64(struct node *n, uint32_t index)
- /*
-  * Searching for a key within a single node.
-  */
--int lower_bound(struct node *n, uint64_t key);
-+int lower_bound(struct btree_node *n, uint64_t key);
- 
- extern struct dm_block_validator btree_node_validator;
- 
-diff --git a/drivers/md/persistent-data/dm-btree-remove.c b/drivers/md/persistent-data/dm-btree-remove.c
-index 023fbc2..1a589bf 100644
---- a/drivers/md/persistent-data/dm-btree-remove.c
-+++ b/drivers/md/persistent-data/dm-btree-remove.c
-@@ -53,7 +53,7 @@
- /*
-  * Some little utilities for moving node data around.
-  */
--static void node_shift(struct node *n, int shift)
-+static void node_shift(struct btree_node *n, int shift)
- {
- 	uint32_t nr_entries = le32_to_cpu(n->header.nr_entries);
- 	uint32_t value_size = le32_to_cpu(n->header.value_size);
-@@ -79,7 +79,7 @@ static void node_shift(struct node *n, int shift)
- 	}
- }
- 
--static void node_copy(struct node *left, struct node *right, int shift)
-+static void node_copy(struct btree_node *left, struct btree_node *right, int shift)
- {
- 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
- 	uint32_t value_size = le32_to_cpu(left->header.value_size);
-@@ -108,7 +108,7 @@ static void node_copy(struct node *left, struct node *right, int shift)
- /*
-  * Delete a specific entry from a leaf node.
-  */
--static void delete_at(struct node *n, unsigned index)
-+static void delete_at(struct btree_node *n, unsigned index)
- {
- 	unsigned nr_entries = le32_to_cpu(n->header.nr_entries);
- 	unsigned nr_to_copy = nr_entries - (index + 1);
-@@ -128,12 +128,12 @@ static void delete_at(struct node *n, unsigned index)
- 	n->header.nr_entries = cpu_to_le32(nr_entries - 1);
- }
- 
--static unsigned del_threshold(struct node *n)
-+static unsigned del_threshold(struct btree_node *n)
- {
- 	return le32_to_cpu(n->header.max_entries) / 3;
- }
- 
--static unsigned merge_threshold(struct node *n)
-+static unsigned merge_threshold(struct btree_node *n)
- {
- 	/*
- 	 * The extra one is because we know we're potentially going to
-@@ -145,7 +145,7 @@ static unsigned merge_threshold(struct node *n)
- struct child {
- 	unsigned index;
- 	struct dm_block *block;
--	struct node *n;
-+	struct btree_node *n;
- };
- 
- static struct dm_btree_value_type le64_type = {
-@@ -156,7 +156,7 @@ static struct dm_btree_value_type le64_type = {
- 	.equal = NULL
- };
- 
--static int init_child(struct dm_btree_info *info, struct node *parent,
-+static int init_child(struct dm_btree_info *info, struct btree_node *parent,
- 		      unsigned index, struct child *result)
- {
- 	int r, inc;
-@@ -186,7 +186,7 @@ static int exit_child(struct dm_btree_info *info, struct child *c)
- 	return dm_tm_unlock(info->tm, c->block);
- }
- 
--static void shift(struct node *left, struct node *right, int count)
-+static void shift(struct btree_node *left, struct btree_node *right, int count)
- {
- 	if (!count)
- 		return;
-@@ -208,11 +208,11 @@ static void shift(struct node *left, struct node *right, int count)
- 	BUG_ON(le32_to_cpu(right->header.nr_entries) > le32_to_cpu(right->header.max_entries));
- }
- 
--static void __rebalance2(struct dm_btree_info *info, struct node *parent,
-+static void __rebalance2(struct dm_btree_info *info, struct btree_node *parent,
- 			 struct child *l, struct child *r)
- {
--	struct node *left = l->n;
--	struct node *right = r->n;
-+	struct btree_node *left = l->n;
-+	struct btree_node *right = r->n;
- 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
- 	uint32_t nr_right = le32_to_cpu(right->header.nr_entries);
- 
-@@ -246,7 +246,7 @@ static int rebalance2(struct shadow_spine *s, struct dm_btree_info *info,
- 		      unsigned left_index)
- {
- 	int r;
--	struct node *parent;
-+	struct btree_node *parent;
- 	struct child left, right;
- 
- 	parent = dm_block_data(shadow_current(s));
-@@ -272,12 +272,12 @@ static int rebalance2(struct shadow_spine *s, struct dm_btree_info *info,
- 	return exit_child(info, &right);
- }
- 
--static void __rebalance3(struct dm_btree_info *info, struct node *parent,
-+static void __rebalance3(struct dm_btree_info *info, struct btree_node *parent,
- 			 struct child *l, struct child *c, struct child *r)
- {
--	struct node *left = l->n;
--	struct node *center = c->n;
--	struct node *right = r->n;
-+	struct btree_node *left = l->n;
-+	struct btree_node *center = c->n;
-+	struct btree_node *right = r->n;
- 
- 	uint32_t nr_left = le32_to_cpu(left->header.nr_entries);
- 	uint32_t nr_center = le32_to_cpu(center->header.nr_entries);
-@@ -344,7 +344,7 @@ static int rebalance3(struct shadow_spine *s, struct dm_btree_info *info,
- 		      unsigned left_index)
- {
- 	int r;
--	struct node *parent = dm_block_data(shadow_current(s));
-+	struct btree_node *parent = dm_block_data(shadow_current(s));
- 	struct child left, center, right;
- 
- 	/*
-@@ -394,7 +394,7 @@ static int get_nr_entries(struct dm_transaction_manager *tm,
- {
- 	int r;
- 	struct dm_block *block;
--	struct node *n;
-+	struct btree_node *n;
- 
- 	r = dm_tm_read_lock(tm, b, &btree_node_validator, &block);
- 	if (r)
-@@ -411,7 +411,7 @@ static int rebalance_children(struct shadow_spine *s,
- {
- 	int i, r, has_left_sibling, has_right_sibling;
- 	uint32_t child_entries;
--	struct node *n;
-+	struct btree_node *n;
- 
- 	n = dm_block_data(shadow_current(s));
- 
-@@ -459,7 +459,7 @@ static int rebalance_children(struct shadow_spine *s,
- 	return r;
- }
- 
--static int do_leaf(struct node *n, uint64_t key, unsigned *index)
-+static int do_leaf(struct btree_node *n, uint64_t key, unsigned *index)
- {
- 	int i = lower_bound(n, key);
- 
-@@ -482,7 +482,7 @@ static int remove_raw(struct shadow_spine *s, struct dm_btree_info *info,
- 		      uint64_t key, unsigned *index)
- {
- 	int i = *index, r;
--	struct node *n;
-+	struct btree_node *n;
- 
- 	for (;;) {
- 		r = shadow_step(s, root, vt);
-@@ -532,7 +532,7 @@ int dm_btree_remove(struct dm_btree_info *info, dm_block_t root,
- 	unsigned level, last_level = info->levels - 1;
- 	int index = 0, r = 0;
- 	struct shadow_spine spine;
--	struct node *n;
-+	struct btree_node *n;
- 
- 	init_shadow_spine(&spine, info);
- 	for (level = 0; level < info->levels; level++) {
-diff --git a/drivers/md/persistent-data/dm-btree-spine.c b/drivers/md/persistent-data/dm-btree-spine.c
-index d9a7912..2f0805c 100644
---- a/drivers/md/persistent-data/dm-btree-spine.c
-+++ b/drivers/md/persistent-data/dm-btree-spine.c
-@@ -23,7 +23,7 @@ static void node_prepare_for_write(struct dm_block_validator *v,
- 				   struct dm_block *b,
- 				   size_t block_size)
- {
--	struct node *n = dm_block_data(b);
-+	struct btree_node *n = dm_block_data(b);
- 	struct node_header *h = &n->header;
- 
- 	h->blocknr = cpu_to_le64(dm_block_location(b));
-@@ -38,7 +38,7 @@ static int node_check(struct dm_block_validator *v,
- 		      struct dm_block *b,
- 		      size_t block_size)
- {
--	struct node *n = dm_block_data(b);
-+	struct btree_node *n = dm_block_data(b);
- 	struct node_header *h = &n->header;
- 	size_t value_size;
- 	__le32 csum_disk;
-@@ -164,7 +164,7 @@ int ro_step(struct ro_spine *s, dm_block_t new_child)
- 	return r;
- }
- 
--struct node *ro_node(struct ro_spine *s)
-+struct btree_node *ro_node(struct ro_spine *s)
- {
- 	struct dm_block *block;
- 
-diff --git a/drivers/md/persistent-data/dm-btree.c b/drivers/md/persistent-data/dm-btree.c
-index bd1e7ff..bbb2ec5 100644
---- a/drivers/md/persistent-data/dm-btree.c
-+++ b/drivers/md/persistent-data/dm-btree.c
-@@ -38,7 +38,7 @@ static void array_insert(void *base, size_t elt_size, unsigned nr_elts,
- /*----------------------------------------------------------------*/
- 
- /* makes the assumption that no two keys are the same. */
--static int bsearch(struct node *n, uint64_t key, int want_hi)
-+static int bsearch(struct btree_node *n, uint64_t key, int want_hi)
- {
- 	int lo = -1, hi = le32_to_cpu(n->header.nr_entries);
- 
-@@ -58,12 +58,12 @@ static int bsearch(struct node *n, uint64_t key, int want_hi)
- 	return want_hi ? hi : lo;
- }
- 
--int lower_bound(struct node *n, uint64_t key)
-+int lower_bound(struct btree_node *n, uint64_t key)
- {
- 	return bsearch(n, key, 0);
- }
- 
--void inc_children(struct dm_transaction_manager *tm, struct node *n,
-+void inc_children(struct dm_transaction_manager *tm, struct btree_node *n,
- 		  struct dm_btree_value_type *vt)
- {
- 	unsigned i;
-@@ -78,7 +78,7 @@ void inc_children(struct dm_transaction_manager *tm, struct node *n,
- 				value_ptr(n, i, vt->size));
- }
- 
--static int insert_at(size_t value_size, struct node *node, unsigned index,
-+static int insert_at(size_t value_size, struct btree_node *node, unsigned index,
- 		      uint64_t key, void *value)
- 		      __dm_written_to_disk(value)
- {
-@@ -123,7 +123,7 @@ int dm_btree_empty(struct dm_btree_info *info, dm_block_t *root)
- {
- 	int r;
- 	struct dm_block *b;
--	struct node *n;
-+	struct btree_node *n;
- 	size_t block_size;
- 	uint32_t max_entries;
- 
-@@ -155,7 +155,7 @@ EXPORT_SYMBOL_GPL(dm_btree_empty);
- #define MAX_SPINE_DEPTH 64
- struct frame {
- 	struct dm_block *b;
--	struct node *n;
-+	struct btree_node *n;
- 	unsigned level;
- 	unsigned nr_children;
- 	unsigned current_child;
-@@ -296,7 +296,7 @@ EXPORT_SYMBOL_GPL(dm_btree_del);
- /*----------------------------------------------------------------*/
- 
- static int btree_lookup_raw(struct ro_spine *s, dm_block_t block, uint64_t key,
--			    int (*search_fn)(struct node *, uint64_t),
-+			    int (*search_fn)(struct btree_node *, uint64_t),
- 			    uint64_t *result_key, void *v, size_t value_size)
- {
- 	int i, r;
-@@ -407,7 +407,7 @@ static int btree_split_sibling(struct shadow_spine *s, dm_block_t root,
- 	size_t size;
- 	unsigned nr_left, nr_right;
- 	struct dm_block *left, *right, *parent;
--	struct node *ln, *rn, *pn;
-+	struct btree_node *ln, *rn, *pn;
- 	__le64 location;
- 
- 	left = shadow_current(s);
-@@ -492,7 +492,7 @@ static int btree_split_beneath(struct shadow_spine *s, uint64_t key)
- 	size_t size;
- 	unsigned nr_left, nr_right;
- 	struct dm_block *left, *right, *new_parent;
--	struct node *pn, *ln, *rn;
-+	struct btree_node *pn, *ln, *rn;
- 	__le64 val;
- 
- 	new_parent = shadow_current(s);
-@@ -577,7 +577,7 @@ static int btree_insert_raw(struct shadow_spine *s, dm_block_t root,
- 			    uint64_t key, unsigned *index)
- {
- 	int r, i = *index, top = 1;
--	struct node *node;
-+	struct btree_node *node;
- 
- 	for (;;) {
- 		r = shadow_step(s, root, vt);
-@@ -644,7 +644,7 @@ static int insert(struct dm_btree_info *info, dm_block_t root,
- 	unsigned level, index = -1, last_level = info->levels - 1;
- 	dm_block_t block = root;
- 	struct shadow_spine spine;
--	struct node *n;
-+	struct btree_node *n;
- 	struct dm_btree_value_type le64_type;
- 
- 	le64_type.context = NULL;
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
