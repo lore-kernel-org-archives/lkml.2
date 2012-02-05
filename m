@@ -1,44 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab2BEWpL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:45:11 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:54019 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296Ab2BEWpE (ORCPT
+	id S1754831Ab2BEWpx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:45:53 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:43931 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753977Ab2BEWpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:45:04 -0500
-Message-ID: <4F2F0669.3000601@redhat.com>
-Date: Sun, 05 Feb 2012 23:44:57 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.kernel.stable,gmane.linux.scsi
-To: Willy Tarreau <w@1wt.eu>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 90/91] block: fail SCSI passthrough ioctls on partition
- devices
-References: <0635750f5f06ed2ca212b91fcb5c4483@local> <20120205220953.312427771@pcw.home.local>
-In-Reply-To: <20120205220953.312427771@pcw.home.local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 5 Feb 2012 17:45:50 -0500
+Date: Sun, 05 Feb 2012 17:45:42 -0500 (EST)
+Message-Id: <20120205.174542.1546750618491915970.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: kys@microsoft.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] net/hyperv: Convert camel cased variables in
+ rndis_filter.c to lower cases
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1328479990-1436-1-git-send-email-haiyangz@microsoft.com>
+References: <1328479990-1436-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 05 Feb 2012 14:45:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2012 11:11 PM, Willy Tarreau wrote:
-> Signed-off-by: Ben Hutchings<ben@decadent.org.uk>
-> Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
-> [wt: no scsi_cmd_blk_ioctl in 2.6.27, change callers instead. cciss is OK,
->   ub,virtio_blk,ide-floppy,sd need fixing, cdrom&st can be ignored ]
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Sun,  5 Feb 2012 14:13:08 -0800
 
-NACK, you aren't fixing virtio-blk to call scsi_verify_blk_ioctl, are you?
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-You need to backport the patch that introduced scsi_cmd_blk_ioctl, 
-which, in fact was in the same patch series as this one.
-
-Paolo
+Applied.
