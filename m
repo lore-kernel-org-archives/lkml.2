@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab2BEWcB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:32:01 -0500
-Received: from 1wt.eu ([62.212.114.60]:62149 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754835Ab2BEW1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754854Ab2BEW1O (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 5 Feb 2012 17:27:14 -0500
-Message-Id: <20120205220950.472021223@pcw.home.local>
+Received: from 1wt.eu ([62.212.114.60]:62141 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754538Ab2BEW1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:27:06 -0500
+Message-Id: <20120205220953.132108866@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:13 +0100
+Date: Sun, 05 Feb 2012 23:11:15 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Milton Miller <miltonm@bga.com>, <linuxppc-dev@lists.ozlabs.org>,
+Cc: Jim Bos <jim876@xs4all.nl>, Jakub Jelinek <jakub@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andreas Schwab <schwab@linux-m68k.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Nick Piggin <npiggin@kernel.dk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 24/91] seqlock: Dont smp_rmb in seqlock reader spin loop
+Subject: [PATCH 86/91] Fix gcc 4.5.1 miscompiling drivers/char/i8k.c (again)
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,74 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 5db1256a5131d3b133946fa02ac9770a784e6eb2 upstream.
+commit 22d3243de86bc92d874abb7c5b185d5c47aba323 upstream.
 
-Move the smp_rmb after cpu_relax loop in read_seqlock and add
-ACCESS_ONCE to make sure the test and return are consistent.
+The fix in commit 6b4e81db2552 ("i8k: Tell gcc that *regs gets
+clobbered") to work around the gcc miscompiling i8k.c to add "+m
+(*regs)" caused register pressure problems and a build failure.
 
-A multi-threaded core in the lab didn't like the update
-from 2.6.35 to 2.6.36, to the point it would hang during
-boot when multiple threads were active.  Bisection showed
-af5ab277ded04bd9bc6b048c5a2f0e7d70ef0867 (clockevents:
-Remove the per cpu tick skew) as the culprit and it is
-supported with stack traces showing xtime_lock waits including
-tick_do_update_jiffies64 and/or update_vsyscall.
+Changing the 'asm' statement to 'asm volatile' instead should prevent
+that and works around the gcc bug as well, so we can remove the "+m".
 
-Experimentation showed the combination of cpu_relax and smp_rmb
-was significantly slowing the progress of other threads sharing
-the core, and this patch is effective in avoiding the hang.
+[ Background on the gcc bug: a memory clobber fails to mark the function
+  the asm resides in as non-pure (aka "__attribute__((const))"), so if
+  the function does nothing else that triggers the non-pure logic, gcc
+  will think that that function has no side effects at all. As a result,
+  callers will be mis-compiled.
 
-A theory is the rmb is affecting the whole core while the
-cpu_relax is causing a resource rebalance flush, together they
-cause an interfernce cadance that is unbroken when the seqlock
-reader has interrupts disabled.
+  Adding the "+m" made gcc see that it's not a pure function, and so
+  does "asm volatile". The problem was never really the need to mark
+  "*regs" as changed, since the memory clobber did that part - the
+  problem was just a bug in the gcc "pure" function analysis  - Linus ]
 
-At first I was confused why the refactor in
-3c22cd5709e8143444a6d08682a87f4c57902df3 (kernel: optimise
-seqlock) didn't affect this patch application, but after some
-study that affected seqcount not seqlock. The new seqcount was
-not factored back into the seqlock.  I defer that the future.
-
-While the removal of the timer interrupt offset created
-contention for the xtime lock while a cpu does the
-additonal work to update the system clock, the seqlock
-implementation with the tight rmb spin loop goes back much
-further, and is just waiting for the right trigger.
-
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Cc: <linuxppc-dev@lists.ozlabs.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jim Bos <jim876@xs4all.nl>
+Acked-by: Jakub Jelinek <jakub@redhat.com>
 Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Anton Blanchard <anton@samba.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Link: http://lkml.kernel.org/r/%3Cseqlock-rmb%40mdm.bga.com%3E
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/seqlock.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/char/i8k.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Index: longterm-2.6.27/include/linux/seqlock.h
+Index: longterm-2.6.27/drivers/char/i8k.c
 ===================================================================
---- longterm-2.6.27.orig/include/linux/seqlock.h	2012-02-05 22:34:34.295914918 +0100
-+++ longterm-2.6.27/include/linux/seqlock.h	2012-02-05 22:34:38.288914818 +0100
-@@ -88,12 +88,12 @@
- 	unsigned ret;
+--- longterm-2.6.27.orig/drivers/char/i8k.c	2012-02-05 22:34:47.002916726 +0100
++++ longterm-2.6.27/drivers/char/i8k.c	2012-02-05 22:34:47.136914619 +0100
+@@ -119,7 +119,7 @@
+ 	int eax = regs->eax;
  
- repeat:
--	ret = sl->sequence;
--	smp_rmb();
-+	ret = ACCESS_ONCE(sl->sequence);
- 	if (unlikely(ret & 1)) {
- 		cpu_relax();
- 		goto repeat;
- 	}
-+	smp_rmb();
- 
- 	return ret;
- }
+ #if defined(CONFIG_X86_64)
+-	asm("pushq %%rax\n\t"
++	asm volatile("pushq %%rax\n\t"
+ 		"movl 0(%%rax),%%edx\n\t"
+ 		"pushq %%rdx\n\t"
+ 		"movl 4(%%rax),%%ebx\n\t"
+@@ -141,11 +141,11 @@
+ 		"lahf\n\t"
+ 		"shrl $8,%%eax\n\t"
+ 		"andl $1,%%eax\n"
+-		:"=a"(rc), "+m" (*regs)
++		:"=a"(rc)
+ 		:    "a"(regs)
+ 		:    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+ #else
+-	asm("pushl %%eax\n\t"
++	asm volatile("pushl %%eax\n\t"
+ 	    "movl 0(%%eax),%%edx\n\t"
+ 	    "push %%edx\n\t"
+ 	    "movl 4(%%eax),%%ebx\n\t"
+@@ -167,7 +167,7 @@
+ 	    "lahf\n\t"
+ 	    "shrl $8,%%eax\n\t"
+ 	    "andl $1,%%eax\n"
+-	    :"=a"(rc), "+m" (*regs)
++	    :"=a"(rc)
+ 	    :    "a"(regs)
+ 	    :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+ #endif
 
 
