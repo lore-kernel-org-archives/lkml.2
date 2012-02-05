@@ -1,165 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab2BELqa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 06:46:30 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39431 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab2BELq2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 06:46:28 -0500
-MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <4F2AAEB9.9070302@tilera.com>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
-	<1327591185.2446.102.camel@twins>
-	<CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
-	<20120201170443.GE6731@somewhere.redhat.com>
-	<CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
-	<4F2AAEB9.9070302@tilera.com>
-Date: Sun, 5 Feb 2012 13:46:25 +0200
-Message-ID: <CAOtvUMfE3xpwmRKnFPTsstr3SuUG7SnpWn5eomEQzkap4_nfrg@mail.gmail.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+	id S1754909Ab2BELsE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 06:48:04 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46249 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753289Ab2BELsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 06:48:02 -0500
+Date: Sun, 5 Feb 2012 12:47:51 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Jason Baron <jbaron@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 0/5 v2] [GIT PULL] x86/jump label: Paranoid checks and 2
+ or 5 byte nops
+Message-ID: <20120205114751.GA27049@elte.hu>
+References: <1327936060.22710.165.camel@gandalf.stny.rr.com>
+ <20120131194813.GA12074@elte.hu>
+ <1328072925.5882.57.camel@gandalf.stny.rr.com>
+ <20120201080539.GA11770@elte.hu>
+ <1328109697.5882.65.camel@gandalf.stny.rr.com>
+ <20120202135154.GA10315@elte.hu>
+ <4F2A9960.2090500@zytor.com>
+ <1328193068.5882.95.camel@gandalf.stny.rr.com>
+ <20120203073632.GB30543@elte.hu>
+ <1328275874.5882.137.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328275874.5882.137.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 2, 2012 at 5:41 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> On 2/2/2012 3:46 AM, Gilad Ben-Yossef wrote:
->
->> Yes, that is what drives me as well. I have a bare metal program
->> I'm trying to kill here, I researched CPU isolation and ran into your
->> nohz patch set and asked myself: "OK, if we disable the tick what else
->> is on the way?"
->
-> At Tilera we have been supporting a "dataplane" mode (aka Zero Overhead
-> Linux - the marketing name).  This is configured on a per-cpu basis, and in
-> addition to setting isolcpus for those nodes, also suppresses various
-> things that might otherwise run (soft lockup detection, vmstat work,
-> etc.).  The claim is that you need to specify these kinds of things
-> per-core since it's not always possible for the kernel to know that you
-> really don't want the scheduler or any other interrupt source to touch the
-> core, as opposed to the case where you just happen to have a single process
-> scheduled on the core and you don't mind occasional interrupts.  But
-> there's definitely appeal in having the kernel do it adaptively too,
-> particularly if it can be made to work just as well as configuring it
-> statically.
 
-Currently adaptive tick needs to be enabled as a cpuset property in
-order to apply,
-but once enabled it is activated automatically when feasible.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-The combination of per cpuset enabling and automatic activation makes
-sense to me
-since cpuset is the way to go to isolate cpus for specific tasks going forward.
->
-> We also have a set_dataplane() syscall that a task can make to allow it to
-> request some additional semantics from the kernel, such as various
-> debugging modes, a flag to request populating the page table fully, and a
-> flag to request that all pending kernel timer ticks, etc., happen while the
-> task spins in the kernel before actually returning to userspace from a
-> syscall (so you don't get unexpected interrupts once you're back in
-> userspace).
+> On Fri, 2012-02-03 at 08:36 +0100, Ingo Molnar wrote:
+> > * Steven Rostedt <rostedt@goodmis.org> wrote:
+> > 
+> > > Now I'm running a ktest bisect on the out-of-tree branch to 
+> > > find the commit that prevents this box from booting. [...]
+> > 
+> > Let me know once you have found that and are able to boot -tip 
+> > with your new bits applied. tip:out-of-tree needs definitely 
+> > needs a cleanup - I'll probably even make it internal to my 
+> > testing to not uglify tip:master.
+> 
+> Found it. I found this once before, but couldn't find it when I looked,
+> but it was still there :-/
+> 
+> Anyway, here's the commit that prevents my box from booting:
+> 
+> commit 41e95d95208c62d4b0fbcee5f16d93e23ca32984
+> Author: Ingo Molnar <mingo@elte.hu>
+> Date:   Thu Sep 17 23:12:20 2009 +0200
+> 
+>     <not-for-merge> Disable DEVTMPFS_MOUNT for now
+> 
+> 
+> It seems that this box requires DEVTMPFS_MOUNT to be set in 
+> order to boot.
 
-Oohh.. I like that :-)
+Hm, silly userspace, because the *enabling* of this option can 
+break existing setups as well:
 
-> I've appended the relevant bits of <asm/dataplane.h> for more
-> details.
->
-> We've been planning to start working with the community on returning this,
-> but since fiddling with the scheduler is pretty tricky stuff and it wasn't
-> clear there was a lot of interest, we've been deferring it in favor of
-> other activities.  But seeing more about Frederic Weisbecker's and Gilad
-> Ben-Yossef's work makes me think that it might be a good time for us to
-> start that process.  For a start I'll see about putting up a git branch on
-> kernel.org that has our dataplane stuff in it, for reference.
->
+| Subject: [PATCH] <not-for-merge> Disable DEVTMPFS_MOUNT for now
+|
+| Causing bootup problems - /dev/zero and /dev/null not being there, etc.
+|
+| NOT-Signed-off-by: Ingo Molnar <mingo@elte.hu>
 
-This sounds very interesting. Thanks you!
+You could probably work it around by doing something like:
 
-I for one will be delighted to see that tree as a reference. There is nothing
-I hate more then re-inventing the wheel... :-)
+   mkdir /mnt2
+   mount /dev/root /mnt2
+   cp -a /dev/* /mnt2/
 
-> /*
->  * Quiesce the timer interrupt before returning to user space after a
->  * system call.  Normally if a task on a dataplane core makes a
->  * syscall, the system will run one or more timer ticks after the
->  * syscall has completed, causing unexpected interrupts in userspace.
->  * Setting DP_QUIESCE avoids that problem by having the kernel "hold"
->  * the task in kernel mode until the timer ticks are complete.  This
->  * will make syscalls dramatically slower.
->  *
->  * If multiple dataplane tasks are scheduled on a single core, this
->  * in effect silently disables DP_QUIESCE, which allows the tasks to make
->  * progress, but without actually disabling the timer tick.
->  */
-> #define DP_QUIESCE      0x1
->
-> /*
->  * Disallow the application from entering the kernel in any way,
->  * unless it calls set_dataplane() again without this bit set.
->  * Issuing any other syscall or causing a page fault would generate a
->  * kernel message, and "kill -9" the process.
->  *
->  * Setting this flag automatically sets DP_QUIESCE as well.
->  */
-> #define DP_STRICT       0x2
->
-> /*
->  * Debug dataplane interrupts, so that if any interrupt source
->  * attempts to involve a dataplane cpu, a kernel message and stack
->  * backtrace will be generated on the console.  As this warning is a
->  * slow event, it may make sense to avoid this mode in production code
->  * to avoid making any possible interrupts even more heavyweight.
->  *
->  * Setting this flag automatically sets DP_QUIESCE as well.
->  */
-> #define DP_DEBUG        0x4
->
-> /*
->  * Cause all memory mappings to be populated in the page table.
->  * Specifying this when entering dataplane mode ensures that no future
->  * page fault events will occur to cause interrupts into the Linux
->  * kernel, as long as no new mappings are installed by mmap(), etc.
->  * Note that since the hardware TLB is of finite size, there will
->  * still be the potential for TLB misses that the hypervisor handles,
->  * either via its software TLB cache (fast path) or by walking the
->  * kernel page tables (slow path), so touching large amounts of memory
->  * will still incur hypervisor interrupt overhead.
->  */
-> #define DP_POPULATE     0x8
+this will create the device nodes in /dev and make them 
+available to early userspace even if it could not mount devtmpfs 
+like it used to.
 
-hmm... I've probably missed something, but doesn't this replicate
-mlockall (MCL_CURRENT|MCL_FUTURE) ?
+Thanks,
 
-Thanks!
-Gilad
-
-
-
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+	Ingo
