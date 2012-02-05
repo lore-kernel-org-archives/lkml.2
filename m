@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab2BEW0R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:26:17 -0500
-Received: from 1wt.eu ([62.212.114.60]:61802 "EHLO 1wt.eu"
+	id S1753751Ab2BEWsK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:48:10 -0500
+Received: from 1wt.eu ([62.212.114.60]:61858 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753251Ab2BEW0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:07 -0500
-Message-Id: <20120205220949.493273111@pcw.home.local>
+	id S1753666Ab2BEW0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:17 -0500
+Message-Id: <20120205220949.791917535@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:09:50 +0100
+Date: Sun, 05 Feb 2012 23:09:57 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 01/91] UBIFS: fix master node recovery
+Cc: Ben Dooks <ben-linux@fluff.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chris Ball <cjb@laptop.org>, Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 08/91] mmc: sdhci: Check mrq->cmd in sdhci_tasklet_finish
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,77 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 6e0d9fd38b750d678bf9fd07db23582f52fafa55 upstream.
+commit b7b4d3426d2b5ecab21578eb20d8e456a1aace8f upstream.
 
-This patch fixes the following symptoms:
-1. Unmount UBIFS cleanly.
-2. Start mounting UBIFS R/W and have a power cut immediately
-3. Start mounting UBIFS R/O, this succeeds
-4. Try to re-mount UBIFS R/W - this fails immediately or later on,
-   because UBIFS will write the master node to the flash area
-   which has been written before.
+It seems that under certain circumstances that the sdhci_tasklet_finish()
+call can be entered with mrq->cmd set to NULL, causing the system to crash
+with a NULL pointer de-reference.
 
-The analysis of the problem:
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+PC is at sdhci_tasklet_finish+0x34/0xe8
+LR is at sdhci_tasklet_finish+0x24/0xe8
 
-1. UBIFS is unmounted cleanly, both copies of the master node are clean.
-2. UBIFS is being mounter R/W, starts changing master node copy 1, and
-   a power cut happens. The copy N1 becomes corrupted.
-3. UBIFS is being mounted R/O. It notices the copy N1 is corrupted and
-   reads copy N2. Copy N2 is clean.
-4. Because of R/O mode, UBIFS cannot recover copy 1.
-5. The mount code (ubifs_mount()) sees that the master node is clean,
-   so it decides that no recovery is needed.
-6. We are re-mounting R/W. UBIFS believes no recovery is needed and
-   starts updating the master node, but copy N1 is still corrupted
-   and was not recovered!
+Seen on S3C6410 system.
 
-Fix this problem by marking the master node as dirty every time we
-recover it and we are in R/O mode. This forces further recovery and
-the UBIFS cleans-up the corruptions and recovers the copy N1 when
-re-mounting R/W later.
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: Ben Dooks <ben-linux@fluff.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ubifs/recovery.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+ drivers/mmc/host/sdhci.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Index: longterm-2.6.27/fs/ubifs/recovery.c
+Index: longterm-2.6.27/drivers/mmc/host/sdhci.c
 ===================================================================
---- longterm-2.6.27.orig/fs/ubifs/recovery.c	2012-02-05 22:34:35.037914818 +0100
-+++ longterm-2.6.27/fs/ubifs/recovery.c	2012-02-05 22:34:35.088916370 +0100
-@@ -280,6 +280,32 @@
- 			goto out_free;
- 		}
- 		memcpy(c->rcvrd_mst_node, c->mst_node, UBIFS_MST_NODE_SZ);
-+
-+		/*
-+		 * We had to recover the master node, which means there was an
-+		 * unclean reboot. However, it is possible that the master node
-+		 * is clean at this point, i.e., %UBIFS_MST_DIRTY is not set.
-+		 * E.g., consider the following chain of events:
-+		 *
-+		 * 1. UBIFS was cleanly unmounted, so the master node is clean
-+		 * 2. UBIFS is being mounted R/W and starts changing the master
-+		 *    node in the first (%UBIFS_MST_LNUM). A power cut happens,
-+		 *    so this LEB ends up with some amount of garbage at the
-+		 *    end.
-+		 * 3. UBIFS is being mounted R/O. We reach this place and
-+		 *    recover the master node from the second LEB
-+		 *    (%UBIFS_MST_LNUM + 1). But we cannot update the media
-+		 *    because we are being mounted R/O. We have to defer the
-+		 *    operation.
-+		 * 4. However, this master node (@c->mst_node) is marked as
-+		 *    clean (since the step 1). And if we just return, the
-+		 *    mount code will be confused and won't recover the master
-+		 *    node when it is re-mounter R/W later.
-+		 *
-+		 *    Thus, to force the recovery by marking the master node as
-+		 *    dirty.
-+		 */
-+		c->mst_node->flags |= cpu_to_le32(UBIFS_MST_DIRTY);
- 	} else {
- 		/* Write the recovered master node */
- 		c->max_sqnum = le64_to_cpu(mst->ch.sqnum) - 1;
+--- longterm-2.6.27.orig/drivers/mmc/host/sdhci.c	2012-02-05 22:34:34.798915250 +0100
++++ longterm-2.6.27/drivers/mmc/host/sdhci.c	2012-02-05 22:34:36.053916156 +0100
+@@ -1176,7 +1176,7 @@
+ 	 * upon error conditions.
+ 	 */
+ 	if (!(host->flags & SDHCI_DEVICE_DEAD) &&
+-		(mrq->cmd->error ||
++	    ((mrq->cmd && mrq->cmd->error) ||
+ 		 (mrq->data && (mrq->data->error ||
+ 		  (mrq->data->stop && mrq->data->stop->error))) ||
+ 		   (host->quirks & SDHCI_QUIRK_RESET_AFTER_REQUEST))) {
 
 
