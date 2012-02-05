@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab2BEWrS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:47:18 -0500
-Received: from 1wt.eu ([62.212.114.60]:61866 "EHLO 1wt.eu"
+	id S1755196Ab2BEWrf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:47:35 -0500
+Received: from 1wt.eu ([62.212.114.60]:61862 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753719Ab2BEW0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:19 -0500
-Message-Id: <20120205220949.621395683@pcw.home.local>
+	id S1753692Ab2BEW0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:18 -0500
+Message-Id: <20120205220950.344285644@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:09:53 +0100
+Date: Sun, 05 Feb 2012 23:10:10 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Dave Airlie <airlied@redhat.com>,
+Cc: Eric B Munson <emunson@mgebm.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 04/91] agp: fix arbitrary kernel memory writes
+Subject: [PATCH 21/91] powerpc/oprofile: Handle events that raise an exception without overflowing
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,57 +24,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 194b3da873fd334ef183806db751473512af29ce upstream.
+commit ad5d5292f16c6c1d7d3e257c4c7407594286b97e upstream.
 
-pg_start is copied from userspace on AGPIOC_BIND and AGPIOC_UNBIND ioctl
-cmds of agp_ioctl() and passed to agpioc_bind_wrap().  As said in the
-comment, (pg_start + mem->page_count) may wrap in case of AGPIOC_BIND,
-and it is not checked at all in case of AGPIOC_UNBIND.  As a result, user
-with sufficient privileges (usually "video" group) may generate either
-local DoS or privilege escalation.
+Commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 fixes a situation on POWER7
+where events can roll back if a specualtive event doesn't actually complete.
+This can raise a performance monitor exception.  We need to catch this to ensure
+that we reset the PMC.  In all cases the PMC will be less than 256 cycles from
+overflow.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This patch lifts Anton's fix for the problem in perf and applies it to oprofile
+as well.
+
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/agp/generic.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ arch/powerpc/oprofile/op_model_power4.c |   24 +++++++++++++++++++++++-
+ 1 files changed, 23 insertions(+), 1 deletions(-)
 
-Index: longterm-2.6.27/drivers/char/agp/generic.c
+Index: longterm-2.6.27/arch/powerpc/oprofile/op_model_power4.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/char/agp/generic.c	2012-02-05 22:34:34.961915038 +0100
-+++ longterm-2.6.27/drivers/char/agp/generic.c	2012-02-05 22:34:35.500916106 +0100
-@@ -1099,8 +1099,8 @@
- 		return -EINVAL;
- 	}
+--- longterm-2.6.27.orig/arch/powerpc/oprofile/op_model_power4.c	2012-02-05 22:34:34.372915404 +0100
++++ longterm-2.6.27/arch/powerpc/oprofile/op_model_power4.c	2012-02-05 22:34:37.870914576 +0100
+@@ -254,6 +254,28 @@
+ 	return is_kernel;
+ }
  
--	/* AK: could wrap */
--	if ((pg_start + mem->page_count) > num_entries)
-+	if (((pg_start + mem->page_count) > num_entries) ||
-+	    ((pg_start + mem->page_count) < pg_start))
- 		return -EINVAL;
- 
- 	j = pg_start;
-@@ -1132,7 +1132,7 @@
- {
- 	size_t i;
- 	struct agp_bridge_data *bridge;
--	int mask_type;
-+	int mask_type, num_entries;
- 
- 	bridge = mem->bridge;
- 	if (!bridge)
-@@ -1144,6 +1144,11 @@
- 	if (type != mem->type)
- 		return -EINVAL;
- 
-+	num_entries = agp_num_entries();
-+	if (((pg_start + mem->page_count) > num_entries) ||
-+	    ((pg_start + mem->page_count) < pg_start))
-+		return -EINVAL;
++static bool pmc_overflow(unsigned long val)
++{
++	if ((int)val < 0)
++		return true;
 +
- 	mask_type = bridge->driver->agp_type_to_mask_type(bridge, type);
- 	if (mask_type != 0) {
- 		/* The generic routines know nothing of memory types */
++	/*
++	 * Events on POWER7 can roll back if a speculative event doesn't
++	 * eventually complete. Unfortunately in some rare cases they will
++	 * raise a performance monitor exception. We need to catch this to
++	 * ensure we reset the PMC. In all cases the PMC will be 256 or less
++	 * cycles from overflow.
++	 *
++	 * We only do this if the first pass fails to find any overflowing
++	 * PMCs because a user might set a period of less than 256 and we
++	 * don't want to mistakenly reset them.
++	 */
++	if (__is_processor(PV_POWER7) && ((0x80000000 - val) <= 256))
++		return true;
++
++	return false;
++}
++
+ static void power4_handle_interrupt(struct pt_regs *regs,
+ 				    struct op_counter_config *ctr)
+ {
+@@ -274,7 +296,7 @@
+ 
+ 	for (i = 0; i < cur_cpu_spec->num_pmcs; ++i) {
+ 		val = classic_ctr_read(i);
+-		if (val < 0) {
++		if (pmc_overflow(val)) {
+ 			if (oprofile_running && ctr[i].enabled) {
+ 				oprofile_add_ext_sample(pc, regs, i, is_kernel);
+ 				classic_ctr_write(i, reset_value[i]);
 
 
