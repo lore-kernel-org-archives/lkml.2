@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab2BEJQn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 04:16:43 -0500
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:58567 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751799Ab2BEJQl (ORCPT
+	id S1753491Ab2BEJSL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 04:18:11 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47213 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab2BEJSH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 04:16:41 -0500
+	Sun, 5 Feb 2012 04:18:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120205090805.GA13300@legolas.emea.dhcp.ti.com>
-References: <20120202191630.GT15343@ponder.secretlab.ca> <20120202194545.GA29351@legolas.emea.dhcp.ti.com>
- <4F2AF68D.1000505@ti.com> <20120202214907.GA22888@legolas.emea.dhcp.ti.com>
- <20120202215350.GB22888@legolas.emea.dhcp.ti.com> <4F2B078B.1040709@ti.com>
- <20120202220744.GA23092@legolas.emea.dhcp.ti.com> <87liojajs4.fsf@ti.com>
- <20120204160802.GA10818@legolas.emea.dhcp.ti.com> <CA+HSevqvHAgA+PPLm8BH5vfWkc8yY8W+fRpqjT2urq2EWtSYiA@mail.gmail.com>
- <20120205090805.GA13300@legolas.emea.dhcp.ti.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Sun, 5 Feb 2012 14:46:19 +0530
-Message-ID: <CAMQu2gyNhEJ3vr7_o_xYAQOYKaRofJViobKtfH2HoxwgU7nUpw@mail.gmail.com>
-Subject: Re: [PATCH v9 01/25] gpio/omap: remove dependency on gpio_bank_count
-To: balbi@ti.com
-Cc: "Varadarajan, Charulatha" <charu@ti.com>, Kevin Hilman <khilman@ti.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>, linux-omap@vger.kernel.org,
-        tony@atomide.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <CAKYAXd9k5i2_SuD8YSJeG25CBpK0b4jQGJstc-Ef1jD20cph1Q@mail.gmail.com>
+References: <1328158649-4137-1-git-send-email-vinholikatti@gmail.com>
+ <1328158649-4137-5-git-send-email-vinholikatti@gmail.com> <CAKYAXd9k5i2_SuD8YSJeG25CBpK0b4jQGJstc-Ef1jD20cph1Q@mail.gmail.com>
+From: Santosh Y <santoshsy@gmail.com>
+Date: Sun, 5 Feb 2012 14:47:46 +0530
+Message-ID: <CALMYJDtpdFcVs_b-ePBnVHi-xkPc0NUST1_9WhpHsjoLaVnpUQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] [SCSI] ufshcd: SCSI error handling
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: Vinayak Holikatti <vinholikatti@gmail.com>,
+        James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, saugata.das@linaro.org,
+        arnd@arndb.de, venkat@linaro.org, girish.shivananjappa@linaro.org,
+        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 5, 2012 at 2:38 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Sun, Feb 05, 2012 at 12:37:55PM +0530, Varadarajan, Charulatha wrote:
->> Felipe,
->>
->> On Sat, Feb 4, 2012 at 21:38, Felipe Balbi <balbi@ti.com> wrote:
+On Sun, Feb 5, 2012 at 1:07 PM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+>> +
+>> +/**
+>> + * ufshcd_abort - abort a specific command
+>> + * @cmd: SCSI command pointer
+>> + *
+>> + * Returns 0 on success, non-zero value on failure
+>> + */
+>> +static int ufshcd_abort(struct scsi_cmnd *cmd)
+>> +{
+>> +       struct Scsi_Host *host;
+>> +       struct ufs_hba *hba;
+>> +       unsigned long flags;
+>> +       unsigned int tag;
+>> +       unsigned int pos;
+>> +       int err;
+>> +
+>> +       host = cmd->device->host;
+>> +       hba = (struct ufs_hba *) host->hostdata;
+>> +       tag = cmd->request->tag;
+>> +
+>> +       spin_lock_irqsave(host->host_lock, flags);
+>> +       pos = (1 << tag);
+>> +
+>> +       /* check if command is still pending */
+>> +       if (!(hba->outstanding_reqs & pos)) {
+>> +               err = -1;
+>> +               spin_unlock_irqrestore(host->host_lock, flags);
+>> +               goto out;
+>> +       }
+>> +
+>> +       err = ufshcd_issue_tm_cmd(hba, &hba->lrb[tag], UFS_ABORT_TASK);
+> Hi.
+> You called spin_lock_irqsave in ufshcd_issue_tm_cmd() without
+> spin_unlock_irqrestore.
 
-[....]
-
->> bank->mod_usage check is used to take care of doing pm_runtime_get*/put* only
->> if all the GPIOs in a particular bank are enabled or disabled respectively.
->
-> and why should you care about that ? The first get will enable the
-> resources you need, the second get will just increase a counter and so
-> on. So if you have 32 gets, you will disable the module when you have 32
-> puts.
->
-Am not sure if it is clear to you that the GPIO resources like clock,
-debounce clk are per bank wise and not per GPIO line. So doing 32
-get/put per bank is stupid. runtime pm is for managing pm
-resources and if the pm resource is per bank, it has to be
-handled per bank.
-
->> With the above change, pm_runtime_put*/get* would be called for every
->> gpio_request()
->> /_free() (that is, for upto 32 pins in OMAP3/4) in a bank irrespective
->> of whether other
->
-> so ?
-It's useless.
+Thanks for reviewing the code. We'll correct it.
+Please let us know your comments on the other patches too.
 
 >
->> GPIO pins are enabled or disabled in the same bank. Hence it is
->> required to have a
->> check based on mod_usage.
->
-> unnecessary.
->
-I don't think so.
+>> +       if (!err) {
+>> +               spin_lock_irqsave(host->host_lock, flags);
+> This case is same also.
+> Thanks.
+>> +               scsi_dma_unmap(cmd);
+>> +
+>> +               /* clear the respective UTRLCLR bit */
+>> +               writel(~pos,
+>> +                       (UFSHCD_MMIO_BASE +
+>> +                        REG_UTP_TRANSFER_REQ_LIST_CLEAR));
+>> +               hba->outstanding_reqs &= ~pos;
+>> +               hba->lrb[tag].cmd = NULL;
+>> +               spin_unlock_irqrestore(host->host_lock, flags);
+>> +       }
+>> +out:
+>> +       return err;
+>> +}
+>> +
 
-Regards
-Santosh
+-- 
+~Santosh
