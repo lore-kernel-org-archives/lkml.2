@@ -1,88 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab2BELjL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 06:39:11 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47033 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152Ab2BELjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 06:39:08 -0500
-Date: Sun, 5 Feb 2012 12:38:21 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Joe Perches <joe@perches.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH, v2] checkpatch: Warn on code with 6+ tab indentation,
- remove 80col warning
-Message-ID: <20120205113821.GA22399@elte.hu>
-References: <20120203095227.GA13162@elte.hu>
- <20120203100743.GA3334@elte.hu>
- <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
- <1328311239.21255.24.camel@joe2Laptop>
- <20120204130330.GA30198@elte.hu>
- <1328372536.5766.3.camel@joe2Laptop>
- <20120204180237.GA7682@elte.hu>
- <1328381300.5996.2.camel@joe2Laptop>
- <CAOJsxLGtkVDZpFn3WY21Z4nqnH159KLyo7sx5rhe73bz712sYw@mail.gmail.com>
- <1328383659.7008.7.camel@joe2Laptop>
+	id S1754629Ab2BELqa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 06:46:30 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39431 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab2BELq2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 06:46:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328383659.7008.7.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <4F2AAEB9.9070302@tilera.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	<1327591185.2446.102.camel@twins>
+	<CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+	<20120201170443.GE6731@somewhere.redhat.com>
+	<CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+	<4F2AAEB9.9070302@tilera.com>
+Date: Sun, 5 Feb 2012 13:46:25 +0200
+Message-ID: <CAOtvUMfE3xpwmRKnFPTsstr3SuUG7SnpWn5eomEQzkap4_nfrg@mail.gmail.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 2, 2012 at 5:41 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 2/2/2012 3:46 AM, Gilad Ben-Yossef wrote:
+>
+>> Yes, that is what drives me as well. I have a bare metal program
+>> I'm trying to kill here, I researched CPU isolation and ran into your
+>> nohz patch set and asked myself: "OK, if we disable the tick what else
+>> is on the way?"
+>
+> At Tilera we have been supporting a "dataplane" mode (aka Zero Overhead
+> Linux - the marketing name).  This is configured on a per-cpu basis, and in
+> addition to setting isolcpus for those nodes, also suppresses various
+> things that might otherwise run (soft lockup detection, vmstat work,
+> etc.).  The claim is that you need to specify these kinds of things
+> per-core since it's not always possible for the kernel to know that you
+> really don't want the scheduler or any other interrupt source to touch the
+> core, as opposed to the case where you just happen to have a single process
+> scheduled on the core and you don't mind occasional interrupts.  But
+> there's definitely appeal in having the kernel do it adaptively too,
+> particularly if it can be made to work just as well as configuring it
+> statically.
 
-* Joe Perches <joe@perches.com> wrote:
+Currently adaptive tick needs to be enabled as a cpuset property in
+order to apply,
+but once enabled it is activated automatically when feasible.
 
-> +		    $line =~ /^\+\s*"[^"]*"\s*(?:\s*|,|\)\s*;)\s*$/) {
-> +			if ($length > $max_line_len_strict) {
-> +				CHK("LONG_LINE",
-> +				     "line over $max_line_len_strict characters\n" . $herecurr);
-> +			}
-> +			if ($length > $max_line_len_warn) {
-> +				WARN("LONG_LINE",
-> +				     "line over $max_line_len_warn characters\n" . $herecurr);
-> +			}
+The combination of per cpuset enabling and automatic activation makes
+sense to me
+since cpuset is the way to go to isolate cpus for specific tasks going forward.
+>
+> We also have a set_dataplane() syscall that a task can make to allow it to
+> request some additional semantics from the kernel, such as various
+> debugging modes, a flag to request populating the page table fully, and a
+> flag to request that all pending kernel timer ticks, etc., happen while the
+> task spins in the kernel before actually returning to userspace from a
+> syscall (so you don't get unexpected interrupts once you're back in
+> userspace).
 
-In practice patch submitters take warnings just as seriously.
-If it is emitted by the default checkpatch run, it's acted
-upon. That is the human behavior that is a given.
+Oohh.. I like that :-)
 
-If warnings are often crap and should not be acted upon then 
-frankly, don't emit them by default.
+> I've appended the relevant bits of <asm/dataplane.h> for more
+> details.
+>
+> We've been planning to start working with the community on returning this,
+> but since fiddling with the scheduler is pretty tricky stuff and it wasn't
+> clear there was a lot of interest, we've been deferring it in favor of
+> other activities.  But seeing more about Frederic Weisbecker's and Gilad
+> Ben-Yossef's work makes me think that it might be a good time for us to
+> start that process.  For a start I'll see about putting up a git branch on
+> kernel.org that has our dataplane stuff in it, for reference.
+>
 
-I don't care *how* that warning is removed - whether it's 
-removed from checkpatch or just hidden from the default view - 
-but it needs to be removed or people like Pekka (or me) stop 
-using it.
+This sounds very interesting. Thanks you!
 
-Thanks,
+I for one will be delighted to see that tree as a reference. There is nothing
+I hate more then re-inventing the wheel... :-)
 
-	Ingo
+> /*
+>  * Quiesce the timer interrupt before returning to user space after a
+>  * system call.  Normally if a task on a dataplane core makes a
+>  * syscall, the system will run one or more timer ticks after the
+>  * syscall has completed, causing unexpected interrupts in userspace.
+>  * Setting DP_QUIESCE avoids that problem by having the kernel "hold"
+>  * the task in kernel mode until the timer ticks are complete.  This
+>  * will make syscalls dramatically slower.
+>  *
+>  * If multiple dataplane tasks are scheduled on a single core, this
+>  * in effect silently disables DP_QUIESCE, which allows the tasks to make
+>  * progress, but without actually disabling the timer tick.
+>  */
+> #define DP_QUIESCE      0x1
+>
+> /*
+>  * Disallow the application from entering the kernel in any way,
+>  * unless it calls set_dataplane() again without this bit set.
+>  * Issuing any other syscall or causing a page fault would generate a
+>  * kernel message, and "kill -9" the process.
+>  *
+>  * Setting this flag automatically sets DP_QUIESCE as well.
+>  */
+> #define DP_STRICT       0x2
+>
+> /*
+>  * Debug dataplane interrupts, so that if any interrupt source
+>  * attempts to involve a dataplane cpu, a kernel message and stack
+>  * backtrace will be generated on the console.  As this warning is a
+>  * slow event, it may make sense to avoid this mode in production code
+>  * to avoid making any possible interrupts even more heavyweight.
+>  *
+>  * Setting this flag automatically sets DP_QUIESCE as well.
+>  */
+> #define DP_DEBUG        0x4
+>
+> /*
+>  * Cause all memory mappings to be populated in the page table.
+>  * Specifying this when entering dataplane mode ensures that no future
+>  * page fault events will occur to cause interrupts into the Linux
+>  * kernel, as long as no new mappings are installed by mmap(), etc.
+>  * Note that since the hardware TLB is of finite size, there will
+>  * still be the potential for TLB misses that the hypervisor handles,
+>  * either via its software TLB cache (fast path) or by walking the
+>  * kernel page tables (slow path), so touching large amounts of memory
+>  * will still incur hypervisor interrupt overhead.
+>  */
+> #define DP_POPULATE     0x8
+
+hmm... I've probably missed something, but doesn't this replicate
+mlockall (MCL_CURRENT|MCL_FUTURE) ?
+
+Thanks!
+Gilad
+
+
+
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
