@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab2BEWdH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:33:07 -0500
-Received: from 1wt.eu ([62.212.114.60]:62125 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754449Ab2BEW1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:27:03 -0500
-Message-Id: <20120205220953.356092520@pcw.home.local>
-User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:11:20 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 91/91] dm: do not forward ioctls from logical volumes to the underlying device
-In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
+	id S1754948Ab2BEWdR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:33:17 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:40719 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab2BEWdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:33:14 -0500
+Date: Sun, 5 Feb 2012 23:21:41 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
+Message-ID: <20120205222141.GA26223@electric-eye.fr.zoreil.com>
+References: <20120205134050.7e135bb231b613806a2e0b70@gmail.com> <4F2F0065.9040909@lwfinger.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2F0065.9040909@lwfinger.net>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-longterm review patch.  If anyone has any objections, please let us know.
+Larry Finger <Larry.Finger@lwfinger.net> :
+> On 02/05/2012 03:40 PM, Justin P. Mattock wrote:
+> >
+> >this showed up as I woke the machine up from suspend. machine is connected
+> >I just see networkmanager constantly spinning trying to connect then telling me
+> >the wired network is not connected(even though its just wireless that I have).
 
-------------------
+[ 1273.447349] r8169 0000:06:00.0: Refused to change power state, currently in D3
+[ 1273.571024] psmouse serio1: elantech: retrying ps2 command 0xf8 (2).
+[ 1273.656709] r8169 0000:06:00.0: eth0: link up
+                                         ^^^^^^^
 
-commit ec8013beddd717d1740cfefb1a9b900deef85462 upstream.
+Justin, you did not ever connect a cable, did you ?
 
-A logical volume can map to just part of underlying physical volume.
-In this case, it must be treated like a partition.
+[...]
+> The error clearly comes from r8169, not from ath9k. If you unload
+> r8169 before suspending, does this still happen? My suspicion is
+> that NM is getting confused.
 
-Based on a patch from Alasdair G Kergon.
+It could hide the problem but the D3 + link up messages are nonetheless
+a bit unexpected.
 
-Cc: Alasdair G Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backport to 2.6.32 - drop change to drivers/md/dm-flakey.c]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/md/dm-linear.c |   12 +++++++++++-
- drivers/md/dm-mpath.c  |    6 ++++++
- 2 files changed, 17 insertions(+), 1 deletions(-)
+> P.S. Unless it happens with just the ath9k active, this ML is likely
+> not the correct one.
 
-Index: longterm-2.6.27/drivers/md/dm-linear.c
-===================================================================
---- longterm-2.6.27.orig/drivers/md/dm-linear.c	2012-02-05 22:34:32.148917626 +0100
-+++ longterm-2.6.27/drivers/md/dm-linear.c	2012-02-05 22:34:47.932914720 +0100
-@@ -118,12 +118,20 @@
- 	struct block_device *bdev = lc->dev->bdev;
- 	struct file fake_file = {};
- 	struct dentry fake_dentry = {};
-+	int r = 0;
- 
- 	fake_file.f_mode = lc->dev->mode;
- 	fake_file.f_path.dentry = &fake_dentry;
- 	fake_dentry.d_inode = bdev->bd_inode;
- 
--	return blkdev_driver_ioctl(bdev->bd_inode, &fake_file, bdev->bd_disk, cmd, arg);
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (lc->start ||
-+	    ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
-+	return r ? : blkdev_driver_ioctl(bdev->bd_inode, &fake_file, bdev->bd_disk, cmd, arg);
- }
- 
- static int linear_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
-Index: longterm-2.6.27/drivers/md/dm-mpath.c
-===================================================================
---- longterm-2.6.27.orig/drivers/md/dm-mpath.c	2012-02-05 22:34:32.145914857 +0100
-+++ longterm-2.6.27/drivers/md/dm-mpath.c	2012-02-05 22:34:47.937916536 +0100
-@@ -1421,6 +1421,12 @@
- 
- 	spin_unlock_irqrestore(&m->lock, flags);
- 
-+	/*
-+	 * Only pass ioctls through if the device sizes match exactly.
-+	 */
-+	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
- 	return r ? : blkdev_driver_ioctl(bdev->bd_inode, &fake_file,
- 					 bdev->bd_disk, cmd, arg);
- }
+Yes, please Cc: netdev@vger.kernel.org + me instead.
 
+Thanks.
 
+-- 
+Ueimor
