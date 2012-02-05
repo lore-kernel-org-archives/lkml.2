@@ -1,48 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab2BEG4a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 01:56:30 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54650 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753182Ab2BEG42 (ORCPT
+	id S1753860Ab2BEG4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 01:56:25 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:41398 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab2BEGzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 01:56:28 -0500
-References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: An extremely simplified pinctrl bindings proposal
-From: Richard Zhao <richard.zhao@linaro.org>
-Date: Sun, 05 Feb 2012 14:07:10 +0800
-To: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "ext Tony Lindgren (tony@atomide.com)" <tony@atomide.com>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <2e92398f-b634-4bad-a911-2a2295b7e1b0@email.android.com>
+	Sun, 5 Feb 2012 01:55:39 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 5/9] PCI: Skip reset cardbus assigned resource during pci bus rescan
+Date: Sat,  4 Feb 2012 22:55:04 -0800
+Message-Id: <1328424908-6385-6-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
+References: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090202.4F2E27E3.0035,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lol, great, and it may be more generic by define register update routines.
-some boards may need different pad settings in suspend.
-some quirks or work around for hw issues may be out kernel this way.
+otherwise when rescan is used for cardbus, assigned resource will get
+cleared.
 
-richard
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/setup-bus.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 3b3932a..2991a89 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -901,6 +901,8 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+ 	resource_size_t b_res_3_size = pci_cardbus_mem_size * 2;
+ 	u16 ctrl;
+ 
++	if (b_res[0].parent)
++		goto handle_b_res_1;
+ 	/*
+ 	 * Reserve some resources for CardBus.  We reserve
+ 	 * a fixed amount of bus space for CardBus bridges.
+@@ -914,6 +916,9 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+ 				pci_cardbus_io_size);
+ 	}
+ 
++handle_b_res_1:
++	if (b_res[1].parent)
++		goto handle_b_res_2;
+ 	b_res[1].start = pci_cardbus_io_size;
+ 	b_res[1].end = b_res[1].start + pci_cardbus_io_size - 1;
+ 	b_res[1].flags |= IORESOURCE_IO | IORESOURCE_STARTALIGN;
+@@ -923,6 +928,7 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+ 				 pci_cardbus_io_size);
+ 	}
+ 
++handle_b_res_2:
+ 	/* MEM1 must not be pref mmio */
+ 	pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
+ 	if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM1) {
+@@ -942,6 +948,8 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+ 		pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
+ 	}
+ 
++	if (b_res[2].parent)
++		goto handle_b_res_3;
+ 	/*
+ 	 * If we have prefetchable memory support, allocate
+ 	 * two regions.  Otherwise, allocate one region of
+@@ -962,6 +970,9 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+ 		b_res_3_size = pci_cardbus_mem_size;
+ 	}
+ 
++handle_b_res_3:
++	if (b_res[3].parent)
++		goto handle_done;
+ 	b_res[3].start = pci_cardbus_mem_size;
+ 	b_res[3].end = b_res[3].start + b_res_3_size - 1;
+ 	b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_STARTALIGN;
+@@ -970,6 +981,9 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+ 		add_to_list(realloc_head, bridge, b_res+3, b_res_3_size,
+ 				 pci_cardbus_mem_size);
+ 	}
++
++handle_done:
++	;
+ }
+ 
+ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+-- 
+1.7.7
+
