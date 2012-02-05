@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab2BEHBd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 02:01:33 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:61858 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151Ab2BEHAn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 02:00:43 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1755221Ab2BEHBq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 02:01:46 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:43985 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751261Ab2BEHBc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 02:01:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdXvv_fvaUq_64_kOHCJ4+04uM_iw7aYxwOPU-Tg+g00-A@mail.gmail.com>
+References: <20120121082857.GC32134@elte.hu>
+	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+	<20120121165830.GA9216@elte.hu>
+	<CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+	<CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
+	<CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
+	<CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
+	<20120131115855.5861bad7@pyramind.ukuu.org.uk>
+	<20120131120922.GD32010@elte.hu>
+	<20120131121820.58a1db97@pyramind.ukuu.org.uk>
+	<20120131122339.GG32010@elte.hu>
+	<CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
+	<1328144756.2768.57.camel@dabdike.int.hansenpartnership.com>
+	<4F2AA642.1030400@linux.intel.com>
+	<CAMO-S2joH0fwEyOOCSFGM+Lc=xgiarNxm3Rj9DgWJNeoRD+QRQ@mail.gmail.com>
+	<CAMuHMdXvv_fvaUq_64_kOHCJ4+04uM_iw7aYxwOPU-Tg+g00-A@mail.gmail.com>
+Date: Sun, 5 Feb 2012 16:01:31 +0900
+Message-ID: <CAMO-S2hAYg9+0iJkwy6xsBiR+g1YPr34Am+C6UR47qqDRiH0ow@mail.gmail.com>
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
+From: Hitoshi Mitake <h.mitake@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        James Bottomley <jbottomley@parallels.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 23/24] PCI: make pci_rescan_bus_bridge_resize use pci_scan_bridge instead
-Date: Sat,  4 Feb 2012 22:58:07 -0800
-Message-Id: <1328425088-6562-24-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1328425088-6562-1-git-send-email-yinghai@kernel.org>
-References: <1328425088-6562-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4F2E2913.0056,ss=1,re=0.000,fgs=0
+        Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So after remove all children and then using setpci change bus register and rescan
-bridge could use new set bus number.
+On Sun, Feb 5, 2012 at 15:53, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sat, Feb 4, 2012 at 16:39, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>>> I worked myself on a driver (which sadly never shipped) which had an WC
+>>> window and a UC window... the final write in a series had a completion bit
+>>> in it and would go to the UC window after setting up a whole chunk of
+>>> operations in the WC window (writing UC memory flushes WC memory ahead of
+>>> it.)
+>>>
+>>> Thus, the two-part breakdown of writeq() to the UC window had to write the
+>>> low half to the WC window instead.  This is clearly not generic.
+>>
+>> Because of my ignorant, I don't know the words "UC window" and "WC window"
+>> in this context. Could you teach me?
+>
+> UN = uncached, WC = writecombining.
 
-Otherwise need to rescan parent bus, it would have too much overhead.
+Thanks a lot for your teaching!
 
-also need to use pci_bus_add_single_device to make sure new change bus have directory
- /sys/../.../pci_bus.
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 61df44d..e85b823 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1972,14 +1972,16 @@ EXPORT_SYMBOL(pci_scan_bus);
-  */
- unsigned int __ref pci_rescan_bus_bridge_resize(struct pci_dev *bridge)
- {
--	unsigned int max;
--	struct pci_bus *bus = bridge->subordinate;
-+	unsigned int max = 0;
-+	int pass;
-+	struct pci_bus *bus = bridge->bus;
- 
--	max = pci_scan_child_bus(bus);
-+	for (pass = 0; pass < 2; pass++)
-+		max = pci_scan_bridge(bus, bridge, max, pass);
- 
- 	pci_assign_unassigned_bridge_resources(bridge);
- 
--	pci_bus_add_devices(bus);
-+	pci_bus_add_single_device(bridge);
- 
- 	return max;
- }
+
 -- 
-1.7.7
-
+Hitoshi Mitake
+h.mitake@gmail.com
