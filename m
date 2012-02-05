@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2BEW1E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:27:04 -0500
-Received: from 1wt.eu ([62.212.114.60]:62067 "EHLO 1wt.eu"
+	id S1754816Ab2BEW1Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:27:24 -0500
+Received: from 1wt.eu ([62.212.114.60]:62151 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab2BEW0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:52 -0500
-Message-Id: <20120205220952.741215868@pcw.home.local>
+	id S1754720Ab2BEW1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:27:19 -0500
+Message-Id: <20120205220951.418684907@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:11:06 +0100
+Date: Sun, 05 Feb 2012 23:10:35 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <jaxboe@fusionio.com>, Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 77/91] block: add proper state guards to __elv_next_request
+Cc: Mark Salyzyn <mark_salyzyn@us.xyratex.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 46/91] libsas: fix panic when single phy is disabled on a wide port
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,37 +24,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 0a58e077eb600d1efd7e54ad9926a75a39d7f8ae upstream.
+commit a73914c35b05d80f8ce78288e10056c91090b666 upstream.
 
-blk_cleanup_queue() calls elevator_exit() and after this, we can't
-touch the elevator without oopsing.  __elv_next_request() must check
-for this state because in the refcounted queue model, we can still
-call it after blk_cleanup_queue() has been called.
+When a wide port is being utilized to a target, if one disables only one
+of the
+phys, we get an OS crash:
 
-This was reported as causing an oops attributable to scsi.
+BUG: unable to handle kernel NULL pointer dereference at
+0000000000000238
+IP: [<ffffffff814ca9b1>] mutex_lock+0x21/0x50
+PGD 4103f5067 PUD 41dba9067 PMD 0
+Oops: 0002 [#1] SMP
+last sysfs file: /sys/bus/pci/slots/5/address
+CPU 0
+Modules linked in: pm8001(U) ses enclosure fuse nfsd exportfs autofs4
+ipmi_devintf ipmi_si ipmi_msghandler nfs lockd fscache nfs_acl
+auth_rpcgss 8021q fcoe libfcoe garp libfc scsi_transport_fc stp scsi_tgt
+llc sunrpc cpufreq_ondemand acpi_cpufreq freq_table ipv6 sr_mod cdrom
+dm_mirror dm_region_hash dm_log uinput sg i2c_i801 i2c_core iTCO_wdt
+iTCO_vendor_support e1000e mlx4_ib ib_mad ib_core mlx4_en mlx4_core ext3
+jbd mbcache sd_mod crc_t10dif usb_storage ata_generic pata_acpi ata_piix
+libsas(U) scsi_transport_sas dm_mod [last unloaded: pm8001]
 
-[WT: in 2.6.27, __elv_next_request() is in elevator.c]
+Modules linked in: pm8001(U) ses enclosure fuse nfsd exportfs autofs4
+ipmi_devintf ipmi_si ipmi_msghandler nfs lockd fscache nfs_acl
+auth_rpcgss 8021q fcoe libfcoe garp libfc scsi_transport_fc stp scsi_tgt
+llc sunrpc cpufreq_ondemand acpi_cpufreq freq_table ipv6 sr_mod cdrom
+dm_mirror dm_region_hash dm_log uinput sg i2c_i801 i2c_core iTCO_wdt
+iTCO_vendor_support e1000e mlx4_ib ib_mad ib_core mlx4_en mlx4_core ext3
+jbd mbcache sd_mod crc_t10dif usb_storage ata_generic pata_acpi ata_piix
+libsas(U) scsi_transport_sas dm_mod [last unloaded: pm8001]
+Pid: 5146, comm: scsi_wq_5 Not tainted
+2.6.32-71.29.1.el6.lustre.7.x86_64 #1 Storage Server
+RIP: 0010:[<ffffffff814ca9b1>]  [<ffffffff814ca9b1>]
+mutex_lock+0x21/0x50
+RSP: 0018:ffff8803e4e33d30  EFLAGS: 00010246
+RAX: 0000000000000000 RBX: 0000000000000238 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffff8803e664c800 RDI: 0000000000000238
+RBP: ffff8803e4e33d40 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+R13: 0000000000000238 R14: ffff88041acb7200 R15: ffff88041c51ada0
+FS:  0000000000000000(0000) GS:ffff880028200000(0000)
+knlGS:0000000000000000
+CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+CR2: 0000000000000238 CR3: 0000000410143000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process scsi_wq_5 (pid: 5146, threadinfo ffff8803e4e32000, task
+ffff8803e4e294a0)
+Stack:
+ ffff8803e664c800 0000000000000000 ffff8803e4e33d70 ffffffffa001f06e
+<0> ffff8803e4e33d60 ffff88041c51ada0 ffff88041acb7200 ffff88041bc0aa00
+<0> ffff8803e4e33d90 ffffffffa0032b6c 0000000000000014 ffff88041acb7200
+Call Trace:
+ [<ffffffffa001f06e>] sas_port_delete_phy+0x2e/0xa0 [scsi_transport_sas]
+ [<ffffffffa0032b6c>] sas_unregister_devs_sas_addr+0xac/0xe0 [libsas]
+ [<ffffffffa0034914>] sas_ex_revalidate_domain+0x204/0x330 [libsas]
+ [<ffffffffa00307f0>] ? sas_revalidate_domain+0x0/0x90 [libsas]
+ [<ffffffffa0030855>] sas_revalidate_domain+0x65/0x90 [libsas]
+ [<ffffffff8108c7d0>] worker_thread+0x170/0x2a0
+ [<ffffffff81091ea0>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff8108c660>] ? worker_thread+0x0/0x2a0
+ [<ffffffff81091b36>] kthread+0x96/0xa0
+ [<ffffffff810141ca>] child_rip+0xa/0x20
+ [<ffffffff81091aa0>] ? kthread+0x0/0xa0
+ [<ffffffff810141c0>] ? child_rip+0x0/0x20
+Code: ff ff 85 c0 75 ed eb d6 66 90 55 48 89 e5 48 83 ec 10 48 89 1c 24
+4c 89 64 24 08 0f 1f 44 00 00 48 89 fb e8 92 f4 ff ff 48 89 df <f0> ff
+0f 79 05 e8 25 00 00 00 65 48 8b 04 25 08 cc 00 00 48 2d
+RIP  [<ffffffff814ca9b1>] mutex_lock+0x21/0x50
+ RSP <ffff8803e4e33d30>
+CR2: 0000000000000238
 
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+The following patch is admittedly a band-aid, and does not solve the
+root cause, but it still is a good candidate for hardening as a pointer
+check before reference.
+
+Signed-off-by: Mark Salyzyn <mark_salyzyn@us.xyratex.com>
+Tested-by: Jack Wang <jack_wang@usish.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- block/clk.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/scsi/libsas/sas_expander.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-Index: longterm-2.6.27/block/elevator.c
+Index: longterm-2.6.27/drivers/scsi/libsas/sas_expander.c
 ===================================================================
---- longterm-2.6.27.orig/block/elevator.c	2012-02-05 22:34:32.624915301 +0100
-+++ longterm-2.6.27/block/elevator.c	2012-02-05 22:34:45.849915230 +0100
-@@ -729,7 +729,8 @@
- 				return rq;
- 		}
- 
--		if (!q->elevator->ops->elevator_dispatch_fn(q, 0))
-+		if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags) ||
-+		    !q->elevator->ops->elevator_dispatch_fn(q, 0))
- 			return NULL;
+--- longterm-2.6.27.orig/drivers/scsi/libsas/sas_expander.c	2012-02-05 22:34:39.404915902 +0100
++++ longterm-2.6.27/drivers/scsi/libsas/sas_expander.c	2012-02-05 22:34:41.383915412 +0100
+@@ -1722,10 +1722,12 @@
  	}
+ 	sas_disable_routing(parent, phy->attached_sas_addr);
+ 	memset(phy->attached_sas_addr, 0, SAS_ADDR_SIZE);
+-	sas_port_delete_phy(phy->port, phy->phy);
+-	if (phy->port->num_phys == 0)
+-		sas_port_delete(phy->port);
+-	phy->port = NULL;
++	if (phy->port) {
++		sas_port_delete_phy(phy->port, phy->phy);
++		if (phy->port->num_phys == 0)
++			sas_port_delete(phy->port);
++		phy->port = NULL;
++	}
  }
+ 
+ static int sas_discover_bfs_by_root_level(struct domain_device *root,
 
 
