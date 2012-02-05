@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab2BELWN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 06:22:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40614 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753475Ab2BELWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 06:22:11 -0500
-Date: Sun, 5 Feb 2012 06:22:04 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, Steve French <sfrench@samba.org>
-Subject: Re: [PATCH] CIFS: Fix NULL pointer dereference in
- cifs_construct_tcon()
-Message-ID: <20120205062204.763bdab6@tlielax.poochiereds.net>
-In-Reply-To: <alpine.LNX.2.00.1202050030520.30244@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202050030520.30244@swampdragon.chaosbits.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754492Ab2BELbY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 06:31:24 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:60132 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab2BELbW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 06:31:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F2E608B.9000904@linux.vnet.ibm.com>
+References: <20120201223105.6669.12718.stgit@srivatsabhat.in.ibm.com>
+	<4F29C3E3.1040108@linux.vnet.ibm.com>
+	<4F2D3C90.3000708@linux.vnet.ibm.com>
+	<201202042327.10045.rjw@sisk.pl>
+	<CAJd=RBDz6bm-2p28506+0CuC3P6kED8kXLrZe_TPuhTQSUo67w@mail.gmail.com>
+	<4F2E608B.9000904@linux.vnet.ibm.com>
+Date: Sun, 5 Feb 2012 19:31:21 +0800
+Message-ID: <CAJd=RBCDao9L0knyF74nN0RsGB7xKoUG_jG6o_GifesMchhbKw@mail.gmail.com>
+Subject: Re: [PATCH Updated] PM/Freezer: Thaw only kernel threads if freezing
+ of kernel threads fails
+From: Hillf Danton <dhillf@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>, pavel@ucw.cz,
+        len.brown@intel.com, linux-pm@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Nigel Cunningham <nigel@tuxonice.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Feb 2012 00:35:19 +0100 (CET)
-Jesper Juhl <jj@chaosbits.net> wrote:
+On Sun, Feb 5, 2012 at 6:57 PM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 02/05/2012 11:36 AM, Hillf Danton wrote:
+>
+>> On Sun, Feb 5, 2012 at 6:27 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> On Saturday, February 04, 2012, Srivatsa S. Bhat wrote:
+>>>> On 02/02/2012 04:29 AM, Srivatsa S. Bhat wrote:
+>>>> Hi Rafael,
+>>>>
+>>>> I have reworked the changelog of this patch to indicate that this fixes a
+>>>> regression. Here is the updated patch:
+>>>
+>>> Well, I've already fixed that up in my tree, but thanks anyway. :-)
+>>>
+>>
+>> Nicer if gurus open wider windows for patches received, no?
+>>
+>
+>
+> I am not quite sure what you meant by that, but just in case you got the
+> wrong idea by any chance, let me clarify:
+>
+> Working with Rafael has *always* been an immensely pleasurable experience!
+> There is absolutely no doubt in that :-)
+>
+> So there really is no reason to feel bad about the above incident :-)
+>
 
-> If the call to kcalloc() fails and returns NULL we'll dereference a
-> NULL 'vol_info' after we jump to the 'out:' label.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  fs/cifs/connect.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-> index 986709a..bd67b7c 100644
-> --- a/fs/cifs/connect.c
-> +++ b/fs/cifs/connect.c
-> @@ -3859,7 +3859,7 @@ cifs_construct_tcon(struct cifs_sb_info *cifs_sb, uid_t fsuid)
->  	vol_info = kzalloc(sizeof(*vol_info), GFP_KERNEL);
->  	if (vol_info == NULL) {
->  		tcon = ERR_PTR(-ENOMEM);
-> -		goto out;
-> +		goto out2;
->  	}
->  
->  	vol_info->local_nls = cifs_sb->local_nls;
-> @@ -3901,7 +3901,7 @@ out:
->  	kfree(vol_info->username);
->  	kfree(vol_info->password);
->  	kfree(vol_info);
-> -
-> +out2:
->  	return tcon;
->  }
->  
+Yes, no reason not to keep mind open.
 
-Thanks. Dan Carpenter already sent a patch a couple of weeks ago to fix
-this. Steve has it in his tree, but hasn't pushed it to Linus yet.
-
-Steve, is there a reason you're waiting?
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Good weekend
+Hillf
