@@ -1,72 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab2BEW7U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:59:20 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:44180 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab2BEW7R (ORCPT
+	id S1754075Ab2BEXCY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 18:02:24 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55923 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489Ab2BEXCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:59:17 -0500
-Date: Sun, 5 Feb 2012 14:59:13 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: WARNING: at net/sched/sch_generic.c:256
- dev_watchdog+0x1f2/0x200()
-Message-Id: <20120205145913.194746473361e324bda1eb4a@gmail.com>
-In-Reply-To: <20120205222141.GA26223@electric-eye.fr.zoreil.com>
-References: <20120205134050.7e135bb231b613806a2e0b70@gmail.com>
-	<4F2F0065.9040909@lwfinger.net>
-	<20120205222141.GA26223@electric-eye.fr.zoreil.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 5 Feb 2012 18:02:22 -0500
+Message-ID: <4F2F08CD.2010806@gmail.com>
+Date: Sun, 05 Feb 2012 23:55:09 +0100
+From: Chase Douglas <chasedouglas@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120119 Thunderbird/10.0
+MIME-Version: 1.0
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Input: Add EVIOC mechanism for MT slots
+References: <1328036403-2827-1-git-send-email-rydberg@euromail.se> <4F2B24AC.1020408@gmail.com> <20120203072725.GA6914@polaris.bitmath.org> <4F2D7730.3090704@gmail.com> <20120205075906.GA7698@polaris.bitmath.org> <4F2EB8C8.9090102@gmail.com> <20120205194036.GA2566@polaris.bitmath.org>
+In-Reply-To: <20120205194036.GA2566@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Feb 2012 23:21:41 +0100
-Francois Romieu <romieu@fr.zoreil.com> wrote:
+On 02/05/2012 08:40 PM, Henrik Rydberg wrote:
+>>> Besides leaving a possible giant stack crash in your code, it assumes
+>>> memory is somehow magically allocated. Not good practise in low-level
+>>> programming. You wouldn't use a template this way, would you?
+>>
+>> No, which is why I think this interface is bad. I should be able to
+>> dynamically set the size of the array, but it's not possible with this
+>> interface.
+> 
+> It is possible (using num_slots == 0 or creating your own struct), but
+> not ideal, granted. The patch serves the purpose of definining the
+> binary interface, the rest is up to userland.
+> 
+>> I think the implementation is fine in terms of how the plumbing works. I
+>> just don't think this macro should be included. Make the user create the
+>> struct themselves:
+>>
+>> In linux/input.h:
+>>
+>> struct input_mt_request {
+>> 	__u32 code;
+>> 	__s32 values[];
+>> };
+> 
+> The above (the first) version is not ideal either, since it cannot be
+> used as it is.
+> 
+>> It could be argued that we should leave the macro around for people who
+>> want to statically define the size of the request, but I think that is
+>> leading them down the wrong path. It's easier, but it will lead to
+>> broken code if you pick the wrong size.
+> 
+> Rather than creating both a suboptimal static and a suboptimal dynamic
+> version, removing the struct altogether is tempting. All that is
+> really needed is a clear definition of the binary interface. The rest
+> can easily be set up in userland, using whatever method is preferred.
 
-> Larry Finger <Larry.Finger@lwfinger.net> :
-> > On 02/05/2012 03:40 PM, Justin P. Mattock wrote:
-> > >
-> > >this showed up as I woke the machine up from suspend. machine is connected
-> > >I just see networkmanager constantly spinning trying to connect then telling me
-> > >the wired network is not connected(even though its just wireless that I have).
-> 
-> [ 1273.447349] r8169 0000:06:00.0: Refused to change power state, currently in D3
-> [ 1273.571024] psmouse serio1: elantech: retrying ps2 command 0xf8 (2).
-> [ 1273.656709] r8169 0000:06:00.0: eth0: link up
->                                          ^^^^^^^
-> 
-> Justin, you did not ever connect a cable, did you ?
+I'm normally not a fan of static functions in header files, but maybe it
+would be a good solution here:
 
-nope! was using wireless the whole time. 
+struct input_mt_request {
+	__u32 code;
+	__s32 values[];
+};
 
-> 
-> [...]
-> > The error clearly comes from r8169, not from ath9k. If you unload
-> > r8169 before suspending, does this still happen? My suspicion is
-> > that NM is getting confused.
-> 
-> It could hide the problem but the D3 + link up messages are nonetheless
-> a bit unexpected.
-> 
-> > P.S. Unless it happens with just the ath9k active, this ML is likely
-> > not the correct one.
-> 
-> Yes, please Cc: netdev@vger.kernel.org + me instead.
-> 
-> Thanks.
-> 
-> -- 
-> Ueimor
+static struct input_mt_request *
+linux_input_mt_request_alloc(int num_slots) {
+	return (struct input_mt_request *)malloc(
+		sizeof(__u32) + num_slots * sizeof(__s32));
+}
 
-removed linux-wireless and added netdev to the cc's
-will monitor this and report anything that shows up.
+#define EVIOCGMTSLOTS(num_slots) \
+	_IOC(_IOC_READ, 'E', 0x0a, \
+	     sizeof(__u32) + (num_slots) * sizeof(__s32))
 
--- 
-Justin P. Mattock <justinmattock@gmail.com>
+This would lead to userspace code:
+
+struct input_mt_request *req;
+int num_slots;
+
+EVIOCGABS call on ABS_MT_SLOT;
+
+num_slots = ABS_MT_SLOT.max - ABS_MT_SLOT.min + 1;
+req = linux_input_mt_request_alloc(num_slots);
+req->code = ABS_MT_POSITION_X;
+if (ioctl(fd, EVIOCGMTSLOTS(num_slots), req) < 0) {
+	free(req);
+	return -1;
+}
+for (i = 0; i < 64; i++)
+	printf("slot %d: %d\n", i, req.values[i]);
+free(req);
+
+Normally, I would recommend adding a free() function too, but the
+necessity of a free() function is only when libc's free() won't work or
+the implementation may change. Here, however, the implementation would
+be codified by the ioctl interface in a way that guarantees libc's
+free() to be correct.
+
+-- Chase
