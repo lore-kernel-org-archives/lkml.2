@@ -1,120 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021Ab2BEGNl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 01:13:41 -0500
-Received: from sandeen.net ([63.231.237.45]:58909 "EHLO mail.sandeen.net"
+	id S1752271Ab2BEGYR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 01:24:17 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:39514 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801Ab2BEGNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 01:13:39 -0500
-Message-ID: <4F2E1E12.2030308@sandeen.net>
-Date: Sun, 05 Feb 2012 00:13:38 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	id S1750786Ab2BEGYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 01:24:17 -0500
+Date: Sat, 4 Feb 2012 22:22:06 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon subsystem fixes for 3.3-rc3
+Message-ID: <20120205062206.GA1853@ericsson.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-fsdevel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 2/8] vfs: Protect write paths by sb_start_write - sb_end_write
-References: <1327091686-23177-1-git-send-email-jack@suse.cz> <1327091686-23177-3-git-send-email-jack@suse.cz>
-In-Reply-To: <1327091686-23177-3-git-send-email-jack@suse.cz>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/20/12 2:34 PM, Jan Kara wrote:
-> There are three entry points which dirty pages in a filesystem.  mmap (handled
-> by block_page_mkwrite()), buffered write (handled by
-> __generic_file_aio_write()), and truncate (it can dirty last partial page -
-> handled inside each filesystem separately). Protect these places with
-> sb_start_write() and sb_end_write().
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The protection for truncate got lost since the first patchset, was that
-on purpose?
+Hi Linus,
 
--Eric
+Please pull hwmon subsystem fixes for Linux 3.3-rc3 from:
 
-> Acked-by: "Theodore Ts'o" <tytso@mit.edu>
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/buffer.c  |   22 ++++------------------
->  mm/filemap.c |    3 ++-
->  2 files changed, 6 insertions(+), 19 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 19d8eb7..550714d 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -2338,8 +2338,8 @@ EXPORT_SYMBOL(block_commit_write);
->   * beyond EOF, then the page is guaranteed safe against truncation until we
->   * unlock the page.
->   *
-> - * Direct callers of this function should call vfs_check_frozen() so that page
-> - * fault does not busyloop until the fs is thawed.
-> + * Direct callers of this function should protect against filesystem freezing
-> + * using sb_start_write() - sb_end_write() functions.
->   */
->  int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
->  			 get_block_t get_block)
-> @@ -2371,18 +2371,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
->  
->  	if (unlikely(ret < 0))
->  		goto out_unlock;
-> -	/*
-> -	 * Freezing in progress? We check after the page is marked dirty and
-> -	 * with page lock held so if the test here fails, we are sure freezing
-> -	 * code will wait during syncing until the page fault is done - at that
-> -	 * point page will be dirty and unlocked so freezing code will write it
-> -	 * and writeprotect it again.
-> -	 */
->  	set_page_dirty(page);
-> -	if (inode->i_sb->s_frozen != SB_UNFROZEN) {
-> -		ret = -EAGAIN;
-> -		goto out_unlock;
-> -	}
->  	wait_on_page_writeback(page);
->  	return 0;
->  out_unlock:
-> @@ -2397,12 +2386,9 @@ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
->  	int ret;
->  	struct super_block *sb = vma->vm_file->f_path.dentry->d_inode->i_sb;
->  
-> -	/*
-> -	 * This check is racy but catches the common case. The check in
-> -	 * __block_page_mkwrite() is reliable.
-> -	 */
-> -	vfs_check_frozen(sb, SB_FREEZE_WRITE);
-> +	sb_start_write(sb, SB_FREEZE_WRITE);
->  	ret = __block_page_mkwrite(vma, vmf, get_block);
-> +	sb_end_write(sb, SB_FREEZE_WRITE);
->  	return block_page_mkwrite_return(ret);
->  }
->  EXPORT_SYMBOL(block_page_mkwrite);
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index c0018f2..471b9ae 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -2529,7 +2529,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
->  	count = ocount;
->  	pos = *ppos;
->  
-> -	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
-> +	sb_start_write(inode->i_sb, SB_FREEZE_WRITE);
->  
->  	/* We can write back this queue in page reclaim */
->  	current->backing_dev_info = mapping->backing_dev_info;
-> @@ -2601,6 +2601,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
->  				pos, ppos, count, written);
->  	}
->  out:
-> +	sb_end_write(inode->i_sb, SB_FREEZE_WRITE);
->  	current->backing_dev_info = NULL;
->  	return written ? written : err;
->  }
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
+Signed tag: hwmon-fixes-for-3.3-rc3
+
+Just a single patch this time.
+
+Since this is the first time I tried using a signed tag, I provided both a
+branch and a signed tag to pull from. If the tag works, I'll only provide
+the tag next time. If something is wrong with the tag, please let me know.
+
+Thanks,
+Guenter
+
+------
+
+The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
+
+  Linux 3.3-rc2 (2012-01-31 13:31:54 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Guenter Roeck (1):
+      hwmon: (w83627ehf) Fix number of fans for NCT6776F
+
+ drivers/hwmon/w83627ehf.c |   23 ++++++++++++++++++++---
+ 1 files changed, 20 insertions(+), 3 deletions(-)
+
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPLiAOAAoJEMsfJm/On5mBMJMP/jYxW9uiSyXWBds8uZxlr1P2
+cadf9hGz2N6paRGNxGDk+Wk+FhlaIbFnrMB6YjTWBttB2oFSaiiU9xM888r3vQPH
+Dge957qmO4zZLfruGw9YpAWSezXtqVoEtoStzw0fMYxH+Q0LMI/DgRi3rG+0Yjrr
+i7zWJu2BVf/FJlxFmkKABUVlwBmcImraGXDLvoc9KDak3U3zoUE7s/ep7pwDC0Dq
+DC0FZ/SPZ9lKPw65M42rM430JrGcfbXwNk6xK76ervYrkJm+6wxuR8WzHleLYlvJ
+IiFWezmFlbuHwqDzkqOgGXVJoIZ5HxHRY9E95BJBcaLRZF39e4F7SHUgrvb2cEps
+hld4sQb6SlHE7/uPJlrTlV5QgYQSWlHxNs1izknMcRIHiaof+d5DyjK2zAOxaCnO
+F2FZi0FlnMlyPugieKxCUSe4BcbvPwBmSl7byYdWhUuYwsJBzkCyKGMYbfFzE+RS
+b2ndrSl6AJRFHAW3Eb/ygmp66m6cjIe3lnh3iNbyKWNc77DuHTp/SoKJNGuPYsrh
+mcPHfGL5krl+7zBbCJpM+bjMB2cuBFuEW8Uy33XDc8yBbzMkilBbq50a4KNVBOeD
+ysCdnw7ilPReUsaEV0645GLPF5Ax6yDkc7ayeU6oj7uDIM2s73zWFMgqfvg8sv11
+XOzsOrKhSvVaUD6GhB69
+=RYmJ
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
