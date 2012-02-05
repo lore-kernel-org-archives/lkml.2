@@ -1,54 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab2BEWJL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:09:11 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:58209
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751654Ab2BEWI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:08:58 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, kys@microsoft.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] net/hyperv: Correct the assignment in netvsc_recv_callback()
-Date: Sun,  5 Feb 2012 14:13:09 -0800
-Message-Id: <1328479990-1436-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753260Ab2BEWMr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:12:47 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27966 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab2BEWMp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:12:45 -0500
+Date: Sun, 5 Feb 2012 23:13:13 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+cc: kys@microsoft.com, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] net/hyperv: Convert camel cased variables in
+ rndis_filter.c to lower cases
 In-Reply-To: <1328479990-1436-1-git-send-email-haiyangz@microsoft.com>
+Message-ID: <alpine.LNX.2.00.1202052312391.32529@swampdragon.chaosbits.net>
 References: <1328479990-1436-1-git-send-email-haiyangz@microsoft.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first assignment to variable "net" is wrong, but overridden by the
-latter assignments. So the bug isn't manifested.
+Looks like a nice change to me.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/netvsc_drv.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+On Sun, 5 Feb 2012, Haiyang Zhang wrote:
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 466c58a..0ae7a1a 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -267,13 +267,10 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
- int netvsc_recv_callback(struct hv_device *device_obj,
- 				struct hv_netvsc_packet *packet)
- {
--	struct net_device *net = dev_get_drvdata(&device_obj->device);
-+	struct net_device *net;
- 	struct sk_buff *skb;
--	struct netvsc_device *net_device;
--
--	net_device = hv_get_drvdata(device_obj);
--	net = net_device->ndev;
- 
-+	net = ((struct netvsc_device *)hv_get_drvdata(device_obj))->ndev;
- 	if (!net) {
- 		netdev_err(net, "got receive callback but net device"
- 			" not initialized yet\n");
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+
+
+> ---
+>  drivers/net/hyperv/rndis_filter.c |   60 ++++++++++++++++++------------------
+>  1 files changed, 30 insertions(+), 30 deletions(-)
+> 
+> diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+> index 133b7fb..a60e5e2 100644
+> --- a/drivers/net/hyperv/rndis_filter.c
+> +++ b/drivers/net/hyperv/rndis_filter.c
+> @@ -758,66 +758,66 @@ int rndis_filter_open(struct hv_device *dev)
+>  
+>  int rndis_filter_close(struct hv_device *dev)
+>  {
+> -	struct netvsc_device *netDevice = hv_get_drvdata(dev);
+> +	struct netvsc_device *nvdev = hv_get_drvdata(dev);
+>  
+> -	if (!netDevice)
+> +	if (!nvdev)
+>  		return -EINVAL;
+>  
+> -	return rndis_filter_close_device(netDevice->extension);
+> +	return rndis_filter_close_device(nvdev->extension);
+>  }
+>  
+>  int rndis_filter_send(struct hv_device *dev,
+>  			     struct hv_netvsc_packet *pkt)
+>  {
+>  	int ret;
+> -	struct rndis_filter_packet *filterPacket;
+> -	struct rndis_message *rndisMessage;
+> -	struct rndis_packet *rndisPacket;
+> -	u32 rndisMessageSize;
+> +	struct rndis_filter_packet *filter_pkt;
+> +	struct rndis_message *rndis_msg;
+> +	struct rndis_packet *rndis_pkt;
+> +	u32 rndis_msg_size;
+>  
+>  	/* Add the rndis header */
+> -	filterPacket = (struct rndis_filter_packet *)pkt->extension;
+> +	filter_pkt = (struct rndis_filter_packet *)pkt->extension;
+>  
+> -	memset(filterPacket, 0, sizeof(struct rndis_filter_packet));
+> +	memset(filter_pkt, 0, sizeof(struct rndis_filter_packet));
+>  
+> -	rndisMessage = &filterPacket->msg;
+> -	rndisMessageSize = RNDIS_MESSAGE_SIZE(struct rndis_packet);
+> +	rndis_msg = &filter_pkt->msg;
+> +	rndis_msg_size = RNDIS_MESSAGE_SIZE(struct rndis_packet);
+>  
+> -	rndisMessage->ndis_msg_type = REMOTE_NDIS_PACKET_MSG;
+> -	rndisMessage->msg_len = pkt->total_data_buflen +
+> -				      rndisMessageSize;
+> +	rndis_msg->ndis_msg_type = REMOTE_NDIS_PACKET_MSG;
+> +	rndis_msg->msg_len = pkt->total_data_buflen +
+> +				      rndis_msg_size;
+>  
+> -	rndisPacket = &rndisMessage->msg.pkt;
+> -	rndisPacket->data_offset = sizeof(struct rndis_packet);
+> -	rndisPacket->data_len = pkt->total_data_buflen;
+> +	rndis_pkt = &rndis_msg->msg.pkt;
+> +	rndis_pkt->data_offset = sizeof(struct rndis_packet);
+> +	rndis_pkt->data_len = pkt->total_data_buflen;
+>  
+>  	pkt->is_data_pkt = true;
+> -	pkt->page_buf[0].pfn = virt_to_phys(rndisMessage) >> PAGE_SHIFT;
+> +	pkt->page_buf[0].pfn = virt_to_phys(rndis_msg) >> PAGE_SHIFT;
+>  	pkt->page_buf[0].offset =
+> -			(unsigned long)rndisMessage & (PAGE_SIZE-1);
+> -	pkt->page_buf[0].len = rndisMessageSize;
+> +			(unsigned long)rndis_msg & (PAGE_SIZE-1);
+> +	pkt->page_buf[0].len = rndis_msg_size;
+>  
+>  	/* Add one page_buf if the rndis msg goes beyond page boundary */
+> -	if (pkt->page_buf[0].offset + rndisMessageSize > PAGE_SIZE) {
+> +	if (pkt->page_buf[0].offset + rndis_msg_size > PAGE_SIZE) {
+>  		int i;
+>  		for (i = pkt->page_buf_cnt; i > 1; i--)
+>  			pkt->page_buf[i] = pkt->page_buf[i-1];
+>  		pkt->page_buf_cnt++;
+>  		pkt->page_buf[0].len = PAGE_SIZE - pkt->page_buf[0].offset;
+>  		pkt->page_buf[1].pfn = virt_to_phys((void *)((ulong)
+> -			rndisMessage + pkt->page_buf[0].len)) >> PAGE_SHIFT;
+> +			rndis_msg + pkt->page_buf[0].len)) >> PAGE_SHIFT;
+>  		pkt->page_buf[1].offset = 0;
+> -		pkt->page_buf[1].len = rndisMessageSize - pkt->page_buf[0].len;
+> +		pkt->page_buf[1].len = rndis_msg_size - pkt->page_buf[0].len;
+>  	}
+>  
+>  	/* Save the packet send completion and context */
+> -	filterPacket->completion = pkt->completion.send.send_completion;
+> -	filterPacket->completion_ctx =
+> +	filter_pkt->completion = pkt->completion.send.send_completion;
+> +	filter_pkt->completion_ctx =
+>  				pkt->completion.send.send_completion_ctx;
+>  
+>  	/* Use ours */
+>  	pkt->completion.send.send_completion = rndis_filter_send_completion;
+> -	pkt->completion.send.send_completion_ctx = filterPacket;
+> +	pkt->completion.send.send_completion_ctx = filter_pkt;
+>  
+>  	ret = netvsc_send(dev, pkt);
+>  	if (ret != 0) {
+> @@ -826,9 +826,9 @@ int rndis_filter_send(struct hv_device *dev,
+>  		 * above
+>  		 */
+>  		pkt->completion.send.send_completion =
+> -				filterPacket->completion;
+> +				filter_pkt->completion;
+>  		pkt->completion.send.send_completion_ctx =
+> -				filterPacket->completion_ctx;
+> +				filter_pkt->completion_ctx;
+>  	}
+>  
+>  	return ret;
+> @@ -836,10 +836,10 @@ int rndis_filter_send(struct hv_device *dev,
+>  
+>  static void rndis_filter_send_completion(void *ctx)
+>  {
+> -	struct rndis_filter_packet *filterPacket = ctx;
+> +	struct rndis_filter_packet *filter_pkt = ctx;
+>  
+>  	/* Pass it back to the original handler */
+> -	filterPacket->completion(filterPacket->completion_ctx);
+> +	filter_pkt->completion(filter_pkt->completion_ctx);
+>  }
+>  
+>  
+> 
+
 -- 
-1.7.7
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
