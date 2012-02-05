@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab2BEW1R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:27:17 -0500
-Received: from 1wt.eu ([62.212.114.60]:62129 "EHLO 1wt.eu"
+	id S1754879Ab2BEW1P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:27:15 -0500
+Received: from 1wt.eu ([62.212.114.60]:62130 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754720Ab2BEW1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754735Ab2BEW1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 Feb 2012 17:27:04 -0500
-Message-Id: <20120205220953.271302918@pcw.home.local>
+Message-Id: <20120205220952.057754032@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:11:18 +0100
+Date: Sun, 05 Feb 2012 23:10:50 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Luca Tettamanti <kronos.it@gmail.com>, Massimo Dal Zotto <dz@debian.org>,
-        Jean Delvare <khali@linux-fr.org>,
+Cc: Phillip Lougher <plougher@redhat.com>, Jeff Mahoney <jeffm@suse.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        =?ISO-8859-15?q?Moritz=20M=FChlenhoff?= <jmm@inutil.org>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 89/91] i8k: Avoid lahf in 64-bit code
+Subject: [PATCH 61/91] hfs: fix hfs_find_init() sb->ext_tree NULL ptr oops
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,38 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit bc1f419c76a2d6450413ce4349f4e4a07be011d5 upstream.
+commit 434a964daa14b9db083ce20404a4a2add54d037a upstream.
 
-i8k uses lahf to read the flag register in 64-bit code; early x86-64
-CPUs, however, lack this instruction and we get an invalid opcode
-exception at runtime.
-Use pushf to load the flag register into the stack instead.
+Clement Lecigne reports a filesystem which causes a kernel oops in
+hfs_find_init() trying to dereference sb->ext_tree which is NULL.
 
-Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
-Reported-by: Jeff Rickman <jrickman@myamigos.us>
-Tested-by: Jeff Rickman <jrickman@myamigos.us>
-Tested-by: Harry G McGavran Jr <w5pny@arrl.net>
-Cc: Massimo Dal Zotto <dz@debian.org>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+This proves to be because the filesystem has a corrupted MDB extent
+record, where the extents file does not fit into the first three extents
+in the file record (the first blocks).
+
+In hfs_get_block() when looking up the blocks for the extent file
+(HFS_EXT_CNID), it fails the first blocks special case, and falls
+through to the extent code (which ultimately calls hfs_find_init())
+which is in the process of being initialised.
+
+Hfs avoids this scenario by always having the extents b-tree fitting
+into the first blocks (the extents B-tree can't have overflow extents).
+
+The fix is to check at mount time that the B-tree fits into first
+blocks, i.e.  fail if HFS_I(inode)->alloc_blocks >=
+HFS_I(inode)->first_blocks
+
+Note, the existing commit 47f365eb57573 ("hfs: fix oops on mount with
+corrupted btree extent records") becomes subsumed into this as a special
+case, but only for the extents B-tree (HFS_EXT_CNID), it is perfectly
+acceptable for the catalog B-Tree file to grow beyond three extents,
+with the remaining extent descriptors in the extents overfow.
+
+[WT: patch edited - 47f365eb57573 was missing from 2.6.27.x]
+
+This fixes CVE-2011-2203
+
+Reported-by: Clement LECIGNE <clement.lecigne@netasq.com>
+Signed-off-by: Phillip Lougher <plougher@redhat.com>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Moritz Mühlenhoff <jmm@inutil.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/i8k.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ fs/hfs/btree.c |   20 +++++++++++++++-----
+ 1 files changed, 15 insertions(+), 5 deletions(-)
 
-Index: longterm-2.6.27/drivers/char/i8k.c
+Index: longterm-2.6.27/fs/hfs/btree.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/char/i8k.c	2012-02-05 22:34:47.136914619 +0100
-+++ longterm-2.6.27/drivers/char/i8k.c	2012-02-05 22:34:47.574914836 +0100
-@@ -138,8 +138,8 @@
- 		"movl %%edi,20(%%rax)\n\t"
- 		"popq %%rdx\n\t"
- 		"movl %%edx,0(%%rax)\n\t"
--		"lahf\n\t"
--		"shrl $8,%%eax\n\t"
-+		"pushfq\n\t"
-+		"popq %%rax\n\t"
- 		"andl $1,%%eax\n"
- 		:"=a"(rc)
- 		:    "a"(regs)
+--- longterm-2.6.27.orig/fs/hfs/btree.c	2012-02-05 22:34:33.129915287 +0100
++++ longterm-2.6.27/fs/hfs/btree.c	2012-02-05 22:34:43.555914905 +0100
+@@ -45,11 +45,26 @@
+ 	case HFS_EXT_CNID:
+ 		hfs_inode_read_fork(tree->inode, mdb->drXTExtRec, mdb->drXTFlSize,
+ 				    mdb->drXTFlSize, be32_to_cpu(mdb->drXTClpSiz));
++		if (HFS_I(tree->inode)->alloc_blocks >
++					HFS_I(tree->inode)->first_blocks) {
++			printk(KERN_ERR "hfs: invalid btree extent records\n");
++			unlock_new_inode(tree->inode);
++			goto free_inode;
++		}
++
+ 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
+ 		break;
+ 	case HFS_CAT_CNID:
+ 		hfs_inode_read_fork(tree->inode, mdb->drCTExtRec, mdb->drCTFlSize,
+ 				    mdb->drCTFlSize, be32_to_cpu(mdb->drCTClpSiz));
++
++		if (!HFS_I(tree->inode)->first_blocks) {
++			printk(KERN_ERR "hfs: invalid btree extent records "
++								"(0 size).\n");
++			unlock_new_inode(tree->inode);
++			goto free_inode;
++		}
++
+ 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
+ 		break;
+ 	default:
 
 
