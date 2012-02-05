@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab2BEQA3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 11:00:29 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:50087 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab2BEQA1 (ORCPT
+	id S1753142Ab2BEQEU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 11:04:20 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34497 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab2BEQES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 11:00:27 -0500
-Message-ID: <4F2EA785.9070706@linux.vnet.ibm.com>
-Date: Sun, 05 Feb 2012 21:30:05 +0530
+	Sun, 5 Feb 2012 11:04:18 -0500
+Message-ID: <4F2EA869.2080505@linux.vnet.ibm.com>
+Date: Sun, 05 Feb 2012 21:33:53 +0530
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
@@ -27,151 +27,156 @@ CC: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Milton Miller <miltonm@bga.com>
 Subject: Re: [PATCH v8 4/8] smp: add func to IPI cpus based on parameter func
-References: <1328448800-15794-1-git-send-email-gilad@benyossef.com> <1328449722-15959-3-git-send-email-gilad@benyossef.com> <4F2EA206.3000707@linux.vnet.ibm.com> <CAOtvUMdqpwOedhZHq6QpUnDyg1FzfK_K3=9HQujjoN9yU3XWnA@mail.gmail.com>
-In-Reply-To: <CAOtvUMdqpwOedhZHq6QpUnDyg1FzfK_K3=9HQujjoN9yU3XWnA@mail.gmail.com>
+References: <1328448800-15794-1-git-send-email-gilad@benyossef.com> <1328449722-15959-3-git-send-email-gilad@benyossef.com> <4F2EA206.3000707@linux.vnet.ibm.com> <CAOtvUMdqpwOedhZHq6QpUnDyg1FzfK_K3=9HQujjoN9yU3XWnA@mail.gmail.com> <4F2EA785.9070706@linux.vnet.ibm.com>
+In-Reply-To: <4F2EA785.9070706@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12020505-5490-0000-0000-000000AD93AB
+x-cbid: 12020506-1396-0000-0000-000000A14C1F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2012 09:16 PM, Gilad Ben-Yossef wrote:
+On 02/05/2012 09:30 PM, Srivatsa S. Bhat wrote:
 
-> On Sun, Feb 5, 2012 at 5:36 PM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> On 02/05/2012 07:18 PM, Gilad Ben-Yossef wrote:
->>
->>> Add the on_each_cpu_cond() function that wraps on_each_cpu_mask()
->>> and calculates the cpumask of cpus to IPI by calling a function supplied
->>> as a parameter in order to determine whether to IPI each specific cpu.
->>>
->>> The function works around allocation failure of cpumask variable in
->>> CONFIG_CPUMASK_OFFSTACK=y by itereating over cpus sending an IPI a
->>> time via smp_call_function_single().
->>>
->>> The function is useful since it allows to seperate the specific
->>> code that decided in each case whether to IPI a specific cpu for
->>> a specific request from the common boilerplate code of handling
->>> creating the mask, handling failures etc.
->>>
->>> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
->> ...
->>> diff --git a/include/linux/smp.h b/include/linux/smp.h
->>> index d0adb78..da4d034 100644
->>> --- a/include/linux/smp.h
->>> +++ b/include/linux/smp.h
->>> @@ -109,6 +109,15 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
->>>               void *info, bool wait);
->>>
->>>  /*
->>> + * Call a function on each processor for which the supplied function
->>> + * cond_func returns a positive value. This may include the local
->>> + * processor.
->>> + */
->>> +void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
->>> +             smp_call_func_t func, void *info, bool wait,
->>> +             gfp_t gfp_flags);
->>> +
->>> +/*
->>>   * Mark the boot cpu "online" so that it can call console drivers in
->>>   * printk() and can access its per-cpu storage.
->>>   */
->>> @@ -153,6 +162,21 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
->>>                       local_irq_enable();             \
->>>               }                                       \
->>>       } while (0)
->>> +/*
->>> + * Preemption is disabled here to make sure the
->>> + * cond_func is called under the same condtions in UP
->>> + * and SMP.
->>> + */
->>> +#define on_each_cpu_cond(cond_func, func, info, wait, gfp_flags) \
->>> +     do {                                            \
->>> +             preempt_disable();                      \
->>> +             if (cond_func(0, info)) {               \
->>> +                     local_irq_disable();            \
->>> +                     (func)(info);                   \
->>> +                     local_irq_enable();             \
->>> +             }                                       \
->>> +             preempt_enable();                       \
->>> +     } while (0)
->>>
->>>  static inline void smp_send_reschedule(int cpu) { }
->>>  #define num_booting_cpus()                   1
->>> diff --git a/kernel/smp.c b/kernel/smp.c
->>> index a081e6c..28cbcc5 100644
->>> --- a/kernel/smp.c
->>> +++ b/kernel/smp.c
->>> @@ -730,3 +730,63 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
->>>       put_cpu();
->>>  }
->>>  EXPORT_SYMBOL(on_each_cpu_mask);
->>> +
->>> +/*
->>> + * on_each_cpu_cond(): Call a function on each processor for which
->>> + * the supplied function cond_func returns true, optionally waiting
->>> + * for all the required CPUs to finish. This may include the local
->>> + * processor.
->>> + * @cond_func:       A callback function that is passed a cpu id and
->>> + *           the the info parameter. The function is called
->>> + *           with preemption disabled. The function should
->>> + *           return a blooean value indicating whether to IPI
->>> + *           the specified CPU.
->>> + * @func:    The function to run on all applicable CPUs.
->>> + *           This must be fast and non-blocking.
->>> + * @info:    An arbitrary pointer to pass to both functions.
->>> + * @wait:    If true, wait (atomically) until function has
->>> + *           completed on other CPUs.
->>> + * @gfp_flags:       GFP flags to use when allocating the cpumask
->>> + *           used internally by the function.
->>> + *
->>> + * The function might sleep if the GFP flags indicates a non
->>> + * atomic allocation is allowed.
->>> + *
->>> + * Preemption is disabled to protect against a hotplug event.
->>
->>
->> Well, disabling preemption protects us only against CPU offline right?
->> (because we use the stop_machine thing during cpu offline).
->>
->> What about CPU online?
->>
->> Just to cross-check my understanding of the code with the existing
->> documentation on CPU hotplug, I looked up Documentation/cpu-hotplug.txt
->> and this is what I found:
->>
->> "If you merely need to avoid cpus going away, you could also use
->> preempt_disable() and preempt_enable() for those sections....
->> ...The preempt_disable() will work as long as stop_machine_run() is used
->> to take a cpu down."
->>
->> So even this only talks about using preempt_disable() to prevent CPU offline,
->> not CPU online. Or, am I missing something?
+> On 02/05/2012 09:16 PM, Gilad Ben-Yossef wrote:
 > 
-> You are not missing anything, this is simply a bad choice of words on my part.
-> Thank you for pointing this out.
+>> On Sun, Feb 5, 2012 at 5:36 PM, Srivatsa S. Bhat
+>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>> On 02/05/2012 07:18 PM, Gilad Ben-Yossef wrote:
+>>>
+>>>> Add the on_each_cpu_cond() function that wraps on_each_cpu_mask()
+>>>> and calculates the cpumask of cpus to IPI by calling a function supplied
+>>>> as a parameter in order to determine whether to IPI each specific cpu.
+>>>>
+>>>> The function works around allocation failure of cpumask variable in
+>>>> CONFIG_CPUMASK_OFFSTACK=y by itereating over cpus sending an IPI a
+>>>> time via smp_call_function_single().
+>>>>
+>>>> The function is useful since it allows to seperate the specific
+>>>> code that decided in each case whether to IPI a specific cpu for
+>>>> a specific request from the common boilerplate code of handling
+>>>> creating the mask, handling failures etc.
+>>>>
+>>>> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+>>> ...
+>>>> diff --git a/include/linux/smp.h b/include/linux/smp.h
+>>>> index d0adb78..da4d034 100644
+>>>> --- a/include/linux/smp.h
+>>>> +++ b/include/linux/smp.h
+>>>> @@ -109,6 +109,15 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+>>>>               void *info, bool wait);
+>>>>
+>>>>  /*
+>>>> + * Call a function on each processor for which the supplied function
+>>>> + * cond_func returns a positive value. This may include the local
+>>>> + * processor.
+>>>> + */
+>>>> +void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+>>>> +             smp_call_func_t func, void *info, bool wait,
+>>>> +             gfp_t gfp_flags);
+>>>> +
+>>>> +/*
+>>>>   * Mark the boot cpu "online" so that it can call console drivers in
+>>>>   * printk() and can access its per-cpu storage.
+>>>>   */
+>>>> @@ -153,6 +162,21 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
+>>>>                       local_irq_enable();             \
+>>>>               }                                       \
+>>>>       } while (0)
+>>>> +/*
+>>>> + * Preemption is disabled here to make sure the
+>>>> + * cond_func is called under the same condtions in UP
+>>>> + * and SMP.
+>>>> + */
+>>>> +#define on_each_cpu_cond(cond_func, func, info, wait, gfp_flags) \
+>>>> +     do {                                            \
+>>>> +             preempt_disable();                      \
+>>>> +             if (cond_func(0, info)) {               \
+>>>> +                     local_irq_disable();            \
+>>>> +                     (func)(info);                   \
+>>>> +                     local_irq_enable();             \
+>>>> +             }                                       \
+>>>> +             preempt_enable();                       \
+>>>> +     } while (0)
+>>>>
+>>>>  static inline void smp_send_reschedule(int cpu) { }
+>>>>  #define num_booting_cpus()                   1
+>>>> diff --git a/kernel/smp.c b/kernel/smp.c
+>>>> index a081e6c..28cbcc5 100644
+>>>> --- a/kernel/smp.c
+>>>> +++ b/kernel/smp.c
+>>>> @@ -730,3 +730,63 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+>>>>       put_cpu();
+>>>>  }
+>>>>  EXPORT_SYMBOL(on_each_cpu_mask);
+>>>> +
+>>>> +/*
+>>>> + * on_each_cpu_cond(): Call a function on each processor for which
+>>>> + * the supplied function cond_func returns true, optionally waiting
+>>>> + * for all the required CPUs to finish. This may include the local
+>>>> + * processor.
+>>>> + * @cond_func:       A callback function that is passed a cpu id and
+>>>> + *           the the info parameter. The function is called
+>>>> + *           with preemption disabled. The function should
+>>>> + *           return a blooean value indicating whether to IPI
+>>>> + *           the specified CPU.
+>>>> + * @func:    The function to run on all applicable CPUs.
+>>>> + *           This must be fast and non-blocking.
+>>>> + * @info:    An arbitrary pointer to pass to both functions.
+>>>> + * @wait:    If true, wait (atomically) until function has
+>>>> + *           completed on other CPUs.
+>>>> + * @gfp_flags:       GFP flags to use when allocating the cpumask
+>>>> + *           used internally by the function.
+>>>> + *
+>>>> + * The function might sleep if the GFP flags indicates a non
+>>>> + * atomic allocation is allowed.
+>>>> + *
+>>>> + * Preemption is disabled to protect against a hotplug event.
+>>>
+>>>
+>>> Well, disabling preemption protects us only against CPU offline right?
+>>> (because we use the stop_machine thing during cpu offline).
+>>>
+>>> What about CPU online?
+>>>
+>>> Just to cross-check my understanding of the code with the existing
+>>> documentation on CPU hotplug, I looked up Documentation/cpu-hotplug.txt
+>>> and this is what I found:
+>>>
+>>> "If you merely need to avoid cpus going away, you could also use
+>>> preempt_disable() and preempt_enable() for those sections....
+>>> ...The preempt_disable() will work as long as stop_machine_run() is used
+>>> to take a cpu down."
+>>>
+>>> So even this only talks about using preempt_disable() to prevent CPU offline,
+>>> not CPU online. Or, am I missing something?
+>>
+>> You are not missing anything, this is simply a bad choice of words on my part.
+>> Thank you for pointing this out.
+>>
+>> I should write:
+>>
+>> " Preemption is disabled to protect against CPU going offline but not online.
+>>   CPUs going online during the call will not be seen or sent an IPI."
+>>
 > 
-> I should write:
 > 
-> " Preemption is disabled to protect against CPU going offline but not online.
->   CPUs going online during the call will not be seen or sent an IPI."
+> Yeah, that sounds better.
 > 
-
-
-Yeah, that sounds better.
-
-> Protecting against CPU going online during the function is useless
-> since they might
-> as well go online right after the call is finished, so the caller has
-> to take care of it, if they
-> cares.
+>> Protecting against CPU going online during the function is useless
+>> since they might
+>> as well go online right after the call is finished, so the caller has
+>> to take care of it, if they
+>> cares.
+>>
+> 
+> 
+> Ah, makes sense, thanks!
 > 
 
 
-Ah, makes sense, thanks!
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
 Regards,
-
 Srivatsa S. Bhat
 
