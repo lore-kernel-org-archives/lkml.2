@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab2BEWcb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:32:31 -0500
-Received: from 1wt.eu ([62.212.114.60]:62148 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754762Ab2BEW1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754824Ab2BEW1L (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 5 Feb 2012 17:27:11 -0500
-Message-Id: <20120205220952.698841788@pcw.home.local>
+Received: from 1wt.eu ([62.212.114.60]:62131 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754738Ab2BEW1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:27:04 -0500
+Message-Id: <20120205220952.783533652@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:11:05 +0100
+Date: Sun, 05 Feb 2012 23:11:07 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Jay Vosburgh <fubar@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 76/91] bonding: Ensure that we unshare skbs prior to calling pskb_may_pull
+Cc: Jiri Olsa <jolsa@redhat.com>, Brian Gerst <brgerst@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 78/91] x86, 64-bit: Fix copy_[to/from]_user() checks for the userspace address limit
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,135 +24,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit b30532515f0a62bfe17207ab00883dd262497006 upstream.
+commit 26afb7c661080ae3f1f13ddf7f0c58c4f931c22b upstream.
 
-Recently reported oops:
+As reported in BZ #30352:
 
-kernel BUG at net/core/skbuff.c:813!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/devices/virtual/net/bond0/broadcast
-CPU 8
-Modules linked in: sit tunnel4 cpufreq_ondemand acpi_cpufreq freq_table bonding
-ipv6 dm_mirror dm_region_hash dm_log cdc_ether usbnet mii serio_raw i2c_i801
-i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac edac_core bnx2
-ixgbe dca mdio sg ext4 mbcache jbd2 sd_mod crc_t10dif mptsas mptscsih mptbase
-scsi_transport_sas dm_mod [last unloaded: microcode]
+  https://bugzilla.kernel.org/show_bug.cgi?id=30352
 
-Modules linked in: sit tunnel4 cpufreq_ondemand acpi_cpufreq freq_table bonding
-ipv6 dm_mirror dm_region_hash dm_log cdc_ether usbnet mii serio_raw i2c_i801
-i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac edac_core bnx2
-ixgbe dca mdio sg ext4 mbcache jbd2 sd_mod crc_t10dif mptsas mptscsih mptbase
-scsi_transport_sas dm_mod [last unloaded: microcode]
-Pid: 0, comm: swapper Not tainted 2.6.32-71.el6.x86_64 #1 BladeCenter HS22
--[7870AC1]-
-RIP: 0010:[<ffffffff81405b16>]  [<ffffffff81405b16>]
-pskb_expand_head+0x36/0x1e0
-RSP: 0018:ffff880028303b70  EFLAGS: 00010202
-RAX: 0000000000000002 RBX: ffff880c6458ec80 RCX: 0000000000000020
-RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880c6458ec80
-RBP: ffff880028303bc0 R08: ffffffff818a6180 R09: ffff880c6458ed64
-R10: ffff880c622b36c0 R11: 0000000000000400 R12: 0000000000000000
-R13: 0000000000000180 R14: ffff880c622b3000 R15: 0000000000000000
-FS:  0000000000000000(0000) GS:ffff880028300000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-CR2: 00000038653452a4 CR3: 0000000001001000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 0, threadinfo ffff8806649c2000, task ffff880c64f16ab0)
-Stack:
- ffff880028303bc0 ffffffff8104fff9 000000000000001c 0000000100000000
-<0> ffff880000047d80 ffff880c6458ec80 000000000000001c ffff880c6223da00
-<0> ffff880c622b3000 0000000000000000 ffff880028303c10 ffffffff81407f7a
-Call Trace:
-<IRQ>
- [<ffffffff8104fff9>] ? __wake_up_common+0x59/0x90
- [<ffffffff81407f7a>] __pskb_pull_tail+0x2aa/0x360
- [<ffffffffa0244530>] bond_arp_rcv+0x2c0/0x2e0 [bonding]
- [<ffffffff814a0857>] ? packet_rcv+0x377/0x440
- [<ffffffff8140f21b>] netif_receive_skb+0x2db/0x670
- [<ffffffff8140f788>] napi_skb_finish+0x58/0x70
- [<ffffffff8140fc89>] napi_gro_receive+0x39/0x50
- [<ffffffffa01286eb>] ixgbe_clean_rx_irq+0x35b/0x900 [ixgbe]
- [<ffffffffa01290f6>] ixgbe_clean_rxtx_many+0x136/0x240 [ixgbe]
- [<ffffffff8140fe53>] net_rx_action+0x103/0x210
- [<ffffffff81073bd7>] __do_softirq+0xb7/0x1e0
- [<ffffffff810d8740>] ? handle_IRQ_event+0x60/0x170
- [<ffffffff810142cc>] call_softirq+0x1c/0x30
- [<ffffffff81015f35>] do_softirq+0x65/0xa0
- [<ffffffff810739d5>] irq_exit+0x85/0x90
- [<ffffffff814cf915>] do_IRQ+0x75/0xf0
- [<ffffffff81013ad3>] ret_from_intr+0x0/0x11
- <EOI>
- [<ffffffff8101bc01>] ? mwait_idle+0x71/0xd0
- [<ffffffff814cd80a>] ? atomic_notifier_call_chain+0x1a/0x20
- [<ffffffff81011e96>] cpu_idle+0xb6/0x110
- [<ffffffff814c17c8>] start_secondary+0x1fc/0x23f
+there's a kernel bug related to reading the last allowed page on x86_64.
 
-Resulted from bonding driver registering packet handlers via dev_add_pack and
-then trying to call pskb_may_pull. If another packet handler (like for AF_PACKET
-sockets) gets called first, the delivered skb will have a user count > 1, which
-causes pskb_may_pull to BUG halt when it does its skb_shared check.  Fix this by
-calling skb_share_check prior to the may_pull call sites in the bonding driver
-to clone the skb when needed.  Tested by myself and the reported successfully.
+The _copy_to_user() and _copy_from_user() functions use the following
+check for address limit:
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
-Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  if (buf + size >= limit)
+	fail();
+
+while it should be more permissive:
+
+  if (buf + size > limit)
+	fail();
+
+That's because the size represents the number of bytes being
+read/write from/to buf address AND including the buf address.
+So the copy function will actually never touch the limit
+address even if "buf + size == limit".
+
+Following program fails to use the last page as buffer
+due to the wrong limit check:
+
+ #include <sys/mman.h>
+ #include <sys/socket.h>
+ #include <assert.h>
+
+ #define PAGE_SIZE       (4096)
+ #define LAST_PAGE       ((void*)(0x7fffffffe000))
+
+ int main()
+ {
+        int fds[2], err;
+        void * ptr = mmap(LAST_PAGE, PAGE_SIZE, PROT_READ | PROT_WRITE,
+                          MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+        assert(ptr == LAST_PAGE);
+        err = socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
+        assert(err == 0);
+        err = send(fds[0], ptr, PAGE_SIZE, 0);
+        perror("send");
+        assert(err == PAGE_SIZE);
+        err = recv(fds[1], ptr, PAGE_SIZE, MSG_WAITALL);
+        perror("recv");
+        assert(err == PAGE_SIZE);
+        return 0;
+ }
+
+The other place checking the addr limit is the access_ok() function,
+which is working properly. There's just a misleading comment
+for the __range_not_ok() macro - which this patch fixes as well.
+
+The last page of the user-space address range is a guard page and
+Brian Gerst observed that the guard page itself due to an erratum on K8 cpus
+(#121 Sequential Execution Across Non-Canonical Boundary Causes Processor
+Hang).
+
+However, the test code is using the last valid page before the guard page.
+The bug is that the last byte before the guard page can't be read
+because of the off-by-one error. The guard page is left in place.
+
+This bug would normally not show up because the last page is
+part of the process stack and never accessed via syscalls.
+
+[WT: in 2.6.27 use include/asm-x86/uaccess.h]
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Brian Gerst <brgerst@gmail.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1305210630-7136-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/bonding/bond_3ad.c  |    4 ++++
- drivers/net/bonding/bond_alb.c  |    4 ++++
- drivers/net/bonding/bond_main.c |    4 ++++
- 3 files changed, 12 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/uaccess.h |    2 +-
+ arch/x86/lib/copy_user_64.S    |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Index: longterm-2.6.27/drivers/net/bonding/bond_3ad.c
+Index: longterm-2.6.27/include/asm-x86/uaccess.h
 ===================================================================
---- longterm-2.6.27.orig/drivers/net/bonding/bond_3ad.c	2012-02-05 22:34:45.523916489 +0100
-+++ longterm-2.6.27/drivers/net/bonding/bond_3ad.c	2012-02-05 22:34:45.677916635 +0100
-@@ -2436,6 +2436,10 @@
- 	if (!(dev->flags & IFF_MASTER))
- 		goto out;
- 
-+	skb = skb_share_check(skb, GFP_ATOMIC);
-+	if (!skb)
-+		goto out;
-+
- 	if (!pskb_may_pull(skb, sizeof(struct lacpdu)))
- 		goto out;
- 
-Index: longterm-2.6.27/drivers/net/bonding/bond_alb.c
+--- longterm-2.6.27.orig/include/asm-x86/uaccess.h	2012-02-05 22:34:32.595915339 +0100
++++ longterm-2.6.27/include/asm-x86/uaccess.h	2012-02-05 22:34:45.985914777 +0100
+@@ -42,7 +42,7 @@
+  * Returns 0 if the range is valid, nonzero otherwise.
+  *
+  * This is equivalent to the following test:
+- * (u33)addr + (u33)size >= (u33)current->addr_limit.seg (u65 for x86_64)
++ * (u33)addr + (u33)size > (u33)current->addr_limit.seg (u65 for x86_64)
+  *
+  * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
+  */
+Index: longterm-2.6.27/arch/x86/lib/copy_user_64.S
 ===================================================================
---- longterm-2.6.27.orig/drivers/net/bonding/bond_alb.c	2012-02-05 22:34:45.528915452 +0100
-+++ longterm-2.6.27/drivers/net/bonding/bond_alb.c	2012-02-05 22:34:45.682915651 +0100
-@@ -359,6 +359,10 @@
- 		goto out;
- 	}
+--- longterm-2.6.27.orig/arch/x86/lib/copy_user_64.S	2012-02-05 22:34:32.601914938 +0100
++++ longterm-2.6.27/arch/x86/lib/copy_user_64.S	2012-02-05 22:34:45.992914590 +0100
+@@ -72,7 +72,7 @@
+ 	addq %rdx,%rcx
+ 	jc bad_to_user
+ 	cmpq TI_addr_limit(%rax),%rcx
+-	jae bad_to_user
++	ja bad_to_user
+ 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
+ 	CFI_ENDPROC
  
-+	skb = skb_share_check(skb, GFP_ATOMIC);
-+	if (!skb)
-+		goto out;
-+
- 	if (!pskb_may_pull(skb, arp_hdr_len(bond_dev)))
- 		goto out;
- 
-Index: longterm-2.6.27/drivers/net/bonding/bond_main.c
-===================================================================
---- longterm-2.6.27.orig/drivers/net/bonding/bond_main.c	2012-02-05 22:34:32.651914903 +0100
-+++ longterm-2.6.27/drivers/net/bonding/bond_main.c	2012-02-05 22:34:45.691916958 +0100
-@@ -2699,6 +2699,10 @@
- 	if (!slave || !slave_do_arp_validate(bond, slave))
- 		goto out_unlock;
- 
-+	skb = skb_share_check(skb, GFP_ATOMIC);
-+	if (!skb)
-+		goto out_unlock;
-+
- 	if (!pskb_may_pull(skb, arp_hdr_len(dev)))
- 		goto out_unlock;
- 
+@@ -84,7 +84,7 @@
+ 	addq %rdx,%rcx
+ 	jc bad_from_user
+ 	cmpq TI_addr_limit(%rax),%rcx
+-	jae bad_from_user
++	ja bad_from_user
+ 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
+ 	CFI_ENDPROC
+ ENDPROC(copy_from_user)
 
 
