@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab2BEWec (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:34:32 -0500
-Received: from 1wt.eu ([62.212.114.60]:62116 "EHLO 1wt.eu"
+	id S1755139Ab2BEWeu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:34:50 -0500
+Received: from 1wt.eu ([62.212.114.60]:62103 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754333Ab2BEW1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:27:00 -0500
-Message-Id: <20120205220953.045255935@pcw.home.local>
+	id S1754600Ab2BEW07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:59 -0500
+Message-Id: <20120205220952.228676505@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:11:13 +0100
+Date: Sun, 05 Feb 2012 23:10:54 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        harvey.harrison@gmail.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+Cc: Andrea Arcangeli <aarcange@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 84/91] x86: Fix mmap random address range
+Subject: [PATCH 65/91] ext4: avoid hangs in ext4_da_should_update_i_disksize()
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +23,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 9af0c7a6fa860698d080481f24a342ba74b68982 upstream.
+commit ea51d132dbf9b00063169c1159bee253d9649224 upstream.
 
-On x86_32 casting the unsigned int result of get_random_int() to
-long may result in a negative value.  On x86_32 the range of
-mmap_rnd() therefore was -255 to 255.  The 32bit mode on x86_64
-used 0 to 255 as intended.
+If the pte mapping in generic_perform_write() is unmapped between
+iov_iter_fault_in_readable() and iov_iter_copy_from_user_atomic(), the
+"copied" parameter to ->end_write can be zero. ext4 couldn't cope with
+it with delayed allocations enabled. This skips the i_disksize
+enlargement logic if copied is zero and no new data was appeneded to
+the inode.
 
-The bug was introduced by 675a081 ("x86: unify mmap_{32|64}.c")
-in January 2008.
+ gdb> bt
+ #0  0xffffffff811afe80 in ext4_da_should_update_i_disksize (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x1\
+ 08000, len=0x1000, copied=0x0, page=0xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2467
+ #1  ext4_da_write_end (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x108000, len=0x1000, copied=0x0, page=0\
+ xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2512
+ #2  0xffffffff810d97f1 in generic_perform_write (iocb=<value optimized out>, iov=<value optimized out>, nr_segs=<value o\
+ ptimized out>, pos=0x108000, ppos=0xffff88001e26be40, count=<value optimized out>, written=0x0) at mm/filemap.c:2440
+ #3  generic_file_buffered_write (iocb=<value optimized out>, iov=<value optimized out>, nr_segs=<value optimized out>, p\
+ os=0x108000, ppos=0xffff88001e26be40, count=<value optimized out>, written=0x0) at mm/filemap.c:2482
+ #4  0xffffffff810db5d1 in __generic_file_aio_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=0x1, ppos=0\
+ xffff88001e26be40) at mm/filemap.c:2600
+ #5  0xffffffff810db853 in generic_file_aio_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=<value optimi\
+ zed out>, pos=<value optimized out>) at mm/filemap.c:2632
+ #6  0xffffffff811a71aa in ext4_file_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=0x1, pos=0x108000) a\
+ t fs/ext4/file.c:136
+ #7  0xffffffff811375aa in do_sync_write (filp=0xffff88003f606a80, buf=<value optimized out>, len=<value optimized out>, \
+ ppos=0xffff88001e26bf48) at fs/read_write.c:406
+ #8  0xffffffff81137e56 in vfs_write (file=0xffff88003f606a80, buf=0x1ec2960 <Address 0x1ec2960 out of bounds>, count=0x4\
+ 000, pos=0xffff88001e26bf48) at fs/read_write.c:435
+ #9  0xffffffff8113816c in sys_write (fd=<value optimized out>, buf=0x1ec2960 <Address 0x1ec2960 out of bounds>, count=0x\
+ 4000) at fs/read_write.c:487
+ #10 <signal handler called>
+ #11 0x00007f120077a390 in __brk_reservation_fn_dmi_alloc__ ()
+ #12 0x0000000000000000 in ?? ()
+ gdb> print offset
+ $22 = 0xffffffffffffffff
+ gdb> print idx
+ $23 = 0xffffffff
+ gdb> print inode->i_blkbits
+ $24 = 0xc
+ gdb> up
+ #1  ext4_da_write_end (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x108000, len=0x1000, copied=0x0, page=0\
+ xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2512
+ 2512                    if (ext4_da_should_update_i_disksize(page, end)) {
+ gdb> print start
+ $25 = 0x0
+ gdb> print end
+ $26 = 0xffffffffffffffff
+ gdb> print pos
+ $27 = 0x108000
+ gdb> print new_i_size
+ $28 = 0x108000
+ gdb> print ((struct ext4_inode_info *)((char *)inode-((int)(&((struct ext4_inode_info *)0)->vfs_inode))))->i_disksize
+ $29 = 0xd9000
+ gdb> down
+ 2467            for (i = 0; i < idx; i++)
+ gdb> print i
+ $30 = 0xd44acbee
 
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: harvey.harrison@gmail.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/201111152246.pAFMklOB028527@wpaz5.hot.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+This is 100% reproducible with some autonuma development code tuned in
+a very aggressive manner (not normal way even for knumad) which does
+"exotic" changes to the ptes. It wouldn't normally trigger but I don't
+see why it can't happen normally if the page is added to swap cache in
+between the two faults leading to "copied" being zero (which then
+hangs in ext4). So it should be fixed. Especially possible with lumpy
+reclaim (albeit disabled if compaction is enabled) as that would
+ignore the young bits in the ptes.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/mm/mmap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ fs/ext4/inode.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Index: longterm-2.6.27/arch/x86/mm/mmap.c
+Index: longterm-2.6.27/fs/ext4/inode.c
 ===================================================================
---- longterm-2.6.27.orig/arch/x86/mm/mmap.c	2012-02-05 22:34:32.437915058 +0100
-+++ longterm-2.6.27/arch/x86/mm/mmap.c	2012-02-05 22:34:46.864914382 +0100
-@@ -87,9 +87,9 @@
- 	*/
- 	if (current->flags & PF_RANDOMIZE) {
- 		if (mmap_is_ia32())
--			rnd = (long)get_random_int() % (1<<8);
-+			rnd = get_random_int() % (1<<8);
- 		else
--			rnd = (long)(get_random_int() % (1<<28));
-+			rnd = get_random_int() % (1<<28);
- 	}
- 	return rnd << PAGE_SHIFT;
- }
+--- longterm-2.6.27.orig/fs/ext4/inode.c	2012-02-05 22:34:33.021914803 +0100
++++ longterm-2.6.27/fs/ext4/inode.c	2012-02-05 22:34:44.128916205 +0100
+@@ -2816,7 +2816,7 @@
+ 	 */
+ 
+ 	new_i_size = pos + copied;
+-	if (new_i_size > EXT4_I(inode)->i_disksize) {
++	if (copied && new_i_size > EXT4_I(inode)->i_disksize) {
+ 		if (ext4_da_should_update_i_disksize(page, end)) {
+ 			down_write(&EXT4_I(inode)->i_data_sem);
+ 			if (new_i_size > EXT4_I(inode)->i_disksize) {
 
 
