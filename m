@@ -1,160 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab2BELRF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 06:17:05 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:62138 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab2BELQK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 06:16:10 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Pekka Enberg <penberg@kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
-Subject: [PATCH v5 2/3] virtio-scsi: add error handling
-Date: Sun,  5 Feb 2012 12:16:01 +0100
-Message-Id: <1328440562-19425-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1328440562-19425-1-git-send-email-pbonzini@redhat.com>
-References: <1328440562-19425-1-git-send-email-pbonzini@redhat.com>
+	id S1754523Ab2BELWN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 06:22:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753475Ab2BELWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 06:22:11 -0500
+Date: Sun, 5 Feb 2012 06:22:04 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, Steve French <sfrench@samba.org>
+Subject: Re: [PATCH] CIFS: Fix NULL pointer dereference in
+ cifs_construct_tcon()
+Message-ID: <20120205062204.763bdab6@tlielax.poochiereds.net>
+In-Reply-To: <alpine.LNX.2.00.1202050030520.30244@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1202050030520.30244@swampdragon.chaosbits.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds basic error handling to the virtio-scsi
-HBA device.  Task management functions are sent synchronously
-via the control virtqueue.
+On Sun, 5 Feb 2012 00:35:19 +0100 (CET)
+Jesper Juhl <jj@chaosbits.net> wrote:
 
-Cc: linux-scsi <linux-scsi@vger.kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: kvm@vger.kernel.org
-Acked-by: Pekka Enberg <penberg@kernel.org> 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
-	v3->v4: fixed 32-bit compilation; adjusted call to virtscsi_kick_cmd
+> If the call to kcalloc() fails and returns NULL we'll dereference a
+> NULL 'vol_info' after we jump to the 'out:' label.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  fs/cifs/connect.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+> index 986709a..bd67b7c 100644
+> --- a/fs/cifs/connect.c
+> +++ b/fs/cifs/connect.c
+> @@ -3859,7 +3859,7 @@ cifs_construct_tcon(struct cifs_sb_info *cifs_sb, uid_t fsuid)
+>  	vol_info = kzalloc(sizeof(*vol_info), GFP_KERNEL);
+>  	if (vol_info == NULL) {
+>  		tcon = ERR_PTR(-ENOMEM);
+> -		goto out;
+> +		goto out2;
+>  	}
+>  
+>  	vol_info->local_nls = cifs_sb->local_nls;
+> @@ -3901,7 +3901,7 @@ out:
+>  	kfree(vol_info->username);
+>  	kfree(vol_info->password);
+>  	kfree(vol_info);
+> -
+> +out2:
+>  	return tcon;
+>  }
+>  
 
-	v2->v3: added mempool, used GFP_NOIO instead of GFP_ATOMIC,
-	formatting fixes
+Thanks. Dan Carpenter already sent a patch a couple of weeks ago to fix
+this. Steve has it in his tree, but hasn't pushed it to Linus yet.
 
-	v1->v2: use scmd_printk
+Steve, is there a reason you're waiting?
 
- drivers/scsi/virtio_scsi.c |   73 +++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 72 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 3f87ae0..68104cd 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -29,6 +29,7 @@
- /* Command queue element */
- struct virtio_scsi_cmd {
- 	struct scsi_cmnd *sc;
-+	struct completion *comp;
- 	union {
- 		struct virtio_scsi_cmd_req       cmd;
- 		struct virtio_scsi_ctrl_tmf_req  tmf;
-@@ -168,11 +169,12 @@ static void virtscsi_req_done(struct virtqueue *vq)
- 	virtscsi_vq_done(vq, virtscsi_complete_cmd);
- };
- 
--/* These are still stubs.  */
- static void virtscsi_complete_free(void *buf)
- {
- 	struct virtio_scsi_cmd *cmd = buf;
- 
-+	if (cmd->comp)
-+		complete_all(cmd->comp);
- 	mempool_free(cmd, virtscsi_cmd_pool);
- }
- 
-@@ -306,12 +308,81 @@ out:
- 	return ret;
- }
- 
-+static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
-+{
-+	DECLARE_COMPLETION_ONSTACK(comp);
-+	int ret;
-+
-+	cmd->comp = &comp;
-+	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
-+			       sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
-+			       GFP_NOIO);
-+	if (ret < 0)
-+		return FAILED;
-+
-+	wait_for_completion(&comp);
-+	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
-+	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
-+		return FAILED;
-+
-+	return SUCCESS;
-+}
-+
-+static int virtscsi_device_reset(struct scsi_cmnd *sc)
-+{
-+	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
-+	struct virtio_scsi_cmd *cmd;
-+
-+	sdev_printk(KERN_INFO, sc->device, "device reset\n");
-+	cmd = mempool_alloc(virtscsi_cmd_pool, GFP_NOIO);
-+	if (!cmd)
-+		return FAILED;
-+
-+	memset(cmd, 0, sizeof(*cmd));
-+	cmd->sc = sc;
-+	cmd->req.tmf = (struct virtio_scsi_ctrl_tmf_req){
-+		.type = VIRTIO_SCSI_T_TMF,
-+		.subtype = VIRTIO_SCSI_T_TMF_LOGICAL_UNIT_RESET,
-+		.lun[0] = 1,
-+		.lun[1] = sc->device->id,
-+		.lun[2] = (sc->device->lun >> 8) | 0x40,
-+		.lun[3] = sc->device->lun & 0xff,
-+	};
-+	return virtscsi_tmf(vscsi, cmd);
-+}
-+
-+static int virtscsi_abort(struct scsi_cmnd *sc)
-+{
-+	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
-+	struct virtio_scsi_cmd *cmd;
-+
-+	scmd_printk(KERN_INFO, sc, "abort\n");
-+	cmd = mempool_alloc(virtscsi_cmd_pool, GFP_NOIO);
-+	if (!cmd)
-+		return FAILED;
-+
-+	memset(cmd, 0, sizeof(*cmd));
-+	cmd->sc = sc;
-+	cmd->req.tmf = (struct virtio_scsi_ctrl_tmf_req){
-+		.type = VIRTIO_SCSI_T_TMF,
-+		.subtype = VIRTIO_SCSI_T_TMF_ABORT_TASK,
-+		.lun[0] = 1,
-+		.lun[1] = sc->device->id,
-+		.lun[2] = (sc->device->lun >> 8) | 0x40,
-+		.lun[3] = sc->device->lun & 0xff,
-+		.tag = (unsigned long)sc,
-+	};
-+	return virtscsi_tmf(vscsi, cmd);
-+}
-+
- static struct scsi_host_template virtscsi_host_template = {
- 	.module = THIS_MODULE,
- 	.name = "Virtio SCSI HBA",
- 	.proc_name = "virtio_scsi",
- 	.queuecommand = virtscsi_queuecommand,
- 	.this_id = -1,
-+	.eh_abort_handler = virtscsi_abort,
-+	.eh_device_reset_handler = virtscsi_device_reset,
- 
- 	.can_queue = 1024,
- 	.dma_boundary = UINT_MAX,
 -- 
-1.7.1
-
-
+Jeff Layton <jlayton@redhat.com>
