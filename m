@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab2BEW3I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:29:08 -0500
-Received: from 1wt.eu ([62.212.114.60]:62172 "EHLO 1wt.eu"
+	id S1755225Ab2BEW3N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:29:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51417 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754772Ab2BEW3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:29:05 -0500
-Message-Id: <20120205220952.918036511@pcw.home.local>
-User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:11:10 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 81/91] af_packet: prevent information leak
-In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
+	id S1755143Ab2BEW3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:29:08 -0500
+Date: Mon, 6 Feb 2012 09:28:51 +1100
+From: NeilBrown <neilb@suse.de>
+To: dedekind1@gmail.com
+Cc: David Woodhouse <David.Woodhouse@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Crash in mtd_cls_suspend because mtd is NULL.
+Message-ID: <20120206092851.5b33b014@notabene.brown>
+In-Reply-To: <1328245104.6750.6.camel@sauron.fi.intel.com>
+References: <20120203105057.11a86f26@notabene.brown>
+	<1328245104.6750.6.camel@sauron.fi.intel.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/j1iiH_PcybnP._060v5WcJI"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-longterm review patch.  If anyone has any objections, please let us know.
+--Sig_/j1iiH_PcybnP._060v5WcJI
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Fri, 03 Feb 2012 06:58:24 +0200 Artem Bityutskiy <dedekind1@gmail.com>
+wrote:
 
-[ Upstream commit 13fcb7bd322164c67926ffe272846d4860196dc6 ]
+> On Fri, 2012-02-03 at 10:50 +1100, NeilBrown wrote:
+> > Hi,
+> >  I just tried to suspend my GTA04 (OMAP based mobile phone platform) ru=
+nning
+> > 3.3-rc2 and it crashed in mtd_cls_suspend because mtd was NULL.
+> >=20
+> > So for me, it looks like the following patch is a regression.
+> >=20
+> > Is there anything I can do to help find the correct resolution here.
+> >=20
+> > (It has some flash memory but I am not using it at all).
+>=20
+> Neil, there is a fix:
+>=20
+> http://git.infradead.org/users/dedekind/l2-mtd.git/commit/da50432777e184d=
+d889f077cf06a74aa24cb80d9
+>=20
+> I should just be merged upstream. It was discussed here:
+>=20
+> http://patchwork.ozlabs.org/patch/138551/
+>=20
 
-In 2.6.27, commit 393e52e33c6c2 (packet: deliver VLAN TCI to userspace)
-added a small information leak.
+Thanks!
 
-Add padding field and make sure its zeroed before copy to user.
+I pulled in the  whole 'master' branch and it is much better....
+(which is to say that suspend gets a bit further, and the thing that causes
+it to break isn't MTD (it is libertas_sdio..)).
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Patrick McHardy <kaber@trash.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- include/linux/if_packet.h |    2 ++
- net/packet/af_packet.c    |    2 ++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+Thanks,
+NeilBrown
 
-Index: longterm-2.6.27/include/linux/if_packet.h
-===================================================================
---- longterm-2.6.27.orig/include/linux/if_packet.h	2012-02-05 22:34:32.515915059 +0100
-+++ longterm-2.6.27/include/linux/if_packet.h	2012-02-05 22:34:46.429914864 +0100
-@@ -61,6 +61,7 @@
- 	__u16		tp_mac;
- 	__u16		tp_net;
- 	__u16		tp_vlan_tci;
-+	__u16		tp_padding;
- };
- 
- struct tpacket_hdr
-@@ -93,6 +94,7 @@
- 	__u32		tp_sec;
- 	__u32		tp_nsec;
- 	__u16		tp_vlan_tci;
-+	__u16		tp_padding;
- };
- 
- #define TPACKET2_HDRLEN		(TPACKET_ALIGN(sizeof(struct tpacket2_hdr)) + sizeof(struct sockaddr_ll))
-Index: longterm-2.6.27/net/packet/af_packet.c
-===================================================================
---- longterm-2.6.27.orig/net/packet/af_packet.c	2012-02-05 22:34:32.520914890 +0100
-+++ longterm-2.6.27/net/packet/af_packet.c	2012-02-05 22:34:46.438916430 +0100
-@@ -708,6 +708,7 @@
- 		h.h2->tp_sec = ts.tv_sec;
- 		h.h2->tp_nsec = ts.tv_nsec;
- 		h.h2->tp_vlan_tci = skb->vlan_tci;
-+		h.h2->tp_padding = 0;
- 		hdrlen = sizeof(*h.h2);
- 		break;
- 	default:
-@@ -1181,6 +1182,7 @@
- 		aux.tp_net = skb_network_offset(skb);
- 		aux.tp_vlan_tci = skb->vlan_tci;
- 
-+		aux.tp_padding = 0;
- 		put_cmsg(msg, SOL_PACKET, PACKET_AUXDATA, sizeof(aux), &aux);
- 	}
- 
+--Sig_/j1iiH_PcybnP._060v5WcJI
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
+iQIVAwUBTy8CpDnsnt1WYoG5AQJYBxAAlEzUEXeJyuer8YXbUs3r/7/0KxGBhy/L
+XvNSa8dMWWwifGujCywI+KpqSEi3ARLDJTKM/q1hq7OKL77hyytfmVMDblfj758d
+SpIoG+xHXEggf8HJBhJge63jtSp7OLSeEO6Glg34KOEK6FMvbPQ1CNn+34g7KvcL
+I/8HcLiF6ZzMBzZdqfkHQf8tiUVBPPbjQFQwcgrmiEsPBZGdGnsA+DBPUffewfNB
+D9NrYqNsdRLRbez0Z4x+yrsqkoAqR+CEZC9yu+JlFa61AK/338iT+FkBdTjjprvZ
+K2Ua2F7L/Lx2WgR7HKfdxZA58zBeaVDllg5VKi9M6crNGLfNdPxIAxu2Cy4MW+uK
+ItqoQkYlLBGLf8838sYP7orlj+nLgBb4BD946dRm4gN2Gmonb4seGCwHQ4RGP8xj
+HeDxkXUTEz7d+68ib4bQMfQCc8jM15IzdNQidgjHQk6oAGje37vAAzefLicYZE5d
+7daA0mUctxvslxt3CYLTUzUpfAaYYRZb3NOVItt+jkqY66h4GJNXxhmZIUzJMEXP
+HzoSvUy08QGMLc32s+aOcwHhXNaU+i/w3hRDeR28qUpj3pV6E74DHM37/ArX6mZB
+OEJqiO8ZSRWP+1aNp3PevZ7dBXiCovxqr4cPyQ3gyDzn40QRaxiOBW27k7tLvLDo
+gHSFxgPWFL0=
+=E9re
+-----END PGP SIGNATURE-----
+
+--Sig_/j1iiH_PcybnP._060v5WcJI--
