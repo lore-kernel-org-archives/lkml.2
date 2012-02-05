@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2BEW0i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:26:38 -0500
-Received: from 1wt.eu ([62.212.114.60]:61951 "EHLO 1wt.eu"
+	id S1754209Ab2BEW0g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:26:36 -0500
+Received: from 1wt.eu ([62.212.114.60]:61953 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754023Ab2BEW0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754036Ab2BEW0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 Feb 2012 17:26:31 -0500
-Message-Id: <20120205220951.588883629@pcw.home.local>
+Message-Id: <20120205220951.461594058@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:39 +0100
+Date: Sun, 05 Feb 2012 23:10:36 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 50/91] NLM: Dont hang forever on NLM unlock requests
+Subject: [PATCH 47/91] KVM: s390: check cpu_id prior to using it
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,82 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 0b760113a3a155269a3fba93a409c640031dd68f upstream.
+commit 4d47555a80495657161a7e71ec3014ff2021e450 upstream.
 
-If the NLM daemon is killed on the NFS server, we can currently end up
-hanging forever on an 'unlock' request, instead of aborting. Basically,
-if the rpcbind request fails, or the server keeps returning garbage, we
-really want to quit instead of retrying.
+We use the cpu id provided by userspace as array index here. Thus we
+clearly need to check it first. Ooops.
 
-Tested-by: Vasily Averin <vvs@sw.ru>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Carsten Otte <cotte@de.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/lockd/clntproc.c          |    8 +++++++-
- include/linux/sunrpc/sched.h |    4 ++--
- net/sunrpc/clnt.c            |    3 +++
- net/sunrpc/sched.c           |    1 +
- 4 files changed, 13 insertions(+), 3 deletions(-)
+ arch/s390/kvm/kvm-s390.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
 
-Index: longterm-2.6.27/fs/lockd/clntproc.c
+Index: longterm-2.6.27/arch/s390/kvm/kvm-s390.c
 ===================================================================
---- longterm-2.6.27.orig/fs/lockd/clntproc.c	2012-02-05 22:34:33.509914670 +0100
-+++ longterm-2.6.27/fs/lockd/clntproc.c	2012-02-05 22:34:41.942915002 +0100
-@@ -709,7 +709,13 @@
+--- longterm-2.6.27.orig/arch/s390/kvm/kvm-s390.c	2012-02-05 22:34:33.588915140 +0100
++++ longterm-2.6.27/arch/s390/kvm/kvm-s390.c	2012-02-05 22:34:41.524915249 +0100
+@@ -274,11 +274,17 @@
+ struct kvm_vcpu *kvm_arch_vcpu_create(struct kvm *kvm,
+ 				      unsigned int id)
+ {
+-	struct kvm_vcpu *vcpu = kzalloc(sizeof(struct kvm_vcpu), GFP_KERNEL);
+-	int rc = -ENOMEM;
++	struct kvm_vcpu *vcpu;
++	int rc = -EINVAL;
  
- 	if (task->tk_status < 0) {
- 		dprintk("lockd: unlock failed (err = %d)\n", -task->tk_status);
--		goto retry_rebind;
-+		switch (task->tk_status) {
-+		case -EACCES:
-+		case -EIO:
-+			goto die;
-+		default:
-+			goto retry_rebind;
-+		}
- 	}
- 	if (status == NLM_LCK_DENIED_GRACE_PERIOD) {
- 		rpc_delay(task, NLMCLNT_GRACE_WAIT);
-Index: longterm-2.6.27/include/linux/sunrpc/sched.h
-===================================================================
---- longterm-2.6.27.orig/include/linux/sunrpc/sched.h	2012-02-05 22:34:33.497915064 +0100
-+++ longterm-2.6.27/include/linux/sunrpc/sched.h	2012-02-05 22:34:41.949914805 +0100
-@@ -84,8 +84,8 @@
- 	long			tk_rtt;		/* round-trip time (jiffies) */
++	if (id >= KVM_MAX_VCPUS)
++		goto out;
++
++	rc = -ENOMEM;
++
++	vcpu = kzalloc(sizeof(struct kvm_vcpu), GFP_KERNEL);
+ 	if (!vcpu)
+-		goto out_nomem;
++		goto out;
  
- 	pid_t			tk_owner;	/* Process id for batching tasks */
--	unsigned char		tk_priority : 2;/* Task priority */
--
-+	unsigned char		tk_priority : 2,/* Task priority */
-+				tk_rebind_retry : 2;
- #ifdef RPC_DEBUG
- 	unsigned short		tk_pid;		/* debugging aid */
- #endif
-Index: longterm-2.6.27/net/sunrpc/clnt.c
-===================================================================
---- longterm-2.6.27.orig/net/sunrpc/clnt.c	2012-02-05 22:34:33.501914879 +0100
-+++ longterm-2.6.27/net/sunrpc/clnt.c	2012-02-05 22:34:41.957914825 +0100
-@@ -955,6 +955,9 @@
- 			status = -EOPNOTSUPP;
- 			break;
- 		}
-+		if (task->tk_rebind_retry == 0)
-+			break;
-+		task->tk_rebind_retry--;
- 		rpc_delay(task, 3*HZ);
- 		goto retry_timeout;
- 	case -ETIMEDOUT:
-Index: longterm-2.6.27/net/sunrpc/sched.c
-===================================================================
---- longterm-2.6.27.orig/net/sunrpc/sched.c	2012-02-05 22:34:33.505915115 +0100
-+++ longterm-2.6.27/net/sunrpc/sched.c	2012-02-05 22:34:41.963916236 +0100
-@@ -786,6 +786,7 @@
- 	/* Initialize retry counters */
- 	task->tk_garb_retry = 2;
- 	task->tk_cred_retry = 2;
-+	task->tk_rebind_retry = 2;
+ 	vcpu->arch.sie_block = (struct kvm_s390_sie_block *)
+ 					get_zeroed_page(GFP_KERNEL);
+@@ -313,7 +319,7 @@
+ 	return vcpu;
+ out_free_cpu:
+ 	kfree(vcpu);
+-out_nomem:
++out:
+ 	return ERR_PTR(rc);
+ }
  
- 	task->tk_priority = task_setup_data->priority - RPC_PRIORITY_LOW;
- 	task->tk_owner = current->tgid;
 
 
