@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab2BEKgh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 05:36:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152Ab2BEKgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 05:36:35 -0500
-Message-ID: <4F2E5BB0.7040702@redhat.com>
-Date: Sun, 05 Feb 2012 12:36:32 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1754303Ab2BEKo2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 05:44:28 -0500
+Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:51243 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752152Ab2BEKo1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 05:44:27 -0500
+Date: Sun, 5 Feb 2012 11:44:18 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Chinmay V S <chinmay.v.s@pathpartnertech.com>
+Cc: linux-kernel@vger.kernel.org, cvs268@gmail.com, tglx@linutronix.de,
+        sebastian@breakpoint.cc, arjan@linux.intel.com,
+        jeff.chua.linux@gmail.com
+Subject: Re: [PATCH] [timer] Optimise apply_slack() for size and speed.
+Message-ID: <20120205104417.GA6103@kibibi>
+References: <arjan@linux.intel.com>
+ <1328284850-27743-1-git-send-email-chinmay.v.s@pathpartnertech.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [GIT PULL] KVM updates for 3.3-rc2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1328284850-27743-1-git-send-email-chinmay.v.s@pathpartnertech.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from:
+* Chinmay V S | 2012-02-03 21:30:50 [+0530]:
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/3.3
+>Updated the patch for improved readability.
+Arjan's point was that this is not critical for performance and as such
+it does not need an improvement.
 
-Fixing a regression with the PMU MSRs when PMU virtualization is
-disabled, a guest-internal DoS with the SYSCALL instruction, and a dirty
-memory logging race that may cause live migration to fail.
+>How about the following patch?
+I guess this will be left as is.
 
-Gleb Natapov (1):
-      KVM: do not #GP on perf MSR writes when vPMU is disabled
-
-Stephan Bärwolf (2):
-      KVM: x86: extend "struct x86_emulate_ops" with "get_cpuid"
-      KVM: x86: fix missing checks in syscall emulation
-
-Takuya Yoshikawa (1):
-      KVM: Fix __set_bit() race in mark_page_dirty() during dirty logging
-
- arch/x86/include/asm/kvm_emulate.h |   16 +++++++++++
- arch/x86/kvm/emulate.c             |   51
-++++++++++++++++++++++++++++++++++++
- arch/x86/kvm/x86.c                 |   45 +++++++++++++++++++++++++++++++
- virt/kvm/kvm_main.c                |    2 +-
- 4 files changed, 113 insertions(+), 1 deletions(-)
-
--- 
-error compiling committee.c: too many arguments to function
-
+Sebastian
