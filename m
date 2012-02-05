@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab2BENtl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 08:49:41 -0500
+	id S1755118Ab2BENuh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 08:50:37 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:47746 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754994Ab2BENth (ORCPT
+	with ESMTP id S1754702Ab2BENte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 08:49:37 -0500
+	Sun, 5 Feb 2012 08:49:34 -0500
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>, Christoph Lameter <cl@linux.com>,
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Chris Metcalf <cmetcalf@tilera.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
@@ -22,9 +22,9 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>, Christoph Lameter <cl@linux.com>,
         Michal Nazarewicz <mina86@mina86.com>,
         Kosaki Motohiro <kosaki.motohiro@gmail.com>,
         Milton Miller <miltonm@bga.com>
-Subject: [PATCH v8 6/8] fs: only send IPI to invalidate LRU BH when needed
-Date: Sun,  5 Feb 2012 15:48:40 +0200
-Message-Id: <1328449722-15959-5-git-send-email-gilad@benyossef.com>
+Subject: [PATCH v8 5/8] slub: only IPI CPUs that have per cpu obj to flush
+Date: Sun,  5 Feb 2012 15:48:39 +0200
+Message-Id: <1328449722-15959-4-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1328448800-15794-1-git-send-email-gilad@benyossef.com>
 References: <1328448800-15794-1-git-send-email-gilad@benyossef.com>
@@ -32,24 +32,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In several code paths, such as when unmounting a file system (but
-not only) we send an IPI to ask each cpu to invalidate its local
-LRU BHs.
+flush_all() is called for each kmem_cahce_destroy(). So every cache
+being destroyed dynamically ends up sending an IPI to each CPU in the
+system, regardless if the cache has ever been used there.
 
-For multi-cores systems that have many cpus that may not have
-any LRU BH because they are idle or because they have not performed
-any file system accesses since last invalidation (e.g. CPU crunching
-on high perfomance computing nodes that write results to shared
-memory or only using filesystems that do not use the bh layer.)
-This can lead to loss of performance each time someone switches
-the KVM (the virtual keyboard and screen type, not the hypervisor)
-if it has a USB storage stuck in.
+For example, if you close the Infinband ipath driver char device file,
+the close file ops calls kmem_cache_destroy(). So running some
+infiniband config tool on one a single CPU dedicated to system tasks
+might interrupt the rest of the 127 CPUs dedicated to some CPU
+intensive or latency sensitive task.
 
-This patch attempts to only send an IPI to cpus that have LRU BH.
+I suspect there is a good chance that every line in the output of "git
+grep kmem_cache_destroy linux/ | grep '\->'" has a similar scenario.
+
+This patch attempts to rectify this issue by sending an IPI to flush
+the per cpu objects back to the free lists only to CPUs that seem to
+have such objects.
+
+The check which CPU to IPI is racy but we don't care since asking a
+CPU without per cpu objects to flush does no damage and as far as I
+can tell the flush_all by itself is racy against allocs on remote
+CPUs anyway, so if you required the flush_all to be determinstic, you
+had to arrange for locking regardless.
+
+Without this patch the following artificial test case:
+
+$ cd /sys/kernel/slab
+$ for DIR in *; do cat $DIR/alloc_calls > /dev/null; done
+
+produces 166 IPIs on an cpuset isolated CPU. With it it produces none.
+
+The code path of memory allocation failure for CPUMASK_OFFSTACK=y
+config was tested using fault injection framework.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Christoph Lameter <cl@linux.com>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Christoph Lameter <cl@linux.com>
 CC: Chris Metcalf <cmetcalf@tilera.com>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Russell King <linux@arm.linux.org.uk>
@@ -68,38 +86,32 @@ CC: Michal Nazarewicz <mina86@mina86.com>
 CC: Kosaki Motohiro <kosaki.motohiro@gmail.com>
 CC: Milton Miller <miltonm@bga.com>
 ---
- fs/buffer.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+ mm/slub.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 1a30db7..baa075e 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1384,10 +1384,23 @@ static void invalidate_bh_lru(void *arg)
- 	}
- 	put_cpu_var(bh_lrus);
+diff --git a/mm/slub.c b/mm/slub.c
+index 4907563..3d75f89 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2018,9 +2018,17 @@ static void flush_cpu_slab(void *d)
+ 	__flush_cpu_slab(s, smp_processor_id());
  }
-+
-+static bool has_bh_in_lru(int cpu, void *dummy)
+ 
++static bool has_cpu_slab(int cpu, void *info)
 +{
-+	struct bh_lru *b = per_cpu_ptr(&bh_lrus, cpu);
-+	int i;
- 	
-+	for (i = 0; i < BH_LRU_SIZE; i++) {
-+		if (b->bhs[i])
-+			return 1;
-+	}
++	struct kmem_cache *s = info;
++	struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
 +
-+	return 0;
++	return !!(c->page);
 +}
 +
- void invalidate_bh_lrus(void)
+ static void flush_all(struct kmem_cache *s)
  {
--	on_each_cpu(invalidate_bh_lru, NULL, 1);
-+	on_each_cpu_cond(has_bh_in_lru, invalidate_bh_lru, NULL, 1, GFP_KERNEL);
+-	on_each_cpu(flush_cpu_slab, s, 1);
++	on_each_cpu_cond(has_cpu_slab, flush_cpu_slab, s, 1, GFP_ATOMIC);
  }
- EXPORT_SYMBOL_GPL(invalidate_bh_lrus);
  
+ /*
 -- 
 1.7.0.4
 
