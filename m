@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab2BEWkO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:40:14 -0500
-Received: from 1wt.eu ([62.212.114.60]:62011 "EHLO 1wt.eu"
+	id S1754725Ab2BEWkj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:40:39 -0500
+Received: from 1wt.eu ([62.212.114.60]:61989 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753848Ab2BEW0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:40 -0500
-Message-Id: <20120205220951.845011258@pcw.home.local>
+	id S1754117Ab2BEW0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:39 -0500
+Message-Id: <20120205220951.929556284@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:45 +0100
+Date: Sun, 05 Feb 2012 23:10:47 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Robert Richter <robert.richter@amd.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 56/91] hfs: add sanity check for file name length
+Subject: [PATCH 58/91] oprofile, x86: Fix crash when unloading module (nmi timer mode)
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +23,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit bc5b8a9003132ae44559edd63a1623b7b99dfb68 upstream.
+commit 97f7f8189fe54e3cfe324ef9ad35064f3d2d3bff upstream.
 
-On a corrupted file system the ->len field could be wrong leading to
-a buffer overflow.
+If oprofile uses the nmi timer interrupt there is a crash while
+unloading the module. The bug can be triggered with oprofile build as
+module and kernel parameter nolapic set. This patch fixes this.
 
-Reported-and-acked-by: Clement LECIGNE <clement.lecigne@netasq.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+oprofile: using NMI timer interrupt.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+IP: [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+PGD 42dbca067 PUD 41da6a067 PMD 0
+Oops: 0002 [#1] PREEMPT SMP
+CPU 5
+Modules linked in: oprofile(-) [last unloaded: oprofile]
+
+Pid: 2518, comm: modprobe Not tainted 3.1.0-rc7-00019-gb2fb49d #19 Advanced Micro Device Anaheim/Anaheim
+RIP: 0010:[<ffffffff8123c226>]  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+RSP: 0018:ffff88041ef71e98  EFLAGS: 00010296
+RAX: 0000000000000000 RBX: ffffffffa0017100 RCX: dead000000200200
+RDX: 0000000000000000 RSI: dead000000100100 RDI: ffffffff8178c620
+RBP: ffff88041ef71ea8 R08: 0000000000000001 R09: 0000000000000082
+R10: 0000000000000000 R11: ffff88041ef71de8 R12: 0000000000000080
+R13: fffffffffffffff5 R14: 0000000000000001 R15: 0000000000610210
+FS:  00007fc902f20700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000008 CR3: 000000041cdb6000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process modprobe (pid: 2518, threadinfo ffff88041ef70000, task ffff88041d348040)
+Stack:
+ ffff88041ef71eb8 ffffffffa0017790 ffff88041ef71eb8 ffffffffa0013532
+ ffff88041ef71ec8 ffffffffa00132d6 ffff88041ef71ed8 ffffffffa00159b2
+ ffff88041ef71f78 ffffffff81073115 656c69666f72706f 0000000000610200
+Call Trace:
+ [<ffffffffa0013532>] op_nmi_exit+0x15/0x17 [oprofile]
+ [<ffffffffa00132d6>] oprofile_arch_exit+0xe/0x10 [oprofile]
+ [<ffffffffa00159b2>] oprofile_exit+0x1e/0x20 [oprofile]
+ [<ffffffff81073115>] sys_delete_module+0x1c3/0x22f
+ [<ffffffff811bf09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8148070b>] system_call_fastpath+0x16/0x1b
+Code: 20 c6 78 81 e8 c5 cc 23 00 48 8b 13 48 8b 43 08 48 be 00 01 10 00 00 00 ad de 48 b9 00 02 20 00 00 00 ad de 48 c7 c7 20 c6 78 81
+ 89 42 08 48 89 10 48 89 33 48 89 4b 08 e8 a6 c0 23 00 5a 5b
+RIP  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+ RSP <ffff88041ef71e98>
+CR2: 0000000000000008
+---[ end trace 43a541a52956b7b0 ]---
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/hfs/trans.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/x86/oprofile/init.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-Index: longterm-2.6.27/fs/hfs/trans.c
+Index: longterm-2.6.27/arch/x86/oprofile/init.c
 ===================================================================
---- longterm-2.6.27.orig/fs/hfs/trans.c	2012-02-05 22:34:33.296915074 +0100
-+++ longterm-2.6.27/fs/hfs/trans.c	2012-02-05 22:34:42.844914477 +0100
-@@ -40,6 +40,8 @@
+--- longterm-2.6.27.orig/arch/x86/oprofile/init.c	2012-02-05 22:34:33.209915247 +0100
++++ longterm-2.6.27/arch/x86/oprofile/init.c	2012-02-05 22:34:43.123914870 +0100
+@@ -21,6 +21,7 @@
+ extern void op_nmi_exit(void);
+ extern void x86_backtrace(struct pt_regs * const regs, unsigned int depth);
  
- 	src = in->name;
- 	srclen = in->len;
-+	if (srclen > HFS_NAMELEN)
-+		srclen = HFS_NAMELEN;
- 	dst = out;
- 	dstlen = HFS_MAX_NAMELEN;
- 	if (nls_io) {
++static int nmi_timer;
+ 
+ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ {
+@@ -31,8 +32,9 @@
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	ret = op_nmi_init(ops);
+ #endif
++	nmi_timer = (ret != 0);
+ #ifdef CONFIG_X86_IO_APIC
+-	if (ret < 0)
++	if (nmi_timer)
+ 		ret = op_nmi_timer_init(ops);
+ #endif
+ 	ops->backtrace = x86_backtrace;
+@@ -44,6 +46,7 @@
+ void oprofile_arch_exit(void)
+ {
+ #ifdef CONFIG_X86_LOCAL_APIC
+-	op_nmi_exit();
++	if (!nmi_timer)
++		op_nmi_exit();
+ #endif
+ }
 
 
