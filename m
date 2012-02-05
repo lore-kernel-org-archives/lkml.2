@@ -1,187 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab2BEINi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 03:13:38 -0500
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:35521 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751799Ab2BEINg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 03:13:36 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AosHADo5Lk9XQCTA/2dsb2JhbABCgxGsH4EGgXIBAQUnER4jEAsVAwkaCw8CEBgeBg0BBQIBAYd7rRGIFYNPAQQCAQICCQQBDQQGAQEBgzcZBAMMAxQFVxgbAgEEBIMvBJsAg1eBW4dS
-Message-ID: <4F2E39F6.70803@computer.org>
-Date: Sun, 05 Feb 2012 09:12:38 +0100
-From: Jan Ceuleers <jan.ceuleers@computer.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1753137Ab2BEIP5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 03:15:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46873 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752087Ab2BEIP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 03:15:56 -0500
+Date: Sun, 5 Feb 2012 16:15:42 +0800
+From: Dave Young <dyoung@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: akpm@linux-foundation.org, xiyou.wangcong@gmail.com, penberg@kernel.org,
+        fengguang.wu@intel.com, cl@linux.com
+Subject: [PATCH 1/3] move page-types.c from Documentation to tools/vm
+Message-ID: <20120205081542.GA2245@darkstar.redhat.com>
 MIME-Version: 1.0
-To: "Devendra.Naga" <devendra.aaru@gmail.com>
-CC: Larry.Finger@lwfinger.net, chaoming_li@realsil.com.cn,
-        linville@tuxdriver.com, paul.gortmaker@windriver.com, joe@perches.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] wireless: move ifs' in _rtl92c_store_pwrIndex_diffrate_offset
- into elseif statements
-References: <1327906245-8200-1-git-send-email-devendra.aaru@gmail.com>
-In-Reply-To: <1327906245-8200-1-git-send-email-devendra.aaru@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 07:50 AM, Devendra.Naga wrote:
-> From: "Devendra.Naga"<devendra.aaru@gmail.com>
->
->          The regaddr is compared against different rates in each case and the powerlevels are set
->          accordingly. as this can match for the first if and we still check for other powerlevels too,
->          use else if ratherthan using if statements
-> Signed-off-by: Devendra.Naga<devendra.aaru@gmail.com>
-If this is correct, and I'm not saying it is or isn't, would it not be 
-clearer to turn this whole section into a switch statement? The cases 
-that requiring fiddling with the bitmask would need to be dealt with in 
-the default: case.
+tools/ is the better place for vm tools which are used by many people.
+Moving them to tools also make them open to more users instead of hide in
+Documentation folder.
 
-Why was it written as a series of if statements to begin with: can (or 
-could) any of these if statements change the value of regaddr such that 
-later ifs evaluate differently? From reading only the patch the answer 
-seems to be "no", so that looks good.
+This patch move page-types.c to tools/vm/page-types.c
+Also add Makefile in tools/vm and fix two coding style problems of below:
+a. change const arrary to 'const char * const'
+b. change a space to tab for indent
 
-Or what about turning this into a data-driven section? It looks like 
-values of regaddr are being translated into offsets into 
-rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt]. Can this be done with a lookup 
-table?
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ Documentation/vm/Makefile                |    2 +-
+ tools/vm/Makefile                        |   11 +++++++++++
+ {Documentation => tools}/vm/page-types.c |    6 +++---
+ 3 files changed, 15 insertions(+), 4 deletions(-)
+ create mode 100644 tools/vm/Makefile
+ rename {Documentation => tools}/vm/page-types.c (99%)
 
-> ---
->   drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |   47 +++++++------------
->   1 files changed, 17 insertions(+), 30 deletions(-)
->
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-> index 22e998d..cb11e5a 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-> @@ -260,106 +260,93 @@ void _rtl92c_store_pwrIndex_diffrate_offset(struct ieee80211_hw *hw,
->   			 "MCSTxPowerLevelOriginalOffset[%d][0] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][0]);
-> -	}
-> -	if (regaddr == RTXAGC_A_RATE54_24) {
-> +	} else if (regaddr == RTXAGC_A_RATE54_24) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][1] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][1] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][1]);
-> -	}
-> -	if (regaddr == RTXAGC_A_CCK1_MCS32) {
-> +	} else if (regaddr == RTXAGC_A_CCK1_MCS32) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][6] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][6] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][6]);
-> -	}
-> -	if (regaddr == RTXAGC_B_CCK11_A_CCK2_11&&  bitmask == 0xffffff00) {
-> +	} else if (regaddr == RTXAGC_B_CCK11_A_CCK2_11&&
-> +		bitmask == 0xffffff00) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][7] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][7] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][7]);
-> -	}
-> -	if (regaddr == RTXAGC_A_MCS03_MCS00) {
-> +	} else if (regaddr == RTXAGC_A_MCS03_MCS00) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][2] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][2] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][2]);
-> -	}
-> -	if (regaddr == RTXAGC_A_MCS07_MCS04) {
-> +	} else if (regaddr == RTXAGC_A_MCS07_MCS04) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][3] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][3] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][3]);
-> -	}
-> -	if (regaddr == RTXAGC_A_MCS11_MCS08) {
-> +	} else if (regaddr == RTXAGC_A_MCS11_MCS08) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][4] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][4] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][4]);
-> -	}
-> -	if (regaddr == RTXAGC_A_MCS15_MCS12) {
-> +	} else if (regaddr == RTXAGC_A_MCS15_MCS12) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][5] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][5] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][5]);
-> -	}
-> -	if (regaddr == RTXAGC_B_RATE18_06) {
-> +	} else if (regaddr == RTXAGC_B_RATE18_06) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][8] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][8] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][8]);
-> -	}
-> -	if (regaddr == RTXAGC_B_RATE54_24) {
-> +	} else if (regaddr == RTXAGC_B_RATE54_24) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][9] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][9] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][9]);
-> -	}
-> -	if (regaddr == RTXAGC_B_CCK1_55_MCS32) {
-> +	} else if (regaddr == RTXAGC_B_CCK1_55_MCS32) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][14] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][14] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][14]);
-> -	}
-> -	if (regaddr == RTXAGC_B_CCK11_A_CCK2_11&&  bitmask == 0x000000ff) {
-> +	} else if (regaddr == RTXAGC_B_CCK11_A_CCK2_11&&
-> +		bitmask == 0x000000ff) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][15] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][15] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][15]);
-> -	}
-> -	if (regaddr == RTXAGC_B_MCS03_MCS00) {
-> +	} else if (regaddr == RTXAGC_B_MCS03_MCS00) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][10] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][10] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][10]);
-> -	}
-> -	if (regaddr == RTXAGC_B_MCS07_MCS04) {
-> +	} else if (regaddr == RTXAGC_B_MCS07_MCS04) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][11] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][11] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][11]);
-> -	}
-> -	if (regaddr == RTXAGC_B_MCS11_MCS08) {
-> +	} else if (regaddr == RTXAGC_B_MCS11_MCS08) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][12] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][12] = 0x%x\n",
->   			 rtlphy->pwrgroup_cnt,
->   			 rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][12]);
-> -	}
-> -	if (regaddr == RTXAGC_B_MCS15_MCS12) {
-> +	} else if (regaddr == RTXAGC_B_MCS15_MCS12) {
->   		rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][13] = data;
->   		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
->   			 "MCSTxPowerLevelOriginalOffset[%d][13] = 0x%x\n",
+diff --git a/Documentation/vm/Makefile b/Documentation/vm/Makefile
+index 3fa4d06..e538864 100644
+--- a/Documentation/vm/Makefile
++++ b/Documentation/vm/Makefile
+@@ -2,7 +2,7 @@
+ obj- := dummy.o
+ 
+ # List of programs to build
+-hostprogs-y := page-types hugepage-mmap hugepage-shm map_hugetlb
++hostprogs-y := hugepage-mmap hugepage-shm map_hugetlb
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+diff --git a/tools/vm/Makefile b/tools/vm/Makefile
+new file mode 100644
+index 0000000..3823d4b
+--- /dev/null
++++ b/tools/vm/Makefile
+@@ -0,0 +1,11 @@
++# Makefile for vm tools
++
++CC = $(CROSS_COMPILE)gcc
++CFLAGS = -Wall -Wextra
++
++all: page-types
++%: %.c
++	$(CC) $(CFLAGS) -o $@ $^
++
++clean:
++	$(RM) page-types
+diff --git a/Documentation/vm/page-types.c b/tools/vm/page-types.c
+similarity index 99%
+rename from Documentation/vm/page-types.c
+rename to tools/vm/page-types.c
+index 7445caa..89dd173 100644
+--- a/Documentation/vm/page-types.c
++++ b/tools/vm/page-types.c
+@@ -123,7 +123,7 @@
+ #define BIT(name)		(1ULL << KPF_##name)
+ #define BITS_COMPOUND		(BIT(COMPOUND_HEAD) | BIT(COMPOUND_TAIL))
+ 
+-static const char *page_flag_names[] = {
++static const char * const page_flag_names[] = {
+ 	[KPF_LOCKED]		= "L:locked",
+ 	[KPF_ERROR]		= "E:error",
+ 	[KPF_REFERENCED]	= "R:referenced",
+@@ -164,7 +164,7 @@ static const char *page_flag_names[] = {
+ };
+ 
+ 
+-static const char *debugfs_known_mountpoints[] = {
++static const char * const debugfs_known_mountpoints[] = {
+ 	"/sys/kernel/debug",
+ 	"/debug",
+ 	0,
+@@ -213,7 +213,7 @@ static int		hwpoison_forget_fd;
+ 
+ static unsigned long	total_pages;
+ static unsigned long	nr_pages[HASH_SIZE];
+-static uint64_t 	page_flags[HASH_SIZE];
++static uint64_t		page_flags[HASH_SIZE];
+ 
+ 
+ /*
+-- 
+1.7.4.4
 
