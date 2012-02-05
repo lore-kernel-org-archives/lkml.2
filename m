@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab2BENtn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 08:49:43 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51550 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab2BENtl (ORCPT
+	id S1754984Ab2BENtf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 08:49:35 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47746 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab2BENtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 08:49:41 -0500
-MIME-Version: 1.0
+	Sun, 5 Feb 2012 08:49:32 -0500
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Chris Metcalf <cmetcalf@tilera.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
         Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Milton Miller <miltonm@bga.com>
-Subject: [PATCH v8 7/8] mm: only IPI CPUs to drain local pages if they exist
-Date: Sun,  5 Feb 2012 15:48:41 +0200
-Message-Id: <1328449722-15959-6-git-send-email-gilad@benyossef.com>
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Milton Miller <miltonm@bga.com>
+Subject: [PATCH v8 4/8] smp: add func to IPI cpus based on parameter func
+Date: Sun,  5 Feb 2012 15:48:38 +0200
+Message-Id: <1328449722-15959-3-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1328448800-15794-1-git-send-email-gilad@benyossef.com>
 References: <1328448800-15794-1-git-send-email-gilad@benyossef.com>
@@ -32,66 +33,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate a cpumask of CPUs with per-cpu pages in any zone
-and only send an IPI requesting CPUs to drain these pages
-to the buddy allocator if they actually have pages when
-asked to flush.
+Add the on_each_cpu_cond() function that wraps on_each_cpu_mask()
+and calculates the cpumask of cpus to IPI by calling a function supplied
+as a parameter in order to determine whether to IPI each specific cpu.
 
-This patch saves 85%+ of IPIs asking to drain per-cpu
-pages in case of severe memory preassure that leads
-to OOM since in these cases multiple, possibly concurrent,
-allocation requests end up in the direct reclaim code
-path so when the per-cpu pages end up reclaimed on first
-allocation failure for most of the proceeding allocation
-attempts until the memory pressure is off (possibly via
-the OOM killer) there are no per-cpu pages on most CPUs
-(and there can easily be hundreds of them).
+The function works around allocation failure of cpumask variable in
+CONFIG_CPUMASK_OFFSTACK=y by itereating over cpus sending an IPI a
+time via smp_call_function_single().
 
-This also has the side effect of shortening the average
-latency of direct reclaim by 1 or more order of magnitude
-since waiting for all the CPUs to ACK the IPI takes a
-long time.
-
-Tested by running "hackbench 400" on a 8 CPU x86 VM and
-observing the difference between the number of direct
-reclaim attempts that end up in drain_all_pages() and
-those were more then 1/2 of the online CPU had any per-cpu
-page in them, using the vmstat counters introduced
-in the next patch in the series and using proc/interrupts.
-
-In the test sceanrio, this was seen to save around 3600 global
-IPIs after trigerring an OOM on a concurrent workload:
-
-$ cat /proc/vmstat | tail -n 2
-pcp_global_drain 0
-pcp_global_ipi_saved 0
-
-$ cat /proc/interrupts | grep CAL
-CAL:          1          2          1          2
-          2          2          2          2   Function call interrupts
-
-$ hackbench 400
-[OOM messages snipped]
-
-$ cat /proc/vmstat | tail -n 2
-pcp_global_drain 3647
-pcp_global_ipi_saved 3642
-
-$ cat /proc/interrupts | grep CAL
-CAL:          6         13          6          3
-          3          3         1 2          7   Function call interrupts
-
-Please note that if the global drain is removed from the
-direct reclaim path as a patch from Mel Gorman currently
-suggests this should be replaced with an on_each_cpu_cond
-invocation.
+The function is useful since it allows to seperate the specific
+code that decided in each case whether to IPI a specific cpu for
+a specific request from the common boilerplate code of handling
+creating the mask, handling failures etc.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 CC: Chris Metcalf <cmetcalf@tilera.com>
+CC: Christoph Lameter <cl@linux-foundation.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Russell King <linux@arm.linux.org.uk>
 CC: linux-mm@kvack.org
@@ -100,69 +58,128 @@ CC: Matt Mackall <mpm@selenic.com>
 CC: Sasha Levin <levinsasha928@gmail.com>
 CC: Rik van Riel <riel@redhat.com>
 CC: Andi Kleen <andi@firstfloor.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Alexander Viro <viro@zeniv.linux.org.uk>
 CC: linux-fsdevel@vger.kernel.org
 CC: Avi Kivity <avi@redhat.com>
 CC: Michal Nazarewicz <mina86@mina86.com>
+CC: Kosaki Motohiro <kosaki.motohiro@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Milton Miller <miltonm@bga.com>
 ---
- mm/page_alloc.c |   39 +++++++++++++++++++++++++++++++++++++--
- 1 files changed, 37 insertions(+), 2 deletions(-)
+ include/linux/smp.h |   24 ++++++++++++++++++++
+ kernel/smp.c        |   60 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 84 insertions(+), 0 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d2186ec..3ff5aff 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1161,11 +1161,46 @@ void drain_local_pages(void *arg)
- }
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index d0adb78..da4d034 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -109,6 +109,15 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+ 		void *info, bool wait);
  
  /*
-- * Spill all the per-cpu pages from all CPUs back into the buddy allocator
-+ * Spill all the per-cpu pages from all CPUs back into the buddy allocator.
-+ *
-+ * Note that this code is protected against sending an IPI to an offline
-+ * CPU but does not guarantee sending an IPI to newly hotplugged CPUs:
-+ * on_each_cpu_mask() blocks hotplug and won't talk to offlined CPUs but
-+ * nothing keeps CPUs from showing up after we populated the cpumask and
-+ * before the call to on_each_cpu_mask().
++ * Call a function on each processor for which the supplied function
++ * cond_func returns a positive value. This may include the local
++ * processor.
++ */
++void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
++		smp_call_func_t func, void *info, bool wait,
++		gfp_t gfp_flags);
++
++/*
+  * Mark the boot cpu "online" so that it can call console drivers in
+  * printk() and can access its per-cpu storage.
   */
- void drain_all_pages(void)
- {
--	on_each_cpu(drain_local_pages, NULL, 1);
-+	int cpu;
-+	struct per_cpu_pageset *pcp;
-+	struct zone *zone;
-+
-+	/* Allocate in the BSS so we wont require allocation in
-+	 * direct reclaim path for CONFIG_CPUMASK_OFFSTACK=y
-+	 */
-+	static cpumask_t cpus_with_pcps;
-+
-+	/*
-+	 * We don't care about racing with CPU hotplug event
-+	 * as offline notification will cause the notified
-+	 * cpu to drain that CPU pcps and on_each_cpu_mask
-+	 * disables preemption as part of its processing
-+	 */
-+	for_each_online_cpu(cpu) {
-+		bool has_pcps = false;
-+		for_each_populated_zone(zone) {
-+			pcp = per_cpu_ptr(zone->pageset, cpu);
-+			if (pcp->pcp.count) {
-+				has_pcps = true;
-+				break;
-+			}
-+		}
-+		if (has_pcps)
-+			cpumask_set_cpu(cpu, &cpus_with_pcps);
-+		else
-+			cpumask_clear_cpu(cpu, &cpus_with_pcps);
-+	}
-+	on_each_cpu_mask(&cpus_with_pcps, drain_local_pages, NULL, 1);
- }
+@@ -153,6 +162,21 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
+ 			local_irq_enable();		\
+ 		}					\
+ 	} while (0)
++/*
++ * Preemption is disabled here to make sure the
++ * cond_func is called under the same condtions in UP
++ * and SMP.
++ */
++#define on_each_cpu_cond(cond_func, func, info, wait, gfp_flags) \
++	do {						\
++		preempt_disable();			\
++		if (cond_func(0, info)) {		\
++			local_irq_disable();		\
++			(func)(info);			\
++			local_irq_enable();		\
++		}					\
++		preempt_enable();			\
++	} while (0)
  
- #ifdef CONFIG_HIBERNATION
+ static inline void smp_send_reschedule(int cpu) { }
+ #define num_booting_cpus()			1
+diff --git a/kernel/smp.c b/kernel/smp.c
+index a081e6c..28cbcc5 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -730,3 +730,63 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+ 	put_cpu();
+ }
+ EXPORT_SYMBOL(on_each_cpu_mask);
++
++/*
++ * on_each_cpu_cond(): Call a function on each processor for which
++ * the supplied function cond_func returns true, optionally waiting
++ * for all the required CPUs to finish. This may include the local
++ * processor.
++ * @cond_func:	A callback function that is passed a cpu id and
++ *		the the info parameter. The function is called
++ *		with preemption disabled. The function should
++ *		return a blooean value indicating whether to IPI
++ *		the specified CPU.
++ * @func:	The function to run on all applicable CPUs.
++ *		This must be fast and non-blocking.
++ * @info:	An arbitrary pointer to pass to both functions.
++ * @wait:	If true, wait (atomically) until function has
++ *		completed on other CPUs.
++ * @gfp_flags:	GFP flags to use when allocating the cpumask
++ *		used internally by the function.
++ *
++ * The function might sleep if the GFP flags indicates a non
++ * atomic allocation is allowed.
++ *
++ * Preemption is disabled to protect against a hotplug event.
++ *
++ * You must not call this function with disabled interrupts or
++ * from a hardware interrupt handler or from a bottom half handler.
++ */
++void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
++			smp_call_func_t func, void *info, bool wait,
++			gfp_t gfp_flags)
++{
++	cpumask_var_t cpus;
++	int cpu, ret;
++
++	might_sleep_if(gfp_flags & __GFP_WAIT);
++
++	if (likely(zalloc_cpumask_var(&cpus, (gfp_flags|__GFP_NOWARN)))) {
++		preempt_disable();
++		for_each_online_cpu(cpu)
++			if (cond_func(cpu, info))
++				cpumask_set_cpu(cpu, cpus);
++		on_each_cpu_mask(cpus, func, info, wait);
++		preempt_enable();
++		free_cpumask_var(cpus);
++	} else {
++		/*
++		 * No free cpumask, bother. No matter, we'll
++		 * just have to IPI them one by one.
++		 */
++		preempt_disable();
++		for_each_online_cpu(cpu)
++			if (cond_func(cpu, info)) {
++				ret = smp_call_function_single(cpu, func,
++								info, wait);
++				WARN_ON_ONCE(!ret);
++			}
++		preempt_enable();
++	}
++}
++EXPORT_SYMBOL(on_each_cpu_cond);
 -- 
 1.7.0.4
 
