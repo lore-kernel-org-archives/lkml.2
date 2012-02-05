@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2BEWdG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:33:06 -0500
-Received: from 1wt.eu ([62.212.114.60]:62127 "EHLO 1wt.eu"
+	id S1754914Ab2BEWdu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:33:50 -0500
+Received: from 1wt.eu ([62.212.114.60]:62124 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754716Ab2BEW1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754386Ab2BEW1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 Feb 2012 17:27:03 -0500
-Message-Id: <20120205220952.186588421@pcw.home.local>
+Message-Id: <20120205220953.088725541@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:53 +0100
+Date: Sun, 05 Feb 2012 23:11:14 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: John Lumby <johnlumby@hotmail.com>, Maynard Johnson <maynardj@us.ibm.com>,
-        Robert Richter <robert.richter@amd.com>,
+Cc: Jim Bos <jim876@xs4all.nl>, Andi Kleen <andi@firstfloor.org>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 64/91] oprofile, x86: Fix nmi-unsafe callgraph support
+Subject: [PATCH 85/91] i8k: Tell gcc that *regs gets clobbered
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,146 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit a0e3e70243f5b270bc3eca718f0a9fa5e6b8262e upstream.
+commit 6b4e81db2552bad04100e7d5ddeed7e848f53b48 upstream.
 
-Backport for stable kernel v2.6.32.y to v2.6.36.y.
+More recent GCC caused the i8k driver to stop working, on Slackware
+compiler was upgraded from gcc-4.4.4 to gcc-4.5.1 after which it didn't
+work anymore, meaning the driver didn't load or gave total nonsensical
+output.
 
-Current oprofile's x86 callgraph support may trigger page faults
-throwing the BUG_ON(in_nmi()) message below. This patch fixes this by
-using the same nmi-safe copy-from-user code as in perf.
+As it turned out the asm(..) statement forgot to mention it modifies the
+*regs variable.
 
-------------[ cut here ]------------
-kernel BUG at .../arch/x86/kernel/traps.c:436!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/devices/pci0000:00/0000:00:0a.0/0000:07:00.0/0000:08:04.0/net/eth0/broadcast
-CPU 5
-Modules linked in:
+Credits to Andi Kleen and Andreas Schwab for providing the fix.
 
-Pid: 8611, comm: opcontrol Not tainted 2.6.39-00007-gfe47ae7 #1 Advanced Micro Device Anaheim/Anaheim
-RIP: 0010:[<ffffffff813e8e35>]  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
-RSP: 0000:ffff88042fd47f28  EFLAGS: 00010002
-RAX: ffff88042c0a7fd8 RBX: 0000000000000001 RCX: 00000000c0000101
-RDX: 00000000ffff8804 RSI: ffffffffffffffff RDI: ffff88042fd47f58
-RBP: ffff88042fd47f48 R08: 0000000000000004 R09: 0000000000001484
-R10: 0000000000000001 R11: 0000000000000000 R12: ffff88042fd47f58
-R13: 0000000000000000 R14: ffff88042fd47d98 R15: 0000000000000020
-FS:  00007fca25e56700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000074 CR3: 000000042d28b000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process opcontrol (pid: 8611, threadinfo ffff88042c0a6000, task ffff88042c532310)
-Stack:
- 0000000000000000 0000000000000001 ffff88042c0a7fd8 0000000000000000
- ffff88042fd47de8 ffffffff813e897a 0000000000000020 ffff88042fd47d98
- 0000000000000000 ffff88042c0a7fd8 ffff88042fd47de8 0000000000000074
-Call Trace:
- <NMI>
- [<ffffffff813e897a>] nmi+0x1a/0x20
- [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
- <<EOE>>
-Code: ff 59 5b 41 5c 41 5d c9 c3 55 65 48 8b 04 25 88 b5 00 00 48 89 e5 41 55 41 54 49 89 fc 53 48 83 ec 08 f6 80 47 e0 ff ff 04 74 04 <0f> 0b eb fe 81 80 44 e0 ff ff 00 00 01 04 65 ff 04 25 c4 0f 01
-RIP  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
- RSP <ffff88042fd47f28>
----[ end trace ed6752185092104b ]---
-Kernel panic - not syncing: Fatal exception in interrupt
-Pid: 8611, comm: opcontrol Tainted: G      D     2.6.39-00007-gfe47ae7 #1
-Call Trace:
- <NMI>  [<ffffffff813e5e0a>] panic+0x8c/0x188
- [<ffffffff813e915c>] oops_end+0x81/0x8e
- [<ffffffff8100403d>] die+0x55/0x5e
- [<ffffffff813e8c45>] do_trap+0x11c/0x12b
- [<ffffffff810023c8>] do_invalid_op+0x91/0x9a
- [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
- [<ffffffff8131e6fa>] ? oprofile_add_sample+0x83/0x95
- [<ffffffff81321670>] ? op_amd_check_ctrs+0x4f/0x2cf
- [<ffffffff813ee4d5>] invalid_op+0x15/0x20
- [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
- [<ffffffff813e8e7a>] ? do_nmi+0x67/0x1ee
- [<ffffffff813e897a>] nmi+0x1a/0x20
- [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
- <<EOE>>
-
-Cc: John Lumby <johnlumby@hotmail.com>
-Cc: Maynard Johnson <maynardj@us.ibm.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Jim Bos <jim876@xs4all.nl>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/oprofile/backtrace.c |   46 +++++++++++++++++++++++++++++++++++++---
- 1 files changed, 42 insertions(+), 4 deletions(-)
+ drivers/char/i8k.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Index: longterm-2.6.27/arch/x86/oprofile/backtrace.c
+Index: longterm-2.6.27/drivers/char/i8k.c
 ===================================================================
---- longterm-2.6.27.orig/arch/x86/oprofile/backtrace.c	2012-02-05 22:34:33.047915246 +0100
-+++ longterm-2.6.27/arch/x86/oprofile/backtrace.c	2012-02-05 22:34:43.985914946 +0100
-@@ -11,6 +11,8 @@
- #include <linux/oprofile.h>
- #include <linux/sched.h>
- #include <linux/mm.h>
-+#include <linux/highmem.h>
-+
- #include <asm/ptrace.h>
- #include <asm/uaccess.h>
- #include <asm/stacktrace.h>
-@@ -47,6 +49,42 @@
- 	.address = backtrace_address,
- };
- 
-+/* from arch/x86/kernel/cpu/perf_event.c: */
-+
-+/*
-+ * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
-+ */
-+static unsigned long
-+copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
-+{
-+	unsigned long offset, addr = (unsigned long)from;
-+	unsigned long size, len = 0;
-+	struct page *page;
-+	void *map;
-+	int ret;
-+
-+	do {
-+		ret = __get_user_pages_fast(addr, 1, 0, &page);
-+		if (!ret)
-+			break;
-+
-+		offset = addr & (PAGE_SIZE - 1);
-+		size = min(PAGE_SIZE - offset, n - len);
-+
-+		map = kmap_atomic(page, KM_USER0);
-+		memcpy(to, map+offset, size);
-+		kunmap_atomic(map, KM_USER0);
-+		put_page(page);
-+
-+		len  += size;
-+		to   += size;
-+		addr += size;
-+
-+	} while (len < n);
-+
-+	return len;
-+}
-+
- struct frame_head {
- 	struct frame_head *bp;
- 	unsigned long ret;
-@@ -55,12 +93,12 @@
- static struct frame_head *
- dump_user_backtrace(struct frame_head * head)
- {
-+	/* Also check accessibility of one struct frame_head beyond: */
- 	struct frame_head bufhead[2];
-+	unsigned long bytes;
- 
--	/* Also check accessibility of one struct frame_head beyond */
--	if (!access_ok(VERIFY_READ, head, sizeof(bufhead)))
--		return NULL;
--	if (__copy_from_user_inatomic(bufhead, head, sizeof(bufhead)))
-+	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
-+	if (bytes != sizeof(bufhead))
- 		return NULL;
- 
- 	oprofile_add_trace(bufhead[0].ret);
+--- longterm-2.6.27.orig/drivers/char/i8k.c	2012-02-05 22:34:32.409914870 +0100
++++ longterm-2.6.27/drivers/char/i8k.c	2012-02-05 22:34:47.002916726 +0100
+@@ -141,7 +141,7 @@
+ 		"lahf\n\t"
+ 		"shrl $8,%%eax\n\t"
+ 		"andl $1,%%eax\n"
+-		:"=a"(rc)
++		:"=a"(rc), "+m" (*regs)
+ 		:    "a"(regs)
+ 		:    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+ #else
+@@ -166,7 +166,8 @@
+ 	    "movl %%edx,0(%%eax)\n\t"
+ 	    "lahf\n\t"
+ 	    "shrl $8,%%eax\n\t"
+-	    "andl $1,%%eax\n":"=a"(rc)
++	    "andl $1,%%eax\n"
++	    :"=a"(rc), "+m" (*regs)
+ 	    :    "a"(regs)
+ 	    :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+ #endif
 
 
