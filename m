@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2BEWmA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:42:00 -0500
-Received: from 1wt.eu ([62.212.114.60]:61977 "EHLO 1wt.eu"
+	id S1754246Ab2BEWmc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:42:32 -0500
+Received: from 1wt.eu ([62.212.114.60]:61946 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754075Ab2BEW0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:34 -0500
-Message-Id: <20120205220951.631049117@pcw.home.local>
+	id S1753872Ab2BEW0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:30 -0500
+Message-Id: <20120205220951.334100926@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:40 +0100
+Date: Sun, 05 Feb 2012 23:10:33 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 51/91] Bluetooth: Prevent buffer overflow in l2cap config request
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>, Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 44/91] TPM: Zero buffer after copying to userspace
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,33 +23,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 7ac28817536797fd40e9646452183606f9e17f71 upstream.
+commit 3321c07ae5068568cd61ac9f4ba749006a7185c9 upstream.
 
-A remote user can provide a small value for the command size field in
-the command header of an l2cap configuration request, resulting in an
-integer underflow when subtracting the size of the configuration request
-header.  This results in copying a very large amount of data via
-memcpy() and destroying the kernel heap.  Check for underflow.
+Since the buffer might contain security related data it might be a good idea to
+zero the buffer after we have copied it to userspace.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+This got assigned CVE-2011-1162.
+
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/bluetooth/l2cap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/char/tpm/tpm.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Index: longterm-2.6.27/net/bluetooth/l2cap.c
+Index: longterm-2.6.27/drivers/char/tpm/tpm.c
 ===================================================================
---- longterm-2.6.27.orig/net/bluetooth/l2cap.c	2012-02-05 22:34:33.464915011 +0100
-+++ longterm-2.6.27/net/bluetooth/l2cap.c	2012-02-05 22:34:42.135914462 +0100
-@@ -1737,7 +1737,7 @@
+--- longterm-2.6.27.orig/drivers/char/tpm/tpm.c	2012-02-05 22:34:40.951915689 +0100
++++ longterm-2.6.27/drivers/char/tpm/tpm.c	2012-02-05 22:34:41.090914667 +0100
+@@ -1069,6 +1069,7 @@
+ {
+ 	struct tpm_chip *chip = file->private_data;
+ 	ssize_t ret_size;
++	int rc;
  
- 	/* Reject if config buffer is too small. */
- 	len = cmd_len - sizeof(*req);
--	if (l2cap_pi(sk)->conf_len + len > sizeof(l2cap_pi(sk)->conf_req)) {
-+	if (len < 0 || l2cap_pi(sk)->conf_len + len > sizeof(l2cap_pi(sk)->conf_req)) {
- 		l2cap_send_cmd(conn, cmd->ident, L2CAP_CONF_RSP,
- 				l2cap_build_conf_rsp(sk, rsp,
- 					L2CAP_CONF_REJECT, flags), rsp);
+ 	del_singleshot_timer_sync(&chip->user_read_timer);
+ 	flush_scheduled_work();
+@@ -1079,8 +1080,11 @@
+ 			ret_size = size;
+ 
+ 		mutex_lock(&chip->buffer_mutex);
+-		if (copy_to_user(buf, chip->data_buffer, ret_size))
++		rc = copy_to_user(buf, chip->data_buffer, ret_size);
++		memset(chip->data_buffer, 0, ret_size);
++		if (rc)
+ 			ret_size = -EFAULT;
++
+ 		mutex_unlock(&chip->buffer_mutex);
+ 	}
+ 
 
 
