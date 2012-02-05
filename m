@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab2BEEOd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 23:14:33 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:54343 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356Ab2BEEOc (ORCPT
+	id S1754773Ab2BEEVN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 23:21:13 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63006 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab2BEEVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 23:14:32 -0500
-Date: Sun, 5 Feb 2012 15:14:24 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tristan Pourcelot <tristan.pourcelot@gmail.com>
-Cc: davem@davemloft.net, linux-geode@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Correcting some style issues
-Message-ID: <20120205041424.GB8219@gondor.apana.org.au>
-References: <1328190031.6508.1.camel@blackout-netbook>
+	Sat, 4 Feb 2012 23:21:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328190031.6508.1.camel@blackout-netbook>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Dongsheng Song <dongsheng.song@gmail.com>
+Date: Sun, 5 Feb 2012 12:20:51 +0800
+Message-ID: <CAE8XmWo6vyL69hA+sHUygit7x3DF2yHUNttCM9iSuRq=TWGx0A@mail.gmail.com>
+Subject: High 'Creating block layer request' or '[sleep_on_page] ' latency
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 02:40:31PM +0100, Tristan Pourcelot wrote:
-> >From d50e5530201aa02a5232ca9f2458a7fdd18de374 Mon Sep 17 00:00:00 2001
-> From: Tristan Pourcelot <tristan.pourcelot@gmail.com>
-> Date: Thu, 2 Feb 2012 14:01:03 +0100
-> Subject: [PATCH] Correcting some style errors in
->  drivers/crypto/geode-aes.c 
-> Signed-off-by: Tristan Pourcelot <tristan.pourcelot@gmail.com>
+Hi all,
 
-Sorry, your patch doesn't apply against cryptodev:
+I have observed many high 'Creating block layer request' or
+'[sleep_on_page] ' latency on Linux 3.2.4 and btrfs.
 
-$ git apply ~/p
-2 out of 3 hunks FAILED -- saving rejects to file drivers/crypto/geode-aes.c.rej
-$
+Cause                           Maximum          Percentage
+synchronous write               14590.0 msec          5.9 %
+[btrfs_pin_log_trans]           12743.8 msec          7.8 %
+[lock_rename]                    2624.6 msec          1.1 %
+Creating a file                  1835.7 msec          3.2 %
+Creating block layer request     1835.2 msec         53.8 %
+Reading directory content        1674.0 msec          4.8 %
+[sleep_on_page]                  1661.9 msec         21.0 %
+Reading from file                1626.9 msec          2.2 %
+Opening file                      118.7 msec          0.2 %
 
-Please check and resend.
+Cause                           Maximum         Percentage
+Creating block layer request    3716.4 msec         55.1 %
+[sleep_on_page]                  606.5 msec         27.7 %
+Reading from file                571.9 msec          4.4 %
+Page fault                       550.8 msec          6.8 %
+Pagecache sync readahead         108.3 msec          0.2 %
+synchronous write                103.0 msec          0.8 %
+Creating a file                   88.3 msec          3.1 %
+[btrfs_tree_lock]                 58.2 msec          0.1 %
+[btrfs_pin_log_trans]             33.8 msec          0.1 %
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Is there something wrong ?
+
+Regards,
+Dongsheng
