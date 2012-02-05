@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab2BEWxZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:53:25 -0500
-Received: from 1wt.eu ([62.212.114.60]:62232 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab2BEWxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:53:24 -0500
-Date: Sun, 5 Feb 2012 23:53:14 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 90/91] block: fail SCSI passthrough ioctls on partition devices
-Message-ID: <20120205225314.GF8334@1wt.eu>
-References: <0635750f5f06ed2ca212b91fcb5c4483@local> <20120205220953.312427771@pcw.home.local> <4F2F0669.3000601@redhat.com>
+	id S1753901Ab2BEWyP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:54:15 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:44089 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab2BEWyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:54:14 -0500
+Date: Sun, 05 Feb 2012 17:54:01 -0500 (EST)
+Message-Id: <20120205.175401.1607753113306832696.davem@davemloft.net>
+To: jj@chaosbits.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sjur.brandeland@stericsson.com, remi.denis-courmont@nokia.com,
+        sakari.ailus@nokia.com
+Subject: Re: [PATCH] Net: caifdev is never used in
+ net/caif/caif_dev.c::transmit() - remove it.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1202052348450.32529@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1202052348450.32529@swampdragon.chaosbits.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F2F0669.3000601@redhat.com>
-User-Agent: Mutt/1.4.2.3i
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 05 Feb 2012 14:54:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paolo,
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Sun, 5 Feb 2012 23:50:46 +0100 (CET)
 
-On Sun, Feb 05, 2012 at 11:44:57PM +0100, Paolo Bonzini wrote:
-> On 02/05/2012 11:11 PM, Willy Tarreau wrote:
-> >Signed-off-by: Ben Hutchings<ben@decadent.org.uk>
-> >Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
-> >[wt: no scsi_cmd_blk_ioctl in 2.6.27, change callers instead. cciss is OK,
-> >  ub,virtio_blk,ide-floppy,sd need fixing, cdrom&st can be ignored ]
-> 
-> NACK, you aren't fixing virtio-blk to call scsi_verify_blk_ioctl, are you?
-> 
-> You need to backport the patch that introduced scsi_cmd_blk_ioctl, 
-> which, in fact was in the same patch series as this one.
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-Thanks for this report, I missed this patch. I thought the reason for the lack
-of scsi_cmd_blk_ioctl() it was one of the differences between 2.6.27 and 2.6.32,
-so I have adapted the callers I identified to perform the same test as what's
-in scsi_cmd_blk_ioctl(). I *think* I did it correctly, but it would be safer
-to apply the original patch, of course. Now I see the patch (618 in my queue).
- I'll merge it and it will simplify the backport.
+Applied.
 
-Thank you,
-Willy
-
+I changed the subject prefix to "caif: " and the one for your previous
+patch to "decnet: "  Please don't put that "Net, " thing there.
