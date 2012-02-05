@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab2BEWgE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:36:04 -0500
-Received: from 1wt.eu ([62.212.114.60]:62101 "EHLO 1wt.eu"
+	id S1754653Ab2BEW05 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:26:57 -0500
+Received: from 1wt.eu ([62.212.114.60]:62054 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754459Ab2BEW06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:58 -0500
-Message-Id: <20120205220951.759687876@pcw.home.local>
+	id S1754392Ab2BEW0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:52 -0500
+Message-Id: <20120205220952.526747546@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:43 +0100
+Date: Sun, 05 Feb 2012 23:11:01 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>, Chul Kim <chul.kim@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 54/91] drivers/net/rionet.c: fix ethernet address macros for LE platforms
+Subject: [PATCH 72/91] svcrpc: fix double-free on shutdown of nfsd after changing pool mode
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,36 +23,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit e0c87bd95e8dad455c23bc56513af8dcb1737e55 upstream.
+commit 61c8504c428edcebf23b97775a129c5b393a302b upstream.
 
-Modify Ethernet addess macros to be compatible with BE/LE platforms
+The pool_to and to_pool fields of the global svc_pool_map are freed on
+shutdown, but are initialized in nfsd startup only in the
+SVC_POOL_PERCPU and SVC_POOL_PERNODE cases.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Chul Kim <chul.kim@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+They *are* initialized to zero on kernel startup.  So as long as you use
+only SVC_POOL_GLOBAL (the default), this will never be a problem.
+
+You're also OK if you only ever use SVC_POOL_PERCPU or SVC_POOL_PERNODE.
+
+However, the following sequence events leads to a double-free:
+
+	1. set SVC_POOL_PERCPU or SVC_POOL_PERNODE
+	2. start nfsd: both fields are initialized.
+	3. shutdown nfsd: both fields are freed.
+	4. set SVC_POOL_GLOBAL
+	5. start nfsd: the fields are left untouched.
+	6. shutdown nfsd: now we try to free them again.
+
+Step 4 is actually unnecessary, since (for some bizarre reason), nfsd
+automatically resets the pool mode to SVC_POOL_GLOBAL on shutdown.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/rionet.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ net/sunrpc/svc.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Index: longterm-2.6.27/drivers/net/rionet.c
+Index: longterm-2.6.27/net/sunrpc/svc.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/net/rionet.c	2012-02-05 22:34:33.389915485 +0100
-+++ longterm-2.6.27/drivers/net/rionet.c	2012-02-05 22:34:42.555916186 +0100
-@@ -87,8 +87,8 @@
- #define dev_rionet_capable(dev) \
- 	is_rionet_capable(dev->pef, dev->src_ops, dev->dst_ops)
+--- longterm-2.6.27.orig/net/sunrpc/svc.c	2012-02-05 22:34:32.810915144 +0100
++++ longterm-2.6.27/net/sunrpc/svc.c	2012-02-05 22:34:45.104915090 +0100
+@@ -163,6 +163,7 @@
  
--#define RIONET_MAC_MATCH(x)	(*(u32 *)x == 0x00010001)
--#define RIONET_GET_DESTID(x)	(*(u16 *)(x + 4))
-+#define RIONET_MAC_MATCH(x)	(!memcmp((x), "\00\01\00\01", 4))
-+#define RIONET_GET_DESTID(x)	((*((u8 *)x + 4) << 8) | *((u8 *)x + 5))
+ fail_free:
+ 	kfree(m->to_pool);
++	m->to_pool = NULL;
+ fail:
+ 	return -ENOMEM;
+ }
+@@ -283,7 +284,9 @@
+ 	if (!--m->count) {
+ 		m->mode = SVC_POOL_DEFAULT;
+ 		kfree(m->to_pool);
++		m->to_pool = NULL;
+ 		kfree(m->pool_to);
++		m->pool_to = NULL;
+ 		m->npools = 0;
+ 	}
  
- static int rionet_rx_clean(struct net_device *ndev)
- {
 
 
