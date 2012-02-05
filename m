@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab2BEEVN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Feb 2012 23:21:13 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63006 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab2BEEVM (ORCPT
+	id S1754805Ab2BEEZn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Feb 2012 23:25:43 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62394 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab2BEEZl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Feb 2012 23:21:12 -0500
+	Sat, 4 Feb 2012 23:25:41 -0500
 MIME-Version: 1.0
-From: Dongsheng Song <dongsheng.song@gmail.com>
-Date: Sun, 5 Feb 2012 12:20:51 +0800
-Message-ID: <CAE8XmWo6vyL69hA+sHUygit7x3DF2yHUNttCM9iSuRq=TWGx0A@mail.gmail.com>
-Subject: High 'Creating block layer request' or '[sleep_on_page] ' latency
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <1328271538-14502-13-git-send-email-m.szyprowski@samsung.com>
+References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
+	<1328271538-14502-13-git-send-email-m.szyprowski@samsung.com>
+Date: Sun, 5 Feb 2012 12:25:40 +0800
+Message-ID: <CAJd=RBBPOwftZJUfe3xc6y24=T8un5hPk0wEOT_5v6WMCbDSag@mail.gmail.com>
+Subject: Re: [PATCH 12/15] drivers: add Contiguous Memory Allocator
+From: Hillf Danton <dhillf@gmail.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, Feb 3, 2012 at 8:18 PM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+> The Contiguous Memory Allocator is a set of helper functions for DMA
+> mapping framework that improves allocations of contiguous memory chunks.
+>
+> CMA grabs memory on system boot, marks it with CMA_MIGRATE_TYPE and
+> gives back to the system. Kernel is allowed to allocate movable pages
+> within CMA's managed memory so that it can be used for example for page
+> cache when DMA mapping do not use it. On dma_alloc_from_contiguous()
+> request such pages are migrated out of CMA area to free required
+> contiguous block and fulfill the request. This allows to allocate large
+> contiguous chunks of memory at any time assuming that there is enough
+> free memory available in the system.
+>
+> This code is heavily based on earlier works by Michal Nazarewicz.
+>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Tested-by: Rob Clark <rob.clark@linaro.org>
+> Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
+> Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+> ---
 
-I have observed many high 'Creating block layer request' or
-'[sleep_on_page] ' latency on Linux 3.2.4 and btrfs.
+[...]
 
-Cause                           Maximum          Percentage
-synchronous write               14590.0 msec          5.9 %
-[btrfs_pin_log_trans]           12743.8 msec          7.8 %
-[lock_rename]                    2624.6 msec          1.1 %
-Creating a file                  1835.7 msec          3.2 %
-Creating block layer request     1835.2 msec         53.8 %
-Reading directory content        1674.0 msec          4.8 %
-[sleep_on_page]                  1661.9 msec         21.0 %
-Reading from file                1626.9 msec          2.2 %
-Opening file                      118.7 msec          0.2 %
+> +/*
+> + * Contiguous Memory Allocator
+> + *
+> + *   The Contiguous Memory Allocator (CMA) makes it possible to
+> + *   allocate big contiguous chunks of memory after the system has
+> + *   booted.
+> + *
+> + * Why is it needed?
+> + *
+> + *   Various devices on embedded systems have no scatter-getter and/or
+> + *   IO map support and require contiguous blocks of memory to
+> + *   operate.  They include devices such as cameras, hardware video
+> + *   coders, etc.
+> + *
+> + *   Such devices often require big memory buffers (a full HD frame
+> + *   is, for instance, more then 2 mega pixels large, i.e. more than 6
+> + *   MB of memory), which makes mechanisms such as kmalloc() or
+> + *   alloc_page() ineffective.
+> + *
+> + *   At the same time, a solution where a big memory region is
+> + *   reserved for a device is suboptimal since often more memory is
+> + *   reserved then strictly required and, moreover, the memory is
+> + *   inaccessible to page system even if device drivers don't use it.
+> + *
+> + *   CMA tries to solve this issue by operating on memory regions
+> + *   where only movable pages can be allocated from.  This way, kernel
+> + *   can use the memory for pagecache and when device driver requests
+> + *   it, allocated pages can be migrated.
+> + *
 
-Cause                           Maximum         Percentage
-Creating block layer request    3716.4 msec         55.1 %
-[sleep_on_page]                  606.5 msec         27.7 %
-Reading from file                571.9 msec          4.4 %
-Page fault                       550.8 msec          6.8 %
-Pagecache sync readahead         108.3 msec          0.2 %
-synchronous write                103.0 msec          0.8 %
-Creating a file                   88.3 msec          3.1 %
-[btrfs_tree_lock]                 58.2 msec          0.1 %
-[btrfs_pin_log_trans]             33.8 msec          0.1 %
-
-Is there something wrong ?
-
-Regards,
-Dongsheng
+Without boot mem reservation, what is the successful rate of CMA to
+serve requests of 1MiB, 2MiB, 4MiB and 8MiB chunks?
