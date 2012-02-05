@@ -1,117 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab2BEG5r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 01:57:47 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:41360 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab2BEGze (ORCPT
+	id S1752977Ab2BEG6m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 01:58:42 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:61351 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab2BEG6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 01:55:34 -0500
+	Sun, 5 Feb 2012 01:58:40 -0500
 From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 1/9] pci: Fix pci cardbus removal
-Date: Sat,  4 Feb 2012 22:55:00 -0800
-Message-Id: <1328424908-6385-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v5 0/24] PCI: allocate pci bus num range for unassigned bridge busn + pci rescan cleanup
+Date: Sat,  4 Feb 2012 22:57:44 -0800
+Message-Id: <1328425088-6562-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
-References: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F2E27DE.002C,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F2E2897.0065,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During test busn_res allocation with cardbus, found pci card removal is not
-working anymore, and it turns out it is broken by:
+cdef5a1: PCI: clean up rescan_bus_bridge_resize
+7b6deb4: PCI: make pci_rescan_bus_bridge_resize use pci_scan_bridge instead
+876bd4a: PCI: Add pci_bus_add_single_device()
+6e5f346: PCI, sysfs: create rescan_bridge under /sys/.../pci/devices/... for pci bridges
+3c92113: PCI, sys: Use device_type and attr_groups with pci dev
+e6d3c54: PCI, pciehp: Remove not needed bus number range checking
+2306e31: PCI: Double checking setting for bus register and bus struct.
+daddc90: pcmcia: remove workaround for fixing pci parent bus subordinate
+6a88939: PCI: Seperate child bus scanning to two passes overall
+60c7d94: PCI: kill pci_fixup_parent_subordinate_busnr()
+e9e72be: PCI: Allocate bus range instead of use max blindly
+f22af7f: PCI: Strict checking of valid range for bridge
+8656ea6: PCI: Probe safe range that we can use for unassigned bridge.
+4023fc3: PCI: Add pci_bus_extend/shrink_top()
+a066c95: PCI, parisc: Register busn_res for root buses
+d069fbb: PCI, powerpc: Register busn_res for root buses
+f00e514: PCI, ia64: Register busn_res for root buses
+1a203f1: PCI, x86: Register busn_res for root buses
+8b1b01b: PCI: Add busn_res tracking in core
+a9ccca7: PCI: add /proc/iobusn
+ec1cdb3: PCI: Add busn_res operation functions
+2a09fbd: Make %pR could handle bus resource with domain
+9c83a59: PCI: add busn inline helper
+b18cd6a: PCI: Add iobusn_resource
 
-|commit 79cc9601c3e42b4f0650fe7e69132ebce7ab48f9
-|Date:   Tue Nov 22 21:06:53 2011 -0800
-|
-|    PCI: Only call pci_stop_bus_device() one time for child devices at remove
+Set up iobusn_resource tree, and register bus number range to it.
+Later when need to find bus range, will try to allocate from the tree
 
-that patch changed pci_remove_behind_bridge behavoir that yenta_carbus depends.
+Need to test on arches other than x86. esp for ia64 and powerpc that support
+  more than on peer root buses.
 
-Restore the old behavoir of pci_remove_behind_bridge by:
-1. rename pci_remove_behind_bridge to __pci_remove_behind_bridge, and let
-	__pci_remove_bus_device() call it instead.
-2. add pci-stop_befind_bridge that will stop device under bridge
-3. add back pci_remove_behind_bridge that will stop and remove device
-	under bridge.
+last five patches are rescan cleanup that make use busn alloc.
 
-This one is for v3.3
+could be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-busn-alloc
 
--v2: update commit description a little bit.
+-v2: according to Jesse, split to more small patches.
+-v3: address some request from Bjorn. like make use %pR for busn_res debug print
+	out, and move the comment change with code change.
+-v4: fixes the problem about rescan that Bjorn found.
+-v5: add /proc/iobusn that is requested by Bjorn.
+     remove old workaround from pciehp.
+     add rescan_bridge for pci bridge in /sys
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/remove.c |   28 ++++++++++++++++++++++------
- 1 files changed, 22 insertions(+), 6 deletions(-)
+Thanks
 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index bd70f23..82f8ae5 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -77,6 +77,7 @@ void pci_remove_bus(struct pci_bus *pci_bus)
- }
- EXPORT_SYMBOL(pci_remove_bus);
- 
-+static void __pci_remove_behind_bridge(struct pci_dev *dev);
- /**
-  * pci_remove_bus_device - remove a PCI device and any children
-  * @dev: the device to remove
-@@ -94,7 +95,7 @@ static void __pci_remove_bus_device(struct pci_dev *dev)
- 	if (dev->subordinate) {
- 		struct pci_bus *b = dev->subordinate;
- 
--		pci_remove_behind_bridge(dev);
-+		__pci_remove_behind_bridge(dev);
- 		pci_remove_bus(b);
- 		dev->subordinate = NULL;
- 	}
-@@ -107,6 +108,24 @@ void pci_remove_bus_device(struct pci_dev *dev)
- 	__pci_remove_bus_device(dev);
- }
- 
-+static void __pci_remove_behind_bridge(struct pci_dev *dev)
-+{
-+	struct list_head *l, *n;
-+
-+	if (dev->subordinate)
-+		list_for_each_safe(l, n, &dev->subordinate->devices)
-+			__pci_remove_bus_device(pci_dev_b(l));
-+}
-+
-+static void pci_stop_behind_bridge(struct pci_dev *dev)
-+{
-+	struct list_head *l, *n;
-+
-+	if (dev->subordinate)
-+		list_for_each_safe(l, n, &dev->subordinate->devices)
-+			pci_stop_bus_device(pci_dev_b(l));
-+}
-+
- /**
-  * pci_remove_behind_bridge - remove all devices behind a PCI bridge
-  * @dev: PCI bridge device
-@@ -117,11 +136,8 @@ void pci_remove_bus_device(struct pci_dev *dev)
-  */
- void pci_remove_behind_bridge(struct pci_dev *dev)
- {
--	struct list_head *l, *n;
--
--	if (dev->subordinate)
--		list_for_each_safe(l, n, &dev->subordinate->devices)
--			__pci_remove_bus_device(pci_dev_b(l));
-+	pci_stop_behind_bridge(dev);
-+	__pci_remove_behind_bridge(dev);
- }
- 
- static void pci_stop_bus_devices(struct pci_bus *bus)
--- 
-1.7.7
+Yinghai
+
+ Documentation/ABI/testing/sysfs-bus-pci |   10 +
+ arch/ia64/pci/pci.c                     |    2 +
+ arch/powerpc/kernel/pci-common.c        |    7 +-
+ arch/x86/include/asm/topology.h         |    3 +-
+ arch/x86/pci/acpi.c                     |    8 +-
+ arch/x86/pci/bus_numa.c                 |    8 +-
+ arch/x86/pci/common.c                   |   11 +-
+ drivers/parisc/dino.c                   |    2 +
+ drivers/parisc/lba_pci.c                |    3 +
+ drivers/pci/bus.c                       |   40 +++
+ drivers/pci/hotplug/pciehp_pci.c        |   12 +-
+ drivers/pci/pci-sysfs.c                 |   59 ++++-
+ drivers/pci/pci.h                       |    1 +
+ drivers/pci/probe.c                     |  460 +++++++++++++++++++++++++------
+ drivers/pci/remove.c                    |    1 +
+ drivers/pcmcia/yenta_socket.c           |   75 -----
+ include/linux/ioport.h                  |   18 ++
+ include/linux/pci.h                     |    9 +
+ kernel/resource.c                       |   50 ++++
+ lib/vsprintf.c                          |   29 ++-
+ 20 files changed, 617 insertions(+), 191 deletions(-)
 
