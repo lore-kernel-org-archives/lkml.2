@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab2BEHUv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 02:20:51 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49105 "EHLO
+	id S1753488Ab2BEHhJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 02:37:09 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54317 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab2BEHUt convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751458Ab2BEHhH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 02:20:49 -0500
+	Sun, 5 Feb 2012 02:37:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <1328158649-4137-1-git-send-email-vinholikatti@gmail.com>
+In-Reply-To: <1328158649-4137-5-git-send-email-vinholikatti@gmail.com>
 References: <1328158649-4137-1-git-send-email-vinholikatti@gmail.com>
-Date: Sun, 5 Feb 2012 16:20:47 +0900
-Message-ID: <CAKYAXd_sRKCfw_rNrRD8yKKQEP_8Zee+E5rZW0G1NuuCA4HcNA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] [SCSI] ufshcd: UFS Host Controller Driver
+	<1328158649-4137-5-git-send-email-vinholikatti@gmail.com>
+Date: Sun, 5 Feb 2012 16:37:05 +0900
+Message-ID: <CAKYAXd9k5i2_SuD8YSJeG25CBpK0b4jQGJstc-Ef1jD20cph1Q@mail.gmail.com>
+Subject: Re: [PATCH 4/4] [SCSI] ufshcd: SCSI error handling
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: Vinayak Holikatti <vinholikatti@gmail.com>
 Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
@@ -27,82 +28,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/2 Vinayak Holikatti <vinholikatti@gmail.com>:
-> From: Santosh Yaraganavi <santoshsy@gmail.com>
->
-> UFS is designed to be the most advanced specification for
-> both embedded and removable flash memory-based storage in mobile devices
-> such as smart phones and tablet computers.  The UFS standard represents
-> an evolutionary progression of JEDEC standards in this field, and has been
-> specifically tailored for mobile applications and computing systems requiring
-> high performance and low power consumption.  The initial data throughput for
-> UFS will be ~300 megabytes per second (MB/s), and the standard also supports
-> command queuing features to raise random read/write speeds.
->
-> To achieve the highest performance and most power efficient data
-> transport, UFS uses the leading industry interface standards to form its
-> Interconnect Layer: MIPI® Alliance’s M-PHY and UniProSM  specifications.
-> UniPro is a comprehensive specification meant to act as a universal
-> chip-to-chip protocol, providing a common tunnel for other protocols.
-> The M-PHY interface is designed as the primary physical interface (PHY layer)
-> for the UniPro specification, and is a high speed serial interface targeting
-> up to 2.9 gigabits per second (Gbps) per lane with up-scalability to 5.8Gbps
-> per lane.
->
-> MIPI’s M-PHY and UniPro specifications are optimized for mobile applications,
-> and are designed from the ground up for efficient power management in mobile
-> devices, including enabling efficient transitions between the active and power
-> save modes. Combined with a low active power level and a near-zero idle power
-> level, UFS offers the promise for significant reductions in device power
-> consumption.
->
-> The UFS standard adopts the well-known SCSI Architecture Model and command
-> protocols supporting multiple commands with command queuing features and
-> enabling a multi-thread programming paradigm. This differs from conventional
-> flash-based memory cards and embedded flash solutions which process one
-> command at a time, limiting random read/write access performance.
-> In addition, a forthcoming complementary UFS Host Controller Interface (HCI)
-> specification will allow system designers greater flexibility by simplifying
-> the involvement of the host processor in the operation of the flash storage
-> subsystem. The UFS HCI specification and the adoption of SCSI will provide
-> a well-known software programming model and enable wider market adoption.
->
-> This patchset contains PCIe based UFS host controller driver which complies
-> to UFSHCI 1.0 and 1.1. The driver is based on Linux SCSI framework.
-> The driver is tested with UFS Host controller(FPGA) and UFS device(FPGA).
->
-> This patch set is successfully applied on kernel version 3.3-rc2.
->
-> Santosh Yaraganavi (4):
->  [SCSI] ufshcd: UFS Host controller driver
->  [SCSI] ufshcd: UFS UTP Transfer requests handling
->  [SCSI] ufshcd: UFSHCI error handling
->  [SCSI] ufshcd: SCSI error handling
->
->  drivers/scsi/Kconfig      |    1 +
->  drivers/scsi/Makefile     |    1 +
->  drivers/scsi/ufs/Kconfig  |   49 ++
->  drivers/scsi/ufs/Makefile |    2 +
->  drivers/scsi/ufs/ufs.h    |  203 +++++
->  drivers/scsi/ufs/ufshcd.c | 1954 +++++++++++++++++++++++++++++++++++++++++++++
->  drivers/scsi/ufs/ufshci.h |  360 +++++++++
->  7 files changed, 2570 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/scsi/ufs/Kconfig
->  create mode 100644 drivers/scsi/ufs/Makefile
->  create mode 100644 drivers/scsi/ufs/ufs.h
->  create mode 100644 drivers/scsi/ufs/ufshcd.c
->  create mode 100644 drivers/scsi/ufs/ufshci.h
->
-> --
-> 1.7.5.4
+> +
+> +/**
+> + * ufshcd_abort - abort a specific command
+> + * @cmd: SCSI command pointer
+> + *
+> + * Returns 0 on success, non-zero value on failure
+> + */
+> +static int ufshcd_abort(struct scsi_cmnd *cmd)
+> +{
+> +       struct Scsi_Host *host;
+> +       struct ufs_hba *hba;
+> +       unsigned long flags;
+> +       unsigned int tag;
+> +       unsigned int pos;
+> +       int err;
+> +
+> +       host = cmd->device->host;
+> +       hba = (struct ufs_hba *) host->hostdata;
+> +       tag = cmd->request->tag;
+> +
+> +       spin_lock_irqsave(host->host_lock, flags);
+> +       pos = (1 << tag);
+> +
+> +       /* check if command is still pending */
+> +       if (!(hba->outstanding_reqs & pos)) {
+> +               err = -1;
+> +               spin_unlock_irqrestore(host->host_lock, flags);
+> +               goto out;
+> +       }
+> +
+> +       err = ufshcd_issue_tm_cmd(hba, &hba->lrb[tag], UFS_ABORT_TASK);
 Hi.
-I have been waiting for ufs contribution.
-Unfortunately I don't have real target supported ufs(maybe only you
-have it). I can not debug and run this code, So just review only code
-with specification.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+You called spin_lock_irqsave in ufshcd_issue_tm_cmd() without
+spin_unlock_irqrestore.
+
+> +       if (!err) {
+> +               spin_lock_irqsave(host->host_lock, flags);
+This case is same also.
+Thanks.
+> +               scsi_dma_unmap(cmd);
+> +
+> +               /* clear the respective UTRLCLR bit */
+> +               writel(~pos,
+> +                       (UFSHCD_MMIO_BASE +
+> +                        REG_UTP_TRANSFER_REQ_LIST_CLEAR));
+> +               hba->outstanding_reqs &= ~pos;
+> +               hba->lrb[tag].cmd = NULL;
+> +               spin_unlock_irqrestore(host->host_lock, flags);
+> +       }
+> +out:
+> +       return err;
+> +}
+> +
