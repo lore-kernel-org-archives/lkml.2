@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab2BEWnl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:43:41 -0500
-Received: from 1wt.eu ([62.212.114.60]:61898 "EHLO 1wt.eu"
+	id S1754193Ab2BEWnj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:43:39 -0500
+Received: from 1wt.eu ([62.212.114.60]:61900 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238Ab2BEW0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753859Ab2BEW0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 Feb 2012 17:26:23 -0500
-Message-Id: <20120205220950.600107885@pcw.home.local>
+Message-Id: <20120205220951.077338767@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:16 +0100
+Date: Sun, 05 Feb 2012 23:10:27 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 27/91] uvcvideo: Remove buffers from the queues when freeing
+Cc: Takashi Iwai <tiwai@suse.de>, Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 38/91] ALSA: timer - Fix Oops at closing slave timer
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +22,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 8ca2c80b170c47eeb55f0c2a0f2b8edf85f35d49 upstream.
+commit 0584ffa548b6e59aceb027112f23a55f0133400e upstream.
 
-When freeing memory for the video buffers also remove them from the
-irq & main queues.
+A slave-timer instance has no timer reference, and this results in
+NULL-dereference at stopping the timer, typically called at closing
+the device.
 
-This fixes an oops when doing the following:
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=40682
 
-open ("/dev/video", ..)
-VIDIOC_REQBUFS
-VIDIOC_QBUF
-VIDIOC_REQBUFS
-close ()
-
-As the second VIDIOC_REQBUFS will cause the list entries of the buffers
-to be cleared while they still hang around on the main and irc queues
-
-Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/media/video/uvc/uvc_queue.c |    2 ++
+ sound/core/timer.c |    2 ++
  1 files changed, 2 insertions(+), 0 deletions(-)
 
-Index: longterm-2.6.27/drivers/media/video/uvc/uvc_queue.c
+Index: longterm-2.6.27/sound/core/timer.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/media/video/uvc/uvc_queue.c	2012-02-05 22:34:34.215915503 +0100
-+++ longterm-2.6.27/drivers/media/video/uvc/uvc_queue.c	2012-02-05 22:34:38.711914474 +0100
-@@ -165,6 +165,8 @@
- 	}
- 
- 	if (queue->count) {
-+		uvc_queue_cancel(queue, 0);
-+		INIT_LIST_HEAD(&queue->mainqueue);
- 		vfree(queue->mem);
- 		queue->count = 0;
- 	}
+--- longterm-2.6.27.orig/sound/core/timer.c	2012-02-05 22:34:33.866915229 +0100
++++ longterm-2.6.27/sound/core/timer.c	2012-02-05 22:34:40.244919877 +0100
+@@ -527,6 +527,8 @@
+ 	if (err < 0)
+ 		return err;
+ 	timer = timeri->timer;
++	if (!timer)
++		return -EINVAL;
+ 	spin_lock_irqsave(&timer->lock, flags);
+ 	timeri->cticks = timeri->ticks;
+ 	timeri->pticks = 0;
 
 
