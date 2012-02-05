@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2BEWfh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:35:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31930 "EHLO mx1.redhat.com"
+	id S1754674Ab2BEW06 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:26:58 -0500
+Received: from 1wt.eu ([62.212.114.60]:62075 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754745Ab2BEWfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:35:32 -0500
-Date: Sun, 5 Feb 2012 17:35:27 -0500
-From: Dave Jones <davej@redhat.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at net/sched/sch_generic.c:256
- dev_watchdog+0x1f2/0x200()
-Message-ID: <20120205223527.GA19001@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Justin P. Mattock" <justinmattock@gmail.com>,
-	Larry Finger <Larry.Finger@lwfinger.net>,
-	linux-kernel@vger.kernel.org
-References: <20120205134050.7e135bb231b613806a2e0b70@gmail.com>
- <4F2F0065.9040909@lwfinger.net>
- <20120205142946.953cf9ed55b0adce3974a759@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120205142946.953cf9ed55b0adce3974a759@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754291Ab2BEW0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:53 -0500
+Message-Id: <20120205220952.441985700@pcw.home.local>
+User-Agent: quilt/0.48-1
+Date: Sun, 05 Feb 2012 23:10:59 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Pavel Hofman <pavel.hofman@ivitera.com>, Takashi Iwai <tiwai@suse.de>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 70/91] ALSA: ice1724 - Check for ac97 to avoid kernel oops
+In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 05, 2012 at 02:29:46PM -0800, Justin P. Mattock wrote:
+2.6.27-longterm review patch.  If anyone has any objections, please let us know.
+
+------------------
+
+commit e7848163aa2a649d9065f230fadff80dc3519775 upstream.
+
+Cards with identical PCI ids but no AC97 config in EEPROM do not have
+the ac97 field initialized. We must check for this case to avoid kernel oops.
+
+Signed-off-by: Pavel Hofman <pavel.hofman@ivitera.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ sound/pci/ice1712/amp.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+Index: longterm-2.6.27/sound/pci/ice1712/amp.c
+===================================================================
+--- longterm-2.6.27.orig/sound/pci/ice1712/amp.c	2012-02-05 22:34:32.865918049 +0100
++++ longterm-2.6.27/sound/pci/ice1712/amp.c	2012-02-05 22:34:44.825915033 +0100
+@@ -67,8 +67,11 @@
  
- > > > [ 2270.546572] WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
- > > > [ 2270.546576] Hardware name: 0914
- > > > [ 2270.546580] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
- > > 
- > > The error clearly comes from r8169, not from ath9k. If you unload r8169 before 
- > > suspending, does this still happen? My suspicion is that NM is getting confused.
- > > 
- > as a quick test I unloaded r8169 and did not see this message, but I also added it in and suspended
- > and no warning message as well.
+ static int __devinit snd_vt1724_amp_add_controls(struct snd_ice1712 *ice)
+ {
+-	/* we use pins 39 and 41 of the VT1616 for left and right read outputs */
+-	snd_ac97_write_cache(ice->ac97, 0x5a, snd_ac97_read(ice->ac97, 0x5a) & ~0x8000);
++	if (ice->ac97)
++		/* we use pins 39 and 41 of the VT1616 for left and right
++		read outputs */
++		snd_ac97_write_cache(ice->ac97, 0x5a,
++			snd_ac97_read(ice->ac97, 0x5a) & ~0x8000);
+ 	return 0;
+ }
+ 
 
-FWIW, we've been seeing reports of this in Fedora since last summer.
-https://bugzilla.redhat.com/show_bug.cgi?id=715137
-
-(We have reports on other chips too, but this bug is just the r8169 reports)
-
-	Dave
 
