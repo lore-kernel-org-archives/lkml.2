@@ -1,182 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2BEQEU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 11:04:20 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34497 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab2BEQES (ORCPT
+	id S1753302Ab2BEQFu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 11:05:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55331 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab2BEQFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 11:04:18 -0500
-Message-ID: <4F2EA869.2080505@linux.vnet.ibm.com>
-Date: Sun, 05 Feb 2012 21:33:53 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Sun, 5 Feb 2012 11:05:48 -0500
+Message-ID: <4F2EA8D8.4080907@lwfinger.net>
+Date: Sun, 05 Feb 2012 10:05:44 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH v8 4/8] smp: add func to IPI cpus based on parameter func
-References: <1328448800-15794-1-git-send-email-gilad@benyossef.com> <1328449722-15959-3-git-send-email-gilad@benyossef.com> <4F2EA206.3000707@linux.vnet.ibm.com> <CAOtvUMdqpwOedhZHq6QpUnDyg1FzfK_K3=9HQujjoN9yU3XWnA@mail.gmail.com> <4F2EA785.9070706@linux.vnet.ibm.com>
-In-Reply-To: <4F2EA785.9070706@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jan Ceuleers <jan.ceuleers@computer.org>
+CC: "Devendra.Naga" <devendra.aaru@gmail.com>, chaoming_li@realsil.com.cn,
+        linville@tuxdriver.com, paul.gortmaker@windriver.com, joe@perches.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] wireless: move ifs' in _rtl92c_store_pwrIndex_diffrate_offset
+ into elseif statements
+References: <1327906245-8200-1-git-send-email-devendra.aaru@gmail.com> <4F2E39F6.70803@computer.org>
+In-Reply-To: <4F2E39F6.70803@computer.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12020506-1396-0000-0000-000000A14C1F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2012 09:30 PM, Srivatsa S. Bhat wrote:
-
-> On 02/05/2012 09:16 PM, Gilad Ben-Yossef wrote:
-> 
->> On Sun, Feb 5, 2012 at 5:36 PM, Srivatsa S. Bhat
->> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->>> On 02/05/2012 07:18 PM, Gilad Ben-Yossef wrote:
->>>
->>>> Add the on_each_cpu_cond() function that wraps on_each_cpu_mask()
->>>> and calculates the cpumask of cpus to IPI by calling a function supplied
->>>> as a parameter in order to determine whether to IPI each specific cpu.
->>>>
->>>> The function works around allocation failure of cpumask variable in
->>>> CONFIG_CPUMASK_OFFSTACK=y by itereating over cpus sending an IPI a
->>>> time via smp_call_function_single().
->>>>
->>>> The function is useful since it allows to seperate the specific
->>>> code that decided in each case whether to IPI a specific cpu for
->>>> a specific request from the common boilerplate code of handling
->>>> creating the mask, handling failures etc.
->>>>
->>>> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
->>> ...
->>>> diff --git a/include/linux/smp.h b/include/linux/smp.h
->>>> index d0adb78..da4d034 100644
->>>> --- a/include/linux/smp.h
->>>> +++ b/include/linux/smp.h
->>>> @@ -109,6 +109,15 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
->>>>               void *info, bool wait);
->>>>
->>>>  /*
->>>> + * Call a function on each processor for which the supplied function
->>>> + * cond_func returns a positive value. This may include the local
->>>> + * processor.
->>>> + */
->>>> +void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
->>>> +             smp_call_func_t func, void *info, bool wait,
->>>> +             gfp_t gfp_flags);
->>>> +
->>>> +/*
->>>>   * Mark the boot cpu "online" so that it can call console drivers in
->>>>   * printk() and can access its per-cpu storage.
->>>>   */
->>>> @@ -153,6 +162,21 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
->>>>                       local_irq_enable();             \
->>>>               }                                       \
->>>>       } while (0)
->>>> +/*
->>>> + * Preemption is disabled here to make sure the
->>>> + * cond_func is called under the same condtions in UP
->>>> + * and SMP.
->>>> + */
->>>> +#define on_each_cpu_cond(cond_func, func, info, wait, gfp_flags) \
->>>> +     do {                                            \
->>>> +             preempt_disable();                      \
->>>> +             if (cond_func(0, info)) {               \
->>>> +                     local_irq_disable();            \
->>>> +                     (func)(info);                   \
->>>> +                     local_irq_enable();             \
->>>> +             }                                       \
->>>> +             preempt_enable();                       \
->>>> +     } while (0)
->>>>
->>>>  static inline void smp_send_reschedule(int cpu) { }
->>>>  #define num_booting_cpus()                   1
->>>> diff --git a/kernel/smp.c b/kernel/smp.c
->>>> index a081e6c..28cbcc5 100644
->>>> --- a/kernel/smp.c
->>>> +++ b/kernel/smp.c
->>>> @@ -730,3 +730,63 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
->>>>       put_cpu();
->>>>  }
->>>>  EXPORT_SYMBOL(on_each_cpu_mask);
->>>> +
->>>> +/*
->>>> + * on_each_cpu_cond(): Call a function on each processor for which
->>>> + * the supplied function cond_func returns true, optionally waiting
->>>> + * for all the required CPUs to finish. This may include the local
->>>> + * processor.
->>>> + * @cond_func:       A callback function that is passed a cpu id and
->>>> + *           the the info parameter. The function is called
->>>> + *           with preemption disabled. The function should
->>>> + *           return a blooean value indicating whether to IPI
->>>> + *           the specified CPU.
->>>> + * @func:    The function to run on all applicable CPUs.
->>>> + *           This must be fast and non-blocking.
->>>> + * @info:    An arbitrary pointer to pass to both functions.
->>>> + * @wait:    If true, wait (atomically) until function has
->>>> + *           completed on other CPUs.
->>>> + * @gfp_flags:       GFP flags to use when allocating the cpumask
->>>> + *           used internally by the function.
->>>> + *
->>>> + * The function might sleep if the GFP flags indicates a non
->>>> + * atomic allocation is allowed.
->>>> + *
->>>> + * Preemption is disabled to protect against a hotplug event.
->>>
->>>
->>> Well, disabling preemption protects us only against CPU offline right?
->>> (because we use the stop_machine thing during cpu offline).
->>>
->>> What about CPU online?
->>>
->>> Just to cross-check my understanding of the code with the existing
->>> documentation on CPU hotplug, I looked up Documentation/cpu-hotplug.txt
->>> and this is what I found:
->>>
->>> "If you merely need to avoid cpus going away, you could also use
->>> preempt_disable() and preempt_enable() for those sections....
->>> ...The preempt_disable() will work as long as stop_machine_run() is used
->>> to take a cpu down."
->>>
->>> So even this only talks about using preempt_disable() to prevent CPU offline,
->>> not CPU online. Or, am I missing something?
+On 02/05/2012 02:12 AM, Jan Ceuleers wrote:
+> On 01/30/2012 07:50 AM, Devendra.Naga wrote:
+>> From: "Devendra.Naga"<devendra.aaru@gmail.com>
 >>
->> You are not missing anything, this is simply a bad choice of words on my part.
->> Thank you for pointing this out.
->>
->> I should write:
->>
->> " Preemption is disabled to protect against CPU going offline but not online.
->>   CPUs going online during the call will not be seen or sent an IPI."
->>
-> 
-> 
-> Yeah, that sounds better.
-> 
->> Protecting against CPU going online during the function is useless
->> since they might
->> as well go online right after the call is finished, so the caller has
->> to take care of it, if they
->> cares.
->>
-> 
-> 
-> Ah, makes sense, thanks!
-> 
+>> The regaddr is compared against different rates in each case and the
+>> powerlevels are set
+>> accordingly. as this can match for the first if and we still check for other
+>> powerlevels too,
+>> use else if ratherthan using if statements
+>> Signed-off-by: Devendra.Naga<devendra.aaru@gmail.com>
+> If this is correct, and I'm not saying it is or isn't, would it not be clearer
+> to turn this whole section into a switch statement? The cases that requiring
+> fiddling with the bitmask would need to be dealt with in the default: case.
 
+Yes, it is correct. It might be clearer if it were written as a switch 
+statement, but that would be a lot more intrusive. Besides, have you ever looked 
+at the way gcc compiles a switch? I have done some reverse engineering, and at 
+least some implementations generate code that looks like if .. else if .. .. 
+else. I have not looked at the generated code, but I'm quite certain that the 
+optimizer in gcc is good enough to know that once it gets a match between 
+regaddr and one of the RTXAGC constants, there is no need to test the rest, and 
+that the change to "else if" is mostly cosmetic, and will not greatly affect the 
+execution.
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Why was it written as a series of if statements to begin with: can (or could)
+> any of these if statements change the value of regaddr such that later ifs
+> evaluate differently? From reading only the patch the answer seems to be "no",
+> so that looks good.
 
-Regards,
-Srivatsa S. Bhat
+I cannot answer the question of why it was written this way - you would have to 
+ask the original authors. As to the possibility of the code changing regaddr, 
+you either need to look more carefully at the code, or you need to restudy how C 
+works.
 
+> Or what about turning this into a data-driven section? It looks like values of
+> regaddr are being translated into offsets into
+> rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt]. Can this be done with a lookup table?
+
+I would state it a little differently - the values of regaddr are used to 
+determine where in the double-indexed array rtlphy->MCS_TXPWR[][] that the 
+quantity "data" should be placed. There are always multiple ways to do anything. 
+For the kernel, a major rule is to make minimal changes that are easy to verify. 
+The patch in question meets that condition. If this code were in the hot path, 
+it might be worth the effort required to do a complete rewrite with the 
+associated testing, but in my mind, that effort would be wasted. Something that 
+would be easy to do, easy to verify, and would reduce the size of the generated 
+code would be
+
+int index;
+
+if (regaddr == RTXAGC_A_RATE18_06) {
+	index = 0;
+else if (if (regaddr == RTXAGC_A_RATE54_24) {
+	index = 1;
+.....
+}
+rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][index] = data;
+RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
+          "MCSTxPowerLevelOriginalOffset[%d][%d] = 0x%x\n",
+          rtlphy->pwrgroup_cnt, index,
+          rtlphy->MCS_TXPWR[rtlphy->pwrgroup_cnt][index]);
+...
+
+Larry
