@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab2BEWet (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:34:49 -0500
-Received: from 1wt.eu ([62.212.114.60]:62112 "EHLO 1wt.eu"
+	id S1755061Ab2BEWf3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:35:29 -0500
+Received: from 1wt.eu ([62.212.114.60]:62106 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754658Ab2BEW07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754631Ab2BEW07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 Feb 2012 17:26:59 -0500
-Message-Id: <20120205220951.716704592@pcw.home.local>
+Message-Id: <20120205220952.143885576@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:42 +0100
+Date: Sun, 05 Feb 2012 23:10:52 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "Theodore Tso" <tytso@mit.edu>, Xiaoyun Mao <xiaoyun.maoxy@aliyun-inc.com>,
-        Yingbin Wang <yingbin.wangyb@aliyun-inc.com>,
-        Jia Wan <jia.wanj@aliyun-inc.com>, Zheng Liu <wenqing.lz@taobao.com>,
+Cc: Nick Piggin <npiggin@suse.de>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Robert Richter <robert.richter@amd.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 53/91] ext4: fix BUG_ON() in ext4_ext_insert_extent()
+Subject: [PATCH 63/91] export __get_user_pages_fast() function
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Does not corrispond with a direct commit in Linus's tree as it was fixed
-differently in the 3.0 release.
+commit 45888a0c6edc305495b6bd72a30e66bc40b324c6 upstream.
 
+Backport for stable kernel v2.6.32.y to v2.6.36.y.
 
-We will meet with a BUG_ON() if following script is run.
+Needed for next patch:
 
-mkfs.ext4 -b 4096 /dev/sdb1 1000000
-mount -t ext4 /dev/sdb1 /mnt/sdb1
-fallocate -l 100M /mnt/sdb1/test
-sync
-for((i=0;i<170;i++))
-do
-        dd if=/dev/zero of=/mnt/sdb1/test conv=notrunc bs=256k count=1
-seek=`expr $i \* 2`
-done
-umount /mnt/sdb1
-mount -t ext4 /dev/sdb1 /mnt/sdb1
-dd if=/dev/zero of=/mnt/sdb1/test conv=notrunc bs=256k count=1 seek=341
-umount /mnt/sdb1
-mount /dev/sdb1 /mnt/sdb1
-dd if=/dev/zero of=/mnt/sdb1/test conv=notrunc bs=256k count=1 seek=340
-sync
+ oprofile, x86: Fix nmi-unsafe callgraph support
 
-The reason is that it forgot to mark dirty when splitting two extents in
-ext4_ext_convert_to_initialized(). Althrough ex has been updated in
-memory, it is not dirtied both in ext4_ext_convert_to_initialized() and
-ext4_ext_insert_extent(). The disk layout is corrupted. Then it will
-meet with a BUG_ON() when writting at the start of that extent again.
+This function is used by KVM to pin process's page in the atomic context.
 
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Xiaoyun Mao <xiaoyun.maoxy@aliyun-inc.com>
-Cc: Yingbin Wang <yingbin.wangyb@aliyun-inc.com>
-Cc: Jia Wan <jia.wanj@aliyun-inc.com>
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+Define the 'weak' function to avoid other architecture not support it
+
+Acked-by: Nick Piggin <npiggin@suse.de>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/extents.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ mm/util.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-Index: longterm-2.6.27/fs/ext4/extents.c
+Index: longterm-2.6.27/mm/util.c
 ===================================================================
---- longterm-2.6.27.orig/fs/ext4/extents.c	2012-02-05 22:34:33.413914999 +0100
-+++ longterm-2.6.27/fs/ext4/extents.c	2012-02-05 22:34:42.416916530 +0100
-@@ -2327,6 +2327,7 @@
- 		ex1 = ex;
- 		ex1->ee_len = cpu_to_le16(iblock - ee_block);
- 		ext4_ext_mark_uninitialized(ex1);
-+		ext4_ext_dirty(handle, inode, path + depth);
- 		ex2 = &newex;
- 	}
- 	/*
+--- longterm-2.6.27.orig/mm/util.c	2012-02-05 22:34:33.070915063 +0100
++++ longterm-2.6.27/mm/util.c	2012-02-05 22:34:43.848914804 +0100
+@@ -101,6 +101,19 @@
+ }
+ EXPORT_SYMBOL(__krealloc);
+ 
++/*
++ * Like get_user_pages_fast() except its IRQ-safe in that it won't fall
++ * back to the regular GUP.
++ * If the architecture not support this fucntion, simply return with no
++ * page pinned
++ */
++int __attribute__((weak)) __get_user_pages_fast(unsigned long start,
++				 int nr_pages, int write, struct page **pages)
++{
++	return 0;
++}
++EXPORT_SYMBOL_GPL(__get_user_pages_fast);
++
+ /**
+  * krealloc - reallocate memory. The contents will remain unchanged.
+  * @p: object to reallocate memory for.
 
 
