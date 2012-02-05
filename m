@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab2BEKap (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 05:30:45 -0500
-Received: from manchmal.in-ulm.de ([217.10.9.201]:57231 "EHLO
-	manchmal.in-ulm.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab2BEKao (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 05:30:44 -0500
-X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Feb 2012 05:30:44 EST
-Date: Sun, 5 Feb 2012 11:20:48 +0100
-From: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [0/1] 3.0.20-stable review
-Message-ID: <1328434946@msgid.manchmal.in-ulm.de>
-References: <20120203220745.GA3459@kroah.com>
+	id S1754230Ab2BEKdr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 05:33:47 -0500
+Received: from isrv.corpit.ru ([86.62.121.231]:51603 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752152Ab2BEKdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 05:33:46 -0500
+Message-ID: <4F2E5B08.4010200@msgid.tls.msk.ru>
+Date: Sun, 05 Feb 2012 14:33:44 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110805 Icedove/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203220745.GA3459@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Harald Dunkel <harri@afaics.de>
+CC: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: /proc/self/mounts in chroot vs lxc
+References: <4F2E4120.3030506@afaics.de>
+In-Reply-To: <4F2E4120.3030506@afaics.de>
+X-Enigmail-Version: 1.2.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote...
+On 05.02.2012 12:43, Harald Dunkel wrote:
+> Hi folks,
+> 
+> AFAIK /proc/mounts (-> self/mounts) is supposed to replace
+> /etc/mtab. Problem is: In a chroot it contains too much
+> (invalid) information about the parent's mount points. It is
+> very hard to figure out which lines are correct.
+> 
+> For lxc there seems to be no such problem, so I wonder if it
+> would be possible to extend this scheme to chroot?
+> 
+> I am not sure if this is a kernel or libc issue. Any helpful
+> comment would be highly appreciated.
 
-> Please let me know if anyone has any problems with it as soon as possible.
+/proc is _always_ kernel thing.
 
-After two tests without any visible change in neither power
-consumption nor system stability: How do I identify computers where
-that patch _might_ change things? Does for example
+For lxc, it creates a separate namespace where all "extra" mounts
+are unmounted.  So /proc/mounts does not contain unnecessary
+entries.
 
-    ACPI _OSC control for PCIe not granted, disabling ASPM
+But plain chroot does not create new namespace, the process inherits
+parent namespace, so there is no way to clean in up cleanly.
 
-indicate that box isn't worth any efforts? Does this patch void a
-"pcie_aspm=force" kernel parameter, should or even must that one be
-given?
+This is how it always worked, I'd say it is too late to change
+this, and changing it isn't really trivial due to various
+implications bind mounts are giving us.
 
-And another question, what are "any problems" likely to be? Obvious
-things like crashes, or rather nasty things like slowly eating data on
-the disks?
+I think anway.
 
-I bet there are some documents around about that, so pointers will do.
-There's <Documentation/kernel-parameters.txt> and
-<https://wiki.ubuntu.com/Kernel/PowerManagementASPM> but these don't
-answer my questions.
-
-> Responses should be made by Monday, February 6, 2012, 20:00:00 UTC.
-> Anything received after that time might be too late.
-
-Having said that, no appearent effect found on (DMI string from
-dmesg):
-
-- D945GCLF2, BIOS LF94510J.86A.0278.2010.0414.2000 04/14/2010
-- M4A88T-V EVO, BIOS 0405 12/15/2010
-
-    Christoph
+/mjt.
