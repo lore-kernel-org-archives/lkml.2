@@ -1,169 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab2BEWMr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:12:47 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27966 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab2BEWMp (ORCPT
+	id S1753204Ab2BEWTZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:19:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53114 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab2BEWTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:12:45 -0500
-Date: Sun, 5 Feb 2012 23:13:13 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-cc: kys@microsoft.com, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] net/hyperv: Convert camel cased variables in
- rndis_filter.c to lower cases
-In-Reply-To: <1328479990-1436-1-git-send-email-haiyangz@microsoft.com>
-Message-ID: <alpine.LNX.2.00.1202052312391.32529@swampdragon.chaosbits.net>
-References: <1328479990-1436-1-git-send-email-haiyangz@microsoft.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 5 Feb 2012 17:19:23 -0500
+Message-ID: <4F2F0065.9040909@lwfinger.net>
+Date: Sun, 05 Feb 2012 16:19:17 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
+References: <20120205134050.7e135bb231b613806a2e0b70@gmail.com>
+In-Reply-To: <20120205134050.7e135bb231b613806a2e0b70@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like a nice change to me.
+On 02/05/2012 03:40 PM, Justin P. Mattock wrote:
+>
+> this showed up as I woke the machine up from suspend. machine is connected
+> I just see networkmanager constantly spinning trying to connect then telling me
+> the wired network is not connected(even though its just wireless that I have).
+>
+>
+> [ 1584.693284] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 1)
+> [ 1584.695279] wlan0: authenticated
+> [ 1584.699289] wlan0: associate with 00:1e:2a:62:6b:1e (try 1)
+> [ 1584.703037] wlan0: RX AssocResp from 00:1e:2a:62:6b:1e (capab=0x31 status=0 aid=5)
+> [ 1584.703043] wlan0: associated
+> [ 1584.703054] wlan0: moving STA 00:1e:2a:62:6b:1e to state 1
+> [ 1584.703058] wlan0: moving STA 00:1e:2a:62:6b:1e to state 2
+> [ 1584.722127] wlan0: moving STA 00:1e:2a:62:6b:1e to state 3
+> [ 2270.546555] ------------[ cut here ]------------
+> [ 2270.546572] WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
+> [ 2270.546576] Hardware name: 0914
+> [ 2270.546580] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
+> [ 2270.546584] Modules linked in: parport_pc ppdev ipt_REJECT ipt_LOG xt_limit xt_tcpudp dm_crypt joydev xt_addrtype arc4 ath9k snd_hda_codec_hdmi snd_hda_codec_conexant mac80211 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm xt_state snd_seq_midi snd_rawmidi nf_conntrack_netbios_ns snd_seq_midi_event nf_conntrack_broadcast snd_seq nf_nat_ftp nf_nat ath9k_common ath9k_hw nf_conntrack_ipv4 nf_defrag_ipv4 uvcvideo ath snd_timer snd_seq_device snd nf_conntrack_ftp videobuf2_core cfg80211 nf_conntrack iptable_filter mei(C) ip_tables intel_ips ideapad_laptop sparse_keymap psmouse lp parport soundcore snd_page_alloc videodev videobuf2_vmalloc x_tables wmi serio_raw videobuf2_memops i915 drm_kms_helper r8169 drm i2c_algo_bit usbhid hid video
+> [ 2270.546701] Pid: 0, comm: swapper/1 Tainted: G         C   3.3.0-rc2-00172-g23783f8 #1
+> [ 2270.546705] Call Trace:
+> [ 2270.546716]  [<c1042d02>] warn_slowpath_common+0x72/0xa0
+> [ 2270.546724]  [<c14d59d2>] ? dev_watchdog+0x1f2/0x200
+> [ 2270.546730]  [<c14d59d2>] ? dev_watchdog+0x1f2/0x200
+> [ 2270.546735]  [<c1042dd3>] warn_slowpath_fmt+0x33/0x40
+> [ 2270.546742]  [<c14d59d2>] dev_watchdog+0x1f2/0x200
+> [ 2270.546760]  [<c1053c52>] run_timer_softirq+0x132/0x520
+> [ 2270.546766]  [<c1053bd8>] ? run_timer_softirq+0xb8/0x520
+> [ 2270.546774]  [<c10d0f5c>] ? __rcu_process_callbacks+0x4c/0x3c0
+> [ 2270.546780]  [<c14d57e0>] ? pfifo_fast_init+0x60/0x60
+> [ 2270.546789]  [<c104ace7>] __do_softirq+0x97/0x340
+> [ 2270.546796]  [<c104ac50>] ? __tasklet_hi_schedule_first+0x120/0x120
+> [ 2270.546799]<IRQ>   [<c104b236>] ? irq_exit+0x86/0xb0
+> [ 2270.546813]  [<c158fef9>] ? smp_apic_timer_interrupt+0x59/0x88
+> [ 2270.546822]  [<c12c1028>] ? trace_hardirqs_off_thunk+0xc/0x14
+> [ 2270.546828]  [<c1588662>] ? apic_timer_interrupt+0x36/0x3c
+> [ 2270.546836]  [<c10a007b>] ? print_kernel_ident+0x4b/0x50
+> [ 2270.546844]  [<c1308987>] ? intel_idle+0xd7/0x130
+> [ 2270.546853]  [<c14773f0>] ? cpuidle_idle_call+0xb0/0x500
+> [ 2270.546859]  [<c10a48f4>] ? trace_hardirqs_on_caller+0xf4/0x180
+> [ 2270.546868]  [<c1014a85>] ? cpu_idle+0xa5/0xf0
+> [ 2270.546874]  [<c1579545>] ? start_secondary+0x21c/0x222
+> [ 2270.546879] ---[ end trace 22be394e4d8a72e0 ]---
+> [ 2270.617566] r8169 0000:06:00.0: eth0: link up693284] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 1)
+> [ 1584.695279] wlan0: authenticated
+> [ 1584.699289] wlan0: associate with 00:1e:2a:62:6b:1e (try 1)
+> [ 1584.703037] wlan0: RX AssocResp from 00:1e:2a:62:6b:1e (capab=0x31 status=0 aid=5)
+> [ 1584.703043] wlan0: associated
+> [ 1584.703054] wlan0: moving STA 00:1e:2a:62:6b:1e to state 1
+> [ 1584.703058] wlan0: moving STA 00:1e:2a:62:6b:1e to state 2
+> [ 1584.722127] wlan0: moving STA 00:1e:2a:62:6b:1e to state 3
+> [ 2270.546555] ------------[ cut here ]------------
+> [ 2270.546572] WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
+> [ 2270.546576] Hardware name: 0914
+> [ 2270.546580] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
+> [ 2270.546584] Modules linked in: parport_pc ppdev ipt_REJECT ipt_LOG xt_limit xt_tcpudp dm_crypt joydev xt_addrtype arc4 ath9k snd_hda_codec_hdmi snd_hda_codec_conexant mac80211 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm xt_state snd_seq_midi snd_rawmidi nf_conntrack_netbios_ns snd_seq_midi_event nf_conntrack_broadcast snd_seq nf_nat_ftp nf_nat ath9k_common ath9k_hw nf_conntrack_ipv4 nf_defrag_ipv4 uvcvideo ath snd_timer snd_seq_device snd nf_conntrack_ftp videobuf2_core cfg80211 nf_conntrack iptable_filter mei(C) ip_tables intel_ips ideapad_laptop sparse_keymap psmouse lp parport soundcore snd_page_alloc videodev videobuf2_vmalloc x_tables wmi serio_raw videobuf2_memops i915 drm_kms_helper r8169 drm i2c_algo_bit usbhid hid video
+> [ 2270.546701] Pid: 0, comm: swapper/1 Tainted: G         C   3.3.0-rc2-00172-g23783f8 #1
+> [ 2270.546705] Call Trace:
+> [ 2270.546716]  [<c1042d02>] warn_slowpath_common+0x72/0xa0
+> [ 2270.546724]  [<c14d59d2>] ? dev_watchdog+0x1f2/0x200
+> [ 2270.546730]  [<c14d59d2>] ? dev_watchdog+0x1f2/0x200
+> [ 2270.546735]  [<c1042dd3>] warn_slowpath_fmt+0x33/0x40
+> [ 2270.546742]  [<c14d59d2>] dev_watchdog+0x1f2/0x200
+> [ 2270.546760]  [<c1053c52>] run_timer_softirq+0x132/0x520
+> [ 2270.546766]  [<c1053bd8>] ? run_timer_softirq+0xb8/0x520
+> [ 2270.546774]  [<c10d0f5c>] ? __rcu_process_callbacks+0x4c/0x3c0
+> [ 2270.546780]  [<c14d57e0>] ? pfifo_fast_init+0x60/0x60
+> [ 2270.546789]  [<c104ace7>] __do_softirq+0x97/0x340
+> [ 2270.546796]  [<c104ac50>] ? __tasklet_hi_schedule_first+0x120/0x120
+> [ 2270.546799]<IRQ>   [<c104b236>] ? irq_exit+0x86/0xb0
+> [ 2270.546813]  [<c158fef9>] ? smp_apic_timer_interrupt+0x59/0x88
+> [ 2270.546822]  [<c12c1028>] ? trace_hardirqs_off_thunk+0xc/0x14
+> [ 2270.546828]  [<c1588662>] ? apic_timer_interrupt+0x36/0x3c
+> [ 2270.546836]  [<c10a007b>] ? print_kernel_ident+0x4b/0x50
+> [ 2270.546844]  [<c1308987>] ? intel_idle+0xd7/0x130
+> [ 2270.546853]  [<c14773f0>] ? cpuidle_idle_call+0xb0/0x500
+> [ 2270.546859]  [<c10a48f4>] ? trace_hardirqs_on_caller+0xf4/0x180
+> [ 2270.546868]  [<c1014a85>] ? cpu_idle+0xa5/0xf0
+> [ 2270.546874]  [<c1579545>] ? start_secondary+0x21c/0x222
+> [ 2270.546879] ---[ end trace 22be394e4d8a72e0 ]---
+> [ 2270.617566] r8169 0000:06:00.0: eth0: link up
+>
+> full dmesg is here..:
+> http://fpaste.org/007p/
 
-On Sun, 5 Feb 2012, Haiyang Zhang wrote:
+The error clearly comes from r8169, not from ath9k. If you unload r8169 before 
+suspending, does this still happen? My suspicion is that NM is getting confused.
 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Larry
 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
-
-
-> ---
->  drivers/net/hyperv/rndis_filter.c |   60 ++++++++++++++++++------------------
->  1 files changed, 30 insertions(+), 30 deletions(-)
-> 
-> diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-> index 133b7fb..a60e5e2 100644
-> --- a/drivers/net/hyperv/rndis_filter.c
-> +++ b/drivers/net/hyperv/rndis_filter.c
-> @@ -758,66 +758,66 @@ int rndis_filter_open(struct hv_device *dev)
->  
->  int rndis_filter_close(struct hv_device *dev)
->  {
-> -	struct netvsc_device *netDevice = hv_get_drvdata(dev);
-> +	struct netvsc_device *nvdev = hv_get_drvdata(dev);
->  
-> -	if (!netDevice)
-> +	if (!nvdev)
->  		return -EINVAL;
->  
-> -	return rndis_filter_close_device(netDevice->extension);
-> +	return rndis_filter_close_device(nvdev->extension);
->  }
->  
->  int rndis_filter_send(struct hv_device *dev,
->  			     struct hv_netvsc_packet *pkt)
->  {
->  	int ret;
-> -	struct rndis_filter_packet *filterPacket;
-> -	struct rndis_message *rndisMessage;
-> -	struct rndis_packet *rndisPacket;
-> -	u32 rndisMessageSize;
-> +	struct rndis_filter_packet *filter_pkt;
-> +	struct rndis_message *rndis_msg;
-> +	struct rndis_packet *rndis_pkt;
-> +	u32 rndis_msg_size;
->  
->  	/* Add the rndis header */
-> -	filterPacket = (struct rndis_filter_packet *)pkt->extension;
-> +	filter_pkt = (struct rndis_filter_packet *)pkt->extension;
->  
-> -	memset(filterPacket, 0, sizeof(struct rndis_filter_packet));
-> +	memset(filter_pkt, 0, sizeof(struct rndis_filter_packet));
->  
-> -	rndisMessage = &filterPacket->msg;
-> -	rndisMessageSize = RNDIS_MESSAGE_SIZE(struct rndis_packet);
-> +	rndis_msg = &filter_pkt->msg;
-> +	rndis_msg_size = RNDIS_MESSAGE_SIZE(struct rndis_packet);
->  
-> -	rndisMessage->ndis_msg_type = REMOTE_NDIS_PACKET_MSG;
-> -	rndisMessage->msg_len = pkt->total_data_buflen +
-> -				      rndisMessageSize;
-> +	rndis_msg->ndis_msg_type = REMOTE_NDIS_PACKET_MSG;
-> +	rndis_msg->msg_len = pkt->total_data_buflen +
-> +				      rndis_msg_size;
->  
-> -	rndisPacket = &rndisMessage->msg.pkt;
-> -	rndisPacket->data_offset = sizeof(struct rndis_packet);
-> -	rndisPacket->data_len = pkt->total_data_buflen;
-> +	rndis_pkt = &rndis_msg->msg.pkt;
-> +	rndis_pkt->data_offset = sizeof(struct rndis_packet);
-> +	rndis_pkt->data_len = pkt->total_data_buflen;
->  
->  	pkt->is_data_pkt = true;
-> -	pkt->page_buf[0].pfn = virt_to_phys(rndisMessage) >> PAGE_SHIFT;
-> +	pkt->page_buf[0].pfn = virt_to_phys(rndis_msg) >> PAGE_SHIFT;
->  	pkt->page_buf[0].offset =
-> -			(unsigned long)rndisMessage & (PAGE_SIZE-1);
-> -	pkt->page_buf[0].len = rndisMessageSize;
-> +			(unsigned long)rndis_msg & (PAGE_SIZE-1);
-> +	pkt->page_buf[0].len = rndis_msg_size;
->  
->  	/* Add one page_buf if the rndis msg goes beyond page boundary */
-> -	if (pkt->page_buf[0].offset + rndisMessageSize > PAGE_SIZE) {
-> +	if (pkt->page_buf[0].offset + rndis_msg_size > PAGE_SIZE) {
->  		int i;
->  		for (i = pkt->page_buf_cnt; i > 1; i--)
->  			pkt->page_buf[i] = pkt->page_buf[i-1];
->  		pkt->page_buf_cnt++;
->  		pkt->page_buf[0].len = PAGE_SIZE - pkt->page_buf[0].offset;
->  		pkt->page_buf[1].pfn = virt_to_phys((void *)((ulong)
-> -			rndisMessage + pkt->page_buf[0].len)) >> PAGE_SHIFT;
-> +			rndis_msg + pkt->page_buf[0].len)) >> PAGE_SHIFT;
->  		pkt->page_buf[1].offset = 0;
-> -		pkt->page_buf[1].len = rndisMessageSize - pkt->page_buf[0].len;
-> +		pkt->page_buf[1].len = rndis_msg_size - pkt->page_buf[0].len;
->  	}
->  
->  	/* Save the packet send completion and context */
-> -	filterPacket->completion = pkt->completion.send.send_completion;
-> -	filterPacket->completion_ctx =
-> +	filter_pkt->completion = pkt->completion.send.send_completion;
-> +	filter_pkt->completion_ctx =
->  				pkt->completion.send.send_completion_ctx;
->  
->  	/* Use ours */
->  	pkt->completion.send.send_completion = rndis_filter_send_completion;
-> -	pkt->completion.send.send_completion_ctx = filterPacket;
-> +	pkt->completion.send.send_completion_ctx = filter_pkt;
->  
->  	ret = netvsc_send(dev, pkt);
->  	if (ret != 0) {
-> @@ -826,9 +826,9 @@ int rndis_filter_send(struct hv_device *dev,
->  		 * above
->  		 */
->  		pkt->completion.send.send_completion =
-> -				filterPacket->completion;
-> +				filter_pkt->completion;
->  		pkt->completion.send.send_completion_ctx =
-> -				filterPacket->completion_ctx;
-> +				filter_pkt->completion_ctx;
->  	}
->  
->  	return ret;
-> @@ -836,10 +836,10 @@ int rndis_filter_send(struct hv_device *dev,
->  
->  static void rndis_filter_send_completion(void *ctx)
->  {
-> -	struct rndis_filter_packet *filterPacket = ctx;
-> +	struct rndis_filter_packet *filter_pkt = ctx;
->  
->  	/* Pass it back to the original handler */
-> -	filterPacket->completion(filterPacket->completion_ctx);
-> +	filter_pkt->completion(filter_pkt->completion_ctx);
->  }
->  
->  
-> 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+P.S. Unless it happens with just the ath9k active, this ML is likely not the 
+correct one.
