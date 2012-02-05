@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab2BEWjK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:39:10 -0500
-Received: from 1wt.eu ([62.212.114.60]:62046 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754366Ab2BEW0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754448Ab2BEW0t (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 5 Feb 2012 17:26:49 -0500
-Message-Id: <20120205220952.272422230@pcw.home.local>
+Received: from 1wt.eu ([62.212.114.60]:62030 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754314Ab2BEW0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:44 -0500
+Message-Id: <20120205220952.314304561@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:55 +0100
+Date: Sun, 05 Feb 2012 23:10:56 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 66/91] offb: Fix setting of the pseudo-palette for >8bpp
+Subject: [PATCH 67/91] offb: Fix bug in calculating requested vram size
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,88 +23,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 1bb0b7d21584b3f878e2bc880db62351ddee5185 upstream.
+commit c055fe0797b7bd8f6f21a13598a55a16d5c13ae7 upstream.
 
-When using a >8bpp framebuffer, offb advertises truecolor, not directcolor,
-and doesn't touch the color map even if it has a corresponding access method
-for the real hardware.
-
-Thus it needs to set the pseudo-palette with all 3 components of the color,
-like other truecolor framebuffers, not with copies of the color index like
-a directcolor framebuffer would do.
-
-This went unnoticed for a long time because it's pretty hard to get offb
-to kick in with anything but 8bpp (old BootX under MacOS will do that and
-qemu does it).
+We used to try to request 8 times more vram than needed, which would
+fail if the card has a too small BAR (observed with qemu & kvm).
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/video/offb.c |   50 +++++++++++++++++++++++---------------------------
- 1 files changed, 23 insertions(+), 27 deletions(-)
+ drivers/video/offb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 Index: longterm-2.6.27/drivers/video/offb.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/video/offb.c	2012-02-05 22:34:32.996915260 +0100
-+++ longterm-2.6.27/drivers/video/offb.c	2012-02-05 22:34:44.268915456 +0100
-@@ -100,36 +100,32 @@
- 			  u_int transp, struct fb_info *info)
+--- longterm-2.6.27.orig/drivers/video/offb.c	2012-02-05 22:34:44.268915456 +0100
++++ longterm-2.6.27/drivers/video/offb.c	2012-02-05 22:34:44.406915262 +0100
+@@ -368,7 +368,7 @@
+ 				int pitch, unsigned long address,
+ 				int foreign_endian, struct device_node *dp)
  {
- 	struct offb_par *par = (struct offb_par *) info->par;
--	int i, depth;
--	u32 *pal = info->pseudo_palette;
- 
--	depth = info->var.bits_per_pixel;
--	if (depth == 16)
--		depth = (info->var.green.length == 5) ? 15 : 16;
--
--	if (regno > 255 ||
--	    (depth == 16 && regno > 63) ||
--	    (depth == 15 && regno > 31))
--		return 1;
--
--	if (regno < 16) {
--		switch (depth) {
--		case 15:
--			pal[regno] = (regno << 10) | (regno << 5) | regno;
--			break;
--		case 16:
--			pal[regno] = (regno << 11) | (regno << 5) | regno;
--			break;
--		case 24:
--			pal[regno] = (regno << 16) | (regno << 8) | regno;
--			break;
--		case 32:
--			i = (regno << 8) | regno;
--			pal[regno] = (i << 16) | i;
--			break;
-+	if (info->fix.visual == FB_VISUAL_TRUECOLOR) {
-+		u32 *pal = info->pseudo_palette;
-+		u32 cr = red >> (16 - info->var.red.length);
-+		u32 cg = green >> (16 - info->var.green.length);
-+		u32 cb = blue >> (16 - info->var.blue.length);
-+		u32 value;
-+
-+		if (regno >= 16)
-+			return -EINVAL;
-+
-+		value = (cr << info->var.red.offset) |
-+			(cg << info->var.green.offset) |
-+			(cb << info->var.blue.offset);
-+		if (info->var.transp.length > 0) {
-+			u32 mask = (1 << info->var.transp.length) - 1;
-+			mask <<= info->var.transp.offset;
-+			value |= mask;
- 		}
-+		pal[regno] = value;
-+		return 0;
- 	}
- 
-+	if (regno > 255)
-+		return -EINVAL;
-+
- 	red >>= 8;
- 	green >>= 8;
- 	blue >>= 8;
+-	unsigned long res_size = pitch * height * (depth + 7) / 8;
++	unsigned long res_size = pitch * height;
+ 	struct offb_par *par = &default_par;
+ 	unsigned long res_start = address;
+ 	struct fb_fix_screeninfo *fix;
 
 
