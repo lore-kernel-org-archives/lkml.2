@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab2BEW0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:26:16 -0500
-Received: from 1wt.eu ([62.212.114.60]:61807 "EHLO 1wt.eu"
+	id S1754945Ab2BEWsz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:48:55 -0500
+Received: from 1wt.eu ([62.212.114.60]:61845 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276Ab2BEW0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:07 -0500
-Message-Id: <20120205220949.961545423@pcw.home.local>
+	id S1753528Ab2BEW0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:14 -0500
+Message-Id: <20120205220950.173907665@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:10:01 +0100
+Date: Sun, 05 Feb 2012 23:10:06 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "Sachin S. Prabhu" <sprabhu@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 12/91] Open with O_CREAT flag set fails to open existing files on non writable directories
+Cc: Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
+        Jonathan Liu <net147@gmail.com>, Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 17/91] libata: set queue DMA alignment to sector size for ATAPI too
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,54 +23,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 1574dff8996ab1ed92c09012f8038b5566fce313 upstream.
+commit 729a6a300e628a48cf12bac93a964a535e83cd1d upstream.
 
-An open on a NFS4 share using the O_CREAT flag on an existing file for
-which we have permissions to open but contained in a directory with no
-write permissions will fail with EACCES.
+ata_pio_sectors() expects buffer for each sector to be contained in a
+single page; otherwise, it ends up overrunning the first page.  This
+is achieved by setting queue DMA alignment.  If sector_size is smaller
+than PAGE_SIZE and all buffers are sector_size aligned, buffer for
+each sector is always contained in a single page.
 
-A tcpdump shows that the client had set the open mode to UNCHECKED which
-indicates that the file should be created if it doesn't exist and
-encountering an existing flag is not an error. Since in this case the
-file exists and can be opened by the user, the NFS server is wrong in
-attempting to check create permissions on the parent directory.
+This wasn't applied to ATAPI devices but IDENTIFY_PACKET is executed
+as ATA_PROT_PIO and thus uses ata_pio_sectors().  Newer versions of
+udev issue IDENTIFY_PACKET with unaligned buffer triggering the
+problem and causing oops.
 
-The patch adds a conditional statement to check for create permissions
-only if the file doesn't exist.
+This patch fixes the problem by setting sdev->sector_size to
+ATA_SECT_SIZE on ATATPI devices and always setting DMA alignment to
+sector_size.  While at it, add a warning for the unlikely but still
+possible scenario where sector_size is larger than PAGE_SIZE, in which
+case the alignment wouldn't be enough.
 
-Signed-off-by: Sachin S. Prabhu <sprabhu@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: John Stanley <jpsinthemix@verizon.net>
+Tested-by: John Stanley <jpsinthemix@verizon.net>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Jonathan Liu <net147@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/nfsd/vfs.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/ata/libata-scsi.c |   24 ++++++++++++++++++------
+ 1 files changed, 18 insertions(+), 6 deletions(-)
 
-Index: longterm-2.6.27/fs/nfsd/vfs.c
+Index: longterm-2.6.27/drivers/ata/libata-scsi.c
 ===================================================================
---- longterm-2.6.27.orig/fs/nfsd/vfs.c	2012-02-05 22:34:34.659915205 +0100
-+++ longterm-2.6.27/fs/nfsd/vfs.c	2012-02-05 22:34:36.622917202 +0100
-@@ -1334,7 +1334,7 @@
- 		goto out;
- 	if (!(iap->ia_valid & ATTR_MODE))
- 		iap->ia_mode = 0;
--	err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_CREATE);
-+	err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_EXEC);
- 	if (err)
- 		goto out;
+--- longterm-2.6.27.orig/drivers/ata/libata-scsi.c	2012-02-05 22:34:34.505914937 +0100
++++ longterm-2.6.27/drivers/ata/libata-scsi.c	2012-02-05 22:34:37.312916183 +0100
+@@ -957,13 +957,13 @@
+ 	/* configure max sectors */
+ 	blk_queue_max_sectors(sdev->request_queue, dev->max_sectors);
  
-@@ -1356,6 +1356,13 @@
- 	if (IS_ERR(dchild))
- 		goto out_nfserr;
- 
-+	/* If file doesn't exist, check for permissions to create one */
-+	if (!dchild->d_inode) {
-+		err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_CREATE);
-+		if (err)
-+			goto out;
-+	}
++	sdev->sector_size = ATA_SECT_SIZE;
 +
- 	err = fh_compose(resfhp, fhp->fh_export, dchild, fhp);
- 	if (err)
- 		goto out;
+ 	if (dev->class == ATA_DEV_ATAPI) {
+ 		struct request_queue *q = sdev->request_queue;
+ 		void *buf;
+ 
+-		/* set the min alignment and padding */
+-		blk_queue_update_dma_alignment(sdev->request_queue,
+-					       ATA_DMA_PAD_SZ - 1);
++		/* set DMA padding */
+ 		blk_queue_update_dma_pad(sdev->request_queue,
+ 					 ATA_DMA_PAD_SZ - 1);
+ 
+@@ -977,12 +977,24 @@
+ 
+ 		blk_queue_dma_drain(q, atapi_drain_needed, buf, ATAPI_MAX_DRAIN);
+ 	} else {
+-		/* ATA devices must be sector aligned */
+-		blk_queue_update_dma_alignment(sdev->request_queue,
+-					       ATA_SECT_SIZE - 1);
+ 		sdev->manage_start_stop = 1;
+ 	}
+ 
++	/*
++	 * ata_pio_sectors() expects buffer for each sector to not cross
++	 * page boundary.  Enforce it by requiring buffers to be sector
++	 * aligned, which works iff sector_size is not larger than
++	 * PAGE_SIZE.  ATAPI devices also need the alignment as
++	 * IDENTIFY_PACKET is executed as ATA_PROT_PIO.
++	 */
++	if (sdev->sector_size > PAGE_SIZE)
++		ata_dev_printk(dev, KERN_WARNING,
++			"sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
++			sdev->sector_size);
++
++	blk_queue_update_dma_alignment(sdev->request_queue,
++				       sdev->sector_size - 1);
++
+ 	if (dev->flags & ATA_DFLAG_AN)
+ 		set_bit(SDEV_EVT_MEDIA_CHANGE, sdev->supported_events);
+ 
 
 
