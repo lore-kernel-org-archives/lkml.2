@@ -1,118 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab2BEWTZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:19:25 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53114 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab2BEWTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:19:23 -0500
-Message-ID: <4F2F0065.9040909@lwfinger.net>
-Date: Sun, 05 Feb 2012 16:19:17 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
-MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
-References: <20120205134050.7e135bb231b613806a2e0b70@gmail.com>
-In-Reply-To: <20120205134050.7e135bb231b613806a2e0b70@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753102Ab2BEWZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:25:59 -0500
+Received: from 1wt.eu ([62.212.114.60]:61760 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751851Ab2BEWZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:25:58 -0500
+Message-Id: <20120205220949.424749720@pcw.home.local>
+User-Agent: quilt/0.48-1
+Date: Sun, 05 Feb 2012 23:09:49 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH 00/91] 2.6.27.60-longterm review
+Message-ID: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2012 03:40 PM, Justin P. Mattock wrote:
->
-> this showed up as I woke the machine up from suspend. machine is connected
-> I just see networkmanager constantly spinning trying to connect then telling me
-> the wired network is not connected(even though its just wireless that I have).
->
->
-> [ 1584.693284] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 1)
-> [ 1584.695279] wlan0: authenticated
-> [ 1584.699289] wlan0: associate with 00:1e:2a:62:6b:1e (try 1)
-> [ 1584.703037] wlan0: RX AssocResp from 00:1e:2a:62:6b:1e (capab=0x31 status=0 aid=5)
-> [ 1584.703043] wlan0: associated
-> [ 1584.703054] wlan0: moving STA 00:1e:2a:62:6b:1e to state 1
-> [ 1584.703058] wlan0: moving STA 00:1e:2a:62:6b:1e to state 2
-> [ 1584.722127] wlan0: moving STA 00:1e:2a:62:6b:1e to state 3
-> [ 2270.546555] ------------[ cut here ]------------
-> [ 2270.546572] WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
-> [ 2270.546576] Hardware name: 0914
-> [ 2270.546580] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-> [ 2270.546584] Modules linked in: parport_pc ppdev ipt_REJECT ipt_LOG xt_limit xt_tcpudp dm_crypt joydev xt_addrtype arc4 ath9k snd_hda_codec_hdmi snd_hda_codec_conexant mac80211 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm xt_state snd_seq_midi snd_rawmidi nf_conntrack_netbios_ns snd_seq_midi_event nf_conntrack_broadcast snd_seq nf_nat_ftp nf_nat ath9k_common ath9k_hw nf_conntrack_ipv4 nf_defrag_ipv4 uvcvideo ath snd_timer snd_seq_device snd nf_conntrack_ftp videobuf2_core cfg80211 nf_conntrack iptable_filter mei(C) ip_tables intel_ips ideapad_laptop sparse_keymap psmouse lp parport soundcore snd_page_alloc videodev videobuf2_vmalloc x_tables wmi serio_raw videobuf2_memops i915 drm_kms_helper r8169 drm i2c_algo_bit usbhid hid video
-> [ 2270.546701] Pid: 0, comm: swapper/1 Tainted: G         C   3.3.0-rc2-00172-g23783f8 #1
-> [ 2270.546705] Call Trace:
-> [ 2270.546716]  [<c1042d02>] warn_slowpath_common+0x72/0xa0
-> [ 2270.546724]  [<c14d59d2>] ? dev_watchdog+0x1f2/0x200
-> [ 2270.546730]  [<c14d59d2>] ? dev_watchdog+0x1f2/0x200
-> [ 2270.546735]  [<c1042dd3>] warn_slowpath_fmt+0x33/0x40
-> [ 2270.546742]  [<c14d59d2>] dev_watchdog+0x1f2/0x200
-> [ 2270.546760]  [<c1053c52>] run_timer_softirq+0x132/0x520
-> [ 2270.546766]  [<c1053bd8>] ? run_timer_softirq+0xb8/0x520
-> [ 2270.546774]  [<c10d0f5c>] ? __rcu_process_callbacks+0x4c/0x3c0
-> [ 2270.546780]  [<c14d57e0>] ? pfifo_fast_init+0x60/0x60
-> [ 2270.546789]  [<c104ace7>] __do_softirq+0x97/0x340
-> [ 2270.546796]  [<c104ac50>] ? __tasklet_hi_schedule_first+0x120/0x120
-> [ 2270.546799]<IRQ>   [<c104b236>] ? irq_exit+0x86/0xb0
-> [ 2270.546813]  [<c158fef9>] ? smp_apic_timer_interrupt+0x59/0x88
-> [ 2270.546822]  [<c12c1028>] ? trace_hardirqs_off_thunk+0xc/0x14
-> [ 2270.546828]  [<c1588662>] ? apic_timer_interrupt+0x36/0x3c
-> [ 2270.546836]  [<c10a007b>] ? print_kernel_ident+0x4b/0x50
-> [ 2270.546844]  [<c1308987>] ? intel_idle+0xd7/0x130
-> [ 2270.546853]  [<c14773f0>] ? cpuidle_idle_call+0xb0/0x500
-> [ 2270.546859]  [<c10a48f4>] ? trace_hardirqs_on_caller+0xf4/0x180
-> [ 2270.546868]  [<c1014a85>] ? cpu_idle+0xa5/0xf0
-> [ 2270.546874]  [<c1579545>] ? start_secondary+0x21c/0x222
-> [ 2270.546879] ---[ end trace 22be394e4d8a72e0 ]---
-> [ 2270.617566] r8169 0000:06:00.0: eth0: link up693284] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 1)
-> [ 1584.695279] wlan0: authenticated
-> [ 1584.699289] wlan0: associate with 00:1e:2a:62:6b:1e (try 1)
-> [ 1584.703037] wlan0: RX AssocResp from 00:1e:2a:62:6b:1e (capab=0x31 status=0 aid=5)
-> [ 1584.703043] wlan0: associated
-> [ 1584.703054] wlan0: moving STA 00:1e:2a:62:6b:1e to state 1
-> [ 1584.703058] wlan0: moving STA 00:1e:2a:62:6b:1e to state 2
-> [ 1584.722127] wlan0: moving STA 00:1e:2a:62:6b:1e to state 3
-> [ 2270.546555] ------------[ cut here ]------------
-> [ 2270.546572] WARNING: at net/sched/sch_generic.c:256 dev_watchdog+0x1f2/0x200()
-> [ 2270.546576] Hardware name: 0914
-> [ 2270.546580] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-> [ 2270.546584] Modules linked in: parport_pc ppdev ipt_REJECT ipt_LOG xt_limit xt_tcpudp dm_crypt joydev xt_addrtype arc4 ath9k snd_hda_codec_hdmi snd_hda_codec_conexant mac80211 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm xt_state snd_seq_midi snd_rawmidi nf_conntrack_netbios_ns snd_seq_midi_event nf_conntrack_broadcast snd_seq nf_nat_ftp nf_nat ath9k_common ath9k_hw nf_conntrack_ipv4 nf_defrag_ipv4 uvcvideo ath snd_timer snd_seq_device snd nf_conntrack_ftp videobuf2_core cfg80211 nf_conntrack iptable_filter mei(C) ip_tables intel_ips ideapad_laptop sparse_keymap psmouse lp parport soundcore snd_page_alloc videodev videobuf2_vmalloc x_tables wmi serio_raw videobuf2_memops i915 drm_kms_helper r8169 drm i2c_algo_bit usbhid hid video
-> [ 2270.546701] Pid: 0, comm: swapper/1 Tainted: G         C   3.3.0-rc2-00172-g23783f8 #1
-> [ 2270.546705] Call Trace:
-> [ 2270.546716]  [<c1042d02>] warn_slowpath_common+0x72/0xa0
-> [ 2270.546724]  [<c14d59d2>] ? dev_watchdog+0x1f2/0x200
-> [ 2270.546730]  [<c14d59d2>] ? dev_watchdog+0x1f2/0x200
-> [ 2270.546735]  [<c1042dd3>] warn_slowpath_fmt+0x33/0x40
-> [ 2270.546742]  [<c14d59d2>] dev_watchdog+0x1f2/0x200
-> [ 2270.546760]  [<c1053c52>] run_timer_softirq+0x132/0x520
-> [ 2270.546766]  [<c1053bd8>] ? run_timer_softirq+0xb8/0x520
-> [ 2270.546774]  [<c10d0f5c>] ? __rcu_process_callbacks+0x4c/0x3c0
-> [ 2270.546780]  [<c14d57e0>] ? pfifo_fast_init+0x60/0x60
-> [ 2270.546789]  [<c104ace7>] __do_softirq+0x97/0x340
-> [ 2270.546796]  [<c104ac50>] ? __tasklet_hi_schedule_first+0x120/0x120
-> [ 2270.546799]<IRQ>   [<c104b236>] ? irq_exit+0x86/0xb0
-> [ 2270.546813]  [<c158fef9>] ? smp_apic_timer_interrupt+0x59/0x88
-> [ 2270.546822]  [<c12c1028>] ? trace_hardirqs_off_thunk+0xc/0x14
-> [ 2270.546828]  [<c1588662>] ? apic_timer_interrupt+0x36/0x3c
-> [ 2270.546836]  [<c10a007b>] ? print_kernel_ident+0x4b/0x50
-> [ 2270.546844]  [<c1308987>] ? intel_idle+0xd7/0x130
-> [ 2270.546853]  [<c14773f0>] ? cpuidle_idle_call+0xb0/0x500
-> [ 2270.546859]  [<c10a48f4>] ? trace_hardirqs_on_caller+0xf4/0x180
-> [ 2270.546868]  [<c1014a85>] ? cpu_idle+0xa5/0xf0
-> [ 2270.546874]  [<c1579545>] ? start_secondary+0x21c/0x222
-> [ 2270.546879] ---[ end trace 22be394e4d8a72e0 ]---
-> [ 2270.617566] r8169 0000:06:00.0: eth0: link up
->
-> full dmesg is here..:
-> http://fpaste.org/007p/
+This is the start of the longterm review cycle for the 2.6.27.60 release.
+All patches will be posted as a response to this one.  If anyone has any
+issues with these being applied, please let me know.  If anyone is a
+maintainer of the proper subsystem, and wants to add a Signed-off-by:
+line to the patch, please respond with it.
 
-The error clearly comes from r8169, not from ath9k. If you unload r8169 before 
-suspending, does this still happen? My suspicion is that NM is getting confused.
+These patches have been picked out of 647 patches that were merged between
+2.6.32.39 and 2.6.32.56. A number of driver-specific patches which cannot be
+tested without proper hardware have *not* been merged to keep the list low.
+If you're having an issue with a specific driver with the 2.6.27 series and
+you know the 2.6.32 series is OK, please report it to me, a fix might exist.
 
-Larry
+Responses should be made within 72 hours. Anything received after that
+time might be too late.
 
-P.S. Unless it happens with just the ath9k active, this ML is likely not the 
-correct one.
+Please note that the whole -rc patch is not provided anymore, only individual
+patches are provided so that their authors and subsystem maintainers can spot
+issues. The new release process does not make it as easy as before to upload
+pre-release patches, and experience shows that release candidates are almost
+never built for old kernels, users only build the final patch, so that's not
+worth the pain. If this is a problem for you, please manifest yourself so that
+we find a solution.
+
+The diffstat is appened below.
+
+ Documentation/kbuild/makefiles.txt         |   12 ++++++
+ MAINTAINERS                                |    2 +-
+ Makefile                                   |    5 ++-
+ arch/alpha/kernel/osf_sys.c                |   11 +++--
+ arch/arm/kernel/sys_oabi-compat.c          |    2 +-
+ arch/parisc/mm/init.c                      |    4 +-
+ arch/powerpc/kernel/crash.c                |    6 +--
+ arch/powerpc/kernel/prom_init.c            |    6 +-
+ arch/powerpc/oprofile/op_model_power4.c    |   24 +++++++++++-
+ arch/powerpc/platforms/pseries/hvconsole.c |    2 +-
+ arch/powerpc/platforms/pseries/lpar.c      |    2 +-
+ arch/s390/kvm/kvm-s390.c                   |   14 +++++--
+ arch/um/drivers/ubd_kern.c                 |   31 +++++++++++++++-
+ arch/x86/kernel/amd_iommu_init.c           |    8 ++--
+ arch/x86/kernel/reboot.c                   |    8 ++++
+ arch/x86/lib/copy_user_64.S                |    4 +-
+ arch/x86/mm/gup.c                          |   56 ++++++++++++++++++++++++++++
+ arch/x86/mm/mmap.c                         |    4 +-
+ arch/x86/oprofile/backtrace.c              |   46 +++++++++++++++++++++--
+ arch/x86/oprofile/init.c                   |    7 ++-
+ arch/x86/xen/smp.c                         |   10 +++++
+ block/cfq-iosched.c                        |    8 +++-
+ block/elevator.c                           |    3 +-
+ block/scsi_ioctl.c                         |   40 ++++++++++++++++++++
+ drivers/ata/libata-scsi.c                  |   24 +++++++++---
+ drivers/ata/sata_via.c                     |   15 +++++++
+ drivers/block/ub.c                         |    4 ++
+ drivers/block/virtio_blk.c                 |    6 +++
+ drivers/char/agp/generic.c                 |   19 +++++++--
+ drivers/char/i8k.c                         |   11 +++--
+ drivers/char/tpm/tpm.c                     |    9 ++++-
+ drivers/ide/ide-floppy.c                   |    9 +++-
+ drivers/md/dm-linear.c                     |   10 ++++-
+ drivers/md/dm-mpath.c                      |    6 +++
+ drivers/md/md.c                            |    2 +-
+ drivers/media/video/uvc/uvc_queue.c        |    2 +
+ drivers/mmc/host/sdhci-pci.c               |    1 +
+ drivers/mmc/host/sdhci.c                   |    9 ++++-
+ drivers/mtd/ubi/cdev.c                     |    3 +
+ drivers/net/bonding/bond_3ad.c             |    7 +++
+ drivers/net/bonding/bond_alb.c             |    7 +++
+ drivers/net/bonding/bond_main.c            |    4 ++
+ drivers/net/rionet.c                       |    4 +-
+ drivers/net/wireless/libertas/cmd.c        |    6 ++-
+ drivers/scsi/aacraid/commsup.c             |    2 +
+ drivers/scsi/device_handler/scsi_dh.c      |    7 +++-
+ drivers/scsi/hosts.c                       |    9 +++-
+ drivers/scsi/libsas/sas_expander.c         |   13 ++++--
+ drivers/scsi/scsi_lib.c                    |   15 ++++++-
+ drivers/scsi/scsi_sysfs.c                  |   16 ++++----
+ drivers/scsi/sd.c                          |   11 ++++-
+ drivers/scsi/sym53c8xx_2/sym_glue.c        |    4 ++
+ drivers/usb/musb/musb_core.c               |    1 +
+ drivers/usb/serial/ftdi_sio.c              |   14 +++++-
+ drivers/usb/storage/usb.c                  |    1 +
+ drivers/video/carminefb.c                  |    6 +-
+ drivers/video/offb.c                       |   52 ++++++++++++--------------
+ fs/cifs/cifssmb.c                          |    3 +-
+ fs/ext3/namei.c                            |   13 +++++-
+ fs/ext3/xattr.c                            |   12 +++++-
+ fs/ext4/extents.c                          |    1 +
+ fs/ext4/inode.c                            |    2 +-
+ fs/hfs/btree.c                             |   15 +++++++
+ fs/hfs/trans.c                             |    2 +
+ fs/jbd/journal.c                           |    8 ++++
+ fs/jbd2/journal.c                          |    8 ++++
+ fs/lockd/clntproc.c                        |    8 +++-
+ fs/nfsd/export.c                           |    2 +-
+ fs/nfsd/vfs.c                              |    9 ++++-
+ fs/partitions/efi.c                        |    6 +++
+ fs/partitions/ldm.c                        |   21 ++++++++--
+ fs/partitions/osf.c                        |   12 +++++-
+ fs/ubifs/recovery.c                        |   26 +++++++++++++
+ include/asm-x86/uaccess.h                  |    2 +-
+ include/linux/blkdev.h                     |    1 +
+ include/linux/if_packet.h                  |    2 +
+ include/linux/mm.h                         |    6 +++
+ include/linux/seqlock.h                    |    4 +-
+ include/linux/sunrpc/sched.h               |    4 +-
+ init/Kconfig                               |    1 +
+ kernel/taskstats.c                         |    1 +
+ kernel/time/timekeeping.c                  |   11 ++++-
+ mm/util.c                                  |   13 ++++++
+ net/bluetooth/l2cap.c                      |    2 +-
+ net/ipv4/af_inet.c                         |    3 +
+ net/packet/af_packet.c                     |    2 +
+ net/sched/sch_api.c                        |   14 +++---
+ net/sunrpc/clnt.c                          |    3 +
+ net/sunrpc/rpcb_clnt.c                     |    2 +-
+ net/sunrpc/sched.c                         |    1 +
+ net/sunrpc/svc.c                           |    3 +
+ net/sunrpc/svc_xprt.c                      |   11 +++--
+ net/sunrpc/xprtsock.c                      |   28 +++++++++++---
+ net/unix/af_unix.c                         |   16 +++++++-
+ scripts/Kbuild.include                     |    5 ++
+ sound/core/timer.c                         |    2 +
+ sound/pci/ice1712/amp.c                    |    7 ++-
+ 97 files changed, 751 insertions(+), 165 deletions(-)
+
+
