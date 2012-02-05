@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab2BEHBq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 02:01:46 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:43985 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751261Ab2BEHBc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 02:01:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdXvv_fvaUq_64_kOHCJ4+04uM_iw7aYxwOPU-Tg+g00-A@mail.gmail.com>
-References: <20120121082857.GC32134@elte.hu>
-	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
-	<20120121165830.GA9216@elte.hu>
-	<CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
-	<CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
-	<CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
-	<CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
-	<20120131115855.5861bad7@pyramind.ukuu.org.uk>
-	<20120131120922.GD32010@elte.hu>
-	<20120131121820.58a1db97@pyramind.ukuu.org.uk>
-	<20120131122339.GG32010@elte.hu>
-	<CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
-	<1328144756.2768.57.camel@dabdike.int.hansenpartnership.com>
-	<4F2AA642.1030400@linux.intel.com>
-	<CAMO-S2joH0fwEyOOCSFGM+Lc=xgiarNxm3Rj9DgWJNeoRD+QRQ@mail.gmail.com>
-	<CAMuHMdXvv_fvaUq_64_kOHCJ4+04uM_iw7aYxwOPU-Tg+g00-A@mail.gmail.com>
-Date: Sun, 5 Feb 2012 16:01:31 +0900
-Message-ID: <CAMO-S2hAYg9+0iJkwy6xsBiR+g1YPr34Am+C6UR47qqDRiH0ow@mail.gmail.com>
-Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
+	id S1755156Ab2BEHCA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 02:02:00 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:61855 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755140Ab2BEHAm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 02:00:42 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 22/24] PCI: Add pci_bus_add_single_device()
+Date: Sat,  4 Feb 2012 22:58:06 -0800
+Message-Id: <1328425088-6562-23-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1328425088-6562-1-git-send-email-yinghai@kernel.org>
+References: <1328425088-6562-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4F2E2912.0014,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 5, 2012 at 15:53, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Sat, Feb 4, 2012 at 16:39, Hitoshi Mitake <h.mitake@gmail.com> wrote:
->>> I worked myself on a driver (which sadly never shipped) which had an WC
->>> window and a UC window... the final write in a series had a completion bit
->>> in it and would go to the UC window after setting up a whole chunk of
->>> operations in the WC window (writing UC memory flushes WC memory ahead of
->>> it.)
->>>
->>> Thus, the two-part breakdown of writeq() to the UC window had to write the
->>> low half to the WC window instead.  This is clearly not generic.
->>
->> Because of my ignorant, I don't know the words "UC window" and "WC window"
->> in this context. Could you teach me?
->
-> UN = uncached, WC = writecombining.
+will use it to pci_bus_bridge_scan_resize(0 to make bridge will
+have pci_bus directory created.
 
-Thanks a lot for your teaching!
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/bus.c   |   40 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |    1 +
+ 2 files changed, 41 insertions(+), 0 deletions(-)
 
->
-> Gr{oetje,eeting}s,
->
->                         Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-
-
-
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 398f5d8..7b2ae85 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -247,6 +247,46 @@ void pci_bus_add_devices(const struct pci_bus *bus)
+ 	}
+ }
+ 
++void pci_bus_add_single_device(struct pci_dev *dev)
++{
++	struct pci_bus *child;
++	int retval;
++
++	/* Skip already-added devices */
++	if (!dev->is_added) {
++		retval = pci_bus_add_device(dev);
++		if (retval)
++			dev_err(&dev->dev, "Error adding device, continuing\n");
++	}
++
++	BUG_ON(!dev->is_added);
++
++	child = dev->subordinate;
++	/*
++	 * If there is an unattached subordinate bus, attach
++	 * it and then scan for unattached PCI devices.
++	 */
++	if (child) {
++		if (list_empty(&child->node)) {
++			down_write(&pci_bus_sem);
++			list_add_tail(&child->node, &dev->bus->children);
++			up_write(&pci_bus_sem);
++		}
++		pci_bus_add_devices(child);
++
++		/*
++		 * register the bus with sysfs as the parent is now
++		 * properly registered.
++		 */
++		if (!child->is_added) {
++			retval = pci_bus_add_child(child);
++			if (retval)
++				dev_err(&dev->dev, "Error adding bus, continuing\n");
++		}
++	}
++}
++
++
+ void pci_enable_bridges(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index d5b6786..8061031 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -659,6 +659,7 @@ void pci_fixup_cardbus(struct pci_bus *);
+ void pcibios_scan_specific_bus(int busn);
+ extern struct pci_bus *pci_find_bus(int domain, int busnr);
+ void pci_bus_add_devices(const struct pci_bus *bus);
++void pci_bus_add_single_device(struct pci_dev *dev);
+ struct pci_bus *pci_scan_bus_parented(struct device *parent, int bus,
+ 				      struct pci_ops *ops, void *sysdata);
+ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
 -- 
-Hitoshi Mitake
-h.mitake@gmail.com
+1.7.7
+
