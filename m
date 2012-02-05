@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab2BEWgq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:36:46 -0500
-Received: from 1wt.eu ([62.212.114.60]:62079 "EHLO 1wt.eu"
+	id S1754593Ab2BEW0z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:26:55 -0500
+Received: from 1wt.eu ([62.212.114.60]:62069 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754489Ab2BEW04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:56 -0500
-Message-Id: <20120205220952.484134878@pcw.home.local>
+	id S1754459Ab2BEW0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:52 -0500
+Message-Id: <20120205220951.120047847@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:11:00 +0100
+Date: Sun, 05 Feb 2012 23:10:28 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 71/91] UBI: fix nameless volumes handling
+Subject: [PATCH 39/91] powerpc: Fix device tree claim code
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,34 +24,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 4a59c797a18917a5cf3ff7ade296b46134d91e6a upstream.
+commit 966728dd88b4026ec58fee169ccceaeaf56ef120 upstream.
 
-Currently it's possible to create a volume without a name. E.g:
-ubimkvol -n 32 -s 2MiB -t static /dev/ubi0 -N ""
+I have a box that fails in OF during boot with:
 
-After that vtbl_check() will always fail because it does not permit
-empty strings.
+DEFAULT CATCH!, exception-handler=fff00400
+at   %SRR0: 49424d2c4c6f6768   %SRR1: 800000004000b002
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
+ie "IBM,Logh". OF got corrupted with a device tree string.
+
+Looking at make_room and alloc_up, we claim the first chunk (1 MB)
+but we never claim any more. mem_end is always set to alloc_top
+which is the top of our available address space, guaranteeing we will
+never call alloc_up and claim more memory.
+
+Also alloc_up wasn't setting alloc_bottom to the bottom of the
+available address space.
+
+This doesn't help the box to boot, but we at least fail with
+an obvious error. We could relocate the device tree in a future
+patch.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/mtd/ubi/cdev.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/powerpc/kernel/prom_init.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Index: longterm-2.6.27/drivers/mtd/ubi/cdev.c
+Index: longterm-2.6.27/arch/powerpc/kernel/prom_init.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/mtd/ubi/cdev.c	2012-02-05 22:34:32.837915400 +0100
-+++ longterm-2.6.27/drivers/mtd/ubi/cdev.c	2012-02-05 22:34:44.966914934 +0100
-@@ -569,6 +569,9 @@
- 	if (req->alignment != 1 && n)
- 		goto bad;
+--- longterm-2.6.27.orig/arch/powerpc/kernel/prom_init.c	2012-02-05 22:34:33.840914904 +0100
++++ longterm-2.6.27/arch/powerpc/kernel/prom_init.c	2012-02-05 22:34:40.385916495 +0100
+@@ -880,7 +880,7 @@
+ 	}
+ 	if (addr == 0)
+ 		return 0;
+-	RELOC(alloc_bottom) = addr;
++	RELOC(alloc_bottom) = addr + size;
  
-+	if (!req->name[0] || !req->name_len)
-+		goto bad;
-+
- 	if (req->name_len > UBI_VOL_NAME_MAX) {
- 		err = -ENAMETOOLONG;
- 		goto bad;
+ 	prom_debug(" -> %x\n", addr);
+ 	prom_debug("  alloc_bottom : %x\n", RELOC(alloc_bottom));
+@@ -1680,7 +1680,7 @@
+ 		chunk = alloc_up(room, 0);
+ 		if (chunk == 0)
+ 			prom_panic("No memory for flatten_device_tree (claim failed)");
+-		*mem_end = RELOC(alloc_top);
++		*mem_end = chunk + room;
+ 	}
+ 
+ 	ret = (void *)*mem_start;
+@@ -1899,7 +1899,7 @@
+ 	mem_start = (unsigned long)alloc_up(room, PAGE_SIZE);
+ 	if (mem_start == 0)
+ 		prom_panic("Can't allocate initial device-tree chunk\n");
+-	mem_end = RELOC(alloc_top);
++	mem_end = mem_start + room;
+ 
+ 	/* Get root of tree */
+ 	root = call_prom("peer", 1, 1, (phandle)0);
 
 
