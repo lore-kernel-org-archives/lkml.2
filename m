@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab2BEQV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 11:21:27 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:35643 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751684Ab2BEQV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 11:21:26 -0500
-Message-ID: <1328458885.7008.58.camel@joe2Laptop>
-Subject: Re: [PATCH, v2] checkpatch: Warn on code with 6+ tab indentation,
- remove 80col warning
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Valdis.Kletnieks@vt.edu
-Date: Sun, 05 Feb 2012 08:21:25 -0800
-In-Reply-To: <20120205113821.GA22399@elte.hu>
-References: <20120203095227.GA13162@elte.hu> <20120203100743.GA3334@elte.hu>
-	 <CA+55aFxjPAsfsSSOsX9eyts6EP6dEyieGS_YJs-4HLuTKNfzZg@mail.gmail.com>
-	 <1328311239.21255.24.camel@joe2Laptop> <20120204130330.GA30198@elte.hu>
-	 <1328372536.5766.3.camel@joe2Laptop> <20120204180237.GA7682@elte.hu>
-	 <1328381300.5996.2.camel@joe2Laptop>
-	 <CAOJsxLGtkVDZpFn3WY21Z4nqnH159KLyo7sx5rhe73bz712sYw@mail.gmail.com>
-	 <1328383659.7008.7.camel@joe2Laptop> <20120205113821.GA22399@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753491Ab2BEQWQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 11:22:16 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41427 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab2BEQWO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 11:22:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120205123415.GY889@n2100.arm.linux.org.uk>
+References: <1326959620-25920-1-git-send-email-b32955@freescale.com>
+	<1326959620-25920-2-git-send-email-b32955@freescale.com>
+	<CAMiH66FoX0m_NPntMRyt6zJoYgxuYnzv6neDggmKxW8nfzKJiA@mail.gmail.com>
+	<20120205123415.GY889@n2100.arm.linux.org.uk>
+Date: Mon, 6 Feb 2012 00:22:13 +0800
+Message-ID: <CAMiH66F+Nz0b=S-=_97MuBgmPz8svG6-9QVZmtTCjg12H6jUng@mail.gmail.com>
+Subject: Re: [PATCH resent v2 1/2] ioport : add DEFINE_RES_DMA_SIZE_NAMED macro
+From: Huang Shijie <shijie8@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Huang Shijie <b32955@freescale.com>, akpm@linux-foundation.org,
+        shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, u.kleine-koenig@pengutronix.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-02-05 at 12:38 +0100, Ingo Molnar wrote:
-> In practice patch submitters take warnings just as seriously.
+On Sun, Feb 5, 2012 at 8:34 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sun, Feb 05, 2012 at 07:53:31PM +0800, Huang Shijie wrote:
+>> Does any one have any comments about this patch?
+>
+> Yes.  Having a flat numberspace for DMAs invites the same problems that
+> we have with the flat IRQ numberspace when it comes to having multiple
+> DMA controllers.
+>
+> With DMA engine drivers, channels are allocated using a match function
+> and unspecified match data.  While a linear numberspace can be used,
+> that sets itself up for clashing between different DMA controllers
+> especially if the numberspace overlaps.
+>
+> What's missing from this patch set is an illustration of how this will
+> be used.
+>
+> Another issue here is that having the peripheral drivers know about the
+> exact match function and what data the DMA engines require ties the
+> periperal drivers to their respective DMA engine.  One of the points of
+> DMA engine is to separate that knowledge, so that the same peripheral IP
+> can be re-used with different DMA engines.
+>
+> To encode knowledge of the DMA engine into the peripheral driver basically
+> destroys the purpose of having a DMA engine API.
+>
+> So, I believe that _if_ we are going down the path of using the DMA engine
+> API for our SoCs, we really don't want to invent a linear DMA numberspace
+> by putting DMA numbers into resources.
 
-In practice, that's not necessarily bad.
-I do think there should be some line length limit.
-80 might be a bit short.
+ok. thanks.
 
-> If it is emitted by the default checkpatch run, it's acted
-> upon. That is the human behavior that is a given.
 
-Look at some of the lines in drivers/staging
-that have _really_ long lines that would not
-get any warning if this were removed.
-
-$ git ls-files "drivers/staging/*.[ch]" | xargs cat | \
-  awk '{print length($0),$0}' | sort -rn | head -50
-
-gotta love the first few...
-
-A few lines in arch/x86 might benefit from
-some wrapping too.
-
+Huang Shijie
