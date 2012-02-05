@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab2BEMRV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 07:17:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58059 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840Ab2BEMRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 07:17:20 -0500
-Message-ID: <4F2E7311.8060808@redhat.com>
-Date: Sun, 05 Feb 2012 14:16:17 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753316Ab2BEMej (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 07:34:39 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52246 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab2BEMei (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 07:34:38 -0500
+Date: Sun, 5 Feb 2012 12:34:15 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Huang Shijie <shijie8@gmail.com>
+Cc: Huang Shijie <b32955@freescale.com>, akpm@linux-foundation.org,
+        shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, u.kleine-koenig@pengutronix.de
+Subject: Re: [PATCH resent v2 1/2] ioport : add DEFINE_RES_DMA_SIZE_NAMED
+	macro
+Message-ID: <20120205123415.GY889@n2100.arm.linux.org.uk>
+References: <1326959620-25920-1-git-send-email-b32955@freescale.com> <1326959620-25920-2-git-send-email-b32955@freescale.com> <CAMiH66FoX0m_NPntMRyt6zJoYgxuYnzv6neDggmKxW8nfzKJiA@mail.gmail.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Christoph Lameter <cl@linux.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-References: <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <1328117722.2446.262.camel@twins> <20120201184045.GG2382@linux.vnet.ibm.com> <alpine.DEB.2.00.1202011404500.2074@router.home> <20120201201336.GI2382@linux.vnet.ibm.com> <4F2A58A1.90800@redhat.com> <20120202153437.GD2518@linux.vnet.ibm.com> <4F2AB66C.2030309@redhat.com> <20120202170134.GM2518@linux.vnet.ibm.com> <4F2AC69B.7000704@redhat.com> <20120202175155.GV2518@linux.vnet.ibm.com>
-In-Reply-To: <20120202175155.GV2518@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMiH66FoX0m_NPntMRyt6zJoYgxuYnzv6neDggmKxW8nfzKJiA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2012 07:51 PM, Paul E. McKenney wrote:
-> On Thu, Feb 02, 2012 at 07:23:39PM +0200, Avi Kivity wrote:
-> > On 02/02/2012 07:01 PM, Paul E. McKenney wrote:
-> > > > 
-> > > > It's not called (since the cpu is not idle).  Instead we call
-> > > > rcu_virt_note_context_switch().
-> > >
-> > > Frederic's work checks to see if there is only one runnable user task
-> > > on a given CPU.  If there is only one, then the scheduling-clock interrupt
-> > > is turned off for that CPU, and RCU is told to ignore it while it is
-> > > executing in user space.  Not sure whether this covers KVM guests.
-> > 
-> > Conceptually it's the same.  Maybe it needs adjustments, since kvm
-> > enters a guest in a different way than the kernel exits to userspace.
-> > 
-> > > In any case, this is not yet in mainline.
-> > 
-> > Let me know when it's in, and I'll have a look.
->
-> Could you please touch base with Frederic Weisbecker to make sure that
-> what he is doing works for you?
->
+On Sun, Feb 05, 2012 at 07:53:31PM +0800, Huang Shijie wrote:
+> Does any one have any comments about this patch?
 
-Looks like there are new rcu_user_enter() and rcu_user_exit() APIs which
-we can use.  Hopefully they subsume rcu_virt_note_context_switch() so we
-only need one set of APIs.
+Yes.  Having a flat numberspace for DMAs invites the same problems that
+we have with the flat IRQ numberspace when it comes to having multiple
+DMA controllers.
 
--- 
-error compiling committee.c: too many arguments to function
+With DMA engine drivers, channels are allocated using a match function
+and unspecified match data.  While a linear numberspace can be used,
+that sets itself up for clashing between different DMA controllers
+especially if the numberspace overlaps.
 
+What's missing from this patch set is an illustration of how this will
+be used.
+
+Another issue here is that having the peripheral drivers know about the
+exact match function and what data the DMA engines require ties the
+periperal drivers to their respective DMA engine.  One of the points of
+DMA engine is to separate that knowledge, so that the same peripheral IP
+can be re-used with different DMA engines.
+
+To encode knowledge of the DMA engine into the peripheral driver basically
+destroys the purpose of having a DMA engine API.
+
+So, I believe that _if_ we are going down the path of using the DMA engine
+API for our SoCs, we really don't want to invent a linear DMA numberspace
+by putting DMA numbers into resources.
