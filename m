@@ -1,188 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2BEMHJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 07:07:09 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34799 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab2BEMHE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 07:07:04 -0500
-Message-ID: <4F2E709C.5060000@mvista.com>
-Date: Sun, 05 Feb 2012 16:05:48 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	id S1753266Ab2BEMRV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 07:17:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750840Ab2BEMRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 07:17:20 -0500
+Message-ID: <4F2E7311.8060808@redhat.com>
+Date: Sun, 05 Feb 2012 14:16:17 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Amit Sahrawat <amit.sahrawat83@gmail.com>
-CC: Jeff Garzik <jgarzik@pobox.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
- routine fails
-References: <1328273954-5010-1-git-send-email-amit.sahrawat83@gmail.com>
-In-Reply-To: <1328273954-5010-1-git-send-email-amit.sahrawat83@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: paulmck@linux.vnet.ibm.com
+CC: Christoph Lameter <cl@linux.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+References: <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <1328117722.2446.262.camel@twins> <20120201184045.GG2382@linux.vnet.ibm.com> <alpine.DEB.2.00.1202011404500.2074@router.home> <20120201201336.GI2382@linux.vnet.ibm.com> <4F2A58A1.90800@redhat.com> <20120202153437.GD2518@linux.vnet.ibm.com> <4F2AB66C.2030309@redhat.com> <20120202170134.GM2518@linux.vnet.ibm.com> <4F2AC69B.7000704@redhat.com> <20120202175155.GV2518@linux.vnet.ibm.com>
+In-Reply-To: <20120202175155.GV2518@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 03-02-2012 16:59, Amit Sahrawat wrote:
-
-> It has been observed that a number of USB HDD's do not respond correctly
-
-    Why are you working around this in libata-scsi.c then if it's USB HDD?
-
-> to SCSI mode sense command(retrieve caching pages) which results in their
-> Write Cache being discarded by queue requests i.e., WCE if left set to
-> '0'(disabled).
-> This results in a number of Filesystem corruptions, when the device
-> is unplugged abruptly.
-
-> So, in order to identify the devices correctly - give it
-> a last try using ATA_16 after failure from normal routine.
-
-    Shouldn't this be done in drivers/usb/storage somewhere?
-
-> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
-> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
-
-[...]
-
-> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-> index 508a60b..d5b00e6 100644
-> --- a/drivers/ata/libata-scsi.c
-> +++ b/drivers/ata/libata-scsi.c
-> @@ -562,6 +562,57 @@ error:
->   }
+On 02/02/2012 07:51 PM, Paul E. McKenney wrote:
+> On Thu, Feb 02, 2012 at 07:23:39PM +0200, Avi Kivity wrote:
+> > On 02/02/2012 07:01 PM, Paul E. McKenney wrote:
+> > > > 
+> > > > It's not called (since the cpu is not idle).  Instead we call
+> > > > rcu_virt_note_context_switch().
+> > >
+> > > Frederic's work checks to see if there is only one runnable user task
+> > > on a given CPU.  If there is only one, then the scheduling-clock interrupt
+> > > is turned off for that CPU, and RCU is told to ignore it while it is
+> > > executing in user space.  Not sure whether this covers KVM guests.
+> > 
+> > Conceptually it's the same.  Maybe it needs adjustments, since kvm
+> > enters a guest in a different way than the kernel exits to userspace.
+> > 
+> > > In any case, this is not yet in mainline.
+> > 
+> > Let me know when it's in, and I'll have a look.
 >
->   /**
-> + *      ata_get_cachestatus - Handler for to get WriteCache Status
-> + *                      using ATA_16 scsi command
-> + *      @scsidev: Device to which we are issuing command
-> + *
-> + *      LOCKING:
-> + *      Defined by the SCSI layer.  We don't really care.
-> + *
-> + *      RETURNS:
-> + *      '0' for Write Cache Disabled and on any error.
-> + *      '1' for Write Cache enabled
-> + */
-> +int ata_get_cachestatus(struct scsi_device *scsidev)
-> +{
-> +	int rc = 0;
-> +	u8 scsi_cmd[MAX_COMMAND_SIZE] = {0};
-> +	u8 *sensebuf = NULL, *argbuf = NULL;
-
-    No need to initialize them.
-
-> +	enum dma_data_direction data_dir;
-> +
-> +	sensebuf = kzalloc(SCSI_SENSE_BUFFERSIZE, GFP_NOIO);
-> +	if (!sensebuf)
-> +		return rc;
-> +
-> +	argbuf = kmalloc(ATA_SECT_SIZE, GFP_KERNEL);
-> +	if (argbuf == NULL)
-
-    Could you use an uniform NULL-check, either '!x' or 'x == NULL'?
-
-> +		goto error;
-> +
-> +	scsi_cmd[0] = ATA_16;
-> +	scsi_cmd[1]  = (4<<  1); /* PIO Data-in */
-> +	scsi_cmd[2]  = 0x0e;     /* no off.line or cc, read from dev,
-> +				block count in sector count field */
-> +	data_dir = DMA_FROM_DEVICE;
-> +	scsi_cmd[14] = ATA_IDENTIFY_DEV;
-> +
-> +	if (!scsi_execute(scsidev, scsi_cmd, data_dir, argbuf, ATA_SECT_SIZE,
-> +				sensebuf, (10*HZ), 5, 0, NULL)) {
-> +		/*
-> +		 * '6th' Bit in Word 85 Corresponds to Write Cache
-
-    No need for apostrophes here.
-
-> +		 * being Enabled/disabled, Word 85 represnets the
-> +		 * features supported
-> +		 */
-> +		if (le16_to_cpu(((unsigned short *)argbuf)[85])&  0x20)
-> +			rc = 1;
-> +	}
-> +
-> +error:
-> +	kfree(sensebuf);
-> +	kfree(argbuf);
-> +	return rc;
-> +}
-> +
-> +/**
->    *	ata_task_ioctl - Handler for HDIO_DRIVE_TASK ioctl
->    *	@scsidev: Device to which we are issuing command
->    *	@arg: User provided data for issuing command
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index c691fb5..a6b887d 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -50,6 +50,11 @@
->   #include<linux/string_helpers.h>
->   #include<linux/async.h>
->   #include<linux/slab.h>
-> +
-> +#ifdef CONFIG_ATA
-
-    #ifdef not necessary here.
-
-> +#include<linux/libata.h>
-> +#endif
-> +
->   #include<linux/pm_runtime.h>
->   #include<asm/uaccess.h>
->   #include<asm/unaligned.h>
-> @@ -2129,7 +2134,11 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
->   		if (modepage == 0x3F) {
->   			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
->   				  "present\n");
-> +#ifdef CONFIG_ATA
-> +			goto WCE_USING_ATA;
-
-    Yikes.
-
-> +#else
->   			goto defaults;
-> +#endif
->   		} else if ((buffer[offset]&  0x3f) != modepage) {
->   			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
->   			goto defaults;
-> @@ -2149,6 +2158,14 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
->   				  "Uses READ/WRITE(6), disabling FUA\n");
->   			sdkp->DPOFUA = 0;
->   		}
-> +#ifdef CONFIG_ATA
-> +WCE_USING_ATA:
-> +		if (!sdp->removable && !sdkp->WCE) {
-> +			sd_printk(KERN_NOTICE, sdkp, "Try to check write cache "
-> +				"enable/disable using ATA command\n");
-> +			sdkp->WCE = ata_get_cachestatus(sdp);
-> +		}
-> +#endif
+> Could you please touch base with Frederic Weisbecker to make sure that
+> what he is doing works for you?
 >
->   		if (sdkp->first_scan || old_wce != sdkp->WCE ||
->   		    old_rcd != sdkp->RCD || old_dpofua != sdkp->DPOFUA)
-> diff --git a/include/linux/libata.h b/include/linux/libata.h
-> index cafc09a..33fc73f 100644
-> --- a/include/linux/libata.h
-> +++ b/include/linux/libata.h
-> @@ -84,6 +84,8 @@
->   	}							\
->   })
->
-> +#define ATA_IDENTIFY_DEV	0xEC
-> +
 
-    This is alerady #defined in <linux/ata.h> as ATA_CMD_ID_ATA.
+Looks like there are new rcu_user_enter() and rcu_user_exit() APIs which
+we can use.  Hopefully they subsume rcu_virt_note_context_switch() so we
+only need one set of APIs.
 
-MBR, Sergei
+-- 
+error compiling committee.c: too many arguments to function
+
