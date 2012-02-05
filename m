@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab2BEWsK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 17:48:10 -0500
-Received: from 1wt.eu ([62.212.114.60]:61858 "EHLO 1wt.eu"
+	id S1755217Ab2BEWsd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 17:48:33 -0500
+Received: from 1wt.eu ([62.212.114.60]:61854 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753666Ab2BEW0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 17:26:17 -0500
-Message-Id: <20120205220949.791917535@pcw.home.local>
+	id S1753607Ab2BEW0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 17:26:16 -0500
+Message-Id: <20120205220950.516072640@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Sun, 05 Feb 2012 23:09:57 +0100
+Date: Sun, 05 Feb 2012 23:10:14 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ben Dooks <ben-linux@fluff.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Chris Ball <cjb@laptop.org>, Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 08/91] mmc: sdhci: Check mrq->cmd in sdhci_tasklet_finish
+Cc: Joerg Roedel <joerg.roedel@amd.com>, Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH 25/91] x86/amd-iommu: Fix 3 possible endless loops
 In-Reply-To: <0635750f5f06ed2ca212b91fcb5c4483@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,38 +22,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit b7b4d3426d2b5ecab21578eb20d8e456a1aace8f upstream.
+commit 0de66d5b35ee148455e268b2782873204ffdef4b upstream.
 
-It seems that under certain circumstances that the sdhci_tasklet_finish()
-call can be entered with mrq->cmd set to NULL, causing the system to crash
-with a NULL pointer de-reference.
+The driver contains several loops counting on an u16 value
+where the exit-condition is checked against variables that
+can have values up to 0xffff. In this case the loops will
+never exit. This patch fixed 3 such loops.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-PC is at sdhci_tasklet_finish+0x34/0xe8
-LR is at sdhci_tasklet_finish+0x24/0xe8
-
-Seen on S3C6410 system.
-
-Signed-off-by: Ben Dooks <ben-linux@fluff.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/mmc/host/sdhci.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/amd_iommu_init.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Index: longterm-2.6.27/drivers/mmc/host/sdhci.c
+Index: longterm-2.6.27/arch/x86/kernel/amd_iommu_init.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/mmc/host/sdhci.c	2012-02-05 22:34:34.798915250 +0100
-+++ longterm-2.6.27/drivers/mmc/host/sdhci.c	2012-02-05 22:34:36.053916156 +0100
-@@ -1176,7 +1176,7 @@
- 	 * upon error conditions.
- 	 */
- 	if (!(host->flags & SDHCI_DEVICE_DEAD) &&
--		(mrq->cmd->error ||
-+	    ((mrq->cmd && mrq->cmd->error) ||
- 		 (mrq->data && (mrq->data->error ||
- 		  (mrq->data->stop && mrq->data->stop->error))) ||
- 		   (host->quirks & SDHCI_QUIRK_RESET_AFTER_REQUEST))) {
+--- longterm-2.6.27.orig/arch/x86/kernel/amd_iommu_init.c	2012-02-05 22:34:34.270914795 +0100
++++ longterm-2.6.27/arch/x86/kernel/amd_iommu_init.c	2012-02-05 22:34:38.426915208 +0100
+@@ -538,8 +538,8 @@
+ {
+ 	u8 *p = (u8 *)h;
+ 	u8 *end = p, flags = 0;
+-	u16 dev_i, devid = 0, devid_start = 0, devid_to = 0;
+-	u32 ext_flags = 0;
++	u16 devid = 0, devid_start = 0, devid_to = 0;
++	u32 dev_i, ext_flags = 0;
+ 	bool alias = false;
+ 	struct ivhd_entry *e;
+ 
+@@ -638,7 +638,7 @@
+ /* Initializes the device->iommu mapping for the driver */
+ static int __init init_iommu_devices(struct amd_iommu *iommu)
+ {
+-	u16 i;
++	u32 i;
+ 
+ 	for (i = iommu->first_device; i <= iommu->last_device; ++i)
+ 		set_iommu_for_device(iommu, i);
+@@ -833,7 +833,7 @@
+  */
+ static void init_device_table(void)
+ {
+-	u16 devid;
++	u32 devid;
+ 
+ 	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
+ 		set_dev_entry_bit(devid, DEV_ENTRY_VALID);
 
 
