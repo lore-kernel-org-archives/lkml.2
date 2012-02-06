@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab2BFT72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 14:59:28 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44857 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751935Ab2BFT71 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 14:59:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <1328556210.2482.20.camel@laptop>
-References: <1328187288-24395-1-git-send-email-eranian@google.com>
-	<1328187288-24395-10-git-send-email-eranian@google.com>
-	<1328556210.2482.20.camel@laptop>
-Date: Mon, 6 Feb 2012 20:59:25 +0100
-Message-ID: <CABPqkBT8a5cZCcCP7SDv2moCpv-DNy06xQ=kqtZQ=1a4YaHa_Q@mail.gmail.com>
-Subject: Re: [PATCH v5 09/18] perf: disable PERF_SAMPLE_BRANCH_* when not supported
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
-        khandual@linux.vnet.ibm.com, dsahern@gmail.com
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755379Ab2BFUDI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 15:03:08 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54907 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2BFUDH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 15:03:07 -0500
+Subject: Re: [RFC PATCH 00/14] sched: entity load-tracking re-work
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+In-Reply-To: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
+References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Feb 2012 21:02:49 +0100
+Message-ID: <1328558569.2482.22.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 6, 2012 at 8:23 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2012-02-02 at 13:54 +0100, Stephane Eranian wrote:
->> @@ -539,6 +539,10 @@ static int armpmu_event_init(struct perf_event *event)
->>         int err = 0;
->>         atomic_t *active_events = &armpmu->active_events;
->>
->> +       /* does not support taken branch sampling */
->> +       if (has_branch_smpl(event))
->> +               return -EOPNOTSUPP;
->> +
->>         if (armpmu->map_event(event) == -ENOENT)
->
-> I'll make that has_branch_stack(), ok? :-)
->
-Supposedly, I fixed that in v5. Is it not there?
-If not, then something went wrong but go ahead, that's the right fix anyway.
+On Wed, 2012-02-01 at 17:38 -0800, Paul Turner wrote:
+>                            Mailer: 
+> StGit/0.15
+> 
+Its broken, every email has the exact same timestamp! This means emails
+are sorted by receive order, which doesn't match actual patch order.
+
+Maybe the new and improved stgit-1.6 has this fixed.
+
+/me goes read more
+
