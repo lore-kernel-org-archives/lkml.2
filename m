@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab2BFRnD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 12:43:03 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64549 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751016Ab2BFRnB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 12:43:01 -0500
+	id S1753423Ab2BFRom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 12:44:42 -0500
+Received: from stats.peacock.arvixe.com ([174.122.104.67]:44857 "EHLO
+	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751016Ab2BFRok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 12:44:40 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
+	h=Message-ID:In-Reply-To:References:Date:Subject:From:To:Cc:User-Agent:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Priority:Importance;
+	b=njQPd4dRiWdmwGFnBXKWpU5U9YJOYDMeE6jp4PaPSuVrhD6pBQf4e7Wmopvwo4gWLeUUdc+kauVkw/V/sxn3WXu7HQ+0BdnHHupmzi0e3Kj/TxLxX6cBwPBqi/sKzqCE;
+Message-ID: <b24d411c05c013317690ef4cec330c71.squirrel@webmail.firszt.eu>
+In-Reply-To: <4F300F2C.9030308@goop.org>
+References: <1328481324-7241-1-git-send-email-przemo@firszt.eu>
+    <alpine.LNX.2.00.1202061326150.24127@pobox.suse.cz>
+    <d2139519eb66f9b7bfd8f56d3b4e2d96.squirrel@webmail.firszt.eu>
+    <alpine.LNX.2.00.1202061342090.24127@pobox.suse.cz>
+    <4F300F2C.9030308@goop.org>
+Date: Mon, 6 Feb 2012 17:44:17 -0000
+Subject: Re: [PATCH] HID: wacom: Fix invalid power_supply_powers calls
+From: przemo@firszt.eu
+To: "Jeremy Fitzhardinge" <jeremy@goop.org>
+Cc: "Jiri Kosina" <jkosina@suse.cz>, "Przemo Firszt" <przemo@firszt.eu>,
+        chris@cnpbagwell.com, pinglinux@gmail.com,
+        linuxwacom-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-In-Reply-To: <20120206.120740.1750013890695365167.davem@davemloft.net>
-References: <cf736034e7bd407297e2ea9fbf247fb410eb7b39.1328445742.git.netdev@pradeepdalvi.com>
-	<d8ad7b1e88df72e284cbc8b8fba1745530923375.1328445742.git.netdev@pradeepdalvi.com>
-	<20120206.120740.1750013890695365167.davem@davemloft.net>
-Date: Mon, 6 Feb 2012 23:13:00 +0530
-Message-ID: <CA+Dx6HaRFw-zACqQb-VWCnGyA5jagZmNhQx=Os=Nbv626O4msg@mail.gmail.com>
-Subject: Re: [PATCH v5 4/5] netdev: ethernet dev_alloc_skb to netdev_alloc_skb
-From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - peacock.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 6, 2012 at 10:37 PM, David Miller <davem@davemloft.net> wrote:
-> From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
-> Date: Sun,  5 Feb 2012 18:21:05 +0530
->
->> From: Pradeep A Dalvi <netdev@pradeepdalvi.com>
+> On 02/06/2012 04:42 AM, Jiri Kosina wrote:
+>> On Mon, 6 Feb 2012, przemo@firszt.eu wrote:
 >>
->> Replaced deprecating dev_alloc_skb with netdev_alloc_skb in drivers/net/ethernet
->>   - Removed extra skb->dev = dev after netdev_alloc_skb
->>
->> Signed-off-by: Pradeep A Dalvi <netdev@pradeepdalvi.com>
+>>>> Hmm, seems valid. How did you notice? Have you seen crashes because of
+>>>> wild pointers?
+>>> Hi Jiri,
+>>> Yes, the driver was unusable - 100% crashes during connection.
+>> Okay, I thought that'd be the case.
 >
-> I'm not applying this, you screw up the code formatting in too
-> many locations.
+> Very sorry about that.  I don't have a device to test with, so I should
+> have reviewed the code extra carefully.
 >
-> Do NOT take the output of checkpatch literally, look at the result
-> and determine on your own whether it looks reasonable or not:
+> Does the same bug apply to the Wii changes, which were of the same form?
 >
->> -             struct sk_buff *skb = dev_alloc_skb(np->rx_buf_sz + NV_RX_ALLOC_PAD);
->> +             struct sk_buff *skb =
->> +                     netdev_alloc_skb(dev, np->rx_buf_sz + NV_RX_ALLOC_PAD);
->
-> This, looks like crap.  The longer line is better.
->
->> -                     struct sk_buff *skb = dev_alloc_skb(hmp->rx_buf_sz + 2);
->> +                     struct sk_buff *skb = netdev_alloc_skb(dev,
->> +                                     hmp->rx_buf_sz + 2);
->
-> Same thing here.
->
->> -                     struct sk_buff *skb = dev_alloc_skb(yp->rx_buf_sz + 2);
->> +                     struct sk_buff *skb = netdev_alloc_skb(dev,
->> +                                     yp->rx_buf_sz + 2);
->
-> Column line-up rule violated, and this looks like crap as a result.  The long
-> single line would look 100 times better.
->
-> And there are many other instances of this problem.
->
-> Here's my advice, just do the textual change of the function name and add
-> the network device argument, don't mess with the coding style at all.
->
-> You're fare much better than how these patches ended up in the cases where
-> you tried to "improve" things.
+Hi Jeremy,
+The wii code looks the same, so probably it's affected as well. Can you
+make a patch?
 
-I shall fix these and resubmit patch again.
+power_supply_powers call in wiimote driver:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=drivers/hid/hid-wiimote-core.c#l1229
 
-Thanks & regards,
-Pradeep A. Dalvi
+regards,
+Przemo Firszt
+
