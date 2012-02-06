@@ -1,114 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab2BFQoe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:44:34 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36300 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab2BFQod (ORCPT
+	id S1755358Ab2BFQpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:45:12 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:50961 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754487Ab2BFQpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:44:33 -0500
-Date: Mon, 6 Feb 2012 08:44:28 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <vivek.goyal2008@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
-Subject: Re: [patch]block: fix ioc locking warning
-Message-ID: <20120206164428.GA21292@google.com>
-References: <1328514611.21268.66.camel@sli10-conroe>
- <20120206151219.GC30752@redhat.com>
- <4F2FFB21.9000202@kernel.dk>
- <20120206163721.GF30752@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120206163721.GF30752@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 Feb 2012 11:45:11 -0500
+Date: Mon, 06 Feb 2012 11:45:05 -0500 (EST)
+Message-Id: <20120206.114505.1068389709235471266.davem@davemloft.net>
+To: netdev@pradeepdalvi.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/5] netdev: ethernet dev_alloc_skb to
+ netdev_alloc_skb
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cf736034e7bd407297e2ea9fbf247fb410eb7b39.1328445742.git.netdev@pradeepdalvi.com>
+References: <cf736034e7bd407297e2ea9fbf247fb410eb7b39.1328445742.git.netdev@pradeepdalvi.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 06 Feb 2012 08:45:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
+Date: Sun,  5 Feb 2012 18:19:09 +0530
 
-On Mon, Feb 06, 2012 at 11:37:21AM -0500, Vivek Goyal wrote:
-> block: Do not lock try to lock already locked queue again
+> From: Pradeep A Dalvi <netdev@pradeepdalvi.com>
 > 
-> put_io_context() can be called with one of the request queue lock 
-> already held. But if the locked queue's cic is not first in the
-> ioc->ioc_list, then we have two possible issues.
+> Replaced deprecating dev_alloc_skb with netdev_alloc_skb in drivers/net/ethernet
+>   - Removed extra skb->dev = dev after netdev_alloc_skb
 > 
-> - For above condition, current code bails out and schedules the worker
->   thread for freeing up ioc. This can be optimized.
-> 
-> - It might happen that we received the queue locked but we still do the
->   trylock on the queue. For SMP case that's not a problem as we will
->   fail to lock already locked queue, but in case of UP, we seem to
->   succeed and in the process increment the preempt count. Once we are
->   done with ioc_exit_icq(), we do not call spin_unlock() on locked
->   queue as we are not supposed to. This leads to imbalance in preemtion
->   count and following warning was reported.
->
-> This patch fixes both the above issues by making sure we do not try to
-> lock already locked queue again.
-> 
-> WARNING: at kernel/timer.c:1122 run_timer_softirq+0x199/0x1ec()
-> Hardware name: 939Dual-SATA2
-> timer: cfq_idle_slice_timer+0x0/0xaa preempt leak: 00000102 -> 00000103
-> Modules linked in: sr_mod cdrom videodev media drm_kms_helper ohci_hcd ehci_hcd
-> v4l2_compat_ioctl32 usbcore i2c_ali15x3 snd_seq drm snd_timer snd_seq
-> Pid: 0, comm: swapper Not tainted 3.3.0-rc2-00110-gd125666 #176
-> Call Trace:
-> <IRQ>  [<ffffffff81022aaa>] warn_slowpath_common+0x7e/0x96
-> [<ffffffff8114c485>] ? cfq_slice_expired+0x1d/0x1d
-> [<ffffffff81022b56>] warn_slowpath_fmt+0x41/0x43
-> [<ffffffff8114c526>] ? cfq_idle_slice_timer+0xa1/0xaa
-> [<ffffffff8114c485>] ? cfq_slice_expired+0x1d/0x1d
-> [<ffffffff8102c124>] run_timer_softirq+0x199/0x1ec
-> [<ffffffff81047a53>] ? timekeeping_get_ns+0x12/0x31
-> [<ffffffff810145fd>] ? apic_write+0x11/0x13
-> [<ffffffff81027475>] __do_softirq+0x74/0xfa
-> [<ffffffff812f337a>] call_softirq+0x1a/0x30
-> [<ffffffff81002ff9>] do_softirq+0x31/0x68
-> [<ffffffff810276cf>] irq_exit+0x3d/0xa3
-> [<ffffffff81014aca>] smp_apic_timer_interrupt+0x6b/0x77
-> [<ffffffff812f2de9>] apic_timer_interrupt+0x69/0x70
-> <EOI>  [<ffffffff81040136>] ? sched_clock_cpu+0x73/0x7d
-> [<ffffffff81040136>] ? sched_clock_cpu+0x73/0x7d
-> [<ffffffff8100801f>] ? default_idle+0x1e/0x32
-> [<ffffffff81008019>] ? default_idle+0x18/0x32
-> [<ffffffff810008b1>] cpu_idle+0x87/0xd1
-> [<ffffffff812de861>] rest_init+0x85/0x89
-> [<ffffffff81659a4d>] start_kernel+0x2eb/0x2f8
-> [<ffffffff8165926e>] x86_64_start_reservations+0x7e/0x82
-> [<ffffffff81659362>] x86_64_start_kernel+0xf0/0xf7
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> Reported-by: Meelis Roos <mroos@linux.ee>
-> Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-> Tested-by: Knut Petersen <Knut_Petersen@t-online.de>
+> Signed-off-by: Pradeep A Dalvi <netdev@pradeepdalvi.com>
 
-Yeah, this seems better to me.  Jens, if you're gonna amend the
-commit, please consider collapsing the following patch into the
-original patch too.  Thanks.
+Applied, but I had to fix several things up:
 
-diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-index 7490b6d..12978fc 100644
---- a/block/blk-ioc.c
-+++ b/block/blk-ioc.c
-@@ -204,7 +204,14 @@ void put_io_context(struct io_context *ioc, struct request_queue *locked_q)
- 				spin_unlock(last_q->queue_lock);
- 			last_q = NULL;
- 
--			/* spin_trylock() always successes in UP case */
-+			/*
-+			 * If icq for locked_q wasn't at the head of
-+			 * icq_list, we can try to switch back to locked_q.
-+			 * On SMP, the following locked_q test avoids
-+			 * unnecessary deferring to release_work, on UP,
-+			 * incorrect lock state transition (trylock
-+			 * succeeding while holding the same lock).
-+			 */
- 			if (this_q != locked_q &&
- 			    !spin_trylock(this_q->queue_lock))
- 				break;
+> -			if (pkt_len < rx_copybreak && (skb = dev_alloc_skb(pkt_len + 2)) != NULL) {
+> +			if (pkt_len < rx_copybreak &&
+> +					(skb = netdev_alloc_skb(dev, pkt_len + 2)) != NULL) {
+
+This is not the correct way to format a multi-line conditional.
+
+All subsequent lines must start at the first column after the initial line's
+openning parenthesis:
+
+	if (format_it &&
+	    like_this)
+
+	if (not &&
+		like_this)
+
+To be honest I have no idea what posses people to tab things out in such
+an incredibly ugly fashion in the first place.
+
+> -		if (!(lp->rx_skbuff[i] = dev_alloc_skb(lp->rx_buff_len))) {
+> +		lp->rx_skbuff[i] = netdev_alloc_skb(dev, lp->rx_buff_len);
+> +		if (!lp->rx_skbuff[i]) {
+
+You properly leave this test alone and keep it as "!foo" yet:
+
+> -			if(!(new_skb = dev_alloc_skb(lp->rx_buff_len))){
+> +			new_skb = netdev_alloc_skb(dev, lp->rx_buff_len);
+> +			if (new_skb == NULL) {
+
+You change this one to the undesirable "== NULL" test, don't do that.
+"!foo" is the canonical and most efficient NULL pointer test.
+
+> -      skb = dev_alloc_skb(pkt_len+2);
+> +	skb = netdev_alloc_skb(dev, pkt_len + 2);
+
+Do not change the indentation in one place when the entire rest of the source
+file uses something else, fixing that would a seperate change from what you're
+doing.
+
+> -	    skb = dev_alloc_skb(RX_BUFLEN + 2);
+> +		skb = netdev_alloc_skb(RX_BUFLEN + 2);
+
+Same problem.
