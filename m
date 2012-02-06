@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2BFWla (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:41:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47263 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754389Ab2BFWlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:41:18 -0500
-Date: Mon, 6 Feb 2012 23:41:16 +0100
-From: Jan Kara <jack@suse.cz>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, util-linux@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] fs: filesystem specific options and remount
-Message-ID: <20120206224116.GE24840@quack.suse.cz>
-References: <4F2BFBAF.5020703@redhat.com>
+	id S1756005Ab2BFWqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:46:36 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:46489 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709Ab2BFWqe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 17:46:34 -0500
+Date: Tue, 7 Feb 2012 07:46:19 +0900
+From: Norbert Preining <preining@logic.at>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, jeff@garzik.org,
+        "stern@rowland.harvard.edu >> Alan Stern" <stern@rowland.harvard.edu>,
+        linux-ide@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jian Peng <jipeng2005@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>
+Subject: Re: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume,
+	COMRESET failed
+Message-ID: <20120206224619.GA14901@gamma.logic.tuwien.ac.at>
+References: <20120203054319.GA25510@gamma.logic.tuwien.ac.at> <1328257660.15079.30.camel@minggr> <20120206004608.GA9413@gamma.logic.tuwien.ac.at> <1328492218.15079.38.camel@minggr> <20120206024052.GI9413@gamma.logic.tuwien.ac.at> <1328496591.15079.40.camel@minggr> <20120206031528.GA16093@gamma.logic.tuwien.ac.at> <1328503376.15079.55.camel@minggr> <20120206161943.GA3926@google.com> <CAN8TOE9SM1X_rQCScE8hCZYrWVY9K-B_TM+Vvzx3tZQ2LoGxXw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F2BFBAF.5020703@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAN8TOE9SM1X_rQCScE8hCZYrWVY9K-B_TM+Vvzx3tZQ2LoGxXw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 03-02-12 16:22:23, Jerome Marchand wrote:
-> 
-> When remounted without option specified, some filesystems keep the
-> options that are already set (e.g. procfs, fat) and some reset them to
-> default (e.g. devpts).
-> Regarding options that are specified at remount, behavior of
-> filesystems also differ: some apply them (procfs, devpts), some
-> silently disregard them (e.g. fat) and some have a more elaborate
-> behavior (e.g. xfs apparently allows a subset of options to be changed
-> and issues warning if someone tries to change any other option).
-> 
-> Is there any policy regarding what the correct behavior should be?
-> This variety of behaviors tends to confuse mount utility which often
-> does not show the correct option actually set after a remount and
-> most certainly confuses the users as well.
-> 
-> Here is a example of discrepancy between mount (/etc/mtab) and
-> /proc/mounts:
-> 
-> $ grep proc /proc/mounts
-> /proc /proc proc rw,relatime 0 0
-> $ mount | grep proc
-> proc on /proc type proc (rw)
-> 
-> $ mount -o remount,hidepid=2 /proc/
-> $ grep proc /proc/mounts
-> /proc /proc proc rw,relatime,hidepid=2 0 0
-> $ mount | grep proc
-> proc on /proc type proc (rw,hidepid=2)
-> 
-> $ mount -o remount /proc/
-> $ grep proc /proc/mounts
-> /proc /proc proc rw,relatime,hidepid=2 0 0
-> $ mount | grep proc
-> proc on /proc type proc (rw)
-> 
-> And here is the discrepancy: mount does not show "hidepid=2" option
-> that is actually still set and enforced. Note that mount also missed
-> the relatime option to begin with.
-  I don't mind the discrepancy between /etc/mtab and /proc/mounts that much
-(/proc/mounts is a fine replacement of /etc/mtab for me) but I agree that
-handling of mount options on remount is a mess and IMHO it's made even
-worse by mount(8) adding options from /etc/mtab to mount(2) syscall when
--o remount is specified. But realistically I can hardly imagine how to fix
-all this mess because I'd almost bet userspace depends on the behavior.
+Hi Brian,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+On Mo, 06 Feb 2012, Brian Norris wrote:
+> Is there any possibility of debugging this regression instead of
+> effectively reverting it for mainline? Or perhaps can I have better
+> information regarding the hardware on which this regression is seen?
+
+Sure, Sony VAIO Z11 laptop. I have attached several dmesg output
+to emails in this thread, that should give you a good idea what
+the hardware is. FOr the ahci:
+$ lspci -v -s 00:1f.2
+00:1f.2 SATA controller: Intel Corporation 82801IBM/IEM (ICH9M/ICH9M-E) 4 port SATA Controller [AHCI mode] (rev 03) (prog-if 01 [AHCI 1.0])
+	Subsystem: Sony Corporation Device 9025
+	Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 44
+	I/O ports at 7128 [size=8]
+	I/O ports at 713c [size=4]
+	I/O ports at 7120 [size=8]
+	I/O ports at 7138 [size=4]
+	I/O ports at 7020 [size=32]
+	Memory at daa25000 (32-bit, non-prefetchable) [size=2K]
+	Capabilities: [80] MSI: Enable+ Count=1/16 Maskable- 64bit-
+	Capabilities: [70] Power Management version 3
+	Capabilities: [a8] SATA HBA v1.0
+	Capabilities: [b0] PCI Advanced Features
+	Kernel driver in use: ahci
+
+If you need any other information, please let me know.
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+FIUNARY (n.)
+The safe place you put something and then forget where it was.
+			--- Douglas Adams, The Meaning of Liff
