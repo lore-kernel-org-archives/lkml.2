@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab2BFR1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 12:27:04 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38311 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754033Ab2BFR1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 12:27:02 -0500
-Message-ID: <4F300D41.5050105@linux.vnet.ibm.com>
-Date: Mon, 06 Feb 2012 11:26:25 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1755667Ab2BFR1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 12:27:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44402 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513Ab2BFR1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 12:27:11 -0500
+Date: Mon, 6 Feb 2012 09:27:06 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <vivek.goyal2008@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
+Subject: Re: [patch]block: fix ioc locking warning
+Message-ID: <20120206172706.GB21292@google.com>
+References: <1328514611.21268.66.camel@sli10-conroe>
+ <20120206151219.GC30752@redhat.com>
+ <4F2FFB21.9000202@kernel.dk>
+ <20120206163721.GF30752@redhat.com>
+ <20120206164428.GA21292@google.com>
+ <CA+55aFx6BR_ZUHd8d64btu-LzsPHo3Ot_d1-5jJytjQUqvvaiQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
-References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com> <1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com> <4F21A5AF.6010605@linux.vnet.ibm.com>
-In-Reply-To: <4F21A5AF.6010605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020617-7182-0000-0000-000000B172A3
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFx6BR_ZUHd8d64btu-LzsPHo3Ot_d1-5jJytjQUqvvaiQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2012 01:12 PM, Dave Hansen wrote:
-> On 01/09/2012 02:51 PM, Seth Jennings wrote:
->> +	area = &get_cpu_var(zs_map_area);
->> +	if (off + class->size <= PAGE_SIZE) {
->> +		/* this object is contained entirely within a page */
->> +		area->vm_addr = kmap_atomic(page);
->> +	} else {
->> +		/* this object spans two pages */
->> +		struct page *nextp;
->> +
->> +		nextp = get_next_page(page);
->> +		BUG_ON(!nextp);
->> +
->> +
->> +		set_pte(area->vm_ptes[0], mk_pte(page, PAGE_KERNEL));
->> +		set_pte(area->vm_ptes[1], mk_pte(nextp, PAGE_KERNEL));
->> +
->> +		/* We pre-allocated VM area so mapping can never fail */
->> +		area->vm_addr = area->vm->addr;
->> +	}
-> 
-> This bit appears to be trying to make kmap_atomic() variant that can map
-> two pages in to contigious virtual addresses.  Instead of open-coding it
-> in a non-portable way like this, should we just make a new kmap_atomic()
-> variant that does this?
-> 
-> From the way it's implemented, I _think_ you're guaranteed to get two
-> contiguous addresses if you do two adjacent kmap_atomics() on the same CPU:
-> 
-> void *kmap_atomic_prot(struct page *page, pgprot_t prot)
-> {
-> ...
->         type = kmap_atomic_idx_push();
->         idx = type + KM_TYPE_NR*smp_processor_id();
->         vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
-> 
-> I think if you do a get_cpu()/put_cpu() or just a preempt_disable()
-> across the operations you'll be guaranteed to get two contiguous addresses.
+Hello,
 
-I'm not quite following here.  kmap_atomic() only does this for highmem pages.
-For normal pages (all pages for 64-bit), it doesn't do any mapping at all.  It
-just returns the virtual address of the page since it is in the kernel's address
-space.
+On Mon, Feb 06, 2012 at 08:58:49AM -0800, Linus Torvalds wrote:
+> On Mon, Feb 6, 2012 at 8:44 AM, Tejun Heo <tj@kernel.org> wrote:
+> >
+> > Yeah, this seems better to me.  Jens, if you're gonna amend the
+> > commit, please consider collapsing the following patch into the
+> > original patch too.  Thanks.
+> 
+> Guys, is it *really* worth it to do all these crazy games?
+>
+> How bad is it to just always use the async freeing, instead of this
+> clearly very fragile crazy direct-freeing-with-serious-locking-issues
+> thing?
 
-For this design, the pages _must_ be mapped, even if the pages are directly
-reachable in the address space, because they must be virtually contiguous.
+It's one wq scheduling on exit for any task which has issued an IO.  I
+don't think it would matter except for task fork/exit microbenchs (or
+workloads which approximate to that).  I'll get some measurements and
+strip the optimization if it doesn't really show up.
+
+Thanks.
 
 --
-Seth
-
+tejun
