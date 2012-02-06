@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab2BFOcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 09:32:48 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38524 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754408Ab2BFOcr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 09:32:47 -0500
+	id S1754878Ab2BFOfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 09:35:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38263 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab2BFOfL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 09:35:11 -0500
+Date: Mon, 6 Feb 2012 08:35:06 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 1/3] apple_bl: Convert printks to pr_<level>
+Message-ID: <20120206143506.GB6414@ubuntu-macmini>
+Mail-Followup-To: Ryan Mallon <rmallon@gmail.com>,
+	linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+	Matthew Garrett <mjg@redhat.com>
+References: <1328300884-21551-1-git-send-email-seth.forshee@canonical.com>
+ <1328300884-21551-2-git-send-email-seth.forshee@canonical.com>
+ <4F2F0F61.7070900@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1328538568.2482.5.camel@laptop>
-References: <20120202211709.GA1642@x4>
-	<20120202213220.GB1642@x4>
-	<CABPqkBTutb5TuNVXZ4o+MzXczVSwk3NtsJh73KZS58xmrd=tbg@mail.gmail.com>
-	<20120204135110.GA6437@elte.hu>
-	<CABPqkBTvoNBBdzvS-njoFk+SrTf-BKQSvP54C05un+m7RA+nBg@mail.gmail.com>
-	<CABPqkBQdRwKKAvgK339Po0-WBW-MJkgcmpWqS=OOgepn3_XiRw@mail.gmail.com>
-	<1328523130.2220.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<CABPqkBQLn+5fYtOjhpKjXSzvKesuo+YRXxaawyTGUTQuZ6AjYw@mail.gmail.com>
-	<1328526691.2220.16.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<CABPqkBQnDToQczbgW4dCXiu3x2ZTXjAuKS_q_hJ=28Pu_2HexQ@mail.gmail.com>
-	<1328538568.2482.5.camel@laptop>
-Date: Mon, 6 Feb 2012 15:32:46 +0100
-Message-ID: <CABPqkBSuQCJkmJYbno_qsb=erOOf3uf84sQsSCzoov-6=7r40Q@mail.gmail.com>
-Subject: Re: WARNING: at arch/x86/kernel/cpu/perf_event.c:989
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2F0F61.7070900@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 6, 2012 at 3:29 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Mon, 2012-02-06 at 15:13 +0100, Stephane Eranian wrote:
->> Ok, I found the problem!
->>
->> it comes from perf_adjust_freq_unthr_context() vs perf_adjust_period().
->> The latter can under certain condition stop and restart the event. So we
->> had:
->>
->>       stop()
->>       if (delta > 0) {
->>            perf_adjust_period() {
->>                if (period > 8*...) {
->>                    stop()
->>                    ...
->>                    start()
->>                }
->>            }
->>        }
->>        start()
->>
->> Could have a double stop() and double start(), thus triggering the warning in
->> x86_pmu_start().
->>
->> Will post a patch shortly to fix this.
->
-> Nice, thanks for looking at this!
->
-I am wondering why we stop and restart the code in perf_adjust_period()
-when it's called from __perf_event_overflow(). Isn't it supposed to be stopped
-already by the model specific interrupt handler. Looks like we do stop/start,
-just to get the reload aspect of start. Is that right?
+On Mon, Feb 06, 2012 at 10:23:13AM +1100, Ryan Mallon wrote:
+> On 04/02/12 07:28, Seth Forshee wrote:
+> 
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> > ---
+> >  drivers/video/backlight/apple_bl.c |   29 ++++++++---------------------
+> >  1 files changed, 8 insertions(+), 21 deletions(-)
+> > 
+> > diff --git a/drivers/video/backlight/apple_bl.c b/drivers/video/backlight/apple_bl.c
+> > index be98d15..66d5bec 100644
+> > --- a/drivers/video/backlight/apple_bl.c
+> > +++ b/drivers/video/backlight/apple_bl.c
+> > @@ -16,6 +16,8 @@
+> >   *  get at the firmware code in order to figure out what it's actually doing.
+> >   */
+> >  
+> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > +
+> >  #include <linux/module.h>
+> >  #include <linux/kernel.h>
+> >  #include <linux/init.h>
+> > @@ -38,13 +40,6 @@ struct hw_data {
+> >  
+> >  static const struct hw_data *hw_data;
+> >  
+> > -#define DRIVER "apple_backlight: "
+> > -
+> > -/* Module parameters. */
+> > -static int debug;
+> > -module_param_named(debug, debug, int, 0644);
+> > -MODULE_PARM_DESC(debug, "Set to one to enable debugging messages.");
+> 
+> 
+> Removal of this module parameter is not noted in the changelog.
+> 
+> > -
+> >  /*
+> >   * Implementation for machines with Intel chipset.
+> >   */
+> > @@ -58,9 +53,7 @@ static int intel_chipset_send_intensity(struct backlight_device *bd)
+> >  {
+> >  	int intensity = bd->props.brightness;
+> >  
+> > -	if (debug)
+> > -		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
+> > -		       intensity);
+> > +	pr_debug("setting brightness to %d\n", intensity);
+> 
+> 
+> As Joe points out, this no longer has the same behaviour as it did
+> previously. The pr_debug will only show up if you have DEBUG defined.
+> Again, this should probably be mentioned in the changelog.
+
+I doesn't matter to me one way or the other whether these statements are
+enabled by module parameter, I was just thinking that pr_debug was
+generally preferred. I can put the module parameter back or denote this
+in the changelog, whichever is more acceptable.
+
+Seth
