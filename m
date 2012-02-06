@@ -1,108 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab2BFPi7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 10:38:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755300Ab2BFPiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 10:38:55 -0500
-Subject: Re: Memory corruption due to word sharing
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew MacLeod <amacleod@redhat.com>, paulmck@linux.vnet.ibm.com,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
-        rguenther@suse.de, GCC Patches <gcc@gcc.gnu.org>
-In-Reply-To: <CA+55aFxoW0zexd4Zy33gToK9V0UU6wbQFFogEyFPPiGuNq2GGQ@mail.gmail.com>
-References: <20120201151918.GC16714@quack.suse.cz>
-	 <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
-	 <1328118174.15992.6206.camel@triegel.csb>
-	 <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
-	 <1328128874.15992.6430.camel@triegel.csb>
-	 <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
-	 <20120201224554.GK2382@linux.vnet.ibm.com>
-	 <CA+55aFyzYO0CMZOgdrVV0PdG2DkbwTQG7eE7N3bp=0tQmruFEQ@mail.gmail.com>
-	 <20120202184209.GD2518@linux.vnet.ibm.com>
-	 <CA+55aFyYxzED4OoYvb3nbET7_zyP5mGhEa2w_QCvQOx55bVjHg@mail.gmail.com>
-	 <20120202193747.GG2518@linux.vnet.ibm.com> <4F2C0D8A.70103@redhat.com>
-	 <CA+55aFx1NjR9XMQ9iLyVk05Erwtqgf7hfZkBCMJzkCMFJS8CHw@mail.gmail.com>
-	 <4F2C329B.2080107@redhat.com>
-	 <CA+55aFxoW0zexd4Zy33gToK9V0UU6wbQFFogEyFPPiGuNq2GGQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Feb 2012 16:38:03 +0100
-Message-ID: <1328542683.13242.311.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755404Ab2BFPkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 10:40:47 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57168 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353Ab2BFPkq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 10:40:46 -0500
+MIME-Version: 1.0
+Date: Mon, 6 Feb 2012 09:40:45 -0600
+Message-ID: <CAOgv-ziomS-+ML0Xb4oSoWTjzkG8BBBQcMjXwn7rjQV2pFtQ6Q@mail.gmail.com>
+Subject: Soft lockup problem
+From: Gerard Saraber <gsaraber@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-03 at 12:00 -0800, Linus Torvalds wrote:
-> Of course, it you expose some intrinsic for the whole "ll/sc" model
-> (and you then turn it into cmpxchg on demand), we could literally
-> open-code it.
-> 
-> That is likely the most *flexible* approach for a compiler. I think
-> pretty much everything the kernel needs (except for cmpxchg_double)
-> can be very naturally written as a "ll/sc" sequence, and if the
-> compiler then just does the right thing with peephole optimizations,
-> that's fine.
-> 
-> IOW, we don't really need "atomic_add()" or anything like that. If we can do
-> 
->   do {
->      val = __load_linked(mem);
->      val++;
->   } while (__store_conditional(val, mem));
-> 
-> and the compiler just automagically turns that into "lock add" on x86,
-> that's perfectly fine.
-> 
-> It might not be too hard, because you really don't need to recognize
-> very many patterns, and any pattern you don't recognize could be
-> turned into a cmpxchg loop.
-> 
-> NOTE NOTE NOTE! The "turned into a cmpxchg loop" is not the true
-> correct translation of load-linked/store-conditional, since it allows
-> the memory to be modified as long as it's modified *back* before the
-> store-conditional, and that actually matters for a few algorithms. But
-> if you document the fact that it's not a "true" ll/sc (and maybe have
-> some compile-time way to detect when it isn't), it would be very
-> flexible.
-> 
-> Of course, the syntax could be something completely different. Maybe
-> you'd want to do it as
-> 
->    __builtin_ll_sc(&var, update-expression, return-expression,
-> failure-expression)
-> 
-> rather than an explicit loop.
-> 
-> But it doesn't sound like the internal gcc model is based on some
-> generic ll/sc model.
+Greetings everyone,
+I've been having a bit of a problem since upgrading to the linux 3.x
+series, I have a machine that we're using as a NAS that runs various
+rsync processes (mostly at night), lately after a day or two, I will
+come in in the morning to a load average of 49, but the machine not
+really doing anything, when trying to run 'dstat' the command just
+hung with no output at all. there were no errors in the logs, or even
+anything that would vaguely point at anything I could work with.
+So needing to get the machine back to work I attempted to reboot it
+"shutdown -r now" on console... it gives a nice message saying it's
+going to reboot, but nothing ever happens.. the only way to reboot it
+is by using ctrl + alt + sysrq + b. after which the machine reboots
+and the raid array comes back clean.
 
-No, and I don't think it's beneficial overall to do this.  Sure, an
-LL/SC or CAS loop is universal, but in turn programmers would have to
-make sure that they hit the patterns that the compiler can actually
-recognize and turn into the more efficient forms.
+I'm not sure how to troubleshoot this, any pointers would be appreciated.
 
-The custom atomic operations also provide different progress guarantees.
-While a single CAS/cmpxchg is wait-free, the full loop isn't
-necessarily.  Same for the bit operations.  So, I think it makes sense
-to offer them separately.  The split between weak- and strong-progress
-compare-and-exchange in C++11 is related.
+I'm compiling 3.2.4 at the moment and found a bunch of possibly useful
+options in the kernel debugging section:
+detect hard/soft lockups and detect hung tasks, maybe it'll give me
+something more to go on.
 
-> I realize that people have bad memories of the x86 bit instructions,
-> but especially in their locked form, the fact that they take a few
-> extra cycles or decode in only one pipeline etc is *not* relevant.
-> They are small and "fast", because the true cost tends to be not the
-> instruction cost, but the locking overhead and the cache effects.
-
-And the semantics of the operation is known immediately (without trying
-to recover the actual atomic op from some surrounding cmpxchg loop).
-That allows potential optimizations like combining (but I'm not a HW
-expert, so I don't know whether HW actually does this internally).
-
-
-Torvald
-
+Some details about the machine:
+Linux xenbox 3.2.2 #1 SMP Sun Jan 29 10:28:22 CST 2012 x86_64 Intel(R)
+Xeon(R) CPU 5140 @ 2.33GHz GenuineIntel GNU/Linux
+It has 3 software raid arrays (2 x 5 drives and 1 x 4 drives) LVM'ed
+together into a 23TB XFS filesystem.
+6GB memory and a pair of Intel Gigabit ethernet controllers bonded together.
