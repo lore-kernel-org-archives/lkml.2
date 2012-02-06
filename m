@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab2BFNz5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 08:55:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38828 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755241Ab2BFNz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 08:55:56 -0500
-From: Jan Kara <jack@suse.cz>
-To: linux-fsdevel@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, hare@suse.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH] vfs: Avoid IPI storm due to bh LRU invalidation
-Date: Mon,  6 Feb 2012 14:55:31 +0100
-Message-Id: <1328536531-19034-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
+	id S1755294Ab2BFN46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 08:56:58 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53149 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865Ab2BFN44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 08:56:56 -0500
+Date: Mon, 6 Feb 2012 13:56:55 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] killing boilerplate checks in ->link/->mkdir/->rename
+Message-ID: <20120206135655.GF23916@ZenIV.linux.org.uk>
+References: <m1wr87ywex.fsf@fess.ebiederm.org>
+ <m1ehueyz20.fsf_-_@fess.ebiederm.org>
+ <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
+ <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
+ <20120202012258.GQ23916@ZenIV.linux.org.uk>
+ <20120202212400.GR23916@ZenIV.linux.org.uk>
+ <CA+55aFzHSv2eHKenVhxnSFMJMXtJCnxD2xu6QjMiMLEGLCZ2uQ@mail.gmail.com>
+ <20120203011612.GS23916@ZenIV.linux.org.uk>
+ <20120203170825.GX23916@ZenIV.linux.org.uk>
+ <1328518244.22240.25.camel@sauron.fi.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328518244.22240.25.camel@sauron.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When discovery of lots of disks happen in parallel, we call
-invalidate_bh_lrus() once for each disk from partitioning code resulting in a
-storm of IPIs and causing a softlockup detection to fire (it takes several
-*minutes* for a machine to execute all the invalidate_bh_lrus() calls).
+On Mon, Feb 06, 2012 at 10:50:44AM +0200, Artem Bityutskiy wrote:
 
-Fix the issue by allowing only single invalidation to run using a mutex and let
-waiters for mutex figure out whether someone invalidated LRUs for them while
-they were waiting.
+> WRT 'sen_nlink()' - I can use it instead of 'drop_nlink()'/'inc_nlink()'
+> of course. But I do not really see why is this better. E.g.,
+> 'drop_nlink()' additionally gives me ' WARN_ON()' in case of 'i_nlink'
+> wrapping.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/buffer.c |   23 ++++++++++++++++++++++-
- 1 files changed, 22 insertions(+), 1 deletions(-)
-
-  I feel this is slightly hacky approach but it works. If someone has better
-idea, please speak up.
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 1a30db7..56b0d2b 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1384,10 +1384,31 @@ static void invalidate_bh_lru(void *arg)
- 	}
- 	put_cpu_var(bh_lrus);
- }
--	
-+
-+/*
-+ * Invalidate all buffers in LRUs. Since we have to signal all CPUs to
-+ * invalidate their per-cpu local LRU lists this is rather expensive operation.
-+ * So we optimize the case of several parallel calls to invalidate_bh_lrus()
-+ * which happens from partitioning code when lots of disks appear in the
-+ * system during boot.
-+ */
- void invalidate_bh_lrus(void)
- {
-+	static DEFINE_MUTEX(bh_invalidate_mutex);
-+	static long bh_invalidate_sequence;
-+
-+	long my_bh_invalidate_sequence = bh_invalidate_sequence;
-+
-+	mutex_lock(&bh_invalidate_mutex);
-+	/* Someone did bh invalidation while we were sleeping? */
-+	if (my_bh_invalidate_sequence != bh_invalidate_sequence)
-+		goto out;
-+	bh_invalidate_sequence++;
-+	/* Inc of bh_invalidate_sequence must happen before we invalidate bhs */
-+	smp_wmb();
- 	on_each_cpu(invalidate_bh_lru, NULL, 1);
-+out:
-+	mutex_unlock(&bh_invalidate_mutex);
- }
- EXPORT_SYMBOL_GPL(invalidate_bh_lrus);
- 
--- 
-1.7.1
-
+So does inc_nlink() when you are asking to get from nlink=0 to nlink=1.
+I.e. on failure exit in your unlink()...
