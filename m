@@ -1,90 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab2BFOfM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 09:35:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38263 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab2BFOfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 09:35:11 -0500
-Date: Mon, 6 Feb 2012 08:35:06 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 1/3] apple_bl: Convert printks to pr_<level>
-Message-ID: <20120206143506.GB6414@ubuntu-macmini>
-Mail-Followup-To: Ryan Mallon <rmallon@gmail.com>,
-	linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-	Matthew Garrett <mjg@redhat.com>
-References: <1328300884-21551-1-git-send-email-seth.forshee@canonical.com>
- <1328300884-21551-2-git-send-email-seth.forshee@canonical.com>
- <4F2F0F61.7070900@gmail.com>
+	id S1754926Ab2BFOiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 09:38:14 -0500
+Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:55907 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754671Ab2BFOiN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 09:38:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F2F0F61.7070900@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328528294.26182.80.camel@vkoul-udesk3>
+References: <1328006840-7345-1-git-send-email-javier.martin@vista-silicon.com>
+	<1328528294.26182.80.camel@vkoul-udesk3>
+Date: Mon, 6 Feb 2012 15:38:11 +0100
+Message-ID: <CACKLOr16kN+9DfF_vxzF_uzcmQC7cvAzR_oXpbNmc1D1qDY9sA@mail.gmail.com>
+Subject: Re: [PATCH v3] dmaengine: Add support for MEMCPY for imx-dma.
+From: javier Martin <javier.martin@vista-silicon.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dan.j.williams@intel.com, s.hauer@pengutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 10:23:13AM +1100, Ryan Mallon wrote:
-> On 04/02/12 07:28, Seth Forshee wrote:
-> 
-> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> > ---
-> >  drivers/video/backlight/apple_bl.c |   29 ++++++++---------------------
-> >  1 files changed, 8 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/drivers/video/backlight/apple_bl.c b/drivers/video/backlight/apple_bl.c
-> > index be98d15..66d5bec 100644
-> > --- a/drivers/video/backlight/apple_bl.c
-> > +++ b/drivers/video/backlight/apple_bl.c
-> > @@ -16,6 +16,8 @@
-> >   *  get at the firmware code in order to figure out what it's actually doing.
-> >   */
-> >  
-> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> > +
-> >  #include <linux/module.h>
-> >  #include <linux/kernel.h>
-> >  #include <linux/init.h>
-> > @@ -38,13 +40,6 @@ struct hw_data {
-> >  
-> >  static const struct hw_data *hw_data;
-> >  
-> > -#define DRIVER "apple_backlight: "
-> > -
-> > -/* Module parameters. */
-> > -static int debug;
-> > -module_param_named(debug, debug, int, 0644);
-> > -MODULE_PARM_DESC(debug, "Set to one to enable debugging messages.");
-> 
-> 
-> Removal of this module parameter is not noted in the changelog.
-> 
-> > -
-> >  /*
-> >   * Implementation for machines with Intel chipset.
-> >   */
-> > @@ -58,9 +53,7 @@ static int intel_chipset_send_intensity(struct backlight_device *bd)
-> >  {
-> >  	int intensity = bd->props.brightness;
-> >  
-> > -	if (debug)
-> > -		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
-> > -		       intensity);
-> > +	pr_debug("setting brightness to %d\n", intensity);
-> 
-> 
-> As Joe points out, this no longer has the same behaviour as it did
-> previously. The pr_debug will only show up if you have DEBUG defined.
-> Again, this should probably be mentioned in the changelog.
+Hi Vinod,
+thank you for your review.
 
-I doesn't matter to me one way or the other whether these statements are
-enabled by module parameter, I was just thinking that pr_debug was
-generally preferred. I can put the module parameter back or denote this
-in the changelog, whichever is more acceptable.
+Let me first explain who we are and what are we trying to accomplish
+so you can get a global view.
+We are an small company of 10 workers where I am the only one in
+charge of developing for the kernel. With all these DMA changes we are
+trying to develop a generic, video mem2mem deinterlacing driver, and
+we plan to have it ready for the next merge window which will be
+probably in March, according to the Linux kernel development cycle.
 
-Seth
+Following the rule "post early, post often" we've divided our
+development process in several steps:
+
+- Step 1 (this patch):
+[PATCH v3] dmaengine: Add support for MEMCPY for imx-dma.
+
+This step is important for us since it gives us access to the dmatest
+module and allows to develop a first prototype of the driver which
+just copies the content of one buffer into another.
+
+- Step 2 (also submitted to the mainling list):
+[PATCH 1/2] i.MX DMA: Add support for 2D transfers.
+[PATCH 2/2] dmaengine: i.MX: Add support for interleaved transfers.
+
+With this step we have know a first working version of a driver which
+actually does video deinterlacing. However, since current dmaengine
+support for imx only regards a single descriptor, this code is quite
+ugly and dirty.
+
+- Step 3 (developing):
+dmaengine: i.MX: Support multiple descriptors.
+
+Supporting multiple descriptors gives us access to the feature of
+queueing multiple DMA transfers and therefore we can make a cleaner
+deinterlacing driver.
+
+
+On 6 February 2012 12:38, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Tue, 2012-01-31 at 11:47 +0100, Javier Martin wrote:
+>> MEMCPY transfers allow DMA copies from memory to
+>> memory. This patch has been tested with dmatest
+>> device driver.
+>>
+>> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+>> ---
+>>  drivers/dma/imx-dma.c |   36 +++++++++++++++++++++++++++++++++++-
+>>  1 files changed, 35 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+>> index 3296a73..9aa6e85 100644
+>> --- a/drivers/dma/imx-dma.c
+>> +++ b/drivers/dma/imx-dma.c
+>> @@ -196,7 +196,8 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
+>>       struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+>>       struct imx_dma_data *data = chan->private;
+>>
+>> -     imxdmac->dma_request = data->dma_request;
+>> +     if (data != NULL)
+>> +             imxdmac->dma_request = data->dma_request;
+> if you support memcopy then why should it _always_ require private
+> pointer?
+
+This is precisely why I have added this lines. Just to consider those
+cases where a private pointer is not needed.  Note that when this
+pointer is null I don't use it.
+
+
+>>
+>>       dma_async_tx_descriptor_init(&imxdmac->desc, chan);
+>>       imxdmac->desc.tx_submit = imxdma_tx_submit;
+>> @@ -328,6 +329,36 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+>>       return &imxdmac->desc;
+>>  }
+>>
+>> +static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
+>> +     struct dma_chan *chan, dma_addr_t dest,
+>> +     dma_addr_t src, size_t len, unsigned long flags)
+>> +{
+>> +     struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+>> +     struct imxdma_engine *imxdma = imxdmac->imxdma;
+>> +     int ret;
+>> +
+>> +     dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
+>> +                     __func__, imxdmac->channel, src, dest, len);
+>> +
+>> +     if (imxdmac->status == DMA_IN_PROGRESS)
+>> +             return NULL;
+> thats not right, you should be able to prepare descriptors even if dmac
+> is busy. Prepare != start
+
+As you've probably noticed, all existen prepare callbacks (slave_sg,
+cyclic)in this driver are programmed in the same way. As the driver
+does only support a single descriptor, every call to a prepare
+function of an active channel will fail some way or another (because
+there are no free descriptors available). You can argue that actual
+configuration of the HW should be done in the "tx_submit()" callback
+but, since this driver does not support more than one descriptor this
+wouldn't make any difference.
+
+Moreover, I don't think it's convenient punishing developers of new
+functionality for poor previous decissions, although as a maintainer I
+understand you want the drivers to be clean. However, we are enforced
+to fix this in "Step 3" of our development process anyway, since we
+need to add support for multiple descriptors. So, it would make things
+easier for us if you could let these patches pass.
+
+>> +     imxdmac->status = DMA_IN_PROGRESS;
+>> +
+>> +     ret = imx_dma_config_channel(imxdmac->imxdma_channel,
+>> +                            IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
+>> +                            IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
+>> +                            0, 0);
+>> +     if (ret)
+>> +             return NULL;
+>> +
+>> +     ret = imx_dma_setup_single(imxdmac->imxdma_channel, src, len,
+>> +                                dest, DMA_MODE_WRITE);
+>> +     if (ret)
+>> +             return NULL;
+>> +
+>> +     return &imxdmac->desc;
+>> +}
+>> +
+>>  static void imxdma_issue_pending(struct dma_chan *chan)
+>>  {
+>>       struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+>> @@ -349,6 +380,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
+>>
+>>       dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
+>>       dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
+>> +     dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
+>>
+>>       /* Initialize channel parameters */
+>>       for (i = 0; i < MAX_DMA_CHANNELS; i++) {
+>> @@ -382,11 +414,13 @@ static int __init imxdma_probe(struct platform_device *pdev)
+>>       imxdma->dma_device.device_tx_status = imxdma_tx_status;
+>>       imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
+>>       imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
+>> +     imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
+>>       imxdma->dma_device.device_control = imxdma_control;
+>>       imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
+>>
+>>       platform_set_drvdata(pdev, imxdma);
+>>
+>> +     imxdma->dma_device.copy_align = 2; /* 2^2 = 4 bytes alignment */
+> what is this magic number?
+
+It indicates this driver support 32bit aligned memory accesses and we
+use it as it is done in other drivers like:
+http://lxr.linux.no/#linux+v3.2.4/drivers/dma/ste_dma40.c#L2437
+http://lxr.linux.no/#linux+v3.2.4/drivers/dma/coh901318.c#L1557
+
+
+Regards.
+-- 
+Javier Martin
+Vista Silicon S.L.
+CDTUC - FASE C - Oficina S-345
+Avda de los Castros s/n
+39005- Santander. Cantabria. Spain
++34 942 25 32 60
+www.vista-silicon.com
