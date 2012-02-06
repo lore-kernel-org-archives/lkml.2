@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab2BFQhp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:37:45 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46846 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab2BFQhn (ORCPT
+	id S1755404Ab2BFQhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:37:32 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:21002 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755344Ab2BFQh3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:37:43 -0500
-Subject: Re: [BUG] perf: perf sched warning possibly due to clock
- granularity on AMD
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, mingo@elte.hu, robert.richter@amd.com,
-        eric.dumazet@gmail.com, Andreas Herrmann <andreas.herrmann3@amd.com>
-In-Reply-To: <20120206153408.GA31237@aftab>
-References: <20120206132546.GA30854@quad> <1328538403.2482.4.camel@laptop>
-	 <20120206153408.GA31237@aftab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Feb 2012 17:37:26 +0100
-Message-ID: <1328546246.2482.10.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Feb 2012 11:37:29 -0500
+MIME-Version: 1.0
+Message-ID: <e871af1b-8003-4d3d-8fde-ea40545ff9fe@default>
+Date: Mon, 6 Feb 2012 08:37:17 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] xen/tmem: cleanup
+References: <4F2C06A00200007800071071@nat28.tlf.novell.com>
+ <d86f0be9-1530-47bd-b3fd-8c251e563b25@default>
+ <4F2F998202000078000714CD@nat28.tlf.novell.com>
+In-Reply-To: <4F2F998202000078000714CD@nat28.tlf.novell.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4F3001C2.00CE,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-06 at 16:34 +0100, Borislav Petkov wrote:
-> + Andreas.
+> From: Jan Beulich [mailto:JBeulich@suse.com]
+> Sent: Monday, February 06, 2012 1:13 AM
+> To: Dan Magenheimer
+> Cc: Jeremy Fitzhardinge; xen-devel@lists.xensource.com; Konrad Wilk; linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH] xen/tmem: cleanup
 > 
-> On Mon, Feb 06, 2012 at 03:26:43PM +0100, Peter Zijlstra wrote:
-> > On Mon, 2012-02-06 at 14:25 +0100, Stephane Eranian wrote:
-> > > In summary, two issues:
-> > >   - Why is sched_clock_stable not set or even tested on recent AMD systems?
+> >>> On 04.02.12 at 17:42, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> >>  From: Jan Beulich [mailto:JBeulich@suse.com]
+> >> Subject: [PATCH] xen/tmem: cleanup
+> >>
+> >> Use 'bool' for boolean variables. Do proper section placement.
+> >> Eliminate an unnecessary export.
+> >>
+> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> >> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+> >>
+> >> -int tmem_enabled __read_mostly;
+> >> -EXPORT_SYMBOL(tmem_enabled);
+> >> +bool __read_mostly tmem_enabled = false;
+> >
+> > tmem_enabled is used in xen/drivers/xen-selfballoon.c
 > 
-> AFAICT, sched_clock_stable is set on Intel under the following conditions:
-> 
->         /*
->          * c->x86_power is 8000_0007 edx. Bit 8 is TSC runs at constant rate
->          * with P/T states and does not stop in deep C-states.
->          *
->          * It is also reliable across cores and sockets. (but not across
->          * cabinets - we turn it off in that case explicitly.)
->          */
->         if (c->x86_power & (1 << 8)) {
->                 set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
->                 set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
->                 if (!check_tsc_unstable())
->                         sched_clock_stable = 1;
->         }
-> 
-> and yes, we can do CONSTANT_TSC and NONSTOP_TSC on the now older F10h
-> already, so Bulldozer can do that too, implicitly.
-> 
-> I don't see why sched_clock_stable shouldn't be moved to generic x86
-> code and set based on the two CPUID cap flags above.
+> Which can't be built as a module, and hence the symbol doesn't need
+> exporting. This patch (of course, I'm tempted to say) survived build
+> testing.
 
-stable means more than both those flags together.. 
+Yes, correct.  BUT... I think only the reason xen-selfballoon.c
+can't be built as a module is because the MM variable vm_committed_as
+(or an access function) is not exported.  Ideally xen-selfballoon.c
+probably should be a module but putting a core MM change in
+the critical path of a Xen-only-related enhancement seemed
+a recipe for sure failure.
 
- - CONSTANT_TSC means freq independent
- - NONSTOP_TSC means it doesn't get stopped in any C state
+Konrad, if you (1) disagree entirely, or (2) want to remove the
+tmem_enabled EXPORT_SYMBOL now and add it back later if/when
+the core MM change happens, I'll leave that up to you.
 
-Together they make TSC completely C-state independent.
-sched_clock_stable actually means that TSC is both _AND_ is consistent
-across all CPUs in the entire system.
+If (2), the MM change should be added to the minor-tmem-related-
+changes-that-need-to-be-eventually-upstreamed list ;-)
 
-
-
+Dan
