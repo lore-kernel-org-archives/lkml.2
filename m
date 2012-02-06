@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab2BFQ3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:29:35 -0500
+	id S1755270Ab2BFQ3l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:29:41 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:57593 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab2BFQ3d (ORCPT
+	with ESMTP id S1755183Ab2BFQ3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:29:33 -0500
-Date: Mon, 6 Feb 2012 20:29:30 +0400
+	Mon, 6 Feb 2012 11:29:38 -0500
+Date: Mon, 6 Feb 2012 20:29:35 +0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Oleg Nesterov <oleg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>
 Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
@@ -17,8 +17,8 @@ Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org, kernel-team@android.com,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH 1/6] oom: Make find_lock_task_mm() sparse-aware
-Message-ID: <20120206162930.GA5117@oksana.dev.rtsoft.ru>
+Subject: [PATCH 2/6] oom: Get rid of sparse warnings
+Message-ID: <20120206162935.GB5117@oksana.dev.rtsoft.ru>
 References: <20120203163056.GA4190@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -29,71 +29,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed so that callers would not get 'context imbalance'
-warnings from the sparse tool.
-
-As a side effect, this patch fixes the following sparse warnings:
+Sparse flood makes it hard to catch newly-introduced warnings. So let's
+fix the the sparse warnings in the oom killer:
 
   CHECK   mm/oom_kill.c
-  mm/oom_kill.c:201:28: warning: context imbalance in 'oom_badness' -
-  unexpected unlock
-  include/linux/rcupdate.h:249:30: warning: context imbalance in
-  'dump_tasks' - unexpected unlock
-  mm/oom_kill.c:453:9: warning: context imbalance in 'oom_kill_task' -
-  unexpected unlock
-  CHECK   mm/memcontrol.c
-  ...
-  mm/memcontrol.c:1130:17: warning: context imbalance in
-  'task_in_mem_cgroup' - unexpected unlock
+  mm/oom_kill.c:139:20: warning: context imbalance in
+	  '__find_lock_task_mm' - wrong count at exit
+  mm/oom_kill.c:771:9: warning: context imbalance in 'out_of_memory' -
+	  different lock contexts for basic block
+
+The first one is fixed by assuring sparse that we know that we exit
+with the lock held.
+
+The second one is caused by the fact that sparse isn't smart enough
+to handle noreturn attribute.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- include/linux/oom.h |   11 ++++++++++-
- mm/oom_kill.c       |    2 +-
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ mm/oom_kill.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 552fba9..e64bfd2 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -21,6 +21,7 @@
- 
- #ifdef __KERNEL__
- 
-+#include <linux/compiler.h>
- #include <linux/sched.h>
- #include <linux/types.h>
- #include <linux/nodemask.h>
-@@ -65,7 +66,15 @@ static inline void oom_killer_enable(void)
- 	oom_killer_disabled = false;
- }
- 
--extern struct task_struct *find_lock_task_mm(struct task_struct *p);
-+extern struct task_struct *__find_lock_task_mm(struct task_struct *p);
-+
-+#define find_lock_task_mm(p)						\
-+({									\
-+	struct task_struct *__ret;					\
-+									\
-+	__cond_lock(&(p)->alloc_lock, __ret = __find_lock_task_mm(p));	\
-+	__ret;								\
-+})
- 
- /* sysctls */
- extern int sysctl_oom_dump_tasks;
 diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 2958fd8..0ebb383 100644
+index 0ebb383..49569b6 100644
 --- a/mm/oom_kill.c
 +++ b/mm/oom_kill.c
-@@ -136,7 +136,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
-  * pointer.  Return p, or any of its subthreads with a valid ->mm, with
-  * task_lock() held.
-  */
--struct task_struct *find_lock_task_mm(struct task_struct *p)
-+struct task_struct *__find_lock_task_mm(struct task_struct *p)
- {
- 	struct task_struct *t = p;
+@@ -142,8 +142,14 @@ struct task_struct *__find_lock_task_mm(struct task_struct *p)
  
+ 	do {
+ 		task_lock(t);
+-		if (likely(t->mm))
++		if (likely(t->mm)) {
++			/*
++			 * Shut up sparse: we do know that we exit w/ the
++			 * task locked.
++			 */
++			__release(&t->alloc_loc);
+ 			return t;
++		}
+ 		task_unlock(t);
+ 	} while_each_thread(p, t);
+ 
+@@ -766,6 +772,7 @@ retry:
+ 		dump_header(NULL, gfp_mask, order, NULL, mpol_mask);
+ 		read_unlock(&tasklist_lock);
+ 		panic("Out of memory and no killable processes...\n");
++		return;
+ 	}
+ 
+ 	if (oom_kill_process(p, gfp_mask, order, points, totalpages, NULL,
 -- 
 1.7.7.6
 
