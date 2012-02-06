@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751020Ab2BFFV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 00:21:58 -0500
-Received: from mga03.intel.com ([143.182.124.21]:23213 "EHLO mga03.intel.com"
+	id S1751341Ab2BFFWo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 00:22:44 -0500
+Received: from ozlabs.org ([203.10.76.45]:40479 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708Ab2BFFV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 00:21:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="63634678"
-Subject: Re: a non producible kernel panic
-From: "Alex,Shi" <alex.shi@intel.com>
-To: "Chen, Tim C" <tim.c.chen@intel.com>
-Cc: "Li, Shaohua" <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Tang Feng <feng.tang@intel.com>
-In-Reply-To: <4F2E0586.2090803@intel.com>
-References: <4F2E0586.2090803@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Feb 2012 13:19:04 +0800
-Message-ID: <1328505544.12669.52.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1750928Ab2BFFWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 00:22:43 -0500
+From: Michael Neuling <mikey@neuling.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 21/25] irqdomain/powerpc: Replace custom xlate functions with library functions
+In-reply-to: <1327700179-17454-22-git-send-email-grant.likely@secretlab.ca>
+References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca> <1327700179-17454-22-git-send-email-grant.likely@secretlab.ca>
+Comments: In-reply-to Grant Likely <grant.likely@secretlab.ca>
+   message dated "Fri, 27 Jan 2012 14:36:15 -0700."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Mon, 06 Feb 2012 16:22:41 +1100
+Message-ID: <24476.1328505761@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-02-05 at 12:28 +0800, Alex Shi wrote:
-> When do performance testing for rc2 kernel on our NHM EX machine( 4
-> sockets * 8 cores), I find a kernel panic. but never reproduced it. and
-> didn't find some useful info after enable lockdep, rcu debug etc.
+>  static const struct irq_domain_ops pmac_pic_host_ops = {
+>  	.match = pmac_pic_host_match,
+>  	.map = pmac_pic_host_map,
+> -	.xlate = pmac_pic_host_xlate,
+> +	.xlate = irq_domain_xlate_onecell;
+>  };
+>  
 
-BTW, the panic caused my machine hang. 
-> 
-> Any ideas on this?
-> 
-> INFO: task umount:4280 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> umount          D ffff883025443198     0  4280   4235 0x00000080
->  ffff883027805d28 0000000000000086 ffff883025442de0 ffff883027805fd8
->  ffff883027805fd8 0000000000013100 ffff8810292eade0 ffff883025442de0
->  0000000000000018 7fffffffffffffff 7fffffffffffffff ffffffff81c180c8
-> Call Trace:
->  [<ffffffff81452caa>] schedule+0x55/0x57
->  [<ffffffff81451a93>] schedule_timeout+0x2f/0xd9
->  [<ffffffff8109dfe0>] ? rcu_panic+0x12/0x12
->  [<ffffffff81028259>] ? physflat_send_IPI_allbutself+0x12/0x14
->  [<ffffffff81024a33>] ? native_send_call_func_ipi+0x71/0x91
->  [<ffffffff81452b67>] wait_for_common+0x95/0xeb
->  [<ffffffff8105dfe7>] ? try_to_wake_up+0x1e0/0x1e0
->  [<ffffffff8109dfe0>] ? rcu_panic+0x12/0x12
->  [<ffffffff8109eb41>] ? call_rcu_bh+0x12/0x12
->  [<ffffffff81452c53>] wait_for_completion+0x18/0x1a
->  [<ffffffff8109ef36>] _rcu_barrier+0x96/0xa6
->  [<ffffffff8109ef5d>] rcu_barrier_sched+0x17/0x19
->  [<ffffffff8109ef68>] rcu_barrier+0x9/0xb
->  [<ffffffff8110bac0>] deactivate_locked_super+0x32/0x52
->  [<ffffffff8110c536>] deactivate_super+0x32/0x36
->  [<ffffffff81120691>] mntput_no_expire+0xde/0xe7
->  [<ffffffff811212f2>] sys_umount+0x2cd/0x2ff
->  [<ffffffff81112699>] ? path_put+0x1a/0x1e
->  [<ffffffff81459a79>] system_call_fastpath+0x16/0x1b
-> INFO: task umount:4280 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> umount          D ffff883025443198     0  4280   4235 0x00000080
->  ffff883027805d28 0000000000000086 ffff883025442de0 ffff883027805fd8
->  ffff883027805fd8 0000000000013100 ffff8810292eade0 ffff883025442de0
->  0000000000000018 7fffffffffffffff 7fffffffffffffff ffffffff81c18
+This causes a compile fail (in next-20120206):
+  arch/powerpc/platforms/powermac/pic.c:294: error: expected '}' before ';' token
+Trivial fix below:
 
 
+
+irqdomain/powerpc: Fix compile error in powermac/pic.c
+
+Error introduced in:
+  commit 72d6b477675374eafd206720d6c9146520df18ce
+  Author: Grant Likely <grant.likely@secretlab.ca>
+  irqdomain/powerpc: Replace custom xlate functions with library functions
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+
+diff --git a/arch/powerpc/platforms/powermac/pic.c b/arch/powerpc/platforms/powermac/pic.c
+index 3af29d1..92afc38 100644
+--- a/arch/powerpc/platforms/powermac/pic.c
++++ b/arch/powerpc/platforms/powermac/pic.c
+@@ -291,7 +291,7 @@ static int pmac_pic_host_map(struct irq_domain *h, unsigned int virq,
+ static const struct irq_domain_ops pmac_pic_host_ops = {
+ 	.match = pmac_pic_host_match,
+ 	.map = pmac_pic_host_map,
+-	.xlate = irq_domain_xlate_onecell;
++	.xlate = irq_domain_xlate_onecell,
+ };
+ 
+ static void __init pmac_pic_probe_oldstyle(void)
