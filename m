@@ -1,193 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab2BFVqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 16:46:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64053 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753624Ab2BFVqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 16:46:33 -0500
-Message-ID: <1328564789.3074.145.camel@bling.home>
-Subject: Re: [PATCH v2] KVM: Fix assigned device MSI-X entry setting leak
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Mon, 06 Feb 2012 14:46:29 -0700
-In-Reply-To: <20120131191120.GC3601@redhat.com>
-References: <20120130210346.22952.5215.stgit@bling.home>
-	 <20120131191120.GC3601@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1755434Ab2BFVrR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 16:47:17 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:50608 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753206Ab2BFVrQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 16:47:16 -0500
+Message-ID: <4F304A5F.8060104@gmail.com>
+Date: Tue, 07 Feb 2012 08:47:11 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 1/3] apple_bl: Convert printks to pr_<level>
+References: <1328300884-21551-1-git-send-email-seth.forshee@canonical.com> <1328300884-21551-2-git-send-email-seth.forshee@canonical.com> <4F2F0F61.7070900@gmail.com> <20120206143506.GB6414@ubuntu-macmini>
+In-Reply-To: <20120206143506.GB6414@ubuntu-macmini>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 21:11 +0200, Michael S. Tsirkin wrote:
-> On Mon, Jan 30, 2012 at 02:05:54PM -0700, Alex Williamson wrote:
-> > We need to prioritize our matching when setting MSI-X vector
-> > entries.  Unused entries should only be used if we don't find
-> > an exact match or else we risk duplicating entries.  This was
-> > causing an ENOSPC return when trying to mask and unmask MSI-X
-> > vectors based on guest MSI-X table updates.
-> > 
-> > The new KVM_CAP_DEVICE_MSIX_MASK extension indicates the
-> > presence of this fix.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> > 
-> > v2: Add capability indicating MSIX_MASKing now works.
-> > 
-> > The faulting sequence went something like:
-> > 
-> > Start:
-> > [0] entry 0, vector A
-> > [1] entry 1, vector B
-> > [2] entry 2, vector C
-> > 
-> > Set entry 1 to 0:
-> > [0] entry 0, vector A
-> > [1] entry 1->1, vector B->0
-> > [2] entry 2, vector C
-> > 
-> > Set entry 2 to 0:
-> > [0] entry 0, vector A
-> > [1] entry 1->2, vector 0->0 <- incorrectly matched
-> > [2] entry 2, vector C
-> > 
-> > Set entry 2 to C:
-> > [0] entry 0, vector A
-> > [1] entry 2->2, vector 0->C <- incorrectly matched again
-> > [2] entry 2, vector C
-> > 
-> > Set entry 1 to B:
-> > [0] entry 0, vector A
-> > [1] entry 2, vector C
-> > [2] entry 2, vector C
-> > -ENOSPC
-> > 
-> >  Documentation/virtual/kvm/api.txt |    5 +++--
-> >  arch/x86/kvm/x86.c                |    1 +
-> >  include/linux/kvm.h               |    1 +
-> >  virt/kvm/assigned-dev.c           |   21 ++++++++++++++-------
-> >  4 files changed, 19 insertions(+), 9 deletions(-)
+On 07/02/12 01:35, Seth Forshee wrote:
+
+> On Mon, Feb 06, 2012 at 10:23:13AM +1100, Ryan Mallon wrote:
+>> On 04/02/12 07:28, Seth Forshee wrote:
+>>
+>>> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+>>> ---
+>>>  drivers/video/backlight/apple_bl.c |   29 ++++++++---------------------
+>>>  1 files changed, 8 insertions(+), 21 deletions(-)
+>>>
+>>> diff --git a/drivers/video/backlight/apple_bl.c b/drivers/video/backlight/apple_bl.c
+>>> index be98d15..66d5bec 100644
+>>> --- a/drivers/video/backlight/apple_bl.c
+>>> +++ b/drivers/video/backlight/apple_bl.c
+>>> @@ -16,6 +16,8 @@
+>>>   *  get at the firmware code in order to figure out what it's actually doing.
+>>>   */
+>>>  
+>>> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>>> +
+>>>  #include <linux/module.h>
+>>>  #include <linux/kernel.h>
+>>>  #include <linux/init.h>
+>>> @@ -38,13 +40,6 @@ struct hw_data {
+>>>  
+>>>  static const struct hw_data *hw_data;
+>>>  
+>>> -#define DRIVER "apple_backlight: "
+>>> -
+>>> -/* Module parameters. */
+>>> -static int debug;
+>>> -module_param_named(debug, debug, int, 0644);
+>>> -MODULE_PARM_DESC(debug, "Set to one to enable debugging messages.");
+>>
+>>
+>> Removal of this module parameter is not noted in the changelog.
+>>
+>>> -
+>>>  /*
+>>>   * Implementation for machines with Intel chipset.
+>>>   */
+>>> @@ -58,9 +53,7 @@ static int intel_chipset_send_intensity(struct backlight_device *bd)
+>>>  {
+>>>  	int intensity = bd->props.brightness;
+>>>  
+>>> -	if (debug)
+>>> -		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
+>>> -		       intensity);
+>>> +	pr_debug("setting brightness to %d\n", intensity);
+>>
+>>
+>> As Joe points out, this no longer has the same behaviour as it did
+>> previously. The pr_debug will only show up if you have DEBUG defined.
+>> Again, this should probably be mentioned in the changelog.
 > 
-> I don't object to fixing this bug. But I don't think
-> we need a capability for this. Here's why:
-> 
-> setting an entry to zero is not really matching
-> what devices need, since that would lose interrupts.
-> What devices need is mask entries to disable them,
-> then unmask and get an interrupt if it was delayed.
-> 
-> So, if we are going to add a new capability, how about
-> sticking a mask bit in the padding instead?
+> I doesn't matter to me one way or the other whether these statements are
+> enabled by module parameter, I was just thinking that pr_debug was
+> generally preferred. I can put the module parameter back or denote this
+> in the changelog, whichever is more acceptable.
 
-I'll take a look.  Are you suggesting then that we'd note the masked
-interrupt was deferred and inject when unmasked?
 
-> As was shown in the past this can even improve performance since we can
-> propagate the mask bit back to the host device.
+Actually, you can just remove the debug print. The backlight core has a
+similar message already, so no need to duplicate it here. Note this
+reasoning in the changelog though.
 
-I'm dubious whether there's actually a use case that benefits from
-pushing the mask down to hardware.  The typical mask case is a temporary
-mask to update the vector data/address then unmask.  We're actually
-accelerating that by not pushing it down to hardware.  Are there real
-world drivers that enable a vector and then mask it for an extended
-period of time?  Thanks,
-
-Alex
-
-> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > index e1d94bf..dd0b554 100644
-> > --- a/Documentation/virtual/kvm/api.txt
-> > +++ b/Documentation/virtual/kvm/api.txt
-> > @@ -1304,8 +1304,9 @@ Type: vm ioctl
-> >  Parameters: struct kvm_assigned_msix_entry (in)
-> >  Returns: 0 on success, -1 on error
-> >  
-> > -Specifies the routing of an MSI-X assigned device interrupt to a GSI. Setting
-> > -the GSI vector to zero means disabling the interrupt.
-> > +Specifies the routing of an MSI-X assigned device interrupt to a GSI. If
-> > +KVM_CAP_DEVICE_MSIX_MASK is available, setting the GSI vector to zero means
-> > +disabling the interrupt.
-> >  
-> >  struct kvm_assigned_msix_entry {
-> >  	__u32 assigned_dev_id;
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index 14d6cad..a35255e 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -2057,6 +2057,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> >  	case KVM_CAP_XSAVE:
-> >  	case KVM_CAP_ASYNC_PF:
-> >  	case KVM_CAP_GET_TSC_KHZ:
-> > +	case KVM_CAP_DEVICE_MSIX_MASK:
-> >  		r = 1;
-> >  		break;
-> >  	case KVM_CAP_COALESCED_MMIO:
-> > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> > index 68e67e5..64438e6 100644
-> > --- a/include/linux/kvm.h
-> > +++ b/include/linux/kvm.h
-> > @@ -558,6 +558,7 @@ struct kvm_ppc_pvinfo {
-> >  #define KVM_CAP_PPC_PAPR 68
-> >  #define KVM_CAP_S390_GMAP 71
-> >  #define KVM_CAP_TSC_DEADLINE_TIMER 72
-> > +#define KVM_CAP_DEVICE_MSIX_MASK 73
-> >  
-> >  #ifdef KVM_CAP_IRQ_ROUTING
-> >  
-> > diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-> > index 758e3b3..58f3f6b 100644
-> > --- a/virt/kvm/assigned-dev.c
-> > +++ b/virt/kvm/assigned-dev.c
-> > @@ -728,7 +728,7 @@ msix_nr_out:
-> >  static int kvm_vm_ioctl_set_msix_entry(struct kvm *kvm,
-> >  				       struct kvm_assigned_msix_entry *entry)
-> >  {
-> > -	int r = 0, i;
-> > +	int r = 0, i, unused = -1;
-> >  	struct kvm_assigned_dev_kernel *adev;
-> >  
-> >  	mutex_lock(&kvm->lock);
-> > @@ -741,17 +741,24 @@ static int kvm_vm_ioctl_set_msix_entry(struct kvm *kvm,
-> >  		goto msix_entry_out;
-> >  	}
-> >  
-> > -	for (i = 0; i < adev->entries_nr; i++)
-> > -		if (adev->guest_msix_entries[i].vector == 0 ||
-> > -		    adev->guest_msix_entries[i].entry == entry->entry) {
-> > +	for (i = 0; i < adev->entries_nr; i++) {
-> > +		if (adev->guest_msix_entries[i].entry == entry->entry) {
-> >  			adev->guest_msix_entries[i].entry = entry->entry;
-> >  			adev->guest_msix_entries[i].vector = entry->gsi;
-> >  			adev->host_msix_entries[i].entry = entry->entry;
-> >  			break;
-> > -		}
-> > +		} else if (unused < 0 && !adev->guest_msix_entries[i].vector)
-> > +			unused = i;
-> > +	}
-> > +
-> >  	if (i == adev->entries_nr) {
-> > -		r = -ENOSPC;
-> > -		goto msix_entry_out;
-> > +		if (unused < 0) {
-> > +			r = -ENOSPC;
-> > +			goto msix_entry_out;
-> > +		}
-> > +		adev->guest_msix_entries[unused].entry = entry->entry;
-> > +		adev->guest_msix_entries[unused].vector = entry->gsi;
-> > +		adev->host_msix_entries[unused].entry = entry->entry;
-> >  	}
-> >  
-> >  msix_entry_out:
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-
+~Ryan
 
 
