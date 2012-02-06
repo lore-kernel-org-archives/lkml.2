@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab2BFQ3l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:29:41 -0500
+	id S1755319Ab2BFQ3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:29:48 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:57593 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183Ab2BFQ3i (ORCPT
+	with ESMTP id S1755204Ab2BFQ3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:29:38 -0500
-Date: Mon, 6 Feb 2012 20:29:35 +0400
+	Mon, 6 Feb 2012 11:29:46 -0500
+Date: Mon, 6 Feb 2012 20:29:41 +0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Oleg Nesterov <oleg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>
 Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
@@ -17,8 +17,9 @@ Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org, kernel-team@android.com,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH 2/6] oom: Get rid of sparse warnings
-Message-ID: <20120206162935.GB5117@oksana.dev.rtsoft.ru>
+Subject: [PATCH 3/6] staging: android/lowmemorykiller: Don't grab
+ tasklist_lock
+Message-ID: <20120206162941.GC5117@oksana.dev.rtsoft.ru>
 References: <20120203163056.GA4190@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -29,54 +30,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse flood makes it hard to catch newly-introduced warnings. So let's
-fix the the sparse warnings in the oom killer:
+Grabbing tasklist_lock has its disadvantages, i.e. it blocks
+process creation and destruction. If there are lots of processes,
+blocking doesn't sound as a great idea.
 
-  CHECK   mm/oom_kill.c
-  mm/oom_kill.c:139:20: warning: context imbalance in
-	  '__find_lock_task_mm' - wrong count at exit
-  mm/oom_kill.c:771:9: warning: context imbalance in 'out_of_memory' -
-	  different lock contexts for basic block
+For LMK, it is sufficient to surround tasks list traverse with
+rcu_read_{,un}lock().
 
-The first one is fixed by assuring sparse that we know that we exit
-with the lock held.
+>From now on using force_sig() is not safe, as it can race with an
+already exiting task, so we use send_sig() now. As a downside, it
+won't kill PID namespace init processes, but that's not what we
+want anyway.
 
-The second one is caused by the fact that sparse isn't smart enough
-to handle noreturn attribute.
-
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- mm/oom_kill.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/staging/android/lowmemorykiller.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 0ebb383..49569b6 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -142,8 +142,14 @@ struct task_struct *__find_lock_task_mm(struct task_struct *p)
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+index 2d8d2b7..63da844 100644
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -34,6 +34,7 @@
+ #include <linux/mm.h>
+ #include <linux/oom.h>
+ #include <linux/sched.h>
++#include <linux/rcupdate.h>
+ #include <linux/profile.h>
+ #include <linux/notifier.h>
  
- 	do {
- 		task_lock(t);
--		if (likely(t->mm))
-+		if (likely(t->mm)) {
-+			/*
-+			 * Shut up sparse: we do know that we exit w/ the
-+			 * task locked.
-+			 */
-+			__release(&t->alloc_loc);
- 			return t;
-+		}
- 		task_unlock(t);
- 	} while_each_thread(p, t);
- 
-@@ -766,6 +772,7 @@ retry:
- 		dump_header(NULL, gfp_mask, order, NULL, mpol_mask);
- 		read_unlock(&tasklist_lock);
- 		panic("Out of memory and no killable processes...\n");
-+		return;
+@@ -132,7 +133,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
  	}
+ 	selected_oom_adj = min_adj;
  
- 	if (oom_kill_process(p, gfp_mask, order, points, totalpages, NULL,
+-	read_lock(&tasklist_lock);
++	rcu_read_lock();
+ 	for_each_process(p) {
+ 		struct mm_struct *mm;
+ 		struct signal_struct *sig;
+@@ -180,12 +181,12 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 		lowmem_deathpending = selected;
+ 		task_handoff_register(&task_nb);
+ #endif
+-		force_sig(SIGKILL, selected);
++		send_sig(SIGKILL, selected, 0);
+ 		rem -= selected_tasksize;
+ 	}
+ 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
+ 		     sc->nr_to_scan, sc->gfp_mask, rem);
+-	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
+ 	return rem;
+ }
+ 
 -- 
 1.7.7.6
 
