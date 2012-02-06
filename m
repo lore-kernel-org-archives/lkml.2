@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab2BFKK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 05:10:27 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60916 "EHLO
+	id S1754076Ab2BFKLB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 05:11:01 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60932 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab2BFKK0 (ORCPT
+	with ESMTP id S1752502Ab2BFKK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 05:10:26 -0500
+	Mon, 6 Feb 2012 05:10:59 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 6 Feb 2012 19:09:07 +0900
+Date: Mon, 6 Feb 2012 19:09:39 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -17,9 +17,8 @@ Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
         Hugh Dickins <hughd@google.com>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [RFC] [PATCH 2/6 v3]  memcg: remove
- EXPORT_SYMBOL(mem_cgroup_update_page_stat)
-Message-Id: <20120206190907.4167f834.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 3/6] memcg: remove PCG_MOVE_LOCK flag from page_cgroup.
+Message-Id: <20120206190939.6dca3373.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20120206190627.7313ff82.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20120206190627.7313ff82.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
@@ -31,33 +30,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal pointed out this.
-
->From 78dfe92250046397114148e57bbc5927c59257fe Mon Sep 17 00:00:00 2001
+>From 94b17cbc95e068a0a841c84fb0345f48a2a27d24 Mon Sep 17 00:00:00 2001
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 2 Feb 2012 12:05:41 +0900
-Subject: [PATCH 2/6] memcg: remove EXPORT_SYMBOL(mem_cgroup_update_page_stat)
+Date: Thu, 2 Feb 2012 11:49:59 +0900
+Subject: [PATCH 3/6] memcg: remove PCG_MOVE_LOCK flag from page_cgroup.
 
->From the log, I guess EXPORT was for preparing dirty accounting.
-But _now_, we don't need to export this. Remove this for now.
+PCG_MOVE_LOCK is used for bit spinlock to avoid race between overwriting
+pc->mem_cgroup and page statistics accounting per memcg.
+This lock helps to avoid the race but the race is very rare because moving
+tasks between cgroup is not a usual job.
+So, it seems using 1bit per page is too costly.
+
+This patch changes this lock as per-memcg spinlock and removes PCG_MOVE_LOCK.
+
+If smaller lock is required, we'll be able to add some hashes but
+I'd like to start from this.
 
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ include/linux/page_cgroup.h |   19 -------------------
+ mm/memcontrol.c             |   34 ++++++++++++++++++++++++++++++++--
+ 2 files changed, 32 insertions(+), 21 deletions(-)
 
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 1060292..7a3af74 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -7,7 +7,6 @@ enum {
+ 	PCG_USED, /* this object is in use. */
+ 	PCG_MIGRATION, /* under page migration */
+ 	/* flags for mem_cgroup and file and I/O status */
+-	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
+ 	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
+ 	__NR_PCG_FLAGS,
+ };
+@@ -89,24 +88,6 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
+ 	bit_spin_unlock(PCG_LOCK, &pc->flags);
+ }
+ 
+-static inline void move_lock_page_cgroup(struct page_cgroup *pc,
+-	unsigned long *flags)
+-{
+-	/*
+-	 * We know updates to pc->flags of page cache's stats are from both of
+-	 * usual context or IRQ context. Disable IRQ to avoid deadlock.
+-	 */
+-	local_irq_save(*flags);
+-	bit_spin_lock(PCG_MOVE_LOCK, &pc->flags);
+-}
+-
+-static inline void move_unlock_page_cgroup(struct page_cgroup *pc,
+-	unsigned long *flags)
+-{
+-	bit_spin_unlock(PCG_MOVE_LOCK, &pc->flags);
+-	local_irq_restore(*flags);
+-}
+-
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct page_cgroup;
+ 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9bf9d1c..4ba0d76 100644
+index 4ba0d76..083154d 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -1896,7 +1896,6 @@ out:
- 		move_unlock_page_cgroup(pc, &flags);
- 	rcu_read_unlock();
+@@ -280,6 +280,8 @@ struct mem_cgroup {
+ 	 * set > 0 if pages under this cgroup are moving to other cgroup.
+ 	 */
+ 	atomic_t	moving_account;
++	/* taken only while moving_account > 0 */
++	spinlock_t	move_lock;
+ 	/*
+ 	 * percpu counter.
+ 	 */
+@@ -1338,6 +1340,34 @@ static bool mem_cgroup_wait_acct_move(struct mem_cgroup *memcg)
+ 	return false;
  }
--EXPORT_SYMBOL(mem_cgroup_update_page_stat);
  
++/*
++ * Take this lock when
++ * - a code tries to modify page's memcg while it's USED.
++ * - a code tries to modify page state accounting in a memcg.
++ * see mem_cgroup_stealed(), too.
++ */
++static void move_lock_page_cgroup(struct page_cgroup *pc, unsigned long *flags)
++{
++	struct mem_cgroup *memcg;
++
++again:
++	memcg = pc->mem_cgroup;
++	spin_lock_irqsave(&memcg->move_lock, *flags);
++	if (unlikely(pc->mem_cgroup != memcg)) {
++		spin_unlock_irqrestore(&memcg->move_lock, *flags);
++		goto again;
++	}
++}
++
++static void move_unlock_page_cgroup(struct page_cgroup *pc,
++				unsigned long *flags)
++{
++	struct mem_cgroup *memcg;
++
++	memcg = pc->mem_cgroup;
++	spin_unlock_irqrestore(&memcg->move_lock, *flags);
++}
++
+ /**
+  * mem_cgroup_print_oom_info: Called from OOM with tasklist_lock held in read mode.
+  * @memcg: The memory cgroup that went over limit
+@@ -2435,8 +2465,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 
+-#define PCGF_NOCOPY_AT_SPLIT ((1 << PCG_LOCK) | (1 << PCG_MOVE_LOCK) |\
+-			(1 << PCG_MIGRATION))
++#define PCGF_NOCOPY_AT_SPLIT ((1 << PCG_LOCK) | (1 << PCG_MIGRATION))
  /*
-  * size of first charge trial. "32" comes from vmscan.c's magic value.
+  * Because tail pages are not marked as "used", set it. We're under
+  * zone->lru_lock, 'splitting on pmd' and compound_lock.
+@@ -4923,6 +4952,7 @@ mem_cgroup_create(struct cgroup *cont)
+ 	atomic_set(&memcg->refcnt, 1);
+ 	memcg->move_charge_at_immigrate = 0;
+ 	mutex_init(&memcg->thresholds_lock);
++	spin_lock_init(&memcg->move_lock);
+ 	return &memcg->css;
+ free_out:
+ 	__mem_cgroup_free(memcg);
 -- 
 1.7.4.1
 
