@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab2BFWqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:46:36 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:46489 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709Ab2BFWqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:46:34 -0500
-Date: Tue, 7 Feb 2012 07:46:19 +0900
-From: Norbert Preining <preining@logic.at>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, jeff@garzik.org,
-        "stern@rowland.harvard.edu >> Alan Stern" <stern@rowland.harvard.edu>,
-        linux-ide@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jian Peng <jipeng2005@gmail.com>,
-        Kevin Cernekee <cernekee@gmail.com>
-Subject: Re: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume,
-	COMRESET failed
-Message-ID: <20120206224619.GA14901@gamma.logic.tuwien.ac.at>
-References: <20120203054319.GA25510@gamma.logic.tuwien.ac.at> <1328257660.15079.30.camel@minggr> <20120206004608.GA9413@gamma.logic.tuwien.ac.at> <1328492218.15079.38.camel@minggr> <20120206024052.GI9413@gamma.logic.tuwien.ac.at> <1328496591.15079.40.camel@minggr> <20120206031528.GA16093@gamma.logic.tuwien.ac.at> <1328503376.15079.55.camel@minggr> <20120206161943.GA3926@google.com> <CAN8TOE9SM1X_rQCScE8hCZYrWVY9K-B_TM+Vvzx3tZQ2LoGxXw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN8TOE9SM1X_rQCScE8hCZYrWVY9K-B_TM+Vvzx3tZQ2LoGxXw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756008Ab2BFWsF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:48:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47632 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754709Ab2BFWsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 17:48:03 -0500
+Date: Tue, 7 Feb 2012 09:47:51 +1100
+From: NeilBrown <neilb@suse.de>
+To: Pawel Sikora <pawel.sikora@agmk.net>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        arekm@pld-linux.org
+Subject: Re: [3.2.2] tasks blocked during matrix auto checking.
+Message-ID: <20120207094751.51e5321a@notabene.brown>
+In-Reply-To: <2156863.jdbU24e2Kr@pawels>
+References: <2156863.jdbU24e2Kr@pawels>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/H6.ZcU.j9_OV=zNfrIcihQu"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
+--Sig_/H6.ZcU.j9_OV=zNfrIcihQu
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Mo, 06 Feb 2012, Brian Norris wrote:
-> Is there any possibility of debugging this regression instead of
-> effectively reverting it for mainline? Or perhaps can I have better
-> information regarding the hardware on which this regression is seen?
+On Mon, 06 Feb 2012 13:02 +0100 Pawel Sikora <pawel.sikora@agmk.net> wrote:
 
-Sure, Sony VAIO Z11 laptop. I have attached several dmesg output
-to emails in this thread, that should give you a good idea what
-the hardware is. FOr the ahci:
-$ lspci -v -s 00:1f.2
-00:1f.2 SATA controller: Intel Corporation 82801IBM/IEM (ICH9M/ICH9M-E) 4 port SATA Controller [AHCI mode] (rev 03) (prog-if 01 [AHCI 1.0])
-	Subsystem: Sony Corporation Device 9025
-	Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 44
-	I/O ports at 7128 [size=8]
-	I/O ports at 713c [size=4]
-	I/O ports at 7120 [size=8]
-	I/O ports at 7138 [size=4]
-	I/O ports at 7020 [size=32]
-	Memory at daa25000 (32-bit, non-prefetchable) [size=2K]
-	Capabilities: [80] MSI: Enable+ Count=1/16 Maskable- 64bit-
-	Capabilities: [70] Power Management version 3
-	Capabilities: [a8] SATA HBA v1.0
-	Capabilities: [b0] PCI Advanced Features
-	Kernel driver in use: ahci
+> Hi,
+>=20
+> on heavy loaded opterons i've noticed some blocked tasks during matrix au=
+to checking.
+> is it a known issue?
 
-If you need any other information, please let me know.
+No.... maybe not too surprising though.
+The data-check will pause to let other IO through, but if there is lots of =
+IO
+queued up it could cause some longish delays...
 
-Best wishes
+2 minutes does seem a bit long though, so maybe there is a bug somewhere.=20
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-FIUNARY (n.)
-The safe place you put something and then forget where it was.
-			--- Douglas Adams, The Meaning of Liff
+And had 3 consecutive timeouts, so that makes it 6 minutes which really is
+too long.
+
+What sort of array was this?  RAID1? RAID5 ??
+
+Thanks,
+NeilBrown
+
+
+
+>=20
+> (...)
+> [401836.109354] md: data-check of RAID array md0
+> [401836.109364] md: minimum _guaranteed_  speed: 1000 KB/sec/disk.
+> [401836.109368] md: using maximum available idle IO bandwidth (but not mo=
+re than 200000 KB/sec) for data-check.
+> [401836.109388] md: using 128k window, over a total of 8000256k.
+> [401836.111441] md: delaying data-check of md2 until md0 has finished (th=
+ey share one or more physical units)
+> [401914.274728] md: md0: data-check done.
+> [401914.293562] md: data-check of RAID array md2
+> [401914.293566] md: minimum _guaranteed_  speed: 1000 KB/sec/disk.
+> [401914.293569] md: using maximum available idle IO bandwidth (but not mo=
+re than 200000 KB/sec) for data-check.
+> [401914.293589] md: using 128k window, over a total of 849514496k.
+> [402723.026480] INFO: task kjournald:1546 blocked for more than 120 secon=
+ds.
+> [402723.026484] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disabl=
+es this message.
+
+--Sig_/H6.ZcU.j9_OV=zNfrIcihQu
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTzBYlznsnt1WYoG5AQL32A/+JHV46P+j8zE5Qd6IRhqHDaLmSecYvs7g
+CqH+6lu67oFhzzytCt+JO8/w8wmseXzoZxJb8bxEGdarH0VKcdehILyI4WFJUSr6
+IgC1noC2iagrf9IwkZW5llvFzOUpqk7V6DnG0RBWSqqTMs8RLCaojzjvKWNY0kkY
+j2hk7BvzS8cht/3axcBKg9psQqrb3xph4umoFl/GrOg/mL5zlYK3RmQ4OnmOrFZ7
+Lr8kWClJfTiOXL/sFb7Ybn1eJYCT5xab/HR6Jnb0YjTMx6Sn1hb2QLMalr2Dc7u+
+M6ALgVaehBdpB3jsHWRe3nskWpMZ+ikLZYqICO+OvewmhrBDigBGXc95qXHlX+UD
+h8fydW/JA9ubjh0aHxLP5b/KVt/XR85z8lhABuKfJ2p2Dh+3Sr/r6gW36Bt1Ni30
+jUe5EJ59QdL9paMW15oNzCabpQenLodgXOs/jHKS+DMKNx08lA7YhCy+1YMrTK6l
+IJuy/r1Pzl8H+rVeTuKIlwL2d3FSYk0GJHYTWqnVWQIKSuVwH4vM6t1o7U/h9m/w
+vQhZ5YpgEcO+CvUtL/okZsn18rQYhebp7ITcekD80K7R30fhi8f0dDxam4OsvrbI
+Oy5thylUKGUqsnyFgDmE9Y4ZKll2vvsZzpSlBoB9tR1zB2FlS0DK2pWy3pEsCb75
+17OwP+09SR8=
+=rs19
+-----END PGP SIGNATURE-----
+
+--Sig_/H6.ZcU.j9_OV=zNfrIcihQu--
