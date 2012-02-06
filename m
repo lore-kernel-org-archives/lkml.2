@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab2BFRpx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 12:45:53 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:42176 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab2BFRpv (ORCPT
+	id S1753979Ab2BFRqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 12:46:46 -0500
+Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:57744 "HELO
+	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753662Ab2BFRqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 12:45:51 -0500
-Date: Mon, 6 Feb 2012 17:45:49 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 2/2] hfsplus: Add an ioctl to bless files
-Message-ID: <20120206174549.GA1655@srcf.ucam.org>
-References: <1328215191-4201-1-git-send-email-mjg@redhat.com>
- <1328215191-4201-2-git-send-email-mjg@redhat.com>
- <20120206173553.GB1135@infradead.org>
+	Mon, 6 Feb 2012 12:46:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120206173553.GB1135@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120130202013.GJ30782@redhat.com>
+References: <1327557574-6125-1-git-send-email-roland@kernel.org>
+ <alpine.LSU.2.00.1201261133230.1369@eggly.anvils> <CAG4TOxNEV2VY9wOE86p9RnKGqpruB32ci9Wq3yBt8O2zc7f05w@mail.gmail.com>
+ <alpine.LSU.2.00.1201271458130.3402@eggly.anvils> <CAL1RGDXqguZ2QKV=yjLXtk2n_Ag4Nf3CW+kF2BFQFR4ySTNaRA@mail.gmail.com>
+ <20120130202013.GJ30782@redhat.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Mon, 6 Feb 2012 09:46:23 -0800
+X-Google-Sender-Auth: muut9WgQdEYv-LkTjlRMZj22_IU
+Message-ID: <CAL1RGDUzYTVJJNwYzraObNvkZmOT=1oR4gBL2hKhB2harAiLLw@mail.gmail.com>
+Subject: Re: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages() parameters
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, linux-rdma@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 12:35:53PM -0500, Christoph Hellwig wrote:
-> +#define HFSPLUS_IOC_BLESS              _IO('f', 0x20)
-> 
-> I'd probably move this to fs.h and follow the numbering there,
-> otherwise we are bound to run into conflicts.
+Hi Andrea, sorry for the slow reply, had to work on other stuff for a bit.
 
-Ok. Any problem with leaving something filesystem specific in there?
+On Mon, Jan 30, 2012 at 12:20 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> If you map it with an mmap(PROT_READ|PROT_WRITE), force or not force
+> won't change a thing in terms of cows. Just make sure you map your
+> control memory right, then safely remove force=1 and you won't get the
+> control page cowed by mistake. Then if you map it with MAP_SHARED it
+> won't be mapped read-only by fork() (leading to either parent or child
+> losing the control on the device), Hugh already suggested you to use
+> MAP_SHARED instead of MAP_PRIVATE.
 
-> > +static int hfsplus_ioctl_bless(struct file *file, int __user *user_flags)
-> 
-> Care to add a little comment on what this ioctl does, bless is a bit
-> of a generic name.
+Actually this isn't about control memory for the RDMA adapter...
+as you mentioned that typically is MMIO and mapped with remap_pfn
+stuff, without using any GUP stuff.
 
-Will do.
+I'm talking about the registration of other memory for reading/writing
+by a remote system via RDMA.
 
-> > +{
-> > +	struct inode *inode = file->f_dentry->d_inode;
-> 
-> Please use file->f_path.dentry instead of the f_dentry define, please.
+The reason I'm talking about exporting kernel memory is that I wanted
+to do a debugging trick where a kernel module exposed some state
+into an mmap'able buffer.  And I wanted to be able to read that state
+even if my broken module killed the whole system (in fact exactly
+when things crash I want to be able to read the state to figure out
+why I crashed!).
 
-Ok.
+So I wrote a trivial userspace program that does nothing but mmap
+the buffer, accept RDMA connections from remote systems, and
+map the buffer for reading over those connections.  Then I can have
+a second system that connects to that process and polls the buffer.
 
-> > +	mutex_lock(&sbi->vh_mutex);
-> > +	vh->finder_info[0] = bvh->finder_info[0] =
-> > +		cpu_to_be32(parent_ino(file->f_dentry));
-> > +	vh->finder_info[1] = bvh->finder_info[1] = cpu_to_be32(inode->i_ino);
-> > +	vh->finder_info[5] = bvh->finder_info[5] =
-> > +		cpu_to_be32(parent_ino(file->f_dentry));
-> 
-> Any idea why we write the parent twice?
+Because all the RDMA state is setup in advance, I can keep polling
+even after the first system panics.  It's sort of like that firewire remote
+debugging, except I only get access to a limited memory buffer.
 
->From the spec:
+The only difficulty is the problem that started this thread, ie a bogus
+COW so the remote system ends up polling the wrong pages.  So with
+my original patch, I'm able to debug but I guess we agree it's the
+wrong fix for the general problem, and I'll write up a patch that adds
+what I think is the correct fix (the new FOLL flag) soon.
 
-"finderInfo[0] contains the directory ID of the directory containing the 
-bootable system (for example, the System Folder in Mac OS 8 or 9, or 
-/System/Library/CoreServices in Mac OS X). It is zero if there is no 
-bootable system on the volume. This value is typically equal to either 
-finderInfo[3] or finderInfo[5]."
-
-finderInfo[3] is the OS8/9 system folder, finderInfo[5] is the OS X one. 
-I'd guess it's just to indicate whether the boot media should default to 
-OS8/9 or OS X, but it's not entirely clear.
-
-> Not directly relevant, but where do you plan to put the userspace to
-> call this ioctl?
-
-There's a git repo at git://cavan.codon.org.uk/mactel-boot
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+ - R.
