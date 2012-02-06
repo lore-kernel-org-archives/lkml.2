@@ -1,109 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2BFWZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:25:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46776 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266Ab2BFWZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:25:22 -0500
-Date: Mon, 6 Feb 2012 23:25:17 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        hare@suse.de, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-Subject: Re: [PATCH] vfs: Avoid IPI storm due to bh LRU invalidation
-Message-ID: <20120206222517.GD24840@quack.suse.cz>
-References: <1328536531-19034-1-git-send-email-jack@suse.cz>
- <4F2FF4EC.1000104@linux.vnet.ibm.com>
- <20120206164732.GH6890@quack.suse.cz>
- <20120206131717.c4346f72.akpm@linux-foundation.org>
+	id S1755942Ab2BFW0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:26:33 -0500
+Received: from kamaji.grokhost.net ([87.117.218.43]:59874 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055Ab2BFW0c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 17:26:32 -0500
+X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Feb 2012 17:26:31 EST
+From: Chris Boot <bootc@bootc.net>
+To: linux1394-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Chris Boot <bootc@bootc.net>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [RFC][PATCH] firewire: Add function to get speed from opaque struct fw_request
+Date: Mon,  6 Feb 2012 22:17:41 +0000
+Message-Id: <1328566661-80768-1-git-send-email-bootc@bootc.net>
+X-Mailer: git-send-email 1.7.8.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120206131717.c4346f72.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 06-02-12 13:17:17, Andrew Morton wrote:
-> On Mon, 6 Feb 2012 17:47:32 +0100
-> Jan Kara <jack@suse.cz> wrote:
-> 
-> > On Mon 06-02-12 21:12:36, Srivatsa S. Bhat wrote:
-> > > On 02/06/2012 07:25 PM, Jan Kara wrote:
-> > > 
-> > > > When discovery of lots of disks happen in parallel, we call
-> > > > invalidate_bh_lrus() once for each disk from partitioning code resulting in a
-> > > > storm of IPIs and causing a softlockup detection to fire (it takes several
-> > > > *minutes* for a machine to execute all the invalidate_bh_lrus() calls).
-> 
-> Gad.  How many disks are we talking about here?
-  I think something around hundred scsi disks in this case (number of
-physical drives is actually lower but multipathing blows it up). I actually
-saw machines with close to thousand scsi disks (yes, they had names like
-sdabc ;).
+[ Would something like the following be acceptable as an addition to the
+FireWire stack? This would be enough for me to get the speed of the
+request for my work on the SBP-2 target code. ]
 
-> > > > Fix the issue by allowing only single invalidation to run using a mutex and let
-> > > > waiters for mutex figure out whether someone invalidated LRUs for them while
-> > > > they were waiting.
-> > > > 
-> > > > Signed-off-by: Jan Kara <jack@suse.cz>
-> > > > ---
-> > > >  fs/buffer.c |   23 ++++++++++++++++++++++-
-> > > >  1 files changed, 22 insertions(+), 1 deletions(-)
-> > > > 
-> > > >   I feel this is slightly hacky approach but it works. If someone has better
-> > > > idea, please speak up.
-> > > > 
-> > > 
-> > > 
-> > > Something related that you might be interested in:
-> > > https://lkml.org/lkml/2012/2/5/109
-> > > 
-> > > (This is part of Gilad's patchset that tries to reduce cross-CPU IPI
-> > > interference.)
-> >   Thanks for the pointer. I didn't know about it. As Hannes wrote, this
-> > need not be enough for our use case as there might indeed be some bhs in
-> > the LRU. But I'd be interested how well the patchset works anyway. Maybe it
-> > would be enough because after all when we invalidate LRUs subsequent
-> > callers will see them empty and not issue IPI? Hannes, can you give a try
-> > to the patches?
-> 
-> If that doesn't work then an option to think about is to have a bool to
-> disable the bh LRU code.  That would add a test-n-branch to
-> __find_get_block(), which wouldn't kill us.  Arrange for the LRU code
-> to be disabled during device probing.  Or just leave the LRU disabled
-> until very late in boot, perhaps.
-> 
-> Also, I'm wondering why we call invalidate_bh_lrus() at all during
-> partition reading.  Presumably it's where we're shooting down the
-> blockdev pagecache (you didn't tell us and I'm too lazy to hunt it
-> down).  But do we really need to drop the pagecache at
-> whatever-this-callsite-is?
-  block/genhd.c has in register_disk():
-       ...
-       bdev = bdget_disk(disk, 0);
-       if (!bdev)
-               goto exit;
+Sometimes it's useful to know the FireWire speed of the request that has
+just come in to a fw_address_handler callback. As struct fw_request is
+opaque we can't peek inside to get the speed out of the struct fw_packet
+that's just inside. For example, the SBP-2 spec says:
 
-       bdev->bd_invalidated = 1;
-       err = blkdev_get(bdev, FMODE_READ, NULL);
-       if (err < 0)
-               goto exit;
-       blkdev_put(bdev, FMODE_READ);
-       ...
-  And in blkdev_put() (actually __blkdev_put()) bd_openers drops to 0 so we
-call kill_bdev() which calls invalidate_bh_lrus(). So yes, we are
-unnecessarily eager to flush things there but I'm not sure if I see
-a cleaner solution.
+"The speed at which the block write request to the MANAGEMENT_AGENT
+register is received shall determine the speed used by the target for
+all subsequent requests to read the initiator’s configuration ROM, fetch
+ORB’s from initiator memory or store status at the initiator’s
+status_FIFO. Command block ORB’s separately specify the speed for
+requests addressed to the data buffer or page table."
 
-								Honza
+[ ANSI T10/1155D Revision 4 page 53/54 ]
 
+Signed-off-by: Chris Boot <bootc@bootc.net>
+Cc: Clemens Ladisch <clemens@ladisch.de>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ drivers/firewire/core-transaction.c |    6 ++++++
+ include/linux/firewire.h            |    1 +
+ 2 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/firewire/core-transaction.c b/drivers/firewire/core-transaction.c
+index 855ab3f..89c882d 100644
+--- a/drivers/firewire/core-transaction.c
++++ b/drivers/firewire/core-transaction.c
+@@ -820,6 +820,12 @@ void fw_send_response(struct fw_card *card,
+ }
+ EXPORT_SYMBOL(fw_send_response);
+ 
++int fw_request_speed(struct fw_request *request)
++{
++	return request->response.speed;
++}
++EXPORT_SYMBOL(fw_request_speed);
++
+ static void handle_exclusive_region_request(struct fw_card *card,
+ 					    struct fw_packet *p,
+ 					    struct fw_request *request,
+diff --git a/include/linux/firewire.h b/include/linux/firewire.h
+index 84ccf8e..eded4e4 100644
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -340,6 +340,7 @@ int fw_core_add_address_handler(struct fw_address_handler *handler,
+ void fw_core_remove_address_handler(struct fw_address_handler *handler);
+ void fw_send_response(struct fw_card *card,
+ 		      struct fw_request *request, int rcode);
++int fw_request_speed(struct fw_request *request);
+ void fw_send_request(struct fw_card *card, struct fw_transaction *t,
+ 		     int tcode, int destination_id, int generation, int speed,
+ 		     unsigned long long offset, void *payload, size_t length,
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.8.3
+
