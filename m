@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab2BFJio (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 04:38:44 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:48241 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab2BFJin (ORCPT
+	id S1754704Ab2BFJvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 04:51:48 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:33370 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641Ab2BFJvq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 04:38:43 -0500
-Message-ID: <4F2F9F6C.1090608@linux.vnet.ibm.com>
-Date: Mon, 06 Feb 2012 17:37:48 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Mon, 6 Feb 2012 04:51:46 -0500
+To: pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
+        kvm@vger.kernel.org
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sched: Avoid unnecessary work in reweight_entity
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12020609-2674-0000-0000-0000033DA817
+Subject: Pe: [PATCH v5 1/3] virtio-scsi: first version
+X-KeepSent: 2D939B55:7C07E33B-C125799C:0032B83A;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>
+From: Christian Hoff <christian.hoff@de.ibm.com>
+Date: Mon, 6 Feb 2012 10:51:26 +0100
+X-MIMETrack: S/MIME Sign by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
+ 10, 2010) at 06/02/2012 10:51:32,
+	Serialize by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
+ 10, 2010) at 06/02/2012 10:51:32,
+	Serialize complete at 06/02/2012 10:51:32,
+	S/MIME Sign failed at 06/02/2012 10:51:32: The cryptographic key was not
+ found,
+	Serialize by Router on D06MC042/06/M/IBM(Release 8.5.2FP3|July 10, 2011) at
+ 06/02/2012 10:51:28,
+	Serialize complete at 06/02/2012 10:51:28
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+x-cbid: 12020609-5024-0000-0000-0000019C86B4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
+Hello Paolo,
 
-In original code, using account_entity_dequeue and account_entity_enqueue
-as a pair will do some work unnecessary, this patch combine the work of
-them to save time.
+first let me say that your patch is working fine on my local clone of the 
+qemu repository.
 
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- kernel/sched/fair.c  |   32 ++++++++++++++++++++++++--------
- kernel/sched/sched.h |    8 ++++++++
- 2 files changed, 32 insertions(+), 8 deletions(-)
+Let me ask just one question about the format of the data being 
+transmitted over the virtqueue.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 84adb2d..e380518 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -782,11 +782,23 @@ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
- {
- 	cfs_rq->task_weight += weight;
- }
-+
-+static void
-+sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
-+{
-+	cfs_rq->task_weight -= sub;
-+	cfs_rq->task_weight += add;
-+}
- #else
- static inline void
- add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
- {
- }
-+
-+static void
-+sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
-+{
-+}
- #endif
- 
- static void
-@@ -938,20 +950,24 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
- {
- }
- # endif /* CONFIG_SMP */
-+
- static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
- 			    unsigned long weight)
- {
-+	/* commit outstanding execution time */
-+	if (cfs_rq->curr == se)
-+		update_curr(cfs_rq);
-+
- 	if (se->on_rq) {
--		/* commit outstanding execution time */
--		if (cfs_rq->curr == se)
--			update_curr(cfs_rq);
--		account_entity_dequeue(cfs_rq, se);
-+		update_load_sub_add(&cfs_rq->load, se->load.weight, weight);
-+		if (!parent_entity(se)) {
-+			update_load_sub_add(&rq_of(cfs_rq), se->load.weight, weight);
-+		}
-+		if (entity_is_task(se)) {
-+			sub_add_cfs_task_weight(cfs_rq, se->load.weight, weight);
-+		}
- 	}
--
- 	update_load_set(&se->load, weight);
--
--	if (se->on_rq)
--		account_entity_enqueue(cfs_rq, se);
- }
- 
- static void update_cfs_shares(struct cfs_rq *cfs_rq)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 98c0c26..ec4430f 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -779,6 +779,14 @@ static inline void update_load_sub(struct load_weight *lw, unsigned long dec)
- 	lw->inv_weight = 0;
- }
- 
-+static inline void update_load_sub_add(struct load_weight *lw, unsigned long dec,
-+					unsigned long inc)
-+{
-+	lw->weight -= dec;
-+	lw->weight += inc;
-+	lw->inv_weight = 0;
-+}
-+
- static inline void update_load_set(struct load_weight *lw, unsigned long w)
- {
- 	lw->weight = w;
--- 
-1.7.4.1
+Paolo Bonzini wrote:
++                cmd->req.cmd = (struct virtio_scsi_cmd_req){
++                                .lun[0] = 1,
++                                .lun[1] = sc->device->id,
++                                .lun[2] = (sc->device->lun >> 8) | 0x40,
++                                .lun[3] = sc->device->lun & 0xff,
++                               [...]
++                };
+
+Can't we have seperate fields for the SCSI target ID and the LUN number 
+here? Putting all this into a single field seems confusing. The following 
+line of code (sc->device->lun >> 8) | 0x40 essentially means that LUN 
+numbers will be limited to 8+6 Bits=14 Bits for no obvious reason that I 
+can see. Maybe we could just split the LUN field up into two uint32 fields 
+for target ID and LUN number?
+
+Also, lun[1] = sc->device->id means that only 255 SCSI target IDs will be 
+supported. Think about bigger usage scenarios, such as FCP networks with 
+several hundred HBAs in the net. If you want to have the target ID<->HBA 
+mapping the same as on the guest as on the host, then 255 virtual target 
+IDs could be a limit.
+
+Sorry for coming up so late with these suggestions. I hope there is still 
+enough time left to discuss and address these problems.
+
+Mit freundlichen Grüßen / Kind regards
+
+Christian Hoff
+
+Student - Applied Computer Science
+
+
+Phone:
+49-16098976-950
+ IBM Deutschland
+
+E-Mail:
+christian.hoff@de.ibm.com
+ Am Fichtenberg 1
+
+
+ 71083 Herrenberg
+
+
+ Germany
+
+
+IBM Deutschland GmbH / Vorsitzender des Aufsichtsrats: Martin Jetter
+Geschäftsführung: Martina Koederitz (Vorsitzende), Reinhard Reschke, 
+Dieter Scholz, Gregor Pillen, Joachim Heel, Christian Noll
+Sitz der Gesellschaft: Ehningen / Registergericht: Amtsgericht Stuttgart, 
+HRB 14562 / WEEE-Reg.-Nr. DE 99369940 
 
