@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab2BFEVB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 23:21:01 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54569 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab2BFEVA (ORCPT
+	id S1753755Ab2BFEX7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 23:23:59 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:34896 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362Ab2BFEX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 23:21:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
-Date: Mon, 6 Feb 2012 05:20:59 +0100
-Message-ID: <CACRpkdahin4srDh7dphgvq306gjz7CGP=h4dVkUY+w0z0wpXRQ@mail.gmail.com>
-Subject: Re: An extremely simplified pinctrl bindings proposal
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng <dongas86@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "ext Tony Lindgren (tony@atomide.com)" <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 5 Feb 2012 23:23:57 -0500
+Date: Mon, 6 Feb 2012 15:23:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        "Hans J. Koch" <hjk@linutronix.de>,
+        Torben Hohn <torbenh@linutronix.de>
+Subject: linux-next: build failure after merge of the final tree (gpio tree
+ related)
+Message-Id: <20120206152346.106057d7dd747d0daa47bbc8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__6_Feb_2012_15_23_46_+1100_Rtl8imGifQLMA9U6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 5, 2012 at 6:31 AM, Stephen Warren <swarren@nvidia.com> wrote:
+--Signature=_Mon__6_Feb_2012_15_23_46_+1100_Rtl8imGifQLMA9U6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Sorry, I haven't had a chance to read any of the pincrl emails from
-> Friday onwards. However, I thought a bit more about this, and decided
-> to propose someting much simpler:
+Hi Grant,
 
-I think this approach is quite interesting, but since it removes more
-or less all semantic meaning of the pinctrl system, I don't see why
-it would be a pinctrl rewrite at all or called pinctrl, rather it'd be
-something new and separate, since it could (if I understand
-correctly) very well be used to configure things that are totally
-unrelated to pin control, could it not?
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-It is indeed described as "little more than a system to execute a
-list of arbitrary register writes".
+drivers/gpio/gpio-sodaville.c:130:2: error: unknown field 'dt_translate' sp=
+ecified in initializer
+drivers/gpio/gpio-sodaville.c:130:2: warning: initialization from incompati=
+ble pointer type [enabled by default]
+drivers/gpio/gpio-sodaville.c:130:2: warning: (near initialization for 'irq=
+_domain_sdv_ops.match') [enabled by default]
+drivers/gpio/gpio-sodaville.c: In function 'sdv_register_irqsupport':
+drivers/gpio/gpio-sodaville.c:152:8: error: 'struct irq_domain' has no memb=
+er named 'irq_base'
+drivers/gpio/gpio-sodaville.c:182:2: error: implicit declaration of functio=
+n 'irq_domain_add' [-Werror=3Dimplicit-function-declaration]
+drivers/gpio/gpio-sodaville.c: In function 'sdv_gpio_remove':
+drivers/gpio/gpio-sodaville.c:263:2: error: implicit declaration of functio=
+n 'irq_domain_del' [-Werror=3Dimplicit-function-declaration]
 
-For example it could be readily used to set up the config registers
-of parameters in an external memory controller - these are also a lot
-of magic writes into various registers, nobody really knows what they
-actually do, timings for access and whatnot.
+Caused by commit 8b26c833d229 ("gpio: Add a driver for Sodaville GPIO
+controller") interacting with the irqdomain tree changes.
 
-Incidentally external memory controllers is another things that
-is usually magically reconfigured at idle/sleep and on the way
-back up.
+I have reverted that commit for today.  I am not sure how you should
+handle this ... you could send me a fixup patch that I should apply as a
+merge fix when merging the irqdomain tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Can we defined it then as controlled register processing at
-determined points, some during boot, some at runtime, and
-maybe tied to certain devices at certain points in time?
+--Signature=_Mon__6_Feb_2012_15_23_46_+1100_Rtl8imGifQLMA9U6
+Content-Type: application/pgp-signature
 
-A controlled set of register read/writes and maybe also conditionals
-(if that bit is 1, do this, else do that, plus a loop command to wait
-for a flag or similar) are known as a "jam tables" and usually used
-in BIOSes to do a compact machine initialization. I learned this term
-in Bunnie Huang's "Hacking the Xbox, where he describes finding a
-jam table interpreter in the Xbox ROM.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-So if I understand the proposal correctly it would fit nice as
-drivers/jamtable or so, and could do that kind of control of whatever
-hardware you want to control with opaque register accesses,
-then reflect it as raw register contents in debugfs etc.
+iQIcBAEBCAAGBQJPL1XSAAoJEECxmPOUX5FE0WcP/iHL5wOebOQfPUhsR8N6Ab65
+IohiTVdQsMLpfQ/+ktpQFu09Zw93LUgcJmWld29bUKdwbYQBK6R2U0Oa022eB4rO
+nstMJ09cG8HeBZhcGV+cBt8MO+IOgqtbhrPqIo2M09OKrsspHupMpJ2SyU7v4eCN
+lsHMJXZ1jTmy85ICT9f5nNxAdOrHFVhiJ3lSTKCgC2JcVlGJj2w209ctRzEf0dNF
+EKmh1296v4tz4A3Z6XOIUYktxvcV28MQTiJGbn/bUsYfa43Jv9/3XerxHdbBTI9M
+/YIaUCVf33Ty2BVHq8fwwKvptRm27NevBd/NybrqbqAP7iyl28dPK3ok2smW/PDJ
+CJz6BDzdL2yqOnOyKzASe+q6uedNu61R9s/Vn56un0ohwL9cBKKqn/KXpEIGBpne
+nHmRRU6MtxsFUDNXSw34+VssXaNp95Ctve/mBkgB9d6uL4J+vLDDeTEctp6mQJI6
++IBh0z70murNGYqQAS0+IRawnW1dw204Z/uOL1vM53PSo6ulnGqtPPjomMobnX4Q
+mqJ35UwEGqAdjzKLVXYuLdyn0jx0UGzG/w79oFvalc4/nGtPseTouktNIjr3EfbF
+NVHtCcy5KYTuyssqbW/9oZOS1ZdZ2j90JeJhWj2xSi/NKB1L8iUNO1LWAsZxM3L6
+5+xlFJxlFGAXFUi+NUE7
+=svfX
+-----END PGP SIGNATURE-----
 
-If it turns out everyone is happy with that and we can move other
-drivers over to it we can just scrap pinctrl, or have it only for those
-systems that want a semantic representation.
-
-While I would probably mourn the death of sematics I also see
-that if the goal is to get huge static data sets out of the kernel,
-something like this may be the best way to get there.
-
-Thoughts?
-Linus Walleij
+--Signature=_Mon__6_Feb_2012_15_23_46_+1100_Rtl8imGifQLMA9U6--
