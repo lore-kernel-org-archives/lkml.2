@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab2BFVFL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 16:05:11 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21052 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab2BFVFJ (ORCPT
+	id S1754278Ab2BFVKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 16:10:37 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:47201 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab2BFVKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 16:05:09 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19/x1EPuHjMPibDUA7GxgeN
-Date: Mon, 6 Feb 2012 13:04:56 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: An extremely simplified pinctrl bindings proposal
-Message-ID: <20120206210456.GV1426@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
- <CACRpkdahin4srDh7dphgvq306gjz7CGP=h4dVkUY+w0z0wpXRQ@mail.gmail.com>
- <4F2F6AE2.1040504@nvidia.com>
- <CACRpkdbtTPSoX1x4aBtNVGZ2Qex9t77D09V9JgON_jfShQdx6w@mail.gmail.com>
- <20120206190315.GU1426@atomide.com>
- <CACRpkdZthbejmTqRJAWHb8jU-p8LPT_+zj_CY1q0voMb4FKz2Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZthbejmTqRJAWHb8jU-p8LPT_+zj_CY1q0voMb4FKz2Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 Feb 2012 16:10:35 -0500
+Date: Tue, 7 Feb 2012 08:10:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: dedekind1@gmail.com
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: linux-next: build failure after merge of the l2-mtd tree
+Message-Id: <20120207081026.2f488c285a0dee36a0b03c63@canb.auug.org.au>
+In-Reply-To: <1328519654.22240.31.camel@sauron.fi.intel.com>
+References: <20120206120706.cf5d951972d22eb7fa134fbd@canb.auug.org.au>
+	<1328519654.22240.31.camel@sauron.fi.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__7_Feb_2012_08_10_26_+1100_B9Q9CWBZu_GMIgRs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [120206 11:25]:
-> On Mon, Feb 6, 2012 at 8:03 PM, Tony Lindgren <tony@atomide.com> wrote:
-> 
-> > So far the only
-> > change needed for pinctrl drivers containing no data is that
-> > we should make the string names optional and structure debugfs
-> > around the physical register addresses instead. I'm basically
-> > just setting the mux register physcal address as the pin name
-> > for now to work around this.
-> 
-> OK please make a patch to do it really optional in the core if
-> you find the time, it seems like a good change anyway, because
-> it will make it possible to reduce some current pin name lists
-> quite easily.
+--Signature=_Tue__7_Feb_2012_08_10_26_+1100_B9Q9CWBZu_GMIgRs
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, will take a look at that.
+Hi Artem,
 
-> If you need to change the layout of debugfs just do it.
-> 
-> I actually had something like unnamed pins in the early patches
-> to register a bunch of anonymous pins ranges, so why not bring
-> it back in.
+On Mon, 06 Feb 2012 11:14:14 +0200 Artem Bityutskiy <dedekind1@gmail.com> w=
+rote:
+>
+> On Mon, 2012-02-06 at 12:07 +1100, Stephen Rothwell wrote:
+> >=20
+> > drivers/mtd/devices/pmc551.c:191:12: error: conflicting types for 'pmc5=
+51_unpoint'
+> > include/linux/mtd/pmc551.h:37:13: note: previous declaration of 'pmc551=
+_unpoint' was here
+> > drivers/mtd/devices/pmc551.c: In function 'pmc551_unpoint':
+> > drivers/mtd/devices/pmc551.c:196:1: warning: no return statement in fun=
+ction returning non-void [-Wreturn-type]
+>=20
+> Thanks, fixed. I am doing rather massive MTD API cleaning, so new small
+> issues are possible.
 
-Yeah it seems that the mux registers should be listed, it might
-require a little bit of thinking for cases where one register
-controls multiple pins. So maybe we need just a new entry for
-mux registers?
+You fixed the header file, but not the fact that pmc551_unpoint() still
+doesn't return anything ... Warnings are there for a reason sometimes :-)
 
-Regards,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Tony
+--Signature=_Tue__7_Feb_2012_08_10_26_+1100_B9Q9CWBZu_GMIgRs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPMEHCAAoJEECxmPOUX5FEyHEQAJpMwvAGOB4Puzhsocl5BWPW
+tpxShfsr7cMqm175SlfUTxC5cGvpJg3dM5BTzkEpNsPJ3XM6t4OpufQZiyRVioYK
+Gg5BUGigfNckec4r+g5OCTg2wRiAmPz+9QC3yUDVR9sON8OghuBd9h+ySlc24r7M
+frUXN4+GaMVvPwDctZq0deZ+btNg+tad5wTDAcMmR0s+c3LLrqHfNJgpHbtVd0g2
+3W7vbffzuUlZX8qa3J3EoiQ7YdrJMqVKG5RyGVV1SkrI1xwP21LEXXhBe1KEheC0
+T051H8ZK8rpkt5k6rjpG1yMW3UHzcDgyTMiEsgUUKruePe1nJW73EMzlX+2yj7so
+fW4sCwEL7z6ZBn/7aN4kB1LKBtvorEzeAmk4XPZRIvXmJ35M4PI2AYQvY27eEsIJ
+fiO7fCQHfQ8aopDjQ3XyVwJVjtkETu/VVr2E9pWFpTPi9lYP3M8Aq4Zhh0MByg9U
+P7W2B4wjZahz33tNE1XbOeftPFl0pfVjLRntPDgfEFJ6Wn/JIryX8tnZOc2h8xex
+6p3Wm+U9IFLBlNEae5rXajP+6FNulnDK4Bkc0D1NCBF5PYNQOmQN8SItwiyB7nIZ
+M79v1gcsxxWtxjhtp/1N5YtVW/e6zcMCzNx9adEkBkSyWQeSP1uqqKnvAglL762h
+JyzRCBh/J9R1hKaKoTJj
+=zEda
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__7_Feb_2012_08_10_26_+1100_B9Q9CWBZu_GMIgRs--
