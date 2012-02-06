@@ -1,80 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab2BFQDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:03:31 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37198 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200Ab2BFQDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:03:30 -0500
-Date: Mon, 6 Feb 2012 17:03:37 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Keith Packard <keithp@keithp.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Lubos Kolouch <lubos.kolouch@gmail.com>
-Subject: Re: [Intel-gfx] [PATCH 1/2] drm/i915: Force explicit bpp selection
- for intel_dp_link_required
-Message-ID: <20120206160337.GB4066@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	Keith Packard <keithp@keithp.com>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	Lubos Kolouch <lubos.kolouch@gmail.com>
-References: <1327508186-26704-1-git-send-email-keithp@keithp.com>
- <1327508186-26704-2-git-send-email-keithp@keithp.com>
- <20120127103010.GB3901@phenom.ffwll.local>
- <CAPM=9tyg6Ju8qi+Qy0XP-23wApGA3+12jDfd7KQRoZ_bqSH=4g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	id S1755459Ab2BFQFz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:05:55 -0500
+Received: from tex.lwn.net ([70.33.254.29]:32927 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755353Ab2BFQFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 11:05:54 -0500
+Date: Mon, 6 Feb 2012 09:05:53 -0700
+From: Jonathan Corbet <corbet@lwn.net>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Please re-enable the git-commits-head mailing list
+Message-ID: <20120206090553.4bc0205d@dt>
+In-Reply-To: <4F2FD60D.5090708@panasas.com>
+References: <4EA6EA6F.1020602@panasas.com>
+	<20111025134800.4da48376@tpl.lwn.net>
+	<4F2FD60D.5090708@panasas.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPM=9tyg6Ju8qi+Qy0XP-23wApGA3+12jDfd7KQRoZ_bqSH=4g@mail.gmail.com>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 12:12:16PM +0000, Dave Airlie wrote:
-> On Fri, Jan 27, 2012 at 10:30 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> > On Wed, Jan 25, 2012 at 08:16:25AM -0800, Keith Packard wrote:
-> >> It is never correct to use intel_crtc->bpp in intel_dp_link_required,
-> >> so instead pass an explicit bpp in to this function. This patch
-> >> only supports 18bpp and 24bpp modes, which means that 10bpc modes will
-> >> be computed incorrectly. Fixing that will require more extensive
-> >> changes, and so must be addressed separately from this bugfix.
-> >>
-> >> intel_dp_link_required is called from intel_dp_mode_valid and
-> >> intel_dp_mode_fixup.
-> >>
-> >> * intel_dp_mode_valid is called to list supported modes; in this case,
-> >>   the current crtc values cannot be relevant as the modes in question
-> >>   may never be selected. Thus, using intel_crtc->bpp is never right.
-> >>
-> >> * intel_dp_mode_fixup is called during mode setting, but it is run
-> >>   well before ironlake_crtc_mode_set is called to set intel_crtc->bpp,
-> >>   so using intel_crtc-bpp in this path can only ever get a stale
-> >>   value.
-> >>
-> >> Cc: Lubos Kolouch <lubos.kolouch@gmail.com>
-> >> Cc: Adam Jackson <ajax@redhat.com>
-> >> Signed-off-by: Keith Packard <keithp@keithp.com>
-> >
-> > Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=42263
-> > Tested-by: camalot@picnicpark.org (Dell Latitude 6510)
-> >
-> > Not the original reporter and might not exactly be this bug, but likely.
-> > -Daniel
-> 
-> Tested-by: Dave Airlie <airlied@redhat.com>
+On Mon, 6 Feb 2012 15:30:53 +0200
+Boaz Harrosh <bharrosh@panasas.com> wrote:
 
-Another bugzilla for this patch:
+> So what is the final disposition on git-commits-head@vger.kernel.org?
+> Was it decided not to have it anymore? or was it just forgotten?
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44881
-Tested-by: Roland Dreier <roland@digitalvampire.org>
+Certainly I've heard nothing about it.  I've been occasionally agitating
+for a status report from kernel.org in general, but I guess they're still
+too busy putting pieces back together to do that.
 
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+I naturally had to make my own arrangements a long time ago.  Rolling
+one's own mail feed isn't that hard to do.  What I've been hacking on more
+recently, though, is an NNTP gateway that allows me to watch what's up
+with an arbitrary number of repositories using a news reader.  I'll
+probably toss the source out in the very near future, and may make feeds
+available if that is useful to anybody.
+
+jon
