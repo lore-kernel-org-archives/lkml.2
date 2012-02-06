@@ -1,133 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab2BFKMT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 05:12:19 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:45964 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab2BFKMO (ORCPT
+	id S1753906Ab2BFKNB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 05:13:01 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36368 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab2BFKNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 05:12:14 -0500
-Message-ID: <1328523130.2220.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: WARNING: at arch/x86/kernel/cpu/perf_event.c:989
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>
-Date: Mon, 06 Feb 2012 11:12:10 +0100
-In-Reply-To: <CABPqkBQdRwKKAvgK339Po0-WBW-MJkgcmpWqS=OOgepn3_XiRw@mail.gmail.com>
-References: <20120202211709.GA1642@x4> <20120202213220.GB1642@x4>
-	 <CABPqkBTutb5TuNVXZ4o+MzXczVSwk3NtsJh73KZS58xmrd=tbg@mail.gmail.com>
-	 <20120204135110.GA6437@elte.hu>
-	 <CABPqkBTvoNBBdzvS-njoFk+SrTf-BKQSvP54C05un+m7RA+nBg@mail.gmail.com>
-	 <CABPqkBQdRwKKAvgK339Po0-WBW-MJkgcmpWqS=OOgepn3_XiRw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
+	Mon, 6 Feb 2012 05:13:00 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 6 Feb 2012 19:11:41 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: [RFC] [PATCH 6/6] memcg: fix performance of
+ mem_cgroup_begin_update_page_stat()
+Message-Id: <20120206191141.e854b311.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120206190627.7313ff82.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20120206190627.7313ff82.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 06 février 2012 à 10:54 +0100, Stephane Eranian a écrit :
-> On Sat, Feb 4, 2012 at 7:09 PM, Stephane Eranian <eranian@google.com> wrote:
-> > I am working on it. It is hard to reproduce for me.
-> >
-> What did you run to trigger this warning? What system is this on?
-> 
-> > On Sat, Feb 4, 2012 at 2:51 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >>
-> >> there's yet another one triggering at:
-> >>
-> >> [89214.962603] ------------[ cut here ]------------
-> >> [89214.967441] WARNING: at arch/x86/kernel/cpu/perf_event.c:995 x86_pmu_start+0x79/0xd4()
-> >> [89214.975825] Hardware name: X8DTN
-> >> [89214.979268] Modules linked in:
-> >> [89214.982560] Pid: 0, comm: swapper/6 Not tainted 3.3.0-rc2-tip+ #1
-> >> [89214.988865] Call Trace:
-> >> [89214.991533]  <IRQ>  [<ffffffff81065cc7>] warn_slowpath_common+0x7e/0x97
-> >> [89214.998379]  [<ffffffff81065cf5>] warn_slowpath_null+0x15/0x17
-> >> [89215.004428]  [<ffffffff8103f626>] x86_pmu_start+0x79/0xd4
-> >> [89215.010042]  [<ffffffff810e30d1>] perf_adjust_freq_unthr_context.part.63+0xef/0x123
-> >> [89215.018123]  [<ffffffff810e318c>] perf_event_task_tick+0x87/0x1c1
-> >> [89215.024463]  [<ffffffff810a2370>] ? tick_nohz_handler+0xda/0xda
-> >> [89215.030595]  [<ffffffff8108b819>] scheduler_tick+0xd1/0xf3
-> >> [89215.036296]  [<ffffffff810720b0>] update_process_times+0x5e/0x6f
-> >> [89215.042512]  [<ffffffff810a23e0>] tick_sched_timer+0x70/0x99
-> >> [89215.048387]  [<ffffffff810823f9>] __run_hrtimer+0x8c/0x148
-> >> [89215.054087]  [<ffffffff81082add>] hrtimer_interrupt+0xc1/0x18c
-> >>
-> >> Thanks,
-> >>
-> >>        Ingo
+>From 4094b65b9c0a368a34b8c3d42df1ce0ebfa1edf8 Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 6 Feb 2012 12:14:47 +0900
+Subject: [PATCH 6/6] memcg: fix performance of mem_cgroup_begin_update_page_stat()
 
-Stephane, I trigger this as well very easily on my machine, 32bit
-kernel, using the following :
+mem_cgroup_begin_update_page_stat() should be very fast because
+it's called very frequently. Now, it needs to look up page_cgroup
+and its memcg....this is slow.
 
+This patch adds a global variable to check "a memcg is moving or not".
+By this, the caller doesn't need to visit page_cgroup and memcg.
+This makes performance quicker.
 
-perf record -a -g hackbench 10 thread 4000
+Here is a test result. A test program makes page faults onto a file,
+MAP_SHARED and makes each page's page_mapcount(page) > 1, and free
+the range by madvise() and page fault again.  This program causes
+26214400 times of page fault onto a file(size was 1G.) and shows
+shows the cost of mem_cgroup_begin_update_page_stat().
+(please see 'sys' time and think error range is 0.2 - 0.4sec.)
 
+Before the series of patch (linux-next Feb/06)
+[kamezawa@bluextal test]$ time ./mmap 1G
 
-[ 1205.338006] ------------[ cut here ]------------
-[ 1205.338028] WARNING: at arch/x86/kernel/cpu/perf_event.c:989
-x86_pmu_start+0xba/0xf0()
-[ 1205.338044] Hardware name: ProLiant BL460c G1
-[ 1205.338053] Modules linked in: xt_hashlimit af_packet tg3 bonding
-[ 1205.338076] Pid: 0, comm: swapper/5 Not tainted
-3.3.0-rc2-00172-g23783f8 #55
-[ 1205.338090] Call Trace:
-[ 1205.338100]  [<c0609e06>] ? printk+0x1d/0x1f
-[ 1205.338111]  [<c022b012>] warn_slowpath_common+0x72/0xa0
-[ 1205.338123]  [<c021072a>] ? x86_pmu_start+0xba/0xf0
-[ 1205.338134]  [<c021072a>] ? x86_pmu_start+0xba/0xf0
-[ 1205.338145]  [<c022b062>] warn_slowpath_null+0x22/0x30
-[ 1205.338157]  [<c021072a>] x86_pmu_start+0xba/0xf0
-[ 1205.338170]  [<c02aba7b>] perf_adjust_freq_unthr_context.part.75
-+0xfb/0x180
-[ 1205.338185]  [<c02abd21>] perf_event_task_tick+0x221/0x290
-[ 1205.338199]  [<c0258dee>] ? update_cpu_load+0xbe/0xf0
-[ 1205.338210]  [<c0259728>] scheduler_tick+0x98/0xf0
-[ 1205.338222]  [<c0239c6a>] update_process_times+0x5a/0x70
-[ 1205.338235]  [<c026bb10>] tick_sched_timer+0x60/0x1f0
-[ 1205.338248]  [<c024f1c0>] ? __remove_hrtimer+0x40/0xa0
-[ 1205.338260]  [<c024f3f7>] __run_hrtimer+0x67/0x1e0
-[ 1205.338270]  [<c026bab0>] ? tick_init_highres+0x20/0x20
-[ 1205.338297]  [<c02501b0>] hrtimer_interrupt+0xe0/0x260
-[ 1205.338323]  [<c025c207>] ? sched_clock_cpu+0xd7/0x160
-[ 1205.338350]  [<c025c841>] ? set_next_entity+0x31/0x70
-[ 1205.338380]  [<c0610804>] smp_apic_timer_interrupt+0x54/0x88
-[ 1205.338407]  [<c060fcda>] apic_timer_interrupt+0x2a/0x30
-[ 1205.338439]  [<c0209efc>] ? mwait_idle+0x7c/0x1d0
-[ 1205.338470]  [<c0201606>] cpu_idle+0x66/0xa0
-[ 1205.338495]  [<c060500f>] start_secondary+0x1bf/0x1c5
-[ 1205.338520] ---[ end trace 94f790d96c8679f1 ]---
-[ 1211.617012] Uhhuh. NMI received for unknown reason 21 on CPU 0.
-[ 1211.617049] Do you have a strange power saving mode enabled?
-[ 1211.617075] Dazed and confused, but trying to continue
-[ 1211.970013] Uhhuh. NMI received for unknown reason 31 on CPU 7.
-[ 1211.970050] Do you have a strange power saving mode enabled?
-[ 1211.970076] Dazed and confused, but trying to continue
-[ 1214.440012] Uhhuh. NMI received for unknown reason 21 on CPU 3.
-[ 1214.440048] Do you have a strange power saving mode enabled?
-[ 1214.440074] Dazed and confused, but trying to continue
-[ 1214.634012] Uhhuh. NMI received for unknown reason 31 on CPU 4.
-[ 1214.634047] Do you have a strange power saving mode enabled?
-[ 1214.634073] Dazed and confused, but trying to continue
-[ 1216.568016] Uhhuh. NMI received for unknown reason 31 on CPU 1.
-[ 1216.568052] Do you have a strange power saving mode enabled?
-[ 1216.568078] Dazed and confused, but trying to continue
-[ 1217.309010] Uhhuh. NMI received for unknown reason 31 on CPU 2.
-[ 1217.309044] Do you have a strange power saving mode enabled?
-[ 1217.309070] Dazed and confused, but trying to continue
+real    0m23.534s
+user    0m5.949s
+sys     0m17.563s
 
+After the patch for mem_cgroup_begin_update_page_stat()
+[kamezawa@bluextal test]$ time ./mmap 1G
 
+real    0m24.268s
+user    0m6.059s
+sys     0m18.187s
 
+After this patch
+[kamezawa@bluextal test]$ time ./mmap 1G
 
-processor	: 7
-vendor_id	: GenuineIntel
-cpu family	: 6
-model		: 23
-model name	: Intel(R) Xeon(R) CPU           E5450  @ 3.00GHz
-stepping	: 6
+real    0m23.094s
+user    0m6.045s
+sys     0m17.030s
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/memcontrol.h |    5 +++--
+ mm/memcontrol.c            |    6 +++++-
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 3f3ef33..3df9979 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -143,7 +143,7 @@ static inline bool mem_cgroup_disabled(void)
+ 
+ void __mem_cgroup_begin_update_page_stat(struct page *page,
+ 					bool *lock, unsigned long *flags);
+-
++extern atomic_t memcg_moving;
+ static inline void mem_cgroup_begin_update_page_stat(struct page *page,
+ 					bool *lock, unsigned long *flags)
+ {
+@@ -151,7 +151,8 @@ static inline void mem_cgroup_begin_update_page_stat(struct page *page,
+ 		return;
+ 	rcu_read_lock();
+ 	*lock = false;
+-	return __mem_cgroup_begin_update_page_stat(page, lock, flags);
++	if (atomic_read(&memcg_moving))
++		return __mem_cgroup_begin_update_page_stat(page, lock, flags);
+ }
+ 
+ void __mem_cgroup_end_update_page_stat(struct page *page, bool *lock,
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index eedabee..322e381 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1273,16 +1273,20 @@ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
+  *         start move here.
+  */
+ 
++atomic_t memcg_moving __read_mostly;
+ static void mem_cgroup_start_move(struct mem_cgroup *memcg)
+ {
++	atomic_inc(&memcg_moving);
+ 	atomic_inc(&memcg->moving_account);
+ 	synchronize_rcu();
+ }
+ 
+ static void mem_cgroup_end_move(struct mem_cgroup *memcg)
+ {
+-	if (memcg)
++	if (memcg) {
+ 		atomic_dec(&memcg->moving_account);
++		atomic_dec(&memcg_moving);
++	}
+ }
+ /*
+  * 2 routines for checking "mem" is under move_account() or not.
+-- 
+1.7.4.1
 
 
