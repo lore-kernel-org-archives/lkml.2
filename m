@@ -1,225 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab2BFSwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 13:52:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1911 "EHLO mx1.redhat.com"
+	id S1755828Ab2BFSws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 13:52:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19426 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755760Ab2BFSwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 13:52:41 -0500
-Date: Mon, 6 Feb 2012 16:08:24 -0200
+	id S1755799Ab2BFSwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 13:52:43 -0500
+Date: Mon, 6 Feb 2012 16:22:08 -0200
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 To: Stephane Eranian <eranian@google.com>
 Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
         robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
         asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
         khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: Re: [PATCH v5 12/18] perf: add support for sampling taken branch
-	to perf record
-Message-ID: <20120206180823.GD6367@infradead.org>
-References: <1328187288-24395-1-git-send-email-eranian@google.com> <1328187288-24395-13-git-send-email-eranian@google.com>
+Subject: Re: [PATCH v5 16/18] perf: enable reading of perf.data files from
+	different ABI rev
+Message-ID: <20120206182208.GH6367@infradead.org>
+References: <1328187288-24395-1-git-send-email-eranian@google.com> <1328187288-24395-17-git-send-email-eranian@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1328187288-24395-13-git-send-email-eranian@google.com>
+In-Reply-To: <1328187288-24395-17-git-send-email-eranian@google.com>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 02, 2012 at 01:54:42PM +0100, Stephane Eranian escreveu:
-> From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
+Em Thu, Feb 02, 2012 at 01:54:46PM +0100, Stephane Eranian escreveu:
+> This patch allows perf to process perf.data files generated
+> using an ABI that has a different perf_event_attr struct size, i.e.,
+> a different ABI version.
 > 
-> This patch adds a new option to enable taken branch stack
-> sampling, i.e., leverage the PERF_SAMPLE_BRANCH_STACK feature
-> of perf_events.
+> The perf_event_attr can be extended, yet perf needs to cope with
+> older perf.data files. Similarly, perf must be able to cope with
+> a perf.data file which is using a newer version of the ABI than
+> what it knows about.
 > 
-> There is a new option to active this mode: -b.
-> It is possible to pass a set of filters to select the type of
-> branches to sample.
-> 
-> The following filters are available:
-> - any : any type of branches
-> - any_call : any function call or system call
-> - any_ret : any function return or system call return
-> - any_ind : any indirect branch
-> - u:  only when the branch target is at the user level
-> - k: only when the branch target is in the kernel
-> - hv: only when the branch target is in the hypervisor
-> 
-> Filters can be combined by passing a comma separated list
-> to the option:
-> 
-> $ perf record -b any_call,u -e cycles:u branchy
-> 
-> Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
+> This patch adds read_attr(), a routine that reads a perf_event_attr
+> struct from a file incrementally based on its advertised size. If
+> the on-file struct is smaller than what perf knows, then the extra
+> fields are zeroed. If the on-file struct is bigger, then perf only
+> uses what it knows about, the rest is skipped.
 
-Looks ok,
+Anshuman, can I have your Acked-by or Reviewed-by since you spotted
+problems in this and your suggestions were taken into account? Is this
+OK now?
 
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
+- Arnaldo
+ 
 > Signed-off-by: Stephane Eranian <eranian@google.com>
 > ---
->  tools/perf/Documentation/perf-record.txt |   25 ++++++++++
->  tools/perf/builtin-record.c              |   74 ++++++++++++++++++++++++++++++
->  tools/perf/perf.h                        |    1 +
->  tools/perf/util/evsel.c                  |    4 ++
->  4 files changed, 104 insertions(+), 0 deletions(-)
+>  tools/perf/util/header.c |   49 ++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 47 insertions(+), 2 deletions(-)
 > 
-> diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-> index ff9a66e..288d429 100644
-> --- a/tools/perf/Documentation/perf-record.txt
-> +++ b/tools/perf/Documentation/perf-record.txt
-> @@ -152,6 +152,31 @@ an empty cgroup (monitor all the time) using, e.g., -G foo,,bar. Cgroups must ha
->  corresponding events, i.e., they always refer to events defined earlier on the command
->  line.
->  
-> +-b::
-> +--branch-stack::
-> +Enable taken branch stack sampling. Each sample captures a series of consecutive
-> +taken branches. The number of branches captured with each sample depends on the
-> +underlying hardware, the type of branches of interest, and the executed code.
-> +It is possible to select the types of branches captured by enabling filters. The
-> +following filters are defined:
-> +
-> +        -  any :  any type of branches
-> +        - any_call: any function call or system call
-> +        - any_ret: any function return or system call return
-> +        - any_ind: any indirect branch
-> +        - u:  only when the branch target is at the user level
-> +        - k: only when the branch target is in the kernel
-> +        - hv: only when the target is at the hypervisor level
-> +
-> ++
-> +At least one of any, any_call, any_ret, any_ind must be provided. The privilege levels may
-> +be ommitted, in which case, the privilege levels of the associated event are applied to the
-> +branch filter. Both kernel (k) and hypervisor (hv) privilege levels are subject to
-> +permissions.  When sampling on multiple events, branch stack sampling is enabled for all
-> +the sampling events. The sampled branch type is the same for all events.
-> +Note that taken branch sampling may not be available on all processors.
-> +The various filters must be specified as a comma separated list: -b any_ret,u,k
-> +
->  SEE ALSO
->  --------
->  linkperf:perf-stat[1], linkperf:perf-list[1]
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 32870ee..6565164 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -637,6 +637,77 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
->  	return err;
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index 6f4187d..8d6c18d 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -1959,6 +1959,51 @@ static int perf_header__read_pipe(struct perf_session *session, int fd)
+>  	return 0;
 >  }
 >  
-> +#define BRANCH_OPT(n, m) \
-> +	{ .name = n, .mode = (m) }
-> +
-> +#define BRANCH_END { .name = NULL }
-> +
-> +struct branch_mode {
-> +	const char *name;
-> +	int mode;
-> +};
-> +
-> +static const struct branch_mode branch_modes[] = {
-> +	BRANCH_OPT("u", PERF_SAMPLE_BRANCH_USER),
-> +	BRANCH_OPT("k", PERF_SAMPLE_BRANCH_KERNEL),
-> +	BRANCH_OPT("hv", PERF_SAMPLE_BRANCH_HV),
-> +	BRANCH_OPT("any", PERF_SAMPLE_BRANCH_ANY),
-> +	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
-> +	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
-> +	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
-> +	BRANCH_END
-> +};
-> +
-> +static int
-> +parse_branch_stack(const struct option *opt, const char *str, int unset __used)
+> +static int read_attr(int fd, struct perf_header *ph,
+> +		     struct perf_file_attr *f_attr)
 > +{
-> +#define ONLY_PLM \
-> +	(PERF_SAMPLE_BRANCH_USER	|\
-> +	 PERF_SAMPLE_BRANCH_KERNEL	|\
-> +	 PERF_SAMPLE_BRANCH_HV)
+> +	struct perf_event_attr *attr = &f_attr->attr;
+> +	size_t sz, left;
+> +	size_t our_sz = sizeof(f_attr->attr);
+> +	int ret;
 > +
-> +	uint64_t *mode = (uint64_t *)opt->value;
-> +	const struct branch_mode *br;
-> +	char *s, *os, *p;
-> +	int ret = -1;
+> +	memset(f_attr, 0, sizeof(*f_attr));
 > +
-> +	*mode = 0;
-> +
-> +	/* because str is read-only */
-> +	s = os = strdup(str);
-> +	if (!s)
+> +	/* read minimal guaranteed structure */
+> +	ret = readn(fd, attr, PERF_ATTR_SIZE_VER0);
+> +	if (ret <= 0)
 > +		return -1;
 > +
-> +	for (;;) {
-> +		p = strchr(s, ',');
-> +		if (p)
-> +			*p = '\0';
+> +	/* on file perf_event_attr size */
+> +	sz = attr->size;
+> +	if (ph->needs_swap)
+> +		sz = bswap_32(sz);
 > +
-> +		for (br = branch_modes; br->name; br++) {
-> +			if (!strcasecmp(s, br->name))
-> +				break;
-> +		}
-> +		if (!br->name)
-> +			goto error;
+> +	if (sz == 0) {
+> +		/* assume ABI0 */
+> +		sz =  PERF_ATTR_SIZE_VER0;
+> +	} else if (sz > our_sz) {
+> +		/* bigger than what we know about */
+> +		sz = our_sz;
 > +
-> +		*mode |= br->mode;
-> +
-> +		if (!p)
-> +			break;
-> +
-> +		s = p + 1;
+> +		/* skip what we do not know about */
+> +		lseek(fd, SEEK_CUR, attr->size - our_sz);
 > +	}
-> +	ret = 0;
+> +	/* what we have not yet read and that we know about */
+> +	left = sz - PERF_ATTR_SIZE_VER0;
+> +	if (left) {
+> +		void *ptr = attr;
+> +		ptr += PERF_ATTR_SIZE_VER0;
 > +
-> +	if ((*mode & ~ONLY_PLM) == 0) {
-> +		error("need at least one branch type with -b\n");
-> +		ret = -1;
+> +		ret = readn(fd, ptr, left);
+> +		if (ret <= 0)
+> +			return -1;
 > +	}
-> +error:
-> +	free(os);
-> +	return ret;
+> +	/* read the ids */
+> +	ret = readn(fd, &f_attr->ids, sizeof(struct perf_file_section));
+> +	return ret <= 0 ? -1 : 0;
 > +}
 > +
->  static const char * const record_usage[] = {
->  	"perf record [<options>] [<command>]",
->  	"perf record [<options>] -- <command> [<options>]",
-> @@ -729,6 +800,9 @@ const struct option record_options[] = {
->  		     "monitor event in cgroup name only",
->  		     parse_cgroups),
->  	OPT_STRING('u', "uid", &record.uid_str, "user", "user to profile"),
-> +	OPT_CALLBACK('b', "branch-stack", &record.opts.branch_stack,
-> +		     "branch mode mask", "branch stack sampling modes",
-> +		     parse_branch_stack),
->  	OPT_END()
->  };
->  
-> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-> index 8b4d25d..7f8fbab 100644
-> --- a/tools/perf/perf.h
-> +++ b/tools/perf/perf.h
-> @@ -222,6 +222,7 @@ struct perf_record_opts {
->  	unsigned int freq;
->  	unsigned int mmap_pages;
->  	unsigned int user_freq;
-> +	int	     branch_stack;
->  	u64	     default_interval;
->  	u64	     user_interval;
->  	const char   *cpu_list;
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index 6b15cda..63a6a16 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -126,6 +126,10 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
->  		attr->watermark = 0;
->  		attr->wakeup_events = 1;
+>  int perf_session__read_header(struct perf_session *session, int fd)
+>  {
+>  	struct perf_header *header = &session->header;
+> @@ -1979,14 +2024,14 @@ int perf_session__read_header(struct perf_session *session, int fd)
+>  		return -EINVAL;
 >  	}
-> +	if (opts->branch_stack) {
-> +		attr->sample_type	|= PERF_SAMPLE_BRANCH_STACK;
-> +		attr->branch_sample_type = opts->branch_stack;
-> +	}
 >  
->  	attr->mmap = track;
->  	attr->comm = track;
+> -	nr_attrs = f_header.attrs.size / sizeof(f_attr);
+> +	nr_attrs = f_header.attrs.size / f_header.attr_size;
+>  	lseek(fd, f_header.attrs.offset, SEEK_SET);
+>  
+>  	for (i = 0; i < nr_attrs; i++) {
+>  		struct perf_evsel *evsel;
+>  		off_t tmp;
+>  
+> -		if (readn(fd, &f_attr, sizeof(f_attr)) <= 0)
+> +		if (read_attr(fd, header, &f_attr) < 0)
+>  			goto out_errno;
+>  
+>  		if (header->needs_swap)
 > -- 
 > 1.7.4.1
