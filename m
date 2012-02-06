@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab2BFPNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 10:13:39 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:44702 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754544Ab2BFPNi (ORCPT
+	id S1755320Ab2BFPPY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 10:15:24 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:50136 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754544Ab2BFPPX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 10:13:38 -0500
-Date: Mon, 6 Feb 2012 10:13:37 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Huang Ying <ying.huang@intel.com>
-cc: ming.m.lin@intel.com, <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [RFC 0/5] scsi, sd, pm, request based runtime PM for scsi disk
-In-Reply-To: <1328513548-19786-1-git-send-email-ying.huang@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1202061007570.1525-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 6 Feb 2012 10:15:23 -0500
+Date: Mon, 06 Feb 2012 10:15:17 -0500 (EST)
+Message-Id: <20120206.101517.1598607878740481170.davem@davemloft.net>
+To: steweg@ynet.sk
+Cc: gregory.v.rose@intel.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [patch v1, kernel version 3.2.1] rtnetlink workaround around
+ the skb buff size issue
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAGsizzLFoXdUQrA-WtdRq4FDdnDNnevyK6HCRmrT2joUV=ZRXg@mail.gmail.com>
+References: <20120203.192933.510206531351047222.davem@davemloft.net>
+	<C5551D9AAB213A418B7FD5E4A6F30A0702F7F86F@ORSMSX106.amr.corp.intel.com>
+	<CAGsizzLFoXdUQrA-WtdRq4FDdnDNnevyK6HCRmrT2joUV=ZRXg@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 06 Feb 2012 07:15:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Feb 2012, Huang Ying wrote:
+From: ¦tefan Gula <steweg@ynet.sk>
+Date: Mon, 6 Feb 2012 09:53:28 +0100
 
-> SSD becomes more and more popular, this makes it possible to put disk into
-> low power state more often.  And request based runtime PM for scsi disk is
-> more useful than open/close based one because disk is normally mounted at
-> most time.
-> 
-> One known issue, because SCSI TEST_UNIT_READY will be put into request
-> queue every 2 seconds by default, this makes it hard for disk to sleep.
-> Maybe we can implement check_events callback in some other way?
-> 
-> [RFC 1/5] pm, runtime, Add resume notifier
-> [RFC 2/5] scsi, pm, rename scsi_autopm_get/put_xxx to
-> [RFC 3/5] scsi, pm, add pm_runtime_get/put in scsi request
-> [RFC 4/5] scsi, pm, use autosuspend for scsi runtime PM
-> [RFC 5/5] scsi, sd, pm, request based runtime PM support
+> If I try to request for it, it will eventually fail with a lot of
+> records even with filtering...
 
-Your whole approach is at the wrong level.  Runtime PM between I/O 
-requests for block devices should be implemented in the block layer, 
-not in the SCSI layer.
+Then the user can loop increasing the buffer size until the netlink
+request succeeds.
 
-It also is much more difficult than your patches would indicate.  For 
-example, some USB card readers indicate a media change every time they 
-resume; therefore they must not be suspended while the device file is 
-open.
-
-Another difficulty arises because some drivers need to send SCSI 
-commands (such as SYNCHRONIZE CACHE) _while_ suspending or resuming.
-
-Alan Stern
-
+It is not a problem.
