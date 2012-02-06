@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab2BFQyj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:54:39 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49191 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab2BFQyh (ORCPT
+	id S1755532Ab2BFQ4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:56:13 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40247 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754852Ab2BFQ4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:54:37 -0500
-Subject: Re: [BUG] perf: perf sched warning possibly due to clock
- granularity on AMD
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, mingo@elte.hu, robert.richter@amd.com,
-        eric.dumazet@gmail.com, Andreas Herrmann <andreas.herrmann3@amd.com>
-In-Reply-To: <20120206164626.GA31704@aftab>
-References: <20120206132546.GA30854@quad> <1328538403.2482.4.camel@laptop>
-	 <20120206153408.GA31237@aftab> <1328546246.2482.10.camel@laptop>
-	 <20120206164626.GA31704@aftab>
+	Mon, 6 Feb 2012 11:56:11 -0500
+Message-ID: <1328547366.2220.83.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [patch v1, kernel version 3.2.1] rtnetlink workaround around
+ the skb buff size issue
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: steweg@ynet.sk, gregory.v.rose@intel.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Mon, 06 Feb 2012 17:56:06 +0100
+In-Reply-To: <20120206.101517.1598607878740481170.davem@davemloft.net>
+References: <20120203.192933.510206531351047222.davem@davemloft.net>
+	 <C5551D9AAB213A418B7FD5E4A6F30A0702F7F86F@ORSMSX106.amr.corp.intel.com>
+	 <CAGsizzLFoXdUQrA-WtdRq4FDdnDNnevyK6HCRmrT2joUV=ZRXg@mail.gmail.com>
+	 <20120206.101517.1598607878740481170.davem@davemloft.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Feb 2012 17:54:19 +0100
-Message-ID: <1328547259.2482.11.camel@laptop>
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-06 at 17:46 +0100, Borislav Petkov wrote:
-> > across all CPUs in the entire system.
+Le lundi 06 février 2012 à 10:15 -0500, David Miller a écrit :
+> From: Štefan Gula <steweg@ynet.sk>
+> Date: Mon, 6 Feb 2012 09:53:28 +0100
 > 
-> Right, by the "entire system" you mean consistent across cores and
-> sockets but not necessarily across cabinets, as in the comment above,
-> correct?
+> > If I try to request for it, it will eventually fail with a lot of
+> > records even with filtering...
 > 
-> If so, let me ask around if this holds true too.
+> Then the user can loop increasing the buffer size until the netlink
+> request succeeds.
+> 
+> It is not a problem.
 
-Every CPU available to the kernel. So if you run a single system image
-across your cabinets, then yes those too.
+Actually we always truncate message in netlink_recvmsg()
+
+We could use a MSG_NOPARTIAL flag in netlink_recvmsg() so that user can
+avoid the MSG_PEEK operation to fetch next message length.
+
+(Ie not consume/copy skb if user buffer is too small to hold full
+message, and only return the needed length)
+
+
 
