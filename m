@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab2BFWTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:19:42 -0500
-Received: from proxima.lp0.eu ([81.2.80.65]:36458 "EHLO proxima.lp0.eu"
+	id S1755911Ab2BFWZX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:25:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46776 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753261Ab2BFWTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:19:41 -0500
-X-Greylist: delayed 652 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Feb 2012 17:19:41 EST
-Message-ID: <4F304CAD.5080700@simon.arlott.org.uk>
-Date: Mon, 06 Feb 2012 21:57:01 +0000
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110823 Thunderbird/5.0
+	id S1751266Ab2BFWZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 17:25:22 -0500
+Date: Mon, 6 Feb 2012 23:25:17 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        hare@suse.de, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>
+Subject: Re: [PATCH] vfs: Avoid IPI storm due to bh LRU invalidation
+Message-ID: <20120206222517.GD24840@quack.suse.cz>
+References: <1328536531-19034-1-git-send-email-jack@suse.cz>
+ <4F2FF4EC.1000104@linux.vnet.ibm.com>
+ <20120206164732.GH6890@quack.suse.cz>
+ <20120206131717.c4346f72.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH] dvb-core: fix DVBFE_ALGO_HW retune bug
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206131717.c4346f72.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7e07222 breaks DVBFE_ALGO_HW tuning after a retune is requested,
-which causes bad tuning on my TBS 6920.
+On Mon 06-02-12 13:17:17, Andrew Morton wrote:
+> On Mon, 6 Feb 2012 17:47:32 +0100
+> Jan Kara <jack@suse.cz> wrote:
+> 
+> > On Mon 06-02-12 21:12:36, Srivatsa S. Bhat wrote:
+> > > On 02/06/2012 07:25 PM, Jan Kara wrote:
+> > > 
+> > > > When discovery of lots of disks happen in parallel, we call
+> > > > invalidate_bh_lrus() once for each disk from partitioning code resulting in a
+> > > > storm of IPIs and causing a softlockup detection to fire (it takes several
+> > > > *minutes* for a machine to execute all the invalidate_bh_lrus() calls).
+> 
+> Gad.  How many disks are we talking about here?
+  I think something around hundred scsi disks in this case (number of
+physical drives is actually lower but multipathing blows it up). I actually
+saw machines with close to thousand scsi disks (yes, they had names like
+sdabc ;).
 
-[    0.769091] pci 0000:06:00.0: [14f1:8852] type 0 class 0x000400
-[   19.733530] CORE cx23885[0]: subsystem: 6920:8888, board: TurboSight TBS 6920 [card=14,autodetected]
-[  762.824912] cx24116_load_firmware: FW version 1.23.86.1
+> > > > Fix the issue by allowing only single invalidation to run using a mutex and let
+> > > > waiters for mutex figure out whether someone invalidated LRUs for them while
+> > > > they were waiting.
+> > > > 
+> > > > Signed-off-by: Jan Kara <jack@suse.cz>
+> > > > ---
+> > > >  fs/buffer.c |   23 ++++++++++++++++++++++-
+> > > >  1 files changed, 22 insertions(+), 1 deletions(-)
+> > > > 
+> > > >   I feel this is slightly hacky approach but it works. If someone has better
+> > > > idea, please speak up.
+> > > > 
+> > > 
+> > > 
+> > > Something related that you might be interested in:
+> > > https://lkml.org/lkml/2012/2/5/109
+> > > 
+> > > (This is part of Gilad's patchset that tries to reduce cross-CPU IPI
+> > > interference.)
+> >   Thanks for the pointer. I didn't know about it. As Hannes wrote, this
+> > need not be enough for our use case as there might indeed be some bhs in
+> > the LRU. But I'd be interested how well the patchset works anyway. Maybe it
+> > would be enough because after all when we invalidate LRUs subsequent
+> > callers will see them empty and not issue IPI? Hannes, can you give a try
+> > to the patches?
+> 
+> If that doesn't work then an option to think about is to have a bool to
+> disable the bh LRU code.  That would add a test-n-branch to
+> __find_get_block(), which wouldn't kill us.  Arrange for the LRU code
+> to be disabled during device probing.  Or just leave the LRU disabled
+> until very late in boot, perhaps.
+> 
+> Also, I'm wondering why we call invalidate_bh_lrus() at all during
+> partition reading.  Presumably it's where we're shooting down the
+> blockdev pagecache (you didn't tell us and I'm too lazy to hunt it
+> down).  But do we really need to drop the pagecache at
+> whatever-this-callsite-is?
+  block/genhd.c has in register_disk():
+       ...
+       bdev = bdget_disk(disk, 0);
+       if (!bdev)
+               goto exit;
 
-7e0722215a510921cbb73ab4c37477d4dcb91bf8 [media] dvb-core: Don't pass DVBv3 parameters on tune() fops
+       bdev->bd_invalidated = 1;
+       err = blkdev_get(bdev, FMODE_READ, NULL);
+       if (err < 0)
+               goto exit;
+       blkdev_put(bdev, FMODE_READ);
+       ...
+  And in blkdev_put() (actually __blkdev_put()) bd_openers drops to 0 so we
+call kill_bdev() which calls invalidate_bh_lrus(). So yes, we are
+unnecessarily eager to flush things there but I'm not sure if I see
+a cleaner solution.
 
-Although re_tune is set to true when FESTATE_RETUNE occurs, it is never
-set back to false which the old code used to do when !FESTATE_RETUNE.
+								Honza
 
-This patch sets re_tune to false if !(state & FESTATE_RETUNE).
-
-$ szap-s2 -a 2 "Channel 5"
-reading channels from file '/home/simon/.szap/channels.conf'
-zapping to 247 'Channel 5':
-delivery DVB-S, modulation QPSK
-sat 0, frequency 10964 MHz H, symbolrate 22000000, coderate 5/6, rolloff 0.35
-vpid 0x092a, apid 0x092b, sid 0x092d
-using '/dev/dvb/adapter2/frontend0' and '/dev/dvb/adapter2/demux0'
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eb33 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cec0 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-status 1f | signal cec0 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-
-Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
----
- drivers/media/dvb/dvb-core/dvb_frontend.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/media/dvb/dvb-core/dvb_frontend.c b/drivers/media/dvb/dvb-core/dvb_frontend.c
-index fbbe545..4555baa 100644
---- a/drivers/media/dvb/dvb-core/dvb_frontend.c
-+++ b/drivers/media/dvb/dvb-core/dvb_frontend.c
-@@ -655,6 +655,8 @@ restart:
- 					dprintk("%s: Retune requested, FESTATE_RETUNE\n", __func__);
- 					re_tune = true;
- 					fepriv->state = FESTATE_TUNED;
-+				} else {
-+					re_tune = false;
- 				}
- 
- 				if (fe->ops.tune)
 -- 
-1.7.8.rc3
-
--- 
-Simon Arlott
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
