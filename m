@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab2BFHcm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 02:32:42 -0500
+	id S1754104Ab2BFHcj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 02:32:39 -0500
 Received: from mga11.intel.com ([192.55.52.93]:54923 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753091Ab2BFHck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 02:32:40 -0500
+	id S1750942Ab2BFHch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 02:32:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="121267520"
+   d="scan'208";a="121267509"
 From: Huang Ying <ying.huang@intel.com>
 To: Alan Stern <stern@rowland.harvard.edu>
 Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         James Bottomley <JBottomley@parallels.com>,
         Huang Ying <ying.huang@intel.com>
-Subject: [RFC 5/5] scsi, sd, pm, request based runtime PM support
-Date: Mon,  6 Feb 2012 15:32:28 +0800
-Message-Id: <1328513548-19786-6-git-send-email-ying.huang@intel.com>
+Subject: [RFC 3/5] scsi, pm, add pm_runtime_get/put in scsi request function
+Date: Mon,  6 Feb 2012 15:32:26 +0800
+Message-Id: <1328513548-19786-4-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1328513548-19786-1-git-send-email-ying.huang@intel.com>
 References: <1328513548-19786-1-git-send-email-ying.huang@intel.com>
@@ -26,177 +26,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can reduce power consumption when disk is mounted but no read/write
-request.
-
-TODO: Request based runtime PM may be harmful for rotating HD, should
-enable that only for SSD and fallback to open/close based runtime PM
-otherwise.
+To support request based scsi device runtime PM.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- drivers/scsi/scsi_lib.c  |    3 ++-
- drivers/scsi/scsi_priv.h |    1 +
- drivers/scsi/sd.c        |   43 +++++++++++++++++++++++++++++++++++++++++--
- drivers/scsi/sd.h        |    2 ++
- 4 files changed, 46 insertions(+), 3 deletions(-)
+ drivers/scsi/scsi_lib.c  |   10 ++++++++++
+ drivers/scsi/scsi_pm.c   |   30 ++++++++++++++++++++++++++++++
+ drivers/scsi/scsi_priv.h |    8 ++++++++
+ 3 files changed, 48 insertions(+)
 
 --- a/drivers/scsi/scsi_lib.c
 +++ b/drivers/scsi/scsi_lib.c
-@@ -401,7 +401,7 @@ static inline int scsi_host_is_busy(stru
-  * Notes:	The previous command was completely finished, start
-  *		a new one if possible.
-  */
--static void scsi_run_queue(struct request_queue *q)
-+void scsi_run_queue(struct request_queue *q)
- {
- 	struct scsi_device *sdev = q->queuedata;
- 	struct Scsi_Host *shost;
-@@ -454,6 +454,7 @@ static void scsi_run_queue(struct reques
- 
- 	blk_run_queue(q);
+@@ -314,6 +314,8 @@ void scsi_device_unbusy(struct scsi_devi
+ 	spin_unlock(shost->host_lock);
+ 	spin_lock(sdev->request_queue->queue_lock);
+ 	sdev->device_busy--;
++	if (!sdev->device_busy)
++		scsi_autopm_put_device(sdev);
+ 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
  }
-+EXPORT_SYMBOL_GPL(scsi_run_queue);
  
- void scsi_requeue_run_queue(struct work_struct *work)
+@@ -1418,6 +1420,8 @@ static void scsi_kill_request(struct req
+ 	 * bump busy counts.  To bump the counters, we need to dance
+ 	 * with the locks as normal issue path does.
+ 	 */
++	if (!sdev->device_busy)
++		scsi_autopm_get_device_noresume(sdev);
+ 	sdev->device_busy++;
+ 	spin_unlock(sdev->request_queue->queue_lock);
+ 	spin_lock(shost->host_lock);
+@@ -1520,6 +1524,10 @@ static void scsi_request_fn(struct reque
+ 		}
+ 
+ 
++		if (!sdev->device_busy) {
++			if (scsi_autopm_get_device(sdev))
++				break;
++		}
+ 		/*
+ 		 * Remove the request from the request list.
+ 		 */
+@@ -1600,6 +1608,8 @@ static void scsi_request_fn(struct reque
+ 	spin_lock_irq(q->queue_lock);
+ 	blk_requeue_request(q, req);
+ 	sdev->device_busy--;
++	if (sdev->device_busy == 0)
++		scsi_autopm_put_device_noidle(sdev);
+ out_delay:
+ 	if (sdev->device_busy == 0)
+ 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -176,12 +176,42 @@ int scsi_autopm_get_device_sync(struct s
+ }
+ EXPORT_SYMBOL_GPL(scsi_autopm_get_device_sync);
+ 
++int scsi_autopm_get_device(struct scsi_device *sdev)
++{
++	int	err;
++
++	err = pm_runtime_get(&sdev->sdev_gendev);
++	if (err < 0 && err != -EACCES && err != -EINPROGRESS &&
++	    err != -EAGAIN)
++		pm_runtime_put_noidle(&sdev->sdev_gendev);
++	else
++		err = 0;
++	return err;
++}
++
++void scsi_autopm_get_device_noresume(struct scsi_device *sdev)
++{
++	pm_runtime_get_noresume(&sdev->sdev_gendev);
++}
++
+ void scsi_autopm_put_device_sync(struct scsi_device *sdev)
  {
++	pm_runtime_mark_last_busy(&sdev->sdev_gendev);
+ 	pm_runtime_put_sync(&sdev->sdev_gendev);
+ }
+ EXPORT_SYMBOL_GPL(scsi_autopm_put_device_sync);
+ 
++void scsi_autopm_put_device(struct scsi_device *sdev)
++{
++	pm_runtime_mark_last_busy(&sdev->sdev_gendev);
++	pm_runtime_put(&sdev->sdev_gendev);
++}
++
++void scsi_autopm_put_device_noidle(struct scsi_device *sdev)
++{
++	pm_runtime_put_noidle(&sdev->sdev_gendev);
++}
++
+ void scsi_autopm_get_target_sync(struct scsi_target *starget)
+ {
+ 	pm_runtime_get_sync(&starget->dev);
 --- a/drivers/scsi/scsi_priv.h
 +++ b/drivers/scsi/scsi_priv.h
-@@ -87,6 +87,7 @@ extern struct request_queue *scsi_alloc_
- extern void scsi_free_queue(struct request_queue *q);
- extern int scsi_init_queue(void);
- extern void scsi_exit_queue(void);
-+extern void scsi_run_queue(struct request_queue *q);
- struct request_queue;
- struct request;
- extern struct kmem_cache *scsi_sdb_cache;
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -66,6 +66,7 @@
- 
- #include "sd.h"
- #include "scsi_logging.h"
-+#include "scsi_priv.h"
- 
- MODULE_AUTHOR("Eric Youngdale");
- MODULE_DESCRIPTION("SCSI disk (sd) driver");
-@@ -981,6 +982,8 @@ static int sd_open(struct block_device *
- 			scsi_set_medium_removal(sdev, SCSI_REMOVAL_PREVENT);
- 	}
- 
-+	scsi_autopm_put_device_sync(sdev);
-+
- 	return 0;
- 
- error_out:
-@@ -1020,7 +1023,6 @@ static int sd_release(struct gendisk *di
- 	 * XXX is followed by a "rmmod sd_mod"?
- 	 */
- 
--	scsi_autopm_put_device_sync(sdev);
- 	scsi_disk_put(sdkp);
- 	return 0;
- }
-@@ -1071,7 +1073,7 @@ static int sd_ioctl(struct block_device
- 	struct scsi_device *sdp = sdkp->device;
- 	void __user *p = (void __user *)arg;
- 	int error;
--    
-+
- 	SCSI_LOG_IOCTL(1, sd_printk(KERN_INFO, sdkp, "sd_ioctl: disk=%s, "
- 				    "cmd=0x%x\n", disk->disk_name, cmd));
- 
-@@ -1079,6 +1081,10 @@ static int sd_ioctl(struct block_device
- 	if (error < 0)
- 		return error;
- 
-+	error = scsi_autopm_get_device_sync(sdp);
-+	if (error)
-+		return error;
-+
- 	/*
- 	 * If we are in the middle of error recovery, don't let anyone
- 	 * else try and use this device.  Also, if error recovery fails, it
-@@ -1108,6 +1114,7 @@ static int sd_ioctl(struct block_device
- 			break;
- 	}
- out:
-+	scsi_autopm_put_device_sync(sdp);
- 	return error;
- }
- 
-@@ -2365,10 +2372,15 @@ static int sd_revalidate_disk(struct gen
- 	struct scsi_device *sdp = sdkp->device;
- 	unsigned char *buffer;
- 	unsigned flush = 0;
-+	int error;
- 
- 	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp,
- 				      "sd_revalidate_disk\n"));
- 
-+	error = scsi_autopm_get_device_sync(sdp);
-+	if (error)
-+		return 0;
-+
- 	/*
- 	 * If the device is offline, don't try and read capacity or any
- 	 * of the other niceties.
-@@ -2421,6 +2433,7 @@ static int sd_revalidate_disk(struct gen
- 	kfree(buffer);
- 
-  out:
-+	scsi_autopm_put_device_sync(sdp);
- 	return 0;
- }
- 
-@@ -2490,6 +2503,29 @@ static int sd_format_disk_name(char *pre
- 	return 0;
- }
- 
-+static void sd_on_resume_work(struct work_struct *work)
-+{
-+	struct scsi_disk *sdkp = container_of(work, struct scsi_disk, work);
-+	struct scsi_device *sdev = sdkp->device;
-+
-+	scsi_run_queue(sdev->request_queue);
-+}
-+
-+/*
-+ * Called with dev->power.lock held, scsi_run_queue will acquire the
-+ * lock too, so delay to a work item to do that.
-+ */
-+static int sd_on_resume(struct notifier_block *nb, unsigned long event,
-+			void *ptr)
-+{
-+	struct scsi_disk *sdkp = container_of(nb, struct scsi_disk, nb);
-+
-+	if (event == RPM_REQ_RESUME)
-+		schedule_work(&sdkp->work);
-+
-+	return NOTIFY_DONE;
-+}
-+
- /*
-  * The asynchronous part of sd_probe
-  */
-@@ -2543,6 +2579,9 @@ static void sd_probe_async(void *data, a
- 
- 	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
- 		  sdp->removable ? "removable " : "");
-+	INIT_WORK(&sdkp->work, sd_on_resume_work);
-+	sdkp->nb.notifier_call = sd_on_resume;
-+	atomic_notifier_chain_register(&dev->power.notifier, &sdkp->nb);
- 	scsi_autopm_put_device_sync(sdp);
- 	put_device(&sdkp->dev);
- }
---- a/drivers/scsi/sd.h
-+++ b/drivers/scsi/sd.h
-@@ -50,6 +50,8 @@ struct scsi_disk {
- 	struct scsi_driver *driver;	/* always &sd_template */
- 	struct scsi_device *device;
- 	struct device	dev;
-+	struct notifier_block nb;
-+	struct work_struct work;
- 	struct gendisk	*disk;
- 	atomic_t	openers;
- 	sector_t	capacity;	/* size in 512-byte sectors */
+@@ -151,11 +151,19 @@ static inline void scsi_netlink_exit(voi
+ extern const struct dev_pm_ops scsi_bus_pm_ops;
+ #endif
+ #ifdef CONFIG_PM_RUNTIME
++extern int scsi_autopm_get_device(struct scsi_device *);
++extern void scsi_autopm_get_device_noresume(struct scsi_device *);
++extern void scsi_autopm_put_device(struct scsi_device *);
++extern void scsi_autopm_put_device_noidle(struct scsi_device *);
+ extern void scsi_autopm_get_target_sync(struct scsi_target *);
+ extern void scsi_autopm_put_target_sync(struct scsi_target *);
+ extern int scsi_autopm_get_host_sync(struct Scsi_Host *);
+ extern void scsi_autopm_put_host_sync(struct Scsi_Host *);
+ #else
++extern int scsi_autopm_get_device(struct scsi_device *sdev) { return 0; }
++extern void scsi_autopm_get_device_noresume(struct scsi_device *sdev) {}
++extern void scsi_autopm_put_device(struct scsi_device *sdev) {}
++extern void scsi_autopm_put_device_noidle(struct scsi_device *sdev) {}
+ static inline void scsi_autopm_get_target_sync(struct scsi_target *t) {}
+ static inline void scsi_autopm_put_target_sync(struct scsi_target *t) {}
+ static inline int scsi_autopm_get_host_sync(struct Scsi_Host *h) { return 0; }
