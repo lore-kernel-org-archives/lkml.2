@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab2BFUS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 15:18:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752848Ab2BFUS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 15:18:28 -0500
-From: Matthew Garrett <mjg@redhat.com>
-To: hch@infradead.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2] hfsplus: Add an ioctl to bless files
-Date: Mon,  6 Feb 2012 15:14:40 -0500
-Message-Id: <1328559280-29111-1-git-send-email-mjg@redhat.com>
-In-Reply-To: <20120206174943.GA14225@infradead.org>
-References: <20120206174943.GA14225@infradead.org>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.202
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1755487Ab2BFUXZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 15:23:25 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:37017 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab2BFUXY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 15:23:24 -0500
+Date: Mon, 6 Feb 2012 15:23:07 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, "x86@kernel.org" <x86@kernel.org>,
+        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Jean Delvare <khali@linux-fr.org>, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH v5 2/5] x86/platform: (TS-5500) add GPIO support
+Message-ID: <20120206152307.7d1fb316@v0nbox>
+In-Reply-To: <20120206153742.GE10173@sirena.org.uk>
+References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1328130344-18836-3-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<20120201213025.53d820d2@pyramind.ukuu.org.uk>
+	<1328211236.2261.152.camel@groeck-laptop>
+	<20120206153742.GE10173@sirena.org.uk>
+Organization: Savoir-faire Linux Inc.
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Making an hfsplus partition bootable requires the ability to "bless" a
-file by putting its inode number in the volume header. Doing this from
-userspace on a mounted filesystem is impractical since the kernel will
-write back the original values on unmount. Add an ioctl to allow userspace
-to update the volume header information based on the target file.
+Le Mon, 6 Feb 2012 15:37:42 +0000,
+Mark Brown <broonie@opensource.wolfsonmicro.com> a écrit :
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
-Kept the ioctl in the hfs code, but moved it to a different range to reduce
-reduce the chances of someone stepping on it with another filesystem.
+> On Thu, Feb 02, 2012 at 11:33:56AM -0800, Guenter Roeck wrote:
+> > On Wed, 2012-02-01 at 16:30 -0500, Alan Cox wrote:
+> 
+> > > > My first RFC patches set has every driver separated. As they are
+> > > > really specific to the platform, people seem to agree with
+> > > > grouping them, mainly because they won't be shared. I changed
+> > > > that in the following patches sets, and X86 maintainers seemed
+> > > > to be ok with that.
+> 
+> > It looks like things are going back and forth a bit. If I were
+> > Vivien, I would be a bit frustrated by now and be close to giving
+> > up (Vivien, I really commend you for your patience).
+> 
+> OTOH I just looked back and saw that some of the review comments I
+> just made were also made against the first version of this driver I
+> noticed (v2) but appear to have been ignored, the request tracking
+> stands out.
+> 
+> > Is there a written guideline or policy people can look and point to
+> > if/when something like this comes up ? Otherwise we may have the
+> > LED/GPIO/xxx maintainers point one way, the X86 maintainers point
+> > the other way, and thus may have reached a complete deadlock.
+> 
+> I'm not sure I'm seeing much conflict here TBH, looking at the above
+> and the history I have to hand I'd say it's reading like the x86
+> maintainers aren't fussed either way and the people doing kernel wide
+> work on things like this prefer getting stuff integrated into the
+> frameworks.
 
- Documentation/ioctl/ioctl-number.txt |    1 +
- fs/hfsplus/hfsplus_fs.h              |    5 +++++
- fs/hfsplus/ioctl.c                   |   34 ++++++++++++++++++++++++++++++++++
- 3 files changed, 40 insertions(+), 0 deletions(-)
+Thanks for the comments. I'll then move the GPIO driver back to
+drivers/gpio and fix what Mark pointed out.
 
-diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
-index 4840334..37a4248 100644
---- a/Documentation/ioctl/ioctl-number.txt
-+++ b/Documentation/ioctl/ioctl-number.txt
-@@ -218,6 +218,7 @@ Code  Seq#(hex)	Include File		Comments
- 'h'	00-7F				conflict! Charon filesystem
- 					<mailto:zapman@interlan.net>
- 'h'	00-1F	linux/hpet.h		conflict!
-+'h'	80-8F	fs/hfsplus/ioctl.c
- 'i'	00-3F	linux/i2o-dev.h		conflict!
- 'i'	0B-1F	linux/ipmi.h		conflict!
- 'i'	80-8F	linux/i8k.h
-diff --git a/fs/hfsplus/hfsplus_fs.h b/fs/hfsplus/hfsplus_fs.h
-index 21a5b7f..4e75ac6 100644
---- a/fs/hfsplus/hfsplus_fs.h
-+++ b/fs/hfsplus/hfsplus_fs.h
-@@ -317,6 +317,11 @@ static inline unsigned short hfsplus_min_io_size(struct super_block *sb)
- 
- 
- /*
-+ * hfs+-specific ioctl for making the filesystem bootable
-+ */
-+#define HFSPLUS_IOC_BLESS _IO('h', 0x80)
-+
-+/*
-  * Functions in any *.c used in other files
-  */
- 
-diff --git a/fs/hfsplus/ioctl.c b/fs/hfsplus/ioctl.c
-index f66c765..c640ba5 100644
---- a/fs/hfsplus/ioctl.c
-+++ b/fs/hfsplus/ioctl.c
-@@ -20,6 +20,38 @@
- #include <asm/uaccess.h>
- #include "hfsplus_fs.h"
- 
-+/*
-+ * "Blessing" an HFS+ filesystem writes metadata to the superblock informing
-+ * the platform firmware which file to boot from
-+ */
-+static int hfsplus_ioctl_bless(struct file *file, int __user *user_flags)
-+{
-+	struct dentry *dentry = file->f_path.dentry;
-+	struct inode *inode = dentry->d_inode;
-+	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode->i_sb);
-+	struct hfsplus_vh *vh = sbi->s_vhdr;
-+	struct hfsplus_vh *bvh = sbi->s_backup_vhdr;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	mutex_lock(&sbi->vh_mutex);
-+
-+	/* Directory containing the bootable system */
-+	vh->finder_info[0] = bvh->finder_info[0] =
-+		cpu_to_be32(parent_ino(dentry));
-+
-+	/* Bootloader */
-+	vh->finder_info[1] = bvh->finder_info[1] = cpu_to_be32(inode->i_ino);
-+
-+	/* Per spec, the OS X system folder - same as finder_info[0] here */
-+	vh->finder_info[5] = bvh->finder_info[5] =
-+		cpu_to_be32(parent_ino(dentry));
-+
-+	mutex_unlock(&sbi->vh_mutex);
-+	return 0;
-+}
-+
- static int hfsplus_ioctl_getflags(struct file *file, int __user *user_flags)
- {
- 	struct inode *inode = file->f_path.dentry->d_inode;
-@@ -108,6 +140,8 @@ long hfsplus_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		return hfsplus_ioctl_getflags(file, argp);
- 	case HFSPLUS_IOC_EXT2_SETFLAGS:
- 		return hfsplus_ioctl_setflags(file, argp);
-+	case HFSPLUS_IOC_BLESS:
-+		return hfsplus_ioctl_bless(file, argp);
- 	default:
- 		return -ENOTTY;
- 	}
+I Cc Richard Purdie, to have his maintainer view on the platform LED
+declaration. Is it ok in the ts5500_led.c platform file, or should it
+better be moved into drivers/leds/leds-ts5500.c, or maybe directly
+declared in the main ts5500.c platform code?
+
+Thanks,
+Vivien.
+
 -- 
-1.7.7.6
-
+Vivien Didelot
+Savoir-faire Linux Inc.
+Tel: (514) 276-5468 #149
