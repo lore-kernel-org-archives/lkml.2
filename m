@@ -1,133 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2BFKNB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 05:13:01 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36368 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab2BFKNA (ORCPT
+	id S1753199Ab2BFKSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 05:18:35 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58990 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab2BFKSe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 05:13:00 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 6 Feb 2012 19:11:41 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [RFC] [PATCH 6/6] memcg: fix performance of
- mem_cgroup_begin_update_page_stat()
-Message-Id: <20120206191141.e854b311.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120206190627.7313ff82.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20120206190627.7313ff82.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Feb 2012 05:18:34 -0500
+MIME-Version: 1.0
+X-Originating-IP: [87.66.62.139]
+In-Reply-To: <201202051204.38717.rjw@sisk.pl>
+References: <1328227065-22045-1-git-send-email-venki@google.com>
+	<CAN5iSWo-n7OER4i1tPoeGBhY_RY-nX=7n4B3mFv1f0JK074bhQ@mail.gmail.com>
+	<20120205035057.GA4948@gs62>
+	<201202051204.38717.rjw@sisk.pl>
+Date: Mon, 6 Feb 2012 11:18:33 +0100
+Message-ID: <CAORVsuVCYp+Fmfaje-UDnv1=x0PqApML6Jb-Z6EG0425SuREMg@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH] CPU C-state breakage with PM Qos change
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, markgross@thegnar.org
+Cc: Kevin Hilman <khilman@ti.com>, Venkatesh Pallipadi <venki@google.com>,
+        linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Pihet-XID, Jean" <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 4094b65b9c0a368a34b8c3d42df1ce0ebfa1edf8 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 6 Feb 2012 12:14:47 +0900
-Subject: [PATCH 6/6] memcg: fix performance of mem_cgroup_begin_update_page_stat()
+Hi Rafael, Mark,
 
-mem_cgroup_begin_update_page_stat() should be very fast because
-it's called very frequently. Now, it needs to look up page_cgroup
-and its memcg....this is slow.
+On Sun, Feb 5, 2012 at 12:04 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Sunday, February 05, 2012, mark gross wrote:
+>> On Fri, Feb 03, 2012 at 03:04:43PM +0100, Pihet-XID, Jean wrote:
+>> > Looping in linux-pm
+>> >
+>> > On Fri, Feb 3, 2012 at 1:14 AM, Venkatesh Pallipadi <venki@google.com> wrote:
+>> > > Looks like change "PM QoS: Move and rename the implementation files"
+>> > > made pm_qos depend on CONFIG_PM which depends on
+>> > > PM_SLEEP || PM_RUNTIME
+>> > >
+>> > > That breaks CPU C-states with kernels not having these CONFIGs, causing CPUs
+>> > > to spend time in Polling loop idle instead of going into deep C-states,
+>> > > consuming way way more power. This is with either acpi idle or intel idle
+>> > > enabled.
+>> > >
+>> > > Either CONFIG_PM should be enabled with any pm_qos users or
+>> > > the !CONFIG_PM pm_qos_request() should return sane defaults not to break
+>> > > the existing users. Here's is the patch for the latter option.
+>> > I think the real question is whether PM QoS should be functional in
+>> > all cases (as is ACPI) or whether only if certain options are set
+>> > (CONFIG_PM).
+>> > In the current code if CONFIG_PM is not enabled, a dummy PM QoS API is
+>> > provided as function stubs in order for the build to succeed.
+>> >
+>> > Rafael, Mark,
+>> > What do you think? Should PM QoS be enabled in all cases? Are there
+>> > any known dependencies with CONFIG_PM?
+>>
+>> Yes I do think pm_qos interfaces should be enabled all the time and be
+>> independent of CONFIG_PM.  Also, I still am not a fan of the renaming
+>> patch but, as the argument for and against renaming cannot be based on
+>> quantifiable things I've chosen not to let it bother me.
+>>
+>> I think Venki's change is a band aid and we should fix it right by not
+>> having a dependency on config_pm for the interface to behave.
+>>
+>> I'll take a look at why there is now a dependency before I have more to
+>> say.
+>
+> In kernel/power/Makefile:
+>
+> obj-$(CONFIG_PM)                += main.o qos.o
+>
+> I guess that explains things. :-)
+Initially I thought we should have a way of disabling the feature on
+some (minimal) kernels and so thought CONFIG_PM was the option to use.
 
-This patch adds a global variable to check "a memcg is moving or not".
-By this, the caller doesn't need to visit page_cgroup and memcg.
-This makes performance quicker.
+> It's quite easy to make qos.o be independent of CONFIG_PM, in which case the
+> code added by Venki can be removed, so patches welcome (for 3.4, though).
+I am working on it, more to come soon.
 
-Here is a test result. A test program makes page faults onto a file,
-MAP_SHARED and makes each page's page_mapcount(page) > 1, and free
-the range by madvise() and page fault again.  This program causes
-26214400 times of page fault onto a file(size was 1G.) and shows
-shows the cost of mem_cgroup_begin_update_page_stat().
-(please see 'sys' time and think error range is 0.2 - 0.4sec.)
+>
+> Thanks,
+> Rafael
 
-Before the series of patch (linux-next Feb/06)
-[kamezawa@bluextal test]$ time ./mmap 1G
+Thanks,
+Jean
 
-real    0m23.534s
-user    0m5.949s
-sys     0m17.563s
-
-After the patch for mem_cgroup_begin_update_page_stat()
-[kamezawa@bluextal test]$ time ./mmap 1G
-
-real    0m24.268s
-user    0m6.059s
-sys     0m18.187s
-
-After this patch
-[kamezawa@bluextal test]$ time ./mmap 1G
-
-real    0m23.094s
-user    0m6.045s
-sys     0m17.030s
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memcontrol.h |    5 +++--
- mm/memcontrol.c            |    6 +++++-
- 2 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 3f3ef33..3df9979 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -143,7 +143,7 @@ static inline bool mem_cgroup_disabled(void)
- 
- void __mem_cgroup_begin_update_page_stat(struct page *page,
- 					bool *lock, unsigned long *flags);
--
-+extern atomic_t memcg_moving;
- static inline void mem_cgroup_begin_update_page_stat(struct page *page,
- 					bool *lock, unsigned long *flags)
- {
-@@ -151,7 +151,8 @@ static inline void mem_cgroup_begin_update_page_stat(struct page *page,
- 		return;
- 	rcu_read_lock();
- 	*lock = false;
--	return __mem_cgroup_begin_update_page_stat(page, lock, flags);
-+	if (atomic_read(&memcg_moving))
-+		return __mem_cgroup_begin_update_page_stat(page, lock, flags);
- }
- 
- void __mem_cgroup_end_update_page_stat(struct page *page, bool *lock,
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index eedabee..322e381 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1273,16 +1273,20 @@ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
-  *         start move here.
-  */
- 
-+atomic_t memcg_moving __read_mostly;
- static void mem_cgroup_start_move(struct mem_cgroup *memcg)
- {
-+	atomic_inc(&memcg_moving);
- 	atomic_inc(&memcg->moving_account);
- 	synchronize_rcu();
- }
- 
- static void mem_cgroup_end_move(struct mem_cgroup *memcg)
- {
--	if (memcg)
-+	if (memcg) {
- 		atomic_dec(&memcg->moving_account);
-+		atomic_dec(&memcg_moving);
-+	}
- }
- /*
-  * 2 routines for checking "mem" is under move_account() or not.
--- 
-1.7.4.1
-
-
+> _______________________________________________
+> linux-pm mailing list
+> linux-pm@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/linux-pm
