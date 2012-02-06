@@ -1,168 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab2BFXCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:02:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48296 "EHLO mx2.suse.de"
+	id S1756341Ab2BFXCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 18:02:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56102 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab2BFW4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:56:33 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 14/15] mm: Throttle direct reclaimers if PF_MEMALLOC reserves are low and swap is backed by network storage
-Date: Mon,  6 Feb 2012 22:56:17 +0000
-Message-Id: <1328568978-17553-15-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1328568978-17553-1-git-send-email-mgorman@suse.de>
-References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
+	id S1756266Ab2BFXCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 18:02:10 -0500
+From: Adam Jackson <ajax@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, greg@kroah.com
+Subject: [PATCH] char/mem: Make /dev/port less obviously broken (v0)
+Date: Mon,  6 Feb 2012 18:02:02 -0500
+Message-Id: <1328569322-19165-1-git-send-email-ajax@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If swap is backed by network storage such as NBD, there is a risk
-that a large number of reclaimers can hang the system by consuming
-all PF_MEMALLOC reserves. To avoid these hangs, the administrator
-must tune min_free_kbytes in advance. This patch will throttle direct
-reclaimers if half the PF_MEMALLOC reserves are in use as the system
-is at risk of hanging.
+Did you know /dev/port turns all reads and writes into a stream of inb
+and outb?  Turns out hardware really does care about I/O cycle size
+though, and if you're trying to do an outl four outb's is very much not
+the same thing.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+However, someone somewhere probably built some code and hardware that
+relies on that behaviour.  Plus, userspace needs to be able to tell
+whether the kernel will do the right thing, and fall back to raw port
+access if not.  So add an ioctl to request new 'strict' semantics, which
+allows only exactly 1/2/4 byte cycles and translates them into the
+corresponding I/O cycle size.  This matches the behaviour of sysfs's
+resourceN files for I/O BARs.
+
+Known issues:
+
+- Where should this ioctl go?  There's not a good header for it already
+  installed, at least not on amd64.
+- Is it worth allowing and ignoring 0-byte cycles?  Probably not.
+- Does the kernel also need to reject misaligned I/O?  Probably not?
+  The IA32 manual doesn't specify an exception for this case, and
+  actually trying it on a C2D just returns -1, so it's probably safe
+  to just pass that through.
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
 ---
- include/linux/mmzone.h |    1 +
- mm/page_alloc.c        |    1 +
- mm/vmscan.c            |   71 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 73 insertions(+), 0 deletions(-)
+ drivers/char/mem.c |  125 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 125 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 650ba2f..eea0398 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -662,6 +662,7 @@ typedef struct pglist_data {
- 					     range, including holes */
- 	int node_id;
- 	wait_queue_head_t kswapd_wait;
-+	wait_queue_head_t pfmemalloc_wait;
- 	struct task_struct *kswapd;
- 	int kswapd_max_order;
- 	enum zone_type classzone_idx;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 7c26962..01138a6 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4281,6 +4281,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	pgdat_resize_init(pgdat);
- 	pgdat->nr_zones = 0;
- 	init_waitqueue_head(&pgdat->kswapd_wait);
-+	init_waitqueue_head(&pgdat->pfmemalloc_wait);
- 	pgdat->kswapd_max_order = 0;
- 	pgdat_page_cgroup_init(pgdat);
- 	
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c52b235..87ae4314 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2425,6 +2425,49 @@ out:
- 	return 0;
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index d6e9d08..12892a1 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -571,6 +571,8 @@ static ssize_t write_kmem(struct file *file, const char __user *buf,
+ #endif
+ 
+ #ifdef CONFIG_DEVPORT
++static const struct file_operations port_strict_fops, port_fops; 
++
+ static ssize_t read_port(struct file *file, char __user *buf,
+ 			 size_t count, loff_t *ppos)
+ {
+@@ -589,6 +591,46 @@ static ssize_t read_port(struct file *file, char __user *buf,
+ 	return tmp-buf;
  }
  
-+static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
++static ssize_t read_port_strict(struct file *file, char __user *buf,
++				size_t count, loff_t *ppos)
 +{
-+	struct zone *zone;
-+	unsigned long pfmemalloc_reserve = 0;
-+	unsigned long free_pages = 0;
-+	int i;
++	unsigned long port = *ppos;
++	const char __user * tmp = buf;
 +
-+	for (i = 0; i <= ZONE_NORMAL; i++) {
-+		zone = &pgdat->node_zones[i];
-+		pfmemalloc_reserve += min_wmark_pages(zone);
-+		free_pages += zone_page_state(zone, NR_FREE_PAGES);
++	switch (count) {
++		case 0:
++		case 1:
++		case 2:
++		case 4:
++		        break;
++		default:
++			return -EINVAL;
 +	}
 +
-+	return (free_pages > pfmemalloc_reserve / 2) ? true : false;
++	if (!access_ok(VERIFY_WRITE, buf, count))
++		return -EFAULT;
++
++	switch (count) {
++		case 0:
++			break;
++		case 1:
++			if (__put_user(inb(port), tmp) < 0)
++				return -EFAULT;
++			break;
++		case 2:
++			if (__put_user(inw(port), tmp) < 0)
++				return -EFAULT;
++			break;
++		case 4:
++			if (__put_user(inl(port), tmp) < 0)
++				return -EFAULT;
++			break;
++	}
++
++	*ppos += count;
++	return count;
 +}
 +
-+/*
-+ * Throttle direct reclaimers if backing storage is backed by the network
-+ * and the PFMEMALLOC reserve for the preferred node is getting dangerously
-+ * depleted. kswapd will continue to make progress and wake the processes
-+ * when the low watermark is reached
-+ */
-+static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
-+					nodemask_t *nodemask)
-+{
-+	struct zone *zone;
-+	int high_zoneidx = gfp_zone(gfp_mask);
-+	DEFINE_WAIT(wait);
-+
-+	/* Kernel threads such as kjournald should not be throttled */
-+	if (current->flags & PF_KTHREAD)
-+		return;
-+
-+	/* Check if the pfmemalloc reserves are ok */
-+	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
-+	if (pfmemalloc_watermark_ok(zone->zone_pgdat))
-+		return;
-+
-+	/* Throttle */
-+	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
-+		pfmemalloc_watermark_ok(zone->zone_pgdat));
-+}
-+
- unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 				gfp_t gfp_mask, nodemask_t *nodemask)
+ static ssize_t write_port(struct file *file, const char __user *buf,
+ 			  size_t count, loff_t *ppos)
  {
-@@ -2443,6 +2486,15 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 		.gfp_mask = sc.gfp_mask,
- 	};
+@@ -611,6 +653,80 @@ static ssize_t write_port(struct file *file, const char __user *buf,
+ 	*ppos = i;
+ 	return tmp-buf;
+ }
++
++static ssize_t write_port_strict(struct file *file, const char __user *buf,
++				 size_t count, loff_t *ppos)
++{
++	unsigned long port = *ppos;
++	const char __user * tmp = buf;
++	u8 byte;
++	u16 word;
++	u32 dword;
++
++	switch (count) {
++		case 0:
++		case 1:
++		case 2:
++		case 4:
++			break;
++		default:
++			return -EINVAL;
++	}
++
++	if (!access_ok(VERIFY_READ, buf, count))
++		return -EFAULT;
++
++	switch (count) {
++		case 0:
++			break;
++		case 1:
++			if (__get_user(byte, tmp))
++				return -EFAULT;
++			outb(byte, port);
++			break;
++		case 2:
++			if (__get_user(word, tmp))
++				return -EFAULT;
++			outw(word, port);
++			break;
++		case 4:
++			if (__get_user(dword, tmp))
++				return -EFAULT;
++			outl(dword, port);
++			break;
++		default:
++			return -EINVAL;
++	}
++
++	*ppos += count;
++	return count;
++}
++
++#ifndef DEVPORT_STRICT
++#define DEVPORT_STRICT _IOW(0xd0, 'p' + 0, u32)
++#endif
++
++static long ioctl_port(struct file *filp, unsigned int op, unsigned long arg)
++{
++	switch (op) {
++		case DEVPORT_STRICT: {
++			u32 val;
++
++			if (copy_from_user(&val, (void __user *)arg,
++					   _IOC_SIZE(op)))
++				return -EINVAL;
++
++			filp->f_op = val ? &port_strict_fops : &port_fops;
++			
++			break;
++		}
++
++		default:
++			return -EINVAL;
++	}
++
++	return 0;
++}
+ #endif
  
-+	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
+ static ssize_t read_null(struct file *file, char __user *buf,
+@@ -773,6 +889,15 @@ static const struct file_operations port_fops = {
+ 	.read		= read_port,
+ 	.write		= write_port,
+ 	.open		= open_port,
++	.unlocked_ioctl = ioctl_port,
++};
 +
-+	/*
-+	 * Do not enter reclaim if fatal signal is pending. 1 is returned so
-+	 * that the page allocator does not consider triggering OOM
-+	 */
-+	if (fatal_signal_pending(current))
-+		return 1;
-+
- 	trace_mm_vmscan_direct_reclaim_begin(order,
- 				sc.may_writepage,
- 				gfp_mask);
-@@ -2840,6 +2892,12 @@ loop_again:
- 			}
++static const struct file_operations port_strict_fops = {
++	.llseek		= memory_lseek,
++	.read		= read_port_strict,
++	.write		= write_port_strict,
++	.open		= open_port,
++	.unlocked_ioctl = ioctl_port,
+ };
+ #endif
  
- 		}
-+
-+		/* Wake throttled direct reclaimers if low watermark is met */
-+		if (waitqueue_active(&pgdat->pfmemalloc_wait) &&
-+				pfmemalloc_watermark_ok(pgdat))
-+			wake_up(&pgdat->pfmemalloc_wait);
-+
- 		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
- 			break;		/* kswapd: all done */
- 		/*
-@@ -2961,6 +3019,19 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
- 		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
- 
- 		/*
-+		 * There is a potential race between when kswapd checks it
-+		 * watermarks and a process gets throttled. There is also
-+		 * a potential race if processes get throttled, kswapd wakes,
-+		 * a large process exits therby balancing the zones that causes
-+		 * kswapd to miss a wakeup. If kswapd is going to sleep, no
-+		 * process should be sleeping on pfmemalloc_wait so wake them
-+		 * now if necessary. If necessary, processes will wake kswapd
-+		 * and get throttled again
-+		 */
-+		if (waitqueue_active(&pgdat->pfmemalloc_wait))
-+			wake_up(&pgdat->pfmemalloc_wait);
-+
-+		/*
- 		 * vmstat counters are not perfectly accurate and the estimated
- 		 * value for counters such as NR_FREE_PAGES can deviate from the
- 		 * true value by nr_online_cpus * threshold. To avoid the zone
 -- 
-1.7.3.4
+1.7.8.4
 
