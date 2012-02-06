@@ -1,206 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab2BFXCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:02:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56102 "EHLO mx1.redhat.com"
+	id S1756172Ab2BFW4d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:56:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48274 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756266Ab2BFXCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 18:02:10 -0500
-From: Adam Jackson <ajax@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, greg@kroah.com
-Subject: [PATCH] char/mem: Make /dev/port less obviously broken (v0)
-Date: Mon,  6 Feb 2012 18:02:02 -0500
-Message-Id: <1328569322-19165-1-git-send-email-ajax@redhat.com>
+	id S1756126Ab2BFW4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 17:56:30 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 10/15] netvm: Propagate page->pfmemalloc from netdev_alloc_page to skb
+Date: Mon,  6 Feb 2012 22:56:13 +0000
+Message-Id: <1328568978-17553-11-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1328568978-17553-1-git-send-email-mgorman@suse.de>
+References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Did you know /dev/port turns all reads and writes into a stream of inb
-and outb?  Turns out hardware really does care about I/O cycle size
-though, and if you're trying to do an outl four outb's is very much not
-the same thing.
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If page splitting is used, it is possible that pages will
+be allocated from the PFMEMALLOC reserve without propagating this
+information to the skb. This patch propagates page->pfmemalloc from
+pages allocated for fragments to the skb.
 
-However, someone somewhere probably built some code and hardware that
-relies on that behaviour.  Plus, userspace needs to be able to tell
-whether the kernel will do the right thing, and fall back to raw port
-access if not.  So add an ioctl to request new 'strict' semantics, which
-allows only exactly 1/2/4 byte cycles and translates them into the
-corresponding I/O cycle size.  This matches the behaviour of sysfs's
-resourceN files for I/O BARs.
+It works by reintroducing and expanding the netdev_alloc_page() API
+to take an skb. If the page was allocated from pfmemalloc reserves,
+it is automatically copied. If the driver allocates the page before
+the skb, it should call propagate_pfmemalloc_skb() after the skb is
+allocated to ensure the flag is copied properly.
 
-Known issues:
+Failure to do so is not critical. The resulting driver may perform
+slower if it is used for swap-over-NBD or swap-over-NFS but it should
+not result in failure.
 
-- Where should this ioctl go?  There's not a good header for it already
-  installed, at least not on amd64.
-- Is it worth allowing and ignoring 0-byte cycles?  Probably not.
-- Does the kernel also need to reject misaligned I/O?  Probably not?
-  The IA32 manual doesn't specify an exception for this case, and
-  actually trying it on a C2D just returns -1, so it's probably safe
-  to just pass that through.
-
-Signed-off-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- drivers/char/mem.c |  125 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 125 insertions(+), 0 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb4/sge.c          |    2 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/sge.c        |    2 +-
+ drivers/net/ethernet/intel/igb/igb_main.c         |    2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |    2 +-
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    3 +-
+ drivers/net/usb/cdc-phonet.c                      |    2 +-
+ drivers/usb/gadget/f_phonet.c                     |    2 +-
+ include/linux/skbuff.h                            |   38 +++++++++++++++++++++
+ 8 files changed, 46 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index d6e9d08..12892a1 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -571,6 +571,8 @@ static ssize_t write_kmem(struct file *file, const char __user *buf,
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/sge.c b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+index 2dae795..05f02b3 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+@@ -528,7 +528,7 @@ static unsigned int refill_fl(struct adapter *adap, struct sge_fl *q, int n,
  #endif
  
- #ifdef CONFIG_DEVPORT
-+static const struct file_operations port_strict_fops, port_fops; 
-+
- static ssize_t read_port(struct file *file, char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
-@@ -589,6 +591,46 @@ static ssize_t read_port(struct file *file, char __user *buf,
- 	return tmp-buf;
+ 	while (n--) {
+-		pg = alloc_page(gfp);
++		pg = __netdev_alloc_page(gfp, NULL);
+ 		if (unlikely(!pg)) {
+ 			q->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+index 0bd585b..e8a372e 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+@@ -653,7 +653,7 @@ static unsigned int refill_fl(struct adapter *adapter, struct sge_fl *fl,
+ 
+ alloc_small_pages:
+ 	while (n--) {
+-		page = alloc_page(gfp | __GFP_NOWARN | __GFP_COLD);
++		page = __netdev_alloc_page(gfp | __GFP_NOWARN, NULL);
+ 		if (unlikely(!page)) {
+ 			fl->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index e91d73c..c062909 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6187,7 +6187,7 @@ static bool igb_alloc_mapped_page(struct igb_ring *rx_ring,
+ 		return true;
+ 
+ 	if (!page) {
+-		page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++		page = __netdev_alloc_page(GFP_ATOMIC, bi->skb);
+ 		bi->page = page;
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_failed++;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 1ee5d0f..7a011c3 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -1143,7 +1143,7 @@ void ixgbe_alloc_rx_buffers(struct ixgbe_ring *rx_ring, u16 cleaned_count)
+ 
+ 		if (ring_is_ps_enabled(rx_ring)) {
+ 			if (!bi->page) {
+-				bi->page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++				bi->page = __netdev_alloc_page(GFP_ATOMIC, skb);
+ 				if (!bi->page) {
+ 					rx_ring->rx_stats.alloc_rx_page_failed++;
+ 					goto no_buffers;
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index bed411b..f6ea14a 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -366,7 +366,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 		if (!bi->page_dma &&
+ 		    (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED)) {
+ 			if (!bi->page) {
+-				bi->page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++				bi->page = __netdev_alloc_page(GFP_ATOMIC, NULL);
+ 				if (!bi->page) {
+ 					adapter->alloc_rx_page_failed++;
+ 					goto no_buffers;
+@@ -400,6 +400,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 			 */
+ 			skb_reserve(skb, NET_IP_ALIGN);
+ 
++			propagate_pfmemalloc_skb(bi->page_dma, skb);
+ 			bi->skb = skb;
+ 		}
+ 		if (!bi->dma) {
+diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
+index 790cbde..51c8b9e 100644
+--- a/drivers/net/usb/cdc-phonet.c
++++ b/drivers/net/usb/cdc-phonet.c
+@@ -130,7 +130,7 @@ static int rx_submit(struct usbpn_dev *pnd, struct urb *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __netdev_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
+index 7cdcb63..a5550dd 100644
+--- a/drivers/usb/gadget/f_phonet.c
++++ b/drivers/usb/gadget/f_phonet.c
+@@ -301,7 +301,7 @@ pn_rx_submit(struct f_phonet *fp, struct usb_request *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __netdev_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 17ed022..8da4ca0 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1696,6 +1696,44 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
  }
  
-+static ssize_t read_port_strict(struct file *file, char __user *buf,
-+				size_t count, loff_t *ppos)
+ /**
++ *	__netdev_alloc_page - allocate a page for ps-rx on a specific device
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *
++ * 	Allocate a new page. dev currently unused.
++ *
++ * 	%NULL is returned if there is no free memory.
++ */
++static inline struct page *__netdev_alloc_page(gfp_t gfp_mask,
++						struct sk_buff *skb)
 +{
-+	unsigned long port = *ppos;
-+	const char __user * tmp = buf;
++	struct page *page;
 +
-+	switch (count) {
-+		case 0:
-+		case 1:
-+		case 2:
-+		case 4:
-+		        break;
-+		default:
-+			return -EINVAL;
-+	}
++	gfp_mask |= __GFP_COLD;
 +
-+	if (!access_ok(VERIFY_WRITE, buf, count))
-+		return -EFAULT;
++	if (!(gfp_mask & __GFP_NOMEMALLOC))
++		gfp_mask |= __GFP_MEMALLOC;
 +
-+	switch (count) {
-+		case 0:
-+			break;
-+		case 1:
-+			if (__put_user(inb(port), tmp) < 0)
-+				return -EFAULT;
-+			break;
-+		case 2:
-+			if (__put_user(inw(port), tmp) < 0)
-+				return -EFAULT;
-+			break;
-+		case 4:
-+			if (__put_user(inl(port), tmp) < 0)
-+				return -EFAULT;
-+			break;
-+	}
++	page = alloc_pages_node(NUMA_NO_NODE, gfp_mask, 0);
++	if (skb && page && page->pfmemalloc)
++		skb->pfmemalloc = true;
 +
-+	*ppos += count;
-+	return count;
++	return page;
 +}
 +
- static ssize_t write_port(struct file *file, const char __user *buf,
- 			  size_t count, loff_t *ppos)
- {
-@@ -611,6 +653,80 @@ static ssize_t write_port(struct file *file, const char __user *buf,
- 	*ppos = i;
- 	return tmp-buf;
- }
-+
-+static ssize_t write_port_strict(struct file *file, const char __user *buf,
-+				 size_t count, loff_t *ppos)
++/**
++ *	propagate_pfmemalloc_skb - Propagate pfmemalloc if skb is allocated after RX page
++ *	@page: The page that was allocated from netdev_alloc_page
++ *	@skb: The skb that may need pfmemalloc set
++ */
++static inline void propagate_pfmemalloc_skb(struct page *page,
++						struct sk_buff *skb)
 +{
-+	unsigned long port = *ppos;
-+	const char __user * tmp = buf;
-+	u8 byte;
-+	u16 word;
-+	u32 dword;
-+
-+	switch (count) {
-+		case 0:
-+		case 1:
-+		case 2:
-+		case 4:
-+			break;
-+		default:
-+			return -EINVAL;
-+	}
-+
-+	if (!access_ok(VERIFY_READ, buf, count))
-+		return -EFAULT;
-+
-+	switch (count) {
-+		case 0:
-+			break;
-+		case 1:
-+			if (__get_user(byte, tmp))
-+				return -EFAULT;
-+			outb(byte, port);
-+			break;
-+		case 2:
-+			if (__get_user(word, tmp))
-+				return -EFAULT;
-+			outw(word, port);
-+			break;
-+		case 4:
-+			if (__get_user(dword, tmp))
-+				return -EFAULT;
-+			outl(dword, port);
-+			break;
-+		default:
-+			return -EINVAL;
-+	}
-+
-+	*ppos += count;
-+	return count;
++	if (page && page->pfmemalloc)
++		skb->pfmemalloc = true;
 +}
 +
-+#ifndef DEVPORT_STRICT
-+#define DEVPORT_STRICT _IOW(0xd0, 'p' + 0, u32)
-+#endif
-+
-+static long ioctl_port(struct file *filp, unsigned int op, unsigned long arg)
-+{
-+	switch (op) {
-+		case DEVPORT_STRICT: {
-+			u32 val;
-+
-+			if (copy_from_user(&val, (void __user *)arg,
-+					   _IOC_SIZE(op)))
-+				return -EINVAL;
-+
-+			filp->f_op = val ? &port_strict_fops : &port_fops;
-+			
-+			break;
-+		}
-+
-+		default:
-+			return -EINVAL;
-+	}
-+
-+	return 0;
-+}
- #endif
- 
- static ssize_t read_null(struct file *file, char __user *buf,
-@@ -773,6 +889,15 @@ static const struct file_operations port_fops = {
- 	.read		= read_port,
- 	.write		= write_port,
- 	.open		= open_port,
-+	.unlocked_ioctl = ioctl_port,
-+};
-+
-+static const struct file_operations port_strict_fops = {
-+	.llseek		= memory_lseek,
-+	.read		= read_port_strict,
-+	.write		= write_port_strict,
-+	.open		= open_port,
-+	.unlocked_ioctl = ioctl_port,
- };
- #endif
- 
++/**
+  * skb_frag_page - retrieve the page refered to by a paged fragment
+  * @frag: the paged fragment
+  *
 -- 
-1.7.8.4
+1.7.3.4
 
