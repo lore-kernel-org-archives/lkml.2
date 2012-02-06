@@ -1,121 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab2BFLg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 06:36:26 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10535 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754589Ab2BFLgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 06:36:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="104482662"
-Subject: Re: [PATCH v3] dmaengine: Add support for MEMCPY for imx-dma.
-From: Vinod Koul <vinod.koul@intel.com>
-To: Javier Martin <javier.martin@vista-silicon.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dan.j.williams@intel.com, s.hauer@pengutronix.de
-In-Reply-To: <1328006840-7345-1-git-send-email-javier.martin@vista-silicon.com>
-References: <1328006840-7345-1-git-send-email-javier.martin@vista-silicon.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Feb 2012 17:08:14 +0530
-Message-ID: <1328528294.26182.80.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754865Ab2BFLhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 06:37:25 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52170 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754589Ab2BFLhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 06:37:22 -0500
+Date: Mon, 6 Feb 2012 11:37:20 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-arch@vger.kernel.org,
+        linux-mips@linux-mips.org, uclinux-dist-devel@blackfin.uclinux.org,
+        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH] gpiolib/arches: Centralise bolierplate asm/gpio.h
+Message-ID: <20120206113720.GG3070@opensource.wolfsonmicro.com>
+References: <1328370879-18523-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20120204170632.GA3615@merkur.ravnborg.org>
+ <20120204174115.GX889@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PpAOPzA3dXsRhoo+"
+Content-Disposition: inline
+In-Reply-To: <20120204174115.GX889@n2100.arm.linux.org.uk>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-31 at 11:47 +0100, Javier Martin wrote:
-> MEMCPY transfers allow DMA copies from memory to
-> memory. This patch has been tested with dmatest
-> device driver.
-> 
-> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
-> ---
->  drivers/dma/imx-dma.c |   36 +++++++++++++++++++++++++++++++++++-
->  1 files changed, 35 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> index 3296a73..9aa6e85 100644
-> --- a/drivers/dma/imx-dma.c
-> +++ b/drivers/dma/imx-dma.c
-> @@ -196,7 +196,8 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
->  	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
->  	struct imx_dma_data *data = chan->private;
->  
-> -	imxdmac->dma_request = data->dma_request;
-> +	if (data != NULL)
-> +		imxdmac->dma_request = data->dma_request;
-if you support memcopy then why should it _always_ require private
-pointer?
->  
->  	dma_async_tx_descriptor_init(&imxdmac->desc, chan);
->  	imxdmac->desc.tx_submit = imxdma_tx_submit;
-> @@ -328,6 +329,36 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
->  	return &imxdmac->desc;
->  }
->  
-> +static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
-> +	struct dma_chan *chan, dma_addr_t dest,
-> +	dma_addr_t src, size_t len, unsigned long flags)
-> +{
-> +	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-> +	struct imxdma_engine *imxdma = imxdmac->imxdma;
-> +	int ret;
-> +
-> +	dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
-> +			__func__, imxdmac->channel, src, dest, len);
-> +
-> +	if (imxdmac->status == DMA_IN_PROGRESS)
-> +		return NULL;
-thats not right, you should be able to prepare descriptors even if dmac
-is busy. Prepare != start
-> +	imxdmac->status = DMA_IN_PROGRESS;
-> +
-> +	ret = imx_dma_config_channel(imxdmac->imxdma_channel,
-> +			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
-> +			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
-> +			       0, 0);
-> +	if (ret)
-> +		return NULL;
-> +
-> +	ret = imx_dma_setup_single(imxdmac->imxdma_channel, src, len,
-> +				   dest, DMA_MODE_WRITE);
-> +	if (ret)
-> +		return NULL;
-> +
-> +	return &imxdmac->desc;
-> +}
-> +
->  static void imxdma_issue_pending(struct dma_chan *chan)
->  {
->  	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-> @@ -349,6 +380,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
->  
->  	dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
->  	dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
-> +	dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
->  
->  	/* Initialize channel parameters */
->  	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-> @@ -382,11 +414,13 @@ static int __init imxdma_probe(struct platform_device *pdev)
->  	imxdma->dma_device.device_tx_status = imxdma_tx_status;
->  	imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
->  	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
-> +	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
->  	imxdma->dma_device.device_control = imxdma_control;
->  	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
->  
->  	platform_set_drvdata(pdev, imxdma);
->  
-> +	imxdma->dma_device.copy_align = 2; /* 2^2 = 4 bytes alignment */
-what is this magic number?
->  	imxdma->dma_device.dev->dma_parms = &imxdma->dma_parms;
->  	dma_set_max_seg_size(imxdma->dma_device.dev, 0xffffff);
->  
 
+--PpAOPzA3dXsRhoo+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-~Vinod
+On Sat, Feb 04, 2012 at 05:41:15PM +0000, Russell King - ARM Linux wrote:
 
+> What's platform specific about asm/gpio.h is the number of GPIOs in
+> the system, and whether it wants to intercept the gpio_xxx() functions
+> to provide fast access to on-chip GPIOs.
+
+Plus the fact that it might be a completely non-standard API, and might
+totally override the gpiolib implementation.
+
+> What I'd suggest is moving asm-generic/gpio.h to linux/gpiolib.h, and
+> making asm-generic/gpio.h include that as a patch until stuff is fixed
+> for its new location.  That should result in a proper asm-generic/gpio.h
+> being:
+
+> Alternatively, instead of linux/gpiolib.h, put it in linux/gpio.h instead,
+> but that gets more icky because of the mess of asm/gpio.h includes (which
+> I've been banging on for years about in ARM patches and they're _still_
+> coming.)
+
+Yeah, though it is a bit neater if it's all in gpio.h and everyone is
+using gpiolib.  Perhaps something like the warnings I added on inclusion
+of asm/gpio.h without linux/gpio.h would help, though I certainly
+wouldn't expect it to solve anything.
+
+--PpAOPzA3dXsRhoo+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPL7tpAAoJEBus8iNuMP3d12YQAJa6Z9EArDWj12yuaVLeGewd
+3nUgd+GTaayJJo+I47NOMHevebKyErQd/y68c3YWmVXZdOi0kKZCLEupFGh1jf5B
+V5EphiOXY06SsHqrQXy67US1Mpf4ms2MQozBkvCEkZoF2LkwdOoZj9TCutnwquQs
+UD7SkQ0QQaIRehc5Y4+XM7KseFcCmyvK/mqEnRGfE9xNIln2JeStF3yifdjXeOzj
++6cHi9pN5Tw25mVARelZZmx7vCA9rAoNC8tVNWet9GtOWNRiEVbBlGoNeukeMdUT
+iYgPCeX/IOYBivJiULQijvOMAG0FfNr3DmrAGVgeSGPRPRILX53RaqsVDXT74zme
+CFFuz3BhtGpE8WkjiLAPNd84I8IGsvKgQKX/KQhatUbxjf7HvfAauJ2YxFEpjNps
+5UDmO5MfgsEAZ0zZXPfi67/kXjuhkPJ4PzYiwIE9MvWjLlWdEhEqmrPYVVjRwge8
+nZR2P9oJRMj5k5pQ1gwe37fgabFwXe09JR1K4yKT5rpaiihiEX2HfU9I8Gm5kJGY
++TQv44fnozuKj+i6SSgiDK2ljrnlZMAO8XCSemKOHtSoi67Wx40QOzw87QBMGw6H
+p5MDrmcw6Z1J65uXiJJTzf+FSkVc99RogMEL8nhIROIVv91TxR17/m1QPRMiVzvM
+WyCUwqMjTqqMAqum/gOz
+=ZpPo
+-----END PGP SIGNATURE-----
+
+--PpAOPzA3dXsRhoo+--
