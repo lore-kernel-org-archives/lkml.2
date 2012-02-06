@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2BFQhf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:37:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57657 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755250Ab2BFQha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:37:30 -0500
-Date: Mon, 6 Feb 2012 11:37:21 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Shaohua Li <vivek.goyal2008@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Knut Petersen <Knut_Petersen@t-online.de>,
-        mroos@linux.ee
-Subject: Re: [patch]block: fix ioc locking warning
-Message-ID: <20120206163721.GF30752@redhat.com>
-References: <1328514611.21268.66.camel@sli10-conroe>
- <20120206151219.GC30752@redhat.com>
- <4F2FFB21.9000202@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F2FFB21.9000202@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755467Ab2BFQhp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:37:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46846 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab2BFQhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 11:37:43 -0500
+Subject: Re: [BUG] perf: perf sched warning possibly due to clock
+ granularity on AMD
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, mingo@elte.hu, robert.richter@amd.com,
+        eric.dumazet@gmail.com, Andreas Herrmann <andreas.herrmann3@amd.com>
+In-Reply-To: <20120206153408.GA31237@aftab>
+References: <20120206132546.GA30854@quad> <1328538403.2482.4.camel@laptop>
+	 <20120206153408.GA31237@aftab>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Feb 2012 17:37:26 +0100
+Message-ID: <1328546246.2482.10.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 05:09:05PM +0100, Jens Axboe wrote:
-
-[..]
-> > Changlog was not obivious atleast to me. I wished it was little more
-> > descriptive. Anyway, patch is already committed..
+On Mon, 2012-02-06 at 16:34 +0100, Borislav Petkov wrote:
+> + Andreas.
 > 
-> We can always amend the changelog, so don't worry about it already being
-> committed. If you want to add/change something, just send it in.
+> On Mon, Feb 06, 2012 at 03:26:43PM +0100, Peter Zijlstra wrote:
+> > On Mon, 2012-02-06 at 14:25 +0100, Stephane Eranian wrote:
+> > > In summary, two issues:
+> > >   - Why is sched_clock_stable not set or even tested on recent AMD systems?
+> 
+> AFAICT, sched_clock_stable is set on Intel under the following conditions:
+> 
+>         /*
+>          * c->x86_power is 8000_0007 edx. Bit 8 is TSC runs at constant rate
+>          * with P/T states and does not stop in deep C-states.
+>          *
+>          * It is also reliable across cores and sockets. (but not across
+>          * cabinets - we turn it off in that case explicitly.)
+>          */
+>         if (c->x86_power & (1 << 8)) {
+>                 set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+>                 set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
+>                 if (!check_tsc_unstable())
+>                         sched_clock_stable = 1;
+>         }
+> 
+> and yes, we can do CONSTANT_TSC and NONSTOP_TSC on the now older F10h
+> already, so Bulldozer can do that too, implicitly.
+> 
+> I don't see why sched_clock_stable shouldn't be moved to generic x86
+> code and set based on the two CPUID cap flags above.
 
-How about something like as follows.
+stable means more than both those flags together.. 
+
+ - CONSTANT_TSC means freq independent
+ - NONSTOP_TSC means it doesn't get stopped in any C state
+
+Together they make TSC completely C-state independent.
+sched_clock_stable actually means that TSC is both _AND_ is consistent
+across all CPUs in the entire system.
 
 
-block: Do not lock try to lock already locked queue again
 
-put_io_context() can be called with one of the request queue lock 
-already held. But if the locked queue's cic is not first in the
-ioc->ioc_list, then we have two possible issues.
-
-- For above condition, current code bails out and schedules the worker
-  thread for freeing up ioc. This can be optimized.
-
-- It might happen that we received the queue locked but we still do the
-  trylock on the queue. For SMP case that's not a problem as we will
-  fail to lock already locked queue, but in case of UP, we seem to
-  succeed and in the process increment the preempt count. Once we are
-  done with ioc_exit_icq(), we do not call spin_unlock() on locked
-  queue as we are not supposed to. This leads to imbalance in preemtion
-  count and following warning was reported.
-
-This patch fixes both the above issues by making sure we do not try to
-lock already locked queue again.
-
-WARNING: at kernel/timer.c:1122 run_timer_softirq+0x199/0x1ec()
-Hardware name: 939Dual-SATA2
-timer: cfq_idle_slice_timer+0x0/0xaa preempt leak: 00000102 -> 00000103
-Modules linked in: sr_mod cdrom videodev media drm_kms_helper ohci_hcd ehci_hcd
-v4l2_compat_ioctl32 usbcore i2c_ali15x3 snd_seq drm snd_timer snd_seq
-Pid: 0, comm: swapper Not tainted 3.3.0-rc2-00110-gd125666 #176
-Call Trace:
-<IRQ>  [<ffffffff81022aaa>] warn_slowpath_common+0x7e/0x96
-[<ffffffff8114c485>] ? cfq_slice_expired+0x1d/0x1d
-[<ffffffff81022b56>] warn_slowpath_fmt+0x41/0x43
-[<ffffffff8114c526>] ? cfq_idle_slice_timer+0xa1/0xaa
-[<ffffffff8114c485>] ? cfq_slice_expired+0x1d/0x1d
-[<ffffffff8102c124>] run_timer_softirq+0x199/0x1ec
-[<ffffffff81047a53>] ? timekeeping_get_ns+0x12/0x31
-[<ffffffff810145fd>] ? apic_write+0x11/0x13
-[<ffffffff81027475>] __do_softirq+0x74/0xfa
-[<ffffffff812f337a>] call_softirq+0x1a/0x30
-[<ffffffff81002ff9>] do_softirq+0x31/0x68
-[<ffffffff810276cf>] irq_exit+0x3d/0xa3
-[<ffffffff81014aca>] smp_apic_timer_interrupt+0x6b/0x77
-[<ffffffff812f2de9>] apic_timer_interrupt+0x69/0x70
-<EOI>  [<ffffffff81040136>] ? sched_clock_cpu+0x73/0x7d
-[<ffffffff81040136>] ? sched_clock_cpu+0x73/0x7d
-[<ffffffff8100801f>] ? default_idle+0x1e/0x32
-[<ffffffff81008019>] ? default_idle+0x18/0x32
-[<ffffffff810008b1>] cpu_idle+0x87/0xd1
-[<ffffffff812de861>] rest_init+0x85/0x89
-[<ffffffff81659a4d>] start_kernel+0x2eb/0x2f8
-[<ffffffff8165926e>] x86_64_start_reservations+0x7e/0x82
-[<ffffffff81659362>] x86_64_start_kernel+0xf0/0xf7
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Reported-by: Meelis Roos <mroos@linux.ee>
-Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-Tested-by: Knut Petersen <Knut_Petersen@t-online.de>
-
-Thanks
-Vivek
