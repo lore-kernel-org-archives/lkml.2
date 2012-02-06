@@ -1,235 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab2BFPRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 10:17:36 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33343 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282Ab2BFPRc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 10:17:32 -0500
-From: Franck Bui-Huu <fbuihuu@gmail.com>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>
-Subject: [PATCH Try #2] perf doc: allow producing documentation in a specified output directory
-Date: Mon,  6 Feb 2012 16:17:23 +0100
-Message-Id: <1328541443-18003-1-git-send-email-fbuihuu@gmail.com>
-X-Mailer: git-send-email 1.7.7.4
+	id S1755365Ab2BFPRu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 10:17:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45910 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755348Ab2BFPRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 10:17:48 -0500
+Date: Mon, 6 Feb 2012 16:17:45 +0100
+From: Jan Kara <jack@suse.cz>
+To: Eric Sandeen <sandeen@sandeen.net>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/8] fs: Improve filesystem freezing handling
+Message-ID: <20120206151745.GD6890@quack.suse.cz>
+References: <1327091686-23177-1-git-send-email-jack@suse.cz>
+ <1327091686-23177-2-git-send-email-jack@suse.cz>
+ <4F2C9FF8.2010207@sandeen.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2C9FF8.2010207@sandeen.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we can put the object files in a different directory by
-using 'O=' comand line argument.
+On Fri 03-02-12 21:03:20, Eric Sandeen wrote:
+> On 1/20/12 2:34 PM, Jan Kara wrote:
+> > vfs_check_frozen() tests are racy since the filesystem can be frozen just after
+> > the test is performed. Thus in write paths we can end up marking some pages or
+> > inodes dirty even though filesystem is already frozen. This creates problems
+> > with flusher thread hanging on frozen filesystem.
+> > 
+> > Another problem is that exclusion between ->page_mkwrite() and filesystem
+> > freezing has been handled by setting page dirty and then verifying s_frozen.
+> > This guaranteed that either the freezing code sees the faulted page, writes it,
+> > and writeprotects it again or we see s_frozen set and bail out of page fault.
+> > This works to protect from page being marked writeable while filesystem
+> > freezing is running but has an unpleasant artefact of leaving dirty (although
+> > unmodified and writeprotected) pages on frozen filesystem resulting in similar
+> > problems with flusher thread as the first problem.
+> > 
+> > This patch aims at providing exclusion between write paths and filesystem
+> > freezing. We implement a writer-freeze read-write semaphores in the superblock
+> > for each freezing level (currently there are two - SB_FREEZE_WRITE for data and
+> > SB_FREEZE_TRANS for metadata). Write paths which should block freezing on given
+> > level (e.g. ->block_page_mkwrite(), ->aio_write() for SB_FREEZE_WRITE level;
+> > transaction lifetime for SB_FREEZE_TRANS level) hold reader side of the
+> > semaphore. Code freezing the filesystem to a given level takes the writer side.
+> > 
+> > Only that we don't really want to bounce cachelines of the semaphore between
+> > CPUs for each write happening. So we implement the reader side of the semaphore
+> > as a per-cpu counter and the writer side is implemented using s_frozen
+> > superblock field.
+> > 
+> > Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> 
+> ...
+> 
+> > @@ -135,6 +157,11 @@ static struct super_block *alloc_super(struct file_system_type *type)
+> >  #else
+> >  		INIT_LIST_HEAD(&s->s_files);
+> >  #endif
+> > +		if (init_sb_writers(s, SB_FREEZE_WRITE, "sb_writers_write"))
+> > +			goto err_out;
+> > +		if (init_sb_writers(s, SB_FREEZE_TRANS, "sb_writers_trans"))
+> > +			goto err_out;
+> > +
+> >  		s->s_bdi = &default_backing_dev_info;
+> >  		INIT_LIST_HEAD(&s->s_instances);
+> >  		INIT_HLIST_BL_HEAD(&s->s_anon);
+> > @@ -186,6 +213,17 @@ static struct super_block *alloc_super(struct file_system_type *type)
+> >  	}
+> >  out:
+> >  	return s;
+> > +err_out:
+> > +	security_sb_free(s);
+> > +#ifdef CONFIG_SMP
+> > +	if (s->s_files)
+> > +		free_percpu(s->s_files);
+> > +#endif
+> > +	destroy_sb_writers(s, SB_FREEZE_WRITE);
+> > +	destroy_sb_writers(s, SB_FREEZE_TRANS);
+> 
+> You probably ran into this already but the writer percpu vars need
+> to be torn down in destroy_super() as well.
+  Actually not. Thanks for spotting this.
 
-However the generated documentation files don't honor this directive,
-
-This patch fixes that. It's been tested for man target but the others
-seems currently broken so no tests have been done on them so far.
-
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
----
-
- Hi,
-
- The previous version used to pass the command line argument 'O' down
- to the doc sub makefile which was unneeded.
-
- Please consider.
-
- tools/perf/Documentation/Makefile |   86 ++++++++++++++++++++++--------------
- 1 files changed, 52 insertions(+), 34 deletions(-)
-
-diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-index 4626a39..ca600e0 100644
---- a/tools/perf/Documentation/Makefile
-+++ b/tools/perf/Documentation/Makefile
-@@ -1,3 +1,10 @@
-+OUTPUT := ./
-+ifeq ("$(origin O)", "command line")
-+  ifneq ($(O),)
-+	OUTPUT := $(O)/
-+  endif
-+endif
-+
- MAN1_TXT= \
- 	$(filter-out $(addsuffix .txt, $(ARTICLES) $(SP_ARTICLES)), \
- 		$(wildcard perf-*.txt)) \
-@@ -6,10 +13,11 @@ MAN5_TXT=
- MAN7_TXT=
- 
- MAN_TXT = $(MAN1_TXT) $(MAN5_TXT) $(MAN7_TXT)
--MAN_XML=$(patsubst %.txt,%.xml,$(MAN_TXT))
--MAN_HTML=$(patsubst %.txt,%.html,$(MAN_TXT))
-+_MAN_XML=$(patsubst %.txt,%.xml,$(MAN_TXT))
-+_MAN_HTML=$(patsubst %.txt,%.html,$(MAN_TXT))
- 
--DOC_HTML=$(MAN_HTML)
-+MAN_XML=$(addprefix $(OUTPUT),$(_MAN_XML))
-+MAN_HTML=$(addprefix $(OUTPUT),$(_MAN_HTML))
- 
- ARTICLES =
- # with their own formatting rules.
-@@ -18,11 +26,17 @@ API_DOCS = $(patsubst %.txt,%,$(filter-out technical/api-index-skel.txt technica
- SP_ARTICLES += $(API_DOCS)
- SP_ARTICLES += technical/api-index
- 
--DOC_HTML += $(patsubst %,%.html,$(ARTICLES) $(SP_ARTICLES))
-+_DOC_HTML = $(_MAN_HTML)
-+_DOC_HTML+=$(patsubst %,%.html,$(ARTICLES) $(SP_ARTICLES))
-+DOC_HTML=$(addprefix $(OUTPUT),$(_DOC_HTML))
- 
--DOC_MAN1=$(patsubst %.txt,%.1,$(MAN1_TXT))
--DOC_MAN5=$(patsubst %.txt,%.5,$(MAN5_TXT))
--DOC_MAN7=$(patsubst %.txt,%.7,$(MAN7_TXT))
-+_DOC_MAN1=$(patsubst %.txt,%.1,$(MAN1_TXT))
-+_DOC_MAN5=$(patsubst %.txt,%.5,$(MAN5_TXT))
-+_DOC_MAN7=$(patsubst %.txt,%.7,$(MAN7_TXT))
-+
-+DOC_MAN1=$(addprefix $(OUTPUT),$(_DOC_MAN1))
-+DOC_MAN5=$(addprefix $(OUTPUT),$(_DOC_MAN5))
-+DOC_MAN7=$(addprefix $(OUTPUT),$(_DOC_MAN7))
- 
- # Make the path relative to DESTDIR, not prefix
- ifndef DESTDIR
-@@ -150,9 +164,9 @@ man1: $(DOC_MAN1)
- man5: $(DOC_MAN5)
- man7: $(DOC_MAN7)
- 
--info: perf.info perfman.info
-+info: $(OUTPUT)perf.info $(OUTPUT)perfman.info
- 
--pdf: user-manual.pdf
-+pdf: $(OUTPUT)user-manual.pdf
- 
- install: install-man
- 
-@@ -166,7 +180,7 @@ install-man: man
- 
- install-info: info
- 	$(INSTALL) -d -m 755 $(DESTDIR)$(infodir)
--	$(INSTALL) -m 644 perf.info perfman.info $(DESTDIR)$(infodir)
-+	$(INSTALL) -m 644 $(OUTPUT)perf.info $(OUTPUT)perfman.info $(DESTDIR)$(infodir)
- 	if test -r $(DESTDIR)$(infodir)/dir; then \
- 	  $(INSTALL_INFO) --info-dir=$(DESTDIR)$(infodir) perf.info ;\
- 	  $(INSTALL_INFO) --info-dir=$(DESTDIR)$(infodir) perfman.info ;\
-@@ -176,7 +190,7 @@ install-info: info
- 
- install-pdf: pdf
- 	$(INSTALL) -d -m 755 $(DESTDIR)$(pdfdir)
--	$(INSTALL) -m 644 user-manual.pdf $(DESTDIR)$(pdfdir)
-+	$(INSTALL) -m 644 $(OUTPUT)user-manual.pdf $(DESTDIR)$(pdfdir)
- 
- #install-html: html
- #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
-@@ -189,14 +203,14 @@ install-pdf: pdf
- #
- # Determine "include::" file references in asciidoc files.
- #
--doc.dep : $(wildcard *.txt) build-docdep.perl
-+$(OUTPUT)doc.dep : $(wildcard *.txt) build-docdep.perl
- 	$(QUIET_GEN)$(RM) $@+ $@ && \
- 	$(PERL_PATH) ./build-docdep.perl >$@+ $(QUIET_STDERR) && \
- 	mv $@+ $@
- 
---include doc.dep
-+-include $(OUPTUT)doc.dep
- 
--cmds_txt = cmds-ancillaryinterrogators.txt \
-+_cmds_txt = cmds-ancillaryinterrogators.txt \
- 	cmds-ancillarymanipulators.txt \
- 	cmds-mainporcelain.txt \
- 	cmds-plumbinginterrogators.txt \
-@@ -205,32 +219,36 @@ cmds_txt = cmds-ancillaryinterrogators.txt \
- 	cmds-synchelpers.txt \
- 	cmds-purehelpers.txt \
- 	cmds-foreignscminterface.txt
-+cmds_txt=$(addprefix $(OUTPUT),$(_cmds_txt))
- 
--$(cmds_txt): cmd-list.made
-+$(cmds_txt): $(OUTPUT)cmd-list.made
- 
--cmd-list.made: cmd-list.perl ../command-list.txt $(MAN1_TXT)
-+$(OUTPUT)cmd-list.made: cmd-list.perl ../command-list.txt $(MAN1_TXT)
- 	$(QUIET_GEN)$(RM) $@ && \
- 	$(PERL_PATH) ./cmd-list.perl ../command-list.txt $(QUIET_STDERR) && \
- 	date >$@
- 
- clean:
--	$(RM) *.xml *.xml+ *.html *.html+ *.1 *.5 *.7
--	$(RM) *.texi *.texi+ *.texi++ perf.info perfman.info
--	$(RM) howto-index.txt howto/*.html doc.dep
--	$(RM) technical/api-*.html technical/api-index.txt
--	$(RM) $(cmds_txt) *.made
--
--$(MAN_HTML): %.html : %.txt
-+	$(RM) $(MAN_XML) $(addsuffix +,$(MAN_XML))
-+	$(RM) $(MAN_HTML) $(addsuffix +,$(MAN_HTML))
-+	$(RM) $(DOC_HTML) $(DOC_MAN1) $(DOC_MAN5) $(DOC_MAN7)
-+	$(RM) $(OUTPUT)*.texi $(OUTPUT)*.texi+ $(OUTPUT)*.texi++
-+	$(RM) $(OUTPUT)perf.info $(OUTPUT)perfman.info
-+	$(RM) $(OUTPUT)howto-index.txt $(OUTPUT)howto/*.html $(OUTPUT)doc.dep
-+	$(RM) $(OUTPUT)technical/api-*.html $(OUTPUT)technical/api-index.txt
-+	$(RM) $(cmds_txt) $(OUTPUT)*.made
-+
-+$(MAN_HTML): $(OUTPUT)%.html : %.txt
- 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
- 	$(ASCIIDOC) -b xhtml11 -d manpage -f asciidoc.conf \
- 		$(ASCIIDOC_EXTRA) -aperf_version=$(PERF_VERSION) -o $@+ $< && \
- 	mv $@+ $@
- 
--%.1 %.5 %.7 : %.xml
-+$(OUTPUT)%.1 $(OUTPUT)%.5 $(OUTPUT)%.7 : $(OUTPUT)%.xml
- 	$(QUIET_XMLTO)$(RM) $@ && \
--	xmlto -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
-+	xmlto -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
- 
--%.xml : %.txt
-+$(OUTPUT)%.xml : %.txt
- 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
- 	$(ASCIIDOC) -b docbook -d manpage -f asciidoc.conf \
- 		$(ASCIIDOC_EXTRA) -aperf_version=$(PERF_VERSION) -o $@+ $< && \
-@@ -239,25 +257,25 @@ $(MAN_HTML): %.html : %.txt
- XSLT = docbook.xsl
- XSLTOPTS = --xinclude --stringparam html.stylesheet docbook-xsl.css
- 
--user-manual.html: user-manual.xml
-+$(OUTPUT)user-manual.html: $(OUTPUT)user-manual.xml
- 	$(QUIET_XSLTPROC)xsltproc $(XSLTOPTS) -o $@ $(XSLT) $<
- 
--perf.info: user-manual.texi
--	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split -o $@ user-manual.texi
-+$(OUTPUT)perf.info: $(OUTPUT)user-manual.texi
-+	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split -o $@ $(OUTPUT)user-manual.texi
- 
--user-manual.texi: user-manual.xml
-+$(OUTPUT)user-manual.texi: $(OUTPUT)user-manual.xml
- 	$(QUIET_DB2TEXI)$(RM) $@+ $@ && \
--	$(DOCBOOK2X_TEXI) user-manual.xml --encoding=UTF-8 --to-stdout >$@++ && \
-+	$(DOCBOOK2X_TEXI) $(OUTPUT)user-manual.xml --encoding=UTF-8 --to-stdout >$@++ && \
- 	$(PERL_PATH) fix-texi.perl <$@++ >$@+ && \
- 	rm $@++ && \
- 	mv $@+ $@
- 
--user-manual.pdf: user-manual.xml
-+$(OUTPUT)user-manual.pdf: $(OUTPUT)user-manual.xml
- 	$(QUIET_DBLATEX)$(RM) $@+ $@ && \
- 	$(DBLATEX) -o $@+ -p /etc/asciidoc/dblatex/asciidoc-dblatex.xsl -s /etc/asciidoc/dblatex/asciidoc-dblatex.sty $< && \
- 	mv $@+ $@
- 
--perfman.texi: $(MAN_XML) cat-texi.perl
-+$(OUTPUT)perfman.texi: $(MAN_XML) cat-texi.perl
- 	$(QUIET_DB2TEXI)$(RM) $@+ $@ && \
- 	($(foreach xml,$(MAN_XML),$(DOCBOOK2X_TEXI) --encoding=UTF-8 \
- 		--to-stdout $(xml) &&) true) > $@++ && \
-@@ -265,7 +283,7 @@ perfman.texi: $(MAN_XML) cat-texi.perl
- 	rm $@++ && \
- 	mv $@+ $@
- 
--perfman.info: perfman.texi
-+$(OUTPUT)perfman.info: $(OUTPUT)perfman.texi
- 	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split --no-validate $*.texi
- 
- $(patsubst %.txt,%.texi,$(MAN_TXT)): %.texi : %.xml
+								Honza
 -- 
-1.7.7.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
