@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab2BFUbm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 15:31:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55313 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755536Ab2BFUbj (ORCPT
+	id S1755617Ab2BFUc3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 15:32:29 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:18188 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848Ab2BFUc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 15:31:39 -0500
-Subject: Re: [BUG] perf: perf sched warning possibly due to clock
- granularity on AMD
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, mingo@elte.hu, robert.richter@amd.com,
-        eric.dumazet@gmail.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Venkatesh Pallipadi <venki@google.com>
-In-Reply-To: <20120206202722.GA556@aftab>
-References: <20120206132546.GA30854@quad> <1328538403.2482.4.camel@laptop>
-	 <20120206153408.GA31237@aftab> <1328546246.2482.10.camel@laptop>
-	 <20120206164626.GA31704@aftab> <1328547259.2482.11.camel@laptop>
-	 <20120206202722.GA556@aftab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Feb 2012 21:31:33 +0100
-Message-ID: <1328560293.2482.24.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Feb 2012 15:32:28 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6612"; a="160974262"
+Message-ID: <c1f3d71b6001dfc42ded4ee651e9a82c.squirrel@www.codeaurora.org>
+In-Reply-To: <20120203121847.1b01f4b5@s6510.linuxnetplumber.net>
+References: <20120203112701.1c12b12c@s6510.linuxnetplumber.net>
+    <4F2C38BD.1060109@codeaurora.org>
+    <20120203121847.1b01f4b5@s6510.linuxnetplumber.net>
+Date: Mon, 6 Feb 2012 12:32:27 -0800 (PST)
+Subject: Re: [PATCH] tags: fix regex passed to etags
+From: "Stephen Boyd" <sboyd@codeaurora.org>
+To: "Stephen Hemminger" <shemminger@vyatta.com>
+Cc: "Stephen Boyd" <sboyd@codeaurora.org>, "Michal Marek" <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-06 at 21:27 +0100, Borislav Petkov wrote:
-> On Mon, Feb 06, 2012 at 05:54:19PM +0100, Peter Zijlstra wrote:
-> > On Mon, 2012-02-06 at 17:46 +0100, Borislav Petkov wrote:
-> > > > across all CPUs in the entire system.
-> > > 
-> > > Right, by the "entire system" you mean consistent across cores and
-> > > sockets but not necessarily across cabinets, as in the comment above,
-> > > correct?
-> > > 
-> > > If so, let me ask around if this holds true too.
-> > 
-> > Every CPU available to the kernel. So if you run a single system image
-> > across your cabinets, then yes those too.
-> 
-> Ok, but what about that sentence "(but not across cabinets - we turn
-> it off in that case explicitly.)" - I don't see any place where it is
-> turned off explicitly... Maybe a stale comment?
+> On Fri, 03 Feb 2012 11:42:53 -0800
+> Stephen Boyd <sboyd@codeaurora.org> wrote:
+>
+>> On 02/03/12 11:27, Stephen Hemminger wrote:
+>> > Several of the regular expressions passed to etags where incorrect
+>> > and missing the backslash before the closing parenthesis, causing
+>> warning:
+>> >   etags: Unmatched ( or \( while compiling pattern
+>> >
+>> > Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+>> >
+>>
+>> I'm confused how ctags didn't complain at me. It worked for me when I
+>> tried it. Next time I'll try both. Thanks.
+>>
+>
+> Most likely a new check in newer version of the tags command.
+>
 
-I suspect it might be the sched_clock_stable = 0 in mark_tsc_unstable(),
-but lets ask Venki, IIRC he wrote all that.
+Actually it looks like ctags also needs the fix. Can you resend with
+both etags and ctags fixed?
 
