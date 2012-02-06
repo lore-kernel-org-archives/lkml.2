@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab2BFJyZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 04:54:25 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:62404 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754435Ab2BFJyW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 04:54:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <CABPqkBTvoNBBdzvS-njoFk+SrTf-BKQSvP54C05un+m7RA+nBg@mail.gmail.com>
-References: <20120202211709.GA1642@x4>
-	<20120202213220.GB1642@x4>
-	<CABPqkBTutb5TuNVXZ4o+MzXczVSwk3NtsJh73KZS58xmrd=tbg@mail.gmail.com>
-	<20120204135110.GA6437@elte.hu>
-	<CABPqkBTvoNBBdzvS-njoFk+SrTf-BKQSvP54C05un+m7RA+nBg@mail.gmail.com>
-Date: Mon, 6 Feb 2012 10:54:21 +0100
-Message-ID: <CABPqkBQdRwKKAvgK339Po0-WBW-MJkgcmpWqS=OOgepn3_XiRw@mail.gmail.com>
-Subject: Re: WARNING: at arch/x86/kernel/cpu/perf_event.c:989
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754693Ab2BFKHx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 05:07:53 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60828 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449Ab2BFKHw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 05:07:52 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 6 Feb 2012 19:06:27 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: [RFC] [PATCH 0/6 v3] memcg: page cgroup diet
+Message-Id: <20120206190627.7313ff82.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 4, 2012 at 7:09 PM, Stephane Eranian <eranian@google.com> wrote:
-> I am working on it. It is hard to reproduce for me.
->
-What did you run to trigger this warning? What system is this on?
 
-> On Sat, Feb 4, 2012 at 2:51 PM, Ingo Molnar <mingo@elte.hu> wrote:
->>
->> there's yet another one triggering at:
->>
->> [89214.962603] ------------[ cut here ]------------
->> [89214.967441] WARNING: at arch/x86/kernel/cpu/perf_event.c:995 x86_pmu_start+0x79/0xd4()
->> [89214.975825] Hardware name: X8DTN
->> [89214.979268] Modules linked in:
->> [89214.982560] Pid: 0, comm: swapper/6 Not tainted 3.3.0-rc2-tip+ #1
->> [89214.988865] Call Trace:
->> [89214.991533]  <IRQ>  [<ffffffff81065cc7>] warn_slowpath_common+0x7e/0x97
->> [89214.998379]  [<ffffffff81065cf5>] warn_slowpath_null+0x15/0x17
->> [89215.004428]  [<ffffffff8103f626>] x86_pmu_start+0x79/0xd4
->> [89215.010042]  [<ffffffff810e30d1>] perf_adjust_freq_unthr_context.part.63+0xef/0x123
->> [89215.018123]  [<ffffffff810e318c>] perf_event_task_tick+0x87/0x1c1
->> [89215.024463]  [<ffffffff810a2370>] ? tick_nohz_handler+0xda/0xda
->> [89215.030595]  [<ffffffff8108b819>] scheduler_tick+0xd1/0xf3
->> [89215.036296]  [<ffffffff810720b0>] update_process_times+0x5e/0x6f
->> [89215.042512]  [<ffffffff810a23e0>] tick_sched_timer+0x70/0x99
->> [89215.048387]  [<ffffffff810823f9>] __run_hrtimer+0x8c/0x148
->> [89215.054087]  [<ffffffff81082add>] hrtimer_interrupt+0xc1/0x18c
->>
->> Thanks,
->>
->>        Ingo
+Here is my page_cgroup diet series v3. Since v2, "remove PCG_CACHE" is alread
+merged.
+
+This series changes page-stat-accounting per memcg 
+
+from:
+	if (change page's state)
+		mem_cgroup_update_page_state()
+
+to:
+	mem_cgroup_begin_update_page_state()
+	if (change page's state)
+		mem_cgroup_update_page_state()
+	mem_cgroup_end_update_page_state()
+
+(see patch 4 for details.) This allows us not to duplicate page struct's
+information in page_cgroup's flag field.
+
+Because above sequence adds 2 extra calls to hot-path, performance will be problem.
+Patch 6 is a fix for performance, and I don't see performance regression in my
+small test. (see patch 6 for details.)
+
+Thanks,
+-Kame
+
+
+
+
+
+
