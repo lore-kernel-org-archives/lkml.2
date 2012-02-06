@@ -1,190 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab2BFSSc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 13:18:32 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45506 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754541Ab2BFSSb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 13:18:31 -0500
+	id S1754989Ab2BFSTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 13:19:51 -0500
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:48551 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750797Ab2BFSTu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 13:19:50 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 5pQxkjYVM1lIXClNyDpp9sIyeRwrVqDjFD5dlpTySS.qNdO
+ bP6ipK4bySqK2d7DlBAIo83uydQf.Z1nBajXcBWHMCrruB0BD.6zG2r2BsAp
+ FQKvcj4UNq45SVplfDVg2RpYjJTC7Qn0SRx08HZeIMv2LFP3RFly7zo0TTuI
+ KApHTVQy.MtWCc.qCOBFRfcl6u5br_4QbhxtCN6A5_wOak7AjKxXh46P3_11
+ Wu6uSERLOPLSAO6ML32LKWHptXoiRnzZki1IW3swAQ_WqVWEAYvAcvjeWVXK
+ xMzSse7Pl_4FuqOpwNrBjSxf5OXbDLVdqrnHb0cMh7bdQmK20Nid9se_6ZIu
+ s3hF2N7DUOlBtBsdjHt75e9TUKJmGpzXP9qLEjLhRhLuaGB.7ka2bab7ziec
+ XIA.mv3pUD4.4ZoWPkQpPys9eI8dpDIDvSsoz3akdygce.63Trcbm9rf9LBY
+ 9YmpnTabpkD5XucksCQvzfJUa8aF4gJ0-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 6 Feb 2012 12:19:44 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+In-Reply-To: <CAOtvUMdCZpQuSvutKHpMxthktTm_VkA1R99yxpNhxpsYN9wTRQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1202061218420.2799@router.home>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327591185.2446.102.camel@twins> <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <1328117722.2446.262.camel@twins> <20120201184045.GG2382@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1202011404500.2074@router.home> <20120201201336.GI2382@linux.vnet.ibm.com> <4F2A58A1.90800@redhat.com> <20120202153437.GD2518@linux.vnet.ibm.com> <4F2AB66C.2030309@redhat.com> <20120202170134.GM2518@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1202021124520.6338@router.home> <CAOtvUMdCZpQuSvutKHpMxthktTm_VkA1R99yxpNhxpsYN9wTRQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120206181704.GF6367@infradead.org>
-References: <1328187288-24395-1-git-send-email-eranian@google.com>
-	<1328187288-24395-15-git-send-email-eranian@google.com>
-	<20120206181704.GF6367@infradead.org>
-Date: Mon, 6 Feb 2012 19:18:29 +0100
-Message-ID: <CABPqkBRPJhiufo46GxRgudEAV=Ed+dTL62k+q28BagwDAxOBtw@mail.gmail.com>
-Subject: Re: [PATCH v5 14/18] perf: fix endianness detection in perf.data
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
-        khandual@linux.vnet.ibm.com, dsahern@gmail.com
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 6, 2012 at 7:17 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
-> Em Thu, Feb 02, 2012 at 01:54:44PM +0100, Stephane Eranian escreveu:
->> The current version of perf detects whether or not
->> the perf.data file is written in a different endianness
->> using the attr_size field in the header of the file. This
->> field represents sizeof(struct perf_event_attr) as known
->> to perf record. If the sizes do not match, then perf tries
->> the byte-swapped version. If they match, then the tool assumes
->> a different endianness.
->>
->> The issue with the approach is that it assumes the size of
->> perf_event_attr always has to match between perf record and
->> perf report. However, the kernel perf_event ABI is extensible.
->> New fields can be added to struct perf_event_attr. Consequently,
->> it is not possible to use attr_size to detect endianness.
->>
->> This patch takes another approach by using the magic number
->> written at the beginning of the perf.data file to detect
->> endianness. The magic number is an eight-byte signature.
->> It's primary purpose is to identify (signature) a perf.data
->> file. But it could also be used to encode the endianness.
->>
->> The patch introduces a new value for this signature. The key
->> difference is that the signature is written differently in
->> the file depending on the endianness. Thus, by comparing the
->> signature from the file with the tool's own signature it is
->> possible to detect endianness. The new signature is "PERFILE2".
->>
->> Backward compatiblity with existing perf.data file is
->> ensured.
->
-> Looks ok, but IIRC David Ahern interacted with you on this specific
-> patch in the past, having his Acked-by and/or Tested-by would be great,
-> David?
->
-I agree, I am still waiting for the results of his test on big-endian systems.
-I don't have any unfortunately.
+On Sun, 5 Feb 2012, Gilad Ben-Yossef wrote
 
-> - Arnaldo
 >
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->> ---
->>  tools/perf/util/header.c |   77 ++++++++++++++++++++++++++++++++++++++--------
->>  1 files changed, 64 insertions(+), 13 deletions(-)
->>
->> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
->> index ecd7f4d..6f4187d 100644
->> --- a/tools/perf/util/header.c
->> +++ b/tools/perf/util/header.c
->> @@ -63,9 +63,20 @@ char *perf_header__find_event(u64 id)
->>       return NULL;
->>  }
->>
->> -static const char *__perf_magic = "PERFFILE";
->> +/*
->> + * magic2 = "PERFILE2"
->> + * must be a numerical value to let the endianness
->> + * determine the memory layout. That way we are able
->> + * to detect endianness when reading the perf.data file
->> + * back.
->> + *
->> + * we check for legacy (PERFFILE) format.
->> + */
->> +static const char *__perf_magic1 = "PERFFILE";
->> +static const u64 __perf_magic2    = 0x32454c4946524550ULL;
->> +static const u64 __perf_magic2_sw = 0x50455246494c4532ULL;
->>
->> -#define PERF_MAGIC   (*(u64 *)__perf_magic)
->> +#define PERF_MAGIC   __perf_magic2
->>
->>  struct perf_file_attr {
->>       struct perf_event_attr  attr;
->> @@ -1620,24 +1631,59 @@ int perf_header__process_sections(struct perf_header *header, int fd,
->>       return err;
->>  }
->>
->> +static int check_magic_endian(u64 *magic, struct perf_file_header *header,
->> +                           struct perf_header *ph)
->> +{
->> +     int ret;
->> +
->> +     /* check for legacy format */
->> +     ret = memcmp(magic, __perf_magic1, sizeof(*magic));
->> +     if (ret == 0) {
->> +             pr_debug("legacy perf.data format\n");
->> +             if (!header)
->> +                     return -1;
->> +
->> +             if (header->attr_size != sizeof(struct perf_file_attr)) {
->> +                     u64 attr_size = bswap_64(header->attr_size);
->> +
->> +                     if (attr_size != sizeof(struct perf_file_attr))
->> +                             return -1;
->> +
->> +                     ph->needs_swap = true;
->> +             }
->> +             return 0;
->> +     }
->> +
->> +     /* check magic number with same endianness */
->> +     if (*magic == __perf_magic2)
->> +             return 0;
->> +
->> +     /* check magic number but opposite endianness */
->> +     if (*magic != __perf_magic2_sw)
->> +             return -1;
->> +
->> +     ph->needs_swap = true;
->> +
->> +     return 0;
->> +}
->> +
->>  int perf_file_header__read(struct perf_file_header *header,
->>                          struct perf_header *ph, int fd)
->>  {
->> +     int ret;
->> +
->>       lseek(fd, 0, SEEK_SET);
->>
->> -     if (readn(fd, header, sizeof(*header)) <= 0 ||
->> -         memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
->> +     ret = readn(fd, header, sizeof(*header));
->> +     if (ret <= 0)
->>               return -1;
->>
->> -     if (header->attr_size != sizeof(struct perf_file_attr)) {
->> -             u64 attr_size = bswap_64(header->attr_size);
->> -
->> -             if (attr_size != sizeof(struct perf_file_attr))
->> -                     return -1;
->> +     if (check_magic_endian(&header->magic, header, ph) < 0)
->> +             return -1;
->>
->> +     if (ph->needs_swap) {
->>               mem_bswap_64(header, offsetof(struct perf_file_header,
->> -                                         adds_features));
->> -             ph->needs_swap = true;
->> +                          adds_features));
->>       }
->>
->>       if (header->size != sizeof(*header)) {
->> @@ -1873,8 +1919,13 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
->>                                      struct perf_header *ph, int fd,
->>                                      bool repipe)
->>  {
->> -     if (readn(fd, header, sizeof(*header)) <= 0 ||
->> -         memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
->> +     int ret;
->> +
->> +     ret = readn(fd, header, sizeof(*header));
->> +     if (ret <= 0)
->> +             return -1;
->> +
->> +      if (check_magic_endian(&header->magic, NULL, ph) < 0)
->>               return -1;
->>
->>       if (repipe && do_write(STDOUT_FILENO, header, sizeof(*header)) < 0)
->> --
->> 1.7.4.1
+> Frederic has the latest version in a git tree here:
+>
+> git://github.com/fweisbec/linux-dynticks.git
+>        nohz/cpuset-v2-pre-20120117
+>
+> It's on top latest rcu/core.
+
+Hmmm.. A pull vs upstream leads to lots of conflicts.
+
+
+> But the good news is that with these hacks applied I managed to run a 100%
+> CPU task  with  zero interrupts  (ticks or  otherwise) on an isolated cpu.
+
+Cool.
+
+> Disregarding TLB overhead, you get bare metal performance with Linux user
+> space manageability and  debug capabilities.  Pretty magical really: It's like
+> eating your cake and having it too :-)
+
+We definitely need that.
+
