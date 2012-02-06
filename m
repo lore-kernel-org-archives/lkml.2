@@ -1,53 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab2BFSCc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 13:02:32 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43582 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752158Ab2BFSCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 13:02:30 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] regmap: Add debugfs information for the cache status
-Date: Mon,  6 Feb 2012 18:02:28 +0000
-Message-Id: <1328551348-7662-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.rc1
-In-Reply-To: <1328551348-7662-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1328551348-7662-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1754831Ab2BFSCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 13:02:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:58082 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752158Ab2BFSCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 13:02:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="104608178"
+Subject: Re: [PATCH 01/11] dmaengine: add context parameter toprep_slave_sg
+ and prep_dma_cyclic
+From: Vinod Koul <vinod.koul@intel.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
+In-Reply-To: <20120206155318.GA20852@flint.arm.linux.org.uk>
+References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com>
+	 <1328218341-31436-2-git-send-email-alexandre.bounine@idt.com>
+	 <20120202214350.GB4432@flint.arm.linux.org.uk>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E55202872683@CORPEXCH1.na.ads.idt.com>
+	 <1328529182.26182.92.camel@vkoul-udesk3>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E552028729F9@CORPEXCH1.na.ads.idt.com>
+	 <1328542134.26182.111.camel@vkoul-udesk3>
+	 <20120206155318.GA20852@flint.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Feb 2012 23:34:24 +0530
+Message-ID: <1328551464.26182.136.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Show all the cache status flags in debugfs if we have a cache.
+On Mon, 2012-02-06 at 15:53 +0000, Russell King wrote:
+> On Mon, Feb 06, 2012 at 08:58:54PM +0530, Vinod Koul wrote:
+> > On Mon, 2012-02-06 at 07:04 -0800, Bounine, Alexandre wrote:
+> > > I was thinking about keeping the original scatterlist for dmac unchanged,
+> > > but allocating another scatterlist in rio_dma_prep_slave_sg() and chaining
+> > > two lists together. After it passed to device specific function, it parses
+> > > first section of the chain for additional transfer parameters and use
+> > > following scatterlist as intended for dmac.
+> > hmmm, but that wouldn't make it generic for other systems like proposed
+> > MSM box mode..., right?
+> > > 
+> > > But Russell's idea (See https://lkml.org/lkml/2012/2/3/269 ) seems to be
+> > > a better way without added complexity and I am ready to take that path and
+> > > make new patches if you and Dan agree with it. 
+> > but it still doesn't fix his concerns for the using void pointer.
+> 
+> It helps because it makes it easier to find those drivers who are not
+> using the generic interface (and so would be tied to their particular
+> DMA engine.)
+> 
+> Let's take a step back.
+> 
+> One of the fundamental points for having a DMA engine API is to separate
+> the DMA users from the DMA engines, and make the two independent.  This
+> allows DMA users (like MMC, UARTs, etc) to be written in a way that they
+> are totally independent of the DMA engine.
+> 
+> Why is this important?  We're seeing an increasing number of SoCs with
+> the same peripheral IP integrated onto them but with different DMA
+> controllers.  Not only does that happen within an architecture, but you
+> can bet it'll start happening outside.  For example, AMBA Primecell
+> peripherals are not only found on ARM but also on SoCs with differing
+> CPUs.  Some PXA peripherals are now being found on x86 hardware.
+Yes this is the basic premise we are working on.
+> 
+> So, we need a basic DMA engine API which ensures that users of the API
+> do not have to know any details about the DMA engine itself for them to
+> be able to get on with their business.
+For memcpy I believe that is mostly the case.
+But problem arises for slave-dma partly due to 
+a) controllers need specific channel as only specific channel(s) can
+talk to their peripheral, and today we don't have a good way to do this
+across arch. (x86, arm, RIO.....)
+b) some dmacs which support a generic transfer pattern but need more
+information in order to get a transfer done, so some specific parameters
+have to be passed. For most of drivers today we have reached a point
+where we need to remove any specific params introduced (chan->private).
+But for these controllers (RIO, MSM), it seems they would need few more
+non generic parameters!!!
+So we can
+a) say no, don't use dmaengine APIs and invent your own stuff
+b) try to accommodate while keeping dmaengine neutral.
+> 
+> Now, if we start allowing a 'void *' per-transfer random pointer, then
+> what will happen is that we'll end up with people abusing it for passing
+> other stuff, maybe such as DMA request lines because they don't want to
+> bother with virtual channels in their DMA engine.  At that point, the
+> peripheral drivers gain knowledge about the DMA engine they're attached
+> to, and it becomes impossible to reuse them without resorting to ifdeffery
+> in the peripheral drivers.
+Yes that was my concern too which was listed when we discussed original
+patch from Alexandre and this as possible approach.
+> 
+> This brings up a fundamental question: if you have a DMA engine which
+> has some unique specific feature, and needs extra data to use that funky
+> feature passed through the generic API, is it appropriate to use the
+> generic API, or does it make sense to augment the API in some way?
+> 
+> It might be that the peripherals of this funky feature are soo tied to
+> the DMA engine that it wouldn't ever be appropriate for them to live
+> with a different DMA engine.  In that case, does the DMA engine API
+> actually benefit them, or does it result in an erosion of the API
+> boundary, and therefore the separation of DMA engine from DMA user?
+> 
+> If the net result will be that the DMA engine API boundaries are blured,
+> then we've lost, because we need a replacement API to do the job that we
+> desperately need our existing API to be doing for us.
+> 
+> And that's my biggest concern about nebulous undefined 'void *'
+> arguments across this API.
+Okay, so now how about _defining_ these arch specific parameters in
+dmaengine_arch (or some better place) and clients which are not on those
+will use generic dmaengine_prep_slave_sg() as you outlined, and the ones
+like RIO use
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap-debugfs.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+#ifdef CONFIG_RIO
+struct rio_specfic_data {
+...
+};
 
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 6f39747..b3b4b8f 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -192,6 +192,15 @@ void regmap_debugfs_init(struct regmap *map)
- 		debugfs_create_file("access", 0400, map->debugfs,
- 				    map, &regmap_access_fops);
- 	}
-+
-+	if (map->cache_type) {
-+		debugfs_create_bool("cache_only", 0400, map->debugfs,
-+				    &map->cache_only);
-+		debugfs_create_bool("cache_dirty", 0400, map->debugfs,
-+				    &map->cache_dirty);
-+		debugfs_create_bool("cache_bypass", 0400, map->debugfs,
-+				    &map->cache_bypass);
-+	}
- }
- 
- void regmap_debugfs_exit(struct regmap *map)
+static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_sg_rio(
+	struct dma_chan *chan, struct scatterlist *sg, unsigned sg_len,
+	enum dma_transfer_direction direction, unsigned long flags,
+	struct rio_specfic_data *data)
+{
+	return chan->device->device_prep_slave_sg(chan, sg, sglen, dir, flags, (void *)data);
+}
+#endif
+
+That way no client needs to pass a loose parameter. And we ensure dmacs
+are using the last argument only when defined for particular arch.
+
+
+
 -- 
-1.7.9.rc1
+~Vinod
 
