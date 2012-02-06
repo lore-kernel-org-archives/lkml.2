@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab2BFXLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:11:39 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37802 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab2BFXLh convert rfc822-to-8bit (ORCPT
+	id S1756086Ab2BFXPc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 18:15:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61754 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753158Ab2BFXPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 18:11:37 -0500
+	Mon, 6 Feb 2012 18:15:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7wFda_6C7q9YLApJmRe8D=dnB4ks8VJ3UXQta_qm_8vA@mail.gmail.com>
-References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
- <20120108221342.GA7058@ime.usp.br> <CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
- <20120109112207.7f993845@jbarnes-desktop> <CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
- <CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
- <CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
- <CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
- <CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
- <CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
- <20120113115946.GA10615@ime.usp.br> <CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
- <CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
- <CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
- <CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
- <CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
- <CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
- <CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
- <CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
- <CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
- <CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
- <CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
- <CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
- <CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
- <CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
- <CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
- <CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
- <CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
- <CAOtrxKO9kZce4sDopN4yKFtLVx-BQS56OwyEav0Bh1XjqnS1MQ@mail.gmail.com>
- <CAE9FiQU5239LD-e7FdpKq1iY3k80BFg2pLVw28YScufuai0R4w@mail.gmail.com>
- <CAOtrxKMb==2aR-BF2_XJy+y2_7JAhxHF2H60het19BQE163J8g@mail.gmail.com> <CAErSpo7wFda_6C7q9YLApJmRe8D=dnB4ks8VJ3UXQta_qm_8vA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 6 Feb 2012 15:11:15 -0800
-Message-ID: <CAErSpo5R7uAoN01zS2eMKPHJq3RF6mXN1d1j8C143ZuKziYEVw@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
-        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
-X-System-Of-Record: true
+In-Reply-To: <20120206210456.GV1426@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
+	<CACRpkdahin4srDh7dphgvq306gjz7CGP=h4dVkUY+w0z0wpXRQ@mail.gmail.com>
+	<4F2F6AE2.1040504@nvidia.com>
+	<CACRpkdbtTPSoX1x4aBtNVGZ2Qex9t77D09V9JgON_jfShQdx6w@mail.gmail.com>
+	<20120206190315.GU1426@atomide.com>
+	<CACRpkdZthbejmTqRJAWHb8jU-p8LPT_+zj_CY1q0voMb4FKz2Q@mail.gmail.com>
+	<20120206210456.GV1426@atomide.com>
+Date: Tue, 7 Feb 2012 00:15:30 +0100
+Message-ID: <CACRpkdYrbD3PpJ3wb69yb3Ya8SeZJnPpgJdtttjWTkS5xsD-4g@mail.gmail.com>
+Subject: Re: An extremely simplified pinctrl bindings proposal
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 26, 2012 at 7:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Thu, Jan 26, 2012 at 4:16 AM, Rogério Brito <rbrito@ime.usp.br> wrote:
->> On Thu, Jan 26, 2012 at 00:03, Yinghai Lu <yinghai@kernel.org> wrote:
->>> 2012/1/25 Rogério Brito <rbrito@ime.usp.br>:
->>>>
->>>> Wild thoughts: I just saw that nouveau calls some ACPI stuff to get
->>>> EDID information and, as ACPI is broken on this notebook, could that
->>>> be a potential reason for the panic that I'm seeing? (Yes, I can take
->>>> a photo of the screen).
->>>
->>> Which 2.6.x kernel works on your laptop without disabling acpi?
->>
->> Unfortunately, no 2.6 kernel has worked on this laptop without
->> acpi=off. I also once booted FreeBSD here just to see how it would
->> behave and it also hang with ACPI enabled.
->>
->> From what I see on this notebook, if ACPI is not turned off, the
->> computer simply hangs once the ACPI is started (it gives one layman
->> like me the impression of entering an infinite loop). But, again, this
->> is just a layman observation of what the system appears to be doing.
->
-> My guess is that most of these problems are related, so if we fixed
-> whatever causes the ACPI hang, the other problems would probably go
-> away, too.
->
-> Did you figure out anything about the MTRRs?
+On Mon, Feb 6, 2012 at 10:04 PM, Tony Lindgren <tony@atomide.com> wrote:
 
-Ping :)  Let me know if you'd like a patch to print out the MTRR info
-later in boot where it will be slow enough to capture in a video.
+>> I actually had something like unnamed pins in the early patches
+>> to register a bunch of anonymous pins ranges, so why not bring
+>> it back in.
+>
+> Yeah it seems that the mux registers should be listed, it might
+> require a little bit of thinking for cases where one register
+> controls multiple pins. So maybe we need just a new entry for
+> mux registers?
 
- Bjorn
+I'm not sure if I'm following completely, if this is inside the devicetree-based
+driver file, would it work to just add a struct dentry * to the
+pinctrl_desc where you put a per-driver file?
+
+Or maybe add extern void pinctrl_add_debugfs(struct dentry *) that adds
+a new file to the existing per-driver directory through the core and then
+have this add that file?
+
+Or did you mean that the core.c should be register-aware?
+
+Yours,
+Linus Walleij
