@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab2BFLxV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 06:53:21 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:57762 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753718Ab2BFLxT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 06:53:19 -0500
+	id S1754808Ab2BFMD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 07:03:56 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38879 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754155Ab2BFMDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 07:03:55 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@st.com>
+Subject: Re: Query: When will drv->poweroff() called
+Date: Mon, 6 Feb 2012 13:07:40 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: pavel@ucw.cz, len.brown@intel.com,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Vipin KUMAR <vipin.kumar@st.com>, deepak sikri <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <amit.virdi@st.com>, Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>
+References: <4F2F6B40.6070308@st.com>
+In-Reply-To: <4F2F6B40.6070308@st.com>
 MIME-Version: 1.0
-In-Reply-To: <87pqdv4oo3.fsf@ti.com>
-References: <1328203851-20435-1-git-send-email-tarun.kanti@ti.com>
-	<87pqdv4oo3.fsf@ti.com>
-Date: Mon, 6 Feb 2012 17:23:18 +0530
-Message-ID: <CAC83ZvJndyGv6KAuzn1GLYMMNH1cC-u3=sdHxqO+q-xtaFbnVA@mail.gmail.com>
-Subject: Re: [PATCH v9 00/25] gpio/omap: driver cleanup and fixes
-From: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-omap@vger.kernel.org, tony@atomide.com, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202061307.40628.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin,
+Hi,
 
-On Sat, Feb 4, 2012 at 2:31 AM, Kevin Hilman <khilman@ti.com> wrote:
->
-> Hi Tarun,
->
-> Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
->
-> > The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
-> >   Linus Torvalds (1):
-> >         Linux 3.3-rc2
-> >
-> > are available in the git repository at:
-> > http://gitorious.org/~tarunkanti/omap-sw-develoment/tarunkantis-linux-omap-dev
-> > Branch: for_3.4/gpio_cleanup_fixes_v9
-> >
-> > This series is continuation of cleanup of OMAP GPIO driver and fixes.
-> > The cleanup include getting rid of cpu_is_* checks wherever possible,
-> > use of gpio_bank list instead of static array, use of unique platform
-> > specific value associated data member to OMAP platforms to avoid
-> > cpu_is_* checks. The series also include PM runtime support.
->
-> This version is looking pretty good, and I'm almost ready to queue it up
-> for Grant.
->
-> However, one more minor nit.  Please fix up the compile warnings when
-> built without CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME.
->
-> The definitons of the dev_pm_ops callbacks need to be conditional when
-> using the SET_*_PM_OPS() macros, otherwise you get these warnings:
+On Monday, February 06, 2012, Viresh Kumar wrote:
+> 
+> Hi Guys,
+> 
+> Sorry for asking this silly question, but i couldn't locate much
+> help for it in documentation, so asking it.
+> 
+> We were testing hibernation for SPEAr13xx SoC family, based on
+> ARM Cortex a9.
+> 
+> I observed that poweroff() callback of individual drivers are not
+> getting called at all, while we test hibernate.
 
-I have updated the branch with the required changes.
---
-Tarun
->
->
->
->  CC      drivers/gpio/gpio-omap.o
-> /work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1142:12: warning: 'omap_gpio_suspend' defined but not used [-Wunused-function]
-> /work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1167:12: warning: 'omap_gpio_resume' defined but not used [-Wunused-function]
-> /work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1191:12: warning: 'omap_gpio_runtime_suspend' defined but not used [-Wunused-function]
-> /work/kernel/omap/pm/drivers/gpio/gpio-omap.c:1237:12: warning: 'omap_gpio_runtime_resume' defined but not used [-Wunused-function]
->
->
-> Thanks,
->
-> Kevin
+They should be called in the last phase of hibernation, after the image
+has been created and the system is going for "power off" (hance the
+callback name).
+
+> I tried to go through the code to see what happened. It looked like
+> there should be call to hibernation_set_ops() for platforms that are
+> willing to get a call to poweroff() for their drivers.
+
+That's correct.  The ->poweroff() callbacks are only executed if
+hibernation_mode is equal to HIBERNATION_PLATFORM, which is not the
+default.
+
+> Otherwise shutdown of the busses gets called, which is a completely
+> different path.
+> 
+> There are many drivers today, that are registering poweroff() from dev_pm_ops
+> but are not doing bus specific shutdown stuff.
+> 
+> Even i tried to look for hibernation_set_ops() in kernel, and only acpi
+> code is calling it.
+
+That's correct too.
+
+> I didn't understood how other ARM Sub-Arch's are handling this.
+
+Well, they are supposed to call hibernation_set_ops() and set the operations
+appropriately.  Those operations may be empty routines if they don't need
+to do anything, but they have to be defined.
+
+Thanks,
+Rafael
