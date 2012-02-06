@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab2BFQfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:35:48 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45842 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754852Ab2BFQfr (ORCPT
+	id S1755314Ab2BFQhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:37:11 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:44003 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755079Ab2BFQhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:35:47 -0500
-Date: Mon, 6 Feb 2012 16:35:45 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: cbou@mail.ru, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add I2C driver for Summit Microelectronics SMB347
- Battery Charger.
-Message-ID: <20120206163544.GO3070@opensource.wolfsonmicro.com>
-References: <20120206155729.9947.22792.stgit@bob.linux.org.uk>
- <20120206160127.GF10173@sirena.org.uk>
- <20120206162409.4f7536cf@pyramind.ukuu.org.uk>
+	Mon, 6 Feb 2012 11:37:09 -0500
+X-Sasl-enc: rKns/oyPlth/A8Qa0ff+lfCfuMVLENUWdaTgjpTNLJzj 1328546228
+Date: Mon, 6 Feb 2012 08:35:42 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 1/6] oom: Make find_lock_task_mm() sparse-aware
+Message-ID: <20120206163542.GA10104@kroah.com>
+References: <20120203163056.GA4190@redhat.com>
+ <20120206162930.GA5117@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BuBclajtnfx5hylj"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120206162409.4f7536cf@pyramind.ukuu.org.uk>
-X-Cookie: Many pages make a thick book.
+In-Reply-To: <20120206162930.GA5117@oksana.dev.rtsoft.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 06, 2012 at 08:29:30PM +0400, Anton Vorontsov wrote:
+> This is needed so that callers would not get 'context imbalance'
+> warnings from the sparse tool.
+> 
+> As a side effect, this patch fixes the following sparse warnings:
+> 
+>   CHECK   mm/oom_kill.c
+>   mm/oom_kill.c:201:28: warning: context imbalance in 'oom_badness' -
+>   unexpected unlock
+>   include/linux/rcupdate.h:249:30: warning: context imbalance in
+>   'dump_tasks' - unexpected unlock
+>   mm/oom_kill.c:453:9: warning: context imbalance in 'oom_kill_task' -
+>   unexpected unlock
+>   CHECK   mm/memcontrol.c
+>   ...
+>   mm/memcontrol.c:1130:17: warning: context imbalance in
+>   'task_in_mem_cgroup' - unexpected unlock
+> 
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+>  include/linux/oom.h |   11 ++++++++++-
+>  mm/oom_kill.c       |    2 +-
+>  2 files changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/oom.h b/include/linux/oom.h
+> index 552fba9..e64bfd2 100644
+> --- a/include/linux/oom.h
+> +++ b/include/linux/oom.h
+> @@ -21,6 +21,7 @@
+>  
+>  #ifdef __KERNEL__
+>  
+> +#include <linux/compiler.h>
+>  #include <linux/sched.h>
+>  #include <linux/types.h>
+>  #include <linux/nodemask.h>
+> @@ -65,7 +66,15 @@ static inline void oom_killer_enable(void)
+>  	oom_killer_disabled = false;
+>  }
+>  
+> -extern struct task_struct *find_lock_task_mm(struct task_struct *p);
+> +extern struct task_struct *__find_lock_task_mm(struct task_struct *p);
+> +
+> +#define find_lock_task_mm(p)						\
+> +({									\
+> +	struct task_struct *__ret;					\
+> +									\
+> +	__cond_lock(&(p)->alloc_lock, __ret = __find_lock_task_mm(p));	\
+> +	__ret;								\
+> +})
 
---BuBclajtnfx5hylj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Please use the proper "do...while" style thing here for multi-line,
+complex #defines like the rest of the kernel does so that you don't end
+up debugging horrible problems later.
 
-On Mon, Feb 06, 2012 at 04:24:09PM +0000, Alan Cox wrote:
-> Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+And I would need acks from the -mm developers before I could apply any
+of this.
 
-> > There's quite a lot of read/modify/write cycles and...
+thanks,
 
-> True but they are basically all in the setup side of things so I'm not
-> sure the complexity is justified or appropriate ?
-
-I'm not sure what complexity you mean?  If the interface is too
-difficult to use we should fix that but I didn't notice anything in the
-driver which should be more than a straight substitution (or deletion of
-code in the case of the debugfs file).
-
---BuBclajtnfx5hylj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPMAFXAAoJEBus8iNuMP3dxVMP+gLJfcDwjBJWoWxfsKjAjQQa
-h7j60Y08DyQqPWB98WFZ3ggo7j1oKwI3oetG3yP1KyuzJ0yApENs3TBNY5qnhP0/
-8rJ+n8zRxWk2UNwbgofplRNmPROtIfAb7U6+mumxaE9N1Fw+B6RpEy6+HRB8LLy/
-OdCnkc49NA3pnKPXAPEdNTBrTNhN0AFG1dDIG8CNPHzNnzl4KrciuCoPpRk7GcnH
-+e5CmNV+2tLC0jy/8rAXMS7SiUFr8nlKYDqIEjiQs7fjDH8AdzAFRGUoJHe/2+xA
-MTsqRWCxwEy57c/nWMEOaCENrU476vN+RrfyblvyuwcavSAbvQH32ftJt6Ro0VOW
-S7JRIni401GQnykPm3PcllODWzmN6NCNR0S9ameUunuLM86ClsbZbGfeeroDAsaZ
-d498j4C8LwsRhcsLhmgojMPU3xO8Nf6eCf/qd62RvzhSTzo+g1qQhNmlWrUzKcCp
-mQwiU/Jo9tEV05/+y7PLRYPPnUuUDTzcDBhMQgQ6Xn+EOOvX6PasGZVBhx2ktpWG
-9RuQ/dYNtCoqI4tTHqHoEZISjp2UyoL0WF87UB1BXmt/lKb3FrAk99MnfZt2dsi/
-EdX0N+nptGWwsYNoVMKz/wXCcNOfbBbBVY7FH7p/t5RGTOyp9cnYXD+OHU5MfJOt
-H+g2D/EsE21JP/kmoL3Z
-=ncAt
------END PGP SIGNATURE-----
-
---BuBclajtnfx5hylj--
+greg k-h
