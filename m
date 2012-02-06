@@ -1,28 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2BFQ6b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:58:31 -0500
-Received: from na3sys010aog104.obsmtp.com ([74.125.245.76]:49753 "HELO
-	na3sys010aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755397Ab2BFQ63 (ORCPT
+	id S1755561Ab2BFQ7L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:59:11 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60071 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755397Ab2BFQ7J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:58:29 -0500
+	Mon, 6 Feb 2012 11:59:09 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1202042346510.30244@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202042346510.30244@swampdragon.chaosbits.net>
-From: Roland Dreier <roland@kernel.org>
-Date: Mon, 6 Feb 2012 08:58:08 -0800
-X-Google-Sender-Auth: ApErp7nK78MgXM5zXOn_RlwR2sg
-Message-ID: <CAL1RGDUf8J_CYEzWanmNz=rvF+XcFsFVdQEH4ZgqNWORsXd5nQ@mail.gmail.com>
-Subject: Re: [PATCH] IB: Don't return freed pointer from srpt_alloc_ioctx_ring()
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Nicholas A. Bellinger" <nab@risingtidesystems.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Sean Hefty <sean.hefty@intel.com>
+In-Reply-To: <20120206164428.GA21292@google.com>
+References: <1328514611.21268.66.camel@sli10-conroe> <20120206151219.GC30752@redhat.com>
+ <4F2FFB21.9000202@kernel.dk> <20120206163721.GF30752@redhat.com> <20120206164428.GA21292@google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 6 Feb 2012 08:58:49 -0800
+X-Google-Sender-Auth: mGaCORB_WAF-qSlVtN65PYLzvBY
+Message-ID: <CA+55aFx6BR_ZUHd8d64btu-LzsPHo3Ot_d1-5jJytjQUqvvaiQ@mail.gmail.com>
+Subject: Re: [patch]block: fix ioc locking warning
+To: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <vivek.goyal2008@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good catch, applied, thanks!
+On Mon, Feb 6, 2012 at 8:44 AM, Tejun Heo <tj@kernel.org> wrote:
+>
+> Yeah, this seems better to me.  Jens, if you're gonna amend the
+> commit, please consider collapsing the following patch into the
+> original patch too.  Thanks.
+
+Guys, is it *really* worth it to do all these crazy games?
+
+How bad is it to just always use the async freeing, instead of this
+clearly very fragile crazy direct-freeing-with-serious-locking-issues
+thing?
+
+Sure, even ioc_release_fn() isn't trivial wrt lock handling, but at
+least it doesn't have to play these *insane* games with recursive
+locking.
+
+And if workqueues are too expensive, what saner alternatives might
+there be? This code really is insane.
+
+                Linus
