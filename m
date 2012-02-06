@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab2BFIMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 03:12:41 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:33595 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab2BFIMk convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Mon, 6 Feb 2012 03:12:40 -0500
-Message-Id: <4F2F998202000078000714CD@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 06 Feb 2012 08:12:34 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Dan Magenheimer" <dan.magenheimer@oracle.com>
-Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>, <xen-devel@lists.xensource.com>,
-        "Konrad Wilk" <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] xen/tmem: cleanup
-References: <4F2C06A00200007800071071@nat28.tlf.novell.com>
- <d86f0be9-1530-47bd-b3fd-8c251e563b25@default>
-In-Reply-To: <d86f0be9-1530-47bd-b3fd-8c251e563b25@default>
+	id S1754189Ab2BFIOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 03:14:51 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:55272 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab2BFIOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 03:14:50 -0500
+Message-ID: <20271.35831.227679.177366@ipc1.ka-ro>
+Date: Mon, 6 Feb 2012 09:14:47 +0100
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
+From: =?us-ascii?Q?=3D=3Futf-8=3FQ=3FLothar=5FWa=3DC3=3D9Fmann=3F=3D?= 
+	<LW@KARO-electronics.de>
+To: <linux-kernel@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [BUG] genirq: Race condition in ONESHOT IRQ handler disabling IRQ forever
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 04.02.12 at 17:42, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
->>  From: Jan Beulich [mailto:JBeulich@suse.com]
->> Subject: [PATCH] xen/tmem: cleanup
->> 
->> Use 'bool' for boolean variables. Do proper section placement.
->> Eliminate an unnecessary export.
->> 
->> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
->> 
->> -int tmem_enabled __read_mostly;
->> -EXPORT_SYMBOL(tmem_enabled);
->> +bool __read_mostly tmem_enabled = false;
-> 
-> tmem_enabled is used in xen/drivers/xen-selfballoon.c
+Hi,
 
-Which can't be built as a module, and hence the symbol doesn't need
-exporting. This patch (of course, I'm tempted to say) survived build
-testing.
+I already sent this to <linux-kernel@vger.kernel.org> on Feb. 1, 2012
+but did not get any response there. So resending to a wider audience
+with improved subject line:
 
-Jan
+there is a race condition in the threaded IRQ handler code for oneshot
+interrupts that may lead to disabling an IRQ indefinitely. IRQs are
+masked before calling the hard-irq handler and are unmasked only after
+the soft-irq handler has been run. Thus if the hard-irq handler
+returns IRQ_HANDLED instead of IRQ_WAKE_THREAD, meaning the soft-irq
+will not be called, the interrupt will remain masked forever.
+
+This can happen due to a short pulse on the interrupt line, that
+triggers the interrupt logic, but goes undetected by the hard-irq
+handler. The problem can be reproduced with the TSC2007 touch
+controller driver that uses ONESHOT interrupts.
+
+The problem arises also with interrupt controllers that latch a level
+triggered IRQ until it is acknowledged (like the i.MX28 does).
+In this case the IRQ status bit will remain asserted after the
+soft-irq finishes and retrigger the interrupt while the interrupt line
+is already deasserted.
+
+The following patch would solve the problem, but I'm not sure whether
+it's the Right Thing(TM) to do. Especially wrt. shared interrupts.
+
+diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+index 470d08c..93beadb 100644
+--- a/kernel/irq/handle.c
++++ b/kernel/irq/handle.c
+@@ -146,6 +146,11 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ 			/* Fall through to add to randomness */
+ 		case IRQ_HANDLED:
+ 			random |= action->flags;
++			/* unmask the IRQ that has been left masked
++			 * due to race condition
++			 */
++			if (res == IRQ_HANDLED && (action->flags & IRQF_ONESHOT))
++				unmask_irq(desc);
+ 			break;
+ 
+ 		default:
+
+Best regards,
+
+Lothar Wassmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
 
