@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab2BFVga (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 16:36:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47368 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab2BFVg3 (ORCPT
+	id S1755888Ab2BFVhA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 16:37:00 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59449 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755869Ab2BFVg5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 16:36:29 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Clark Williams <williams@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, stable@kernel.org,
-        arnaldo.melo@gmail.com
-Subject: [GIT PULL 0/3] perf/urgent fixes
-Date: Mon,  6 Feb 2012 19:36:06 -0200
-Message-Id: <1328564169-26517-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.123.g65da0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 6 Feb 2012 16:36:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120206162947.GD5117@oksana.dev.rtsoft.ru>
+References: <20120203163056.GA4190@redhat.com> <20120206162947.GD5117@oksana.dev.rtsoft.ru>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Mon, 6 Feb 2012 16:36:37 -0500
+Message-ID: <CAHGf_=qMGXViNwhZudXb9GntORjL2wjuim23GbLxMDQdMNfMPQ@mail.gmail.com>
+Subject: Re: [PATCH 4/6] staging: android/lowmemorykiller: Better mm handling
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 84f2b9b2edc09595569c7397cc3c888764ffd78b:
+>  static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+>  {
+> -       struct task_struct *p;
+> +       struct task_struct *tsk;
+>        struct task_struct *selected = NULL;
+>        int rem = 0;
+>        int tasksize;
+> @@ -134,15 +134,17 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+>        selected_oom_adj = min_adj;
+>
+>        rcu_read_lock();
+> -       for_each_process(p) {
+> -               struct mm_struct *mm;
+> +       for_each_process(tsk) {
+> +               struct task_struct *p;
+>                struct signal_struct *sig;
+>                int oom_adj;
+>
+> -               task_lock(p);
+> -               mm = p->mm;
+> +               p = find_lock_task_mm(tsk);
+> +               if (!p)
+> +                       continue;
+> +
+>                sig = p->signal;
+> -               if (!mm || !sig) {
+> +               if (!sig) {
+>                        task_unlock(p);
+>                        continue;
+>                }
+> @@ -151,7 +153,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+>                        task_unlock(p);
+>                        continue;
+>                }
+> -               tasksize = get_mm_rss(mm);
+> +               tasksize = get_mm_rss(p->mm);
+>                task_unlock(p);
+>                if (tasksize <= 0)
+>                        continue;
 
-  perf: Remove deprecated WARN_ON_ONCE() (2012-02-03 08:24:40 +0100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf-urgent-for-mingo
-
-for you to fetch changes up to a4a03fc7ef89020baca4f19174e6a43767c6d78a:
-
-  perf evsel: Fix an issue where perf report fails to show the proper percentage (2012-02-06 18:59:38 -0200)
-
-----------------------------------------------------------------
-Fixes for some long standing problems.
-
-----------------------------------------------------------------
-Jiri Olsa (2):
-      perf tools: Fix perf stack to non executable on x86_64
-      perf tools: Fix prefix matching for kernel maps
-
-Naveen N. Rao (1):
-      perf evsel: Fix an issue where perf report fails to show the proper percentage
-
- tools/perf/bench/mem-memcpy-x86-64-asm.S |    6 ++++++
- tools/perf/util/event.c                  |    2 +-
- tools/perf/util/evsel.c                  |    1 +
- 3 files changed, 8 insertions(+), 1 deletions(-)
+ack.
