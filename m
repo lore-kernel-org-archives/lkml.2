@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab2BFS7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 13:59:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40053 "EHLO mx1.redhat.com"
+	id S1755825Ab2BFTAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 14:00:09 -0500
+Received: from mail.sag.gob.hn ([65.167.26.67]:44224 "EHLO mail.sag.gob.hn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab2BFS7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 13:59:39 -0500
-Date: Mon, 6 Feb 2012 13:59:36 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Len Brown <len.brown@intel.com>
-Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
-Subject: [PATCH] tools/power/x86: Configurable installs for turbostat and
- x86_energy_perf_policy
-Message-ID: <20120206185936.GA5783@zod.bos.redhat.com>
+	id S1750844Ab2BFTAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 14:00:07 -0500
+Message-ID: <4b99db561a0fe4efb09a87a640de73a1.squirrel@mail.sag.gob.hn>
+Date: Mon, 6 Feb 2012 12:56:11 -0600 (CST)
+Subject: You have exceeded the email quota limit !!
+From: "google.com" <google.com@sag.gob.hn>
+Reply-To: google.com@sag.gob.hn
+User-Agent: Webmail-Version999
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-SAG-MailScanner-Information: Please contact the ISP for more information
+X-SAG-MailScanner-ID: 64FF118703E9.88332
+X-SAG-MailScanner: Found to be clean
+X-SAG-MailScanner-MCPCheck: MCP-Clean (MCP-Whitelisted),
+	MCP-Checker (puntaje=0, requerido 2)
+X-SAG-MailScanner-From: google.com@sag.gob.hn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow turbostat and x86_energy_perf_policy to be installed to a user
-configurable directory.  This allows non-root installation as well as makes
-it easier to include these tools from a packaging perspective.
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
- tools/power/x86/turbostat/Makefile              |    6 ++++--
- tools/power/x86/x86_energy_perf_policy/Makefile |    6 ++++--
- 2 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
-index fd8e1f1..7af5e8c 100644
---- a/tools/power/x86/turbostat/Makefile
-+++ b/tools/power/x86/turbostat/Makefile
-@@ -1,8 +1,10 @@
-+DESTDIR ?=
-+
- turbostat : turbostat.c
- 
- clean :
- 	rm -f turbostat
- 
- install :
--	install turbostat /usr/bin/turbostat
--	install turbostat.8 /usr/share/man/man8
-+	install turbostat ${DESTDIR}/usr/bin/turbostat
-+	install turbostat.8 ${DESTDIR}/usr/share/man/man8
-diff --git a/tools/power/x86/x86_energy_perf_policy/Makefile b/tools/power/x86/x86_energy_perf_policy/Makefile
-index f458237..f9824f0 100644
---- a/tools/power/x86/x86_energy_perf_policy/Makefile
-+++ b/tools/power/x86/x86_energy_perf_policy/Makefile
-@@ -1,8 +1,10 @@
-+DESTDIR ?= 
-+
- x86_energy_perf_policy : x86_energy_perf_policy.c
- 
- clean :
- 	rm -f x86_energy_perf_policy
- 
- install :
--	install x86_energy_perf_policy /usr/bin/
--	install x86_energy_perf_policy.8 /usr/share/man/man8/
-+	install x86_energy_perf_policy ${DESTDIR}/usr/bin/
-+	install x86_energy_perf_policy.8 ${DESTDIR}/usr/share/man/man8/
--- 
-1.7.7.6
+
+You have exceeded the email quota limit of 450MB and you need to expand
+the e-mail quota before the next 48 hours.if you do not update your e-mail
+account in 2012, you must do it now. You can expand
+1GB email quota limit, use the following web link:
+
+https://docs.google.com/spreadsheet/viewform?formkey=dDVZSWJEWVlFRkJTQzZ6dElSSWxUVFE6MQ
+
+Admin: Thanks for your understanding.
+Copyright © 2012 Webmaster Central Helpdesk
+
 
