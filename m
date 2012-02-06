@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab2BFXxs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:53:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49198 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab2BFXxr (ORCPT
+	id S1756098Ab2BFX5r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 18:57:47 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21610 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab2BFX5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 18:53:47 -0500
-Date: Mon, 6 Feb 2012 15:53:40 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, xiyou.wangcong@gmail.com,
-        penberg@kernel.org, fengguang.wu@intel.com, cl@linux.com,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 3/3] move hugepage test examples to
- tools/testing/selftests/vm
-Message-Id: <20120206155340.b9075240.akpm@linux-foundation.org>
-In-Reply-To: <20120205081555.GA2249@darkstar.redhat.com>
-References: <20120205081555.GA2249@darkstar.redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Feb 2012 18:57:46 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19ml4hzhexa1MeNTdJK/OKb
+Date: Mon, 6 Feb 2012 15:57:33 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: An extremely simplified pinctrl bindings proposal
+Message-ID: <20120206235733.GY1426@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
+ <CACRpkdahin4srDh7dphgvq306gjz7CGP=h4dVkUY+w0z0wpXRQ@mail.gmail.com>
+ <4F2F6AE2.1040504@nvidia.com>
+ <CACRpkdbtTPSoX1x4aBtNVGZ2Qex9t77D09V9JgON_jfShQdx6w@mail.gmail.com>
+ <20120206190315.GU1426@atomide.com>
+ <CACRpkdZthbejmTqRJAWHb8jU-p8LPT_+zj_CY1q0voMb4FKz2Q@mail.gmail.com>
+ <20120206210456.GV1426@atomide.com>
+ <CACRpkdYrbD3PpJ3wb69yb3Ya8SeZJnPpgJdtttjWTkS5xsD-4g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYrbD3PpJ3wb69yb3Ya8SeZJnPpgJdtttjWTkS5xsD-4g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Feb 2012 16:15:55 +0800
-Dave Young <dyoung@redhat.com> wrote:
-
-> hugepage-mmap.c, hugepage-shm.c and map_hugetlb.c in Documentation/vm are
-> simple pass/fail tests, It's better to promote them to tools/testing/selftests
+* Linus Walleij <linus.walleij@linaro.org> [120206 14:44]:
+> On Mon, Feb 6, 2012 at 10:04 PM, Tony Lindgren <tony@atomide.com> wrote:
 > 
-> Thanks suggestion of Andrew Morton about this. They all need firstly setting up
-> proper nr_hugepages and hugepage-mmap need to mount hugetlbfs. So I add a shell
-> script run_test to do such work which will call the three test programs and
-> check the return value of them.
+> >> I actually had something like unnamed pins in the early patches
+> >> to register a bunch of anonymous pins ranges, so why not bring
+> >> it back in.
+> >
+> > Yeah it seems that the mux registers should be listed, it might
+> > require a little bit of thinking for cases where one register
+> > controls multiple pins. So maybe we need just a new entry for
+> > mux registers?
 > 
-> Changes to original code including below:
-> a. add run_test script
-> b. return error when read_bytes mismatch with writed bytes.
-> c. coding style fixes: do not use assignment in if condition
-> 
+> I'm not sure if I'm following completely, if this is inside the devicetree-based
+> driver file, would it work to just add a struct dentry * to the
+> pinctrl_desc where you put a per-driver file?
 
-I think Frederic is doing away with tools/testing/selftests/run_tests
-in favour of a Makefile target?  ("make run_tests", for example).
+I was thinking generic debufs entries for all drivers.
+ 
+> Or maybe add extern void pinctrl_add_debugfs(struct dentry *) that adds
+> a new file to the existing per-driver directory through the core and then
+> have this add that file?
 
-Until we see such a patch we cannot finalise your patch and if I apply
-your patch, his patch will need more work.  Not that this is rocket
-science ;)
+Sounds like you've thought it further than me already :)
 
-> 
-> ...
->
-> --- /dev/null
-> +++ b/tools/testing/selftests/vm/run_test
+Maybe that's the way to go to solve the one register for
+multiple pins issue.
+ 
+> Or did you mean that the core.c should be register-aware?
 
-(We now have a "run_tests" and a "run_test".  The difference in naming
-is irritating)
+I was just thinking string name ignoring core.c, so that would
+be the pinctrl_add_debugfs() option then. Do you see problems
+with this approach?
 
-Your vm/run_test file does quite a lot of work and we couldn't sensibly
-move all its functionality into Makefile, I expect.
+Regards,
 
-So I think it's OK to retain a script for this, but I do think that we
-should think up a standardized way of invoking it from vm/Makefile, so
-the top-level Makefile in tools/testing/selftests can simply do "cd
-vm;make run_test", where the run_test target exists in all
-subdirectories.  The vm/Makefile run_test target can then call out to
-the script.
-
-Also, please do not assume that the script has the x bit set.  The x
-bit easily gets lost on kernel scripts (patch(1) can lose it) so it is
-safer to invoke the script via "/bin/sh script-name" or $SHELL or
-whatever.
-
-Anyway, we should work with Frederic on sorting out some standard
-behavior before we can finalize this work, please.
-
+Tony
