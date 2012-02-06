@@ -1,236 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2BFWMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:12:10 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51218 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755897Ab2BFWKd (ORCPT
+	id S1755920Ab2BFWTV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:19:21 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45461 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755705Ab2BFWTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:10:33 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 6/8] perf doc: Allow producing documentation in a specified output directory
-Date: Mon,  6 Feb 2012 20:10:21 -0200
-Message-Id: <1328566223-27218-7-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.123.g65da0
-In-Reply-To: <1328566223-27218-1-git-send-email-acme@infradead.org>
-References: <1328566223-27218-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 6 Feb 2012 17:19:20 -0500
+Message-ID: <4F3051E3.5050402@gmail.com>
+Date: Mon, 06 Feb 2012 15:19:15 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
+        vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com
+Subject: Re: [PATCH v5 16/18] perf: enable reading of perf.data files from
+ different ABI rev
+References: <1328187288-24395-1-git-send-email-eranian@google.com> <1328187288-24395-17-git-send-email-eranian@google.com>
+In-Reply-To: <1328187288-24395-17-git-send-email-eranian@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-Currently we can put the object files in a different directory by using
-'O=' comand line argument.
 
-However the generated documentation files don't honor this directive,
+On 02/02/2012 05:54 AM, Stephane Eranian wrote:
+> This patch allows perf to process perf.data files generated
+> using an ABI that has a different perf_event_attr struct size, i.e.,
+> a different ABI version.
+> 
+> The perf_event_attr can be extended, yet perf needs to cope with
+> older perf.data files. Similarly, perf must be able to cope with
+> a perf.data file which is using a newer version of the ABI than
+> what it knows about.
+> 
+> This patch adds read_attr(), a routine that reads a perf_event_attr
+> struct from a file incrementally based on its advertised size. If
+> the on-file struct is smaller than what perf knows, then the extra
+> fields are zeroed. If the on-file struct is bigger, then perf only
+> uses what it knows about, the rest is skipped.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  tools/perf/util/header.c |   49 ++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 47 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index 6f4187d..8d6c18d 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -1959,6 +1959,51 @@ static int perf_header__read_pipe(struct perf_session *session, int fd)
+>  	return 0;
+>  }
+>  
+> +static int read_attr(int fd, struct perf_header *ph,
+> +		     struct perf_file_attr *f_attr)
+> +{
+> +	struct perf_event_attr *attr = &f_attr->attr;
+> +	size_t sz, left;
+> +	size_t our_sz = sizeof(f_attr->attr);
+> +	int ret;
+> +
+> +	memset(f_attr, 0, sizeof(*f_attr));
+> +
+> +	/* read minimal guaranteed structure */
+> +	ret = readn(fd, attr, PERF_ATTR_SIZE_VER0);
+> +	if (ret <= 0)
+> +		return -1;
 
-This patch fixes that. It's been tested for man target but the others
-seems currently broken so no tests have been done on them so far.
+As I recall the first bump in that structure happened in 2.6.32. Why add
+backward compatibility for it now? ie., why not just expect VER1
 
-Link: http://lkml.kernel.org/r/1328541443-18003-1-git-send-email-fbuihuu@gmail.com
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/Makefile |   86 ++++++++++++++++++++++--------------
- 1 files changed, 52 insertions(+), 34 deletions(-)
+> +
+> +	/* on file perf_event_attr size */
+> +	sz = attr->size;
+> +	if (ph->needs_swap)
+> +		sz = bswap_32(sz);
+> +
+> +	if (sz == 0) {
+> +		/* assume ABI0 */
+> +		sz =  PERF_ATTR_SIZE_VER0;
 
-diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-index 4626a39..ca600e0 100644
---- a/tools/perf/Documentation/Makefile
-+++ b/tools/perf/Documentation/Makefile
-@@ -1,3 +1,10 @@
-+OUTPUT := ./
-+ifeq ("$(origin O)", "command line")
-+  ifneq ($(O),)
-+	OUTPUT := $(O)/
-+  endif
-+endif
-+
- MAN1_TXT= \
- 	$(filter-out $(addsuffix .txt, $(ARTICLES) $(SP_ARTICLES)), \
- 		$(wildcard perf-*.txt)) \
-@@ -6,10 +13,11 @@ MAN5_TXT=
- MAN7_TXT=
- 
- MAN_TXT = $(MAN1_TXT) $(MAN5_TXT) $(MAN7_TXT)
--MAN_XML=$(patsubst %.txt,%.xml,$(MAN_TXT))
--MAN_HTML=$(patsubst %.txt,%.html,$(MAN_TXT))
-+_MAN_XML=$(patsubst %.txt,%.xml,$(MAN_TXT))
-+_MAN_HTML=$(patsubst %.txt,%.html,$(MAN_TXT))
- 
--DOC_HTML=$(MAN_HTML)
-+MAN_XML=$(addprefix $(OUTPUT),$(_MAN_XML))
-+MAN_HTML=$(addprefix $(OUTPUT),$(_MAN_HTML))
- 
- ARTICLES =
- # with their own formatting rules.
-@@ -18,11 +26,17 @@ API_DOCS = $(patsubst %.txt,%,$(filter-out technical/api-index-skel.txt technica
- SP_ARTICLES += $(API_DOCS)
- SP_ARTICLES += technical/api-index
- 
--DOC_HTML += $(patsubst %,%.html,$(ARTICLES) $(SP_ARTICLES))
-+_DOC_HTML = $(_MAN_HTML)
-+_DOC_HTML+=$(patsubst %,%.html,$(ARTICLES) $(SP_ARTICLES))
-+DOC_HTML=$(addprefix $(OUTPUT),$(_DOC_HTML))
- 
--DOC_MAN1=$(patsubst %.txt,%.1,$(MAN1_TXT))
--DOC_MAN5=$(patsubst %.txt,%.5,$(MAN5_TXT))
--DOC_MAN7=$(patsubst %.txt,%.7,$(MAN7_TXT))
-+_DOC_MAN1=$(patsubst %.txt,%.1,$(MAN1_TXT))
-+_DOC_MAN5=$(patsubst %.txt,%.5,$(MAN5_TXT))
-+_DOC_MAN7=$(patsubst %.txt,%.7,$(MAN7_TXT))
-+
-+DOC_MAN1=$(addprefix $(OUTPUT),$(_DOC_MAN1))
-+DOC_MAN5=$(addprefix $(OUTPUT),$(_DOC_MAN5))
-+DOC_MAN7=$(addprefix $(OUTPUT),$(_DOC_MAN7))
- 
- # Make the path relative to DESTDIR, not prefix
- ifndef DESTDIR
-@@ -150,9 +164,9 @@ man1: $(DOC_MAN1)
- man5: $(DOC_MAN5)
- man7: $(DOC_MAN7)
- 
--info: perf.info perfman.info
-+info: $(OUTPUT)perf.info $(OUTPUT)perfman.info
- 
--pdf: user-manual.pdf
-+pdf: $(OUTPUT)user-manual.pdf
- 
- install: install-man
- 
-@@ -166,7 +180,7 @@ install-man: man
- 
- install-info: info
- 	$(INSTALL) -d -m 755 $(DESTDIR)$(infodir)
--	$(INSTALL) -m 644 perf.info perfman.info $(DESTDIR)$(infodir)
-+	$(INSTALL) -m 644 $(OUTPUT)perf.info $(OUTPUT)perfman.info $(DESTDIR)$(infodir)
- 	if test -r $(DESTDIR)$(infodir)/dir; then \
- 	  $(INSTALL_INFO) --info-dir=$(DESTDIR)$(infodir) perf.info ;\
- 	  $(INSTALL_INFO) --info-dir=$(DESTDIR)$(infodir) perfman.info ;\
-@@ -176,7 +190,7 @@ install-info: info
- 
- install-pdf: pdf
- 	$(INSTALL) -d -m 755 $(DESTDIR)$(pdfdir)
--	$(INSTALL) -m 644 user-manual.pdf $(DESTDIR)$(pdfdir)
-+	$(INSTALL) -m 644 $(OUTPUT)user-manual.pdf $(DESTDIR)$(pdfdir)
- 
- #install-html: html
- #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
-@@ -189,14 +203,14 @@ install-pdf: pdf
- #
- # Determine "include::" file references in asciidoc files.
- #
--doc.dep : $(wildcard *.txt) build-docdep.perl
-+$(OUTPUT)doc.dep : $(wildcard *.txt) build-docdep.perl
- 	$(QUIET_GEN)$(RM) $@+ $@ && \
- 	$(PERL_PATH) ./build-docdep.perl >$@+ $(QUIET_STDERR) && \
- 	mv $@+ $@
- 
---include doc.dep
-+-include $(OUPTUT)doc.dep
- 
--cmds_txt = cmds-ancillaryinterrogators.txt \
-+_cmds_txt = cmds-ancillaryinterrogators.txt \
- 	cmds-ancillarymanipulators.txt \
- 	cmds-mainporcelain.txt \
- 	cmds-plumbinginterrogators.txt \
-@@ -205,32 +219,36 @@ cmds_txt = cmds-ancillaryinterrogators.txt \
- 	cmds-synchelpers.txt \
- 	cmds-purehelpers.txt \
- 	cmds-foreignscminterface.txt
-+cmds_txt=$(addprefix $(OUTPUT),$(_cmds_txt))
- 
--$(cmds_txt): cmd-list.made
-+$(cmds_txt): $(OUTPUT)cmd-list.made
- 
--cmd-list.made: cmd-list.perl ../command-list.txt $(MAN1_TXT)
-+$(OUTPUT)cmd-list.made: cmd-list.perl ../command-list.txt $(MAN1_TXT)
- 	$(QUIET_GEN)$(RM) $@ && \
- 	$(PERL_PATH) ./cmd-list.perl ../command-list.txt $(QUIET_STDERR) && \
- 	date >$@
- 
- clean:
--	$(RM) *.xml *.xml+ *.html *.html+ *.1 *.5 *.7
--	$(RM) *.texi *.texi+ *.texi++ perf.info perfman.info
--	$(RM) howto-index.txt howto/*.html doc.dep
--	$(RM) technical/api-*.html technical/api-index.txt
--	$(RM) $(cmds_txt) *.made
--
--$(MAN_HTML): %.html : %.txt
-+	$(RM) $(MAN_XML) $(addsuffix +,$(MAN_XML))
-+	$(RM) $(MAN_HTML) $(addsuffix +,$(MAN_HTML))
-+	$(RM) $(DOC_HTML) $(DOC_MAN1) $(DOC_MAN5) $(DOC_MAN7)
-+	$(RM) $(OUTPUT)*.texi $(OUTPUT)*.texi+ $(OUTPUT)*.texi++
-+	$(RM) $(OUTPUT)perf.info $(OUTPUT)perfman.info
-+	$(RM) $(OUTPUT)howto-index.txt $(OUTPUT)howto/*.html $(OUTPUT)doc.dep
-+	$(RM) $(OUTPUT)technical/api-*.html $(OUTPUT)technical/api-index.txt
-+	$(RM) $(cmds_txt) $(OUTPUT)*.made
-+
-+$(MAN_HTML): $(OUTPUT)%.html : %.txt
- 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
- 	$(ASCIIDOC) -b xhtml11 -d manpage -f asciidoc.conf \
- 		$(ASCIIDOC_EXTRA) -aperf_version=$(PERF_VERSION) -o $@+ $< && \
- 	mv $@+ $@
- 
--%.1 %.5 %.7 : %.xml
-+$(OUTPUT)%.1 $(OUTPUT)%.5 $(OUTPUT)%.7 : $(OUTPUT)%.xml
- 	$(QUIET_XMLTO)$(RM) $@ && \
--	xmlto -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
-+	xmlto -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
- 
--%.xml : %.txt
-+$(OUTPUT)%.xml : %.txt
- 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
- 	$(ASCIIDOC) -b docbook -d manpage -f asciidoc.conf \
- 		$(ASCIIDOC_EXTRA) -aperf_version=$(PERF_VERSION) -o $@+ $< && \
-@@ -239,25 +257,25 @@ $(MAN_HTML): %.html : %.txt
- XSLT = docbook.xsl
- XSLTOPTS = --xinclude --stringparam html.stylesheet docbook-xsl.css
- 
--user-manual.html: user-manual.xml
-+$(OUTPUT)user-manual.html: $(OUTPUT)user-manual.xml
- 	$(QUIET_XSLTPROC)xsltproc $(XSLTOPTS) -o $@ $(XSLT) $<
- 
--perf.info: user-manual.texi
--	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split -o $@ user-manual.texi
-+$(OUTPUT)perf.info: $(OUTPUT)user-manual.texi
-+	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split -o $@ $(OUTPUT)user-manual.texi
- 
--user-manual.texi: user-manual.xml
-+$(OUTPUT)user-manual.texi: $(OUTPUT)user-manual.xml
- 	$(QUIET_DB2TEXI)$(RM) $@+ $@ && \
--	$(DOCBOOK2X_TEXI) user-manual.xml --encoding=UTF-8 --to-stdout >$@++ && \
-+	$(DOCBOOK2X_TEXI) $(OUTPUT)user-manual.xml --encoding=UTF-8 --to-stdout >$@++ && \
- 	$(PERL_PATH) fix-texi.perl <$@++ >$@+ && \
- 	rm $@++ && \
- 	mv $@+ $@
- 
--user-manual.pdf: user-manual.xml
-+$(OUTPUT)user-manual.pdf: $(OUTPUT)user-manual.xml
- 	$(QUIET_DBLATEX)$(RM) $@+ $@ && \
- 	$(DBLATEX) -o $@+ -p /etc/asciidoc/dblatex/asciidoc-dblatex.xsl -s /etc/asciidoc/dblatex/asciidoc-dblatex.sty $< && \
- 	mv $@+ $@
- 
--perfman.texi: $(MAN_XML) cat-texi.perl
-+$(OUTPUT)perfman.texi: $(MAN_XML) cat-texi.perl
- 	$(QUIET_DB2TEXI)$(RM) $@+ $@ && \
- 	($(foreach xml,$(MAN_XML),$(DOCBOOK2X_TEXI) --encoding=UTF-8 \
- 		--to-stdout $(xml) &&) true) > $@++ && \
-@@ -265,7 +283,7 @@ perfman.texi: $(MAN_XML) cat-texi.perl
- 	rm $@++ && \
- 	mv $@+ $@
- 
--perfman.info: perfman.texi
-+$(OUTPUT)perfman.info: $(OUTPUT)perfman.texi
- 	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split --no-validate $*.texi
- 
- $(patsubst %.txt,%.texi,$(MAN_TXT)): %.texi : %.xml
--- 
-1.7.9.123.g65da0
+Shouldn't this be a failure? ie., problem with the file (or the
+swapping) since size can't be 0
 
+And then for the following why not restrict sz to known, expected sizes
+-- using the PERF_ATTR_SIZE_VER defines introduced in patch 15?
+
+> +	} else if (sz > our_sz) {
+> +		/* bigger than what we know about */
+> +		sz = our_sz;
+> +
+> +		/* skip what we do not know about */
+> +		lseek(fd, SEEK_CUR, attr->size - our_sz);
+> +	}
+> +	/* what we have not yet read and that we know about */
+> +	left = sz - PERF_ATTR_SIZE_VER0;
+> +	if (left) {
+> +		void *ptr = attr;
+> +		ptr += PERF_ATTR_SIZE_VER0;
+> +
+> +		ret = readn(fd, ptr, left);
+> +		if (ret <= 0)
+> +			return -1;
+> +	}
+> +	/* read the ids */
+> +	ret = readn(fd, &f_attr->ids, sizeof(struct perf_file_section));
+
+Confused by the above? It is not done in the old code, so why read the
+ids here? I scanned the other patches, but don't see other code movement
+on this file.
+
+David
+
+> +	return ret <= 0 ? -1 : 0;
+> +}
+> +
+>  int perf_session__read_header(struct perf_session *session, int fd)
+>  {
+>  	struct perf_header *header = &session->header;
+> @@ -1979,14 +2024,14 @@ int perf_session__read_header(struct perf_session *session, int fd)
+>  		return -EINVAL;
+>  	}
+>  
+> -	nr_attrs = f_header.attrs.size / sizeof(f_attr);
+> +	nr_attrs = f_header.attrs.size / f_header.attr_size;
+>  	lseek(fd, f_header.attrs.offset, SEEK_SET);
+>  
+>  	for (i = 0; i < nr_attrs; i++) {
+>  		struct perf_evsel *evsel;
+>  		off_t tmp;
+>  
+> -		if (readn(fd, &f_attr, sizeof(f_attr)) <= 0)
+> +		if (read_attr(fd, header, &f_attr) < 0)
+>  			goto out_errno;
+>  
+>  		if (header->needs_swap)
