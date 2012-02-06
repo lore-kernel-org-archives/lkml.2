@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab2BFREK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 12:04:10 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:59060 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755597Ab2BFREH (ORCPT
+	id S1755589Ab2BFRFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 12:05:25 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:42794 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755204Ab2BFRFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 12:04:07 -0500
-X-Sasl-enc: olIliIN5ubIgB6/9JoTo48adMR4xi9O6E4iBCcLZ6xtl 1328547846
-Date: Mon, 6 Feb 2012 09:03:49 -0800
-From: Greg KH <greg@kroah.com>
-To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        rob.lee@linaro.org
-Subject: Re: [linux-pm] [RFC PATCH] thermal: Add support to report cooling
- statistics achieved by cooling devices
-Message-ID: <20120206170348.GA19749@kroah.com>
-References: <1326878467-17766-1-git-send-email-amit.kachhap@linaro.org>
- <20120206165658.GA28687@atrey.karlin.mff.cuni.cz>
+	Mon, 6 Feb 2012 12:05:23 -0500
+Date: Mon, 6 Feb 2012 12:02:24 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/tmem: cleanup
+Message-ID: <20120206170224.GD23240@phenom.dumpdata.com>
+References: <4F2C06A00200007800071071@nat28.tlf.novell.com>
+ <d86f0be9-1530-47bd-b3fd-8c251e563b25@default>
+ <4F2F998202000078000714CD@nat28.tlf.novell.com>
+ <e871af1b-8003-4d3d-8fde-ea40545ff9fe@default>
+ <4F3012B602000078000716AB@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120206165658.GA28687@atrey.karlin.mff.cuni.cz>
+In-Reply-To: <4F3012B602000078000716AB@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090207.4F30084D.0068,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 05:56:58PM +0100, Pavel Machek wrote:
-> Hi!
-> 
-> > Add a sysfs node code to report effective cooling of all cooling devices
-> > attached to each trip points of a thermal zone. The cooling data reported
-> > will be absolute if the higher temperature trip points are arranged first
-> > otherwise the cooling stats is the cumulative effect of the earlier
-> > invoked cooling handlers.
+On Mon, Feb 06, 2012 at 04:49:42PM +0000, Jan Beulich wrote:
+> >>> On 06.02.12 at 17:37, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> >>  From: Jan Beulich [mailto:JBeulich@suse.com]
+> >> Sent: Monday, February 06, 2012 1:13 AM
+> >> To: Dan Magenheimer
+> >> Cc: Jeremy Fitzhardinge; xen-devel@lists.xensource.com; Konrad Wilk; 
+> > linux-kernel@vger.kernel.org 
+> >> Subject: RE: [PATCH] xen/tmem: cleanup
+> >> 
+> >> >>> On 04.02.12 at 17:42, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> >> >>  From: Jan Beulich [mailto:JBeulich@suse.com]
+> >> >> Subject: [PATCH] xen/tmem: cleanup
+> >> >>
+> >> >> Use 'bool' for boolean variables. Do proper section placement.
+> >> >> Eliminate an unnecessary export.
+> >> >>
+> >> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> >> >> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+> >> >>
+> >> >> -int tmem_enabled __read_mostly;
+> >> >> -EXPORT_SYMBOL(tmem_enabled);
+> >> >> +bool __read_mostly tmem_enabled = false;
+> >> >
+> >> > tmem_enabled is used in xen/drivers/xen-selfballoon.c
+> >> 
+> >> Which can't be built as a module, and hence the symbol doesn't need
+> >> exporting. This patch (of course, I'm tempted to say) survived build
+> >> testing.
 > > 
-> > The basic assumption is that cooling devices will bring down the temperature
-> > in a symmetric manner and those statistics can be stored back and used for
-> > further tuning of the system.
+> > Yes, correct.  BUT... I think only the reason xen-selfballoon.c
+> > can't be built as a module is because the MM variable vm_committed_as
+> > (or an access function) is not exported.  Ideally xen-selfballoon.c
+> > probably should be a module but putting a core MM change in
+> > the critical path of a Xen-only-related enhancement seemed
+> > a recipe for sure failure.
 > 
-> /sys fs should be one-value-per-file, talk to gregkh.
+> No, this isn't the main reason (as you say further down, this could
+> easily be adjusted for) afaict. The main reason is that
+> register_xen_selfballooning() is being called from non-modular
+> code (xen-balloon.c), which could be made a module too, but in
+> turn has at least one reference that wouldn't be nice to become
+> an export (balloon_set_new_target()).
 
-That's correct.
+It would be nice if all of it could become modules. That way HVM
+device driver domains could load the whole thing without having much
+built-in code in the kernel.
 
-Why not use debugfs for this instead?
-
-thanks,
-
-greg k-h
+Is it possible to do that?
+> 
+> Jan
+> 
+> > Konrad, if you (1) disagree entirely, or (2) want to remove the
+> > tmem_enabled EXPORT_SYMBOL now and add it back later if/when
+> > the core MM change happens, I'll leave that up to you.
+> > 
+> > If (2), the MM change should be added to the minor-tmem-related-
+> > changes-that-need-to-be-eventually-upstreamed list ;-)
+> > 
+> > Dan
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
