@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab2BFBuT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 20:50:19 -0500
-Received: from eastrmfepo102.cox.net ([68.230.241.214]:59641 "EHLO
-	eastrmfepo102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989Ab2BFBuS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 20:50:18 -0500
-X-Greylist: delayed 2137 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Feb 2012 20:50:17 EST
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020207.4F2F297E.009D,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=9CGhgpVy8VOpPLslScZdRHBhJ+fxHMdKNa4l378vzVw=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=vIygn8JkSz8A:10 a=IkcTkHD0fZMA:10
- a=fQ0R5/E6U8zqvEIwXtjL/g==:17 a=PT6YlxcxAAAA:8 a=4rWN_Wxv-kW_zN8-trUA:9
- a=QEXdDO2ut3YA:10 a=qqs0dwh5Zc7-NDGI:21 a=o5Cs7Jo1DH4zNT7I:21
- a=fQ0R5/E6U8zqvEIwXtjL/g==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20120205201438.CADJL.371752.imail@eastrmwml105>
-Date: Sun, 5 Feb 2012 17:14:38 -0800
-From: "Western.Union" <mohammed05@cox.net>
-Reply-To: wumtonlinepay15@teman.zikri.com
-Subject: Happy New Year!!!
+	id S1754709Ab2BFBvk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 20:51:40 -0500
+Received: from tundra.namei.org ([65.99.196.166]:51318 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753989Ab2BFBvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 20:51:38 -0500
+Date: Mon, 6 Feb 2012 12:51:35 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zohar@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH v1 0/2] integrity: module integrity verification
+In-Reply-To: <cover.1328122362.git.dmitry.kasatkin@intel.com>
+Message-ID: <alpine.LRH.2.00.1202061250400.16907@tundra.namei.org>
+References: <cover.1328122362.git.dmitry.kasatkin@intel.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Atten:Beneficiary,
+On Wed, 1 Feb 2012, Dmitry Kasatkin wrote:
 
-be informed that you have  (5 Million united state dollars) Lodged in our Western Union to transfer to you as compensation.contact mr.collins moore  via mail : mr.collins.moore555@teman.zikri.com
+> Hi,
+> 
+> Here is another module verification patchset, which is based on the recently
+> upstreamed digital signature support used by EVM and IMA-appraisal.
+
+You should cc: Rusty on any changes to the module code.
+
+
+-- 
+James Morris
+<jmorris@namei.org>
