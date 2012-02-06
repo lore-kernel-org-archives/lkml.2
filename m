@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab2BFAq0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 19:46:26 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:59294 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab2BFAqY (ORCPT
+	id S1754684Ab2BFAvv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 19:51:51 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61121 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502Ab2BFAvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 19:46:24 -0500
-Date: Mon, 6 Feb 2012 09:46:08 +0900
-From: Norbert Preining <preining@logic.at>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, jeff@garzik.org,
-        Tejun Heo <tj@kernel.org>,
-        "stern@rowland.harvard.edu >> Alan Stern" <stern@rowland.harvard.edu>,
-        linux-ide@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume,
-	COMRESET failed
-Message-ID: <20120206004608.GA9413@gamma.logic.tuwien.ac.at>
-References: <20120202051258.GA15550@gamma.logic.tuwien.ac.at> <4F2A4B7E.2090503@linux.vnet.ibm.com> <1328231716.15079.15.camel@minggr> <1328242884.15079.22.camel@minggr> <20120203052452.GC24563@gamma.logic.tuwien.ac.at> <1328247269.15079.26.camel@minggr> <20120203054319.GA25510@gamma.logic.tuwien.ac.at> <1328257660.15079.30.camel@minggr>
+	Sun, 5 Feb 2012 19:51:49 -0500
+Message-ID: <4F2F2424.3060702@gmail.com>
+Date: Sun, 05 Feb 2012 18:51:48 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328257660.15079.30.camel@minggr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Milton Miller <miltonm@bga.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 00/25] irq_domain generalization and refinement
+References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca> <20120204221748.GN14129@n2100.arm.linux.org.uk>
+In-Reply-To: <20120204221748.GN14129@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lin,
+Russell,
 
-
-sorry for the delay, weekend I was off ...
-
-On Fr, 03 Feb 2012, Lin Ming wrote:
-> > Confirmed. Reverted 7faa33da9b7 on top of 6c073a7ee250 made
-> > the boot delay go away. dmesg from this boot attached.
+On 02/04/2012 04:17 PM, Russell King - ARM Linux wrote:
+> On Fri, Jan 27, 2012 at 02:35:54PM -0700, Grant Likely wrote:
+>> Hey everyone,
+>>
+>> This patch series is ready for much wider consumption now.  I'd like
+>> to get it into linux-next ASAP because there will be ARM board support
+>> depending on it.  I'll wait a few days before I ask Stephen to pull
+>> this in.
 > 
-> Dig into the code, but I can't find where the problem is.
+> Grant,
 > 
-> Anyway, does below DEBUG patch help?
-> Let's always stop the engine during hard reset.
+> Can you answer me this: does this irqdomain support require DT?
+> 
 
-If you meant: 
-  "Try that patch on top of HEAD *without* reverting 7faa33da9b7?"
-then I can report that it does NOT help. With *only* this patch I still
-get 10sec delay, and otherwise nothing changes.
+No. It's the other way around, DT requires irqdomain. The GIC and VIC
+code for example can be built with or w/o DT enabled, but both select
+IRQ_DOMAIN.
 
+FYI, I just submitted a patch that selects IRQ_DOMAIN for all of ARM:
 
-Best wishes
+http://www.gossamer-threads.com/lists/linux/kernel/1487231?page=last
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-YESNABY (n.)
-A 'yes, maybe' which means 'no'.
-			--- Douglas Adams, The Meaning of Liff
+Either we do that or we select IRQ_DOMAIN one irq_chip at a time. With
+the "new" irq_domain code, we could probably do better to shrink the
+code needed in the non-DT case.
+
+> The question comes up because OMAP has converted some of their support
+> to require irq domain support for their PMICs, and it seems irq domain
+> support requires DT.  This seems to have made the whole of OMAP
+> essentially become a DT-only platform.
+
+I think we should select DT or not at the sub-arch level. Trying to
+support both builds is a needless headache.
+
+> 
+> Removing the dependency on IRQ_DOMAIN brings up these build errors
+> in the twl-core code (that being the PMIC for OMAP CPUs):
+> 
+> drivers/mfd/twl-core.c: In function 'twl_probe':
+> drivers/mfd/twl-core.c:1229: error: invalid use of undefined type 'struct irq_domain'
+> drivers/mfd/twl-core.c:1230: error: invalid use of undefined type 'struct irq_domain'
+> drivers/mfd/twl-core.c:1235: error: implicit declaration of function 'irq_domain_add'
+> 
+> That's a bit of a problem, because afaik there aren't the DT descriptions
+> for the boards I have yet, so it's causing me to see regressions when
+> building and booting kernels with CONFIG_OF=n.
+> 
+> The more core-code we end up with which requires DT, the worse this
+> problem is going to become - and obviously saying "everyone must now
+> convert to DT" is, even today, a mammoth task.
+> 
+> Now, here's the thing: I believe that IRQ domains - at least as far as
+> the hwirq stuff - should be available irrespective of whether we have
+> the rest of the IRQ domain support code in place, so that IRQ support
+> code doesn't have to keep playing games to decode from the global
+> space to the per-controller number space.
+> 
+> I believe that would certainly help the current OMAP problems, where
+> the current lack of CONFIG_IRQ_DOMAIN basically makes the kernel oops
+> on boot.
+> 
+> How we fix this regression for 3.4 I've no idea at present, I'm trying
+> to work out what the real dependencies are for OMAP on this stuff.
+> 
+> Finally, do we need asm/irq.h in our asm/prom.h ?  That's causing
+> fragility between DT and non-DT builds, because people are finding
+> that their DT builds work without their mach/irqs.h includes but
+> fail when built with non-DT.  The only thing which DT might need -
+> at the most - is NR_IRQS, but I'd hope with things like irq domains
+> it doesn't actually require it.
+
+Doesn't look like it is needed.
+
+Rob
+
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
+
