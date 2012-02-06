@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab2BFGAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 01:00:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51246 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab2BFGAI (ORCPT
+	id S1753901Ab2BFGHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 01:07:15 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:38973 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753025Ab2BFGHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 01:00:08 -0500
-Date: Sun, 5 Feb 2012 23:00:04 -0700
+	Mon, 6 Feb 2012 01:07:13 -0500
+Date: Sun, 5 Feb 2012 23:07:08 -0700
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Michael Neuling <mikey@neuling.org>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 21/25] irqdomain/powerpc: Replace custom xlate
- functions with library functions
-Message-ID: <20120206060004.GB21449@ponder.secretlab.ca>
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
- <1327700179-17454-22-git-send-email-grant.likely@secretlab.ca>
- <24476.1328505761@neuling.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        "Hans J. Koch" <hjk@linutronix.de>,
+        Torben Hohn <torbenh@linutronix.de>
+Subject: Re: linux-next: build failure after merge of the final tree (gpio
+ tree related)
+Message-ID: <20120206060708.GC21449@ponder.secretlab.ca>
+References: <20120206152346.106057d7dd747d0daa47bbc8@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <24476.1328505761@neuling.org>
+In-Reply-To: <20120206152346.106057d7dd747d0daa47bbc8@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 04:22:41PM +1100, Michael Neuling wrote:
-> >  static const struct irq_domain_ops pmac_pic_host_ops = {
-> >  	.match = pmac_pic_host_match,
-> >  	.map = pmac_pic_host_map,
-> > -	.xlate = pmac_pic_host_xlate,
-> > +	.xlate = irq_domain_xlate_onecell;
-> >  };
-> >  
+On Mon, Feb 06, 2012 at 03:23:46PM +1100, Stephen Rothwell wrote:
+> Hi Grant,
 > 
-> This causes a compile fail (in next-20120206):
->   arch/powerpc/platforms/powermac/pic.c:294: error: expected '}' before ';' token
-> Trivial fix below:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/gpio/gpio-sodaville.c:130:2: error: unknown field 'dt_translate' specified in initializer
+> drivers/gpio/gpio-sodaville.c:130:2: warning: initialization from incompatible pointer type [enabled by default]
+> drivers/gpio/gpio-sodaville.c:130:2: warning: (near initialization for 'irq_domain_sdv_ops.match') [enabled by default]
+> drivers/gpio/gpio-sodaville.c: In function 'sdv_register_irqsupport':
+> drivers/gpio/gpio-sodaville.c:152:8: error: 'struct irq_domain' has no member named 'irq_base'
+> drivers/gpio/gpio-sodaville.c:182:2: error: implicit declaration of function 'irq_domain_add' [-Werror=implicit-function-declaration]
+> drivers/gpio/gpio-sodaville.c: In function 'sdv_gpio_remove':
+> drivers/gpio/gpio-sodaville.c:263:2: error: implicit declaration of function 'irq_domain_del' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit 8b26c833d229 ("gpio: Add a driver for Sodaville GPIO
+> controller") interacting with the irqdomain tree changes.
+> 
+> I have reverted that commit for today.  I am not sure how you should
+> handle this ... you could send me a fixup patch that I should apply as a
+> merge fix when merging the irqdomain tree.
 
-fixed, thanks.
+The sodavile is an x86 driver only.  This problem can be solved by
+making it depend on x86, which I'll do now.  When x86 is converted to the
+new irq_domain code the problem will go even further away.
 
 g.
 
-> 
-> 
-> 
-> irqdomain/powerpc: Fix compile error in powermac/pic.c
-> 
-> Error introduced in:
->   commit 72d6b477675374eafd206720d6c9146520df18ce
->   Author: Grant Likely <grant.likely@secretlab.ca>
->   irqdomain/powerpc: Replace custom xlate functions with library functions
-> 
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-> 
-> diff --git a/arch/powerpc/platforms/powermac/pic.c b/arch/powerpc/platforms/powermac/pic.c
-> index 3af29d1..92afc38 100644
-> --- a/arch/powerpc/platforms/powermac/pic.c
-> +++ b/arch/powerpc/platforms/powermac/pic.c
-> @@ -291,7 +291,7 @@ static int pmac_pic_host_map(struct irq_domain *h, unsigned int virq,
->  static const struct irq_domain_ops pmac_pic_host_ops = {
->  	.match = pmac_pic_host_match,
->  	.map = pmac_pic_host_map,
-> -	.xlate = irq_domain_xlate_onecell;
-> +	.xlate = irq_domain_xlate_onecell,
->  };
->  
->  static void __init pmac_pic_probe_oldstyle(void)
+
