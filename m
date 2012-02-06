@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab2BFTYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 14:24:10 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35641 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab2BFTYI (ORCPT
+	id S1754513Ab2BFTZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 14:25:20 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:11468 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab2BFTZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 14:24:08 -0500
-Date: Mon, 6 Feb 2012 20:24:07 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Why are not processes HUPped when they open /dev/console?
-Message-ID: <20120206192406.GB28687@atrey.karlin.mff.cuni.cz>
-References: <4F207660.500@suse.cz>
- <20120125214522.7a49cf39@pyramind.ukuu.org.uk>
- <4F2151FD.4050101@suse.cz>
+	Mon, 6 Feb 2012 14:25:18 -0500
+Date: Mon, 6 Feb 2012 20:25:47 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [tip:perf/urgent] trace events: Update version number reference
+ to new 3.x scheme for EVENT_POWER_TRACING_DEPRECATED
+In-Reply-To: <1328549630.2200.19.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LNX.2.00.1202062024530.20117@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107250929370.8080@swampdragon.chaosbits.net>  <tip-f629299b544b6cc12b4e3e85fec96f4ce5809482@git.kernel.org> <1328549630.2200.19.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F2151FD.4050101@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 01/25/2012 10:45 PM, Alan Cox wrote:
-> > On Wed, 25 Jan 2012 22:38:40 +0100
-> > Jiri Slaby <jslaby@suse.cz> wrote:
+On Mon, 6 Feb 2012, Steven Rostedt wrote:
+
+> On Mon, 2011-07-25 at 20:06 +0000, tip-bot for Jesper Juhl wrote:
+> > Commit-ID:  f629299b544b6cc12b4e3e85fec96f4ce5809482
+> > Gitweb:     http://git.kernel.org/tip/f629299b544b6cc12b4e3e85fec96f4ce5809482
+> > Author:     Jesper Juhl <jj@chaosbits.net>
+> > AuthorDate: Sun, 24 Jul 2011 23:15:42 +0200
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Mon, 25 Jul 2011 09:37:21 +0200
 > > 
-> >> Hello,
-> >>
-> >> don't you remember by a chance the reason for this test in __tty_hangup:
-> >>   if (filp->f_op->write != tty_write)
-> >>
-> >> The logic there is not to HUP processes that have this tty open via
-> >> /dev/console.
+> > trace events: Update version number reference to new 3.x scheme for EVENT_POWER_TRACING_DEPRECATED
 > > 
-> > Because if you hang up the console the machine crashes ?
-> >
-> > At least that's what used to happen.
+> > What was scheduled to be 2.6.41 is now going to be 3.1 .
 > 
-> It does not crash anymore. However the system (systemd more precisely)
-> is confused a bit (well, a huge). So I suppose the test has its meaning.
+> I see the comment here also states that this code would be removed in
+> 3.1, where as we are now heading towards 3.3 and Arjan said it doesn't
+> hurt to keep the code.
 > 
-> The whole exercise was about how to fix the userspace issue introduced
-> by the added infinite timeout.
+> I guess this comment needs to be removed too?
+> 
 
-> I think the proper solution here is just not to call vhangup in
-> userspace for the device which is /dev/console. It never worked anyway.
-> Because the HUP signal was never sent and it always timed out.
+I already submitted a patch to do just that : 
+http://lkml.indiana.edu/hypermail/linux/kernel/1202.0/02085.html
 
-Perhaps the "infinite timeout" should be reverted, then? It sounds
-like a regression...
-
+And I can see in -next that Jiri already too that one in his tree.
 
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
