@@ -1,123 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab2BFO4f (ORCPT <rfc822;w@1wt.eu>);
+	id S1755237Ab2BFO4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 09:56:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9813 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755172Ab2BFO4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Feb 2012 09:56:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38383 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753906Ab2BFO4e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 09:56:34 -0500
-Date: Mon, 6 Feb 2012 08:56:30 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 2/3] apple_bl: Rework in advance of gmux backlight support
-Message-ID: <20120206145630.GC6414@ubuntu-macmini>
-Mail-Followup-To: Lars-Peter Clausen <lars@metafoo.de>,
-	linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-	Matthew Garrett <mjg@redhat.com>
-References: <1328300884-21551-1-git-send-email-seth.forshee@canonical.com>
- <1328300884-21551-3-git-send-email-seth.forshee@canonical.com>
- <4F2C5EC8.8090203@metafoo.de>
- <20120203225123.GD22758@ubuntu-macmini>
- <4F2D6A21.7030903@metafoo.de>
+Date: Mon, 6 Feb 2012 09:56:22 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Subject: 3.3-rc2 snd_pcm lockdep backtrace
+Message-ID: <20120206145621.GA4771@zod.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F2D6A21.7030903@metafoo.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 04, 2012 at 06:25:53PM +0100, Lars-Peter Clausen wrote:
-> On 02/03/2012 11:51 PM, Seth Forshee wrote:
-> > On Fri, Feb 03, 2012 at 11:25:12PM +0100, Lars-Peter Clausen wrote:
-> >> On 02/03/2012 09:28 PM, Seth Forshee wrote:
-> >>> Make it easier to support backlights without a fixed I/O range, and
-> >>> remove use of global variables to allow having multiple backlights
-> >>> concurrently.
-> >>>
-> >>> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> >>> ---
-> >>>  drivers/video/backlight/apple_bl.c |  163 +++++++++++++++++++-----------------
-> >>>  1 files changed, 85 insertions(+), 78 deletions(-)
-> >>>
-> >>> diff --git a/drivers/video/backlight/apple_bl.c b/drivers/video/backlight/apple_bl.c
-> >>> index 66d5bec..e65b459 100644
-> >>> --- a/drivers/video/backlight/apple_bl.c
-> >>> +++ b/drivers/video/backlight/apple_bl.c
-> >>> @@ -27,39 +27,30 @@
-> >>>  #include <linux/pci.h>
-> >>>  #include <linux/acpi.h>
-> >>> [...]
-> >>> + */
-> >>> +static int apple_bl_get_brightness(struct backlight_device *bd)
-> >>> +{
-> >>> +	struct apple_bl_data *bl_data = bl_get_data(bd);
-> >>> +	return bl_data->get_brightness(bl_data);
-> >>> +}
-> >>> +
-> >>> +static int apple_bl_update_status(struct backlight_device *bd)
-> >>> +{
-> >>> +	struct apple_bl_data *bl_data = bl_get_data(bd);
-> >>> +
-> >>> +	bl_data->set_brightness(bl_data, bd->props.brightness);
-> >>> +	return 0;
-> >>> +}
-> >>> +
-> >>> +static const struct backlight_ops apple_bl_ops = {
-> >>> +	.get_brightness = apple_bl_get_brightness,
-> >>> +	.update_status = apple_bl_update_status,
-> >>>  };
-> >>
-> >> Adding this extra indirection here isn't so nice and isn't necessary either.
-> >> Just define one set of backlight ops for the intel case and one for the nvidia
-> >> case and use it accordingly when registering the backlight device.
-> > 
-> > There's a reason for the extra level of indirection to be there. The
-> > driver uses {get,set}_brightness before the backlight device has been
-> > allocated to test whether or not the backlight interface actually works.
-> > This worked okay previously because the functions didn't need any extra
-> > data; they just access fixed port addresses (really it only half-worked,
-> > the update_status actually already has this indirection to support the
-> > test, duplicated for each interface). But for the gmux backlight we're
-> > getting the I/O address range from ACPI, so it needs to get at the data.
-> > 
-> 
-> Ok, I see. Btw. am I missing something or are the intel and nvidia
-> {set,get}_brightness functions identical except for the IO base address? If
-> yes, I think they could be merged since you now pass the pass base address into
-> the function when calling it.
-> 
-> Something that would also be good to fix is to move the request_region(...) on
-> the IO address before actually accessing it.
+Hi All,
 
-Okay, that makes sense.
+We've had a report[1] of a lockdep backtrace from the snd_pcm driver.  I
+was wondering if anyone had hit this already or had some decent ideas on
+what the issue might be.
 
-> > Of course there are a couple of ways we could get around this. Not
-> > calling the backlight ops in the gmux case would be an option; then you
-> > don't get the check, but so far as I know right now the check doesn't
-> > work for the gmux backlight anyway. Or allocating the backlight device
-> > first before doing the check, but I don't see that as a good option.
-> > 
-> 
-> Hm, if that the check doesn't do anything for gmux is there acutally any code
-> shared between the gmux and the legacy path in the driver? If not would make
-> sense to put the gmux backlight support into its own driver?
+josh
 
-What I know is that the check doesn't work for the gmux on one
-particular model. On that machine the gmux device is present but doesn't
-control the backlight, yet reads and writes to the backlight ports
-behave the same as if it did control the backlight. That's the only
-model with a gmux that doesn't control the backlight that I've been able
-to get any testing on, so I don't know how other models behave.
+[1] https://bugzilla.redhat.com/show_bug.cgi?id=787319
 
-But you're right, by and large all the legacy and gmux paths share are
-boilerplate code, other than the fact that they support the same class
-of machines. The way apple_bl is done it seems natural to extended it
-with other backlight interfaces for Apple hardware, but an argument can
-be made for separting it out as well.
-
-Seth
+backtrace:
+:[ INFO: possible recursive locking detected ]
+:3.3.0-0.rc2.git2.1.fc17.x86_64 #1 Not tainted
+:---------------------------------------------
+:pulseaudio/954 is trying to acquire lock:
+: (&(&substream->self_group.lock)->rlock/1){......}, at: [<ffffffffa00d9093>]
+snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+:but task is already holding lock:
+: (&(&substream->self_group.lock)->rlock/1){......}, at: [<ffffffffa00d9093>]
+snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+:other info that might help us debug this:
+: Possible unsafe locking scenario:
+:       CPU0
+:       ----
+:  lock(&(&substream->self_group.lock)->rlock/1);
+:  lock(&(&substream->self_group.lock)->rlock/1);
+: *** DEADLOCK ***
+: May be due to missing lock nesting notation
+:4 locks held by pulseaudio/954:
+: #0:  (snd_pcm_link_rwlock){......}, at: [<ffffffffa00d9e62>]
+snd_pcm_drop+0x62/0x110 [snd_pcm]
+: #1:  (&(&substream->self_group.lock)->rlock){......}, at:
+[<ffffffffa00d9e6a>] snd_pcm_drop+0x6a/0x110 [snd_pcm]
+: #2:  (&(&substream->group->lock)->rlock){......}, at: [<ffffffffa00d93ce>]
+snd_pcm_action+0x3e/0xb0 [snd_pcm]
+: #3:  (&(&substream->self_group.lock)->rlock/1){......}, at:
+[<ffffffffa00d9093>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+:stack backtrace:
+:Pid: 954, comm: pulseaudio Not tainted 3.3.0-0.rc2.git2.1.fc17.x86_64 #1
+:Call Trace:
+: [<ffffffff810cb7ec>] __lock_acquire+0x160c/0x1ad0
+: [<ffffffff810ca4f6>] ? __lock_acquire+0x316/0x1ad0
+: [<ffffffff81020f99>] ? sched_clock+0x9/0x10
+: [<ffffffff810a24a5>] ? sched_clock_local+0x25/0xa0
+: [<ffffffff810cc381>] lock_acquire+0xa1/0x1e0
+: [<ffffffffa00d9093>] ? snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+: [<ffffffff8169cca4>] _raw_spin_lock_nested+0x44/0x80
+: [<ffffffffa00d9093>] ? snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+: [<ffffffffa00d9093>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+: [<ffffffffa00d9401>] snd_pcm_action+0x71/0xb0 [snd_pcm]
+: [<ffffffffa00d945a>] snd_pcm_stop+0x1a/0x20 [snd_pcm]
+: [<ffffffffa00d9e84>] snd_pcm_drop+0x84/0x110 [snd_pcm]
+: [<ffffffffa00dbba8>] snd_pcm_common_ioctl1+0x4a8/0xbe0 [snd_pcm]
+: [<ffffffffa00dc650>] snd_pcm_playback_ioctl1+0x60/0x2d0 [snd_pcm]
+: [<ffffffff812c1481>] ? file_has_perm+0xe1/0xf0
+: [<ffffffffa00dc8f4>] snd_pcm_playback_ioctl+0x34/0x40 [snd_pcm]
+: [<ffffffff811cf8d9>] do_vfs_ioctl+0x99/0x5a0
+: [<ffffffff811cfe79>] sys_ioctl+0x99/0xa0
+: [<ffffffff816a63e9>] system_call_fastpath+0x16/0x1b
