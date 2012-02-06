@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab2BFQTv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:19:51 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62181 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab2BFQTt (ORCPT
+	id S1755464Ab2BFQUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:20:23 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33711 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755079Ab2BFQUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:19:49 -0500
-Date: Mon, 6 Feb 2012 08:19:43 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Norbert Preining <preining@logic.at>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, jeff@garzik.org,
-        "stern@rowland.harvard.edu >> Alan Stern" <stern@rowland.harvard.edu>,
-        linux-ide@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jian Peng <jipeng2005@gmail.com>
-Subject: Re: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume,
- COMRESET failed
-Message-ID: <20120206161943.GA3926@google.com>
-References: <20120203052452.GC24563@gamma.logic.tuwien.ac.at>
- <1328247269.15079.26.camel@minggr>
- <20120203054319.GA25510@gamma.logic.tuwien.ac.at>
- <1328257660.15079.30.camel@minggr>
- <20120206004608.GA9413@gamma.logic.tuwien.ac.at>
- <1328492218.15079.38.camel@minggr>
- <20120206024052.GI9413@gamma.logic.tuwien.ac.at>
- <1328496591.15079.40.camel@minggr>
- <20120206031528.GA16093@gamma.logic.tuwien.ac.at>
- <1328503376.15079.55.camel@minggr>
+	Mon, 6 Feb 2012 11:20:20 -0500
+Date: Mon, 6 Feb 2012 16:20:17 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [alsa-devel] [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add missing
+ iounmap
+Message-ID: <20120206162017.GM3070@opensource.wolfsonmicro.com>
+References: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr>
+ <7FE21149F4667147B645348EC605788508FBDB@039-SN2MPN1-013.039d.mgd.msft.net>
+ <alpine.DEB.2.02.1201241828480.1779@localhost6.localdomain6>
+ <20120124202203.GD1135@opensource.wolfsonmicro.com>
+ <alpine.DEB.2.02.1201242144580.1998@hadrien>
+ <20120126110506.GB2611@pengutronix.de>
+ <alpine.DEB.2.02.1201261220460.1851@localhost6.localdomain6>
+ <20120126112242.GA9401@opensource.wolfsonmicro.com>
+ <alpine.DEB.2.02.1201280801230.2045@hadrien>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hdhkc9EpVJoq6PQ6"
 Content-Disposition: inline
-In-Reply-To: <1328503376.15079.55.camel@minggr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.02.1201280801230.2045@hadrien>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-(cc'ing Jian Peng, hi)
+--hdhkc9EpVJoq6PQ6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Mon, Feb 06, 2012 at 12:42:56PM +0800, Lin Ming wrote:
-> On Mon, 2012-02-06 at 12:15 +0900, Norbert Preining wrote:
-> > On Mo, 06 Feb 2012, Lin Ming wrote:
-> > > Only this patch on top of HEAD *without* reverting 7faa33da9b7.
-> > 
-> > Works. Am I right that it differs from 7faa33da9b7 only in that
-> > the later also changes:
-> 
-> Right.
-> 
-> Tejun,
-> 
-> This regression is caused by 7faa33da9b7(ahci: start engine only during
-> soft/hard resets).
-> 
-> But I can't reproduce it.
-> 
-> What's your guess?
+On Sat, Jan 28, 2012 at 08:03:34AM +0100, Julia Lawall wrote:
 
-Urgh.... yeah, following standard can sometimes be silly thing to do.
-Jian, I think we'll have to add a flag for your controller and revert
-to the original behavior for others.  How can your controller be
-distinguished?
+> patch against
+> git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
 
-Thanks.
+Hrm, I know there had been some debate about what to generate against
+but this now once again fails to apply against for-3.4...  No idea
+what's going on there and I didn't investigate the conflicts, sorry.
 
--- 
-tejun
+I had been waiting in the vauge hope that some of the mxs maintainers
+would review.
+
+--hdhkc9EpVJoq6PQ6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPL/27AAoJEBus8iNuMP3dAHkQAIPFIMEo18/EJOkgCE2lz4M2
+RrvBrBnyqJDGkLiHeQhoVjRZ6nrRRWB6pKvlbUC9EoqsZmF8NEB5PFMw9ER4HgYh
+zUZDCm6aIlr5rkXBnfe+pmDdlEfLLy5Ypcd63y9XVaY6eDy6+BZc6lMCyco7xE34
+u9RvPA9hrAJ3mwVkNkokA/jd0Qq5YpUiEOY6nX3m5YaFmM/9nRzjLWVZplfmyMNu
+Zjl+7PaWgeqKwimufMHaVjeIdAQTaHn5G0itH75gUn4pXa6B1wTni8+AC88sFwMQ
+ODCsNrCt4mokeqCYVhwU8XypYg2iyYcD63vJjsLSzjJ5AmIaRfU/4+6G9bMhP0y9
+uqPxsc1UJQqXo1HuoBSjMiM1HOLANE7UA+jLxdyCfd62hdRXyV90SA4NZe1TotGj
+MM58sM/4lXy3H2UKlpwH3p4/wJiuVBz+S4br0gzKim9f7c1lgaxvyagLn+35JL/G
+SglmCZ8ascnjb3UjatfvASaoxl/A1TNRB9Sc14gLSBFbHi9SSXWfpEN4av+DZkaz
+95LQR2w5ntqFEvssYMeJkSvLVWUdVPjCk7SVLsx2QH0lMCKWatALQlJ0nThOqSqQ
+PbOJXhhhzsURXOwSPk8wr7jYhE+iaA294QxeisEdDd1WPtXKRuUoCMwrfnQMyPk0
+ZSQCghDGoTW9rbgDXUIV
+=Rd3a
+-----END PGP SIGNATURE-----
+
+--hdhkc9EpVJoq6PQ6--
