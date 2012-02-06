@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab2BFQcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:32:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65400 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754513Ab2BFQct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:32:49 -0500
-Date: Mon, 6 Feb 2012 17:25:32 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Andi Kleen <ak@linux.intel.com>, Clark Williams <williams@redhat.com>,
-        Luis Goncalves <lgoncalv@redhat.com>, stable-rt@vger.kernel.org
-Subject: Re: [PATCH RT 2/2 v4] preempt-rt/x86: Delay calling signals in int3
-Message-ID: <20120206162532.GA6951@redhat.com>
-References: <20120203182853.547078531@goodmis.org> <20120203183041.427463295@goodmis.org> <20120203184016.GA10413@redhat.com> <1328299833.5882.211.camel@gandalf.stny.rr.com> <20120205192305.GB12183@redhat.com> <20120205193146.GC12183@redhat.com> <1328544744.2200.11.camel@gandalf.stny.rr.com>
+	id S1755289Ab2BFQfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:35:48 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45842 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754852Ab2BFQfr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 11:35:47 -0500
+Date: Mon, 6 Feb 2012 16:35:45 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: cbou@mail.ru, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add I2C driver for Summit Microelectronics SMB347
+ Battery Charger.
+Message-ID: <20120206163544.GO3070@opensource.wolfsonmicro.com>
+References: <20120206155729.9947.22792.stgit@bob.linux.org.uk>
+ <20120206160127.GF10173@sirena.org.uk>
+ <20120206162409.4f7536cf@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BuBclajtnfx5hylj"
 Content-Disposition: inline
-In-Reply-To: <1328544744.2200.11.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120206162409.4f7536cf@pyramind.ukuu.org.uk>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06, Steven Rostedt wrote:
->
-> On Sun, 2012-02-05 at 20:31 +0100, Oleg Nesterov wrote:
-> > Damn. Sorry for noise...
-> >
-> > On 02/05, Oleg Nesterov wrote:
-> > >
-> > > +int force_sig_info(int sig, struct siginfo *info, struct task_struct *t)
-> > > +{
-> > > +#ifdef CONFIG_PREEMPT_RT_FULL
-> > > +	if (in_atomic()) {
-> > > +		if (WARN_ON_ONCE(t != current))
-> >
-> > This is certainly wrong in upstream kernel. It does use force_
-> > this way although it shouldn't imho.
->
-> It's wrong in upstream even with the #ifdef define here?
 
-No, the patch has no effect if !CONFIG_PREEMPT_RT_FULL.
+--BuBclajtnfx5hylj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Oleg.
+On Mon, Feb 06, 2012 at 04:24:09PM +0000, Alan Cox wrote:
+> Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
+> > There's quite a lot of read/modify/write cycles and...
+
+> True but they are basically all in the setup side of things so I'm not
+> sure the complexity is justified or appropriate ?
+
+I'm not sure what complexity you mean?  If the interface is too
+difficult to use we should fix that but I didn't notice anything in the
+driver which should be more than a straight substitution (or deletion of
+code in the case of the debugfs file).
+
+--BuBclajtnfx5hylj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPMAFXAAoJEBus8iNuMP3dxVMP+gLJfcDwjBJWoWxfsKjAjQQa
+h7j60Y08DyQqPWB98WFZ3ggo7j1oKwI3oetG3yP1KyuzJ0yApENs3TBNY5qnhP0/
+8rJ+n8zRxWk2UNwbgofplRNmPROtIfAb7U6+mumxaE9N1Fw+B6RpEy6+HRB8LLy/
+OdCnkc49NA3pnKPXAPEdNTBrTNhN0AFG1dDIG8CNPHzNnzl4KrciuCoPpRk7GcnH
++e5CmNV+2tLC0jy/8rAXMS7SiUFr8nlKYDqIEjiQs7fjDH8AdzAFRGUoJHe/2+xA
+MTsqRWCxwEy57c/nWMEOaCENrU476vN+RrfyblvyuwcavSAbvQH32ftJt6Ro0VOW
+S7JRIni401GQnykPm3PcllODWzmN6NCNR0S9ameUunuLM86ClsbZbGfeeroDAsaZ
+d498j4C8LwsRhcsLhmgojMPU3xO8Nf6eCf/qd62RvzhSTzo+g1qQhNmlWrUzKcCp
+mQwiU/Jo9tEV05/+y7PLRYPPnUuUDTzcDBhMQgQ6Xn+EOOvX6PasGZVBhx2ktpWG
+9RuQ/dYNtCoqI4tTHqHoEZISjp2UyoL0WF87UB1BXmt/lKb3FrAk99MnfZt2dsi/
+EdX0N+nptGWwsYNoVMKz/wXCcNOfbBbBVY7FH7p/t5RGTOyp9cnYXD+OHU5MfJOt
+H+g2D/EsE21JP/kmoL3Z
+=ncAt
+-----END PGP SIGNATURE-----
+
+--BuBclajtnfx5hylj--
