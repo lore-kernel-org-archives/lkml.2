@@ -1,55 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2BFW3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:29:42 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61132 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab2BFW3l (ORCPT
+	id S1755981Ab2BFWid (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:38:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48207 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755015Ab2BFWic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:29:41 -0500
-Message-ID: <4F305450.5020905@gmail.com>
-Date: Mon, 06 Feb 2012 15:29:36 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@elte.hu, robert.richter@amd.com,
-        ming.m.lin@intel.com, andi@firstfloor.org, asharma@fb.com,
-        ravitillo@lbl.gov, vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com
-Subject: Re: [PATCH v5 14/18] perf: fix endianness detection in perf.data
-References: <1328187288-24395-1-git-send-email-eranian@google.com> <1328187288-24395-15-git-send-email-eranian@google.com> <20120206181704.GF6367@infradead.org> <4F304A66.8050803@gmail.com> <20120206220651.GA16861@infradead.org>
-In-Reply-To: <20120206220651.GA16861@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Feb 2012 17:38:32 -0500
+Date: Mon, 6 Feb 2012 14:38:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>, <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <dchen@diasemi.com>, <sameo@linux.intel.com>
+Subject: Re: [PATCH 06/07] RTC: RTC driver for DA9052/53 PMIC v1
+Message-Id: <20120206143820.9808fba7.akpm@linux-foundation.org>
+In-Reply-To: <1328532545.30549.83.camel@dhruva>
+References: <1328532545.30549.83.camel@dhruva>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 6 Feb 2012 18:19:05 +0530
+Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
 
-
-On 02/06/2012 03:06 PM, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Feb 06, 2012 at 02:47:18PM -0700, David Ahern escreveu:
->> On 02/06/2012 11:17 AM, Arnaldo Carvalho de Melo wrote:
->>> Looks ok, but IIRC David Ahern interacted with you on this specific
->>> patch in the past, having his Acked-by and/or Tested-by would be great,
->>> David?
->>
->> I don't recall anything changing since version 4. I scanned over the
->> change and it all looks familiar; testing worked fine as well -- I was
->> able to analyze a PPC file on x86 and vice versa.
->>
->> Acked-by: David Ahern <dsahern@gmail.com>
->> Tested-by: David Ahern <dsahern@gmail.com>
->>
+> RTC Driver for Dialog Semiconductor DA9052/53 PMICs.
 > 
-> Stephane,
+> This patch is functionally tested on Samsung SMDKV6410.
 > 
-> 	What are your plans? A v6 patch series with this new round of
-> comments and Acked-by et al stamps?
-> 
-> - Arnaldo
+> ...
+>
+>  drivers/rtc/Kconfig      |    7 +
+>  drivers/rtc/Makefile     |    1 +
+>  drivers/rtc/rtc-da9052.c |  293 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 301 insertions(+), 0 deletions(-)
 
-I thought this one was standalone, so it could be picked up now.
+I assume that this patch is mergeable without any of the other six
+patches in this series.  It compiles OK...
 
-David
+>
+> ...
+>
+> +static int da9052_read_alarm(struct da9052 *da9052, struct rtc_time *rtc_tm)
+> +{
+> +	int ret;
+> +	uint8_t v[5] = {0, 0, 0, 0, 0};
+
+These initalised local arrays are expensive.  The below patch reduces
+the module's text size by over 100 bytes.
+
+The arrays whcih are passed to da9052_group_write() surely didn't need
+initalisation, and I trust that's also the case with the arrays which
+are passed to da9052_group_read()?
+
+>
+> ...
+>
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: rtc-rtc-driver-for-da9052-53-pmic-v1-fix
+
+- clean up file header layout
+- remove unneeded initialisation of local arrays
+
+Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: David Dajun Chen <dchen@diasemi.com>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: David Dajun Chen <dchen@diasemi.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/rtc/rtc-da9052.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff -puN drivers/rtc/rtc-da9052.c~rtc-rtc-driver-for-da9052-53-pmic-v1-fix drivers/rtc/rtc-da9052.c
+--- a/drivers/rtc/rtc-da9052.c~rtc-rtc-driver-for-da9052-53-pmic-v1-fix
++++ a/drivers/rtc/rtc-da9052.c
+@@ -1,9 +1,9 @@
+ /*
+  * Real time clock driver for DA9052
+  *
+- *Copyright(c) 2012 Dialog Semiconductor Ltd.
++ * Copyright(c) 2012 Dialog Semiconductor Ltd.
+  *
+- *Author: Dajun Dajun Chen <dajun.chen@diasemi.com>
++ * Author: Dajun Dajun Chen <dajun.chen@diasemi.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -69,7 +69,7 @@ static irqreturn_t da9052_rtc_irq(int ir
+ static int da9052_read_alarm(struct da9052 *da9052, struct rtc_time *rtc_tm)
+ {
+ 	int ret;
+-	uint8_t v[5] = {0, 0, 0, 0, 0};
++	uint8_t v[5];
+ 
+ 	ret = da9052_group_read(da9052, DA9052_ALARM_MI_REG, 5, v);
+ 	if (ret != 0) {
+@@ -92,7 +92,7 @@ static int da9052_read_alarm(struct da90
+ static int da9052_set_alarm(struct da9052 *da9052, struct rtc_time *rtc_tm)
+ {
+ 	int ret;
+-	uint8_t v[3] = {0, 0, 0};
++	uint8_t v[3];
+ 
+ 	rtc_tm->tm_year -= 100;
+ 	rtc_tm->tm_mon += 1;
+@@ -136,7 +136,7 @@ static int da9052_rtc_get_alarm_status(s
+ static int da9052_rtc_read_time(struct device *dev, struct rtc_time *rtc_tm)
+ {
+ 	struct da9052_rtc *rtc = dev_get_drvdata(dev);
+-	uint8_t v[6] = {0, 0, 0, 0, 0, 0};
++	uint8_t v[6];
+ 	int ret;
+ 
+ 	ret = da9052_group_read(rtc->da9052, DA9052_COUNT_S_REG, 6, v);
+@@ -164,7 +164,7 @@ static int da9052_rtc_read_time(struct d
+ static int da9052_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ {
+ 	struct da9052_rtc *rtc;
+-	uint8_t v[6] = {0, 0, 0, 0, 0, 0};
++	uint8_t v[6];
+ 
+ 	rtc = dev_get_drvdata(dev);
+ 
+_
+
