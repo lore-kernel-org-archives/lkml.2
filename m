@@ -1,87 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab2BFXBD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:01:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49198 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756218Ab2BFXA7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 18:00:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <5C167A1D-2203-4F1C-B538-E99DD87E7E42@bootc.net>
-References: <4E4BD560.4010806@bootc.net> <4E4D3B88.30003@ladisch.de>
- <4F29978A.3010707@redhat.com> <20120201224156.0773ebc6@stein>
- <4F2A55B9.4040005@panasas.com> <4F2A60DC.9030007@ladisch.de>
- <4F2FD1F4.9050702@bootc.net> <4F2FE705.3070509@ladisch.de>
- <4F2FE8DA.70502@bootc.net> <20120206212628.6880c506@stein> <5C167A1D-2203-4F1C-B538-E99DD87E7E42@bootc.net>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Tue, 7 Feb 2012 10:00:38 +1100
-Message-ID: <CAGRGNgWf0epcam-jpCzMCSqefCKDSm892mw-X49FrcoRO0QYrQ@mail.gmail.com>
-Subject: Re: FireWire/SBP2 Target mode
-To: Chris Boot <bootc@bootc.net>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Clemens Ladisch <clemens@ladisch.de>, target-devel@vger.kernel.org,
-        linux1394-devel@lists.sourceforge.net,
-        Boaz Harrosh <bharrosh@panasas.com>, Andy Grover <agrover@redhat.com>,
-        linux-scsi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1756527Ab2BFXBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 18:01:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48342 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756215Ab2BFW4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 17:56:44 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Linux-MM <linux-mm@kvack.org>
+Cc: Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/11] netvm: Prevent a stream-specific deadlock
+Date: Mon,  6 Feb 2012 22:56:31 +0000
+Message-Id: <1328569001-17599-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1328569001-17599-1-git-send-email-mgorman@suse.de>
+References: <1328569001-17599-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+It could happen that all !SOCK_MEMALLOC sockets have buffered so
+much data that we're over the global rmem limit. This will prevent
+SOCK_MEMALLOC buffers from receiving data, which will prevent userspace
+from running, which is needed to reduce the buffered data.
 
-On Tue, Feb 7, 2012 at 09:28, Chris Boot <bootc@bootc.net> wrote:
-> On 6 Feb 2012, at 20:26, Stefan Richter wrote:
->
->> On Feb 06 Chris Boot wrote:
->>> On 06/02/2012 14:43, Clemens Ladisch wrote:
->>>> Chris Boot wrote:
->>>>> You can pull the code from:
->>>>> git://github.com/bootc/Linux-SBP-2-Target.git
->>>>
->>>> The TODO file says:
->>>>> * Update Juju so we can get the speed in the fw_address_handler callback
->>>>
->>>> What is the speed needed for?
->>>
->>> "The speed at which the block write request to the MANAGEMENT_AGENT
->>> register is received shall determine the speed used by the target for
->>> all subsequent requests to read the initiator’s configuration ROM, fetch
->>> ORB’s from initiator memory or store status at the initiator’s
->>> status_FIFO. Command block ORB’s separately specify the speed for
->>> requests addressed to the data buffer or page table."
->>>
->>> (T10/1155D Revision 4 page 53/54)
->>
->> I guess it is not too hard to add this to the AR-req handler.  On the
->> other hand, I see little reason to follow the SBP-2 spec to the letter
->> here.  The target driver could just use the maximum speed that the core
->> figured out.  On the other hand, this requires of course
->>  - the target to wait for core to finish scanning an initiator,
->>  - the core to offer an API to look up an fw_device by a
->>    card--generation--nodeID tuple.
->>
->> The intention of the spec is IMO clearly to enable target implementations
->> that do not need to implement topology scanning.  I have a hard time to
->> think of a valid scenario where an initiator needs to be able to steer a
->> target towards a lower wire speed than what the participating links and
->> PHYs actually support.
->
-> The only thing stopping me from getting the speed is the fact that struct fw_request is opaque. The value is easily available from request->response.speed and I kind of do that already in a very hackish way. I've sent a separate patch which adds a function that can be used to access that one value.
->
-> Waiting until the bus scan is complete isn't actually that great as I see the first LOGIN requests often before the fw_node is seen at all. I'd have to turn away the requester and hope they try again. I'm fairly sure my little tweak in my patch is a simple enough solution.
+Fix this by exempting the SOCK_MEMALLOC sockets from the rmem limit.
 
-Stupid question: Could you use a completion queue or something
-equivalent to wait until you have seen the fw_node, *then* process the
-LOGIN request?
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/net/sock.h     |    7 ++++---
+ net/caif/caif_socket.c |    2 +-
+ net/core/sock.c        |    2 +-
+ net/ipv4/tcp_input.c   |   12 ++++++------
+ net/sctp/ulpevent.c    |    2 +-
+ 5 files changed, 13 insertions(+), 12 deletions(-)
 
-Thanks,
-
+diff --git a/include/net/sock.h b/include/net/sock.h
+index bb147fd..bdae68a 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1249,12 +1249,13 @@ static inline int sk_wmem_schedule(struct sock *sk, int size)
+ 		__sk_mem_schedule(sk, size, SK_MEM_SEND);
+ }
+ 
+-static inline int sk_rmem_schedule(struct sock *sk, int size)
++static inline int sk_rmem_schedule(struct sock *sk, struct sk_buff *skb)
+ {
+ 	if (!sk_has_account(sk))
+ 		return 1;
+-	return size <= sk->sk_forward_alloc ||
+-		__sk_mem_schedule(sk, size, SK_MEM_RECV);
++	return skb->truesize <= sk->sk_forward_alloc ||
++		__sk_mem_schedule(sk, skb->truesize, SK_MEM_RECV) ||
++		skb_pfmemalloc(skb);
+ }
+ 
+ static inline void sk_mem_reclaim(struct sock *sk)
+diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
+index a986280..78ef332 100644
+--- a/net/caif/caif_socket.c
++++ b/net/caif/caif_socket.c
+@@ -168,7 +168,7 @@ static int caif_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 	err = sk_filter(sk, skb);
+ 	if (err)
+ 		return err;
+-	if (!sk_rmem_schedule(sk, skb->truesize) && rx_flow_is_on(cf_sk)) {
++	if (!sk_rmem_schedule(sk, skb) && rx_flow_is_on(cf_sk)) {
+ 		set_rx_flow_off(cf_sk);
+ 		if (net_ratelimit())
+ 			pr_debug("sending flow OFF due to rmem_schedule\n");
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 0aebbde..cf81592 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -392,7 +392,7 @@ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 	if (err)
+ 		return err;
+ 
+-	if (!sk_rmem_schedule(sk, skb->truesize)) {
++	if (!sk_rmem_schedule(sk, skb)) {
+ 		atomic_inc(&sk->sk_drops);
+ 		return -ENOBUFS;
+ 	}
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 976034f..b46bc36 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -4405,19 +4405,19 @@ static void tcp_ofo_queue(struct sock *sk)
+ static int tcp_prune_ofo_queue(struct sock *sk);
+ static int tcp_prune_queue(struct sock *sk);
+ 
+-static inline int tcp_try_rmem_schedule(struct sock *sk, unsigned int size)
++static inline int tcp_try_rmem_schedule(struct sock *sk, struct sk_buff *skb)
+ {
+ 	if (atomic_read(&sk->sk_rmem_alloc) > sk->sk_rcvbuf ||
+-	    !sk_rmem_schedule(sk, size)) {
++	    !sk_rmem_schedule(sk, skb)) {
+ 
+ 		if (tcp_prune_queue(sk) < 0)
+ 			return -1;
+ 
+-		if (!sk_rmem_schedule(sk, size)) {
++		if (!sk_rmem_schedule(sk, skb)) {
+ 			if (!tcp_prune_ofo_queue(sk))
+ 				return -1;
+ 
+-			if (!sk_rmem_schedule(sk, size))
++			if (!sk_rmem_schedule(sk, skb))
+ 				return -1;
+ 		}
+ 	}
+@@ -4470,7 +4470,7 @@ static void tcp_data_queue(struct sock *sk, struct sk_buff *skb)
+ 		if (eaten <= 0) {
+ queue_and_out:
+ 			if (eaten < 0 &&
+-			    tcp_try_rmem_schedule(sk, skb->truesize))
++			    tcp_try_rmem_schedule(sk, skb))
+ 				goto drop;
+ 
+ 			skb_set_owner_r(skb, sk);
+@@ -4541,7 +4541,7 @@ drop:
+ 
+ 	TCP_ECN_check_ce(tp, skb);
+ 
+-	if (tcp_try_rmem_schedule(sk, skb->truesize))
++	if (tcp_try_rmem_schedule(sk, skb))
+ 		goto drop;
+ 
+ 	/* Disable header prediction. */
+diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
+index 8a84017..6c6ed2d 100644
+--- a/net/sctp/ulpevent.c
++++ b/net/sctp/ulpevent.c
+@@ -702,7 +702,7 @@ struct sctp_ulpevent *sctp_ulpevent_make_rcvmsg(struct sctp_association *asoc,
+ 	if (rx_count >= asoc->base.sk->sk_rcvbuf) {
+ 
+ 		if ((asoc->base.sk->sk_userlocks & SOCK_RCVBUF_LOCK) ||
+-		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb->truesize)))
++		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb)))
+ 			goto fail;
+ 	}
+ 
 -- 
-Julian Calaby
+1.7.3.4
 
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
