@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2BFQ3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:29:52 -0500
+	id S1755386Ab2BFQ37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:29:59 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:57593 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754513Ab2BFQ3u (ORCPT
+	with ESMTP id S1754513Ab2BFQ35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:29:50 -0500
-Date: Mon, 6 Feb 2012 20:29:47 +0400
+	Mon, 6 Feb 2012 11:29:57 -0500
+Date: Mon, 6 Feb 2012 20:29:54 +0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Oleg Nesterov <oleg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>
 Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
@@ -17,8 +17,9 @@ Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org, kernel-team@android.com,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH 4/6] staging: android/lowmemorykiller: Better mm handling
-Message-ID: <20120206162947.GD5117@oksana.dev.rtsoft.ru>
+Subject: [PATCH 5/6] staging: android/lowmemorykiller: No need for
+ task->signal check
+Message-ID: <20120206162954.GE5117@oksana.dev.rtsoft.ru>
 References: <20120203163056.GA4190@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -29,62 +30,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LMK should not directly check for task->mm. The reason is that the
-process' threads may exit or detach its mm via use_mm(), but other
-threads may still have a valid mm. To catch this we use
-find_lock_task_mm(), which walks up all threads and returns an
-appropriate task (with lock held).
+task->signal == NULL is not possible, so no need for these checks.
 
 Suggested-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/staging/android/lowmemorykiller.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
+ drivers/staging/android/lowmemorykiller.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index 63da844..0755e2f 100644
+index 0755e2f..6e800d3 100644
 --- a/drivers/staging/android/lowmemorykiller.c
 +++ b/drivers/staging/android/lowmemorykiller.c
-@@ -82,7 +82,7 @@ task_notify_func(struct notifier_block *self, unsigned long val, void *data)
- 
- static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- {
--	struct task_struct *p;
-+	struct task_struct *tsk;
- 	struct task_struct *selected = NULL;
- 	int rem = 0;
- 	int tasksize;
-@@ -134,15 +134,17 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 	selected_oom_adj = min_adj;
- 
+@@ -136,19 +136,13 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
  	rcu_read_lock();
--	for_each_process(p) {
--		struct mm_struct *mm;
-+	for_each_process(tsk) {
-+		struct task_struct *p;
- 		struct signal_struct *sig;
+ 	for_each_process(tsk) {
+ 		struct task_struct *p;
+-		struct signal_struct *sig;
  		int oom_adj;
  
--		task_lock(p);
--		mm = p->mm;
-+		p = find_lock_task_mm(tsk);
-+		if (!p)
-+			continue;
-+
- 		sig = p->signal;
--		if (!mm || !sig) {
-+		if (!sig) {
- 			task_unlock(p);
+ 		p = find_lock_task_mm(tsk);
+ 		if (!p)
  			continue;
- 		}
-@@ -151,7 +153,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 
+-		sig = p->signal;
+-		if (!sig) {
+-			task_unlock(p);
+-			continue;
+-		}
+-		oom_adj = sig->oom_adj;
++		oom_adj = p->signal->oom_adj;
+ 		if (oom_adj < min_adj) {
  			task_unlock(p);
- 			continue;
- 		}
--		tasksize = get_mm_rss(mm);
-+		tasksize = get_mm_rss(p->mm);
- 		task_unlock(p);
- 		if (tasksize <= 0)
  			continue;
 -- 
 1.7.7.6
