@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab2BFV2C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 16:28:02 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:26604 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755817Ab2BFV16 (ORCPT
+	id S1755473Ab2BFVb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 16:31:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10272 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753206Ab2BFVbZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 16:27:58 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlQEAG1FME95LD+bgWdsb2JhbABDr0QjAQEWJiWBcgEBBAE6HCMFCwgDDgouFCUDIROHfLhwE4shAgIJBQwHBgELAQgFAwMJBgQPBoQeAQMBBBgCBIJWYwSVJ4kwiUA
-Date: Tue, 7 Feb 2012 08:27:54 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Raghavendra D Prabhu <raghu.prabhu13@gmail.com>, xfs@oss.sgi.com,
-        xfs-masters@oss.sgi.com, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RFC] XFS: Fix mem leak and possible NULL deref in
- xfs_setattr_nonsize()
-Message-ID: <20120206212754.GC12836@dastard>
-References: <alpine.LNX.2.00.1202052220390.32529@swampdragon.chaosbits.net>
- <20120206091100.GA4350@Xye>
- <alpine.LNX.2.00.1202062145240.20117@swampdragon.chaosbits.net>
+	Mon, 6 Feb 2012 16:31:25 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: =?utf-8?Q?J=C3=B6rn?= Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org, Joel Becker <jlbec@evilplan.org>
+Subject: Re: Announce: cancd 0.2.0 netconsole capture server
+References: <20120206190206.GA8068@logfs.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 06 Feb 2012 16:31:14 -0500
+In-Reply-To: <20120206190206.GA8068@logfs.org> (=?utf-8?Q?=22J=C3=B6rn?=
+ Engel"'s message of
+	"Mon, 6 Feb 2012 14:02:06 -0500")
+Message-ID: <x49mx8vps2l.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1202062145240.20117@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 09:51:54PM +0100, Jesper Juhl wrote:
-> On Mon, 6 Feb 2012, Raghavendra D Prabhu wrote:
-> > As far as second one is concerned, looks fine, though this one should also do
-> > the same.
-> > 
-> > diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-> > index ab30253..d331f5b 100644
-> > --- a/fs/xfs/xfs_iops.c
-> > +++ b/fs/xfs/xfs_iops.c
-> > @@ -730,9 +730,9 @@ xfs_setattr_nonsize(
-> >         return 0;
-> > 
-> > out_trans_cancel:
-> > -       xfs_trans_cancel(tp, 0);
-> >         xfs_iunlock(ip, XFS_ILOCK_EXCL);
-> > out_dqrele:
-> > +       xfs_trans_cancel(tp, 0);
-> >         xfs_qm_dqrele(udqp);
-> >         xfs_qm_dqrele(gdqp);
-> >         return error;
-> > 
-> 
-> Thank you for the feedback.
-> 
-> I worry about the fact that this suddenly calls xfs_trans_cancel() without 
-> holding the lock. I don't know if that's actually significant though. 
+Jörn Engel <joern@logfs.org> writes:
 
-You're right to worry about it, because it is significant.
+> Quoting Documentation/networking/netconsole.txt:
+> 	The remote host can run either 'netcat -u -l -p <port>',
+> 	'nc -l -u <port>' or syslogd.
+>
+> Now, both of these options have their issues.  Netcat works fine, but
+> only reasonably scales to 1.  Having to use a seperate port for every
+> test machine, as well as a seperate netcat process that writes to a
+> proper file becomes a bit of a nightmare by the time you approach
+> three digits of machines.
+>
+> Syslogd would be great, if netconsole actually spoke syslog protocol.
+> As it is netconsole speaks a protocol I would describe as "7bit ascii,
+> no nonsense".  Syslog protocal is described in rfc5424, a 38-page
+> document.  I think it is fair to say the two are incompatibel.  In
+> case someone actually wants to see the full trainwreck, a quick search
+> should come up with enough bug reports to scare your children into
+> bed.
+>
+> Given that sad state of things, here is yet another alternative:
+> http://git.kernel.org/?p=linux/kernel/git/joern/cancd.git
 
-The transaction needs to be cancelled before we unlock the inode
-because the transaction cancel cleans up state on the inode if the
-inode has been joined to the transaction.  Unlocking the inode
-before the transaction is cancelled means some other transaction can
-lock the inode and join it to a new transaction before the old one
-is cleaned up. Then Bad Stuff Happens.
-
-IOWs, the above change is not safe to make.
-
-> If it *is* significant, then I think the patch I just submitted in reply to 
-> Dave Chinner is better since there we do the alloc and cancel before even 
-> taking the lock at all in the leaky case and all other case have 
-> identical behaviour as before.
-
-I'll go check it out.
+Hmm, the old netdump-server package that we used to ship in RHEL should
+work too, I think, if you are interested in that approach.  That was
+designed specifically to receive netconsole messages and netdumps from
+multiple servers.  Google up netdump-server-0.7.16 and you should find
+an srpm.  If there's interest in keeping that alive, I can put it up in
+some public repo.
 
 Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Jeff
