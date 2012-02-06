@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab2BFQh3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:37:29 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:35570 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755250Ab2BFQhK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:37:10 -0500
-X-Sasl-enc: IwAZsmOXDOB5HGm0B+ubopVtfVouwnexlwR15t/X94m8 1328546229
-Date: Mon, 6 Feb 2012 08:36:49 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, kernel-team@android.com,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 3/6] staging: android/lowmemorykiller: Don't grab
- tasklist_lock
-Message-ID: <20120206163649.GB10104@kroah.com>
-References: <20120203163056.GA4190@redhat.com>
- <20120206162941.GC5117@oksana.dev.rtsoft.ru>
+	id S1755438Ab2BFQhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:37:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57657 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755250Ab2BFQha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 11:37:30 -0500
+Date: Mon, 6 Feb 2012 11:37:21 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Shaohua Li <vivek.goyal2008@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Knut Petersen <Knut_Petersen@t-online.de>,
+        mroos@linux.ee
+Subject: Re: [patch]block: fix ioc locking warning
+Message-ID: <20120206163721.GF30752@redhat.com>
+References: <1328514611.21268.66.camel@sli10-conroe>
+ <20120206151219.GC30752@redhat.com>
+ <4F2FFB21.9000202@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120206162941.GC5117@oksana.dev.rtsoft.ru>
+In-Reply-To: <4F2FFB21.9000202@kernel.dk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 08:29:41PM +0400, Anton Vorontsov wrote:
-> Grabbing tasklist_lock has its disadvantages, i.e. it blocks
-> process creation and destruction. If there are lots of processes,
-> blocking doesn't sound as a great idea.
-> 
-> For LMK, it is sufficient to surround tasks list traverse with
-> rcu_read_{,un}lock().
-> 
-> >From now on using force_sig() is not safe, as it can race with an
-> already exiting task, so we use send_sig() now. As a downside, it
-> won't kill PID namespace init processes, but that's not what we
-> want anyway.
-> 
-> Suggested-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+On Mon, Feb 06, 2012 at 05:09:05PM +0100, Jens Axboe wrote:
 
-Are these last 4 patches independant of the first 2 and can be taken
-through the staging tree now?
+[..]
+> > Changlog was not obivious atleast to me. I wished it was little more
+> > descriptive. Anyway, patch is already committed..
+> 
+> We can always amend the changelog, so don't worry about it already being
+> committed. If you want to add/change something, just send it in.
 
-thanks,
+How about something like as follows.
 
-greg k-h
+
+block: Do not lock try to lock already locked queue again
+
+put_io_context() can be called with one of the request queue lock 
+already held. But if the locked queue's cic is not first in the
+ioc->ioc_list, then we have two possible issues.
+
+- For above condition, current code bails out and schedules the worker
+  thread for freeing up ioc. This can be optimized.
+
+- It might happen that we received the queue locked but we still do the
+  trylock on the queue. For SMP case that's not a problem as we will
+  fail to lock already locked queue, but in case of UP, we seem to
+  succeed and in the process increment the preempt count. Once we are
+  done with ioc_exit_icq(), we do not call spin_unlock() on locked
+  queue as we are not supposed to. This leads to imbalance in preemtion
+  count and following warning was reported.
+
+This patch fixes both the above issues by making sure we do not try to
+lock already locked queue again.
+
+WARNING: at kernel/timer.c:1122 run_timer_softirq+0x199/0x1ec()
+Hardware name: 939Dual-SATA2
+timer: cfq_idle_slice_timer+0x0/0xaa preempt leak: 00000102 -> 00000103
+Modules linked in: sr_mod cdrom videodev media drm_kms_helper ohci_hcd ehci_hcd
+v4l2_compat_ioctl32 usbcore i2c_ali15x3 snd_seq drm snd_timer snd_seq
+Pid: 0, comm: swapper Not tainted 3.3.0-rc2-00110-gd125666 #176
+Call Trace:
+<IRQ>  [<ffffffff81022aaa>] warn_slowpath_common+0x7e/0x96
+[<ffffffff8114c485>] ? cfq_slice_expired+0x1d/0x1d
+[<ffffffff81022b56>] warn_slowpath_fmt+0x41/0x43
+[<ffffffff8114c526>] ? cfq_idle_slice_timer+0xa1/0xaa
+[<ffffffff8114c485>] ? cfq_slice_expired+0x1d/0x1d
+[<ffffffff8102c124>] run_timer_softirq+0x199/0x1ec
+[<ffffffff81047a53>] ? timekeeping_get_ns+0x12/0x31
+[<ffffffff810145fd>] ? apic_write+0x11/0x13
+[<ffffffff81027475>] __do_softirq+0x74/0xfa
+[<ffffffff812f337a>] call_softirq+0x1a/0x30
+[<ffffffff81002ff9>] do_softirq+0x31/0x68
+[<ffffffff810276cf>] irq_exit+0x3d/0xa3
+[<ffffffff81014aca>] smp_apic_timer_interrupt+0x6b/0x77
+[<ffffffff812f2de9>] apic_timer_interrupt+0x69/0x70
+<EOI>  [<ffffffff81040136>] ? sched_clock_cpu+0x73/0x7d
+[<ffffffff81040136>] ? sched_clock_cpu+0x73/0x7d
+[<ffffffff8100801f>] ? default_idle+0x1e/0x32
+[<ffffffff81008019>] ? default_idle+0x18/0x32
+[<ffffffff810008b1>] cpu_idle+0x87/0xd1
+[<ffffffff812de861>] rest_init+0x85/0x89
+[<ffffffff81659a4d>] start_kernel+0x2eb/0x2f8
+[<ffffffff8165926e>] x86_64_start_reservations+0x7e/0x82
+[<ffffffff81659362>] x86_64_start_kernel+0xf0/0xf7
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Reported-by: Meelis Roos <mroos@linux.ee>
+Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+Tested-by: Knut Petersen <Knut_Petersen@t-online.de>
+
+Thanks
+Vivek
