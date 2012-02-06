@@ -1,242 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab2BFDHy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 22:07:54 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53985 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084Ab2BFDHw convert rfc822-to-8bit (ORCPT
+	id S1753393Ab2BFDMa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 22:12:30 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53938 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab2BFDM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 22:07:52 -0500
+	Sun, 5 Feb 2012 22:12:28 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=4xDcOe4IjvRdPVVETi+CqA==:17 a=TRgVYD6ZyiEA:10 a=kbqjixIPYdAA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=Br9LfDWDAAAA:8 a=yQdBAQUQAAAA:8 a=oYVDii8IDF10_8bP_8sA:9 a=1cI3ame_4mkq-Gqf8FUA:7 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=4xDcOe4IjvRdPVVETi+CqA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 75.81.36.228
+Date: Sun, 05 Feb 2012 21:12:26 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: r8712u: Use asynchronous firmware loading
+Message-ID: <4f2f451a.AnH+RlPPXaDyP8Hn%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
-Date: Sun, 5 Feb 2012 19:07:51 -0800
-Message-ID: <CAJuYYwQ2yczBh+CBFWohZPM+9jHXYxyxYzL8CS4puE96v4fDXw@mail.gmail.com>
-Subject: Re: An extremely simplified pinctrl bindings proposal
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng <dongas86@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "ext Tony Lindgren (tony@atomide.com)" <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+In https://bugs.archlinux.org/task/27996, failure of driver r8712u is
+reported, with a timeout during module loading due to synchronous loading
+of the firmware. The code now uses request_firmware_nowait().
 
-On 4 February 2012 21:31, Stephen Warren <swarren@nvidia.com> wrote:
-> Sorry, I haven't had a chance to read any of the pincrl emails from
-> Friday onwards. However, I thought a bit more about this, and decided
-> to propose someting much simpler:
->
-> Thoughts:
->
-> * Defining all the pins, groups, functions, ... takes a lot of space,
->  whether it's in static data in pinctrl drivers or in the device tree.
->  The lists must also be stored in RAM at runtime.
->
-> * It's been very difficult to come up with a generic description of all
->  pin controller's capabilities. This is true even irrespective of device
->  tree; think pin config where we've agonized over whether we can create
->  a standardized list of pin config properties, or need to allow each
->  pinctrl driver to define its own set of properties, etc.
->
-> * The only real use of the lists is for debugfs. Drivers shouldn't expect
->  to directly request specific pinctrl settings, since that would encode
->  knowledge of an individual SoC's pin controller. This should be
->  abstracted from drivers.
->
-> * The data in debugfs could easily be replaced by a raw register dump
->  coupled with a SoC-specific script to print out what each register
->  means.
->
-> My proposal below is to radically simplify the pinctrl subsystem, and
-> make it little more than a system to execute a list of arbitrary register
-> writes.
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
 
-Thanks for your work on pinctrl bindings proposal.
+Greg,
 
-With this new approach, how much of the pinctrl susbystem is used in
-device tree mode. Last time I had proposed something similar to this
-(http://marc.info/?l=linux-kernel&m=132697880016289&w=2), you were not
-happy about that approach since the pinctrl subsystem is largely
-under-utilized (http://marc.info/?l=linux-kernel&m=132735884622374&w=2),
-expect for providing a interface which individual
-pinctrl/pinmux/pinconfig drivers will use to implement a function that
-programs the hardware.
+This patch probably should go to stable, but I want you to judge whether
+it is too invasive for that.
 
-There need not be pinmux/pinctrl/pinconfig bindings that are designed
-for the linux pinctrl subsystem. DT allows specifying the
-pinconfig/pinmux properties in a simple way, which was not possible in
-non-dt case and hence the pinctrl subsystem. Other OS'es which might
-not have a pinctrl subsystem, similar to what linux has, should also
-find the pinctrl bindings useful.
+Thanks,
 
-Regards,
-Thomas.
+Larry
+---
+ drv_types.h   |    7 ++++++
+ hal_init.c    |   62 ++++++++++++++++++++++++++++++++++++++++------------------
+ os_intfs.c    |   14 ++++++++++---
+ rtl8712_hal.h |    1 
+ usb_intf.c    |    9 +++++---
+ 5 files changed, 68 insertions(+), 25 deletions(-)
+---
 
->
-> Advantages:
->
-> * No need to define any kind of data model for pinctrl.
->
-> * No need to store any list of pins/groups/function/parameters/... either
->  in static data, in device tree, or at run-time.
->
-> * No need to store the the selected board-specific settings anywhere either.
->
-> * Completely generic; can handle anything that exists now or in the future.
->
-> * Handles pin mux and pin config identically.
->
-> * Extremely simple to implement and understand; probably just a few K
->  of code and no data. I assume this will be very appealing to those
->  interested in using the binding within U-Boot too.
->
-> * The lists of register writes can just as easily be provided by board
->  files as device tree, so operation should be identical.
->
-> Disadvantages:
->
-> * Creating the list of register values/masks may be a little painful. If
->  we move forward with this, we'd want to strongly push dtc towards
->  providing named constants, expressesion, macros, etc. Those dtc features
->  would be very useful anyway.
->
-> * Lack of high-level semantic meaning to the data; but I assert there's
->  little benefit to having that anyway.
->
->  To solve this, write a script to parse each pinctrl driver's regcache
->  file and print out all the register meanings.
->
-> * This scheme wouldn't represent which device "owns" which pins/groups,
->  nor be able to validate that different devices' pinmux settings don't
->  conflict.
->
->  I don't think this is a huge issue though, since that's mainly error-
->  checking. Any problems should be just as obvious during testing whether
->  they cause the HW to fail to operate correctly, or whether they cause
->  pinctrl to throw an error. Equally, there are many error conditions
->  that pinctrl core wasn't checking for anyway.
->
-> Precedent:
->
-> * There was previous discussion on using this exact technique for pinmux
->  at a previous Linaro Connect:
->
->  http://www.spinics.net/lists/linux-tegra/msg01943.html
->
-> * There is an existing binding that works very similarly, for the Mavell
->  PHY:
->
->  http://www.gossamer-threads.com/lists/linux/kernel/1305624
->  drivers/net/phy/marvell.c
->
->  Explicit mention was made here that a simple list of register writes
->  avoiding the complexity of representing a huge number of combinations
->  in the device tree.
->
-> tegra20.dtsi:
->
-> pinmux: pinmux@70000000 {
->        compatible = "nvidia,tegra20-pinmux";
->        reg = <0x70000014 0x10>  /* Tri-state registers */
->              <0x70000080 0x20>  /* Mux registers */
->              <0x700000a0 0x14>  /* Pull-up/down registers */
->              <0x70000868 0xa8>; /* Pad control registers */
->
->        pinmux_i2c1_spdio_active: pinmux-i2c1-spdio-active {
->                reg-init =
->                    /* Set pingroup SPDO to function I2C1 */
->                    <
->                        1          /* Register "bank" in controller */
->                        0x8c       /* Register offset */
->                        0x000000c0 /* Write bitmask, 0 for whole register */
->                        0x00000080 /* Write value */
->                    >
->                    /* Set pingroup SPDI to function I2C1 */
->                    <
->                        1          /* Register "bank" in controller */
->                        0x8c       /* Register offset */
->                        0x00000300 /* Write bitmask, 0 for whole register */
->                        0x00000200 /* Write value */
->                    >;
->        };
->        pinmux_i2c1_spdio_suspend: pinmux-i2c1-spdio-suspend {
->                ...
->        };
-> };
->
-> tegra-seaboard.dts:
->
-> i2c@7000c000 {
->        /*
->         * These are phandles to nodes that containthe reg-init list. Can
->         * we have phandles to properties instead? Then we wouldn't need
->         * all those nodes which each just contains 1 property.
->         */
->        pinctrl = <&pinmux_i2c1_spdio_active &pinmux_i2c1_spdio_suspend>;
->        pinctrl-names = "active", "suspend";
-> };
->
-> In order to support programming more than one pin controller at once, we
-> could include the phandle of the pin controller in the "reg-init" property:
->
-> somewhere-other-than-under-a-pin-controller {
->        pinmux-foo {
->                reg-init =
->                    <
->                        &tegra_pmx /* Pin controller */
->                        2          /* Number of entries for this controller */
->                    >
->                    <
->                        1          /* Register "bank" in controller */
->                        0x8c       /* Register offset */
->                        0x000000c0 /* Write bitmask, 0 for whole register */
->                        0x00000080 /* Write value */
->                    >
->                    <
->                        1          /* Register "bank" in controller */
->                        0x8c       /* Register offset */
->                        0x00000300 /* Write bitmask, 0 for whole register */
->                        0x00000200 /* Write value */
->                    >
->                    <
->                        &other_pmx /* Pin controller */
->                        1          /* Number of entries for this controller */
->                    >
->                    <
->                        0          /* Register "bank" in controller */
->                        0x04       /* Register offset */
->                        0x000000ff /* Write bitmask, 0 for whole register */
->                        0x0000005a /* Write value */
->                    >;
->        }
-> };
->
-> When parsing a reg-init property, we know if it contains phandles by:
-> * If node containing property is a child of a pin controller, the property
->  doesn't containt pin controller phandles.
-> * Otherwise, it does.
->
-> What are people's thoughts. Thinking about all the issues involved, this
-> is certainly the approach I like most right now.
->
-> --
-> nvpublic
->
+Index: wireless-testing-new/drivers/staging/rtl8712/drv_types.h
+===================================================================
+--- wireless-testing-new.orig/drivers/staging/rtl8712/drv_types.h
++++ wireless-testing-new/drivers/staging/rtl8712/drv_types.h
+@@ -37,6 +37,8 @@ struct _adapter;
+ #include "wlan_bssdef.h"
+ #include "rtl8712_spec.h"
+ #include "rtl8712_hal.h"
++#include <linux/mutex.h>
++#include <linux/completion.h>
+ 
+ enum _NIC_VERSION {
+ 	RTL8711_NIC,
+@@ -168,6 +170,7 @@ struct _adapter {
+ 	s32	bSurpriseRemoved;
+ 	u32	IsrContent;
+ 	u32	ImrContent;
++	bool	fw_found;
+ 	u8	EepromAddressSize;
+ 	u8	hw_init_completed;
+ 	struct task_struct *cmdThread;
+@@ -184,6 +187,10 @@ struct _adapter {
+ 	_workitem wkFilterRxFF0;
+ 	u8 blnEnableRxFF0Filter;
+ 	spinlock_t lockRxFF0Filter;
++	const struct firmware *fw;
++	struct usb_interface *pusb_intf;
++	struct mutex mutex_start;
++	struct completion rtl8712_fw_ready;
+ };
+ 
+ static inline u8 *myid(struct eeprom_priv *peepriv)
+Index: wireless-testing-new/drivers/staging/rtl8712/hal_init.c
+===================================================================
+--- wireless-testing-new.orig/drivers/staging/rtl8712/hal_init.c
++++ wireless-testing-new/drivers/staging/rtl8712/hal_init.c
+@@ -42,29 +42,56 @@
+ #define FWBUFF_ALIGN_SZ 512
+ #define MAX_DUMP_FWSZ	49152 /*default = 49152 (48k)*/
+ 
+-static u32 rtl871x_open_fw(struct _adapter *padapter, void **pphfwfile_hdl,
+-		    const u8 **ppmappedfw)
++static void rtl871x_load_fw_cb(const struct firmware *firmware, void *context)
+ {
++	struct _adapter *padapter = context;
++
++	complete(&padapter->rtl8712_fw_ready);
++	if (!firmware) {
++		struct usb_device *udev = padapter->dvobjpriv.pusbdev;
++		struct usb_interface *pusb_intf = padapter->pusb_intf;
++		printk(KERN_ERR "r8712u: Firmware request failed\n");
++		padapter->fw_found = false;
++		usb_put_dev(udev);
++		usb_set_intfdata(pusb_intf, NULL);
++		return;
++	}
++	padapter->fw = firmware;
++	padapter->fw_found = true;
++	/* firmware available - start netdev */
++	register_netdev(padapter->pnetdev);
++}
++
++static const char firmware_file[] = "rtlwifi/rtl8712u.bin";
++
++int rtl871x_load_fw(struct _adapter *padapter)
++{
++	struct device *dev = &padapter->dvobjpriv.pusbdev->dev;
+ 	int rc;
+-	const char firmware_file[] = "rtlwifi/rtl8712u.bin";
+-	const struct firmware **praw = (const struct firmware **)
+-				       (pphfwfile_hdl);
+-	struct dvobj_priv *pdvobjpriv = (struct dvobj_priv *)
+-					(&padapter->dvobjpriv);
+-	struct usb_device *pusbdev = pdvobjpriv->pusbdev;
+ 
++	init_completion(&padapter->rtl8712_fw_ready);
+ 	printk(KERN_INFO "r8712u: Loading firmware from \"%s\"\n",
+ 	       firmware_file);
+-	rc = request_firmware(praw, firmware_file, &pusbdev->dev);
+-	if (rc < 0) {
+-		printk(KERN_ERR "r8712u: Unable to load firmware\n");
+-		printk(KERN_ERR "r8712u: Install latest linux-firmware\n");
++	rc = request_firmware_nowait(THIS_MODULE, 1, firmware_file, dev,
++				     GFP_KERNEL, padapter, rtl871x_load_fw_cb);
++	if (rc)
++		printk(KERN_ERR "r8712u: Firmware request error %d\n", rc);
++	return rc;
++}
++MODULE_FIRMWARE("rtlwifi/rtl8712u.bin");
++
++static u32 rtl871x_open_fw(struct _adapter *padapter, const u8 **ppmappedfw)
++{
++	const struct firmware **praw = &padapter->fw;
++
++	if (padapter->fw->size > 200000) {
++		printk(KERN_ERR "r8172u: Badfw->size of %d\n",
++		       (int)padapter->fw->size);
+ 		return 0;
+ 	}
+ 	*ppmappedfw = (u8 *)((*praw)->data);
+ 	return (*praw)->size;
+ }
+-MODULE_FIRMWARE("rtlwifi/rtl8712u.bin");
+ 
+ static void fill_fwpriv(struct _adapter *padapter, struct fw_priv *pfwpriv)
+ {
+@@ -142,18 +169,17 @@ static u8 rtl8712_dl_fw(struct _adapter
+ 	uint dump_imem_sz, imem_sz, dump_emem_sz, emem_sz; /* max = 49152; */
+ 	struct fw_hdr fwhdr;
+ 	u32 ulfilelength;	/* FW file size */
+-	void *phfwfile_hdl = NULL;
+ 	const u8 *pmappedfw = NULL;
+ 	u8 *ptmpchar = NULL, *ppayload, *ptr;
+ 	struct tx_desc *ptx_desc;
+ 	u32 txdscp_sz = sizeof(struct tx_desc);
+ 	u8 ret = _FAIL;
+ 
+-	ulfilelength = rtl871x_open_fw(padapter, &phfwfile_hdl, &pmappedfw);
++	ulfilelength = rtl871x_open_fw(padapter, &pmappedfw);
+ 	if (pmappedfw && (ulfilelength > 0)) {
+ 		update_fwhdr(&fwhdr, pmappedfw);
+ 		if (chk_fwhdr(&fwhdr, ulfilelength) == _FAIL)
+-			goto firmware_rel;
++			return ret;
+ 		fill_fwpriv(padapter, &fwhdr.fwpriv);
+ 		/* firmware check ok */
+ 		maxlen = (fwhdr.img_IMEM_size > fwhdr.img_SRAM_size) ?
+@@ -161,7 +187,7 @@ static u8 rtl8712_dl_fw(struct _adapter
+ 		maxlen += txdscp_sz;
+ 		ptmpchar = _malloc(maxlen + FWBUFF_ALIGN_SZ);
+ 		if (ptmpchar == NULL)
+-			goto firmware_rel;
++			return ret;
+ 
+ 		ptx_desc = (struct tx_desc *)(ptmpchar + FWBUFF_ALIGN_SZ -
+ 			    ((addr_t)(ptmpchar) & (FWBUFF_ALIGN_SZ - 1)));
+@@ -297,8 +323,6 @@ static u8 rtl8712_dl_fw(struct _adapter
+ 
+ exit_fail:
+ 	kfree(ptmpchar);
+-firmware_rel:
+-	release_firmware((struct firmware *)phfwfile_hdl);
+ 	return ret;
+ }
+ 
+Index: wireless-testing-new/drivers/staging/rtl8712/rtl8712_hal.h
+===================================================================
+--- wireless-testing-new.orig/drivers/staging/rtl8712/rtl8712_hal.h
++++ wireless-testing-new/drivers/staging/rtl8712/rtl8712_hal.h
+@@ -145,5 +145,6 @@ struct hal_priv {
+ };
+ 
+ uint	 rtl8712_hal_init(struct _adapter *padapter);
++int rtl871x_load_fw(struct _adapter *padapter);
+ 
+ #endif
+Index: wireless-testing-new/drivers/staging/rtl8712/usb_intf.c
+===================================================================
+--- wireless-testing-new.orig/drivers/staging/rtl8712/usb_intf.c
++++ wireless-testing-new/drivers/staging/rtl8712/usb_intf.c
+@@ -389,6 +389,7 @@ static int r871xu_drv_init(struct usb_in
+ 	pdvobjpriv = &padapter->dvobjpriv;
+ 	pdvobjpriv->padapter = padapter;
+ 	padapter->dvobjpriv.pusbdev = udev;
++	padapter->pusb_intf = pusb_intf;
+ 	usb_set_intfdata(pusb_intf, pnetdev);
+ 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
+ 	/* step 2. */
+@@ -595,10 +596,11 @@ static int r871xu_drv_init(struct usb_in
+ 			       "%pM\n", mac);
+ 		memcpy(pnetdev->dev_addr, mac, ETH_ALEN);
+ 	}
+-	/* step 6. Tell the network stack we exist */
+-	if (register_netdev(pnetdev) != 0)
++	/* step 6. Load the firmware asynchronously */
++	if (rtl871x_load_fw(padapter))
+ 		goto error;
+ 	spin_lock_init(&padapter->lockRxFF0Filter);
++	mutex_init(&padapter->mutex_start);
+ 	return 0;
+ error:
+ 	usb_put_dev(udev);
+@@ -629,7 +631,8 @@ static void r871xu_dev_remove(struct usb
+ 		flush_scheduled_work();
+ 		udelay(1);
+ 		/*Stop driver mlme relation timer */
+-		r8712_stop_drv_timers(padapter);
++		if (padapter->fw_found)
++			r8712_stop_drv_timers(padapter);
+ 		r871x_dev_unload(padapter);
+ 		r8712_free_drv_sw(padapter);
+ 	}
+Index: wireless-testing-new/drivers/staging/rtl8712/os_intfs.c
+===================================================================
+--- wireless-testing-new.orig/drivers/staging/rtl8712/os_intfs.c
++++ wireless-testing-new/drivers/staging/rtl8712/os_intfs.c
+@@ -31,6 +31,7 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/kthread.h>
++#include <linux/firmware.h>
+ #include "osdep_service.h"
+ #include "drv_types.h"
+ #include "xmit_osdep.h"
+@@ -264,12 +265,12 @@ static void start_drv_timers(struct _ada
+ void r8712_stop_drv_timers(struct _adapter *padapter)
+ {
+ 	_cancel_timer_ex(&padapter->mlmepriv.assoc_timer);
+-	_cancel_timer_ex(&padapter->mlmepriv.sitesurveyctrl.
+-			 sitesurvey_ctrl_timer);
+ 	_cancel_timer_ex(&padapter->securitypriv.tkip_timer);
+ 	_cancel_timer_ex(&padapter->mlmepriv.scan_to_timer);
+ 	_cancel_timer_ex(&padapter->mlmepriv.dhcp_timer);
+ 	_cancel_timer_ex(&padapter->mlmepriv.wdg_timer);
++	_cancel_timer_ex(&padapter->mlmepriv.sitesurveyctrl.
++			 sitesurvey_ctrl_timer);
+ }
+ 
+ static u8 init_default_value(struct _adapter *padapter)
+@@ -347,7 +348,8 @@ u8 r8712_free_drv_sw(struct _adapter *pa
+ 	r8712_free_mlme_priv(&padapter->mlmepriv);
+ 	r8712_free_io_queue(padapter);
+ 	_free_xmit_priv(&padapter->xmitpriv);
+-	_r8712_free_sta_priv(&padapter->stapriv);
++	if (padapter->fw_found)
++		_r8712_free_sta_priv(&padapter->stapriv);
+ 	_r8712_free_recv_priv(&padapter->recvpriv);
+ 	mp871xdeinit(padapter);
+ 	if (pnetdev)
+@@ -388,6 +390,7 @@ static int netdev_open(struct net_device
+ {
+ 	struct _adapter *padapter = (struct _adapter *)netdev_priv(pnetdev);
+ 
++	mutex_lock(&padapter->mutex_start);
+ 	if (padapter->bup == false) {
+ 		padapter->bDriverStopped = false;
+ 		padapter->bSurpriseRemoved = false;
+@@ -435,11 +438,13 @@ static int netdev_open(struct net_device
+ 	/* start driver mlme relation timer */
+ 	start_drv_timers(padapter);
+ 	padapter->ledpriv.LedControlHandler(padapter, LED_CTL_NO_LINK);
++	mutex_unlock(&padapter->mutex_start);
+ 	return 0;
+ netdev_open_error:
+ 	padapter->bup = false;
+ 	netif_carrier_off(pnetdev);
+ 	netif_stop_queue(pnetdev);
++	mutex_unlock(&padapter->mutex_start);
+ 	return -1;
+ }
+ 
+@@ -473,6 +478,9 @@ static int netdev_close(struct net_devic
+ 	r8712_free_network_queue(padapter);
+ 	/* The interface is no longer Up: */
+ 	padapter->bup = false;
++	release_firmware(padapter->fw);
++	/* never exit with a firmware callback pending */
++	wait_for_completion(&padapter->rtl8712_fw_ready);
+ 	return 0;
+ }
+ 
