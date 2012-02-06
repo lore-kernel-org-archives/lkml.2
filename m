@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab2BFXJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:09:55 -0500
-Received: from kamaji.grokhost.net ([87.117.218.43]:60152 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029Ab2BFXJx convert rfc822-to-8bit (ORCPT
+	id S1756239Ab2BFXLj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 18:11:39 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37802 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756051Ab2BFXLh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 18:09:53 -0500
-Subject: Re: FireWire/SBP2 Target mode
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=windows-1252
-From: Chris Boot <bootc@bootc.net>
-In-Reply-To: <CAGRGNgWf0epcam-jpCzMCSqefCKDSm892mw-X49FrcoRO0QYrQ@mail.gmail.com>
-Date: Mon, 6 Feb 2012 23:09:49 +0000
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Clemens Ladisch <clemens@ladisch.de>, target-devel@vger.kernel.org,
-        linux1394-devel@lists.sourceforge.net,
-        Boaz Harrosh <bharrosh@panasas.com>, Andy Grover <agrover@redhat.com>,
-        linux-scsi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+	Mon, 6 Feb 2012 18:11:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo7wFda_6C7q9YLApJmRe8D=dnB4ks8VJ3UXQta_qm_8vA@mail.gmail.com>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+ <20120108221342.GA7058@ime.usp.br> <CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+ <20120109112207.7f993845@jbarnes-desktop> <CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+ <CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+ <CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+ <CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+ <CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+ <CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+ <20120113115946.GA10615@ime.usp.br> <CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+ <CAOtrxKN4FQSPUJpP47=4+XzjTpcOQj=Dy+MUWBVYu7mQHNaSXA@mail.gmail.com>
+ <CAOtrxKM_ijORTP_5C4z0R79jy5O=_eX5iNJ_GmAqXf6d8OGe9g@mail.gmail.com>
+ <CAE9FiQWbtByxJopU_SHLpiAJt_91qTs_=9dBFTYDHFh5OQQydg@mail.gmail.com>
+ <CAOtrxKOy1msY_49GiVaaZ3GnORx8ifJYkiTjzDOe-Rk7LLD8rA@mail.gmail.com>
+ <CAE9FiQV++kCaA-2Y0-zuR0NMzwcvd4LJ+5fdTECBPkZkhWD50Q@mail.gmail.com>
+ <CAOtrxKNDTQVcg6wRJGxt_inva1YSDXG5YiO1EhH1Fs5ZDy+q3Q@mail.gmail.com>
+ <CAE9FiQVPLQp+GzGsgON-nW6JKPE2_P6Aua8wHcgkOiLnhuJh4A@mail.gmail.com>
+ <CAOtrxKNrMXkztu4Gtv_GFD_163fr18Au7DqyXEK-nacpu=-_eQ@mail.gmail.com>
+ <CAOtrxKP6OQyf8TX8BYk+wTFNSZmLOZjHq-NBJqfnyh=PdAKSow@mail.gmail.com>
+ <CAE9FiQWi5pMaKtyf_kwszO_m7fb15=d_2GpupNnSvbN61=X6bQ@mail.gmail.com>
+ <CAOtrxKOjNwwAbuhrqTUdiV5M=790FwUetDTkMbRdbkR7bXNH4A@mail.gmail.com>
+ <CAE9FiQXt4XbxBAaTQd156af_v0sEnkjO1YPK_Wd7+2i1rCKB0Q@mail.gmail.com>
+ <CAE9FiQVUcPZOic1Vqw2Qyv138sk8OTQkVYeOCBPi+iDKvYH-hA@mail.gmail.com>
+ <CAOtrxKM-M6yTKOwbiYqHqyRP-JvpAik8G7KYwGCX=2vAXe0T4Q@mail.gmail.com>
+ <CAOtrxKNNdWYVFf3UWpKK6O7hK2PFSmfcBwaVD3UmNta00uYP4A@mail.gmail.com>
+ <CAOtrxKPerDtHQgTOgb01Yzq8c=aoHEQM-GFE3c8Jo-XwX4Db-g@mail.gmail.com>
+ <CAOtrxKO9kZce4sDopN4yKFtLVx-BQS56OwyEav0Bh1XjqnS1MQ@mail.gmail.com>
+ <CAE9FiQU5239LD-e7FdpKq1iY3k80BFg2pLVw28YScufuai0R4w@mail.gmail.com>
+ <CAOtrxKMb==2aR-BF2_XJy+y2_7JAhxHF2H60het19BQE163J8g@mail.gmail.com> <CAErSpo7wFda_6C7q9YLApJmRe8D=dnB4ks8VJ3UXQta_qm_8vA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 6 Feb 2012 15:11:15 -0800
+Message-ID: <CAErSpo5R7uAoN01zS2eMKPHJq3RF6mXN1d1j8C143ZuKziYEVw@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>, rui.zhang@intel.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <476E7976-738A-4202-9FC4-FA5B060EA95F@bootc.net>
-References: <4E4BD560.4010806@bootc.net> <4E4D3B88.30003@ladisch.de> <4F29978A.3010707@redhat.com> <20120201224156.0773ebc6@stein> <4F2A55B9.4040005@panasas.com> <4F2A60DC.9030007@ladisch.de> <4F2FD1F4.9050702@bootc.net> <4F2FE705.3070509@ladisch.de> <4F2FE8DA.70502@bootc.net> <20120206212628.6880c506@stein> <5C167A1D-2203-4F1C-B538-E99DD87E7E42@bootc.net> <CAGRGNgWf0epcam-jpCzMCSqefCKDSm892mw-X49FrcoRO0QYrQ@mail.gmail.com>
-To: Julian Calaby <julian.calaby@gmail.com>
-X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 26, 2012 at 7:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Thu, Jan 26, 2012 at 4:16 AM, Rogério Brito <rbrito@ime.usp.br> wrote:
+>> On Thu, Jan 26, 2012 at 00:03, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> 2012/1/25 Rogério Brito <rbrito@ime.usp.br>:
+>>>>
+>>>> Wild thoughts: I just saw that nouveau calls some ACPI stuff to get
+>>>> EDID information and, as ACPI is broken on this notebook, could that
+>>>> be a potential reason for the panic that I'm seeing? (Yes, I can take
+>>>> a photo of the screen).
+>>>
+>>> Which 2.6.x kernel works on your laptop without disabling acpi?
+>>
+>> Unfortunately, no 2.6 kernel has worked on this laptop without
+>> acpi=off. I also once booted FreeBSD here just to see how it would
+>> behave and it also hang with ACPI enabled.
+>>
+>> From what I see on this notebook, if ACPI is not turned off, the
+>> computer simply hangs once the ACPI is started (it gives one layman
+>> like me the impression of entering an infinite loop). But, again, this
+>> is just a layman observation of what the system appears to be doing.
+>
+> My guess is that most of these problems are related, so if we fixed
+> whatever causes the ACPI hang, the other problems would probably go
+> away, too.
+>
+> Did you figure out anything about the MTRRs?
 
-On 6 Feb 2012, at 23:00, Julian Calaby wrote:
+Ping :)  Let me know if you'd like a patch to print out the MTRR info
+later in boot where it will be slow enough to capture in a video.
 
-> Hi,
-> 
-> On Tue, Feb 7, 2012 at 09:28, Chris Boot <bootc@bootc.net> wrote:
->> On 6 Feb 2012, at 20:26, Stefan Richter wrote:
->> 
->>> On Feb 06 Chris Boot wrote:
->>>> On 06/02/2012 14:43, Clemens Ladisch wrote:
->>>>> Chris Boot wrote:
->>>>>> You can pull the code from:
->>>>>> git://github.com/bootc/Linux-SBP-2-Target.git
->>>>> 
->>>>> The TODO file says:
->>>>>> * Update Juju so we can get the speed in the fw_address_handler callback
->>>>> 
->>>>> What is the speed needed for?
->>>> 
->>>> "The speed at which the block write request to the MANAGEMENT_AGENT
->>>> register is received shall determine the speed used by the target for
->>>> all subsequent requests to read the initiator’s configuration ROM, fetch
->>>> ORB’s from initiator memory or store status at the initiator’s
->>>> status_FIFO. Command block ORB’s separately specify the speed for
->>>> requests addressed to the data buffer or page table."
->>>> 
->>>> (T10/1155D Revision 4 page 53/54)
->>> 
->>> I guess it is not too hard to add this to the AR-req handler.  On the
->>> other hand, I see little reason to follow the SBP-2 spec to the letter
->>> here.  The target driver could just use the maximum speed that the core
->>> figured out.  On the other hand, this requires of course
->>>  - the target to wait for core to finish scanning an initiator,
->>>  - the core to offer an API to look up an fw_device by a
->>>    card--generation--nodeID tuple.
->>> 
->>> The intention of the spec is IMO clearly to enable target implementations
->>> that do not need to implement topology scanning.  I have a hard time to
->>> think of a valid scenario where an initiator needs to be able to steer a
->>> target towards a lower wire speed than what the participating links and
->>> PHYs actually support.
->> 
->> The only thing stopping me from getting the speed is the fact that struct fw_request is opaque. The value is easily available from request->response.speed and I kind of do that already in a very hackish way. I've sent a separate patch which adds a function that can be used to access that one value.
->> 
->> Waiting until the bus scan is complete isn't actually that great as I see the first LOGIN requests often before the fw_node is seen at all. I'd have to turn away the requester and hope they try again. I'm fairly sure my little tweak in my patch is a simple enough solution.
-> 
-> Stupid question: Could you use a completion queue or something
-> equivalent to wait until you have seen the fw_node, *then* process the
-> LOGIN request?
-
-The fw_address_handler callback is called in interrupt context, and I can't sleep from within there. As far as I'm aware I must call fw_send_response() from within the callback and can't defer that until I've scheduled something on a work queue. Please correct me if I'm wrong though, as that might be useful anyway.
-
-Chris
-
--- 
-Chris Boot
-bootc@bootc.net
-
+ Bjorn
