@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab2BFDEL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 22:04:11 -0500
-Received: from stats.peacock.arvixe.com ([174.122.104.67]:60860 "EHLO
-	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753238Ab2BFDDq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 22:03:46 -0500
-X-Greylist: delayed 16076 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Feb 2012 22:03:45 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer;
-	b=zXkceF1Blc6zYGWIw45s+jTDcNURyhZjTqHqaIUNx/z245SIvDcEujvEFvbN44lOxHaiZfhqv66f1beZvKQQhLIZLcNK/0x9Jp6TPaiOQUUxLAgybkaYCvW1IMFJLcBc;
-From: Przemo Firszt <przemo@firszt.eu>
-To: chris@cnpbagwell.com, pinglinux@gmail.com, jkosina@suse.cz,
-        linuxwacom-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH] HID: wacom: Fix invalid power_supply_powers calls
-Date: Sun,  5 Feb 2012 22:35:24 +0000
-Message-Id: <1328481324-7241-1-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.7.6.4
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - peacock.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
+	id S1753302Ab2BFDHa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 22:07:30 -0500
+Received: from ozlabs.org ([203.10.76.45]:33257 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752002Ab2BFDH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Feb 2012 22:07:28 -0500
+Date: Mon, 6 Feb 2012 14:07:24 +1100
+From: David Gibson <hermes@gibson.dropbear.id.au>
+To: Linus Torvalds <torvalds@osdl.org>, Pavel Roskin <proski@gnu.org>
+Cc: orinoco-users@lists.sourceforge.net, orinoco-devel@lists.sourceforge.net,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: orinoco: Remove old mailing lists from MAINTAINERS
+Message-ID: <20120206030724.GC18754@truffala.fritz.box>
+Mail-Followup-To: Linus Torvalds <torvalds@osdl.org>,
+	Pavel Roskin <proski@gnu.org>, orinoco-users@lists.sourceforge.net,
+	orinoco-devel@lists.sourceforge.net, linux-wireless@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-power_supply_powers calls added in 35b4c01e29bdd9632dabf9784ed3486333f00427
-have to be called after power device is created. This patch also fixes the
-second call - it has to be "ac" instead of "battery"
+The two orinoco mailing lists on sourceforge were set up many years
+ago and are now more or less moribund.  I'd like to shut them down, so
+I don't have to keep filtering the spam from them (which is most of
+what comes through now).  In preparation, this patch removes the
+reference to them from the MAINTAINERS file.  Any remaining discussion
+of this approaching obsolete driver can go to the linux-wireless list.
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
-Signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
----
- drivers/hid/hid-wacom.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Please apply.
 
-diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-index b47e58b..acab74c 100644
---- a/drivers/hid/hid-wacom.c
-+++ b/drivers/hid/hid-wacom.c
-@@ -531,7 +531,6 @@ static int wacom_probe(struct hid_device *hdev,
- 	wdata->battery.type = POWER_SUPPLY_TYPE_BATTERY;
- 	wdata->battery.use_for_apm = 0;
+Signed-off-by: David Gibson <hermes@gibson.dropbear.id.au>
+
+Index: working-2.6/MAINTAINERS
+===================================================================
+--- working-2.6.orig/MAINTAINERS	2012-02-06 12:24:27.933527295 +1100
++++ working-2.6/MAINTAINERS	2012-02-06 12:24:38.273578556 +1100
+@@ -4906,8 +4906,6 @@ F:	fs/ocfs2/
  
--	power_supply_powers(&wdata->battery, &hdev->dev);
- 
- 	ret = power_supply_register(&hdev->dev, &wdata->battery);
- 	if (ret) {
-@@ -540,6 +539,8 @@ static int wacom_probe(struct hid_device *hdev,
- 		goto err_battery;
- 	}
- 
-+	power_supply_powers(&wdata->battery, &hdev->dev);
-+
- 	wdata->ac.properties = wacom_ac_props;
- 	wdata->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
- 	wdata->ac.get_property = wacom_ac_get_property;
-@@ -547,14 +548,14 @@ static int wacom_probe(struct hid_device *hdev,
- 	wdata->ac.type = POWER_SUPPLY_TYPE_MAINS;
- 	wdata->ac.use_for_apm = 0;
- 
--	power_supply_powers(&wdata->battery, &hdev->dev);
--
- 	ret = power_supply_register(&hdev->dev, &wdata->ac);
- 	if (ret) {
- 		hid_warn(hdev,
- 			 "can't create ac battery attribute, err: %d\n", ret);
- 		goto err_ac;
- 	}
-+
-+	power_supply_powers(&wdata->ac, &hdev->dev);
- #endif
- 	return 0;
- 
+ ORINOCO DRIVER
+ L:	linux-wireless@vger.kernel.org
+-L:	orinoco-users@lists.sourceforge.net
+-L:	orinoco-devel@lists.sourceforge.net
+ W:	http://linuxwireless.org/en/users/Drivers/orinoco
+ W:	http://www.nongnu.org/orinoco/
+ S:	Orphan
+
 -- 
-1.7.6.4
-
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
