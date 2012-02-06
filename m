@@ -1,127 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab2BFPQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 10:16:46 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:32911 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282Ab2BFPQp (ORCPT
+	id S1755346Ab2BFPRg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 10:17:36 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33343 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282Ab2BFPRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 10:16:45 -0500
-Date: Mon, 6 Feb 2012 15:16:14 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: x86@kernel.org, Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v5 2/5] x86/platform: (TS-5500) add GPIO support
-Message-ID: <20120206151614.GD10173@sirena.org.uk>
-References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1328130344-18836-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328130344-18836-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Cookie: To err is human, to forgive unusual.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Mon, 6 Feb 2012 10:17:32 -0500
+From: Franck Bui-Huu <fbuihuu@gmail.com>
+To: acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>
+Subject: [PATCH Try #2] perf doc: allow producing documentation in a specified output directory
+Date: Mon,  6 Feb 2012 16:17:23 +0100
+Message-Id: <1328541443-18003-1-git-send-email-fbuihuu@gmail.com>
+X-Mailer: git-send-email 1.7.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 04:05:41PM -0500, Vivien Didelot wrote:
+Currently we can put the object files in a different directory by
+using 'O=' comand line argument.
 
->  arch/x86/platform/ts5500/Kconfig       |    7 +
->  arch/x86/platform/ts5500/Makefile      |    1 +
->  arch/x86/platform/ts5500/ts5500_gpio.c |  478 ++++++++++++++++++++++++++++++++
->  arch/x86/platform/ts5500/ts5500_gpio.h |   60 ++++
+However the generated documentation files don't honor this directive,
 
-As previously pointed out rather than hiding these drivers in arch/
-directories there's a push to ship them in drivers/ where they benefit
-from better subsystem review.
+This patch fixes that. It's been tested for man target but the others
+seems currently broken so no tests have been done on them so far.
 
-> +static int ts5500_gpio_request(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	struct ts5500_drvdata *drvdata;
-> +
-> +	drvdata = container_of(chip, struct ts5500_drvdata, gpio_chip);
-> +
-> +	mutex_lock(&drvdata->gpio_lock);
-> +	if (requested_gpios[offset]) {
-> +		mutex_unlock(&drvdata->gpio_lock);
-> +		return -EBUSY;
-> +	}
-> +	requested_gpios[offset] = 1;
-> +	mutex_unlock(&drvdata->gpio_lock);
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+---
 
-This is all redundant, gpiolib will check this for you.
+ Hi,
 
-> +static void ts5500_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
-> +{
+ The previous version used to pass the command line argument 'O' down
+ to the doc sub makefile which was unneeded.
 
-This (and get()) should be a _cansleep() operation because...
+ Please consider.
 
-> +	mutex_lock(&drvdata->gpio_lock);
-> +	if (val == 0)
-> +		port_bit_clear(ioaddr, bitno);
-> +	else
-> +		port_bit_set(ioaddr, bitno);
-> +	mutex_unlock(&drvdata->gpio_lock);
+ tools/perf/Documentation/Makefile |   86 ++++++++++++++++++++++--------------
+ 1 files changed, 52 insertions(+), 34 deletions(-)
 
-...you take a mutex which needs process context.
+diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
+index 4626a39..ca600e0 100644
+--- a/tools/perf/Documentation/Makefile
++++ b/tools/perf/Documentation/Makefile
+@@ -1,3 +1,10 @@
++OUTPUT := ./
++ifeq ("$(origin O)", "command line")
++  ifneq ($(O),)
++	OUTPUT := $(O)/
++  endif
++endif
++
+ MAN1_TXT= \
+ 	$(filter-out $(addsuffix .txt, $(ARTICLES) $(SP_ARTICLES)), \
+ 		$(wildcard perf-*.txt)) \
+@@ -6,10 +13,11 @@ MAN5_TXT=
+ MAN7_TXT=
+ 
+ MAN_TXT = $(MAN1_TXT) $(MAN5_TXT) $(MAN7_TXT)
+-MAN_XML=$(patsubst %.txt,%.xml,$(MAN_TXT))
+-MAN_HTML=$(patsubst %.txt,%.html,$(MAN_TXT))
++_MAN_XML=$(patsubst %.txt,%.xml,$(MAN_TXT))
++_MAN_HTML=$(patsubst %.txt,%.html,$(MAN_TXT))
+ 
+-DOC_HTML=$(MAN_HTML)
++MAN_XML=$(addprefix $(OUTPUT),$(_MAN_XML))
++MAN_HTML=$(addprefix $(OUTPUT),$(_MAN_HTML))
+ 
+ ARTICLES =
+ # with their own formatting rules.
+@@ -18,11 +26,17 @@ API_DOCS = $(patsubst %.txt,%,$(filter-out technical/api-index-skel.txt technica
+ SP_ARTICLES += $(API_DOCS)
+ SP_ARTICLES += technical/api-index
+ 
+-DOC_HTML += $(patsubst %,%.html,$(ARTICLES) $(SP_ARTICLES))
++_DOC_HTML = $(_MAN_HTML)
++_DOC_HTML+=$(patsubst %,%.html,$(ARTICLES) $(SP_ARTICLES))
++DOC_HTML=$(addprefix $(OUTPUT),$(_DOC_HTML))
+ 
+-DOC_MAN1=$(patsubst %.txt,%.1,$(MAN1_TXT))
+-DOC_MAN5=$(patsubst %.txt,%.5,$(MAN5_TXT))
+-DOC_MAN7=$(patsubst %.txt,%.7,$(MAN7_TXT))
++_DOC_MAN1=$(patsubst %.txt,%.1,$(MAN1_TXT))
++_DOC_MAN5=$(patsubst %.txt,%.5,$(MAN5_TXT))
++_DOC_MAN7=$(patsubst %.txt,%.7,$(MAN7_TXT))
++
++DOC_MAN1=$(addprefix $(OUTPUT),$(_DOC_MAN1))
++DOC_MAN5=$(addprefix $(OUTPUT),$(_DOC_MAN5))
++DOC_MAN7=$(addprefix $(OUTPUT),$(_DOC_MAN7))
+ 
+ # Make the path relative to DESTDIR, not prefix
+ ifndef DESTDIR
+@@ -150,9 +164,9 @@ man1: $(DOC_MAN1)
+ man5: $(DOC_MAN5)
+ man7: $(DOC_MAN7)
+ 
+-info: perf.info perfman.info
++info: $(OUTPUT)perf.info $(OUTPUT)perfman.info
+ 
+-pdf: user-manual.pdf
++pdf: $(OUTPUT)user-manual.pdf
+ 
+ install: install-man
+ 
+@@ -166,7 +180,7 @@ install-man: man
+ 
+ install-info: info
+ 	$(INSTALL) -d -m 755 $(DESTDIR)$(infodir)
+-	$(INSTALL) -m 644 perf.info perfman.info $(DESTDIR)$(infodir)
++	$(INSTALL) -m 644 $(OUTPUT)perf.info $(OUTPUT)perfman.info $(DESTDIR)$(infodir)
+ 	if test -r $(DESTDIR)$(infodir)/dir; then \
+ 	  $(INSTALL_INFO) --info-dir=$(DESTDIR)$(infodir) perf.info ;\
+ 	  $(INSTALL_INFO) --info-dir=$(DESTDIR)$(infodir) perfman.info ;\
+@@ -176,7 +190,7 @@ install-info: info
+ 
+ install-pdf: pdf
+ 	$(INSTALL) -d -m 755 $(DESTDIR)$(pdfdir)
+-	$(INSTALL) -m 644 user-manual.pdf $(DESTDIR)$(pdfdir)
++	$(INSTALL) -m 644 $(OUTPUT)user-manual.pdf $(DESTDIR)$(pdfdir)
+ 
+ #install-html: html
+ #	'$(SHELL_PATH_SQ)' ./install-webdoc.sh $(DESTDIR)$(htmldir)
+@@ -189,14 +203,14 @@ install-pdf: pdf
+ #
+ # Determine "include::" file references in asciidoc files.
+ #
+-doc.dep : $(wildcard *.txt) build-docdep.perl
++$(OUTPUT)doc.dep : $(wildcard *.txt) build-docdep.perl
+ 	$(QUIET_GEN)$(RM) $@+ $@ && \
+ 	$(PERL_PATH) ./build-docdep.perl >$@+ $(QUIET_STDERR) && \
+ 	mv $@+ $@
+ 
+--include doc.dep
++-include $(OUPTUT)doc.dep
+ 
+-cmds_txt = cmds-ancillaryinterrogators.txt \
++_cmds_txt = cmds-ancillaryinterrogators.txt \
+ 	cmds-ancillarymanipulators.txt \
+ 	cmds-mainporcelain.txt \
+ 	cmds-plumbinginterrogators.txt \
+@@ -205,32 +219,36 @@ cmds_txt = cmds-ancillaryinterrogators.txt \
+ 	cmds-synchelpers.txt \
+ 	cmds-purehelpers.txt \
+ 	cmds-foreignscminterface.txt
++cmds_txt=$(addprefix $(OUTPUT),$(_cmds_txt))
+ 
+-$(cmds_txt): cmd-list.made
++$(cmds_txt): $(OUTPUT)cmd-list.made
+ 
+-cmd-list.made: cmd-list.perl ../command-list.txt $(MAN1_TXT)
++$(OUTPUT)cmd-list.made: cmd-list.perl ../command-list.txt $(MAN1_TXT)
+ 	$(QUIET_GEN)$(RM) $@ && \
+ 	$(PERL_PATH) ./cmd-list.perl ../command-list.txt $(QUIET_STDERR) && \
+ 	date >$@
+ 
+ clean:
+-	$(RM) *.xml *.xml+ *.html *.html+ *.1 *.5 *.7
+-	$(RM) *.texi *.texi+ *.texi++ perf.info perfman.info
+-	$(RM) howto-index.txt howto/*.html doc.dep
+-	$(RM) technical/api-*.html technical/api-index.txt
+-	$(RM) $(cmds_txt) *.made
+-
+-$(MAN_HTML): %.html : %.txt
++	$(RM) $(MAN_XML) $(addsuffix +,$(MAN_XML))
++	$(RM) $(MAN_HTML) $(addsuffix +,$(MAN_HTML))
++	$(RM) $(DOC_HTML) $(DOC_MAN1) $(DOC_MAN5) $(DOC_MAN7)
++	$(RM) $(OUTPUT)*.texi $(OUTPUT)*.texi+ $(OUTPUT)*.texi++
++	$(RM) $(OUTPUT)perf.info $(OUTPUT)perfman.info
++	$(RM) $(OUTPUT)howto-index.txt $(OUTPUT)howto/*.html $(OUTPUT)doc.dep
++	$(RM) $(OUTPUT)technical/api-*.html $(OUTPUT)technical/api-index.txt
++	$(RM) $(cmds_txt) $(OUTPUT)*.made
++
++$(MAN_HTML): $(OUTPUT)%.html : %.txt
+ 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
+ 	$(ASCIIDOC) -b xhtml11 -d manpage -f asciidoc.conf \
+ 		$(ASCIIDOC_EXTRA) -aperf_version=$(PERF_VERSION) -o $@+ $< && \
+ 	mv $@+ $@
+ 
+-%.1 %.5 %.7 : %.xml
++$(OUTPUT)%.1 $(OUTPUT)%.5 $(OUTPUT)%.7 : $(OUTPUT)%.xml
+ 	$(QUIET_XMLTO)$(RM) $@ && \
+-	xmlto -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
++	xmlto -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
+ 
+-%.xml : %.txt
++$(OUTPUT)%.xml : %.txt
+ 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
+ 	$(ASCIIDOC) -b docbook -d manpage -f asciidoc.conf \
+ 		$(ASCIIDOC_EXTRA) -aperf_version=$(PERF_VERSION) -o $@+ $< && \
+@@ -239,25 +257,25 @@ $(MAN_HTML): %.html : %.txt
+ XSLT = docbook.xsl
+ XSLTOPTS = --xinclude --stringparam html.stylesheet docbook-xsl.css
+ 
+-user-manual.html: user-manual.xml
++$(OUTPUT)user-manual.html: $(OUTPUT)user-manual.xml
+ 	$(QUIET_XSLTPROC)xsltproc $(XSLTOPTS) -o $@ $(XSLT) $<
+ 
+-perf.info: user-manual.texi
+-	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split -o $@ user-manual.texi
++$(OUTPUT)perf.info: $(OUTPUT)user-manual.texi
++	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split -o $@ $(OUTPUT)user-manual.texi
+ 
+-user-manual.texi: user-manual.xml
++$(OUTPUT)user-manual.texi: $(OUTPUT)user-manual.xml
+ 	$(QUIET_DB2TEXI)$(RM) $@+ $@ && \
+-	$(DOCBOOK2X_TEXI) user-manual.xml --encoding=UTF-8 --to-stdout >$@++ && \
++	$(DOCBOOK2X_TEXI) $(OUTPUT)user-manual.xml --encoding=UTF-8 --to-stdout >$@++ && \
+ 	$(PERL_PATH) fix-texi.perl <$@++ >$@+ && \
+ 	rm $@++ && \
+ 	mv $@+ $@
+ 
+-user-manual.pdf: user-manual.xml
++$(OUTPUT)user-manual.pdf: $(OUTPUT)user-manual.xml
+ 	$(QUIET_DBLATEX)$(RM) $@+ $@ && \
+ 	$(DBLATEX) -o $@+ -p /etc/asciidoc/dblatex/asciidoc-dblatex.xsl -s /etc/asciidoc/dblatex/asciidoc-dblatex.sty $< && \
+ 	mv $@+ $@
+ 
+-perfman.texi: $(MAN_XML) cat-texi.perl
++$(OUTPUT)perfman.texi: $(MAN_XML) cat-texi.perl
+ 	$(QUIET_DB2TEXI)$(RM) $@+ $@ && \
+ 	($(foreach xml,$(MAN_XML),$(DOCBOOK2X_TEXI) --encoding=UTF-8 \
+ 		--to-stdout $(xml) &&) true) > $@++ && \
+@@ -265,7 +283,7 @@ perfman.texi: $(MAN_XML) cat-texi.perl
+ 	rm $@++ && \
+ 	mv $@+ $@
+ 
+-perfman.info: perfman.texi
++$(OUTPUT)perfman.info: $(OUTPUT)perfman.texi
+ 	$(QUIET_MAKEINFO)$(MAKEINFO) --no-split --no-validate $*.texi
+ 
+ $(patsubst %.txt,%.texi,$(MAN_TXT)): %.texi : %.xml
+-- 
+1.7.7.4
 
-> +static int ts5500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	/* Only a few lines are IRQ-Capable */
-> +	switch (offset) {
-> +	case TS5500_DIO1_13:
-> +		return TS5500_DIO1_13_IRQ;
-> +	case TS5500_DIO2_13:
-> +		return TS5500_DIO2_13_IRQ;
-> +	case TS5500_LCD_RS:
-> +		return TS5500_LCD_RS_IRQ;
-
-Why are these numbers compile time constants?
-
-> +	/* Setup the gpio_chip structure */
-> +	drvdata = kzalloc(sizeof(struct ts5500_drvdata), GFP_KERNEL);
-> +	if (drvdata == NULL)
-> +		goto err_alloc_dev;
-
-Looks like you'd benefit from using devm_ functions for most if not all
-of the allocation.
-
-> +/* Callback for releasing resources */
-> +static void ts5500_gpio_device_release(struct device *dev)
-> +{
-> +	/* noop */
-> +}
-> +
-> +static struct platform_device ts5500_gpio_device = {
-> +	.name = "ts5500_gpio",
-> +	.id = -1,
-> +	.dev = {
-> +		.release = ts5500_gpio_device_release,
-> +	}
-> +};
-
-I'm not sure what this is all about but it looks fairly obviously wrong.
-
-> +static int __devexit ts5500_gpio_remove(struct platform_device *pdev)
-> +{
-> +	struct ts5500_drvdata *drvdata;
-> +	int ret, i;
-> +
-> +	drvdata = platform_get_drvdata(pdev);
-> +
-> +	/* Release GPIO lines */
-> +	for (i = 0; i < ARRAY_SIZE(requested_gpios); i++) {
-> +		if (requested_gpios[i])
-> +			gpio_free(i);
-> +	}
-
-You shouldn't be doing this, if it was sensible then gpiolib ought to be
-doing it for you.
