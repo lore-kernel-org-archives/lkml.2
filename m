@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2BFMzl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 07:55:41 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:56124
+	id S1755237Ab2BFMzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 07:55:52 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:38851
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754977Ab2BFMzk (ORCPT
+	by vger.kernel.org with ESMTP id S1755189Ab2BFMzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 07:55:40 -0500
+	Mon, 6 Feb 2012 07:55:51 -0500
 X-SpamScore: 3
 X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh2a8h668h839h93fh)
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [PATCH 05/07] Watchdog: DA9052/53 watchdog support v1
+Subject: [PATCH 06/07] RTC: RTC driver for DA9052/53 PMIC v1
 From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
-        David Dajun Chen <dajun.chen@diasemi.com>,
-        <linaro-dev@lists.linaro.org>, <sameo@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Paul Gortmaker <p_gortmaker@yahoo.com>, <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <dchen@diasemi.com>, <sameo@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 6 Feb 2012 18:18:06 +0530
-Message-ID: <1328532486.30549.82.camel@dhruva>
+Date: Mon, 6 Feb 2012 18:19:05 +0530
+Message-ID: <1328532545.30549.83.camel@dhruva>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -28,75 +27,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver adds support for the watchdog functionality provided by the
-Dialog Semiconductor DA9052/53 PMIC chip.
+RTC Driver for Dialog Semiconductor DA9052/53 PMICs.
 
 This patch is functionally tested on Samsung SMDKV6410.
 
 Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 ---
- Documentation/watchdog/watchdog-parameters.txt |    5 +
- drivers/watchdog/Kconfig                       |    6 +
- drivers/watchdog/Makefile                      |    1 +
- drivers/watchdog/da9052_wdt.c                  |  333 ++++++++++++++++++++++++
- 4 files changed, 345 insertions(+), 0 deletions(-)
- create mode 100644 drivers/watchdog/da9052_wdt.c
-diff --git a/Documentation/watchdog/watchdog-parameters.txt b/Documentation/watchdog/watchdog-parameters.txt
-index 17ddd82..04fddba 100644
---- a/Documentation/watchdog/watchdog-parameters.txt
-+++ b/Documentation/watchdog/watchdog-parameters.txt
-@@ -78,6 +78,11 @@ wd0_timeout: Default watchdog0 timeout in 1/10secs
- wd1_timeout: Default watchdog1 timeout in 1/10secs
- wd2_timeout: Default watchdog2 timeout in 1/10secs
- -------------------------------------------------
-+da9052wdt:
-+timeout: Watchdog timeout in seconds. 2<= timeout <=131, default=2.048s
-+nowayout: Watchdog cannot be stopped once started
-+	(default=kernel config parameter)
-+-------------------------------------------------
- davinci_wdt:
- heartbeat: Watchdog heartbeat period in seconds from 1 to 600, default 60
- -------------------------------------------------
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 877b107..3fb9633 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -63,6 +63,12 @@ config SOFT_WATCHDOG
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called softdog.
+ drivers/rtc/Kconfig      |    7 +
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-da9052.c |  293 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 301 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-da9052.c
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 850febc..4f9fb25 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -554,6 +554,13 @@ config RTC_DRV_DS1742
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-ds1742.
  
-+config DA9052_WATCHDOG
-+	tristate "Dialog DA9052/DA9053 Watchdog"
++config RTC_DRV_DA9052
++	tristate "Dialog DA9052/DA9053 RTC"
 +	depends on PMIC_DA9052
 +	help
-+	  Support for the watchdog in the DA9052-BC and DA9053-AA/Bx PMICs.
++	  Say y here to support the RTC driver for Dialog Semiconductor
++	  DA9052-BC and DA9053-AA/Bx PMICs.
 +
- config WM831X_WATCHDOG
- 	tristate "WM831x watchdog"
- 	depends on MFD_WM831X
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index e8f479a..0ecbe5a 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -166,4 +166,5 @@ obj-$(CONFIG_XEN_WDT) += xen_wdt.o
- obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
- obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
- obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
-+obj-$(CONFIG_DA9052_WATCHDOG) += da9052_wdt.o
- obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
-diff --git a/drivers/watchdog/da9052_wdt.c b/drivers/watchdog/da9052_wdt.c
+ config RTC_DRV_EFI
+ 	tristate "EFI RTC"
+ 	depends on IA64
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 6c9387a..727ae77 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_RTC_DRV_BQ32K)	+= rtc-bq32k.o
+ obj-$(CONFIG_RTC_DRV_BQ4802)	+= rtc-bq4802.o
+ obj-$(CONFIG_RTC_DRV_CMOS)	+= rtc-cmos.o
+ obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
++obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
+ obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
+ obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
+ obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
+diff --git a/drivers/rtc/rtc-da9052.c b/drivers/rtc/rtc-da9052.c
 new file mode 100644
-index 0000000..b08091e
+index 0000000..0968b0b
 --- /dev/null
-+++ b/drivers/watchdog/da9052_wdt.c
-@@ -0,0 +1,333 @@
++++ b/drivers/rtc/rtc-da9052.c
+@@ -0,0 +1,293 @@
 +/*
-+ * System monitoring driver for DA9052 PMICs.
++ * Real time clock driver for DA9052
 + *
-+ * Copyright(c) 2012 Dialog Semiconductor Ltd.
++ *Copyright(c) 2012 Dialog Semiconductor Ltd.
 + *
-+ * Author: Dajun Chen <dchen@diasemi.com>
++ *Author: Dajun Dajun Chen <dajun.chen@diasemi.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -105,324 +89,284 @@ index 0000000..b08091e
 + *
 + */
 +
-+#include <linux/miscdevice.h>
 +#include <linux/module.h>
-+#include <linux/delay.h>
-+#include <linux/fs.h>
-+#include <linux/uaccess.h>
 +#include <linux/platform_device.h>
-+#include <linux/time.h>
-+#include <linux/watchdog.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
++#include <linux/rtc.h>
 +
-+#include <linux/mfd/da9052/reg.h>
 +#include <linux/mfd/da9052/da9052.h>
++#include <linux/mfd/da9052/reg.h>
 +
-+static int nowayout = WATCHDOG_NOWAYOUT;
-+static int wdt_state = WDIOS_DISABLECARD;
-+static struct miscdevice da9052_wdt_miscdev;
-+static unsigned long da9052_wdt_users;
-+static int da9052_wdt_expect_close;
-+struct da9052 *da9052;
-+static DEFINE_MUTEX(wdt_mutex);
++#define rtc_err(da9052, fmt, ...) \
++		dev_err(da9052->dev, "%s: " fmt, __func__, ##__VA_ARGS__)
 +
-+static struct {
-+	u8 reg_val;
-+	int time;  /* Seconds */
-+} da9052_wdt_maps[] = {
-+	{ 1, 2 },
-+	{ 2, 4 },
-+	{ 3, 8 },
-+	{ 4, 16 },
-+	{ 5, 32 },
-+	{ 5, 33 },  /* Actual time  32.768s so included both 32s and 33s */
-+	{ 6, 65 },
-+	{ 6, 66 },  /* Actual time 65.536s so include both, 65s and 66s */
-+	{ 7, 131 },
++struct da9052_rtc {
++	struct rtc_device *rtc;
++	struct da9052 *da9052;
++	int irq;
 +};
 +
-+static int da9052_wdt_set_timeout(struct da9052 *da9052, unsigned char timeout)
++static int da9052_rtc_enable_alarm(struct da9052 *da9052, bool enable)
 +{
 +	int ret;
++	if (enable) {
++		ret = da9052_reg_update(da9052, DA9052_ALARM_Y_REG,
++					DA9052_ALARM_Y_ALARM_ON,
++					DA9052_ALARM_Y_ALARM_ON);
++		if (ret != 0)
++			rtc_err(da9052, "Failed to enable ALM: %d\n", ret);
++	} else {
++		ret = da9052_reg_update(da9052, DA9052_ALARM_Y_REG,
++					DA9052_ALARM_Y_ALARM_ON, 0);
++		if (ret != 0)
++			rtc_err(da9052, "Write error: %d\n", ret);
++	}
++	return ret;
++}
 +
-+	/* Disable the Watchdog timer for 150us before changing the
-+	*  time out value
-+	*/
-+	ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-+				DA9052_CONTROLD_TWDSCALE, 0);
++static irqreturn_t da9052_rtc_irq(int irq, void *data)
++{
++	struct da9052_rtc *rtc = data;
++	int ret;
++
++	ret = da9052_reg_read(rtc->da9052, DA9052_ALARM_MI_REG);
 +	if (ret < 0) {
-+		dev_err(da9052->dev, "Failed to disable watchdog bit, %d\n",
-+			ret);
++		rtc_err(rtc->da9052, "Read error: %d\n", ret);
++		return IRQ_NONE;
++	}
++
++	if (ret & DA9052_ALARMMI_ALARMTYPE) {
++		da9052_rtc_enable_alarm(rtc->da9052, 0);
++		rtc_update_irq(rtc->rtc, 1, RTC_IRQF | RTC_AF);
++	} else
++		rtc_update_irq(rtc->rtc, 1, RTC_IRQF | RTC_PF);
++
++	return IRQ_HANDLED;
++}
++
++static int da9052_read_alarm(struct da9052 *da9052, struct rtc_time *rtc_tm)
++{
++	int ret;
++	uint8_t v[5] = {0, 0, 0, 0, 0};
++
++	ret = da9052_group_read(da9052, DA9052_ALARM_MI_REG, 5, v);
++	if (ret != 0) {
++		rtc_err(da9052, "Failed to group read ALM: %d\n", ret);
 +		return ret;
 +	}
 +
-+	mutex_lock(&wdt_mutex);
-+	wdt_state = (timeout == 0) ? WDIOS_DISABLECARD : WDIOS_ENABLECARD;
-+	mutex_unlock(&wdt_mutex);
++	rtc_tm->tm_year = (v[4] & DA9052_RTC_YEAR) + 100;
++	rtc_tm->tm_mon  = (v[3] & DA9052_RTC_MONTH) - 1;
++	rtc_tm->tm_mday = v[2] & DA9052_RTC_DAY;
++	rtc_tm->tm_hour = v[1] & DA9052_RTC_HOUR;
++	rtc_tm->tm_min  = v[0] & DA9052_RTC_MIN;
 +
-+	if (timeout) {
-+		udelay(150);
-+
-+		/* Set the desired timeout */
-+		ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-+					DA9052_CONTROLD_TWDSCALE, timeout);
-+		if (ret < 0) {
-+			dev_err(da9052->dev,
-+				"Failed to update timescale bit, %d\n", ret);
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int da9052_wdt_start(struct da9052 *da9052)
-+{
-+	int ret = 0;
-+
-+
-+	if (wdt_state == WDIOS_DISABLECARD) {
-+		/* Default 2.048s */
-+		ret = da9052_wdt_set_timeout(da9052, 1);
-+		if (ret <= 0)
-+			goto err;
-+
-+		mutex_lock(&wdt_mutex);
-+		wdt_state = WDIOS_ENABLECARD;
-+		mutex_unlock(&wdt_mutex);
-+	}
-+
-+err:
++	ret = rtc_valid_tm(rtc_tm);
++	if (ret != 0)
++		return ret;
 +	return ret;
 +}
 +
-+static int da9052_wdt_stop(struct da9052 *da9052)
-+{
-+	int ret = 0;
-+
-+	mutex_lock(&wdt_mutex);
-+
-+	if (wdt_state == WDIOS_ENABLECARD) {
-+		ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-+					DA9052_CONTROLD_TWDSCALE, 0);
-+		if (ret < 0) {
-+			dev_err(da9052->dev,
-+				"Failed to disable watchdog bit strobe bit, %d\n",
-+				ret);
-+			goto err;
-+		}
-+
-+		wdt_state = WDIOS_DISABLECARD;
-+	}
-+
-+err:
-+	mutex_unlock(&wdt_mutex);
-+	return ret;
-+}
-+
-+static void da9052_wdt_strobe(struct da9052 *da9052)
++static int da9052_set_alarm(struct da9052 *da9052, struct rtc_time *rtc_tm)
 +{
 +	int ret;
++	uint8_t v[3] = {0, 0, 0};
 +
-+	if (wdt_state == WDIOS_ENABLECARD) {
-+		ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-+					DA9052_CONTROLD_WATCHDOG, 1 << 7);
-+		if (ret < 0) {
-+			dev_err(da9052->dev,
-+				"Failed to update watchdog strobe bit, %d\n",
-+				ret);
-+			return;
-+		}
++	rtc_tm->tm_year -= 100;
++	rtc_tm->tm_mon += 1;
++
++	ret = da9052_reg_update(da9052, DA9052_ALARM_MI_REG,
++				DA9052_RTC_MIN, rtc_tm->tm_min);
++	if (ret != 0) {
++		rtc_err(da9052, "Failed to write ALRM MIN: %d\n", ret);
++		return ret;
 +	}
-+}
 +
-+static int da9052_wdt_open(struct inode *inode, struct file *file)
-+{
-+	int ret;
++	v[0] = rtc_tm->tm_hour;
++	v[1] = rtc_tm->tm_mday;
++	v[2] = rtc_tm->tm_mon;
 +
-+	if (test_and_set_bit(0, &da9052_wdt_users))
-+		return -EBUSY;
-+
-+	ret = da9052_wdt_start(da9052);
++	ret = da9052_group_write(da9052, DA9052_ALARM_H_REG, 3, v);
 +	if (ret < 0)
 +		return ret;
 +
-+	return nonseekable_open(inode, file);
-+}
-+
-+static int da9052_wdt_release(struct inode *inode, struct file *file)
-+{
-+	int ret = 0;
-+
-+	if (da9052_wdt_expect_close == 42)
-+		ret = da9052_wdt_stop(da9052);
-+	else
-+		da9052_wdt_strobe(da9052);
-+
-+	da9052_wdt_expect_close = 0;
-+	clear_bit(0, &da9052_wdt_users);
++	ret = da9052_reg_update(da9052, DA9052_ALARM_Y_REG,
++				DA9052_RTC_YEAR, rtc_tm->tm_year);
++	if (ret != 0)
++		rtc_err(da9052, "Failed to write ALRM YEAR: %d\n", ret);
 +
 +	return ret;
 +}
 +
-+static struct watchdog_info da9052_wdt_info = {
-+	.options	= WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
-+	.identity	= "DA9052 Watchdog",
-+};
-+
-+static long da9052_wdt_ioctl(struct file *file, uint cmd, unsigned long arg)
-+{
-+	void __user *argp = (void __user *)arg;
-+	int ret = 0, timeout, i, __user *p = argp;
-+
-+	switch (cmd) {
-+	case WDIOC_GETSUPPORT:
-+		ret = copy_to_user(argp, &da9052_wdt_info,
-+				   sizeof(da9052_wdt_info)) ? -EFAULT : 0;
-+		break;
-+	case WDIOC_GETSTATUS:
-+	case WDIOC_GETBOOTSTATUS:
-+		ret = put_user(0, p);
-+		break;
-+	case WDIOC_SETOPTIONS:
-+	{
-+		int options;
-+		ret = get_user(options, p);
-+		if (ret)
-+			break;
-+
-+		if (options == WDIOS_ENABLECARD)
-+			ret = da9052_wdt_start(da9052);
-+
-+		if (options == WDIOS_DISABLECARD)
-+			ret = da9052_wdt_stop(da9052);
-+
-+		break;
-+	}
-+	case WDIOC_KEEPALIVE:
-+		da9052_wdt_strobe(da9052);
-+		break;
-+	case WDIOC_SETTIMEOUT:
-+		ret = get_user(timeout, p);
-+		if (ret)
-+			break;
-+
-+		for (i = 0; i < ARRAY_SIZE(da9052_wdt_maps); i++)
-+			if (da9052_wdt_maps[i].time == timeout)
-+				break;
-+		if (i == ARRAY_SIZE(da9052_wdt_maps))
-+			ret = -EINVAL;
-+		else
-+			ret = da9052_wdt_set_timeout(da9052,
-+						    da9052_wdt_maps[i].reg_val);
-+
-+		break;
-+	case WDIOC_GETTIMEOUT:
-+		ret = da9052_reg_read(da9052, DA9052_CONTROL_D_REG);
-+		if (ret < 0)
-+			break;
-+
-+		ret &= DA9052_CONTROLD_TWDSCALE;
-+		for (i = 0; i < ARRAY_SIZE(da9052_wdt_maps); i++)
-+			if (da9052_wdt_maps[i].reg_val == ret)
-+				break;
-+		if (i == ARRAY_SIZE(da9052_wdt_maps))
-+			ret = -EINVAL;
-+		else
-+			ret = put_user(da9052_wdt_maps[i].time, p);
-+
-+		break;
-+	default:
-+		return -ENOTTY;
-+	}
-+
-+	return ret;
-+}
-+
-+static ssize_t da9052_wdt_write(struct file *file,
-+				const char __user *data, size_t count,
-+				loff_t *ppos)
-+{
-+	size_t i;
-+
-+	/* Check the magic character 'V' and reload the timer */
-+	if (count) {
-+		if (!nowayout) {
-+			da9052_wdt_expect_close = 0;
-+
-+			/* scan for magic character */
-+			for (i = 0; i != count; i++) {
-+				char c;
-+				if (get_user(c, data + i))
-+					return -EFAULT;
-+				if (c == 'V')
-+					da9052_wdt_expect_close = 42;
-+			}
-+		/* someone wrote to us, we should reload the timer */
-+		da9052_wdt_strobe(da9052);
-+		}
-+	}
-+	return count;
-+}
-+
-+static const struct file_operations da9052_wdt_fops = {
-+	.owner		= THIS_MODULE,
-+	.llseek		= no_llseek,
-+	.unlocked_ioctl	= da9052_wdt_ioctl,
-+	.write		= da9052_wdt_write,
-+	.open		= da9052_wdt_open,
-+	.release	= da9052_wdt_release,
-+};
-+
-+static struct miscdevice da9052_wdt_miscdev = {
-+	.minor		= WATCHDOG_MINOR,
-+	.name		= "da9052-wdt",
-+	.fops		= &da9052_wdt_fops,
-+};
-+
-+static int __devinit da9052_wdt_probe(struct platform_device *pdev)
++static int da9052_rtc_get_alarm_status(struct da9052 *da9052)
 +{
 +	int ret;
 +
-+	da9052 = dev_get_drvdata(pdev->dev.parent);
-+
-+	ret = da9052_reg_update(da9052, DA9052_CONTROL_D_REG,
-+				DA9052_CONTROLD_TWDSCALE, 0);
++	ret = da9052_reg_read(da9052, DA9052_ALARM_Y_REG);
 +	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to disable watchdog bits, %d\n",
-+			ret);
++		rtc_err(da9052, "Failed to read ALM: %d\n", ret);
++		return ret;
++	}
++	ret &= DA9052_ALARM_Y_ALARM_ON;
++	return (ret > 0) ? 1 : 0;
++}
++
++static int da9052_rtc_read_time(struct device *dev, struct rtc_time *rtc_tm)
++{
++	struct da9052_rtc *rtc = dev_get_drvdata(dev);
++	uint8_t v[6] = {0, 0, 0, 0, 0, 0};
++	int ret;
++
++	ret = da9052_group_read(rtc->da9052, DA9052_COUNT_S_REG, 6, v);
++	if (ret < 0) {
++		rtc_err(rtc->da9052, "Failed to read RTC time : %d\n", ret);
 +		return ret;
 +	}
 +
-+	da9052_wdt_miscdev.parent = &pdev->dev;
++	rtc_tm->tm_year = (v[5] & DA9052_RTC_YEAR) + 100;
++	rtc_tm->tm_mon  = (v[4] & DA9052_RTC_MONTH) - 1;
++	rtc_tm->tm_mday = v[3] & DA9052_RTC_DAY;
++	rtc_tm->tm_hour = v[2] & DA9052_RTC_HOUR;
++	rtc_tm->tm_min  = v[1] & DA9052_RTC_MIN;
++	rtc_tm->tm_sec  = v[0] & DA9052_RTC_SEC;
 +
-+	ret = misc_register(&da9052_wdt_miscdev);
-+
-+	return ret;
-+}
-+
-+static int __devexit da9052_wdt_remove(struct platform_device *dev)
-+{
-+	misc_deregister(&da9052_wdt_miscdev);
++	ret = rtc_valid_tm(rtc_tm);
++	if (ret != 0) {
++		rtc_err(rtc->da9052, "rtc_valid_tm failed: %d\n", ret);
++		return ret;
++	}
 +
 +	return 0;
 +}
 +
-+static struct platform_driver da9052_wdt_driver = {
-+	.probe = da9052_wdt_probe,
-+	.remove = __devexit_p(da9052_wdt_remove),
++static int da9052_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct da9052_rtc *rtc;
++	uint8_t v[6] = {0, 0, 0, 0, 0, 0};
++
++	rtc = dev_get_drvdata(dev);
++
++	v[0] = tm->tm_sec;
++	v[1] = tm->tm_min;
++	v[2] = tm->tm_hour;
++	v[3] = tm->tm_mday;
++	v[4] = tm->tm_mon + 1;
++	v[5] = tm->tm_year - 100;
++
++	return da9052_group_write(rtc->da9052, DA9052_COUNT_S_REG, 6, v);
++}
++
++static int da9052_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	int ret;
++	struct rtc_time *tm = &alrm->time;
++	struct da9052_rtc *rtc = dev_get_drvdata(dev);
++
++	ret = da9052_read_alarm(rtc->da9052, tm);
++
++	if (ret)
++		return ret;
++
++	alrm->enabled = da9052_rtc_get_alarm_status(rtc->da9052);
++
++	return 0;
++}
++
++static int da9052_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	int ret;
++	struct rtc_time *tm = &alrm->time;
++	struct da9052_rtc *rtc = dev_get_drvdata(dev);
++
++	ret = da9052_rtc_enable_alarm(rtc->da9052, 0);
++	if (ret < 0)
++		return ret;
++
++	ret = da9052_set_alarm(rtc->da9052, tm);
++	if (ret)
++		return ret;
++
++	ret = da9052_rtc_enable_alarm(rtc->da9052, 1);
++
++	return ret;
++}
++
++static int da9052_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
++{
++	struct da9052_rtc *rtc = dev_get_drvdata(dev);
++
++	return da9052_rtc_enable_alarm(rtc->da9052, enabled);
++}
++
++static const struct rtc_class_ops da9052_rtc_ops = {
++	.read_time	= da9052_rtc_read_time,
++	.set_time	= da9052_rtc_set_time,
++	.read_alarm	= da9052_rtc_read_alarm,
++	.set_alarm	= da9052_rtc_set_alarm,
++	.alarm_irq_enable = da9052_rtc_alarm_irq_enable,
++};
++
++static int __devinit da9052_rtc_probe(struct platform_device *pdev)
++{
++	struct da9052_rtc *rtc;
++	int ret;
++
++	rtc = devm_kzalloc(&pdev->dev, sizeof(struct da9052_rtc), GFP_KERNEL);
++	if (!rtc)
++		return -ENOMEM;
++
++	rtc->da9052 = dev_get_drvdata(pdev->dev.parent);
++	platform_set_drvdata(pdev, rtc);
++	rtc->irq = platform_get_irq_byname(pdev, "ALM");
++	ret = request_threaded_irq(rtc->irq, NULL, da9052_rtc_irq,
++				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++				   "ALM", rtc);
++	if (ret != 0) {
++		rtc_err(rtc->da9052, "irq registration failed: %d\n", ret);
++		goto err_mem;
++	}
++
++	rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
++				       &da9052_rtc_ops, THIS_MODULE);
++	if (IS_ERR(rtc->rtc)) {
++		ret = PTR_ERR(rtc->rtc);
++		goto err_free_irq;
++	}
++
++	return 0;
++
++err_free_irq:
++	free_irq(rtc->irq, rtc);
++err_mem:
++	devm_kfree(&pdev->dev, rtc);
++	return ret;
++}
++
++static int __devexit da9052_rtc_remove(struct platform_device *pdev)
++{
++	struct da9052_rtc *rtc = pdev->dev.platform_data;
++
++	rtc_device_unregister(rtc->rtc);
++	free_irq(rtc->irq, rtc);
++	platform_set_drvdata(pdev, NULL);
++	devm_kfree(&pdev->dev, rtc);
++
++	return 0;
++}
++
++static struct platform_driver da9052_rtc_driver = {
++	.probe	= da9052_rtc_probe,
++	.remove	= __devexit_p(da9052_rtc_remove),
 +	.driver = {
-+		.name	= "da9052-watchdog",
++		.name	= "da9052-rtc",
 +		.owner	= THIS_MODULE,
 +	},
 +};
 +
-+module_platform_driver(da9052_wdt_driver);
++module_platform_driver(da9052_rtc_driver);
 +
 +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("DA9052 SM Device Driver");
++MODULE_DESCRIPTION("RTC driver for Dialog DA9052 PMIC");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:da9052-wdt");
++MODULE_ALIAS("platform:da9052-rtc");
 
 
