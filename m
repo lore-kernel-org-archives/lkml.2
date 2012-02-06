@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2BFSBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 13:01:07 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:51170 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab2BFSBF (ORCPT
+	id S1754605Ab2BFSCc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 13:02:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43582 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752158Ab2BFSCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 13:01:05 -0500
-Date: Mon, 6 Feb 2012 19:01:04 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Andi Kleen <andi@firstfloor.org>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/5] ACPI: EC: Add a limited number of repeats after false EC interrupts
-Message-ID: <20120206180104.GO11715@one.firstfloor.org>
-References: <1328545032-21373-1-git-send-email-andi@firstfloor.org> <1328545032-21373-4-git-send-email-andi@firstfloor.org> <20120206162740.GA32061@srcf.ucam.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120206162740.GA32061@srcf.ucam.org>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 6 Feb 2012 13:02:30 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] regmap: Add debugfs information for the cache status
+Date: Mon,  6 Feb 2012 18:02:28 +0000
+Message-Id: <1328551348-7662-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.rc1
+In-Reply-To: <1328551348-7662-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1328551348-7662-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Our EC code is, at this point, a layer of hacks piled on top of other 
-> hacks. We have various patches that fix some machines and break others 
-> and a lack of a detailed description of what the driver actually does 
-> and where it deviates from the specification (and why).
+Show all the cache status flags in debugfs if we have a cache.
 
-The moving to an interrupt thread will enable a lot of cleanups
-in fact. A lot of the existing code could be simplified now that
-you can sleep. A lot of the nasty code was simply a workaround
-for that.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-debugfs.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-I don't have plans to work on this however, since my laptop
-works now (sorry). But I believe the patchkit is a good base
-for further cleanups.
-
--Andi
-
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 6f39747..b3b4b8f 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -192,6 +192,15 @@ void regmap_debugfs_init(struct regmap *map)
+ 		debugfs_create_file("access", 0400, map->debugfs,
+ 				    map, &regmap_access_fops);
+ 	}
++
++	if (map->cache_type) {
++		debugfs_create_bool("cache_only", 0400, map->debugfs,
++				    &map->cache_only);
++		debugfs_create_bool("cache_dirty", 0400, map->debugfs,
++				    &map->cache_dirty);
++		debugfs_create_bool("cache_bypass", 0400, map->debugfs,
++				    &map->cache_bypass);
++	}
+ }
+ 
+ void regmap_debugfs_exit(struct regmap *map)
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.9.rc1
+
