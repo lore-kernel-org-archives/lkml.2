@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab2BFVTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 16:19:30 -0500
-Received: from longford.logfs.org ([213.229.74.203]:35652 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab2BFVT3 (ORCPT
+	id S1755743Ab2BFVTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 16:19:46 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59832 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308Ab2BFVTp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 16:19:29 -0500
-X-Greylist: delayed 2201 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Feb 2012 16:19:28 EST
-Date: Mon, 6 Feb 2012 14:02:06 -0500
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: linux-kernel@vger.kernel.org
-Cc: Joel Becker <jlbec@evilplan.org>
-Subject: Announce: cancd 0.2.0 netconsole capture server
-Message-ID: <20120206190206.GA8068@logfs.org>
+	Mon, 6 Feb 2012 16:19:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120206203738.GB556@aftab>
+References: <20120206132546.GA30854@quad>
+	<1328538403.2482.4.camel@laptop>
+	<20120206153408.GA31237@aftab>
+	<1328546246.2482.10.camel@laptop>
+	<20120206164626.GA31704@aftab>
+	<1328547259.2482.11.camel@laptop>
+	<20120206202722.GA556@aftab>
+	<1328560293.2482.24.camel@laptop>
+	<20120206203738.GB556@aftab>
+Date: Mon, 6 Feb 2012 13:19:44 -0800
+Message-ID: <CABeCy1ZH_BQhoSegeyBnY0XkjL9afm5=onKrmt9SApufCWgs3A@mail.gmail.com>
+Subject: Re: [BUG] perf: perf sched warning possibly due to clock granularity
+ on AMD
+From: Venki Pallipadi <venki@google.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, mingo@elte.hu, robert.richter@amd.com,
+        eric.dumazet@gmail.com, Andreas Herrmann <andreas.herrmann3@amd.com>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Documentation/networking/netconsole.txt:
-	The remote host can run either 'netcat -u -l -p <port>',
-	'nc -l -u <port>' or syslogd.
+On Mon, Feb 6, 2012 at 12:37 PM, Borislav Petkov <bp@amd64.org> wrote:
+> On Mon, Feb 06, 2012 at 09:31:33PM +0100, Peter Zijlstra wrote:
+>> On Mon, 2012-02-06 at 21:27 +0100, Borislav Petkov wrote:
+>> > On Mon, Feb 06, 2012 at 05:54:19PM +0100, Peter Zijlstra wrote:
+>> > > On Mon, 2012-02-06 at 17:46 +0100, Borislav Petkov wrote:
+>> > > > > across all CPUs in the entire system.
+>> > > >
+>> > > > Right, by the "entire system" you mean consistent across cores and
+>> > > > sockets but not necessarily across cabinets, as in the comment above,
+>> > > > correct?
+>> > > >
+>> > > > If so, let me ask around if this holds true too.
+>> > >
+>> > > Every CPU available to the kernel. So if you run a single system image
+>> > > across your cabinets, then yes those too.
+>> >
+>> > Ok, but what about that sentence "(but not across cabinets - we turn
+>> > it off in that case explicitly.)" - I don't see any place where it is
+>> > turned off explicitly... Maybe a stale comment?
+>>
+>> I suspect it might be the sched_clock_stable = 0 in mark_tsc_unstable(),
+>> but lets ask Venki, IIRC he wrote all that.
+>
+> Yeah, I was looking at the code further and on Intel it does:
+>
+>        if (c->x86_power & (1 << 8)) {
+>                set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+>                set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
+>                if (!check_tsc_unstable())
+>                        sched_clock_stable = 1;
+>        }
+>
+> while on AMD, in early_init_amd() we do:
+>
+>        if (c->x86_power & (1 << 8)) {
+>                set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+>                set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
+>        }
+>
+> and having in mind that tsc_unstable is set on generic x86 paths,
+> nothing stops us to do the same on AMD too, and as a result, set
+> sched_clock_stable too.
+>
+> But yeah, let's see what Venki has to say first.
+>
 
-Now, both of these options have their issues.  Netcat works fine, but
-only reasonably scales to 1.  Having to use a seperate port for every
-test machine, as well as a seperate netcat process that writes to a
-proper file becomes a bit of a nightmare by the time you approach
-three digits of machines.
+Looks like cabinet comment came from Ingo (commit 83ce4009) in reference to
+    (We will turn this off in DMI quirks for multi-chassis systems)
 
-Syslogd would be great, if netconsole actually spoke syslog protocol.
-As it is netconsole speaks a protocol I would describe as "7bit ascii,
-no nonsense".  Syslog protocal is described in rfc5424, a 38-page
-document.  I think it is fair to say the two are incompatibel.  In
-case someone actually wants to see the full trainwreck, a quick search
-should come up with enough bug reports to scare your children into
-bed.
+Yes. If these two flags are set, TSC should be consistent and sched_clock_stable
+could be set and it will be reset if there is a call to mark_tsc_unstable().
 
-Given that sad state of things, here is yet another alternative:
-http://git.kernel.org/?p=linux/kernel/git/joern/cancd.git
-
-It is far from perfect.  Bases on cancd 0.1.0, written by Joel Becker,
-it is completely incompatible to the older version.  I decided to just
-bang on the code long enough until it happened to do what I wanted.
-No thought went into preserving previous functionality that I didn't
-want to use.  No thought went into making functionality I did actually
-want optional.  So unless your taste and requirements closely match
-mine, you will have to invest some work.
-
-The good new is that you have the source and can do it, just like I
-did it.  If you send me patches that keep things working for me, I
-will be happy to merge them.  If someone else wants to become
-maintainer, great!  Less work for me.
-
-Also beware that I changed the code, but not the documentation.  Oh,
-Joel also disagrees with a number of the changes I made.  A better
-programmer with more time could have kept 0.1.0 and 0.2.0 compatible.
-I didn't, sorry.
-
-JÃ¶rn
-
-PS: Since there is no documentation, here is a quick overview.
-
-Invocations: cancd -p <port> -l <log_dir>
-
-Cancd will take any messages thrown at that port, prepend a timestamp
-to each line and write them out to a logfile matching the "machine".
-Initially, the logfile will be the IP address of the source host.  If
-that IP has a matching reverse DNS entry, the logfile will be "foo"
-for "foo.example.org".  If you have two seperate machines
-foo.a.example.org and foo.b.example.org, they will use the same
-logfile.
-
-Best used in combination with logrotate, for obvious reasons.
+Thanks,
+Venki
