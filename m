@@ -1,168 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab2BFETV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Feb 2012 23:19:21 -0500
-Received: from exprod5og115.obsmtp.com ([64.18.0.246]:60531 "HELO
-	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753302Ab2BFETT (ORCPT
+	id S1753842Ab2BFEVB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Feb 2012 23:21:01 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54569 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab2BFEVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Feb 2012 23:19:19 -0500
-From: Duc Dang <dhdang@apm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Duc Dang <dhdang@apm.com>
-Subject: [PATCH 2/2] powerpc/44x: Add more changes for APM821XX EMAC driver
-Date: Mon,  6 Feb 2012 11:10:57 +0700
-Message-Id: <1328501457-11516-1-git-send-email-dhdang@apm.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 5 Feb 2012 23:21:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
+Date: Mon, 6 Feb 2012 05:20:59 +0100
+Message-ID: <CACRpkdahin4srDh7dphgvq306gjz7CGP=h4dVkUY+w0z0wpXRQ@mail.gmail.com>
+Subject: Re: An extremely simplified pinctrl bindings proposal
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Dong Aisheng <dongas86@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "ext Tony Lindgren (tony@atomide.com)" <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes:
+On Sun, Feb 5, 2012 at 6:31 AM, Stephen Warren <swarren@nvidia.com> wrote:
 
-  Configure EMAC PHY clock source (clock from PHY or internal clock).
+> Sorry, I haven't had a chance to read any of the pincrl emails from
+> Friday onwards. However, I thought a bit more about this, and decided
+> to propose someting much simpler:
 
-  Do not advertise PHY half duplex capability as APM821XX EMAC does not
-support half duplex mode.
+I think this approach is quite interesting, but since it removes more
+or less all semantic meaning of the pinctrl system, I don't see why
+it would be a pinctrl rewrite at all or called pinctrl, rather it'd be
+something new and separate, since it could (if I understand
+correctly) very well be used to configure things that are totally
+unrelated to pin control, could it not?
 
-  Add changes to support configuring jumbo frame for APM821XX EMAC.
+It is indeed described as "little more than a system to execute a
+list of arbitrary register writes".
 
-Signed-off-by: Duc Dang <dhdang@apm.com>
----
- drivers/net/ethernet/ibm/emac/core.c |   26 +++++++++++++++++++++++++-
- drivers/net/ethernet/ibm/emac/core.h |   13 +++++++++++--
- drivers/net/ethernet/ibm/emac/emac.h |    5 ++++-
- 3 files changed, 40 insertions(+), 4 deletions(-)
+For example it could be readily used to set up the config registers
+of parameters in an external memory controller - these are also a lot
+of magic writes into various registers, nobody really knows what they
+actually do, timings for access and whatnot.
 
-diff --git a/drivers/net/ethernet/ibm/emac/core.c b/drivers/net/ethernet/ibm/emac/core.c
-index ed79b2d..de620f1 100644
---- a/drivers/net/ethernet/ibm/emac/core.c
-+++ b/drivers/net/ethernet/ibm/emac/core.c
-@@ -434,6 +434,11 @@ static inline u32 emac_iff2rmr(struct net_device *ndev)
- 	else if (!netdev_mc_empty(ndev))
- 		r |= EMAC_RMR_MAE;
- 
-+	if (emac_has_feature(dev, EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE)) {
-+		r &= ~EMAC4_RMR_MJS_MASK;
-+		r |= EMAC4_RMR_MJS(ndev->mtu);
-+	}
-+
- 	return r;
- }
- 
-@@ -965,6 +970,7 @@ static int emac_resize_rx_ring(struct emac_instance *dev, int new_mtu)
- 	int rx_sync_size = emac_rx_sync_size(new_mtu);
- 	int rx_skb_size = emac_rx_skb_size(new_mtu);
- 	int i, ret = 0;
-+	int mr1_jumbo_bit_change = 0;
- 
- 	mutex_lock(&dev->link_lock);
- 	emac_netif_stop(dev);
-@@ -1013,7 +1019,14 @@ static int emac_resize_rx_ring(struct emac_instance *dev, int new_mtu)
- 	}
-  skip:
- 	/* Check if we need to change "Jumbo" bit in MR1 */
--	if ((new_mtu > ETH_DATA_LEN) ^ (dev->ndev->mtu > ETH_DATA_LEN)) {
-+	if (emac_has_feature(dev, EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE))
-+		mr1_jumbo_bit_change = (new_mtu > ETH_DATA_LEN) ||
-+				(dev->ndev->mtu > ETH_DATA_LEN);
-+	else
-+		mr1_jumbo_bit_change = (new_mtu > ETH_DATA_LEN) ^
-+				(dev->ndev->mtu > ETH_DATA_LEN);
-+
-+	if (mr1_jumbo_bit_change) {
- 		/* This is to prevent starting RX channel in emac_rx_enable() */
- 		set_bit(MAL_COMMAC_RX_STOPPED, &dev->commac.flags);
- 
-@@ -2471,6 +2484,7 @@ static int __devinit emac_init_phy(struct emac_instance *dev)
- 
- 	/* Disable any PHY features not supported by the platform */
- 	dev->phy.def->features &= ~dev->phy_feat_exc;
-+	dev->phy.features &= ~dev->phy_feat_exc;
- 
- 	/* Setup initial link parameters */
- 	if (dev->phy.features & SUPPORTED_Autoneg) {
-@@ -2568,6 +2582,10 @@ static int __devinit emac_init_config(struct emac_instance *dev)
- 		if (of_device_is_compatible(np, "ibm,emac-405ex") ||
- 		    of_device_is_compatible(np, "ibm,emac-405exr"))
- 			dev->features |= EMAC_FTR_440EP_PHY_CLK_FIX;
-+		if (of_device_is_compatible(np, "ibm,emac-apm821xx"))
-+			dev->features |= (EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE
-+					| EMAC_FTR_APM821XX_NO_HALF_DUPLEX
-+					| EMAC_FTR_460EX_PHY_CLK_FIX);
- 	} else if (of_device_is_compatible(np, "ibm,emac4")) {
- 		dev->features |= EMAC_FTR_EMAC4;
- 		if (of_device_is_compatible(np, "ibm,emac-440gx"))
-@@ -2818,6 +2836,12 @@ static int __devinit emac_probe(struct platform_device *ofdev)
- 	dev->stop_timeout = STOP_TIMEOUT_100;
- 	INIT_DELAYED_WORK(&dev->link_work, emac_link_timer);
- 
-+	/* Some SoCs like APM821xx does not support Half Duplex mode. */
-+	if (emac_has_feature(dev, EMAC_FTR_APM821XX_NO_HALF_DUPLEX))
-+		dev->phy_feat_exc = (SUPPORTED_1000baseT_Half
-+					| SUPPORTED_100baseT_Half
-+					| SUPPORTED_10baseT_Half);
-+
- 	/* Find PHY if any */
- 	err = emac_init_phy(dev);
- 	if (err != 0)
-diff --git a/drivers/net/ethernet/ibm/emac/core.h b/drivers/net/ethernet/ibm/emac/core.h
-index fa3ec57..9dea85a 100644
---- a/drivers/net/ethernet/ibm/emac/core.h
-+++ b/drivers/net/ethernet/ibm/emac/core.h
-@@ -325,7 +325,14 @@ struct emac_instance {
-  * Set if we need phy clock workaround for 460ex or 460gt
-  */
- #define EMAC_FTR_460EX_PHY_CLK_FIX	0x00000400
--
-+/*
-+ * APM821xx requires Jumbo frame size set explicitly
-+ */
-+#define EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE	0x00000800
-+/*
-+ * APM821xx does not support Half Duplex mode
-+ */
-+#define EMAC_FTR_APM821XX_NO_HALF_DUPLEX	0x00001000
- 
- /* Right now, we don't quite handle the always/possible masks on the
-  * most optimal way as we don't have a way to say something like
-@@ -353,7 +360,9 @@ enum {
- 	    EMAC_FTR_NO_FLOW_CONTROL_40x |
- #endif
- 	EMAC_FTR_460EX_PHY_CLK_FIX |
--	EMAC_FTR_440EP_PHY_CLK_FIX,
-+	EMAC_FTR_440EP_PHY_CLK_FIX |
-+	EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE |
-+	EMAC_FTR_APM821XX_NO_HALF_DUPLEX,
- };
- 
- static inline int emac_has_feature(struct emac_instance *dev,
-diff --git a/drivers/net/ethernet/ibm/emac/emac.h b/drivers/net/ethernet/ibm/emac/emac.h
-index 1568278..36bcd69 100644
---- a/drivers/net/ethernet/ibm/emac/emac.h
-+++ b/drivers/net/ethernet/ibm/emac/emac.h
-@@ -212,7 +212,10 @@ struct emac_regs {
- #define EMAC4_RMR_RFAF_64_1024		0x00000006
- #define EMAC4_RMR_RFAF_128_2048		0x00000007
- #define EMAC4_RMR_BASE			EMAC4_RMR_RFAF_128_2048
--
-+#if defined(CONFIG_APM821xx)
-+#define EMAC4_RMR_MJS_MASK              0x0001fff8
-+#define EMAC4_RMR_MJS(s)                (((s) << 3) & EMAC4_RMR_MJS_MASK)
-+#endif
- /* EMACx_ISR & EMACx_ISER */
- #define EMAC4_ISR_TXPE			0x20000000
- #define EMAC4_ISR_RXPE			0x10000000
--- 
-1.7.5.4
+Incidentally external memory controllers is another things that
+is usually magically reconfigured at idle/sleep and on the way
+back up.
 
-CONFIDENTIALITY NOTICE: This e-mail message, including any attachments, 
-is for the sole use of the intended recipient(s) and contains information 
-that is confidential and proprietary to AppliedMicro Corporation or its subsidiaries. 
-It is to be used solely for the purpose of furthering the parties' business relationship. 
-All unauthorized review, use, disclosure or distribution is prohibited. 
-If you are not the intended recipient, please contact the sender by reply e-mail 
-and destroy all copies of the original message.
+Can we defined it then as controlled register processing at
+determined points, some during boot, some at runtime, and
+maybe tied to certain devices at certain points in time?
 
+A controlled set of register read/writes and maybe also conditionals
+(if that bit is 1, do this, else do that, plus a loop command to wait
+for a flag or similar) are known as a "jam tables" and usually used
+in BIOSes to do a compact machine initialization. I learned this term
+in Bunnie Huang's "Hacking the Xbox, where he describes finding a
+jam table interpreter in the Xbox ROM.
+
+So if I understand the proposal correctly it would fit nice as
+drivers/jamtable or so, and could do that kind of control of whatever
+hardware you want to control with opaque register accesses,
+then reflect it as raw register contents in debugfs etc.
+
+If it turns out everyone is happy with that and we can move other
+drivers over to it we can just scrap pinctrl, or have it only for those
+systems that want a semantic representation.
+
+While I would probably mourn the death of sematics I also see
+that if the goal is to get huge static data sets out of the kernel,
+something like this may be the best way to get there.
+
+Thoughts?
+Linus Walleij
