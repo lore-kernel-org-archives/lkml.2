@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab2BFTQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 14:16:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31240 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755887Ab2BFTQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 14:16:09 -0500
-Subject: Re: [BUG] Multiple definition of pcibios_max_latency
-From: Myron Stowe <mstowe@redhat.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Mike Rapoport <mike@compulab.co.il>
-In-Reply-To: <20120204125904.GU889@n2100.arm.linux.org.uk>
-References: <20120204125904.GU889@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Feb 2012 10:59:17 -0700
-Message-ID: <1328551157.2264.11.camel@zim.stowe>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755908Ab2BFTUB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 14:20:01 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:46011 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755730Ab2BFTUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 14:20:00 -0500
+X-Sasl-enc: 9wLh6mQlIHieH+rXTFMGwnl9D1FQ6Cts21L0c1aK63+Z 1328555999
+Date: Mon, 6 Feb 2012 11:18:54 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 1/6] oom: Make find_lock_task_mm() sparse-aware
+Message-ID: <20120206191854.GA16702@kroah.com>
+References: <20120203163056.GA4190@redhat.com>
+ <20120206162930.GA5117@oksana.dev.rtsoft.ru>
+ <20120206163542.GA10104@kroah.com>
+ <20120206185909.GB7741@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206185909.GB7741@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-02-04 at 12:59 +0000, Russell King - ARM Linux wrote:
-> While building my test PXA configuration, I came across:
+On Mon, Feb 06, 2012 at 10:59:09PM +0400, Anton Vorontsov wrote:
+> On Mon, Feb 06, 2012 at 08:35:42AM -0800, Greg KH wrote:
+> [...]
+> > > -extern struct task_struct *find_lock_task_mm(struct task_struct *p);
+> > > +extern struct task_struct *__find_lock_task_mm(struct task_struct *p);
+> > > +
+> > > +#define find_lock_task_mm(p)						\
+> > > +({									\
+> > > +	struct task_struct *__ret;					\
+> > > +									\
+> > > +	__cond_lock(&(p)->alloc_lock, __ret = __find_lock_task_mm(p));	\
+> > > +	__ret;								\
+> > > +})
+> > 
+> > Please use the proper "do...while" style thing here for multi-line,
+> > complex #defines like the rest of the kernel does so that you don't end
+> > up debugging horrible problems later.
 > 
-> drivers/built-in.o:(.data+0x230): multiple definition of `pcibios_max_latency'
-> arch/arm/common/built-in.o:(.data+0x40c): first defined here
-> make[1]: *** [vmlinux.o] Error 1
-> 
-> This was introduced by:
-> 
-> commit 96c5590058d7fded14f43af2ab521436cecf3125
-> Author: Myron Stowe <mstowe@redhat.com>
-> Date:   Fri Oct 28 15:48:38 2011 -0600
-> 
->     PCI: Pull PCI 'latency timer' setup up into the core
-> 
->     The 'latency timer' of PCI devices, both Type 0 and Type 1,
->     is setup in architecture-specific code [see: 'pcibios_set_master()'].
->     There are two approaches being taken by all the architectures - check
->     if the 'latency timer' is currently set between 16 and 255 and if not
->     bring it within bounds, or, do nothing (and then there is the
->     gratuitously different PA-RISC implementation).
-> 
->     There is nothing architecture-specific about PCI's 'latency timer' so
->     this patch pulls its setup functionality up into the PCI core by
->     creating a generic 'pcibios_set_master()' function using the '__weak'
->     attribute which can be used by all architectures as a default which,
->     if necessary, can then be over-ridden by architecture-specific code.
-> 
->     No functional change.
-> 
->     Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
->     Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-> 
-> which moved the handling of pcibios_set_master() into core code for
-> everyone but ARM:
-> 
->  arch/blackfin/include/asm/pci.h         |    4 ----
->  arch/frv/mb93090-mb00/pci-frv.c         |    6 ------
->  arch/frv/mb93090-mb00/pci-frv.h         |    2 --
->  arch/h8300/include/asm/pci.h            |    5 -----
->  arch/mips/pci/pci.c                     |    6 ------
->  arch/mn10300/unit-asb2305/pci-asb2305.c |    6 ------
->  arch/mn10300/unit-asb2305/pci-asb2305.h |    2 --
->  arch/sh/drivers/pci/pci.c               |    6 ------
->  arch/x86/include/asm/pci_x86.h          |    2 --
->  arch/x86/pci/i386.c                     |    6 ------
->  drivers/pci/pci.c                       |   29 +++++++++++++++++++++++++++++
->  include/linux/pci.h                     |    3 +++
->  12 files changed, 32 insertions(+), 45 deletions(-)
-> 
-> I think the right solution is to delete the (now duplicate) definition 
-> of pcibios_max_latency in arch/arm/common/it8152.c.  Please comment.
+> Unfortunately this isn't possible in this case. Unlike '({})' GCC
+> extension, do-while statement does not evaluate to a value, i.e.
+> 'x = do { 123; } while (0);' is illegal.
 
-Yes, that commit is the culprit.  I was concerned about ARM in general
-when I posted this series as I do not have a compile environment for it,
-nor am I at all familiar with ARM to know if I had covered all the
-possible variations (i.e. 8152 vs other, non 8152 types).
+Ah, you are right, my bad, sorry about that.
 
-Will deleting the 'pcibios_max_latency' definition in
-arch/arm/common/it8152.c be the correct solution for all ARM variations
-(I don't want to try and fix one while breaking others)?
-
-I'll wait for your response/guidance and if this is the correct action
-generate a patch right away.
-
-Thanks,
- Myron
-
-
-
+greg k-h
