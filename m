@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab2BFMKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 07:10:31 -0500
-Received: from nm6.bullet.mail.ird.yahoo.com ([77.238.189.63]:39184 "HELO
-	nm6.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754282Ab2BFMK3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 07:10:29 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 554105.5424.bm@omp1027.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=0HGwvKc8Kl1wYRAdGJ+TDlJ7y24XkhGUskrcjHHVQ9SloPQkA9pA2AzjD+Fz+KT9fPfMreSgONcUWlT1wz1iaNiq5r+xqPLFdIQHPKrPzhcNIQNj8/LGEIVQPZBJPHZYKkQEnnloeEwRniHCL30zOwJsZZfYNb/NN25pvyFBU1E=;
-X-YMail-OSG: T0lRVbkVM1mtgUDyaJVvVXgHwkHrReBdiUqBAUCOsHs.FLy
- RXX2b0RsFw86TC6pUMn99cgqyAatLK7e3R95_vFP9BjVRtdqmVqNb.kr6u93
- 4qqQzDZ.iWYBuN9GEI_IzBbEZYhFkBCIPsSsl2n5.SMrQH5qvQPKkMv._7dR
- 7Y6VuiJ7aD6J6aZ6H5QvosLCWnUPfc6m6rbNUzq0A48VdSFIjL_VMCnMJopl
- eolymeOL4yoIfgtX3Y7qvuavWA.jvI58RFBeTenyO_5Q2qedVqOXd1lSC5c_
- 2JVliMY9qCbfarC3L0lMhe8obEMTVvrNHuED24hj3_kuL6rhsUaDrmdJvL4E
- 0JypSlgQtbtcqWJXG2piKO4W0MEf9DAC62YaQOIqSHe37MkrP3OfdvJKYRUg
- 7512tO7vQUok1Vy3q_h3LSiZSwsTezcm9iXS_f598akp_Xceu8_pwEA--
-X-Mailer: YahooMailClassic/15.0.4 YahooMailWebService/0.8.116.331537
-Message-ID: <1328530227.72508.YahooMailClassic@web29004.mail.ird.yahoo.com>
-Date: Mon, 6 Feb 2012 12:10:27 +0000 (GMT)
-From: Paul Parsons <lost.distance@yahoo.com>
-Subject: Re: No /dev/root with devtmpfs?
-To: linux-kernel@vger.kernel.org, Kirill Smelkov <kirr@mns.spb.ru>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-In-Reply-To: <20120206111853.GA11506@tugrik.mns.mnsspb.ru>
+	id S1754903Ab2BFMMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 07:12:19 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61046 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab2BFMMR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 07:12:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <20120127103010.GB3901@phenom.ffwll.local>
+References: <1327508186-26704-1-git-send-email-keithp@keithp.com>
+	<1327508186-26704-2-git-send-email-keithp@keithp.com>
+	<20120127103010.GB3901@phenom.ffwll.local>
+Date: Mon, 6 Feb 2012 12:12:16 +0000
+Message-ID: <CAPM=9tyg6Ju8qi+Qy0XP-23wApGA3+12jDfd7KQRoZ_bqSH=4g@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH 1/2] drm/i915: Force explicit bpp selection
+ for intel_dp_link_required
+From: Dave Airlie <airlied@gmail.com>
+To: Keith Packard <keithp@keithp.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Lubos Kolouch <lubos.kolouch@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Mon, 6/2/12, Kirill Smelkov <kirr@mns.spb.ru> wrote:
-> Is it somehow possible to add /dev/root to devtmpfs?
+On Fri, Jan 27, 2012 at 10:30 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Wed, Jan 25, 2012 at 08:16:25AM -0800, Keith Packard wrote:
+>> It is never correct to use intel_crtc->bpp in intel_dp_link_required,
+>> so instead pass an explicit bpp in to this function. This patch
+>> only supports 18bpp and 24bpp modes, which means that 10bpc modes will
+>> be computed incorrectly. Fixing that will require more extensive
+>> changes, and so must be addressed separately from this bugfix.
+>>
+>> intel_dp_link_required is called from intel_dp_mode_valid and
+>> intel_dp_mode_fixup.
+>>
+>> * intel_dp_mode_valid is called to list supported modes; in this case,
+>>   the current crtc values cannot be relevant as the modes in question
+>>   may never be selected. Thus, using intel_crtc->bpp is never right.
+>>
+>> * intel_dp_mode_fixup is called during mode setting, but it is run
+>>   well before ironlake_crtc_mode_set is called to set intel_crtc->bpp,
+>>   so using intel_crtc-bpp in this path can only ever get a stale
+>>   value.
+>>
+>> Cc: Lubos Kolouch <lubos.kolouch@gmail.com>
+>> Cc: Adam Jackson <ajax@redhat.com>
+>> Signed-off-by: Keith Packard <keithp@keithp.com>
+>
+> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=42263
+> Tested-by: camalot@picnicpark.org (Dell Latitude 6510)
+>
+> Not the original reporter and might not exactly be this bug, but likely.
+> -Daniel
 
-Or alternatively have /proc/mounts report the actual root device
-instead of "/dev/root" ?
+Tested-by: Dave Airlie <airlied@redhat.com>
+
+Without this patch the eDP panel on my HP 2540p won't resume.
+
+Please get this into -fixes and too me asap.
+
+Dave.
