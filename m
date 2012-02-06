@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab2BFQVk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:21:40 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33726 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753003Ab2BFQVj (ORCPT
+	id S1755381Ab2BFQW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:22:28 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42606 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977Ab2BFQW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:21:39 -0500
-Date: Mon, 6 Feb 2012 16:21:36 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Takashi Iwai <tiwai@suse.de>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: devm_request_and_ioremap
-Message-ID: <20120206162136.GN3070@opensource.wolfsonmicro.com>
-References: <20120124202203.GD1135@opensource.wolfsonmicro.com>
- <alpine.DEB.2.02.1201242144580.1998@hadrien>
- <20120126110506.GB2611@pengutronix.de>
- <alpine.DEB.2.02.1201261220460.1851@localhost6.localdomain6>
- <20120126112242.GA9401@opensource.wolfsonmicro.com>
- <alpine.DEB.2.02.1201261439460.1851@localhost6.localdomain6>
- <20120126135135.GD2611@pengutronix.de>
- <alpine.DEB.2.02.1202041922070.1974@hadrien>
- <20120204184638.GA10688@opensource.wolfsonmicro.com>
- <alpine.DEB.2.02.1202042306520.1992@hadrien>
+	Mon, 6 Feb 2012 11:22:26 -0500
+Date: Mon, 6 Feb 2012 08:22:22 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
+Subject: Re: [patch]block: fix ioc locking warning
+Message-ID: <20120206162222.GB3926@google.com>
+References: <1328514611.21268.66.camel@sli10-conroe>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="57SHPaztv6dlLu/a"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1202042306520.1992@hadrien>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328514611.21268.66.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---57SHPaztv6dlLu/a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Feb 06, 2012 at 03:50:11PM +0800, Shaohua Li wrote:
+> diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+> index 27a06e0..7490b6d 100644
+> --- a/block/blk-ioc.c
+> +++ b/block/blk-ioc.c
+> @@ -204,7 +204,9 @@ void put_io_context(struct io_context *ioc, struct request_queue *locked_q)
+>  				spin_unlock(last_q->queue_lock);
+>  			last_q = NULL;
+>  
+> -			if (!spin_trylock(this_q->queue_lock))
+> +			/* spin_trylock() always successes in UP case */
+> +			if (this_q != locked_q &&
+> +			    !spin_trylock(this_q->queue_lock))
 
-On Sat, Feb 04, 2012 at 11:08:24PM +0100, Julia Lawall wrote:
-> And how about a function devm_clk_get?  It looks like there would be
-> around 150 opportunities for its use.
+Yeah, this is the right thing to do.  I think the comment is slightly
+misleading.  I'll prep a patch.
 
-Note that currently there's no standard clk API so any work there is a
-bit more painful than it perhaps should be.
+Thanks.
 
---57SHPaztv6dlLu/a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPL/3zAAoJEBus8iNuMP3d4rIP/3HSifxMrpLK8p9cxQBOHrFz
-vM2d2T2QyHy/r9WOf47vmYxaC4rL10DylEmTHtY1Oy1mq3n+Nyvf6pfm1uSyd7S6
-kzcZj0m9voDBsUNXerlbCMODwDzvq4MiOA3O5mYcn+FYP7Z86wpddMFLUauXAjc7
-11QBW4UJv6orPXTjkM3KosF1y/AhuF08vnkATNeOtFVnDD14+2SK5NWv0gV7SPXu
-szfDEhewSAcHMoc9VY2FYv6Gk83iv9SLz0CXjGsdkOZABjtFZ3nMFei54IrLNJRL
-yvzVf81cEQLBLZKgsEC4XJIbE3JIop/IZAu+eZMffu/8f0j/LHQNd5pS7FcxHNJJ
-2yMnIQkjGKx7e/iSkvuGYnSEpeoXMT/Pexxg3me4Sde7NFK1gotgIw8P0ofuLkAu
-2gupl7giQAtFRrk2r1sGJ4DFUhFpa/qDzIvyqita+IpPhbF63l6Sg1otYF0BAitW
-77ufJ8cODR8c+Z9S+ORH/w6KZP139S/fPutWFtxNlG1gMvvLwTLW2B7wkm/rbkiL
-AtMQxzPBscyxfQgGbcg+Q6uVpqvnsgu9V7FrPRLAxCgvhqQzzcXnViUVZQrtg0vQ
-mPACkr/kZWvw1Ybwh8XD/AwA9bOFuN3zcLtljrBCSqo4IjWRVRwR++PMs2KgIeYI
-Bu7S4q8tUwVw/CXQg1My
-=4dsq
------END PGP SIGNATURE-----
-
---57SHPaztv6dlLu/a--
+-- 
+tejun
