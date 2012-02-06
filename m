@@ -1,144 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab2BFQS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:18:26 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:50972 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754977Ab2BFQRZ (ORCPT
+	id S1755534Ab2BFQSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:18:24 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34715 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab2BFQRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Feb 2012 11:17:25 -0500
-From: Andi Kleen <andi@firstfloor.org>
-To: lenb@kernel.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, mjg@redhat.com,
-        Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/5] ACPI: Do cpufreq clamping for throttling per package v2
-Date: Mon,  6 Feb 2012 08:17:11 -0800
-Message-Id: <1328545032-21373-5-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1328545032-21373-1-git-send-email-andi@firstfloor.org>
-References: <1328545032-21373-1-git-send-email-andi@firstfloor.org>
+Date: Mon, 6 Feb 2012 16:16:56 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
+Subject: Re: [PATCH 01/11] dmaengine: add context parameter toprep_slave_sg
+	and prep_dma_cyclic
+Message-ID: <20120206161655.GB20852@flint.arm.linux.org.uk>
+References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-2-git-send-email-alexandre.bounine@idt.com> <20120202214350.GB4432@flint.arm.linux.org.uk> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872683@CORPEXCH1.na.ads.idt.com> <1328529182.26182.92.camel@vkoul-udesk3> <0CE8B6BE3C4AD74AB97D9D29BD24E552028729F9@CORPEXCH1.na.ads.idt.com> <1328542134.26182.111.camel@vkoul-udesk3> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872A3B@CORPEXCH1.na.ads.idt.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55202872A3B@CORPEXCH1.na.ads.idt.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Intel CPUs the processor typically uses the highest frequency
-set by any logical CPU. When the system overheats
-Linux first forces the frequency to the lowest available one
-to lower the temperature.
+On Mon, Feb 06, 2012 at 07:56:57AM -0800, Bounine, Alexandre wrote:
+> At least corresponding inline functions may use specific data types
+> or hide the new parameter like in Russell's code example. (I believe
+> he forgot to pass NULL in chan->device->device_prep_slave_sg() as
+> the new param there).
 
-However this was done only per logical CPU, which means all
-logical CPUs in a package would need to go through this before
-the frequency is actually lowered.
+No I didn't - I gave a step by step approach.  Step one is to intrduce
+the wrapper with no API changes at all fixing up everyone to use the
+wrapper.
 
-Worse this delay actually prevents real throttling, because
-the real throttle code only proceeds when the lowest frequency
-is already reached.
+Step two is where the call in struct dma_device changes.
 
-So when a throttle event happens force the lowest frequency
-for all CPUs in the package where it happened. The per CPU
-state is now kept per package, not per logical CPU. An alternative
-would be to do it per cpufreq unit, but since we want to bring
-down the temperature of the complete chip it's better
-to do it for all.
-
-In principle it may even make sense to do it for all CPUs,
-but I kept it on the package for now.
-
-With this change the frequency is actually lowered, which
-in terms also allows real throttling to proceed.
-
-I also removed an unnecessary per cpu variable initialization.
-
-v2: Fix package mapping
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/acpi/processor_thermal.c |   45 +++++++++++++++++++++++++++++++------
- 1 files changed, 37 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/acpi/processor_thermal.c b/drivers/acpi/processor_thermal.c
-index 3b599ab..b149b6e 100644
---- a/drivers/acpi/processor_thermal.c
-+++ b/drivers/acpi/processor_thermal.c
-@@ -57,6 +57,27 @@ ACPI_MODULE_NAME("processor_thermal");
- static DEFINE_PER_CPU(unsigned int, cpufreq_thermal_reduction_pctg);
- static unsigned int acpi_thermal_cpufreq_is_init = 0;
- 
-+#define reduction_pctg(cpu) \
-+	per_cpu(cpufreq_thermal_reduction_pctg, phys_package_first_cpu(cpu))
-+
-+/*
-+ * Emulate "per package data" using per cpu data (which should be really provided 
-+ * elsewhere)
-+ *
-+ * Note we can lose a CPU on cpu hotunplug, in this case we forget the state
-+ * temporarily. Fortunately that's not a big issue here (I hope)
-+ */
-+static int phys_package_first_cpu(int cpu)
-+{
-+	int i;
-+	int id = topology_physical_package_id(cpu);
-+
-+	for_each_online_cpu (i)
-+		if (topology_physical_package_id(i) == id)
-+			return i;
-+	return 0;
-+}
-+
- static int cpu_has_cpufreq(unsigned int cpu)
- {
- 	struct cpufreq_policy policy;
-@@ -76,7 +97,7 @@ static int acpi_thermal_cpufreq_notifier(struct notifier_block *nb,
- 
- 	max_freq = (
- 	    policy->cpuinfo.max_freq *
--	    (100 - per_cpu(cpufreq_thermal_reduction_pctg, policy->cpu) * 20)
-+	    (100 - reduction_pctg(policy->cpu) * 20)
- 	) / 100;
- 
- 	cpufreq_verify_within_limits(policy, 0, max_freq);
-@@ -102,16 +123,28 @@ static int cpufreq_get_cur_state(unsigned int cpu)
- 	if (!cpu_has_cpufreq(cpu))
- 		return 0;
- 
--	return per_cpu(cpufreq_thermal_reduction_pctg, cpu);
-+	return reduction_pctg(cpu);
- }
- 
- static int cpufreq_set_cur_state(unsigned int cpu, int state)
- {
-+	int i;
-+
- 	if (!cpu_has_cpufreq(cpu))
- 		return 0;
- 
--	per_cpu(cpufreq_thermal_reduction_pctg, cpu) = state;
--	cpufreq_update_policy(cpu);
-+	reduction_pctg(cpu) = state;
-+
-+	/* 
-+	 * Update all the CPUs in the same package because they all
-+	 * contribute to the temperature and often share the same
-+	 * frequency.
-+	 */
-+	for_each_online_cpu (i) {
-+		if (topology_physical_package_id(i) == 
-+		    topology_physical_package_id(cpu))
-+			cpufreq_update_policy(i);
-+	}
- 	return 0;
- }
- 
-@@ -119,10 +152,6 @@ void acpi_thermal_cpufreq_init(void)
- {
- 	int i;
- 
--	for (i = 0; i < nr_cpu_ids; i++)
--		if (cpu_present(i))
--			per_cpu(cpufreq_thermal_reduction_pctg, i) = 0;
--
- 	i = cpufreq_register_notifier(&acpi_thermal_cpufreq_notifier_block,
- 				      CPUFREQ_POLICY_NOTIFIER);
- 	if (!i)
 -- 
-1.7.7
-
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
