@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab2BFUGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 15:06:35 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11885 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab2BFUGe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 15:06:34 -0500
-Date: Mon, 6 Feb 2012 21:07:04 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: "David S. Miller" <davem@davemloft.net>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <jmorris@namei.org>
-Subject: [PATCH] mpi: Avoid using freed pointer in mpi_lshift_limbs()
-Message-ID: <alpine.LNX.2.00.1202062104440.20117@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755464Ab2BFUJG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 15:09:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754700Ab2BFUJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 15:09:05 -0500
+Date: Mon, 6 Feb 2012 18:08:19 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf, tool: Fix prefix matching for kernel maps
+Message-ID: <20120206200819.GJ6367@infradead.org>
+References: <1328461865-6127-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328461865-6127-1-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the start of the function we assign 'a->d' to 'ap'. Then we use the
-RESIZE_IF_NEEDED macro on 'a' - this may free 'a->d' and replace it
-with newly allocaetd storage. In that case, we'll be operating on
-freed memory further down in the function when we index into 'ap[]'.
-Since we don't actually need 'ap' until after the use of the
-RESIZE_IF_NEEDED macro we can just delay the assignment to it until
-after we've potentially resized, thus avoiding the issue.
+Em Sun, Feb 05, 2012 at 06:11:05PM +0100, Jiri Olsa escreveu:
+> In some perf ancient versions we used '[kernel.kallsyms._text]' as
+> the name for the kernel map.
+> 
+> This got changed with commit:
+>   perf: 'perf kvm' tool for monitoring guest performance from host
+>   commit a1645ce12adb6c9cc9e19d7695466204e3f017fe
+>   Author: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
+> 
+> and we started to use following name '[kernel.kallsyms]_text'.
+> 
+> This name change is important for the report code dealing with ancient
+> perf data. When processing the kernel map event, we need to recognize
+> the old naming (dont match the last ']') and initialize the kernel map
+> correctly.
+> 
+> The subsequent call to maps__set_kallsyms_ref_reloc_sym deals with the
+> superfluous ']' to get correct symbol name.
 
-While I was there anyway I also changed the integer variable 'n' to be
-const. It might as well be since we only assign to it once and use it
-as a constant, and then the compiler will tell us if we ever assign to
-it in the future.
+Good catch & fix, thanks.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- lib/mpi/mpi-bit.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+People curious about that -1 can look at 'git blame' to read the above
+historical explanation ;-)
 
- only compile tested.
-
-diff --git a/lib/mpi/mpi-bit.c b/lib/mpi/mpi-bit.c
-index 2f52662..0c50536 100644
---- a/lib/mpi/mpi-bit.c
-+++ b/lib/mpi/mpi-bit.c
-@@ -177,8 +177,8 @@ int mpi_rshift(MPI x, MPI a, unsigned n)
-  */
- int mpi_lshift_limbs(MPI a, unsigned int count)
- {
--	mpi_ptr_t ap = a->d;
--	int n = a->nlimbs;
-+	const int n = a->nlimbs;
-+	mpi_ptr_t ap;
- 	int i;
+- Arnaldo
  
- 	if (!count || !n)
-@@ -187,6 +187,7 @@ int mpi_lshift_limbs(MPI a, unsigned int count)
- 	if (RESIZE_IF_NEEDED(a, n + count) < 0)
- 		return -ENOMEM;
- 
-+	ap = a->d;
- 	for (i = n - 1; i >= 0; i--)
- 		ap[i + count] = ap[i];
- 	for (i = 0; i < count; i++)
--- 
-1.7.9
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  tools/perf/util/event.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> index 73ddaf0..2044324 100644
+> --- a/tools/perf/util/event.c
+> +++ b/tools/perf/util/event.c
+> @@ -554,7 +554,7 @@ static int perf_event__process_kernel_mmap(struct perf_tool *tool __used,
+>  
+>  	is_kernel_mmap = memcmp(event->mmap.filename,
+>  				kmmap_prefix,
+> -				strlen(kmmap_prefix)) == 0;
+> +				strlen(kmmap_prefix) - 1) == 0;
+>  	if (event->mmap.filename[0] == '/' ||
+>  	    (!is_kernel_mmap && event->mmap.filename[0] == '[')) {
+>  
+> -- 
+> 1.7.4.4
