@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab2BFQNw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:13:52 -0500
-Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:40955 "EHLO
-	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754852Ab2BFQNu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:13:50 -0500
+	id S1755341Ab2BFQQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:16:36 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:54635 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab2BFQQe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 11:16:34 -0500
+Date: Mon, 6 Feb 2012 11:07:28 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Cc: hauke@hauke-m.de, kernel-team@lists.ubuntu.com,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] compat: add compat kernel checker and downloader
+Message-ID: <20120206160727.GA21048@tuxdriver.com>
+References: <1328312594-31934-1-git-send-email-mcgrof@frijolero.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzxxtEfiEhzqrrMK-YA4xznkZJJE=A6rTDs-2a0Eodacg@mail.gmail.com>
-References: <1327788715-24076-1-git-send-email-wad@chromium.org>
-	<20120202152900.GA4583@sergelap>
-	<CABqD9hY0O+QU_0yD8C1GFkqo-i1fmJEwKHWwUrCBoUERxHzLqA@mail.gmail.com>
-	<CA+55aFzxxtEfiEhzqrrMK-YA4xznkZJJE=A6rTDs-2a0Eodacg@mail.gmail.com>
-Date: Mon, 6 Feb 2012 10:13:48 -0600
-Message-ID: <CABqD9hY9j5RtQBM_7CKgsKO2eN+h6QE_Qgi++FJxCsZDuktXCA@mail.gmail.com>
-Subject: Re: [PATCH v6 1/3] seccomp: kill the seccomp_t typedef
-From: Will Drewry <wad@chromium.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
-        alan@lxorguk.ukuu.org.uk, indan@nul.nu, mcgrathr@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328312594-31934-1-git-send-email-mcgrof@frijolero.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 7:05 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Feb 3, 2012 at 3:16 PM, Will Drewry <wad@chromium.org> wrote:
->>
->> task_struct {
->>  ...
->>  struct seccomp seccomp;
->> }
->>
->> was as ideal.  I've noticed that almost all of the duplicate names in
->> the task struct use redundancy to differentiate the naming, but I'm
->> happy enough to rename if appropriate.
->
-> The redundant "struct xyz_struct" naming is traditional, but we try to
-> avoid it these days. The reason for it is that I long long ago was a
-> bit confused about the C namespace rules, so for the longest time I
-> made struct names unique for no really good reason. The struct/union
-> namespace is separate from the other namespaces, so trying to make
-> things unique really has no good reason.
->
-> And obviously "struct task_struct" is one of those very old things,
-> and then the "struct xyz_struct" naming kind of spread from there.
->
-> I think "struct seccomp" is fine, and even if "struct x x" looks a bit
-> odd, it's at least _less_ repetition than "struct x_struct x" which is
-> just really repetitive.
->
-> That said, just to make "grep" easier, please do the whole "struct
-> xyz" always together, and always with just a single space in between
-> them, so that
->
->   git grep "struct xyz"
->
-> does the right thing. And for the same reason, when declaring a
-> struct, people should always use "struct xyz {", with that exact
-> spacing. The exact details of spacing obviously has no semantic
-> meaning, but making it easy to grep for use and for definition is
-> really convenient.
+On Fri, Feb 03, 2012 at 03:43:14PM -0800, Luis R. Rodriguez wrote:
+> This adds get-compat-kernels, a utility that is intended
+> to be Linux distribution agnostic that downloads and installs
+> all kernel headers for all supported kernel releases of compat.
+> You also have the option of specifying you want to also install
+> the actual kernel image (get-compat-kernels -i).
+> 
+> We start off by adding support for Ubuntu on x86_64 as that
+> is what a few of us maintaining compat and compat-wireless run.
+> Just for kernel headers (default run of get-compat-kernels),
+> you'll need currently 205 M of hard drive space.
+> 
+> Once done with running get-compat-kernels, you can then
+> start running ckmake to verify your compat kernel changes
+> won't bust compilation against any known supported kernel.
+> 
+> I'd like to start requiring runs against this script for
+> patch submissions. Eventually we can try to add the same
+> runs against compat-wireless so we can verify integrity
+> against compilation for different kernel versions.
+> 
+> Support for different Linux distributios is welcomed.
+> 
+> Debug log goes out to ckmake.log
+> 
+> Example output:
+> 
+> mcgrof@tux ~/compat (git::master)$ ckmake
+> Trying kernel                  3.3.0-030300rc2-generic  [OK]
+> Trying kernel                     3.2.2-030202-generic  [OK]
+> Trying kernel                    3.1.10-030110-generic  [OK]
+> Trying kernel                    3.0.18-030018-generic  [OK]
+> Trying kernel                  2.6.39-02063904-generic  [OK]
+> Trying kernel                         2.6.38-8-generic  [OK]
+> Trying kernel                        2.6.38-13-generic  [OK]
+> Trying kernel                        2.6.38-12-generic  [OK]
+> Trying kernel                        2.6.38-11-generic  [OK]
+> Trying kernel                        2.6.38-10-generic  [OK]
+> Trying kernel                  2.6.38-02063808-generic  [OK]
+> Trying kernel                  2.6.37-02063706-generic  [OK]
+> Trying kernel                  2.6.36-02063604-generic  [OK]
+> Trying kernel                  2.6.35-02063512-generic  [OK]
+> Trying kernel                  2.6.34-02063410-generic  [OK]
+> Trying kernel                  2.6.33-02063305-generic  [OK]
+> Trying kernel                  2.6.32-02063255-generic  [OK]
+> Trying kernel                        2.6.31-22-generic  [OK]
+> Trying kernel                  2.6.31-02063113-generic  [OK]
+> Trying kernel                  2.6.30-02063010-generic  [OK]
+> Trying kernel                  2.6.29-02062906-generic  [OK]
+> Trying kernel                  2.6.28-02062810-generic  [OK]
+> Trying kernel                    2.6.27-020627-generic  [OK]
+> Trying kernel                    2.6.26-020626-generic  [OK]
+> Trying kernel                    2.6.25-020625-generic  [OK]
+> Trying kernel                    2.6.24-020624-generic  [OK]
+> 
+> Cc: kernel-team@lists.ubuntu.com
+> Signed-off-by: Luis R. Rodriguez <mcgrof@frijolero.org>
 
-Thanks for the background and explanation!
-will
+I'm not sure this makes any sense.  I thought the point of the compat
+project was to support upstream kernels, not distro ones?  I'm not
+even sure I know how to replicate the above process in Fedora, since
+we would only have kernels available from a given release in each
+release's repository.
+
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
