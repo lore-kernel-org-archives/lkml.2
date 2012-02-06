@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab2BFKl0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 05:41:26 -0500
-Received: from smtp-out-106.synserver.de ([212.40.185.106]:1035 "EHLO
-	smtp-out-106.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab2BFKlZ (ORCPT
+	id S1754649Ab2BFKly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 05:41:54 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:44768 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab2BFKlw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 05:41:25 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 23040
-Message-ID: <4F2FAE93.5020205@metafoo.de>
-Date: Mon, 06 Feb 2012 11:42:27 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
+	Mon, 6 Feb 2012 05:41:52 -0500
 MIME-Version: 1.0
-To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] genirq: Race condition in ONESHOT IRQ handler disabling
- IRQ forever
-References: <20271.35831.227679.177366@ipc1.ka-ro>
-In-Reply-To: <20271.35831.227679.177366@ipc1.ka-ro>
+In-Reply-To: <CAMuHMdVim5VjEYCABXmaw8JQQQtAJk_hLGs+vys2Vr49AFOxCw@mail.gmail.com>
+References: <1326622076-957-1-git-send-email-geert@linux-m68k.org>
+	<20120115105203.GA12584@x220.P-661HNU-F1>
+	<CAMuHMdVim5VjEYCABXmaw8JQQQtAJk_hLGs+vys2Vr49AFOxCw@mail.gmail.com>
+Date: Mon, 6 Feb 2012 11:41:51 +0100
+X-Google-Sender-Auth: 68kl7CHF7vfR6tc9ZITho8W3Q4M
+Message-ID: <CAMuHMdUgyDgOttd+VFJviKw=WCNpt7rjEHC_FCNLfujcr-4m4A@mail.gmail.com>
+Subject: Re: [PATCH] blutetooth: Remove bogus inline for l2cap_chan_connect()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2012 09:14 AM, =?utf-8?Q?Lothar_Wa=C3=9Fmann?= wrote:
-> Hi,
-> 
-> I already sent this to <linux-kernel@vger.kernel.org> on Feb. 1, 2012
-> but did not get any response there. So resending to a wider audience
-> with improved subject line:
-> 
-> there is a race condition in the threaded IRQ handler code for oneshot
-> interrupts that may lead to disabling an IRQ indefinitely. IRQs are
-> masked before calling the hard-irq handler and are unmasked only after
-> the soft-irq handler has been run. Thus if the hard-irq handler
-> returns IRQ_HANDLED instead of IRQ_WAKE_THREAD, meaning the soft-irq
-> will not be called, the interrupt will remain masked forever.
-> 
-> This can happen due to a short pulse on the interrupt line, that
-> triggers the interrupt logic, but goes undetected by the hard-irq
-> handler. The problem can be reproduced with the TSC2007 touch
-> controller driver that uses ONESHOT interrupts.
-> 
-> The problem arises also with interrupt controllers that latch a level
-> triggered IRQ until it is acknowledged (like the i.MX28 does).
-> In this case the IRQ status bit will remain asserted after the
-> soft-irq finishes and retrigger the interrupt while the interrupt line
-> is already deasserted.
-> 
-> The following patch would solve the problem, but I'm not sure whether
-> it's the Right Thing(TM) to do. Especially wrt. shared interrupts.
-> 
-> diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-> index 470d08c..93beadb 100644
-> --- a/kernel/irq/handle.c
-> +++ b/kernel/irq/handle.c
-> @@ -146,6 +146,11 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
->  			/* Fall through to add to randomness */
->  		case IRQ_HANDLED:
->  			random |= action->flags;
-> +			/* unmask the IRQ that has been left masked
-> +			 * due to race condition
-> +			 */
-> +			if (res == IRQ_HANDLED && (action->flags & IRQF_ONESHOT))
-> +				unmask_irq(desc);
->  			break;
->  
->  		default:
+Hi Johan,
 
-I think a better fix is to check the return value of handle_irq_event in
-handle_level_irq and if the IRQ_WAKE_THREADED bit is not set unmask the irq.
+On Sun, Jan 15, 2012 at 12:25, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sun, Jan 15, 2012 at 11:52, Johan Hedberg <johan.hedberg@gmail.com> wrote:
+>>>     net/bluetooth/l2cap_sock.c: In function ‘l2cap_sock_connect’:
+>>>     include/net/bluetooth/l2cap.h:838: sorry, unimplemented: inlining failed in call to ‘l2cap_chan_connect’: function body not available
+>>>     net/bluetooth/l2cap_sock.c:126: sorry, unimplemented: called from here
+>>>     make[1]: *** [net/bluetooth/l2cap_sock.o] Error 1
+>
+>> This was already reported[1] earlier this month and a patch[2] was also
+>
+> Ah, it was reported as a sparse warning. I guess that's why I didn't find it.
+> But a build error is worse.
+>
+>> created for it which right now resides in my bluetooth-next tree[3].
+>> [3] http://git.kernel.org/?p=linux/kernel/git/jh/bluetooth-next.git;a=commitdiff;h=cd555072d0b0738c8a107776fe91902da686f94d
 
-The same should probably also be done for handle_fasteoi_irq.
+This doesn't seem to be in linux-next, as -next pulls
+git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-next.git
+instead?
 
+Can we please get the fix in mainline ASAP, as it breaks the build with some
+versions of gcc?
+
+Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
