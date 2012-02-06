@@ -1,89 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab2BFK2v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 05:28:51 -0500
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:55441 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752764Ab2BFK2v (ORCPT
+	id S1753989Ab2BFKbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 05:31:48 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:34707 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab2BFKbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 05:28:51 -0500
-X-Greylist: delayed 1211 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Feb 2012 05:28:51 EST
-Message-Id: <4F3041500200002300007E56@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 06 Feb 2012 03:08:32 -0700
-From: "Joey Lee" <jlee@suse.com>
-To: <merlin.schumacher@gmail.com>
-Cc: <ike.pan@canonical.com>, <mjg@redhat.com>, "Joey Lee" <JLee@suse.com>,
-        <linux-kernel@vger.kernel.org>, <platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH] acer-wmi: support for P key on TM8372
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	Mon, 6 Feb 2012 05:31:47 -0500
+Message-ID: <4F2FABFF.1010902@linux.vnet.ibm.com>
+Date: Mon, 06 Feb 2012 18:31:27 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: Avoid unnecessary work in reweight_entity
+References: <4F2F9F6C.1090608@linux.vnet.ibm.com>
+In-Reply-To: <4F2F9F6C.1090608@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12020610-8878-0000-0000-00000134DFDC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Merlin, 
+On 02/06/2012 05:37 PM, Michael Wang wrote:
 
-於 四，2012-01-26 於 12:53 +0100，Merlin Schumacher 提到：
-> Am 26.01.2012 03:28, schrieb joeyli:
-> > Hi Ike,
-> >
-> > 於 二，2012-01-24 於 04:35 +0800，Ike Panhc 提到：
-> >> From: Merlin Schumacher<merlin.schumacher@gmail.com>
-> >>
-> >> BugLink: http://launchpad.net/bugs/865807
-> >>
-> >> There is no entry for P key on TM8372, so when P key is pressed, only
-> >> "acer_wmi: Unknown key number - 0x29" in dmesg.
-> >>
-> >> Signed-off-by: Merlin Schumacher<merlin.schumacher@gmail.com>
-> >> Signed-off-by: Ike Panhc<ike.pan@canonical.com>
-> >
-> > Reviewed-by: Lee, Chun-Yi<jlee@suse.com>
-> >
-> >> ---
-> >>   drivers/platform/x86/acer-wmi.c |    1 +
-> >>   1 files changed, 1 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> >> index b848277..d48262c 100644
-> >> --- a/drivers/platform/x86/acer-wmi.c
-> >> +++ b/drivers/platform/x86/acer-wmi.c
-> >> @@ -105,6 +105,7 @@ static const struct key_entry acer_wmi_keymap[] = {
-> >>   	{KE_KEY, 0x22, {KEY_PROG2} },    /* Arcade */
-> >>   	{KE_KEY, 0x23, {KEY_PROG3} },    /* P_Key */
-> >>   	{KE_KEY, 0x24, {KEY_PROG4} },    /* Social networking_Key */
-> >> +	{KE_KEY, 0x29, {KEY_PROG3} },    /* P_Key for TM8372 */
-> >>   	{KE_IGNORE, 0x41, {KEY_MUTE} },
-> >>   	{KE_IGNORE, 0x42, {KEY_PREVIOUSSONG} },
-> >>   	{KE_IGNORE, 0x43, {KEY_NEXTSONG} },
-> >
-> > This patch has no problem, but could you please provide the dmidecode
-> > result to me for reference?
-> >
-> >
-> > Thanks a lot!
-> > Joey Lee
-> >
+> From: Michael Wang <wangyun@linux.vnet.ibm.com>
 > 
-> Hi,
+> In original code, using account_entity_dequeue and account_entity_enqueue
+> as a pair will do some work unnecessary, this patch combine the work of
+> them to save time.
 > 
-> attached you'll find the output of dmidecode on the TM8372. If you need 
-> anything else, let me know.
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  kernel/sched/fair.c  |   32 ++++++++++++++++++++++++--------
+>  kernel/sched/sched.h |    8 ++++++++
+>  2 files changed, 32 insertions(+), 8 deletions(-)
 > 
-> You're welcome
-> 
-> Merlin Schumacher
-> 
-> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 84adb2d..e380518 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -782,11 +782,23 @@ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+>  {
+>  	cfs_rq->task_weight += weight;
+>  }
+> +
+> +static void
+> +sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
+> +{
+> +	cfs_rq->task_weight -= sub;
+> +	cfs_rq->task_weight += add;
+> +}
+>  #else
+>  static inline void
+>  add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+>  {
+>  }
+> +
+> +static void
+> +sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
+> +{
+> +}
+>  #endif
+>  
+>  static void
+> @@ -938,20 +950,24 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
+>  {
+>  }
+>  # endif /* CONFIG_SMP */
+> +
+>  static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+>  			    unsigned long weight)
+>  {
+> +	/* commit outstanding execution time */
+> +	if (cfs_rq->curr == se)
+> +		update_curr(cfs_rq);
 
-Thanks for your dmidecode log of TM8372, I can keep it for regression
-test after add new functions.
+I suppose "se is curr" means "se is already on rq", and "se is not on
+rq" means "se can not be curr", so I change the logic up.
 
+> +
 
-Thanks a lot!
-Joey Lee
+>  	if (se->on_rq) {
+> -		/* commit outstanding execution time */
+> -		if (cfs_rq->curr == se)
+> -			update_curr(cfs_rq);
+> -		account_entity_dequeue(cfs_rq, se);
+> +		update_load_sub_add(&cfs_rq->load, se->load.weight, weight);
+> +		if (!parent_entity(se)) {
+> +			update_load_sub_add(&rq_of(cfs_rq), se->load.weight, weight);
+> +		}
+> +		if (entity_is_task(se)) {
+> +			sub_add_cfs_task_weight(cfs_rq, se->load.weight, weight);
+> +		}
+>  	}
+> -
+>  	update_load_set(&se->load, weight);
+
+I wonder will this sequence change result some mistake, but I think this
+function should already be protected.
+
+Thanks,
+Michael Wang
+
+> -
+> -	if (se->on_rq)
+> -		account_entity_enqueue(cfs_rq, se);
+>  }
+>  
+>  static void update_cfs_shares(struct cfs_rq *cfs_rq)
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 98c0c26..ec4430f 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -779,6 +779,14 @@ static inline void update_load_sub(struct load_weight *lw, unsigned long dec)
+>  	lw->inv_weight = 0;
+>  }
+>  
+> +static inline void update_load_sub_add(struct load_weight *lw, unsigned long dec,
+> +					unsigned long inc)
+> +{
+> +	lw->weight -= dec;
+> +	lw->weight += inc;
+> +	lw->inv_weight = 0;
+> +}
+> +
+>  static inline void update_load_set(struct load_weight *lw, unsigned long w)
+>  {
+>  	lw->weight = w;
 
 
