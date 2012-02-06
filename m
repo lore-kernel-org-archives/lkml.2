@@ -1,67 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab2BFXPc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:15:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61754 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab2BFXPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 18:15:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120206210456.GV1426@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
-	<CACRpkdahin4srDh7dphgvq306gjz7CGP=h4dVkUY+w0z0wpXRQ@mail.gmail.com>
-	<4F2F6AE2.1040504@nvidia.com>
-	<CACRpkdbtTPSoX1x4aBtNVGZ2Qex9t77D09V9JgON_jfShQdx6w@mail.gmail.com>
-	<20120206190315.GU1426@atomide.com>
-	<CACRpkdZthbejmTqRJAWHb8jU-p8LPT_+zj_CY1q0voMb4FKz2Q@mail.gmail.com>
-	<20120206210456.GV1426@atomide.com>
-Date: Tue, 7 Feb 2012 00:15:30 +0100
-Message-ID: <CACRpkdYrbD3PpJ3wb69yb3Ya8SeZJnPpgJdtttjWTkS5xsD-4g@mail.gmail.com>
-Subject: Re: An extremely simplified pinctrl bindings proposal
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756142Ab2BFXPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 18:15:49 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:40729 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753158Ab2BFXPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 18:15:47 -0500
+Date: Mon, 6 Feb 2012 15:15:43 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH] tags: fix use of parenthesis in regex
+Message-ID: <20120206151543.1bb1d869@s6510.linuxnetplumber.net>
+In-Reply-To: <4F305CB6.7050603@codeaurora.org>
+References: <20120203112701.1c12b12c@s6510.linuxnetplumber.net>
+	<4F2C38BD.1060109@codeaurora.org>
+	<20120203121847.1b01f4b5@s6510.linuxnetplumber.net>
+	<c1f3d71b6001dfc42ded4ee651e9a82c.squirrel@www.codeaurora.org>
+	<20120206124058.1cf1a23e@s6510.linuxnetplumber.net>
+	<4F305CB6.7050603@codeaurora.org>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 6, 2012 at 10:04 PM, Tony Lindgren <tony@atomide.com> wrote:
+Several of the regular expressions passed to etags and ctags where incorrect
+and missing the backslash before the closing paren, and matching the wrong
+part of the start of the function causing warning:
+  etags: Unmatched ( or \( while compiling pattern
 
->> I actually had something like unnamed pins in the early patches
->> to register a bunch of anonymous pins ranges, so why not bring
->> it back in.
->
-> Yeah it seems that the mux registers should be listed, it might
-> require a little bit of thinking for cases where one register
-> controls multiple pins. So maybe we need just a new entry for
-> mux registers?
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
 
-I'm not sure if I'm following completely, if this is inside the devicetree-based
-driver file, would it work to just add a struct dentry * to the
-pinctrl_desc where you put a per-driver file?
+---
+v2 - cover all regex (not just etags)
+v3 - fix match at start of function args
 
-Or maybe add extern void pinctrl_add_debugfs(struct dentry *) that adds
-a new file to the existing per-driver directory through the core and then
-have this add that file?
 
-Or did you mean that the core.c should be register-aware?
-
-Yours,
-Linus Walleij
+--- a/scripts/tags.sh	2012-02-06 12:38:53.243121989 -0800
++++ b/scripts/tags.sh	2012-02-06 15:13:33.400557183 -0800
+@@ -129,31 +129,31 @@ exuberant()
+ 	-I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL                      \
+ 	-I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
+ 	--extra=+f --c-kinds=+px                                \
+-	--regex-asm='/^(ENTRY|_GLOBAL)\(([^)]*)\).*/\2/'        \
+-	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/' \
+-	--regex-c++='/^TRACE_EVENT\(([^,)]*).*/trace_\1/'		\
+-	--regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*).*/trace_\1/'	\
+-	--regex-c++='/PAGEFLAG\(([^,)]*).*/Page\1/'			\
+-	--regex-c++='/PAGEFLAG\(([^,)]*).*/SetPage\1/'			\
+-	--regex-c++='/PAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
+-	--regex-c++='/TESTSETFLAG\(([^,)]*).*/TestSetPage\1/'		\
+-	--regex-c++='/TESTPAGEFLAG\(([^,)]*).*/Page\1/'			\
+-	--regex-c++='/SETPAGEFLAG\(([^,)]*).*/SetPage\1/'		\
+-	--regex-c++='/__SETPAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
+-	--regex-c++='/TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
+-	--regex-c++='/__TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
+-	--regex-c++='/CLEARPAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
+-	--regex-c++='/__CLEARPAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
+-	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
+-	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__ClearPage\1/'		\
+-	--regex-c++='/PAGEFLAG_FALSE\(([^,)]*).*/Page\1/'		\
+-	--regex-c++='/TESTSCFLAG\(([^,)]*).*/TestSetPage\1/'		\
+-	--regex-c++='/TESTSCFLAG\(([^,)]*).*/TestClearPage\1/'		\
+-	--regex-c++='/SETPAGEFLAG_NOOP\(([^,)]*).*/SetPage\1/'		\
+-	--regex-c++='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
+-	--regex-c++='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/'	\
+-	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
+-	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
++	--regex-asm='/^(ENTRY|_GLOBAL)(\([^)]*)\).*/\2/'        \
++	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?(\([^,)]*\).*/sys_\1/' \
++	--regex-c++='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
++	--regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*\).*/trace_\1/'	\
++	--regex-c++='/PAGEFLAG(\([^,)]*\).*/Page\1/'			\
++	--regex-c++='/PAGEFLAG(\([^,)]*\).*/SetPage\1/'			\
++	--regex-c++='/PAGEFLAG(\([^,)]*\).*/ClearPage\1/'		\
++	--regex-c++='/TESTSETFLAG(\([^,)]*\).*/TestSetPage\1/'		\
++	--regex-c++='/TESTPAGEFLAG(\([^,)]*\).*/Page\1/'		\
++	--regex-c++='/SETPAGEFLAG(\([^,)]*\).*/SetPage\1/'		\
++	--regex-c++='/__SETPAGEFLAG(\([^,)]*\).*/__SetPage\1/'		\
++	--regex-c++='/TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
++	--regex-c++='/__TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
++	--regex-c++='/CLEARPAGEFLAG(\([^,)]*\).*/ClearPage\1/'		\
++	--regex-c++='/__CLEARPAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
++	--regex-c++='/__PAGEFLAG(\([^,)]*\).*/__SetPage\1/'		\
++	--regex-c++='/__PAGEFLAG(\([^,)]*\).*/__ClearPage\1/'		\
++	--regex-c++='/PAGEFLAG_FALSE(\([^,)]*\).*/Page\1/'		\
++	--regex-c++='/TESTSCFLAG(\([^,)]*\).*/TestSetPage\1/'		\
++	--regex-c++='/TESTSCFLAG(\([^,)]*\).*/TestClearPage\1/'		\
++	--regex-c++='/SETPAGEFLAG_NOOP(\([^,)]*\).*/SetPage\1/'		\
++	--regex-c++='/CLEARPAGEFLAG_NOOP(\([^,)]*\).*/ClearPage\1/'	\
++	--regex-c++='/__CLEARPAGEFLAG_NOOP(\([^,)]*\).*/__ClearPage\1/'	\
++	--regex-c++='/TESTCLEARFLAG_FALSE(\([^,)]*\).*/TestClearPage\1/' \
++	--regex-c++='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/'
+ 
+ 	all_kconfigs | xargs $1 -a                              \
+ 	--langdef=kconfig --language-force=kconfig              \
+@@ -178,27 +178,27 @@ emacs()
+ 	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
+ 	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
+ 	--regex='/^DEFINE_EVENT([^,)]*, *\([^,)]*\).*/trace_\1/' \
+-	--regex='/PAGEFLAG\(([^,)]*).*/Page\1/'			\
+-	--regex='/PAGEFLAG\(([^,)]*).*/SetPage\1/'		\
+-	--regex='/PAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
+-	--regex='/TESTSETFLAG\(([^,)]*).*/TestSetPage\1/'	\
+-	--regex='/TESTPAGEFLAG\(([^,)]*).*/Page\1/'		\
+-	--regex='/SETPAGEFLAG\(([^,)]*).*/SetPage\1/'		\
+-	--regex='/__SETPAGEFLAG\(([^,)]*).*/__SetPage\1/'	\
+-	--regex='/TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
+-	--regex='/__TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
+-	--regex='/CLEARPAGEFLAG\(([^,)]*).*/ClearPage\1/'	\
+-	--regex='/__CLEARPAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
+-	--regex='/__PAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
+-	--regex='/__PAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
+-	--regex='/PAGEFLAG_FALSE\(([^,)]*).*/Page\1/'		\
+-	--regex='/TESTSCFLAG\(([^,)]*).*/TestSetPage\1/'	\
+-	--regex='/TESTSCFLAG\(([^,)]*).*/TestClearPage\1/'	\
+-	--regex='/SETPAGEFLAG_NOOP\(([^,)]*).*/SetPage\1/'	\
+-	--regex='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
+-	--regex='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/' \
+-	--regex='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
+-	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
++	--regex='/PAGEFLAG(\([^,)]*\).*/Page\1/'			\
++	--regex='/PAGEFLAG(\([^,)]*\).*/SetPage\1/'		\
++	--regex='/PAGEFLAG(\([^,)]*\).*/ClearPage\1/'		\
++	--regex='/TESTSETFLAG(\([^,)]*\).*/TestSetPage\1/'	\
++	--regex='/TESTPAGEFLAG(\([^,)]*\).*/Page\1/'		\
++	--regex='/SETPAGEFLAG(\([^,)]*\).*/SetPage\1/'		\
++	--regex='/__SETPAGEFLAG(\([^,)]*\).*/__SetPage\1/'	\
++	--regex='/TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
++	--regex='/__TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
++	--regex='/CLEARPAGEFLAG(\([^,)]*\).*/ClearPage\1/'	\
++	--regex='/__CLEARPAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
++	--regex='/__PAGEFLAG(\([^,)]*\).*/__SetPage\1/'		\
++	--regex='/__PAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
++	--regex='/PAGEFLAG_FALSE(\([^,)]*\).*/Page\1/'		\
++	--regex='/TESTSCFLAG(\([^,)]*\).*/TestSetPage\1/'	\
++	--regex='/TESTSCFLAG(\([^,)]*\).*/TestClearPage\1/'	\
++	--regex='/SETPAGEFLAG_NOOP(\([^,)]*\).*/SetPage\1/'	\
++	--regex='/CLEARPAGEFLAG_NOOP(\([^,)]*\).*/ClearPage\1/'	\
++	--regex='/__CLEARPAGEFLAG_NOOP(\([^,)]*\).*/__ClearPage\1/' \
++	--regex='/TESTCLEARFLAG_FALSE(\([^,)]*\).*/TestClearPage\1/' \
++	--regex='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/'
+ 
+ 	all_kconfigs | xargs $1 -a                              \
+ 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
