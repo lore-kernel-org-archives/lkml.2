@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab2BFSkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 13:40:08 -0500
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:39703 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755433Ab2BFSkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 13:40:05 -0500
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: Yevgeny Petrilin <yevgenyp@mellanox.co.il>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Eugenia Emantayev <eugenia@mellanox.co.il>,
-        Alexander Guller <alexg@mellanox.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] mlx4: allow device removal by fixing dma unmap size
-Date: Mon,  6 Feb 2012 16:39:49 -0200
-Message-Id: <1328553590-27677-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.4
-x-cbid: 12020618-1524-0000-0000-0000015C0853
+	id S1755666Ab2BFSqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 13:46:22 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:35614 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754563Ab2BFSqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 13:46:21 -0500
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Subject: RE: [PATCH 01/11] dmaengine: add context parameter toprep_slave_sgand prep_dma_cyclic
+Date: Mon, 6 Feb 2012 10:45:50 -0800
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55202872B3D@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <1328551625.26182.139.camel@vkoul-udesk3>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 01/11] dmaengine: add context parameter toprep_slave_sgand prep_dma_cyclic
+Thread-Index: Aczk+fvfFhVGPKokQEClXBtmv7qu5wAAFRlg
+References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-2-git-send-email-alexandre.bounine@idt.com> <20120202214350.GB4432@flint.arm.linux.org.uk> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872683@CORPEXCH1.na.ads.idt.com> <1328529182.26182.92.camel@vkoul-udesk3> <0CE8B6BE3C4AD74AB97D9D29BD24E552028729F9@CORPEXCH1.na.ads.idt.com> <1328542134.26182.111.camel@vkoul-udesk3> <20120206155318.GA20852@flint.arm.linux.org.uk> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872AB1@CORPEXCH1.na.ads.idt.com> <1328551625.26182.139.camel@vkoul-udesk3>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Russell King <rmk@arm.linux.org.uk>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        "Matt Porter" <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q16IkX1P021886
 
-After opening the network interface, Mellanox ConnectX device cannot be
-removed by hotplug because it has not properly unmapped all DMA memory.
+On Mon, Feb 06, 2012 at 1:07 PM, Vinod Koul wrote:
+> 
+> On Mon, 2012-02-06 at 09:02 -0800, Bounine, Alexandre wrote:
+> >
+> > What if we introduce another dma_transaction_type like DMA_SLAVE_EXT
+> > (extended?).
+> > In this case all devices that adhere to the generic SLAVE interface
+> > still be
+> > registered as DMA_SLAVE and those that do not follow generic route
+> use
+> > DMA_SLAVE_EXT.
+> that way it would be channel specific not transaction specific as you
+> had asked for...?
+> 
+> Again, how does this solve problem of passing parameters while
+> preventing abuse...
 
-It happens that mlx4_en_activate_rx_rings overrides the variable that
-keeps the size of the memory mapped.
+This gives a channel-specific treatment to the parameter. Channels registered
+as DMA_SLAVE never expect an extra parameter (BUG_ON if the pointer is not NULL).
+In the generic use scenario described by Russell clients are safe to request
+any such channel without an additional HW knowledge (as it is now).
 
-This is fixed by passing to mlx4_en_destroy_rx_ring the same size that is
-given to mlx4_en_create_rx_ring.
+Channels registered as DMA_SLAVE_EXT will accept a pointer to parameter structure.
+This, combined with configuration specific wrappers as you described
+in earlier e-mail with #ifdef CONFIG_RAPIDIO, should ensure that there is no
+unexpected treatment of (void *) parameter. Also for channels registered
+as DMA_SLAVE_EXT a corresponding filter routine must be provided. 
 
-After applying this patch, hot unplugging the device works after opening
-the interface.
+Alex.
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
----
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    3 ++-
- drivers/net/ethernet/mellanox/mlx4/en_rx.c     |    4 ++--
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |    3 ++-
- 3 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-index 467ae58..149e60d 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -892,7 +892,8 @@ void mlx4_en_free_resources(struct mlx4_en_priv *priv)
- 
- 	for (i = 0; i < priv->rx_ring_num; i++) {
- 		if (priv->rx_ring[i].rx_info)
--			mlx4_en_destroy_rx_ring(priv, &priv->rx_ring[i]);
-+			mlx4_en_destroy_rx_ring(priv, &priv->rx_ring[i],
-+				priv->prof->rx_ring_size, priv->stride);
- 		if (priv->rx_cq[i].buf)
- 			mlx4_en_destroy_cq(priv, &priv->rx_cq[i]);
- 	}
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_rx.c b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-index 971d4b6..d1c631e 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-@@ -380,12 +380,12 @@ err_allocator:
- }
- 
- void mlx4_en_destroy_rx_ring(struct mlx4_en_priv *priv,
--			     struct mlx4_en_rx_ring *ring)
-+			     struct mlx4_en_rx_ring *ring, u32 size, u16 stride)
- {
- 	struct mlx4_en_dev *mdev = priv->mdev;
- 
- 	mlx4_en_unmap_buffer(&ring->wqres.buf);
--	mlx4_free_hwq_res(mdev->dev, &ring->wqres, ring->buf_size + TXBB_SIZE);
-+	mlx4_free_hwq_res(mdev->dev, &ring->wqres, size * stride + TXBB_SIZE);
- 	vfree(ring->rx_info);
- 	ring->rx_info = NULL;
- }
-diff --git a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-index 35f0884..d60335f 100644
---- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-+++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-@@ -528,7 +528,8 @@ int mlx4_en_create_rx_ring(struct mlx4_en_priv *priv,
- 			   struct mlx4_en_rx_ring *ring,
- 			   u32 size, u16 stride);
- void mlx4_en_destroy_rx_ring(struct mlx4_en_priv *priv,
--			     struct mlx4_en_rx_ring *ring);
-+			     struct mlx4_en_rx_ring *ring,
-+			     u32 size, u16 stride);
- int mlx4_en_activate_rx_rings(struct mlx4_en_priv *priv);
- void mlx4_en_deactivate_rx_ring(struct mlx4_en_priv *priv,
- 				struct mlx4_en_rx_ring *ring);
--- 
-1.7.4.4
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
