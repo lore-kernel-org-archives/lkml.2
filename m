@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab2BFVRa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 16:17:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47585 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755709Ab2BFVR2 (ORCPT
+	id S1755702Ab2BFVTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 16:19:30 -0500
+Received: from longford.logfs.org ([213.229.74.203]:35652 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab2BFVT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 16:17:28 -0500
-Date: Mon, 6 Feb 2012 13:17:17 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        hare@suse.de, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-Subject: Re: [PATCH] vfs: Avoid IPI storm due to bh LRU invalidation
-Message-Id: <20120206131717.c4346f72.akpm@linux-foundation.org>
-In-Reply-To: <20120206164732.GH6890@quack.suse.cz>
-References: <1328536531-19034-1-git-send-email-jack@suse.cz>
-	<4F2FF4EC.1000104@linux.vnet.ibm.com>
-	<20120206164732.GH6890@quack.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Feb 2012 16:19:29 -0500
+X-Greylist: delayed 2201 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Feb 2012 16:19:28 EST
+Date: Mon, 6 Feb 2012 14:02:06 -0500
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: linux-kernel@vger.kernel.org
+Cc: Joel Becker <jlbec@evilplan.org>
+Subject: Announce: cancd 0.2.0 netconsole capture server
+Message-ID: <20120206190206.GA8068@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Feb 2012 17:47:32 +0100
-Jan Kara <jack@suse.cz> wrote:
+Quoting Documentation/networking/netconsole.txt:
+	The remote host can run either 'netcat -u -l -p <port>',
+	'nc -l -u <port>' or syslogd.
 
-> On Mon 06-02-12 21:12:36, Srivatsa S. Bhat wrote:
-> > On 02/06/2012 07:25 PM, Jan Kara wrote:
-> > 
-> > > When discovery of lots of disks happen in parallel, we call
-> > > invalidate_bh_lrus() once for each disk from partitioning code resulting in a
-> > > storm of IPIs and causing a softlockup detection to fire (it takes several
-> > > *minutes* for a machine to execute all the invalidate_bh_lrus() calls).
+Now, both of these options have their issues.  Netcat works fine, but
+only reasonably scales to 1.  Having to use a seperate port for every
+test machine, as well as a seperate netcat process that writes to a
+proper file becomes a bit of a nightmare by the time you approach
+three digits of machines.
 
-Gad.  How many disks are we talking about here?
+Syslogd would be great, if netconsole actually spoke syslog protocol.
+As it is netconsole speaks a protocol I would describe as "7bit ascii,
+no nonsense".  Syslog protocal is described in rfc5424, a 38-page
+document.  I think it is fair to say the two are incompatibel.  In
+case someone actually wants to see the full trainwreck, a quick search
+should come up with enough bug reports to scare your children into
+bed.
 
-> > > Fix the issue by allowing only single invalidation to run using a mutex and let
-> > > waiters for mutex figure out whether someone invalidated LRUs for them while
-> > > they were waiting.
-> > > 
-> > > Signed-off-by: Jan Kara <jack@suse.cz>
-> > > ---
-> > >  fs/buffer.c |   23 ++++++++++++++++++++++-
-> > >  1 files changed, 22 insertions(+), 1 deletions(-)
-> > > 
-> > >   I feel this is slightly hacky approach but it works. If someone has better
-> > > idea, please speak up.
-> > > 
-> > 
-> > 
-> > Something related that you might be interested in:
-> > https://lkml.org/lkml/2012/2/5/109
-> > 
-> > (This is part of Gilad's patchset that tries to reduce cross-CPU IPI
-> > interference.)
->   Thanks for the pointer. I didn't know about it. As Hannes wrote, this
-> need not be enough for our use case as there might indeed be some bhs in
-> the LRU. But I'd be interested how well the patchset works anyway. Maybe it
-> would be enough because after all when we invalidate LRUs subsequent
-> callers will see them empty and not issue IPI? Hannes, can you give a try
-> to the patches?
+Given that sad state of things, here is yet another alternative:
+http://git.kernel.org/?p=linux/kernel/git/joern/cancd.git
 
-If that doesn't work then an option to think about is to have a bool to
-disable the bh LRU code.  That would add a test-n-branch to
-__find_get_block(), which wouldn't kill us.  Arrange for the LRU code
-to be disabled during device probing.  Or just leave the LRU disabled
-until very late in boot, perhaps.
+It is far from perfect.  Bases on cancd 0.1.0, written by Joel Becker,
+it is completely incompatible to the older version.  I decided to just
+bang on the code long enough until it happened to do what I wanted.
+No thought went into preserving previous functionality that I didn't
+want to use.  No thought went into making functionality I did actually
+want optional.  So unless your taste and requirements closely match
+mine, you will have to invest some work.
 
-Also, I'm wondering why we call invalidate_bh_lrus() at all during
-partition reading.  Presumably it's where we're shooting down the
-blockdev pagecache (you didn't tell us and I'm too lazy to hunt it
-down).  But do we really need to drop the pagecache at
-whatever-this-callsite-is?
+The good new is that you have the source and can do it, just like I
+did it.  If you send me patches that keep things working for me, I
+will be happy to merge them.  If someone else wants to become
+maintainer, great!  Less work for me.
+
+Also beware that I changed the code, but not the documentation.  Oh,
+Joel also disagrees with a number of the changes I made.  A better
+programmer with more time could have kept 0.1.0 and 0.2.0 compatible.
+I didn't, sorry.
+
+Jörn
+
+PS: Since there is no documentation, here is a quick overview.
+
+Invocations: cancd -p <port> -l <log_dir>
+
+Cancd will take any messages thrown at that port, prepend a timestamp
+to each line and write them out to a logfile matching the "machine".
+Initially, the logfile will be the IP address of the source host.  If
+that IP has a matching reverse DNS entry, the logfile will be "foo"
+for "foo.example.org".  If you have two seperate machines
+foo.a.example.org and foo.b.example.org, they will use the same
+logfile.
+
+Best used in combination with logrotate, for obvious reasons.
