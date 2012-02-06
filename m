@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab2BFGXW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 01:23:22 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:21287 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750721Ab2BFGXV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 01:23:21 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAFxuL095LD+b/2dsb2JhbABDrzaBBoFyAQEEATocIwULCAMOCi4UJQMhE4d8uGgTi1cCAgkFDAcGAQsBCAUDAwkGBA8GhB4BAwEEGAIEglZjBJUniTCJQA
-Date: Mon, 6 Feb 2012 17:23:19 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: xfs@oss.sgi.com, xfs-masters@oss.sgi.com, linux-kernel@vger.kernel.org,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>
-Subject: Re: [PATCH][RFC] XFS: Fix mem leak and possible NULL deref in
- xfs_setattr_nonsize()
-Message-ID: <20120206062319.GB12836@dastard>
-References: <alpine.LNX.2.00.1202052220390.32529@swampdragon.chaosbits.net>
-MIME-Version: 1.0
+	id S1753842Ab2BFG0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 01:26:43 -0500
+Received: from 1wt.eu ([62.212.114.60]:62238 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751Ab2BFG0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 01:26:41 -0500
+Date: Mon, 6 Feb 2012 07:25:05 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Luben Tuikov <ltuikov@yahoo.com>
+Cc: "gaowanlong@cn.fujitsu.com" <gaowanlong@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 32/91] libsas: remove expander from dev list on error
+Message-ID: <20120206062505.GG8334@1wt.eu>
+References: <20120205220950.812864962@pcw.home.local> <4C7B5EA1-AE40-4E64-92CC-24277900A99E@yahoo.com> <4F2F2445.9080604@cn.fujitsu.com> <613D92FB-4573-4301-BC1A-8DA114FE2A5F@yahoo.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1202052220390.32529@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <613D92FB-4573-4301-BC1A-8DA114FE2A5F@yahoo.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 05, 2012 at 10:23:44PM +0100, Jesper Juhl wrote:
-> In xfs_setattr_nonsize(), xfs_trans_alloc() gets its memory from
-> _xfs_trans_alloc() which gets it from kmem_zone_zalloc() which may
-> fail and return NULL. So this:
-> 
-> 	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
-> 
-> may result in a NULL 'tp'.
-> If it does, then the call:
-> 
-> 	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
-> 
-> with a NULL 'tp' will explode, since xfs_trans_reserve() dereferences
-> its first argument unconditionally.
+On Sun, Feb 05, 2012 at 05:14:26PM -0800, Luben Tuikov wrote:
+> Where is the "From:" tag that would appear in "git log"?
 
-xfs_trans_alloc() can't fail. It will sleep forever until the memory
-allocation succeeds.
+Here's the complete patch scheduled for merging :
 
-There's 35 other places in XFS where this xfs_trans_alloc/
-xfs_trans_reserve pattern occurs - none of them check whether tp is
-null, either.
+	From da229078845ada4d7b0b49a020c8eaf49420cec9 Mon Sep 17 00:00:00 2001
+	From: Luben Tuikov <ltuikov@yahoo.com>
+	Date: Tue, 26 Jul 2011 23:10:48 -0700
+	Subject: libsas: remove expander from dev list on error
 
-> And if the memory allocation for 'tp' goes well (and thus
-> xfs_trans_reserve() does not explode) then we may leak the memory
-> allocated to 'tp' if xfs_trans_reserve() returns error.
+	commit 5911e963d3718e306bcac387b83e259aa4228896 upstream.
 
-yes, that's a problem, though will only happen if a filesystem
-shutdown occurs between the start of the function and that check.
+	If expander discovery fails (sas_discover_expander()), remove the
+	expander from the port device list (sas_ex_discover_expander()),
+	before freeing it. Else the list is corrupted and, e.g., when we
+	attempt to send SMP commands to other devices, the kernel oopses.
 
-> 
-> I believe this patch should fix both issues, but I'm not intimate with
-> the XFS code at all, so there can easily be something I overlooked or
-> something that should be done differently than what I did.
+	Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+	Reviewed-by: Jack Wang <jack_wang@usish.com>
+	Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+	Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+	---
+	 drivers/scsi/libsas/sas_expander.c |    3 +++
+	 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Only need to fix the leak of tp.
+	Index: longterm-2.6.27/drivers/scsi/libsas/sas_expander.c
+	===================================================================
+	--- longterm-2.6.27.orig/drivers/scsi/libsas/sas_expander.c     2012-02-05 22:34:34.059914940 +0100
+	+++ longterm-2.6.27/drivers/scsi/libsas/sas_expander.c  2012-02-05 22:34:39.404915902 +0100
+	@@ -839,6 +839,9 @@
+	 
+		res = sas_discover_expander(child);
+		if (res) {
+	+               spin_lock_irq(&parent->port->dev_list_lock);
+	+               list_del(&child->dev_list_node);
+	+               spin_unlock_irq(&parent->port->dev_list_lock);
+			kfree(child);
+			return NULL;
+		}
 
-Cheers,
+You're clearly the one who's credited for the patch, both by the From: and
+Signed-off-by tags. I am always very careful about credit attributions, and
+that's even what scares me when I have to force to apply patches by hand.
+I think you were surprized not to see you in the From just because of the
+way the review scripts assembles the patches in mails.  I'm using quilt this
+way to build the mails :
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+   quilt mail \
+     -m "$(sed -e "s/XX\.YY/$SUBLEVEL.$REV/g" .quilt/header;git diff --stat)" \
+     --from "$GIT_COMMITTER_NAME <$GIT_COMMITTER_EMAIL>" \
+     --subject "$VERSION.$PATCHLEVEL.$SUBLEVEL.$REV-longterm review" \
+     --prefix "PATCH" \
+     --to "linux-kernel@vger.kernel.org, stable@vger.kernel.org" \
+     --mbox mbox
+
+I don't think there's anything wrong with this. I you have suggestions to
+improve the output readability, feel free to suggest so.
+
+Best regards,
+Willy
+
