@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab2BFMn0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 07:43:26 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:26500
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755008Ab2BFMnY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 07:43:24 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzc89bhzz1202hzzz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [PATCH 00/07] DA9052 patch series
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Dajun <dajun.chen@diasemi.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-watchdog@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
-        <sameo@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 6 Feb 2012 18:05:55 +0530
-Message-ID: <1328531755.30549.67.camel@dhruva>
+	id S1755110Ab2BFMoF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 07:44:05 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39971 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab2BFMoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 07:44:04 -0500
+X-AuditID: b753bd60-9aa63ba00000359c-82-4f2fcb10f946
+X-AuditID: b753bd60-9aa63ba00000359c-82-4f2fcb10f946
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Subject: [PATCH -v2 0/3] xfs: change available ranges in quota check
+To: Ben Myers <bpm@sgi.com>, Alex Elder <aelder@sgi.com>,
+        Christoph Hellwig <hch@lst.de>
+Cc: xfs-masters@oss.sgi.com, xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Date: Mon, 06 Feb 2012 21:49:51 +0900
+Message-ID: <20120206124951.12624.88233.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-X-Originating-IP: [10.10.38.47]
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿﻿The following patch series adds support for the various features of
-Dialog Semiconductor DA9052/53 PMICs.
+Hi,
 
-The DA9052/53 PMICs support many functionalities like GPIOs, regulators,
-power-supply, touchscreen, rtc, backlight, etc. So these patches are
-applicable to different sub-systems of the kernel separately.
+This patch series changes available ranges of softlimit and
+hardlimit in quota check. Currently xfs quota allows us to
+use disk blocks up to lower than quota limits. They should
+be used up to not beyond them.
 
-This patch series adds support for ADC functionality in MFD, HWMON,
-LEDS, Backlight, Watchdog, RTC and TSI. Support for rest of the devices
-will be added later.
+Thanks.
 
-The HWMON patch depends on the patch for ADC functionality in MFD
-module.
+---
 
-Ashish Jangam (7):
-	[MFD]: Incremental ADC support. HWMON patch also depends on this
-	[HWMON]: HWMON driver for DA9052/53 PMICs.
-	[LEDS]: Support for DA9052/53 LEDS.
-	[Backlight]: Support for DA9052/53 white LED / backlight.
-	[Watchdog]: Watchdog driver for DA9052/53 PMICs.
-	[RTC]: RTC driver for DA9052/53 PMICs.
-	[TSI]: Support for Touch screen interface for DA9052/53 PMICs.
-
- Documentation/hwmon/da9052                     |   59 ++++
- Documentation/watchdog/watchdog-parameters.txt |    5 +
- drivers/hwmon/Kconfig                          |   10 +
- drivers/hwmon/Makefile                         |    1 +
- drivers/hwmon/da9052-hwmon.c                   |  343
-+++++++++++++++++++++++
- drivers/input/touchscreen/Kconfig              |    7 +
- drivers/input/touchscreen/Makefile             |    1 +
- drivers/input/touchscreen/da9052_tsi.c         |  353
-++++++++++++++++++++++++
- drivers/leds/Kconfig                           |    8 +
- drivers/leds/Makefile                          |    1 +
- drivers/leds/leds-da9052.c                     |  214 ++++++++++++++
- drivers/mfd/da9052-core.c                      |  134 +++++++++
- drivers/rtc/Kconfig                            |    7 +
- drivers/rtc/Makefile                           |    1 +
- drivers/rtc/rtc-da9052.c                       |  293
-++++++++++++++++++++
- drivers/video/backlight/Kconfig                |    6 +
- drivers/video/backlight/Makefile               |    1 +
- drivers/video/backlight/da9052_bl.c            |  187 +++++++++++++
- drivers/watchdog/Kconfig                       |    6 +
- drivers/watchdog/Makefile                      |    1 +
- drivers/watchdog/da9052_wdt.c                  |  333
-++++++++++++++++++++++
- include/linux/mfd/da9052/da9052.h              |   17 ++
- 22 files changed, 1988 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/hwmon/da9052
- create mode 100644 drivers/hwmon/da9052-hwmon.c
- create mode 100644 drivers/input/touchscreen/da9052_tsi.c
- create mode 100644 drivers/leds/leds-da9052.c
- create mode 100644 drivers/rtc/rtc-da9052.c
- create mode 100644 drivers/video/backlight/da9052_bl.c
- create mode 100644 drivers/watchdog/da9052_wdt.c
+Mitsuo Hayasaka (3):
+      xfs: cleanup quota check on disk blocks and inodes reservations
+      xfs: make inode quota check more general
+      xfs: change available ranges of softlimit and hardlimit in quota check
 
 
+ fs/xfs/xfs_dquot.c       |   24 ++++++++++++------------
+ fs/xfs/xfs_log_recover.c |    6 +++---
+ fs/xfs/xfs_qm_syscalls.c |    4 ++--
+ fs/xfs/xfs_trans_dquot.c |   15 +++++++--------
+ 4 files changed, 24 insertions(+), 25 deletions(-)
+
+-- 
+Mitsuo Hayasaka (mitsuo.hayasaka.hu@hitachi.com)
