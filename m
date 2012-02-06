@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab2BFUiR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 15:38:17 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:58738 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab2BFUiQ (ORCPT
+	id S1755609Ab2BFUj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 15:39:56 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:56321 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755022Ab2BFUjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 15:38:16 -0500
-Date: Mon, 6 Feb 2012 21:37:38 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, mingo@elte.hu, robert.richter@amd.com,
-        eric.dumazet@gmail.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: Re: [BUG] perf: perf sched warning possibly due to clock granularity
- on AMD
-Message-ID: <20120206203738.GB556@aftab>
-References: <20120206132546.GA30854@quad>
- <1328538403.2482.4.camel@laptop>
- <20120206153408.GA31237@aftab>
- <1328546246.2482.10.camel@laptop>
- <20120206164626.GA31704@aftab>
- <1328547259.2482.11.camel@laptop>
- <20120206202722.GA556@aftab>
- <1328560293.2482.24.camel@laptop>
+	Mon, 6 Feb 2012 15:39:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328560293.2482.24.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F30387A.9040209@zytor.com>
+References: <20120116183730.GB21112@redhat.com> <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+ <20120118022217.GS11715@one.firstfloor.org> <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+ <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+ <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+ <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+ <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+ <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+ <4F1731C1.4050007@zytor.com> <4F1733DF.7040905@zytor.com> <4F1737C9.3070905@zytor.com>
+ <CAB=4xhqW8RK2UpU5PPjSQo3nZYt8oZkaBf1VEhX37tbMVrAigg@mail.gmail.com>
+ <4F173F48.2070604@zytor.com> <CA+55aFw3kv_JRsSCQEf6fQd0gX939MuoevDxFtcXkPY+bmyjtA@mail.gmail.com>
+ <4F176605.5020101@zytor.com> <CAK1hOcManWsEvjS2xxtfGTKx=JLPvO2sBkWU-xQP+medV=rbAA@mail.gmail.com>
+ <CAB=4xhqFYdU3s_NQkgdzVVG1r3vGDb=qPewPRFTrJ1B_eiEVDA@mail.gmail.com> <4F30387A.9040209@zytor.com>
+From: Roland McGrath <mcgrathr@google.com>
+Date: Mon, 6 Feb 2012 12:39:28 -0800
+Message-ID: <CAB=4xhrGqGi-XoG9xG=XrOkdSJeshxQ2WKw7TRO1XeKBuz+J4A@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, Andi Kleen <andi@firstfloor.org>,
+        Jamie Lokier <jamie@shareable.org>, Andrew Lutomirski <luto@mit.edu>,
+        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 09:31:33PM +0100, Peter Zijlstra wrote:
-> On Mon, 2012-02-06 at 21:27 +0100, Borislav Petkov wrote:
-> > On Mon, Feb 06, 2012 at 05:54:19PM +0100, Peter Zijlstra wrote:
-> > > On Mon, 2012-02-06 at 17:46 +0100, Borislav Petkov wrote:
-> > > > > across all CPUs in the entire system.
-> > > > 
-> > > > Right, by the "entire system" you mean consistent across cores and
-> > > > sockets but not necessarily across cabinets, as in the comment above,
-> > > > correct?
-> > > > 
-> > > > If so, let me ask around if this holds true too.
-> > > 
-> > > Every CPU available to the kernel. So if you run a single system image
-> > > across your cabinets, then yes those too.
-> > 
-> > Ok, but what about that sentence "(but not across cabinets - we turn
-> > it off in that case explicitly.)" - I don't see any place where it is
-> > turned off explicitly... Maybe a stale comment?
-> 
-> I suspect it might be the sched_clock_stable = 0 in mark_tsc_unstable(),
-> but lets ask Venki, IIRC he wrote all that.
+On Mon, Feb 6, 2012 at 12:30 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> What is needed to make a regset variable-sized?  Just declaring that it
+> may change in size in the future, or does one need a length field at the
+> top (I would personally have expected that both notes and ptrace would
+> have out-of-band methods for getting the size?)
 
-Yeah, I was looking at the code further and on Intel it does:
+ELF notes do have a size field, so core files are self-explanatory.  There
+is no ptrace interface to directly interrogate the regset details (one
+could be added).  But the PTRACE_GETREGSET interface is to accept an upper
+bound and yield the actual size filled in (which might be less than the
+regset's size if the user-supplied buffer was smaller).  So in practice, a
+caller can just use a buffer that's sure to be large enough, and then look
+at iov_len for the actual size delivered.  (And nobody has yet complained
+about this for xstate, though that might just be that nobody is really
+using it.)
 
-        if (c->x86_power & (1 << 8)) {
-                set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
-                set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
-                if (!check_tsc_unstable())
-                        sched_clock_stable = 1;
-        }
 
-while on AMD, in early_init_amd() we do:
-
-        if (c->x86_power & (1 << 8)) {
-                set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
-                set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
-        }
-
-and having in mind that tsc_unstable is set on generic x86 paths,
-nothing stops us to do the same on AMD too, and as a result, set
-sched_clock_stable too.
-
-But yeah, let's see what Venki has to say first.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thanks,
+Roland
