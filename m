@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab2BFKJV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 05:09:21 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60305 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab2BFKJU (ORCPT
+	id S1753039Ab2BFKK1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 05:10:27 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60916 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab2BFKK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 05:09:20 -0500
+	Mon, 6 Feb 2012 05:10:26 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 6 Feb 2012 19:07:59 +0900
+Date: Mon, 6 Feb 2012 19:09:07 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -17,8 +17,9 @@ Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
         Hugh Dickins <hughd@google.com>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [PATCH 1/6] memcg: simplify move_account() check.
-Message-Id: <20120206190759.76df4784.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [RFC] [PATCH 2/6 v3]  memcg: remove
+ EXPORT_SYMBOL(mem_cgroup_update_page_stat)
+Message-Id: <20120206190907.4167f834.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20120206190627.7313ff82.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20120206190627.7313ff82.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
@@ -30,163 +31,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From c75cc843ca0cb36de97ab814e59fb4ab7b1ffbd1 Mon Sep 17 00:00:00 2001
+Michal pointed out this.
+
+>From 78dfe92250046397114148e57bbc5927c59257fe Mon Sep 17 00:00:00 2001
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 2 Feb 2012 10:02:39 +0900
-Subject: [PATCH 1/6] memcg: simplify move_account() check.
+Date: Thu, 2 Feb 2012 12:05:41 +0900
+Subject: [PATCH 2/6] memcg: remove EXPORT_SYMBOL(mem_cgroup_update_page_stat)
 
-In memcg, for avoiding take-lock-irq-off at accessing page_cgroup,
-a logic, flag + rcu_read_lock(), is used. This works as following
-
-     CPU-A                     CPU-B
-                             rcu_read_lock()
-    set flag
-                             if(flag is set)
-                                   take heavy lock
-                             do job.
-    synchronize_rcu()        rcu_read_unlock()
-
-In recent discussion, it's argued that using per-cpu value for this
-flag just complicates the code because 'set flag' is very rare.
-
-This patch changes 'flag' implementation from percpu to atomic_t.
-This will be much simpler.
-
- memcontrol.c |   65 ++++++++++++++++++++++-------------------------------------
- 1 file changed, 25 insertions(+), 40 deletions(-)
+>From the log, I guess EXPORT was for preparing dirty accounting.
+But _now_, we don't need to export this. Remove this for now.
 
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   65 +++++++++++++++++++++---------------------------------
- 1 files changed, 25 insertions(+), 40 deletions(-)
+ mm/memcontrol.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ab315ab..9bf9d1c 100644
+index 9bf9d1c..4ba0d76 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -89,7 +89,6 @@ enum mem_cgroup_stat_index {
- 	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
- 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
- 	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
--	MEM_CGROUP_ON_MOVE,	/* someone is moving account between groups */
- 	MEM_CGROUP_STAT_NSTATS,
- };
- 
-@@ -278,6 +277,10 @@ struct mem_cgroup {
- 	 */
- 	unsigned long 	move_charge_at_immigrate;
- 	/*
-+	 * set > 0 if pages under this cgroup are moving to other cgroup.
-+	 */
-+	atomic_t	moving_account;
-+	/*
- 	 * percpu counter.
- 	 */
- 	struct mem_cgroup_stat_cpu *stat;
-@@ -1253,35 +1256,31 @@ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
- 
- 	return memcg->swappiness;
+@@ -1896,7 +1896,6 @@ out:
+ 		move_unlock_page_cgroup(pc, &flags);
+ 	rcu_read_unlock();
  }
-+/*
-+ * memcg->moving_account is used for checking possibility that some thread is
-+ * calling move_account(). When a thread on CPU-A starts moving pages under
-+ * a memcg, other threads sholud check memcg->moving_account under
-+ * rcu_read_lock(), like this:
-+ *
-+ *         CPU-A                                    CPU-B
-+ *                                              rcu_read_lock()
-+ *         memcg->moving_account+1              if (memcg->mocing_account)
-+ *                                                   take havier locks.
-+ *         syncronize_rcu()                     update something.
-+ *                                              rcu_read_unlock()
-+ *         start move here.
-+ */
+-EXPORT_SYMBOL(mem_cgroup_update_page_stat);
  
- static void mem_cgroup_start_move(struct mem_cgroup *memcg)
- {
--	int cpu;
--
--	get_online_cpus();
--	spin_lock(&memcg->pcp_counter_lock);
--	for_each_online_cpu(cpu)
--		per_cpu(memcg->stat->count[MEM_CGROUP_ON_MOVE], cpu) += 1;
--	memcg->nocpu_base.count[MEM_CGROUP_ON_MOVE] += 1;
--	spin_unlock(&memcg->pcp_counter_lock);
--	put_online_cpus();
--
-+	atomic_inc(&memcg->moving_account);
- 	synchronize_rcu();
- }
- 
- static void mem_cgroup_end_move(struct mem_cgroup *memcg)
- {
--	int cpu;
--
--	if (!memcg)
--		return;
--	get_online_cpus();
--	spin_lock(&memcg->pcp_counter_lock);
--	for_each_online_cpu(cpu)
--		per_cpu(memcg->stat->count[MEM_CGROUP_ON_MOVE], cpu) -= 1;
--	memcg->nocpu_base.count[MEM_CGROUP_ON_MOVE] -= 1;
--	spin_unlock(&memcg->pcp_counter_lock);
--	put_online_cpus();
-+	if (memcg)
-+		atomic_dec(&memcg->moving_account);
- }
  /*
-  * 2 routines for checking "mem" is under move_account() or not.
-@@ -1298,7 +1297,7 @@ static void mem_cgroup_end_move(struct mem_cgroup *memcg)
- static bool mem_cgroup_stealed(struct mem_cgroup *memcg)
- {
- 	VM_BUG_ON(!rcu_read_lock_held());
--	return this_cpu_read(memcg->stat->count[MEM_CGROUP_ON_MOVE]) > 0;
-+	return atomic_read(&memcg->moving_account);
- }
- 
- static bool mem_cgroup_under_move(struct mem_cgroup *memcg)
-@@ -1849,8 +1848,8 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask)
-  * by flags.
-  *
-  * Considering "move", this is an only case we see a race. To make the race
-- * small, we check MEM_CGROUP_ON_MOVE percpu value and detect there are
-- * possibility of race condition. If there is, we take a lock.
-+ * small, we check mm->moving_account and detect there are possibility of race
-+ * If there is, we take a lock.
-  */
- 
- void mem_cgroup_update_page_stat(struct page *page,
-@@ -2068,17 +2067,6 @@ static void mem_cgroup_drain_pcp_counter(struct mem_cgroup *memcg, int cpu)
- 		per_cpu(memcg->stat->events[i], cpu) = 0;
- 		memcg->nocpu_base.events[i] += x;
- 	}
--	/* need to clear ON_MOVE value, works as a kind of lock. */
--	per_cpu(memcg->stat->count[MEM_CGROUP_ON_MOVE], cpu) = 0;
--	spin_unlock(&memcg->pcp_counter_lock);
--}
--
--static void synchronize_mem_cgroup_on_move(struct mem_cgroup *memcg, int cpu)
--{
--	int idx = MEM_CGROUP_ON_MOVE;
--
--	spin_lock(&memcg->pcp_counter_lock);
--	per_cpu(memcg->stat->count[idx], cpu) = memcg->nocpu_base.count[idx];
- 	spin_unlock(&memcg->pcp_counter_lock);
- }
- 
-@@ -2090,11 +2078,8 @@ static int __cpuinit memcg_cpu_hotplug_callback(struct notifier_block *nb,
- 	struct memcg_stock_pcp *stock;
- 	struct mem_cgroup *iter;
- 
--	if ((action == CPU_ONLINE)) {
--		for_each_mem_cgroup(iter)
--			synchronize_mem_cgroup_on_move(iter, cpu);
-+	if ((action == CPU_ONLINE))
- 		return NOTIFY_OK;
--	}
- 
- 	if ((action != CPU_DEAD) || action != CPU_DEAD_FROZEN)
- 		return NOTIFY_OK;
+  * size of first charge trial. "32" comes from vmscan.c's magic value.
 -- 
 1.7.4.1
 
