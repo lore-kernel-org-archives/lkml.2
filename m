@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab2BFTnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 14:43:16 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:52883 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189Ab2BFTnM (ORCPT
+	id S1754671Ab2BFTpp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 14:45:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34403 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab2BFTpo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 14:43:12 -0500
-Date: Mon, 06 Feb 2012 14:42:56 -0500 (EST)
-Message-Id: <20120206.144256.1171908949073473140.davem@davemloft.net>
-To: cascardo@linux.vnet.ibm.com
-Cc: yevgenyp@mellanox.co.il, ogerlitz@mellanox.com, eugenia@mellanox.co.il,
-        alexg@mellanox.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mlx4: fix DMA mapping leak when allocation fails
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1328553590-27677-2-git-send-email-cascardo@linux.vnet.ibm.com>
-References: <1328553590-27677-1-git-send-email-cascardo@linux.vnet.ibm.com>
-	<1328553590-27677-2-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 06 Feb 2012 11:42:59 -0800 (PST)
+	Mon, 6 Feb 2012 14:45:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120206111853.GA11506@tugrik.mns.mnsspb.ru>
+References: <20120206111853.GA11506@tugrik.mns.mnsspb.ru>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Mon, 6 Feb 2012 20:45:24 +0100
+Message-ID: <CAPXgP11N=8NULMH-o0Us0OuqYpP9sKe9uUKWzE35h1AiRP1Cjg@mail.gmail.com>
+Subject: Re: No /dev/root with devtmpfs?
+To: Kirill Smelkov <kirr@mns.spb.ru>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Date: Mon,  6 Feb 2012 16:39:50 -0200
+On Mon, Feb 6, 2012 at 12:18, Kirill Smelkov <kirr@mns.spb.ru> wrote:
+> Recently I've reworked my system not to use udev, but use devtmpfs
+> instead and discovered there is no /dev/root symlink in devtmpfs case.
+>
+> My setup uses /dev/root early to know what is the boot device and then
+> do some operations on it like checksumming, etc...
+>
+> Now when /dev/root is gone the best workaround I could come up with is
+> to   grep /proc/partitions for '[hs]d[a-z]1'  but it's ugly and will
+> break when there are several block devices attached.
+>
+> Is it somehow possible to add /dev/root to devtmpfs?
 
-> mlx4_en_prepare_rx_desc does not correctly clean up after it finds an
-> allocation failure. It should unmap a page before calling put_page, but
-> it only calls the later.
-> 
-> This bug would prevent a device removal using hotplug after setting the
-> device MTU to 9000 and opening the network interface. After the fix, we
-> still see the allocation failure with MTU 9000, but we are able to
-> remove the device.
-> 
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+No, devtmpfs has no business in knowing anything about the rootfs or
+who mounted what ans where. I can not create such links.
 
-Applied.
+The entire concept of /dev/root is flawed anyway, and nothing should
+really depend on that.
+
+Modern filesystems will not offer a direct relation to a single block
+device, they allocate an superblock which has a major == 0, so there
+can be by definition never such a link. Better get rid of all uses of
+/dev/root, it will just fail in the future.
+
+Kay
