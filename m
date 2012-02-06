@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab2BFQSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:18:43 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:57501 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755092Ab2BFQSk (ORCPT
+	id S1755302Ab2BFQTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:19:51 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62181 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754542Ab2BFQTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:18:40 -0500
-Date: Mon, 6 Feb 2012 17:18:02 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, bp@amd64.org,
-        tony.luck@intel.com, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marcos.mage@gmail.com,
-        prasad@linux.vnet.ibm.com
-Subject: Re: [PATCH] x86, mce: Fix rcu splat in drain_mce_log_buffer()
-Message-ID: <20120206161802.GC31237@aftab>
-References: <20120111142213.16610.85866.stgit@srivatsabhat.in.ibm.com>
- <20120111161153.GA2925@linux.vnet.ibm.com>
- <4F102353.1040109@linux.vnet.ibm.com>
- <20120113214435.GC2909@linux.vnet.ibm.com>
+	Mon, 6 Feb 2012 11:19:49 -0500
+Date: Mon, 6 Feb 2012 08:19:43 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Norbert Preining <preining@logic.at>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, jeff@garzik.org,
+        "stern@rowland.harvard.edu >> Alan Stern" <stern@rowland.harvard.edu>,
+        linux-ide@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jian Peng <jipeng2005@gmail.com>
+Subject: Re: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume,
+ COMRESET failed
+Message-ID: <20120206161943.GA3926@google.com>
+References: <20120203052452.GC24563@gamma.logic.tuwien.ac.at>
+ <1328247269.15079.26.camel@minggr>
+ <20120203054319.GA25510@gamma.logic.tuwien.ac.at>
+ <1328257660.15079.30.camel@minggr>
+ <20120206004608.GA9413@gamma.logic.tuwien.ac.at>
+ <1328492218.15079.38.camel@minggr>
+ <20120206024052.GI9413@gamma.logic.tuwien.ac.at>
+ <1328496591.15079.40.camel@minggr>
+ <20120206031528.GA16093@gamma.logic.tuwien.ac.at>
+ <1328503376.15079.55.camel@minggr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120113214435.GC2909@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328503376.15079.55.camel@minggr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 01:44:35PM -0800, Paul E. McKenney wrote:
-> Looks good to me, but I do need to defer to people who know this code
-> better than do I.  The key thing that (from what I can see) makes
-> rcu_dereference() unnecessary is that the smp_rmb() used in conjunction
-> with polling the .finished field takes care of ordering.
+Hello,
 
-Right, this was me trying hard not to screw up touching mcelog.next,
-thus trying to use the rcu_dereference_index_check() primitive without
-thinking it through too much. But you're right, I'm polling the
-->finished field 4 times (totally arbitrary, btw) which should suffice
-while the mce_log() routine above writes those entries.
+(cc'ing Jian Peng, hi)
 
-Although, the question still remains, since mce_log() accesses
-mcelog.next through the rcu_dereference_index_check() primitive,
-shouldn't I do it the same way?
+On Mon, Feb 06, 2012 at 12:42:56PM +0800, Lin Ming wrote:
+> On Mon, 2012-02-06 at 12:15 +0900, Norbert Preining wrote:
+> > On Mo, 06 Feb 2012, Lin Ming wrote:
+> > > Only this patch on top of HEAD *without* reverting 7faa33da9b7.
+> > 
+> > Works. Am I right that it differs from 7faa33da9b7 only in that
+> > the later also changes:
+> 
+> Right.
+> 
+> Tejun,
+> 
+> This regression is caused by 7faa33da9b7(ahci: start engine only during
+> soft/hard resets).
+> 
+> But I can't reproduce it.
+> 
+> What's your guess?
+
+Urgh.... yeah, following standard can sometimes be silly thing to do.
+Jian, I think we'll have to add a flag for your controller and revert
+to the original behavior for others.  How can your controller be
+distinguished?
 
 Thanks.
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+tejun
