@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab2BFRD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 12:03:56 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52649 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab2BFRDy (ORCPT
+	id S1755592Ab2BFREE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 12:04:04 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47551 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755376Ab2BFREC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 12:03:54 -0500
-Message-ID: <1328547955.22240.39.camel@sauron.fi.intel.com>
-Subject: Re: [RFC] killing boilerplate checks in ->link/->mkdir/->rename
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 06 Feb 2012 19:05:55 +0200
-In-Reply-To: <20120206135655.GF23916@ZenIV.linux.org.uk>
-References: <m1wr87ywex.fsf@fess.ebiederm.org>
-	 <m1ehueyz20.fsf_-_@fess.ebiederm.org>
-	 <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
-	 <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
-	 <20120202012258.GQ23916@ZenIV.linux.org.uk>
-	 <20120202212400.GR23916@ZenIV.linux.org.uk>
-	 <CA+55aFzHSv2eHKenVhxnSFMJMXtJCnxD2xu6QjMiMLEGLCZ2uQ@mail.gmail.com>
-	 <20120203011612.GS23916@ZenIV.linux.org.uk>
-	 <20120203170825.GX23916@ZenIV.linux.org.uk>
-	 <1328518244.22240.25.camel@sauron.fi.intel.com>
-	 <20120206135655.GF23916@ZenIV.linux.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-kUZLN3dhkT9rGOcPprNa"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	Mon, 6 Feb 2012 12:04:02 -0500
+Date: Mon, 6 Feb 2012 17:05:28 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: cbou@mail.ru, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add I2C driver for Summit Microelectronics SMB347
+ Battery Charger.
+Message-ID: <20120206170528.6c74f206@pyramind.ukuu.org.uk>
+In-Reply-To: <20120206163544.GO3070@opensource.wolfsonmicro.com>
+References: <20120206155729.9947.22792.stgit@bob.linux.org.uk>
+	<20120206160127.GF10173@sirena.org.uk>
+	<20120206162409.4f7536cf@pyramind.ukuu.org.uk>
+	<20120206163544.GO3070@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 6 Feb 2012 16:35:45 +0000
+Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
---=-kUZLN3dhkT9rGOcPprNa
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> On Mon, Feb 06, 2012 at 04:24:09PM +0000, Alan Cox wrote:
+> > Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> 
+> > > There's quite a lot of read/modify/write cycles and...
+> 
+> > True but they are basically all in the setup side of things so I'm not
+> > sure the complexity is justified or appropriate ?
+> 
+> I'm not sure what complexity you mean?  If the interface is too
+> difficult to use we should fix that but I didn't notice anything in the
+> driver which should be more than a straight substitution (or deletion of
+> code in the case of the debugfs file).
 
-On Mon, 2012-02-06 at 13:56 +0000, Al Viro wrote:
-> On Mon, Feb 06, 2012 at 10:50:44AM +0200, Artem Bityutskiy wrote:
->=20
-> > WRT 'sen_nlink()' - I can use it instead of 'drop_nlink()'/'inc_nlink()=
-'
-> > of course. But I do not really see why is this better. E.g.,
-> > 'drop_nlink()' additionally gives me ' WARN_ON()' in case of 'i_nlink'
-> > wrapping.
->=20
-> So does inc_nlink() when you are asking to get from nlink=3D0 to nlink=3D=
-1.
-> I.e. on failure exit in your unlink()...
+The API seems fine to me but you've then got to implement the
+writeable/readable/volatile reg callbacks and figure out what is cachable
+for the chip and specify it.
 
-Indeed! I'll switch to 'clear_nlink(inode)' and 'set_nlink(inode, 1)'
-for those inodes which are being unliked.
+Seems like overkill for a chip you poke asynchronously during boot and
+then basically let it mind its own business.
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-kUZLN3dhkT9rGOcPprNa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPMAhzAAoJECmIfjd9wqK0POEP/j1tTtfR6oqOWtCc4n5NfDGR
-7wDOK2P0y9jQWM9MX4VR7v2NYKFYbh9ZeYG+sFYKzlZw9mYZeggRqwBeF6mGeavF
-6YcKDdGiMBnY46oJcg3FzFY3YqMrjh9HoxBP2AcS5gw0Izz+n7R7/L3vvy7oMTmJ
-sLVBCEfWGGbArqK63mL60+64l0QuxmE1MQbkl3JHfaV4v1lNz7nGbMKr8FMaGxwA
-g3/GKoavZw+bFtzQX5Cak5fAXCJ48/spwKmKEdK+5suF25f2ZJQF+P6elGZr8iKY
-nBnsepI/eCZ6ErybX3rxmh51D6F6IHBEj1ZSJcrZJticKTwK9XMhykcv89U7C3PW
-u9W+5W1m/orAmvnHZ2mbBfFW35fcW8SpK7Cc8F2BffvBdGQyTEoB47ssFe2Ntqy/
-pNvuAYg4MkVOTDxjObOOGY2l5eA+g9wCWdgh41DwyIZormXoC466fyqvAIFubNi6
-gh7/fK8Sb0d4o7VJFFLE+StsxgOZAgMjEjlZuzojPNKa8vvRTyyvvl6UP4qqMzCg
-4mEr+pbPpMr97eVPRxjdDTLHyQvNQIC6taP10QDzOGRhTYz0vkpMfjxbZ5u2y1KR
-8YC4y68cFSdLGGzInL2zRmjNAeSlsZAOTql4jLf+fhTOJrazEeHsvcngVQz6ANCX
-2QuB7F5fQHTMn5fzIqN/
-=i23q
------END PGP SIGNATURE-----
-
---=-kUZLN3dhkT9rGOcPprNa--
-
+Alan
