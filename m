@@ -1,173 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab2BFW4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:56:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48220 "EHLO mx2.suse.de"
+	id S1756113Ab2BFXJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 18:09:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36295 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754178Ab2BFW4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:56:21 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 00/15] Swap-over-NBD without deadlocking V8
-Date: Mon,  6 Feb 2012 22:56:03 +0000
-Message-Id: <1328568978-17553-1-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
+	id S1756029Ab2BFXJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 18:09:14 -0500
+Date: Tue, 7 Feb 2012 00:08:49 +0100
+From: Karel Zak <kzak@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Jerome Marchand <jmarchan@redhat.com>, linux-fsdevel@vger.kernel.org,
+        util-linux@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] fs: filesystem specific options and remount
+Message-ID: <20120206230849.GA20767@x2.net.home>
+References: <4F2BFBAF.5020703@redhat.com>
+ <20120206224116.GE24840@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206224116.GE24840@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog since V7
-  o Rebase to 3.3-rc2
-  o Take greater care propagating page->pfmemalloc to skb
-  o Propagate pfmemalloc from netdev_alloc_page to skb where possible
-  o Release RCU lock properly on preempt kernel
+On Mon, Feb 06, 2012 at 11:41:16PM +0100, Jan Kara wrote:
+> On Fri 03-02-12 16:22:23, Jerome Marchand wrote:
+> > 
+> > When remounted without option specified, some filesystems keep the
+> > options that are already set (e.g. procfs, fat) and some reset them to
+> > default (e.g. devpts).
+> > Regarding options that are specified at remount, behavior of
+> > filesystems also differ: some apply them (procfs, devpts), some
+> > silently disregard them (e.g. fat) and some have a more elaborate
+> > behavior (e.g. xfs apparently allows a subset of options to be changed
+> > and issues warning if someone tries to change any other option).
+> > 
+> > Is there any policy regarding what the correct behavior should be?
+> > This variety of behaviors tends to confuse mount utility which often
+> > does not show the correct option actually set after a remount and
+> > most certainly confuses the users as well.
+> > 
+> > Here is a example of discrepancy between mount (/etc/mtab) and
+> > /proc/mounts:
+> > 
+> > $ grep proc /proc/mounts
+> > /proc /proc proc rw,relatime 0 0
+> > $ mount | grep proc
+> > proc on /proc type proc (rw)
+> > 
+> > $ mount -o remount,hidepid=2 /proc/
+> > $ grep proc /proc/mounts
+> > /proc /proc proc rw,relatime,hidepid=2 0 0
+> > $ mount | grep proc
+> > proc on /proc type proc (rw,hidepid=2)
+> > 
+> > $ mount -o remount /proc/
+> > $ grep proc /proc/mounts
+> > /proc /proc proc rw,relatime,hidepid=2 0 0
+> > $ mount | grep proc
+> > proc on /proc type proc (rw)
+> > 
+> > And here is the discrepancy: mount does not show "hidepid=2" option
+> > that is actually still set and enforced. Note that mount also missed
+> > the relatime option to begin with.
+>   I don't mind the discrepancy between /etc/mtab and /proc/mounts that much
+> (/proc/mounts is a fine replacement of /etc/mtab for me) but I agree that
 
-Changelog since V6
-  o Rebase to 3.1-rc8
-  o Use wake_up instead of wake_up_interruptible()
-  o Do not throttle kernel threads
-  o Avoid a potential race between kswapd going to sleep and processes being
-    throttled
+Fedora for example does not use /etc/mtab anymore.
 
-Changelog since V5
-  o Rebase to 3.1-rc5
+> handling of mount options on remount is a mess and IMHO it's made even
+> worse by mount(8) adding options from /etc/mtab to mount(2) syscall when
+> -o remount is specified. But realistically I can hardly imagine how to fix
 
-Changelog since V4
-  o Update comment clarifying what protocols can be used		(Michal)
-  o Rebase to 3.0-rc3
+man mount:
 
-Changelog since V3
-  o Propogate pfmemalloc from packet fragment pages to skb		(Neil)
-  o Rebase to 3.0-rc2
+   The  remount  functionality follows the standard way how the mount
+   command works with options from fstab. It means the mount command
+   doesn't read fstab (or mtab) only when  a  device  and dir are fully
+   specified.
 
-Changelog since V2
-  o Document that __GFP_NOMEMALLOC overrides __GFP_MEMALLOC		(Neil)
-  o Use wait_event_interruptible					(Neil)
-  o Use !! when casting to bool to avoid any possibilitity of type
-    truncation								(Neil)
-  o Nicer logic when using skb_pfmemalloc_protocol			(Neil)
+         mount -o remount,rw /dev/foo /dir
 
-Changelog since V1
-  o Rebase on top of mmotm
-  o Use atomic_t for memalloc_socks		(David Miller)
-  o Remove use of sk_memalloc_socks in vmscan	(Neil Brown)
-  o Check throttle within prepare_to_wait	(Neil Brown)
-  o Add statistics on throttling instead of printk
+   After this call all old mount options are replaced and arbitrary stuff
+   from fstab is ignored, except the loop= option which is internally
+   generated and maintained by the mount command.
 
-When a user or administrator requires swap for their application, they
-create a swap partition and file, format it with mkswap and activate it
-with swapon. Swap over the network is considered as an option in diskless
-systems. The two likely scenarios are when blade servers are used as part
-of a cluster where the form factor or maintenance costs do not allow the
-use of disks and thin clients.
+         mount -o remount,rw  /dir
 
-The Linux Terminal Server Project recommends the use of the
-Network Block Device (NBD) for swap according to the manual at
-https://sourceforge.net/projects/ltsp/files/Docs-Admin-Guide/LTSPManual.pdf/download
-There is also documentation and tutorials on how to setup swap over NBD
-at places like https://help.ubuntu.com/community/UbuntuLTSP/EnableNBDSWAP
-The nbd-client also documents the use of NBD as swap. Despite this, the
-fact is that a machine using NBD for swap can deadlock within minutes if
-swap is used intensively. This patch series addresses the problem.
+   After this call mount reads fstab (or mtab) and merges these options
+   with options  from command line ( -o ).
 
-The core issue is that network block devices do not use mempools like normal
-block devices do. As the host cannot control where they receive packets from,
-they cannot reliably work out in advance how much memory they might need.
 
-Some years ago, Peter Ziljstra developed a series of patches that supported
-swap over an NFS that some distributions are carrying in their kernels. This
-patch series borrows very heavily from Peter's work to support swapping
-over NBD as a pre-requisite to supporting swap-over-NFS. The bulk of the
-complexity is concerned with preserving memory that is allocated from the
-PFMEMALLOC reserves for use by the network layer which is needed for both
-NBD and NFS.
 
-Patch 1 serialises access to min_free_kbytes. It's not strictly needed
-	by this series but as the series cares about watermarks in
-	general, it's a harmless fix. It could be merged independently.
+Note that mtab is a fallback solution when the mountpoint is not found
+in fstab, the mtab is not read by default.
 
-Patch 2 adds knowledge of the PFMEMALLOC reserves to SLAB and SLUB to
-	preserve access to pages allocated under low memory situations
-	to callers that are freeing memory.
+Anyway, libmount allows to specify how use the mount options from mtab
+and fstab. My plan is to add to mount(8) new command line options to
+override the current default, probably something like:
 
-Patch 3 introduces __GFP_MEMALLOC to allow access to the PFMEMALLOC
-	reserves without setting PFMEMALLOC.
+  --options-mode={ignore,append,prepend,replace}
+  --options-source={fstab,mtab,none}
 
-Patch 4 opens the possibility for softirqs to use PFMEMALLOC reserves
-	for later use by network packet processing.
+so you will have a full control on options for mount(2) syscall.
 
-Patch 5 ignores memory policies when ALLOC_NO_WATERMARKS is set.
-
-Patches 6-11 allows network processing to use PFMEMALLOC reserves when
-	the socket has been marked as being used by the VM to clean
-	pages. If packets are received and stored in pages that were
-	allocated under low-memory situations and are unrelated to
-	the VM, the packets are dropped.
-
-Patch 12 is a micro-optimisation to avoid a function call in the
-	common case.
-
-Patch 13 tags NBD sockets as being SOCK_MEMALLOC so they can use
-	PFMEMALLOC if necessary.
-
-Patch 14 notes that it is still possible for the PFMEMALLOC reserve
-	to be depleted. To prevent this, direct reclaimers get
-	throttled on a waitqueue if 50% of the PFMEMALLOC reserves are
-	depleted.  It is expected that kswapd and the direct reclaimers
-	already running will clean enough pages for the low watermark
-	to be reached and the throttled processes are woken up.
-
-Patch 15 adds a statistic to track how often processes get throttled
-
-Some basic performance testing was run using kernel builds, netperf
-on loopback for UDP and TCP, hackbench (pipes and sockets), iozone
-and sysbench. Each of them were expected to use the sl*b allocators
-reasonably heavily but there did not appear to be significant
-performance variances.
-
-For testing swap-over-NBD, a machine was booted with 2G of RAM with a
-swapfile backed by NBD. 8*NUM_CPU processes were started that create
-anonymous memory mappings and read them linearly in a loop. The total
-size of the mappings were 4*PHYSICAL_MEMORY to use swap heavily under
-memory pressure. Without the patches, the machine locks up within
-minutes and runs to completion with them applied.
-
- drivers/block/nbd.c                               |    6 +-
- drivers/net/ethernet/chelsio/cxgb4/sge.c          |    2 +-
- drivers/net/ethernet/chelsio/cxgb4vf/sge.c        |    2 +-
- drivers/net/ethernet/intel/igb/igb_main.c         |    2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |    2 +-
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    3 +-
- drivers/net/usb/cdc-phonet.c                      |    2 +-
- drivers/usb/gadget/f_phonet.c                     |    2 +-
- include/linux/gfp.h                               |   13 +-
- include/linux/mm_types.h                          |    9 +
- include/linux/mmzone.h                            |    1 +
- include/linux/sched.h                             |    7 +
- include/linux/skbuff.h                            |   66 ++++++-
- include/linux/slub_def.h                          |    1 +
- include/linux/vm_event_item.h                     |    1 +
- include/net/sock.h                                |   19 ++
- include/trace/events/gfpflags.h                   |    1 +
- kernel/softirq.c                                  |    3 +
- mm/page_alloc.c                                   |   57 ++++-
- mm/slab.c                                         |  235 ++++++++++++++++++---
- mm/slub.c                                         |   36 +++-
- mm/vmscan.c                                       |   72 +++++++
- mm/vmstat.c                                       |    1 +
- net/core/dev.c                                    |   52 ++++-
- net/core/filter.c                                 |    8 +
- net/core/skbuff.c                                 |   93 +++++++--
- net/core/sock.c                                   |   42 ++++
- net/ipv4/tcp.c                                    |    3 +-
- net/ipv4/tcp_output.c                             |   16 +-
- net/ipv6/tcp_ipv6.c                               |   12 +-
- 30 files changed, 675 insertions(+), 94 deletions(-)
+    Karel
 
 -- 
-1.7.3.4
-
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
