@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab2BFQtv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:49:51 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:32016 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755337Ab2BFQtu convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Mon, 6 Feb 2012 11:49:50 -0500
-Message-Id: <4F3012B602000078000716AB@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 06 Feb 2012 16:49:42 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Dan Magenheimer" <dan.magenheimer@oracle.com>
-Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>, <xen-devel@lists.xensource.com>,
-        "Konrad Wilk" <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] xen/tmem: cleanup
-References: <4F2C06A00200007800071071@nat28.tlf.novell.com>
- <d86f0be9-1530-47bd-b3fd-8c251e563b25@default>
- <4F2F998202000078000714CD@nat28.tlf.novell.com>
- <e871af1b-8003-4d3d-8fde-ea40545ff9fe@default>
-In-Reply-To: <e871af1b-8003-4d3d-8fde-ea40545ff9fe@default>
+	id S1755477Ab2BFQvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:51:04 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:38570 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755156Ab2BFQvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 11:51:01 -0500
+Message-ID: <1328547058.3845.5.camel@odin>
+Subject: Re: linux-next: build failure after merge of the sound-asoc tree
+From: Liam Girdwood <lrg@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 06 Feb 2012 16:50:58 +0000
+In-Reply-To: <20120206122553.e794e84d5f586619d710fdcd@canb.auug.org.au>
+References: <20120206122553.e794e84d5f586619d710fdcd@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.02.12 at 17:37, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
->>  From: Jan Beulich [mailto:JBeulich@suse.com]
->> Sent: Monday, February 06, 2012 1:13 AM
->> To: Dan Magenheimer
->> Cc: Jeremy Fitzhardinge; xen-devel@lists.xensource.com; Konrad Wilk; 
-> linux-kernel@vger.kernel.org 
->> Subject: RE: [PATCH] xen/tmem: cleanup
->> 
->> >>> On 04.02.12 at 17:42, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
->> >>  From: Jan Beulich [mailto:JBeulich@suse.com]
->> >> Subject: [PATCH] xen/tmem: cleanup
->> >>
->> >> Use 'bool' for boolean variables. Do proper section placement.
->> >> Eliminate an unnecessary export.
->> >>
->> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->> >> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
->> >>
->> >> -int tmem_enabled __read_mostly;
->> >> -EXPORT_SYMBOL(tmem_enabled);
->> >> +bool __read_mostly tmem_enabled = false;
->> >
->> > tmem_enabled is used in xen/drivers/xen-selfballoon.c
->> 
->> Which can't be built as a module, and hence the symbol doesn't need
->> exporting. This patch (of course, I'm tempted to say) survived build
->> testing.
+Hi Stephen,
+
+Btw, I have a new email address at TI now, any chance you could update
+your scripts. Thanks !
+
+On Mon, 2012-02-06 at 12:25 +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Yes, correct.  BUT... I think only the reason xen-selfballoon.c
-> can't be built as a module is because the MM variable vm_committed_as
-> (or an access function) is not exported.  Ideally xen-selfballoon.c
-> probably should be a module but putting a core MM change in
-> the critical path of a Xen-only-related enhancement seemed
-> a recipe for sure failure.
-
-No, this isn't the main reason (as you say further down, this could
-easily be adjusted for) afaict. The main reason is that
-register_xen_selfballooning() is being called from non-modular
-code (xen-balloon.c), which could be made a module too, but in
-turn has at least one reference that wouldn't be nice to become
-an export (balloon_set_new_target()).
-
-Jan
-
-> Konrad, if you (1) disagree entirely, or (2) want to remove the
-> tmem_enabled EXPORT_SYMBOL now and add it back later if/when
-> the core MM change happens, I'll leave that up to you.
+> After merging the sound-asoc tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> If (2), the MM change should be added to the minor-tmem-related-
-> changes-that-need-to-be-eventually-upstreamed list ;-)
+> sound/soc/codecs/max9768.c: In function 'max9768_probe':
+> sound/soc/codecs/max9768.c:138:3: error: implicit declaration of function 'snd_soc_add_controls' [-Werror=implicit-function-declaration]
 > 
-> Dan
+> Caused by commit 022658beab55 ("ASoC: core: Add support for DAI and
+> machine kcontrols").
+> 
+> I have used the sound-asoc tree from next-20120203 for today.
 
+Sorry, this should fix it.
+
+>From e3e06e913cb74a57b603a2e7ac0f08c995af4969 Mon Sep 17 00:00:00 2001
+From: Liam Girdwood <lrg@ti.com>
+Date: Mon, 6 Feb 2012 16:36:04 +0000
+Subject: [PATCH] ASoC: max9768 - Fix build and use new add control API.
+
+Fix build breakage by using the correct API call to add kcontrols.
+
+Signed-off-by: Liam Girdwood <lrg@ti.com>
+---
+ sound/soc/codecs/max9768.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/sound/soc/codecs/max9768.c b/sound/soc/codecs/max9768.c
+index 79e9901..17b3ec2 100644
+--- a/sound/soc/codecs/max9768.c
++++ b/sound/soc/codecs/max9768.c
+@@ -135,7 +135,7 @@ static int max9768_probe(struct snd_soc_codec *codec)
+ 	}
+ 
+ 	if (gpio_is_valid(max9768->mute_gpio)) {
+-		ret = snd_soc_add_controls(codec, max9768_mute,
++		ret = snd_soc_add_codec_controls(codec, max9768_mute,
+ 				ARRAY_SIZE(max9768_mute));
+ 		if (ret)
+ 			return ret;
+-- 
+1.7.5.4
 
 
