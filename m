@@ -1,124 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab2BFHSU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 02:18:20 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48338 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab2BFHST convert rfc822-to-8bit (ORCPT
+	id S1752005Ab2BFHZn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 02:25:43 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:63379 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab2BFHZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 02:18:19 -0500
+	Mon, 6 Feb 2012 02:25:41 -0500
+Date: Sun, 5 Feb 2012 23:25:35 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Chase Douglas <chasedouglas@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Input: Add EVIOC mechanism for MT slots
+Message-ID: <20120206072535.GB14139@core.coreip.homeip.net>
+References: <1328036403-2827-1-git-send-email-rydberg@euromail.se>
+ <4F2B24AC.1020408@gmail.com>
+ <20120203072725.GA6914@polaris.bitmath.org>
+ <4F2D7730.3090704@gmail.com>
+ <20120205075906.GA7698@polaris.bitmath.org>
+ <4F2EB8C8.9090102@gmail.com>
+ <20120205194036.GA2566@polaris.bitmath.org>
+ <4F2F08CD.2010806@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKYAXd_msUdB2UbMvxqn751nuN5R=T6W5sjLDMxqEOR6KTX38w@mail.gmail.com>
-References: <1328158649-4137-1-git-send-email-vinholikatti@gmail.com>
- <CAKYAXd_sRKCfw_rNrRD8yKKQEP_8Zee+E5rZW0G1NuuCA4HcNA@mail.gmail.com> <CAKYAXd_msUdB2UbMvxqn751nuN5R=T6W5sjLDMxqEOR6KTX38w@mail.gmail.com>
-From: Santosh Y <santoshsy@gmail.com>
-Date: Mon, 6 Feb 2012 12:47:57 +0530
-Message-ID: <CALMYJDvy58ohVSjeQC2e=rccyKe2S=628q9YBFtpAm7v1HHO3Q@mail.gmail.com>
-Subject: Re: [PATCH 0/4] [SCSI] ufshcd: UFS Host Controller Driver
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: Vinayak Holikatti <vinholikatti@gmail.com>,
-        James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, saugata.das@linaro.org,
-        arnd@arndb.de, venkat@linaro.org, girish.shivananjappa@linaro.org,
-        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F2F08CD.2010806@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 6, 2012 at 4:15 AM, Namjae Jeon <linkinjeon@gmail.com> wrote:
-> 2012/2/5 Namjae Jeon <linkinjeon@gmail.com>:
->> 2012/2/2 Vinayak Holikatti <vinholikatti@gmail.com>:
->>> From: Santosh Yaraganavi <santoshsy@gmail.com>
->>>
->>> UFS is designed to be the most advanced specification for
->>> both embedded and removable flash memory-based storage in mobile devices
->>> such as smart phones and tablet computers.  The UFS standard represents
->>> an evolutionary progression of JEDEC standards in this field, and has been
->>> specifically tailored for mobile applications and computing systems requiring
->>> high performance and low power consumption.  The initial data throughput for
->>> UFS will be ~300 megabytes per second (MB/s), and the standard also supports
->>> command queuing features to raise random read/write speeds.
->>>
->>> To achieve the highest performance and most power efficient data
->>> transport, UFS uses the leading industry interface standards to form its
->>> Interconnect Layer: MIPI® Alliance’s M-PHY and UniProSM  specifications.
->>> UniPro is a comprehensive specification meant to act as a universal
->>> chip-to-chip protocol, providing a common tunnel for other protocols.
->>> The M-PHY interface is designed as the primary physical interface (PHY layer)
->>> for the UniPro specification, and is a high speed serial interface targeting
->>> up to 2.9 gigabits per second (Gbps) per lane with up-scalability to 5.8Gbps
->>> per lane.
->>>
->>> MIPI’s M-PHY and UniPro specifications are optimized for mobile applications,
->>> and are designed from the ground up for efficient power management in mobile
->>> devices, including enabling efficient transitions between the active and power
->>> save modes. Combined with a low active power level and a near-zero idle power
->>> level, UFS offers the promise for significant reductions in device power
->>> consumption.
->>>
->>> The UFS standard adopts the well-known SCSI Architecture Model and command
->>> protocols supporting multiple commands with command queuing features and
->>> enabling a multi-thread programming paradigm. This differs from conventional
->>> flash-based memory cards and embedded flash solutions which process one
->>> command at a time, limiting random read/write access performance.
->>> In addition, a forthcoming complementary UFS Host Controller Interface (HCI)
->>> specification will allow system designers greater flexibility by simplifying
->>> the involvement of the host processor in the operation of the flash storage
->>> subsystem. The UFS HCI specification and the adoption of SCSI will provide
->>> a well-known software programming model and enable wider market adoption.
->>>
->>> This patchset contains PCIe based UFS host controller driver which complies
->>> to UFSHCI 1.0 and 1.1. The driver is based on Linux SCSI framework.
->>> The driver is tested with UFS Host controller(FPGA) and UFS device(FPGA).
->>>
->>> This patch set is successfully applied on kernel version 3.3-rc2.
->>>
->>> Santosh Yaraganavi (4):
->>>  [SCSI] ufshcd: UFS Host controller driver
->>>  [SCSI] ufshcd: UFS UTP Transfer requests handling
->>>  [SCSI] ufshcd: UFSHCI error handling
->>>  [SCSI] ufshcd: SCSI error handling
->>>
->>>  drivers/scsi/Kconfig      |    1 +
->>>  drivers/scsi/Makefile     |    1 +
->>>  drivers/scsi/ufs/Kconfig  |   49 ++
->>>  drivers/scsi/ufs/Makefile |    2 +
->>>  drivers/scsi/ufs/ufs.h    |  203 +++++
->>>  drivers/scsi/ufs/ufshcd.c | 1954 +++++++++++++++++++++++++++++++++++++++++++++
->>>  drivers/scsi/ufs/ufshci.h |  360 +++++++++
->>>  7 files changed, 2570 insertions(+), 0 deletions(-)
->>>  create mode 100644 drivers/scsi/ufs/Kconfig
->>>  create mode 100644 drivers/scsi/ufs/Makefile
->>>  create mode 100644 drivers/scsi/ufs/ufs.h
->>>  create mode 100644 drivers/scsi/ufs/ufshcd.c
->>>  create mode 100644 drivers/scsi/ufs/ufshci.h
->>>
->>> --
->>> 1.7.5.4
->> Hi.
->> I have been waiting for ufs contribution.
->> Unfortunately I don't have real target supported ufs(maybe only you
->> have it). I can not debug and run this code, So just review only code
->> with specification.
->>>
-> Hi. Santosh.
-> Would you share performance measurement result (read/write seq,ran) ?
-> Thanks.
+On Sun, Feb 05, 2012 at 11:55:09PM +0100, Chase Douglas wrote:
+> On 02/05/2012 08:40 PM, Henrik Rydberg wrote:
+> >>> Besides leaving a possible giant stack crash in your code, it assumes
+> >>> memory is somehow magically allocated. Not good practise in low-level
+> >>> programming. You wouldn't use a template this way, would you?
+> >>
+> >> No, which is why I think this interface is bad. I should be able to
+> >> dynamically set the size of the array, but it's not possible with this
+> >> interface.
+> > 
+> > It is possible (using num_slots == 0 or creating your own struct), but
+> > not ideal, granted. The patch serves the purpose of definining the
+> > binary interface, the rest is up to userland.
+> > 
+> >> I think the implementation is fine in terms of how the plumbing works. I
+> >> just don't think this macro should be included. Make the user create the
+> >> struct themselves:
+> >>
+> >> In linux/input.h:
+> >>
+> >> struct input_mt_request {
+> >> 	__u32 code;
+> >> 	__s32 values[];
+> >> };
+> > 
+> > The above (the first) version is not ideal either, since it cannot be
+> > used as it is.
+> > 
+> >> It could be argued that we should leave the macro around for people who
+> >> want to statically define the size of the request, but I think that is
+> >> leading them down the wrong path. It's easier, but it will lead to
+> >> broken code if you pick the wrong size.
+> > 
+> > Rather than creating both a suboptimal static and a suboptimal dynamic
+> > version, removing the struct altogether is tempting. All that is
+> > really needed is a clear definition of the binary interface. The rest
+> > can easily be set up in userland, using whatever method is preferred.
+> 
+> I'm normally not a fan of static functions in header files, but maybe it
+> would be a good solution here:
+> 
+> struct input_mt_request {
+> 	__u32 code;
+> 	__s32 values[];
+> };
+> 
+> static struct input_mt_request *
+> linux_input_mt_request_alloc(int num_slots) {
+> 	return (struct input_mt_request *)malloc(
+> 		sizeof(__u32) + num_slots * sizeof(__s32));
+> }
 
-Hi Namjae,
+Gah, can we please leave it to userspace programs to define and allocate
+the structure as it makes most sense for them. As far as kernel goes we
+just want to document that we'll need a u32 and a place to put N s32s.
+How they are allocated we do not care at all. It could be on stack
+(which does not have the same limits as kernel stack) or in the heap.
 
-Currently UFS Driver is being tested on on UFS Controller FPGA and UFS
-Device FPGA. So currently the main concentration is on functionality.
-Performance on FPGA will not be the correct measurement.
-
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks.
 
 -- 
-~Santosh
+Dmitry
