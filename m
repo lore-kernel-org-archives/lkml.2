@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab2BFPhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 10:37:53 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:32982 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200Ab2BFPhw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 10:37:52 -0500
-Date: Mon, 6 Feb 2012 15:37:42 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v5 2/5] x86/platform: (TS-5500) add GPIO support
-Message-ID: <20120206153742.GE10173@sirena.org.uk>
-References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1328130344-18836-3-git-send-email-vivien.didelot@savoirfairelinux.com>
- <20120201213025.53d820d2@pyramind.ukuu.org.uk>
- <1328211236.2261.152.camel@groeck-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328211236.2261.152.camel@groeck-laptop>
-X-Cookie: To err is human, to forgive unusual.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	id S1755392Ab2BFPi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 10:38:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755300Ab2BFPiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 10:38:55 -0500
+Subject: Re: Memory corruption due to word sharing
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew MacLeod <amacleod@redhat.com>, paulmck@linux.vnet.ibm.com,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, dsterba@suse.cz, ptesarik@suse.cz,
+        rguenther@suse.de, GCC Patches <gcc@gcc.gnu.org>
+In-Reply-To: <CA+55aFxoW0zexd4Zy33gToK9V0UU6wbQFFogEyFPPiGuNq2GGQ@mail.gmail.com>
+References: <20120201151918.GC16714@quack.suse.cz>
+	 <CA+55aFy55Q=+pFCZcS9cOM6SL+ZT3sNDB+c4qFvVqwwSpTqJ7g@mail.gmail.com>
+	 <1328118174.15992.6206.camel@triegel.csb>
+	 <CA+55aFw=z2SKFGoSE5e_0ZmKcAAjK5q0DBM4PaxBH2D9tuikzA@mail.gmail.com>
+	 <1328128874.15992.6430.camel@triegel.csb>
+	 <CA+55aFx4SdtZcYaWZ-=JG3yVFJxsBa-Yqn0m+h4Y=QHdRjx6_w@mail.gmail.com>
+	 <20120201224554.GK2382@linux.vnet.ibm.com>
+	 <CA+55aFyzYO0CMZOgdrVV0PdG2DkbwTQG7eE7N3bp=0tQmruFEQ@mail.gmail.com>
+	 <20120202184209.GD2518@linux.vnet.ibm.com>
+	 <CA+55aFyYxzED4OoYvb3nbET7_zyP5mGhEa2w_QCvQOx55bVjHg@mail.gmail.com>
+	 <20120202193747.GG2518@linux.vnet.ibm.com> <4F2C0D8A.70103@redhat.com>
+	 <CA+55aFx1NjR9XMQ9iLyVk05Erwtqgf7hfZkBCMJzkCMFJS8CHw@mail.gmail.com>
+	 <4F2C329B.2080107@redhat.com>
+	 <CA+55aFxoW0zexd4Zy33gToK9V0UU6wbQFFogEyFPPiGuNq2GGQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Feb 2012 16:38:03 +0100
+Message-ID: <1328542683.13242.311.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 11:33:56AM -0800, Guenter Roeck wrote:
-> On Wed, 2012-02-01 at 16:30 -0500, Alan Cox wrote:
+On Fri, 2012-02-03 at 12:00 -0800, Linus Torvalds wrote:
+> Of course, it you expose some intrinsic for the whole "ll/sc" model
+> (and you then turn it into cmpxchg on demand), we could literally
+> open-code it.
+> 
+> That is likely the most *flexible* approach for a compiler. I think
+> pretty much everything the kernel needs (except for cmpxchg_double)
+> can be very naturally written as a "ll/sc" sequence, and if the
+> compiler then just does the right thing with peephole optimizations,
+> that's fine.
+> 
+> IOW, we don't really need "atomic_add()" or anything like that. If we can do
+> 
+>   do {
+>      val = __load_linked(mem);
+>      val++;
+>   } while (__store_conditional(val, mem));
+> 
+> and the compiler just automagically turns that into "lock add" on x86,
+> that's perfectly fine.
+> 
+> It might not be too hard, because you really don't need to recognize
+> very many patterns, and any pattern you don't recognize could be
+> turned into a cmpxchg loop.
+> 
+> NOTE NOTE NOTE! The "turned into a cmpxchg loop" is not the true
+> correct translation of load-linked/store-conditional, since it allows
+> the memory to be modified as long as it's modified *back* before the
+> store-conditional, and that actually matters for a few algorithms. But
+> if you document the fact that it's not a "true" ll/sc (and maybe have
+> some compile-time way to detect when it isn't), it would be very
+> flexible.
+> 
+> Of course, the syntax could be something completely different. Maybe
+> you'd want to do it as
+> 
+>    __builtin_ll_sc(&var, update-expression, return-expression,
+> failure-expression)
+> 
+> rather than an explicit loop.
+> 
+> But it doesn't sound like the internal gcc model is based on some
+> generic ll/sc model.
 
-> > > My first RFC patches set has every driver separated. As they are
-> > > really specific to the platform, people seem to agree with grouping
-> > > them, mainly because they won't be shared. I changed that in the
-> > > following patches sets, and X86 maintainers seemed to be ok with
-> > > that.
+No, and I don't think it's beneficial overall to do this.  Sure, an
+LL/SC or CAS loop is universal, but in turn programmers would have to
+make sure that they hit the patterns that the compiler can actually
+recognize and turn into the more efficient forms.
 
-> It looks like things are going back and forth a bit. If I were Vivien, I
-> would be a bit frustrated by now and be close to giving up (Vivien, I
-> really commend you for your patience).
+The custom atomic operations also provide different progress guarantees.
+While a single CAS/cmpxchg is wait-free, the full loop isn't
+necessarily.  Same for the bit operations.  So, I think it makes sense
+to offer them separately.  The split between weak- and strong-progress
+compare-and-exchange in C++11 is related.
 
-OTOH I just looked back and saw that some of the review comments I just
-made were also made against the first version of this driver I noticed
-(v2) but appear to have been ignored, the request tracking stands out.
+> I realize that people have bad memories of the x86 bit instructions,
+> but especially in their locked form, the fact that they take a few
+> extra cycles or decode in only one pipeline etc is *not* relevant.
+> They are small and "fast", because the true cost tends to be not the
+> instruction cost, but the locking overhead and the cache effects.
 
-> Is there a written guideline or policy people can look and point to
-> if/when something like this comes up ? Otherwise we may have the
-> LED/GPIO/xxx maintainers point one way, the X86 maintainers point the
-> other way, and thus may have reached a complete deadlock.
+And the semantics of the operation is known immediately (without trying
+to recover the actual atomic op from some surrounding cmpxchg loop).
+That allows potential optimizations like combining (but I'm not a HW
+expert, so I don't know whether HW actually does this internally).
 
-I'm not sure I'm seeing much conflict here TBH, looking at the above and
-the history I have to hand I'd say it's reading like the x86 maintainers
-aren't fussed either way and the people doing kernel wide work on things
-like this prefer getting stuff integrated into the frameworks.
+
+Torvald
+
