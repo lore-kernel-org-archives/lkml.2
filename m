@@ -1,62 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab2BFUsp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 15:48:45 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:32831 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560Ab2BFUso (ORCPT
+	id S1755403Ab2BFUvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 15:51:25 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12399 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab2BFUvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 15:48:44 -0500
-Subject: Re: [RFC PATCH 13/14] sched: make __update_entity_runnable_avg()
- fast
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-In-Reply-To: <20120202013827.20844.30497.stgit@kitami.mtv.corp.google.com>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
-	 <20120202013827.20844.30497.stgit@kitami.mtv.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Feb 2012 21:48:26 +0100
-Message-ID: <1328561306.2482.32.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Feb 2012 15:51:24 -0500
+Date: Mon, 6 Feb 2012 21:51:54 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Raghavendra D Prabhu <raghu.prabhu13@gmail.com>
+cc: xfs@oss.sgi.com, xfs-masters@oss.sgi.com, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH][RFC] XFS: Fix mem leak and possible NULL deref in
+ xfs_setattr_nonsize()
+In-Reply-To: <20120206091100.GA4350@Xye>
+Message-ID: <alpine.LNX.2.00.1202062145240.20117@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1202052220390.32529@swampdragon.chaosbits.net> <20120206091100.GA4350@Xye>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 17:38 -0800, Paul Turner wrote:
-> +/* Precomputed fixed inverse multiplies for multiplication by y^n */
-> +const static u32 runnable_avg_yN_inv[] = {
-> +       0xffffffff,0xfa83b2db,0xf5257d15,0xefe4b99b,0xeac0c6e7,0xe5b906e7,
-> +       0xe0ccdeec,0xdbfbb797,0xd744fcca,0xd2a81d91,0xce248c15,0xc9b9bd86,
-> +       0xc5672a11,0xc12c4cca,0xbd08a39f,0xb8fbaf47,0xb504f333,0xb123f581,
-> +       0xad583eea,0xa9a15ab4,0xa5fed6a9,0xa2704303,0x9ef53260,0x9b8d39b9,
-> +       0x9837f051,0x94f4efa8,0x91c3d373,0x8ea4398b,0x8b95c1e3,0x88980e80,
-> +       0x85aac367,0x82cd8698,
-> +};
+On Mon, 6 Feb 2012, Raghavendra D Prabhu wrote:
 
-I wonder if modern Intel isn't at the point where computing this thing
-is cheaper than the cacheline miss. You can compute y^n in O(log n) time
-and with n < 32 that's 5 multiplications (see fixed_power_int). Add to
-that the division.
+> Hi,
+> 
+> 
+> * On Sun, Feb 05, 2012 at 10:23:44PM +0100, Jesper Juhl <jj@chaosbits.net>
+> wrote:
+> > In xfs_setattr_nonsize(), xfs_trans_alloc() gets its memory from
+> > _xfs_trans_alloc() which gets it from kmem_zone_zalloc() which may
+> > fail and return NULL. So this:
+> > 
+> > 	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
+> > 
+> > may result in a NULL 'tp'.
+> > If it does, then the call:
+> > 
+> > 	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
+> > 
+> > with a NULL 'tp' will explode, since xfs_trans_reserve() dereferences
+> > its first argument unconditionally.
+> > 
+> > And if the memory allocation for 'tp' goes well (and thus
+> > xfs_trans_reserve() does not explode) then we may leak the memory
+> > allocated to 'tp' if xfs_trans_reserve() returns error.
+> > 
+> > I believe this patch should fix both issues, but I'm not intimate with
+> > the XFS code at all, so there can easily be something I overlooked or
+> > something that should be done differently than what I did.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> > fs/xfs/xfs_iops.c |    7 ++++++-
+> > 1 files changed, 6 insertions(+), 1 deletions(-)
+> > 
+> > Note:
+> >  Please review carefully before applying.
+> >  Especially since I don't currently have any XFS filesystems to test
+> >  this on, nor any clear idea of a good way to actually test this if I
+> >  had. So this patch is compile tested only on my end.
+> > 
+> > diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+> > index ab30253..194c9d7 100644
+> > --- a/fs/xfs/xfs_iops.c
+> > +++ b/fs/xfs/xfs_iops.c
+> > @@ -575,9 +575,14 @@ xfs_setattr_nonsize(
+> > 	}
+> > 
+> > 	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
+> > +	if (!tp)
+> > +		goto out_dqrele;
+> > +
+> > 	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
+> > -	if (error)
+> > +	if (error) {
+> > +		xfs_trans_cancel(tp, 0);
+> > 		goto out_dqrele;
+> > +	}
+> > 
+> > 	xfs_ilock(ip, XFS_ILOCK_EXCL);
+> > 
+> > -- 
+> > 1.7.9
+> > 
+> > 
+> > Please CC me on replies.
+> > 
+[...]
+> 
+> The first one won't be triggered because kmem_zone_alloc (the last one in call
+> chain) checks for 
+>     if (ptr || (flags & (KM_MAYFAIL|KM_NOSLEEP)))
+> 
+> whereas xfs_trans_alloc  calls _xfs_trans_alloc with KM_SLEEP, also all other
+> callers of _xfs_trans_alloc call it with KM_SLEEP (except one which calls with
+> KM_NOFS), so it looks like we are safe there, it keeps spinning till it finds
+> mem.
+> 
+Good.
 
-Of course there's platforms, ARM?, where reverse is likely true. Bugger
-that.
+> 
+> As far as second one is concerned, looks fine, though this one should also do
+> the same.
+> 
+> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+> index ab30253..d331f5b 100644
+> --- a/fs/xfs/xfs_iops.c
+> +++ b/fs/xfs/xfs_iops.c
+> @@ -730,9 +730,9 @@ xfs_setattr_nonsize(
+>         return 0;
+> 
+> out_trans_cancel:
+> -       xfs_trans_cancel(tp, 0);
+>         xfs_iunlock(ip, XFS_ILOCK_EXCL);
+> out_dqrele:
+> +       xfs_trans_cancel(tp, 0);
+>         xfs_qm_dqrele(udqp);
+>         xfs_qm_dqrele(gdqp);
+>         return error;
+> 
 
-> +/* Precomputed \Sum y^k { 1<=k<=n } */
-> +const static u32 runnable_avg_yN_sum[] = {
-> +           0, 1002, 1982, 2941, 3880, 4798, 5697, 6576, 7437, 8279, 9103,
-> +        9909,10698,11470,12226,12966,13690,14398,15091,15769,16433,17082,
-> +       17718,18340,18949,19545,20128,20698,21256,21802,22336,22859,23371,
-> +}; 
+Thank you for the feedback.
 
-Right, can't see a fast way to compute this..
+I worry about the fact that this suddenly calls xfs_trans_cancel() without 
+holding the lock. I don't know if that's actually significant though. 
 
-The asymmetry in the tables annoys me though 32 vs 33 entries, hex vs
-dec :-)
+If it *is* significant, then I think the patch I just submitted in reply to 
+Dave Chinner is better since there we do the alloc and cancel before even 
+taking the lock at all in the leaky case and all other case have 
+identical behaviour as before.
+If it is *not* significant then your patch is probably better since that 
+means one less thing done while holding a lock.
+
+But I don't know enough XFS details to say which it is, so I'll leave it 
+to someone else to pick the best patch of the two for this.
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
