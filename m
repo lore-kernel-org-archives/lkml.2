@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab2BFWyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:54:00 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65191 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548Ab2BFWx7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:53:59 -0500
-Message-ID: <1328568833.2476.1.camel@edumazet-laptop>
-Subject: Re: [PATCH] bnx2x: Fix mem leak in bnx2x_tpa_stop() if build_skb()
- fails.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: netdev@vger.kernel.org, Eilon Greenstein <eilong@broadcom.com>,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Eliezer Tamir <eliezert@broadcom.com>
-Date: Mon, 06 Feb 2012 23:53:53 +0100
-In-Reply-To: <alpine.LNX.2.00.1202062224210.20532@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202062224210.20532@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1756127Ab2BFW4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:56:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48260 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755997Ab2BFW41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 17:56:27 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 07/15] netvm: Allow the use of __GFP_MEMALLOC by specific sockets
+Date: Mon,  6 Feb 2012 22:56:10 +0000
+Message-Id: <1328568978-17553-8-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1328568978-17553-1-git-send-email-mgorman@suse.de>
+References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 06 février 2012 à 22:28 +0100, Jesper Juhl a écrit :
-> We allocate memory for 'new_data' with kmalloc(). If we get the memory
-> we then try to build_skb() and if that should fail (which it can) we
-> do not enter 'if (likely(skb)) {' and actually use 'new_data' but
-> instead fall through to the 'drop:' label and end up returning from
-> the function without ever assigning 'new'data' to anything or freeing
-> it. That leaks the memory allocated to 'new_data'.
-> 
-> This patch fixes the memory leak by doing a kfree(new_data) in the
-> case where build_skb() fails (or where allocation of 'new_data' itself
-> fails, but in taht case it's just a harmless kfree(NULL)).
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
->  No hardware to test, so compile tested only.
-> 
-> diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-> index 03f3935..7aee469 100644
-> --- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-> +++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-> @@ -523,7 +523,6 @@ static void bnx2x_tpa_stop(struct bnx2x *bp, struct bnx2x_fastpath *fp,
->  		skb = build_skb(data);
->  
->  	if (likely(skb)) {
-> -
->  #ifdef BNX2X_STOP_ON_ERROR
->  		if (pad + len > fp->rx_buf_size) {
->  			BNX2X_ERR("skb_put is about to fail...  "
-> @@ -557,7 +556,7 @@ static void bnx2x_tpa_stop(struct bnx2x *bp, struct bnx2x_fastpath *fp,
->  
->  		return;
->  	}
-> -
-> +	kfree(new_data);
->  drop:
->  	/* drop the packet and keep the buffer in the bin */
->  	DP(NETIF_MSG_RX_STATUS,
-> -- 
-> 1.7.9
-> 
-> 
+Allow specific sockets to be tagged SOCK_MEMALLOC and use
+__GFP_MEMALLOC for their allocations. These sockets will be able to go
+below watermarks and allocate from the emergency reserve. Such sockets
+are to be used to service the VM (iow. to swap over). They must be
+handled kernel side, exposing such a socket to user-space is a bug.
 
-Good catch, my bad.
+There is a risk that the reserves be depleted so for now, the
+administrator is responsible for increasing min_free_kbytes as
+necessary to prevent deadlock for their workloads.
 
-Thanks
+[a.p.zijlstra@chello.nl: Original patches]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/net/sock.h |    5 ++++-
+ net/core/sock.c    |   22 ++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 1 deletions(-)
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-
-
+diff --git a/include/net/sock.h b/include/net/sock.h
+index a76e858..82b2148 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -579,6 +579,7 @@ enum sock_flags {
+ 	SOCK_RCVTSTAMPNS, /* %SO_TIMESTAMPNS setting */
+ 	SOCK_LOCALROUTE, /* route locally only, %SO_DONTROUTE setting */
+ 	SOCK_QUEUE_SHRUNK, /* write queue has been shrunk recently */
++	SOCK_MEMALLOC, /* VM depends on this socket for swapping */
+ 	SOCK_TIMESTAMPING_TX_HARDWARE,  /* %SOF_TIMESTAMPING_TX_HARDWARE */
+ 	SOCK_TIMESTAMPING_TX_SOFTWARE,  /* %SOF_TIMESTAMPING_TX_SOFTWARE */
+ 	SOCK_TIMESTAMPING_RX_HARDWARE,  /* %SOF_TIMESTAMPING_RX_HARDWARE */
+@@ -614,7 +615,7 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
+ 
+ static inline gfp_t sk_allocation(struct sock *sk, gfp_t gfp_mask)
+ {
+-	return gfp_mask;
++	return gfp_mask | (sk->sk_allocation & __GFP_MEMALLOC);
+ }
+ 
+ static inline void sk_acceptq_removed(struct sock *sk)
+@@ -755,6 +756,8 @@ extern int sk_stream_wait_memory(struct sock *sk, long *timeo_p);
+ extern void sk_stream_wait_close(struct sock *sk, long timeo_p);
+ extern int sk_stream_error(struct sock *sk, int flags, int err);
+ extern void sk_stream_kill_queues(struct sock *sk);
++extern void sk_set_memalloc(struct sock *sk);
++extern void sk_clear_memalloc(struct sock *sk);
+ 
+ extern int sk_wait_data(struct sock *sk, long *timeo);
+ 
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 3e81fd2..03069e0 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -267,6 +267,28 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
+ int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
+ EXPORT_SYMBOL(sysctl_optmem_max);
+ 
++/**
++ * sk_set_memalloc - sets %SOCK_MEMALLOC
++ * @sk: socket to set it on
++ *
++ * Set %SOCK_MEMALLOC on a socket for access to emergency reserves.
++ * It's the responsibility of the admin to adjust min_free_kbytes
++ * to meet the requirements
++ */
++void sk_set_memalloc(struct sock *sk)
++{
++	sock_set_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation |= __GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_set_memalloc);
++
++void sk_clear_memalloc(struct sock *sk)
++{
++	sock_reset_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation &= ~__GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_clear_memalloc);
++
+ #if defined(CONFIG_CGROUPS)
+ #if !defined(CONFIG_NET_CLS_CGROUP)
+ int net_cls_subsys_id = -1;
+-- 
+1.7.3.4
 
