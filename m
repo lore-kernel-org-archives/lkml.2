@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2BFRqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 12:46:46 -0500
-Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:57744 "HELO
-	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753662Ab2BFRqo (ORCPT
+	id S1753662Ab2BFRtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 12:49:45 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56324
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750844Ab2BFRto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 12:46:44 -0500
+	Mon, 6 Feb 2012 12:49:44 -0500
+Date: Mon, 6 Feb 2012 12:49:43 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/2] hfsplus: Add an ioctl to bless files
+Message-ID: <20120206174943.GA14225@infradead.org>
+References: <1328215191-4201-1-git-send-email-mjg@redhat.com>
+ <1328215191-4201-2-git-send-email-mjg@redhat.com>
+ <20120206173553.GB1135@infradead.org>
+ <20120206174549.GA1655@srcf.ucam.org>
 MIME-Version: 1.0
-In-Reply-To: <20120130202013.GJ30782@redhat.com>
-References: <1327557574-6125-1-git-send-email-roland@kernel.org>
- <alpine.LSU.2.00.1201261133230.1369@eggly.anvils> <CAG4TOxNEV2VY9wOE86p9RnKGqpruB32ci9Wq3yBt8O2zc7f05w@mail.gmail.com>
- <alpine.LSU.2.00.1201271458130.3402@eggly.anvils> <CAL1RGDXqguZ2QKV=yjLXtk2n_Ag4Nf3CW+kF2BFQFR4ySTNaRA@mail.gmail.com>
- <20120130202013.GJ30782@redhat.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Mon, 6 Feb 2012 09:46:23 -0800
-X-Google-Sender-Auth: muut9WgQdEYv-LkTjlRMZj22_IU
-Message-ID: <CAL1RGDUzYTVJJNwYzraObNvkZmOT=1oR4gBL2hKhB2harAiLLw@mail.gmail.com>
-Subject: Re: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages() parameters
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>, linux-rdma@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206174549.GA1655@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrea, sorry for the slow reply, had to work on other stuff for a bit.
+On Mon, Feb 06, 2012 at 05:45:49PM +0000, Matthew Garrett wrote:
+> On Mon, Feb 06, 2012 at 12:35:53PM -0500, Christoph Hellwig wrote:
+> > +#define HFSPLUS_IOC_BLESS              _IO('f', 0x20)
+> > 
+> > I'd probably move this to fs.h and follow the numbering there,
+> > otherwise we are bound to run into conflicts.
+> 
+> Ok. Any problem with leaving something filesystem specific in there?
 
-On Mon, Jan 30, 2012 at 12:20 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> If you map it with an mmap(PROT_READ|PROT_WRITE), force or not force
-> won't change a thing in terms of cows. Just make sure you map your
-> control memory right, then safely remove force=1 and you won't get the
-> control page cowed by mistake. Then if you map it with MAP_SHARED it
-> won't be mapped read-only by fork() (leading to either parent or child
-> losing the control on the device), Hugh already suggested you to use
-> MAP_SHARED instead of MAP_PRIVATE.
+Leaving it in hfsplus sounds fine, but I'd avoid using 'f' then just to
+reduce the chance for overlap.
 
-Actually this isn't about control memory for the RDMA adapter...
-as you mentioned that typically is MMIO and mapped with remap_pfn
-stuff, without using any GUP stuff.
+> >From the spec:
+> 
+> "finderInfo[0] contains the directory ID of the directory containing the 
+> bootable system (for example, the System Folder in Mac OS 8 or 9, or 
+> /System/Library/CoreServices in Mac OS X). It is zero if there is no 
+> bootable system on the volume. This value is typically equal to either 
+> finderInfo[3] or finderInfo[5]."
+> 
+> finderInfo[3] is the OS8/9 system folder, finderInfo[5] is the OS X one. 
+> I'd guess it's just to indicate whether the boot media should default to 
+> OS8/9 or OS X, but it's not entirely clear.
 
-I'm talking about the registration of other memory for reading/writing
-by a remote system via RDMA.
+Care to add this explanation as a comment?
 
-The reason I'm talking about exporting kernel memory is that I wanted
-to do a debugging trick where a kernel module exposed some state
-into an mmap'able buffer.  And I wanted to be able to read that state
-even if my broken module killed the whole system (in fact exactly
-when things crash I want to be able to read the state to figure out
-why I crashed!).
-
-So I wrote a trivial userspace program that does nothing but mmap
-the buffer, accept RDMA connections from remote systems, and
-map the buffer for reading over those connections.  Then I can have
-a second system that connects to that process and polls the buffer.
-
-Because all the RDMA state is setup in advance, I can keep polling
-even after the first system panics.  It's sort of like that firewire remote
-debugging, except I only get access to a limited memory buffer.
-
-The only difficulty is the problem that started this thread, ie a bogus
-COW so the remote system ends up polling the wrong pages.  So with
-my original patch, I'm able to debug but I guess we agree it's the
-wrong fix for the general problem, and I'll write up a patch that adds
-what I think is the correct fix (the new FOLL flag) soon.
-
- - R.
