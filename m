@@ -1,135 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab2BFPdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 10:33:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47043 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754861Ab2BFPdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 10:33:14 -0500
-Date: Mon, 6 Feb 2012 16:33:12 +0100
-From: Jan Kara <jack@suse.cz>
-To: Eric Sandeen <sandeen@sandeen.net>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 2/8] vfs: Protect write paths by sb_start_write -
- sb_end_write
-Message-ID: <20120206153312.GE6890@quack.suse.cz>
-References: <1327091686-23177-1-git-send-email-jack@suse.cz>
- <1327091686-23177-3-git-send-email-jack@suse.cz>
- <4F2E1E12.2030308@sandeen.net>
+	id S1755389Ab2BFPer (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 10:34:47 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:57268 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab2BFPeq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 10:34:46 -0500
+Date: Mon, 6 Feb 2012 16:34:08 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, mingo@elte.hu, robert.richter@amd.com,
+        eric.dumazet@gmail.com, Borislav Petkov <bp@amd64.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [BUG] perf: perf sched warning possibly due to clock granularity
+ on AMD
+Message-ID: <20120206153408.GA31237@aftab>
+References: <20120206132546.GA30854@quad>
+ <1328538403.2482.4.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F2E1E12.2030308@sandeen.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1328538403.2482.4.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 05-02-12 00:13:38, Eric Sandeen wrote:
-> On 1/20/12 2:34 PM, Jan Kara wrote:
-> > There are three entry points which dirty pages in a filesystem.  mmap (handled
-> > by block_page_mkwrite()), buffered write (handled by
-> > __generic_file_aio_write()), and truncate (it can dirty last partial page -
-> > handled inside each filesystem separately). Protect these places with
-> > sb_start_write() and sb_end_write().
-> 
-> The protection for truncate got lost since the first patchset, was that
-> on purpose?
-  It was not lost but it got moved down into the filesystem. I forgot to
-update the changelog. But after Dave's comments I think it can go back into
-VFS. Just lockdep complained about deadlocks in my first naive approach -
-that's why I started doing weird things with XFS locks after all.
++ Andreas.
 
-  Anyway now I'm wiser regarding XFS locking and I also have better idea
-how to achive proper lock ordering in VFS. Just we are finishing SLE11 SP2
-so I didn't get to writing the patches last week... But I should get to it
-maybe even today and if not then at least during this week ;)
+On Mon, Feb 06, 2012 at 03:26:43PM +0100, Peter Zijlstra wrote:
+> On Mon, 2012-02-06 at 14:25 +0100, Stephane Eranian wrote:
+> > In summary, two issues:
+> >   - Why is sched_clock_stable not set or even tested on recent AMD systems?
 
-									Honza
+AFAICT, sched_clock_stable is set on Intel under the following conditions:
 
-> > Acked-by: "Theodore Ts'o" <tytso@mit.edu>
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> >  fs/buffer.c  |   22 ++++------------------
-> >  mm/filemap.c |    3 ++-
-> >  2 files changed, 6 insertions(+), 19 deletions(-)
-> > 
-> > diff --git a/fs/buffer.c b/fs/buffer.c
-> > index 19d8eb7..550714d 100644
-> > --- a/fs/buffer.c
-> > +++ b/fs/buffer.c
-> > @@ -2338,8 +2338,8 @@ EXPORT_SYMBOL(block_commit_write);
-> >   * beyond EOF, then the page is guaranteed safe against truncation until we
-> >   * unlock the page.
-> >   *
-> > - * Direct callers of this function should call vfs_check_frozen() so that page
-> > - * fault does not busyloop until the fs is thawed.
-> > + * Direct callers of this function should protect against filesystem freezing
-> > + * using sb_start_write() - sb_end_write() functions.
-> >   */
-> >  int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
-> >  			 get_block_t get_block)
-> > @@ -2371,18 +2371,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
-> >  
-> >  	if (unlikely(ret < 0))
-> >  		goto out_unlock;
-> > -	/*
-> > -	 * Freezing in progress? We check after the page is marked dirty and
-> > -	 * with page lock held so if the test here fails, we are sure freezing
-> > -	 * code will wait during syncing until the page fault is done - at that
-> > -	 * point page will be dirty and unlocked so freezing code will write it
-> > -	 * and writeprotect it again.
-> > -	 */
-> >  	set_page_dirty(page);
-> > -	if (inode->i_sb->s_frozen != SB_UNFROZEN) {
-> > -		ret = -EAGAIN;
-> > -		goto out_unlock;
-> > -	}
-> >  	wait_on_page_writeback(page);
-> >  	return 0;
-> >  out_unlock:
-> > @@ -2397,12 +2386,9 @@ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
-> >  	int ret;
-> >  	struct super_block *sb = vma->vm_file->f_path.dentry->d_inode->i_sb;
-> >  
-> > -	/*
-> > -	 * This check is racy but catches the common case. The check in
-> > -	 * __block_page_mkwrite() is reliable.
-> > -	 */
-> > -	vfs_check_frozen(sb, SB_FREEZE_WRITE);
-> > +	sb_start_write(sb, SB_FREEZE_WRITE);
-> >  	ret = __block_page_mkwrite(vma, vmf, get_block);
-> > +	sb_end_write(sb, SB_FREEZE_WRITE);
-> >  	return block_page_mkwrite_return(ret);
-> >  }
-> >  EXPORT_SYMBOL(block_page_mkwrite);
-> > diff --git a/mm/filemap.c b/mm/filemap.c
-> > index c0018f2..471b9ae 100644
-> > --- a/mm/filemap.c
-> > +++ b/mm/filemap.c
-> > @@ -2529,7 +2529,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
-> >  	count = ocount;
-> >  	pos = *ppos;
-> >  
-> > -	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
-> > +	sb_start_write(inode->i_sb, SB_FREEZE_WRITE);
-> >  
-> >  	/* We can write back this queue in page reclaim */
-> >  	current->backing_dev_info = mapping->backing_dev_info;
-> > @@ -2601,6 +2601,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
-> >  				pos, ppos, count, written);
-> >  	}
-> >  out:
-> > +	sb_end_write(inode->i_sb, SB_FREEZE_WRITE);
-> >  	current->backing_dev_info = NULL;
-> >  	return written ? written : err;
-> >  }
-> 
+        /*
+         * c->x86_power is 8000_0007 edx. Bit 8 is TSC runs at constant rate
+         * with P/T states and does not stop in deep C-states.
+         *
+         * It is also reliable across cores and sockets. (but not across
+         * cabinets - we turn it off in that case explicitly.)
+         */
+        if (c->x86_power & (1 << 8)) {
+                set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+                set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
+                if (!check_tsc_unstable())
+                        sched_clock_stable = 1;
+        }
+
+and yes, we can do CONSTANT_TSC and NONSTOP_TSC on the now older F10h
+already, so Bulldozer can do that too, implicitly.
+
+I don't see why sched_clock_stable shouldn't be moved to generic x86
+code and set based on the two CPUID cap flags above.
+
+HTH.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
