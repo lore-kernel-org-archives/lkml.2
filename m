@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab2BFRf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 12:35:56 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56270
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750797Ab2BFRfy (ORCPT
+	id S1752746Ab2BFRhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 12:37:19 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:35391 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab2BFRhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 12:35:54 -0500
-Date: Mon, 6 Feb 2012 12:35:53 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org
-Subject: Re: [PATCH V2 2/2] hfsplus: Add an ioctl to bless files
-Message-ID: <20120206173553.GB1135@infradead.org>
-References: <1328215191-4201-1-git-send-email-mjg@redhat.com>
- <1328215191-4201-2-git-send-email-mjg@redhat.com>
+	Mon, 6 Feb 2012 12:37:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328215191-4201-2-git-send-email-mjg@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <CAOgv-ziomS-+ML0Xb4oSoWTjzkG8BBBQcMjXwn7rjQV2pFtQ6Q@mail.gmail.com>
+References: <CAOgv-ziomS-+ML0Xb4oSoWTjzkG8BBBQcMjXwn7rjQV2pFtQ6Q@mail.gmail.com>
+Date: Mon, 6 Feb 2012 11:37:16 -0600
+Message-ID: <CAOgv-ziVnp_3aUPacgRNBQ2vgZAA5MxdB9xAfoQw4xocAWQDgg@mail.gmail.com>
+Subject: Re: Soft lockup problem
+From: Gerard Saraber <gsaraber@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+#define HFSPLUS_IOC_BLESS              _IO('f', 0x20)
+Also totally forgot, possibly quite important information, most of the
+disks are connected via a pair of LSI controllers:
 
-I'd probably move this to fs.h and follow the numbering there,
-otherwise we are bound to run into conflicts.
+08:00.0 SCSI storage controller: LSI Logic / Symbios Logic SAS1068E
+PCI-Express Fusion-MPT SAS (rev 08)
+0a:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS
+2008 [Falcon] (rev 03)
 
-> +static int hfsplus_ioctl_bless(struct file *file, int __user *user_flags)
+a couple disks are connected with the onboard Intel SATA controller..
 
-Care to add a little comment on what this ioctl does, bless is a bit
-of a generic name.
+-Gerard Saraber
 
-> +{
-> +	struct inode *inode = file->f_dentry->d_inode;
-
-Please use file->f_path.dentry instead of the f_dentry define, please.
-
-Also given that we use the dentry almost as often I'd pull it into a
-local variable as well.
-
-> +	mutex_lock(&sbi->vh_mutex);
-> +	vh->finder_info[0] = bvh->finder_info[0] =
-> +		cpu_to_be32(parent_ino(file->f_dentry));
-> +	vh->finder_info[1] = bvh->finder_info[1] = cpu_to_be32(inode->i_ino);
-> +	vh->finder_info[5] = bvh->finder_info[5] =
-> +		cpu_to_be32(parent_ino(file->f_dentry));
-
-Any idea why we write the parent twice?
-
-
-
-Not directly relevant, but where do you plan to put the userspace to
-call this ioctl?
+On Mon, Feb 6, 2012 at 9:40 AM, Gerard Saraber <gsaraber@gmail.com> wrote:
+> Greetings everyone,
+> I've been having a bit of a problem since upgrading to the linux 3.x
+> series, I have a machine that we're using as a NAS that runs various
+> rsync processes (mostly at night), lately after a day or two, I will
+> come in in the morning to a load average of 49, but the machine not
+> really doing anything, when trying to run 'dstat' the command just
+> hung with no output at all. there were no errors in the logs, or even
+> anything that would vaguely point at anything I could work with.
+> So needing to get the machine back to work I attempted to reboot it
+> "shutdown -r now" on console... it gives a nice message saying it's
+> going to reboot, but nothing ever happens.. the only way to reboot it
+> is by using ctrl + alt + sysrq + b. after which the machine reboots
+> and the raid array comes back clean.
+>
+> I'm not sure how to troubleshoot this, any pointers would be appreciated.
+>
+> I'm compiling 3.2.4 at the moment and found a bunch of possibly useful
+> options in the kernel debugging section:
+> detect hard/soft lockups and detect hung tasks, maybe it'll give me
+> something more to go on.
+>
+> Some details about the machine:
+> Linux xenbox 3.2.2 #1 SMP Sun Jan 29 10:28:22 CST 2012 x86_64 Intel(R)
+> Xeon(R) CPU 5140 @ 2.33GHz GenuineIntel GNU/Linux
+> It has 3 software raid arrays (2 x 5 drives and 1 x 4 drives) LVM'ed
+> together into a 23TB XFS filesystem.
+> 6GB memory and a pair of Intel Gigabit ethernet controllers bonded together.
