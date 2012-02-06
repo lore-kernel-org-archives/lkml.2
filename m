@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab2BFOvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 09:51:15 -0500
-Received: from kamaji.grokhost.net ([87.117.218.43]:57640 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135Ab2BFOvN (ORCPT
+	id S1755178Ab2BFOvx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 09:51:53 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:31791 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754965Ab2BFOvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 09:51:13 -0500
-Message-ID: <4F2FE8DA.70502@bootc.net>
-Date: Mon, 06 Feb 2012 14:51:06 +0000
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Mon, 6 Feb 2012 09:51:52 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: XrT2tM4VM1n33gsRGu4oVESldItC1NCCWWbmaN57yfVqFs.
+ 9CY5qWsm0KSXjXZPyjAZ7Q5_n.dOnH4AWURo6omGHyg5UfqECQXGEQRP5O1z
+ RjYGuWun66pq0N1_B4KKTutk2Ev2DUDqZ15pOjZdUWmzJx6eHUj39_Y5aj_y
+ f_MVwRLQ.JnG0AhMv22FNtVZ9_X.KEqHj9wSvBn6vYwY5Y69WU4m4okJ9Rai
+ 48j6Olk8VLyKgCb34kyvkN_lB36iarct1cu3SgVmmeSL12T1pwafSkUvrOWo
+ _fBJtnuytgjUZbYeouwztyb_zDpwYQ7DMHw7DBd7nVfDL_fntNHJI_IxCokA
+ yaRAsfr2UxX_ZH041A2urJGkrmG4xnDzLC.yQsLBuX82DROU.folfxbZd5du
+ zCHkYj7kzDUtHu.SU0IY2w0upeDiGqTSWi2w-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 6 Feb 2012 08:51:48 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dave Young <dyoung@redhat.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, xiyou.wangcong@gmail.com,
+        penberg@kernel.org, fengguang.wu@intel.com
+Subject: Re: [PATCH 2/3] move slabinfo.c to tools/vm
+In-Reply-To: <20120205081550.GA2247@darkstar.redhat.com>
+Message-ID: <alpine.DEB.2.00.1202060851260.393@router.home>
+References: <20120205081550.GA2247@darkstar.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: target-devel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Andy Grover <agrover@redhat.com>, linux-scsi@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: FireWire/SBP2 Target mode
-References: <4E4BD560.4010806@bootc.net> <4E4D3B88.30003@ladisch.de> <4F29978A.3010707@redhat.com> <20120201224156.0773ebc6@stein> <4F2A55B9.4040005@panasas.com> <4F2A60DC.9030007@ladisch.de> <4F2FD1F4.9050702@bootc.net> <4F2FE705.3070509@ladisch.de>
-In-Reply-To: <4F2FE705.3070509@ladisch.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2012 14:43, Clemens Ladisch wrote:
-> Chris Boot wrote:
->> You can pull the code from:
->> git://github.com/bootc/Linux-SBP-2-Target.git
->
-> The TODO file says:
->> * Update Juju so we can get the speed in the fw_address_handler callback
->
-> What is the speed needed for?
+On Sun, 5 Feb 2012, Dave Young wrote:
 
-"The speed at which the block write request to the MANAGEMENT_AGENT 
-register is received shall determine the speed used by the target for 
-all subsequent requests to read the initiator’s configuration ROM, fetch 
-ORB’s from initiator memory or store status at the initiator’s 
-status_FIFO. Command block ORB’s separately specify the speed for 
-requests addressed to the data buffer or page table."
+> We have tools/vm/ folder for vm tools, so move slabinfo.c
+> from tools/slub/ to tools/vm/
 
-(T10/1155D Revision 4 page 53/54)
-
-> SBP-2 says:
-> | The target shall issue data transfer requests with a speed equal to
-> | that specified by the spd field in the ORB.
->
-> SBP-3 says:
-> | The target shall issue data transfer requests with a speed equal to
-> | that specified by the controlling spd field, whether in the ORB or in
-> | a node selector in an associated page table.
-
->> Please note that you can't then disable a unit until all the targets
->> are logged-out. For Linux this usually means 'rmmod firewire_sbp2'.
->
-> That driver should not, by default, log into targets on its own node.
-
-It still tries to and never appears to give up, so this needs 
-blacklisting on the target system until firewire_sbp2 is changed. It's 
-harmless other than filling up the kernel log with error messages.
-
-What I meant, however, is if you connect to the target from a separate 
-Linux system you will be unable to disable the unit on the target system 
-until the _initiator_ logs out. You can do this on the initiator by 
-unloading the module, which sends a logout request to the target.
-
-HTH,
-Chris
-
--- 
-Chris Boot
-bootc@bootc.net
+Acked-by: Christoph Lameter <cl@linux.com>
