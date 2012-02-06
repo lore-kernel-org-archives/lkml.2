@@ -1,148 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab2BFUvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 15:51:25 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12399 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab2BFUvY (ORCPT
+	id S1755635Ab2BFUx7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 15:53:59 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58970 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287Ab2BFUx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 15:51:24 -0500
-Date: Mon, 6 Feb 2012 21:51:54 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Raghavendra D Prabhu <raghu.prabhu13@gmail.com>
-cc: xfs@oss.sgi.com, xfs-masters@oss.sgi.com, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH][RFC] XFS: Fix mem leak and possible NULL deref in
- xfs_setattr_nonsize()
-In-Reply-To: <20120206091100.GA4350@Xye>
-Message-ID: <alpine.LNX.2.00.1202062145240.20117@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202052220390.32529@swampdragon.chaosbits.net> <20120206091100.GA4350@Xye>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 6 Feb 2012 15:53:57 -0500
+Date: Mon, 6 Feb 2012 21:53:54 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, eric.dumazet@gmail.com,
+        markus@trippelsdorf.de, paulus@samba.org
+Subject: [PATCH] perf: fix assertion failure in x86_pmu_start()
+Message-ID: <20120206205354.GA31186@quad>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Feb 2012, Raghavendra D Prabhu wrote:
 
-> Hi,
-> 
-> 
-> * On Sun, Feb 05, 2012 at 10:23:44PM +0100, Jesper Juhl <jj@chaosbits.net>
-> wrote:
-> > In xfs_setattr_nonsize(), xfs_trans_alloc() gets its memory from
-> > _xfs_trans_alloc() which gets it from kmem_zone_zalloc() which may
-> > fail and return NULL. So this:
-> > 
-> > 	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
-> > 
-> > may result in a NULL 'tp'.
-> > If it does, then the call:
-> > 
-> > 	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
-> > 
-> > with a NULL 'tp' will explode, since xfs_trans_reserve() dereferences
-> > its first argument unconditionally.
-> > 
-> > And if the memory allocation for 'tp' goes well (and thus
-> > xfs_trans_reserve() does not explode) then we may leak the memory
-> > allocated to 'tp' if xfs_trans_reserve() returns error.
-> > 
-> > I believe this patch should fix both issues, but I'm not intimate with
-> > the XFS code at all, so there can easily be something I overlooked or
-> > something that should be done differently than what I did.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> > fs/xfs/xfs_iops.c |    7 ++++++-
-> > 1 files changed, 6 insertions(+), 1 deletions(-)
-> > 
-> > Note:
-> >  Please review carefully before applying.
-> >  Especially since I don't currently have any XFS filesystems to test
-> >  this on, nor any clear idea of a good way to actually test this if I
-> >  had. So this patch is compile tested only on my end.
-> > 
-> > diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-> > index ab30253..194c9d7 100644
-> > --- a/fs/xfs/xfs_iops.c
-> > +++ b/fs/xfs/xfs_iops.c
-> > @@ -575,9 +575,14 @@ xfs_setattr_nonsize(
-> > 	}
-> > 
-> > 	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
-> > +	if (!tp)
-> > +		goto out_dqrele;
-> > +
-> > 	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
-> > -	if (error)
-> > +	if (error) {
-> > +		xfs_trans_cancel(tp, 0);
-> > 		goto out_dqrele;
-> > +	}
-> > 
-> > 	xfs_ilock(ip, XFS_ILOCK_EXCL);
-> > 
-> > -- 
-> > 1.7.9
-> > 
-> > 
-> > Please CC me on replies.
-> > 
-[...]
-> 
-> The first one won't be triggered because kmem_zone_alloc (the last one in call
-> chain) checks for 
->     if (ptr || (flags & (KM_MAYFAIL|KM_NOSLEEP)))
-> 
-> whereas xfs_trans_alloc  calls _xfs_trans_alloc with KM_SLEEP, also all other
-> callers of _xfs_trans_alloc call it with KM_SLEEP (except one which calls with
-> KM_NOFS), so it looks like we are safe there, it keeps spinning till it finds
-> mem.
-> 
-Good.
+The following patch fixes an issue introduced by the following
+commit:
+        e050e3f0a71b ("perf: Fix broken interrupt rate throttling")
 
-> 
-> As far as second one is concerned, looks fine, though this one should also do
-> the same.
-> 
-> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-> index ab30253..d331f5b 100644
-> --- a/fs/xfs/xfs_iops.c
-> +++ b/fs/xfs/xfs_iops.c
-> @@ -730,9 +730,9 @@ xfs_setattr_nonsize(
->         return 0;
-> 
-> out_trans_cancel:
-> -       xfs_trans_cancel(tp, 0);
->         xfs_iunlock(ip, XFS_ILOCK_EXCL);
-> out_dqrele:
-> +       xfs_trans_cancel(tp, 0);
->         xfs_qm_dqrele(udqp);
->         xfs_qm_dqrele(gdqp);
->         return error;
-> 
+The patch caused the following warning to pop up depending on
+the sampling frequency adjustments:
 
-Thank you for the feedback.
+[89214.962603] ------------[ cut here ]------------
+[89214.967441] WARNING: at arch/x86/kernel/cpu/perf_event.c:995 x86_pmu_start+0x79/0xd4()
+[89214.975825] Hardware name: X8DTN
+[89214.979268] Modules linked in:
+[89214.982560] Pid: 0, comm: swapper/6 Not tainted 3.3.0-rc2-tip+ #1
+[89214.988865] Call Trace:
+[89214.991533]  <IRQ>  [<ffffffff81065cc7>] warn_slowpath_common+0x7e/0x97
+[89214.998379]  [<ffffffff81065cf5>] warn_slowpath_null+0x15/0x17
+[89215.004428]  [<ffffffff8103f626>] x86_pmu_start+0x79/0xd4
+[89215.010042]  [<ffffffff810e30d1>] perf_adjust_freq_unthr_context.part.63+0xef/0x123
+[89215.018123]  [<ffffffff810e318c>] perf_event_task_tick+0x87/0x1c1
+[89215.024463]  [<ffffffff810a2370>] ? tick_nohz_handler+0xda/0xda
+[89215.030595]  [<ffffffff8108b819>] scheduler_tick+0xd1/0xf3
+[89215.036296]  [<ffffffff810720b0>] update_process_times+0x5e/0x6f
+[89215.042512]  [<ffffffff810a23e0>] tick_sched_timer+0x70/0x99
+[89215.048387]  [<ffffffff810823f9>] __run_hrtimer+0x8c/0x148
+[89215.054087]  [<ffffffff81082add>] hrtimer_interrupt+0xc1/0x18c
 
-I worry about the fact that this suddenly calls xfs_trans_cancel() without 
-holding the lock. I don't know if that's actually significant though. 
+It was caused by the following call sequence:
 
-If it *is* significant, then I think the patch I just submitted in reply to 
-Dave Chinner is better since there we do the alloc and cancel before even 
-taking the lock at all in the leaky case and all other case have 
-identical behaviour as before.
-If it is *not* significant then your patch is probably better since that 
-means one less thing done while holding a lock.
+perf_adjust_freq_unthr_context.part() {
+     stop()
+     if (delta > 0) {
+          perf_adjust_period() {
+              if (period > 8*...) {
+                  stop()
+                  ...
+                  start()
+              }
+          }
+      }
+      start()
+}
 
-But I don't know enough XFS details to say which it is, so I'll leave it 
-to someone else to pick the best patch of the two for this.
+Which caused a double start and a double stop, thus triggering the assert
+in x86_pmu_start().
 
+The patch fixes the problem by avoiding the double calls. We pass a new
+argument to perf_adjust_period() to indicate whether or not the event
+is already stopped. We can't just remove the start/stop from that function
+because it's called from __perf_event_overflow where the event needs to
+be reloaded via a stop/start back-toback call.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+The patch reintroduces the assertion in x86_pmu_start() which was removed
+by commit:
+	84f2b9b perf: Remove deprecated WARN_ON_ONCE()
 
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 3c44b71..f8bddb5 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -988,6 +988,9 @@ static void x86_pmu_start(struct perf_event *event, int flags)
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	int idx = event->hw.idx;
+ 
++	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
++		return;
++
+ 	if (WARN_ON_ONCE(idx == -1))
+ 		return;
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 7c3b9de..ee151f4 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2303,7 +2303,9 @@ do {					\
+ static DEFINE_PER_CPU(int, perf_throttled_count);
+ static DEFINE_PER_CPU(u64, perf_throttled_seq);
+ 
+-static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
++static void perf_adjust_period(struct perf_event *event, u64 nsec,
++			       u64 count,
++			       bool dostop)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	s64 period, sample_period;
+@@ -2322,9 +2324,13 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ 	hwc->sample_period = sample_period;
+ 
+ 	if (local64_read(&hwc->period_left) > 8*sample_period) {
+-		event->pmu->stop(event, PERF_EF_UPDATE);
++		if (dostop)
++			event->pmu->stop(event, PERF_EF_UPDATE);
++
+ 		local64_set(&hwc->period_left, 0);
+-		event->pmu->start(event, PERF_EF_RELOAD);
++
++		if (dostop)
++			event->pmu->start(event, PERF_EF_RELOAD);
+ 	}
+ }
+ 
+@@ -2381,9 +2387,12 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
+ 		/*
+ 		 * restart the event
+ 		 * reload only if value has changed
++		 * we have stopped the event so tell that
++		 * to perf_adjust_period() to avoid stopping it
++		 * twice.
+ 		 */
+ 		if (delta > 0)
+-			perf_adjust_period(event, period, delta);
++			perf_adjust_period(event, period, delta, false);
+ 
+ 		event->pmu->start(event, delta > 0 ? PERF_EF_RELOAD : 0);
+ 	}
+@@ -4567,7 +4576,8 @@ static int __perf_event_overflow(struct perf_event *event,
+ 		hwc->freq_time_stamp = now;
+ 
+ 		if (delta > 0 && delta < 2*TICK_NSEC)
+-			perf_adjust_period(event, delta, hwc->last_period);
++			perf_adjust_period(event, delta,
++					   hwc->last_period, true);
+ 	}
+ 
+ 	/*
