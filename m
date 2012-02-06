@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab2BFShB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 13:37:01 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:59458 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751121Ab2BFShA (ORCPT
+	id S1755722Ab2BFSkJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 13:40:09 -0500
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:44545 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755538Ab2BFSkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 13:37:00 -0500
-X-Sasl-enc: bnXOPM3CGTF1YMnbbD1iiTWvQjcOJEMbc/7GXra6otwQ 1328553419
-Date: Mon, 6 Feb 2012 10:29:56 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: kobject (ffff88003ffbb4b8): tried to init an initialized object,
- something is seriously wrong.
-Message-ID: <20120206182956.GA13819@kroah.com>
-References: <20120203205953.GA2897@phenom.dumpdata.com>
- <20120203213949.GC8196@kroah.com>
- <20120203214235.GA10549@kroah.com>
- <20120206182040.GA1862@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120206182040.GA1862@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Feb 2012 13:40:07 -0500
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Yevgeny Petrilin <yevgenyp@mellanox.co.il>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Eugenia Emantayev <eugenia@mellanox.co.il>,
+        Alexander Guller <alexg@mellanox.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Subject: [PATCH 2/2] mlx4: fix DMA mapping leak when allocation fails
+Date: Mon,  6 Feb 2012 16:39:50 -0200
+Message-Id: <1328553590-27677-2-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1328553590-27677-1-git-send-email-cascardo@linux.vnet.ibm.com>
+References: <1328553590-27677-1-git-send-email-cascardo@linux.vnet.ibm.com>
+x-cbid: 12020618-8936-0000-0000-000005D50B4C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 01:20:40PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Fri, Feb 03, 2012 at 01:42:35PM -0800, Greg KH wrote:
-> > On Fri, Feb 03, 2012 at 01:39:49PM -0800, Greg KH wrote:
-> > > On Fri, Feb 03, 2012 at 03:59:53PM -0500, Konrad Rzeszutek Wilk wrote:
-> > > > Hey Greg,
-> > > > 
-> > > > With or without your previous patch (the one that added an cpu_device_release
-> > > > function) I am getting this in 3.3-rc2.  I did not get this in 3.2.
-> > > > 
-> > > > I added some extra printks to make sure that the handle_vcpu_hotplug_event
-> > > > code actually did call 'arch_unregister_cpu' which is certainly looks
-> > > > to be doing.
-> > > > 
-> > > > I hadn't done a bisection yet, but was wondering if this is related
-> > > > to the previous issues with the sysdev. Or kobject getting more observant.
-> > > 
-> > > No, it's related to the previous issue, let me knock up a patch to fix
-> > > this as well...
-> > 
-> > Does this patch solve the problem for you?
-> 
-> Yeah, no warnings. But neither is the CPU coming back up :-(
+mlx4_en_prepare_rx_desc does not correctly clean up after it finds an
+allocation failure. It should unmap a page before calling put_page, but
+it only calls the later.
 
-Very wierd.
+This bug would prevent a device removal using hotplug after setting the
+device MTU to 9000 and opening the network interface. After the fix, we
+still see the allocation failure with MTU 9000, but we are able to
+remove the device.
 
-> Thought that might be related to something else  - let me double check
-> with 3.2 whether there are some race-conditions that I might be hitting.
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+---
+ drivers/net/ethernet/mellanox/mlx4/en_rx.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Ok, I'll wait to queue this up until you get back to me.
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_rx.c b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
+index d1c631e..d4ad8c2 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_rx.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
+@@ -168,8 +168,12 @@ static int mlx4_en_prepare_rx_desc(struct mlx4_en_priv *priv,
+ 	return 0;
+ 
+ err:
+-	while (i--)
++	while (i--) {
++		dma_addr_t dma = be64_to_cpu(rx_desc->data[i].addr);
++		pci_unmap_single(priv->mdev->pdev, dma, skb_frags[i].size,
++				 PCI_DMA_FROMDEVICE);
+ 		put_page(skb_frags[i].page);
++	}
+ 	return -ENOMEM;
+ }
+ 
+-- 
+1.7.4.4
 
-greg k-h
