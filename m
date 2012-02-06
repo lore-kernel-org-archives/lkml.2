@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab2BFRhT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 12:37:19 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:35391 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab2BFRhR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 12:37:17 -0500
+	id S1753158Ab2BFRhs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 12:37:48 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52235 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751130Ab2BFRhq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 12:37:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAOgv-ziomS-+ML0Xb4oSoWTjzkG8BBBQcMjXwn7rjQV2pFtQ6Q@mail.gmail.com>
-References: <CAOgv-ziomS-+ML0Xb4oSoWTjzkG8BBBQcMjXwn7rjQV2pFtQ6Q@mail.gmail.com>
-Date: Mon, 6 Feb 2012 11:37:16 -0600
-Message-ID: <CAOgv-ziVnp_3aUPacgRNBQ2vgZAA5MxdB9xAfoQw4xocAWQDgg@mail.gmail.com>
-Subject: Re: Soft lockup problem
-From: Gerard Saraber <gsaraber@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <20120206.114505.1068389709235471266.davem@davemloft.net>
+References: <cf736034e7bd407297e2ea9fbf247fb410eb7b39.1328445742.git.netdev@pradeepdalvi.com>
+	<20120206.114505.1068389709235471266.davem@davemloft.net>
+Date: Mon, 6 Feb 2012 23:07:44 +0530
+Message-ID: <CA+Dx6HaYkYCB3d8Md-LdEg8ER1qL=Jj1XRPwA9NHHg_LUS-o5A@mail.gmail.com>
+Subject: Re: [PATCH v5 1/5] netdev: ethernet dev_alloc_skb to netdev_alloc_skb
+From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also totally forgot, possibly quite important information, most of the
-disks are connected via a pair of LSI controllers:
-
-08:00.0 SCSI storage controller: LSI Logic / Symbios Logic SAS1068E
-PCI-Express Fusion-MPT SAS (rev 08)
-0a:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS
-2008 [Falcon] (rev 03)
-
-a couple disks are connected with the onboard Intel SATA controller..
-
--Gerard Saraber
-
-On Mon, Feb 6, 2012 at 9:40 AM, Gerard Saraber <gsaraber@gmail.com> wrote:
-> Greetings everyone,
-> I've been having a bit of a problem since upgrading to the linux 3.x
-> series, I have a machine that we're using as a NAS that runs various
-> rsync processes (mostly at night), lately after a day or two, I will
-> come in in the morning to a load average of 49, but the machine not
-> really doing anything, when trying to run 'dstat' the command just
-> hung with no output at all. there were no errors in the logs, or even
-> anything that would vaguely point at anything I could work with.
-> So needing to get the machine back to work I attempted to reboot it
-> "shutdown -r now" on console... it gives a nice message saying it's
-> going to reboot, but nothing ever happens.. the only way to reboot it
-> is by using ctrl + alt + sysrq + b. after which the machine reboots
-> and the raid array comes back clean.
+On Mon, Feb 6, 2012 at 10:15 PM, David Miller <davem@davemloft.net> wrote:
+> From: "Pradeep A. Dalvi" <netdev@pradeepdalvi.com>
+> Date: Sun,  5 Feb 2012 18:19:09 +0530
 >
-> I'm not sure how to troubleshoot this, any pointers would be appreciated.
+>> From: Pradeep A Dalvi <netdev@pradeepdalvi.com>
+>>
+>> Replaced deprecating dev_alloc_skb with netdev_alloc_skb in drivers/net/ethernet
+>>   - Removed extra skb->dev = dev after netdev_alloc_skb
+>>
+>> Signed-off-by: Pradeep A Dalvi <netdev@pradeepdalvi.com>
 >
-> I'm compiling 3.2.4 at the moment and found a bunch of possibly useful
-> options in the kernel debugging section:
-> detect hard/soft lockups and detect hung tasks, maybe it'll give me
-> something more to go on.
+> Applied, but I had to fix several things up:
 >
-> Some details about the machine:
-> Linux xenbox 3.2.2 #1 SMP Sun Jan 29 10:28:22 CST 2012 x86_64 Intel(R)
-> Xeon(R) CPU 5140 @ 2.33GHz GenuineIntel GNU/Linux
-> It has 3 software raid arrays (2 x 5 drives and 1 x 4 drives) LVM'ed
-> together into a 23TB XFS filesystem.
-> 6GB memory and a pair of Intel Gigabit ethernet controllers bonded together.
+>> -                     if (pkt_len < rx_copybreak && (skb = dev_alloc_skb(pkt_len + 2)) != NULL) {
+>> +                     if (pkt_len < rx_copybreak &&
+>> +                                     (skb = netdev_alloc_skb(dev, pkt_len + 2)) != NULL) {
+>
+> This is not the correct way to format a multi-line conditional.
+>
+> All subsequent lines must start at the first column after the initial line's
+> openning parenthesis:
+>
+>        if (format_it &&
+>            like_this)
+>
+>        if (not &&
+>                like_this)
+>
+> To be honest I have no idea what posses people to tab things out in such
+> an incredibly ugly fashion in the first place.
+>
+>> -             if (!(lp->rx_skbuff[i] = dev_alloc_skb(lp->rx_buff_len))) {
+>> +             lp->rx_skbuff[i] = netdev_alloc_skb(dev, lp->rx_buff_len);
+>> +             if (!lp->rx_skbuff[i]) {
+>
+> You properly leave this test alone and keep it as "!foo" yet:
+>
+>> -                     if(!(new_skb = dev_alloc_skb(lp->rx_buff_len))){
+>> +                     new_skb = netdev_alloc_skb(dev, lp->rx_buff_len);
+>> +                     if (new_skb == NULL) {
+>
+> You change this one to the undesirable "== NULL" test, don't do that.
+> "!foo" is the canonical and most efficient NULL pointer test.
+>
+>> -      skb = dev_alloc_skb(pkt_len+2);
+>> +     skb = netdev_alloc_skb(dev, pkt_len + 2);
+>
+> Do not change the indentation in one place when the entire rest of the source
+> file uses something else, fixing that would a seperate change from what you're
+> doing.
+>
+>> -         skb = dev_alloc_skb(RX_BUFLEN + 2);
+>> +             skb = netdev_alloc_skb(RX_BUFLEN + 2);
+>
+> Same problem.
+
+Thanks a lot! I will make note of these points and shall not repeat again.
+
+Regards,
+Pradeep A. Dalvi
