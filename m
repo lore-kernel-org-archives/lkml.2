@@ -1,131 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab2BFSws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 13:52:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19426 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755799Ab2BFSwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 13:52:43 -0500
-Date: Mon, 6 Feb 2012 16:22:08 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
-        khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: Re: [PATCH v5 16/18] perf: enable reading of perf.data files from
-	different ABI rev
-Message-ID: <20120206182208.GH6367@infradead.org>
-References: <1328187288-24395-1-git-send-email-eranian@google.com> <1328187288-24395-17-git-send-email-eranian@google.com>
+	id S1755881Ab2BFSxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 13:53:15 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49148 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755853Ab2BFSxM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 13:53:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328187288-24395-17-git-send-email-eranian@google.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1328547366.2220.83.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <20120203.192933.510206531351047222.davem@davemloft.net>
+ <C5551D9AAB213A418B7FD5E4A6F30A0702F7F86F@ORSMSX106.amr.corp.intel.com>
+ <CAGsizzLFoXdUQrA-WtdRq4FDdnDNnevyK6HCRmrT2joUV=ZRXg@mail.gmail.com>
+ <20120206.101517.1598607878740481170.davem@davemloft.net> <1328547366.2220.83.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
+Date: Mon, 6 Feb 2012 19:52:52 +0100
+X-Google-Sender-Auth: CMIC2iFlYSnhaTThPpsY3pzl1dc
+Message-ID: <CAGsizzLJ27jmX8darnuUX5+B9zr3N+DM-+Uwdk6MrTPO8j_sug@mail.gmail.com>
+Subject: Re: [patch v1, kernel version 3.2.1] rtnetlink workaround around the
+ skb buff size issue
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, gregory.v.rose@intel.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 02, 2012 at 01:54:46PM +0100, Stephane Eranian escreveu:
-> This patch allows perf to process perf.data files generated
-> using an ABI that has a different perf_event_attr struct size, i.e.,
-> a different ABI version.
-> 
-> The perf_event_attr can be extended, yet perf needs to cope with
-> older perf.data files. Similarly, perf must be able to cope with
-> a perf.data file which is using a newer version of the ABI than
-> what it knows about.
-> 
-> This patch adds read_attr(), a routine that reads a perf_event_attr
-> struct from a file incrementally based on its advertised size. If
-> the on-file struct is smaller than what perf knows, then the extra
-> fields are zeroed. If the on-file struct is bigger, then perf only
-> uses what it knows about, the rest is skipped.
-
-Anshuman, can I have your Acked-by or Reviewed-by since you spotted
-problems in this and your suggestions were taken into account? Is this
-OK now?
-
-- Arnaldo
- 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->  tools/perf/util/header.c |   49 ++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 47 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 6f4187d..8d6c18d 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -1959,6 +1959,51 @@ static int perf_header__read_pipe(struct perf_session *session, int fd)
->  	return 0;
->  }
->  
-> +static int read_attr(int fd, struct perf_header *ph,
-> +		     struct perf_file_attr *f_attr)
-> +{
-> +	struct perf_event_attr *attr = &f_attr->attr;
-> +	size_t sz, left;
-> +	size_t our_sz = sizeof(f_attr->attr);
-> +	int ret;
-> +
-> +	memset(f_attr, 0, sizeof(*f_attr));
-> +
-> +	/* read minimal guaranteed structure */
-> +	ret = readn(fd, attr, PERF_ATTR_SIZE_VER0);
-> +	if (ret <= 0)
-> +		return -1;
-> +
-> +	/* on file perf_event_attr size */
-> +	sz = attr->size;
-> +	if (ph->needs_swap)
-> +		sz = bswap_32(sz);
-> +
-> +	if (sz == 0) {
-> +		/* assume ABI0 */
-> +		sz =  PERF_ATTR_SIZE_VER0;
-> +	} else if (sz > our_sz) {
-> +		/* bigger than what we know about */
-> +		sz = our_sz;
-> +
-> +		/* skip what we do not know about */
-> +		lseek(fd, SEEK_CUR, attr->size - our_sz);
-> +	}
-> +	/* what we have not yet read and that we know about */
-> +	left = sz - PERF_ATTR_SIZE_VER0;
-> +	if (left) {
-> +		void *ptr = attr;
-> +		ptr += PERF_ATTR_SIZE_VER0;
-> +
-> +		ret = readn(fd, ptr, left);
-> +		if (ret <= 0)
-> +			return -1;
-> +	}
-> +	/* read the ids */
-> +	ret = readn(fd, &f_attr->ids, sizeof(struct perf_file_section));
-> +	return ret <= 0 ? -1 : 0;
-> +}
-> +
->  int perf_session__read_header(struct perf_session *session, int fd)
->  {
->  	struct perf_header *header = &session->header;
-> @@ -1979,14 +2024,14 @@ int perf_session__read_header(struct perf_session *session, int fd)
->  		return -EINVAL;
->  	}
->  
-> -	nr_attrs = f_header.attrs.size / sizeof(f_attr);
-> +	nr_attrs = f_header.attrs.size / f_header.attr_size;
->  	lseek(fd, f_header.attrs.offset, SEEK_SET);
->  
->  	for (i = 0; i < nr_attrs; i++) {
->  		struct perf_evsel *evsel;
->  		off_t tmp;
->  
-> -		if (readn(fd, &f_attr, sizeof(f_attr)) <= 0)
-> +		if (read_attr(fd, header, &f_attr) < 0)
->  			goto out_errno;
->  
->  		if (header->needs_swap)
-> -- 
-> 1.7.4.1
+2012/2/6 Eric Dumazet <eric.dumazet@gmail.com>:
+> Le lundi 06 février 2012 à 10:15 -0500, David Miller a écrit :
+>> From: Štefan Gula <steweg@ynet.sk>
+>> Date: Mon, 6 Feb 2012 09:53:28 +0100
+>>
+>> > If I try to request for it, it will eventually fail with a lot of
+>> > records even with filtering...
+>>
+>> Then the user can loop increasing the buffer size until the netlink
+>> request succeeds.
+>>
+>> It is not a problem.
+>
+> Actually we always truncate message in netlink_recvmsg()
+>
+> We could use a MSG_NOPARTIAL flag in netlink_recvmsg() so that user can
+> avoid the MSG_PEEK operation to fetch next message length.
+>
+> (Ie not consume/copy skb if user buffer is too small to hold full
+> message, and only return the needed length)
+>
+>
+>
+Not sure if this will work. I tried to implement this by the way of
+sending one request from user-space to kernel and using NLM_F_MULTI
+messages per record to receive the data back from kernel. The problem
+was that if I went somewhere beyond 700 messages/records. I get EAGAIN
+error code from kernel while trying to write to netlink socket. On the
+other hand iproute code was getting error on recvmsg() that buffer is
+full. The messages was only 40B long so they should always be able to
+fit the 16k buffer used. So I end up with not being able to write nor
+read from the socket -> not really sure why. If I introduce paging to
+this, so kernel will put only limited number of records (in my case it
+was 10) per one request and wait for another request message to
+continue... this approach has done job for me. So maybe a good thing
+here would be to post the whole code, including rtnetlink part,
+macvlan part, iproute part and let you guys check, if you want. Do you
+agree?
