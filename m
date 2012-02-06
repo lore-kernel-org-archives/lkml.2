@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab2BFQBb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:01:31 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52993 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200Ab2BFQBa (ORCPT
+	id S1755447Ab2BFQDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:03:31 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37198 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200Ab2BFQDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:01:30 -0500
-Date: Mon, 6 Feb 2012 16:01:27 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: cbou@mail.ru, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add I2C driver for Summit Microelectronics SMB347
- Battery Charger.
-Message-ID: <20120206160127.GF10173@sirena.org.uk>
-References: <20120206155729.9947.22792.stgit@bob.linux.org.uk>
+	Mon, 6 Feb 2012 11:03:30 -0500
+Date: Mon, 6 Feb 2012 17:03:37 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Keith Packard <keithp@keithp.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Lubos Kolouch <lubos.kolouch@gmail.com>
+Subject: Re: [Intel-gfx] [PATCH 1/2] drm/i915: Force explicit bpp selection
+ for intel_dp_link_required
+Message-ID: <20120206160337.GB4066@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	Keith Packard <keithp@keithp.com>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+	Lubos Kolouch <lubos.kolouch@gmail.com>
+References: <1327508186-26704-1-git-send-email-keithp@keithp.com>
+ <1327508186-26704-2-git-send-email-keithp@keithp.com>
+ <20120127103010.GB3901@phenom.ffwll.local>
+ <CAPM=9tyg6Ju8qi+Qy0XP-23wApGA3+12jDfd7KQRoZ_bqSH=4g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120206155729.9947.22792.stgit@bob.linux.org.uk>
-X-Cookie: To err is human, to forgive unusual.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPM=9tyg6Ju8qi+Qy0XP-23wApGA3+12jDfd7KQRoZ_bqSH=4g@mail.gmail.com>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 03:59:01PM +0000, Alan Cox wrote:
+On Mon, Feb 06, 2012 at 12:12:16PM +0000, Dave Airlie wrote:
+> On Fri, Jan 27, 2012 at 10:30 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > On Wed, Jan 25, 2012 at 08:16:25AM -0800, Keith Packard wrote:
+> >> It is never correct to use intel_crtc->bpp in intel_dp_link_required,
+> >> so instead pass an explicit bpp in to this function. This patch
+> >> only supports 18bpp and 24bpp modes, which means that 10bpc modes will
+> >> be computed incorrectly. Fixing that will require more extensive
+> >> changes, and so must be addressed separately from this bugfix.
+> >>
+> >> intel_dp_link_required is called from intel_dp_mode_valid and
+> >> intel_dp_mode_fixup.
+> >>
+> >> * intel_dp_mode_valid is called to list supported modes; in this case,
+> >>   the current crtc values cannot be relevant as the modes in question
+> >>   may never be selected. Thus, using intel_crtc->bpp is never right.
+> >>
+> >> * intel_dp_mode_fixup is called during mode setting, but it is run
+> >>   well before ironlake_crtc_mode_set is called to set intel_crtc->bpp,
+> >>   so using intel_crtc-bpp in this path can only ever get a stale
+> >>   value.
+> >>
+> >> Cc: Lubos Kolouch <lubos.kolouch@gmail.com>
+> >> Cc: Adam Jackson <ajax@redhat.com>
+> >> Signed-off-by: Keith Packard <keithp@keithp.com>
+> >
+> > Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=42263
+> > Tested-by: camalot@picnicpark.org (Dell Latitude 6510)
+> >
+> > Not the original reporter and might not exactly be this bug, but likely.
+> > -Daniel
+> 
+> Tested-by: Dave Airlie <airlied@redhat.com>
 
-> Driver support for the Summit I??C battery charger. This is used in some
-> Intel devices.
+Another bugzilla for this patch:
 
-There's quite a lot of read/modify/write cycles and...
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44881
+Tested-by: Roland Dreier <roland@digitalvampire.org>
 
-> +static int smb347_debugfs_show(struct seq_file *s, void *data)
-> +{
-> +	struct smb347_charger *smb = s->private;
-> +	int ret;
-> +	u8 reg;
-> +
-> +	seq_printf(s, "Control registers:\n");
-> +	seq_printf(s, "==================\n");
-
-...this which make me wonder if this might not benefit from using
-regmap.  The read/modify/write cycles are handled by regmap_update_bits()
-and there's a standard debugfs file for dumping registers.  Should save
-a bit of code I think but I'd not worry too much either way.
-
-> +static int __init smb347_init(void)
-> +{
-> +	return i2c_add_driver(&smb347_driver);
-> +}
-> +module_init(smb347_init);
-> +
-> +static void __exit smb347_exit(void)
-> +{
-> +	i2c_del_driver(&smb347_driver);
-> +}
-> +module_exit(smb347_exit);
-
-There's module_i2c_driver() (and similarly for SPI and platform) though
-that's definitely a nitpick.
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
