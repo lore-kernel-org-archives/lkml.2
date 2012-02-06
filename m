@@ -1,186 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2BFIb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 03:31:58 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35847 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135Ab2BFIb5 convert rfc822-to-8bit (ORCPT
+	id S1754318Ab2BFIdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 03:33:16 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:55847 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab2BFIdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 03:31:57 -0500
+	Mon, 6 Feb 2012 03:33:14 -0500
+Message-ID: <dac05d1da093cb86e2f654fbfe66dfce.squirrel@webmail.greenhost.nl>
+In-Reply-To: <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+References: <20120116183730.GB21112@redhat.com>
+    <20120117164523.GA17070@redhat.com>
+    <CABqD9hYZ4yX76EaWgm2G8HuKgYPMxcxWRTHEazmxWNFL-mgY2A@mail.gmail.com>
+    <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
+    <20120117170512.GB17070@redhat.com>
+    <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
+    <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+    <20120118015013.GR11715@one.firstfloor.org>
+    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+    <20120118022217.GS11715@one.firstfloor.org>
+    <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+    <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+    <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+    <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+    <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+Date: Mon, 6 Feb 2012 09:32:43 +0100
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Andi Kleen" <andi@firstfloor.org>,
+        "Jamie Lokier" <jamie@shareable.org>,
+        "Andrew Lutomirski" <luto@mit.edu>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        "Roland McGrath" <mcgrathr@chromium.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-In-Reply-To: <1328515542-3779-1-git-send-email-rydberg@euromail.se>
-References: <1328515542-3779-1-git-send-email-rydberg@euromail.se>
-From: Daniel Kurtz <djkurtz@google.com>
-Date: Mon, 6 Feb 2012 16:31:36 +0800
-Message-ID: <CAGS+omD9aVcLKZnTi=8FfpUxeERHxxrWr4NM2GX+1LL1716awQ@mail.gmail.com>
-Subject: Re: [PATCH v4] Input: Add EVIOC mechanism for MT slots
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, chasedouglas@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 1.4
+X-Scan-Signature: 2d0a7f6a049cc125cd28f2ceffdc0173
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 6, 2012 at 4:05 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> This patch adds the ability to extract MT slot data via a new ioctl,
-> EVIOCGMTSLOTS. The function returns an array of slot values for the
-> specified ABS_MT event type.
+On Wed, January 18, 2012 21:26, Linus Torvalds wrote:
+> Added Peter to the cc, since this is now about some x86-specific
+> things. Ingo was already cc'd earlier.
+>
+> On Wed, Jan 18, 2012 at 11:31 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> Using the high bits of 'eflags' might work. Hopefully nobody tests
+>> that. IOW, something like the attached might work. It just sets bit#32
+>> in eflags if the system call is a compat call.
+>
+> So that description was bogus, it was what my original patch did, but
+> not the one I actually sent out (Peter - you can find it on lkml,
+> although the description below is probably sufficient for you to
+> understand what it does, or the obvious nature of the attached patch
+> for strace).
+>
+> The one I sent out *unconditionally* sets one bit in the high bits of
+> the returned value of the eflags register from ptrace(), very much on
+> purpose. That way you can unambiguously see whether it's an old kernel
+> (bits clear) or a new kernel that supports the feature. On a new
+> kernel, bit #32 of eflags will be set for a native 64-bit system call,
+> and bit #33 will be set for a compat system call.
+>
+> And some testing says that it works. In particular, I have a patch to
+> strace-4.6 that is able to correctly decode my mixed-case binary that
+> uses both the compat system call and the native system calls from
+> 64-bit long mode. Also, it looks like gdb ignores the high bits of
+> eflags, since it "knows" that eflags is just a 32-bit register even in
+> 64-bit mode, so the fact that we set some random bits in there doesn't
+> end up being noisy for at least one debugger.
+>
+> HOWEVER. I'm not going to guarantee that this is the right approach.
+> It seems to work, and it clearly gives people real information, but
+> whether this is the best way to do things or not is open.
 
-Henrik,
-
-Instead of returning the values of just one event type, can you please
-return values for all defined MT event types for all slots?  Userspace
-can already know how big such an array would be required, since it can
-probe to determine how many ABS_MT types have been defined.
-
-It seems like the most common use case for this API is to fetch the
-complete "initial state" when a userspace program first attaches to a
-(stateful) evdev device.  Fetching all at once would be slightly more
-efficient, and would resolve (or at worst minimize) race conditions
-that could occur if input events are arriving while userspace is still
-slowly ioctl'ing out the event type initial states, one at a time.
-
-If there are strong use cases for 'just probe one event type', perhaps
-you can keep the proposed API, but allow a special event type value,
-like "ABS_MT_*", to fetch all?
-
-BTW, I am very happy that you are finally plugging this particular
-issue since it has been bugging me for many months.  We sometimes use
-a userspace tools to record evdev events for a touch device while a
-user is performing a multitouch gesture.  If the userspace tool starts
-while there are already contacts on the device, there is currently no
-unambiguous way to determine what that initial state should have been.
- Thus, some information is always lost.  This patch would allow us to
-address this in the tools.  I've just been to busy/lazy to propose a
-fix of my own :).
-
--Daniel
+It seems that just using eflags is a lot simpler than the alternatives,
+let's just go for it.
 
 >
-> Example of user space usage:
+> The reason I picked 'eflags' was that it
 >
-> struct { unsigned code; int values[64]; } req;
-> req.code = ABS_MT_POSITION_X;
-> if (ioctl(fd, EVIOCGMTSLOTS(sizeof(req)), &req) < 0)
->        return -1;
-> for (i = 0; i < 64; i++)
->        printf("slot %d: %d\n", i, req.values[i]);
+>  (a) was easy from an implementation standpoint, since we already have
+> to handle reading of eflags specially in ptrace (we have to fake out
+> the resume bit)
 >
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
-> Here is the fourth version of the patch.
+>  (b) it "kind of" makes sense to make high bits be "system flags",
+> with low bits being "cpu flags", so it fits at least *some* kind of
+> conceptual model.
 >
-> Rather than over-specifying the ioctl binary format by introducing a
-> struct object that does not fit everyone, this version simply leaves
-> all object definitions to userland.
+>  (c) the other sane places to put it (high bits of CS and/or ORIG_AX)
+> were being used and compared as 64-bit values at least by strace.
+> Whether eflags works for all users, I have no idea, but generally you
+> would never compare eflags for one particular value - you might check
+> individual bits in eflags, but hopefully setting a few new bits should
+> not be something that any legacy user would ever really notice.
 >
-> Thanks,
-> Henrik
+> So there are reasons to think that my patch is sane, but...
 >
->  drivers/input/evdev.c |   27 ++++++++++++++++++++++++++-
->  include/linux/input.h |   25 +++++++++++++++++++++++++
->  2 files changed, 51 insertions(+), 1 deletions(-)
+> Here's the strace patch, so people can look. I didn't even test it on
+> an old kernel, but the fallback case to the old behavior looks
+> trivial.
 >
-> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> index 76457d5..e4cad16 100644
-> --- a/drivers/input/evdev.c
-> +++ b/drivers/input/evdev.c
-> @@ -20,7 +20,7 @@
->  #include <linux/slab.h>
->  #include <linux/module.h>
->  #include <linux/init.h>
-> -#include <linux/input.h>
-> +#include <linux/input/mt.h>
->  #include <linux/major.h>
->  #include <linux/device.h>
->  #include "input-compat.h"
-> @@ -623,6 +623,28 @@ static int evdev_handle_set_keycode_v2(struct input_dev *dev, void __user *p)
->        return input_set_keycode(dev, &ke);
->  }
->
-> +static int evdev_handle_mt_request(struct input_dev *dev,
-> +                                  unsigned int size,
-> +                                  int __user *ip)
-> +{
-> +       const struct input_mt_slot *mt = dev->mt;
-> +       unsigned int code;
-> +       int max_slots;
-> +       int i;
-> +
-> +       if (get_user(code, &ip[0]))
-> +               return -EFAULT;
-> +       if (!input_is_mt_value(code))
-> +               return -EINVAL;
-> +
-> +       max_slots = (size - sizeof(__u32)) / sizeof(__s32);
-> +       for (i = 0; i < dev->mtsize && i < max_slots; i++)
-> +               if (put_user(input_mt_get_value(&mt[i], code), &ip[1 + i]))
-> +                       return -EFAULT;
-> +
-> +       return 0;
-> +}
-> +
->  static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->                           void __user *p, int compat_mode)
->  {
-> @@ -708,6 +730,9 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->                return bits_to_user(dev->propbit, INPUT_PROP_MAX,
->                                    size, p, compat_mode);
->
-> +       case EVIOCGMTSLOTS(0):
-> +               return evdev_handle_mt_request(dev, size, ip);
-> +
->        case EVIOCGKEY(0):
->                return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
->
-> diff --git a/include/linux/input.h b/include/linux/input.h
-> index 3862e32..af26443 100644
-> --- a/include/linux/input.h
-> +++ b/include/linux/input.h
-> @@ -114,6 +114,31 @@ struct input_keymap_entry {
->  #define EVIOCGUNIQ(len)                _IOC(_IOC_READ, 'E', 0x08, len)         /* get unique identifier */
->  #define EVIOCGPROP(len)                _IOC(_IOC_READ, 'E', 0x09, len)         /* get device properties */
->
-> +/**
-> + * EVIOCGMTSLOTS(len) - get MT slot values
-> + *
-> + * The ioctl buffer argument should be binary equivalent to
-> + *
-> + * struct input_mt_request_layout {
-> + *     __u32 code;
-> + *     __s32 values[num_slots];
-> + * };
-> + *
-> + * where num_slots is the (arbitrary) number of MT slots to extract.
-> + *
-> + * The ioctl size argument (len) is the size of the buffer, which
-> + * should satisfy len = (num_slots + 1) * sizeof(__s32).  If len is
-> + * too small to fit all available slots, the first num_slots are
-> + * returned.
-> + *
-> + * Before the call, code is set to the wanted ABS_MT event type. On
-> + * return, values[] is filled with the slot values for the specified
-> + * ABS_MT code.
-> + *
-> + * If the request code is not an ABS_MT value, -EINVAL is returned.
-> + */
-> +#define EVIOCGMTSLOTS(len)     _IOC(_IOC_READ, 'E', 0x0a, len)
-> +
->  #define EVIOCGKEY(len)         _IOC(_IOC_READ, 'E', 0x18, len)         /* get global key state */
->  #define EVIOCGLED(len)         _IOC(_IOC_READ, 'E', 0x19, len)         /* get all LEDs */
->  #define EVIOCGSND(len)         _IOC(_IOC_READ, 'E', 0x1a, len)         /* get all sounds status */
-> --
-> 1.7.9
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Comments?
+
+I propose using bits somewhere in the middle of the upper half. If new
+flags are ever added by Intel or AMD, they will use the lower bits. If
+anyone else ever adds flags, they most likely add them to the top (VIA).
+So the middle seems the safest spot as far as long-term maintenance goes.
+
+The below version does that, but instead of setting one of the two bits,
+it always sets bit 50 for newer kernels and sets bit 51 if it's a compat
+system call. I find this version more readable and after compilation it's
+also a couple of bytes smaller compared to Linus' original version.
+
+Should we make sure that the top 32 bits are zero, in case any weird
+hardware does set our bits?
+
+Greetings,
+
+Indan
+
+---
+
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 5026738..a7fda48 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -353,6 +353,7 @@ static int set_segment_reg(struct task_struct *task,
+
+ static unsigned long get_flags(struct task_struct *task)
+ {
++	int bit = 50;
+ 	unsigned long retval = task_pt_regs(task)->flags;
+
+ 	/*
+@@ -360,8 +361,11 @@ static unsigned long get_flags(struct task_struct *task)
+ 	 */
+ 	if (test_tsk_thread_flag(task, TIF_FORCED_TF))
+ 		retval &= ~X86_EFLAGS_TF;
+-
+-	return retval;
++#ifdef CONFIG_IA32_EMULATION
++	if (task_thread_info(task)->status & TS_COMPAT)
++		retval |= (1ul << 51);
++#endif
++	return retval | (1ul << bit);
+ }
+
+ static int set_flags(struct task_struct *task, unsigned long value)
 
 
-
--- 
-Daniel Kurtz | Software Engineer | djkurtz@google.com | 650.204.0722
