@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab2BFJLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 04:11:39 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:58461 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554Ab2BFJLf (ORCPT
+	id S1754545Ab2BFJMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 04:12:19 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58198 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab2BFJMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 04:11:35 -0500
-Date: Mon, 6 Feb 2012 10:11:25 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@intel.com>
-cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 6/7 v2] ASoC: SIU: prepare for conversion to simple DMA
-In-Reply-To: <1328495625.26182.55.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1202061010300.10363@axis700.grange>
-References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de> 
- <1327589784-4287-7-git-send-email-g.liakhovetski@gmx.de>
- <1328495625.26182.55.camel@vkoul-udesk3>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:iOF6uPNKojdPlFYM3rthZIip4FeiyP5zD+7QxPLPBUM
- EIF9epjmiRvKBGZS9b4cxJukUWRS/hCDcPTJfyvniBwdQmR10l
- 6KQAExV6YmG0bE2CCfdl4SKd22HLP7iTHUGhCkimusvbuA+EcM
- hjjEmUH8wEOQi3h8DI44fGrktXw75qGvM6puCLXvd90VWrGrNs
- OF8Bf1jY9W+KbWXBEA+2jLso+XX6bm9vMKJ7pjAq0eblFVaL0B
- p0BGYuCzd9z0gzVyiTpgeEX4h11a7DJPF/9NlHvwRzSccn+7Wc
- 2F1iMTVNmDwFCfM/pO7GF50bbBcb4zR5+rr3k+x0lETWatEYAS
- 2qHUJ+gOEpKoYPQlE7jwcJBIVJ0gf+NaHGj4H/nQqDSCxKusDD
- Gq3ebixfl6AtQ==
+	Mon, 6 Feb 2012 04:12:17 -0500
+Message-ID: <1328519654.22240.31.camel@sauron.fi.intel.com>
+Subject: Re: linux-next: build failure after merge of the l2-mtd tree
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
+Date: Mon, 06 Feb 2012 11:14:14 +0200
+In-Reply-To: <20120206120706.cf5d951972d22eb7fa134fbd@canb.auug.org.au>
+References: <20120206120706.cf5d951972d22eb7fa134fbd@canb.auug.org.au>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-PEazU30TuUcS8KRchU3/"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod
 
-On Mon, 6 Feb 2012, Vinod Koul wrote:
+--=-PEazU30TuUcS8KRchU3/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, 2012-01-26 at 15:56 +0100, Guennadi Liakhovetski wrote:
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > ---
-> >  sound/soc/sh/siu_pcm.c |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/sound/soc/sh/siu_pcm.c b/sound/soc/sh/siu_pcm.c
-> > index 0193e59..414bb35 100644
-> > --- a/sound/soc/sh/siu_pcm.c
-> > +++ b/sound/soc/sh/siu_pcm.c
-> > @@ -330,12 +330,12 @@ static bool filter(struct dma_chan *chan, void *slave)
-> >  {
-> >  	struct sh_dmae_slave *param = slave;
-> >  
-> > -	pr_debug("%s: slave ID %d\n", __func__, param->slave_id);
-> > +	pr_debug("%s: slave ID %d\n", __func__, param->simple_slave.slave_id);
-> >  
-> >  	if (unlikely(param->dma_dev != chan->device->dev))
-> >  		return false;
-> >  
-> > -	chan->private = param;
-> > +	chan->private = &param->simple_slave;
-> While at it, Can you fix the sh-mobile driver to NOT use chan->private?
+On Mon, 2012-02-06 at 12:07 +1100, Stephen Rothwell wrote:
+> Hi Artem,
+>=20
+> After merging the l2-mtd tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> drivers/mtd/devices/pmc551.c:191:12: error: conflicting types for 'pmc551=
+_unpoint'
+> include/linux/mtd/pmc551.h:37:13: note: previous declaration of 'pmc551_u=
+npoint' was here
+> drivers/mtd/devices/pmc551.c: In function 'pmc551_unpoint':
+> drivers/mtd/devices/pmc551.c:196:1: warning: no return statement in funct=
+ion returning non-void [-Wreturn-type]
+>=20
+> Caused by commit 753c57f84b57 ("mtd: return error code from
+> mtd_unpoint").  [Mind you, I don't understand why those static functions
+> would be declared in a header file ...]
 
-This is an independent change and for it I need my recent RFC PATCH 
-"[PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()"
+Thanks, fixed. I am doing rather massive MTD API cleaning, so new small
+issues are possible.
 
-http://marc.info/?l=linux-kernel&m=132811019930675&w=2
+WRT the header file - I think it should not be in 'inlude/linux' at all
+- I'll try to cook a patch to kick it out of there, thanks!
 
-Thanks
-Guennadi
+--=20
+Best Regards,
+Artem Bityutskiy
 
-> >  	return true;
-> >  }
-> >  
-> > @@ -360,12 +360,12 @@ static int siu_pcm_open(struct snd_pcm_substream *ss)
-> >  	if (ss->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-> >  		siu_stream = &port_info->playback;
-> >  		param = &siu_stream->param;
-> > -		param->slave_id = port ? pdata->dma_slave_tx_b :
-> > +		param->simple_slave.slave_id = port ? pdata->dma_slave_tx_b :
-> >  			pdata->dma_slave_tx_a;
-> >  	} else {
-> >  		siu_stream = &port_info->capture;
-> >  		param = &siu_stream->param;
-> > -		param->slave_id = port ? pdata->dma_slave_rx_b :
-> > +		param->simple_slave.slave_id = port ? pdata->dma_slave_rx_b :
-> >  			pdata->dma_slave_rx_a;
-> >  	}
-> >  
-> 
-> 
-> -- 
-> ~Vinod
-> 
+--=-PEazU30TuUcS8KRchU3/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPL5nmAAoJECmIfjd9wqK00vgP/jTXzDlebZ5EHRT1jhXFa5O2
+OUrrBpqHMl81uq7A70JctZXbwVh0nJnc0Uj53SbxCuvjqoPrve7ymC6jLOcWqBU7
+M+CZZGmp63jzH5LQzeEVS03bDARqjMDoGh9hO0G+B0fhaqR8IhwUZT5nVvmUwYji
+GbuiBD/jqH78Oi+Cl5MwNgYGFXbBpdVCuIBmI2oH9RI4TrNnHS910FsKLOXpTzBM
+QHFXUMYt1nhU1mnrjRcx8bWYMrPacwfiS9Xcm6YT9lZngbYnQhNZMkfavr4wwuSk
+bH0RUuYGE1Xlbt4lxP5hn8Z4P8FARzu30b5pxuesBZxDQet028EcjRz3gU/laEsJ
+H/PCdj7KZLk9RLyp14bkgSh7mX0kQSoi8kKx0uaS0QHBtUbhl2PBXRxH4H1Dqf0D
+AoCbtBb/HbaglodVJSf5JnEWz6G8RPmLUQf7wU1510LgSMEUrj9evSwe4EBn7lUP
+smniMyefA0FCqt4sCO1M+afaunPiAQeRIA8oLMT06nMm3vh+L36RBIDMRtJ9kHGb
+8hnU6199gC4iBNaXjFHZ2h3T7cZHDJ5clCAbQuxVQCCJ41yDlHFFziSpsdIHfnSh
+eFakQlTSCzX2C6FTAuZPv8oMqc1Qqlyp/eh2rjTVcC5291RsblT/FCFiFnFu26Hd
+xHg4wp2mdy+sLX8QNtSr
+=B/mH
+-----END PGP SIGNATURE-----
+
+--=-PEazU30TuUcS8KRchU3/--
+
