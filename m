@@ -1,143 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab2BFWTV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:19:21 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45461 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755705Ab2BFWTU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:19:20 -0500
-Message-ID: <4F3051E3.5050402@gmail.com>
-Date: Mon, 06 Feb 2012 15:19:15 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1755945Ab2BFWTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:19:42 -0500
+Received: from proxima.lp0.eu ([81.2.80.65]:36458 "EHLO proxima.lp0.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753261Ab2BFWTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 17:19:41 -0500
+X-Greylist: delayed 652 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Feb 2012 17:19:41 EST
+Message-ID: <4F304CAD.5080700@simon.arlott.org.uk>
+Date: Mon, 06 Feb 2012 21:57:01 +0000
+From: Simon Arlott <simon@fire.lp0.eu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110823 Thunderbird/5.0
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
-        vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com
-Subject: Re: [PATCH v5 16/18] perf: enable reading of perf.data files from
- different ABI rev
-References: <1328187288-24395-1-git-send-email-eranian@google.com> <1328187288-24395-17-git-send-email-eranian@google.com>
-In-Reply-To: <1328187288-24395-17-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [PATCH] dvb-core: fix DVBFE_ALGO_HW retune bug
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 7e07222 breaks DVBFE_ALGO_HW tuning after a retune is requested,
+which causes bad tuning on my TBS 6920.
 
+[    0.769091] pci 0000:06:00.0: [14f1:8852] type 0 class 0x000400
+[   19.733530] CORE cx23885[0]: subsystem: 6920:8888, board: TurboSight TBS 6920 [card=14,autodetected]
+[  762.824912] cx24116_load_firmware: FW version 1.23.86.1
 
-On 02/02/2012 05:54 AM, Stephane Eranian wrote:
-> This patch allows perf to process perf.data files generated
-> using an ABI that has a different perf_event_attr struct size, i.e.,
-> a different ABI version.
-> 
-> The perf_event_attr can be extended, yet perf needs to cope with
-> older perf.data files. Similarly, perf must be able to cope with
-> a perf.data file which is using a newer version of the ABI than
-> what it knows about.
-> 
-> This patch adds read_attr(), a routine that reads a perf_event_attr
-> struct from a file incrementally based on its advertised size. If
-> the on-file struct is smaller than what perf knows, then the extra
-> fields are zeroed. If the on-file struct is bigger, then perf only
-> uses what it knows about, the rest is skipped.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->  tools/perf/util/header.c |   49 ++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 47 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 6f4187d..8d6c18d 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -1959,6 +1959,51 @@ static int perf_header__read_pipe(struct perf_session *session, int fd)
->  	return 0;
->  }
->  
-> +static int read_attr(int fd, struct perf_header *ph,
-> +		     struct perf_file_attr *f_attr)
-> +{
-> +	struct perf_event_attr *attr = &f_attr->attr;
-> +	size_t sz, left;
-> +	size_t our_sz = sizeof(f_attr->attr);
-> +	int ret;
-> +
-> +	memset(f_attr, 0, sizeof(*f_attr));
-> +
-> +	/* read minimal guaranteed structure */
-> +	ret = readn(fd, attr, PERF_ATTR_SIZE_VER0);
-> +	if (ret <= 0)
-> +		return -1;
+7e0722215a510921cbb73ab4c37477d4dcb91bf8 [media] dvb-core: Don't pass DVBv3 parameters on tune() fops
 
-As I recall the first bump in that structure happened in 2.6.32. Why add
-backward compatibility for it now? ie., why not just expect VER1
+Although re_tune is set to true when FESTATE_RETUNE occurs, it is never
+set back to false which the old code used to do when !FESTATE_RETUNE.
 
-> +
-> +	/* on file perf_event_attr size */
-> +	sz = attr->size;
-> +	if (ph->needs_swap)
-> +		sz = bswap_32(sz);
-> +
-> +	if (sz == 0) {
-> +		/* assume ABI0 */
-> +		sz =  PERF_ATTR_SIZE_VER0;
+This patch sets re_tune to false if !(state & FESTATE_RETUNE).
 
-Shouldn't this be a failure? ie., problem with the file (or the
-swapping) since size can't be 0
+$ szap-s2 -a 2 "Channel 5"
+reading channels from file '/home/simon/.szap/channels.conf'
+zapping to 247 'Channel 5':
+delivery DVB-S, modulation QPSK
+sat 0, frequency 10964 MHz H, symbolrate 22000000, coderate 5/6, rolloff 0.35
+vpid 0x092a, apid 0x092b, sid 0x092d
+using '/dev/dvb/adapter2/frontend0' and '/dev/dvb/adapter2/demux0'
+status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr eb33 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cf40 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cec0 | snr eccd | ber 00000000 | unc 00000000 | FE_HAS_LOCK
+status 1f | signal cec0 | snr 0000 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
 
-And then for the following why not restrict sz to known, expected sizes
--- using the PERF_ATTR_SIZE_VER defines introduced in patch 15?
+Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
+---
+ drivers/media/dvb/dvb-core/dvb_frontend.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-> +	} else if (sz > our_sz) {
-> +		/* bigger than what we know about */
-> +		sz = our_sz;
-> +
-> +		/* skip what we do not know about */
-> +		lseek(fd, SEEK_CUR, attr->size - our_sz);
-> +	}
-> +	/* what we have not yet read and that we know about */
-> +	left = sz - PERF_ATTR_SIZE_VER0;
-> +	if (left) {
-> +		void *ptr = attr;
-> +		ptr += PERF_ATTR_SIZE_VER0;
-> +
-> +		ret = readn(fd, ptr, left);
-> +		if (ret <= 0)
-> +			return -1;
-> +	}
-> +	/* read the ids */
-> +	ret = readn(fd, &f_attr->ids, sizeof(struct perf_file_section));
+diff --git a/drivers/media/dvb/dvb-core/dvb_frontend.c b/drivers/media/dvb/dvb-core/dvb_frontend.c
+index fbbe545..4555baa 100644
+--- a/drivers/media/dvb/dvb-core/dvb_frontend.c
++++ b/drivers/media/dvb/dvb-core/dvb_frontend.c
+@@ -655,6 +655,8 @@ restart:
+ 					dprintk("%s: Retune requested, FESTATE_RETUNE\n", __func__);
+ 					re_tune = true;
+ 					fepriv->state = FESTATE_TUNED;
++				} else {
++					re_tune = false;
+ 				}
+ 
+ 				if (fe->ops.tune)
+-- 
+1.7.8.rc3
 
-Confused by the above? It is not done in the old code, so why read the
-ids here? I scanned the other patches, but don't see other code movement
-on this file.
-
-David
-
-> +	return ret <= 0 ? -1 : 0;
-> +}
-> +
->  int perf_session__read_header(struct perf_session *session, int fd)
->  {
->  	struct perf_header *header = &session->header;
-> @@ -1979,14 +2024,14 @@ int perf_session__read_header(struct perf_session *session, int fd)
->  		return -EINVAL;
->  	}
->  
-> -	nr_attrs = f_header.attrs.size / sizeof(f_attr);
-> +	nr_attrs = f_header.attrs.size / f_header.attr_size;
->  	lseek(fd, f_header.attrs.offset, SEEK_SET);
->  
->  	for (i = 0; i < nr_attrs; i++) {
->  		struct perf_evsel *evsel;
->  		off_t tmp;
->  
-> -		if (readn(fd, &f_attr, sizeof(f_attr)) <= 0)
-> +		if (read_attr(fd, header, &f_attr) < 0)
->  			goto out_errno;
->  
->  		if (header->needs_swap)
+-- 
+Simon Arlott
