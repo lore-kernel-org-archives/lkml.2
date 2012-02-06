@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2BFMiF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 07:38:05 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38561 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab2BFMiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 07:38:03 -0500
-Message-ID: <1328531866.4535.1.camel@phoenix>
-Subject: [PATCH] regulator: Show correct chip id for max8649
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Mon, 06 Feb 2012 20:37:46 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755055Ab2BFMmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 07:42:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33339 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754831Ab2BFMmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 07:42:39 -0500
+Date: Mon, 6 Feb 2012 13:42:37 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: chris@cnpbagwell.com, pinglinux@gmail.com,
+        linuxwacom-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH] HID: wacom: Fix invalid power_supply_powers calls
+In-Reply-To: <d2139519eb66f9b7bfd8f56d3b4e2d96.squirrel@webmail.firszt.eu>
+Message-ID: <alpine.LNX.2.00.1202061342090.24127@pobox.suse.cz>
+References: <1328481324-7241-1-git-send-email-przemo@firszt.eu>    <alpine.LNX.2.00.1202061326150.24127@pobox.suse.cz> <d2139519eb66f9b7bfd8f56d3b4e2d96.squirrel@webmail.firszt.eu>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8649.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Mon, 6 Feb 2012, przemo@firszt.eu wrote:
 
-diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
-index b06a239..636dfd4 100644
---- a/drivers/regulator/max8649.c
-+++ b/drivers/regulator/max8649.c
-@@ -270,7 +270,7 @@ static int __devinit max8649_regulator_probe(struct i2c_client *client,
- 			ret);
- 		goto out;
- 	}
--	dev_info(info->dev, "Detected MAX8649 (ID:%x)\n", ret);
-+	dev_info(info->dev, "Detected MAX8649 (ID:%x)\n", val);
- 
- 	/* enable VID0 & VID1 */
- 	regmap_update_bits(info->regmap, MAX8649_CONTROL, MAX8649_VID_MASK, 0);
+> > Hmm, seems valid. How did you notice? Have you seen crashes because of
+> > wild pointers?
+> 
+> Hi Jiri,
+> Yes, the driver was unusable - 100% crashes during connection.
+
+Okay, I thought that'd be the case.
+
+> Chris came up with the solution, I did coding & testing.
+> 
+> The crash details are here:  http://pastebin.com/ZVNZWaPs
+
+Thank you. Will be pushing to Linus soon.
+
 -- 
-1.7.5.4
-
-
-
+Jiri Kosina
+SUSE Labs
