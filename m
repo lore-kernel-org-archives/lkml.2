@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab2BFIxu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 03:53:50 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46981 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab2BFIxs convert rfc822-to-8bit (ORCPT
+	id S1754402Ab2BFI7I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 03:59:08 -0500
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:55569 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075Ab2BFI7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 03:53:48 -0500
+	Mon, 6 Feb 2012 03:59:07 -0500
+X-SENDER-IP: [85.230.170.239]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiFTAKuVL09V5qrvPGdsb2JhbABDiVKlZhkBAQEBNzKBcgEBBAE6HCMFCwgDDjgUJQoaiA8DuHkTi1cCAgkFDAcGAQQBAQkEFAcED4J8AgsDBBoEAoEJEoJWYwSVJ4VojHU
+X-IronPort-AV: E=Sophos;i="4.73,369,1325458800"; 
+   d="scan'208";a="1804117049"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 6 Feb 2012 10:00:28 +0100
+To: Daniel Kurtz <djkurtz@google.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, chasedouglas@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] Input: Add EVIOC mechanism for MT slots
+Message-ID: <20120206090028.GA4137@polaris.bitmath.org>
+References: <1328515542-3779-1-git-send-email-rydberg@euromail.se>
+ <CAGS+omD9aVcLKZnTi=8FfpUxeERHxxrWr4NM2GX+1LL1716awQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <C5551D9AAB213A418B7FD5E4A6F30A0702F7F86F@ORSMSX106.amr.corp.intel.com>
-References: <5422254.3711328278789768.JavaMail.root@5-MeO-DMT.ynet.sk>
- <10521320.3761328279061644.JavaMail.root@5-MeO-DMT.ynet.sk>
- <20120203.192933.510206531351047222.davem@davemloft.net> <C5551D9AAB213A418B7FD5E4A6F30A0702F7F86F@ORSMSX106.amr.corp.intel.com>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Mon, 6 Feb 2012 09:53:28 +0100
-X-Google-Sender-Auth: byyreMKvp84qc6xQx5bp4lMJUBY
-Message-ID: <CAGsizzLFoXdUQrA-WtdRq4FDdnDNnevyK6HCRmrT2joUV=ZRXg@mail.gmail.com>
-Subject: Re: [patch v1, kernel version 3.2.1] rtnetlink workaround around the
- skb buff size issue
-To: "Rose, Gregory V" <gregory.v.rose@intel.com>
-Cc: David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGS+omD9aVcLKZnTi=8FfpUxeERHxxrWr4NM2GX+1LL1716awQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/6 Rose, Gregory V <gregory.v.rose@intel.com>:
->
-> The patch below is what I've got so far.  Right now the bit mask array is global so if you enable display of VF (n) on one interface it will enable display of the same VF on other interfaces.  I intend to move the bit mask array into the net_device structure so we can set the display mask for each interface independently.
->
-> The command to set the filter mask is "set only", I see no reason to add it to the info dump.  If other folks see it differently then I can do that too.
->
-> Anyway, it will allow the user to control which VFs are getting displayed during the info dump.  They all default to off so initially no VF info gets displayed.
->
-> I've also whipped up a patch for the iproute2 ip command.  It'll work like this:
->
-> 'ip link set <dev> vf (n) filter [on|off]'
->
-> So if you have 128 VFs on the device you could enable info dumps for arbitrary VFs, e.g. VFs 3, 9, 16, 21, and 31.  Only the info for those VFs would display.  This method has the advantage of not breaking scripts which parse the current VF info display.  Of course, one could also script up something to sequentially enable the display of a single VF, dump the info for it, and then move on to the next.
-As this patch will allow one to filter some information and possible
-lower the need on skb buffer size, the general idea is ok. On the
-other hand it will not eliminate the problem. e.g.:
-- assume that one didn't know the limits behind it and put all options enabled
-- it also doesn't fix the need to fill relevant info by interface
-bigger than buffer size, e.g. my macvlan interface mac address list.
-If I try to request for it, it will eventually fail with a lot of
-records even with filtering...
+Hi Daniel,
 
-So I would rather see a proper general method for requesting some
-information in cycles inside the single interface like sending request
-to kernel per VF for particular device or per MAC address from macvlan
-associated lists. This approach is I believe slightly more scalable as
-it can be potentially reused on other types of network devices as
-well.
+> Instead of returning the values of just one event type, can you please
+> return values for all defined MT event types for all slots?  Userspace
+> can already know how big such an array would be required, since it can
+> probe to determine how many ABS_MT types have been defined.
 
-My original idea was to have these methods:
-1st kernel method will return some info about the absolute number of
-cycles needed per given interface - this can be done in standard
-GETLINK operation with some associated IFLA_* value.
-2nd user-space method will based on that number sends netlink request
-per records or reasonable page of records (e.g. 10) and parse the
-output in the user-space.
- - this is needed to overcome another issue when kernel generates so
-many netlink messages with NLM_F_MULTI that netlink socket will not be
-able to hold and further write/read code will fail.
-3rd kernel method, which will allocated, fill, and send required info
-per record -> this one can be done by ops/command netlink association
-(in my proposal it is DEVDUMP)
+Userland does not always want all MT values, it depends on which are
+in actual use. Having an ioctl that returns the values for a single
+event code therefore makes sense. We also have to care about the
+restrictions of the ioctl interface: Even with the present patch, we
+are limited to 4000 slots, since we can only specify a buffer size of
+16 kilobytes.
 
-To sum up, I believe that both approaches (using cycles and filtering)
-should be allowed to coexists in kernel, but they should be considered
-separately as they are doing different jobs.
+> It seems like the most common use case for this API is to fetch the
+> complete "initial state" when a userspace program first attaches to a
+> (stateful) evdev device.  Fetching all at once would be slightly more
+> efficient, and would resolve (or at worst minimize) race conditions
+> that could occur if input events are arriving while userspace is still
+> slowly ioctl'ing out the event type initial states, one at a time.
 
-I can provide whole example of code (not just rtnetlink part), if the
-list is interested to see live example.
+The same argument applies to _all_ input events, but in practise, only
+a few less frequent events really need to be looked up. I agree that a
+one-call-captures-all function would not hurt in some situations, but
+I do not think it is justified in this case.
+
+The race condition is present regardless of the method used. Looking
+at input events as a whole, a method to capture the state in
+conjunction with opening the device would be good, but that problem is
+of quite a different scope.
+
+> If there are strong use cases for 'just probe one event type', perhaps
+> you can keep the proposed API, but allow a special event type value,
+> like "ABS_MT_*", to fetch all?
+
+I really think "all" is less useful; a bitmask of wanted values would
+make more sense. You are welcome to supply such a patch. ;-)
+
+> BTW, I am very happy that you are finally plugging this particular
+> issue since it has been bugging me for many months.  We sometimes use
+> a userspace tools to record evdev events for a touch device while a
+> user is performing a multitouch gesture.  If the userspace tool starts
+> while there are already contacts on the device, there is currently no
+> unambiguous way to determine what that initial state should have been.
+>  Thus, some information is always lost.  This patch would allow us to
+> address this in the tools.  I've just been to busy/lazy to propose a
+> fix of my own :).
+
+Yep, this goes for all of us. :-)
+
+Cheers,
+Henrik
