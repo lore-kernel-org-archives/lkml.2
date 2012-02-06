@@ -1,98 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab2BFJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 04:34:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754050Ab2BFJeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 04:34:07 -0500
-Message-ID: <4F2F9E89.7090607@redhat.com>
-Date: Mon, 06 Feb 2012 11:34:01 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1754589Ab2BFJio (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 04:38:44 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:48241 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754050Ab2BFJin (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 04:38:43 -0500
+Message-ID: <4F2F9F6C.1090608@linux.vnet.ibm.com>
+Date: Mon, 06 Feb 2012 17:37:48 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: Gleb Natapov <gleb@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-References: <4F2AB552.2070909@redhat.com> <20120205093723.GQ23536@redhat.com>	<4F2E4F8B.8090504@redhat.com> <20120205095153.GA29265@redhat.com> <4F2EAFF6.7030006@codemonkey.ws>
-In-Reply-To: <4F2EAFF6.7030006@codemonkey.ws>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched: Avoid unnecessary work in reweight_entity
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12020609-2674-0000-0000-0000033DA817
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2012 06:36 PM, Anthony Liguori wrote:
-> On 02/05/2012 03:51 AM, Gleb Natapov wrote:
->> On Sun, Feb 05, 2012 at 11:44:43AM +0200, Avi Kivity wrote:
->>> On 02/05/2012 11:37 AM, Gleb Natapov wrote:
->>>> On Thu, Feb 02, 2012 at 06:09:54PM +0200, Avi Kivity wrote:
->>>>> Device model
->>>>> ------------
->>>>> Currently kvm virtualizes or emulates a set of x86 cores, with or
->>>>> without local APICs, a 24-input IOAPIC, a PIC, a PIT, and a number of
->>>>> PCI devices assigned from the host.  The API allows emulating the
->>>>> local
->>>>> APICs in userspace.
->>>>>
->>>>> The new API will do away with the IOAPIC/PIC/PIT emulation and defer
->>>>> them to userspace.  Note: this may cause a regression for older
->>>>> guests
->>>>> that don't support MSI or kvmclock.  Device assignment will be done
->>>>> using VFIO, that is, without direct kvm involvement.
->>>>>
->>>> So are we officially saying that KVM is only for modern guest
->>>> virtualization?
->>>
->>> No, but older guests may have reduced performance in some workloads
->>> (e.g. RHEL4 gettimeofday() intensive workloads).
->>>
->> Reduced performance is what I mean. Obviously old guests will
->> continue working.
->
-> An interesting solution to this problem would be an in-kernel device VM.
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-It's interesting, yes, but has a very high barrier to implementation.
+In original code, using account_entity_dequeue and account_entity_enqueue
+as a pair will do some work unnecessary, this patch combine the work of
+them to save time.
 
->
-> Most of the time, the hot register is just one register within a more
-> complex device.  The reads are often side-effect free and trivially
-> computed from some device state + host time.
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ kernel/sched/fair.c  |   32 ++++++++++++++++++++++++--------
+ kernel/sched/sched.h |    8 ++++++++
+ 2 files changed, 32 insertions(+), 8 deletions(-)
 
-Look at arch/x86/kvm/i8254.c:pit_ioport_read() for a counterexample. 
-There are also interactions with other devices (for example the
-apic/ioapic interaction via the apic bus).
-
->
-> If userspace had a way to upload bytecode to the kernel that was
-> executed for a PIO operation, it could either pass the operation to
-> userspace or handle it within the kernel when possible without taking
-> a heavy weight exit.
->
-> If the bytecode can access variables in a shared memory area, it could
-> be pretty efficient to work with.
->
-> This means that the kernel never has to deal with specific in-kernel
-> devices but that userspace can accelerator as many of its devices as
-> it sees fit.
-
-I would really love to have this, but the problem is that we'd need a
-general purpose bytecode VM with binding to some kernel APIs.  The
-bytecode VM, if made general enough to host more complicated devices,
-would likely be much larger than the actual code we have in the kernel now.
-
->
-> This could replace ioeventfd as a mechanism (which would allow
-> clearing the notify flag before writing to an eventfd).
->
-> We could potentially just use BPF for this.
-
-BPF generally just computes a predicate.  We could overload the scratch
-area for storing internal state and for read results, though (and have
-an "mmio scratch register" for reading the time).
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 84adb2d..e380518 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -782,11 +782,23 @@ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+ {
+ 	cfs_rq->task_weight += weight;
+ }
++
++static void
++sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
++{
++	cfs_rq->task_weight -= sub;
++	cfs_rq->task_weight += add;
++}
+ #else
+ static inline void
+ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+ {
+ }
++
++static void
++sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
++{
++}
+ #endif
+ 
+ static void
+@@ -938,20 +950,24 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
+ {
+ }
+ # endif /* CONFIG_SMP */
++
+ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+ 			    unsigned long weight)
+ {
++	/* commit outstanding execution time */
++	if (cfs_rq->curr == se)
++		update_curr(cfs_rq);
++
+ 	if (se->on_rq) {
+-		/* commit outstanding execution time */
+-		if (cfs_rq->curr == se)
+-			update_curr(cfs_rq);
+-		account_entity_dequeue(cfs_rq, se);
++		update_load_sub_add(&cfs_rq->load, se->load.weight, weight);
++		if (!parent_entity(se)) {
++			update_load_sub_add(&rq_of(cfs_rq), se->load.weight, weight);
++		}
++		if (entity_is_task(se)) {
++			sub_add_cfs_task_weight(cfs_rq, se->load.weight, weight);
++		}
+ 	}
+-
+ 	update_load_set(&se->load, weight);
+-
+-	if (se->on_rq)
+-		account_entity_enqueue(cfs_rq, se);
+ }
+ 
+ static void update_cfs_shares(struct cfs_rq *cfs_rq)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 98c0c26..ec4430f 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -779,6 +779,14 @@ static inline void update_load_sub(struct load_weight *lw, unsigned long dec)
+ 	lw->inv_weight = 0;
+ }
+ 
++static inline void update_load_sub_add(struct load_weight *lw, unsigned long dec,
++					unsigned long inc)
++{
++	lw->weight -= dec;
++	lw->weight += inc;
++	lw->inv_weight = 0;
++}
++
+ static inline void update_load_set(struct load_weight *lw, unsigned long w)
+ {
+ 	lw->weight = w;
 -- 
-error compiling committee.c: too many arguments to function
+1.7.4.1
 
