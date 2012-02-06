@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab2BFQkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:40:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52060 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754865Ab2BFQkO (ORCPT
+	id S1755247Ab2BFQmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:42:03 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64717 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559Ab2BFQmB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:40:14 -0500
-Date: Mon, 6 Feb 2012 16:40:12 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>,
-        Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RESEND] regulator: Remove redundant regmap_update_bits
- call for TPS65023_REG_CON_CTRL2
-Message-ID: <20120206164012.GS3070@opensource.wolfsonmicro.com>
-References: <1328533274.4535.5.camel@phoenix>
+	Mon, 6 Feb 2012 11:42:01 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hEarWVD7htqb1VxP"
-Content-Disposition: inline
-In-Reply-To: <1328533274.4535.5.camel@phoenix>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [87.66.62.139]
+In-Reply-To: <CAORVsuVCYp+Fmfaje-UDnv1=x0PqApML6Jb-Z6EG0425SuREMg@mail.gmail.com>
+References: <1328227065-22045-1-git-send-email-venki@google.com>
+	<CAN5iSWo-n7OER4i1tPoeGBhY_RY-nX=7n4B3mFv1f0JK074bhQ@mail.gmail.com>
+	<20120205035057.GA4948@gs62>
+	<201202051204.38717.rjw@sisk.pl>
+	<CAORVsuVCYp+Fmfaje-UDnv1=x0PqApML6Jb-Z6EG0425SuREMg@mail.gmail.com>
+Date: Mon, 6 Feb 2012 17:42:00 +0100
+Message-ID: <CAORVsuW7mBCZdGqScX5jjaYDhijZH_H7vDKkJ4v6WWHn9rUsGw@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH] CPU C-state breakage with PM Qos change
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: markgross@thegnar.org, Kevin Hilman <khilman@ti.com>,
+        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Pihet-XID, Jean" <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Rafael,
 
---hEarWVD7htqb1VxP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Feb 6, 2012 at 11:18 AM, Jean Pihet <jean.pihet@newoldbits.com> wrote:
+> Hi Rafael, Mark,
+>
+> On Sun, Feb 5, 2012 at 12:04 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+...
 
-On Mon, Feb 06, 2012 at 09:01:14PM +0800, Axel Lin wrote:
-> This looks like a merge mistake.  Calling regmap_update_bits once is enou=
-gh.
->=20
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>> In kernel/power/Makefile:
+>>
+>> obj-$(CONFIG_PM)                += main.o qos.o
+>>
+>> I guess that explains things. :-)
+> Initially I thought we should have a way of disabling the feature on
+> some (minimal) kernels and so thought CONFIG_PM was the option to use.
+>
+>> It's quite easy to make qos.o be independent of CONFIG_PM, in which case the
+>> code added by Venki can be removed, so patches welcome (for 3.4, though).
+> I am working on it, more to come soon.
 
-Applied, thanks.
+I have a couple of patches ready, to be applied on 3.3-rc1 (so without
+Venki's patch applied).
+The first one is on PM QoS, the second one on per-device PM QoS. Is
+the latter needed?
 
---hEarWVD7htqb1VxP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Please let me know and I will send them asap.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Regards,
+Jean
 
-iQIcBAEBAgAGBQJPMAJlAAoJEBus8iNuMP3dB0oP/RxmKhHli1XRYzY+fb5RelV1
-HLPLHgmxlScwThTDTSA0GX5HbS9zZrfkcHsdl0MdgXnc2YVgvmQ6szvMuRcI0vS2
-/3o2vXIogbBh0CrwWXe2KJj3kb0Cs9V9JrUGts0bIzQkmP1q0TYOr1pDXulu3vAf
-jwxG5iWTPCN+NiSgoOOLCAkiPNwpEw2M59FrqXG7jM0orMGWDWoxbiJL2MU/wYo+
-xqV1ZVy22eCmgtIwsCOQlmiGJRpU1Py418d10Xp57DCPBgOf2mDT+5p0OEfXdlu3
-a3JKNPqHw/lQqZ1kP0ZPtvhJMHVgHsQuc4owaKbFg85jj+So0mJ4M3M9hs0i3wSQ
-THUhgTWPhaxXgIbgDPv0AH6RlPp5KZoHDgqTc+uYh9aVHYAQ5U69y5p3XpE3V1KE
-0vYe5nFiRm+vqWoY36vfnl7zaSREtkln6x2EqUz/TmUmvaQhcm4rT5DBkw2HutNl
-zwL6URFLtkmYHmsBOv+wM0yXBmnhnRo04PbpDx2tqTshxoOq9DwtZQeJgUcLlnPH
-9lr1AbJieNi+0Uqb3lPZ0tpJlpDNFNDGVJ1RdOdUnYRNH+P4jFlb7Kmz3bkrGEyS
-ziUD9AngnQFECeYFdQSkx1zk3GiyjZRHzop58eBUL+UbubX8szBDW52gN/RaDV1e
-JLUghiOnM/4E+1UdZRNW
-=PBNZ
------END PGP SIGNATURE-----
-
---hEarWVD7htqb1VxP--
+>>
+>> Thanks,
+>> Rafael
