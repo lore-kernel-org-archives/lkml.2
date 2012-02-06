@@ -1,122 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab2BFKcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 05:32:10 -0500
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:50956 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753616Ab2BFKcH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 05:32:07 -0500
-Date: Mon, 6 Feb 2012 12:31:59 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Felipe Balbi <balbi@ti.com>,
-        "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-mmc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-serial@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH/RFC] usb: fix renesas_usbhs to not schedule in atomic
- context
-Message-ID: <20120206103158.GK15652@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1327589784-4287-1-git-send-email-g.liakhovetski@gmx.de>
- <1327589784-4287-2-git-send-email-g.liakhovetski@gmx.de>
- <4F22624E.2090201@renesas.com>
- <Pine.LNX.4.64.1201270946150.32661@axis700.grange>
- <4F27CA7D.601@renesas.com>
- <Pine.LNX.4.64.1202022317560.13860@axis700.grange>
- <4F2B9F34.60308@renesas.com>
- <Pine.LNX.4.64.1202031623000.6211@axis700.grange>
- <20120205145358.GA13762@legolas.emea.dhcp.ti.com>
- <Pine.LNX.4.64.1202061058430.10363@axis700.grange>
+	id S1754282Ab2BFKkd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 05:40:33 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39820 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753695Ab2BFKkb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 05:40:31 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="73fGQZLCrFzENemP"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1202061058430.10363@axis700.grange>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328523130.2220.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <20120202211709.GA1642@x4>
+	<20120202213220.GB1642@x4>
+	<CABPqkBTutb5TuNVXZ4o+MzXczVSwk3NtsJh73KZS58xmrd=tbg@mail.gmail.com>
+	<20120204135110.GA6437@elte.hu>
+	<CABPqkBTvoNBBdzvS-njoFk+SrTf-BKQSvP54C05un+m7RA+nBg@mail.gmail.com>
+	<CABPqkBQdRwKKAvgK339Po0-WBW-MJkgcmpWqS=OOgepn3_XiRw@mail.gmail.com>
+	<1328523130.2220.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Date: Mon, 6 Feb 2012 11:40:29 +0100
+Message-ID: <CABPqkBQLn+5fYtOjhpKjXSzvKesuo+YRXxaawyTGUTQuZ6AjYw@mail.gmail.com>
+Subject: Re: WARNING: at arch/x86/kernel/cpu/perf_event.c:989
+From: Stephane Eranian <eranian@google.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 6, 2012 at 11:12 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le lundi 06 février 2012 à 10:54 +0100, Stephane Eranian a écrit :
+>> On Sat, Feb 4, 2012 at 7:09 PM, Stephane Eranian <eranian@google.com> wrote:
+>> > I am working on it. It is hard to reproduce for me.
+>> >
+>> What did you run to trigger this warning? What system is this on?
+>>
+>> > On Sat, Feb 4, 2012 at 2:51 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>> >>
+>> >> there's yet another one triggering at:
+>> >>
+>> >> [89214.962603] ------------[ cut here ]------------
+>> >> [89214.967441] WARNING: at arch/x86/kernel/cpu/perf_event.c:995 x86_pmu_start+0x79/0xd4()
+>> >> [89214.975825] Hardware name: X8DTN
+>> >> [89214.979268] Modules linked in:
+>> >> [89214.982560] Pid: 0, comm: swapper/6 Not tainted 3.3.0-rc2-tip+ #1
+>> >> [89214.988865] Call Trace:
+>> >> [89214.991533]  <IRQ>  [<ffffffff81065cc7>] warn_slowpath_common+0x7e/0x97
+>> >> [89214.998379]  [<ffffffff81065cf5>] warn_slowpath_null+0x15/0x17
+>> >> [89215.004428]  [<ffffffff8103f626>] x86_pmu_start+0x79/0xd4
+>> >> [89215.010042]  [<ffffffff810e30d1>] perf_adjust_freq_unthr_context.part.63+0xef/0x123
+>> >> [89215.018123]  [<ffffffff810e318c>] perf_event_task_tick+0x87/0x1c1
+>> >> [89215.024463]  [<ffffffff810a2370>] ? tick_nohz_handler+0xda/0xda
+>> >> [89215.030595]  [<ffffffff8108b819>] scheduler_tick+0xd1/0xf3
+>> >> [89215.036296]  [<ffffffff810720b0>] update_process_times+0x5e/0x6f
+>> >> [89215.042512]  [<ffffffff810a23e0>] tick_sched_timer+0x70/0x99
+>> >> [89215.048387]  [<ffffffff810823f9>] __run_hrtimer+0x8c/0x148
+>> >> [89215.054087]  [<ffffffff81082add>] hrtimer_interrupt+0xc1/0x18c
+>> >>
+>> >> Thanks,
+>> >>
+>> >>        Ingo
+>
+> Stephane, I trigger this as well very easily on my machine, 32bit
+> kernel, using the following :
+>
+>
+> perf record -a -g hackbench 10 thread 4000
+>
+I tried that on my Nehalem 64-bit running 3.3.0-rc2 where I reverted
+that chunck of commit 84f2b9b:
 
---73fGQZLCrFzENemP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -986,9 +986,6 @@ static void x86_pmu_start(struct perf_event
+*event, int flags)
+        struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+        int idx = event->hw.idx;
 
-Hi,
+-       if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
+-               return;
+-
+        if (WARN_ON_ONCE(idx == -1))
+                return;
 
-On Mon, Feb 06, 2012 at 11:11:45AM +0100, Guennadi Liakhovetski wrote:
-> Hi Felipe
->=20
-> On Sun, 5 Feb 2012, Felipe Balbi wrote:
->=20
-> > Hi,
-> >=20
-> > On Fri, Feb 03, 2012 at 04:43:20PM +0100, Guennadi Liakhovetski wrote:
-> > > The current renesas_usbhs driver triggers
-> > >=20
-> > > BUG: scheduling while atomic: ksoftirqd/0/3/0x00000102
-> > >=20
-> > > with enabled CONFIG_DEBUG_ATOMIC_SLEEP, by submitting DMA transfers f=
-rom=20
-> > > an atomic (tasklet) context, which is not supported by the shdma dmae=
-ngine=20
-> > > driver. Fix it by switching to a work. Also simplify some list=20
-> > > manipulations.
-> >=20
-> > you are doing much more than what you say.
->=20
-> Are those two list macro changes what you refer to as "a lot?" ;-) You're=
-=20
-> right in principle, they are not directly related to the purpose of this=
-=20
-> patch, they are just something that occurred to me, while tracking down=
-=20
-> DMA packets. But yes, it can be extracted to a separate cosmetic patch...
+I have an explanation for the other two WARN_ON_ONCE() but not for that
+one. Friday, I was able to track this down to a situation where from unthr
+we call pmu->stop() but because the event is already marked as not active
+in cpuc->active_mask,  PERF_HES_STOPPED is not set, then
+x86_pmu_start() complains. It happens during frequency adjustments and
+not unthrottling.
 
-please do so ;-)
+This is odd because the only place where cpuc->active_mask is cleared
+(for the event) is x86_pmu_stop(). So looks like we get into a situation where
+cpuc->active_mask[b] == 0 && event->state != HES_STOPPED. But I don't
+know where this could happen.
 
-> > Also, instead of using a
-> > workqueue, have you considered using threaded_irqs ?
-> >=20
-> > (I didn't go over the driver again to see if it makes sense to use
-> > threaded_irqs in this case, but doesn't hurt asking)
->=20
-> From a first glance these tasklets are not directly enough related to=20
-> IRQs, so, doing that is either impossible, or would require a _much_=20
-> deeper change to the driver and _this_ would indeed be a much bigger=20
-> change than just fixing the Oops.
 
-I see.. so please just split the list changes to separate patch and
-resend.
-
---=20
-balbi
-
---73fGQZLCrFzENemP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPL6weAAoJEIaOsuA1yqRE+ZIP/RXcXb6Ngvg56+KXRbkDSjz+
-JC4osfRUhv70f8rIJNeKKoX/ZgAJ1DkBu/bGimR+j8h6cNzsRe/NCRUc0rwbiEAk
-/OYU5C2j9r8zyJD6x/1J3+ipClh6t5EPmrZPOJJOol4UnPdmBFjMBEQ1urON9ZVV
-c28/lL16973n966Rn+nzEHJEVPlhCx7UN02YxY6OJILP9+jXdLvJZ1PQhRO3ydwp
-2GGNtYKguMXpk4fEI32NvyhT7Bh2eYE8SejooJpTcHEUHLDSHc8gV/OGnUsdfEld
-5Kj5HNKrMzaMl8JlisM+q/yD1tjYqwAyAH9dh5svRGpPQwhbtSmwoU4xuU09XWi0
-vPig5ceSnDZWQKFCSMfz2Srmw+c8isz+bQ/GffEO0zT3C7icMLqo2iY+2DmF6UTV
-a6DQkr2KG4+Ng5A01HelIDLs6iYcuHItATT08l3rZnMWOcUxYupPr6rF7c8QHq6v
-1g64HapmsmKKplFNI6U3PdqHKHO8OU9QXAYq0goem12vLf43pTr+H+StQxO08YLp
-Q6QBVpY8zKF9ZjQ+jAxutvFk2H7OO+2ufSrKTwB+QcWhlw/aUrv0apuUOlXXdSO7
-WGTev0cxEKCJrR5cNM7aLDE3pFFkQf+n+EleUiq2XzJ5IphKXLQo3iFh53WjfnQt
-mXUhc3tmrRXvKj+GmoF4
-=gLHG
------END PGP SIGNATURE-----
-
---73fGQZLCrFzENemP--
+>
+> [ 1205.338006] ------------[ cut here ]------------
+> [ 1205.338028] WARNING: at arch/x86/kernel/cpu/perf_event.c:989
+> x86_pmu_start+0xba/0xf0()
+> [ 1205.338044] Hardware name: ProLiant BL460c G1
+> [ 1205.338053] Modules linked in: xt_hashlimit af_packet tg3 bonding
+> [ 1205.338076] Pid: 0, comm: swapper/5 Not tainted
+> 3.3.0-rc2-00172-g23783f8 #55
+> [ 1205.338090] Call Trace:
+> [ 1205.338100]  [<c0609e06>] ? printk+0x1d/0x1f
+> [ 1205.338111]  [<c022b012>] warn_slowpath_common+0x72/0xa0
+> [ 1205.338123]  [<c021072a>] ? x86_pmu_start+0xba/0xf0
+> [ 1205.338134]  [<c021072a>] ? x86_pmu_start+0xba/0xf0
+> [ 1205.338145]  [<c022b062>] warn_slowpath_null+0x22/0x30
+> [ 1205.338157]  [<c021072a>] x86_pmu_start+0xba/0xf0
+> [ 1205.338170]  [<c02aba7b>] perf_adjust_freq_unthr_context.part.75
+> +0xfb/0x180
+> [ 1205.338185]  [<c02abd21>] perf_event_task_tick+0x221/0x290
+> [ 1205.338199]  [<c0258dee>] ? update_cpu_load+0xbe/0xf0
+> [ 1205.338210]  [<c0259728>] scheduler_tick+0x98/0xf0
+> [ 1205.338222]  [<c0239c6a>] update_process_times+0x5a/0x70
+> [ 1205.338235]  [<c026bb10>] tick_sched_timer+0x60/0x1f0
+> [ 1205.338248]  [<c024f1c0>] ? __remove_hrtimer+0x40/0xa0
+> [ 1205.338260]  [<c024f3f7>] __run_hrtimer+0x67/0x1e0
+> [ 1205.338270]  [<c026bab0>] ? tick_init_highres+0x20/0x20
+> [ 1205.338297]  [<c02501b0>] hrtimer_interrupt+0xe0/0x260
+> [ 1205.338323]  [<c025c207>] ? sched_clock_cpu+0xd7/0x160
+> [ 1205.338350]  [<c025c841>] ? set_next_entity+0x31/0x70
+> [ 1205.338380]  [<c0610804>] smp_apic_timer_interrupt+0x54/0x88
+> [ 1205.338407]  [<c060fcda>] apic_timer_interrupt+0x2a/0x30
+> [ 1205.338439]  [<c0209efc>] ? mwait_idle+0x7c/0x1d0
+> [ 1205.338470]  [<c0201606>] cpu_idle+0x66/0xa0
+> [ 1205.338495]  [<c060500f>] start_secondary+0x1bf/0x1c5
+> [ 1205.338520] ---[ end trace 94f790d96c8679f1 ]---
+> [ 1211.617012] Uhhuh. NMI received for unknown reason 21 on CPU 0.
+> [ 1211.617049] Do you have a strange power saving mode enabled?
+> [ 1211.617075] Dazed and confused, but trying to continue
+> [ 1211.970013] Uhhuh. NMI received for unknown reason 31 on CPU 7.
+> [ 1211.970050] Do you have a strange power saving mode enabled?
+> [ 1211.970076] Dazed and confused, but trying to continue
+> [ 1214.440012] Uhhuh. NMI received for unknown reason 21 on CPU 3.
+> [ 1214.440048] Do you have a strange power saving mode enabled?
+> [ 1214.440074] Dazed and confused, but trying to continue
+> [ 1214.634012] Uhhuh. NMI received for unknown reason 31 on CPU 4.
+> [ 1214.634047] Do you have a strange power saving mode enabled?
+> [ 1214.634073] Dazed and confused, but trying to continue
+> [ 1216.568016] Uhhuh. NMI received for unknown reason 31 on CPU 1.
+> [ 1216.568052] Do you have a strange power saving mode enabled?
+> [ 1216.568078] Dazed and confused, but trying to continue
+> [ 1217.309010] Uhhuh. NMI received for unknown reason 31 on CPU 2.
+> [ 1217.309044] Do you have a strange power saving mode enabled?
+> [ 1217.309070] Dazed and confused, but trying to continue
+>
+>
+>
+>
+> processor       : 7
+> vendor_id       : GenuineIntel
+> cpu family      : 6
+> model           : 23
+> model name      : Intel(R) Xeon(R) CPU           E5450  @ 3.00GHz
+> stepping        : 6
+>
+>
