@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab2BFXqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:46:50 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:40029 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341Ab2BFXqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 18:46:48 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] PCI / PM: Disable wakeup during shutdown for devices not enabled to wake up
-Date: Tue, 7 Feb 2012 00:50:35 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1755705Ab2BFXub (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 18:50:31 -0500
+Received: from mail.solarflare.com ([216.237.3.220]:22426 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754009Ab2BFXua (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 18:50:30 -0500
+Message-ID: <1328572230.12637.18.camel@deadeye>
+Subject: RE: [patch v1, kernel version 3.2.1] rtnetlink workaround around
+ the skb buff size issue
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Rose, Gregory V" <gregory.v.rose@intel.com>
+CC: David Miller <davem@davemloft.net>, "steweg@ynet.sk" <steweg@ynet.sk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Mon, 6 Feb 2012 23:50:30 +0000
+In-Reply-To: <C5551D9AAB213A418B7FD5E4A6F30A0702F7F86F@ORSMSX106.amr.corp.intel.com>
+References: <5422254.3711328278789768.JavaMail.root@5-MeO-DMT.ynet.sk>
+	 <10521320.3761328279061644.JavaMail.root@5-MeO-DMT.ynet.sk>
+	 <20120203.192933.510206531351047222.davem@davemloft.net>
+	 <C5551D9AAB213A418B7FD5E4A6F30A0702F7F86F@ORSMSX106.amr.corp.intel.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202070050.35931.rjw@sisk.pl>
+MIME-Version: 1.0
+X-Originating-IP: [88.96.1.126]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18692.006
+X-TM-AS-Result: No--30.902100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Mon, 2012-02-06 at 04:41 +0000, Rose, Gregory V wrote:
+[...]
+> > This is not how we're going to fix this.  I already stated the desired
+> > way to fix this, which is to make the existing dump request have a way
+> > for the requestor to enable extended parts of the device dump.
+> > 
+> > This is just like netlink diag socket dumps, where the dump request
+> > specifies what the user wants to see.
+> > 
+> > In this case we'd add a netlink attribute to the dump request which
+> > is just a u32 bitmask or similar.
+> > 
+> > The Intel engineer who added the VF dump support said he would work on
+> > this fix so why don't you just wait patiently for him to do the work?
+> 
+> The patch below is what I've got so far.  Right now the bit mask array
+> is global so if you enable display of VF (n) on one interface it will
+> enable display of the same VF on other interfaces.  I intend to move
+> the bit mask array into the net_device structure so we can set the
+> display mask for each interface independently.
 
-If a PCI device is enabled to generate wakeup signals (PME) when put
-into a low-power state by runtime PM, it will be still enabled to
-generate those signals after the system shutdown, unless its driver's
-.shutdown() callback takes care of the wakeup signals generation
-setting.  Moreover, there are devices that are not enabled to wake
-up the system and that are configured by runtime PM to generate
-wakeup signals so that (runtime) remote wakeup works with them.
-Those devices should be reconfigured during system shutdown so that
-they don't generate wakeup signals, but at least some drivers don't
-do that.  However, that very well may be done by the PCI core so
-that drivers don't have to worry about it.  For this reason, modify
-pci_device_shutdown() to disable the generation of wakeup events for
-devices not supposed to wake up the system.
+I don't think this can work.  Using an application that requests VF
+information and uses large buffers (e.g. the updated 'ip') will break
+another application that doesn't (e.g. current Network Manager), won't
+it?
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=37952
-Reported-and-tested-by: Kamil Iskra <kamil.54002@iskra.name>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/pci/pci-driver.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+The filter should be per-request and not persistent (and I think it
+could just be a boolean or a limit value rather than a bitmask).
 
-Index: linux/drivers/pci/pci-driver.c
-===================================================================
---- linux.orig/drivers/pci/pci-driver.c
-+++ linux/drivers/pci/pci-driver.c
-@@ -430,6 +430,16 @@ static void pci_device_shutdown(struct d
- 		drv->shutdown(pci_dev);
- 	pci_msi_shutdown(pci_dev);
- 	pci_msix_shutdown(pci_dev);
-+
-+	/*
-+	 * Devices may be enabled to wake up by runtime PM, but they need not
-+	 * be supposed to wake up the system from its "power off" state (e.g.
-+	 * ACPI S5).  Therefore disable wakeup for all devices that aren't
-+	 * supposed to wake up the system at this point.  The state argument
-+	 * will be ignored by pci_enable_wake().
-+	 */
-+	if (!device_may_wakeup(dev))
-+		pci_enable_wake(pci_dev, PCI_UNKNOWN, false);
- }
- 
- #ifdef CONFIG_PM
+> The command to set the filter mask is "set only", I see no reason to
+> add it to the info dump.  If other folks see it differently then I can
+> do that too.
+> 
+> Anyway, it will allow the user to control which VFs are getting
+> displayed during the info dump.  They all default to off so initially
+> no VF info gets displayed.
+> 
+> I've also whipped up a patch for the iproute2 ip command.  It'll work
+> like this:
+> 
+> 'ip link set <dev> vf (n) filter [on|off]'
+
+Well there's no need for a persistent filter.  And I think that the
+default behaviour of 'ip' should be to show all the VFs, as it does now.
+
+[...]
+> --- a/net/core/rtnetlink.c
+> +++ b/net/core/rtnetlink.c
+> @@ -62,6 +62,9 @@ struct rtnl_link {
+>  static DEFINE_MUTEX(rtnl_mutex);
+>  static u16 min_ifinfo_dump_size;
+>  
+> +/* VF info display filter - Number of VFs max is 256 */
+> +static unsigned long show_vfinfo_filter[256 / sizeof(unsigned long)];
+[...]
+
+This array is 8 times too large; use BITS_TO_LONGS.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
