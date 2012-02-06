@@ -1,150 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab2BFXPt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:15:49 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:40729 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab2BFXPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 18:15:47 -0500
-Date: Mon, 6 Feb 2012 15:15:43 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH] tags: fix use of parenthesis in regex
-Message-ID: <20120206151543.1bb1d869@s6510.linuxnetplumber.net>
-In-Reply-To: <4F305CB6.7050603@codeaurora.org>
-References: <20120203112701.1c12b12c@s6510.linuxnetplumber.net>
-	<4F2C38BD.1060109@codeaurora.org>
-	<20120203121847.1b01f4b5@s6510.linuxnetplumber.net>
-	<c1f3d71b6001dfc42ded4ee651e9a82c.squirrel@www.codeaurora.org>
-	<20120206124058.1cf1a23e@s6510.linuxnetplumber.net>
-	<4F305CB6.7050603@codeaurora.org>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756133Ab2BFXQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 18:16:20 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44004 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753158Ab2BFXQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 18:16:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120206170348.GA19749@kroah.com>
+References: <1326878467-17766-1-git-send-email-amit.kachhap@linaro.org>
+	<20120206165658.GA28687@atrey.karlin.mff.cuni.cz>
+	<20120206170348.GA19749@kroah.com>
+Date: Mon, 6 Feb 2012 15:16:17 -0800
+Message-ID: <CAK44p22FWxiXyBA1zbiuO0cbDScTSMRSV9pFDDMxXsc43ebGpw@mail.gmail.com>
+Subject: Re: [linux-pm] [RFC PATCH] thermal: Add support to report cooling
+ statistics achieved by cooling devices
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Greg KH <greg@kroah.com>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        rob.lee@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several of the regular expressions passed to etags and ctags where incorrect
-and missing the backslash before the closing paren, and matching the wrong
-part of the start of the function causing warning:
-  etags: Unmatched ( or \( while compiling pattern
+On 6 February 2012 09:03, Greg KH <greg@kroah.com> wrote:
+> On Mon, Feb 06, 2012 at 05:56:58PM +0100, Pavel Machek wrote:
+>> Hi!
+>>
+>> > Add a sysfs node code to report effective cooling of all cooling devices
+>> > attached to each trip points of a thermal zone. The cooling data reported
+>> > will be absolute if the higher temperature trip points are arranged first
+>> > otherwise the cooling stats is the cumulative effect of the earlier
+>> > invoked cooling handlers.
+>> >
+>> > The basic assumption is that cooling devices will bring down the temperature
+>> > in a symmetric manner and those statistics can be stored back and used for
+>> > further tuning of the system.
+>>
+>> /sys fs should be one-value-per-file, talk to gregkh.
+>
+> That's correct.
+>
+> Why not use debugfs for this instead?
+>
+> thanks,
+>
+> greg k-h
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Thanks Greg/Pavel for looking into the patch.
+Basically I checked the places where single sysfs entry is showing
+more then 1 output. And
+1) /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state
+2) /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table
+are the places where the output is more than 1 value.
 
----
-v2 - cover all regex (not just etags)
-v3 - fix match at start of function args
+Anyway I can enclose this sysfs inside CONFIG_THERMAL_COOLING_STATS macro.
 
-
---- a/scripts/tags.sh	2012-02-06 12:38:53.243121989 -0800
-+++ b/scripts/tags.sh	2012-02-06 15:13:33.400557183 -0800
-@@ -129,31 +129,31 @@ exuberant()
- 	-I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL                      \
- 	-I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
- 	--extra=+f --c-kinds=+px                                \
--	--regex-asm='/^(ENTRY|_GLOBAL)\(([^)]*)\).*/\2/'        \
--	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/' \
--	--regex-c++='/^TRACE_EVENT\(([^,)]*).*/trace_\1/'		\
--	--regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*).*/trace_\1/'	\
--	--regex-c++='/PAGEFLAG\(([^,)]*).*/Page\1/'			\
--	--regex-c++='/PAGEFLAG\(([^,)]*).*/SetPage\1/'			\
--	--regex-c++='/PAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
--	--regex-c++='/TESTSETFLAG\(([^,)]*).*/TestSetPage\1/'		\
--	--regex-c++='/TESTPAGEFLAG\(([^,)]*).*/Page\1/'			\
--	--regex-c++='/SETPAGEFLAG\(([^,)]*).*/SetPage\1/'		\
--	--regex-c++='/__SETPAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
--	--regex-c++='/TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
--	--regex-c++='/__TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
--	--regex-c++='/CLEARPAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
--	--regex-c++='/__CLEARPAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
--	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
--	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__ClearPage\1/'		\
--	--regex-c++='/PAGEFLAG_FALSE\(([^,)]*).*/Page\1/'		\
--	--regex-c++='/TESTSCFLAG\(([^,)]*).*/TestSetPage\1/'		\
--	--regex-c++='/TESTSCFLAG\(([^,)]*).*/TestClearPage\1/'		\
--	--regex-c++='/SETPAGEFLAG_NOOP\(([^,)]*).*/SetPage\1/'		\
--	--regex-c++='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
--	--regex-c++='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/'	\
--	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
--	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
-+	--regex-asm='/^(ENTRY|_GLOBAL)(\([^)]*)\).*/\2/'        \
-+	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?(\([^,)]*\).*/sys_\1/' \
-+	--regex-c++='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
-+	--regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*\).*/trace_\1/'	\
-+	--regex-c++='/PAGEFLAG(\([^,)]*\).*/Page\1/'			\
-+	--regex-c++='/PAGEFLAG(\([^,)]*\).*/SetPage\1/'			\
-+	--regex-c++='/PAGEFLAG(\([^,)]*\).*/ClearPage\1/'		\
-+	--regex-c++='/TESTSETFLAG(\([^,)]*\).*/TestSetPage\1/'		\
-+	--regex-c++='/TESTPAGEFLAG(\([^,)]*\).*/Page\1/'		\
-+	--regex-c++='/SETPAGEFLAG(\([^,)]*\).*/SetPage\1/'		\
-+	--regex-c++='/__SETPAGEFLAG(\([^,)]*\).*/__SetPage\1/'		\
-+	--regex-c++='/TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
-+	--regex-c++='/__TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
-+	--regex-c++='/CLEARPAGEFLAG(\([^,)]*\).*/ClearPage\1/'		\
-+	--regex-c++='/__CLEARPAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
-+	--regex-c++='/__PAGEFLAG(\([^,)]*\).*/__SetPage\1/'		\
-+	--regex-c++='/__PAGEFLAG(\([^,)]*\).*/__ClearPage\1/'		\
-+	--regex-c++='/PAGEFLAG_FALSE(\([^,)]*\).*/Page\1/'		\
-+	--regex-c++='/TESTSCFLAG(\([^,)]*\).*/TestSetPage\1/'		\
-+	--regex-c++='/TESTSCFLAG(\([^,)]*\).*/TestClearPage\1/'		\
-+	--regex-c++='/SETPAGEFLAG_NOOP(\([^,)]*\).*/SetPage\1/'		\
-+	--regex-c++='/CLEARPAGEFLAG_NOOP(\([^,)]*\).*/ClearPage\1/'	\
-+	--regex-c++='/__CLEARPAGEFLAG_NOOP(\([^,)]*\).*/__ClearPage\1/'	\
-+	--regex-c++='/TESTCLEARFLAG_FALSE(\([^,)]*\).*/TestClearPage\1/' \
-+	--regex-c++='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/'
- 
- 	all_kconfigs | xargs $1 -a                              \
- 	--langdef=kconfig --language-force=kconfig              \
-@@ -178,27 +178,27 @@ emacs()
- 	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
- 	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
- 	--regex='/^DEFINE_EVENT([^,)]*, *\([^,)]*\).*/trace_\1/' \
--	--regex='/PAGEFLAG\(([^,)]*).*/Page\1/'			\
--	--regex='/PAGEFLAG\(([^,)]*).*/SetPage\1/'		\
--	--regex='/PAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
--	--regex='/TESTSETFLAG\(([^,)]*).*/TestSetPage\1/'	\
--	--regex='/TESTPAGEFLAG\(([^,)]*).*/Page\1/'		\
--	--regex='/SETPAGEFLAG\(([^,)]*).*/SetPage\1/'		\
--	--regex='/__SETPAGEFLAG\(([^,)]*).*/__SetPage\1/'	\
--	--regex='/TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
--	--regex='/__TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
--	--regex='/CLEARPAGEFLAG\(([^,)]*).*/ClearPage\1/'	\
--	--regex='/__CLEARPAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
--	--regex='/__PAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
--	--regex='/__PAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
--	--regex='/PAGEFLAG_FALSE\(([^,)]*).*/Page\1/'		\
--	--regex='/TESTSCFLAG\(([^,)]*).*/TestSetPage\1/'	\
--	--regex='/TESTSCFLAG\(([^,)]*).*/TestClearPage\1/'	\
--	--regex='/SETPAGEFLAG_NOOP\(([^,)]*).*/SetPage\1/'	\
--	--regex='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
--	--regex='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/' \
--	--regex='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
--	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
-+	--regex='/PAGEFLAG(\([^,)]*\).*/Page\1/'			\
-+	--regex='/PAGEFLAG(\([^,)]*\).*/SetPage\1/'		\
-+	--regex='/PAGEFLAG(\([^,)]*\).*/ClearPage\1/'		\
-+	--regex='/TESTSETFLAG(\([^,)]*\).*/TestSetPage\1/'	\
-+	--regex='/TESTPAGEFLAG(\([^,)]*\).*/Page\1/'		\
-+	--regex='/SETPAGEFLAG(\([^,)]*\).*/SetPage\1/'		\
-+	--regex='/__SETPAGEFLAG(\([^,)]*\).*/__SetPage\1/'	\
-+	--regex='/TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
-+	--regex='/__TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
-+	--regex='/CLEARPAGEFLAG(\([^,)]*\).*/ClearPage\1/'	\
-+	--regex='/__CLEARPAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
-+	--regex='/__PAGEFLAG(\([^,)]*\).*/__SetPage\1/'		\
-+	--regex='/__PAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
-+	--regex='/PAGEFLAG_FALSE(\([^,)]*\).*/Page\1/'		\
-+	--regex='/TESTSCFLAG(\([^,)]*\).*/TestSetPage\1/'	\
-+	--regex='/TESTSCFLAG(\([^,)]*\).*/TestClearPage\1/'	\
-+	--regex='/SETPAGEFLAG_NOOP(\([^,)]*\).*/SetPage\1/'	\
-+	--regex='/CLEARPAGEFLAG_NOOP(\([^,)]*\).*/ClearPage\1/'	\
-+	--regex='/__CLEARPAGEFLAG_NOOP(\([^,)]*\).*/__ClearPage\1/' \
-+	--regex='/TESTCLEARFLAG_FALSE(\([^,)]*\).*/TestClearPage\1/' \
-+	--regex='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/'
- 
- 	all_kconfigs | xargs $1 -a                              \
- 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
+Thanks,
+Amit Daniel
