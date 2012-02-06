@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab2BFQM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 11:12:29 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57686 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab2BFQM1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 11:12:27 -0500
-X-Authority-Analysis: v=2.0 cv=T9kOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=JWdsGIDjgj4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=USCnaUHzAVd5EK_Gv3oA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328544744.2200.11.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RT 2/2 v4] preempt-rt/x86: Delay calling signals in int3
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Andi Kleen <ak@linux.intel.com>, Clark Williams <williams@redhat.com>,
-        Luis Goncalves <lgoncalv@redhat.com>, stable-rt@vger.kernel.org
-Date: Mon, 06 Feb 2012 11:12:24 -0500
-In-Reply-To: <20120205193146.GC12183@redhat.com>
-References: <20120203182853.547078531@goodmis.org>
-	 <20120203183041.427463295@goodmis.org> <20120203184016.GA10413@redhat.com>
-	 <1328299833.5882.211.camel@gandalf.stny.rr.com>
-	 <20120205192305.GB12183@redhat.com> <20120205193146.GC12183@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755487Ab2BFQNw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 11:13:52 -0500
+Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:40955 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754852Ab2BFQNu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 11:13:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzxxtEfiEhzqrrMK-YA4xznkZJJE=A6rTDs-2a0Eodacg@mail.gmail.com>
+References: <1327788715-24076-1-git-send-email-wad@chromium.org>
+	<20120202152900.GA4583@sergelap>
+	<CABqD9hY0O+QU_0yD8C1GFkqo-i1fmJEwKHWwUrCBoUERxHzLqA@mail.gmail.com>
+	<CA+55aFzxxtEfiEhzqrrMK-YA4xznkZJJE=A6rTDs-2a0Eodacg@mail.gmail.com>
+Date: Mon, 6 Feb 2012 10:13:48 -0600
+Message-ID: <CABqD9hY9j5RtQBM_7CKgsKO2eN+h6QE_Qgi++FJxCsZDuktXCA@mail.gmail.com>
+Subject: Re: [PATCH v6 1/3] seccomp: kill the seccomp_t typedef
+From: Will Drewry <wad@chromium.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk, indan@nul.nu, mcgrathr@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-02-05 at 20:31 +0100, Oleg Nesterov wrote:
-> Damn. Sorry for noise...
-> 
-> On 02/05, Oleg Nesterov wrote:
-> >
-> > +int force_sig_info(int sig, struct siginfo *info, struct task_struct *t)
-> > +{
-> > +#ifdef CONFIG_PREEMPT_RT_FULL
-> > +	if (in_atomic()) {
-> > +		if (WARN_ON_ONCE(t != current))
-> 
-> This is certainly wrong in upstream kernel. It does use force_
-> this way although it shouldn't imho.
+On Fri, Feb 3, 2012 at 7:05 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Feb 3, 2012 at 3:16 PM, Will Drewry <wad@chromium.org> wrote:
+>>
+>> task_struct {
+>>  ...
+>>  struct seccomp seccomp;
+>> }
+>>
+>> was as ideal.  I've noticed that almost all of the duplicate names in
+>> the task struct use redundancy to differentiate the naming, but I'm
+>> happy enough to rename if appropriate.
+>
+> The redundant "struct xyz_struct" naming is traditional, but we try to
+> avoid it these days. The reason for it is that I long long ago was a
+> bit confused about the C namespace rules, so for the longest time I
+> made struct names unique for no really good reason. The struct/union
+> namespace is separate from the other namespaces, so trying to make
+> things unique really has no good reason.
+>
+> And obviously "struct task_struct" is one of those very old things,
+> and then the "struct xyz_struct" naming kind of spread from there.
+>
+> I think "struct seccomp" is fine, and even if "struct x x" looks a bit
+> odd, it's at least _less_ repetition than "struct x_struct x" which is
+> just really repetitive.
+>
+> That said, just to make "grep" easier, please do the whole "struct
+> xyz" always together, and always with just a single space in between
+> them, so that
+>
+>   git grep "struct xyz"
+>
+> does the right thing. And for the same reason, when declaring a
+> struct, people should always use "struct xyz {", with that exact
+> spacing. The exact details of spacing obviously has no semantic
+> meaning, but making it easy to grep for use and for definition is
+> really convenient.
 
-It's wrong in upstream even with the #ifdef define here?
-
-> 
-> But _probably_ this is fine for rt? We are going to take the mutex,
-> we shouldn't do this in atomic context. But, once again, I do not
-> really know what in_atomic() means in rt.
-
-in_atomic() is the same in rt as in mainline. It should still work.
-
--- Steve
-
-
+Thanks for the background and explanation!
+will
