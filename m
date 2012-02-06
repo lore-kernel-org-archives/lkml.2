@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab2BFIOv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 03:14:51 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:55272 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab2BFIOu (ORCPT
+	id S1753741Ab2BFI1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 03:27:11 -0500
+Received: from [62.80.22.186] ([62.80.22.186]:6783 "EHLO
+	domex.lippertembedded.de" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750986Ab2BFI1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 03:14:50 -0500
-Message-ID: <20271.35831.227679.177366@ipc1.ka-ro>
-Date: Mon, 6 Feb 2012 09:14:47 +0100
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
-From: =?us-ascii?Q?=3D=3Futf-8=3FQ=3FLothar=5FWa=3DC3=3D9Fmann=3F=3D?= 
-	<LW@KARO-electronics.de>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [BUG] genirq: Race condition in ONESHOT IRQ handler disabling IRQ forever
+	Mon, 6 Feb 2012 03:27:10 -0500
+Message-ID: <4F2F8D51.1010504@LiPPERTEmbedded.de>
+Date: Mon, 06 Feb 2012 09:20:33 +0100
+From: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+User-Agent: Thunderbird 1.5.0.14 (Windows/20071210)
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>
+CC: Andres Salomon <dilinger@queued.net>, linux-kernel@vger.kernel.org,
+        linux-geode@lists.infradead.org
+Subject: [PATCH resend] cs5535-clockevt: don't ignore MFGPT on SMP-capable
+ kernels
+References: <4EE620A5.7080402@LiPPERTEmbedded.de>	<20111212123131.502be350@queued.net>	<4EE77416.8090907@LiPPERTEmbedded.de>	<4EE8ECF3.6000900@LiPPERTEmbedded.de> <20111214104724.292b02d4@queued.net>
+In-Reply-To: <20111214104724.292b02d4@queued.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Feb 2012 08:27:04.0128 (UTC) FILETIME=[1B0C0400:01CCE4A9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+cs5535-clockevt: don't ignore MFGPT on SMP-capable kernels
 
-I already sent this to <linux-kernel@vger.kernel.org> on Feb. 1, 2012
-but did not get any response there. So resending to a wider audience
-with improved subject line:
+On SMP-capable kernels (e.g. generic distro kernel) the cs5535-clockevt driver
+loads but is not actually used.
 
-there is a race condition in the threaded IRQ handler code for oneshot
-interrupts that may lead to disabling an IRQ indefinitely. IRQs are
-masked before calling the hard-irq handler and are unmasked only after
-the soft-irq handler has been run. Thus if the hard-irq handler
-returns IRQ_HANDLED instead of IRQ_WAKE_THREAD, meaning the soft-irq
-will not be called, the interrupt will remain masked forever.
+Setting cpumask to cpu_all_mask works for UP-only kernels, but if compiled for
+SMP - though still running on the same UP hardware -
+kernel/time/tick-common.c:tick_check_new_device() reads this as "non-cpu-local"
+and silently ignores the device.
 
-This can happen due to a short pulse on the interrupt line, that
-triggers the interrupt logic, but goes undetected by the hard-irq
-handler. The problem can be reproduced with the TSC2007 touch
-controller driver that uses ONESHOT interrupts.
+If we leave cpumask unset clockevents_register_device() will initialize it and
+the cs5535-clockevt driver will be used no matter how the kernel was compiled.
+Should anyone ever manage to stick a CS553x in an SMP system (is this even
+possible?) then a warning will be printed.  This is fine as the cs5535-clockevt
+driver was never written/tested for SMP.
 
-The problem arises also with interrupt controllers that latch a level
-triggered IRQ until it is acknowledged (like the i.MX28 does).
-In this case the IRQ status bit will remain asserted after the
-soft-irq finishes and retrigger the interrupt while the interrupt line
-is already deasserted.
+If bisecting led you here this patch may have exposed a pre-existing MFGPT
+problem.  Configure for UP-only and re-check.
 
-The following patch would solve the problem, but I'm not sure whether
-it's the Right Thing(TM) to do. Especially wrt. shared interrupts.
+Signed-off-by: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+Acked-by: Andres Salomon <dilinger@queued.net>
+---
 
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index 470d08c..93beadb 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -146,6 +146,11 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
- 			/* Fall through to add to randomness */
- 		case IRQ_HANDLED:
- 			random |= action->flags;
-+			/* unmask the IRQ that has been left masked
-+			 * due to race condition
-+			 */
-+			if (res == IRQ_HANDLED && (action->flags & IRQF_ONESHOT))
-+				unmask_irq(desc);
- 			break;
+Hi again,
+
+could you please take this, for linux-next?
+
+Thanks,
+Jens
+
+--- linux-3.2-rc6/drivers/clocksource/cs5535-clockevt.c
++++ use_mfgpt_on_smp_kernels/drivers/clocksource/cs5535-clockevt.c
+@@ -100,7 +100,6 @@ static struct clock_event_device cs5535_
+ 	.set_mode = mfgpt_set_mode,
+ 	.set_next_event = mfgpt_next_event,
+ 	.rating = 250,
+-	.cpumask = cpu_all_mask,
+ 	.shift = 32
+ };
  
- 		default:
+_
 
-Best regards,
-
-Lothar Wassmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
 
