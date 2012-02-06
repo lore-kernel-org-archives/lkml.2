@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab2BFWvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 17:51:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47943 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754709Ab2BFWvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 17:51:24 -0500
-Date: Mon, 6 Feb 2012 23:51:22 +0100
-From: Jan Kara <jack@suse.cz>
-To: Gerard Saraber <gsaraber@gmail.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: Soft lockup problem
-Message-ID: <20120206225122.GF24840@quack.suse.cz>
-References: <CAOgv-ziomS-+ML0Xb4oSoWTjzkG8BBBQcMjXwn7rjQV2pFtQ6Q@mail.gmail.com>
+	id S1756047Ab2BFWve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 17:51:34 -0500
+Received: from hostingnews.com ([83.220.131.130]:40939 "EHLO
+	hostingtecnews.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709Ab2BFWvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 17:51:32 -0500
+To: linux-kernel@vger.kernel.org
+Subject: European Data Protection Laws meant to help Cloud adoption
+Date: Mon, 6 Feb 2012 20:37:55 +0100
+From: Cloud Computing News of the Week <listmaster@hostingtecnews.de>
+Message-ID: <daa9b0311a3dfc5944405611321e1039@hostingtecnews.de>
+X-Priority: 3
+X-Mailer: PHPMailer [version 1.73]
+X-Mailer: phplist v2.10.17
+X-MessageID: 46
+X-ListMember: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOgv-ziomS-+ML0Xb4oSoWTjzkG8BBBQcMjXwn7rjQV2pFtQ6Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 06-02-12 09:40:45, Gerard Saraber wrote:
-> Greetings everyone,
-> I've been having a bit of a problem since upgrading to the linux 3.x
-> series, I have a machine that we're using as a NAS that runs various
-> rsync processes (mostly at night), lately after a day or two, I will
-> come in in the morning to a load average of 49, but the machine not
-> really doing anything, when trying to run 'dstat' the command just
-> hung with no output at all. there were no errors in the logs, or even
-> anything that would vaguely point at anything I could work with.
-> So needing to get the machine back to work I attempted to reboot it
-> "shutdown -r now" on console... it gives a nice message saying it's
-> going to reboot, but nothing ever happens.. the only way to reboot it
-> is by using ctrl + alt + sysrq + b. after which the machine reboots
-> and the raid array comes back clean.
-> 
-> I'm not sure how to troubleshoot this, any pointers would be appreciated.
-> 
-> I'm compiling 3.2.4 at the moment and found a bunch of possibly useful
-> options in the kernel debugging section:
-> detect hard/soft lockups and detect hung tasks, maybe it'll give me
-> something more to go on.
-> 
-> Some details about the machine:
-> Linux xenbox 3.2.2 #1 SMP Sun Jan 29 10:28:22 CST 2012 x86_64 Intel(R)
-> Xeon(R) CPU 5140 @ 2.33GHz GenuineIntel GNU/Linux
-> It has 3 software raid arrays (2 x 5 drives and 1 x 4 drives) LVM'ed
-> together into a 23TB XFS filesystem.
-> 6GB memory and a pair of Intel Gigabit ethernet controllers bonded together.
-  Hmm, might be some deadlock in the filesystem. Adding XFS guys to CC.
-Can you run 'echo w >/proc/sysrq-trigger' and post output of dmesg here?
+Dear Cloud Computing Community,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Here are the headlines that dominated the cloud computing industry
+last week:
+
+Proposed European Data Protection Laws Meant to Help Cloud Adoption:
+The proposed new European Union data protection regulation will
+support the adoption of cloud computing, says European Commission
+Vice-President Neelie Kroes.
+http://www.hostingtecnews.com/proposed-european-data-protection-laws-meant-help-cloud-adoption
+
+European Comission's SIENA Initiative: Cloudscape Focuses on
+Interoperability & Cloud Computing Standards: Cloudscape, 23-24
+February at the European Commission in Brussels, aims to drive forward
+the priority actions captured in the SIENA Roadmap by placing
+interoperability, data portability, legal impediments and security
+high on the European agenda.
+http://www.hostingtecnews.com/siena-initiative-cloudscape-focuses-interoperability-cloud-computing-standards
+
+Forum Europe to Host the European Cloud Computing Conference in
+Brussels: Forum Europe will host the European Cloud Computing
+Conference in Brussels. It will be the first opportunity to hear from
+EU policymakers and other stakeholders for a debate on the current
+state and the future of Cloud Computing in Europe.
+http://www.hostingtecnews.com/forum-europe-host-european-cloud-computing-conference-brussels
+
+Best regards,
+
+Hostingtecnews Editorial Staff 
+
+
+
+--
+If you do not want to receive any more newsletters, 
+http://hostingtecnews.de/lists/?p=unsubscribe&uid=3926b811ff07591306b655a10e734184
+
+To update your preferences and to unsubscribe visit
+http://hostingtecnews.de/lists/?p=preferences&uid=3926b811ff07591306b655a10e734184
+Forward a Message to Someone
+http://hostingtecnews.de/lists/?p=forward&uid=3926b811ff07591306b655a10e734184&mid=46
+
+
+------------
+HOSTINGTECNEWS | Cloud Computing, Storage, Virtualization, High Scalability
+and Datacenter Technologies | Lütticher Str. 51, 50674 Cologne Germany
+Tel. +49 (0) 221 789 418 06 | Fax. +49 (0) 221 299 951 31
+www.hostingtecnews.com --
+
+
