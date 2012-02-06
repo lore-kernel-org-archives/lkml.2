@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab2BFMtn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 07:49:43 -0500
-Received: from mail.mnsspb.ru ([84.204.75.2]:47648 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754381Ab2BFMtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 07:49:42 -0500
-Date: Mon, 6 Feb 2012 16:52:50 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Paul Parsons <lost.distance@yahoo.com>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: No /dev/root with devtmpfs?
-Message-ID: <20120206125250.GA13217@tugrik.mns.mnsspb.ru>
-References: <20120206111853.GA11506@tugrik.mns.mnsspb.ru>
- <1328530227.72508.YahooMailClassic@web29004.mail.ird.yahoo.com>
+	id S1755004Ab2BFMv5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 07:51:57 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46516 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754381Ab2BFMvz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 07:51:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328530227.72508.YahooMailClassic@web29004.mail.ird.yahoo.com>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <op.v87mpive3l0zgt@mpn-glaptop>
+References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
+	<1328271538-14502-13-git-send-email-m.szyprowski@samsung.com>
+	<CAJd=RBBPOwftZJUfe3xc6y24=T8un5hPk0wEOT_5v6WMCbDSag@mail.gmail.com>
+	<op.v87mpive3l0zgt@mpn-glaptop>
+Date: Mon, 6 Feb 2012 20:51:54 +0800
+Message-ID: <CAJd=RBCqw=4AEDZU5aPexX2+xVKVhB+uo-ta2hviSAJO63axvw@mail.gmail.com>
+Subject: Re: [PATCH 12/15] drivers: add Contiguous Memory Allocator
+From: Hillf Danton <dhillf@gmail.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 12:10:27PM +0000, Paul Parsons wrote:
-> --- On Mon, 6/2/12, Kirill Smelkov <kirr@mns.spb.ru> wrote:
-> > Is it somehow possible to add /dev/root to devtmpfs?
-> 
-> Or alternatively have /proc/mounts report the actual root device
-> instead of "/dev/root" ?
+2012/2/5 Michal Nazarewicz <mina86@mina86.com>:
+> On Sun, 05 Feb 2012 05:25:40 +0100, Hillf Danton <dhillf@gmail.com> wrote:
+>>
+>> Without boot mem reservation, what is the successful rate of CMA to
+>> serve requests of 1MiB, 2MiB, 4MiB and 8MiB chunks?
+>
+>
+> CMA will work as long as you manage to get some pageblocks marked as
+> MIGRATE_CMA and move all non-movable pages away.  You might try and get it
+> done after system has booted but we have not tried nor tested it.
 
-Sorry, I have not included that info originally. No, it shows /dev/root
-there too:
+Better to include whatever test results in change log.
 
-    root@(none):/# cat /proc/mounts 
-    rootfs / rootfs rw 0 0
-    /dev/root / ext3 ro,relatime,barrier=0,data=writeback 0 0
-    devtmpfs /dev devtmpfs rw,relatime,size=61564k,nr_inodes=15391,mode=755 0 0
-    tmpfs /lib/init/rw tmpfs rw,nosuid,relatime,mode=755 0 0
-    proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
-    sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+And no more questions ;)
