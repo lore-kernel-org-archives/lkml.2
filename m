@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab2BFPC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 10:02:27 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:41864 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754544Ab2BFPC0 (ORCPT
+	id S1755271Ab2BFPC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 10:02:56 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46531 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084Ab2BFPCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 10:02:26 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: le9RDT8VM1lQB0nAwmWlHHWZXKTu4pcXS3iUhpSl4nQOcr8
- 4PbHOpVOXY_9jhvnCmMS77873FiPHGgjwPI6dR3cLoPtRYKuahMkwBLS2CZZ
- UOzjMl66ZybR4ujWEJiy0Y_VTFe8y1kv8ay4l2S3SHvXwuEioz1I5crgKHUW
- iQ2mXIgTUk0m562hpBQZhKAmEFO9mkp9ZUVjdXpDGlInAnc17tj53uXLO_oU
- IFIryjGzyXirqIYCFoPhw0k2rnZQoa1kB6A3qbTsZNlkRs4dlf4EilxOITfa
- OqY5kCyxKYD.v0ab3VTOMydJnbVvEsI9QN38hxrmszp8c_SIYxQytuAXdvv6
- ug.0GxRqPQWChRRckx_JPQ6BcR_8mmnzypHFq37kdGgKewN_mZMF.fIK73uT
- V
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 6 Feb 2012 09:02:23 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Alex Shi <alex.shi@intel.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [rfc PATCH]slub: per cpu partial statistics change
-In-Reply-To: <4F2C824E.8080501@intel.com>
-Message-ID: <alpine.DEB.2.00.1202060858510.393@router.home>
-References: <1328256695.12669.24.camel@debian> <alpine.DEB.2.00.1202030920060.2420@router.home> <4F2C824E.8080501@intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 6 Feb 2012 10:02:55 -0500
+Subject: Re: WARNING: at arch/x86/kernel/cpu/perf_event.c:989
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>
+In-Reply-To: <CABPqkBSuQCJkmJYbno_qsb=erOOf3uf84sQsSCzoov-6=7r40Q@mail.gmail.com>
+References: <20120202211709.GA1642@x4> <20120202213220.GB1642@x4>
+	 <CABPqkBTutb5TuNVXZ4o+MzXczVSwk3NtsJh73KZS58xmrd=tbg@mail.gmail.com>
+	 <20120204135110.GA6437@elte.hu>
+	 <CABPqkBTvoNBBdzvS-njoFk+SrTf-BKQSvP54C05un+m7RA+nBg@mail.gmail.com>
+	 <CABPqkBQdRwKKAvgK339Po0-WBW-MJkgcmpWqS=OOgepn3_XiRw@mail.gmail.com>
+	 <1328523130.2220.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CABPqkBQLn+5fYtOjhpKjXSzvKesuo+YRXxaawyTGUTQuZ6AjYw@mail.gmail.com>
+	 <1328526691.2220.16.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CABPqkBQnDToQczbgW4dCXiu3x2ZTXjAuKS_q_hJ=28Pu_2HexQ@mail.gmail.com>
+	 <1328538568.2482.5.camel@laptop>
+	 <CABPqkBSuQCJkmJYbno_qsb=erOOf3uf84sQsSCzoov-6=7r40Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Feb 2012 16:02:48 +0100
+Message-ID: <1328540568.2482.7.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 4 Feb 2012, Alex Shi wrote:
+On Mon, 2012-02-06 at 15:32 +0100, Stephane Eranian wrote:
+> I am wondering why we stop and restart the code in perf_adjust_period()
+> when it's called from __perf_event_overflow(). Isn't it supposed to be stopped
+> already by the model specific interrupt handler. Looks like we do stop/start,
+> just to get the reload aspect of start. Is that right? 
 
-> On 02/03/2012 11:27 PM, Christoph Lameter wrote:
->
-> > On Fri, 3 Feb 2012, Alex,Shi wrote:
-> >
-> >> This patch split the cpu_partial_free into 2 parts: cpu_partial_node, PCP refilling
-> >> times from node partial; and same name cpu_partial_free, PCP refilling times in
-> >> slab_free slow path. A new statistic 'release_cpu_partial' is added to get PCP
-> >> release times. These info are useful when do PCP tunning.
-> >
-> > Releasing? The code where you inserted the new statistics counts the pages
-> > put on the cpu partial list when refilling from the node partial list.
->
->
-> Ops, are we talking the same base kernel: Linus' tree?  :)
-> Here the Releasing code only be called in slow free path and the PCP is
-> full at the same time, not in PCP refilling from node partial.
+Yes it is in order to deal with the case where an excessively long
+period is programmed and we want to force load the new period without
+having to wait for the old one to complete.
 
-Well the term releasing is unfortunate. per cpu partial pages can migrate
-to and from the per node partial list and become per cpu slabs under
-allocation.
-
-> >> @@ -2465,9 +2466,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-> >>  		 * If we just froze the page then put it onto the
-> >>  		 * per cpu partial list.
-> >>  		 */
-> >> -		if (new.frozen && !was_frozen)
-> >> +		if (new.frozen && !was_frozen) {
-> >>  			put_cpu_partial(s, page, 1);
-> >> -
-> >> +			stat(s, CPU_PARTIAL_FREE);
-> >
-> > cpu partial list filled with a partial page created from a fully allocated
-> > slab (which therefore was not on any list before).
->
->
-> Yes, but the counting is not new here. It just moved out of
-> put_cpu_partial().
-
-Ok but then you also added different accounting in put_cpu_partial.
+I hit that case several times with the adaptive code and events that
+have very uneven rates.
 
