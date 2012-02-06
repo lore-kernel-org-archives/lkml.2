@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab2BFVC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 16:02:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33037 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256Ab2BFVC5 (ORCPT
+	id S1755235Ab2BFVFL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 16:05:11 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21052 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab2BFVFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 16:02:57 -0500
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1328560933-3037-1-git-send-email-venki@google.com>
-References: <1328560933-3037-1-git-send-email-venki@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Feb 2012 22:02:46 +0100
-Message-ID: <1328562166.2482.40.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Feb 2012 16:05:09 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19/x1EPuHjMPibDUA7GxgeN
+Date: Mon, 6 Feb 2012 13:04:56 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: An extremely simplified pinctrl bindings proposal
+Message-ID: <20120206210456.GV1426@atomide.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
+ <CACRpkdahin4srDh7dphgvq306gjz7CGP=h4dVkUY+w0z0wpXRQ@mail.gmail.com>
+ <4F2F6AE2.1040504@nvidia.com>
+ <CACRpkdbtTPSoX1x4aBtNVGZ2Qex9t77D09V9JgON_jfShQdx6w@mail.gmail.com>
+ <20120206190315.GU1426@atomide.com>
+ <CACRpkdZthbejmTqRJAWHb8jU-p8LPT_+zj_CY1q0voMb4FKz2Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZthbejmTqRJAWHb8jU-p8LPT_+zj_CY1q0voMb4FKz2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-06 at 12:42 -0800, Venkatesh Pallipadi wrote:
-> smp_call_function_single and ttwu_queue_remote sends unconditional IPI
-> to target CPU. However, if the target CPU is in mwait based idle, we can
-> do IPI-less wakeups using the magical powers of monitor-mwait.
-> Doing this has certain advantages:
-> * Lower overhead on Async IPI send path. Measurements on Westmere based
->   systems show savings on "no wait" smp_call_function_single with idle
->   target CPU (as measured on the sender side).
->   local socket smp_call_func cost goes from ~1600 to ~1200 cycles
->   remote socket smp_call_func cost goes from ~2000 to ~1800 cycles
-> * Avoiding actual interrupts shows a measurable reduction (10%) in system
->   non-idle cycles and cache-references with micro-benchmark sending IPI from
->   one CPU to all the other mostly idle CPUs in the system.
-> * On a mostly idle system, turbostat shows a tiny decrease in C0(active) time
->   and a corresponding increase in C6 state (Each row being 10min avg)
->           %c0   %c1   %c6
->   Before
->   Run 1  1.51  2.93 95.55
->   Run 2  1.48  2.86 95.65
->   Run 3  1.46  2.78 95.74
->   After
->   Run 1  1.35  2.63 96.00
->   Run 2  1.46  2.78 95.74
->   Run 3  1.37  2.63 95.98
+* Linus Walleij <linus.walleij@linaro.org> [120206 11:25]:
+> On Mon, Feb 6, 2012 at 8:03 PM, Tony Lindgren <tony@atomide.com> wrote:
 > 
-> * As a bonus, we can avoid sched/call IPI overhead altogether in a special case.
->   When CPU Y has woken up CPU X (which can take 50-100us to actually wakeup
->   from a deep idle state) and CPU Z wants to send IPI to CPU X in this period.
->   It can get it for free.
+> > So far the only
+> > change needed for pinctrl drivers containing no data is that
+> > we should make the string names optional and structure debugfs
+> > around the physical register addresses instead. I'm basically
+> > just setting the mux register physcal address as the pin name
+> > for now to work around this.
 > 
-> We started looking at this with one of our workloads where system is partially
-> busy and we noticed some kernel hotspots in find_next_bit and
-> default_send_IPI_mask_sequence_phys coming from sched wakeup (futex wakeups)
-> and networking call functions. So, this change addresses those two specific
-> IPI types. This could be extended to nohz_kick, etc.
-> 
-> Note:
-> * This only helps when target CPU is idle. When it is busy we will still send
->   IPI as before.
-> * Only for X86_64 and mwait_idle_with_hints for now, with limited testing.
-> * Will need some accounting for these wakeups exported for powertop and friends.
-> 
-> Comments?
+> OK please make a patch to do it really optional in the core if
+> you find the time, it seems like a good change anyway, because
+> it will make it possible to reduce some current pin name lists
+> quite easily.
 
-Curiously you avoided the existing tsk_is_polling() magic, which IIRC is
-doing something similar for waking from the idle loop.
+OK, will take a look at that.
 
+> If you need to change the layout of debugfs just do it.
+> 
+> I actually had something like unnamed pins in the early patches
+> to register a bunch of anonymous pins ranges, so why not bring
+> it back in.
+
+Yeah it seems that the mux registers should be listed, it might
+require a little bit of thinking for cases where one register
+controls multiple pins. So maybe we need just a new entry for
+mux registers?
+
+Regards,
+
+Tony
