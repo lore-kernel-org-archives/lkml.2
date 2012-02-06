@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab2BFSRI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 13:17:08 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:49294 "EHLO
+	id S1755396Ab2BFSRg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 13:17:36 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52617 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754948Ab2BFSQ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1754576Ab2BFSQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 13:16:56 -0500
-X-Sasl-enc: 37IKEXTA6T6jGGxSvq4YiBCV8y1hHcbV/6QcYNNNmfh0 1328552215
-Date: Mon, 6 Feb 2012 10:16:39 -0800
+	Mon, 6 Feb 2012 13:16:53 -0500
+X-Sasl-enc: iNqr1oZElp06Uolayaw4ozQpEncqmEzkyVNpbWTJkFal 1328552212
+Date: Mon, 6 Feb 2012 10:15:43 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net
-Subject: Re: Linux 3.2.5
-Message-ID: <20120206181639.GB28811@kroah.com>
-References: <20120206181622.GA28811@kroah.com>
+Subject: Re: Linux 3.0.20
+Message-ID: <20120206181543.GB27087@kroah.com>
+References: <20120206181532.GA27087@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120206181622.GA28811@kroah.com>
+In-Reply-To: <20120206181532.GA27087@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 diff --git a/Makefile b/Makefile
-index c8e187e..e9dd0ff 100644
+index 1e57901..c060c58 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,6 +1,6 @@
  VERSION = 3
- PATCHLEVEL = 2
--SUBLEVEL = 4
-+SUBLEVEL = 5
+ PATCHLEVEL = 0
+-SUBLEVEL = 19
++SUBLEVEL = 20
  EXTRAVERSION =
- NAME = Saber-toothed Squirrel
+ NAME = Sneaky Weasel
  
 diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index 2672c79..7aff631 100644
+index d06078d..dfafecb 100644
 --- a/drivers/acpi/pci_root.c
 +++ b/drivers/acpi/pci_root.c
-@@ -596,6 +596,13 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+@@ -595,6 +595,13 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
  		if (ACPI_SUCCESS(status)) {
  			dev_info(root->bus->bridge,
  				"ACPI _OSC control (0x%02x) granted\n", flags);
@@ -56,10 +56,10 @@ index 2672c79..7aff631 100644
  			dev_info(root->bus->bridge,
  				"ACPI _OSC request failed (%s), "
 diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-index 4ecb640..c8e7585 100644
+index d36f41e..56b04bc 100644
 --- a/drivers/pci/pci-acpi.c
 +++ b/drivers/pci/pci-acpi.c
-@@ -395,7 +395,6 @@ static int __init acpi_pci_init(void)
+@@ -393,7 +393,6 @@ static int __init acpi_pci_init(void)
  
  	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
  		printk(KERN_INFO"ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
@@ -68,7 +68,7 @@ index 4ecb640..c8e7585 100644
  	}
  
 diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index cbfbab1..1cfbf22 100644
+index 6892601..e25af67 100644
 --- a/drivers/pci/pcie/aspm.c
 +++ b/drivers/pci/pcie/aspm.c
 @@ -68,7 +68,7 @@ struct pcie_link_state {
