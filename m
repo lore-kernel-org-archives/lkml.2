@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab2BFV1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 16:27:52 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12853 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187Ab2BFV1u (ORCPT
+	id S1755810Ab2BFV1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 16:27:54 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44449 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187Ab2BFV1w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 16:27:50 -0500
-Date: Mon, 6 Feb 2012 22:28:21 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: netdev@vger.kernel.org
-cc: Eilon Greenstein <eilong@broadcom.com>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Eliezer Tamir <eliezert@broadcom.com>
-Subject: [PATCH] bnx2x: Fix mem leak in bnx2x_tpa_stop() if build_skb()
- fails.
-Message-ID: <alpine.LNX.2.00.1202062224210.20532@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 6 Feb 2012 16:27:52 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120206191854.GA16702@kroah.com>
+References: <20120203163056.GA4190@redhat.com> <20120206162930.GA5117@oksana.dev.rtsoft.ru>
+ <20120206163542.GA10104@kroah.com> <20120206185909.GB7741@oksana.dev.rtsoft.ru>
+ <20120206191854.GA16702@kroah.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Mon, 6 Feb 2012 16:27:32 -0500
+Message-ID: <CAHGf_=r+nReQSfdvU7+FAhMRBkZPzQ2Jg6Puw9SmvW7WijpN7A@mail.gmail.com>
+Subject: Re: [PATCH 1/6] oom: Make find_lock_task_mm() sparse-aware
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We allocate memory for 'new_data' with kmalloc(). If we get the memory
-we then try to build_skb() and if that should fail (which it can) we
-do not enter 'if (likely(skb)) {' and actually use 'new_data' but
-instead fall through to the 'drop:' label and end up returning from
-the function without ever assigning 'new'data' to anything or freeing
-it. That leaks the memory allocated to 'new_data'.
+2012/2/6 Greg KH <gregkh@linuxfoundation.org>:
+> On Mon, Feb 06, 2012 at 10:59:09PM +0400, Anton Vorontsov wrote:
+>> On Mon, Feb 06, 2012 at 08:35:42AM -0800, Greg KH wrote:
+>> [...]
+>> > > -extern struct task_struct *find_lock_task_mm(struct task_struct *p);
+>> > > +extern struct task_struct *__find_lock_task_mm(struct task_struct *p);
+>> > > +
+>> > > +#define find_lock_task_mm(p)                                             \
+>> > > +({                                                                       \
+>> > > + struct task_struct *__ret;                                      \
+>> > > +                                                                 \
+>> > > + __cond_lock(&(p)->alloc_lock, __ret = __find_lock_task_mm(p));  \
+>> > > + __ret;                                                          \
+>> > > +})
+>> >
+>> > Please use the proper "do...while" style thing here for multi-line,
+>> > complex #defines like the rest of the kernel does so that you don't end
+>> > up debugging horrible problems later.
+>>
+>> Unfortunately this isn't possible in this case. Unlike '({})' GCC
+>> extension, do-while statement does not evaluate to a value, i.e.
+>> 'x = do { 123; } while (0);' is illegal.
+>
+> Ah, you are right, my bad, sorry about that.
+>
+> greg k-h
 
-This patch fixes the memory leak by doing a kfree(new_data) in the
-case where build_skb() fails (or where allocation of 'new_data' itself
-fails, but in taht case it's just a harmless kfree(NULL)).
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
- No hardware to test, so compile tested only.
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 03f3935..7aee469 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -523,7 +523,6 @@ static void bnx2x_tpa_stop(struct bnx2x *bp, struct bnx2x_fastpath *fp,
- 		skb = build_skb(data);
- 
- 	if (likely(skb)) {
--
- #ifdef BNX2X_STOP_ON_ERROR
- 		if (pad + len > fp->rx_buf_size) {
- 			BNX2X_ERR("skb_put is about to fail...  "
-@@ -557,7 +556,7 @@ static void bnx2x_tpa_stop(struct bnx2x *bp, struct bnx2x_fastpath *fp,
- 
- 		return;
- 	}
--
-+	kfree(new_data);
- drop:
- 	/* drop the packet and keep the buffer in the bin */
- 	DP(NETIF_MSG_RX_STATUS,
--- 
-1.7.9
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Some __cond_lock() caller are inline functions. Is this bad? inline function
+is always recommended than macros.
