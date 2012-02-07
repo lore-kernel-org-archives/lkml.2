@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab2BGVzs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 16:55:48 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56604 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756338Ab2BGVzr (ORCPT
+	id S1757013Ab2BGWHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 17:07:54 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:26931 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756332Ab2BGWHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 16:55:47 -0500
-Message-ID: <4F319DDF.4020303@gmail.com>
-Date: Tue, 07 Feb 2012 14:55:43 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf: allow command to attach local data to thread/evsel structs
-References: <4F316964.2050900@gmail.com> <20120207201052.GE2172@infradead.org> <4F319514.7030604@gmail.com> <20120207213322.GF2172@infradead.org>
-In-Reply-To: <20120207213322.GF2172@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Feb 2012 17:07:53 -0500
+Date: Tue, 7 Feb 2012 23:07:41 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Aaron Sierra <asierra@xes-inc.com>
+Cc: guenter roeck <guenter.roeck@ericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>
+Subject: Re: [PATCH 2/3 v2] gpio: Add support for Intel ICHx/3100/Series[56]
+ GPIO
+Message-ID: <20120207230741.17220c09@endymion.delvare>
+In-Reply-To: <c4c7d7dc-5e9f-45c2-9aa6-f13c20e9a4e6@zimbra>
+References: <1328300388.2261.211.camel@groeck-laptop>
+	<c4c7d7dc-5e9f-45c2-9aa6-f13c20e9a4e6@zimbra>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 02:33 PM, Arnaldo Carvalho de Melo wrote:
->>> I think we either use {thread_conf,evsel_conf} for global configuration
->>> options for these two core data structures or we just provide some
->>> optional, per perf_tool allocator.
->>
->> Meaning conf's that parallel symbol_conf -- allocated and 'owned' by the
->> perf library but exported for the user to set values. In this case
->> handlers are needed for allocation and free as instances come and go?
->> e.g., thread__new invokes thread_conf.allocator if defined and
->> thread__priv returns a pointer to private data.
+On Tue, 07 Feb 2012 13:58:31 -0600 (CST), Aaron Sierra wrote:
+> This driver works on many Intel chipsets, including the ICH6, ICH7,
+> ICH8, ICH9, ICH10, 3100, Series 5/3400 (Ibex Peak), Series 6/C200
+> (Cougar Point), and NM10 (Tiger Point).
 > 
-> Well, the symbol way of doing things is to just allocate as many bytes
-> as the tool being used asks for and then at free time nothing special
-> has to be done.
+> Additional Intel chipsets should be easily supported if needed, eg the
+> ICH1-5, EP80579, etc.
+> 
+> Tested on QM67 (Cougar Point), QM57 (Ibex Peak), 3100 (Whitmore Lake),
+> and NM10 (Tiger Point).
+> (...)
+> +static int ichx_write_bit(int reg, unsigned nr, int val, int verify)
+> +{
+> +	unsigned long flags;
+> +	u32 data, tmp;
+> +	int reg_nr = nr / 32;
+> +	int bit = nr & 0x1f;
+> +	int ret = 0;
+> +
+> +	spin_lock_irqsave(&ichx_priv.lock, flags);
+> +
+> +	data = ICHX_READ(ichx_regs[reg][reg_nr], ichx_priv.gpio_base);
+> +	data = (data & ~(1 << bit)) | (val << bit);
 
-Consider the case of events and you want to track time last seen by cpu.
-You need an array:
+I posted a fix for this function last Sunday:
 
-u64 last_seen[]
+Subject: [PATCH] gpio-ich: Fix setting GPIO value
+Date: Sun, 5 Feb 2012 21:44:44 +0100
 
-with CPU as an index, but do not want to assume some value of max_cpus.
-So one option is:
+Please apply it, otherwise your driver doesn't implement the gpio
+driver API properly and code running on top of it (consumer drivers)
+may fail.
 
-struct priv {
-    u64 *last_seen; /* time this event was last seen */
-    u32 max_cpu;    /* highest cpu slot allocated */
-};
+> +	ICHX_WRITE(data, ichx_regs[reg][reg_nr], ichx_priv.gpio_base);
+> +	tmp = ICHX_READ(ichx_regs[reg][reg_nr], ichx_priv.gpio_base);
+> +	if (verify && (data != tmp))
+> +		ret = -EPERM;
+> +
+> +	spin_unlock_irqrestore(&ichx_priv.lock, flags);
+> +
+> +	return ret;
+> +}
 
-last_seen is malloc'ed first time the event is processed and realloc'ed
-as max_cpu increases. Attaching that struct to an event means an
-embedded allocation that does not follow the static model of symbol_conf.
-
-David
+-- 
+Jean Delvare
