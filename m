@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab2BGS42 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 13:56:28 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:48878 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756413Ab2BGS40 (ORCPT
+	id S1756522Ab2BGS44 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 13:56:56 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:35380 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756381Ab2BGS4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 13:56:26 -0500
+	Tue, 7 Feb 2012 13:56:54 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 1/4] CPU hotplug,
- cpuset: Maintain a copy of the cpus_allowed mask before CPU hotplug
+Subject: [PATCH 2/4] cpuset: Split up update_cpumask() so that its
+ functionality can be reused
 To: paul@paulmenage.org, a.p.zijlstra@chello.nl, mingo@elte.hu, rjw@sisk.pl,
         tj@kernel.org
 Cc: frank.rowand@am.sony.com, pjt@google.com, tglx@linutronix.de,
@@ -17,164 +17,125 @@ Cc: frank.rowand@am.sony.com, pjt@google.com, tglx@linutronix.de,
         paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org
-Date: Wed, 08 Feb 2012 00:26:11 +0530
-Message-ID: <20120207185550.7482.72699.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 08 Feb 2012 00:26:42 +0530
+Message-ID: <20120207185620.7482.29594.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
 References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12020718-4790-0000-0000-00000138CDD1
+x-cbid: 12020718-9574-0000-0000-00000147BDD3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maintain a new per-cpuset mask 'cpus_allowed_before_hotplug', that closely
-reflects the value of 'cpus_allowed' of a cpuset, in order to decide how to
-react upon a CPU offline followed by CPU online.
+update_cpumask() expects the new cpuset in the form of characters (owing to
+the fact that it expects cpuset updates from userspace). This might not be
+appropriate if an in-kernel user wants to call it.
 
-Whenever 'cpus_allowed' of the cpuset changes, 'cpus_allowed_before_hotplug'
-is updated. The only exception is: when 'cpus_allowed' changes due to a CPU
-hotplug event (either offline or online) we don't update
-'cpus_allowed_before_hotplug', so that it still reflects the state of
-'cpus_allowed' as seen *before* the hotplug event.
-
-This is to handle cases like:
-
-* cpus_allowed has 0-15, cpus_allowed_before_hotplug is also 0-15
-
-* CPU 15 was taken offline
-  So now cpus_allowed = 0-14
-  No changes to cpus_allowed_before_hotplug.
-
-* CPU 14 was taken offline
-  So now cpus_allowed = 0-13
-  But we still remember that the original cpuset was 0-15, because
-  cpus_allowed_before_hotplug was never changed.
-
-* cpuset was changed to 0-10 from userspace.
-  So now cpus_allowed = 0-10, and cpus_allowed_before_hotplug is also updated
-  to 0-10.
-
-So, essentially cpus_allowed_before_hotplug is maintained in such a way that
-if a CPU comes back online, we know whether it was in the cpuset earlier (and
-hence we need to add that CPU back into the cpuset) or whether it was
-originally absent from that cpuset.
+So, split up the function so that its functionality can be reused. That is,
+introduce do_update_cpumask() and offload the core work to it.
 
 Reported-by: Prashanth K. Nageshappa <prashanth@linux.vnet.ibm.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Cc: stable@vger.kernel.org
 ---
 
- kernel/cpuset.c |   40 +++++++++++++++++++++++++++++++++++-----
- 1 files changed, 35 insertions(+), 5 deletions(-)
+ kernel/cpuset.c |   61 ++++++++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 42 insertions(+), 19 deletions(-)
 
 diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index a09ac2b..5e2323b 100644
+index 5e2323b..2be71da 100644
 --- a/kernel/cpuset.c
 +++ b/kernel/cpuset.c
-@@ -93,6 +93,15 @@ struct cpuset {
- 
- 	unsigned long flags;		/* "unsigned long" so bitops work */
- 	cpumask_var_t cpus_allowed;	/* CPUs allowed to tasks in cpuset */
-+
-+	/*
-+	 * Copy of 'cpus_allowed'. This is updated whenever 'cpus_allowed' is
-+	 * updated, except during CPU hotplug operations (in which case, only
-+	 * 'cpus_allowed' is updated). This is used to decide whether to add a
-+	 * CPU to this cpuset when that offline CPU comes back online.
-+	 */
-+	cpumask_var_t cpus_allowed_before_hotplug;
-+
- 	nodemask_t mems_allowed;	/* Memory Nodes allowed to tasks */
- 
- 	struct cpuset *parent;		/* my parent */
-@@ -903,6 +912,7 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
- 
- 	mutex_lock(&callback_mutex);
- 	cpumask_copy(cs->cpus_allowed, trialcs->cpus_allowed);
-+	cpumask_copy(cs->cpus_allowed_before_hotplug, cs->cpus_allowed);
- 	mutex_unlock(&callback_mutex);
- 
- 	/*
-@@ -1851,6 +1861,7 @@ static void cpuset_post_clone(struct cgroup_subsys *ss,
- 	mutex_lock(&callback_mutex);
- 	cs->mems_allowed = parent_cs->mems_allowed;
- 	cpumask_copy(cs->cpus_allowed, parent_cs->cpus_allowed);
-+	cpumask_copy(cs->cpus_allowed_before_hotplug, cs->cpus_allowed);
- 	mutex_unlock(&callback_mutex);
- 	return;
+@@ -864,13 +864,14 @@ static void update_tasks_cpumask(struct cpuset *cs, struct ptr_heap *heap)
+ 	cgroup_scan_tasks(&scan);
  }
-@@ -1875,10 +1886,12 @@ static struct cgroup_subsys_state *cpuset_create(
- 	cs = kmalloc(sizeof(*cs), GFP_KERNEL);
- 	if (!cs)
- 		return ERR_PTR(-ENOMEM);
--	if (!alloc_cpumask_var(&cs->cpus_allowed, GFP_KERNEL)) {
--		kfree(cs);
--		return ERR_PTR(-ENOMEM);
+ 
++
+ /**
+- * update_cpumask - update the cpus_allowed mask of a cpuset and all tasks in it
++ * do_update_cpumask - update the cpus_allowed mask of a cpuset and all tasks
++ * in it
+  * @cs: the cpuset to consider
+- * @buf: buffer of cpu numbers written to this cpuset
++ * @trialcs: the updated cpuset value requested
+  */
+-static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+-			  const char *buf)
++static int do_update_cpumask(struct cpuset *cs, struct cpuset *trialcs)
+ {
+ 	struct ptr_heap heap;
+ 	int retval;
+@@ -880,22 +881,9 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+ 	if (cs == &top_cpuset)
+ 		return -EACCES;
+ 
+-	/*
+-	 * An empty cpus_allowed is ok only if the cpuset has no tasks.
+-	 * Since cpulist_parse() fails on an empty mask, we special case
+-	 * that parsing.  The validate_change() call ensures that cpusets
+-	 * with tasks have cpus.
+-	 */
+-	if (!*buf) {
+-		cpumask_clear(trialcs->cpus_allowed);
+-	} else {
+-		retval = cpulist_parse(buf, trialcs->cpus_allowed);
+-		if (retval < 0)
+-			return retval;
+-
+-		if (!cpumask_subset(trialcs->cpus_allowed, cpu_active_mask))
++	if (!cpumask_subset(trialcs->cpus_allowed, cpu_active_mask))
+ 			return -EINVAL;
 -	}
 +
-+	if (!alloc_cpumask_var(&cs->cpus_allowed, GFP_KERNEL))
-+		goto out_cs;
-+
-+	if (!alloc_cpumask_var(&cs->cpus_allowed_before_hotplug, GFP_KERNEL))
-+		goto out_cpus_allowed;
+ 	retval = validate_change(cs, trialcs);
+ 	if (retval < 0)
+ 		return retval;
+@@ -925,9 +913,44 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
  
- 	cs->flags = 0;
- 	if (is_spread_page(parent))
-@@ -1887,6 +1900,7 @@ static struct cgroup_subsys_state *cpuset_create(
- 		set_bit(CS_SPREAD_SLAB, &cs->flags);
- 	set_bit(CS_SCHED_LOAD_BALANCE, &cs->flags);
- 	cpumask_clear(cs->cpus_allowed);
-+	cpumask_clear(cs->cpus_allowed_before_hotplug);
- 	nodes_clear(cs->mems_allowed);
- 	fmeter_init(&cs->fmeter);
- 	cs->relax_domain_level = -1;
-@@ -1894,6 +1908,12 @@ static struct cgroup_subsys_state *cpuset_create(
- 	cs->parent = parent;
- 	number_of_cpusets++;
- 	return &cs->css ;
+ 	if (is_load_balanced)
+ 		async_rebuild_sched_domains();
 +
-+out_cpus_allowed:
-+	kfree(cs->cpus_allowed);
-+out_cs:
-+	kfree(cs);
-+	return ERR_PTR(-ENOMEM);
+ 	return 0;
  }
  
++/**
++ * update_cpumask - update the cpus_allowed mask of a cpuset and all tasks in it
++ * @cs: the cpuset to consider
++ * @buf: buffer of cpu numbers written to this cpuset
++ */
++static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
++			  const char *buf)
++{
++	int retval;
++
++	/* top_cpuset.cpus_allowed tracks cpu_online_map; it's read-only */
++	if (cs == &top_cpuset)
++		return -EACCES;
++
++	/*
++	 * An empty cpus_allowed is ok only if the cpuset has no tasks.
++	 * Since cpulist_parse() fails on an empty mask, we special case
++	 * that parsing.  The validate_change() call ensures that cpusets
++	 * with tasks have cpus.
++	 */
++	if (!*buf) {
++		cpumask_clear(trialcs->cpus_allowed);
++	} else {
++		retval = cpulist_parse(buf, trialcs->cpus_allowed);
++		if (retval < 0)
++			return retval;
++
++		if (!cpumask_subset(trialcs->cpus_allowed, cpu_active_mask))
++			return -EINVAL;
++	}
++
++	return do_update_cpumask(cs, trialcs);
++}
++
  /*
-@@ -1911,6 +1931,7 @@ static void cpuset_destroy(struct cgroup_subsys *ss, struct cgroup *cont)
- 
- 	number_of_cpusets--;
- 	free_cpumask_var(cs->cpus_allowed);
-+	free_cpumask_var(cs->cpus_allowed_before_hotplug);
- 	kfree(cs);
- }
- 
-@@ -1936,7 +1957,9 @@ int __init cpuset_init(void)
- {
- 	int err = 0;
- 
--	if (!alloc_cpumask_var(&top_cpuset.cpus_allowed, GFP_KERNEL))
-+	if (!alloc_cpumask_var(&top_cpuset.cpus_allowed, GFP_KERNEL) ||
-+		!alloc_cpumask_var(&top_cpuset.cpus_allowed_before_hotplug,
-+				GFP_KERNEL))
- 		BUG();
- 
- 	cpumask_setall(top_cpuset.cpus_allowed);
-@@ -2077,6 +2100,13 @@ static void scan_for_empty_cpusets(struct cpuset *root)
- 		mutex_lock(&callback_mutex);
- 		cpumask_and(cp->cpus_allowed, cp->cpus_allowed,
- 			    cpu_active_mask);
-+
-+		/*
-+		 * Do NOT update cpus_allowed_before_hotplug here. We want it
-+		 * to reflect the value of cpus_allowed as seen *before* the
-+		 * hotplug event.
-+		 */
-+
- 		nodes_and(cp->mems_allowed, cp->mems_allowed,
- 						node_states[N_HIGH_MEMORY]);
- 		mutex_unlock(&callback_mutex);
+  * cpuset_migrate_mm
+  *
 
