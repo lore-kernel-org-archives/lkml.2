@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab2BGKZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 05:25:27 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65482 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab2BGKZ0 (ORCPT
+	id S1754787Ab2BGKb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 05:31:27 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59110 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab2BGKb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 05:25:26 -0500
-Message-ID: <1328610322.2232.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [PATCH] perf: fix assertion failure in x86_pmu_start()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, markus@trippelsdorf.de, paulus@samba.org
-Date: Tue, 07 Feb 2012 11:25:22 +0100
-In-Reply-To: <20120207084156.GA15359@elte.hu>
-References: <20120206205354.GA31186@quad>
-	 <1328603689.2476.15.camel@edumazet-laptop> <20120207084156.GA15359@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 7 Feb 2012 05:31:26 -0500
+Subject: [PATCH BUGFIX] mm: fix find_get_page() for shmem exceptional entries
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Tue, 07 Feb 2012 14:31:21 +0400
+Message-ID: <20120207103121.28345.28611.stgit@zurg>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 07 février 2012 à 09:41 +0100, Ingo Molnar a écrit :
+It should return NULL, otherwise the caller will be very surprised.
 
-> Were these messages introduced by:
-> 
->  e050e3f0a71b: perf: Fix broken interrupt rate throttling
-> 
-> as well?
-> 
-> In any case I'm holding off on applying the patch before this is 
-> resolved.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ mm/filemap.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Reverting e050e3f0a71b solves all my problems, no more warnings.
-
-$ perf record -a -g hackbench 10 thread 4000
-Running with 10*40 (== 400) tasks.
-Time: 13.181
-[ perf record: Woken up 59 times to write data ]
-[ perf record: Captured and wrote 16.874 MB perf.data (~737228 samples)
-]
-
-$ perf record -a -g hackbench 10 thread 4000
-Running with 10*40 (== 400) tasks.
-Time: 13.124
-[ perf record: Woken up 61 times to write data ]
-[ perf record: Captured and wrote 16.533 MB perf.data (~722349 samples)
-]
-
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 518223b..ca98cb5 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -693,6 +693,7 @@ repeat:
+ 			 * here as an exceptional entry: so return it without
+ 			 * attempting to raise page count.
+ 			 */
++			page = NULL;
+ 			goto out;
+ 		}
+ 		if (!page_cache_get_speculative(page))
 
