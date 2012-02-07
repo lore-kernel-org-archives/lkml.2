@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab2BGQZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 11:25:21 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:62476 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab2BGQZT convert rfc822-to-8bit (ORCPT
+	id S1756109Ab2BGQ2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 11:28:01 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:37997 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754525Ab2BGQ17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 11:25:19 -0500
+	Tue, 7 Feb 2012 11:27:59 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Cxam9G0VM1lOekinYTk0mqavnxxqTnijFS0w9eSk0H.vetM
+ d7vzXrva8xSr7yPhMPdV9QW3QkjlLC8XC.JjcZOntuLKjcJstAfCOcf3UkQo
+ Nez.kzpw1rUIV3vqoHk75O7S.1JbGDiC7NWrPiA5q6ALp4lQOgxUdKN0UfB3
+ 0J8zCtptjZpQlEM7jhFsReCIi9vawfm_q80DwRIKeEZvPhLD69iTNc0KDrRm
+ 4U9yv.AV5_5V8po94YP4TCMKbUFjymD5YVTAN5BH9VHJiAxU5wksZgOaFLiq
+ IuynYF1A1HxzEB2w43OZ1hqN9VJCErwFZQ_B2dA3E3oUQXA8jeOV5Wcx_TA0
+ nyh1N.IlMG4Q9gemOMzZF0C7BkAxvADuhfN_7OP_uj7qN_dOlnTVwvZkUIdR
+ 1
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 7 Feb 2012 10:27:56 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 02/15] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+In-Reply-To: <1328568978-17553-3-git-send-email-mgorman@suse.de>
+Message-ID: <alpine.DEB.2.00.1202071025050.30652@router.home>
+References: <1328568978-17553-1-git-send-email-mgorman@suse.de> <1328568978-17553-3-git-send-email-mgorman@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <20120206222517.GD24840@quack.suse.cz>
-References: <1328536531-19034-1-git-send-email-jack@suse.cz>
-	<4F2FF4EC.1000104@linux.vnet.ibm.com>
-	<20120206164732.GH6890@quack.suse.cz>
-	<20120206131717.c4346f72.akpm@linux-foundation.org>
-	<20120206222517.GD24840@quack.suse.cz>
-Date: Tue, 7 Feb 2012 18:25:18 +0200
-Message-ID: <CAOtvUMcWOfkn401qEUgBMV=R-vCbWG3sus6=yV9kQjRhheXV4A@mail.gmail.com>
-Subject: Re: [PATCH] vfs: Avoid IPI storm due to bh LRU invalidation
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        hare@suse.de, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 7, 2012 at 12:25 AM, Jan Kara <jack@suse.cz> wrote:
-> On Mon 06-02-12 13:17:17, Andrew Morton wrote:
->> On Mon, 6 Feb 2012 17:47:32 +0100
->> Jan Kara <jack@suse.cz> wrote:
->>
->> > On Mon 06-02-12 21:12:36, Srivatsa S. Bhat wrote:
->> > > On 02/06/2012 07:25 PM, Jan Kara wrote:
->> > >
->> > > > When discovery of lots of disks happen in parallel, we call
->> > > > invalidate_bh_lrus() once for each disk from partitioning code resulting in a
->> > > > storm of IPIs and causing a softlockup detection to fire (it takes several
->> > > > *minutes* for a machine to execute all the invalidate_bh_lrus() calls).
->>
->> Gad.  How many disks are we talking about here?
->  I think something around hundred scsi disks in this case (number of
-> physical drives is actually lower but multipathing blows it up). I actually
-> saw machines with close to thousand scsi disks (yes, they had names like
-> sdabc ;).
+On Mon, 6 Feb 2012, Mel Gorman wrote:
 
-LOL. Is that a huge SCSI disk array in your server or your are just
-happy to see me... ? :-)
->
-...
->> > >
->> > > Something related that you might be interested in:
->> > > https://lkml.org/lkml/2012/2/5/109
->> > >
->> > > (This is part of Gilad's patchset that tries to reduce cross-CPU IPI
->> > > interference.)
->> >   Thanks for the pointer. I didn't know about it. As Hannes wrote, this
->> > need not be enough for our use case as there might indeed be some bhs in
->> > the LRU. But I'd be interested how well the patchset works anyway. Maybe it
->> > would be enough because after all when we invalidate LRUs subsequent
->> > callers will see them empty and not issue IPI? Hannes, can you give a try
->> > to the patches?
+> Pages allocated from the reserve are returned with page->pfmemalloc
+> set and it is up to the caller to determine how the page should be
+> protected.  SLAB restricts access to any page with page->pfmemalloc set
 
-I think its worth a shot since the mutex just delays the IPIs instead
-of canceling them
-altogether.
+pfmemalloc sounds like a page flag. If you would use one then the
+preservation of the flag by copying it elsewhere may not be necessary and
+the patches would be less invasive. Also you would not need to extend
+and modify many of the structures.
 
-A somewhat similar issue in the direct reclaim path of the buddy
-allocator trying
-to reclaim per cpu pages was causing a massive storm of IPIs during OOM with
-concurrent work loads and the IPI noise patches mitigate 85% of the
-IPIs sent just by checking to see if there are any per cpu pages on the CPU you
-are about to IPI, so maybe the same kind of logic applies here as well.
-
-Thanks,
-Gilad
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
