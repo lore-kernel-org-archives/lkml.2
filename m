@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab2BGS0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 13:26:06 -0500
-Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:39953 "EHLO
-	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753706Ab2BGS0E (ORCPT
+	id S1756300Ab2BGS0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 13:26:37 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:27203 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751507Ab2BGS0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 13:26:04 -0500
+	Tue, 7 Feb 2012 13:26:36 -0500
+Message-ID: <1328639192.3549.14.camel@bwh-desktop>
+Subject: RE: [patch v1, kernel version 3.2.1] rtnetlink workaround around
+ the skb buff size issue
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Rose, Gregory V" <gregory.v.rose@intel.com>
+CC: David Miller <davem@davemloft.net>, "steweg@ynet.sk" <steweg@ynet.sk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Tue, 7 Feb 2012 18:26:32 +0000
+In-Reply-To: <C5551D9AAB213A418B7FD5E4A6F30A0702F81413@ORSMSX106.amr.corp.intel.com>
+References: <5422254.3711328278789768.JavaMail.root@5-MeO-DMT.ynet.sk>
+	 <10521320.3761328279061644.JavaMail.root@5-MeO-DMT.ynet.sk>
+	 <20120203.192933.510206531351047222.davem@davemloft.net>
+	 <C5551D9AAB213A418B7FD5E4A6F30A0702F7F86F@ORSMSX106.amr.corp.intel.com>
+	 <1328572230.12637.18.camel@deadeye>
+	 <C5551D9AAB213A418B7FD5E4A6F30A0702F81413@ORSMSX106.amr.corp.intel.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-In-Reply-To: <20120207001818.GB30840@kroah.com>
-References: <1326878467-17766-1-git-send-email-amit.kachhap@linaro.org>
-	<20120206165658.GA28687@atrey.karlin.mff.cuni.cz>
-	<20120206170348.GA19749@kroah.com>
-	<CAK44p22FWxiXyBA1zbiuO0cbDScTSMRSV9pFDDMxXsc43ebGpw@mail.gmail.com>
-	<20120207001818.GB30840@kroah.com>
-Date: Tue, 7 Feb 2012 10:26:02 -0800
-Message-ID: <CAK44p23TPO2r=4vuziGo9Ua42fqVNtQjGMWD8R00mDs7o_vzwg@mail.gmail.com>
-Subject: Re: [linux-pm] [RFC PATCH] thermal: Add support to report cooling
- statistics achieved by cooling devices
-From: Amit Kachhap <amit.kachhap@linaro.org>
-To: Greg KH <greg@kroah.com>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        rob.lee@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18694.005
+X-TM-AS-Result: No--31.899900-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 February 2012 16:18, Greg KH <greg@kroah.com> wrote:
-> On Mon, Feb 06, 2012 at 03:16:17PM -0800, Amit Kachhap wrote:
->> On 6 February 2012 09:03, Greg KH <greg@kroah.com> wrote:
->> > On Mon, Feb 06, 2012 at 05:56:58PM +0100, Pavel Machek wrote:
->> >> Hi!
->> >>
->> >> > Add a sysfs node code to report effective cooling of all cooling devices
->> >> > attached to each trip points of a thermal zone. The cooling data reported
->> >> > will be absolute if the higher temperature trip points are arranged first
->> >> > otherwise the cooling stats is the cumulative effect of the earlier
->> >> > invoked cooling handlers.
->> >> >
->> >> > The basic assumption is that cooling devices will bring down the temperature
->> >> > in a symmetric manner and those statistics can be stored back and used for
->> >> > further tuning of the system.
->> >>
->> >> /sys fs should be one-value-per-file, talk to gregkh.
->> >
->> > That's correct.
->> >
->> > Why not use debugfs for this instead?
->> >
->> > thanks,
->> >
->> > greg k-h
->>
->> Thanks Greg/Pavel for looking into the patch.
->> Basically I checked the places where single sysfs entry is showing
->> more then 1 output. And
->> 1) /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state
->> 2) /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table
->> are the places where the output is more than 1 value.
->
-> Yes, those are two known-bad files, whose files will change soon and
-> move to debugfs.
->
-> Just because you found 2, instead of the thousands of other properly
-> formatted files, does not mean you are allowed to create something like
-> this.
->
->> Anyway I can enclose this sysfs inside CONFIG_THERMAL_COOLING_STATS macro.
->
-> No, you can not create it at all in sysfs, if you really need such a
-> large single file, use debugfs instead, that is what it is there for.
->
-> Again, one-value-per-file is the sysfs rule, and has been for a decade
-> now, please don't think this is a new thing.
->
-> greg k-h
+On Tue, 2012-02-07 at 00:13 +0000, Rose, Gregory V wrote:
+> > -----Original Message-----
+> > From: Ben Hutchings [mailto:bhutchings@solarflare.com]
+> > Sent: Monday, February 06, 2012 3:51 PM
+> > To: Rose, Gregory V
+> > Cc: David Miller; steweg@ynet.sk; linux-kernel@vger.kernel.org;
+> > netdev@vger.kernel.org
+> > Subject: RE: [patch v1, kernel version 3.2.1] rtnetlink workaround around
+> > the skb buff size issue
+> > 
+> > On Mon, 2012-02-06 at 04:41 +0000, Rose, Gregory V wrote:
+> > [...]
+> > > > This is not how we're going to fix this.  I already stated the desired
+> > > > way to fix this, which is to make the existing dump request have a way
+> > > > for the requestor to enable extended parts of the device dump.
+> > > >
+> > > > This is just like netlink diag socket dumps, where the dump request
+> > > > specifies what the user wants to see.
+> > > >
+> > > > In this case we'd add a netlink attribute to the dump request which
+> > > > is just a u32 bitmask or similar.
+> > > >
+> > > > The Intel engineer who added the VF dump support said he would work on
+> > > > this fix so why don't you just wait patiently for him to do the work?
+> > >
+> > > The patch below is what I've got so far.  Right now the bit mask array
+> > > is global so if you enable display of VF (n) on one interface it will
+> > > enable display of the same VF on other interfaces.  I intend to move
+> > > the bit mask array into the net_device structure so we can set the
+> > > display mask for each interface independently.
+> > 
+> > I don't think this can work.  Using an application that requests VF
+> > information and uses large buffers (e.g. the updated 'ip') will break
+> > another application that doesn't (e.g. current Network Manager), won't
+> > it?
+> 
+> It's my understanding that the problem isn't with the application
+> buffer size but with the kernel buffer size, which is limited to a
+> page.
+[...]
 
-Ok I will follow one-value-per-file rule for sysfs file. Thanks
+Then it's no wonder you're going about this the wrong way.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
