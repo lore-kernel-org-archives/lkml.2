@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab2BGX0H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 18:26:07 -0500
-Received: from xes-mad.com ([216.165.139.218]:4318 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756602Ab2BGX0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 18:26:06 -0500
-Date: Tue, 07 Feb 2012 17:25:52 -0600 (CST)
-From: Aaron Sierra <asierra@xes-inc.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: guenter roeck <guenter.roeck@ericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>
-Subject: Re: [PATCH 2/3 v2] gpio: Add support for Intel ICHx/3100/Series[56] GPIO
-Message-ID: <7e927131-d885-4dfd-8c29-4807ae5766b8@zimbra>
-In-Reply-To: <20120207230741.17220c09@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757210Ab2BGX21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 18:28:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35992 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533Ab2BGX20 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 18:28:26 -0500
+Date: Tue, 7 Feb 2012 15:28:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: rtc-linux@googlegroups.com
+Cc: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        Ivan Kuten <ivan.kuten@promwad.com>
+Subject: Re: [rtc-linux] [PATCH] RTC: Add driver for NXP PCF8523 RTC chip
+Message-Id: <20120207152815.6311c59a.akpm@linux-foundation.org>
+In-Reply-To: <1317815823-27297-1-git-send-email-yauhen.kharuzhy@promwad.com>
+References: <1317815823-27297-1-git-send-email-yauhen.kharuzhy@promwad.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.52.0.65]
-X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC15 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static int ichx_write_bit(int reg, unsigned nr, int val, int
-> > verify)
-> > +{
-> > +	unsigned long flags;
-> > +	u32 data, tmp;
-> > +	int reg_nr = nr / 32;
-> > +	int bit = nr & 0x1f;
-> > +	int ret = 0;
-> > +
-> > +	spin_lock_irqsave(&ichx_priv.lock, flags);
-> > +
-> > +	data = ICHX_READ(ichx_regs[reg][reg_nr], ichx_priv.gpio_base);
-> > +	data = (data & ~(1 << bit)) | (val << bit);
-> 
-> I posted a fix for this function last Sunday:
-> 
-> Subject: [PATCH] gpio-ich: Fix setting GPIO value
-> Date: Sun, 5 Feb 2012 21:44:44 +0100
-> 
-> Please apply it, otherwise your driver doesn't implement the gpio
-> driver API properly and code running on top of it (consumer drivers)
-> may fail.
-> 
+On Wed,  5 Oct 2011 14:57:03 +0300
+Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com> wrote:
 
-Jean,
-Thanks for the reminder and for the patch. I have applied it to my tree.
+> This driver is based on PCF8563 driver and supports only base functions
+> now: read/write date & time.
 
--Aaron
+This patch breaks my x86_64 allmodconfig build.
 
-> > +	ICHX_WRITE(data, ichx_regs[reg][reg_nr], ichx_priv.gpio_base);
-> > +	tmp = ICHX_READ(ichx_regs[reg][reg_nr], ichx_priv.gpio_base);
-> > +	if (verify && (data != tmp))
-> > +		ret = -EPERM;
-> > +
-> > +	spin_unlock_irqrestore(&ichx_priv.lock, flags);
-> > +
-> > +	return ret;
-> > +}
-> 
-> --
-> Jean Delvare
-> 
+drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_get_datetime':
+drivers/rtc/rtc-pcf8523.c:55: warning: unused variable 'pcf8523'
+drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_set_datetime':
+drivers/rtc/rtc-pcf8523.c:110: warning: unused variable 'pcf8523'
+drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_probe':
+drivers/rtc/rtc-pcf8523.c:179: error: invalid application of 'sizeof' to incomplete type 'struct pcf8523' 
+drivers/rtc/rtc-pcf8523.c:187: error: dereferencing pointer to incomplete type
+drivers/rtc/rtc-pcf8523.c:188: error: 'THIS_MODULE' undeclared (first use in this function)
+drivers/rtc/rtc-pcf8523.c:188: error: (Each undeclared identifier is reported only once
+drivers/rtc/rtc-pcf8523.c:188: error: for each function it appears in.)
+drivers/rtc/rtc-pcf8523.c:190: error: dereferencing pointer to incomplete type
+drivers/rtc/rtc-pcf8523.c:191: error: dereferencing pointer to incomplete type
+drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_remove':
+drivers/rtc/rtc-pcf8523.c:207: error: dereferencing pointer to incomplete type
+drivers/rtc/rtc-pcf8523.c:208: error: dereferencing pointer to incomplete type
+drivers/rtc/rtc-pcf8523.c: At top level:
+drivers/rtc/rtc-pcf8523.c:219: warning: data definition has no type or storage class
+drivers/rtc/rtc-pcf8523.c:219: warning: type defaults to 'int' in declaration of 'MODULE_DEVICE_TABLE'
+drivers/rtc/rtc-pcf8523.c:219: warning: parameter names (without types) in function declaration
+drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_init':
+drivers/rtc/rtc-pcf8523.c:232: error: 'THIS_MODULE' undeclared (first use in this function)
+drivers/rtc/rtc-pcf8523.c: At top level:
+drivers/rtc/rtc-pcf8523.c:240: error: expected declaration specifiers or '...' before string constant
+drivers/rtc/rtc-pcf8523.c:240: warning: data definition has no type or storage class
+drivers/rtc/rtc-pcf8523.c:240: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+drivers/rtc/rtc-pcf8523.c:240: warning: function declaration isn't a prototype
+drivers/rtc/rtc-pcf8523.c:241: error: expected declaration specifiers or '...' before string constant
+drivers/rtc/rtc-pcf8523.c:241: warning: data definition has no type or storage class
+drivers/rtc/rtc-pcf8523.c:241: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+drivers/rtc/rtc-pcf8523.c:241: warning: function declaration isn't a prototype
+drivers/rtc/rtc-pcf8523.c:242: error: expected declaration specifiers or '...' before string constant
+drivers/rtc/rtc-pcf8523.c:242: warning: data definition has no type or storage class
+drivers/rtc/rtc-pcf8523.c:242: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+drivers/rtc/rtc-pcf8523.c:242: warning: function declaration isn't a prototype
+drivers/rtc/rtc-pcf8523.c:243: error: expected declaration specifiers or '...' before string constant
+drivers/rtc/rtc-pcf8523.c:243: warning: data definition has no type or storage class
+drivers/rtc/rtc-pcf8523.c:243: warning: type defaults to 'int' in declaration of 'MODULE_VERSION'
+drivers/rtc/rtc-pcf8523.c:243: warning: function declaration isn't a prototype
+
