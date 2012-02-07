@@ -1,348 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab2BGBaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 20:30:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756557Ab2BGBaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 20:30:23 -0500
-Message-ID: <4F307F2F.4010400@redhat.com>
-Date: Tue, 07 Feb 2012 09:32:31 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1756676Ab2BGBer (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 20:34:47 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:46985 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756051Ab2BGBeq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 20:34:46 -0500
+Message-ID: <4F307FB3.4030700@gmail.com>
+Date: Mon, 06 Feb 2012 17:34:43 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-CC: akpm@linux-foundation.org, xiyou.wangcong@gmail.com, penberg@kernel.org,
-        fengguang.wu@intel.com, cl@linux.com
-Subject: Re: [PATCH 3/3] move hugepage test examples to tools/testing/selftests/vm
-References: <20120205081555.GA2249@darkstar.redhat.com>
-In-Reply-To: <20120205081555.GA2249@darkstar.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
+References: <1328560933-3037-1-git-send-email-venki@google.com> <4F306FAF.7020500@cavium.com> <4F307D45.1050404@zytor.com>
+In-Reply-To: <4F307D45.1050404@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2012 04:15 PM, Dave Young wrote:
+On 02/06/2012 05:24 PM, H. Peter Anvin wrote:
+> On 02/06/2012 04:26 PM, David Daney wrote:
+>> On 02/06/2012 12:42 PM, Venkatesh Pallipadi wrote:
+>> [...]
+>>> index 5bed94e..6a56cb0 100644
+>>> --- a/arch/x86/Kconfig
+>>> +++ b/arch/x86/Kconfig
+>>> @@ -170,6 +170,11 @@ config GENERIC_TIME_VSYSCALL
+>>>        bool
+>>>        default X86_64
+>>>
+>>> +config AVOID_IPI_ON_IDLE
+>>> +    bool
+>>> +    depends on X86_64
+>>> +    default X86_64
+>>> +
+>>
+>> Can you get rid of this part...
+>>
+>>>    config ARCH_HAS_CPU_RELAX
+>>>        def_bool y
+>>>
+>> [...]
+>>> diff --git a/arch/x86/kernel/acpi/cstate.c
+>>> b/arch/x86/kernel/acpi/cstate.c
+>>> index f50e7fb..340c4e9 100644
+>>> --- a/arch/x86/kernel/acpi/cstate.c
+>>> +++ b/arch/x86/kernel/acpi/cstate.c
+>>> @@ -161,6 +161,14 @@ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
+>>>     */
+>>>    void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
+>>>    {
+>>> +#ifdef CONFIG_AVOID_IPI_ON_IDLE
+>>
+>>
+>> ... and change all of these to #ifdef CONFIG_64BIT
+>>
+>>> +    int oldval, cpu = smp_processor_id();
+>>> +
+>
+> Why should this be 64-bit specific??
+>
 
-> hugepage-mmap.c, hugepage-shm.c and map_hugetlb.c in Documentation/vm are
-> simple pass/fail tests, It's better to promote them to tools/testing/selftests
-> 
-> Thanks suggestion of Andrew Morton about this. They all need firstly setting up
-> proper nr_hugepages and hugepage-mmap need to mount hugetlbfs. So I add a shell
-> script run_test to do such work which will call the three test programs and
-> check the return value of them.
-> 
-> Changes to original code including below:
-> a. add run_test script
-> b. return error when read_bytes mismatch with writed bytes.
-> c. coding style fixes: do not use assignment in if condition
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  Documentation/vm/Makefile                          |    8 --
->  tools/testing/selftests/Makefile                   |    2 +-
->  tools/testing/selftests/run_tests                  |    6 +-
->  tools/testing/selftests/vm/Makefile                |   11 +++
->  .../testing/selftests}/vm/hugepage-mmap.c          |   13 ++--
->  .../testing/selftests}/vm/hugepage-shm.c           |   10 ++-
->  .../testing/selftests}/vm/map_hugetlb.c            |   10 ++-
->  tools/testing/selftests/vm/run_test                |   77 ++++++++++++++++++++
->  8 files changed, 112 insertions(+), 25 deletions(-)
->  delete mode 100644 Documentation/vm/Makefile
->  create mode 100644 tools/testing/selftests/vm/Makefile
->  rename {Documentation => tools/testing/selftests}/vm/hugepage-mmap.c (93%)
->  rename {Documentation => tools/testing/selftests}/vm/hugepage-shm.c (94%)
->  rename {Documentation => tools/testing/selftests}/vm/map_hugetlb.c (94%)
->  create mode 100755 tools/testing/selftests/vm/run_test
-> 
-> diff --git a/Documentation/vm/Makefile b/Documentation/vm/Makefile
-> deleted file mode 100644
-> index e538864..0000000
-> --- a/Documentation/vm/Makefile
-> +++ /dev/null
-> @@ -1,8 +0,0 @@
-> -# kbuild trick to avoid linker error. Can be omitted if a module is built.
-> -obj- := dummy.o
-> -
-> -# List of programs to build
-> -hostprogs-y := hugepage-mmap hugepage-shm map_hugetlb
-> -
-> -# Tell kbuild to always build the programs
-> -always := $(hostprogs-y)
-> diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-> index 4ec8401..9a72fe5 100644
-> --- a/tools/testing/selftests/Makefile
-> +++ b/tools/testing/selftests/Makefile
-> @@ -1,4 +1,4 @@
-> -TARGETS = breakpoints
-> +TARGETS = breakpoints vm
->  
->  all:
->  	for TARGET in $(TARGETS); do \
-> diff --git a/tools/testing/selftests/run_tests b/tools/testing/selftests/run_tests
-> index 320718a..1f4a5ef 100644
-> --- a/tools/testing/selftests/run_tests
-> +++ b/tools/testing/selftests/run_tests
-> @@ -1,8 +1,10 @@
->  #!/bin/bash
->  
-> -TARGETS=breakpoints
-> +TARGETS="breakpoints vm"
->  
->  for TARGET in $TARGETS
->  do
-> -	$TARGET/run_test
-> +	cd "$TARGET"
-> +	./run_test
-> +	cd ..
->  done
-> diff --git a/tools/testing/selftests/vm/Makefile b/tools/testing/selftests/vm/Makefile
-> new file mode 100644
-> index 0000000..537ec38
-> --- /dev/null
-> +++ b/tools/testing/selftests/vm/Makefile
-> @@ -0,0 +1,11 @@
-> +# Makefile for vm selftests
-> +
-> +CC = $(CROSS_COMPILE)gcc
-> +CFLAGS = -Wall -Wextra
-> +
-> +all: hugepage-mmap hugepage-shm  map_hugetlb
-> +%: %.c
-> +	$(CC) $(CFLAGS) -o $@ $^
-> +
-> +clean:
-> +	$(RM) hugepage-mmap hugepage-shm  map_hugetlb
-> diff --git a/Documentation/vm/hugepage-mmap.c b/tools/testing/selftests/vm/hugepage-mmap.c
-> similarity index 93%
-> rename from Documentation/vm/hugepage-mmap.c
-> rename to tools/testing/selftests/vm/hugepage-mmap.c
-> index db0dd9a..a10f310 100644
-> --- a/Documentation/vm/hugepage-mmap.c
-> +++ b/tools/testing/selftests/vm/hugepage-mmap.c
-> @@ -22,7 +22,7 @@
->  #include <sys/mman.h>
->  #include <fcntl.h>
->  
-> -#define FILE_NAME "/mnt/hugepagefile"
-> +#define FILE_NAME "huge/hugepagefile"
->  #define LENGTH (256UL*1024*1024)
->  #define PROTECTION (PROT_READ | PROT_WRITE)
->  
-> @@ -48,7 +48,7 @@ static void write_bytes(char *addr)
->  		*(addr + i) = (char)i;
->  }
->  
-> -static void read_bytes(char *addr)
-> +static int read_bytes(char *addr)
->  {
->  	unsigned long i;
->  
-> @@ -56,14 +56,15 @@ static void read_bytes(char *addr)
->  	for (i = 0; i < LENGTH; i++)
->  		if (*(addr + i) != (char)i) {
->  			printf("Mismatch at %lu\n", i);
-> -			break;
-> +			return 1;
->  		}
-> +	return 0;
->  }
->  
->  int main(void)
->  {
->  	void *addr;
-> -	int fd;
-> +	int fd, ret;
->  
->  	fd = open(FILE_NAME, O_CREAT | O_RDWR, 0755);
->  	if (fd < 0) {
-> @@ -81,11 +82,11 @@ int main(void)
->  	printf("Returned address is %p\n", addr);
->  	check_bytes(addr);
->  	write_bytes(addr);
-> -	read_bytes(addr);
-> +	ret = read_bytes(addr);
->  
->  	munmap(addr, LENGTH);
->  	close(fd);
->  	unlink(FILE_NAME);
->  
-> -	return 0;
-> +	return ret;
->  }
-> diff --git a/Documentation/vm/hugepage-shm.c b/tools/testing/selftests/vm/hugepage-shm.c
-> similarity index 94%
-> rename from Documentation/vm/hugepage-shm.c
-> rename to tools/testing/selftests/vm/hugepage-shm.c
-> index 07956d8..0d0ef4f 100644
-> --- a/Documentation/vm/hugepage-shm.c
-> +++ b/tools/testing/selftests/vm/hugepage-shm.c
-> @@ -57,8 +57,8 @@ int main(void)
->  	unsigned long i;
->  	char *shmaddr;
->  
-> -	if ((shmid = shmget(2, LENGTH,
-> -			    SHM_HUGETLB | IPC_CREAT | SHM_R | SHM_W)) < 0) {
-> +	shmid = shmget(2, LENGTH, SHM_HUGETLB | IPC_CREAT | SHM_R | SHM_W);
-> +	if (shmid < 0) {
->  		perror("shmget");
->  		exit(1);
->  	}
-> @@ -82,14 +82,16 @@ int main(void)
->  
->  	dprintf("Starting the Check...");
->  	for (i = 0; i < LENGTH; i++)
-> -		if (shmaddr[i] != (char)i)
-> +		if (shmaddr[i] != (char)i) {
->  			printf("\nIndex %lu mismatched\n", i);
-> +			exit(3);
-> +		}
->  	dprintf("Done.\n");
->  
->  	if (shmdt((const void *)shmaddr) != 0) {
->  		perror("Detach failure");
->  		shmctl(shmid, IPC_RMID, NULL);
-> -		exit(3);
-> +		exit(4);
->  	}
->  
->  	shmctl(shmid, IPC_RMID, NULL);
-> diff --git a/Documentation/vm/map_hugetlb.c b/tools/testing/selftests/vm/map_hugetlb.c
-> similarity index 94%
-> rename from Documentation/vm/map_hugetlb.c
-> rename to tools/testing/selftests/vm/map_hugetlb.c
-> index eda1a6d..ac56639 100644
-> --- a/Documentation/vm/map_hugetlb.c
-> +++ b/tools/testing/selftests/vm/map_hugetlb.c
-> @@ -44,7 +44,7 @@ static void write_bytes(char *addr)
->  		*(addr + i) = (char)i;
->  }
->  
-> -static void read_bytes(char *addr)
-> +static int read_bytes(char *addr)
->  {
->  	unsigned long i;
->  
-> @@ -52,13 +52,15 @@ static void read_bytes(char *addr)
->  	for (i = 0; i < LENGTH; i++)
->  		if (*(addr + i) != (char)i) {
->  			printf("Mismatch at %lu\n", i);
-> -			break;
-> +			return 1;
->  		}
-> +	return 0;
->  }
->  
->  int main(void)
->  {
->  	void *addr;
-> +	int ret;
->  
->  	addr = mmap(ADDR, LENGTH, PROTECTION, FLAGS, 0, 0);
->  	if (addr == MAP_FAILED) {
-> @@ -69,9 +71,9 @@ int main(void)
->  	printf("Returned address is %p\n", addr);
->  	check_bytes(addr);
->  	write_bytes(addr);
-> -	read_bytes(addr);
-> +	ret = read_bytes(addr);
->  
->  	munmap(addr, LENGTH);
->  
-> -	return 0;
-> +	return ret;
->  }
-> diff --git a/tools/testing/selftests/vm/run_test b/tools/testing/selftests/vm/run_test
-> new file mode 100755
-> index 0000000..33d355d
-> --- /dev/null
-> +++ b/tools/testing/selftests/vm/run_test
-> @@ -0,0 +1,77 @@
-> +#!/bin/bash
-> +#please run as root
-> +
-> +#we need 256M, below is the size in kB
-> +needmem=262144
-> +mnt=./huge
-> +
-> +#get pagesize and freepages from /proc/meminfo
-> +while read name size unit; do
-> +	if [ "$name" = "HugePages_Free:" ]; then
-> +		freepgs=$size
-> +	fi
-> +	if [ "$name" = "Hugepagesize:" ]; then
-> +		pgsize=$size
-> +	fi
-> +done < /proc/meminfo
-> +
-> +#set proper nr_hugepages
-> +if [ -n "$freepgs" ] && [ -n "$pgsize" ]; then
-> +	nr_hugepgs=`cat /proc/sys/vm/nr_hugepages`
-> +	needpgs=`expr $needmem / $pgsize`
-> +	if [ $freepgs -lt $needpgs ]; then
-> +		lackpgs=$(( $needpgs - $freepgs ))
-> +		echo $(( $lackpgs + $nr_hugepgs )) > /proc/sys/vm/nr_hugepages
-> +		if [ $? -ne 0 ]; then
-> +			echo "Please run this test as root"
-> +			exit 1
-> +		fi
-> +	fi
-> +else
-> +	echo "no hugetlbfs support in kernel?"
-> +	exit 1
-> +fi
-> +
-> +mkdir $mnt
-> +mount -t hugetlbfs none $mnt
-> +
-> +echo "--------------------"
-> +echo "runing hugepage-mmap"
-> +echo "--------------------"
-> +./hugepage-mmap
-> +if [ $? -ne 0 ]; then
-> +	echo "[FAIL]"
-> +else
-> +	echo "[PASS]"
-> +fi
-> +
-> +shmmax=`cat /proc/sys/kernel/shmmax`
-> +shmall=`cat /proc/sys/kernel/shmall`
-> +echo 268435456 > /proc/sys/kernel/shmmax
-> +echo 4194304 > /proc/sys/kernel/shmall
-> +echo "--------------------"
-> +echo "runing hugepage-shm"
-> +echo "--------------------"
-> +./hugepage-shm
-> +echo $shmmax > /proc/sys/kernel/shmmax
-> +echo $shmall > /proc/sys/kernel/shmall
-> +if [ $? -ne 0 ]; then
+Well I don't know that part.  The gist of my comment was to get rid of 
+an unneeded new config variable.
 
+If this works just as well for 32-bit, then by all means do it there too.
 
-Oops, $? check place is wrong, will fix in v2
+In any event, I think you want the kernel to automatically do it if the 
+CPU is capable, and not have a manual config setting you have to fiddle 
+with.
 
-> +	echo "[FAIL]"
-> +else
-> +	echo "[PASS]"
-> +fi
-> +
-> +echo "--------------------"
-> +echo "runing map_hugetlb"
-> +echo "--------------------"
-> +./map_hugetlb
-> +if [ $? -ne 0 ]; then
-> +	echo "[FAIL]"
-> +else
-> +	echo "[PASS]"
-> +fi
-> +
-> +#cleanup
-> +umount $mnt
-> +rm -rf $mnt
-> +echo $nr_hugepgs > /proc/sys/vm/nr_hugepages
-
-
-
--- 
-Thanks
-Dave
+David Daney
