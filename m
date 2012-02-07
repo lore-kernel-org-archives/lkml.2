@@ -1,79 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab2BGFUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 00:20:40 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:38334 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751808Ab2BGFUj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 00:20:39 -0500
-X-WSS-ID: 0LZ0C6B-0A-1N5-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-cc: "Linus Walleij" <linus.walleij@linaro.org>,
-        "shreshthakumar.sahu@stericsson.com" 
-	<shreshthakumar.sahu@stericsson.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 6 Feb 2012 21:20:31 -0800
-Subject: RE: [PATCH v3 3/6] leds-lm3530: add lm3530_mode_get() in the
- dev_attr
-Thread-Topic: [PATCH v3 3/6] leds-lm3530: add lm3530_mode_get() in the
- dev_attr
-Thread-Index: AczgVaUQ3hF/QGbiQW2WPkyktVduZwFAcx+Q
-Message-ID: <B567DBAB974C0544994013492B949F8E3812ED44AE@EXMAIL03.scwf.nsc.com>
-References: <B567DBAB974C0544994013492B949F8E3812DEC933@EXMAIL03.scwf.nsc.com>
- <20120131121930.4cb1a05a.akpm@linux-foundation.org>
-In-Reply-To: <20120131121930.4cb1a05a.akpm@linux-foundation.org>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
-MIME-Version: 1.0
-X-WSS-ID: 632E6B281LS10196260-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	id S1753063Ab2BGFY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 00:24:58 -0500
+Received: from mga03.intel.com ([143.182.124.21]:47068 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966Ab2BGFY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 00:24:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104010881"
+Subject: Re: [patch]block: fix ioc locking warning
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
+In-Reply-To: <20120207005900.GF21292@google.com>
+References: <20120206151219.GC30752@redhat.com> <4F2FFB21.9000202@kernel.dk>
+	 <20120206163721.GF30752@redhat.com> <20120206164428.GA21292@google.com>
+	 <CA+55aFx6BR_ZUHd8d64btu-LzsPHo3Ot_d1-5jJytjQUqvvaiQ@mail.gmail.com>
+	 <20120206172706.GB21292@google.com> <20120206203604.GC21292@google.com>
+	 <CANejiEVzs=pUhQSTvUppkDcc2TNZyfohBRLygW5zFmXyk5A-xQ@mail.gmail.com>
+	 <20120207003948.GE21292@google.com>
+	 <1328575430.21268.69.camel@sli10-conroe>
+	 <20120207005900.GF21292@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Feb 2012 13:22:58 +0800
+Message-ID: <1328592178.21268.78.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> -----Original Message-----
-> From: Andrew Morton [mailto:akpm@linux-foundation.org]
-> Sent: Wednesday, February 01, 2012 5:20 AM
-> To: Kim, Milo
-> Cc: Linus Walleij; shreshthakumar.sahu@stericsson.com;
-> rpurdie@rpsys.net; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v3 3/6] leds-lm3530: add lm3530_mode_get() in the
-> dev_attr
-> 
-> On Mon, 30 Jan 2012 23:33:44 -0800
-> "Kim, Milo" <Milo.Kim@ti.com> wrote:
-> 
-> > To get information about brightness control mode, lm3530_mode_get()
-> is added.
-> 
-> drivers/leds/leds-lm3530.c already has an implementation of
-> lm3530_mode_get().  I assume these patches were prepared against some
-> old kernel.  Please don't do that!
-> 
-
-Thank you for your advice.
-Revised patches were sent - based on kernel 3.2.4.
-
-[PATCH v4 1/5] leds-lm3530: set the max_brightness to 127
-[PATCH v4 2/5] leds-lm3530: replace i2c_client with led_classdev
-[PATCH v4 3/5] leds-lm3530: support pwm input mode
-[PATCH v4 4/5] leds-lm3530: remove LM3530_ALS_ZONE_REG code
-[PATCH v4 5/5] leds-lm3530: replace pltfm with pdata
-
-Best Regards,
-Milo -
-
-
-
+On Mon, 2012-02-06 at 16:59 -0800, Tejun Heo wrote:
+> * Test with the this_q != locked_q trylock patch.
+this one slightly reduces the regression. without it, the regression is
+about 17%, with it, the regression is about 12%. Test result is stable.
 
