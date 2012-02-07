@@ -1,98 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab2BGHjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 02:39:16 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:52939 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251Ab2BGHjO (ORCPT
+	id S1755346Ab2BGHvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 02:51:35 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33255 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab2BGHve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 02:39:14 -0500
-Date: Tue, 7 Feb 2012 15:38:40 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org
-Subject: Re: [PATCH] sched: move CONFIG_IRQ_TIME_ACCOUNTING to common code
-Message-ID: <20120207073840.GA32736@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1328080789-18277-1-git-send-email-dmitry.antipov@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1328080789-18277-1-git-send-email-dmitry.antipov@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 7 Feb 2012 02:51:34 -0500
+Subject: Re: [BUG] perf: perf sched warning possibly due to clock
+ granularity on AMD
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venki Pallipadi <venki@google.com>
+Cc: Borislav Petkov <bp@amd64.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, acme@redhat.com, mingo@elte.hu,
+        robert.richter@amd.com, eric.dumazet@gmail.com,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+In-Reply-To: <CABeCy1ZH_BQhoSegeyBnY0XkjL9afm5=onKrmt9SApufCWgs3A@mail.gmail.com>
+References: <20120206132546.GA30854@quad> <1328538403.2482.4.camel@laptop>
+	 <20120206153408.GA31237@aftab> <1328546246.2482.10.camel@laptop>
+	 <20120206164626.GA31704@aftab> <1328547259.2482.11.camel@laptop>
+	 <20120206202722.GA556@aftab> <1328560293.2482.24.camel@laptop>
+	 <20120206203738.GB556@aftab>
+	 <CABeCy1ZH_BQhoSegeyBnY0XkjL9afm5=onKrmt9SApufCWgs3A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Feb 2012 08:51:08 +0100
+Message-ID: <1328601068.2482.46.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 01, 2012 at 11:19:49AM +0400, Dmitry Antipov wrote:
-> Since CONFIG_IRQ_TIME_ACCOUNTING is architecture-agnostic,
-> move it from x86 area to common code.
-
-IIRC, it's x86 dependent now.
-
-Thanks,
-Yong
-
+On Mon, 2012-02-06 at 13:19 -0800, Venki Pallipadi wrote:
 > 
-> Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
-> ---
->  arch/x86/Kconfig  |   11 -----------
->  lib/Kconfig.debug |   11 +++++++++++
->  2 files changed, 11 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 5bed94e..4759676 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -805,17 +805,6 @@ config SCHED_MC
->  	  making when dealing with multi-core CPU chips at a cost of slightly
->  	  increased overhead in some places. If unsure say N here.
->  
-> -config IRQ_TIME_ACCOUNTING
-> -	bool "Fine granularity task level IRQ time accounting"
-> -	default n
-> -	---help---
-> -	  Select this option to enable fine granularity task irq time
-> -	  accounting. This is done by reading a timestamp on each
-> -	  transitions between softirq and hardirq state, so there can be a
-> -	  small performance impact.
-> -
-> -	  If in doubt, say N here.
-> -
->  source "kernel/Kconfig.preempt"
->  
->  config X86_UP_APIC
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 8745ac7..d6d7afc 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -299,6 +299,17 @@ config SCHEDSTATS
->  	  application, you can say N to avoid the very slight overhead
->  	  this adds.
->  
-> +config IRQ_TIME_ACCOUNTING
-> +	bool "Fine granularity task level IRQ time accounting"
-> +	default n
-> +	---help---
-> +	  Select this option to enable fine granularity task irq time
-> +	  accounting. This is done by reading a timestamp on each
-> +	  transitions between softirq and hardirq state, so there can be a
-> +	  small performance impact.
-> +
-> +	  If in doubt, say N here.
-> +
->  config TIMER_STATS
->  	bool "Collect kernel timers statistics"
->  	depends on DEBUG_KERNEL && PROC_FS
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Yes. If these two flags are set, TSC should be consistent and sched_clock_stable
+> could be set and it will be reset if there is a call to mark_tsc_unstable(). 
 
--- 
-Only stand for myself
+Only trouble is that sched_clock_cpu() et al. will jump when you flip
+sched_clock_stable to 0 after you started using it.. its something we
+might want to fix.
+
