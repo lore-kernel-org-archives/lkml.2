@@ -1,114 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757161Ab2BGXAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 18:00:18 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55955 "EHLO
+	id S1757171Ab2BGXB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 18:01:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64079 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756857Ab2BGXAQ (ORCPT
+	with ESMTP id S1756586Ab2BGXB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 18:00:16 -0500
-Date: Tue, 7 Feb 2012 15:00:11 -0800
+	Tue, 7 Feb 2012 18:01:58 -0500
+Date: Tue, 7 Feb 2012 15:01:53 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Shaohua Li <vivek.goyal2008@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
-Subject: [PATCH] block: fix lockdep warning on io_context release
- put_io_context()
-Message-ID: <20120207230011.GJ21292@google.com>
-References: <1328514611.21268.66.camel@sli10-conroe>
- <20120206151219.GC30752@redhat.com>
- <4F2FFB21.9000202@kernel.dk>
- <20120206163721.GF30752@redhat.com>
- <20120206164428.GA21292@google.com>
- <CA+55aFx6BR_ZUHd8d64btu-LzsPHo3Ot_d1-5jJytjQUqvvaiQ@mail.gmail.com>
- <20120206172706.GB21292@google.com>
- <4F303506.9000201@kernel.dk>
- <20120206215451.GD21292@google.com>
- <4F30C96F.1000905@kernel.dk>
+To: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH block/for-linus 1/2] block: separate out blk_rq_merge_ok()
+ and blk_try_merge() from elevator functions
+Message-ID: <20120207230153.GK21292@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F30C96F.1000905@kernel.dk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11a3122f6c "block: strip out locking optimization in put_io_context()"
-removed ioc_lock depth lockdep annoation along with locking
-optimization; however, while recursing from put_io_context() is no
-longer possible, ioc_release_fn() may still end up putting the last
-reference of another ioc through elevator, which wlil grab ioc->lock
-triggering spurious (as the ioc is always different one) A-A deadlock
-warning.
+blk_rq_merge_ok() is the elevator-neutral part of merge eligibility
+test.  blk_try_merge() determines merge direction and expects the
+caller to have tested elv_rq_merge_ok() previously.
 
-As this can only happen one time from ioc_release_fn(), using non-zero
-subclass from ioc_release_fn() is enough.  Use subclass 1.
+elv_rq_merge_ok() now wraps blk_rq_merge_ok() and then calls
+elv_iosched_allow_merge().  elv_try_merge() is removed and the two
+callers are updated to call elv_rq_merge_ok() explicitly followed by
+blk_try_merge().  While at it, make rq_merge_ok() functions return
+bool.
+
+This is to prepare for plug merge update and doesn't introduce any
+behavior change.
+
+This is based on Jens' patch to skip elevator_allow_merge_fn() from
+plug merge.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+LKML-Reference: <4F16F3CA.90904@kernel.dk>
+Original-patch-by: Jens Axboe <axboe@kernel.dk>
 ---
-Jens, this one should go with the previous patch to avoid triggering
-spurious lockdep warning.
+Jens, these two patches fix the easy-to-trigger oops on elevator
+switch bug.  These are based on your previous patch.
 
 Thanks.
 
- block/blk-ioc.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ block/blk-core.c         |    4 +--
+ block/blk-merge.c        |   37 +++++++++++++++++++++++++++++++
+ block/blk.h              |    2 +
+ block/elevator.c         |   55 +++--------------------------------------------
+ include/linux/elevator.h |    3 --
+ 5 files changed, 46 insertions(+), 55 deletions(-)
 
-Index: work/block/blk-ioc.c
+Index: work/block/blk-merge.c
 ===================================================================
---- work.orig/block/blk-ioc.c
-+++ work/block/blk-ioc.c
-@@ -80,8 +80,15 @@ static void ioc_release_fn(struct work_s
- 	struct io_context *ioc = container_of(work, struct io_context,
- 					      release_work);
- 	struct request_queue *last_q = NULL;
-+	unsigned long flags;
+--- work.orig/block/blk-merge.c
++++ work/block/blk-merge.c
+@@ -471,3 +471,40 @@ int blk_attempt_req_merge(struct request
+ {
+ 	return attempt_merge(q, rq, next);
+ }
++
++bool blk_rq_merge_ok(struct request *rq, struct bio *bio)
++{
++	if (!rq_mergeable(rq))
++		return false;
++
++	/* don't merge file system requests and discard requests */
++	if ((bio->bi_rw & REQ_DISCARD) != (rq->bio->bi_rw & REQ_DISCARD))
++		return false;
++
++	/* don't merge discard requests and secure discard requests */
++	if ((bio->bi_rw & REQ_SECURE) != (rq->bio->bi_rw & REQ_SECURE))
++		return false;
++
++	/* different data direction or already started, don't merge */
++	if (bio_data_dir(bio) != rq_data_dir(rq))
++		return false;
++
++	/* must be same device and not a special request */
++	if (rq->rq_disk != bio->bi_bdev->bd_disk || rq->special)
++		return false;
++
++	/* only merge integrity protected bio into ditto rq */
++	if (bio_integrity(bio) != blk_integrity_rq(rq))
++		return false;
++
++	return true;
++}
++
++int blk_try_merge(struct request *rq, struct bio *bio)
++{
++	if (blk_rq_pos(rq) + blk_rq_sectors(rq) == bio->bi_sector)
++		return ELEVATOR_BACK_MERGE;
++	else if (blk_rq_pos(rq) - bio_sectors(bio) == bio->bi_sector)
++		return ELEVATOR_FRONT_MERGE;
++	return ELEVATOR_NO_MERGE;
++}
+Index: work/block/blk.h
+===================================================================
+--- work.orig/block/blk.h
++++ work/block/blk.h
+@@ -137,6 +137,8 @@ int blk_attempt_req_merge(struct request
+ 				struct request *next);
+ void blk_recalc_rq_segments(struct request *rq);
+ void blk_rq_set_mixed_merge(struct request *rq);
++bool blk_rq_merge_ok(struct request *rq, struct bio *bio);
++int blk_try_merge(struct request *rq, struct bio *bio);
  
--	spin_lock_irq(&ioc->lock);
-+	/*
-+	 * Exiting icq may call into put_io_context() through elevator
-+	 * which will trigger lockdep warning.  The ioc's are guaranteed to
-+	 * be different, use a different locking subclass here.  Use
-+	 * irqsave variant as there's no spin_lock_irq_nested().
-+	 */
-+	spin_lock_irqsave_nested(&ioc->lock, flags, 1);
+ void blk_queue_congestion_threshold(struct request_queue *q);
  
- 	while (!hlist_empty(&ioc->icq_list)) {
- 		struct io_cq *icq = hlist_entry(ioc->icq_list.first,
-@@ -103,15 +110,15 @@ static void ioc_release_fn(struct work_s
- 			 */
- 			if (last_q) {
- 				spin_unlock(last_q->queue_lock);
--				spin_unlock_irq(&ioc->lock);
-+				spin_unlock_irqrestore(&ioc->lock, flags);
- 				blk_put_queue(last_q);
- 			} else {
--				spin_unlock_irq(&ioc->lock);
-+				spin_unlock_irqrestore(&ioc->lock, flags);
- 			}
+Index: work/block/elevator.c
+===================================================================
+--- work.orig/block/elevator.c
++++ work/block/elevator.c
+@@ -70,39 +70,9 @@ static int elv_iosched_allow_merge(struc
+ /*
+  * can we safely merge with this request?
+  */
+-int elv_rq_merge_ok(struct request *rq, struct bio *bio)
++bool elv_rq_merge_ok(struct request *rq, struct bio *bio)
+ {
+-	if (!rq_mergeable(rq))
+-		return 0;
+-
+-	/*
+-	 * Don't merge file system requests and discard requests
+-	 */
+-	if ((bio->bi_rw & REQ_DISCARD) != (rq->bio->bi_rw & REQ_DISCARD))
+-		return 0;
+-
+-	/*
+-	 * Don't merge discard requests and secure discard requests
+-	 */
+-	if ((bio->bi_rw & REQ_SECURE) != (rq->bio->bi_rw & REQ_SECURE))
+-		return 0;
+-
+-	/*
+-	 * different data direction or already started, don't merge
+-	 */
+-	if (bio_data_dir(bio) != rq_data_dir(rq))
+-		return 0;
+-
+-	/*
+-	 * must be same device and not a special request
+-	 */
+-	if (rq->rq_disk != bio->bi_bdev->bd_disk || rq->special)
+-		return 0;
+-
+-	/*
+-	 * only merge integrity protected bio into ditto rq
+-	 */
+-	if (bio_integrity(bio) != blk_integrity_rq(rq))
++	if (!blk_rq_merge_ok(rq, bio))
+ 		return 0;
  
- 			last_q = this_q;
--			spin_lock_irq(this_q->queue_lock);
--			spin_lock(&ioc->lock);
-+			spin_lock_irqsave(this_q->queue_lock, flags);
-+			spin_lock_nested(&ioc->lock, 1);
+ 	if (!elv_iosched_allow_merge(rq, bio))
+@@ -112,23 +82,6 @@ int elv_rq_merge_ok(struct request *rq, 
+ }
+ EXPORT_SYMBOL(elv_rq_merge_ok);
+ 
+-int elv_try_merge(struct request *__rq, struct bio *bio)
+-{
+-	int ret = ELEVATOR_NO_MERGE;
+-
+-	/*
+-	 * we can merge and sequence is ok, check if it's possible
+-	 */
+-	if (elv_rq_merge_ok(__rq, bio)) {
+-		if (blk_rq_pos(__rq) + blk_rq_sectors(__rq) == bio->bi_sector)
+-			ret = ELEVATOR_BACK_MERGE;
+-		else if (blk_rq_pos(__rq) - bio_sectors(bio) == bio->bi_sector)
+-			ret = ELEVATOR_FRONT_MERGE;
+-	}
+-
+-	return ret;
+-}
+-
+ static struct elevator_type *elevator_find(const char *name)
+ {
+ 	struct elevator_type *e;
+@@ -478,8 +431,8 @@ int elv_merge(struct request_queue *q, s
+ 	/*
+ 	 * First try one-hit cache.
+ 	 */
+-	if (q->last_merge) {
+-		ret = elv_try_merge(q->last_merge, bio);
++	if (q->last_merge && elv_rq_merge_ok(q->last_merge, bio)) {
++		ret = blk_try_merge(q->last_merge, bio);
+ 		if (ret != ELEVATOR_NO_MERGE) {
+ 			*req = q->last_merge;
+ 			return ret;
+Index: work/include/linux/elevator.h
+===================================================================
+--- work.orig/include/linux/elevator.h
++++ work/include/linux/elevator.h
+@@ -122,7 +122,6 @@ extern void elv_dispatch_add_tail(struct
+ extern void elv_add_request(struct request_queue *, struct request *, int);
+ extern void __elv_add_request(struct request_queue *, struct request *, int);
+ extern int elv_merge(struct request_queue *, struct request **, struct bio *);
+-extern int elv_try_merge(struct request *, struct bio *);
+ extern void elv_merge_requests(struct request_queue *, struct request *,
+ 			       struct request *);
+ extern void elv_merged_request(struct request_queue *, struct request *, int);
+@@ -155,7 +154,7 @@ extern ssize_t elv_iosched_store(struct 
+ extern int elevator_init(struct request_queue *, char *);
+ extern void elevator_exit(struct elevator_queue *);
+ extern int elevator_change(struct request_queue *, const char *);
+-extern int elv_rq_merge_ok(struct request *, struct bio *);
++extern bool elv_rq_merge_ok(struct request *, struct bio *);
+ 
+ /*
+  * Helper functions.
+Index: work/block/blk-core.c
+===================================================================
+--- work.orig/block/blk-core.c
++++ work/block/blk-core.c
+@@ -1282,10 +1282,10 @@ static bool attempt_plug_merge(struct re
+ 
+ 		(*request_count)++;
+ 
+-		if (rq->q != q)
++		if (rq->q != q || !elv_rq_merge_ok(rq, bio))
  			continue;
- 		}
- 		ioc_exit_icq(icq);
-@@ -119,10 +126,10 @@ static void ioc_release_fn(struct work_s
  
- 	if (last_q) {
- 		spin_unlock(last_q->queue_lock);
--		spin_unlock_irq(&ioc->lock);
-+		spin_unlock_irqrestore(&ioc->lock, flags);
- 		blk_put_queue(last_q);
- 	} else {
--		spin_unlock_irq(&ioc->lock);
-+		spin_unlock_irqrestore(&ioc->lock, flags);
- 	}
- 
- 	kmem_cache_free(iocontext_cachep, ioc);
+-		el_ret = elv_try_merge(rq, bio);
++		el_ret = blk_try_merge(rq, bio);
+ 		if (el_ret == ELEVATOR_BACK_MERGE) {
+ 			ret = bio_attempt_back_merge(q, rq, bio);
+ 			if (ret)
