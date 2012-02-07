@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab2BGBGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 20:06:04 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:40156 "EHLO ogre.sisk.pl"
+	id S1756598Ab2BGBGD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 20:06:03 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:40167 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574Ab2BGBGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 20:06:00 -0500
+	id S1756542Ab2BGBF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 20:05:59 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 4/8] PM / Sleep: Use wait queue to signal "no wakeup events in progress"
-Date: Tue, 7 Feb 2012 02:04:19 +0100
+Subject: [PATCH 3/8] PM / Sleep: Look for wakeup events in later stages of device suspend
+Date: Tue, 7 Feb 2012 02:03:42 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
@@ -24,96 +24,51 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202070204.19615.rjw@sisk.pl>
+Message-Id: <201202070203.42895.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The current wakeup source deactivation code doesn't do anything when
-the counter of wakeup events in progress goes down to zero, which
-requires pm_get_wakeup_count() to poll that counter periodically.
-Although this reduces the average time it takes to deactivate a
-wakeup source, it also may lead to a substantial amount of unnecessary
-polling if there are extended periods of wakeup activity.  Thus it
-seems reasonable to use a wait queue for signaling the "no wakeup
-events in progress" condition and remove the polling.
+Currently, the device suspend code only checks if there have been
+any wakeup events, and therefore the ongoing system transition to a
+sleep state should be aborted, during the first (i.e. "suspend")
+device suspend phase.  However, wakeup events may be reported later
+as well, so it's reasonable to look for them in the in the subsequent
+(i.e. "late suspend" and "suspend noirq") phases.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/wakeup.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ drivers/base/power/main.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Index: linux/drivers/base/power/wakeup.c
+Index: linux/drivers/base/power/main.c
 ===================================================================
---- linux.orig/drivers/base/power/wakeup.c
-+++ linux/drivers/base/power/wakeup.c
-@@ -17,8 +17,6 @@
- 
- #include "power.h"
- 
--#define TIMEOUT		100
--
- /*
-  * If set, the suspend/hibernate code will abort transitions to a sleep state
-  * if wakeup events are registered during or immediately before the transition.
-@@ -52,6 +50,8 @@ static void pm_wakeup_timer_fn(unsigned
- 
- static LIST_HEAD(wakeup_sources);
- 
-+static DECLARE_WAIT_QUEUE_HEAD(wakeup_count_wait_queue);
+--- linux.orig/drivers/base/power/main.c
++++ linux/drivers/base/power/main.c
+@@ -889,6 +889,11 @@ static int dpm_suspend_noirq(pm_message_
+ 		if (!list_empty(&dev->power.entry))
+ 			list_move(&dev->power.entry, &dpm_noirq_list);
+ 		put_device(dev);
 +
- /**
-  * wakeup_source_create - Create a struct wakeup_source object.
-  * @name: Name of the new wakeup source.
-@@ -84,7 +84,7 @@ void wakeup_source_destroy(struct wakeup
- 	while (ws->active) {
- 		spin_unlock_irq(&ws->lock);
- 
--		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
-+		schedule_timeout_interruptible(msecs_to_jiffies(100));
- 
- 		spin_lock_irq(&ws->lock);
++		if (pm_wakeup_pending()) {
++			error = -EBUSY;
++			break;
++		}
  	}
-@@ -411,6 +411,7 @@ EXPORT_SYMBOL_GPL(pm_stay_awake);
-  */
- static void wakeup_source_deactivate(struct wakeup_source *ws)
- {
-+	unsigned int cnt, inpr;
- 	ktime_t duration;
- 	ktime_t now;
- 
-@@ -444,6 +445,10 @@ static void wakeup_source_deactivate(str
- 	 * couter of wakeup events in progress simultaneously.
- 	 */
- 	atomic_add(MAX_IN_PROGRESS, &combined_event_count);
+ 	mutex_unlock(&dpm_list_mtx);
+ 	if (error)
+@@ -962,6 +967,11 @@ static int dpm_suspend_late(pm_message_t
+ 		if (!list_empty(&dev->power.entry))
+ 			list_move(&dev->power.entry, &dpm_late_early_list);
+ 		put_device(dev);
 +
-+	split_counters(&cnt, &inpr);
-+	if (!inpr)
-+		wake_up_all(&wakeup_count_wait_queue);
- }
- 
- /**
-@@ -624,14 +629,19 @@ bool pm_wakeup_pending(void)
- bool pm_get_wakeup_count(unsigned int *count)
- {
- 	unsigned int cnt, inpr;
-+	DEFINE_WAIT(wait);
- 
- 	for (;;) {
-+		prepare_to_wait(&wakeup_count_wait_queue, &wait,
-+				TASK_INTERRUPTIBLE);
- 		split_counters(&cnt, &inpr);
- 		if (inpr == 0 || signal_pending(current))
- 			break;
- 		pm_wakeup_update_hit_counts();
--		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
-+
-+		schedule();
++		if (pm_wakeup_pending()) {
++			error = -EBUSY;
++			break;
++		}
  	}
-+	finish_wait(&wakeup_count_wait_queue, &wait);
- 
- 	split_counters(&cnt, &inpr);
- 	*count = cnt;
+ 	mutex_unlock(&dpm_list_mtx);
+ 	if (error)
 
