@@ -1,99 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab2BGHie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 02:38:34 -0500
-Received: from kamaji.grokhost.net ([87.117.218.43]:33435 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab2BGHid (ORCPT
+	id S1755804Ab2BGHjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 02:39:16 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:52939 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab2BGHjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 02:38:33 -0500
-Message-ID: <4F30D4F6.1040802@bootc.net>
-Date: Tue, 07 Feb 2012 07:38:30 +0000
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Tue, 7 Feb 2012 02:39:14 -0500
+Date: Tue, 7 Feb 2012 15:38:40 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org
+Subject: Re: [PATCH] sched: move CONFIG_IRQ_TIME_ACCOUNTING to common code
+Message-ID: <20120207073840.GA32736@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1328080789-18277-1-git-send-email-dmitry.antipov@linaro.org>
 MIME-Version: 1.0
-To: Julian Calaby <julian.calaby@gmail.com>
-CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Clemens Ladisch <clemens@ladisch.de>, target-devel@vger.kernel.org,
-        linux1394-devel@lists.sourceforge.net,
-        Boaz Harrosh <bharrosh@panasas.com>, Andy Grover <agrover@redhat.com>,
-        linux-scsi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: FireWire/SBP2 Target mode
-References: <4E4BD560.4010806@bootc.net> <4E4D3B88.30003@ladisch.de> <4F29978A.3010707@redhat.com> <20120201224156.0773ebc6@stein> <4F2A55B9.4040005@panasas.com> <4F2A60DC.9030007@ladisch.de> <4F2FD1F4.9050702@bootc.net> <4F2FE705.3070509@ladisch.de> <4F2FE8DA.70502@bootc.net> <20120206212628.6880c506@stein> <5C167A1D-2203-4F1C-B538-E99DD87E7E42@bootc.net> <CAGRGNgWf0epcam-jpCzMCSqefCKDSm892mw-X49FrcoRO0QYrQ@mail.gmail.com> <476E7976-738A-4202-9FC4-FA5B060EA95F@bootc.net>
-In-Reply-To: <476E7976-738A-4202-9FC4-FA5B060EA95F@bootc.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1328080789-18277-1-git-send-email-dmitry.antipov@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2012 23:09, Chris Boot wrote:
->
-> On 6 Feb 2012, at 23:00, Julian Calaby wrote:
->
->> Hi,
->>
->> On Tue, Feb 7, 2012 at 09:28, Chris Boot<bootc@bootc.net>  wrote:
->>> On 6 Feb 2012, at 20:26, Stefan Richter wrote:
->>>
->>>> On Feb 06 Chris Boot wrote:
->>>>> On 06/02/2012 14:43, Clemens Ladisch wrote:
->>>>>> Chris Boot wrote:
->>>>>>> You can pull the code from:
->>>>>>> git://github.com/bootc/Linux-SBP-2-Target.git
->>>>>>
->>>>>> The TODO file says:
->>>>>>> * Update Juju so we can get the speed in the fw_address_handler callback
->>>>>>
->>>>>> What is the speed needed for?
->>>>>
->>>>> "The speed at which the block write request to the MANAGEMENT_AGENT
->>>>> register is received shall determine the speed used by the target for
->>>>> all subsequent requests to read the initiator’s configuration ROM, fetch
->>>>> ORB’s from initiator memory or store status at the initiator’s
->>>>> status_FIFO. Command block ORB’s separately specify the speed for
->>>>> requests addressed to the data buffer or page table."
->>>>>
->>>>> (T10/1155D Revision 4 page 53/54)
->>>>
->>>> I guess it is not too hard to add this to the AR-req handler.  On the
->>>> other hand, I see little reason to follow the SBP-2 spec to the letter
->>>> here.  The target driver could just use the maximum speed that the core
->>>> figured out.  On the other hand, this requires of course
->>>>   - the target to wait for core to finish scanning an initiator,
->>>>   - the core to offer an API to look up an fw_device by a
->>>>     card--generation--nodeID tuple.
->>>>
->>>> The intention of the spec is IMO clearly to enable target implementations
->>>> that do not need to implement topology scanning.  I have a hard time to
->>>> think of a valid scenario where an initiator needs to be able to steer a
->>>> target towards a lower wire speed than what the participating links and
->>>> PHYs actually support.
->>>
->>> The only thing stopping me from getting the speed is the fact that struct fw_request is opaque. The value is easily available from request->response.speed and I kind of do that already in a very hackish way. I've sent a separate patch which adds a function that can be used to access that one value.
->>>
->>> Waiting until the bus scan is complete isn't actually that great as I see the first LOGIN requests often before the fw_node is seen at all. I'd have to turn away the requester and hope they try again. I'm fairly sure my little tweak in my patch is a simple enough solution.
->>
->> Stupid question: Could you use a completion queue or something
->> equivalent to wait until you have seen the fw_node, *then* process the
->> LOGIN request?
->
-> The fw_address_handler callback is called in interrupt context, and I can't sleep from within there. As far as I'm aware I must call fw_send_response() from within the callback and can't defer that until I've scheduled something on a work queue. Please correct me if I'm wrong though, as that might be useful anyway.
+On Wed, Feb 01, 2012 at 11:19:49AM +0400, Dmitry Antipov wrote:
+> Since CONFIG_IRQ_TIME_ACCOUNTING is architecture-agnostic,
+> move it from x86 area to common code.
 
-Hmm sorry I've thought about this overnight and clearly I was talking 
-rubbish. Yes, I need to reply in the fw_address_handler but all I tend 
-to do in there is schedule a task to the the main part of the work 
-anyway. As most of the operations require fetching an ORB from the 
-initiator I have to do this from user context.
+IIRC, it's x86 dependent now.
 
-So it's possible I could do this by waiting in my scheduled work 
-function until the fw_node is available and get the speed from that - 
-but that seems like an inordinate amount of work when I can follow the 
-standard and do it really easily by pulling it out of the fw_request.
+Thanks,
+Yong
 
-Chris
+> 
+> Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
+> ---
+>  arch/x86/Kconfig  |   11 -----------
+>  lib/Kconfig.debug |   11 +++++++++++
+>  2 files changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 5bed94e..4759676 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -805,17 +805,6 @@ config SCHED_MC
+>  	  making when dealing with multi-core CPU chips at a cost of slightly
+>  	  increased overhead in some places. If unsure say N here.
+>  
+> -config IRQ_TIME_ACCOUNTING
+> -	bool "Fine granularity task level IRQ time accounting"
+> -	default n
+> -	---help---
+> -	  Select this option to enable fine granularity task irq time
+> -	  accounting. This is done by reading a timestamp on each
+> -	  transitions between softirq and hardirq state, so there can be a
+> -	  small performance impact.
+> -
+> -	  If in doubt, say N here.
+> -
+>  source "kernel/Kconfig.preempt"
+>  
+>  config X86_UP_APIC
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 8745ac7..d6d7afc 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -299,6 +299,17 @@ config SCHEDSTATS
+>  	  application, you can say N to avoid the very slight overhead
+>  	  this adds.
+>  
+> +config IRQ_TIME_ACCOUNTING
+> +	bool "Fine granularity task level IRQ time accounting"
+> +	default n
+> +	---help---
+> +	  Select this option to enable fine granularity task irq time
+> +	  accounting. This is done by reading a timestamp on each
+> +	  transitions between softirq and hardirq state, so there can be a
+> +	  small performance impact.
+> +
+> +	  If in doubt, say N here.
+> +
+>  config TIMER_STATS
+>  	bool "Collect kernel timers statistics"
+>  	depends on DEBUG_KERNEL && PROC_FS
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Chris Boot
-bootc@bootc.net
-Tel: 01271 414100
+Only stand for myself
