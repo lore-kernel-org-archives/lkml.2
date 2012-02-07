@@ -1,52 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab2BGO3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 09:29:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42272 "EHLO mx1.redhat.com"
+	id S1752469Ab2BGOav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 09:30:51 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:56616 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab2BGO3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 09:29:03 -0500
-Message-ID: <4F313526.2050907@redhat.com>
-Date: Tue, 07 Feb 2012 15:28:54 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1750825Ab2BGOat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 09:30:49 -0500
+X-IronPort-AV: E=Sophos;i="4.73,377,1325491200"; 
+   d="scan'208";a="623222769"
+Message-ID: <4F313595.7090004@netapp.com>
+Date: Tue, 07 Feb 2012 09:30:45 -0500
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-To: Christian Hoff <christian.hoff@de.ibm.com>
-CC: BORNTRAE@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        mst@redhat.com, rusty@rustcorp.com.au
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com> <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com> <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>
-In-Reply-To: <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 4/4] NFS: make nfs_client_lock per net ns
+References: <20120123172631.29637.17188.stgit@localhost6.localdomain6>  <1328622659.4124.3.camel@lade.trondhjem.org>  <4F31308B.1090002@parallels.com> <1328623906.4124.10.camel@lade.trondhjem.org>
+In-Reply-To: <1328623906.4124.10.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 02:59 PM, Christian Hoff wrote:
-> Instead the format has some disadvantages:
-> - It uses up 8 bytes where 3 bytes would be sufficient in order to store
-> both the target ID and LUN number information
-> - The format limits us to 255 target IDs. I agree that the LUN limit is
-> probably more a theoretical and not a practical one, but 255 target IDs
-> could become a limitation in the future.
+On 02/07/12 09:11, Myklebust, Trond wrote:
 
-It also provides better upwards-compatibility in case the limitations 
-are actually hit.  If I had used "uint8_t target; uint16_t lun;" an 
-extension would require a feature bit and a new struct.  With 8-bytes, 
-you can just expand the definition.  That pretty much sums it up.
+> On Tue, 2012-02-07 at 18:09 +0400, Stanislav Kinsbursky wrote:
+>> 07.02.2012 17:51, Myklebust, Trond пишет:
+>>> 8<-------------------------------------------------------------------------
+>>>  From 5a489156da4fd15dd143f2b21dd9657b97dcef88 Mon Sep 17 00:00:00 2001
+>>> From: Trond Myklebust<Trond.Myklebust@netapp.com>
+>>> Date: Tue, 7 Feb 2012 00:05:11 -0500
+>>> Subject: [PATCH] NFS: Initialise the nfs_net->nfs_client_lock
+>>>
+>>> Ensure that we initialise the nfs_net->nfs_client_lock spinlock.
+>>> Also ensure that nfs_server_remove_lists() doesn't try to
+>>> dereference server->nfs_client before that is initialised.
+>>>
+>>
+>> Sorry.
+>> Patch looks nice. Except one notice below.
+>>
+>>> Signed-off-by: Trond Myklebust<Trond.Myklebust@netapp.com>
+>>> Cc: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>>> ---
+>>>   fs/nfs/client.c |    6 +++++-
+>>>   1 files changed, 5 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+>>> index 1a5cd49..f0dacad 100644
+>>> --- a/fs/nfs/client.c
+>>> +++ b/fs/nfs/client.c
+>>> @@ -1055,8 +1055,11 @@ static void nfs_server_insert_lists(struct nfs_server *server)
+>>>   static void nfs_server_remove_lists(struct nfs_server *server)
+>>>   {
+>>>   	struct nfs_client *clp = server->nfs_client;
+>>> -	struct nfs_net *nn = net_generic(clp->net, nfs_net_id);
+>>> +	struct nfs_net *nn;
+>>>
+>>> +	if (clp == NULL)
+>>> +		return;
+>>> +	nn = net_generic(clp->net, nfs_net_id);
+>>>   	spin_lock(&nn->nfs_client_lock);
+>>>   	list_del_rcu(&server->client_link);
+>>>   	if (clp&&  list_empty(&clp->cl_superblocks))
+>>
+>> This check for clp != NULL can be removed.
+>>
+> 
+> Yep... I'll add that in...
 
-But again, I don't think the limitations are serious.  A MegaSAS header 
-has room for 256 targets too, VMWare has only 15, Hyper-V has 1 (and 2 
-channels, but I think that's an off-by-one), and you can always have 
-multiple HBAs on the same guest.
 
-> Nonetheless I think that virtio-scsi is a useful project and addresses
-> many of the limitations imposed by virtio-block. The fact that I am still
-> persisting has more to do with interest in the project rather than wanting
-> to keep the code from going upstream.
 
-No problem. :)
+When I compile Trond's devel branch I get this:
 
-Paolo
+make[1]: Nothing to be done for `all'.
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  CHK     kernel/config_data.h
+  CC [M]  fs/nfs/idmap.o
+fs/nfs/idmap.c: In function 'rpc_pipefs_event':
+fs/nfs/idmap.c:535:9: error: implicit declaration of function 'net_generic' [-Werror=implicit-function-declaration]
+fs/nfs/idmap.c:535:50: error: 'nfs_net_id' undeclared (first use in this function)
+fs/nfs/idmap.c:535:50: note: each undeclared identifier is reported only once for each function it appears in
+fs/nfs/idmap.c:540:82: error: dereferencing pointer to incomplete type
+fs/nfs/idmap.c:540:224: error: dereferencing pointer to incomplete type
+cc1: some warnings being treated as errors
+
+make[2]: *** [fs/nfs/idmap.o] Error 1
+make[1]: *** [fs/nfs] Error 2
+make: *** [fs] Error 2
+
+I bisected it to this patch, probably a missing #include?
+
+- Bryan
+
+> 
+
+
