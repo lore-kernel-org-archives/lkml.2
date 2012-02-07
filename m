@@ -1,285 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab2BGHJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 02:09:58 -0500
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:53097 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752364Ab2BGHJ5 (ORCPT
+	id S1755527Ab2BGHRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 02:17:00 -0500
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:37407 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752447Ab2BGHQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 02:09:57 -0500
-Date: Tue, 7 Feb 2012 09:09:17 +0200
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-Cc: linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rob.lee@linaro.org
-Subject: Re: [linux-pm] [RFC PATCH] thermal: Add support to report cooling
- statistics achieved by cooling devices
-Message-ID: <20120207070917.GA2616@besouro>
-Reply-To: eduardo.valentin@ti.com
-References: <1326878467-17766-1-git-send-email-amit.kachhap@linaro.org>
+	Tue, 7 Feb 2012 02:16:47 -0500
+Date: Tue, 7 Feb 2012 09:16:39 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Vinayak Holikatti <vinholikatti@gmail.com>
+Cc: James.Bottomley@HansenPartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, saugata.das@linaro.org,
+        arnd@arndb.de, venkat@linaro.org, girish.shivananjappa@linaro.org,
+        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com,
+        Santosh Yaraganavi <santoshsy@gmail.com>
+Subject: Re: [PATCH 1/4] [SCSI] ufshcd: UFS Host controller driver
+Message-ID: <20120207071636.GE3707@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1328158649-4137-1-git-send-email-vinholikatti@gmail.com>
+ <1328158649-4137-2-git-send-email-vinholikatti@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="udcq9yAoWb9A4FsZ"
 Content-Disposition: inline
-In-Reply-To: <1326878467-17766-1-git-send-email-amit.kachhap@linaro.org>
+In-Reply-To: <1328158649-4137-2-git-send-email-vinholikatti@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Amit,
 
-some comments embedded.
+--udcq9yAoWb9A4FsZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jan 18, 2012 at 02:51:07PM +0530, Amit Daniel Kachhap wrote:
-> Add a sysfs node code to report effective cooling of all cooling devices
-> attached to each trip points of a thermal zone. The cooling data reported
-> will be absolute if the higher temperature trip points are arranged first
-> otherwise the cooling stats is the cumulative effect of the earlier
-> invoked cooling handlers.
-> 
-> The basic assumption is that cooling devices will bring down the temperature
-> in a symmetric manner and those statistics can be stored back and used for
-> further tuning of the system.
-> 
-> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-> ---
->  Documentation/thermal/sysfs-api.txt |   10 ++++
->  drivers/thermal/thermal_sys.c       |   96 +++++++++++++++++++++++++++++++++++
->  include/linux/thermal.h             |    8 +++
->  3 files changed, 114 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
-> index b61e46f..1db9a9d 100644
-> --- a/Documentation/thermal/sysfs-api.txt
-> +++ b/Documentation/thermal/sysfs-api.txt
-> @@ -209,6 +209,13 @@ passive
->  	Valid values: 0 (disabled) or greater than 1000
->  	RW, Optional
->  
-> +trip_stats
-> +	This attribute presents the effective cooling generated from all the
-> +	cooling devices attached to a trip point. The output is a pair of value
-> +	for each trip point. Each pair represents
-> +	(trip index, cooling temperature difference in millidegree Celsius)
-> +	RO, Optional
-> +
->  *****************************
->  * Cooling device attributes *
->  *****************************
-> @@ -261,6 +268,9 @@ method, the sys I/F structure will be built like this:
->      |---cdev0_trip_point:	1	/* cdev0 can be used for passive */
->      |---cdev1:			--->/sys/class/thermal/cooling_device3
->      |---cdev1_trip_point:	2	/* cdev1 can be used for active[0]*/
-> +    |---trip_stats		0 0
-> +				1 8000	/*trip 1 causes 8 degree Celsius drop*/
-> +				2 3000	/*trip 2 causes 3 degree Celsius drop*/
->  
->  |cooling_device0:
->      |---type:			Processor
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index dd9a574..47e7b6e 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -92,6 +92,64 @@ static void release_idr(struct idr *idr, struct mutex *lock, int id)
->  	if (lock)
->  		mutex_unlock(lock);
->  }
-> +static void update_cooling_stats(struct thermal_zone_device *tz, long cur_temp)
+Hi,
+
+On Thu, Feb 02, 2012 at 10:27:26AM +0530, Vinayak Holikatti wrote:
+> +/**
+> + * ufshcd_uic_cc_handler - handle UIC command completion
+> + * @work: pointer to a work queue structure
+> + *
+> + * Returns 0 on success, non-zero value on failure
+> + */
+> +static void ufshcd_uic_cc_handler (struct work_struct *work)
 > +{
-> +	int count, max_index, cur_interval;
-> +	long trip_temp, max_temp = 0, cool_temp;
-> +	static int last_trip_level = -1;
-
-I got confused here. Are you sure using a static variable here is safe? I suppose this function
-is called for any thermal_zone_device, which in turns, may have different amount of trips, and
-different update rate. You may be using last_trip_level as reference for a different tz. Meaning,
-you would be screwing the stat buffers silently.
-
-If that is the case, I suggest you to move this to your stat structure.
-
+> +	struct ufs_hba *hba;
 > +
-> +	if (cur_temp >= tz->last_temperature)
-> +		return;
+> +	hba =3D container_of(work, struct ufs_hba, uic_workq);
 > +
-> +	/* find the trip according to last temperature */
-> +	for (count = 0; count < tz->trips; count++) {
-> +		tz->ops->get_trip_temp(tz, count, &trip_temp);
-> +		if (tz->last_temperature >= trip_temp) {
-> +			if (max_temp < trip_temp) {
-> +				max_temp = trip_temp;
-> +				max_index = count;
-> +			}
-> +		}
-> +	}
+> +	if ((UIC_CMD_DME_LINK_STARTUP =3D=3D hba->active_uic_cmd.command) &&
+
+this is so annoying. Please invert all these constructs:
+
+if ((hcd->active_uic_cmd.command =3D=3D UIC_CMD_DME_LINK_STARTUP) ....
+and so on.
+
+> +	    !(ufshcd_get_uic_cmd_result(hba))) {
 > +
-> +	if (!max_temp) {
-> +		last_trip_level = -1;
+> +		if (ufshcd_make_hba_operational(hba))
+> +			dev_err(&hba->pdev->dev,
+> +				"cc: hba not operational state\n");
 > +		return;
 > +	}
-> +
-> +	cur_interval = tz->stat[max_index].interval_ptr;
-> +	cool_temp = tz->last_temperature - cur_temp;
-> +
-> +	if (last_trip_level != max_index) {
-> +		if (++cur_interval == INTERVAL_HISTORY)
-> +			cur_interval = 0;
-> +		tz->stat[max_index].cool_temp[cur_interval] = cool_temp;
-> +		tz->stat[max_index].interval_ptr = cur_interval;
-> +		last_trip_level = max_index;
-> +	} else {
-> +		tz->stat[max_index].cool_temp[cur_interval] += cool_temp;
-
-Why do you need to sum up here? Wouldn't this break your statistics? (I may completely missed your idea for last_trip_level).
-
-> +	}
 > +}
 > +
-> +static int calculate_cooling_temp_avg(struct thermal_zone_device *tz, int trip,
-> +					int *avg_cool)
+> +/**
+> + * ufshcd_sl_intr - Interrupt service routine
+> + * @hba: per adapter instance
+> + * @intr_status: contains interrupts generated by the controller
+> + */
+> +static void ufshcd_sl_intr(struct ufs_hba *hba, u32 intr_status)
 > +{
-> +	int result = 0, count = 0, used_data = 0;
-> +
-> +	if (trip > THERMAL_MAX_TRIPS)
-
-Shouldn't this be checked against tz->trips ? At least you allocate your *stat based on it.
-
-> +		return -EINVAL;
-> +
-> +	*avg_cool = 0;
-> +	for (count = 0; count < INTERVAL_HISTORY; count++) {
-> +		if (tz->stat[trip].cool_temp[count] > 0) {
-> +			*avg_cool += tz->stat[trip].cool_temp[count];
-> +			used_data++;
-> +		}
-> +	}
-> +	if (used_data > 1)
-> +		*avg_cool = (*avg_cool)/used_data;
-
-IIRC, the preferred operator style is (*avg_cool) / used_data
-
-> +	return result;
-
-result is used only to hold a 0 here?
-
+> +	if (intr_status & UIC_COMMAND_COMPL)
+> +		schedule_work(&hba->uic_workq);
 > +}
->  
->  /* sys I/F for thermal zone */
->  
-> @@ -493,6 +551,26 @@ temp_crit_show(struct device *dev, struct device_attribute *attr,
->  	return sprintf(buf, "%ld\n", temperature);
->  }
->  
-> +static ssize_t
-> +thermal_cooling_trip_stats_show(struct device *dev,
-> +				struct device_attribute *attr,
-> +				char *buf)
+> +
+> +/**
+> + * ufshcd_intr - Main interrupt service routine
+> + * @irq: irq number
+> + * @__hba: pointer to adapter instance
+> + *
+> + * Returns IRQ_HANDLED - If interrupt is valid
+> + *		IRQ_NONE - If invalid interrupt
+> + */
+> +static irqreturn_t ufshcd_intr(int irq, void *__hba)
 > +{
-> +	struct thermal_zone_device *tz = to_thermal_zone(dev);
-> +	int avg_cool = 0, result, trip_index;
-> +	ssize_t len = 0;
+> +	unsigned long flags;
+> +	u32 intr_status;
+> +	irqreturn_t retval =3D IRQ_NONE;
+> +	struct ufs_hba *hba =3D __hba;
 > +
-> +	for (trip_index = 0; trip_index < tz->trips; trip_index++) {
-> +		result  = calculate_cooling_temp_avg(tz,
-> +						trip_index, &avg_cool);
-> +		if (!result)
-> +			len += sprintf(buf + len, "%d %d\n",
-> +					trip_index, avg_cool);
+> +	spin_lock_irqsave(hba->host->host_lock, flags);
+> +	intr_status =3D readl(UFSHCD_MMIO_BASE + REG_INTERRUPT_STATUS);
+> +
+> +	if (intr_status) {
+> +		ufshcd_sl_intr(hba, intr_status);
+> +
+> +		/* If UFSHCI 1.0 then clear interrupt status register */
+> +		if (UFSHCI_VERSION_10 =3D=3D hba->ufs_version)
+> +			writel(intr_status,
+> +			       (UFSHCD_MMIO_BASE + REG_INTERRUPT_STATUS));
+> +		retval =3D IRQ_HANDLED;
 > +	}
-> +	return len;
+> +	spin_unlock_irqrestore(hba->host->host_lock, flags);
+> +	return retval;
 > +}
-> +static DEVICE_ATTR(trip_stats, 0444,
-> +		   thermal_cooling_trip_stats_show, NULL);
->  
->  static struct thermal_hwmon_device *
->  thermal_hwmon_lookup_by_type(const struct thermal_zone_device *tz)
-> @@ -1049,6 +1127,8 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
->  		goto leave;
->  	}
->  
-> +	update_cooling_stats(tz, temp);
 > +
->  	for (count = 0; count < tz->trips; count++) {
->  		tz->ops->get_trip_type(tz, count, &trip_type);
->  		tz->ops->get_trip_temp(tz, count, &trip_temp);
-> @@ -1181,6 +1261,13 @@ struct thermal_zone_device *thermal_zone_device_register(char *type,
->  		return ERR_PTR(result);
->  	}
->  
-> +	/*Allocate variables for cooling stats*/
-> +	tz->stat  = devm_kzalloc(&tz->device,
-> +				sizeof(struct thermal_cooling_stats) * trips,
-> +				GFP_KERNEL);
-
-You never free this memory here.
-
-> +	if (!tz->stat)
-> +		goto unregister;
-> +
->  	/* sys I/F */
->  	if (type) {
->  		result = device_create_file(&tz->device, &dev_attr_type);
-> @@ -1207,6 +1294,12 @@ struct thermal_zone_device *thermal_zone_device_register(char *type,
->  			passive = 1;
->  	}
->  
-> +	if (trips > 0) {
-> +		result = device_create_file(&tz->device, &dev_attr_trip_stats);
-> +		if (result)
-> +			goto unregister;
-
-The failing paths after your allocation point must consider freeing the memory you requested.
-
-> +	}
-> +
->  	if (!passive)
->  		result = device_create_file(&tz->device,
->  					    &dev_attr_passive);
-> @@ -1282,6 +1375,9 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
->  	for (count = 0; count < tz->trips; count++)
->  		TRIP_POINT_ATTR_REMOVE(&tz->device, count);
->  
-> +	if (tz->trips > 0)
-> +		device_remove_file(&tz->device, &dev_attr_trip_stats);
-> +
-
-Amit,
-
-I think here it would be a good place to free the memory you allocated for *stat
-
->  	thermal_remove_hwmon_sysfs(tz);
->  	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
->  	idr_destroy(&tz->idr);
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index 47b4a27..47504c7 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -72,6 +72,13 @@ struct thermal_cooling_device_ops {
->  #define THERMAL_TRIPS_NONE -1
->  #define THERMAL_MAX_TRIPS 12
->  #define THERMAL_NAME_LENGTH 20
-> +#define INTERVAL_HISTORY 12
-> +
-> +struct thermal_cooling_stats {
-> +	int cool_temp[INTERVAL_HISTORY];
-> +	int interval_ptr;
+> +static struct scsi_host_template ufshcd_driver_template =3D {
+> +	.module			=3D THIS_MODULE,
+> +	.name			=3D UFSHCD,
+> +	.proc_name		=3D UFSHCD,
+> +	.this_id		=3D -1,
 > +};
 > +
->  struct thermal_cooling_device {
->  	int id;
->  	char type[THERMAL_NAME_LENGTH];
-> @@ -102,6 +109,7 @@ struct thermal_zone_device {
->  	struct list_head cooling_devices;
->  	struct idr idr;
->  	struct mutex lock;	/* protect cooling devices list */
-> +	struct thermal_cooling_stats *stat;
->  	struct list_head node;
->  	struct delayed_work poll_queue;
->  };
-> -- 
-> 1.7.1
-> 
-> _______________________________________________
-> linux-pm mailing list
-> linux-pm@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/linux-pm
+> +/**
+> + * ufshcd_shutdown - main funciton to put the controller in reset state
+> + * @pdev: pointer to PCI device handle
+> + */
+> +static void ufshcd_shutdown(struct pci_dev *pdev)
+> +{
+> +	ufshcd_hba_stop((struct ufs_hba *)pci_get_drvdata(pdev));
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +/**
+> + * ufshcd_suspend - suspend power management function
+> + * @pdev: pointer to PCI device handle
+> + * @state: power state
+> + *
+> + * Returns -ENOSYS
+> + */
+> +static int ufshcd_suspend(struct pci_dev *pdev, pm_message_t state)
+> +{
+> +	return -ENOSYS;
+> +}
+> +
+> +/**
+> + * ufshcd_resume - resume power management function
+> + * @pdev: pointer to PCI device handle
+> + *
+> + * Returns -ENOSYS
+> + */
+> +static int ufshcd_resume(struct pci_dev *pdev)
+> +{
+> +	return -ENOSYS;
+> +}
+> +#endif /* CONFIG_PM */
+> +
+> +/**
+> + * ufshcd_hba_free - free allocated memory for
+> + *			host memory space data structures
+> + * @hba: per adapter instance
+> + */
+> +static void ufshcd_hba_free(struct ufs_hba *hba)
+> +{
+> +	iounmap(UFSHCD_MMIO_BASE);
+> +	ufshcd_free_hba_memory(hba);
+> +	pci_release_regions(hba->pdev);
+> +}
+> +
+> +/**
+> + * ufshcd_remove - deallocate PCI/SCSI host and host memory space
+> + *		data structure memory
+> + * @pdev - pointer to PCI handle
+> + */
+> +static void ufshcd_remove(struct pci_dev *pdev)
+> +{
+> +	struct ufs_hba *hba =3D pci_get_drvdata(pdev);
+> +
+> +	/* disable interrupts */
+> +	ufshcd_int_config(hba, UFSHCD_INT_DISABLE);
+> +	free_irq(pdev->irq, hba);
+> +
+> +	ufshcd_hba_stop(hba);
+> +	ufshcd_hba_free(hba);
+> +
+> +	scsi_remove_host(hba->host);
+> +	scsi_host_put(hba->host);
+> +	pci_set_drvdata(pdev, NULL);
+> +	pci_clear_master(pdev);
+> +	pci_disable_device(pdev);
+> +}
+> +
+> +/**
+> + * ufshcd_set_dma_mask - Set dma addressing
+> + * @pdev: PCI device struct
+> + *
+> + * Returns 0 for success, non-zero for failure
+> + */
+> +static int ufshcd_set_dma_mask(struct pci_dev *pdev)
+> +{
+> +	int err;
+> +
+> +	do {
+> +		err =3D pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+> +		if (!err) {
+> +			err =3D pci_set_consistent_dma_mask(pdev,
+> +							  DMA_BIT_MASK(64));
+> +			break;
+> +		}
+> +		err =3D pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+> +		if (!err)
+> +			err =3D pci_set_consistent_dma_mask(pdev,
+> +							  DMA_BIT_MASK(32));
+> +	} while (0);
+> +
+> +	return err;
+> +}
+> +
+> +/**
+> + * ufshcd_probe - probe routine of the driver
+> + * @pdev: pointer to PCI device handle
+> + * @id: PCI device id
+> + *
+> + * Returns 0 on success, non-zero value on failure
+> + */
+> +static int __devinit
+> +ufshcd_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+> +{
+> +	struct Scsi_Host *host;
+> +	struct ufs_hba *hba;
+> +	int ufs_hba_len;
+> +	int err;
+> +
+> +	ufs_hba_len =3D sizeof(struct ufs_hba);
+> +	err =3D pci_enable_device(pdev);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "pci_enable_device failed\n");
+> +		goto out_error;
+> +	}
+> +
+> +	pci_set_master(pdev);
+> +
+> +	host =3D scsi_host_alloc(&ufshcd_driver_template, ufs_hba_len);
+> +	if (!host) {
+> +		dev_err(&pdev->dev, "scsi_host_alloc failed\n");
+> +		err =3D -ENOMEM;
+> +		goto out_disable;
+> +	}
+> +	hba =3D (struct ufs_hba *)host->hostdata;
+> +
+> +	err =3D pci_request_regions(pdev, UFSHCD);
+> +	if (err < 0) {
+> +		dev_err(&pdev->dev, "request regions failed\n");
+> +		goto out_disable;
+> +	}
+> +
+> +	hba->mmio_base =3D pci_ioremap_bar(pdev, 0);
+> +	if (!hba->mmio_base) {
+> +		dev_err(&pdev->dev, "memory map failed\n");
+> +		err =3D -ENOMEM;
+> +		goto out_release_regions;
+> +	}
+> +
+> +	err =3D ufshcd_set_dma_mask(pdev);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "set dma mask failed\n");
+> +		goto out_iounmap;
+> +	}
+> +
+> +	hba->host =3D host;
+> +	hba->pdev =3D pdev;
+> +
+> +	/* Read capabilities registers */
+> +	ufshcd_hba_capabilities(hba);
+> +
+> +	/* Get UFS version supported by the controller */
+> +	hba->ufs_version =3D ufshcd_get_ufs_version(hba);
+> +
+> +	/* Allocate memory for host memory space */
+> +	err =3D ufshcd_memory_alloc(hba);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "Memory allocation failed\n");
+> +		goto out_iounmap;
+> +	}
+> +
+> +	/* Configure LRB */
+> +	ufshcd_host_memory_configure(hba);
+> +
+> +	host->can_queue =3D hba->nutrs;
+> +	host->max_id =3D UFSHCD_MAX_ID;
+> +	host->max_lun =3D UFSHCD_MAX_LUNS;
+> +	host->max_channel =3D UFSHCD_MAX_CHANNEL;
+> +	host->unique_id =3D host->host_no;
+> +
+> +	/* Initialize work queues */
+> +	INIT_WORK(&hba->uic_workq, ufshcd_uic_cc_handler);
+> +
+> +	/* IRQ registration */
+> +	err =3D request_irq(pdev->irq, ufshcd_intr, IRQF_SHARED, UFSHCD, hba);
+
+make this a threaded IRQ and remove your workqueues and tasklets.
+
+> +	if (err) {
+> +		dev_err(&pdev->dev, "request irq failed\n");
+> +		goto out_lrb_free;
+> +	}
+> +
+> +	pci_set_drvdata(pdev, hba);
+
+would also be cool if you would abstract PCI out of this driver, so it's
+easier to be re-used. See how I did it with drivers/usb/dwc3/core.c
+drivers/usb/dwc3/dwc3-pci.c and drivers/usb/dwc3/dwc3-omap.c
+
+--=20
+balbi
+
+--udcq9yAoWb9A4FsZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPMM/UAAoJEIaOsuA1yqREtvsQAKMVpk7QG2NWngWqe4Hn4SLL
+F9ScNIGbvVrAxq3TxXNf2cgGKxz9J4yw3uk86rVGseCY5JEu7qGQLUjYHDNyyaxL
+v/NrvflcwVNBzRrSedyDNoJZXxfd2Af/Zu43LG/YD8Noz/SBBIe/CRzecWpSpV8+
+U9hTfxnq9VhhsspKBg0qQSyzu9JrOFSAggpbhfNfxWJRc24ef0lAitgPYIzpINP3
+5scEv4pBdvm3ukjaNZ4Rp5VqWeZ2Y6ZIkAM9OaGVnQYo2TRIMWc9tgZhOSI/7goK
+MWo4MDx84L/MwGFWP0RqU1fjtRk44E2BDzPAKvq8VPwxAP85JnoX+yrdiE7PV5EZ
+phiBNTRHFF8+3WI49jNn0NHWHbrxhMl5JYc3btpsu3kNfp0Al6/1OglumU2EJEfn
+dbZDC7YHeLPugQSNNX9h0Ex85AHpPxZJc0eG3gYGrrkSXOHWtPk+MsrFENuD1xq0
+2wm3DZewscmY2QOl+UkMfCDHp91SQdHg3NnU43U3iIchUDRWp0HbD/irJbszqn23
+f8jR+XF/YMCnlDfCcMbs8RQMdVQGD41UyhDX8Z+uDAsqUoasNMQgSr5Ls5pxLgKQ
+v87BjbGFgdiypjmg6THsCh0Sz3id6A/RcWREdWZV2F1Yn/XsuYbSesJeJkMKJtsW
+hXyTp2+oRen0aQbztY1S
+=ylPE
+-----END PGP SIGNATURE-----
+
+--udcq9yAoWb9A4FsZ--
