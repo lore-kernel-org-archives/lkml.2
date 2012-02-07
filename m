@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab2BGTt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 14:49:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:26985 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574Ab2BGTtx convert rfc822-to-8bit (ORCPT
+	id S1756811Ab2BGTxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 14:53:25 -0500
+Received: from kamaji.grokhost.net ([87.117.218.43]:36776 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755937Ab2BGTxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 14:49:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="122129735"
-From: "Kay, Allen M" <allen.m.kay@intel.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: "linux-pci-owner@vger.kernel.org" <linux-pci-owner@vger.kernel.org>,
-        "Barnes, Jesse" <jesse.barnes@intel.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jean.guyader@eu.citrix.com" <jean.guyader@eu.citrix.com>,
-        "eric.chanudet@citrix.com" <eric.chanudet@citrix.com>
-Subject: RE: [PATCH 1/1][resend]  check for pci bar restore completion and
- retry
-Thread-Topic: [PATCH 1/1][resend]  check for pci bar restore completion and
- retry
-Thread-Index: AQHM3SwUTYf8DQbgm0uQULr8/d/8npYx4fhA
-Date: Tue, 7 Feb 2012 19:49:48 +0000
-Message-ID: <003AAFE53969E14CB1F09B6FD68C3CD409A8B4F2@ORSMSX105.amr.corp.intel.com>
-References: <1327602353-30966-1-git-send-email-allen.m.kay@intel.com>
- <20120127114416.2621963a@jbarnes-desktop>
-In-Reply-To: <20120127114416.2621963a@jbarnes-desktop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Feb 2012 14:53:24 -0500
+Message-ID: <4F318131.7020004@bootc.net>
+Date: Tue, 07 Feb 2012 19:53:21 +0000
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: Julian Calaby <julian.calaby@gmail.com>,
+        Clemens Ladisch <clemens@ladisch.de>, target-devel@vger.kernel.org,
+        linux1394-devel@lists.sourceforge.net,
+        Boaz Harrosh <bharrosh@panasas.com>, Andy Grover <agrover@redhat.com>,
+        linux-scsi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: FireWire/SBP2 Target mode
+References: <4E4BD560.4010806@bootc.net> <4E4D3B88.30003@ladisch.de> <4F29978A.3010707@redhat.com> <20120201224156.0773ebc6@stein> <4F2A55B9.4040005@panasas.com> <4F2A60DC.9030007@ladisch.de> <4F2FD1F4.9050702@bootc.net> <4F2FE705.3070509@ladisch.de> <4F2FE8DA.70502@bootc.net> <20120206212628.6880c506@stein> <5C167A1D-2203-4F1C-B538-E99DD87E7E42@bootc.net> <CAGRGNgWf0epcam-jpCzMCSqefCKDSm892mw-X49FrcoRO0QYrQ@mail.gmail.com> <476E7976-738A-4202-9FC4-FA5B060EA95F@bootc.net> <4F30D4F6.1040802@bootc.net> <20120207201730.1c8cf6a3@stein>
+In-Reply-To: <20120207201730.1c8cf6a3@stein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry Jesse, I did not see this until now.  There is some problem with my email I was not aware of - many emails did not go into my inbox.
+On 07/02/2012 19:17, Stefan Richter wrote:
+> On Feb 07 Chris Boot wrote:
+>> On 06/02/2012 23:09, Chris Boot wrote:
+>>> On 6 Feb 2012, at 23:00, Julian Calaby wrote:
+>>>> Stupid question: Could you use a completion queue or something
+>>>> equivalent to wait until you have seen the fw_node, *then* process the
+>>>> LOGIN request?
+>>>
+>>> The fw_address_handler callback is called in interrupt context, and
+>>> I can't sleep from within there. As far as I'm aware I must call
+>>> fw_send_response() from within the callback and can't defer that until
+>>> I've scheduled something on a work queue. Please correct me if I'm
+>>> wrong though, as that might be useful anyway.
+>>
+>> Hmm sorry I've thought about this overnight and clearly I was talking
+>> rubbish. Yes, I need to reply in the fw_address_handler but all I tend
+>> to do in there is schedule a task to the the main part of the work
+>> anyway. As most of the operations require fetching an ORB from the
+>> initiator I have to do this from user context.
+>
+> Technically there are two things to perform:
+>
+>   1. Finish the inbound IEEE 1394 transaction to the management agent
+>      register by means of fw_send_response().  As far as I can tell, you
+>      don't have to do that in the address_callback().  But there is little
+>      reason not to.
+>
+>      fw_send_response() ends the lifetime of an fw_request, so read the
+>      speed code before you respond.
+>
+>   2. Finish the inbound SBP-2 transaction; here the login.  This and
+>      everything that leads up to it is definitely easiest to implement in
+>      a process context, e.g. workqueue item.
 
-Given there are many reset methods, checking for actual BAR restore is more reliable and less testing for a various reset methods.  We can potentially add checks for completion in pcie_flr() since that's easy to do.
+Yep I do exactly that - I save the speed then schedule_work() inside the 
+address callback, then call fw_send_response() still within the 
+callback. The work callback uses fw_run_transaction() to fetch the ORB 
+and deal with it.
 
-Eric/Jean, do you have other comments? 
+Cheers,
+Chris
 
-Allen
-
------Original Message-----
-From: Jesse Barnes [mailto:jbarnes@virtuousgeek.org] 
-Sent: Friday, January 27, 2012 11:44 AM
-To: Kay, Allen M
-Cc: linux-pci-owner@vger.kernel.org; Barnes, Jesse; Wilcox, Matthew R; linux-kernel@vger.kernel.org; jean.guyader@eu.citrix.com; eric.chanudet@citrix.com
-Subject: Re: [PATCH 1/1][resend] check for pci bar restore completion and retry
-
-On Thu, 26 Jan 2012 10:25:53 -0800
-"Kay, Allen M" <allen.m.kay@intel.com> wrote:
-
-> On some OEM systems, pci_restore_state() is called while FLR has not 
-> yet completed.  As a result, PCI BAR register restore is not 
-> successful.  This fix reads back the restored value and compares it 
-> with saved value and re-tries 10 times before giving up.
-
-Applied, but I don't think I got an answer as to why we don't do this delay/check when we perform the FLR in the first place?
-
---
-Jesse Barnes, Intel Open Source Technology Center
+-- 
+Chris Boot
+bootc@bootc.net
