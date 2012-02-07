@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab2BGPMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 10:12:53 -0500
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:29192 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751564Ab2BGPMv (ORCPT
+	id S1755380Ab2BGPPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 10:15:19 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60142 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab2BGPPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 10:12:51 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: MPJyFBAVM1mdLx.okoAGuTcMwca1MgE0dtWTskccjZZBUO4
- fuJxCrN8s6ufqDtdXIt14qpr88pbtT0oaGKBsBjTiwHKeoH39VO_rHDMB5LU
- uRJHBkwGejqatp6TMMmxbe9pXvHyY08ewHnILEg1TaVLHKjH5dqAPPBVMHff
- .x5KGqISyqZxosindeZAwRAKYY_tV_wE.O7NFOMonv0G57BpL3j.V.Fa8Rhe
- Jvr3jlGZrh8meWHx6_8vCnew38ruBbcGXHEgrHeWLlpXIG6MelSUdkY2oTWs
- QvjFhJEQm1SZr6oF2ly8I9EjhY6Q547O2bKCg6L_.Ou60bWyE3K_.ZPsa5LX
- fy8S4_fRAkkAfv.uXBJdsWA591dEdDx36hQJ5ntiyldPR5eJ6myN9jSWpy2J
- 9
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 7 Feb 2012 09:12:48 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Alex,Shi" <alex.shi@intel.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [rfc PATCH]slub: per cpu partial statistics change
-In-Reply-To: <1328591165.12669.168.camel@debian>
-Message-ID: <alpine.DEB.2.00.1202070910320.29500@router.home>
-References: <1328256695.12669.24.camel@debian>  <alpine.DEB.2.00.1202030920060.2420@router.home>  <4F2C824E.8080501@intel.com>  <alpine.DEB.2.00.1202060858510.393@router.home> <1328591165.12669.168.camel@debian>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 7 Feb 2012 10:15:17 -0500
+Message-ID: <4F314000.6060401@codemonkey.ws>
+Date: Tue, 07 Feb 2012 09:15:12 -0600
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-1382060301-1328627569=:29500"
+To: Avi Kivity <avi@redhat.com>
+CC: Scott Wood <scottwood@freescale.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Eric Northup <digitaleric@google.com>, KVM list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>, Chris Wright <chrisw@redhat.com>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+References: <4F2AB552.2070909@redhat.com>	<CAG7+5M0s_F93G3dPrRQaFMVv_hPzpd-wYEPApJUDGhh3vJuy-A@mail.gmail.com>	<4F2C6517.3040203@codemonkey.ws>	<4F302E0D.20302@freescale.com>	<4F3118EA.7040302@codemonkey.ws> <4F311BBD.5050600@redhat.com>	<4F311E64.10604@codemonkey.ws> <4F31249D.1040700@redhat.com>
+In-Reply-To: <4F31249D.1040700@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 02/07/2012 07:18 AM, Avi Kivity wrote:
+> On 02/07/2012 02:51 PM, Anthony Liguori wrote:
+>> On 02/07/2012 06:40 AM, Avi Kivity wrote:
+>>> On 02/07/2012 02:28 PM, Anthony Liguori wrote:
+>>>>
+>>>>> It's a potential source of exploits
+>>>>> (from bugs in KVM or in hardware). I can see people wanting to be
+>>>>> selective with access because of that.
+>>>>
+>>>> As is true of the rest of the kernel.
+>>>>
+>>>> If you want finer grain access control, that's exactly why we have things like
+>>>> LSM and SELinux. You can add the appropriate LSM hooks into the KVM
+>>>> infrastructure and setup default SELinux policies appropriately.
+>>>
+>>> LSMs protect objects, not syscalls. There isn't an object to protect here
+>>> (except the fake /dev/kvm object).
+>>
+>> A VM can be an object.
+>>
+>
+> Not really, it's not accessible in a namespace. How would you label it?
 
----1463811839-1382060301-1328627569=:29500
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Labels can originate from userspace, IIUC, so I think it's possible for QEMU (or 
+whatever the userspace is) to set the label for the VM while it's creating it. 
+I think this is how most of the labeling for X and things of that nature works.
 
-On Tue, 7 Feb 2012, Alex,Shi wrote:
+Maybe Chris can set me straight.
 
-> Yes, I want to account the unfreeze_partials=EF=BC=88=EF=BC=89 actions in
-> put_cpu_partial=EF=BC=88). The unfreezing accounting isn't conflict or re=
-peat
-> with the cpu_partial_free accounting, since they are different actions
-> for the PCP.
+> Maybe we can reuse the process label/context (not sure what the right term is
+> for a process).
 
-Well what is happening here is that the whole per cpu partial list is
-moved back to the per node partial list.
+Regards,
 
-CPU_PARTIAL_DRAIN_TO_NODE_PARTIAL ?
+Anthony Liguori
 
-A bit long I think. CPU_PARTIAL_DRAIN?
+>
 
-UNFREEZE does not truly reflect what is going on here.
-
----1463811839-1382060301-1328627569=:29500--
