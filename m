@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab2BGA0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 19:26:43 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:37437 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756384Ab2BGA0e (ORCPT
+	id S1756274Ab2BGA2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 19:28:20 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:45583 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756034Ab2BGA2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 19:26:34 -0500
-X-Sasl-enc: oQxI7fPAWc1B4PmIAwSFZrBo5DbZ3g5vn6/9o9RujrAn 1328574393
-Date: Mon, 6 Feb 2012 16:18:18 -0800
-From: Greg KH <greg@kroah.com>
-To: Amit Kachhap <amit.kachhap@linaro.org>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        rob.lee@linaro.org
-Subject: Re: [linux-pm] [RFC PATCH] thermal: Add support to report cooling
- statistics achieved by cooling devices
-Message-ID: <20120207001818.GB30840@kroah.com>
-References: <1326878467-17766-1-git-send-email-amit.kachhap@linaro.org>
- <20120206165658.GA28687@atrey.karlin.mff.cuni.cz>
- <20120206170348.GA19749@kroah.com>
- <CAK44p22FWxiXyBA1zbiuO0cbDScTSMRSV9pFDDMxXsc43ebGpw@mail.gmail.com>
+	Mon, 6 Feb 2012 19:28:19 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+4PvRENKu4dl6PhQ5O95BYZrBuCmhJsWb78ljnd3
+	1A8BQ9SKV7UoA5
+Message-ID: <4F307015.4030608@gmx.de>
+Date: Tue, 07 Feb 2012 00:28:05 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK44p22FWxiXyBA1zbiuO0cbDScTSMRSV9pFDDMxXsc43ebGpw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 03:16:17PM -0800, Amit Kachhap wrote:
-> On 6 February 2012 09:03, Greg KH <greg@kroah.com> wrote:
-> > On Mon, Feb 06, 2012 at 05:56:58PM +0100, Pavel Machek wrote:
-> >> Hi!
-> >>
-> >> > Add a sysfs node code to report effective cooling of all cooling devices
-> >> > attached to each trip points of a thermal zone. The cooling data reported
-> >> > will be absolute if the higher temperature trip points are arranged first
-> >> > otherwise the cooling stats is the cumulative effect of the earlier
-> >> > invoked cooling handlers.
-> >> >
-> >> > The basic assumption is that cooling devices will bring down the temperature
-> >> > in a symmetric manner and those statistics can be stored back and used for
-> >> > further tuning of the system.
-> >>
-> >> /sys fs should be one-value-per-file, talk to gregkh.
-> >
-> > That's correct.
-> >
-> > Why not use debugfs for this instead?
-> >
-> > thanks,
-> >
-> > greg k-h
-> 
-> Thanks Greg/Pavel for looking into the patch.
-> Basically I checked the places where single sysfs entry is showing
-> more then 1 output. And
-> 1) /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state
-> 2) /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table
-> are the places where the output is more than 1 value.
+Hi Linus,
 
-Yes, those are two known-bad files, whose files will change soon and
-move to debugfs.
+please pull the changes below.
+The key has not been signed yet as I didn't have time to take care about it.
 
-Just because you found 2, instead of the thousands of other properly
-formatted files, does not mean you are allowed to create something like
-this.
 
-> Anyway I can enclose this sysfs inside CONFIG_THERMAL_COOLING_STATS macro.
+Thanks,
 
-No, you can not create it at all in sysfs, if you really need such a
-large single file, use debugfs instead, that is what it is there for.
+Florian Tobias Schandinat
 
-Again, one-value-per-file is the sysfs rule, and has been for a decade
-now, please don't think this is a new thing.
 
-greg k-h
+The following changes since commit f787f32e67e00b072f46b2ae3c454d2c0a1fcdb7:
+
+  module_param: make bool parameters really bool (drivers/video/i810)
+(2012-01-12 23:28:59 +0000)
+
+are available in the git repository at:
+
+  git://github.com/schandinat/linux-2.6.git fbdev-fixes-for-3.3-1
+
+for you to fetch changes up to 9f1065032ceb7e86c7c9f16bb86518857e88a172:
+
+  atmel_lcdfb: fix usage of CONTRAST_CTR in suspend/resume (2012-01-28 19:50:22
++0000)
+
+----------------------------------------------------------------
+fbdev fixes for 3.3
+
+It includes:
+- a compile fix for fsl-diu-fb
+
+- a fix for a suspend/resume issue in atmel_lcdfb
+
+- a fix for a suspend/resume issue in OMAP
+
+- a workaround for a hardware bug to avoid physical damage in OMAP
+
+- a really trivial dead code removal in intelfb
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      intelfb: remove some dead code
+
+Florian Tobias Schandinat (1):
+      Merge branch 'for-3.3-rc' of git://gitorious.org/linux-omap-dss2/linux
+into fbdev-for-linus
+
+Hubert Feurstein (1):
+      atmel_lcdfb: fix usage of CONTRAST_CTR in suspend/resume
+
+Michael Neuling (1):
+      drivers/video: compile fixes for fsl-diu-fb.c
+
+Tomi Valkeinen (7):
+      OMAPDSS: use sync versions of pm_runtime_put
+      OMAP: 4430SDP/Panda: use gpio_free_array to free HDMI gpios
+      OMAP: 4430SDP/Panda: rename HPD GPIO to CT_CP_HPD
+      OMAPDSS: remove wrong HDMI HPD muxing
+      OMAP: 4430SDP/Panda: setup HDMI GPIO muxes
+      OMAP: 4430SDP/Panda: add HDMI HPD gpio
+      OMAPDSS: HDMI: PHY burnout fix
+
+ arch/arm/mach-omap2/board-4430sdp.c       |   18 ++++++--
+ arch/arm/mach-omap2/board-omap4panda.c    |   18 ++++++--
+ arch/arm/mach-omap2/display.c             |    4 --
+ drivers/video/atmel_lcdfb.c               |    2 +-
+ drivers/video/fsl-diu-fb.c                |    4 +-
+ drivers/video/intelfb/intelfbdrv.c        |    1 -
+ drivers/video/omap2/dss/dispc.c           |    2 +-
+ drivers/video/omap2/dss/dsi.c             |    2 +-
+ drivers/video/omap2/dss/dss.c             |    2 +-
+ drivers/video/omap2/dss/hdmi.c            |    5 ++-
+ drivers/video/omap2/dss/rfbi.c            |    2 +-
+ drivers/video/omap2/dss/ti_hdmi.h         |    4 ++
+ drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c |   68 +++++++++++++++++++++++++++--
+ drivers/video/omap2/dss/venc.c            |    2 +-
+ include/video/omapdss.h                   |    5 ++
+ 15 files changed, 113 insertions(+), 26 deletions(-)
