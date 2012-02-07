@@ -1,191 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab2BGBIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 20:08:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55085 "EHLO mx2.suse.de"
+	id S1756642Ab2BGBIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 20:08:38 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:40143 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756553Ab2BGBIJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 20:08:09 -0500
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <4F2B41D6.8020603@codemonkey.ws>
-Date: Tue, 7 Feb 2012 02:08:06 +0100
-Cc: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de>
-References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws>
-To: Anthony Liguori <anthony@codemonkey.ws>
-X-Mailer: Apple Mail (2.1251.1)
+	id S1756230Ab2BGBF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 20:05:58 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
+Date: Tue, 7 Feb 2012 02:00:55 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
+        markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
+        Greg KH <greg@linuxfoundation.org>,
+        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202070200.55505.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
-On 03.02.2012, at 03:09, Anthony Liguori wrote:
+This series tests the theory that the easiest way to sell a once rejected
+feature is to advertise it under a different name.
 
-> On 02/02/2012 10:09 AM, Avi Kivity wrote:
->> The kvm api has been accumulating cruft for several years now.  This is
->> due to feature creep, fixing mistakes, experience gained by the
->> maintainers and developers on how to do things, ports to new
->> architectures, and simply as a side effect of a code base that is
->> developed slowly and incrementally.
->> 
->> While I don't think we can justify a complete revamp of the API now, I'm
->> writing this as a thought experiment to see where a from-scratch API can
->> take us.  Of course, if we do implement this, the new and old APIs will
->> have to be supported side by side for several years.
->> 
->> Syscalls
->> --------
->> kvm currently uses the much-loved ioctl() system call as its entry
->> point.  While this made it easy to add kvm to the kernel unintrusively,
->> it does have downsides:
->> 
->> - overhead in the entry path, for the ioctl dispatch path and vcpu mutex
->> (low but measurable)
->> - semantic mismatch: kvm really wants a vcpu to be tied to a thread, and
->> a vm to be tied to an mm_struct, but the current API ties them to file
->> descriptors, which can move between threads and processes.  We check
->> that they don't, but we don't want to.
->> 
->> Moving to syscalls avoids these problems, but introduces new ones:
->> 
->> - adding new syscalls is generally frowned upon, and kvm will need several
->> - syscalls into modules are harder and rarer than into core kernel code
->> - will need to add a vcpu pointer to task_struct, and a kvm pointer to
->> mm_struct
->> 
->> Syscalls that operate on the entire guest will pick it up implicitly
->> from the mm_struct, and syscalls that operate on a vcpu will pick it up
->> from current.
-> 
-> This seems like the natural progression.
+Well, there actually are two different features, although they are closely
+related to each other.  First, patch [6/8] introduces a feature that allows
+the kernel to trigger system suspend (or more generally a transition into
+a sleep state) whenever there are no active wakeup sources (no, they aren't
+called wakelocks).  It is called "autosleep" here, but it was called a few
+different names in the past ("opportunistic suspend" was probably the most
+popular one).  Second, patch [8/8] introduces "wake locks" that are,
+essentially, wakeup sources which may be created and manipulated by user
+space.  Using them user space may control the autosleep feature introduced
+earlier.
 
-I don't like the idea too much. On s390 and ppc we can set other vcpu's interrupt status. How would that work in this model?
+This also is a kind of a proof of concept for the people who wanted me to
+show a kernel-based implementation of automatic suspend, so there you go.
+Please note, however, that it is done so that the user space "wake locks"
+interface is compatible with Android in support of its user space.  I don't
+really like this interface, but since the Android's user space seems to rely
+on it, I'm fine with using it as is.  YMMV.
 
-I really do like the ioctl model btw. It's easily extensible and easy to understand.
+Let me say a few words about every patch in the series individually.
 
-I can also promise you that I have no idea what other extensions we will need in the next few years. The non-x86 targets are just really very moving. So having an interface that allows for easy extension is a must-have.
+[1/8] - This really is a bug fix, so it's v3.4 material.  Nobody has stepped
+  on this bug so far, but it should be fixed anyway.
 
-> 
->> State accessors
->> ---------------
->> Currently vcpu state is read and written by a bunch of ioctls that
->> access register sets that were added (or discovered) along the years.
->> Some state is stored in the vcpu mmap area.  These will be replaced by a
->> pair of syscalls that read or write the entire state, or a subset of the
->> state, in a tag/value format.  A register will be described by a tuple:
->> 
->>   set: the register set to which it belongs; either a real set (GPR,
->> x87, SSE/AVX, segment, cpuid, MSRs) or a fake set (for
->> eflags/rip/IDT/interrupt shadow/pending exception/etc.)
->>   number: register number within a set
->>   size: for self-description, and to allow expanding registers like
->> SSE->AVX or eax->rax
->>   attributes: read-write, read-only, read-only for guest but read-write
->> for host
->>   value
-> 
-> I do like the idea a lot of being able to read one register at a time as often times that's all you need.
+[2/8] - This is a freezer cleanup, worth doing anyway IMO, so v3.4 material too.
 
-The framework is in KVM today. It's called ONE_REG. So far only PPC implements a few registers. If you like it, just throw all the x86 ones in there and you have everything you need.
+[3/8] - This is something we can do no problem, although completely optional
+  without the autosleep feature.  Rather necessary with it, though.
 
-> 
->> 
->> Device model
->> ------------
->> Currently kvm virtualizes or emulates a set of x86 cores, with or
->> without local APICs, a 24-input IOAPIC, a PIC, a PIT, and a number of
->> PCI devices assigned from the host.  The API allows emulating the local
->> APICs in userspace.
->> 
->> The new API will do away with the IOAPIC/PIC/PIT emulation and defer
->> them to userspace.
-> 
-> I'm a big fan of this.
-> 
->> Note: this may cause a regression for older guests
->> that don't support MSI or kvmclock.  Device assignment will be done
->> using VFIO, that is, without direct kvm involvement.
->> 
->> Local APICs will be mandatory, but it will be possible to hide them from
->> the guest.  This means that it will no longer be possible to emulate an
->> APIC in userspace, but it will be possible to virtualize an APIC-less
->> core - userspace will play with the LINT0/LINT1 inputs (configured as
->> EXITINT and NMI) to queue interrupts and NMIs.
-> 
-> I think this makes sense.  An interesting consequence of this is that it's no longer necessary to associate the VCPU context with an MMIO/PIO operation.  I'm not sure if there's an obvious benefit to that but it's interesting nonetheless.
-> 
->> The communications between the local APIC and the IOAPIC/PIC will be
->> done over a socketpair, emulating the APIC bus protocol.
+[4/8] - This kind of reintroduces my original idea of using a wait queue for
+  waiting until there are no wakeup events in progress.  Alan convinced me that
+  it would be better to poll the counter to prevent wakeup_source_deactivate()
+  from having to call wake_up_all() occasionally (that may be costly in fast
+  paths), but then quite some people told me that the wait queue migh be
+  better.  I think that the polling will make much less sense with autosleep
+  and user space "wake locks".  Anyway, [4/8] is something we can do without
+  those things too.
 
-What is keeping us from moving there today?
+The patches above were given Sign-off-by tags, because I think they make some
+sense regardless of the features introcuded by the remaining patches that in
+turn are total RFC.
 
->> 
->> Ioeventfd/irqfd
->> ---------------
->> As the ioeventfd/irqfd mechanism has been quite successful, it will be
->> retained, and perhaps supplemented with a way to assign an mmio region
->> to a socketpair carrying transactions.  This allows a device model to be
->> implemented out-of-process.  The socketpair can also be used to
->> implement a replacement for coalesced mmio, by not waiting for responses
->> on write transactions when enabled.  Synchronization of coalesced mmio
->> will be implemented in the kernel, not userspace as now: when a
->> non-coalesced mmio is needed, the kernel will first flush the coalesced
->> mmio queue(s).
+[5/8] - This changes wakeup source statistics so that they are more similar to
+  the statistics collected for wakelocks on Android.  The file those statistics
+  may be read from is still located in debugfs, though (I don't think it
+  belongs to proc and its name is different from the analogous Android's file
+  name anyway).  It could be done without autosleep, but then it would be a bit
+  pointless.  BTW, this changes interfaces that _in_ _theory_ may be used by
+  someone, but I'm not aware of anyone using them.  If you are one, I'll be
+  pleased to learn about that, so please tell me who you are. :-)
 
-I would vote for completely deprecating coalesced MMIO. It is a generic framework that nobody except for VGA really needs. Better make something that accelerates read and write paths thanks to more specific knowledge of the interface.
+[6/8] - Autosleep implementation.  I think the changelog explains the idea
+  quite well and the code is really nothing special.  It doesn't really add
+  anything new to the kernel in terms of infrastructure etc., it just uses
+  the existing stuff to implement an alternative method of triggering system
+  sleep transitions.  Note, though, that the interface here is different
+  from the Android's one, because Android actually modifies /sys/power/state
+  to trigger something called "early suspend" (that is never going to be
+  implemented in the "stock" kernel as long as I have any influence on it) and
+  we simply can't do that in the mainline.
 
-One thing I'm thinking of here is IDE. There's no need to PIO callback into user space for all the status ports. We only really care about a callback on write to 7 (cmd). All the others are basically registers that the kernel could just read and write from shared memory.
+[7/8] - This adds a wakeup source statistics that only makes sense with
+  autosleep and (I believe) is analogous to the Android's prevent_suspend_time
+  statistics.  Nothing really special, but I didn't want
+  wakeup_source_activate/deactivate() to take a common lock to avoid
+  congestion.
 
-I'm sure the VGA text stuff could use similar acceleration with well-known interfaces.
+[8/8] - This adds a user space interface to create, activate and deactivate
+  wakeup sources.  Since the files it consists of are called wake_lock and
+  wake_unlock, to follow Android, the objects the wakeup sources are wrapped
+  into are called "wakelocks" (for added confusion).  Since the interface
+  doesn't provide any means to destroy those "wakelocks", I added a garbage
+  collection mechanism to get rid of the unused ones, if any.  I also tought
+  it might be a good idea to put a limit on the number of those things that
+  user space can operate simultaneously, so I did that too.
 
-To me, coalesced mmio has proven that's it's generalization where it doesn't belong.
+All in all, it's not as much code as I thought it would be and it seems to be
+relatively simple (which rises the question why the Android people didn't
+even _try_ to do something like this instead of slapping the "real" wakelocks
+onto the kernel FWIW).  IMHO it doesn't add anything really new to the kernel,
+except for the user space interfaces that should be maintainable.  At least I
+think I should be able to maintain them. :-)
 
->> 
->> Guest memory management
->> -----------------------
->> Instead of managing each memory slot individually, a single API will be
->> provided that replaces the entire guest physical memory map atomically.
->> This matches the implementation (using RCU) and plugs holes in the
->> current API, where you lose the dirty log in the window between the last
->> call to KVM_GET_DIRTY_LOG and the call to KVM_SET_USER_MEMORY_REGION
->> that removes the slot.
+All of the above has been tested very briefly on my test-bed Mackerel board
+and it quite obviously requires more thorough testing, but first I need to know
+if it makes sense to spend any more time on it.
 
-So we render the actual slot logic invisible? That's a very good idea.
+IOW, I need to know your opinions!
 
->> 
->> Slot-based dirty logging will be replaced by range-based and work-based
->> dirty logging; that is "what pages are dirty in this range, which may be
->> smaller than a slot" and "don't return more than N pages".
->> 
->> We may want to place the log in user memory instead of kernel memory, to
->> reduce pinned memory and increase flexibility.
-> 
-> Since we really only support 64-bit hosts, what about just pointing the kernel at a address/size pair and rely on userspace to mmap() the range appropriately?
-
-That's basically what he suggested, no?
-
-> 
->> vcpu fd mmap area
->> -----------------
->> Currently we mmap() a few pages of the vcpu fd for fast user/kernel
->> communications.  This will be replaced by a more orthodox pointer
->> parameter to sys_kvm_enter_guest(), that will be accessed using
->> get_user() and put_user().  This is slower than the current situation,
->> but better for things like strace.
-
-I would actually rather like to see the amount of page sharing between kernel and user space increased, no decreased. I don't care if I can throw strace on KVM. I want speed.
-
-> Look pretty interesting overall.
-
-Yeah, I agree with most ideas, except for the syscall one. Everything else can easily be implemented on top of the current model.
-
-
-Alex
+Thanks,
+Rafael
 
