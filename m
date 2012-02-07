@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab2BGWMD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 17:12:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41903 "EHLO mail.zytor.com"
+	id S1757112Ab2BGWNV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 17:13:21 -0500
+Received: from mga09.intel.com ([134.134.136.24]:63643 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756187Ab2BGWMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 17:12:01 -0500
-Message-ID: <4F31A1A2.8020201@zytor.com>
-Date: Tue, 07 Feb 2012 14:11:46 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1755937Ab2BGWNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 17:13:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="107488981"
+Date: Tue, 7 Feb 2012 14:13:17 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Alex Shi <alex.shi@intel.com>, stern@rowland.harvard.edu
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        andiry.xu@amd.com, linux-kernel@vger.kernel.org,
+        Oliver Neukum <oneukum@suse.de>, Takashi Iwai <tiwai@suse.de>,
+        trenn@suse.de, linux-pci@vger.kernel.org,
+        Michal Marek <MMarek@suse.com>
+Subject: Re: [PATCH] usb: enable pci MSI/MSIX in usb core
+Message-ID: <20120207221317.GA6103@xanatos>
+References: <1328531341-22705-1-git-send-email-alex.shi@intel.com>
+ <4F311233.9070404@intel.com>
+ <20120207144204.GA7214@kroah.com>
+ <20120207172743.GA4780@xanatos>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -v2] x86, mm: Probe memory block size for generic x86
- 64bit
-References: <1327911855-6501-1-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1327911855-6501-1-git-send-email-yinghai@kernel.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120207172743.GA4780@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 12:24 AM, Yinghai Lu wrote:
-> Usually if the system support memory remapping to get back memory for mmio
-> range, we will have 128M ... 2G at the end.
+On Tue, Feb 07, 2012 at 09:27:43AM -0800, Sarah Sharp wrote:
+> I'm trying to track down an oops on my for-usb-linus queue that could
+> either be related to Alex's original MSI work around patch, or the patch
+> Oliver posted for working around PCI MMIO not being enabled fast enough.
+> I don't want to review this MSI improvement patch until I'm sure the
+> original MSI work around patch is stable.
 > 
-> Try to probe that size.
-> 
-> So we can get less entries in /sys/devices/system/memory/
-> 
-> -v2: don't probe it every time when /sys/../block_size_byte is showed...
-> 
+> Alex, please give me time to debug bug fixes for 3.3 before pushing on
+> features for 3.4.
 
-Okay... what on Earth is the point of this?
+Alex, your original MSI enabling patch simply does not work.  The xHCI
+PCI driver was marked as const and the xHCI PCI probe function oopsed as
+soon as it tried to add HCD_MSI_FIRST to driver->flags.  Please test all
+the patches in your patchsets individually to make sure they don't cause
+bugs, as this will break git-bisect.  It's especially troublesome to not
+test a patch I've said will be needed for stable, since we really try
+not to break stable. </grumpy maintainer rant>
 
-This just screams "dangerous toxic heuristic that's likely to break
-unusual configurations", and reducing the number of entries in a /sys
-directory is hardly motivation for anything.
+The oops brings up an interesting point.  I think the reason the xHCI
+PCI driver structure is marked as const is because it's shared across
+all xHCI hosts in the system.  Even if you remove the const keyword, you
+could be modifying the flags while another xHCI host controller is being
+initialized.
 
-You need a much better description of what you're trying to accomplish
-and why that matters in the first place.
+I think PCI probe isn't run in parallel, but you could still have the
+case where the Intel Panther Point xHCI PCI probe runs first,
+HCD_MSI_FIRST gets added to the hcd driver flags, and then the PCI probe
+runs for a Fresco Logic add-in card that doesn't handle MSI, and the USB
+core doesn't attempt to allocate the legacy IRQ because HCD_MSI_FIRST is
+set.  Then the Fresco Logic host controller will be left with no
+interrupt.
 
-	-hpa
+
+Alan, is the hc_driver structure (xhci_pci_hc_driver) shared across all
+xHCI PCI hosts in the system?
+
+Sarah Sharp
