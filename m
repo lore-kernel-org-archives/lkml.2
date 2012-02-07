@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab2BGQ2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 11:28:01 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:37997 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754525Ab2BGQ17 (ORCPT
+	id S1756137Ab2BGQ2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 11:28:22 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39694 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab2BGQ2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 11:27:59 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Cxam9G0VM1lOekinYTk0mqavnxxqTnijFS0w9eSk0H.vetM
- d7vzXrva8xSr7yPhMPdV9QW3QkjlLC8XC.JjcZOntuLKjcJstAfCOcf3UkQo
- Nez.kzpw1rUIV3vqoHk75O7S.1JbGDiC7NWrPiA5q6ALp4lQOgxUdKN0UfB3
- 0J8zCtptjZpQlEM7jhFsReCIi9vawfm_q80DwRIKeEZvPhLD69iTNc0KDrRm
- 4U9yv.AV5_5V8po94YP4TCMKbUFjymD5YVTAN5BH9VHJiAxU5wksZgOaFLiq
- IuynYF1A1HxzEB2w43OZ1hqN9VJCErwFZQ_B2dA3E3oUQXA8jeOV5Wcx_TA0
- nyh1N.IlMG4Q9gemOMzZF0C7BkAxvADuhfN_7OP_uj7qN_dOlnTVwvZkUIdR
- 1
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 7 Feb 2012 10:27:56 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 02/15] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-In-Reply-To: <1328568978-17553-3-git-send-email-mgorman@suse.de>
-Message-ID: <alpine.DEB.2.00.1202071025050.30652@router.home>
-References: <1328568978-17553-1-git-send-email-mgorman@suse.de> <1328568978-17553-3-git-send-email-mgorman@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 7 Feb 2012 11:28:21 -0500
+Message-ID: <4F315113.5010804@kernel.dk>
+Date: Tue, 07 Feb 2012 17:28:03 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tejun Heo <tj@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Shaohua Li <vivek.goyal2008@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
+Subject: Re: [PATCH] block: strip out locking optimization in put_io_context()
+References: <1328514611.21268.66.camel@sli10-conroe> <20120206151219.GC30752@redhat.com> <4F2FFB21.9000202@kernel.dk> <20120206163721.GF30752@redhat.com> <20120206164428.GA21292@google.com> <CA+55aFx6BR_ZUHd8d64btu-LzsPHo3Ot_d1-5jJytjQUqvvaiQ@mail.gmail.com> <20120206172706.GB21292@google.com> <4F303506.9000201@kernel.dk> <20120206215451.GD21292@google.com> <4F30C96F.1000905@kernel.dk> <20120207162253.GG21292@google.com>
+In-Reply-To: <20120207162253.GG21292@google.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Feb 2012, Mel Gorman wrote:
+On 2012-02-07 17:22, Tejun Heo wrote:
+> Hello, Jens.
+> 
+> On Tue, Feb 07, 2012 at 07:49:19AM +0100, Jens Axboe wrote:
+>>> I couldn't find any statiscally meaningful advantage of the
+>>> optimization with tight fork/exit tests w/ forced ioc creation on
+>>> fork, which gotta be the most pathological test case for the code
+>>> path.  So, let's remove the ugly optimization.  If I missed sth, we
+>>> can resurrect the simpler optimization later.  Jens, this is on top of
+>>> linus#master without Shaohua's patch.
+>>
+>> OK, then I'm fine with cleaning it up. Applied, thanks Tejun.
+> 
+> Hmmm... how about merging Shaohua's smaller fix first until we figure
+> out what's going on with the performance regression he's seeing?
 
-> Pages allocated from the reserve are returned with page->pfmemalloc
-> set and it is up to the caller to determine how the page should be
-> protected.  SLAB restricts access to any page with page->pfmemalloc set
+That was already merged in my tree. I don't see how it makes much
+difference in tracking the regression. You said that removing it made no
+difference for the find test case, so I'd be more comfortable getting
+rid of the nasty optimization.
 
-pfmemalloc sounds like a page flag. If you would use one then the
-preservation of the flag by copying it elsewhere may not be necessary and
-the patches would be less invasive. Also you would not need to extend
-and modify many of the structures.
+I'll send it when I have pending tomorrow, so there's still a full day
+to change things. We can just shuffle patches before then, not a
+problem.
+
+-- 
+Jens Axboe
 
