@@ -1,122 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab2BGOAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 09:00:10 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:54277 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225Ab2BGOAG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 09:00:06 -0500
-In-Reply-To: <4F312492.1040002@de.ibm.com>
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com> <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com>
-To: BORNTRAE@linux.vnet.ibm.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, mst@redhat.com,
-        Paolo Bonzini <pbonzini@redhat.com>, rusty@rustcorp.com.au
+	id S1756417Ab2BGODY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 09:03:24 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:55054 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755900Ab2BGODX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 09:03:23 -0500
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-X-KeepSent: AFB86CAE:9917478D-C125799D:004AF231;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>
-From: Christian Hoff <christian.hoff@de.ibm.com>
-Date: Tue, 7 Feb 2012 14:59:53 +0100
-X-MIMETrack: S/MIME Sign by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
- 10, 2010) at 07/02/2012 14:59:58,
-	Serialize by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
- 10, 2010) at 07/02/2012 14:59:58,
-	Serialize complete at 07/02/2012 14:59:58,
-	S/MIME Sign failed at 07/02/2012 14:59:58: The cryptographic key was not
- found,
-	Serialize by Router on D06MC042/06/M/IBM(Release 8.5.2FP3|July 10, 2011) at
- 07/02/2012 14:59:55,
-	Serialize complete at 07/02/2012 14:59:55
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12020714-0542-0000-0000-000000EB679D
+Content-Type: text/plain; charset="utf-8"
+Subject: RE: [PATCH 01/11] dmaengine: add context parameter toprep_slave_sgand prep_dma_cyclic
+Date: Tue, 7 Feb 2012 06:01:23 -0800
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552028C2A5D@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <1328585993.26182.143.camel@vkoul-udesk3>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 01/11] dmaengine: add context parameter toprep_slave_sgand prep_dma_cyclic
+Thread-Index: AczlSgyiyvhqyW/cSTSwYUVZFrzQ5gAVNpiw
+References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-2-git-send-email-alexandre.bounine@idt.com> <20120202214350.GB4432@flint.arm.linux.org.uk> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872683@CORPEXCH1.na.ads.idt.com> <1328529182.26182.92.camel@vkoul-udesk3> <0CE8B6BE3C4AD74AB97D9D29BD24E552028729F9@CORPEXCH1.na.ads.idt.com> <1328542134.26182.111.camel@vkoul-udesk3> <20120206155318.GA20852@flint.arm.linux.org.uk> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872AB1@CORPEXCH1.na.ads.idt.com> <1328551625.26182.139.camel@vkoul-udesk3> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872B3D@CORPEXCH1.na.ads.idt.com> <1328585993.26182.143.camel@vkoul-udesk3>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Russell King <rmk@arm.linux.org.uk>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        "Matt Porter" <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q17E3Ynq028641
 
-Hello Paolo,
+On Mon, Feb 06, 2012 at 10:40 PM, Vinod Koul wrote:
+> 
+> On Mon, 2012-02-06 at 10:45 -0800, Bounine, Alexandre wrote:
+> > On Mon, Feb 06, 2012 at 1:07 PM, Vinod Koul wrote:
+> > >
+> > > On Mon, 2012-02-06 at 09:02 -0800, Bounine, Alexandre wrote:
+> > > >
+> > > > What if we introduce another dma_transaction_type like
+> DMA_SLAVE_EXT
+> > > > (extended?).
+> > > > In this case all devices that adhere to the generic SLAVE
+> interface
+> > > > still be
+> > > > registered as DMA_SLAVE and those that do not follow generic
+> route
+> > > use
+> > > > DMA_SLAVE_EXT.
+> > > that way it would be channel specific not transaction specific as
+> you
+> > > had asked for...?
+> > >
+> > > Again, how does this solve problem of passing parameters while
+> > > preventing abuse...
+> >
+> > This gives a channel-specific treatment to the parameter. Channels
+> registered
+> > as DMA_SLAVE never expect an extra parameter (BUG_ON if the pointer
+> is not NULL).
+> > In the generic use scenario described by Russell clients are safe to
+> request
+> > any such channel without an additional HW knowledge (as it is now).
+> >
+> > Channels registered as DMA_SLAVE_EXT will accept a pointer to
+> parameter structure.
+> > This, combined with configuration specific wrappers as you described
+> > in earlier e-mail with #ifdef CONFIG_RAPIDIO, should ensure that
+> there is no
+> > unexpected treatment of (void *) parameter. Also for channels
+> registered
+> > as DMA_SLAVE_EXT a corresponding filter routine must be provided.
+> Okay this sounds better :)
+> Sorry I didnt quite get the last line about filter routine?
+> 
+Currently function private_candidate() allows filtering function
+not to be specified and therefore skip the filter check.
+It may be a good safety measure to ensure that channels specified
+as DMA_SLAVE_EXT provide a corresponding filter routine so they
+positively identify dma channel that will accept intended extra parameter.
+I assume that a system may have more than one dmac registered as DMA_SLAVE_EXT. 
 
-On 07/02/12 13:31, Paolo Bonzini wrote:
-> The structure of the LUN is defined by SAM, not by me. 
-
-Just had a look at the SAM LUN structure. It appears that you are using 
-the SCSI format for hierarchical LUNs(SAM 5 chapter 4.7.6) in order to 
-indicate that the LUN is actually attached to the host system and not to 
-the Qemu guest operating system itself.
-
-What I am wondering is why you are doing this? The hierarchical SCSI 
-format is only retained while the LUN number is being transmitted over the 
-virtqueue, so there does not seem to be a technical necessity for using 
-this format in order to transmit SCSI target ID and LUN number information 
-to the host.
-
-Instead the format has some disadvantages:
-- It uses up 8 bytes where 3 bytes would be sufficient in order to store 
-both the target ID and LUN number information
-- The format limits us to 255 target IDs. I agree that the LUN limit is 
-probably more a theoretical and not a practical one, but 255 target IDs 
-could become a limitation in the future.
-
-Nonetheless I think that virtio-scsi is a useful project and addresses 
-many of the limitations imposed by virtio-block. The fact that I am still 
-persisting has more to do with interest in the project rather than wanting 
-to keep the code from going upstream. Thank you for your work on this 
-topic.
-
-Mit freundlichen Grüßen / Kind regards
-
-Christian Hoff
-
-Student - Applied Computer Science
-
-
-Phone:
-49-16098976-950
- IBM Deutschland
-
-E-Mail:
-christian.hoff@de.ibm.com
- Am Fichtenberg 1
-
-
- 71083 Herrenberg
-
-
- Germany
-
-
-IBM Deutschland GmbH / Vorsitzender des Aufsichtsrats: Martin Jetter
-Geschäftsführung: Martina Koederitz (Vorsitzende), Reinhard Reschke, 
-Dieter Scholz, Gregor Pillen, Joachim Heel, Christian Noll
-Sitz der Gesellschaft: Ehningen / Registergericht: Amtsgericht Stuttgart, 
-HRB 14562 / WEEE-Reg.-Nr. DE 99369940 
-
+This is what I have for RapidIO - the filter call ensures that DMA
+channel is associated with a RapidIO controller that provides access
+to the specified SRIO device.
 
 
-
-From:
-BORNTRAE@linux.vnet.ibm.com
-To:
-Paolo Bonzini <pbonzini@redhat.com>
-Cc:
-Christian Hoff/Germany/IBM@IBMDE, linux-kernel@vger.kernel.org, 
-linux-scsi@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com, 
-kvm@vger.kernel.org
-Date:
-07/02/2012 14:18
-Subject:
-Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-
-
-
-On 07/02/12 13:31, Paolo Bonzini wrote:
-> The structure of the LUN is defined by SAM, not by me. 
-
-Ok, got it.
-
-
-
+Alex.
+ 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
