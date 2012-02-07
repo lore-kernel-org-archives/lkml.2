@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab2BGWNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 17:13:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63643 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755937Ab2BGWNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 17:13:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="107488981"
-Date: Tue, 7 Feb 2012 14:13:17 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Alex Shi <alex.shi@intel.com>, stern@rowland.harvard.edu
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        andiry.xu@amd.com, linux-kernel@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>, Takashi Iwai <tiwai@suse.de>,
-        trenn@suse.de, linux-pci@vger.kernel.org,
-        Michal Marek <MMarek@suse.com>
-Subject: Re: [PATCH] usb: enable pci MSI/MSIX in usb core
-Message-ID: <20120207221317.GA6103@xanatos>
-References: <1328531341-22705-1-git-send-email-alex.shi@intel.com>
- <4F311233.9070404@intel.com>
- <20120207144204.GA7214@kroah.com>
- <20120207172743.GA4780@xanatos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120207172743.GA4780@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757040Ab2BGWah (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 17:30:37 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:55696 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756370Ab2BGWaf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 17:30:35 -0500
+Message-ID: <1328653791.18150.5.camel@js-netbook>
+Subject: Re: [PATCH 1/8] PM / Sleep: Initialize wakeup source locks in
+ wakeup_source_add()
+From: John Stultz <john.stultz@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <greg@linuxfoundation.org>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Date: Tue, 07 Feb 2012 14:29:51 -0800
+In-Reply-To: <201202070201.58025.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+	 <201202070201.58025.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020722-4242-0000-0000-000000B54B9B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 09:27:43AM -0800, Sarah Sharp wrote:
-> I'm trying to track down an oops on my for-usb-linus queue that could
-> either be related to Alex's original MSI work around patch, or the patch
-> Oliver posted for working around PCI MMIO not being enabled fast enough.
-> I don't want to review this MSI improvement patch until I'm sure the
-> original MSI work around patch is stable.
+On Tue, 2012-02-07 at 02:01 +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> Alex, please give me time to debug bug fixes for 3.3 before pushing on
-> features for 3.4.
+> Initialize wakeup source locks in wakeup_source_add() instead of
+> wakeup_source_create(), because otherwise the locks of the wakeup
+> sources that haven't been allocated with wakeup_source_create()
+> aren't initialized and handled properly.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Alex, your original MSI enabling patch simply does not work.  The xHCI
-PCI driver was marked as const and the xHCI PCI probe function oopsed as
-soon as it tried to add HCD_MSI_FIRST to driver->flags.  Please test all
-the patches in your patchsets individually to make sure they don't cause
-bugs, as this will break git-bisect.  It's especially troublesome to not
-test a patch I've said will be needed for stable, since we really try
-not to break stable. </grumpy maintainer rant>
+Ah, I've shot myself in the foot before, forgetting to init the wakeup
+source, so this should be good. Although, would a WARN_ON be better then
+just initializing the lock in add? That way bad behavior is more likely
+to be corrected, rather then just ignored.
 
-The oops brings up an interesting point.  I think the reason the xHCI
-PCI driver structure is marked as const is because it's shared across
-all xHCI hosts in the system.  Even if you remove the const keyword, you
-could be modifying the flags while another xHCI host controller is being
-initialized.
+thanks
+-john
 
-I think PCI probe isn't run in parallel, but you could still have the
-case where the Intel Panther Point xHCI PCI probe runs first,
-HCD_MSI_FIRST gets added to the hcd driver flags, and then the PCI probe
-runs for a Fresco Logic add-in card that doesn't handle MSI, and the USB
-core doesn't attempt to allocate the legacy IRQ because HCD_MSI_FIRST is
-set.  Then the Fresco Logic host controller will be left with no
-interrupt.
-
-
-Alan, is the hc_driver structure (xhci_pci_hc_driver) shared across all
-xHCI PCI hosts in the system?
-
-Sarah Sharp
