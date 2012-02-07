@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab2BGRmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 12:42:43 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:58748 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563Ab2BGRml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 12:42:41 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6613"; a="161234633"
-Message-ID: <4F31628E.3030006@codeaurora.org>
-Date: Tue, 07 Feb 2012 09:42:38 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	id S1756106Ab2BGRmt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 12:42:49 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35682 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754563Ab2BGRmp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 12:42:45 -0500
 MIME-Version: 1.0
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
-References: <1328210686-15909-1-git-send-email-sboyd@codeaurora.org> <20120202204411.GB14129@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1202021632400.2759@xanadu.home> <4F2B1E11.1040000@codeaurora.org> <20120203003633.GD14129@n2100.arm.linux.org.uk> <4F309BAE.8000608@codeaurora.org>
-In-Reply-To: <4F309BAE.8000608@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F315430.2090708@gmail.com>
+References: <1328187288-24395-1-git-send-email-eranian@google.com>
+	<1328187288-24395-17-git-send-email-eranian@google.com>
+	<4F3051E3.5050402@gmail.com>
+	<CABPqkBSYwwQpfxj3daHF_YHfJWLUT-Pfd03_7_jtrBkO4kM2ag@mail.gmail.com>
+	<4F315430.2090708@gmail.com>
+Date: Tue, 7 Feb 2012 18:42:44 +0100
+Message-ID: <CABPqkBR5j9wxNfSReXeLWmEdUHJmhnQUQ4W2mBqY-MatNSo0sA@mail.gmail.com>
+Subject: Re: [PATCH v5 16/18] perf: enable reading of perf.data files from
+ different ABI rev
+From: Stephane Eranian <eranian@google.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
+        vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/12 19:34, Saravana Kannan wrote:
-> On 02/02/2012 04:36 PM, Russell King - ARM Linux wrote:
->> On Thu, Feb 02, 2012 at 03:36:49PM -0800, Stephen Boyd wrote:
->>> On 02/02/12 13:38, Nicolas Pitre wrote:
->>>> On Thu, 2 Feb 2012, Russell King - ARM Linux wrote
->>>>> On Thu, Feb 02, 2012 at 11:24:46AM -0800, Stephen Boyd wrote:
->>>>>> Should we move get_thread_info into assembler.h? It seems odd
->>>>>> to include entry-header.S but I saw that vfp was doing the same.
->>>>> Probably yes, and probably also have preempt_disable and
->>>>> preempt_enable
->>>>> assembler macros.  That's going to get rather icky if we have to
->>>>> explicitly call the scheduler though (to solve (1)).
->>>> What about a pair of helpers written in C instead?
->>>>
->>>> v7_flush_dcache_all() could be renamed, and a wrapper function called
->>>> v7_flush_dcache_all() would call the preemption disable helper,
->>>> call the
->>>> former v7_flush_dcache_all code, then call the preemption enable
->>>> helper.
->>>>
->>>> Then __v7_setup() could still call the core cache flush code without
->>>> issues.
+On Tue, Feb 7, 2012 at 5:41 PM, David Ahern <dsahern@gmail.com> wrote:
+> On 02/07/2012 08:50 AM, Stephane Eranian wrote:
+>>>> +     if (sz == 0) {
+>>>> +             /* assume ABI0 */
+>>>> +             sz =  PERF_ATTR_SIZE_VER0;
 >>>
->>> I tried to put the preemption disable/enable right around the place
->>> where it was needed. With this approach we would disable preemption
->>> during the entire cache flush. I'm not sure if we want to make this
->>> function worse for performance, do we? It certainly sounds easier than
->>> writing all the preempt macros in assembly though.
+>>> Shouldn't this be a failure? ie., problem with the file (or the
+>>> swapping) since size can't be 0
+>>>
+>> size can be zero. In which case, it means ABI0 version.
+>> See kernel/event/core.c:perf_copy_attr().
+>
+> ok
+>
 >>
->> Err, why do you think it's a big task?
 >>
->> preempt disable is a case of incrementing the thread preempt count,
->> while
->> preempt enable is a case of decrementing it, testing for zero, if zero,
->> then checking whether TIF_NEED_RESCHED is set and calling a function.
->>
->> If that's too much, then the simple method in assembly to quickly
->> disable
->> preemption over a very few set of instructions is using mrs/msr and
->> cpsid i.
->> That'll be far cheaper than fiddling about with preempt counters or
->> messing about with veneers in C code.
+>>> And then for the following why not restrict sz to known, expected sizes
+>>> -- using the PERF_ATTR_SIZE_VER defines introduced in patch 15?
+>>>
+>> Well, the current code solves the problem once and for all. Old tools
+>> can still read new files and vice-versa. If you think that's a problem I
+>> can simply bail out if sz > our_sz.
 >
-> Russell,
+> My sensitivity on this is when endianness is broken it is a nightmare to
+> find. You end up lacing the code with printfs trying to find which size
+> field is going off the charts making the parsing of the file fail - or
+> worse the sizes are slightly off and you get non-sense out.
 >
-> I think you misunderstood Stephen's point about the performance. He
-> isn't referring to the performance difference between a C call to
-> preemt disable/enable vs. a few assembly level instructions.
+> New commands should be able to read old files; old commands reading new
+> files is a bit of a stretch in that the code has to be future-proofed.
+> It seems like a reasonable requirement for data files to be examined by
+> a command of the same vintage or newer as the command that wrote the file.
 >
-> I believe he is referring to the performance hit of having preemption
-> disabled during the entirety of the cache flush operation vs. having
-> preemption disabled only for the duration of writing to CSSELR and
-> reading back CCSIDR.
->
-> I would think a cache flush is a fairly long operation and to have
-> preemption disable across it doesn't sound appealing to me.
->
-> Thoughts?
->
-
-Sorry I messed up the headers for v2 of the patch. It didn't get sent to
-the msm list.
-
-Anyway, disabling interrupts for those few instructions sounds like the
-best approach and so I sent that out in v2.
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Fine then, I can simply strip that part of the code and return an
+error is sz > our_sz.
+How about that?
