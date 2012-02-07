@@ -1,88 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab2BGEU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 23:20:58 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:45563 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756328Ab2BGEUu (ORCPT
+	id S1756376Ab2BGEUx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 23:20:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39583 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756305Ab2BGEUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 23:20:50 -0500
-Message-ID: <4F30A668.8010407@st.com>
-Date: Tue, 7 Feb 2012 09:49:52 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Mon, 6 Feb 2012 23:20:31 -0500
+Date: Tue, 7 Feb 2012 08:20:26 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH v2 2/6] oom: Get rid of sparse warnings
+Message-ID: <20120207042026.GA25524@oksana.dev.rtsoft.ru>
+References: <20120203163056.GA4190@redhat.com>
+ <20120206162935.GB5117@oksana.dev.rtsoft.ru>
+ <CAHGf_=oVQQRdfNYm0gOwzjxbUqPB5jMdsibLATCrt718-sMm7w@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, <amit.kucheria@linaro.org>
-Cc: "pavel@ucw.cz" <pavel@ucw.cz>, "len.brown@intel.com" <len.brown@intel.com>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Vipin KUMAR <vipin.kumar@st.com>, Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Query: When will drv->poweroff() called
-References: <4F2F6B40.6070308@st.com> <201202061307.40628.rjw@sisk.pl>
-In-Reply-To: <201202061307.40628.rjw@sisk.pl>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHGf_=oVQQRdfNYm0gOwzjxbUqPB5jMdsibLATCrt718-sMm7w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sparse flood makes it hard to catch newly-introduced warnings. So let's
+fix the the sparse warnings in the oom killer:
 
-Thanks Rafael.
+  CHECK   mm/oom_kill.c
+  mm/oom_kill.c:139:20: warning: context imbalance in
+	  '__find_lock_task_mm' - wrong count at exit
+  mm/oom_kill.c:771:9: warning: context imbalance in 'out_of_memory' -
+	  different lock contexts for basic block
 
-On 2/6/2012 5:37 PM, Rafael J. Wysocki wrote:
-> On Monday, February 06, 2012, Viresh Kumar wrote:
->> > 
->> > Hi Guys,
->> > 
->> > Sorry for asking this silly question, but i couldn't locate much
->> > help for it in documentation, so asking it.
->> > 
->> > We were testing hibernation for SPEAr13xx SoC family, based on
->> > ARM Cortex a9.
->> > 
->> > I observed that poweroff() callback of individual drivers are not
->> > getting called at all, while we test hibernate.
-> They should be called in the last phase of hibernation, after the image
-> has been created and the system is going for "power off" (hance the
-> callback name).
+The first one is fixed by assuring sparse that we know that we exit
+with the lock held.
+
+The second one is caused by the fact that sparse isn't smart enough
+to handle noreturn attribute.
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+
+On Mon, Feb 06, 2012 at 04:33:26PM -0500, KOSAKI Motohiro wrote:
+> 2012/2/6 Anton Vorontsov <anton.vorontsov@linaro.org>:
+> > Sparse flood makes it hard to catch newly-introduced warnings. So let's
+> > fix the the sparse warnings in the oom killer:
+> >
+> >  CHECK   mm/oom_kill.c
+> >  mm/oom_kill.c:139:20: warning: context imbalance in
+> >          '__find_lock_task_mm' - wrong count at exit
+> >  mm/oom_kill.c:771:9: warning: context imbalance in 'out_of_memory' -
+> >          different lock contexts for basic block
+> >
+> > The first one is fixed by assuring sparse that we know that we exit
+> > with the lock held.
+> >
+> > The second one is caused by the fact that sparse isn't smart enough
+> > to handle noreturn attribute.
+> >
+> > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> > ---
+> >  mm/oom_kill.c |    9 ++++++++-
+> >  1 files changed, 8 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> > index 0ebb383..49569b6 100644
+> > --- a/mm/oom_kill.c
+> > +++ b/mm/oom_kill.c
+> > @@ -142,8 +142,14 @@ struct task_struct *__find_lock_task_mm(struct task_struct *p)
+> >
+> >        do {
+> >                task_lock(t);
+> > -               if (likely(t->mm))
+> > +               if (likely(t->mm)) {
+> > +                       /*
+> > +                        * Shut up sparse: we do know that we exit w/ the
+> > +                        * task locked.
+> > +                        */
+> > +                       __release(&t->alloc_loc);
 > 
->> > I tried to go through the code to see what happened. It looked like
->> > there should be call to hibernation_set_ops() for platforms that are
->> > willing to get a call to poweroff() for their drivers.
-> That's correct.  The ->poweroff() callbacks are only executed if
-> hibernation_mode is equal to HIBERNATION_PLATFORM, which is not the
-> default.
-> 
->> > Otherwise shutdown of the busses gets called, which is a completely
->> > different path.
->> > 
->> > There are many drivers today, that are registering poweroff() from dev_pm_ops
->> > but are not doing bus specific shutdown stuff.
->> > 
->> > Even i tried to look for hibernation_set_ops() in kernel, and only acpi
->> > code is calling it.
-> That's correct too.
-> 
->> > I didn't understood how other ARM Sub-Arch's are handling this.
-> Well, they are supposed to call hibernation_set_ops() and set the operations
-> appropriately.  Those operations may be empty routines if they don't need
-> to do anything, but they have to be defined.
+> task struct only have allock_lock, not alloc_loc.
 
-Hi Amit,
+Funnily, but sparse does not care. :-) __release(foo) will work as
+well. Seems like sparse counts locking balance globally.
 
-Can you give some input on why none of the ARM platforms are calling
-this routine currently.
+This is now fixed in the patch down below, thanks for catching.
 
+> Moreover we don't release
+> the lock in this code path. Seems odd.
+
+Indeed. That's exactly what sparse seeing is as well. We exit
+without releasing the lock, which is bad (in sparse' eyes). So
+we lie to sparse, telling it that we do release, so it shut ups.
+
+Usually, we annotate functions with __releases() and __acquires()
+when when functions releases/acquires one of its arguments, but in
+this case the function returns a locked value, and it seems that
+there's no way to properly annotate this case.
+
+ mm/oom_kill.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 0ebb383..1914367 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -142,8 +142,14 @@ struct task_struct *__find_lock_task_mm(struct task_struct *p)
+ 
+ 	do {
+ 		task_lock(t);
+-		if (likely(t->mm))
++		if (likely(t->mm)) {
++			/*
++			 * Shut up sparse: we do know that we exit w/ the
++			 * task locked.
++			 */
++			__release(&t->alloc_lock);
+ 			return t;
++		}
+ 		task_unlock(t);
+ 	} while_each_thread(p, t);
+ 
+@@ -766,6 +772,7 @@ retry:
+ 		dump_header(NULL, gfp_mask, order, NULL, mpol_mask);
+ 		read_unlock(&tasklist_lock);
+ 		panic("Out of memory and no killable processes...\n");
++		return;
+ 	}
+ 
+ 	if (oom_kill_process(p, gfp_mask, order, points, totalpages, NULL,
 -- 
-viresh
+1.7.7.6
+
