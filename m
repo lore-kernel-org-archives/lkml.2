@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab2BGGu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 01:50:59 -0500
+	id S1756682Ab2BGGv0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 01:51:26 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:61195 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756572Ab2BGGu5 (ORCPT
+	with ESMTP id S1756517Ab2BGGvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 01:50:57 -0500
-Date: Tue, 7 Feb 2012 10:50:54 +0400
+	Tue, 7 Feb 2012 01:51:23 -0500
+Date: Tue, 7 Feb 2012 10:51:20 +0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Greg KH <gregkh@linuxfoundation.org>,
@@ -19,8 +19,8 @@ Cc: Greg KH <gregkh@linuxfoundation.org>,
         Mike Frysinger <vapier@gentoo.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] blackfin: Fix possible race on task->mm
-Message-ID: <20120207065054.GF1496@oksana.dev.rtsoft.ru>
+Subject: [PATCH 7/8] um: Should hold tasklist_lock while traversing processes
+Message-ID: <20120207065120.GG1496@oksana.dev.rtsoft.ru>
 References: <20120207064809.GA29061@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -31,81 +31,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even when in atomic context, grabbing irqsave variant of tasklist lock
-is not enough to protect task->mm from disappearing on SMP machines.
-Instead, we have to grab the task lock.
+Traversing the tasks requires holding tasklist_lock, otherwise it
+is unsafe.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
 
-p.s. I don't have blackfin toolchain handy, so I did not build-test
-the patch.
+p.s. However, I'm not sure that calling os_kill_ptraced_process()
+in the 'atomic' context is correct. It seem to work, but please
+take a closer look.
 
- arch/blackfin/kernel/trace.c |   21 +++++++++------------
- 1 files changed, 9 insertions(+), 12 deletions(-)
+ arch/um/kernel/reboot.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/blackfin/kernel/trace.c b/arch/blackfin/kernel/trace.c
-index 050db44..19bc02a 100644
---- a/arch/blackfin/kernel/trace.c
-+++ b/arch/blackfin/kernel/trace.c
-@@ -10,6 +10,7 @@
- #include <linux/hardirq.h>
- #include <linux/thread_info.h>
- #include <linux/mm.h>
-+#include <linux/sched.h>
- #include <linux/uaccess.h>
- #include <linux/module.h>
- #include <linux/kallsyms.h>
-@@ -27,7 +28,6 @@ void decode_address(char *buf, unsigned long address)
- 	struct task_struct *p;
- 	struct mm_struct *mm;
- 	unsigned long flags, offset;
--	unsigned char in_atomic = (bfin_read_IPEND() & 0x10) || in_atomic();
- 	struct rb_node *n;
+diff --git a/arch/um/kernel/reboot.c b/arch/um/kernel/reboot.c
+index 4d93dff..66d754c 100644
+--- a/arch/um/kernel/reboot.c
++++ b/arch/um/kernel/reboot.c
+@@ -4,6 +4,7 @@
+  */
  
- #ifdef CONFIG_KALLSYMS
-@@ -113,15 +113,13 @@ void decode_address(char *buf, unsigned long address)
- 	 */
- 	write_lock_irqsave(&tasklist_lock, flags);
- 	for_each_process(p) {
--		mm = (in_atomic ? p->mm : get_task_mm(p));
-+		task_lock(p);
-+		mm = p->mm;
- 		if (!mm)
--			continue;
-+			goto __continue;
+ #include "linux/sched.h"
++#include "linux/spinlock.h"
+ #include "linux/slab.h"
+ #include "kern_util.h"
+ #include "os.h"
+@@ -22,6 +23,7 @@ static void kill_off_processes(void)
+ 		struct task_struct *p;
+ 		int pid;
  
--		if (!down_read_trylock(&mm->mmap_sem)) {
--			if (!in_atomic)
--				mmput(mm);
--			continue;
--		}
-+		if (!down_read_trylock(&mm->mmap_sem))
-+			goto __continue;
- 
- 		for (n = rb_first(&mm->mm_rb); n; n = rb_next(n)) {
- 			struct vm_area_struct *vma;
-@@ -163,8 +161,7 @@ void decode_address(char *buf, unsigned long address)
- 						name, vma->vm_start, vma->vm_end);
- 
- 				up_read(&mm->mmap_sem);
--				if (!in_atomic)
--					mmput(mm);
-+				task_unlock(p);
- 
- 				if (buf[0] == '\0')
- 					sprintf(buf, "[ %s ] dynamic memory", name);
-@@ -174,8 +171,8 @@ void decode_address(char *buf, unsigned long address)
++		read_lock(&tasklist_lock);
+ 		for_each_process(p) {
+ 			if (p->mm == NULL)
+ 				continue;
+@@ -29,6 +31,7 @@ static void kill_off_processes(void)
+ 			pid = p->mm->context.id.u.pid;
+ 			os_kill_ptraced_process(pid, 1);
  		}
- 
- 		up_read(&mm->mmap_sem);
--		if (!in_atomic)
--			mmput(mm);
-+__continue:
-+		task_unlock(p);
++		read_unlock(&tasklist_lock);
  	}
+ }
  
- 	/*
 -- 
 1.7.7.6
 
