@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab2BGODY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 09:03:24 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:55054 "EHLO mxout1.idt.com"
+	id S1756455Ab2BGOJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 09:09:31 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:46808 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755900Ab2BGODX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 09:03:23 -0500
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1755900Ab2BGOJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 09:09:30 -0500
+Message-ID: <4F31308B.1090002@parallels.com>
+Date: Tue, 07 Feb 2012 18:09:15 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Subject: RE: [PATCH 01/11] dmaengine: add context parameter toprep_slave_sgand prep_dma_cyclic
-Date: Tue, 7 Feb 2012 06:01:23 -0800
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552028C2A5D@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <1328585993.26182.143.camel@vkoul-udesk3>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 01/11] dmaengine: add context parameter toprep_slave_sgand prep_dma_cyclic
-Thread-Index: AczlSgyiyvhqyW/cSTSwYUVZFrzQ5gAVNpiw
-References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com> <1328218341-31436-2-git-send-email-alexandre.bounine@idt.com> <20120202214350.GB4432@flint.arm.linux.org.uk> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872683@CORPEXCH1.na.ads.idt.com> <1328529182.26182.92.camel@vkoul-udesk3> <0CE8B6BE3C4AD74AB97D9D29BD24E552028729F9@CORPEXCH1.na.ads.idt.com> <1328542134.26182.111.camel@vkoul-udesk3> <20120206155318.GA20852@flint.arm.linux.org.uk> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872AB1@CORPEXCH1.na.ads.idt.com> <1328551625.26182.139.camel@vkoul-udesk3> <0CE8B6BE3C4AD74AB97D9D29BD24E55202872B3D@CORPEXCH1.na.ads.idt.com> <1328585993.26182.143.camel@vkoul-udesk3>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Russell King <rmk@arm.linux.org.uk>, <dan.j.williams@intel.com>,
-        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        "Matt Porter" <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 4/4] NFS: make nfs_client_lock per net ns
+References: <20120123172631.29637.17188.stgit@localhost6.localdomain6> <1328622659.4124.3.camel@lade.trondhjem.org>
+In-Reply-To: <1328622659.4124.3.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q17E3Ynq028641
 
-On Mon, Feb 06, 2012 at 10:40 PM, Vinod Koul wrote:
-> 
-> On Mon, 2012-02-06 at 10:45 -0800, Bounine, Alexandre wrote:
-> > On Mon, Feb 06, 2012 at 1:07 PM, Vinod Koul wrote:
-> > >
-> > > On Mon, 2012-02-06 at 09:02 -0800, Bounine, Alexandre wrote:
-> > > >
-> > > > What if we introduce another dma_transaction_type like
-> DMA_SLAVE_EXT
-> > > > (extended?).
-> > > > In this case all devices that adhere to the generic SLAVE
-> interface
-> > > > still be
-> > > > registered as DMA_SLAVE and those that do not follow generic
-> route
-> > > use
-> > > > DMA_SLAVE_EXT.
-> > > that way it would be channel specific not transaction specific as
-> you
-> > > had asked for...?
-> > >
-> > > Again, how does this solve problem of passing parameters while
-> > > preventing abuse...
-> >
-> > This gives a channel-specific treatment to the parameter. Channels
-> registered
-> > as DMA_SLAVE never expect an extra parameter (BUG_ON if the pointer
-> is not NULL).
-> > In the generic use scenario described by Russell clients are safe to
-> request
-> > any such channel without an additional HW knowledge (as it is now).
-> >
-> > Channels registered as DMA_SLAVE_EXT will accept a pointer to
-> parameter structure.
-> > This, combined with configuration specific wrappers as you described
-> > in earlier e-mail with #ifdef CONFIG_RAPIDIO, should ensure that
-> there is no
-> > unexpected treatment of (void *) parameter. Also for channels
-> registered
-> > as DMA_SLAVE_EXT a corresponding filter routine must be provided.
-> Okay this sounds better :)
-> Sorry I didnt quite get the last line about filter routine?
-> 
-Currently function private_candidate() allows filtering function
-not to be specified and therefore skip the filter check.
-It may be a good safety measure to ensure that channels specified
-as DMA_SLAVE_EXT provide a corresponding filter routine so they
-positively identify dma channel that will accept intended extra parameter.
-I assume that a system may have more than one dmac registered as DMA_SLAVE_EXT. 
+07.02.2012 17:51, Myklebust, Trond Ğ¿Ğ¸ÑˆĞµÑ‚:
+> 8<-------------------------------------------------------------------------
+>  From 5a489156da4fd15dd143f2b21dd9657b97dcef88 Mon Sep 17 00:00:00 2001
+> From: Trond Myklebust<Trond.Myklebust@netapp.com>
+> Date: Tue, 7 Feb 2012 00:05:11 -0500
+> Subject: [PATCH] NFS: Initialise the nfs_net->nfs_client_lock
+>
+> Ensure that we initialise the nfs_net->nfs_client_lock spinlock.
+> Also ensure that nfs_server_remove_lists() doesn't try to
+> dereference server->nfs_client before that is initialised.
+>
 
-This is what I have for RapidIO - the filter call ensures that DMA
-channel is associated with a RapidIO controller that provides access
-to the specified SRIO device.
+Sorry.
+Patch looks nice. Except one notice below.
+
+> Signed-off-by: Trond Myklebust<Trond.Myklebust@netapp.com>
+> Cc: Stanislav Kinsbursky<skinsbursky@parallels.com>
+> ---
+>   fs/nfs/client.c |    6 +++++-
+>   1 files changed, 5 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+> index 1a5cd49..f0dacad 100644
+> --- a/fs/nfs/client.c
+> +++ b/fs/nfs/client.c
+> @@ -1055,8 +1055,11 @@ static void nfs_server_insert_lists(struct nfs_server *server)
+>   static void nfs_server_remove_lists(struct nfs_server *server)
+>   {
+>   	struct nfs_client *clp = server->nfs_client;
+> -	struct nfs_net *nn = net_generic(clp->net, nfs_net_id);
+> +	struct nfs_net *nn;
+>
+> +	if (clp == NULL)
+> +		return;
+> +	nn = net_generic(clp->net, nfs_net_id);
+>   	spin_lock(&nn->nfs_client_lock);
+>   	list_del_rcu(&server->client_link);
+>   	if (clp&&  list_empty(&clp->cl_superblocks))
+
+This check for clp != NULL can be removed.
 
 
-Alex.
- 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+-- 
+Best regards,
+Stanislav Kinsbursky
