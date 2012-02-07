@@ -1,209 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab2BGWmF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 17:42:05 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52068 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755661Ab2BGWmC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 17:42:02 -0500
-Date: Wed, 8 Feb 2012 04:11:54 +0530
-From: Raghavendra D Prabhu <raghu.prabhu13@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: xfs@oss.sgi.com, xfs-masters@oss.sgi.com, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re:  Re: [PATCH][RFC] XFS: Fix mem leak and possible NULL deref in
- xfs_setattr_nonsize()
-Message-ID: <20120207224154.GB4312@Xye>
-Mail-Followup-To: Jesper Juhl <jj@chaosbits.net>, xfs@oss.sgi.com,
-	xfs-masters@oss.sgi.com, Ben Myers <bpm@sgi.com>,
-	Alex Elder <elder@kernel.org>, linux-kernel@vger.kernel.org,
-	Dave Chinner <david@fromorbit.com>
-References: <alpine.LNX.2.00.1202052220390.32529@swampdragon.chaosbits.net>
- <20120206091100.GA4350@Xye>
- <alpine.LNX.2.00.1202062145240.20117@swampdragon.chaosbits.net>
+	id S1757048Ab2BGWpy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 17:45:54 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:41866 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756800Ab2BGWpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 17:45:53 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [Update][RFC][PATCH 6/8] PM / Sleep: Implement opportunistic sleep
+Date: Tue, 7 Feb 2012 23:49:38 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
+        markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201202070200.55505.rjw@sisk.pl> <201202070206.01541.rjw@sisk.pl>
+In-Reply-To: <201202070206.01541.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1202062145240.20117@swampdragon.chaosbits.net>
-X-Operating-System: Arch linux x86_64 3.2.0-rc7-VYX
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-12-30)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202072349.39157.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, February 07, 2012, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Introduce a mechanism by which the kernel can trigger global
+> transitions to a sleep state chosen by user space if there are no
+> active wakeup sources.
+> 
+> It consists of a new sysfs attribute, /sys/power/autosleep, that
+> can be written one of the strings returned by reads from
+> /sys/power/state, a freezable ordered workqueue and a work item
+> carrying out the "suspend" operations.  If a string representing
+> the system's sleep state is written to /sys/power/autosleep, the
+> work item triggering transitions to that state is queued up and
+> it requeues it self after every execution until user space writes
+> "off" to /sys/power/autosleep.  That work item enables the detection
+> of wakeup events using the functions already defined in
+> drivers/base/power/wakeup.c (with one small modification) and calls
+> either pm_suspend(), or hibernate() to put the system into a sleep
+> state.  If a wakeup event is reported while the transition is in
+> progress, it will abort the transition and the "system suspend" work
+> item will be queued up again.
 
---OXfL5xGRrasGEqWY
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK, so before somebody points that out to me, the completion was redundant
+(it was a leftover from one of the previous versions of the patch, sorry
+about that).
 
-Hi,
+Moreover, try_to_suspend() is racy with respect to wakeup_count_store()
+(in theory, an automatic suspend without checking wakeup sources may happen
+if the latter is used carelessly when autosleep is enabled).
 
+Thus below is an updated patch (it requires [8/8] to be updated too because
+of the changes in pm_autosleep_set_state(), but that's rather trivial).
 
+Thanks,
+Rafael
 
-* On Mon, Feb 06, 2012 at 09:51:54PM +0100, Jesper Juhl <jj@chaosbits.net> =
-wrote:
->On Mon, 6 Feb 2012, Raghavendra D Prabhu wrote:
->
->> Hi,
->>
->>
->> * On Sun, Feb 05, 2012 at 10:23:44PM +0100, Jesper Juhl <jj@chaosbits.ne=
-t>
->> wrote:
->> > In xfs_setattr_nonsize(), xfs_trans_alloc() gets its memory from
->> > _xfs_trans_alloc() which gets it from kmem_zone_zalloc() which may
->> > fail and return NULL. So this:
->> >
->> > 	tp =3D xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
->> >
->> > may result in a NULL 'tp'.
->> > If it does, then the call:
->> >
->> > 	error =3D xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
->> >
->> > with a NULL 'tp' will explode, since xfs_trans_reserve() dereferences
->> > its first argument unconditionally.
->> >
->> > And if the memory allocation for 'tp' goes well (and thus
->> > xfs_trans_reserve() does not explode) then we may leak the memory
->> > allocated to 'tp' if xfs_trans_reserve() returns error.
->> >
->> > I believe this patch should fix both issues, but I'm not intimate with
->> > the XFS code at all, so there can easily be something I overlooked or
->> > something that should be done differently than what I did.
->> >
->> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
->> > ---
->> > fs/xfs/xfs_iops.c |    7 ++++++-
->> > 1 files changed, 6 insertions(+), 1 deletions(-)
->> >
->> > Note:
->> >  Please review carefully before applying.
->> >  Especially since I don't currently have any XFS filesystems to test
->> >  this on, nor any clear idea of a good way to actually test this if I
->> >  had. So this patch is compile tested only on my end.
->> >
->> > diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
->> > index ab30253..194c9d7 100644
->> > --- a/fs/xfs/xfs_iops.c
->> > +++ b/fs/xfs/xfs_iops.c
->> > @@ -575,9 +575,14 @@ xfs_setattr_nonsize(
->> > 	}
->> >
->> > 	tp =3D xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
->> > +	if (!tp)
->> > +		goto out_dqrele;
->> > +
->> > 	error =3D xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
->> > -	if (error)
->> > +	if (error) {
->> > +		xfs_trans_cancel(tp, 0);
->> > 		goto out_dqrele;
->> > +	}
->> >
->> > 	xfs_ilock(ip, XFS_ILOCK_EXCL);
->> >
->> > --
->> > 1.7.9
->> >
->> >
->> > Please CC me on replies.
->> >
->[...]
->>
->> The first one won't be triggered because kmem_zone_alloc (the last one i=
-n call
->> chain) checks for
->>     if (ptr || (flags & (KM_MAYFAIL|KM_NOSLEEP)))
->>
->> whereas xfs_trans_alloc  calls _xfs_trans_alloc with KM_SLEEP, also all =
-other
->> callers of _xfs_trans_alloc call it with KM_SLEEP (except one which call=
-s with
->> KM_NOFS), so it looks like we are safe there, it keeps spinning till it =
-finds
->> mem.
->>
->Good.
->
->>
->> As far as second one is concerned, looks fine, though this one should al=
-so do
->> the same.
->>
->> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
->> index ab30253..d331f5b 100644
->> --- a/fs/xfs/xfs_iops.c
->> +++ b/fs/xfs/xfs_iops.c
->> @@ -730,9 +730,9 @@ xfs_setattr_nonsize(
->>         return 0;
->>
->> out_trans_cancel:
->> -       xfs_trans_cancel(tp, 0);
->>         xfs_iunlock(ip, XFS_ILOCK_EXCL);
->> out_dqrele:
->> +       xfs_trans_cancel(tp, 0);
->>         xfs_qm_dqrele(udqp);
->>         xfs_qm_dqrele(gdqp);
->>         return error;
->>
->
->Thank you for the feedback.
->
->I worry about the fact that this suddenly calls xfs_trans_cancel() without
->holding the lock. I don't know if that's actually significant though.
->
->If it *is* significant, then I think the patch I just submitted in reply to
->Dave Chinner is better since there we do the alloc and cancel before even
->taking the lock at all in the leaky case and all other case have
->identical behaviour as before.
->If it is *not* significant then your patch is probably better since that
->means one less thing done while holding a lock.
->
->But I don't know enough XFS details to say which it is, so I'll leave it
->to someone else to pick the best patch of the two for this.
->
->
->--=20
->Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
->Don't top-post http://www.catb.org/jargon/html/T/top-post.html
->Plain text mails only, please.
->
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / Sleep: Implement opportunistic sleep
 
-Thanks, I noticed it a few moments after I posted it :) but I=20
-needed to know the reason behind unlock before cancel pattern=20
-which was provided by David Chinner.
+Introduce a mechanism by which the kernel can trigger global
+transitions to a sleep state chosen by user space if there are no
+active wakeup sources.
 
+It consists of a new sysfs attribute, /sys/power/autosleep, that
+can be written one of the strings returned by reads from
+/sys/power/state, an ordered workqueue and a work item carrying out
+the "suspend" operations.  If a string representing the system's
+sleep state is written to /sys/power/autosleep, the work item
+triggering transitions to that state is queued up and it requeues
+itself after every execution until user space writes "off" to
+/sys/power/autosleep.
 
+That work item enables the detection of wakeup events using the
+functions already defined in drivers/base/power/wakeup.c (with one
+small modification) and calls either pm_suspend(), or hibernate() to
+put the system into a sleep state.  If a wakeup event is reported
+while the transition is in progress, it will abort the transition and
+the "system suspend" work item will be queued up again.
 
+---
+ drivers/base/power/wakeup.c |   38 ++++++++------
+ include/linux/suspend.h     |   13 ++++-
+ kernel/power/Kconfig        |    8 +++
+ kernel/power/Makefile       |    1 
+ kernel/power/autosleep.c    |  112 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/power/main.c         |  105 ++++++++++++++++++++++++++++++++++-------
+ kernel/power/power.h        |   18 +++++++
+ 7 files changed, 262 insertions(+), 33 deletions(-)
 
-
-
-Regards,
---=20
-Raghavendra Prabhu
-GPG Id : 0xD72BE977
-Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
-www: wnohang.net
-
---OXfL5xGRrasGEqWY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPMaiyAAoJEKYW3KHXK+l3mlMH/RTWOM/JSYqSPIMdkGHdw7Mq
-7Q5977qYd4dZjo8gTxNtZ+WNsQTEsGN//61W2hhztdV/lSW4i2zpmhr5zZyz4xSY
-7RHKG2SwGc/+jlhsPovJuDz0UUMbqT2nTioMwgrEXprvs9C2epRwvrrNooZP2qF6
-7qHJubhqccHLkMZCf5YBMln1W86kCZ8q0HmU0EzDxv34cvsSklCuC+hul+CccACl
-ew7Mw50IJ9LF2tiDWknQy87Ly4KPjy9HnJYAsjArj1oHR7Hr33qUBUe5+daEW9LW
-oCyhO9/p8tIy3EWBurtXGDtHOenbGAETx94IN2m4w3HAYVyES9P89/qvaE02HHQ=
-=5oUT
------END PGP SIGNATURE-----
-
---OXfL5xGRrasGEqWY--
+Index: linux/kernel/power/Makefile
+===================================================================
+--- linux.orig/kernel/power/Makefile
++++ linux/kernel/power/Makefile
+@@ -8,5 +8,6 @@ obj-$(CONFIG_SUSPEND)		+= suspend.o
+ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
+ obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
+ 				   block_io.o
++obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
+ 
+ obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
+Index: linux/kernel/power/Kconfig
+===================================================================
+--- linux.orig/kernel/power/Kconfig
++++ linux/kernel/power/Kconfig
+@@ -103,6 +103,14 @@ config PM_SLEEP_SMP
+ 	select HOTPLUG
+ 	select HOTPLUG_CPU
+ 
++config PM_AUTOSLEEP
++	bool "Opportunistic sleep"
++	depends on PM_SLEEP
++	default n
++	---help---
++	Allow the kernel to trigger a system transition into a global sleep
++	state automatically whenever there are no active wakeup sources.
++
+ config PM_RUNTIME
+ 	bool "Run-time PM core functionality"
+ 	depends on !IA64_HP_SIM
+Index: linux/kernel/power/power.h
+===================================================================
+--- linux.orig/kernel/power/power.h
++++ linux/kernel/power/power.h
+@@ -269,3 +269,21 @@ static inline void suspend_thaw_processe
+ {
+ }
+ #endif
++
++#ifdef CONFIG_PM_AUTOSLEEP
++
++/* kernel/power/autosleep.c */
++extern int pm_autosleep_init(void);
++extern void pm_autosleep_lock(void);
++extern void pm_autosleep_unlock(void);
++extern suspend_state_t pm_autosleep_state(void);
++extern int pm_autosleep_set_state(suspend_state_t state);
++
++#else /* !CONFIG_PM_AUTOSLEEP */
++
++static inline int pm_autosleep_init(void) { return 0; }
++static inline void pm_autosleep_lock(void) {}
++static inline void pm_autosleep_unlock(void) {}
++static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
++
++#endif /* !CONFIG_PM_AUTOSLEEP */
+Index: linux/include/linux/suspend.h
+===================================================================
+--- linux.orig/include/linux/suspend.h
++++ linux/include/linux/suspend.h
+@@ -372,7 +372,7 @@ extern int unregister_pm_notifier(struct
+ extern bool events_check_enabled;
+ 
+ extern bool pm_wakeup_pending(void);
+-extern bool pm_get_wakeup_count(unsigned int *count);
++extern bool pm_get_wakeup_count(unsigned int *count, bool block);
+ extern bool pm_save_wakeup_count(unsigned int count);
+ 
+ static inline void lock_system_sleep(void)
+@@ -423,6 +423,17 @@ static inline void unlock_system_sleep(v
+ 
+ #endif /* !CONFIG_PM_SLEEP */
+ 
++#ifdef CONFIG_PM_AUTOSLEEP
++
++/* kernel/power/autosleep.c */
++void queue_up_suspend_work(void);
++
++#else /* !CONFIG_PM_AUTOSLEEP */
++
++static inline void queue_up_suspend_work(void) {}
++
++#endif /* !CONFIG_PM_AUTOSLEEP */
++
+ #ifdef CONFIG_ARCH_SAVE_PAGE_KEYS
+ /*
+  * The ARCH_SAVE_PAGE_KEYS functions can be used by an architecture
+Index: linux/kernel/power/autosleep.c
+===================================================================
+--- /dev/null
++++ linux/kernel/power/autosleep.c
+@@ -0,0 +1,112 @@
++/*
++ * kernel/power/autosleep.c
++ *
++ * Opportunistic sleep support.
++ *
++ * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
++ */
++
++#include <linux/device.h>
++#include <linux/mutex.h>
++#include <linux/pm_wakeup.h>
++
++#include "power.h"
++
++static struct workqueue_struct *autosleep_wq;
++static struct wakeup_source *autosleep_ws;
++
++static DEFINE_MUTEX(autosleep_lock);
++
++static suspend_state_t autosleep_state;
++
++static void try_to_suspend(struct work_struct *work)
++{
++	unsigned int initial_count, final_count;
++
++	if (!pm_get_wakeup_count(&initial_count, true))
++		goto out;
++
++	mutex_lock(&autosleep_lock);
++
++	if (!pm_save_wakeup_count(initial_count)) {
++		mutex_unlock(&autosleep_lock);
++		goto out;
++	}
++
++	if (autosleep_state == PM_SUSPEND_ON) {
++		mutex_unlock(&autosleep_lock);
++		return;
++	}
++	if (autosleep_state >= PM_SUSPEND_MAX)
++		hibernate();
++	else
++		pm_suspend(autosleep_state);
++
++	mutex_unlock(&autosleep_lock);
++
++	if (!pm_get_wakeup_count(&final_count, false))
++		goto out;
++
++	if (final_count == initial_count)
++		schedule_timeout(HZ / 2);
++
++ out:
++	queue_up_suspend_work();
++}
++
++static DECLARE_WORK(suspend_work, try_to_suspend);
++
++void queue_up_suspend_work(void)
++{
++	if (!work_pending(&suspend_work) && autosleep_state > PM_SUSPEND_ON)
++		queue_work(autosleep_wq, &suspend_work);
++}
++
++suspend_state_t pm_autosleep_state(void)
++{
++	return autosleep_state;
++}
++
++int pm_autosleep_set_state(suspend_state_t state)
++{
++#ifndef CONFIG_HIBERNATION
++	if (state >= PM_SUSPEND_MAX)
++		return -EINVAL;
++#endif
++	mutex_lock(&autosleep_lock);
++	__pm_stay_awake(autosleep_ws);
++	if (state == PM_SUSPEND_ON && autosleep_state != PM_SUSPEND_ON) {
++		autosleep_state = PM_SUSPEND_ON;
++		__pm_relax(autosleep_ws);
++	} else if (state > PM_SUSPEND_ON) {
++		autosleep_state = state;
++		__pm_relax(autosleep_ws);
++		queue_up_suspend_work();
++	}
++	mutex_unlock(&autosleep_lock);
++	return 0;
++}
++
++void pm_autosleep_lock(void)
++{
++	mutex_lock(&autosleep_lock);
++}
++
++void pm_autosleep_unlock(void)
++{
++	mutex_unlock(&autosleep_lock);
++}
++
++int __init pm_autosleep_init(void)
++{
++	autosleep_ws = wakeup_source_register("main");
++	if (!autosleep_ws)
++		return -ENOMEM;
++
++	autosleep_wq = alloc_ordered_workqueue("autosleep", 0);
++	if (autosleep_wq)
++		return 0;
++
++	wakeup_source_unregister(autosleep_ws);
++	return -ENOMEM;
++}
+Index: linux/kernel/power/main.c
+===================================================================
+--- linux.orig/kernel/power/main.c
++++ linux/kernel/power/main.c
+@@ -269,8 +269,7 @@ static ssize_t state_show(struct kobject
+ 	return (s - buf);
+ }
+ 
+-static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
+-			   const char *buf, size_t n)
++static suspend_state_t decode_state(const char *buf, size_t n)
+ {
+ #ifdef CONFIG_SUSPEND
+ 	suspend_state_t state = PM_SUSPEND_STANDBY;
+@@ -278,29 +277,46 @@ static ssize_t state_store(struct kobjec
+ #endif
+ 	char *p;
+ 	int len;
+-	int error = -EINVAL;
+ 
+ 	p = memchr(buf, '\n', n);
+ 	len = p ? p - buf : n;
+ 
+-	/* First, check if we are requested to hibernate */
+-	if (len == 4 && !strncmp(buf, "disk", len)) {
+-		error = hibernate();
+-		goto Exit;
+-	}
++	/* Check hibernation first. */
++	if (len == 4 && !strncmp(buf, "disk", len))
++		return PM_SUSPEND_MAX;
+ 
+ #ifdef CONFIG_SUSPEND
+ 	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
+ 		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
+ 			break;
+ 	}
+-	if (state < PM_SUSPEND_MAX && *s) {
+-		error = enter_state(state);
+-		suspend_stats_update(error);
+-	}
++	if (state < PM_SUSPEND_MAX && *s)
++		return state;
+ #endif
+ 
+- Exit:
++	return PM_SUSPEND_ON;
++}
++
++static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
++			   const char *buf, size_t n)
++{
++	suspend_state_t state;
++	int error = -EINVAL;
++
++	pm_autosleep_lock();
++	if (pm_autosleep_state() > PM_SUSPEND_ON) {
++		error = -EBUSY;
++		goto out;
++	}
++
++	state = decode_state(buf, n);
++	if (state < PM_SUSPEND_MAX)
++		error = pm_suspend(state);
++	else if (state > PM_SUSPEND_ON)
++		error = hibernate();
++
++ out:
++	pm_autosleep_unlock();
+ 	return error ? error : n;
+ }
+ 
+@@ -341,7 +357,8 @@ static ssize_t wakeup_count_show(struct
+ {
+ 	unsigned int val;
+ 
+-	return pm_get_wakeup_count(&val) ? sprintf(buf, "%u\n", val) : -EINTR;
++	return pm_get_wakeup_count(&val, true) ?
++		sprintf(buf, "%u\n", val) : -EINTR;
+ }
+ 
+ static ssize_t wakeup_count_store(struct kobject *kobj,
+@@ -349,15 +366,65 @@ static ssize_t wakeup_count_store(struct
+ 				const char *buf, size_t n)
+ {
+ 	unsigned int val;
++	int error = -EINVAL;
++
++	pm_autosleep_lock();
++	if (pm_autosleep_state() > PM_SUSPEND_ON) {
++		error = -EBUSY;
++		goto out;
++	}
+ 
+ 	if (sscanf(buf, "%u", &val) == 1) {
+ 		if (pm_save_wakeup_count(val))
+ 			return n;
+ 	}
+-	return -EINVAL;
++
++ out:
++	pm_autosleep_unlock();
++	return error;
+ }
+ 
+ power_attr(wakeup_count);
++
++#ifdef CONFIG_PM_AUTOSLEEP
++static ssize_t autosleep_show(struct kobject *kobj,
++			      struct kobj_attribute *attr,
++			      char *buf)
++{
++	suspend_state_t state = pm_autosleep_state();
++
++	if (state == PM_SUSPEND_ON)
++		return sprintf(buf, "off\n");
++
++#ifdef CONFIG_SUSPEND
++	if (state < PM_SUSPEND_MAX)
++		return sprintf(buf, "%s\n", valid_state(state) ?
++						pm_states[state] : "error");
++#endif
++#ifdef CONFIG_HIBERNATION
++	return sprintf(buf, "disk\n");
++#else
++	return sprintf(buf, "error");
++#endif
++}
++
++static ssize_t autosleep_store(struct kobject *kobj,
++			       struct kobj_attribute *attr,
++			       const char *buf, size_t n)
++{
++	suspend_state_t state = decode_state(buf, n);
++	int error;
++
++	if (state == PM_SUSPEND_ON && strncmp(buf, "off", 3)
++	    && strncmp(buf, "off\n", 4))
++		return -EINVAL;
++
++	error = pm_autosleep_set_state(state);
++	return error ? error : n;
++}
++
++power_attr(autosleep);
++#endif /* CONFIG_PM_AUTOSLEEP */
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ #ifdef CONFIG_PM_TRACE
+@@ -411,6 +478,9 @@ static struct attribute * g[] = {
+ #ifdef CONFIG_PM_SLEEP
+ 	&pm_async_attr.attr,
+ 	&wakeup_count_attr.attr,
++#ifdef CONFIG_PM_AUTOSLEEP
++	&autosleep_attr.attr,
++#endif
+ #ifdef CONFIG_PM_DEBUG
+ 	&pm_test_attr.attr,
+ #endif
+@@ -446,7 +516,10 @@ static int __init pm_init(void)
+ 	power_kobj = kobject_create_and_add("power", NULL);
+ 	if (!power_kobj)
+ 		return -ENOMEM;
+-	return sysfs_create_group(power_kobj, &attr_group);
++	error = sysfs_create_group(power_kobj, &attr_group);
++	if (error)
++		return error;
++	return pm_autosleep_init();
+ }
+ 
+ core_initcall(pm_init);
+Index: linux/drivers/base/power/wakeup.c
+===================================================================
+--- linux.orig/drivers/base/power/wakeup.c
++++ linux/drivers/base/power/wakeup.c
+@@ -458,8 +458,10 @@ static void wakeup_source_deactivate(str
+ 	atomic_add(MAX_IN_PROGRESS, &combined_event_count);
+ 
+ 	split_counters(&cnt, &inpr);
+-	if (!inpr)
++	if (!inpr) {
+ 		wake_up_all(&wakeup_count_wait_queue);
++		queue_up_suspend_work();
++	}
+ }
+ 
+ /**
+@@ -610,29 +612,33 @@ bool pm_wakeup_pending(void)
+ /**
+  * pm_get_wakeup_count - Read the number of registered wakeup events.
+  * @count: Address to store the value at.
++ * @block: Whether or not to block.
+  *
+- * Store the number of registered wakeup events at the address in @count.  Block
+- * if the current number of wakeup events being processed is nonzero.
++ * Store the number of registered wakeup events at the address in @count.  If
++ * @block is set, block until the current number of wakeup events being
++ * processed is zero.
+  *
+- * Return 'false' if the wait for the number of wakeup events being processed to
+- * drop down to zero has been interrupted by a signal (and the current number
+- * of wakeup events being processed is still nonzero).  Otherwise return 'true'.
++ * Return 'false' if the current number of wakeup events being processed is
++ * nonzero.  Otherwise return 'true'.
+  */
+-bool pm_get_wakeup_count(unsigned int *count)
++bool pm_get_wakeup_count(unsigned int *count, bool block)
+ {
+ 	unsigned int cnt, inpr;
+-	DEFINE_WAIT(wait);
+ 
+-	for (;;) {
+-		prepare_to_wait(&wakeup_count_wait_queue, &wait,
+-				TASK_INTERRUPTIBLE);
+-		split_counters(&cnt, &inpr);
+-		if (inpr == 0 || signal_pending(current))
+-			break;
++	if (block) {
++		DEFINE_WAIT(wait);
+ 
+-		schedule();
++		for (;;) {
++			prepare_to_wait(&wakeup_count_wait_queue, &wait,
++					TASK_INTERRUPTIBLE);
++			split_counters(&cnt, &inpr);
++			if (inpr == 0 || signal_pending(current))
++				break;
++
++			schedule();
++		}
++		finish_wait(&wakeup_count_wait_queue, &wait);
+ 	}
+-	finish_wait(&wakeup_count_wait_queue, &wait);
+ 
+ 	split_counters(&cnt, &inpr);
+ 	*count = cnt;
