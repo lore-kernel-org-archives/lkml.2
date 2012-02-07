@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab2BGTpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 14:45:54 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:52953 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756825Ab2BGTpv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 14:45:51 -0500
-Date: Tue, 7 Feb 2012 11:45:47 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mjg@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 5/5] Disable MCP limit exceeded messages from Intel IPS
- driver
-Message-ID: <20120207114547.2a32fbfb@jbarnes-desktop>
-In-Reply-To: <1328545032-21373-6-git-send-email-andi@firstfloor.org>
-References: <1328545032-21373-1-git-send-email-andi@firstfloor.org>
-	<1328545032-21373-6-git-send-email-andi@firstfloor.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/EzMM+PpiXHXtM_4M2qmhbmL"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1756836Ab2BGTp2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 14:45:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7924 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756789Ab2BGTpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 14:45:25 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 4/8] ftrace, perf: Add add/del tracepoint perf registration actions
+Date: Tue,  7 Feb 2012 20:44:55 +0100
+Message-Id: <1328643899-8361-5-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1328643899-8361-1-git-send-email-jolsa@redhat.com>
+References: <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+ <1328643899-8361-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/EzMM+PpiXHXtM_4M2qmhbmL
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Adding TRACE_REG_PERF_ADD and TRACE_REG_PERF_DEL to handle
+perf event schedule in/out actions.
 
-On Mon,  6 Feb 2012 08:17:12 -0800
-Andi Kleen <andi@firstfloor.org> wrote:
+The add action is invoked for when the perf event is scheduled in,
+while the del action is invoked when the event is scheduled out.
 
-> From: Andi Kleen <ak@linux.intel.com>
->=20
-> On a system on the thermal limit these are quite noisy and flood the logs.
-> Better would be a counter anyways. But given that we don't even have
-> anything for normal throttling this doesn't seem to be urgent either.
->=20
-> Cc: jbarnes@virtuousgeek.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ include/linux/ftrace_event.h    |    2 ++
+ kernel/trace/trace_event_perf.c |    4 +++-
+ kernel/trace/trace_events.c     |    2 ++
+ kernel/trace/trace_kprobe.c     |    2 ++
+ kernel/trace/trace_syscalls.c   |    4 ++++
+ 5 files changed, 13 insertions(+), 1 deletions(-)
 
-Yeah looks fine.  I think I queued a message reduction patch awhile
-back too... not sure if mjg saw it or not.
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 195e360..2bf677c 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -148,6 +148,8 @@ enum trace_reg {
+ 	TRACE_REG_PERF_UNREGISTER,
+ 	TRACE_REG_PERF_OPEN,
+ 	TRACE_REG_PERF_CLOSE,
++	TRACE_REG_PERF_ADD,
++	TRACE_REG_PERF_DEL,
+ };
+ 
+ struct ftrace_event_call;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 0cfcc37..d72af0b 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -211,12 +211,14 @@ int perf_trace_add(struct perf_event *p_event, int flags)
+ 	list = this_cpu_ptr(pcpu_list);
+ 	hlist_add_head_rcu(&p_event->hlist_entry, list);
+ 
+-	return 0;
++	return tp_event->class->reg(tp_event, TRACE_REG_PERF_ADD, p_event);
+ }
+ 
+ void perf_trace_del(struct perf_event *p_event, int flags)
+ {
++	struct ftrace_event_call *tp_event = p_event->tp_event;
+ 	hlist_del_rcu(&p_event->hlist_entry);
++	tp_event->class->reg(tp_event, TRACE_REG_PERF_DEL, p_event);
+ }
+ 
+ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 5138fea..079a93a 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -173,6 +173,8 @@ int ftrace_event_reg(struct ftrace_event_call *call,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 5667f89..580a05e 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1912,6 +1912,8 @@ int kprobe_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 6916b0d..dbdd804 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -666,6 +666,8 @@ static int syscall_enter_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+@@ -690,6 +692,8 @@ static int syscall_exit_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+-- 
+1.7.1
 
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/EzMM+PpiXHXtM_4M2qmhbmL
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPMX9rAAoJEIEoDkX4Qk9h+JEP/1fQHfUTOiqhj6+jDTQE7+1M
-zUDvvOPAPiV+LLsHvDjl6IZ4zsFlxkWaimz1PvxR+mQeHCZca9ePP2wxlnBt6Lcq
-7tpUoHruCn3W5I+AeMU9gFQND9p2kqTxBlrwffmtT7Ei4BHm9k1YW+TvV3zSW2fq
-u/yBt1iFn1BqBDV7qcjtyViy6GFUMCnD+vy0ekmuQ+9uFrhCxVkLEozteUrHrgVs
-mGqMLrcTEcH5nO79MPONAk6nhuqbn4DryCuBQNK4nSt6XdX3eHOxr62GYOS6srZQ
-7LFx2b/o+c3EADrfnONGS2OekAIVe217I7Kh72A3yKZkzMHdCcpfzxN7DL90L+zW
-XocV1HWMk77Gp87tvzPtAPN/mHzzoNF48IJ4UA6G3QVLzWgQHjKWGBJeE3yroneq
-+d6S7c7Z+lMF29Yycqk/FyvwvVm1k9WpQtYLfR9w4FRCaazXsb5PmxeuarlUmQ2T
-f6dmEWwHzQLD/e5YgAwPgULE7b8mtqZrlfhxjotapV5nuEBZoVsn0fy/hvCG3gXo
-eb4KeLKJdfBo0v+A2I6w1CM7LhuHSL+e3P0vg7PDZUeeb1AKPJiuPhIBn8ldfGjQ
-o7Yn1jVDNw82y+lQWtXPaedkz+QWk5x9apb4m4duNEWJ9mYA5S1H49OoeA965lTo
-gYUpAIAYjJKgtgZJ52ZA
-=1/jC
------END PGP SIGNATURE-----
-
---Sig_/EzMM+PpiXHXtM_4M2qmhbmL--
