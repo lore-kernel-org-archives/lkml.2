@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab2BGQTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 11:19:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56614 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab2BGQTF convert rfc822-to-8bit (ORCPT
+	id S1756060Ab2BGQUE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 11:20:04 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52839 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab2BGQUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 11:19:05 -0500
+	Tue, 7 Feb 2012 11:20:02 -0500
+Message-ID: <4F314F2C.4040100@codemonkey.ws>
+Date: Tue, 07 Feb 2012 10:19:56 -0600
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <1327757725-10114-6-git-send-email-rabin@rab.in>
-References: <1327757725-10114-1-git-send-email-rabin@rab.in> <1327757725-10114-6-git-send-email-rabin@rab.in>
-From: Rabin Vincent <rabin@rab.in>
-Date: Tue, 7 Feb 2012 21:48:24 +0530
-X-Google-Sender-Auth: iDXA8SkqDdPC7LXUOHFnO1oVcME
-Message-ID: <CAH+eYFDzsWjrxOFiYcYO6sgPDusxcHOTQcjvN8hDaEPG+=LgAQ@mail.gmail.com>
-Subject: Re: [PATCHv2 5/6] jump label: detect %c support for ARM
-To: Jason Baron <jbaron@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Avi Kivity <avi@redhat.com>
+CC: Rob Earhart <earhart@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+References: <4F2AB552.2070909@redhat.com>	<CAB9FdM9M2DWXBxxyG-ez_5igT61x5b7ptw+fKfgaqMBU_JS5aA@mail.gmail.com>	<4F2E80A7.5040908@redhat.com>	<CAB9FdM9pPJx8x4y=uvRFh-T4fKBR9xChocUVG_GfNGffTWtMNQ@mail.gmail.com>	<4F3025FB.1070802@codemonkey.ws>	<4F31132F.3010100@redhat.com> <4F31408F.80901@codemonkey.ws> <4F314B2A.4000709@redhat.com>
+In-Reply-To: <4F314B2A.4000709@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason,
+On 02/07/2012 10:02 AM, Avi Kivity wrote:
+> On 02/07/2012 05:17 PM, Anthony Liguori wrote:
+>> On 02/07/2012 06:03 AM, Avi Kivity wrote:
+>>> On 02/06/2012 09:11 PM, Anthony Liguori wrote:
+>>>>
+>>>> I'm not so sure. ioeventfds and a future mmio-over-socketpair have to put the
+>>>> kthread to sleep while it waits for the other end to process it. This is
+>>>> effectively equivalent to a heavy weight exit. The difference in cost is
+>>>> dropping to userspace which is really neglible these days (< 100 cycles).
+>>>
+>>> On what machine did you measure these wonderful numbers?
+>>
+>> A syscall is what I mean by "dropping to userspace", not the cost of a heavy
+>> weight exit.
+>
+> Ah. But then ioeventfd has that as well, unless the other end is in the kernel too.
 
-On Sat, Jan 28, 2012 at 19:05, Rabin Vincent <rabin@rab.in> wrote:
-> Some versions of ARM GCC which do support asm goto, have problems
-> handling the the %c specifier.  Since we need the %c to support jump
-> labels on ARM, detect that too in the asm goto detection script to avoid
-> build errors with these versions.
->
-> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
->
-> Cc: Jason Baron <jbaron@redhat.com>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
+Yes, that was my point exactly :-)
 
-Could you please ack this patch if it's OK for you?  Then I could try to
-send it via rmk's ARM patch system along with the rest of the series.
+ioeventfd/mmio-over-socketpair to adifferent thread is not faster than a 
+synchronous KVM_RUN + writing to an eventfd in userspace modulo a couple of 
+cheap syscalls.
 
-Thanks.
+The exception is when the other end is in the kernel and there is magic 
+optimizations (like there is today with ioeventfd).
 
-> ---
->  scripts/gcc-goto.sh |   18 +++++++++++++++++-
->  1 files changed, 17 insertions(+), 1 deletions(-)
+Regards,
+
+Anthony Liguori
+
 >
-> diff --git a/scripts/gcc-goto.sh b/scripts/gcc-goto.sh
-> index 98cffcb..9b744de 100644
-> --- a/scripts/gcc-goto.sh
-> +++ b/scripts/gcc-goto.sh
-> @@ -2,4 +2,20 @@
->  # Test for gcc 'asm goto' support
->  # Copyright (C) 2010, Jason Baron <jbaron@redhat.com>
+>> I think a heavy weight exit is still around a few thousand cycles.
+>>
+>> Any nehalem class or better processor should have a syscall cost of around
+>> that unless I'm wildly mistaken.
+>>
 >
-> -echo "int main(void) { entry: asm goto (\"\"::::entry); return 0; }" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
-> +cat << "END" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
-> +int main(void)
-> +{
-> +#ifdef __arm__
-> +       /*
-> +        * Not related to asm goto, but used by jump label
-> +        * and broken on some ARM GCC versions (see GCC Bug 48637).
-> +        */
-> +       static struct { int dummy; int state; } tp;
-> +       asm ("@ %c0" :: "i" (&tp.state));
-> +#endif
-> +
-> +entry:
-> +       asm goto ("" :::: entry);
-> +       return 0;
-> +}
-> +END
-> --
-> 1.7.8.3
+> That's what I remember too.
 >
+>>>
+>>> But I agree a heavyweight exit is probably faster than a double context switch
+>>> on a remote core.
+>>
+>> I meant, if you already need to take a heavyweight exit (and you do to
+>> schedule something else on the core), than the only additional cost is taking
+>> a syscall return to userspace *first* before scheduling another process. That
+>> overhead is pretty low.
+>
+> Yeah.
+>
+
