@@ -1,97 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab2BGHTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 02:19:51 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55067 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab2BGHTu (ORCPT
+	id S1756139Ab2BGHie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 02:38:34 -0500
+Received: from kamaji.grokhost.net ([87.117.218.43]:33435 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964Ab2BGHid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 02:19:50 -0500
-Message-ID: <1328599312.22240.43.camel@sauron.fi.intel.com>
-Subject: Re: [RFC] killing boilerplate checks in ->link/->mkdir/->rename
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 07 Feb 2012 09:21:52 +0200
-In-Reply-To: <20120206171152.GG23916@ZenIV.linux.org.uk>
-References: <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
-	 <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
-	 <20120202012258.GQ23916@ZenIV.linux.org.uk>
-	 <20120202212400.GR23916@ZenIV.linux.org.uk>
-	 <CA+55aFzHSv2eHKenVhxnSFMJMXtJCnxD2xu6QjMiMLEGLCZ2uQ@mail.gmail.com>
-	 <20120203011612.GS23916@ZenIV.linux.org.uk>
-	 <20120203170825.GX23916@ZenIV.linux.org.uk>
-	 <1328518244.22240.25.camel@sauron.fi.intel.com>
-	 <20120206135655.GF23916@ZenIV.linux.org.uk>
-	 <1328547955.22240.39.camel@sauron.fi.intel.com>
-	 <20120206171152.GG23916@ZenIV.linux.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-24E/TCKH5xcUivb7UF5c"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	Tue, 7 Feb 2012 02:38:33 -0500
+Message-ID: <4F30D4F6.1040802@bootc.net>
+Date: Tue, 07 Feb 2012 07:38:30 +0000
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Julian Calaby <julian.calaby@gmail.com>
+CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Clemens Ladisch <clemens@ladisch.de>, target-devel@vger.kernel.org,
+        linux1394-devel@lists.sourceforge.net,
+        Boaz Harrosh <bharrosh@panasas.com>, Andy Grover <agrover@redhat.com>,
+        linux-scsi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: FireWire/SBP2 Target mode
+References: <4E4BD560.4010806@bootc.net> <4E4D3B88.30003@ladisch.de> <4F29978A.3010707@redhat.com> <20120201224156.0773ebc6@stein> <4F2A55B9.4040005@panasas.com> <4F2A60DC.9030007@ladisch.de> <4F2FD1F4.9050702@bootc.net> <4F2FE705.3070509@ladisch.de> <4F2FE8DA.70502@bootc.net> <20120206212628.6880c506@stein> <5C167A1D-2203-4F1C-B538-E99DD87E7E42@bootc.net> <CAGRGNgWf0epcam-jpCzMCSqefCKDSm892mw-X49FrcoRO0QYrQ@mail.gmail.com> <476E7976-738A-4202-9FC4-FA5B060EA95F@bootc.net>
+In-Reply-To: <476E7976-738A-4202-9FC4-FA5B060EA95F@bootc.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/02/2012 23:09, Chris Boot wrote:
+>
+> On 6 Feb 2012, at 23:00, Julian Calaby wrote:
+>
+>> Hi,
+>>
+>> On Tue, Feb 7, 2012 at 09:28, Chris Boot<bootc@bootc.net>  wrote:
+>>> On 6 Feb 2012, at 20:26, Stefan Richter wrote:
+>>>
+>>>> On Feb 06 Chris Boot wrote:
+>>>>> On 06/02/2012 14:43, Clemens Ladisch wrote:
+>>>>>> Chris Boot wrote:
+>>>>>>> You can pull the code from:
+>>>>>>> git://github.com/bootc/Linux-SBP-2-Target.git
+>>>>>>
+>>>>>> The TODO file says:
+>>>>>>> * Update Juju so we can get the speed in the fw_address_handler callback
+>>>>>>
+>>>>>> What is the speed needed for?
+>>>>>
+>>>>> "The speed at which the block write request to the MANAGEMENT_AGENT
+>>>>> register is received shall determine the speed used by the target for
+>>>>> all subsequent requests to read the initiator’s configuration ROM, fetch
+>>>>> ORB’s from initiator memory or store status at the initiator’s
+>>>>> status_FIFO. Command block ORB’s separately specify the speed for
+>>>>> requests addressed to the data buffer or page table."
+>>>>>
+>>>>> (T10/1155D Revision 4 page 53/54)
+>>>>
+>>>> I guess it is not too hard to add this to the AR-req handler.  On the
+>>>> other hand, I see little reason to follow the SBP-2 spec to the letter
+>>>> here.  The target driver could just use the maximum speed that the core
+>>>> figured out.  On the other hand, this requires of course
+>>>>   - the target to wait for core to finish scanning an initiator,
+>>>>   - the core to offer an API to look up an fw_device by a
+>>>>     card--generation--nodeID tuple.
+>>>>
+>>>> The intention of the spec is IMO clearly to enable target implementations
+>>>> that do not need to implement topology scanning.  I have a hard time to
+>>>> think of a valid scenario where an initiator needs to be able to steer a
+>>>> target towards a lower wire speed than what the participating links and
+>>>> PHYs actually support.
+>>>
+>>> The only thing stopping me from getting the speed is the fact that struct fw_request is opaque. The value is easily available from request->response.speed and I kind of do that already in a very hackish way. I've sent a separate patch which adds a function that can be used to access that one value.
+>>>
+>>> Waiting until the bus scan is complete isn't actually that great as I see the first LOGIN requests often before the fw_node is seen at all. I'd have to turn away the requester and hope they try again. I'm fairly sure my little tweak in my patch is a simple enough solution.
+>>
+>> Stupid question: Could you use a completion queue or something
+>> equivalent to wait until you have seen the fw_node, *then* process the
+>> LOGIN request?
+>
+> The fw_address_handler callback is called in interrupt context, and I can't sleep from within there. As far as I'm aware I must call fw_send_response() from within the callback and can't defer that until I've scheduled something on a work queue. Please correct me if I'm wrong though, as that might be useful anyway.
 
---=-24E/TCKH5xcUivb7UF5c
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hmm sorry I've thought about this overnight and clearly I was talking 
+rubbish. Yes, I need to reply in the fw_address_handler but all I tend 
+to do in there is schedule a task to the the main part of the work 
+anyway. As most of the operations require fetching an ORB from the 
+initiator I have to do this from user context.
 
-On Mon, 2012-02-06 at 17:11 +0000, Al Viro wrote:
-> On Mon, Feb 06, 2012 at 07:05:55PM +0200, Artem Bityutskiy wrote:
-> > On Mon, 2012-02-06 at 13:56 +0000, Al Viro wrote:
-> > > On Mon, Feb 06, 2012 at 10:50:44AM +0200, Artem Bityutskiy wrote:
-> > >=20
-> > > > WRT 'sen_nlink()' - I can use it instead of 'drop_nlink()'/'inc_nli=
-nk()'
-> > > > of course. But I do not really see why is this better. E.g.,
-> > > > 'drop_nlink()' additionally gives me ' WARN_ON()' in case of 'i_nli=
-nk'
-> > > > wrapping.
-> > >=20
-> > > So does inc_nlink() when you are asking to get from nlink=3D0 to nlin=
-k=3D1.
-> > > I.e. on failure exit in your unlink()...
-> >=20
-> > Indeed! I'll switch to 'clear_nlink(inode)' and 'set_nlink(inode, 1)'
-> > for those inodes which are being unliked.
->=20
-> Huh?  I thought ubifs allowed link(2)... IOW, i_nlink could've been great=
-er
-> than 1 when you called ubifs_unlink().
+So it's possible I could do this by waiting in my scheduled work 
+function until the fw_node is available and get the speed from that - 
+but that seems like an inordinate amount of work when I can follow the 
+standard and do it really easily by pulling it out of the fw_request.
 
-You are right, I'll take this correctly when I change the code rather
-than writing an e-mail. Thanks! I think I'll submit a patch this week.
+Chris
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-24E/TCKH5xcUivb7UF5c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPMNEQAAoJECmIfjd9wqK0c7MQALappDT5PoGvjfs37KU2qdiE
-SVvLKdS81CY1jJVmSxaFXemqlLkzOlz2QFlUEi1/SS/CrPdgD4te/YL31TjMLcLZ
-A5NU12muTY/YdmproUOL544Y6YmoLfueotNEFL2skyqzenbJmO51aSCR3CqpAMHl
-67JeQLFhV2+i+XSccJ5ea+KhRuoCvwr3aPh+RjXme4NEmmsNJ8Yrj/b75PU8MSha
-ob0Go/TWGtoFU1DPB+29br53qJrLnSQV/e2nkgc5sVh3Fk7T3QUOpx/P6Zq0CD+H
-lbjY00WMoYuHEb8fvGMhDQsxWllF9o+w4k5+aKRjs6RNQEZFHePtqDqKoHFvBGhO
-OxZETJlhjzuWv669/pfnl7N/UGRfyXv9X710K8yRPL4BxXz7uE/220wH56cXz6qO
-yR/2/5Myy4GGqUsbwhhlm9zdKqul7xpCXiLqYMEJkD80woqirXfLEwyXjVFFhIoF
-fQQU+pmnpcjUTW25xzTOFmJyBxIMYvOFjG0eFIHn2KYD2QdRpdPwpDSlHJBqVJi4
-d8PsPpG50FzRl8DSG/ifkuO2rvkyRRzWGiy3EpCAXUdrsCZkrbDEXWZ9a0SoHIBb
-Wvcv4+sUMkZC1tMF+BBHQqDp4XTPuTbZZyqGseW1iGUbTG7acRvRF7cVziZOfF15
-huzCP+EWdzIjU0j8inxv
-=067o
------END PGP SIGNATURE-----
-
---=-24E/TCKH5xcUivb7UF5c--
-
+-- 
+Chris Boot
+bootc@bootc.net
+Tel: 01271 414100
