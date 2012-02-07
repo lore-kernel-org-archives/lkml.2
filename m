@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab2BGFOz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 00:14:55 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:39239 "EHLO sc-mailgw05.nsc.com"
+	id S1753279Ab2BGFPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 00:15:07 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:39281 "EHLO sc-mailgw05.nsc.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751179Ab2BGFOx convert rfc822-to-8bit (ORCPT
+	id S1751217Ab2BGFPE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 00:14:53 -0500
-X-WSS-ID: 0LZ0BWP-0A-1K8-02
+	Tue, 7 Feb 2012 00:15:04 -0500
+X-WSS-ID: 0LZ0BWZ-0A-1KF-02
 X-M-MSG: 
 X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
 From: "Kim, Milo" <Milo.Kim@ti.com>
@@ -17,19 +17,18 @@ cc: "Linus Walleij" <linus.walleij@linaro.org>,
 	<shreshthakumar.sahu@stericsson.com>,
         "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 6 Feb 2012 21:14:42 -0800
-Subject: [PATCH v4 4/5] leds-lm3530: remove LM3530_ALS_ZONE_REG code
-Thread-Topic: [PATCH v4 4/5] leds-lm3530: remove LM3530_ALS_ZONE_REG
- code
-Thread-Index: AczlV2XrXFM88fSgSNWUKlX21jkLdQ==
-Message-ID: <B567DBAB974C0544994013492B949F8E3812ED44A9@EXMAIL03.scwf.nsc.com>
+Date: Mon, 6 Feb 2012 21:14:52 -0800
+Subject: [PATCH v4 5/5] leds-lm3530: replace pltfm with pdata
+Thread-Topic: [PATCH v4 5/5] leds-lm3530: replace pltfm with pdata
+Thread-Index: AczlV2wXEqnLJCHoRSiPJdfc1AZK6Q==
+Message-ID: <B567DBAB974C0544994013492B949F8E3812ED44AB@EXMAIL03.scwf.nsc.com>
 Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-X-WSS-ID: 632E6CCE1LS10196167-01-01
+X-WSS-ID: 632E6CC51LS10196178-01-01
 Content-Type: text/plain;
  charset=us-ascii
 Content-Transfer-Encoding: 8BIT
@@ -37,75 +36,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LM3530_ALS_ZONE_REG is read-only register.
-Writing this register is not necessary.
+Use 'pdata' rather than 'pltfm' in lm3530_init_registers().
 
 * patch base version : kernel 3.2.4
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lm3530.c |   27 ++++++++++++---------------
- 1 files changed, 12 insertions(+), 15 deletions(-)
+ drivers/leds/leds-lm3530.c |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
-index 8ec7b2b..548eaa5 100644
+index 548eaa5..d49f587 100644
 --- a/drivers/leds/leds-lm3530.c
 +++ b/drivers/leds/leds-lm3530.c
-@@ -26,7 +26,6 @@
- #define LM3530_GEN_CONFIG		0x10
- #define LM3530_ALS_CONFIG		0x20
- #define LM3530_BRT_RAMP_RATE		0x30
--#define LM3530_ALS_ZONE_REG		0x40
- #define LM3530_ALS_IMP_SELECT		0x41
- #define LM3530_BRT_CTRL_REG		0xA0
- #define LM3530_ALS_ZB0_REG		0x60
-@@ -38,7 +37,7 @@
- #define LM3530_ALS_Z2T_REG		0x72
- #define LM3530_ALS_Z3T_REG		0x73
- #define LM3530_ALS_Z4T_REG		0x74
--#define LM3530_REG_MAX			15
-+#define LM3530_REG_MAX			14
+@@ -153,28 +153,28 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
+ 	u8 reg_val[LM3530_REG_MAX];
+ 	u8 zones[LM3530_ALS_ZB_MAX];
+ 	u32 als_vmin, als_vmax, als_vstep;
+-	struct lm3530_platform_data *pltfm = drvdata->pdata;
++	struct lm3530_platform_data *pdata = drvdata->pdata;
+ 	struct i2c_client *client = drvdata->client;
+-	struct lm3530_pwm_data *pwm = &pltfm->pwm_data;
++	struct lm3530_pwm_data *pwm = &pdata->pwm_data;
  
- /* General Control Register */
- #define LM3530_EN_I2C_SHIFT		(0)
-@@ -118,7 +117,6 @@ static const u8 lm3530_reg[LM3530_REG_MAX] = {
- 	LM3530_GEN_CONFIG,
- 	LM3530_ALS_CONFIG,
- 	LM3530_BRT_RAMP_RATE,
--	LM3530_ALS_ZONE_REG,
- 	LM3530_ALS_IMP_SELECT,
- 	LM3530_BRT_CTRL_REG,
- 	LM3530_ALS_ZB0_REG,
-@@ -217,18 +215,17 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
- 	reg_val[0] = gen_config;	/* LM3530_GEN_CONFIG */
- 	reg_val[1] = als_config;	/* LM3530_ALS_CONFIG */
- 	reg_val[2] = brt_ramp;		/* LM3530_BRT_RAMP_RATE */
--	reg_val[3] = 0x00;		/* LM3530_ALS_ZONE_REG */
--	reg_val[4] = als_imp_sel;	/* LM3530_ALS_IMP_SELECT */
--	reg_val[5] = brightness;	/* LM3530_BRT_CTRL_REG */
--	reg_val[6] = zones[0];		/* LM3530_ALS_ZB0_REG */
--	reg_val[7] = zones[1];		/* LM3530_ALS_ZB1_REG */
--	reg_val[8] = zones[2];		/* LM3530_ALS_ZB2_REG */
--	reg_val[9] = zones[3];		/* LM3530_ALS_ZB3_REG */
--	reg_val[10] = LM3530_DEF_ZT_0;	/* LM3530_ALS_Z0T_REG */
--	reg_val[11] = LM3530_DEF_ZT_1;	/* LM3530_ALS_Z1T_REG */
--	reg_val[12] = LM3530_DEF_ZT_2;	/* LM3530_ALS_Z2T_REG */
--	reg_val[13] = LM3530_DEF_ZT_3;	/* LM3530_ALS_Z3T_REG */
--	reg_val[14] = LM3530_DEF_ZT_4;	/* LM3530_ALS_Z4T_REG */
-+	reg_val[3] = als_imp_sel;	/* LM3530_ALS_IMP_SELECT */
-+	reg_val[4] = brightness;	/* LM3530_BRT_CTRL_REG */
-+	reg_val[5] = zones[0];		/* LM3530_ALS_ZB0_REG */
-+	reg_val[6] = zones[1];		/* LM3530_ALS_ZB1_REG */
-+	reg_val[7] = zones[2];		/* LM3530_ALS_ZB2_REG */
-+	reg_val[8] = zones[3];		/* LM3530_ALS_ZB3_REG */
-+	reg_val[9] = LM3530_DEF_ZT_0;	/* LM3530_ALS_Z0T_REG */
-+	reg_val[10] = LM3530_DEF_ZT_1;	/* LM3530_ALS_Z1T_REG */
-+	reg_val[11] = LM3530_DEF_ZT_2;	/* LM3530_ALS_Z2T_REG */
-+	reg_val[12] = LM3530_DEF_ZT_3;	/* LM3530_ALS_Z3T_REG */
-+	reg_val[13] = LM3530_DEF_ZT_4;	/* LM3530_ALS_Z4T_REG */
+-	gen_config = (pltfm->brt_ramp_law << LM3530_RAMP_LAW_SHIFT) |
+-			((pltfm->max_current & 7) << LM3530_MAX_CURR_SHIFT);
++	gen_config = (pdata->brt_ramp_law << LM3530_RAMP_LAW_SHIFT) |
++			((pdata->max_current & 7) << LM3530_MAX_CURR_SHIFT);
  
- 	if (!drvdata->enable) {
- 		ret = regulator_enable(drvdata->regulator);
+ 	if (drvdata->mode == LM3530_BL_MODE_MANUAL ||
+ 	    drvdata->mode == LM3530_BL_MODE_ALS)
+ 		gen_config |= (LM3530_ENABLE_I2C);
+ 
+ 	if (drvdata->mode == LM3530_BL_MODE_ALS) {
+-		if (pltfm->als_vmax == 0) {
+-			pltfm->als_vmin = als_vmin = 0;
+-			pltfm->als_vmin = als_vmax = LM3530_ALS_WINDOW_mV;
++		if (pdata->als_vmax == 0) {
++			pdata->als_vmin = als_vmin = 0;
++			pdata->als_vmin = als_vmax = LM3530_ALS_WINDOW_mV;
+ 		}
+ 
+-		als_vmin = pltfm->als_vmin;
+-		als_vmax = pltfm->als_vmax;
++		als_vmin = pdata->als_vmin;
++		als_vmax = pdata->als_vmax;
+ 
+ 		if ((als_vmax - als_vmin) > LM3530_ALS_WINDOW_mV)
+-			pltfm->als_vmax = als_vmax =
++			pdata->als_vmax = als_vmax =
+ 				als_vmin + LM3530_ALS_WINDOW_mV;
+ 
+ 		/* n zone boundary makes n+1 zones */
+@@ -186,28 +186,28 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
+ 					/ 1000;
+ 
+ 		als_config =
+-			(pltfm->als_avrg_time << LM3530_ALS_AVG_TIME_SHIFT) |
++			(pdata->als_avrg_time << LM3530_ALS_AVG_TIME_SHIFT) |
+ 			(LM3530_ENABLE_ALS) |
+-			(pltfm->als_input_mode << LM3530_ALS_SEL_SHIFT);
++			(pdata->als_input_mode << LM3530_ALS_SEL_SHIFT);
+ 
+ 		als_imp_sel =
+-			(pltfm->als1_resistor_sel << LM3530_ALS1_IMP_SHIFT) |
+-			(pltfm->als2_resistor_sel << LM3530_ALS2_IMP_SHIFT);
++			(pdata->als1_resistor_sel << LM3530_ALS1_IMP_SHIFT) |
++			(pdata->als2_resistor_sel << LM3530_ALS2_IMP_SHIFT);
+ 
+ 	}
+ 
+ 	if (drvdata->mode == LM3530_BL_MODE_PWM)
+ 		gen_config |= (LM3530_ENABLE_PWM) |
+-				(pltfm->pwm_pol_hi << LM3530_PWM_POL_SHIFT) |
++				(pdata->pwm_pol_hi << LM3530_PWM_POL_SHIFT) |
+ 				(LM3530_ENABLE_PWM_SIMPLE);
+ 
+-	brt_ramp = (pltfm->brt_ramp_fall << LM3530_BRT_RAMP_FALL_SHIFT) |
+-			(pltfm->brt_ramp_rise << LM3530_BRT_RAMP_RISE_SHIFT);
++	brt_ramp = (pdata->brt_ramp_fall << LM3530_BRT_RAMP_FALL_SHIFT) |
++			(pdata->brt_ramp_rise << LM3530_BRT_RAMP_RISE_SHIFT);
+ 
+ 	if (drvdata->brightness)
+ 		brightness = drvdata->brightness;
+ 	else
+-		brightness = drvdata->brightness = pltfm->brt_val;
++		brightness = drvdata->brightness = pdata->brt_val;
+ 
+ 	if (brightness > drvdata->led_dev.max_brightness)
+ 		brightness = drvdata->led_dev.max_brightness;
 -- 
 1.7.4.1
 
