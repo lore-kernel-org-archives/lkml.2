@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab2BGGtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 01:49:43 -0500
+	id S1756570Ab2BGGtz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 01:49:55 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:61195 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab2BGGtm (ORCPT
+	with ESMTP id S1756519Ab2BGGtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 01:49:42 -0500
-Date: Tue, 7 Feb 2012 10:49:39 +0400
+	Tue, 7 Feb 2012 01:49:53 -0500
+Date: Tue, 7 Feb 2012 10:49:51 +0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Greg KH <gregkh@linuxfoundation.org>,
@@ -19,8 +19,8 @@ Cc: Greg KH <gregkh@linuxfoundation.org>,
         Mike Frysinger <vapier@gentoo.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] sysrq: Fix possible race with exiting task
-Message-ID: <20120207064939.GA1496@oksana.dev.rtsoft.ru>
+Subject: [PATCH 2/8] sysrq: Properly check for kernel threads
+Message-ID: <20120207064951.GB1496@oksana.dev.rtsoft.ru>
 References: <20120207064809.GA29061@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -31,33 +31,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysrq should grab the tasklist lock, otherwise calling force_sig() is
-not safe, as it might race with exiting task, which ->sighand might be
-set to NULL already.
+There's a real possibility of killing kernel threads that might
+have issued use_mm(), so kthread's mm might become non-NULL.
 
+This patch fixes the issue by checking for PF_KTHREAD (just as
+get_task_mm()).
+
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/tty/sysrq.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/tty/sysrq.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index 7867b7c..a1bcad7 100644
+index a1bcad7..8db9125 100644
 --- a/drivers/tty/sysrq.c
 +++ b/drivers/tty/sysrq.c
-@@ -322,11 +322,13 @@ static void send_sig_all(int sig)
- {
- 	struct task_struct *p;
+@@ -324,9 +324,12 @@ static void send_sig_all(int sig)
  
-+	read_lock(&tasklist_lock);
+ 	read_lock(&tasklist_lock);
  	for_each_process(p) {
- 		if (p->mm && !is_global_init(p))
- 			/* Not swapper, init nor kernel thread */
- 			force_sig(sig, p);
+-		if (p->mm && !is_global_init(p))
+-			/* Not swapper, init nor kernel thread */
+-			force_sig(sig, p);
++		if (p->flags & PF_KTHREAD)
++			continue;
++		if (is_global_init(p))
++			continue;
++
++		force_sig(sig, p);
  	}
-+	read_unlock(&tasklist_lock);
+ 	read_unlock(&tasklist_lock);
  }
- 
- static void sysrq_handle_term(int key)
 -- 
 1.7.7.6
 
