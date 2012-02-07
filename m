@@ -1,88 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab2BGLHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 06:07:16 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61670 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754899Ab2BGLHP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 06:07:15 -0500
+	id S1755805Ab2BGLKr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 06:10:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62287 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755527Ab2BGLKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 06:10:45 -0500
+Date: Tue, 7 Feb 2012 13:10:41 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Christian Hoff <christian.hoff@de.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+Message-ID: <20120207111041.GA6674@redhat.com>
+References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>
+ <4F30F4EE.4080607@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120207104952.GB4328@elte.hu>
-References: <20120206205354.GA31186@quad>
-	<1328603689.2476.15.camel@edumazet-laptop>
-	<20120207084156.GA15359@elte.hu>
-	<1328610322.2232.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<CABPqkBTL70n-e9TZo=QOZDk1J84Ye5wGrm6uz=VNu73nwwxhjw@mail.gmail.com>
-	<20120207104952.GB4328@elte.hu>
-Date: Tue, 7 Feb 2012 12:07:13 +0100
-Message-ID: <CABPqkBRLEH+r61Qi+xZj6uAyJ=Zd-qK7tyM7ysrPR7+CEtW0JA@mail.gmail.com>
-Subject: Re: [PATCH] perf: fix assertion failure in x86_pmu_start()
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, markus@trippelsdorf.de, paulus@samba.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F30F4EE.4080607@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 7, 2012 at 11:49 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->> On Tue, Feb 7, 2012 at 11:25 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> > Le mardi 07 février 2012 à 09:41 +0100, Ingo Molnar a écrit :
->> >
->> >> Were these messages introduced by:
->> >>
->> >>  e050e3f0a71b: perf: Fix broken interrupt rate throttling
->> >>
->> >> as well?
->> >>
->> >> In any case I'm holding off on applying the patch before this is
->> >> resolved.
->> >
->> > Reverting e050e3f0a71b solves all my problems, no more warnings.
->> >
->> > $ perf record -a -g hackbench 10 thread 4000
->> > Running with 10*40 (== 400) tasks.
->> > Time: 13.181
->> > [ perf record: Woken up 59 times to write data ]
->> > [ perf record: Captured and wrote 16.874 MB perf.data (~737228 samples)
->> > ]
->> >
->> > $ perf record -a -g hackbench 10 thread 4000
->> > Running with 10*40 (== 400) tasks.
->> > Time: 13.124
->> > [ perf record: Woken up 61 times to write data ]
->> > [ perf record: Captured and wrote 16.533 MB perf.data (~722349 samples)
->> > ]
->> >
->>
->> What system is this running on?
->> The problem is that without e050e3f0a71b interrupt throttling does not work.
->
-> Fixes are not supposed to regress, so if we cannot resolve this
-> within a couple of days we'll have to revert e050e3f0a71b and
-> re-try it later.
->
-I suspect in the case of Eric's system, the fact that we do not
-stop the PMU when adjusting frequency anymore may expose a side-effect
-of his BIOS "sharing" the PMU with perf_events. But the config value reported
-by the kernel does not include the INT bit, i.e., the counter does not generate
-interrupts on overflow, so it should not conflict.
+On Tue, Feb 07, 2012 at 10:54:54AM +0100, Paolo Bonzini wrote:
+> >Also, lun[1] = sc->device->id means that only 255 SCSI target IDs will be
+> >supported. Think about bigger usage scenarios, such as FCP networks with
+> >several hundred HBAs in the net. If you want to have the target ID<->HBA
+> >mapping the same as on the guest as on the host, then 255 virtual target
+> >IDs could be a limit.
+> 
+> I think you would hit other scalability limitations well before
+> that.  I plan to give each target its own MSI-X interrupt, but there
+> is no infinite supplies of those either.
 
->> I think the key difference is that without the patch,
->> frequency adjustment happens with the PMU completely stopped
->> whereas with my patch it does not. I suspect this may be the
->> issue. I can rework the patch to disable the PMU completely
->> while retaining the same workflow.
->
-> Would be nice to try that.
->
-> Thanks,
->
->        Ingo
+virtio-pci generally lets guests share MSI-X vectors between queues,
+why not allow this here?
+
+-- 
+MST
