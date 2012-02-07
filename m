@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab2BGLeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 06:34:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49055 "EHLO
+	id S1755910Ab2BGLfi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 06:35:38 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49064 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754554Ab2BGLeO (ORCPT
+	by vger.kernel.org with ESMTP id S1754554Ab2BGLfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 06:34:14 -0500
-Date: Tue, 7 Feb 2012 11:34:12 +0000
+	Tue, 7 Feb 2012 06:35:37 -0500
+Date: Tue, 7 Feb 2012 11:35:35 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+Cc: linux-kernel@vger.kernel.org, Jonghwan Choi <jhbird.choi@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
         Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: tps62360: Remove pointless test for unsigned
- less than zero
-Message-ID: <20120207113412.GG3332@opensource.wolfsonmicro.com>
-References: <1328583980.5528.1.camel@phoenix>
+Subject: Re: [PATCH] regulator: Fix getting voltage in max8649_enable_time()
+Message-ID: <20120207113535.GH3332@opensource.wolfsonmicro.com>
+References: <1328584375.5528.3.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qxfKREH7IwbezJ+T"
+	protocol="application/pgp-signature"; boundary="MP5ln1Rcf9Bvi+ZW"
 Content-Disposition: inline
-In-Reply-To: <1328583980.5528.1.camel@phoenix>
+In-Reply-To: <1328584375.5528.3.camel@phoenix>
 X-Cookie: You will forget that you ever knew me.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,35 +28,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---qxfKREH7IwbezJ+T
+--MP5ln1Rcf9Bvi+ZW
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Feb 07, 2012 at 11:06:20AM +0800, Axel Lin wrote:
-> The variable 'selector' is a 'unsigned int', so it can never be less than zero.
+On Tue, Feb 07, 2012 at 11:12:55AM +0800, Axel Lin wrote:
+> Current code takes wrong parameter while calling max8649_list_voltage.
 
 Applied, thanks.
 
---qxfKREH7IwbezJ+T
+--MP5ln1Rcf9Bvi+ZW
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPMQwuAAoJEBus8iNuMP3dGP0P/AwvGoIwO6kNWZ4aoyy7x02a
-ESqh7SNpNjD2Kypj7lwGEYGy+VWIZZ9wtvnB0/PLnbJZNDWVHsRooRyFEJpv8kc+
-hmpDLSm2moLzcAGBlbcJJX54XxR1U8H2POuAlkBZuORKvZLnBfrzWHURECESc3DT
-ycqSpmPnya9uWn+8pCnUIqG0UPPvp7qrD0bQZv7D2Q23mDjiF1vTNaBwaVh/8ViZ
-Jwpk0C0A6H/BmOsZwWpMRxlv2zQ3Od4Erl6rIIjf35IR6PqdKfj90YiJLbr/NQco
-sH4mCWV4xMEtuxAGMOlkfM0SFBv77BxI3U32hvukG9CEoPyYSHoLkZhZuCsM/Pg9
-1c42T7+DOVwPP6tCt434Rx2blzM29nhksUmYS0ZV5XQ1oIDTSXppPKtvdfuXKvi1
-hu5wgRSEJIVtDqEQ3Xg6t5qiXmrH6Gg5H+HdHXaF3Mm6hlyLEDTWOGBqRMabBeXy
-36cB0kMHetGoQgXDatJ2DLv+ufqRJKOvHgfOqKD85+xEjn/WgvyGjs/Mbvsw6oly
-h8BgnCRQP90vxiL+4N0u1SYExIbPSjsbdTmbA1lPrM0SO7TZeu8KQ0Qil32ebECt
-Q6JPotMfurumQy+1k0OxSUzwauVesC+Q+f/6CkXLGNWZYpHcqaR6uHED76Nj53ek
-ze/aUwBmE9nUhV/4gRKK
-=9KMU
+iQIcBAEBAgAGBQJPMQxFAAoJEBus8iNuMP3dvsIP/ja4+m28ihwjYkfAtYbxEJF8
+ffSHMIHmXq1ElJ0ZLLBbIqPXA7V+507+UfFFrWtgUTovw9Jbe5M2/gBENw1C90sc
+MtpJoPgnPILqmi3wp2m7zd9ePKWPRd72qo7yR3ckg6W9UN3muXNcEdxVHe+Uldlg
+BmWPRx/ZtsVZ4adPqJ0Fv3v7StLaIZgg36fzuN3e/JiirXRD2LQ9PI/Y6rkRDnQ/
+soRQQxxy1u7zqtB6WKrrfB1kgXAhvvAYDBueX7gVVNlf/nD36W+/PpYjQg5DujOw
+QWPC0l81bm6zBO6UTYrWJOk/fJUu//HiGekGGqL+42z98gtNDW4w9fV8HhFoFo7z
+py8jco3Iuo7v1ii8SpAwnv4XCQ6xGhuwwHd0YLwsx++xmHRqrZrNsBgDRNjHKJzr
+hVQEhfkrV0UwcfHbRCfa8P8lmNvMR6mPBf0igljuBEgCCiyI6tMLbSJuoBJ5xrli
+IR0S3BHxKM4b2qc2IcaY/Sl5T44e7coZCFLoVDhFJtDdq/P2nVTd0TuFNbNogoCb
+X8MiJb7KhMTbfGBdRWKzByaIt4+zgPBqx2OnaTMils4xtbKvgfcb1/ywNDOXdhaw
+3lZ1DI+IigATHrznMWgT/mt4WZi2tvHokjPb71t1TU3Rz4zVNzRBMcSUuLGw3RyW
+pZEgEXOZiu0yxbgtHMfd
+=kmQl
 -----END PGP SIGNATURE-----
 
---qxfKREH7IwbezJ+T--
+--MP5ln1Rcf9Bvi+ZW--
