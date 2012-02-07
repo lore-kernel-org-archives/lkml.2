@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab2BGBMS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 20:12:18 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43314 "EHLO mga02.intel.com"
+	id S1756543Ab2BGBZC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 20:25:02 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34093 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756548Ab2BGBMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 20:12:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="107130266"
-Subject: Re: [patch]block: fix ioc locking warning
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
-In-Reply-To: <20120207005900.GF21292@google.com>
-References: <20120206151219.GC30752@redhat.com> <4F2FFB21.9000202@kernel.dk>
-	 <20120206163721.GF30752@redhat.com> <20120206164428.GA21292@google.com>
-	 <CA+55aFx6BR_ZUHd8d64btu-LzsPHo3Ot_d1-5jJytjQUqvvaiQ@mail.gmail.com>
-	 <20120206172706.GB21292@google.com> <20120206203604.GC21292@google.com>
-	 <CANejiEVzs=pUhQSTvUppkDcc2TNZyfohBRLygW5zFmXyk5A-xQ@mail.gmail.com>
-	 <20120207003948.GE21292@google.com>
-	 <1328575430.21268.69.camel@sli10-conroe>
-	 <20120207005900.GF21292@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Feb 2012 09:10:20 +0800
-Message-ID: <1328577020.21268.73.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1755883Ab2BGBZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 20:25:00 -0500
+Message-ID: <4F307D45.1050404@zytor.com>
+Date: Mon, 06 Feb 2012 17:24:21 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: David Daney <david.daney@cavium.com>
+CC: Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
+References: <1328560933-3037-1-git-send-email-venki@google.com> <4F306FAF.7020500@cavium.com>
+In-Reply-To: <4F306FAF.7020500@cavium.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-06 at 16:59 -0800, Tejun Heo wrote:
-> On Tue, Feb 07, 2012 at 08:43:50AM +0800, Shaohua Li wrote:
-> > Quite simple, copy kernel source to tmpfs in tight memory environment.
-> > This will trigger swap. The bisection result appears stable.
+On 02/06/2012 04:26 PM, David Daney wrote:
+> On 02/06/2012 12:42 PM, Venkatesh Pallipadi wrote:
+> [...]
+>> index 5bed94e..6a56cb0 100644
+>> --- a/arch/x86/Kconfig
+>> +++ b/arch/x86/Kconfig
+>> @@ -170,6 +170,11 @@ config GENERIC_TIME_VSYSCALL
+>>       bool
+>>       default X86_64
+>>
+>> +config AVOID_IPI_ON_IDLE
+>> +    bool
+>> +    depends on X86_64
+>> +    default X86_64
+>> +
 > 
-> Looked through the commit again but it really doesn't change fast
-> paths.  The only paths which can be slower are ioc and q exits.  Can
-> you please do the followings?
+> Can you get rid of this part...
 > 
-> * Share the script used for microbench.  Maybe it somehow exposes
->   slower exit path?  How much regression are we talking about?
-I need strip the script out from our test framework, but it essentially
-is a 'time copy -a tmpfs/kernelsource tmpfs/copy'. The time increased
-~20% with 3.3-rc1.
+>>   config ARCH_HAS_CPU_RELAX
+>>       def_bool y
+>>
+> [...]
+>> diff --git a/arch/x86/kernel/acpi/cstate.c
+>> b/arch/x86/kernel/acpi/cstate.c
+>> index f50e7fb..340c4e9 100644
+>> --- a/arch/x86/kernel/acpi/cstate.c
+>> +++ b/arch/x86/kernel/acpi/cstate.c
+>> @@ -161,6 +161,14 @@ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
+>>    */
+>>   void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
+>>   {
+>> +#ifdef CONFIG_AVOID_IPI_ON_IDLE
+> 
+> 
+> ... and change all of these to #ifdef CONFIG_64BIT
+> 
+>> +    int oldval, cpu = smp_processor_id();
+>> +
 
-> * Test with the this_q != locked_q trylock patch.
-sure.
+Why should this be 64-bit specific??
 
-Thanks,
-Shaohua
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
