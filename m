@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab2BGGtz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 01:49:55 -0500
+	id S1756578Ab2BGGuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 01:50:11 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:61195 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756519Ab2BGGtx (ORCPT
+	with ESMTP id S1754575Ab2BGGuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 01:49:53 -0500
-Date: Tue, 7 Feb 2012 10:49:51 +0400
+	Tue, 7 Feb 2012 01:50:07 -0500
+Date: Tue, 7 Feb 2012 10:50:04 +0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Greg KH <gregkh@linuxfoundation.org>,
@@ -19,8 +19,8 @@ Cc: Greg KH <gregkh@linuxfoundation.org>,
         Mike Frysinger <vapier@gentoo.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/8] sysrq: Properly check for kernel threads
-Message-ID: <20120207064951.GB1496@oksana.dev.rtsoft.ru>
+Subject: [PATCH 3/8] arm: Fix possible race on task->mm
+Message-ID: <20120207065004.GC1496@oksana.dev.rtsoft.ru>
 References: <20120207064809.GA29061@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -31,38 +31,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a real possibility of killing kernel threads that might
-have issued use_mm(), so kthread's mm might become non-NULL.
+Checking for task->mm is dangerous as ->mm might disappear (exit_mm()
+assigns NULL under task_lock(), so tasklist lock is not enough).
 
-This patch fixes the issue by checking for PF_KTHREAD (just as
-get_task_mm()).
+We can't use get_task_mm()/mmput() pair as mmput() might sleep,
+so let's take the task lock while we care about its mm.
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/tty/sysrq.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ arch/arm/kernel/smp.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index a1bcad7..8db9125 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -324,9 +324,12 @@ static void send_sig_all(int sig)
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 57db122..85db3f2 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -168,8 +168,10 @@ int __cpu_disable(void)
  
  	read_lock(&tasklist_lock);
  	for_each_process(p) {
--		if (p->mm && !is_global_init(p))
--			/* Not swapper, init nor kernel thread */
--			force_sig(sig, p);
-+		if (p->flags & PF_KTHREAD)
-+			continue;
-+		if (is_global_init(p))
-+			continue;
-+
-+		force_sig(sig, p);
++		task_lock(p);
+ 		if (p->mm)
+ 			cpumask_clear_cpu(cpu, mm_cpumask(p->mm));
++		task_unlock(p);
  	}
  	read_unlock(&tasklist_lock);
- }
+ 
 -- 
 1.7.7.6
 
