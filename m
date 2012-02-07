@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab2BGASB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 19:18:01 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:47028 "EHLO mail.vyatta.com"
+	id S1756231Ab2BGAU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 19:20:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12230 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab2BGAR7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 19:17:59 -0500
-Date: Mon, 6 Feb 2012 16:17:57 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Sudden kernel panic with skge in 3.3-rc2
-Message-ID: <20120206161757.6eac9277@nehalam.linuxnetplumber.net>
-In-Reply-To: <CAP=VYLp6Kh7OtN0nsTBDkvTvNLMV0jymAmbR0tJX4r-yMdTSQA@mail.gmail.com>
-References: <20120202192115.GA8480@elliptictech.com>
-	<20120202124529.3e274223@s6510.linuxnetplumber.net>
-	<CAP=VYLp6Kh7OtN0nsTBDkvTvNLMV0jymAmbR0tJX4r-yMdTSQA@mail.gmail.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753491Ab2BGAU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 19:20:28 -0500
+Date: Tue, 7 Feb 2012 01:20:15 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCH 7/7] ftrace, perf: Add filter support for function trace
+ event
+Message-ID: <20120207002015.GA2831@m.redhat.com>
+References: <1326912275-26405-1-git-send-email-jolsa@redhat.com>
+ <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+ <1327776209-4883-8-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327776209-4883-8-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Feb 2012 19:11:27 -0500
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+On Sat, Jan 28, 2012 at 07:43:29PM +0100, Jiri Olsa wrote:
+> Adding support to filter function trace event via perf
+> interface. It is now possible to use filter interface
+> in the perf tool like:
+> 
+>   perf record -e ftrace:function --filter="(ip == mm_*)" ls
+> 
+> The filter syntax is restricted to the the 'ip' field only,
+> and following operators are accepted '==' '!=' '||', ending
+> up with the filter strings like:
+> 
+>   ip == f1[, ]f2 ... || ip != f3[, ]f4 ...
+> 
+> with comma ',' or space ' ' as a function separator. If the
+> space ' ' is used as a separator, the right side of the
+> assignment needs to be enclosed in double quotes '"'.
+> 
+> The '==' operator adds trace filter with same effect as would
+> be added via set_ftrace_filter file.
+> 
+> The '!=' operator adds trace filter with same effect as would
+> be added via set_ftrace_notrace file.
+> 
+> The right side of the '!=', '==' operators is list of functions
+> or regexp. to be added to filter separated by space.
+> 
+> The '||' operator is used for connecting multiple filter definitions
+> together. It is possible to have more than one '==' and '!='
+> operators within one filter string.
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 
-> On Thu, Feb 2, 2012 at 3:45 PM, Stephen Hemminger <shemminger@vyatta.com> wrote:
-> 
-> [...]
-> 
-> >
-> > Try reverting this commit, it seems problematic
-> > commit d0249e44432aa0ffcf710b64449b8eaa3722547e
-> > Author: stephen hemminger <shemminger@vyatta.com>
-> > Date:   Thu Jan 19 14:37:18 2012 +0000
-> >
-> >    skge: check for PCI dma mapping errors
-> >
-> 
-> I'm seeing similar issues, and a revert of the above caused the
-> problems to go away.  I'm testing on a baseline of net-next
-> as of today (3238a9be4d7a) plus some TIPC patches I was
-> trying to test (which are 99.9% unrelated to this, I'm sure).
-> 
-> Details captured from serial console are below.  100% reproducible.
-> 
-> I can probably try a test/debug patch for you if need be.
-> 
-> Paul.
+SNIP
 
-There is a simple bug in the cleanup code reordering. And it is
-reproducible here. Working on a better solution.
+>  static void perf_ftrace_function_enable(struct perf_event *event)
+> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+> index eb04a2a..c8a64ec 100644
+> --- a/kernel/trace/trace_events_filter.c
+> +++ b/kernel/trace/trace_events_filter.c
+> @@ -54,6 +54,13 @@ struct filter_op {
+>  	int precedence;
+>  };
+>  
+> +static struct filter_op filter_ftrace_ops[] = {
+> +	{ OP_OR,	"||",		1 },
+> +	{ OP_NE,	"!=",		2 },
+> +	{ OP_EQ,	"==",		2 },
+> +	{ OP_NONE,	"OP_NONE",	0 },
+> +};
+
+ugh.. just found I cannot define filter_ftrace_ops like this,
+will send fix with new version.
+
+thanks,
+jirka
