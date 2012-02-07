@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab2BGR1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 12:27:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25428 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755932Ab2BGR1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 12:27:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="104978630"
-Date: Tue, 7 Feb 2012 09:27:43 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Alex Shi <alex.shi@intel.com>, stern@rowland.harvard.edu
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        andiry.xu@amd.com, linux-kernel@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>, Takashi Iwai <tiwai@suse.de>,
-        trenn@suse.de, linux-pci@vger.kernel.org,
-        Michal Marek <MMarek@suse.com>
-Subject: Re: [PATCH] usb: enable pci MSI/MSIX in usb core
-Message-ID: <20120207172743.GA4780@xanatos>
-References: <1328531341-22705-1-git-send-email-alex.shi@intel.com>
- <4F311233.9070404@intel.com>
- <20120207144204.GA7214@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120207144204.GA7214@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756007Ab2BGRej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 12:34:39 -0500
+Received: from na3sys010aog114.obsmtp.com ([74.125.245.96]:32965 "HELO
+	na3sys010aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754338Ab2BGRei (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 12:34:38 -0500
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-rdma@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Tue,  7 Feb 2012 09:34:28 -0800
+Message-Id: <1328636068-25497-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 06:42:04AM -0800, Greg KH wrote:
-> On Tue, Feb 07, 2012 at 07:59:47PM +0800, Alex Shi wrote:
-> > On 02/06/2012 08:29 PM, Alex Shi wrote:
-> > 
-> > > MSI/MSIX is the favorite interrupt for PCIe device. PCIe usb HCD should
-> > > be used more and more in future, but current USB core still just wants
-> > > line IRQ, only XHCI usb driver enabled MSI/MSIX.
-> > > 
-> > > This patch enabled pci MSI/MSIX in usb core for HCD, and removed MSI/MSIX
-> > > setup code from XHCI since it becomes redundant now.
-> > > There 2 places need prepare to enable MSI/MSIX in usb driver.
-> > > 1, set HCD_MSI_FIRST in driver->flags to enable MSI/MSIX.
-> > > 2, prepare a get_msix_num() for specific drivers.
-> > > XHCI is a good example for this.
-> > > 
-> > > This patch bases on my "USB-try-MSI-before-legacy-irq-on-pci-xhci-HCD"
-> > > patch.
-> > 
-> > 
-> > Gregkh&Alan:
-> > 
-> > Do you need a full patch that include my recent MSI setup/bug fix
-> > patches? or just this one is ok?
-> 
-> I was thinking that Sarah would forward this on.  We need whatever
-> should be applied to the tree, as I do not have any pending patches from
-> you in my queue.
+Hi Linus,
 
-I'm trying to track down an oops on my for-usb-linus queue that could
-either be related to Alex's original MSI work around patch, or the patch
-Oliver posted for working around PCI MMIO not being enabled fast enough.
-I don't want to review this MSI improvement patch until I'm sure the
-original MSI work around patch is stable.
+Please pull from
 
-Alex, please give me time to debug bug fixes for 3.3 before pushing on
-features for 3.4.
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git ib-srpt-fixes
 
-Sarah Sharp
+This will get a few small cleanups and fixes for the srpt fabric
+driver.  The driver is new for 3.3 so it makes sense to get this in
+before the first release.
+
+----------------------------------------------------------------
+Cleanups and error path fixes for the new SRP (SCSI RDMA protocol) target.
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      IB/srpt: Fix ERR_PTR() vs. NULL checking confusion
+
+Jesper Juhl (2):
+      IB/srpt: Remove unneeded <linux/version.h> include
+      IB/srpt: Don't return freed pointer from srpt_alloc_ioctx_ring()
+
+Roland Dreier (2):
+      IB/srpt: Use DEFINE_SPINLOCK()/LIST_HEAD()
+      IB/srpt: Use ARRAY_SIZE() instead of open-coding
+
+ drivers/infiniband/ulp/srpt/ib_srpt.c |   17 +++++++----------
+ drivers/infiniband/ulp/srpt/ib_srpt.h |    1 -
+ 2 files changed, 7 insertions(+), 11 deletions(-)
