@@ -1,137 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab2BGN1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 08:27:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34581 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753969Ab2BGN1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 08:27:49 -0500
-Date: Tue, 7 Feb 2012 13:27:45 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 00/15] Swap-over-NBD without deadlocking V8
-Message-ID: <20120207132745.GH5938@suse.de>
-References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
- <CAJd=RBAvvzK=TXwDaEjq2t+uEuP2PSi6zaUj7EW4UbL_AUsJAg@mail.gmail.com>
+	id S1755767Ab2BGN33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 08:29:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38528 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754724Ab2BGN32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 08:29:28 -0500
+Date: Tue, 7 Feb 2012 13:29:25 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Liam Girdwood <lrg@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 2/7] MFD: twl6040: Convert to i2c driver, and separate
+ it from twl core
+Message-ID: <20120207132925.GN3332@opensource.wolfsonmicro.com>
+References: <1328619678-26080-1-git-send-email-peter.ujfalusi@ti.com>
+ <1328619678-26080-3-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="c2gYorpyS4gG0T74"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJd=RBAvvzK=TXwDaEjq2t+uEuP2PSi6zaUj7EW4UbL_AUsJAg@mail.gmail.com>
+In-Reply-To: <1328619678-26080-3-git-send-email-peter.ujfalusi@ti.com>
+X-Cookie: You will forget that you ever knew me.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 08:45:18PM +0800, Hillf Danton wrote:
-> On Tue, Feb 7, 2012 at 6:56 AM, Mel Gorman <mgorman@suse.de> wrote:
-> >
-> > The core issue is that network block devices do not use mempools like normal
-> > block devices do. As the host cannot control where they receive packets from,
-> > they cannot reliably work out in advance how much memory they might need.
-> >
-> >
-> > Patch 1 serialises access to min_free_kbytes. It's not strictly needed
-> >        by this series but as the series cares about watermarks in
-> >        general, it's a harmless fix. It could be merged independently.
-> >
-> >
-> Any light shed on tuning min_free_kbytes for every day work?
-> 
 
-For every day work, leave min_free_kbytes as the default.
+--c2gYorpyS4gG0T74
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> > Patch 2 adds knowledge of the PFMEMALLOC reserves to SLAB and SLUB to
-> >        preserve access to pages allocated under low memory situations
-> >        to callers that are freeing memory.
-> >
-> > Patch 3 introduces __GFP_MEMALLOC to allow access to the PFMEMALLOC
-> >        reserves without setting PFMEMALLOC.
-> >
-> > Patch 4 opens the possibility for softirqs to use PFMEMALLOC reserves
-> >        for later use by network packet processing.
-> >
-> > Patch 5 ignores memory policies when ALLOC_NO_WATERMARKS is set.
-> >
-> > Patches 6-11 allows network processing to use PFMEMALLOC reserves when
-> >        the socket has been marked as being used by the VM to clean
-> >        pages. If packets are received and stored in pages that were
-> >        allocated under low-memory situations and are unrelated to
-> >        the VM, the packets are dropped.
-> >
-> > Patch 12 is a micro-optimisation to avoid a function call in the
-> >        common case.
-> >
-> > Patch 13 tags NBD sockets as being SOCK_MEMALLOC so they can use
-> >        PFMEMALLOC if necessary.
-> >
->
-> If it is feasible to bypass hang by tuning min_mem_kbytes,
+On Tue, Feb 07, 2012 at 03:01:13PM +0200, Peter Ujfalusi wrote:
+> Complete the separation of the twl6040 from the twl core since
+> it is a separate chip, not part of the twl6030 PMIC.
 
-No. Increasing or descreasing min_free_kbytes changes the timing but it
-will still hang.
+Looking good
 
-> things may
-> become simpler if NICs are also tagged.
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonicro.com>
 
-That would mean making changes to every driver and they do not necessarily
-know what higher level protocol like TCP they are transmitting. How is
-that simpler? What is the benefit?
+and it looks like you'll save a bunch more code if you're able to
+convert over to using a regmap cache.  Note that as a first pass you
+just need to define which registers are volatile and enable a cache type
+- if defaults are omitted then the values will be read back from the
+device to start off with.
 
-> Sock buffers, pre-allocated if
-> necessary just after NICs are turned on, are not handed back to kmem
-> cache but queued on local lists which are maintained by NIC driver, based
-> the on the info of min_mem_kbytes or similar, for tagged NICs.
+--c2gYorpyS4gG0T74
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I think you are referring to doing something like SKB recycling within
-the driver.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> Upside is no changes in VM core. Downsides?
-> 
+iQIcBAEBAgAGBQJPMSZ+AAoJEBus8iNuMP3df30QAIN5S2+p8EyQfwYgHzuz4N/x
+q0c3AOU/aUpOheyLjEUkVOjzJjNiQHY0GXvmHrXnn/whULW16+n5BFq9/DlHPcff
+rlWE7K1jrl93Lv/dM5IZS4jsDx0iCKN88tw9PN0one/klDUWJPzB7CBEioQQlEq7
+UHKwZtzPk2oHNTAknnsUPMK1hkl9J2fBHDrC+meC1gXyjgdxJy1i03OVbkOntz3P
+eBku+7Hf7Wl3r+txV9aRKLIvx891GB+AtVeZboPtjLgQZ9o9FeSEuQSmImGOgLBG
+3mvgOa14rRVV6wRf2j+H604r2tTNZ2FZZ7OZOK4esOnU8O1bBsirT9Sz3JpY8t99
+gT3BCyzvsrH8IehF5tCA5cWAMT1uLymWN5kMPiBwh4MN+R5MU6DlNbT69KmawM+D
+//gYlHal1sYzyINYTmeoSwlZRCGqNizyO4fL1mxMP0aPpKpIorDvnKFaX8A2cNHT
+4HkkZV/Qt0Uy78+c+OOAlJ+MsIh+mQ7PfzAnVuJlG2wehecJ0D3OysbCVBd+d2Gt
+pu6pzljwKzi+M00BcZPGC5ulrhs0boXczd+av2AOcSQU//rQ/3qSHc8d5LddAMNe
+hP1PMe5GHmnD+qhnbFMWlLAX5jQzmHGw0ITsUKPowQ9FNj4aRH/Tw4OStWDg6eiH
+fc2xy34kKKS0j3yL9W5z
+=1teB
+-----END PGP SIGNATURE-----
 
-That wouls indead requires driver-specific changes and new core
-infrastructure to deal with SKB recycling spreading the complexity over a
-wider range of code. If all the SKBs are in use for SOCK_MEMALLOC purposes
-for whatever reason and more cannot be allocated, it will still hang. So
-downsides are it would be equally if not more complex than this approach
-that it may still hang.
-
-> > Patch 14 notes that it is still possible for the PFMEMALLOC reserve
-> >        to be depleted. To prevent this, direct reclaimers get
-> >        throttled on a waitqueue if 50% of the PFMEMALLOC reserves are
-> >        depleted.  It is expected that kswapd and the direct reclaimers
-> >        already running will clean enough pages for the low watermark
-> >        to be reached and the throttled processes are woken up.
-> >
-> > Patch 15 adds a statistic to track how often processes get throttled
-> >
-> >
-> > For testing swap-over-NBD, a machine was booted with 2G of RAM with a
-> > swapfile backed by NBD. 8*NUM_CPU processes were started that create
-> > anonymous memory mappings and read them linearly in a loop. The total
-> > size of the mappings were 4*PHYSICAL_MEMORY to use swap heavily under
-> > memory pressure. Without the patches, the machine locks up within
-> > minutes and runs to completion with them applied.
-> >
-> >
->
-> While testing, what happens if the network wire is plugged off over
-> three minutes?
-> 
-
-I didn't test the scenario and I don't have a test machine available
-right now to try but it is up to the userspace NBD client to manage the
-reconnection. It is also up to the admin to prevent the NBD client being
-killed by something like the OOM killer and to have it mlocked to avoid
-the NBD client itself being swapped. NFS is able to handle this in-kernel
-but NBD may be more fragile.
-
--- 
-Mel Gorman
-SUSE Labs
+--c2gYorpyS4gG0T74--
