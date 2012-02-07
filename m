@@ -1,236 +1,577 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2BGTeW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 14:34:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40698 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab2BGTeS (ORCPT
+	id S1756013Ab2BGTe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 14:34:58 -0500
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:51607 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753664Ab2BGTex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 14:34:18 -0500
-Date: Tue, 7 Feb 2012 11:33:00 -0800
-From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <tip-4eced2347c447c9409877368fc52478c356b4767@git.kernel.org>
-Cc: acme@redhat.com, mingo@redhat.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, anton@redhat.com, rostedt@goodmis.org,
-        jkenisto@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        oleg@redhat.com, tglx@linutronix.de, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, andi@firstfloor.org,
-        hch@infradead.org, ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, sfr@canb.auug.org.au, roland@hack.frob.com,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, acme@redhat.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, anton@redhat.com, rostedt@goodmis.org,
-        jkenisto@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, oleg@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, andi@firstfloor.org,
-        hch@infradead.org, ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, roland@hack.frob.com, sfr@canb.auug.org.au,
-        mingo@elte.hu
-In-Reply-To: <20120202142040.5967.64156.sendpatchset@srdronam.in.ibm.com>
-References: <20120202142040.5967.64156.sendpatchset@srdronam.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Rename target_module to target
-Git-Commit-ID: 4eced2347c447c9409877368fc52478c356b4767
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 7 Feb 2012 14:34:53 -0500
+Date: Tue, 7 Feb 2012 21:34:44 +0200
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: Amit Kachhap <amit.kachhap@linaro.org>
+Cc: eduardo.valentin@ti.com, linux-pm@lists.linux-foundation.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [linux-pm] [RFC PATCH 2/2] thermal: Add generic cpu cooling
+ implementation
+Message-ID: <20120207193444.GB8589@besouro>
+Reply-To: eduardo.valentin@ti.com
+References: <1323789196-4942-1-git-send-email-amit.kachhap@linaro.org>
+ <1323789196-4942-3-git-send-email-amit.kachhap@linaro.org>
+ <20120207082559.GA5558@besouro>
+ <CAK44p20Y5bLU-cUEvZqvzt300ZhtJ8z5KbRfLc8b2B=d3G=FsA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 07 Feb 2012 11:33:09 -0800 (PST)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK44p20Y5bLU-cUEvZqvzt300ZhtJ8z5KbRfLc8b2B=d3G=FsA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4eced2347c447c9409877368fc52478c356b4767
-Gitweb:     http://git.kernel.org/tip/4eced2347c447c9409877368fc52478c356b4767
-Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-AuthorDate: Thu, 2 Feb 2012 19:50:40 +0530
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 2 Feb 2012 17:39:15 -0200
+Hello Amit,
 
-perf probe: Rename target_module to target
+On Tue, Feb 07, 2012 at 10:21:15AM -0800, Amit Kachhap wrote:
+> Hi eduardo,
+> 
+> Again thanks for the review.
+> 
+> On 7 February 2012 00:25, Eduardo Valentin <eduardo.valentin@ti.com> wrote:
+> > Hello Amit,
+> >
+> > On Tue, Dec 13, 2011 at 08:43:16PM +0530, Amit Daniel Kachhap wrote:
+> >> This patch adds support for generic cpu thermal cooling low level
+> >> implementations using frequency scaling and cpuhotplugg currently.
+> >> Different cpu related cooling devices can be registered by the
+> >> user and the binding of these cooling devices to the corresponding
+> >> trip points can be easily done as the registration API's return the
+> >> cooling device pointer.
+> >>
+> >> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> >> ---
+> >>  Documentation/thermal/cpu-cooling-api.txt |   52 +++++
+> >>  drivers/thermal/Kconfig                   |   11 +
+> >>  drivers/thermal/Makefile                  |    1 +
+> >>  drivers/thermal/cpu_cooling.c             |  302 +++++++++++++++++++++++++++++
+> >>  include/linux/cpu_cooling.h               |   45 +++++
+> >>  5 files changed, 411 insertions(+), 0 deletions(-)
+> >>  create mode 100644 Documentation/thermal/cpu-cooling-api.txt
+> >>  create mode 100644 drivers/thermal/cpu_cooling.c
+> >>  create mode 100644 include/linux/cpu_cooling.h
+> >>
+> >> diff --git a/Documentation/thermal/cpu-cooling-api.txt b/Documentation/thermal/cpu-cooling-api.txt
+> >> new file mode 100644
+> >> index 0000000..d30b4f2
+> >> --- /dev/null
+> >> +++ b/Documentation/thermal/cpu-cooling-api.txt
+> >> @@ -0,0 +1,52 @@
+> >> +CPU cooling api's How To
+> >> +===================================
+> >> +
+> >> +Written by Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> >> +
+> >> +Updated: 13 Dec 2011
+> >> +
+> >> +Copyright (c)  2011 Samsung Electronics Co., Ltd(http://www.samsung.com)
+> >> +
+> >> +0. Introduction
+> >> +
+> >> +The generic cpu cooling(freq clipping, cpuhotplug) provides
+> >> +registration/unregistration api's to the user. The binding of the cooling
+> >> +devices to the trip types is left for the user. The registration api's returns
+> >> +the cooling device pointer.
+> >> +
+> >> +1. cpufreq cooling api's
+> >> +
+> >> +1.1 cpufreq registration api's
+> >> +1.1.1 struct thermal_cooling_device *cpufreq_cooling_register(
+> >> +     struct freq_pctg_table *tab_ptr, unsigned int tab_size,
+> >> +     const struct cpumask *mask_val)
+> >> +
+> >> +    This interface function registers the cpufreq cooling device with the name
+> >> +     "thermal-cpufreq".
+> >> +
+> >> +    tab_ptr: The table containing the percentage of frequency to be clipped for
+> >> +    each cooling state.
+> >> +     .freq_clip_pctg[NR_CPUS]:Percentage of frequency to be clipped for each
+> >> +      cpu.
+> >> +     .polling_interval: polling interval for this cooling state.
+> >> +    tab_size: the total number of cooling state.
+> >> +    mask_val: all the allowed cpu's where frequency clipping can happen.
+> >> +
+> >> +1.1.2 void cpufreq_cooling_unregister(void)
+> >> +
+> >> +    This interface function unregisters the "thermal-cpufreq" cooling device.
+> >> +
+> >> +
+> >> +1.2 cpuhotplug registration api's
+> >> +
+> >> +1.2.1 struct thermal_cooling_device *cpuhotplug_cooling_register(
+> >> +     const struct cpumask *mask_val)
+> >> +
+> >> +    This interface function registers the cpuhotplug cooling device with the name
+> >> +     "thermal-cpuhotplug".
+> >> +
+> >> +    mask_val: all the allowed cpu's which can be hotplugged out.
+> >> +
+> >> +1.1.2 void cpuhotplug_cooling_unregister(void)
+> >> +
+> >> +    This interface function unregisters the "thermal-cpuhotplug" cooling device.
+> >> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> >> index f7f71b2..298c1cd 100644
+> >> --- a/drivers/thermal/Kconfig
+> >> +++ b/drivers/thermal/Kconfig
+> >> @@ -18,3 +18,14 @@ config THERMAL_HWMON
+> >>       depends on THERMAL
+> >>       depends on HWMON=y || HWMON=THERMAL
+> >>       default y
+> >> +
+> >> +config CPU_THERMAL
+> >> +     bool "generic cpu cooling support"
+> >> +     depends on THERMAL
+> >> +     help
+> >> +       This implements the generic cpu cooling mechanism through frequency
+> >> +       reduction, cpu hotplug and any other ways of reducing temperature. An
+> >> +       ACPI version of this already exists(drivers/acpi/processor_thermal.c).
+> >> +       This will be useful for platforms using the generic thermal interface
+> >> +       and not the ACPI interface.
+> >> +       If you want this support, you should say Y or M here.
+> >> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+> >> index 31108a0..655cbc4 100644
+> >> --- a/drivers/thermal/Makefile
+> >> +++ b/drivers/thermal/Makefile
+> >> @@ -3,3 +3,4 @@
+> >>  #
+> >>
+> >>  obj-$(CONFIG_THERMAL)                += thermal_sys.o
+> >> +obj-$(CONFIG_CPU_THERMAL)    += cpu_cooling.o
+> >> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+> >> new file mode 100644
+> >> index 0000000..cdd148c
+> >> --- /dev/null
+> >> +++ b/drivers/thermal/cpu_cooling.c
+> >> @@ -0,0 +1,302 @@
+> >> +/*
+> >> + *  linux/drivers/thermal/cpu_cooling.c
+> >> + *
+> >> + *  Copyright (C) 2011       Samsung Electronics Co., Ltd(http://www.samsung.com)
+> >> + *  Copyright (C) 2011  Amit Daniel <amit.kachhap@linaro.org>
+> >> + *
+> >> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> >> + *  This program is free software; you can redistribute it and/or modify
+> >> + *  it under the terms of the GNU General Public License as published by
+> >> + *  the Free Software Foundation; version 2 of the License.
+> >> + *
+> >> + *  This program is distributed in the hope that it will be useful, but
+> >> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> >> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> >> + *  General Public License for more details.
+> >> + *
+> >> + *  You should have received a copy of the GNU General Public License along
+> >> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> >> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> >> + *
+> >> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> >> + */
+> >> +#include <linux/kernel.h>
+> >> +#include <linux/module.h>
+> >> +#include <linux/thermal.h>
+> >> +#include <linux/platform_device.h>
+> >> +#include <linux/cpufreq.h>
+> >> +#include <linux/err.h>
+> >> +#include <linux/slab.h>
+> >> +#include <linux/cpu.h>
+> >> +#include <linux/cpu_cooling.h>
+> >> +
+> >> +#ifdef CONFIG_CPU_FREQ
+> >> +struct cpufreq_cooling_device {
+> >> +     struct thermal_cooling_device *cool_dev;
+> >> +     struct freq_pctg_table *tab_ptr;
+> >> +     unsigned int tab_size;
+> >> +     unsigned int cpufreq_state;
+> >> +     const struct cpumask *allowed_cpus;
+> >> +};
+> >> +
+> >> +static struct cpufreq_cooling_device *cpufreq_device;
+> >> +
+> >> +/*Below codes defines functions to be used for cpufreq as cooling device*/
+> >> +static bool is_cpufreq_valid(int cpu)
+> >> +{
+> >> +     struct cpufreq_policy policy;
+> >> +     if (!cpufreq_get_policy(&policy, cpu))
+> >> +             return true;
+> >> +     return false;
+> >> +}
+> >> +
+> >> +static int cpufreq_apply_cooling(int cooling_state)
+> >> +{
+> >
+> > Why do you need cooling_state to be signed? You used it always against
+> > unsigned values. Besides, the thermal api imposes unsigned long.
+> Yes, unsigned long is a better way.
+> >
+> >> +     int cpuid, this_cpu = smp_processor_id();
+> >> +
+> >> +     if (!is_cpufreq_valid(this_cpu))
+> >> +             return 0;
+> >> +
+> >> +     if (cooling_state > cpufreq_device->tab_size)
+> >> +             return -EINVAL;
+> >> +
+> >> +     /*Check if last cooling level is same as current cooling level*/
+> >> +     if (cpufreq_device->cpufreq_state == cooling_state)
+> >> +             return 0;
+> >> +
+> >> +     cpufreq_device->cpufreq_state = cooling_state;
+> >> +
+> >> +     for_each_cpu(cpuid, cpufreq_device->allowed_cpus) {
+> >> +             if (is_cpufreq_valid(cpuid))
+> >> +                     cpufreq_update_policy(cpuid);
+> >> +     }
+> >> +
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +static int thermal_cpufreq_notifier(struct notifier_block *nb,
+> >> +                                     unsigned long event, void *data)
+> >> +{
+> >> +     struct cpufreq_policy *policy = data;
+> >> +     struct freq_pctg_table *th_table;
+> >> +     unsigned long max_freq = 0;
+> >> +     unsigned int cpu = policy->cpu, th_pctg = 0, level;
+> >> +
+> >> +     if (event != CPUFREQ_ADJUST)
+> >> +             return 0;
+> >> +
+> >> +     level = cpufreq_device->cpufreq_state;
+> >> +
+> >> +     if (level > 0) {
+> >> +             th_table =
+> >> +                     &(cpufreq_device->tab_ptr[level - 1]);
+> >> +             th_pctg = th_table->freq_clip_pctg[cpu];
+> >> +     }
+> >> +
+> >> +     max_freq =
+> >> +             (policy->cpuinfo.max_freq * (100 - th_pctg)) / 100;
+> >
+> >
+> > Might be interesting to extend this a bit. You could have the
+> > above as default policy setup, but you could also allow people
+> > to change this behavior. For instance, adding some callback option
+> > while registering the cooling device (or a notifier), which would
+> > determine the max_freq for the generic layer. The mechanism to
+> > deploy max_freq into the system must be generic enough with cpufreq
+> > APIs, but the decision to which max_freq to use, could be specific.
+> > Don't you think?
+> I agree that there will always some constraints on the system to cap
+> the max frequency. But these thermal clippings is called for rare
+> scenarios. Anyway, Your idea is worth considering. I will check if
+> cpufreq has any generic way of achieving this.
 
-This is a precursor patch that modifies names that refer to
-kernel/module to also refer to user space names.
+Yeah, well, the idea was to have the max_freq value coming from some
+registered callback in your code, not really on cpufreq.
 
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux-mm <linux-mm@kvack.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20120202142040.5967.64156.sendpatchset@srdronam.in.ibm.com
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-probe.c    |   12 ++++++------
- tools/perf/util/probe-event.c |   26 +++++++++++++-------------
- 2 files changed, 19 insertions(+), 19 deletions(-)
+> >
+> >> +
+> >> +     cpufreq_verify_within_limits(policy, 0, max_freq);
+> >> +
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +/*
+> >> + * cpufreq cooling device callback functions
+> >> + */
+> >> +static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
+> >> +                              unsigned long *state)
+> >> +{
+> >> +     *state = cpufreq_device->tab_size;
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
+> >> +                              unsigned long *state)
+> >> +{
+> >> +     *state = cpufreq_device->cpufreq_state;
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +/*This cooling may be as PASSIVE/STATE_ACTIVE type*/
+> >> +static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
+> >> +                              unsigned long state)
+> >> +{
+> >> +     cpufreq_apply_cooling(state);
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +/* bind cpufreq callbacks to cpufreq cooling device */
+> >> +static struct thermal_cooling_device_ops cpufreq_cooling_ops = {
+> >> +     .get_max_state = cpufreq_get_max_state,
+> >> +     .get_cur_state = cpufreq_get_cur_state,
+> >> +     .set_cur_state = cpufreq_set_cur_state,
+> >> +};
+> >> +
+> >> +static struct notifier_block thermal_cpufreq_notifier_block = {
+> >> +     .notifier_call = thermal_cpufreq_notifier,
+> >> +};
+> >> +
+> >> +struct thermal_cooling_device *cpufreq_cooling_register(
+> >> +     struct freq_pctg_table *tab_ptr, unsigned int tab_size,
+> >> +     const struct cpumask *mask_val)
+> >> +{
+> >> +     struct thermal_cooling_device *cool_dev;
+> >> +
+> >> +     if (tab_ptr == NULL || tab_size == 0)
+> >> +             return ERR_PTR(-EINVAL);
+> >> +
+> >> +     cpufreq_device =
+> >> +             kzalloc(sizeof(struct cpufreq_cooling_device), GFP_KERNEL);
+> >> +
+> >> +     if (!cpufreq_device)
+> >> +             return ERR_PTR(-ENOMEM);
+> >> +
+> >> +     cool_dev = thermal_cooling_device_register("thermal-cpufreq", NULL,
+> >> +                                             &cpufreq_cooling_ops);
+> >> +     if (!cool_dev) {
+> >> +             kfree(cpufreq_device);
+> >> +             return ERR_PTR(-EINVAL);
+> >> +     }
+> >> +
+> >> +     cpufreq_device->tab_ptr = tab_ptr;
+> >> +     cpufreq_device->tab_size = tab_size;
+> >> +     cpufreq_device->cool_dev = cool_dev;
+> >> +     cpufreq_device->allowed_cpus = mask_val;
+> >> +
+> >> +     cpufreq_register_notifier(&thermal_cpufreq_notifier_block,
+> >> +                                             CPUFREQ_POLICY_NOTIFIER);
+> >> +     return cool_dev;
+> >> +}
+> >> +EXPORT_SYMBOL(cpufreq_cooling_register);
+> >> +
+> >> +void cpufreq_cooling_unregister(void)
+> >> +{
+> >> +     cpufreq_unregister_notifier(&thermal_cpufreq_notifier_block,
+> >> +                                             CPUFREQ_POLICY_NOTIFIER);
+> >> +     thermal_cooling_device_unregister(cpufreq_device->cool_dev);
+> >> +     kfree(cpufreq_device);
+> >> +}
+> >> +EXPORT_SYMBOL(cpufreq_cooling_unregister);
+> >> +#else /*!CONFIG_CPU_FREQ*/
+> >> +struct thermal_cooling_device *cpufreq_cooling_register(
+> >> +     struct freq_pctg_table *tab_ptr, unsigned int tab_size)
+> >> +{
+> >> +     return NULL;
+> >> +}
+> >> +EXPORT_SYMBOL(cpufreq_cooling_register);
+> >> +void cpufreq_cooling_unregister(void)
+> >> +{
+> >> +     return;
+> >> +}
+> >> +EXPORT_SYMBOL(cpufreq_cooling_unregister);
+> >> +#endif /*CONFIG_CPU_FREQ*/
+> >> +
+> >> +#ifdef CONFIG_HOTPLUG_CPU
+> >> +
+> >> +struct hotplug_cooling_device {
+> >> +     struct thermal_cooling_device *cool_dev;
+> >> +     unsigned int hotplug_state;
+> >> +     const struct cpumask *allowed_cpus;
+> >> +};
+> >> +static struct hotplug_cooling_device *hotplug_device;
+> >> +
+> >> +/*
+> >> + * cpu hotplug cooling device callback functions
+> >> + */
+> >> +static int cpuhotplug_get_max_state(struct thermal_cooling_device *cdev,
+> >> +                              unsigned long *state)
+> >> +{
+> >> +     *state = 1;
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +static int cpuhotplug_get_cur_state(struct thermal_cooling_device *cdev,
+> >> +                              unsigned long *state)
+> >> +{
+> >> +     /*This cooling device may be of type ACTIVE, so state field
+> >> +     can be 0 or 1*/
+> >> +     *state = hotplug_device->hotplug_state;
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +/*This cooling may be as PASSIVE/STATE_ACTIVE type*/
+> >> +static int cpuhotplug_set_cur_state(struct thermal_cooling_device *cdev,
+> >> +                              unsigned long state)
+> >> +{
+> >> +     int cpuid, this_cpu = smp_processor_id();
+> >> +
+> >> +     if (hotplug_device->hotplug_state == state)
+> >> +             return 0;
+> >> +
+> >> +     /*This cooling device may be of type ACTIVE, so state field
+> >> +     can be 0 or 1*/
+> >
+> > /*
+> >  * Small thing. Check the style for multi line comments.
+> >  * This is also an example.
+> >  */
+> Ok.
+> >
+> >> +     if (state == 1) {
+> >> +             for_each_cpu(cpuid, hotplug_device->allowed_cpus) {
+> >> +                     if (cpu_online(cpuid) && (cpuid != this_cpu))
+> >> +                             cpu_down(cpuid);
+> >> +             }
+> >> +     } else if (state == 0) {
+> >> +             for_each_cpu(cpuid, hotplug_device->allowed_cpus) {
+> >> +                     if (!cpu_online(cpuid) && (cpuid != this_cpu))
+> >> +                             cpu_up(cpuid);
+> >> +             }
+> >> +     } else
+> >> +             return -EINVAL;
+> >> +
+> >> +     hotplug_device->hotplug_state = state;
+> >> +
+> >> +     return 0;
+> >> +}
+> >> +/* bind hotplug callbacks to cpu hotplug cooling device */
+> >> +static struct thermal_cooling_device_ops cpuhotplug_cooling_ops = {
+> >> +     .get_max_state = cpuhotplug_get_max_state,
+> >> +     .get_cur_state = cpuhotplug_get_cur_state,
+> >> +     .set_cur_state = cpuhotplug_set_cur_state,
+> >> +};
+> >> +
+> >> +struct thermal_cooling_device *cpuhotplug_cooling_register(
+> >> +     const struct cpumask *mask_val)
+> >> +{
+> >> +     struct thermal_cooling_device *cool_dev;
+> >> +
+> >> +     hotplug_device =
+> >> +             kzalloc(sizeof(struct hotplug_cooling_device), GFP_KERNEL);
+> >> +
+> >> +     if (!hotplug_device)
+> >> +             return ERR_PTR(-ENOMEM);
+> >> +
+> >> +     cool_dev = thermal_cooling_device_register("thermal-cpuhotplug", NULL,
+> >> +                                             &cpuhotplug_cooling_ops);
+> >> +     if (!cool_dev) {
+> >> +             kfree(hotplug_device);
+> >> +             return ERR_PTR(-EINVAL);
+> >> +     }
+> >> +
+> >> +     hotplug_device->cool_dev = cool_dev;
+> >> +     hotplug_device->hotplug_state = 0;
+> >> +     hotplug_device->allowed_cpus = mask_val;
+> >> +
+> >> +     return cool_dev;
+> >> +}
+> >> +EXPORT_SYMBOL(cpuhotplug_cooling_register);
+> >> +
+> >> +void cpuhotplug_cooling_unregister(void)
+> >> +{
+> >> +     thermal_cooling_device_unregister(hotplug_device->cool_dev);
+> >> +     kfree(hotplug_device);
+> >> +}
+> >> +EXPORT_SYMBOL(cpuhotplug_cooling_unregister);
+> >> +#else /*!CONFIG_HOTPLUG_CPU*/
+> >> +struct thermal_cooling_device *cpuhotplug_cooling_register(
+> >> +     const struct cpumask *mask_val)
+> >> +{
+> >> +     return NULL;
+> >> +}
+> >> +EXPORT_SYMBOL(cpuhotplug_cooling_register);
+> >> +void cpuhotplug_cooling_unregister(void)
+> >> +{
+> >> +     return;
+> >> +}
+> >> +EXPORT_SYMBOL(cpuhotplug_cooling_unregister);
+> >> +#endif /*CONFIG_HOTPLUG_CPU*/
+> >> diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
+> >> new file mode 100644
+> >> index 0000000..0c57375
+> >> --- /dev/null
+> >> +++ b/include/linux/cpu_cooling.h
+> >> @@ -0,0 +1,45 @@
+> >> +/*
+> >> + *  linux/include/linux/cpu_cooling.h
+> >> + *
+> >> + *  Copyright (C) 2011       Samsung Electronics Co., Ltd(http://www.samsung.com)
+> >> + *  Copyright (C) 2011  Amit Daniel <amit.kachhap@linaro.org>
+> >> + *
+> >> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> >> + *  This program is free software; you can redistribute it and/or modify
+> >> + *  it under the terms of the GNU General Public License as published by
+> >> + *  the Free Software Foundation; version 2 of the License.
+> >> + *
+> >> + *  This program is distributed in the hope that it will be useful, but
+> >> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> >> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> >> + *  General Public License for more details.
+> >> + *
+> >> + *  You should have received a copy of the GNU General Public License along
+> >> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> >> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> >> + *
+> >> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> >> + */
+> >> +
+> >> +#ifndef __CPU_COOLING_H__
+> >> +#define __CPU_COOLING_H__
+> >> +
+> >> +#include <linux/thermal.h>
+> >> +
+> >> +struct freq_pctg_table {
+> >> +     unsigned int freq_clip_pctg[NR_CPUS];
+> >> +     unsigned int polling_interval;
+> >> +};
+> >> +
+> >> +extern struct thermal_cooling_device *cpufreq_cooling_register(
+> >> +     struct freq_pctg_table *tab_ptr, unsigned int tab_size,
+> >> +     const struct cpumask *mask_val);
+> >
+> > I suppose your original idea was to have this function called only once right?
+> > I'd suggest to add some documentation on this header file to specify this.
+> >
+> > Besides, the fact that you receive a cpumask may suggest you could register
+> > different cooling device for subsets of your system cpus.
+> >
+> > In any case, if you call this function more than once, you may end with memory leaks
+> > and the last call will be the one acting in the system.
+> >
+> yes these api's are meant to be called once. I am working on a new
+> version where all these function will be multi-instance and hence
+> different cpus can support different frequency clipping.
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index fb85661..4935c09 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -58,7 +58,7 @@ static struct {
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
- 	struct line_range line_range;
--	const char *target_module;
-+	const char *target;
- 	int max_probe_points;
- 	struct strfilter *filter;
- } params;
-@@ -246,7 +246,7 @@ static const struct option options[] = {
- 		   "file", "vmlinux pathname"),
- 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
- 		   "directory", "path to kernel source"),
--	OPT_STRING('m', "module", &params.target_module,
-+	OPT_STRING('m', "module", &params.target,
- 		   "modname|path",
- 		   "target module name (for online) or path (for offline)"),
- #endif
-@@ -333,7 +333,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		if (!params.filter)
- 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
- 						       NULL);
--		ret = show_available_funcs(params.target_module,
-+		ret = show_available_funcs(params.target,
- 					   params.filter);
- 		strfilter__delete(params.filter);
- 		if (ret < 0)
-@@ -354,7 +354,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			usage_with_options(probe_usage, options);
- 		}
- 
--		ret = show_line_range(&params.line_range, params.target_module);
-+		ret = show_line_range(&params.line_range, params.target);
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show lines. (%d)\n", ret);
- 		return ret;
-@@ -371,7 +371,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 
- 		ret = show_available_vars(params.events, params.nevents,
- 					  params.max_probe_points,
--					  params.target_module,
-+					  params.target,
- 					  params.filter,
- 					  params.show_ext_vars);
- 		strfilter__delete(params.filter);
-@@ -393,7 +393,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 	if (params.nevents) {
- 		ret = add_perf_probe_events(params.events, params.nevents,
- 					    params.max_probe_points,
--					    params.target_module,
-+					    params.target,
- 					    params.force_add);
- 		if (ret < 0) {
- 			pr_err("  Error: Failed to add events. (%d)\n", ret);
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index b9bbdd2..c1a513e 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -273,10 +273,10 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
- /* Try to find perf_probe_event with debuginfo */
- static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 					  struct probe_trace_event **tevs,
--					  int max_tevs, const char *module)
-+					  int max_tevs, const char *target)
- {
- 	bool need_dwarf = perf_probe_event_need_dwarf(pev);
--	struct debuginfo *dinfo = open_debuginfo(module);
-+	struct debuginfo *dinfo = open_debuginfo(target);
- 	int ntevs, ret = 0;
- 
- 	if (!dinfo) {
-@@ -295,9 +295,9 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 
- 	if (ntevs > 0) {	/* Succeeded to find trace events */
- 		pr_debug("find %d probe_trace_events.\n", ntevs);
--		if (module)
-+		if (target)
- 			ret = add_module_to_probe_trace_events(*tevs, ntevs,
--							       module);
-+							       target);
- 		return ret < 0 ? ret : ntevs;
- 	}
- 
-@@ -1796,14 +1796,14 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
- 
- static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 					  struct probe_trace_event **tevs,
--					  int max_tevs, const char *module)
-+					  int max_tevs, const char *target)
- {
- 	struct symbol *sym;
- 	int ret = 0, i;
- 	struct probe_trace_event *tev;
- 
- 	/* Convert perf_probe_event with debuginfo */
--	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, module);
-+	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
- 	if (ret != 0)
- 		return ret;	/* Found in debuginfo or got an error */
- 
-@@ -1819,8 +1819,8 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 		goto error;
- 	}
- 
--	if (module) {
--		tev->point.module = strdup(module);
-+	if (target) {
-+		tev->point.module = strdup(target);
- 		if (tev->point.module == NULL) {
- 			ret = -ENOMEM;
- 			goto error;
-@@ -1884,7 +1884,7 @@ struct __event_package {
- };
- 
- int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
--			  int max_tevs, const char *module, bool force_add)
-+			  int max_tevs, const char *target, bool force_add)
- {
- 	int i, j, ret;
- 	struct __event_package *pkgs;
-@@ -1907,7 +1907,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
- 		ret  = convert_to_probe_trace_events(pkgs[i].pev,
- 						     &pkgs[i].tevs,
- 						     max_tevs,
--						     module);
-+						     target);
- 		if (ret < 0)
- 			goto end;
- 		pkgs[i].ntevs = ret;
-@@ -2063,7 +2063,7 @@ static int filter_available_functions(struct map *map __unused,
- 	return 1;
- }
- 
--int show_available_funcs(const char *module, struct strfilter *_filter)
-+int show_available_funcs(const char *target, struct strfilter *_filter)
- {
- 	struct map *map;
- 	int ret;
-@@ -2074,9 +2074,9 @@ int show_available_funcs(const char *module, struct strfilter *_filter)
- 	if (ret < 0)
- 		return ret;
- 
--	map = kernel_get_module_map(module);
-+	map = kernel_get_module_map(target);
- 	if (!map) {
--		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-+		pr_err("Failed to find %s map.\n", (target) ? : "kernel");
- 		return -EINVAL;
- 	}
- 	available_func_filter = _filter;
+
+OK. 
+
+Another point, is about the fact that this implementation is clipping the frequency silently.
+I mean, by changing the policy.max_freq, we may conflict with what the user defines as max freq.
+
+> >
+> >
+> >> +
+> >> +extern void cpufreq_cooling_unregister(void);
+> >> +
+> >> +extern struct thermal_cooling_device *cpuhotplug_cooling_register(
+> >> +     const struct cpumask *mask_val);
+> >> +
+> >> +extern void cpuhotplug_cooling_unregister(void);
+> >> +
+> >> +#endif /* __CPU_COOLING_H__ */
+> >
+> > Another thing, I have the impression that solving the config selection in the
+> > header file instead of in .c files is cleaner. If you want to solve the config
+> > selection in .c files, better to do so with Makefiles.
+> >
+> > If you keep the ifdefery ( THERMAL vs. HOTPLUG_CPU vs. CPU_FREQ ) here in the
+> > header file, it is easier to read.
+> Ok will move them in .h
+> >
+> >> --
+> >> 1.7.1
+> >>
+> >> _______________________________________________
+> >> linux-pm mailing list
+> >> linux-pm@lists.linux-foundation.org
+> >> https://lists.linuxfoundation.org/mailman/listinfo/linux-pm
