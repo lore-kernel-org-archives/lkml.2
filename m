@@ -1,161 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab2BGMYQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 07:24:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755772Ab2BGMYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 07:24:14 -0500
-Message-ID: <4F3117E5.6000105@redhat.com>
-Date: Tue, 07 Feb 2012 14:24:05 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1756133Ab2BGM0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 07:26:22 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45337 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755697Ab2BGM0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 07:26:21 -0500
+Date: Tue, 7 Feb 2012 12:23:17 +0000
+From: "Carlos R. Mafra" <crmafra@gmail.com>
+To: Pavel Roskin <proski@gnu.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        ath9k-devel@venema.h4ckr.net
+Subject: Re: [ath9k-devel] [3.3-rc2+] Thousands of ath9k warnings on dmesg
+ before laptop froze
+Message-ID: <20120207122317.GA2289@Pilar.site>
+References: <20120206002907.GA1899@Pilar.site>
+ <20120206175702.3a41ffc4@mj>
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Anthony Liguori <anthony@codemonkey.ws>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws> <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de>
-In-Reply-To: <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206175702.3a41ffc4@mj>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 03:08 AM, Alexander Graf wrote:
-> I don't like the idea too much. On s390 and ppc we can set other vcpu's interrupt status. How would that work in this model?
-
-It would be a "vm-wide syscall".  You can also do that on x86 (through 
-KVM_IRQ_LINE).
-
->
-> I really do like the ioctl model btw. It's easily extensible and easy to understand.
->
-> I can also promise you that I have no idea what other extensions we will need in the next few years. The non-x86 targets are just really very moving. So having an interface that allows for easy extension is a must-have.
-
-Good point.  If we ever go through with it, it will only be after we see 
-the interface has stabilized.
-
->
-> >
-> >>  State accessors
-> >>  ---------------
-> >>  Currently vcpu state is read and written by a bunch of ioctls that
-> >>  access register sets that were added (or discovered) along the years.
-> >>  Some state is stored in the vcpu mmap area.  These will be replaced by a
-> >>  pair of syscalls that read or write the entire state, or a subset of the
-> >>  state, in a tag/value format.  A register will be described by a tuple:
-> >>
-> >>    set: the register set to which it belongs; either a real set (GPR,
-> >>  x87, SSE/AVX, segment, cpuid, MSRs) or a fake set (for
-> >>  eflags/rip/IDT/interrupt shadow/pending exception/etc.)
-> >>    number: register number within a set
-> >>    size: for self-description, and to allow expanding registers like
-> >>  SSE->AVX or eax->rax
-> >>    attributes: read-write, read-only, read-only for guest but read-write
-> >>  for host
-> >>    value
-> >
-> >  I do like the idea a lot of being able to read one register at a time as often times that's all you need.
->
-> The framework is in KVM today. It's called ONE_REG. So far only PPC implements a few registers. If you like it, just throw all the x86 ones in there and you have everything you need.
-
-This is more like MANY_REG, where you scatter/gather a list of registers 
-in userspace to the kernel or vice versa.
-
->
-> >>  The communications between the local APIC and the IOAPIC/PIC will be
-> >>  done over a socketpair, emulating the APIC bus protocol.
->
-> What is keeping us from moving there today?
-
-The biggest problem with this proposal is that what we have today works 
-reasonably well.  Nothing is keeping us from moving there, except the 
-fear of performance regressions and lack of strong motivation.
-
->
-> >>
-> >>  Ioeventfd/irqfd
-> >>  ---------------
-> >>  As the ioeventfd/irqfd mechanism has been quite successful, it will be
-> >>  retained, and perhaps supplemented with a way to assign an mmio region
-> >>  to a socketpair carrying transactions.  This allows a device model to be
-> >>  implemented out-of-process.  The socketpair can also be used to
-> >>  implement a replacement for coalesced mmio, by not waiting for responses
-> >>  on write transactions when enabled.  Synchronization of coalesced mmio
-> >>  will be implemented in the kernel, not userspace as now: when a
-> >>  non-coalesced mmio is needed, the kernel will first flush the coalesced
-> >>  mmio queue(s).
->
-> I would vote for completely deprecating coalesced MMIO. It is a generic framework that nobody except for VGA really needs.
-
-It's actually used by e1000 too, don't remember what the performance 
-benefits are.  Of course, few people use e1000.
-
-> Better make something that accelerates read and write paths thanks to more specific knowledge of the interface.
->
-> One thing I'm thinking of here is IDE. There's no need to PIO callback into user space for all the status ports. We only really care about a callback on write to 7 (cmd). All the others are basically registers that the kernel could just read and write from shared memory.
->
-> I'm sure the VGA text stuff could use similar acceleration with well-known interfaces.
-
-This goes back to the discussion about a kernel bytecode vm for 
-accelerating mmio.  The problem is that we need something really general.
-
-> To me, coalesced mmio has proven that's it's generalization where it doesn't belong.
-
-But you want to generalize it even more?
-
-There's no way a patch with 'VGA' in it would be accepted.
-
->
-> >>
-> >>  Guest memory management
-> >>  -----------------------
-> >>  Instead of managing each memory slot individually, a single API will be
-> >>  provided that replaces the entire guest physical memory map atomically.
-> >>  This matches the implementation (using RCU) and plugs holes in the
-> >>  current API, where you lose the dirty log in the window between the last
-> >>  call to KVM_GET_DIRTY_LOG and the call to KVM_SET_USER_MEMORY_REGION
-> >>  that removes the slot.
->
-> So we render the actual slot logic invisible? That's a very good idea.
-
-No, slots still exist.  Only the API is "replace slot list" instead of 
-"add slot" and "remove slot".
-
->
-> >>
-> >>  Slot-based dirty logging will be replaced by range-based and work-based
-> >>  dirty logging; that is "what pages are dirty in this range, which may be
-> >>  smaller than a slot" and "don't return more than N pages".
-> >>
-> >>  We may want to place the log in user memory instead of kernel memory, to
-> >>  reduce pinned memory and increase flexibility.
-> >
-> >  Since we really only support 64-bit hosts, what about just pointing the kernel at a address/size pair and rely on userspace to mmap() the range appropriately?
->
-> That's basically what he suggested, no?
+On Mon,  6 Feb 2012 at 17:57:02 -0500, Pavel Roskin wrote:
+> On Mon, 6 Feb 2012 00:29:07 +0000
+> "Carlos R. Mafra" <crmafra@gmail.com> wrote:
+> 
+> > 
+> > I'm testing the latest kernel 3.3.0-rc2+ I pulled from git 
+> > this morning.
+> > 
+> > My laptop just froze, and when I rebooted I noticed
+> > that /var/log/messages contained 48 thousand (!) warnings coming from
+> > ath9k since a few hours ago. I'm pasting the first one:
+> 
+> > 
+> >  ------------[ cut here ]------------
+> >  WARNING:
+> > at /home/mafra/linux-2.6/drivers/net/wireless/ath/ath9k/rc.c:697
+> > ath_rc_get_highest_rix+0x156/0x210 [ath9k]() Hardware name: VPCEB4X1E
+> 
+> I believe I found a solution for this today.  Please see this bug
+> tracker: https://bugzilla.redhat.com/show_bug.cgi?id=768639
+> 
+> While Fedora users report a warning, I've seen panic reports in the
+> list.  It's a memory corruption bug, so it can manifest in different
+> ways.  Please test the latest patch (attached).
+> 
+> Here's my comment to the patch:
+> 
+> This patch is based on my analysis of printk() output I added to the
+> ath9k driver.  I didn't have a chance to test the patch, so testing
+> would be greatly appreciated.
+> 
+> The corruption must be happening in ath_debug_stat_rc(), which is given
+> the result of ath_rc_get_rateindex().  ath_rc_get_rateindex() can
+> return -1, which causes ath_debug_stat_rc() to increment the value that
+> lies 16 bytes before rcstats in struct ath_rate_priv.  On 64-bit
+> systems, that happens to be rate_table.  Once the rate_table pointer is
+> incremented, all data there becomes invalid, which leads to the
+> warning.  On 32-bit systems, the corruption should happen in
+> neg_ht_rates.
+> 
+> The -1 value of idx in struct ieee80211_tx_rate is described in
+> net/mac80211.h. I don't know why we have -1 there and how to reproduce
+> the problem reliably. But -1 can be there and ath9k has no checks for
+> it.
+> 
+> The patch introduces two protections: ath_rc_get_rateindex() never
+> returns a negative value and ath_debug_stat_rc() checks the array
+> bounds.
+> 
+> It may not be good enough for the kernel, but it may be good enough for
+> Fedora.
 
 
-No.
+Thanks for the link to the bugzilla and for the attached patch. 
 
-> >
-> >>  vcpu fd mmap area
-> >>  -----------------
-> >>  Currently we mmap() a few pages of the vcpu fd for fast user/kernel
-> >>  communications.  This will be replaced by a more orthodox pointer
-> >>  parameter to sys_kvm_enter_guest(), that will be accessed using
-> >>  get_user() and put_user().  This is slower than the current situation,
-> >>  but better for things like strace.
->
-> I would actually rather like to see the amount of page sharing between kernel and user space increased, no decreased. I don't care if I can throw strace on KVM. I want speed.
+I'm currently testing it, and so far so good.
 
-Something really critical should be handled in the kernel.  Care to 
-provide examples?
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+
+> Prevent memory corruption in ath9k rate control algorithm
+> 
+> From: Pavel Roskin <proski@gnu.org>
+> 
+> Check final_rate in ath_debug_stat_rc().  Don't return negative values
+> from ath_rc_get_rateindex(), callers don't expect it.
+> 
+> Signed-off-by: Pavel Roskin <proski@gnu.org>
+> ---
+> 
+>  drivers/net/wireless/ath/ath9k/rc.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> 
+> diff --git a/drivers/net/wireless/ath/ath9k/rc.c b/drivers/net/wireless/ath/ath9k/rc.c
+> index 635b592..afe22f4 100644
+> --- a/drivers/net/wireless/ath/ath9k/rc.c
+> +++ b/drivers/net/wireless/ath/ath9k/rc.c
+> @@ -385,6 +385,11 @@ static int ath_rc_get_rateindex(const struct ath_rate_table *rate_table,
+>  	int rix = 0, i = 0;
+>  	static const int mcs_rix_off[] = { 7, 15, 20, 21, 22, 23 };
+>  
+> +	if (rate->idx < 0) {
+> +		printk(KERN_ERR "%s: rate->idx = %d\n", __func__, rate->idx);
+> +		return 0;
+> +	}
+> +
+>  	if (!(rate->flags & IEEE80211_TX_RC_MCS))
+>  		return rate->idx;
+>  
+> @@ -1324,6 +1329,11 @@ static void ath_debug_stat_rc(struct ath_rate_priv *rc, int final_rate)
+>  {
+>  	struct ath_rc_stats *stats;
+>  
+> +	if (final_rate < 0 || final_rate >= RATE_TABLE_SIZE) {
+> +		printk(KERN_ERR "%s: invalid final_rate: %d\n", __func__,
+> +		       final_rate);
+> +		return;
+> +	}
+>  	stats = &rc->rcstats[final_rate];
+>  	stats->success++;
+>  }
 
