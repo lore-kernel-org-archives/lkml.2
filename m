@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab2BGTKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 14:10:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38205 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756610Ab2BGTKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 14:10:19 -0500
-Date: Tue, 7 Feb 2012 16:56:14 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: avi@redhat.com, mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, kvm@vger.kernel.org, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4 V11] Add functions to check if the host has stopped
- the vm
-Message-ID: <20120207185614.GA19800@amt.cnet>
-References: <1328024132-7687-1-git-send-email-emunson@mgebm.net>
- <1328024132-7687-3-git-send-email-emunson@mgebm.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328024132-7687-3-git-send-email-emunson@mgebm.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756639Ab2BGTRz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 14:17:55 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:40521 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756199Ab2BGTRx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 14:17:53 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 7 Feb 2012 20:17:30 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: Julian Calaby <julian.calaby@gmail.com>,
+        Clemens Ladisch <clemens@ladisch.de>, target-devel@vger.kernel.org,
+        linux1394-devel@lists.sourceforge.net,
+        Boaz Harrosh <bharrosh@panasas.com>, Andy Grover <agrover@redhat.com>,
+        linux-scsi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: FireWire/SBP2 Target mode
+Message-ID: <20120207201730.1c8cf6a3@stein>
+In-Reply-To: <4F30D4F6.1040802@bootc.net>
+References: <4E4BD560.4010806@bootc.net>
+	<4E4D3B88.30003@ladisch.de>
+	<4F29978A.3010707@redhat.com>
+	<20120201224156.0773ebc6@stein>
+	<4F2A55B9.4040005@panasas.com>
+	<4F2A60DC.9030007@ladisch.de>
+	<4F2FD1F4.9050702@bootc.net>
+	<4F2FE705.3070509@ladisch.de>
+	<4F2FE8DA.70502@bootc.net>
+	<20120206212628.6880c506@stein>
+	<5C167A1D-2203-4F1C-B538-E99DD87E7E42@bootc.net>
+	<CAGRGNgWf0epcam-jpCzMCSqefCKDSm892mw-X49FrcoRO0QYrQ@mail.gmail.com>
+	<476E7976-738A-4202-9FC4-FA5B060EA95F@bootc.net>
+	<4F30D4F6.1040802@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 31, 2012 at 10:35:30AM -0500, Eric B Munson wrote:
-> When a host stops or suspends a VM it will set a flag to show this.  The
-> watchdog will use these functions to determine if a softlockup is real, or the
-> result of a suspended VM.
+On Feb 07 Chris Boot wrote:
+> On 06/02/2012 23:09, Chris Boot wrote:
+> > On 6 Feb 2012, at 23:00, Julian Calaby wrote:
+> >> On Tue, Feb 7, 2012 at 09:28, Chris Boot<bootc@bootc.net>  wrote:
+> >>> Waiting until the bus scan is complete isn't actually that great
+> >>> as I see the first LOGIN requests often before the fw_node is seen
+> >>> at all. I'd have to turn away the requester and hope they try again.
+
+An SBP-2 initiator should be prepared to retry its first login attempt if
+it sent it shortly after a bus reset.  The target may still hold
+reservations for previously loggend in initiators for up to reconnect_hold
++ 2 seconds after bus reset.
+
+> >>> I'm fairly sure my little tweak in my patch is a simple enough
+> >>> solution.
+
+Yep.
+
+> >> Stupid question: Could you use a completion queue or something
+> >> equivalent to wait until you have seen the fw_node, *then* process the
+> >> LOGIN request?
+> >
+> > The fw_address_handler callback is called in interrupt context, and
+> > I can't sleep from within there. As far as I'm aware I must call
+> > fw_send_response() from within the callback and can't defer that until
+> > I've scheduled something on a work queue. Please correct me if I'm
+> > wrong though, as that might be useful anyway.
 > 
-> Signed-off-by: Eric B Munson <emunson@mgebm.net>
-> asm-generic changes Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: mingo@redhat.com
-> Cc: hpa@zytor.com
-> Cc: ryanh@linux.vnet.ibm.com
-> Cc: aliguori@us.ibm.com
-> Cc: mtosatti@redhat.com
-> Cc: kvm@vger.kernel.org
-> Cc: linux-arch@vger.kernel.org
-> Cc: x86@kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
-> Changes from V6:
->  Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
-> Changes from V5:
->  Collapse generic stubs into this patch
->  check_and_clear_guest_stopped() takes no args and uses __get_cpu_var()
->  Include individual definitions in ia64, s390, and powerpc
-> 
->  arch/ia64/include/asm/kvm_para.h    |    5 +++++
->  arch/powerpc/include/asm/kvm_para.h |    5 +++++
->  arch/s390/include/asm/kvm_para.h    |    5 +++++
->  arch/x86/include/asm/kvm_para.h     |    8 ++++++++
->  arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
->  5 files changed, 44 insertions(+), 0 deletions(-)
+> Hmm sorry I've thought about this overnight and clearly I was talking 
+> rubbish. Yes, I need to reply in the fw_address_handler but all I tend 
+> to do in there is schedule a task to the the main part of the work 
+> anyway. As most of the operations require fetching an ORB from the 
+> initiator I have to do this from user context.
 
-Where is the check_and_clear_guest_stopped() stub in
-asm-generic/kvm_para.h? I think it is necessary for 
-other architectures.
+Technically there are two things to perform:
 
+ 1. Finish the inbound IEEE 1394 transaction to the management agent
+    register by means of fw_send_response().  As far as I can tell, you
+    don't have to do that in the address_callback().  But there is little
+    reason not to.
 
+    fw_send_response() ends the lifetime of an fw_request, so read the
+    speed code before you respond.
+
+ 2. Finish the inbound SBP-2 transaction; here the login.  This and
+    everything that leads up to it is definitely easiest to implement in
+    a process context, e.g. workqueue item.
+-- 
+Stefan Richter
+-=====-===-- --=- --===
+http://arcgraph.de/sr/
