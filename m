@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab2BGFSE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 00:18:04 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:34743 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab2BGFSD (ORCPT
+	id S1752793Ab2BGFUk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 00:20:40 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:38334 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751808Ab2BGFUj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 00:18:03 -0500
+	Tue, 7 Feb 2012 00:20:39 -0500
+X-WSS-ID: 0LZ0C6B-0A-1N5-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Andrew Morton" <akpm@linux-foundation.org>
+cc: "Linus Walleij" <linus.walleij@linaro.org>,
+        "shreshthakumar.sahu@stericsson.com" 
+	<shreshthakumar.sahu@stericsson.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 6 Feb 2012 21:20:31 -0800
+Subject: RE: [PATCH v3 3/6] leds-lm3530: add lm3530_mode_get() in the
+ dev_attr
+Thread-Topic: [PATCH v3 3/6] leds-lm3530: add lm3530_mode_get() in the
+ dev_attr
+Thread-Index: AczgVaUQ3hF/QGbiQW2WPkyktVduZwFAcx+Q
+Message-ID: <B567DBAB974C0544994013492B949F8E3812ED44AE@EXMAIL03.scwf.nsc.com>
+References: <B567DBAB974C0544994013492B949F8E3812DEC933@EXMAIL03.scwf.nsc.com>
+ <20120131121930.4cb1a05a.akpm@linux-foundation.org>
+In-Reply-To: <20120131121930.4cb1a05a.akpm@linux-foundation.org>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-In-Reply-To: <20120207044816.GA31271@oksana.dev.rtsoft.ru>
-References: <20120203163056.GA4190@redhat.com> <20120206162930.GA5117@oksana.dev.rtsoft.ru>
- <20120206163542.GA10104@kroah.com> <20120206185909.GB7741@oksana.dev.rtsoft.ru>
- <20120206191854.GA16702@kroah.com> <CAHGf_=r+nReQSfdvU7+FAhMRBkZPzQ2Jg6Puw9SmvW7WijpN7A@mail.gmail.com>
- <20120207044816.GA31271@oksana.dev.rtsoft.ru>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 7 Feb 2012 00:17:42 -0500
-Message-ID: <CAHGf_=pWgrdJQsnCK4=UX+30zAWTcEb_dJqHd757xdLVovh33A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/6] oom: Make find_lock_task_mm() sparse-aware
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, kernel-team@android.com,
-        linaro-kernel@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-WSS-ID: 632E6B281LS10196260-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Some __cond_lock() caller are inline functions. Is this bad?
->
-> No, that's great, actually. :-) Not obvious, but seems like
-> sparse understands __cond_lock in inline functions, so I'd
-> better use it.
->
-> Thanks,
 
-Great. So, to this version
+> -----Original Message-----
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Sent: Wednesday, February 01, 2012 5:20 AM
+> To: Kim, Milo
+> Cc: Linus Walleij; shreshthakumar.sahu@stericsson.com;
+> rpurdie@rpsys.net; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v3 3/6] leds-lm3530: add lm3530_mode_get() in the
+> dev_attr
+> 
+> On Mon, 30 Jan 2012 23:33:44 -0800
+> "Kim, Milo" <Milo.Kim@ti.com> wrote:
+> 
+> > To get information about brightness control mode, lm3530_mode_get()
+> is added.
+> 
+> drivers/leds/leds-lm3530.c already has an implementation of
+> lm3530_mode_get().  I assume these patches were prepared against some
+> old kernel.  Please don't do that!
+> 
 
-  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Thank you for your advice.
+Revised patches were sent - based on kernel 3.2.4.
+
+[PATCH v4 1/5] leds-lm3530: set the max_brightness to 127
+[PATCH v4 2/5] leds-lm3530: replace i2c_client with led_classdev
+[PATCH v4 3/5] leds-lm3530: support pwm input mode
+[PATCH v4 4/5] leds-lm3530: remove LM3530_ALS_ZONE_REG code
+[PATCH v4 5/5] leds-lm3530: replace pltfm with pdata
+
+Best Regards,
+Milo -
+
+
+
+
