@@ -1,35 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab2BGJK2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 04:10:28 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56879 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756725Ab2BGJKY convert rfc822-to-8bit (ORCPT
+	id S1756767Ab2BGJMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 04:12:20 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:62536 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756725Ab2BGJMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 04:10:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAGsizzL9x2es1XC5pac7LN99yp+sW5nt1eecYKhmdiRjBfNEeg@mail.gmail.com>
-References: <CAGsizzLTHw5Ja3kT-zEN8uK5GrzpmN1bxOhA0OscGL5R6tH3WA@mail.gmail.com>
- <20120131.190830.1189531706541596294.davem@davemloft.net> <CAGsizzKB=NcAe9KvfZbbPiGvSQ6a9Mj+kBaKtDQziGWJ+eGGRA@mail.gmail.com>
- <20120201.024357.1370213516985704222.davem@davemloft.net> <CAGsizzL9x2es1XC5pac7LN99yp+sW5nt1eecYKhmdiRjBfNEeg@mail.gmail.com>
-From: =?ISO-8859-2?Q?=A9tefan_Gula?= <steweg@ynet.sk>
-Date: Tue, 7 Feb 2012 10:10:04 +0100
-X-Google-Sender-Auth: QWLwwBmutWLvubPSxLPLDaDt6YA
-Message-ID: <CAGsizz+-O5jRRxpd=dG664kKnabqH+ge8NCd08bOAhVU6RMFMQ@mail.gmail.com>
-Subject: Re: [patch v7, kernel version 3.2.1] net/ipv4/ip_gre: Ethernet
- multipoint GRE over IP
-To: David Miller <davem@davemloft.net>
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Feb 2012 04:12:18 -0500
+X-AuditID: cbfee61b-b7be3ae0000039aa-23-4f30eaf11225
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Liam Girdwood'" <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org
+References: <1328528127-20771-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-reply-to: <1328528127-20771-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: RE: [PATCH] regulator: s5m8767: Fix unused variable warning in probe()
+Date: Tue, 07 Feb 2012 18:12:13 +0900
+Message-id: <071701cce578$94a46620$bded3260$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Aczkw2+ox5UR9cTZTlGxLqRnUeyOSgAtN/fg
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/1 Štefan Gula <steweg@ynet.sk>:
-> 2012/2/1 David Miller <davem@davemloft.net>:
-I think that everything what could be done and said from my-side to
-provide you guys answers to hopefully all your questions and to get
-this into kernel was done. So I would like to ask you to provide me
-final feedback. Thanks
+On Monday, February 06, 2012 8:35 PM, Mark Brown wrote:
+
+> Subject: [PATCH] regulator: s5m8767: Fix unused variable warning in
+probe()
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/regulator/s5m8767.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+Acked-by: Sangbeom Kim <sbkim73@samsung.com>
+
