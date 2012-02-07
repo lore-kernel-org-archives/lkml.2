@@ -1,41 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab2BGTSr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 14:18:47 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:15639 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756607Ab2BGTSq (ORCPT
+	id S1756669Ab2BGTTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 14:19:47 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59105 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752447Ab2BGTTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 14:18:46 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6613"; a="158955336"
-Message-ID: <4F317915.4040609@codeaurora.org>
-Date: Tue, 07 Feb 2012 11:18:45 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Tue, 7 Feb 2012 14:19:46 -0500
+Date: Tue, 7 Feb 2012 19:19:43 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v3] ASoC: da7210: Add support for PLL and SRM
+Message-ID: <20120207191943.GB15929@opensource.wolfsonmicro.com>
+References: <1328095529.15257.7.camel@matrix>
+ <20120201115035.GC5648@opensource.wolfsonmicro.com>
+ <1328621149.26721.18.camel@matrix>
 MIME-Version: 1.0
-To: Stephen Hemminger <shemminger@vyatta.com>
-CC: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tags: fix use of parenthesis in regex
-References: <20120203112701.1c12b12c@s6510.linuxnetplumber.net>	<4F2C38BD.1060109@codeaurora.org>	<20120203121847.1b01f4b5@s6510.linuxnetplumber.net>	<c1f3d71b6001dfc42ded4ee651e9a82c.squirrel@www.codeaurora.org>	<20120206124058.1cf1a23e@s6510.linuxnetplumber.net>	<4F305CB6.7050603@codeaurora.org> <20120206151543.1bb1d869@s6510.linuxnetplumber.net>
-In-Reply-To: <20120206151543.1bb1d869@s6510.linuxnetplumber.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
+Content-Disposition: inline
+In-Reply-To: <1328621149.26721.18.camel@matrix>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/12 15:15, Stephen Hemminger wrote:
-> Several of the regular expressions passed to etags and ctags where incorrect
-> and missing the backslash before the closing paren, and matching the wrong
-> part of the start of the function causing warning:
->   etags: Unmatched ( or \( while compiling pattern
->
-> Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
->
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+--UlVJffcvxoiEqYs2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+On Tue, Feb 07, 2012 at 06:55:49PM +0530, Ashish Chavan wrote:
+> On Wed, 2012-02-01 at 11:50 +0000, Mark Brown wrote:
+> > On Wed, Feb 01, 2012 at 04:55:29PM +0530, Ashish Chavan wrote:
 
+> > You need checks elsewhere to make sure that the user doesn't try to
+> > reconfigure master/slave while the PLL is active.
+
+> AFAIK master/slave configuration is static(depending on the board
+> configuration) and done via set_fmt() from hw_params() of platform
+> driver. Can you please point me to an example where dynamic/runtime
+> setting of I2S master/slave mode is supported?
+
+The most common case is things like bluetooth SCO connections where if
+there's a baseband you want to clock from the baseband but if there's no
+baseband (eg, for VoIP calls) you can't do that.  Some devices also need
+to change audio interface configuration depening on things like the
+number of channels.
+
+Even without any dynamic reconfiguration you also have cases where the
+sequence people use to power things up is to set the clocking and then
+configure the audio interface format - even if the audio interface
+format is always the same you'll still get it being reconfigured the
+first time you start up.
+
+--UlVJffcvxoiEqYs2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPMXiiAAoJEBus8iNuMP3dQrEP/20OGAlYAdFVLyBpuu8iVKXv
+Zo/vmFo7SlV8cAT/dKryMz76blwwcmznkEhOxjkSrt2CjQqVuY8PmOxXNEDwTbjz
+6Z69YRpmPt5fvGmFzGKIypIDL4YTG2hQm9vsHk8HMMStaU1ZhfGkqHvaPu2COTAu
+zc2oJQlRuX+BlfsI5T5KVAibhJK7+9cbybMjfm8zlK/+Ykwyo4j5tSzleV5yDCq3
+HcyQQHZGOXVbfexsb2avtWOih2Yg6KFzJRghtyHYhksFqtwk1rfvfeXzUpieBGVL
+FQ+LnprhX0Hx0MvzvIi72BpJspgMPZk26wrXKdP4Vjc6HwHAtCey2srzjLbo9lUr
+3LMm4bq1crN/dyPUfBwMVeYnhLpu8ABodzZCYhXCBw7jrkAJJlaLNUt5DLFlVkHA
+VCHo6TGf4OIoGA8pPEFYGLjEwReO56G9kHHA69tkZg8RhHuhAjI/NXZm60BOdQgt
+qw5UuEHqr7Up9KyGBPEoptRXR6oH/otqSy6pc8FsmgkP8TArPrlh6GJwxEucx1ab
+uP87qhIH5BpPFhw5iEPOF0Zrfiv+u5vNh0SuebMgncnGJfwAQcBidEN/4wuMA27g
+stCJyQI6BiUmRYmscX9W4ZFrIFExF9e+ZvwkBCq9V5kqJz0whVGGejVimUDmmz9T
+8p9he/GvZ/94HVCnBmZX
+=ZxcQ
+-----END PGP SIGNATURE-----
+
+--UlVJffcvxoiEqYs2--
