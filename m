@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2BGSPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 13:15:38 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:39967 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab2BGSPh (ORCPT
+	id S1755720Ab2BGSS4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 13:18:56 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:41620 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab2BGSSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 13:15:37 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 7 Feb 2012 19:15:17 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>
-Subject: Re: [RFC][PATCH] firewire: Add function to get speed from opaque
- struct fw_request
-Message-ID: <20120207191517.7b73978c@stein>
-In-Reply-To: <1328566661-80768-1-git-send-email-bootc@bootc.net>
-References: <1328566661-80768-1-git-send-email-bootc@bootc.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+	Tue, 7 Feb 2012 13:18:54 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=ajHGbD3qle6C93n9BTwA:9 a=PUjeQqilurYA:10 a=BUzN4RBKcjHdvWWVaR4A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328638728.2200.97.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.0.20-rt35
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 07 Feb 2012 13:18:48 -0500
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-61P5I3orfYqqNUndhiWT"
+X-Mailer: Evolution 3.2.2-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 06 Chris Boot wrote:
-> [ Would something like the following be acceptable as an addition to the
-> FireWire stack? This would be enough for me to get the speed of the
-> request for my work on the SBP-2 target code. ]
-[...]
-> --- a/drivers/firewire/core-transaction.c
-> +++ b/drivers/firewire/core-transaction.c
-> @@ -820,6 +820,12 @@ void fw_send_response(struct fw_card *card,
->  }
->  EXPORT_SYMBOL(fw_send_response);
->  
-> +int fw_request_speed(struct fw_request *request)
-> +{
-> +	return request->response.speed;
-> +}
-> +EXPORT_SYMBOL(fw_request_speed);
-> +
->  static void handle_exclusive_region_request(struct fw_card *card,
->  					    struct fw_packet *p,
->  					    struct fw_request *request,
-> diff --git a/include/linux/firewire.h b/include/linux/firewire.h
-> index 84ccf8e..eded4e4 100644
-> --- a/include/linux/firewire.h
-> +++ b/include/linux/firewire.h
-> @@ -340,6 +340,7 @@ int fw_core_add_address_handler(struct fw_address_handler *handler,
->  void fw_core_remove_address_handler(struct fw_address_handler *handler);
->  void fw_send_response(struct fw_card *card,
->  		      struct fw_request *request, int rcode);
-> +int fw_request_speed(struct fw_request *request);
->  void fw_send_request(struct fw_card *card, struct fw_transaction *t,
->  		     int tcode, int destination_id, int generation, int speed,
->  		     unsigned long long offset, void *payload, size_t length,
 
-Whenever you add a new exported function, please add a brief kerneldoc
-comment right above its definition.  Can be a one-liner in this case.
-Apart from this,
+--=-61P5I3orfYqqNUndhiWT
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-You can queue this via your SBP-2 target patch series (at which I haven't
-looked yet), followed right away by a change to your driver which uses the
-new symbol.  Or even better, fold these two changes into one.
+Dear RT Folks,
 
-Not sure if four more characters should be spent on the symbol's name
-(fw_get_request_speed).  If you already thought about it and preferred
-fw_request_speed, keep it that way.
+I'm pleased to announce the 3.0.20-rt35 stable release.
 
-There are at least two alternatives to your proposal:
 
-  - We could move the definition of struct fw_request from
-    drivers/firewire/core-transaction.c to include/linux/firewire.h.
-    That would make for a rather bad driver API though.
+This release is just an update to the new stable 3.0.20 version
+and no RT specific changes have been made.
 
-  - We could expand the function type fw_address_callback_t() by a speed
-    argument.  The other users of the API (firewire-core itself,
-    firewire-sbp2, firewire-net, firedtv, snd-firewire-lib, and other
-    as yet unmerged firewire sound drivers) and any other perceivable
-    future user of the API would not care of that speed though.
+New: As of this release, I am now using signed tags to mark the
+versions, for your protection!
 
-I.e. the proposed "get speed of request" helper seems better.
--- 
-Stefan Richter
--=====-===-- --=- --===
-http://arcgraph.de/sr/
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: f1593eb51211386a945c895138db826ada428877
+
+
+Or to build 3.0.20-rt35 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.20.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.20-rt35.=
+patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
+--=-61P5I3orfYqqNUndhiWT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPMWsIAAoJEIy3vGnGbaoAe/0P/0G3XE/PUtsm5m0ySjECiCpv
+KffsKDnEdBpX+qDWxV33IWumTE67xBN6urf35HQs3CxxfOb16MJh4qwI3i+ZWrqj
+hSNZbR79w7Pex1QpACJ7j6TeoAZ6co6gSWLH/6Q4vD38tZc2vZ9hGrmQht9vZ6cJ
+ezSoP38oERnbM22WdLZFmx271ZQZfTvl9rPunMr5JuFqbl/+JwRm7NdgO+hU1ITA
+qqNkkJL2wEB+nlEv3ZBlKoXfePeia5gq+LIwf2A3PRUWubWguouyv6rfa5lTnoxF
+duYq1+NiYvbFahMbIBzC8fPMlSSApe6Clqw6ZYQNb1qGoqJECRmg19Y8PXJKkaN0
+YgstspfxzY2hUDn2aDbUB/rdaNOCly2zVvSGV/wwPV2tpTTYWzJYfveQX/3jjT9v
+n0my3yLDKuRqE9zCFanwhrqU+wararwLGPawe3ONWggTk/lD7lZ5RfNo9PQBxnL7
+l3nsi11PvLi/BPcNlHhaRcnHXZLFH4xiYuFmNrfqkVx4AnhIfBWHAomwCy6RbbE3
+whbs/nGbV6isZEQbzU8DHcChmZIbamKOtIZZRQR1tR7HRleFEYlI7Ozr7v7eGurA
+3BRuNF7qnGpaYDJzCUGLOymRYLjLYWpzE2hclPBvd5lbrqUj/83xueUCZXtEPRQ8
+SHqKP4GRfut1D2vWPU/8
+=RoJs
+-----END PGP SIGNATURE-----
+
+--=-61P5I3orfYqqNUndhiWT--
+
