@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab2BGS5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 13:57:49 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51461 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756445Ab2BGS5r (ORCPT
+	id S1756556Ab2BGS56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 13:57:58 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:52533 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756533Ab2BGS54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 13:57:47 -0500
+	Tue, 7 Feb 2012 13:57:56 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 3/4] cpuset: Add function to introduce CPUs to cpusets during
- CPU online
+Subject: [PATCH 4/4] CPU hotplug,
+ cpusets: Differentiate the CPU online and CPU offline callbacks
 To: paul@paulmenage.org, a.p.zijlstra@chello.nl, mingo@elte.hu, rjw@sisk.pl,
         tj@kernel.org
 Cc: frank.rowand@am.sony.com, pjt@google.com, tglx@linutronix.de,
@@ -17,134 +17,110 @@ Cc: frank.rowand@am.sony.com, pjt@google.com, tglx@linutronix.de,
         paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
         srivatsa.bhat@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org
-Date: Wed, 08 Feb 2012 00:27:09 +0530
-Message-ID: <20120207185651.7482.18642.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 08 Feb 2012 00:27:36 +0530
+Message-ID: <20120207185717.7482.45388.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
 References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12020718-2000-0000-0000-0000065532D3
+x-cbid: 12020718-5816-0000-0000-0000013321A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During a CPU online operation, at present, that CPU is added only to
-top_cpuset.cpus_allowed, but not to any of the other cpusets, which
-is a mistake.
-
-So, add a function to go through all the cpusets and add this CPU to
-each cpuset which contained this CPU previously. In other words, add this
-CPU to those cpusets, whose cpus_allowed_before_hotplug mask contains
-this CPU.
-
-Note that this function should not modify cpus_allowed_before_hotplug.
-Hence, we move that particular piece of code from do_update_cpumask()
-to update_cpumask().
+Call scan_cpusets_during_cpu_online() upon CPU online events and
+call scan_for_empty_cpusets() upon CPU offline events.
 
 Reported-by: Prashanth K. Nageshappa <prashanth@linux.vnet.ibm.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Cc: stable@vger.kernel.org
 ---
 
- kernel/cpuset.c |   71 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 69 insertions(+), 2 deletions(-)
+ include/linux/cpuset.h |    4 ++--
+ kernel/cpuset.c        |    9 +++++++--
+ kernel/sched/core.c    |   12 ++++++++++--
+ 3 files changed, 19 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index e9eaec5..acfe484 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -20,7 +20,7 @@ extern int number_of_cpusets;	/* How many cpusets are defined in system? */
+ 
+ extern int cpuset_init(void);
+ extern void cpuset_init_smp(void);
+-extern void cpuset_update_active_cpus(void);
++extern void cpuset_update_active_cpus(bool cpu_online);
+ extern void cpuset_cpus_allowed(struct task_struct *p, struct cpumask *mask);
+ extern int cpuset_cpus_allowed_fallback(struct task_struct *p);
+ extern nodemask_t cpuset_mems_allowed(struct task_struct *p);
+@@ -133,7 +133,7 @@ static inline void set_mems_allowed(nodemask_t nodemask)
+ static inline int cpuset_init(void) { return 0; }
+ static inline void cpuset_init_smp(void) {}
+ 
+-static inline void cpuset_update_active_cpus(void)
++static inline void cpuset_update_active_cpus(bool cpu_online)
+ {
+ 	partition_sched_domains(1, NULL, NULL);
+ }
 diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 2be71da..c56e705 100644
+index c56e705..d863df5 100644
 --- a/kernel/cpuset.c
 +++ b/kernel/cpuset.c
-@@ -900,7 +900,6 @@ static int do_update_cpumask(struct cpuset *cs, struct cpuset *trialcs)
- 
+@@ -2223,8 +2223,10 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+  *
+  * Called within get_online_cpus().  Needs to call cgroup_lock()
+  * before calling generate_sched_domains().
++ *
++ * @cpu_online: whether this is a CPU online event or a CPU offline event.
+  */
+-void cpuset_update_active_cpus(void)
++void cpuset_update_active_cpus(bool cpu_online)
+ {
+ 	struct sched_domain_attr *attr;
+ 	cpumask_var_t *doms;
+@@ -2234,7 +2236,10 @@ void cpuset_update_active_cpus(void)
  	mutex_lock(&callback_mutex);
- 	cpumask_copy(cs->cpus_allowed, trialcs->cpus_allowed);
--	cpumask_copy(cs->cpus_allowed_before_hotplug, cs->cpus_allowed);
+ 	cpumask_copy(top_cpuset.cpus_allowed, cpu_active_mask);
  	mutex_unlock(&callback_mutex);
+-	scan_for_empty_cpusets(&top_cpuset);
++	if (cpu_online)
++		scan_cpusets_during_cpu_online(&top_cpuset);
++	else
++		scan_for_empty_cpusets(&top_cpuset);
+ 	ndoms = generate_sched_domains(&doms, &attr);
+ 	cgroup_unlock();
  
- 	/*
-@@ -948,7 +947,10 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
- 			return -EINVAL;
- 	}
- 
--	return do_update_cpumask(cs, trialcs);
-+	retval = do_update_cpumask(cs, trialcs);
-+
-+	cpumask_copy(cs->cpus_allowed_before_hotplug, cs->cpus_allowed);
-+	return retval;
- }
- 
- /*
-@@ -2079,6 +2081,71 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
- 	move_member_tasks_to_cpuset(cs, parent);
- }
- 
-+
-+/*
-+ * Walk the specified cpuset subtree and add the newly onlined CPU to the
-+ * cpuset, if that CPU was in this cpuset previously (IOW, if this CPU
-+ * is still in the cpuset_allowed_before_hotplug mask of this cpuset).
-+ *
-+ * Called with cgroup_mutex held.
-+ *
-+ * This walk processes the tree from top to bottom, completing one layer
-+ * before dropping down to the next.  It always processes a node before
-+ * any of its children.
-+ */
-+static void scan_cpusets_during_cpu_online(struct cpuset *root)
-+{
-+	LIST_HEAD(queue);
-+	struct cpuset *cp;	/* scans cpusets being updated */
-+	struct cpuset *child;	/* scans child cpusets of cp */
-+	struct cgroup *cont;
-+	struct cpuset *trialcs;
-+
-+	trialcs = alloc_trial_cpuset(root);
-+	if (!trialcs)
-+		return;
-+
-+	list_add_tail((struct list_head *)&root->stack_list, &queue);
-+
-+	while (!list_empty(&queue)) {
-+		cp = list_first_entry(&queue, struct cpuset, stack_list);
-+		list_del(queue.next);
-+		list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
-+			child = cgroup_cs(cont);
-+			list_add_tail(&child->stack_list, &queue);
-+		}
-+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5255c9d..d4dd9ef 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6732,7 +6732,11 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+-		cpuset_update_active_cpus();
 +		/*
-+		 * Continue past cpusets which didn't have this CPU previously
-+		 * (Note that when this CPU went offline, it had been removed
-+		 * from all cpusets.)
++		 * The 'true' value indicates that we are calling the function
++		 * due to a CPU online operation in progress.
 +		 */
-+		if (cpumask_equal(cp->cpus_allowed,
-+					cp->cpus_allowed_before_hotplug))
-+			continue;
-+
++		cpuset_update_active_cpus(true);
+ 		return NOTIFY_OK;
+ 	default:
+ 		return NOTIFY_DONE;
+@@ -6744,7 +6748,11 @@ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_DOWN_PREPARE:
+-		cpuset_update_active_cpus();
 +		/*
-+		 * Add newly onlined CPUs to this cpuset if they were part of
-+		 * this cpuset previously.
++		 * The 'false' value indicates that we are calling the function
++		 * due to a CPU offline operation in progress.
 +		 */
-+		cpumask_and(trialcs->cpus_allowed,
-+				cp->cpus_allowed_before_hotplug,
-+				cpu_active_mask);
-+
-+		/* Update the cpuset */
-+		do_update_cpumask(cp, trialcs);
-+
-+		/*
-+		 * Do NOT update cpus_allowed_before_hotplug here. We want it
-+		 * to reflect the value of cpus_allowed as seen *before* the
-+		 * hotplug event.
-+		 */
-+	}
-+
-+	free_trial_cpuset(trialcs);
-+}
-+
-+
- /*
-  * Walk the specified cpuset subtree and look for empty cpusets.
-  * The tasks of such cpuset must be moved to a parent cpuset.
++		cpuset_update_active_cpus(false);
+ 		return NOTIFY_OK;
+ 	default:
+ 		return NOTIFY_DONE;
 
