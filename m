@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab2BGGXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 01:23:17 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42502 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab2BGGXQ (ORCPT
+	id S1756221Ab2BGGX7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 01:23:59 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37469 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755079Ab2BGGX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 01:23:16 -0500
-Message-ID: <1328595786.5274.6.camel@phoenix>
-Subject: [PATCH RFC] leds: lm3530: Fix setting pltfm->als_vmax
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 07 Feb 2012 14:23:06 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 7 Feb 2012 01:23:57 -0500
+Date: Tue, 7 Feb 2012 10:23:53 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 2/6] oom: Get rid of sparse warnings
+Message-ID: <20120207062353.GA24687@oksana.dev.rtsoft.ru>
+References: <20120203163056.GA4190@redhat.com>
+ <20120206162935.GB5117@oksana.dev.rtsoft.ru>
+ <CAHGf_=oVQQRdfNYm0gOwzjxbUqPB5jMdsibLATCrt718-sMm7w@mail.gmail.com>
+ <20120207042026.GA25524@oksana.dev.rtsoft.ru>
+ <CAHGf_=rW-EJvj-hsKgEGw4F4uAKMv-U-iG6aROzw2rN4tXPFFQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAHGf_=rW-EJvj-hsKgEGw4F4uAKMv-U-iG6aROzw2rN4tXPFFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current code, pltfm->als_vmin is set to LM3530_ALS_WINDOW_mV and 
-pltfm->als_vmax is 0. This looks does not make sense.
-I think what we want here is setting pltfm->als_vmax to LM3530_ALS_WINDOW_mV.
+On Tue, Feb 07, 2012 at 12:38:58AM -0500, KOSAKI Motohiro wrote:
+> >> task struct only have allock_lock, not alloc_loc.
+> >
+> > Funnily, but sparse does not care. :-) __release(foo) will work as
+> > well. Seems like sparse counts locking balance globally.
+> >
+> > This is now fixed in the patch down below, thanks for catching.
+> >
+> >> Moreover we don't release
+> >> the lock in this code path. Seems odd.
+> >
+> > Indeed. That's exactly what sparse seeing is as well. We exit
+> > without releasing the lock, which is bad (in sparse' eyes). So
+> > we lie to sparse, telling it that we do release, so it shut ups.
+> 
+> Hmmm....
+> 
+> To be honest, I really dislike any lie annotation. Why? It is very
+> fragile and easily
+> become broken from unrelated but near line changes. Please consider to
+> enhance sparse at first.
 
-Both als_vmin and als_vmax local variables will be set to pltfm->als_vmin and
-pltfm->als_vmax by a few lines latter.
-Thus also remove a redundant assignment for als_vmin and als_vmax in this patch.
+I somewhat doubt that it is possible to "enhance it". We keep the
+lock held conditionaly, so we need too place the hint in the
+code itself. I believe the best we can do would be something like
+this:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-Hi Kim,
-I don't have this hardware, I'd appreciate if you can review and test this patch.
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 4a24354..61d91f2 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -14,6 +14,7 @@
+ # define __releases(x)	__attribute__((context(x,1,0)))
+ # define __acquire(x)	__context__(x,1)
+ # define __release(x)	__context__(x,-1)
++# define __ret_with_lock(x)	__context__(x,-1)
+ # define __cond_lock(x,c)	((c) ? ({ __acquire(x); 1; }) : 0)
+ # define __percpu	__attribute__((noderef, address_space(3)))
+ #ifdef CONFIG_SPARSE_RCU_POINTER
+@@ -37,6 +38,7 @@ extern void __chk_io_ptr(const volatile void __iomem *);
+ # define __releases(x)
+ # define __acquire(x) (void)0
+ # define __release(x) (void)0
++# define __ret_with_lock(x)
+ # define __cond_lock(x,c) (c)
+ # define __percpu
+ # define __rcu
 
-Thanks,
-Axel
- drivers/leds/leds-lm3530.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+And then use it instead of __release().
 
-diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
-index 45e6878..e59c166 100644
---- a/drivers/leds/leds-lm3530.c
-+++ b/drivers/leds/leds-lm3530.c
-@@ -164,8 +164,8 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
- 
- 	if (drvdata->mode == LM3530_BL_MODE_ALS) {
- 		if (pltfm->als_vmax == 0) {
--			pltfm->als_vmin = als_vmin = 0;
--			pltfm->als_vmin = als_vmax = LM3530_ALS_WINDOW_mV;
-+			pltfm->als_vmin = 0;
-+			pltfm->als_vmax = LM3530_ALS_WINDOW_mV;
- 		}
- 
- 		als_vmin = pltfm->als_vmin;
 -- 
-1.7.5.4
-
-
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
