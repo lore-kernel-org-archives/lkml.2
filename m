@@ -1,74 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab2BGCQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 21:16:57 -0500
-Received: from mga03.intel.com ([143.182.124.21]:33989 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755211Ab2BGCQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 21:16:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="103978073"
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Aaron Durbin <adurbin@google.com>,
-        Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org
-Date: Mon, 06 Feb 2012 18:24:10 -0800
-In-Reply-To: <1328560933-3037-1-git-send-email-venki@google.com>
-References: <1328560933-3037-1-git-send-email-venki@google.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1755530Ab2BGCSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 21:18:47 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:38843 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211Ab2BGCSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 21:18:46 -0500
+Message-ID: <4F3089F9.6010609@linux.vnet.ibm.com>
+Date: Tue, 07 Feb 2012 10:18:33 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: Avoid unnecessary work in reweight_entity
+References: <4F2F9F6C.1090608@linux.vnet.ibm.com>
+In-Reply-To: <4F2F9F6C.1090608@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <1328581451.29790.14.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+x-cbid: 12020616-5490-0000-0000-000000B042A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-06 at 12:42 -0800, Venkatesh Pallipadi wrote:
-> * Lower overhead on Async IPI send path. Measurements on Westmere based
->   systems show savings on "no wait" smp_call_function_single with idle
->   target CPU (as measured on the sender side).
->   local socket smp_call_func cost goes from ~1600 to ~1200 cycles
->   remote socket smp_call_func cost goes from ~2000 to ~1800 cycles
+On 02/06/2012 05:37 PM, Michael Wang wrote:
 
-Interesting that savings in the remote socket is less compared to the
-local socket.
-
-> +int smp_need_ipi(int cpu)
+> From: Michael Wang <wangyun@linux.vnet.ibm.com>
+> 
+> In original code, using account_entity_dequeue and account_entity_enqueue
+> as a pair will do some work unnecessary, this patch combine the work of
+> them to save time.
+> 
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  kernel/sched/fair.c  |   32 ++++++++++++++++++++++++--------
+>  kernel/sched/sched.h |    8 ++++++++
+>  2 files changed, 32 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 84adb2d..e380518 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -782,11 +782,23 @@ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+>  {
+>  	cfs_rq->task_weight += weight;
+>  }
+> +
+> +static void
+> +sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
 > +{
-> +	int oldval;
+> +	cfs_rq->task_weight -= sub;
+> +	cfs_rq->task_weight += add;
+> +}
+>  #else
+>  static inline void
+>  add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+>  {
+>  }
 > +
-> +	if (!system_using_cpu_idle_sync || cpu == smp_processor_id())
-> +		return 1;
+> +static void
+> +sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
+> +{
+> +}
+>  #endif
+>  
+>  static void
+> @@ -938,20 +950,24 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
+>  {
+>  }
+>  # endif /* CONFIG_SMP */
 > +
-> +	oldval = atomic_cmpxchg(&per_cpu(cpu_idle_sync, cpu),
-> +				CPU_STATE_IDLE, CPU_STATE_WAKING);
+>  static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+>  			    unsigned long weight)
+>  {
+> +	/* commit outstanding execution time */
+> +	if (cfs_rq->curr == se)
+> +		update_curr(cfs_rq);
+> +
+>  	if (se->on_rq) {
+> -		/* commit outstanding execution time */
+> -		if (cfs_rq->curr == se)
+> -			update_curr(cfs_rq);
+> -		account_entity_dequeue(cfs_rq, se);
+> +		update_load_sub_add(&cfs_rq->load, se->load.weight, weight);
+> +		if (!parent_entity(se)) {
+> +			update_load_sub_add(&rq_of(cfs_rq), se->load.weight, weight);
 
-To avoid too many cache line bounces for the case when the cpu is in the
-running state, we should do a read to check if the state is in idle
-before going ahead with the locked operation?
+Sorry for make a silly mistake here, should try make first, I will sent
+correct patch soon.
 
-> +
-> +	if (oldval == CPU_STATE_RUNNING)
-> +		return 1;
-> +
-> +	if (oldval == CPU_STATE_IDLE) {
-> +		set_tsk_ipi_pending(idle_task(cpu));
-> +		atomic_set(&per_cpu(cpu_idle_sync, cpu), CPU_STATE_WOKENUP);
-> +	}
-> +
-> +	return 0;
+Regards,
+Michael Wang
 
-We should probably disable interrupts around this, otherwise any delay
-in transitioning to wokenup from waking will cause the idle cpu to be
-stuck for similar amount of time.
+> +		}
+> +		if (entity_is_task(se)) {
+> +			sub_add_cfs_task_weight(cfs_rq, se->load.weight, weight);
+> +		}
+>  	}
+> -
+>  	update_load_set(&se->load, weight);
+> -
+> -	if (se->on_rq)
+> -		account_entity_enqueue(cfs_rq, se);
+>  }
+>  
+>  static void update_cfs_shares(struct cfs_rq *cfs_rq)
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 98c0c26..ec4430f 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -779,6 +779,14 @@ static inline void update_load_sub(struct load_weight *lw, unsigned long dec)
+>  	lw->inv_weight = 0;
+>  }
+>  
+> +static inline void update_load_sub_add(struct load_weight *lw, unsigned long dec,
+> +					unsigned long inc)
+> +{
+> +	lw->weight -= dec;
+> +	lw->weight += inc;
+> +	lw->inv_weight = 0;
+> +}
+> +
+>  static inline void update_load_set(struct load_weight *lw, unsigned long w)
+>  {
+>  	lw->weight = w;
 
-thanks,
-suresh
 
