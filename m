@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab2BGQlb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 11:41:31 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46827 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab2BGQla (ORCPT
+	id S1755499Ab2BGQpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 11:45:41 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:64771 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab2BGQpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 11:41:30 -0500
-Message-ID: <4F315430.2090708@gmail.com>
-Date: Tue, 07 Feb 2012 09:41:20 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Tue, 7 Feb 2012 11:45:40 -0500
+Message-ID: <4F31552D.9060505@criticallink.com>
+Date: Tue, 07 Feb 2012 11:45:33 -0500
+From: Michael Williamson <michael.williamson@criticallink.com>
+Organization: Critical Link, LLC
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
-        vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com
-Subject: Re: [PATCH v5 16/18] perf: enable reading of perf.data files from
- different ABI rev
-References: <1328187288-24395-1-git-send-email-eranian@google.com> <1328187288-24395-17-git-send-email-eranian@google.com> <4F3051E3.5050402@gmail.com> <CABPqkBSYwwQpfxj3daHF_YHfJWLUT-Pfd03_7_jtrBkO4kM2ag@mail.gmail.com>
-In-Reply-To: <CABPqkBSYwwQpfxj3daHF_YHfJWLUT-Pfd03_7_jtrBkO4kM2ag@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v3 3/3] arm:davinci: move NAND and NOR devices as aemif
+ MFD slaves
+References: <1328627513-30134-1-git-send-email-prakash.pm@ti.com> <1328627513-30134-4-git-send-email-prakash.pm@ti.com>
+In-Reply-To: <1328627513-30134-4-git-send-email-prakash.pm@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 08:50 AM, Stephane Eranian wrote:
->>> +     if (sz == 0) {
->>> +             /* assume ABI0 */
->>> +             sz =  PERF_ATTR_SIZE_VER0;
->>
->> Shouldn't this be a failure? ie., problem with the file (or the
->> swapping) since size can't be 0
->>
-> size can be zero. In which case, it means ABI0 version.
-> See kernel/event/core.c:perf_copy_attr().
+Hello Prakash,
 
-ok
+On 2/7/2012 10:11 AM, Manjunathappa, Prakash wrote:
 
-> 
-> 
->> And then for the following why not restrict sz to known, expected sizes
->> -- using the PERF_ATTR_SIZE_VER defines introduced in patch 15?
->>
-> Well, the current code solves the problem once and for all. Old tools
-> can still read new files and vice-versa. If you think that's a problem I
-> can simply bail out if sz > our_sz.
+> NAND and NOR device are made as aemif device slaves, hence all DaVinci
+> board NAND/NOR device registration achieved via aemif MFD driver.
+>
+> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+> ---
+> Since v2:
+> Make changes for all DaVinci boards in single patch.
 
-My sensitivity on this is when endianness is broken it is a nightmare to
-find. You end up lacing the code with printfs trying to find which size
-field is going off the charts making the parsing of the file fail - or
-worse the sizes are slightly off and you get non-sense out.
 
-New commands should be able to read old files; old commands reading new
-files is a bit of a stretch in that the code has to be future-proofed.
-It seems like a reasonable requirement for data files to be examined by
-a command of the same vintage or newer as the command that wrote the file.
 
-David
+[...]
+
+> diff --git a/arch/arm/mach-davinci/board-mityomapl138.c b/arch/arm/mach-davinci/board-mityomapl138.c
+> index 672d820..bb29b7a 100644
+> --- a/arch/arm/mach-davinci/board-mityomapl138.c
+> +++ b/arch/arm/mach-davinci/board-mityomapl138.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/etherdevice.h>
+>  #include <linux/spi/spi.h>
+>  #include <linux/spi/flash.h>
+> +#include <linux/mfd/davinci_aemif.h>
+>  
+>  #include <asm/io.h>
+>  #include <asm/mach-types.h>
+> @@ -414,18 +415,35 @@ static struct resource mityomapl138_nandflash_resource[] = {
+>  	},
+>  };
+>  
+> -static struct platform_device mityomapl138_nandflash_device = {
+> -	.name		= "davinci_nand",
+> -	.id		= 1,
+> -	.dev		= {
+> -		.platform_data	= &mityomapl138_nandflash_data,
+> +static struct platform_device mityomapl138_emif_devices[] __initdata = {
+> +	{
+> +		.name		= "davinci_nand",
+> +		.id		= 0,
+
+
+
+Pretty sure this still needs to be a 1.  The nand is on chip select 3,
+EMA_CS3, which I believe is the same as the da850 EVM.
+
+-Mike
+
+
