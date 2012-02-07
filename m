@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab2BGHwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 02:52:44 -0500
-Received: from mail.mnsspb.ru ([84.204.75.2]:50960 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349Ab2BGHwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 02:52:43 -0500
-Date: Tue, 7 Feb 2012 11:55:53 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: No /dev/root with devtmpfs?
-Message-ID: <20120207075553.GB8632@tugrik.mns.mnsspb.ru>
-References: <20120206111853.GA11506@tugrik.mns.mnsspb.ru>
- <CAPXgP11N=8NULMH-o0Us0OuqYpP9sKe9uUKWzE35h1AiRP1Cjg@mail.gmail.com>
+	id S1755556Ab2BGHzC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 02:55:02 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40289 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab2BGHzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 02:55:00 -0500
+Subject: [PATCH 0/4] radix-tree: iterating general cleanup
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Tue, 07 Feb 2012 11:54:56 +0400
+Message-ID: <20120207074905.29797.60353.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPXgP11N=8NULMH-o0Us0OuqYpP9sKe9uUKWzE35h1AiRP1Cjg@mail.gmail.com>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 08:45:24PM +0100, Kay Sievers wrote:
-> On Mon, Feb 6, 2012 at 12:18, Kirill Smelkov <kirr@mns.spb.ru> wrote:
-> > Recently I've reworked my system not to use udev, but use devtmpfs
-> > instead and discovered there is no /dev/root symlink in devtmpfs case.
-> >
-> > My setup uses /dev/root early to know what is the boot device and then
-> > do some operations on it like checksumming, etc...
-> >
-> > Now when /dev/root is gone the best workaround I could come up with is
-> > to   grep /proc/partitions for '[hs]d[a-z]1'  but it's ugly and will
-> > break when there are several block devices attached.
-> >
-> > Is it somehow possible to add /dev/root to devtmpfs?
-> 
-> No, devtmpfs has no business in knowing anything about the rootfs or
-> who mounted what ans where. I can not create such links.
-> 
-> The entire concept of /dev/root is flawed anyway, and nothing should
-> really depend on that.
-> 
-> Modern filesystems will not offer a direct relation to a single block
-> device, they allocate an superblock which has a major == 0, so there
-> can be by definition never such a link. Better get rid of all uses of
-> /dev/root, it will just fail in the future.
+This patchset implements common radix-tree iteration routine and
+reworks page-cache lookup functions with using it.
 
-Kay, thanks for explanation.
+radix_tree_gang_lookup_*slot() now mostly unused (the last user somethere in
+drivers/sh/intc/virq.c), but they are exported, we cannot remove them for now.
 
-Though now I'm confused about how to know on what "place" root
-filesystem was mounted... To me the question makes sense, but you say
-with modern filesystems there by definition is no answer (or did I
-misunderstood you?) Strange...
+Also there some shmem-related radix-tree hacks can be reworked,
+radix_tree_locate_item() can be removed. I already have a few extra patches.
+
+And as usual my lovely bloat-o-meter:
+
+add/remove: 4/3 grow/shrink: 4/4 up/down: 1232/-964 (268)
+function                                     old     new   delta
+radix_tree_next_chunk                          -     499    +499
+static.shmem_find_get_pages_and_swap           -     404    +404
+find_get_pages_tag                           354     488    +134
+find_get_pages                               362     438     +76
+find_get_pages_contig                        345     407     +62
+__kstrtab_radix_tree_next_chunk                -      22     +22
+shmem_truncate_range                        1633    1652     +19
+__ksymtab_radix_tree_next_chunk                -      16     +16
+radix_tree_gang_lookup_tag_slot              208     180     -28
+radix_tree_gang_lookup_tag                   247     207     -40
+radix_tree_gang_lookup_slot                  204     162     -42
+radix_tree_gang_lookup                       231     160     -71
+__lookup                                     217       -    -217
+__lookup_tag                                 242       -    -242
+shmem_find_get_pages_and_swap                324       -    -324
+
+---
+
+Konstantin Khlebnikov (4):
+      bitops: implement "optimized" __find_next_bit()
+      radix-tree: introduce bit-optimized iterator
+      radix-tree: rewrite gang lookup with using iterator
+      radix-tree: use iterators in find_get_pages* functions
+
+
+ include/asm-generic/bitops/find.h |   36 +++
+ include/linux/radix-tree.h        |  129 +++++++++++
+ lib/radix-tree.c                  |  422 +++++++++++++------------------------
+ mm/filemap.c                      |   75 ++++---
+ mm/shmem.c                        |   23 +-
+ 5 files changed, 375 insertions(+), 310 deletions(-)
+
+-- 
+Signature
