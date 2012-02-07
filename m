@@ -1,129 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab2BGCSr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 21:18:47 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:38843 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755211Ab2BGCSq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 21:18:46 -0500
-Message-ID: <4F3089F9.6010609@linux.vnet.ibm.com>
-Date: Tue, 07 Feb 2012 10:18:33 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: Avoid unnecessary work in reweight_entity
-References: <4F2F9F6C.1090608@linux.vnet.ibm.com>
-In-Reply-To: <4F2F9F6C.1090608@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755543Ab2BGCZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 21:25:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:52567 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755211Ab2BGCZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 21:25:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="107146062"
+Subject: [patch] x86, tsc: reduce the TSC sync check time for core-siblings
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Jack Steiner <steiner@sgi.com>, venki@google.com
+Date: Mon, 06 Feb 2012 18:32:20 -0800
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12020616-5490-0000-0000-000000B042A4
+Message-ID: <1328581940.29790.20.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2012 05:37 PM, Michael Wang wrote:
+For each logical CPU that is coming online, we spend 20msec for checking
+the TSC synchronization. And as this is done sequentially for each logical CPU
+boot, this time gets added up depending on the number of logical CPU's
+supported by the platform.
 
-> From: Michael Wang <wangyun@linux.vnet.ibm.com>
-> 
-> In original code, using account_entity_dequeue and account_entity_enqueue
-> as a pair will do some work unnecessary, this patch combine the work of
-> them to save time.
-> 
-> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> ---
->  kernel/sched/fair.c  |   32 ++++++++++++++++++++++++--------
->  kernel/sched/sched.h |    8 ++++++++
->  2 files changed, 32 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 84adb2d..e380518 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -782,11 +782,23 @@ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
->  {
->  	cfs_rq->task_weight += weight;
->  }
-> +
-> +static void
-> +sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
-> +{
-> +	cfs_rq->task_weight -= sub;
-> +	cfs_rq->task_weight += add;
-> +}
->  #else
->  static inline void
->  add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
->  {
->  }
-> +
-> +static void
-> +sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
-> +{
-> +}
->  #endif
->  
->  static void
-> @@ -938,20 +950,24 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
->  {
->  }
->  # endif /* CONFIG_SMP */
-> +
->  static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
->  			    unsigned long weight)
->  {
-> +	/* commit outstanding execution time */
-> +	if (cfs_rq->curr == se)
-> +		update_curr(cfs_rq);
-> +
->  	if (se->on_rq) {
-> -		/* commit outstanding execution time */
-> -		if (cfs_rq->curr == se)
-> -			update_curr(cfs_rq);
-> -		account_entity_dequeue(cfs_rq, se);
-> +		update_load_sub_add(&cfs_rq->load, se->load.weight, weight);
-> +		if (!parent_entity(se)) {
-> +			update_load_sub_add(&rq_of(cfs_rq), se->load.weight, weight);
+Minimize this by using the socket topology information.
 
-Sorry for make a silly mistake here, should try make first, I will sent
-correct patch soon.
+If the target CPU coming online doesn't have any of its core-siblings
+online, a timeout of 20msec will be used for the TSC-warp measurement
+loop. Otherwise a smaller timeout of 2msec will be used, as we have some
+information about this socket already (and this information grows as we
+have more and more logical-siblings in that socket).
 
-Regards,
-Michael Wang
+Ideally we should be able to skip the TSC sync check on the other
+core-siblings, if the first logical CPU in a socket passed the sync test.
+But as the TSC is per-logical CPU and can potentially be modified wrongly
+by the bios before the OS boot, TSC sync test for smaller duration should
+be able to catch such errors. Also this will catch the condition where all the
+cores in the socket doesn't get reset at the same time.
 
-> +		}
-> +		if (entity_is_task(se)) {
-> +			sub_add_cfs_task_weight(cfs_rq, se->load.weight, weight);
-> +		}
->  	}
-> -
->  	update_load_set(&se->load, weight);
-> -
-> -	if (se->on_rq)
-> -		account_entity_enqueue(cfs_rq, se);
->  }
->  
->  static void update_cfs_shares(struct cfs_rq *cfs_rq)
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 98c0c26..ec4430f 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -779,6 +779,14 @@ static inline void update_load_sub(struct load_weight *lw, unsigned long dec)
->  	lw->inv_weight = 0;
->  }
->  
-> +static inline void update_load_sub_add(struct load_weight *lw, unsigned long dec,
-> +					unsigned long inc)
-> +{
-> +	lw->weight -= dec;
-> +	lw->weight += inc;
-> +	lw->inv_weight = 0;
-> +}
-> +
->  static inline void update_load_set(struct load_weight *lw, unsigned long w)
->  {
->  	lw->weight = w;
+For example, with this modification, time spent in TSC sync checks on a
+4 socket 10-core with HT system gets reduced from 1580msec to 212msec.
+
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/kernel/tsc_sync.c |   29 ++++++++++++++++++++++++-----
+ 1 files changed, 24 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/tsc_sync.c b/arch/x86/kernel/tsc_sync.c
+index 9eba29b..cbf0b0f 100644
+--- a/arch/x86/kernel/tsc_sync.c
++++ b/arch/x86/kernel/tsc_sync.c
+@@ -42,7 +42,7 @@ static __cpuinitdata int nr_warps;
+ /*
+  * TSC-warp measurement loop running on both CPUs:
+  */
+-static __cpuinit void check_tsc_warp(void)
++static __cpuinit void check_tsc_warp(unsigned int timeout)
+ {
+ 	cycles_t start, now, prev, end;
+ 	int i;
+@@ -51,9 +51,9 @@ static __cpuinit void check_tsc_warp(void)
+ 	start = get_cycles();
+ 	rdtsc_barrier();
+ 	/*
+-	 * The measurement runs for 20 msecs:
++	 * The measurement runs for 'timeout' msecs:
+ 	 */
+-	end = start + tsc_khz * 20ULL;
++	end = start + (cycles_t) tsc_khz * timeout;
+ 	now = start;
+ 
+ 	for (i = 0; ; i++) {
+@@ -99,6 +99,25 @@ static __cpuinit void check_tsc_warp(void)
+ }
+ 
+ /*
++ * If the target CPU coming online doesn't have any of its core-siblings
++ * online, a timeout of 20msec will be used for the TSC-warp measurement
++ * loop. Otherwise a smaller timeout of 2msec will be used, as we have some
++ * information about this socket already (and this information grows as we
++ * have more and more logical-siblings in that socket).
++ *
++ * Ideally we should be able to skip the TSC sync check on the other
++ * core-siblings, if the first logical CPU in a socket passed the sync test.
++ * But as the TSC is per-logical CPU and can potentially be modified wrongly
++ * by the bios, TSC sync test for smaller duration should be able
++ * to catch such errors. Also this will catch the condition where all the
++ * cores in the socket doesn't get reset at the same time.
++ */
++static inline unsigned int loop_timeout(int cpu)
++{
++	return (cpumask_weight(cpu_core_mask(cpu)) > 1) ? 2 : 20;
++}
++
++/*
+  * Source CPU calls into this - it waits for the freshly booted
+  * target CPU to arrive and then starts the measurement:
+  */
+@@ -135,7 +154,7 @@ void __cpuinit check_tsc_sync_source(int cpu)
+ 	 */
+ 	atomic_inc(&start_count);
+ 
+-	check_tsc_warp();
++	check_tsc_warp(loop_timeout(cpu));
+ 
+ 	while (atomic_read(&stop_count) != cpus-1)
+ 		cpu_relax();
+@@ -183,7 +202,7 @@ void __cpuinit check_tsc_sync_target(void)
+ 	while (atomic_read(&start_count) != cpus)
+ 		cpu_relax();
+ 
+-	check_tsc_warp();
++	check_tsc_warp(loop_timeout(smp_processor_id()));
+ 
+ 	/*
+ 	 * Ok, we are done:
 
 
