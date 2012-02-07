@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab2BGMnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 07:43:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59759 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756245Ab2BGMng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 07:43:36 -0500
-Date: Tue, 7 Feb 2012 13:43:31 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, chris@cnpbagwell.com,
-        pinglinux@gmail.com, linuxwacom-devel@lists.sourceforge.net,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: wacom: Fix invalid power_supply_powers calls
-In-Reply-To: <b24d411c05c013317690ef4cec330c71.squirrel@webmail.firszt.eu>
-Message-ID: <alpine.LNX.2.00.1202071342540.24127@pobox.suse.cz>
-References: <1328481324-7241-1-git-send-email-przemo@firszt.eu>    <alpine.LNX.2.00.1202061326150.24127@pobox.suse.cz>    <d2139519eb66f9b7bfd8f56d3b4e2d96.squirrel@webmail.firszt.eu>    <alpine.LNX.2.00.1202061342090.24127@pobox.suse.cz>    <4F300F2C.9030308@goop.org>
- <b24d411c05c013317690ef4cec330c71.squirrel@webmail.firszt.eu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756426Ab2BGMpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 07:45:21 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59597 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab2BGMpT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 07:45:19 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1328568978-17553-1-git-send-email-mgorman@suse.de>
+References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
+Date: Tue, 7 Feb 2012 20:45:18 +0800
+Message-ID: <CAJd=RBAvvzK=TXwDaEjq2t+uEuP2PSi6zaUj7EW4UbL_AUsJAg@mail.gmail.com>
+Subject: Re: [PATCH 00/15] Swap-over-NBD without deadlocking V8
+From: Hillf Danton <dhillf@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Feb 2012, przemo@firszt.eu wrote:
-
-> >>>> Hmm, seems valid. How did you notice? Have you seen crashes because of
-> >>>> wild pointers?
-> >>> Hi Jiri,
-> >>> Yes, the driver was unusable - 100% crashes during connection.
-> >> Okay, I thought that'd be the case.
-> >
-> > Very sorry about that.  I don't have a device to test with, so I should
-> > have reviewed the code extra carefully.
-> >
-> > Does the same bug apply to the Wii changes, which were of the same form?
-> >
-> Hi Jeremy,
-> The wii code looks the same, so probably it's affected as well. Can you
-> make a patch?
-> 
-> power_supply_powers call in wiimote driver:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=drivers/hid/hid-wiimote-core.c#l1229
-
-I have now queued the patch below for the same pile as well.
-Thanks for spotting it.
+On Tue, Feb 7, 2012 at 6:56 AM, Mel Gorman <mgorman@suse.de> wrote:
+>
+> The core issue is that network block devices do not use mempools like normal
+> block devices do. As the host cannot control where they receive packets from,
+> they cannot reliably work out in advance how much memory they might need.
+>
+>
+> Patch 1 serialises access to min_free_kbytes. It's not strictly needed
+>        by this series but as the series cares about watermarks in
+>        general, it's a harmless fix. It could be merged independently.
+>
+>
+Any light shed on tuning min_free_kbytes for every day work?
 
 
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] HID: wiimote: fix invalid power_supply_powers call
+> Patch 2 adds knowledge of the PFMEMALLOC reserves to SLAB and SLUB to
+>        preserve access to pages allocated under low memory situations
+>        to callers that are freeing memory.
+>
+> Patch 3 introduces __GFP_MEMALLOC to allow access to the PFMEMALLOC
+>        reserves without setting PFMEMALLOC.
+>
+> Patch 4 opens the possibility for softirqs to use PFMEMALLOC reserves
+>        for later use by network packet processing.
+>
+> Patch 5 ignores memory policies when ALLOC_NO_WATERMARKS is set.
+>
+> Patches 6-11 allows network processing to use PFMEMALLOC reserves when
+>        the socket has been marked as being used by the VM to clean
+>        pages. If packets are received and stored in pages that were
+>        allocated under low-memory situations and are unrelated to
+>        the VM, the packets are dropped.
+>
+> Patch 12 is a micro-optimisation to avoid a function call in the
+>        common case.
+>
+> Patch 13 tags NBD sockets as being SOCK_MEMALLOC so they can use
+>        PFMEMALLOC if necessary.
+>
+If it is feasible to bypass hang by tuning min_mem_kbytes, things may
+become simpler if NICs are also tagged. Sock buffers, pre-allocated if
+necessary just after NICs are turned on, are not handed back to kmem
+cache but queued on local lists which are maintained by NIC driver, based
+the on the info of min_mem_kbytes or similar, for tagged NICs.
+Upside is no changes in VM core. Downsides?
 
-Analogically to d7cb3dbd1 ("HID: wacom: Fix invalid power_supply_powers
-calls"), fix also the same occurence in wiimote driver.
 
-Reported-by: przemo@firszt.eu
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- drivers/hid/hid-wiimote-core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> Patch 14 notes that it is still possible for the PFMEMALLOC reserve
+>        to be depleted. To prevent this, direct reclaimers get
+>        throttled on a waitqueue if 50% of the PFMEMALLOC reserves are
+>        depleted.  It is expected that kswapd and the direct reclaimers
+>        already running will clean enough pages for the low watermark
+>        to be reached and the throttled processes are woken up.
+>
+> Patch 15 adds a statistic to track how often processes get throttled
+>
+>
+> For testing swap-over-NBD, a machine was booted with 2G of RAM with a
+> swapfile backed by NBD. 8*NUM_CPU processes were started that create
+> anonymous memory mappings and read them linearly in a loop. The total
+> size of the mappings were 4*PHYSICAL_MEMORY to use swap heavily under
+> memory pressure. Without the patches, the machine locks up within
+> minutes and runs to completion with them applied.
+>
+>
+While testing, what happens if the network wire is plugged off over
+three minutes?
 
-diff --git a/drivers/hid/hid-wiimote-core.c b/drivers/hid/hid-wiimote-core.c
-index fc253b4..cac3589 100644
---- a/drivers/hid/hid-wiimote-core.c
-+++ b/drivers/hid/hid-wiimote-core.c
-@@ -1226,14 +1226,14 @@ static int wiimote_hid_probe(struct hid_device *hdev,
- 	wdata->battery.type = POWER_SUPPLY_TYPE_BATTERY;
- 	wdata->battery.use_for_apm = 0;
- 
--	power_supply_powers(&wdata->battery, &hdev->dev);
--
- 	ret = power_supply_register(&wdata->hdev->dev, &wdata->battery);
- 	if (ret) {
- 		hid_err(hdev, "Cannot register battery device\n");
- 		goto err_battery;
- 	}
- 
-+	power_supply_powers(&wdata->battery, &hdev->dev);
-+
- 	ret = wiimote_leds_create(wdata);
- 	if (ret)
- 		goto err_free;
-
--- 
-Jiri Kosina
-SUSE Labs
+Thanks
+Hillf
