@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab2BGL4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 06:56:47 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:33637 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755Ab2BGL4p (ORCPT
+	id S1756092Ab2BGL5D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 06:57:03 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42360 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755986Ab2BGL4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 06:56:45 -0500
-Message-ID: <4F311154.9080407@de.ibm.com>
-Date: Tue, 07 Feb 2012 12:56:04 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Christian Hoff <christian.hoff@de.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com>
-In-Reply-To: <4F30F4EE.4080607@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12020711-4966-0000-0000-000001626BF0
+	Tue, 7 Feb 2012 06:56:47 -0500
+Message-ID: <1328615930.22240.47.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 5/5] MTD: Relax dependencies
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        viro@zeniv.linux.org.uk, linux-mtd@lists.infradead.org
+Date: Tue, 07 Feb 2012 13:58:50 +0200
+In-Reply-To: <1328574170-2286-5-git-send-email-richard@nod.at>
+References: <1328574170-2286-1-git-send-email-richard@nod.at>
+	 <1328574170-2286-5-git-send-email-richard@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-0uGCJHws4xJraHmzYgy6"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +                cmd->req.cmd = (struct virtio_scsi_cmd_req){
->> +                                .lun[0] = 1,
->> +                                .lun[1] = sc->device->id,
->> +                                .lun[2] = (sc->device->lun>>  8) | 0x40,
->> +                                .lun[3] = sc->device->lun&  0xff,
->> +                               [...]
->> +                };
->>
->> Can't we have seperate fields for the SCSI target ID and the LUN number
->> here? Putting all this into a single field seems confusing. The following
->> line of code (sc->device->lun>>  8) | 0x40 essentially means that LUN
->> numbers will be limited to 8+6 Bits=14 Bits for no obvious reason that I
->> can see. Maybe we could just split the LUN field up into two uint32 fields
->> for target ID and LUN number?
-> 
-> The 14-bit limitation can be lifted.  SAM defines a 24-bit LUN format too, 
-> but I've never seen it used in practice.
 
-Why not lift that limitation before the first version is committed upstream?
+--=-0uGCJHws4xJraHmzYgy6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-As far as I see we have to allocate multiple target ids if we want
-to provide multipath (e.g. 8 target ids if there are 8 pathes, thus limiting
-ourselves to 64 targets, no?)
+On Tue, 2012-02-07 at 01:22 +0100, Richard Weinberger wrote:
+> CONFIG_GENERIC_IO is just enough for the basic MTD stuff.
+>=20
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-As a compromise between space/flexibility, cant we just split the 4 bytes
-in a similar fashion as our major/minor numbers (12/20bit)?
+Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-In the mainframe area I have seen real-life problems hitting the 64k 
-device limit for disks (mostly due to multipathing), it was extended
-afterwards, but every extension tends to make an interface less
-appealing. (look at some virtio drivers and you will find places
-were feature bits made the code "less pretty")
-> 
->> Also, lun[1] = sc->device->id means that only 255 SCSI target IDs will be
->> supported. Think about bigger usage scenarios, such as FCP networks with
->> several hundred HBAs in the net. If you want to have the target ID<->HBA
->> mapping the same as on the guest as on the host, then 255 virtual target
->> IDs could be a limit.
-> 
-> I think you would hit other scalability limitations well before that.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Performance might be fixed later, but the interface is then settled.
-[..]
+--=-0uGCJHws4xJraHmzYgy6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-> But in any case, we could still use the fixed "1" byte to go beyond 255 targets.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Again, why not now? Any extension would require a feature bit, no?
-Is there a technical reason why a fixed 1 here is better than just using that space
-as scsi id? (e.g. hash table sizes, lookup etc)
+iQIcBAABAgAGBQJPMRH6AAoJECmIfjd9wqK0wQoP/1xKWaIwofLhrWjDPA39+WQq
+6wbWvctSHYhDYYL9WX3gf2qJ4muatsJ3il9TjJBun7XW29S4xMJencahbK1/PKek
+fVv8BHeYMCtSMw9ATlipIA+P80PM3UXcadc1u1tOWqd7cAtr6f4G+3JB2WeAYdpV
+D/djYBisMkalq2XY4SYpNblMUA4K80QmPcTBqMpk2OLngmyXsC9hZCeeOg+4GKJR
+1wqXNGsFEENXbUG70tdbIgukC2Gy+puLWDMBPTlA6YVLr4vFtr18pUWODgUmjcAw
+Sh8UlJ2BIB9FXEDazaO+NNJ2zeDovgKld8hh0mAEWkP320VicT06EPYb+VSZqEuw
+Q/1j4/TyjOl09lU3sm5i2mdM0wXV1L8v8HhXHwZUv7/+KY7BEMq8I7+jScBqI+gC
+JzBLVVn/UUco6TqiT8wWau3IWzJDNfm84KHM9eYhR2ONkFGMVSrPUiz1ed4Oe1SN
+1j07JQPGf/+/OJAKU+vs4V6o0yb39qNR3eKPRgX1aGkBAkEbuCVLu/WcjNQrUxoW
+MI0M/htOKJ7jxysge45qlzH/qDjE1xToJRGaUtNd9JOTg/CZjvxkT4aUfNf3XUk6
+McaA1R9MtKmqZuo/6SQ2T6Co8HqZP27de23TPPOJVyuPhn9F32REp+UfL4i1DfCT
+LIgVud1jTD0AxtyS0ANi
+=ch3m
+-----END PGP SIGNATURE-----
 
-Regards
-
-Christian
-
-PS: what puzzles me as well, is the fact that struct virtio_scsi_cmd_req has lun[8]
-in the structure. That would sum up as 5 bytes wasted of those 8, no?
+--=-0uGCJHws4xJraHmzYgy6--
 
