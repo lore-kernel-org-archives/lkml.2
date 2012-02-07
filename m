@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab2BGMuj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 07:50:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60191 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756113Ab2BGMui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 07:50:38 -0500
-Date: Tue, 7 Feb 2012 13:50:36 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID, take #2
-In-Reply-To: <alpine.LNX.2.00.1202061621430.24127@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1202071348130.24127@pobox.suse.cz>
-References: <alpine.LNX.2.00.1202061621430.24127@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756485Ab2BGMvy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 07:51:54 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45573 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756410Ab2BGMvx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 07:51:53 -0500
+Message-ID: <4F311E64.10604@codemonkey.ws>
+Date: Tue, 07 Feb 2012 06:51:48 -0600
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Avi Kivity <avi@redhat.com>
+CC: Scott Wood <scottwood@freescale.com>,
+        Eric Northup <digitaleric@google.com>,
+        qemu-devel <qemu-devel@nongnu.org>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+References: <4F2AB552.2070909@redhat.com>	<CAG7+5M0s_F93G3dPrRQaFMVv_hPzpd-wYEPApJUDGhh3vJuy-A@mail.gmail.com>	<4F2C6517.3040203@codemonkey.ws>	<4F302E0D.20302@freescale.com> <4F3118EA.7040302@codemonkey.ws> <4F311BBD.5050600@redhat.com>
+In-Reply-To: <4F311BBD.5050600@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Feb 2012, Jiri Kosina wrote:
+On 02/07/2012 06:40 AM, Avi Kivity wrote:
+> On 02/07/2012 02:28 PM, Anthony Liguori wrote:
+>>
+>>> It's a potential source of exploits
+>>> (from bugs in KVM or in hardware). I can see people wanting to be
+>>> selective with access because of that.
+>>
+>> As is true of the rest of the kernel.
+>>
+>> If you want finer grain access control, that's exactly why we have things like
+>> LSM and SELinux. You can add the appropriate LSM hooks into the KVM
+>> infrastructure and setup default SELinux policies appropriately.
+>
+> LSMs protect objects, not syscalls. There isn't an object to protect here
+> (except the fake /dev/kvm object).
 
-> please pull from
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git upstream-fixes
-> 
-> to receive fixes for -rc3.
+A VM can be an object.
 
-Linus,
+Regards,
 
-seeing that you haven't pulled yet, I am updating the pull request with 
-one more commit; identical fix that was needed for wacom driver is 
-necessary for wiimote as well.
+Anthony Liguori
 
-Thanks in advance.
+> In theory, kvm is exactly the same as other syscalls, but in practice, it is
+> used by only very few user programs, so there may be many unexercised paths.
+>
 
-
-
-Please pull from
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git upstream-fixes
-
-to receive fixes for -rc3.
-
-- fix for crashing wacom and wiimote driver due to incorrect ordering of 
-  power_supply_* calls; I had to merge your tree into upstream-fixes
-  branch first, in order to have the buggy code that went in through
-  Anton's tree
-- deadlock / race fix in generic USB HID code between open() and 
-  disconnect() (caught by lockdep, not usually triggered in the wild)
-- fix for hyperv driver to handle disconnection of corresponding input 
-  device properly
-
-Jiri Kosina (1):
-      HID: wiimote: fix invalid power_supply_powers call
-
-K. Y. Srinivasan (1):
-      HID: hyperv: Properly disconnect the input device
-
-Ming Lei (1):
-      HID: usbhid: fix dead lock between open and disconect
-
-Przemo Firszt (1):
-      HID: wacom: Fix invalid power_supply_powers calls
-
- drivers/hid/hid-hyperv.c       |    1 +
- drivers/hid/hid-wacom.c        |    7 ++++---
- drivers/hid/hid-wiimote-core.c |    4 ++--
- drivers/hid/usbhid/hiddev.c    |    4 ++--
- 4 files changed, 9 insertions(+), 7 deletions(-)
-
--- 
-Jiri Kosina
-SUSE Labs
