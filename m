@@ -1,340 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab2BGQH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 11:07:29 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45606 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab2BGQH1 convert rfc822-to-8bit (ORCPT
+	id S1755937Ab2BGQIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 11:08:51 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:46623 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab2BGQIu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 11:07:27 -0500
+	Tue, 7 Feb 2012 11:08:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAAJw_Zup7Wg7FO95Z63e_sniu21gyzdCjcBNgsS0aw6MguDwLw@mail.gmail.com>
-References: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
-	<m2pqdr2tyq.fsf@bob.laptop.org>
-	<CAAJw_Zv4Hk_kfc33xsVcdi-0_C6tsf_FD3sUx1JPDX_fZZMzeQ@mail.gmail.com>
-	<4F30E19B.9020503@intel.com>
-	<CAAJw_Zth+QM8OhMEWweBBek8QNW_9CseHSDuB-LCGrvwuqfV2A@mail.gmail.com>
-	<4F310529.4020101@intel.com>
-	<CAAJw_ZsHwdvXuw+edXUfyGOSMOu5oUw3zX8nUryxJJiiZXzXKQ@mail.gmail.com>
-	<CAAJw_Zup7Wg7FO95Z63e_sniu21gyzdCjcBNgsS0aw6MguDwLw@mail.gmail.com>
-Date: Wed, 8 Feb 2012 00:07:26 +0800
-Message-ID: <CAAJw_Zv6HkLLqEzNKRCfQ7EbMNEVe_hzbW+mHOnDAWLidOhMBQ@mail.gmail.com>
-Subject: Re: mmc sdhci mmcblk0: error -110 sending status command, retrying
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Philip Rakity <prakity@marvell.com>
-Cc: Chris Ball <cjb@laptop.org>, Pierre Ossman <pierre@ossman.eu>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
-        arindam.nath@amd.com, zhangfei.gao@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Date: Tue, 7 Feb 2012 21:38:49 +0530
+Message-ID: <CAJXQGfJkmTZHDVPP_Rw7W3j8nmxXTN_OLUxjzCt-UOLGx61CZQ@mail.gmail.com>
+Subject: x86_64 arch+SMP ON+linux-2.6.32.46+E1000+KGDBOE = Timed out. Ignoring
+ packet error, continuing...
+From: Naresh Bhat <nareshgbhat@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 8, 2012 at 12:04 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> On Tue, Feb 7, 2012 at 11:00 PM, Philip Rakity <prakity@marvell.com> wrote:
->
->> Chris just took a patch upstream from us that reverts the sd card to HS if we fail uhs.  You might need this.  Could you send me  a complete console log.
->>
->> echo 17 > /proc/sys/kernel/printk
->>
->> Then insert card.
+Hi,
+
+I am trying KGDBOE on the following kernel
+
+Kernel    -   linux-2.6.32.46 (With SMP set)
+Hardware -  x86 64bit machine (Intel Nehlaum)
+Ethernet   - E1000 driver is used
+
+But I am getting the following error
+
+........
+............
+.................
+Breakpoint 2, sys_sync () at fs/sync.c:130
+130        wakeup_flusher_threads(0);
+(gdb) s
+wakeup_flusher_threads (nr_pages=0) at fs/fs-writeback.c:1005
+1005    {
+(gdb) s
+
+Ignoring packet error, continuing...
+Ignoring packet error, continuing...
+Ignoring packet error, continuing...
 
 
-Philip,
+Detailed logs with debug set :
+-----------------------------------------
 
-Here you go. Gmail is not bad at replying.
+...................
+................................
+.......................................
+Sending packet: $z0,ffffffff810ad687,1#66...Ack
+Packet received: OK
+target_remove_breakpoint (0x810ad687, xxx) = 0
+target_terminal_ours ()
+kgdb_register_io_module (new_kgdb_io_ops=0xffffffff81a9d5b0) at
+kernel/kgdb.c:1778
+1778    }
+(gdb) n
+Sending packet: $Z0,ffffffff810ad687,1#46...Ack
+Packet received: OK
+target_insert_breakpoint (0x810ad687, xxx) = 0
+target_terminal_inferior ()
+Sending packet: $s#73...Ack
+target_resume (-1, step, 0)
+Packet received: T05thread:0000000000000001;
+target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+Sending packet: $g#67...Ack
+Packet received:
+0000000000000000b0d5a981ffffffffffffffff00000000ffffffff0000000086020000000000004602000000000000b07e0b2f0088ffffa87e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005cda0a81ffffffff820300001000000018000000
+target_fetch_registers (rip) = 5cda0a81ffffffff 0xffffffff810ada5c -2129995172
+target_stopped_by_watchpoint () = 0
+target_terminal_inferior ()
+Sending packet: $s#73...Ack
+target_resume (-1, step, 0)
+Packet received: T05thread:0000000000000001;
+target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+Sending packet: $g#67...Ack
+Packet received:
+00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000b07e0b2f0088ffffb07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005dda0a81ffffffff820300001000000018000000
+target_fetch_registers (rip) = 5dda0a81ffffffff 0xffffffff810ada5d -2129995171
+target_stopped_by_watchpoint () = 0
+target_terminal_inferior ()
+Sending packet: $s#73...Ack
+target_resume (-1, step, 0)
+Packet received: T05thread:0000000000000001;
+target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+Sending packet: $g#67...Ack
+Packet received:
+00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffb87e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005eda0a81ffffffff820300001000000018000000
+target_fetch_registers (rip) = 5eda0a81ffffffff 0xffffffff810ada5e -2129995170
+target_stopped_by_watchpoint () = 0
+target_terminal_inferior ()
+Sending packet: $s#73...Ack
+target_resume (-1, step, 0)
+Packet received: T05thread:0000000000000001;
+target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+Sending packet: $g#67...Ack
+Packet received:
+00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffc07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b061030000000000180d3e81ffffffff820300001000000018000000
+target_fetch_registers (rip) = 180d3e81ffffffff 0xffffffff813e0d18 -2126639848
+target_stopped_by_watchpoint () = 0
+target_terminal_ours_for_output ()
+Sending packet: $mffffffff813e0d18,1#f8...Ack
+Packet received: 85
+remote:target_xfer_partial (2, (null), 0xbfe00edb, 0x0,
+0xffffffff813e0d18, 1) = 1, bytes = 85
+Sending packet: $mffffffff813e0d18,1#f8...Ack
+Packet received: 85
+remote:target_xfer_partial (2, (null), 0xbfe00edb, 0x0,
+0xffffffff813e0d18, 1) = 1, bytes = 85
+Sending packet: $mffff88002f0b7ec0,40#be...Ack
+Packet received:
+e07e0b2f0088ffff510d3e81ffffffff0800000000000000380d3e81ffffffff107f0b2f0088ffff5fa00081ffffffff107f0b2f0088ffffb0bcb881ffffffff
+remote:target_xfer_partial (3, (null), 0xa944050, 0x0,
+0xffff88002f0b7ec0, 64) = 64, bytes =
+ e0 7e 0b 2f 00 88 ff ff 51 0d 3e 81 ff ff ff ff ...
+remote:target_xfer_partial (4, (null), 0xa944030, 0x0,
+0xffff88002f0b7ec8, 8) = 8, bytes =
+ 51 0d 3e 81 ff ff ff ff
+remote:target_xfer_partial (4, (null), 0xa944030, 0x0,
+0xffff88002f0b7ec0, 8) = 8, bytes =
+ e0 7e 0b 2f 00 88 ff ff
+target_terminal_inferior ()
+Sending packet: $s#73...Ack
+target_resume (-1, step, 0)
+Packet received: T05thread:0000000000000001;
+target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+Sending packet: $g#67...Ack
+Packet received:
+00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffc07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000001a0d3e81ffffffff460300001000000018000000
+target_fetch_registers (rip) = 1a0d3e81ffffffff 0xffffffff813e0d1a -2126639846
+target_stopped_by_watchpoint () = 0
+target_terminal_inferior ()
+Sending packet: $s#73...Ack
+target_resume (-1, step, 0)
+Packet received: T05thread:0000000000000001;
+target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+Sending packet: $g#67...Sending packet: $g#67...Sending packet:
+$g#67...Sending packet: $g#67...Timed out.
+Timed out.
+Timed out.
+Ignoring packet error, continuing...
+Bad register packet; fetching a new packet
+Timed out.
+Timed out.
+Timed out.
+Ignoring packet error, continuing...
+Bad register packet; fetching a new packet
+Timed out.
+Timed out.
+Timed out.
+Ignoring packet error, continuing...
+Bad register packet; fetching a new packet
+Timed out.
+..........................
+.................................
 
-> Here's the log ...
->
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000040
-> mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
-> mmc0: clock 0Hz busmode 2 powermode 1 cs 0 Vdd 21 width 0 timing 0
-> mmc0: clock 400000Hz busmode 2 powermode 2 cs 0 Vdd 21 width 0 timing 0
-> mmc0: starting CMD52 arg 00000c00 flags 00000195
-> mmc0: req done (CMD52): -123: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD52 arg 80000c08 flags 00000195
-> mmc0: req done (CMD52): -123: 00000000 00000000 00000000 00000000
-> mmc0: clock 400000Hz busmode 2 powermode 2 cs 1 Vdd 21 width 0 timing 0
-> mmc0: starting CMD0 arg 00000000 flags 000000c0
-> mmc0: req done (CMD0): -123: 00000000 00000000 00000000 00000000
-> mmc0: clock 400000Hz busmode 2 powermode 2 cs 0 Vdd 21 width 0 timing 0
-> mmc0: starting CMD8 arg 000001aa flags 000002f5
-> mmc0: req done (CMD8): -123: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD5 arg 00000000 flags 000002e1
-> mmc0: req failed (CMD5): -123, retrying...
-> mmc0: req failed (CMD5): -123, retrying...
-> mmc0: req failed (CMD5): -123, retrying...
-> mmc0: req done (CMD5): -123: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> mmc0: req done (CMD55): -123: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> mmc0: req done (CMD55): -123: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> mmc0: req done (CMD55): -123: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> mmc0: req done (CMD55): -123: 00000000 00000000 00000000 00000000
-> mmc0: clock 400000Hz busmode 1 powermode 2 cs 0 Vdd 21 width 0 timing 0
-> mmc0: starting CMD1 arg 00000000 flags 000000e1
-> mmc0: req done (CMD1): -123: 00000000 00000000 00000000 00000000
-> mmc0: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0 timing 0
-> mmc0: mmc_rescan_try_freq: trying to init card at 300000 Hz
-> mmc0: clock 0Hz busmode 2 powermode 1 cs 0 Vdd 21 width 0 timing 0
-> mmc0: clock 300000Hz busmode 2 powermode 2 cs 0 Vdd 21 width 0 timing 0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000040
-> mmc0: starting CMD52 arg 00000c00 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD52): -110: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD52 arg 80000c08 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD52): -110: 00000000 00000000 00000000 00000000
-> mmc0: clock 300000Hz busmode 2 powermode 2 cs 1 Vdd 21 width 0 timing 0
-> mmc0: starting CMD0 arg 00000000 flags 000000c0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD0): 0: 00000000 00000000 00000000 00000000
-> mmc0: clock 300000Hz busmode 2 powermode 2 cs 0 Vdd 21 width 0 timing 0
-> mmc0: starting CMD8 arg 000001aa flags 000002f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD8): 0: 000001aa 00000000 00000000 00000000
-> mmc0: starting CMD5 arg 00000000 flags 000002e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req failed (CMD5): -110, retrying...
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req failed (CMD5): -110, retrying...
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req failed (CMD5): -110, retrying...
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD5): -110: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00400120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 00000000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: clock 300000Hz busmode 2 powermode 2 cs 0 Vdd 20 width 0 timing 0
-> mmc0: clock 300000Hz busmode 2 powermode 2 cs 1 Vdd 20 width 0 timing 0
-> mmc0: starting CMD0 arg 00000000 flags 000000c0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD0): 0: 00000000 00000000 00000000 00000000
-> mmc0: clock 300000Hz busmode 2 powermode 2 cs 0 Vdd 20 width 0 timing 0
-> mmc0: starting CMD8 arg 000001aa flags 000002f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD8): 0: 000001aa 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: 00ff8000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg 00000000 flags 000000f5
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000120 00000000 00000000 00000000
-> mmc0: starting CMD41 arg 51300000 flags 000000e1
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD41): 0: c0ff8000 00000000 00000000 00000000
-> mmc0: starting CMD2 arg 00000000 flags 00000067
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD2): 0: 28424548 30383538 00000011 0a00b200
-> mmc0: starting CMD3 arg 00000000 flags 00000075
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD3): 0: b3680520 00000000 00000000 00000000
-> mmc0: starting CMD9 arg b3680000 flags 00000007
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD9): 0: 400e0032 5b590000 774d7f80 0a400000
-> mmc0: starting CMD7 arg b3680000 flags 00000015
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD7): 0: 00000700 00000000 00000000 00000000
-> mmc0: starting CMD55 arg b3680000 flags 00000095
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000920 00000000 00000000 00000000
-> mmc0: starting CMD51 arg 00000000 flags 000000b5
-> mmc0:     blksz 8 blocks 1 flags 00000200 tsac 100 ms nsac 0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000002
-> mmc0: req done (CMD51): 0: 00000920 00000000 00000000 00000000
-> mmc0:     8 bytes transferred: 0
-> mmc0: starting CMD55 arg b3680000 flags 00000095
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000920 00000000 00000000 00000000
-> mmc0: starting CMD13 arg 00000000 flags 000001b5
-> mmc0:     blksz 64 blocks 1 flags 00000200 tsac 100 ms nsac 0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000002
-> mmc0: req done (CMD13): 0: 00000920 00000000 00000000 00000000
-> mmc0:     64 bytes transferred: 0
-> mmc0: starting CMD6 arg 00fffff1 flags 000000b5
-> mmc0:     blksz 64 blocks 1 flags 00000200 tsac 100 ms nsac 0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000002
-> mmc0: req done (CMD6): 0: 00000900 00000000 00000000 00000000
-> mmc0:     64 bytes transferred: 0
-> mmc0: starting CMD6 arg 00fff1ff flags 000000b5
-> mmc0:     blksz 64 blocks 1 flags 00000200 tsac 100 ms nsac 0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000002
-> mmc0: req done (CMD6): 0: 00000900 00000000 00000000 00000000
-> mmc0:     64 bytes transferred: 0
-> mmc0: starting CMD6 arg 00ff1fff flags 000000b5
-> mmc0:     blksz 64 blocks 1 flags 00000200 tsac 100 ms nsac 0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000002
-> mmc0: req done (CMD6): 0: 00000900 00000000 00000000 00000000
-> mmc0:     64 bytes transferred: 0
-> mmc0: clock 25000000Hz busmode 2 powermode 2 cs 0 Vdd 20 width 0 timing 0
-> mmc0: starting CMD55 arg b3680000 flags 00000095
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD55): -110: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD55 arg b3680000 flags 00000095
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD55): 0: 00000920 00000000 00000000 00000000
-> mmc0: starting CMD6 arg 00000002 flags 00000015
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD6): 0: 00000920 00000000 00000000 00000000
-> mmc0: clock 25000000Hz busmode 2 powermode 2 cs 0 Vdd 20 width 2 timing 0
-> mmc0: new SDHC card at address b368
-> mmc0: calculated max. discard sectors 188416 for timeout 4067 ms
-> mmcblk0: mmc0:b368 H0858 14.9 GiB
-> mmc0: starting CMD18 arg 00000000 flags 000000b5
-> mmc0:     blksz 512 blocks 8 flags 00000200 tsac 100 ms nsac 0
-> mmc0:     CMD12 arg 00000000 flags 0000049d
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x000a8001
-> mmc0: req done (CMD18): -84: 00000000 00000000 00000000 00000000
-> mmc0:     0 bytes transferred: 0
-> mmc0:     (CMD12): 0: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x000a8001
-> mmc0: req done (CMD13): -84: 00000000 00000000 00000000 00000000
-> mmcblk0: error -84 sending status command, retrying
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD13): -110: 00000000 00000000 00000000 00000000
-> mmcblk0: error -110 sending status command, retrying
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD13): -110: 00000000 00000000 00000000 00000000
-> mmcblk0: error -110 sending status command, aborting
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req failed (CMD13): -110, retrying...
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req failed (CMD13): -110, retrying...
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD13): 0: 00400b00 00000000 00000000 00000000
-> end_request: I/O error, dev mmcblk0, sector 0
-> quiet_error: 2 callbacks suppressed
-> Buffer I/O error on device mmcblk0, logical block 0
-> mmc0: starting CMD18 arg 00000000 flags 000000b5
-> mmc0:     blksz 512 blocks 8 flags 00000200 tsac 100 ms nsac 0
-> mmc0:     CMD12 arg 00000000 flags 0000049d
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD18): -110: 00000000 00000000 00000000 00000000
-> mmc0:     0 bytes transferred: 0
-> mmc0:     (CMD12): 0: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x000a8001
-> mmc0: req done (CMD13): -84: 00000000 00000000 00000000 00000000
-> mmcblk0: error -84 sending status command, retrying
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD13): -110: 00000000 00000000 00000000 00000000
-> mmcblk0: error -110 sending status command, retrying
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD13): 0: 00000b00 00000000 00000000 00000000
-> mmc0: starting CMD12 arg 00000000 flags 0000049d
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000003
-> mmc0: req done (CMD12): 0: 00000b00 00000000 00000000 00000000
-> mmcblk0: timed out sending r/w cmd command, card status 0xb00
-> mmc0: starting CMD18 arg 00000000 flags 000000b5
-> mmc0:     blksz 512 blocks 8 flags 00000200 tsac 100 ms nsac 0
-> mmc0:     CMD12 arg 00000000 flags 0000049d
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000002
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD18): 0: 00000900 00000000 00000000 00000000
-> mmc0:     4096 bytes transferred: 0
-> mmc0:     (CMD12): -110: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x000c8001
-> mmc0: req done (CMD13): -84: 00000000 00000000 00000000 00000000
-> mmcblk0: error -84 sending status command, retrying
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD13): 0: 00000b00 00000000 00000000 00000000
-> mmc0: starting CMD12 arg 00000000 flags 0000049d
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x000a8003
-> mmc0: req done (CMD12): 0: 00000580 00000000 00000000 00000000
-> mmcblk0: error -110 sending stop command, original cmd response 0x900,
-> card status 0xb00
-> mmcblk0: unable to read partition table
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x000a8001
-> mmc0: req failed (CMD13): -84, retrying...
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req failed (CMD13): -110, retrying...
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD13): 0: 00400900 00000000 00000000 00000000
-> mmc0: clock 0Hz busmode 2 powermode 2 cs 0 Vdd 20 width 2 timing 0
-> mmc0: gated MCI clock
->
-> Thanks,
-> Jeff
+
+Please help me to identify any available patch in kernel.org or any
+guidance to fix the above error.  I will really appreciate your help
+on this.
+
+
+-- Thanks and Regards
+"For things to change, we must change"
+-Naresh Bhat
