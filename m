@@ -1,366 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab2BGCrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 21:47:08 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:43081 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab2BGCrF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 21:47:05 -0500
+	id S1755771Ab2BGCse (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 21:48:34 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:41783 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755447Ab2BGCsd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 21:48:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMO-S2hCjvcDHheVETr5=+0Ks+G+NyYvr3mnxUV8jQSKzEgVGA@mail.gmail.com>
+References: <20120121082857.GC32134@elte.hu>
+	<CAMO-S2hq0jGeUdAzMizDOhYJvPSQ=8+HVTUVqzsBOJotxOWrUg@mail.gmail.com>
+	<20120121165830.GA9216@elte.hu>
+	<CAMO-S2iegkRWGcnDt0SZqJT3Y3JHQZcHfMY=THKMN7n4Ae0Fyw@mail.gmail.com>
+	<CA+55aFz=KcR5ji3TBHyfAYxFg8PCjXbdLOWf7aXULYHW4pp2kg@mail.gmail.com>
+	<CAMO-S2iRT+uRzzsQRmhhCs4WRefsfFirteeKXtgX3h+kuWi+eQ@mail.gmail.com>
+	<CA+55aFyxbieV2-WpFNrEtwQ6gXbW7y_X9oW5N6FcEcxmQKA38g@mail.gmail.com>
+	<20120131115855.5861bad7@pyramind.ukuu.org.uk>
+	<20120131120922.GD32010@elte.hu>
+	<20120131121820.58a1db97@pyramind.ukuu.org.uk>
+	<20120131122339.GG32010@elte.hu>
+	<CA+55aFw4F-02NxbQHmpy0KtXxKc9++HutgVXd7nGe0G7NqG+Gw@mail.gmail.com>
+	<1328144756.2768.57.camel@dabdike.int.hansenpartnership.com>
+	<CAMO-S2hCjvcDHheVETr5=+0Ks+G+NyYvr3mnxUV8jQSKzEgVGA@mail.gmail.com>
+Date: Tue, 7 Feb 2012 11:48:32 +0900
+Message-ID: <CAMO-S2i=DoYz93Ooebx0fyxcbqGqbcdcF9_GFrEor5DcscCXSA@mail.gmail.com>
+Subject: Re: [PATCH] NVMe: Fix compilation on architecturs without readq/writeq
 From: Hitoshi Mitake <h.mitake@gmail.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>, Len Brown <lenb@kernel.org>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+To: James Bottomley <jbottomley@parallels.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] asm-generic: architecture independent readq/writeq for 32bit environment
-Date: Tue,  7 Feb 2012 11:45:33 +0900
-Message-Id: <1328582733-31804-1-git-send-email-h.mitake@gmail.com>
-X-Mailer: git-send-email 1.7.5.1
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+On Sun, Feb 5, 2012 at 00:34, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+> On Thu, Feb 2, 2012 at 10:05, James Bottomley <jbottomley@parallels.com> wrote:
+>> On Wed, 2012-02-01 at 15:35 -0800, Linus Torvalds wrote:
+>>> On Tue, Jan 31, 2012 at 4:23 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>>> >
+>>> > non-atomic sounds good to me too.
+>>>
+>>> You both apparently missed the related discussion that some devices
+>>> really do care about order, even if they don't care about atomicity.
+>>>
+>>> So we'd actually have two versions of the header file, one
+>>> little-endian, and one big-endian. Then the driver that knows it
+>>> doesn't need the atomic 'readq()' that is always defined, but wants a
+>>> low-bytes-first version would just do
+>>>
+>>>    #include <linux/io64-little-endian.h>
+>>>
+>>> (or "big-endian" if it wants to read/write high bits first). Most
+>>> drivers probably don't care, but apparently NVMe does.
+>>
+>> And this was about the point I concluded last time that it simply wasn't
+>> worth it with the number of different possibilities for the primitives
+>> and trying to come up with a sensible naming scheme ... it's just easier
+>> to open code because then you get exactly what you meant.
+>>
+>> Incidentally, the last time this came up was with mpt fusion: for a
+>> write to a 64 bit register, it didn't care about order, but it did care
+>> about interleaving as in if you write one half of a 64 bit register and
+>> then write to another register, the 64 bit register effectively gets
+>> written with zeros in the part you didn't write to, so we had to put a
+>> spin lock in the open coded writeb/w/l/q() to make sure the card didn't
+>> get interleaved writes.
+>>
+>> James
+>>
+>
+> As you say, readq/writeq without any description about the semantics
+> of atomicity will cause confusion in such a case.
+>
+> But new plan for non-atomic readq/writeq is defining non-atomic readq/writeq
+> in the header file like asm-generic/io-nonatomic-hi-lo.h, and the file name
+> is a good documentation for the description.
+>
+> The drivers which use readq/writeq without the line like
+> #include <asm-generic/io-nonatomic-hi-lo.h>
+> will cause compile error in the 32-bit environment.
+>
+> --
+> Hitoshi Mitake
+> h.mitake@gmail.com
 
-This patch removes some readq()s in drivers (added in  dbee8a0affd5e6eaa5d7c816)
-and provides unified readq()/writeq() for the drivers.
+I sent the patch which implements readq/writeq in the way.
+If you have comments, I'd like to hear.
 
-For some people, readq/writeq without atomicity is harmful, and order of io
-access has to be specified explicitly. So in this patch, new two header files
-which contain non-atomic readq/writeq are added. io-64-nonatomic-lo-hi.h
-provides non-atomic readq/writeq with the order of lower address -> higher
-address. io-64-nonatomic-hi-lo.h provides non-atomic readq/writeq with reversed
-order. All of them are endian awared.
+Thanks,
 
-If this patch is applied, the drivers which need readq/writeq must add the line:
-#include <asm-generic/io-64-nonatomic-lo-hi.h> /* or hi-lo.h */
-
-But this will be nop in 64-bit environments, and no other #ifdefs are required.
-So I believe that this patch can solve the problem of
-1. driver-specific readq/writeq
-2. atomicity and order of io access
-
-This patch is tested with building allyesconfig and allmodconfig as ARCH=x86 and
-ARCH=i386 on top of tip/master.
-
-Cc: Kashyap Desai <Kashyap.Desai@lsi.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Ravi Anand <ravi.anand@qlogic.com>
-Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Jason Uhlenkott <juhlenko@akamai.com>
-Cc: James Bottomley <James.Bottomley@parallels.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: James Bottomley <jbottomley@parallels.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Hitoshi Mitake <h.mitake@gmail.com>
-
----
- drivers/edac/i3200_edac.c                   |   15 +------
- drivers/platform/x86/ibm_rtl.c              |   15 +------
- drivers/platform/x86/intel_ips.c            |   15 +------
- drivers/scsi/qla4xxx/ql4_nx.c               |   23 +---------
- include/asm-generic/io-64-nonatomic-hi-lo.h |   63 +++++++++++++++++++++++++++
- include/asm-generic/io-64-nonatomic-lo-hi.h |   63 +++++++++++++++++++++++++++
- 6 files changed, 134 insertions(+), 60 deletions(-)
- create mode 100644 include/asm-generic/io-64-nonatomic-hi-lo.h
- create mode 100644 include/asm-generic/io-64-nonatomic-lo-hi.h
-
-diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
-index aa08497..73f55e200 100644
---- a/drivers/edac/i3200_edac.c
-+++ b/drivers/edac/i3200_edac.c
-@@ -15,6 +15,8 @@
- #include <linux/io.h>
- #include "edac_core.h"
- 
-+#include <asm-generic/io-64-nonatomic-lo-hi.h>
-+
- #define I3200_REVISION        "1.1"
- 
- #define EDAC_MOD_STR        "i3200_edac"
-@@ -101,19 +103,6 @@ struct i3200_priv {
- 
- static int nr_channels;
- 
--#ifndef readq
--static inline __u64 readq(const volatile void __iomem *addr)
--{
--	const volatile u32 __iomem *p = addr;
--	u32 low, high;
--
--	low = readl(p);
--	high = readl(p + 1);
--
--	return low + ((u64)high << 32);
--}
--#endif
--
- static int how_many_channels(struct pci_dev *pdev)
- {
- 	unsigned char capid0_8b; /* 8th byte of CAPID0 */
-diff --git a/drivers/platform/x86/ibm_rtl.c b/drivers/platform/x86/ibm_rtl.c
-index 42a7d60..7481146 100644
---- a/drivers/platform/x86/ibm_rtl.c
-+++ b/drivers/platform/x86/ibm_rtl.c
-@@ -33,6 +33,8 @@
- #include <linux/mutex.h>
- #include <asm/bios_ebda.h>
- 
-+#include <asm-generic/io-64-nonatomic-lo-hi.h>
-+
- static bool force;
- module_param(force, bool, 0);
- MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
-@@ -83,19 +85,6 @@ static void __iomem *rtl_cmd_addr;
- static u8 rtl_cmd_type;
- static u8 rtl_cmd_width;
- 
--#ifndef readq
--static inline __u64 readq(const volatile void __iomem *addr)
--{
--	const volatile u32 __iomem *p = addr;
--	u32 low, high;
--
--	low = readl(p);
--	high = readl(p + 1);
--
--	return low + ((u64)high << 32);
--}
--#endif
--
- static void __iomem *rtl_port_map(phys_addr_t addr, unsigned long len)
- {
- 	if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
-diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
-index 809a3ae..88a98cf 100644
---- a/drivers/platform/x86/intel_ips.c
-+++ b/drivers/platform/x86/intel_ips.c
-@@ -77,6 +77,8 @@
- #include <asm/processor.h>
- #include "intel_ips.h"
- 
-+#include <asm-generic/io-64-nonatomic-lo-hi.h>
-+
- #define PCI_DEVICE_ID_INTEL_THERMAL_SENSOR 0x3b32
- 
- /*
-@@ -344,19 +346,6 @@ struct ips_driver {
- static bool
- ips_gpu_turbo_enabled(struct ips_driver *ips);
- 
--#ifndef readq
--static inline __u64 readq(const volatile void __iomem *addr)
--{
--	const volatile u32 __iomem *p = addr;
--	u32 low, high;
--
--	low = readl(p);
--	high = readl(p + 1);
--
--	return low + ((u64)high << 32);
--}
--#endif
--
- /**
-  * ips_cpu_busy - is CPU busy?
-  * @ips: IPS driver struct
-diff --git a/drivers/scsi/qla4xxx/ql4_nx.c b/drivers/scsi/qla4xxx/ql4_nx.c
-index 78f1111..65253df 100644
---- a/drivers/scsi/qla4xxx/ql4_nx.c
-+++ b/drivers/scsi/qla4xxx/ql4_nx.c
-@@ -10,6 +10,8 @@
- #include "ql4_def.h"
- #include "ql4_glbl.h"
- 
-+#include <asm-generic/io-64-nonatomic-lo-hi.h>
-+
- #define MASK(n)		DMA_BIT_MASK(n)
- #define MN_WIN(addr)	(((addr & 0x1fc0000) >> 1) | ((addr >> 25) & 0x3ff))
- #define OCM_WIN(addr)	(((addr & 0x1ff0000) >> 1) | ((addr >> 25) & 0x3ff))
-@@ -655,27 +657,6 @@ static int qla4_8xxx_pci_is_same_window(struct scsi_qla_host *ha,
- 	return 0;
- }
- 
--#ifndef readq
--static inline __u64 readq(const volatile void __iomem *addr)
--{
--	const volatile u32 __iomem *p = addr;
--	u32 low, high;
--
--	low = readl(p);
--	high = readl(p + 1);
--
--	return low + ((u64)high << 32);
--}
--#endif
--
--#ifndef writeq
--static inline void writeq(__u64 val, volatile void __iomem *addr)
--{
--	writel(val, addr);
--	writel(val >> 32, addr+4);
--}
--#endif
--
- static int qla4_8xxx_pci_mem_read_direct(struct scsi_qla_host *ha,
- 		u64 off, void *data, int size)
- {
-diff --git a/include/asm-generic/io-64-nonatomic-hi-lo.h b/include/asm-generic/io-64-nonatomic-hi-lo.h
-new file mode 100644
-index 0000000..34e61cc
---- /dev/null
-+++ b/include/asm-generic/io-64-nonatomic-hi-lo.h
-@@ -0,0 +1,63 @@
-+#ifndef _ASM_IO_64_NONATOMIC_HI_LO_H_
-+#define _ASM_IO_64_NONATOMIC_HI_LO_H_
-+
-+#include <linux/io.h>
-+#include <asm-generic/int-ll64.h>
-+
-+#ifdef CPU_LITTLE_ENDIAN
-+
-+#ifndef readq
-+
-+static inline __u64 readq(const volatile void __iomem *addr)
-+{
-+	const volatile u32 __iomem *p = addr;
-+	u32 low, high;
-+
-+	high = readl(p + 1);
-+	low = readl(p);
-+
-+	return low + ((u64)high << 32);
-+}
-+
-+#endif
-+
-+#ifndef writeq
-+
-+static inline void writeq(__u64 val, volatile void __iomem *addr)
-+{
-+	writel(val >> 32, addr + 4);
-+	writel(val, addr);
-+}
-+
-+#endif
-+
-+#else  /* big endian */
-+
-+#ifndef readq
-+
-+static inline __u64 readq(const volatile void __iomem *addr)
-+{
-+	const volatile u32 __iomem *p = addr;
-+	u32 low, high;
-+
-+	low = readl(p + 1);
-+	high = readl(p);
-+
-+	return low + ((u64)high << 32);
-+}
-+
-+#endif
-+
-+#ifndef writeq
-+
-+static inline void writeq(__u64 val, volatile void __iomem *addr)
-+{
-+	writel(val >> 32, addr);
-+	writel(val, addr + 4);
-+}
-+
-+#endif
-+
-+#endif
-+
-+#endif	/* _ASM_IO_64_NONATOMIC_HI_LO_H_ */
-diff --git a/include/asm-generic/io-64-nonatomic-lo-hi.h b/include/asm-generic/io-64-nonatomic-lo-hi.h
-new file mode 100644
-index 0000000..bf2fe0f
---- /dev/null
-+++ b/include/asm-generic/io-64-nonatomic-lo-hi.h
-@@ -0,0 +1,63 @@
-+#ifndef _ASM_IO_64_NONATOMIC_LO_HI_H_
-+#define _ASM_IO_64_NONATOMIC_LO_HI_H_
-+
-+#include <linux/io.h>
-+#include <asm-generic/int-ll64.h>
-+
-+#ifdef CPU_LITTLE_ENDIAN
-+
-+#ifndef readq
-+
-+static inline __u64 readq(const volatile void __iomem *addr)
-+{
-+	const volatile u32 __iomem *p = addr;
-+	u32 low, high;
-+
-+	low = readl(p);
-+	high = readl(p + 1);
-+
-+	return low + ((u64)high << 32);
-+}
-+
-+#endif
-+
-+#ifndef writeq
-+
-+static inline void writeq(__u64 val, volatile void __iomem *addr)
-+{
-+	writel(val, addr);
-+	writel(val >> 32, addr + 4);
-+}
-+
-+#endif
-+
-+#else  /* big endian */
-+
-+#ifndef readq
-+
-+static inline __u64 readq(const volatile void __iomem *addr)
-+{
-+	const volatile u32 __iomem *p = addr;
-+	u32 low, high;
-+
-+	high = readl(p);
-+	low = readl(p + 1);
-+
-+	return low + ((u64)high << 32);
-+}
-+
-+#endif
-+
-+#ifndef writeq
-+
-+static inline void writeq(__u64 val, volatile void __iomem *addr)
-+{
-+	writel(val, addr + 4);
-+	writel(val >> 32, addr);
-+}
-+
-+#endif
-+
-+#endif
-+
-+#endif	/* _ASM_IO_64_NONATOMIC_LO_HI_H_ */
 -- 
-1.7.5.1
-
+Hitoshi Mitake
+h.mitake@gmail.com
