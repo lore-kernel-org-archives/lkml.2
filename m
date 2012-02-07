@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab2BGJwX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 04:52:23 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:57269
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756273Ab2BGJwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 04:52:21 -0500
-X-SpamScore: -18
-X-BigFish: VPS-18(zzbb2dI9371I146fK1432N98dK4015Lzz1202hzzz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZ0OR4-02-0C5-02
-X-M-MSG: 
-Message-ID: <4F30F44C.8090603@amd.com>
-Date: Tue, 7 Feb 2012 17:52:12 +0800
-From: Andiry Xu <andiry.xu@amd.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	id S1756784Ab2BGJzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 04:55:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756273Ab2BGJzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 04:55:06 -0500
+Message-ID: <4F30F4EE.4080607@redhat.com>
+Date: Tue, 07 Feb 2012 10:54:54 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Richard Farina <sidhayn@gmail.com>
-CC: <sarah.a.sharp@linux.intel.com>, Larry Finger <Larry.Finger@lwfinger.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: Question about error from xhci-hcd
-References: <4F30BB0B.5060203@gmail.com>
-In-Reply-To: <4F30BB0B.5060203@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Christian Hoff <christian.hoff@de.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        rusty@rustcorp.com.au, mst@redhat.com, kvm@vger.kernel.org
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>
+In-Reply-To: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Feb 2012 09:52:12.0671 (UTC) FILETIME=[2A6390F0:01CCE57E]
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 01:47 PM, Richard Farina wrote:
-> I apologize but I am having the same issue reported in this thread in
-> December
-> 
-> [ 5077.573181] xhci_hcd 0000:0a:00.0: ERROR no room on ep ring
-> 
-> I saw no resolution on this issue so I figured I'd step up and see if
-> you needed an active tester who could reproduce the issue.
-> 
-> I am running Gentoo with a 3.2.2 kernel.  I am able to run any kernel
-> version you need, including random git trees and custom patches.  If you
-> have not solved this yet, please allow me to be your test monkey. If you
-> have solved this already then sorry for harming the signal to noise
-> ratio, I could not a find a later message then the one below.
-> 
+On 02/06/2012 10:51 AM, Christian Hoff wrote:
+> Hello Paolo,
+>
+> first let me say that your patch is working fine on my local clone of the
+> qemu repository.
+>
+> Let me ask just one question about the format of the data being
+> transmitted over the virtqueue.
+>
+> Paolo Bonzini wrote:
+> +                cmd->req.cmd = (struct virtio_scsi_cmd_req){
+> +                                .lun[0] = 1,
+> +                                .lun[1] = sc->device->id,
+> +                                .lun[2] = (sc->device->lun>>  8) | 0x40,
+> +                                .lun[3] = sc->device->lun&  0xff,
+> +                               [...]
+> +                };
+>
+> Can't we have seperate fields for the SCSI target ID and the LUN number
+> here? Putting all this into a single field seems confusing. The following
+> line of code (sc->device->lun>>  8) | 0x40 essentially means that LUN
+> numbers will be limited to 8+6 Bits=14 Bits for no obvious reason that I
+> can see. Maybe we could just split the LUN field up into two uint32 fields
+> for target ID and LUN number?
 
-You can try andiry-ring-expansion branch on Sarah's xhci git tree. It
-contains bugs and I'm trying to fix that, but you can have a try.
+The 14-bit limitation can be lifted.  SAM defines a 24-bit LUN format 
+too, but I've never seen it used in practice.
 
-Thanks,
-Andiry
+> Also, lun[1] = sc->device->id means that only 255 SCSI target IDs will be
+> supported. Think about bigger usage scenarios, such as FCP networks with
+> several hundred HBAs in the net. If you want to have the target ID<->HBA
+> mapping the same as on the guest as on the host, then 255 virtual target
+> IDs could be a limit.
 
-> 
-> On 12/28/2011 10:30 PM, Andiry Xu wrote: 
->>
->> That's the error I want to see, but I didn't find it in the dmesg you 
->> posted. is it wrapped? 
->>
->> Anyway, please post the full dmesg with no room on ring error and the 
->> dump of the ep ring and event ring (so the xhci_debug_ring() is 
->> triggered in the patch), so we can see if the ring is mangled or there 
->> is just too many transfers. 
->>
->> Another thing you can try is the andiry-ring-expansion branch on Sarah's 
->> xhci git tree, check if there is still no room on ring error. 
-> 
-> No, the ring is not wrapped. I seems that my anti-spam mechanism kicked
-> in too 
-> soon. or the run stopped too soon. 
-> 
-> I'll have the OP do another run and see if we can get the right
-> information. 
-> 
-> Larry 
-> --
-> 
-> 
+I think you would hit other scalability limitations well before that.  I 
+plan to give each target its own MSI-X interrupt, but there is no 
+infinite supplies of those either.
 
+VMware only supports 15 targets and 255 LUNs per host, by comparison.  I 
+think 255 targets and 16383 LUNs is already several times more than is 
+actually needed.  But in any case, we could still use the fixed "1" byte 
+to go beyond 255 targets.
 
+> Sorry for coming up so late with these suggestions. I hope there is still
+> enough time left to discuss and address these problems.
+
+Sure. :)  I hope the above answer is satisfactory, though.
+
+Paolo
