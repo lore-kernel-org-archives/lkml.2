@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab2BGLsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 06:48:24 -0500
-Received: from enyo.dsw2k3.info ([195.71.86.239]:46803 "EHLO enyo.dsw2k3.info"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755641Ab2BGLsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 06:48:23 -0500
-Date: Tue, 7 Feb 2012 12:48:06 +0100
-From: Matthias Schniedermeyer <ms@citd.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org
-Subject: Re: Linux 3.2.5
-Message-ID: <20120207114806.GA15323@citd.de>
-References: <20120206181622.GA28811@kroah.com>
- <20120207084037.GA6140@citd.de>
- <4F30FABF.4060409@ladisch.de>
- <20120207105835.GA12864@citd.de>
- <4F310DBC.1040501@ladisch.de>
+	id S1756027Ab2BGL4r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 06:56:47 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:33637 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755Ab2BGL4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 06:56:45 -0500
+Message-ID: <4F311154.9080407@de.ibm.com>
+Date: Tue, 07 Feb 2012 12:56:04 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F310DBC.1040501@ladisch.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Christian Hoff <christian.hoff@de.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
+        kvm@vger.kernel.org
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com>
+In-Reply-To: <4F30F4EE.4080607@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12020711-4966-0000-0000-000001626BF0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.02.2012 12:40, Clemens Ladisch wrote:
-> Matthias Schniedermeyer wrote:
-> > On 07.02.2012 11:19, Clemens Ladisch wrote:
-> >> Matthias Schniedermeyer wrote:
-> >>> pci 0000:05:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
-> >>
-> >> Please try that kernel parameter.
-> >
-> > I don't want/need ASPM, disabled is fine with me.
+>> +                cmd->req.cmd = (struct virtio_scsi_cmd_req){
+>> +                                .lun[0] = 1,
+>> +                                .lun[1] = sc->device->id,
+>> +                                .lun[2] = (sc->device->lun>>  8) | 0x40,
+>> +                                .lun[3] = sc->device->lun&  0xff,
+>> +                               [...]
+>> +                };
+>>
+>> Can't we have seperate fields for the SCSI target ID and the LUN number
+>> here? Putting all this into a single field seems confusing. The following
+>> line of code (sc->device->lun>>  8) | 0x40 essentially means that LUN
+>> numbers will be limited to 8+6 Bits=14 Bits for no obvious reason that I
+>> can see. Maybe we could just split the LUN field up into two uint32 fields
+>> for target ID and LUN number?
 > 
-> In your case, it appears that sound requires ASPM.
+> The 14-bit limitation can be lifted.  SAM defines a 24-bit LUN format too, 
+> but I've never seen it used in practice.
 
-OK. I will try that later today.
+Why not lift that limitation before the first version is committed upstream?
 
-But i'm not hopeful because in syslog it says:
-ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
-...
-ACPI _OSC control for PCIe not granted, disabling ASPM
+As far as I see we have to allocate multiple target ids if we want
+to provide multipath (e.g. 8 target ids if there are 8 pathes, thus limiting
+ourselves to 64 targets, no?)
 
-So if ACPI doesn't want to relinquish control of ASPM, how is Linux 
-supposed to enable it?
+As a compromise between space/flexibility, cant we just split the 4 bytes
+in a similar fashion as our major/minor numbers (12/20bit)?
 
+In the mainframe area I have seen real-life problems hitting the 64k 
+device limit for disks (mostly due to multipathing), it was extended
+afterwards, but every extension tends to make an interface less
+appealing. (look at some virtio drivers and you will find places
+were feature bits made the code "less pretty")
+> 
+>> Also, lun[1] = sc->device->id means that only 255 SCSI target IDs will be
+>> supported. Think about bigger usage scenarios, such as FCP networks with
+>> several hundred HBAs in the net. If you want to have the target ID<->HBA
+>> mapping the same as on the guest as on the host, then 255 virtual target
+>> IDs could be a limit.
+> 
+> I think you would hit other scalability limitations well before that.
 
+Performance might be fixed later, but the interface is then settled.
+[..]
 
+> But in any case, we could still use the fixed "1" byte to go beyond 255 targets.
 
+Again, why not now? Any extension would require a feature bit, no?
+Is there a technical reason why a fixed 1 here is better than just using that space
+as scsi id? (e.g. hash table sizes, lookup etc)
 
-Bis denn
+Regards
 
--- 
-Real Programmers consider "what you see is what you get" to be just as 
-bad a concept in Text Editors as it is in women. No, the Real Programmer
-wants a "you asked for it, you got it" text editor -- complicated, 
-cryptic, powerful, unforgiving, dangerous.
+Christian
+
+PS: what puzzles me as well, is the fact that struct virtio_scsi_cmd_req has lun[8]
+in the structure. That would sum up as 5 bytes wasted of those 8, no?
 
