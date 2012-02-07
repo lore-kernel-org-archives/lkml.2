@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab2BGMbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 07:31:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755858Ab2BGMbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 07:31:37 -0500
-Message-ID: <4F3119A0.7080005@redhat.com>
-Date: Tue, 07 Feb 2012 13:31:28 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1756293Ab2BGMbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 07:31:47 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:59924
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756259Ab2BGMbp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 07:31:45 -0500
+X-SpamScore: -12
+X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: Re: [PATCH 06/07] RTC: RTC driver for DA9052/53 PMIC v1
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>
+In-Reply-To: <C3AE124F08223B42BC95AEB82F0F6CED1FDDA892@KCHJEXMB02.kpit.com>
+References: <C3AE124F08223B42BC95AEB82F0F6CED1FDDA892@KCHJEXMB02.kpit.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 7 Feb 2012 17:55:02 +0530
+Message-ID: <1328617502.30549.91.camel@dhruva>
 MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-CC: Christian Hoff <christian.hoff@de.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com>
-In-Reply-To: <4F311154.9080407@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 12:56 PM, Christian Borntraeger wrote:
->> The 14-bit limitation can be lifted.  SAM defines a 24-bit LUN format too,
->> but I've never seen it used in practice.
->
-> Why not lift that limitation before the first version is committed upstream?
+On Tue, 2012-02-07 at 17:51 +0530, Ashish Jangam wrote:
+> I assume that this patch is mergeable without any of the other six
+> patches in this series.  It compiles OK...
+yes
+> 
+> > +{
+> > +	int ret;
+> > +	uint8_t v[5] = {0, 0, 0, 0, 0};
+> 
+> These initalised local arrays are expensive.  The below patch reduces
+> the module's text size by over 100 bytes.
+> 
+> The arrays whcih are passed to da9052_group_write() surely didn't need
+> initalisation, and I trust that's also the case with the arrays which
+> are passed to da9052_group_read()?
+Correct, they can be passed without initialisation.
 
-Because nobody supports >14-bit LUNs.  The in-kernel LIO target doesn't, 
-I don't know anything that does.
 
-> As far as I see we have to allocate multiple target ids if we want
-> to provide multipath (e.g. 8 target ids if there are 8 pathes, thus limiting
-> ourselves to 64 targets, no?)
-
-Well, 256/8 is actually 32, but yes. :)  But it's more likely that you 
-would do multipathing and ALUA on the host, and present a single path to 
-the guest using the QEMU SCSI target.  The guest would see a single disk 
-that just works.
-
-> As a compromise between space/flexibility, cant we just split the 4 bytes
-> in a similar fashion as our major/minor numbers (12/20bit)?
-
-The structure of the LUN is defined by SAM, not by me.  I specified a 
-mandatory subset for two reason: 1) simplicity of implementation; 2) 
-nobody supports the full hierarchical LUNs spec (SCSI has a lot of 
-fringe features), so you need to standardize on something to start with.
-
-Also, you can always have more than one HBA.  You do not even have to 
-hotplug the HBAs, you can start a guest with 8 HBAs on a single 
-multifunction PCI device, and add disks to them as you see fit.
-
-> Again, why not now? Any extension would require a feature bit, no?
-
-No, because the guest would simply scan a wider LUN space, and it would 
-not find anything on older hosts.  It could also look at the 
-max_channel/max_target/max_lun fields in the configuration and print a 
-warning to the user that some targets may not be accessible.
-
-Paolo
