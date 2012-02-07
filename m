@@ -1,158 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab2BGXir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 18:38:47 -0500
-Received: from mga14.intel.com ([143.182.124.37]:57917 "EHLO mga14.intel.com"
+	id S1756574Ab2BGXjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 18:39:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34951 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755998Ab2BGXip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 18:38:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="64225702"
-Message-ID: <4F31B604.5070401@intel.com>
-Date: Tue, 07 Feb 2012 15:38:44 -0800
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 10/15] netvm: Propagate page->pfmemalloc from netdev_alloc_page
- to skb
-References: <1328568978-17553-1-git-send-email-mgorman@suse.de> <1328568978-17553-11-git-send-email-mgorman@suse.de>
-In-Reply-To: <1328568978-17553-11-git-send-email-mgorman@suse.de>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752276Ab2BGXjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 18:39:51 -0500
+From: Adam Jackson <ajax@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org
+Subject: [PATCH 1/2] char/mem: Add /dev/io (v2)
+Date: Tue,  7 Feb 2012 18:39:45 -0500
+Message-Id: <1328657985-13942-1-git-send-email-ajax@redhat.com>
+In-Reply-To: <1328623901-20628-1-git-send-email-ajax@redhat.com>
+References: <1328623901-20628-1-git-send-email-ajax@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2012 02:56 PM, Mel Gorman wrote:
-> diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-> index e91d73c..c062909 100644
-> --- a/drivers/net/ethernet/intel/igb/igb_main.c
-> +++ b/drivers/net/ethernet/intel/igb/igb_main.c
-> @@ -6187,7 +6187,7 @@ static bool igb_alloc_mapped_page(struct igb_ring *rx_ring,
->  		return true;
->  
->  	if (!page) {
-> -		page = alloc_page(GFP_ATOMIC | __GFP_COLD);
-> +		page = __netdev_alloc_page(GFP_ATOMIC, bi->skb);
->  		bi->page = page;
->  		if (unlikely(!page)) {
->  			rx_ring->rx_stats.alloc_failed++;
+This is like /dev/port except not broken.  /dev/port will translate all
+read/write into inb/outb streams, which is wrong since hardware can and
+does care about cycle size.  /dev/io will only allow 1, 2, or 4 byte
+access, and will translate that into the appropriate bus cycle size.
 
-This takes care of the case where we are allocating the page, but what
-about if we are reusing the page?  For this driver it might work better
-to hold of on doing the association between the page and skb either
-somewhere after the skb and the page have both been allocated, or in the
-igb_clean_rx_irq path where we will have both the page and the data
-accessible.
-> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> index 1ee5d0f..7a011c3 100644
-> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> @@ -1143,7 +1143,7 @@ void ixgbe_alloc_rx_buffers(struct ixgbe_ring *rx_ring, u16 cleaned_count)
->  
->  		if (ring_is_ps_enabled(rx_ring)) {
->  			if (!bi->page) {
-> -				bi->page = alloc_page(GFP_ATOMIC | __GFP_COLD);
-> +				bi->page = __netdev_alloc_page(GFP_ATOMIC, skb);
->  				if (!bi->page) {
->  					rx_ring->rx_stats.alloc_rx_page_failed++;
->  					goto no_buffers;
+v2: Fix get/put_user types.
 
-Same thing for this driver.
-> diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-> index bed411b..f6ea14a 100644
-> --- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-> +++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-> @@ -366,7 +366,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
->  		if (!bi->page_dma &&
->  		    (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED)) {
->  			if (!bi->page) {
-> -				bi->page = alloc_page(GFP_ATOMIC | __GFP_COLD);
-> +				bi->page = __netdev_alloc_page(GFP_ATOMIC, NULL);
->  				if (!bi->page) {
->  					adapter->alloc_rx_page_failed++;
->  					goto no_buffers;
-> @@ -400,6 +400,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
->  			 */
->  			skb_reserve(skb, NET_IP_ALIGN);
->  
-> +			propagate_pfmemalloc_skb(bi->page_dma, skb);
->  			bi->skb = skb;
->  		}
->  		if (!bi->dma) {
-I am pretty sure this is incorrect.  I believe you want bi->page, not
-bi->page_dma.  This one is closer though to what I had in mind for igb
-and ixgbe in terms of making it so there is only one location that
-generates the association.
+Signed-off-by: Adam Jackson <ajax@redhat.com>
 
-Also a similar changes would be needed for the igbvf , e1000, and e1000e
-drivers in the Intel tree.
+fixup
+---
+ drivers/char/mem.c |   96 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 96 insertions(+), 0 deletions(-)
 
-> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> index 17ed022..8da4ca0 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -1696,6 +1696,44 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
->  }
->  
->  /**
-> + *	__netdev_alloc_page - allocate a page for ps-rx on a specific device
-> + *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
-> + *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
-> + *
-> + * 	Allocate a new page. dev currently unused.
-> + *
-> + * 	%NULL is returned if there is no free memory.
-> + */
-> +static inline struct page *__netdev_alloc_page(gfp_t gfp_mask,
-> +						struct sk_buff *skb)
-> +{
-> +	struct page *page;
-> +
-> +	gfp_mask |= __GFP_COLD;
-> +
-> +	if (!(gfp_mask & __GFP_NOMEMALLOC))
-> +		gfp_mask |= __GFP_MEMALLOC;
-> +
-> +	page = alloc_pages_node(NUMA_NO_NODE, gfp_mask, 0);
-> +	if (skb && page && page->pfmemalloc)
-> +		skb->pfmemalloc = true;
-> +
-> +	return page;
-> +}
-> +
-> +/**
-> + *	propagate_pfmemalloc_skb - Propagate pfmemalloc if skb is allocated after RX page
-> + *	@page: The page that was allocated from netdev_alloc_page
-> + *	@skb: The skb that may need pfmemalloc set
-> + */
-> +static inline void propagate_pfmemalloc_skb(struct page *page,
-> +						struct sk_buff *skb)
-> +{
-> +	if (page && page->pfmemalloc)
-> +		skb->pfmemalloc = true;
-> +}
-> +
-> +/**
->   * skb_frag_page - retrieve the page refered to by a paged fragment
->   * @frag: the paged fragment
->   *
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index d6e9d08..9fc3847 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -611,6 +611,92 @@ static ssize_t write_port(struct file *file, const char __user *buf,
+ 	*ppos = i;
+ 	return tmp-buf;
+ }
++
++static ssize_t read_io(struct file *file, char __user *buf, size_t count,
++		       loff_t *ppos)
++{
++	unsigned long port = *ppos;
++	const u8 __user *btmp = (void __user *)buf;
++	const u16 __user *wtmp = (void __user *)buf;
++	const u32 __user *ltmp = (void __user *)buf;
++
++	switch (count) {
++		case 1:
++		case 2:
++		case 4:
++		        break;
++		default:
++			return -EINVAL;
++	}
++
++	if (!access_ok(VERIFY_WRITE, buf, count))
++		return -EFAULT;
++
++	switch (count) {
++		case 1:
++			if (__put_user(inb(port), btmp) < 0)
++				return -EFAULT;
++			break;
++		case 2:
++			if (__put_user(inw(port), wtmp) < 0)
++				return -EFAULT;
++			break;
++		case 4:
++			if (__put_user(inl(port), ltmp) < 0)
++				return -EFAULT;
++			break;
++	}
++
++	*ppos += count;
++	return count;
++}
++
++static ssize_t write_io(struct file *file, const char __user *buf, size_t count,
++		       	loff_t *ppos)
++{
++	unsigned long port = *ppos;
++	const u8 __user *btmp = (void __user *)buf;
++	const u16 __user *wtmp = (void __user *)buf;
++	const u32 __user *ltmp = (void __user *)buf;
++	u8 byte;
++	u16 word;
++	u32 dword;
++
++	switch (count) {
++		case 1:
++		case 2:
++		case 4:
++			break;
++		default:
++			return -EINVAL;
++	}
++
++	if (!access_ok(VERIFY_READ, buf, count))
++		return -EFAULT;
++
++	switch (count) {
++		case 1:
++			if (__get_user(byte, btmp))
++				return -EFAULT;
++			outb(byte, port);
++			break;
++		case 2:
++			if (__get_user(word, wtmp))
++				return -EFAULT;
++			outw(word, port);
++			break;
++		case 4:
++			if (__get_user(dword, ltmp))
++				return -EFAULT;
++			outl(dword, port);
++			break;
++		default:
++			return -EINVAL;
++	}
++
++	*ppos += count;
++	return count;
++}
+ #endif
+ 
+ static ssize_t read_null(struct file *file, char __user *buf,
+@@ -774,6 +860,13 @@ static const struct file_operations port_fops = {
+ 	.write		= write_port,
+ 	.open		= open_port,
+ };
++
++static const struct file_operations io_fops = {
++	.llseek		= memory_lseek,
++	.read		= read_io,
++	.write		= write_io,
++	.open		= open_port,
++};
+ #endif
+ 
+ static const struct file_operations zero_fops = {
+@@ -867,6 +960,9 @@ static const struct memdev {
+ #ifdef CONFIG_CRASH_DUMP
+ 	[12] = { "oldmem", 0, &oldmem_fops, NULL },
+ #endif
++#ifdef CONFIG_DEVPORT
++	[13] = { "io", 0, &io_fops, NULL },
++#endif
+ };
+ 
+ static int memory_open(struct inode *inode, struct file *filp)
+-- 
+1.7.7.6
 
-Is this function even really needed?  It seems like you already have
-this covered in your earlier patches, specifically 9/15, which takes
-care of associating the skb and the page pfmemalloc flags when you use
-skb_fill_page_desc.  It would be useful to narrow things down so that we
-are associating this either at the allocation time or at the
-fill_page_desc call instead of doing it at both.
-
-Thanks,
-
-Alex
