@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab2BGNBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 08:01:53 -0500
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:49708 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756710Ab2BGNBu (ORCPT
+	id S1756664Ab2BGNBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 08:01:43 -0500
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:44127 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756194Ab2BGNBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 08:01:50 -0500
+	Tue, 7 Feb 2012 08:01:34 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -16,9 +16,9 @@ To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
 Cc: Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 7/7] MFD: TWL6040: Add regulator support for VIO, V2V1 supplies
-Date: Tue,  7 Feb 2012 15:01:18 +0200
-Message-Id: <1328619678-26080-8-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 1/7] MFD: twl-core: Detach twl6040 from the pmic mfd driver
+Date: Tue,  7 Feb 2012 15:01:12 +0200
+Message-Id: <1328619678-26080-2-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1328619678-26080-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1328619678-26080-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,137 +26,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-twl6040 has three power supply source:
-VBAT needs to be connected to VBAT, VIO, and V2V1.
-Add regulator support for the VIO, V2V1 supplies.
-Initially handle the two supply together with bulk commands.
+On OMAP4 platform audio has separate IC, it is no longer part
+of the pmic chip.
+Prevent twl-core to claim the 0x4b address, which belongs to
+the twl6040 audio IC.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl6040-core.c  |   41 +++++++++++++++++++++++++++++++++++++----
- include/linux/mfd/twl6040.h |    2 ++
- 2 files changed, 39 insertions(+), 4 deletions(-)
+ drivers/mfd/twl-core.c |   58 +++++++++++++++++++++++++++--------------------
+ 1 files changed, 33 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index ea00c69..15e4487 100644
---- a/drivers/mfd/twl6040-core.c
-+++ b/drivers/mfd/twl6040-core.c
-@@ -27,6 +27,7 @@
- #include <linux/types.h>
- #include <linux/slab.h>
- #include <linux/kernel.h>
-+#include <linux/err.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
-@@ -35,8 +36,10 @@
- #include <linux/err.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/twl6040.h>
-+#include <linux/regulator/consumer.h>
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index e04e04d..ac6fdd93 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -115,8 +115,8 @@
+ #define twl_has_watchdog()        false
+ #endif
  
- #define VIBRACTRL_MEMBER(reg) ((reg == TWL6040_REG_VIBCTLL) ? 0 : 1)
-+#define TWL6040_NUM_SUPPLIES	(2)
+-#if defined(CONFIG_MFD_TWL4030_AUDIO) || defined(CONFIG_MFD_TWL4030_AUDIO_MODULE) ||\
+-	defined(CONFIG_TWL6040_CORE) || defined(CONFIG_TWL6040_CORE_MODULE)
++#if defined(CONFIG_MFD_TWL4030_AUDIO) || \
++	defined(CONFIG_MFD_TWL4030_AUDIO_MODULE)
+ #define twl_has_codec()	true
+ #else
+ #define twl_has_codec()	false
+@@ -146,6 +146,7 @@
+ #define SUB_CHIP_ID1 1
+ #define SUB_CHIP_ID2 2
+ #define SUB_CHIP_ID3 3
++#define SUB_CHIP_ID_INVAL 0xff
  
- int twl6040_reg_read(struct twl6040 *twl6040, unsigned int reg)
+ #define TWL_MODULE_LAST TWL4030_MODULE_LAST
+ 
+@@ -315,7 +316,7 @@ static struct twl_mapping twl6030_map[] = {
+ 	 * so they continue to match the order in this table.
+ 	 */
+ 	{ SUB_CHIP_ID1, TWL6030_BASEADD_USB },
+-	{ SUB_CHIP_ID3, TWL6030_BASEADD_AUDIO },
++	{ SUB_CHIP_ID_INVAL, TWL6030_BASEADD_AUDIO },
+ 	{ SUB_CHIP_ID2, TWL6030_BASEADD_DIEID },
+ 	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
+ 	{ SUB_CHIP_ID1, TWL6030_BASEADD_PIH },
+@@ -377,6 +378,11 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+ 		return -EPERM;
+ 	}
+ 	sid = twl_map[mod_no].sid;
++	if (unlikely(sid == SUB_CHIP_ID_INVAL)) {
++		pr_err("%s: module %d is not part of the pmic\n",
++		       DRIVER_NAME, mod_no);
++		return -EINVAL;
++	}
+ 	twl = &twl_modules[sid];
+ 
+ 	mutex_lock(&twl->xfer_lock);
+@@ -434,6 +440,11 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+ 		return -EPERM;
+ 	}
+ 	sid = twl_map[mod_no].sid;
++	if (unlikely(sid == SUB_CHIP_ID_INVAL)) {
++		pr_err("%s: module %d is not part of the pmic\n",
++		       DRIVER_NAME, mod_no);
++		return -EINVAL;
++	}
+ 	twl = &twl_modules[sid];
+ 
+ 	mutex_lock(&twl->xfer_lock);
+@@ -834,15 +845,6 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 			return PTR_ERR(child);
+ 	}
+ 
+-	if (twl_has_codec() && pdata->audio && twl_class_is_6030()) {
+-		sub_chip_id = twl_map[TWL_MODULE_AUDIO_VOICE].sid;
+-		child = add_child(sub_chip_id, "twl6040",
+-				pdata->audio, sizeof(*pdata->audio),
+-				false, 0, 0);
+-		if (IS_ERR(child))
+-			return PTR_ERR(child);
+-	}
+-
+ 	/* twl4030 regulators */
+ 	if (twl_has_regulator() && twl_class_is_4030()) {
+ 		child = add_regulator(TWL4030_REG_VPLL1, pdata->vpll1,
+@@ -1163,18 +1165,21 @@ int twl6030_exit_irq(void);
+ 
+ static int twl_remove(struct i2c_client *client)
  {
-@@ -498,6 +501,14 @@ static int __devinit twl6040_probe(struct i2c_client *client,
- 		goto err;
+-	unsigned i;
++	unsigned i, num_slaves;
+ 	int status;
+ 
+-	if (twl_class_is_4030())
++	if (twl_class_is_4030()) {
+ 		status = twl4030_exit_irq();
+-	else
++		num_slaves = TWL_NUM_SLAVES;
++	} else {
+ 		status = twl6030_exit_irq();
++		num_slaves = TWL_NUM_SLAVES - 1;
++	}
+ 
+ 	if (status < 0)
+ 		return status;
+ 
+-	for (i = 0; i < TWL_NUM_SLAVES; i++) {
++	for (i = 0; i < num_slaves; i++) {
+ 		struct twl_client	*twl = &twl_modules[i];
+ 
+ 		if (twl->client && twl->client != client)
+@@ -1190,7 +1195,7 @@ static int __devinit
+ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ {
+ 	int				status;
+-	unsigned			i;
++	unsigned			i, num_slaves;
+ 	struct twl4030_platform_data	*pdata = client->dev.platform_data;
+ 	struct device_node		*node = client->dev.of_node;
+ 	u8 temp;
+@@ -1244,7 +1249,17 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		return -EBUSY;
  	}
  
-+	twl6040->supplies = devm_kzalloc(&client->dev,
-+					 sizeof(struct regulator_bulk_data) *
-+					 TWL6040_NUM_SUPPLIES, GFP_KERNEL);
-+	if (!twl6040->supplies) {
-+		ret = -ENOMEM;
-+		goto err;
+-	for (i = 0; i < TWL_NUM_SLAVES; i++) {
++	if ((id->driver_data) & TWL6030_CLASS) {
++		twl_id = TWL6030_CLASS_ID;
++		twl_map = &twl6030_map[0];
++		num_slaves = TWL_NUM_SLAVES - 1;
++	} else {
++		twl_id = TWL4030_CLASS_ID;
++		twl_map = &twl4030_map[0];
++		num_slaves = TWL_NUM_SLAVES;
 +	}
 +
- 	twl6040->regmap = regmap_init_i2c(client, &twl6040_regmap_config);
- 	if (IS_ERR(twl6040->regmap)) {
- 		ret = PTR_ERR(twl6040->regmap);
-@@ -506,6 +517,21 @@ static int __devinit twl6040_probe(struct i2c_client *client,
++	for (i = 0; i < num_slaves; i++) {
+ 		struct twl_client	*twl = &twl_modules[i];
  
- 	i2c_set_clientdata(client, twl6040);
- 
-+	twl6040->supplies[0].supply = "vio";
-+	twl6040->supplies[1].supply = "v2v1";
-+	ret = regulator_bulk_get(&client->dev, TWL6040_NUM_SUPPLIES,
-+				 twl6040->supplies);
-+	if (ret != 0) {
-+		dev_err(&client->dev, "Failed to get supplies: %d\n", ret);
-+		goto regulator_get_err;
-+	}
-+
-+	ret = regulator_bulk_enable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
-+	if (ret != 0) {
-+		dev_err(&client->dev, "Failed to enable supplies: %d\n", ret);
-+		goto power_err;
-+	}
-+
- 	twl6040->dev = &client->dev;
- 	twl6040->irq = client->irq;
- 	twl6040->irq_base = pdata->irq_base;
-@@ -526,13 +552,13 @@ static int __devinit twl6040_probe(struct i2c_client *client,
- 		ret = gpio_request_one(twl6040->audpwron, GPIOF_OUT_INIT_LOW,
- 				       "audpwron");
- 		if (ret)
--			goto gpio1_err;
-+			goto gpio_err;
+ 		twl->address = client->addr + i;
+@@ -1263,13 +1278,6 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		mutex_init(&twl->xfer_lock);
  	}
+ 	inuse = true;
+-	if ((id->driver_data) & TWL6030_CLASS) {
+-		twl_id = TWL6030_CLASS_ID;
+-		twl_map = &twl6030_map[0];
+-	} else {
+-		twl_id = TWL4030_CLASS_ID;
+-		twl_map = &twl4030_map[0];
+-	}
  
- 	/* codec interrupt */
- 	ret = twl6040_irq_init(twl6040);
- 	if (ret)
--		goto gpio2_err;
-+		goto irq_init_err;
- 
- 	ret = request_threaded_irq(twl6040->irq_base + TWL6040_IRQ_READY,
- 				   NULL, twl6040_naudint_handler, 0,
-@@ -592,10 +618,14 @@ mfd_err:
- 	free_irq(twl6040->irq_base + TWL6040_IRQ_READY, twl6040);
- irq_err:
- 	twl6040_irq_exit(twl6040);
--gpio2_err:
-+irq_init_err:
- 	if (gpio_is_valid(twl6040->audpwron))
- 		gpio_free(twl6040->audpwron);
--gpio1_err:
-+gpio_err:
-+	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
-+power_err:
-+	regulator_bulk_free(TWL6040_NUM_SUPPLIES, twl6040->supplies);
-+regulator_get_err:
- 	i2c_set_clientdata(client, NULL);
- 	regmap_exit(twl6040->regmap);
- err:
-@@ -619,6 +649,9 @@ static int __devexit twl6040_remove(struct i2c_client *client)
- 	i2c_set_clientdata(client, NULL);
- 	regmap_exit(twl6040->regmap);
- 
-+	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
-+	regulator_bulk_free(TWL6040_NUM_SUPPLIES, twl6040->supplies);
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-index e3ff28d..f75d900 100644
---- a/include/linux/mfd/twl6040.h
-+++ b/include/linux/mfd/twl6040.h
-@@ -199,10 +199,12 @@ struct twl6040_platform_data {
- };
- 
- struct regmap;
-+struct regulator_bulk_data;
- 
- struct twl6040 {
- 	struct device *dev;
- 	struct regmap *regmap;
-+	struct regulator_bulk_data *supplies; /* supplies for vio, v2v1 */
- 	struct mutex mutex;
- 	struct mutex io_mutex;
- 	struct mutex irq_mutex;
+ 	/* setup clock framework */
+ 	clocks_init(&client->dev, pdata->clock);
 -- 
 1.7.8.4
 
