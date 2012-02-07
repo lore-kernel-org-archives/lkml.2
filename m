@@ -1,187 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab2BGV3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 16:29:45 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:53286 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756924Ab2BGV20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 16:28:26 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4 V12] Add functions to check if the host has stopped the vm
-Date: Tue,  7 Feb 2012 16:28:18 -0500
-Message-Id: <1328650100-19521-3-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1328650100-19521-1-git-send-email-emunson@mgebm.net>
-References: <1328650100-19521-1-git-send-email-emunson@mgebm.net>
+	id S1757011Ab2BGVdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 16:33:31 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57134 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756936Ab2BGVda (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 16:33:30 -0500
+Date: Tue, 7 Feb 2012 19:33:22 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf: allow command to attach local data to thread/evsel structs
+Message-ID: <20120207213322.GF2172@infradead.org>
+References: <4F316964.2050900@gmail.com>
+ <20120207201052.GE2172@infradead.org>
+ <4F319514.7030604@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F319514.7030604@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a host stops or suspends a VM it will set a flag to show this.  The
-watchdog will use these functions to determine if a softlockup is real, or the
-result of a suspended VM.
+Em Tue, Feb 07, 2012 at 02:18:12PM -0700, David Ahern escreveu:
+> 
+> 
+> On 02/07/2012 01:10 PM, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, Feb 07, 2012 at 11:11:48AM -0700, David Ahern escreveu:
+> >> This is an API I have been using for some 'local' commands that process
+> >> perf events. It allows the commands to attach data to events and threads
+> >> and avoid local caching and lookups.
+> > 
+> > In the kernel proper we try to get away with this pattern using
+> > container_of where possible.
+> > 
+> > Here tho the structures are created in library functions.
+> 
+> exactly.
+> 
+> > 
+> > The symbol library has this symbol_conf.priv_size + symbol__priv() to do
+> > what you want while avoiding two allocs + one pointer in a core
+> > structure.
+> 
+> Ok. Interesting. Somewhat of a hidden allocation. Symbols can't come and
+> go like threads.
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
-asm-generic changes Acked-by: Arnd Bergmann <arnd@arndb.de>
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: ryanh@linux.vnet.ibm.com
-Cc: aliguori@us.ibm.com
-Cc: mtosatti@redhat.com
-Cc: kvm@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
----
-Changes from V11:
- Re-add the missing asm-generic stub for check_and_clear_guest_stopped()
-Changes from V6:
- Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
-Changes from V5:
- Collapse generic stubs into this patch
- check_and_clear_guest_stopped() takes no args and uses __get_cpu_var()
- Include individual definitions in ia64, s390, and powerpc
+Yes, standardizing a way to attach extra info to these structs seems the
+way to go.
 
- arch/ia64/include/asm/kvm_para.h    |    5 +++++
- arch/powerpc/include/asm/kvm_para.h |    5 +++++
- arch/s390/include/asm/kvm_para.h    |    5 +++++
- arch/x86/include/asm/kvm_para.h     |    8 ++++++++
- arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
- include/asm-generic/kvm_para.h      |   14 ++++++++++++++
- 6 files changed, 58 insertions(+), 0 deletions(-)
- create mode 100644 include/asm-generic/kvm_para.h
+The experience with symbol_conf is a data point, check if it fits your
+needs.
+ 
+> > I think we either use {thread_conf,evsel_conf} for global configuration
+> > options for these two core data structures or we just provide some
+> > optional, per perf_tool allocator.
+> 
+> Meaning conf's that parallel symbol_conf -- allocated and 'owned' by the
+> perf library but exported for the user to set values. In this case
+> handlers are needed for allocation and free as instances come and go?
+> e.g., thread__new invokes thread_conf.allocator if defined and
+> thread__priv returns a pointer to private data.
 
-diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
-index 1588aee..2019cb9 100644
---- a/arch/ia64/include/asm/kvm_para.h
-+++ b/arch/ia64/include/asm/kvm_para.h
-@@ -26,6 +26,11 @@ static inline unsigned int kvm_arch_para_features(void)
- 	return 0;
- }
- 
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
- #endif
- 
- #endif
-diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
-index 50533f9..1f80293 100644
---- a/arch/powerpc/include/asm/kvm_para.h
-+++ b/arch/powerpc/include/asm/kvm_para.h
-@@ -169,6 +169,11 @@ static inline unsigned int kvm_arch_para_features(void)
- 	return r;
- }
- 
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
- #endif /* __KERNEL__ */
- 
- #endif /* __POWERPC_KVM_PARA_H__ */
-diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
-index 6964db2..a988329 100644
---- a/arch/s390/include/asm/kvm_para.h
-+++ b/arch/s390/include/asm/kvm_para.h
-@@ -149,6 +149,11 @@ static inline unsigned int kvm_arch_para_features(void)
- 	return 0;
- }
- 
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
- #endif
- 
- #endif /* __S390_KVM_PARA_H */
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 734c376..99c4bbe 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -95,6 +95,14 @@ struct kvm_vcpu_pv_apf_data {
- extern void kvmclock_init(void);
- extern int kvm_register_clock(char *txt);
- 
-+#ifdef CONFIG_KVM_CLOCK
-+bool kvm_check_and_clear_guest_paused(void);
-+#else
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+#endif /* CONFIG_KVMCLOCK */
- 
- /* This instruction is vmcall.  On non-VT architectures, it will generate a
-  * trap that we will then rewrite to the appropriate instruction.
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index 44842d7..bdf6423 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -22,6 +22,7 @@
- #include <asm/msr.h>
- #include <asm/apic.h>
- #include <linux/percpu.h>
-+#include <linux/hardirq.h>
- 
- #include <asm/x86_init.h>
- #include <asm/reboot.h>
-@@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
- 	preset_lpj = lpj;
- }
- 
-+bool kvm_check_and_clear_guest_paused(void)
-+{
-+	bool ret = false;
-+	struct pvclock_vcpu_time_info *src;
-+
-+	/*
-+	 * per_cpu() is safe here because this function is only called from
-+	 * timer functions where preemption is already disabled.
-+	 */
-+	WARN_ON(!in_atomic());
-+	src = &__get_cpu_var(hv_clock);
-+	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
-+		__this_cpu_and(hv_clock.flags, ~PVCLOCK_GUEST_STOPPED);
-+		ret = true;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
-+
- static struct clocksource kvm_clock = {
- 	.name = "kvm-clock",
- 	.read = kvm_clock_get_cycles,
-diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
-new file mode 100644
-index 0000000..05ef7e7
---- /dev/null
-+++ b/include/asm-generic/kvm_para.h
-@@ -0,0 +1,14 @@
-+#ifndef _ASM_GENERIC_KVM_PARA_H
-+#define _ASM_GENERIC_KVM_PARA_H
-+
-+
-+/*
-+ * This function is used by architectures that support kvm to avoid issuing
-+ * false soft lockup messages.
-+ */
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
-+#endif
--- 
-1.7.5.4
+Well, the symbol way of doing things is to just allocate as many bytes
+as the tool being used asks for and then at free time nothing special
+has to be done.
 
+Problem is when multiple things needs extra space. In the kernel we have
+the skb->cb way of doing things, where we have a scratch pad that is per
+layer, but limited in size, difficult to find the right way to do it.
+ 
+> > Yeah, that sounds extreme, but hey, this is a profiler, we ought to eat
+> > our own dog food, right?
+> 
+> um, as a library to be used by other commands libperf.so is an event
+> collector and processor; profiler is just one use.
+
+Right, but in any case the faster and less memory intensive the better,
+even if not strictly needed to use lots of memory or cpu.
+ 
+> > 
+> > - Arnaldo
+> > 
+> > P.S.: Are your tools too specific or are they upstreamable?
+> 
+> Too specific.
+> 
+> One uses context-switch SW events to dump a time history of what task is
+> running on what processor, how long it ran and how long between
+> schedulings. The other uses a custom SW event to track futex's. In both
+> cases the solutions are constrained by an older kernel with limited
+> trace support - and too much effort to backport it.
+> 
+> Key points are that in processing events I want to track data that is
+> task specific (e.g., last scheduled out) and event specific (e.g., time
+> last seen by cpu).
+
+Please take a look at the suggestions and propose a way to address your
+needs, if a void private pointer ends up the way to go... well, we'll
+have it :-)
+ 
+> David
