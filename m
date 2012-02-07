@@ -1,125 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab2BGDjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 22:39:10 -0500
-Received: from void.printf.net ([89.145.121.20]:58659 "EHLO void.printf.net"
+	id S1756171Ab2BGDsm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 22:48:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34747 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756007Ab2BGDjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 22:39:07 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@nokia.com>, Pierre Ossman <pierre@ossman.eu>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org
-Subject: Re: mmc sdhci mmcblk0: error -110 sending status command, retrying
-References: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
-Date: Mon, 06 Feb 2012 22:38:53 -0500
-In-Reply-To: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
-	(Jeff Chua's message of "Tue, 7 Feb 2012 11:34:21 +0800")
-Message-ID: <m2pqdr2tyq.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1755828Ab2BGDsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 22:48:41 -0500
+References: <1328582733-31804-1-git-send-email-h.mitake@gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1328582733-31804-1-git-send-email-h.mitake@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] asm-generic: architecture independent readq/writeq for 32bit environment
+From: "hpanvin@gmail.com" <hpa@zytor.com>
+Date: Mon, 06 Feb 2012 19:47:39 -0800
+To: Hitoshi Mitake <h.mitake@gmail.com>, mingo@elte.hu
+CC: linux-kernel@vger.kernel.org,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Kashyap Desai <Kashyap.Desai@lsi.com>, Len Brown <lenb@kernel.org>,
+        Ravi Anand <ravi.anand@qlogic.com>,
+        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Jason Uhlenkott <juhlenko@akamai.com>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Roland Dreier <roland@purestorage.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Message-ID: <2d1a4f3c-48b0-4105-bbc6-18d164512405@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, adding linux-mmc@ to the thread,
+Should be volatile u64 * not volatile void *...
 
-On Mon, Feb 06 2012, Jeff Chua wrote:
-> The SD slot on the Lenovo X220 is doesn't seems to work on
-> Linux-3.3.0-rc2. I haven't use SD for a while, so don't know which
-> linux version will work on the X220.
->
->
-> # cat .config
-> CONFIG_MMC=m
-> CONFIG_MMC_DEBUG=y
-> CONFIG_MMC_CLKGATE=y
-> CONFIG_MMC_BLOCK=m
-> CONFIG_MMC_BLOCK_MINORS=8
-> CONFIG_MMC_BLOCK_BOUNCE=y
-> CONFIG_MMC_SDHCI=m
-> CONFIG_MMC_SDHCI_PCI=m
-> CONFIG_MMC_RICOH_MMC=y
->
->
-> # lspcpi -v
->
-> 0d:00.0 System peripheral: Ricoh Co Ltd Device e823 (rev 04) (prog-if 01)
->         Subsystem: Lenovo Device 21da
->         Flags: bus master, fast devsel, latency 0, IRQ 16
->         Memory at f1500000 (32-bit, non-prefetchable) [size=256]
->         Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
->         Capabilities: [78] Power Management version 3
->         Capabilities: [80] Express Endpoint, MSI 00
->         Kernel driver in use: sdhci-pci
->         Kernel modules: sdhci-pci
->
->
-> # dmesg
-> sdhci: Secure Digital Host Controller Interface driver
-> sdhci: Copyright(c) Pierre Ossman
-> sdhci-pci 0000:0d:00.0: SDHCI controller found [1180:e823] (rev 4)
-> sdhci-pci 0000:0d:00.0: found 1 slot(s)
-> sdhci [sdhci_add_host()]: mmc0: Auto-CMD23 unavailable
-> sdhci: =========== REGISTER DUMP (mmc0)===========
-> sdhci: Sys addr: 0x00000000 | Version:  0x00000502
-> sdhci: Blk size: 0x00000000 | Blk cnt:  0x00000000
-> sdhci: Argument: 0x00000000 | Trn mode: 0x00000000
-> sdhci: Present:  0x01f70000 | Host ctl: 0x00000000
-> sdhci: Power:    0x00000000 | Blk gap:  0x00000000
-> sdhci: Wake-up:  0x00000000 | Clock:    0x00000000
-> sdhci: Timeout:  0x00000000 | Int stat: 0x00000000
-> sdhci: Int enab: 0x00ff0003 | Sig enab: 0x00ff0003
-> sdhci: AC12 err: 0x00000000 | Slot int: 0x00000000
-> sdhci: Caps:     0x21e832b2 | Caps_1:   0x00008073
-> sdhci: Cmd:      0x00000000 | Max curr: 0x00000040
-> sdhci: Host ctl2: 0x00000000
-> sdhci: ===========================================
->
-> mmc0: req done (CMD18): 0: 00000900 00000000 00000000 00000000
-> mmc0:     0 bytes transferred: -84
-> mmc0:     (CMD12): -110: 00000000 00000000 00000000 00000000
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD13): -110: 00000000 00000000 00000000 00000000
-> mmcblk0: error -110 sending status command, retrying
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00018000
-> mmc0: req done (CMD13): -110: 00000000 00000000 00000000 00000000
-> mmcblk0: error -110 sending status command, retrying
-> mmc0: starting CMD13 arg b3680000 flags 00000195
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> mmc0: req done (CMD13): 0: 00800b00 00000000 00000000 00000000
-> mmc0: starting CMD12 arg 00000000 flags 0000049d
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000003
-> mmc0: req done (CMD12): 0: 00000b00 00000000 00000000 00000000
-> mmcblk0: error -110 sending stop command, original cmd response 0x900,
-> card status 0x800b00
-> mmcblk0: error -84 transferring data, sector 0, nr 32, cmd response
-> 0x900, card status 0xb00
-> mmcblk0: retrying using single block read
-> mmc0: starting CMD17 arg 00000000 flags 000000b5
-> mmc0:     blksz 512 blocks 1 flags 00000200 tsac 100 ms nsac 0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000002
-> mmc0: req done (CMD17): 0: 00000900 00000000 00000000 00000000
-> mmc0:     512 bytes transferred: 0
-> mmc0: starting CMD17 arg 00000001 flags 000000b5
-> mmc0:     blksz 512 blocks 1 flags 00000200 tsac 100 ms nsac 0
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000001
-> sdhci [sdhci_irq()]: *** mmc0 got interrupt: 0x00000002
->
->
-> Any help will be very much appreciated.
 
-Could you try another SD card to confirm that it's the controller?
-If it is, a bisect (at least between kernel versions) is probably
-a good idea.
 
-Thanks,
+Hitoshi Mitake <h.mitake@gmail.com> wrote:
 
-- Chris.
+>From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+>
+>This patch removes some readq()s in drivers (added in 
+>dbee8a0affd5e6eaa5d7c816)
+>and provides unified readq()/writeq() for the drivers.
+>
+>For some people, readq/writeq without atomicity is harmful, and order
+>of io
+>access has to be specified explicitly. So in this patch, new two header
+>files
+>which contain non-atomic readq/writeq are added.
+>io-64-nonatomic-lo-hi.h
+>provides non-atomic readq/writeq with the order of lower address ->
+>higher
+>address. io-64-nonatomic-hi-lo.h provides non-atomic readq/writeq with
+>reversed
+>order. All of them are endian awared.
+>
+>If this patch is applied, the drivers which need readq/writeq must add
+>the line:
+>#include <asm-generic/io-64-nonatomic-lo-hi.h> /* or hi-lo.h */
+>
+>But this will be nop in 64-bit environments, and no other #ifdefs are
+>required.
+>So I believe that this patch can solve the problem of
+>1. driver-specific readq/writeq
+>2. atomicity and order of io access
+>
+>This patch is tested with building allyesconfig and allmodconfig as
+>ARCH=x86 and
+>ARCH=i386 on top of tip/master.
+>
+>Cc: Kashyap Desai <Kashyap.Desai@lsi.com>
+>Cc: Len Brown <lenb@kernel.org>
+>Cc: Ravi Anand <ravi.anand@qlogic.com>
+>Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+>Cc: Matthew Garrett <mjg@redhat.com>
+>Cc: Jason Uhlenkott <juhlenko@akamai.com>
+>Cc: James Bottomley <James.Bottomley@parallels.com>
+>Cc: Thomas Gleixner <tglx@linutronix.de>
+>Cc: "H. Peter Anvin" <hpa@zytor.com>
+>Cc: Roland Dreier <roland@purestorage.com>
+>Cc: James Bottomley <jbottomley@parallels.com>
+>Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+>Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
+>Cc: Andrew Morton <akpm@linux-foundation.org>
+>Cc: Linus Torvalds <torvalds@linux-foundation.org>
+>Signed-off-by: Hitoshi Mitake <h.mitake@gmail.com>
+>
+>---
+> drivers/edac/i3200_edac.c                   |   15 +------
+> drivers/platform/x86/ibm_rtl.c              |   15 +------
+> drivers/platform/x86/intel_ips.c            |   15 +------
+> drivers/scsi/qla4xxx/ql4_nx.c               |   23 +---------
+>include/asm-generic/io-64-nonatomic-hi-lo.h |   63
+>+++++++++++++++++++++++++++
+>include/asm-generic/io-64-nonatomic-lo-hi.h |   63
+>+++++++++++++++++++++++++++
+> 6 files changed, 134 insertions(+), 60 deletions(-)
+> create mode 100644 include/asm-generic/io-64-nonatomic-hi-lo.h
+> create mode 100644 include/asm-generic/io-64-nonatomic-lo-hi.h
+>
+>diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
+>index aa08497..73f55e200 100644
+>--- a/drivers/edac/i3200_edac.c
+>+++ b/drivers/edac/i3200_edac.c
+>@@ -15,6 +15,8 @@
+> #include <linux/io.h>
+> #include "edac_core.h"
+> 
+>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
+>+
+> #define I3200_REVISION        "1.1"
+> 
+> #define EDAC_MOD_STR        "i3200_edac"
+>@@ -101,19 +103,6 @@ struct i3200_priv {
+> 
+> static int nr_channels;
+> 
+>-#ifndef readq
+>-static inline __u64 readq(const volatile void __iomem *addr)
+>-{
+>-	const volatile u32 __iomem *p = addr;
+>-	u32 low, high;
+>-
+>-	low = readl(p);
+>-	high = readl(p + 1);
+>-
+>-	return low + ((u64)high << 32);
+>-}
+>-#endif
+>-
+> static int how_many_channels(struct pci_dev *pdev)
+> {
+> 	unsigned char capid0_8b; /* 8th byte of CAPID0 */
+>diff --git a/drivers/platform/x86/ibm_rtl.c
+>b/drivers/platform/x86/ibm_rtl.c
+>index 42a7d60..7481146 100644
+>--- a/drivers/platform/x86/ibm_rtl.c
+>+++ b/drivers/platform/x86/ibm_rtl.c
+>@@ -33,6 +33,8 @@
+> #include <linux/mutex.h>
+> #include <asm/bios_ebda.h>
+> 
+>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
+>+
+> static bool force;
+> module_param(force, bool, 0);
+> MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
+>@@ -83,19 +85,6 @@ static void __iomem *rtl_cmd_addr;
+> static u8 rtl_cmd_type;
+> static u8 rtl_cmd_width;
+> 
+>-#ifndef readq
+>-static inline __u64 readq(const volatile void __iomem *addr)
+>-{
+>-	const volatile u32 __iomem *p = addr;
+>-	u32 low, high;
+>-
+>-	low = readl(p);
+>-	high = readl(p + 1);
+>-
+>-	return low + ((u64)high << 32);
+>-}
+>-#endif
+>-
+> static void __iomem *rtl_port_map(phys_addr_t addr, unsigned long len)
+> {
+> 	if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
+>diff --git a/drivers/platform/x86/intel_ips.c
+>b/drivers/platform/x86/intel_ips.c
+>index 809a3ae..88a98cf 100644
+>--- a/drivers/platform/x86/intel_ips.c
+>+++ b/drivers/platform/x86/intel_ips.c
+>@@ -77,6 +77,8 @@
+> #include <asm/processor.h>
+> #include "intel_ips.h"
+> 
+>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
+>+
+> #define PCI_DEVICE_ID_INTEL_THERMAL_SENSOR 0x3b32
+> 
+> /*
+>@@ -344,19 +346,6 @@ struct ips_driver {
+> static bool
+> ips_gpu_turbo_enabled(struct ips_driver *ips);
+> 
+>-#ifndef readq
+>-static inline __u64 readq(const volatile void __iomem *addr)
+>-{
+>-	const volatile u32 __iomem *p = addr;
+>-	u32 low, high;
+>-
+>-	low = readl(p);
+>-	high = readl(p + 1);
+>-
+>-	return low + ((u64)high << 32);
+>-}
+>-#endif
+>-
+> /**
+>  * ips_cpu_busy - is CPU busy?
+>  * @ips: IPS driver struct
+>diff --git a/drivers/scsi/qla4xxx/ql4_nx.c
+>b/drivers/scsi/qla4xxx/ql4_nx.c
+>index 78f1111..65253df 100644
+>--- a/drivers/scsi/qla4xxx/ql4_nx.c
+>+++ b/drivers/scsi/qla4xxx/ql4_nx.c
+>@@ -10,6 +10,8 @@
+> #include "ql4_def.h"
+> #include "ql4_glbl.h"
+> 
+>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
+>+
+> #define MASK(n)		DMA_BIT_MASK(n)
+>#define MN_WIN(addr)	(((addr & 0x1fc0000) >> 1) | ((addr >> 25) &
+>0x3ff))
+>#define OCM_WIN(addr)	(((addr & 0x1ff0000) >> 1) | ((addr >> 25) &
+>0x3ff))
+>@@ -655,27 +657,6 @@ static int qla4_8xxx_pci_is_same_window(struct
+>scsi_qla_host *ha,
+> 	return 0;
+> }
+> 
+>-#ifndef readq
+>-static inline __u64 readq(const volatile void __iomem *addr)
+>-{
+>-	const volatile u32 __iomem *p = addr;
+>-	u32 low, high;
+>-
+>-	low = readl(p);
+>-	high = readl(p + 1);
+>-
+>-	return low + ((u64)high << 32);
+>-}
+>-#endif
+>-
+>-#ifndef writeq
+>-static inline void writeq(__u64 val, volatile void __iomem *addr)
+>-{
+>-	writel(val, addr);
+>-	writel(val >> 32, addr+4);
+>-}
+>-#endif
+>-
+> static int qla4_8xxx_pci_mem_read_direct(struct scsi_qla_host *ha,
+> 		u64 off, void *data, int size)
+> {
+>diff --git a/include/asm-generic/io-64-nonatomic-hi-lo.h
+>b/include/asm-generic/io-64-nonatomic-hi-lo.h
+>new file mode 100644
+>index 0000000..34e61cc
+>--- /dev/null
+>+++ b/include/asm-generic/io-64-nonatomic-hi-lo.h
+>@@ -0,0 +1,63 @@
+>+#ifndef _ASM_IO_64_NONATOMIC_HI_LO_H_
+>+#define _ASM_IO_64_NONATOMIC_HI_LO_H_
+>+
+>+#include <linux/io.h>
+>+#include <asm-generic/int-ll64.h>
+>+
+>+#ifdef CPU_LITTLE_ENDIAN
+>+
+>+#ifndef readq
+>+
+>+static inline __u64 readq(const volatile void __iomem *addr)
+>+{
+>+	const volatile u32 __iomem *p = addr;
+>+	u32 low, high;
+>+
+>+	high = readl(p + 1);
+>+	low = readl(p);
+>+
+>+	return low + ((u64)high << 32);
+>+}
+>+
+>+#endif
+>+
+>+#ifndef writeq
+>+
+>+static inline void writeq(__u64 val, volatile void __iomem *addr)
+>+{
+>+	writel(val >> 32, addr + 4);
+>+	writel(val, addr);
+>+}
+>+
+>+#endif
+>+
+>+#else  /* big endian */
+>+
+>+#ifndef readq
+>+
+>+static inline __u64 readq(const volatile void __iomem *addr)
+>+{
+>+	const volatile u32 __iomem *p = addr;
+>+	u32 low, high;
+>+
+>+	low = readl(p + 1);
+>+	high = readl(p);
+>+
+>+	return low + ((u64)high << 32);
+>+}
+>+
+>+#endif
+>+
+>+#ifndef writeq
+>+
+>+static inline void writeq(__u64 val, volatile void __iomem *addr)
+>+{
+>+	writel(val >> 32, addr);
+>+	writel(val, addr + 4);
+>+}
+>+
+>+#endif
+>+
+>+#endif
+>+
+>+#endif	/* _ASM_IO_64_NONATOMIC_HI_LO_H_ */
+>diff --git a/include/asm-generic/io-64-nonatomic-lo-hi.h
+>b/include/asm-generic/io-64-nonatomic-lo-hi.h
+>new file mode 100644
+>index 0000000..bf2fe0f
+>--- /dev/null
+>+++ b/include/asm-generic/io-64-nonatomic-lo-hi.h
+>@@ -0,0 +1,63 @@
+>+#ifndef _ASM_IO_64_NONATOMIC_LO_HI_H_
+>+#define _ASM_IO_64_NONATOMIC_LO_HI_H_
+>+
+>+#include <linux/io.h>
+>+#include <asm-generic/int-ll64.h>
+>+
+>+#ifdef CPU_LITTLE_ENDIAN
+>+
+>+#ifndef readq
+>+
+>+static inline __u64 readq(const volatile void __iomem *addr)
+>+{
+>+	const volatile u32 __iomem *p = addr;
+>+	u32 low, high;
+>+
+>+	low = readl(p);
+>+	high = readl(p + 1);
+>+
+>+	return low + ((u64)high << 32);
+>+}
+>+
+>+#endif
+>+
+>+#ifndef writeq
+>+
+>+static inline void writeq(__u64 val, volatile void __iomem *addr)
+>+{
+>+	writel(val, addr);
+>+	writel(val >> 32, addr + 4);
+>+}
+>+
+>+#endif
+>+
+>+#else  /* big endian */
+>+
+>+#ifndef readq
+>+
+>+static inline __u64 readq(const volatile void __iomem *addr)
+>+{
+>+	const volatile u32 __iomem *p = addr;
+>+	u32 low, high;
+>+
+>+	high = readl(p);
+>+	low = readl(p + 1);
+>+
+>+	return low + ((u64)high << 32);
+>+}
+>+
+>+#endif
+>+
+>+#ifndef writeq
+>+
+>+static inline void writeq(__u64 val, volatile void __iomem *addr)
+>+{
+>+	writel(val, addr + 4);
+>+	writel(val >> 32, addr);
+>+}
+>+
+>+#endif
+>+
+>+#endif
+>+
+>+#endif	/* _ASM_IO_64_NONATOMIC_LO_HI_H_ */
+>-- 
+>1.7.5.1
+
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
