@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab2BGKb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 05:31:27 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59110 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090Ab2BGKb0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755328Ab2BGKb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 05:31:28 -0500
+Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:39194 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753063Ab2BGKb0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Feb 2012 05:31:26 -0500
-Subject: [PATCH BUGFIX] mm: fix find_get_page() for shmem exceptional entries
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Tue, 07 Feb 2012 14:31:21 +0400
-Message-ID: <20120207103121.28345.28611.stgit@zurg>
-User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1328610322.2232.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <20120206205354.GA31186@quad>
+	<1328603689.2476.15.camel@edumazet-laptop>
+	<20120207084156.GA15359@elte.hu>
+	<1328610322.2232.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Date: Tue, 7 Feb 2012 11:31:24 +0100
+Message-ID: <CABPqkBTL70n-e9TZo=QOZDk1J84Ye5wGrm6uz=VNu73nwwxhjw@mail.gmail.com>
+Subject: Re: [PATCH] perf: fix assertion failure in x86_pmu_start()
+From: Stephane Eranian <eranian@google.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, markus@trippelsdorf.de, paulus@samba.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It should return NULL, otherwise the caller will be very surprised.
+On Tue, Feb 7, 2012 at 11:25 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le mardi 07 février 2012 à 09:41 +0100, Ingo Molnar a écrit :
+>
+>> Were these messages introduced by:
+>>
+>>  e050e3f0a71b: perf: Fix broken interrupt rate throttling
+>>
+>> as well?
+>>
+>> In any case I'm holding off on applying the patch before this is
+>> resolved.
+>
+> Reverting e050e3f0a71b solves all my problems, no more warnings.
+>
+> $ perf record -a -g hackbench 10 thread 4000
+> Running with 10*40 (== 400) tasks.
+> Time: 13.181
+> [ perf record: Woken up 59 times to write data ]
+> [ perf record: Captured and wrote 16.874 MB perf.data (~737228 samples)
+> ]
+>
+> $ perf record -a -g hackbench 10 thread 4000
+> Running with 10*40 (== 400) tasks.
+> Time: 13.124
+> [ perf record: Woken up 61 times to write data ]
+> [ perf record: Captured and wrote 16.533 MB perf.data (~722349 samples)
+> ]
+>
+What system is this running on?
+The problem is that without e050e3f0a71b interrupt throttling does not work.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- mm/filemap.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 518223b..ca98cb5 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -693,6 +693,7 @@ repeat:
- 			 * here as an exceptional entry: so return it without
- 			 * attempting to raise page count.
- 			 */
-+			page = NULL;
- 			goto out;
- 		}
- 		if (!page_cache_get_speculative(page))
-
+I think the key difference is that without the patch, frequency adjustment
+happens with the PMU completely stopped whereas with my patch it does
+not. I suspect this may be the issue. I can rework the patch to disable the
+PMU completely while retaining the same workflow.
