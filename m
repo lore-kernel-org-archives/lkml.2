@@ -1,313 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab2BGH4B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 02:56:01 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40289 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab2BGHzI (ORCPT
+	id S1756040Ab2BGIAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 03:00:06 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47909 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754700Ab2BGIAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 02:55:08 -0500
-Subject: [PATCH 2/4] radix-tree: introduce bit-optimized iterator
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Tue, 07 Feb 2012 11:55:04 +0400
-Message-ID: <20120207075504.29797.98116.stgit@zurg>
-In-Reply-To: <20120207074905.29797.60353.stgit@zurg>
-References: <20120207074905.29797.60353.stgit@zurg>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Feb 2012 03:00:04 -0500
+Message-ID: <1328601726.22240.45.camel@sauron.fi.intel.com>
+Subject: Re: linux-next: build failure after merge of the l2-mtd tree
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 07 Feb 2012 10:02:06 +0200
+In-Reply-To: <20120207135815.b551929e844a3824d7943e76@canb.auug.org.au>
+References: <20120207135815.b551929e844a3824d7943e76@canb.auug.org.au>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-VZjxbr3sl+mkN+o7pp/a"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements clean, simple and effective radix-tree iteration routine.
-Iterating is divided into two loops: the outer loop iterates though radix tree
-chunks on leaf nodes, the nested loop iterates through slots in one chunk.
 
-Main iterator function radix_tree_next_chunk() returns pointer to first slot,
-and stores in the struct radix_tree_iter index of next-to-last slot.
-For tagged-iterating it also constuct bitmask of tags for retunted chunk.
-Thus nested-loop has enough information for iteration.
+--=-VZjxbr3sl+mkN+o7pp/a
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- include/linux/radix-tree.h |  129 ++++++++++++++++++++++++++++++++++++++++++++
- lib/radix-tree.c           |  107 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 236 insertions(+), 0 deletions(-)
+On Tue, 2012-02-07 at 13:58 +1100, Stephen Rothwell wrote:
+> Hi Artem,
+>=20
+> After merging the l2-mtd tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> drivers/mtd/devices/pmc551.c: In function 'pmc551_erase':
+> drivers/mtd/devices/pmc551.c:157:2: error: implicit declaration of functi=
+on 'pmc551_point' [-Werror=3Dimplicit-function-declaration]
+> drivers/mtd/devices/pmc551.c: At top level:
+> drivers/mtd/devices/pmc551.c:194:12: error: static declaration of 'pmc551=
+_point' follows non-static declaration
+> drivers/mtd/devices/pmc551.c:157:2: note: previous implicit declaration o=
+f 'pmc551_point' was here
+> drivers/mtd/devices/pmc551.c: In function 'pmc551_unpoint':
+> drivers/mtd/devices/pmc551.c:229:1: warning: no return statement in funct=
+ion returning non-void [-Wreturn-type]
 
-diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-index 07e360b..c31b895 100644
---- a/include/linux/radix-tree.h
-+++ b/include/linux/radix-tree.h
-@@ -2,6 +2,7 @@
-  * Copyright (C) 2001 Momchil Velikov
-  * Portions Copyright (C) 2001 Christoph Hellwig
-  * Copyright (C) 2006 Nick Piggin
-+ * Copyright (C) 2012 Konstantin Khlebnikov
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License as
-@@ -256,4 +257,132 @@ static inline void radix_tree_preload_end(void)
- 	preempt_enable();
- }
- 
-+struct radix_tree_iter {
-+	unsigned long		index;		/* current slot index */
-+	unsigned long		next_index;	/* next chunk first index */
-+	unsigned long		tags;		/* bitmask for tag-iterating */
-+};
-+
-+static inline void radix_tree_iter_start(struct radix_tree_iter *iter,
-+					 unsigned long start)
-+{
-+	iter->index = start;
-+	iter->next_index = 1; /* any non-zero */
-+}
-+
-+#define RADIX_TREE_ITER_TAG_MASK	0x00FF
-+#define RADIX_TREE_ITER_TAGGED		0x0100	/* search tagged */
-+#define RADIX_TREE_ITER_CONTIG		0x0200	/* stop at first hole  */
-+
-+void **radix_tree_next_chunk(struct radix_tree_root *root,
-+			     struct radix_tree_iter *iter, unsigned flags);
-+
-+/**
-+ * radix_tree_next_tag - find next tagged slot in chunk
-+ *
-+ * @slot	pointer to slot pointer
-+ * @iter	iterator state
-+ *
-+ * Eats iter->tags and bumps *slot and iter->index to next tagged slot
-+ * Returns true if something found, and false otherwise
-+ */
-+static inline bool radix_tree_next_tag(void ***slot,
-+				       struct radix_tree_iter *iter)
-+{
-+	unsigned long offset;
-+
-+	if (likely(iter->tags & 1ul))
-+		return true;
-+	if (unlikely(!iter->tags)) {
-+		iter->index = iter->next_index;
-+		return false;
-+	}
-+	offset = __ffs(iter->tags);
-+	iter->tags >>= offset;
-+	iter->index += offset;
-+	*slot += offset;
-+	return true;
-+}
-+
-+/**
-+ * radix_tree_for_each_chunk - iterate over all slot chunks
-+ *
-+ * @slot:	the void** for pointer to first slot
-+ * @root	the struct radix_tree_root pointer
-+ * @iter	the struct radix_tree_iter pointer
-+ * @start	starting index
-+ * @flags	RADIX_TREE_ITER_* and tag index
-+ */
-+#define radix_tree_for_each_chunk(slot, root, iter, start, flags)	\
-+	for ( radix_tree_iter_start(iter, start) ;			\
-+	      (slot = radix_tree_next_chunk(root, iter, flags)) ; )
-+
-+/**
-+ * radix_tree_for_each_chunk_slot - iterate over all slots in one chunk
-+ *
-+ * @slot:	the void** for pointer to slot
-+ * @iter	the struct radix_tree_iter pointer
-+ */
-+#define radix_tree_for_each_chunk_slot(slot, iter)	\
-+	for ( ; (iter)->index != (iter)->next_index ;	\
-+		(iter)->index++, slot++ )
-+
-+/**
-+ * radix_tree_for_each_chunk_tagged_slot - iterate over all tagged slots
-+ *					   in one chunk
-+ *
-+ * @slot:	the void** for pointer to slot
-+ * @iter	the struct radix_tree_iter pointer
-+ */
-+#define radix_tree_for_each_chunk_tagged_slot(slot, iter)	\
-+	for ( ; radix_tree_next_tag(&slot, iter) ;		\
-+		(iter)->tags >>= 1, (iter)->index++, slot++ )
-+
-+/**
-+ * radix_tree_for_each_slot - iterate over all non-empty slots
-+ *
-+ * @slot:	the void** for pointer to slot
-+ * @root	the struct radix_tree_root pointer
-+ * @iter	the struct radix_tree_iter pointer
-+ * @start	starting index
-+ *
-+ * This is double-loop, break does not work.
-+ */
-+#define radix_tree_for_each_slot(slot, root, iter, start)	\
-+	radix_tree_for_each_chunk(slot, root, iter, start, 0)	\
-+		radix_tree_for_each_chunk_slot(slot, iter)	\
-+			if (!*slot) { continue; } else
-+
-+/**
-+ * radix_tree_for_each_contig - iterate over all contiguous non-empty slots
-+ *
-+ * @slot:	the void** for pointer to slot
-+ * @root	the struct radix_tree_root pointer
-+ * @iter	the struct radix_tree_iter pointer
-+ * @start	starting index
-+ *
-+ * This is double-loop, break does not work.
-+ */
-+#define radix_tree_for_each_contig(slot, root, iter, start)	\
-+	radix_tree_for_each_chunk(slot, root, iter, start,	\
-+					RADIX_TREE_ITER_CONTIG)	\
-+		radix_tree_for_each_chunk_slot(slot, iter)	\
-+			if (!*slot) { (iter)->next_index = 0; break; } else
-+
-+/**
-+ * radix_tree_for_each_tagged - iterate over all tagged slots
-+ *
-+ * @slot:	the void** for pointer to slot
-+ * @root	the struct radix_tree_root pointer
-+ * @iter	the struct radix_tree_iter pointer
-+ * @start	starting index
-+ * @tag		tag index
-+ *
-+ * This is double-loop, break does not work.
-+ */
-+#define radix_tree_for_each_tagged(slot, root, iter, start, tag)\
-+	radix_tree_for_each_chunk(slot, root, iter, start,	\
-+				RADIX_TREE_ITER_TAGGED | tag)	\
-+		radix_tree_for_each_chunk_tagged_slot(slot, iter)
-+
- #endif /* _LINUX_RADIX_TREE_H */
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index dc63d08..32e2bfa 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -3,6 +3,7 @@
-  * Portions Copyright (C) 2001 Christoph Hellwig
-  * Copyright (C) 2005 SGI, Christoph Lameter
-  * Copyright (C) 2006 Nick Piggin
-+ * Copyright (C) 2012 Konstantin Khlebnikov
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License as
-@@ -613,6 +614,112 @@ int radix_tree_tag_get(struct radix_tree_root *root,
- EXPORT_SYMBOL(radix_tree_tag_get);
- 
- /**
-+ * radix_tree_next_chunk - find next slots chunk for iteration
-+ *
-+ * @root:		radix tree root
-+ * @iter:		iterator state
-+ * @flags		RADIX_TREE_ITER_* flags and tag index
-+ *
-+ * Returns pointer to first slots, or NULL if there no more left
-+ */
-+void **radix_tree_next_chunk(struct radix_tree_root *root,
-+			     struct radix_tree_iter *iter, unsigned flags)
-+{
-+	unsigned tag = flags & RADIX_TREE_ITER_TAG_MASK;
-+	struct radix_tree_node *rnode, *node;
-+	unsigned long index, i;
-+	unsigned shift;
-+
-+	/* Overflow after ~0ul, or break in contiguous iteration */
-+	if (!iter->next_index)
-+		return NULL;
-+
-+	if ((flags & RADIX_TREE_ITER_TAGGED) && !root_tag_get(root, tag))
-+		return NULL;
-+
-+	index = iter->index;
-+
-+	rnode = rcu_dereference_raw(root->rnode);
-+	if (radix_tree_is_indirect_ptr(rnode)) {
-+		rnode = indirect_to_ptr(rnode);
-+	} else if (rnode && !index) {
-+		/* Single-slot tree */
-+		iter->tags = 1;
-+		iter->next_index = 1;
-+		return (void **)&root->rnode;
-+	} else
-+		return NULL;
-+
-+restart:
-+	shift = (rnode->height - 1) * RADIX_TREE_MAP_SHIFT;
-+	i = index >> shift;
-+
-+	/* Index ouside of the tree */
-+	if (i >= RADIX_TREE_MAP_SIZE)
-+		return NULL;
-+
-+	node = rnode;
-+	while (1) {
-+		if ((flags & RADIX_TREE_ITER_TAGGED) ?
-+				!test_bit(i, node->tags[tag]) :
-+				!node->slots[i]) {
-+			/* Hole detected */
-+			if (flags & RADIX_TREE_ITER_CONTIG)
-+				return NULL;
-+
-+			if (flags & RADIX_TREE_ITER_TAGGED)
-+				i = __find_next_bit(node->tags[tag],
-+						RADIX_TREE_MAP_SIZE, i + 1);
-+			else
-+				while (++i < RADIX_TREE_MAP_SIZE &&
-+						!node->slots[i]);
-+
-+			index &= ~((RADIX_TREE_MAP_SIZE << shift) - 1);
-+			index += i << shift;
-+			/* Overflow after ~0UL */
-+			if (!index)
-+				return NULL;
-+			if (i == RADIX_TREE_MAP_SIZE)
-+				goto restart;
-+		}
-+
-+		/* This is leaf-node */
-+		if (!shift)
-+			break;
-+
-+		node = rcu_dereference_raw(node->slots[i]);
-+		if (node == NULL)
-+			goto restart;
-+		shift -= RADIX_TREE_MAP_SHIFT;
-+		i = (index >> shift) & RADIX_TREE_MAP_MASK;
-+	}
-+
-+	iter->index = index;
-+	iter->next_index = (index | RADIX_TREE_MAP_MASK) + 1;
-+
-+	/* Construct iter->tags bitmask from node->tags[tag] array */
-+	if (flags & RADIX_TREE_ITER_TAGGED) {
-+		unsigned tag_long, tag_bit;
-+
-+		tag_long = i / BITS_PER_LONG;
-+		tag_bit  = i % BITS_PER_LONG;
-+		iter->tags = node->tags[tag][tag_long] >> tag_bit;
-+		/* This never happens if RADIX_TREE_TAG_LONGS == 1 */
-+		if (tag_long < RADIX_TREE_TAG_LONGS - 1) {
-+			/* Pick tags from next element */
-+			if (tag_bit)
-+				iter->tags |= node->tags[tag][tag_long + 1] <<
-+						(BITS_PER_LONG - tag_bit);
-+			/* Clip chunk size, here only BITS_PER_LONG tags */
-+			iter->next_index = index + BITS_PER_LONG;
-+		}
-+	}
-+
-+	return node->slots + i;
-+}
-+EXPORT_SYMBOL(radix_tree_next_chunk);
-+
-+/**
-  * radix_tree_range_tag_if_tagged - for each item in given range set given
-  *				   tag if item has another tag set
-  * @root:		radix tree root
+Hi, thanks a lot, I missed this. Fixed and build-tested with ARCH=3Di386.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-VZjxbr3sl+mkN+o7pp/a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPMNp/AAoJECmIfjd9wqK090IP/isG9UTwQRYleh9hOxE0sSud
+FzynQePid42FvdIUJhjIaJ+EUSPnxZtwQZ/4cekcubq8tdNCP+3yU3dbPwWicyF8
+vPkMRQvJiZI7wtIfbsqBJ+OY4YxAEe8QmrE6EoiQYGjaYzksvVsv8eCCvefZCUNP
+GiOoxbtWc8du5Iio2LVDaepzhTv58ZKYR05avFn2FbbGxyvTHD0+S8k/6eWu7pOZ
+0JnQH7Dicop456Kj5Za4OQmqt4brPeuLrmu/15evqsab1Z0IV7rICKucVqn+1oZD
+OzDmbXb+etTh81NJ6wz6ieQ5Q3PEFiVfjO7UXpVrorxxrJOyzPO8YHGykhaQztiP
+SYZzwhp+AJQhNftnUyuQUSO2Pb77wuOdS5s8M7M2ks6wKdAhjrN4ff24u7GzOto/
+xriE85SKhMLbAImneJDA1bPPKNCq4bCQ7aSsiBzLno/qFtcVnACCTi20+j5Z6wEG
+pcleh0lYAbNMYdqQNqaBERKLTqecoOtb9ubS+X8yLB42eSlCykrNziJMbAFCMpac
+5ekEZxVXX/sIGIdEfrCn5Zr5MLHKI2OYrvl7wU9H2jbFge2DPPc0SHgOj0WfVPC8
+w2qm64L01R4fh0gZEH050fCYkK/ka/9/9Uu0MHEmQXRz6UKl13FHwkBDRzdfLCwa
+p2T+bCT6vO9hHBq5rsGn
+=6xxF
+-----END PGP SIGNATURE-----
+
+--=-VZjxbr3sl+mkN+o7pp/a--
 
