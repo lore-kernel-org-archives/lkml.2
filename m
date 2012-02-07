@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab2BGGOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 01:14:15 -0500
-Received: from 1wt.eu ([62.212.114.60]:62277 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755185Ab2BGGOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 01:14:14 -0500
-Date: Tue, 7 Feb 2012 07:13:57 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 02/91] slub: fix panic with DISCONTIGMEM
-Message-ID: <20120207061357.GA26009@1wt.eu>
-References: <20120205220949.536346997@pcw.home.local> <alpine.DEB.2.00.1202061358170.3817@chino.kir.corp.google.com>
+	id S1754643Ab2BGGXR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 01:23:17 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42502 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab2BGGXQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 01:23:16 -0500
+Message-ID: <1328595786.5274.6.camel@phoenix>
+Subject: [PATCH RFC] leds: lm3530: Fix setting pltfm->als_vmax
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 07 Feb 2012 14:23:06 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1202061358170.3817@chino.kir.corp.google.com>
-User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 01:58:56PM -0800, David Rientjes wrote:
-> On Sun, 5 Feb 2012, Willy Tarreau wrote:
-> 
-> > commit 4a5fa3590f09999f6db41bc386bce40848fa9f63 upstream.
-> > 
-> > Slub makes assumptions about page_to_nid() which are violated by
-> > DISCONTIGMEM and !NUMA.  This violation results in a panic because
-> > page_to_nid() can be non-zero for pages in the discontiguous ranges and
-> > this leads to a null return by get_node().  The assertion by the
-> > maintainer is that DISCONTIGMEM should only be allowed when NUMA is also
-> > defined.  However, at least six architectures: alpha, ia64, m32r, m68k,
-> > mips, parisc violate this.  The panic is a regression against slab, so
-> > just mark slub broken in the problem configuration to prevent users
-> > reporting these panics.
-> > 
-> > Acked-by: David Rientjes <rientjes@google.com>
-> > Acked-by: Pekka Enberg <penberg@kernel.org>
-> > Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> The problem that this patch initially addressed is fixed by the next patch 
-> in your series, "set memory ranges in N_NORMAL_MEMORY when onlined", so I 
-> don't think this one should be merged.
+In current code, pltfm->als_vmin is set to LM3530_ALS_WINDOW_mV and 
+pltfm->als_vmax is 0. This looks does not make sense.
+I think what we want here is setting pltfm->als_vmax to LM3530_ALS_WINDOW_mV.
 
-Perfect, I'm dropping it then.
+Both als_vmin and als_vmax local variables will be set to pltfm->als_vmin and
+pltfm->als_vmax by a few lines latter.
+Thus also remove a redundant assignment for als_vmin and als_vmax in this patch.
 
-Thank you David,
-Willy
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+Hi Kim,
+I don't have this hardware, I'd appreciate if you can review and test this patch.
+
+Thanks,
+Axel
+ drivers/leds/leds-lm3530.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
+index 45e6878..e59c166 100644
+--- a/drivers/leds/leds-lm3530.c
++++ b/drivers/leds/leds-lm3530.c
+@@ -164,8 +164,8 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
+ 
+ 	if (drvdata->mode == LM3530_BL_MODE_ALS) {
+ 		if (pltfm->als_vmax == 0) {
+-			pltfm->als_vmin = als_vmin = 0;
+-			pltfm->als_vmin = als_vmax = LM3530_ALS_WINDOW_mV;
++			pltfm->als_vmin = 0;
++			pltfm->als_vmax = LM3530_ALS_WINDOW_mV;
+ 		}
+ 
+ 		als_vmin = pltfm->als_vmin;
+-- 
+1.7.5.4
+
+
 
