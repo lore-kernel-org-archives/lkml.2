@@ -1,125 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab2BGAN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 19:13:27 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10535 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756215Ab2BGANY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 19:13:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="104717940"
-From: "Rose, Gregory V" <gregory.v.rose@intel.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>, "steweg@ynet.sk" <steweg@ynet.sk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [patch v1, kernel version 3.2.1] rtnetlink workaround around
- the skb buff size issue
-Thread-Topic: [patch v1, kernel version 3.2.1] rtnetlink workaround around
- the skb buff size issue
-Thread-Index: AQHM4tRzTeNX1pwK8UWzJpDyRUwPApYvSQxggAHLngD//37SQA==
-Date: Tue, 7 Feb 2012 00:13:19 +0000
-Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A0702F81413@ORSMSX106.amr.corp.intel.com>
-References: <5422254.3711328278789768.JavaMail.root@5-MeO-DMT.ynet.sk>
-	 <10521320.3761328279061644.JavaMail.root@5-MeO-DMT.ynet.sk>
-	 <20120203.192933.510206531351047222.davem@davemloft.net>
-	 <C5551D9AAB213A418B7FD5E4A6F30A0702F7F86F@ORSMSX106.amr.corp.intel.com>
- <1328572230.12637.18.camel@deadeye>
-In-Reply-To: <1328572230.12637.18.camel@deadeye>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
+	id S1756284Ab2BGAPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 19:15:04 -0500
+Received: from prod-mail-xrelay05.akamai.com ([96.6.114.97]:39958 "EHLO
+	prod-mail-xrelay05.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756227Ab2BGAPC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 19:15:02 -0500
+X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Feb 2012 19:15:02 EST
+Message-ID: <4F306ACA.4090404@akamai.com>
+Date: Mon, 06 Feb 2012 18:05:30 -0600
+From: Josh Hunt <johunt@akamai.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] poll() in 32-bit applications does not handle timeout
+ of -1 properly on 64-bit kernels
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/mixed;
+ boundary="------------010505020704050305040502"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q170DYBI024231
 
-> -----Original Message-----
-> From: Ben Hutchings [mailto:bhutchings@solarflare.com]
-> Sent: Monday, February 06, 2012 3:51 PM
-> To: Rose, Gregory V
-> Cc: David Miller; steweg@ynet.sk; linux-kernel@vger.kernel.org;
-> netdev@vger.kernel.org
-> Subject: RE: [patch v1, kernel version 3.2.1] rtnetlink workaround around
-> the skb buff size issue
-> 
-> On Mon, 2012-02-06 at 04:41 +0000, Rose, Gregory V wrote:
-> [...]
-> > > This is not how we're going to fix this.  I already stated the desired
-> > > way to fix this, which is to make the existing dump request have a way
-> > > for the requestor to enable extended parts of the device dump.
-> > >
-> > > This is just like netlink diag socket dumps, where the dump request
-> > > specifies what the user wants to see.
-> > >
-> > > In this case we'd add a netlink attribute to the dump request which
-> > > is just a u32 bitmask or similar.
-> > >
-> > > The Intel engineer who added the VF dump support said he would work on
-> > > this fix so why don't you just wait patiently for him to do the work?
-> >
-> > The patch below is what I've got so far.  Right now the bit mask array
-> > is global so if you enable display of VF (n) on one interface it will
-> > enable display of the same VF on other interfaces.  I intend to move
-> > the bit mask array into the net_device structure so we can set the
-> > display mask for each interface independently.
-> 
-> I don't think this can work.  Using an application that requests VF
-> information and uses large buffers (e.g. the updated 'ip') will break
-> another application that doesn't (e.g. current Network Manager), won't
-> it?
+This is a multi-part message in MIME format.
+--------------010505020704050305040502
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-It's my understanding that the problem isn't with the application buffer size but with the kernel buffer size, which is limited to a page.
+We've hit an issue where our 32-bit applications, when running on a
+64-bit kernel, using poll() and passing in a value of -1 for the timeout
+return after ~49 days (2^32 msec). Instead of waiting indefinitely as it
+is stated they should. Reproducing the issue is trivial. I've
+instrumented the kernel and found we are hitting the case where poll()
+believes we've passed in a positive number and thus creates a timespec,
+etc. Currently poll() is defined in userspace as:
 
-> 
-> The filter should be per-request and not persistent (and I think it
-> could just be a boolean or a limit value rather than a bitmask).
+int poll(struct pollfd *ufds, nfds_t nfds, int timeout);
 
-Why?
+but in the kernel timeout is of type long.
 
-I think having the ability to specify one or more discrete VFs for the info dump is useful.
+I can think of a few ways to solve this. One, which is the patch I've
+attached, is to change the type of timeout to int in the kernel. I'm not
+certain the ramifications this may have since it's changing a syscall's
+arguments which may be a big no-no :) Another way I am proposing is by
+bounds checking. Currently we do the following:
 
-> 
-> > The command to set the filter mask is "set only", I see no reason to
-> > add it to the info dump.  If other folks see it differently then I can
-> > do that too.
-> >
-> > Anyway, it will allow the user to control which VFs are getting
-> > displayed during the info dump.  They all default to off so initially
-> > no VF info gets displayed.
-> >
-> > I've also whipped up a patch for the iproute2 ip command.  It'll work
-> > like this:
-> >
-> > 'ip link set <dev> vf (n) filter [on|off]'
-> 
-> Well there's no need for a persistent filter.  And I think that the
-> default behaviour of 'ip' should be to show all the VFs, as it does now.
+if (timeout_msecs >= 0) {
+        to = &end_time;
+        poll_select_set_timeout(to, timeout_msecs / MSEC_PER_SEC,
+                        NSEC_PER_MSEC * (timeout_msecs % MSEC_PER_SEC));
+}
 
-Dave asked me to make the default behavior to not show the VFs.  Take it up with him.
+We could add an upper bound on timeout_msecs to say < 0xffffffff. I'm
+not sure if either is acceptable though.
 
-> 
-> [...]
-> > --- a/net/core/rtnetlink.c
-> > +++ b/net/core/rtnetlink.c
-> > @@ -62,6 +62,9 @@ struct rtnl_link {
-> >  static DEFINE_MUTEX(rtnl_mutex);
-> >  static u16 min_ifinfo_dump_size;
-> >
-> > +/* VF info display filter - Number of VFs max is 256 */
-> > +static unsigned long show_vfinfo_filter[256 / sizeof(unsigned long)];
-> [...]
-> 
-> This array is 8 times too large; use BITS_TO_LONGS.
+Josh
 
-Oops... yeah, that'll be fixed in the actual patch.
 
-- Greg
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--------------010505020704050305040502
+Content-Type: text/x-patch;
+ name="poll-timeout-try1.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="poll-timeout-try1.patch"
+
+commit 7f2c4ee58b66f51b5e2c79fc42db84ca4d6c0a18
+Author: Josh Hunt <johunt@akamai.com>
+Date:   Mon Feb 6 15:21:04 2012 -0800
+
+    poll() in 32-bit applications does not handle timeout of -1 properly on 64-bit kernels
+    
+    We have observed our 32-bit applications running on 64-bit kernels which
+    pass a value of -1 to poll()'s timeout argument do not wait infinitely as
+    it should. Instead it winds up waiting ~49 days which is approx the # of msecs
+    in 2^32 (or 32-bit negative 1.) With this patch both 32 and 64 bit applications
+    now support handling of -1 as an argument for timeout.
+    
+    Signed-off-by: Josh Hunt <johunt@akamai.com>
+
+diff --git a/fs/select.c b/fs/select.c
+index d33418f..e782258 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -912,7 +912,7 @@ static long do_restart_poll(struct restart_block *restart_block)
+ }
+ 
+ SYSCALL_DEFINE3(poll, struct pollfd __user *, ufds, unsigned int, nfds,
+-		long, timeout_msecs)
++		int, timeout_msecs)
+ {
+ 	struct timespec end_time, *to = NULL;
+ 	int ret;
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 515669f..8ec1153 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -624,7 +624,7 @@ asmlinkage long sys_socketpair(int, int, int, int __user *);
+ asmlinkage long sys_socketcall(int call, unsigned long __user *args);
+ asmlinkage long sys_listen(int, int);
+ asmlinkage long sys_poll(struct pollfd __user *ufds, unsigned int nfds,
+-				long timeout);
++				int timeout);
+ asmlinkage long sys_select(int n, fd_set __user *inp, fd_set __user *outp,
+ 			fd_set __user *exp, struct timeval __user *tvp);
+ asmlinkage long sys_old_select(struct sel_arg_struct __user *arg);
+
+--------------010505020704050305040502--
