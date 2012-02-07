@@ -1,164 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab2BGSGT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 13:06:19 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37160 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab2BGSGS (ORCPT
+	id S1753706Ab2BGSIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 13:08:09 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:29107 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab2BGSIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 13:06:18 -0500
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-To: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Dmitry Antipov <dmitry.antipov@linaro.org>
-Subject: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and ARM
-Date: Tue,  7 Feb 2012 10:06:22 -0800
-Message-Id: <1328637982-26681-1-git-send-email-dmitry.antipov@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+	Tue, 7 Feb 2012 13:08:07 -0500
+Message-ID: <4F316848.4060100@atmel.com>
+Date: Tue, 07 Feb 2012 19:07:04 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 24/25] irq_domain: remove "hint" when allocating irq
+ numbers
+References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca> <1327700179-17454-25-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1327700179-17454-25-git-send-email-grant.likely@secretlab.ca>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
-ARM, move "noirqtime=" option to common debugging code.
+On 01/27/2012 10:36 PM, Grant Likely :
+> The 'hint' used to try and line up irq numbers with hw irq numbers is
+> rather a hack and not very useful.  Now that /proc/interrupts also outputs
+> the hwirq number, it is even less useful to keep around the 'hint' heuristic.
+> 
+> This patch removes it.
 
-Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
----
- arch/arm/kernel/sched_clock.c |    3 +++
- arch/x86/Kconfig              |   11 -----------
- arch/x86/kernel/tsc.c         |    4 ----
- include/linux/sched.h         |    2 ++
- lib/Kconfig.debug             |   12 ++++++++++++
- lib/Makefile                  |    2 ++
- lib/irqtime.c                 |   12 ++++++++++++
- 7 files changed, 31 insertions(+), 15 deletions(-)
- create mode 100644 lib/irqtime.c
+Grant,
 
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index 5416c7c..56d2a9d 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -162,5 +162,8 @@ void __init sched_clock_postinit(void)
- 	if (read_sched_clock == jiffy_sched_clock_read)
- 		setup_sched_clock(jiffy_sched_clock_read, 32, HZ);
- 
-+	if (!no_sched_irq_time)
-+		enable_sched_clock_irqtime();
-+
- 	sched_clock_poll(sched_clock_timer.data);
- }
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bed94e..4759676 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -805,17 +805,6 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
--config IRQ_TIME_ACCOUNTING
--	bool "Fine granularity task level IRQ time accounting"
--	default n
--	---help---
--	  Select this option to enable fine granularity task irq time
--	  accounting. This is done by reading a timestamp on each
--	  transitions between softirq and hardirq state, so there can be a
--	  small performance impact.
--
--	  If in doubt, say N here.
--
- source "kernel/Kconfig.preempt"
- 
- config X86_UP_APIC
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index a62c201..a3a5465 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -103,14 +103,10 @@ int __init notsc_setup(char *str)
- 
- __setup("notsc", notsc_setup);
- 
--static int no_sched_irq_time;
--
- static int __init tsc_setup(char *str)
- {
- 	if (!strcmp(str, "reliable"))
- 		tsc_clocksource_reliable = 1;
--	if (!strncmp(str, "noirqtime", 9))
--		no_sched_irq_time = 1;
- 	return 1;
- }
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7d379a6..b3575b5 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1966,9 +1966,11 @@ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
-  * The reason for this explicit opt-in is not to have perf penalty with
-  * slow sched_clocks.
-  */
-+extern int no_sched_irq_time;
- extern void enable_sched_clock_irqtime(void);
- extern void disable_sched_clock_irqtime(void);
- #else
-+#define no_sched_irq_time 1
- static inline void enable_sched_clock_irqtime(void) {}
- static inline void disable_sched_clock_irqtime(void) {}
- #endif
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 8745ac7..a55287e 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -299,6 +299,18 @@ config SCHEDSTATS
- 	  application, you can say N to avoid the very slight overhead
- 	  this adds.
- 
-+config IRQ_TIME_ACCOUNTING
-+	bool "Fine granularity task level IRQ time accounting"
-+	depends on DEBUG_KERNEL && (X86 || (ARM && HAVE_SCHED_CLOCK))
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task irq time
-+	  accounting. This is done by reading a timestamp on each
-+	  transitions between softirq and hardirq state, so there can be a
-+	  small performance impact.
-+
-+	  If in doubt, say N here.
-+
- config TIMER_STATS
- 	bool "Collect kernel timers statistics"
- 	depends on DEBUG_KERNEL && PROC_FS
-diff --git a/lib/Makefile b/lib/Makefile
-index 18515f0..44d67d4 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -49,6 +49,8 @@ obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
- obj-$(CONFIG_DEBUG_LIST) += list_debug.o
- obj-$(CONFIG_DEBUG_OBJECTS) += debugobjects.o
- 
-+obj-$(CONFIG_IRQ_TIME_ACCOUNTING) += irqtime.o
-+
- ifneq ($(CONFIG_HAVE_DEC_LOCK),y)
-   lib-y += dec_and_lock.o
- endif
-diff --git a/lib/irqtime.c b/lib/irqtime.c
-new file mode 100644
-index 0000000..10d440d
---- /dev/null
-+++ b/lib/irqtime.c
-@@ -0,0 +1,12 @@
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+
-+int no_sched_irq_time;
-+
-+static int __init irqtime_setup(char *str)
-+{
-+	no_sched_irq_time = 1;
-+	return 1;
-+}
-+
-+__setup("noirqtime", irqtime_setup);
+While trying your patch series in conjunction with Rob one, I do not
+find this patch in your irqdomain/next branch (and a couple of others).
+Can you tell me if this v3 series is available as a git tree?
+
+Thanks, best regards,
 -- 
-1.7.7.6
-
+Nicolas Ferre
