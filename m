@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab2BGONI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 09:13:08 -0500
-Received: from mga03.intel.com ([143.182.124.21]:15907 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756513Ab2BGONG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 09:13:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104126457"
-Subject: RE: [PATCH 01/11] dmaengine: add context parameter
- toprep_slave_sgand prep_dma_cyclic
-From: Vinod Koul <vinod.koul@intel.com>
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-Cc: Russell King <rmk@arm.linux.org.uk>, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E552028C2A5D@CORPEXCH1.na.ads.idt.com>
-References: <1328218341-31436-1-git-send-email-alexandre.bounine@idt.com>
-	 <1328218341-31436-2-git-send-email-alexandre.bounine@idt.com>
-	 <20120202214350.GB4432@flint.arm.linux.org.uk>
-	 <0CE8B6BE3C4AD74AB97D9D29BD24E55202872683@CORPEXCH1.na.ads.idt.com>
-	 <1328529182.26182.92.camel@vkoul-udesk3>
-	 <0CE8B6BE3C4AD74AB97D9D29BD24E552028729F9@CORPEXCH1.na.ads.idt.com>
-	 <1328542134.26182.111.camel@vkoul-udesk3>
-	 <20120206155318.GA20852@flint.arm.linux.org.uk>
-	 <0CE8B6BE3C4AD74AB97D9D29BD24E55202872AB1@CORPEXCH1.na.ads.idt.com>
-	 <1328551625.26182.139.camel@vkoul-udesk3>
-	 <0CE8B6BE3C4AD74AB97D9D29BD24E55202872B3D@CORPEXCH1.na.ads.idt.com>
-	 <1328585993.26182.143.camel@vkoul-udesk3>
-	 <0CE8B6BE3C4AD74AB97D9D29BD24E552028C2A5D@CORPEXCH1.na.ads.idt.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Feb 2012 19:44:17 +0530
-Message-ID: <1328624057.26182.144.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756674Ab2BGON5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 09:13:57 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34049 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab2BGON4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 09:13:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F305450.5020905@gmail.com>
+References: <1328187288-24395-1-git-send-email-eranian@google.com>
+	<1328187288-24395-15-git-send-email-eranian@google.com>
+	<20120206181704.GF6367@infradead.org>
+	<4F304A66.8050803@gmail.com>
+	<20120206220651.GA16861@infradead.org>
+	<4F305450.5020905@gmail.com>
+Date: Tue, 7 Feb 2012 15:13:54 +0100
+Message-ID: <CABPqkBSqy6rCVi8X8NPOuNOECgxd8N6BNhB6aA4nvKkV6=YQ4w@mail.gmail.com>
+Subject: Re: [PATCH v5 14/18] perf: fix endianness detection in perf.data
+From: Stephane Eranian <eranian@google.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
+        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
+        khandual@linux.vnet.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-07 at 06:01 -0800, Bounine, Alexandre wrote:
-> Currently function private_candidate() allows filtering function
-> not to be specified and therefore skip the filter check.
-> It may be a good safety measure to ensure that channels specified
-> as DMA_SLAVE_EXT provide a corresponding filter routine so they
-> positively identify dma channel that will accept intended extra
-> parameter.
-> I assume that a system may have more than one dmac registered as
-> DMA_SLAVE_EXT. 
-> 
-> This is what I have for RapidIO - the filter call ensures that DMA
-> channel is associated with a RapidIO controller that provides access
-> to the specified SRIO device. 
-For slave-dma it's better to have a filter :)
--- 
-~Vinod
+On Mon, Feb 6, 2012 at 11:29 PM, David Ahern <dsahern@gmail.com> wrote:
+>
+>
+> On 02/06/2012 03:06 PM, Arnaldo Carvalho de Melo wrote:
+>> Em Mon, Feb 06, 2012 at 02:47:18PM -0700, David Ahern escreveu:
+>>> On 02/06/2012 11:17 AM, Arnaldo Carvalho de Melo wrote:
+>>>> Looks ok, but IIRC David Ahern interacted with you on this specific
+>>>> patch in the past, having his Acked-by and/or Tested-by would be great,
+>>>> David?
+>>>
+>>> I don't recall anything changing since version 4. I scanned over the
+>>> change and it all looks familiar; testing worked fine as well -- I was
+>>> able to analyze a PPC file on x86 and vice versa.
+>>>
+>>> Acked-by: David Ahern <dsahern@gmail.com>
+>>> Tested-by: David Ahern <dsahern@gmail.com>
+>>>
+>>
+>> Stephane,
+>>
+>>       What are your plans? A v6 patch series with this new round of
+>> comments and Acked-by et al stamps?
+>>
+I can do that. That'll be easier I think.
 
+>> - Arnaldo
+>
+> I thought this one was standalone, so it could be picked up now.
+>
+> David
