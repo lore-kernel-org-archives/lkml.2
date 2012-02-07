@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab2BGSaB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 13:30:01 -0500
-Received: from enyo.dsw2k3.info ([195.71.86.239]:54390 "EHLO enyo.dsw2k3.info"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756361Ab2BGS35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 13:29:57 -0500
-Date: Tue, 7 Feb 2012 19:29:44 +0100
-From: Matthias Schniedermeyer <ms@citd.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+	id S1756229Ab2BGScI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 13:32:08 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57663 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab2BGScG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 13:32:06 -0500
+Date: Tue, 7 Feb 2012 10:31:36 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org
-Subject: Re: Linux 3.2.5
-Message-ID: <20120207182944.GA8595@citd.de>
-References: <20120206181622.GA28811@kroah.com>
- <20120207084037.GA6140@citd.de>
- <4F30FABF.4060409@ladisch.de>
- <20120207105835.GA12864@citd.de>
- <4F310DBC.1040501@ladisch.de>
- <20120207114806.GA15323@citd.de>
- <4F3118F7.8050205@ladisch.de>
- <20120207145205.GA22034@citd.de>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH BUGFIX] mm: fix find_get_page() for shmem exceptional
+ entries
+In-Reply-To: <4F31003E.2090901@openvz.org>
+Message-ID: <alpine.LSU.2.00.1202071011450.1849@eggly.anvils>
+References: <20120207103121.28345.28611.stgit@zurg> <4F31003E.2090901@openvz.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120207145205.GA22034@citd.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.02.2012 15:52, Matthias Schniedermeyer wrote:
+On Tue, 7 Feb 2012, Konstantin Khlebnikov wrote:
 
-> I guess this whole mess is Mainboard specifc.
-> I have a another, very similar system but with an Asus P8H67-M PRO 
-> Mainbaord.
+> Bug was added in commit v3.0-7291-g8079b1c (mm: clarify the radix_tree
+> exceptional cases)
+> So, v3.1 and v3.2 affected.
 > 
-> I just remotly booted that machine into 3.2.5, so i can't verify if the 
-> sound works, but as the dmesg-output appears identical to the previous 
-> boot of 3.2.0 so i guess i will work.
-> 
-> This is all i get for the system for aspm
-> dmesg | grep -i aspm
-> [    0.777824] e1000e 0000:02:00.0: Disabling ASPM L0s
-> 
-> So that mainboard has another BIOS/UEFI-Firmware and the 
-> PCIe-PCI-Bridge, the Soundblaster-Live is behind, is from another 
-> manufacture.
-> 
-> lspci -v -s 5:0
-> 05:00.0 PCI bridge: ASMedia Technology Inc. ASM108x PCIe to PCI Bridge Controller (rev 01) (prog-if 01 [Subtractive decode])
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=05, secondary=06, subordinate=06, sec-latency=32
->         I/O behind bridge: 0000b000-0000bfff
->         Capabilities: [c0] Subsystem: ASUSTeK Computer Inc. Device 8489
+> Konstantin Khlebnikov wrote:
+> > It should return NULL, otherwise the caller will be very surprised.
+> > 
+> > Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
 
-Now that i'm back home i could test this other machine.
-Unpatched 3.2.5 works fine, i guess because of the different Bridge-Chip 
-and/or Firmware.
+Thanks for worrying about it, but Nak to this patch.
 
+If you have found somewhere that is surprised by an exceptional entry
+instead of a page, then indeed we shall need to fix that: I'm not
+aware of any.
 
+There are several places that are prepared for the possibility:
+find_lock_page() (and your patch would be breaking shmem.c's use of
+find_lock_page()), mincore_page(), memcontrol.c's mc_handle_file_pte().
 
+Of the remaining calls to find_get_page(), my understanding is that
+either they are filesystems operating upon their own pagecache, or
+they involve using ->readpage() - that's one of the two reasons why
+I gave shmem its own ->splice_read() and removed its ->readpage()
+before switching over to use the exceptional entries.
 
-Bis denn
+Hugh
 
--- 
-Real Programmers consider "what you see is what you get" to be just as 
-bad a concept in Text Editors as it is in women. No, the Real Programmer
-wants a "you asked for it, you got it" text editor -- complicated, 
-cryptic, powerful, unforgiving, dangerous.
-
+> > ---
+> >   mm/filemap.c |    1 +
+> >   1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/mm/filemap.c b/mm/filemap.c
+> > index 518223b..ca98cb5 100644
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > @@ -693,6 +693,7 @@ repeat:
+> >   			 * here as an exceptional entry: so return it without
+> >   			 * attempting to raise page count.
+> >   			 */
+> > +			page = NULL;
+> >   			goto out;
+> >   		}
+> >   		if (!page_cache_get_speculative(page))
