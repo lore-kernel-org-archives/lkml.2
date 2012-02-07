@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab2BGKb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 05:31:28 -0500
-Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:39194 "EHLO
-	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753063Ab2BGKb0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 05:31:26 -0500
+	id S1754998Ab2BGKfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 05:35:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52226 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753164Ab2BGKfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 05:35:15 -0500
+Message-ID: <4F30FE61.3060703@suse.cz>
+Date: Tue, 07 Feb 2012 11:35:13 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1328610322.2232.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <20120206205354.GA31186@quad>
-	<1328603689.2476.15.camel@edumazet-laptop>
-	<20120207084156.GA15359@elte.hu>
-	<1328610322.2232.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Date: Tue, 7 Feb 2012 11:31:24 +0100
-Message-ID: <CABPqkBTL70n-e9TZo=QOZDk1J84Ye5wGrm6uz=VNu73nwwxhjw@mail.gmail.com>
-Subject: Re: [PATCH] perf: fix assertion failure in x86_pmu_start()
-From: Stephane Eranian <eranian@google.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, markus@trippelsdorf.de, paulus@samba.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: kconfig: tristate choice with depender choice
+References: <20120207.091612.181444339.anemo@mba.ocn.ne.jp>
+In-Reply-To: <20120207.091612.181444339.anemo@mba.ocn.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 7, 2012 at 11:25 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le mardi 07 février 2012 à 09:41 +0100, Ingo Molnar a écrit :
->
->> Were these messages introduced by:
->>
->>  e050e3f0a71b: perf: Fix broken interrupt rate throttling
->>
->> as well?
->>
->> In any case I'm holding off on applying the patch before this is
->> resolved.
->
-> Reverting e050e3f0a71b solves all my problems, no more warnings.
->
-> $ perf record -a -g hackbench 10 thread 4000
-> Running with 10*40 (== 400) tasks.
-> Time: 13.181
-> [ perf record: Woken up 59 times to write data ]
-> [ perf record: Captured and wrote 16.874 MB perf.data (~737228 samples)
-> ]
->
-> $ perf record -a -g hackbench 10 thread 4000
-> Running with 10*40 (== 400) tasks.
-> Time: 13.124
-> [ perf record: Woken up 61 times to write data ]
-> [ perf record: Captured and wrote 16.533 MB perf.data (~722349 samples)
-> ]
->
-What system is this running on?
-The problem is that without e050e3f0a71b interrupt throttling does not work.
+(added Arnaud to CC)
 
-I think the key difference is that without the patch, frequency adjustment
-happens with the PMU completely stopped whereas with my patch it does
-not. I suspect this may be the issue. I can rework the patch to disable the
-PMU completely while retaining the same workflow.
+On 7.2.2012 01:16, Atsushi Nemoto wrote:
+> If a tristate choice has another choice dependers, kconfig produce
+> wrong value.
+> 
+> Example:
+> 
+> choice
+> 	prompt "choice list AB"
+> config A
+> 	tristate "a"
+> config B
+> 	tristate "b"
+> endchoice
+> choice
+> 	prompt "choice list CD"
+> 	depends on A
+> config C
+>        	bool "c"
+> config D
+>        	bool "d"
+> endchoice
+> 
+> kconfig outputs CONFIG_A=m from defconfig with CONFIG_A=y.
+> 
+> This happens if the choice list CD depends on A.
+> Also, if defconfig contains CONFIG_A=y and "# CONFIG_B is not set",
+> output is correct.
+> 
+> I found commit a64b44ea ("kconfig: fix tristate choice with minimal
+> config"), but this problem still exists on v3.3-rc1.  More fix is
+> needed for choice with dependers?
+> 
+> ---
+> Atsushi Nemoto
+
