@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab2BGJsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 04:48:53 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:44971 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756187Ab2BGJsv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 04:48:51 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Tue, 07 Feb 2012 10:48:48 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: Contiguous Memory Allocator on HIGHMEM
-In-reply-to: <4F30E97F.9000409@ingenic.cn>
-To: "'cp.zou'" <cpzou@ingenic.cn>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>
-Message-id: <003601cce57d$b0df2af0$129d80d0$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: Aczld7zmvUQGSkPWQXqtF/jnlo+JqwABGn5A
-References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
- <4F30E97F.9000409@ingenic.cn>
+	id S1756757Ab2BGJuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 04:50:15 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54595 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756619Ab2BGJuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 04:50:13 -0500
+Date: Tue, 7 Feb 2012 10:50:00 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Venki Pallipadi <venki@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, robert.richter@amd.com, eric.dumazet@gmail.com,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [BUG] perf: perf sched warning possibly due to clock granularity
+ on AMD
+Message-ID: <20120207095000.GF15359@elte.hu>
+References: <20120206153408.GA31237@aftab>
+ <1328546246.2482.10.camel@laptop>
+ <20120206164626.GA31704@aftab>
+ <1328547259.2482.11.camel@laptop>
+ <20120206202722.GA556@aftab>
+ <1328560293.2482.24.camel@laptop>
+ <20120206203738.GB556@aftab>
+ <CABeCy1ZH_BQhoSegeyBnY0XkjL9afm5=onKrmt9SApufCWgs3A@mail.gmail.com>
+ <20120207083253.GC12821@elte.hu>
+ <20120207090609.GB4852@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120207090609.GB4852@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Tuesday, February 07, 2012 10:06 AM cp.zou wrote:
+* Borislav Petkov <bp@amd64.org> wrote:
 
-> Hello everyone!
+> On Tue, Feb 07, 2012 at 09:32:53AM +0100, Ingo Molnar wrote:
+> > > Yes. If these two flags are set, TSC should be consistent and 
+> > > sched_clock_stable could be set and it will be reset if there 
+> > > is a call to mark_tsc_unstable().
+> > 
+> > Most of the details swapped out from my brain meanwhile, but I 
+> > have some vague memories of a DMI quirk for some high-end system 
+> > that just did a sched_clock_stable = 0 or such.
+> > 
+> > So if the common case is that the TSC is entirely synchronized 
+> > across CPUs, then we can default to that and rely on platform 
+> > initialization code or DMI quirks setting the few large-NUMA 
+> > systems to an unstable TSC.
 > 
-> I'm recently learning CMA, and I want to implement support for
-> contiguous memory areas placed in HIGHMEM zone,do you have any suggestions?
+> There's also 14be1f7454ea96ee614467a49cf018a1a383b189 which removed
+> the setting of sched_clock_stable to 1 due to UV systems not being
+> TSC-synchronized across blades.
+> 
+> I guess, we could tentatively enable it on AMD provided nothing has
+> marked the TSC as unstable already:
+> 
+> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+> index f4773f4..ddee619 100644
+> --- a/arch/x86/kernel/cpu/amd.c
+> +++ b/arch/x86/kernel/cpu/amd.c
+> @@ -456,6 +456,8 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+>         if (c->x86_power & (1 << 8)) {
+>                 set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+>                 set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
+> +               if (!check_tsc_unstable())
+> +                       sched_clock_stable = 1;
+>         }
 
-CMA memory management core (migration and allocation of pages) should support
-areas placed in HIGHMEM without any additional works. The main limitation is
-in the DMA-mapping framework. Right now it makes certain assumptions about page
-mappings to simplify allocation process. You need to add support for dynamic
-mappings there. 
+i'd go for that.
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+Thanks,
 
-
+	Ingo
