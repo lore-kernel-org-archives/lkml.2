@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab2BGQhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 11:37:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43489 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753700Ab2BGQhX (ORCPT
+	id S1755373Ab2BGQlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 11:41:08 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:52829 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab2BGQlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 11:37:23 -0500
-Date: Tue, 7 Feb 2012 16:37:16 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Michal Marek <mmarek@suse.cz>, Joerg Roedel <joerg.roedel@amd.com>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        debian-kernel@lists.debian.org
-Message-ID: <20120207163716.GA12704@decadent.org.uk>
-References: <1327318828-12984-1-git-send-email-joerg.roedel@amd.com>
- <4F1D8810.1040501@suse.cz>
- <20120204143449.GA28068@stro.at>
+	Tue, 7 Feb 2012 11:41:06 -0500
+Date: Tue, 7 Feb 2012 16:40:57 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Clemens Ladisch <clemens@ladisch.de>, Matthias Schniedermeyer <ms@citd.de>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Linux 3.2.5
+Message-ID: <20120207164057.GA29436@srcf.ucam.org>
+References: <20120206181622.GA28811@kroah.com>
+ <20120207084037.GA6140@citd.de>
+ <4F30FABF.4060409@ladisch.de>
+ <20120207105835.GA12864@citd.de>
+ <4F310DBC.1040501@ladisch.de>
+ <20120207114806.GA15323@citd.de>
+ <4F3118F7.8050205@ladisch.de>
+ <CA+55aFxLKAN7rBWo_5oFNJdvaDfvvJydgmaHYPF5JQ_enDPe+Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120204143449.GA28068@stro.at>
+In-Reply-To: <CA+55aFxLKAN7rBWo_5oFNJdvaDfvvJydgmaHYPF5JQ_enDPe+Q@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH] kbuild: Fix link to headers in 'make deb-pkg'
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 04, 2012 at 03:34:49PM +0100, maximilian attems wrote:
-> adding bwh + debian-kernel
-> 
-> On Mon, 23 Jan 2012, Michal Marek wrote:
-> 
-> > (adding max to CC)
-> > 
-> > On 23.1.2012 12:40, Joerg Roedel wrote:
-> > > The Link to the kernel header files in the debian packages
-> > > point to the original build directory. This is a bad choice
-> > > if the packages were installed on a different machine. Fix
-> > > this in by manually re-creating the link in the builddeb
-> > > script.
+On Tue, Feb 07, 2012 at 08:29:32AM -0800, Linus Torvalds wrote:
 
-Right, but:
+> Resulting in a broken system - aspm on the device, but not the bridge
+> leading up to it. Which I do not think is a correct situation.
 
-[...]
-> > > @@ -121,10 +122,14 @@ fi
-> > >  
-> > >  if grep -q '^CONFIG_MODULES=y' .config ; then
-> > >  	INSTALL_MOD_PATH="$tmpdir" make KBUILD_SRC= modules_install
-> > > -	if [ "$ARCH" = "um" ] ; then
-> > > -		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
-> > > -		rmdir "$tmpdir/lib/modules/$version"
-> > > -	fi
-> > > +fi
-> > > +
-> > > +# Make sure link to the headers is correct
-> > > +ln -snf "/usr/src/$kernel_headers_packagename" "$tmpdir/lib/modules/$version/build"
-[...]
+Per spec, it's valid. If there's a bridge that can't deal with its 
+downstreams having ASPM enabled when it has ASPM disabled then we 
+probably need to quirk that specially.
 
-This should be removed from the kernel image package and created
-in the kernel headers package instead, otherwise it's potentially a
-broken link.
+> (It's also broken because it fundamentally makes the aspm disable be
+> "per device", which seems totally wrong - aspm is a system issue, you
+> can't just willy-nilly randomly enable it for one device without
+> taking other devices into account).
 
-Ben.
+It's at *least* a per-bus thing, not a per-system thing. And, by the 
+spec, it's completely valid to have a different set of states configured 
+on the bridge and any downstream devices.
+
+> So I suspect the whole pcie_aspm_sanity_check() function should go away.
+
+The sanity check is important because nobody tests ASPM with pre-1.1 
+devices. However, in the aspm-is-disabled-by-FADT case, I can believe 
+that we should skip it.
 
 -- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Matthew Garrett | mjg59@srcf.ucam.org
