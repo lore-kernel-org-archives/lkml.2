@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757061Ab2BGWJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 17:09:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33561 "EHLO mx1.redhat.com"
+	id S1757101Ab2BGWMD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 17:12:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41903 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756744Ab2BGWJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 17:09:48 -0500
-Date: Tue, 7 Feb 2012 16:57:41 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kexec-list <kexec@lists.infradead.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] x86, kdump: No need to disable ioapic in crash path
-Message-ID: <20120207215741.GD5650@redhat.com>
-References: <1328206323-25580-1-git-send-email-dzickus@redhat.com>
- <m1r4ycsts1.fsf@fess.ebiederm.org>
+	id S1756187Ab2BGWMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 17:12:01 -0500
+Message-ID: <4F31A1A2.8020201@zytor.com>
+Date: Tue, 07 Feb 2012 14:11:46 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1r4ycsts1.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v2] x86, mm: Probe memory block size for generic x86
+ 64bit
+References: <1327911855-6501-1-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1327911855-6501-1-git-send-email-yinghai@kernel.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 02, 2012 at 03:24:46PM -0800, Eric W. Biederman wrote:
-> > Eric, brought up a point that because the boot code was restructured we may
-> > not need to disable the io apic any more in the crash path.  The original
-> > concern that led to the development of disable_IO_APIC, was that the TSC
-> > calibration on boot up relied on the PIT timer for reference.  Access
-> > to the PIT required 8259 interrupts to be working.  This wouldn't work
-> > if the ioapic needed to be configured.  So on panic path, the ioapic was
-> > reconfigured to use virtual wire mode to allow the 8259 to passthrough.
+On 01/30/2012 12:24 AM, Yinghai Lu wrote:
+> Usually if the system support memory remapping to get back memory for mmio
+> range, we will have 128M ... 2G at the end.
 > 
-> A small clarification originally it was the jiffies calibration that
-> would fail if we could cause the PIT to generate interrupts through the
-> 8259.  The boot would then hang at calibrating jiffies.
-
-Ok.  Thanks!
-
+> Try to probe that size.
 > 
-> > Those concerns don't hold true now, thanks to the fast TSC calibration code
-> > not needing the PIT.  As a result, we can remove this call and simplify the
-> > locking needed in the panic path.
-> >
-> > I tested kdump on an Ivy Bridge platform, a Pentium4 and an old athlon that
-> > did not have an ioapic.  All three were successful.
-> >
-> > Cc: Eric W. Biederman <ebiederm@xmission.com>
-> > Cc: Vivek Goyal <vgoyal@redhat.com>
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> >
-> > ---
-> > I will probably need some help with my explaination as to why this line is not
-> > needed.  Any input is appreciated!
+> So we can get less entries in /sys/devices/system/memory/
 > 
-> Can you test and verify that we also do not need the lapic_shutdown()
-> call and the disable_local_APIC call on the other processors.  The same
-> reasoning that supports us not needing to disable the IO_APIC also
-> supports us not needing to disable local apic.
-
-I did that and it seemed to work on my Ivy Bridge and core2 quad systems.
-
+> -v2: don't probe it every time when /sys/../block_size_byte is showed...
 > 
-> Removing disable_IO_APIC in and of itself and then booting isn't quite
-> sufficient as a practical test to prove this code always works.
-> Sometimes the IOAPIC was not hooked up to interesting interrupt sources
-> like the 8259.
 
-So what systems should I look for to test?
+Okay... what on Earth is the point of this?
 
-Cheers,
-Don
+This just screams "dangerous toxic heuristic that's likely to break
+unusual configurations", and reducing the number of entries in a /sys
+directory is hardly motivation for anything.
+
+You need a much better description of what you're trying to accomplish
+and why that matters in the first place.
+
+	-hpa
