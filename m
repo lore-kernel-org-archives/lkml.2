@@ -1,78 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab2BGBZC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 20:25:02 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34093 "EHLO mail.zytor.com"
+	id S1756671Ab2BGB3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 20:29:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31768 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755883Ab2BGBZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 20:25:00 -0500
-Message-ID: <4F307D45.1050404@zytor.com>
-Date: Mon, 06 Feb 2012 17:24:21 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1756557Ab2BGB3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 20:29:14 -0500
+Message-ID: <4F307EFC.5010400@redhat.com>
+Date: Tue, 07 Feb 2012 09:31:40 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: David Daney <david.daney@cavium.com>
-CC: Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-References: <1328560933-3037-1-git-send-email-venki@google.com> <4F306FAF.7020500@cavium.com>
-In-Reply-To: <4F306FAF.7020500@cavium.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, xiyou.wangcong@gmail.com,
+        penberg@kernel.org, fengguang.wu@intel.com, cl@linux.com,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 3/3] move hugepage test examples to tools/testing/selftests/vm
+References: <20120205081555.GA2249@darkstar.redhat.com> <20120206155340.b9075240.akpm@linux-foundation.org>
+In-Reply-To: <20120206155340.b9075240.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2012 04:26 PM, David Daney wrote:
-> On 02/06/2012 12:42 PM, Venkatesh Pallipadi wrote:
-> [...]
->> index 5bed94e..6a56cb0 100644
->> --- a/arch/x86/Kconfig
->> +++ b/arch/x86/Kconfig
->> @@ -170,6 +170,11 @@ config GENERIC_TIME_VSYSCALL
->>       bool
->>       default X86_64
+On 02/07/2012 07:53 AM, Andrew Morton wrote:
+
+> On Sun, 5 Feb 2012 16:15:55 +0800
+> Dave Young <dyoung@redhat.com> wrote:
+> 
+>> hugepage-mmap.c, hugepage-shm.c and map_hugetlb.c in Documentation/vm are
+>> simple pass/fail tests, It's better to promote them to tools/testing/selftests
 >>
->> +config AVOID_IPI_ON_IDLE
->> +    bool
->> +    depends on X86_64
->> +    default X86_64
->> +
-> 
-> Can you get rid of this part...
-> 
->>   config ARCH_HAS_CPU_RELAX
->>       def_bool y
+>> Thanks suggestion of Andrew Morton about this. They all need firstly setting up
+>> proper nr_hugepages and hugepage-mmap need to mount hugetlbfs. So I add a shell
+>> script run_test to do such work which will call the three test programs and
+>> check the return value of them.
 >>
-> [...]
->> diff --git a/arch/x86/kernel/acpi/cstate.c
->> b/arch/x86/kernel/acpi/cstate.c
->> index f50e7fb..340c4e9 100644
->> --- a/arch/x86/kernel/acpi/cstate.c
->> +++ b/arch/x86/kernel/acpi/cstate.c
->> @@ -161,6 +161,14 @@ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
->>    */
->>   void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
->>   {
->> +#ifdef CONFIG_AVOID_IPI_ON_IDLE
+>> Changes to original code including below:
+>> a. add run_test script
+>> b. return error when read_bytes mismatch with writed bytes.
+>> c. coding style fixes: do not use assignment in if condition
+>>
 > 
+> I think Frederic is doing away with tools/testing/selftests/run_tests
+> in favour of a Makefile target?  ("make run_tests", for example).
+
+>
+
+> Until we see such a patch we cannot finalise your patch and if I apply
+> your patch, his patch will need more work.  Not that this is rocket
+> science ;)
+
+
+Understand.
+
 > 
-> ... and change all of these to #ifdef CONFIG_64BIT
+>>
+>> ...
+>>
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/vm/run_test
 > 
->> +    int oldval, cpu = smp_processor_id();
->> +
+> (We now have a "run_tests" and a "run_test".  The difference in naming
+> is irritating)
 
-Why should this be 64-bit specific??
 
-	-hpa
+Yes, I'm just refer to the breakpoints/Makefile which will make a target
+breakpoints/run_test
 
+> 
+> Your vm/run_test file does quite a lot of work and we couldn't sensibly
+> move all its functionality into Makefile, I expect.
+> 
+> So I think it's OK to retain a script for this, but I do think that we
+> should think up a standardized way of invoking it from vm/Makefile, so
+> the top-level Makefile in tools/testing/selftests can simply do "cd
+> vm;make run_test", where the run_test target exists in all
+> subdirectories.  The vm/Makefile run_test target can then call out to
+> the script.
+
+
+Frederic, do you have any idea about this?
+
+> 
+> Also, please do not assume that the script has the x bit set.  The x
+> bit easily gets lost on kernel scripts (patch(1) can lose it) so it is
+> safer to invoke the script via "/bin/sh script-name" or $SHELL or
+> whatever.
+
+
+Agree, and quilt can not keep the x bit as well, I have to use git to
+create a executable shell script
+
+> 
+> Anyway, we should work with Frederic on sorting out some standard
+> behavior before we can finalize this work, please.
+> 
+
+
+Fine, I can redo this after the standard behavior is out
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Thanks
+Dave
