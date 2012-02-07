@@ -1,183 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab2BGToY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 14:44:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40903 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755833Ab2BGToX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 14:44:23 -0500
-Date: Tue, 7 Feb 2012 11:44:06 -0800
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-f39d47ff819ed52a2afbdbecbe35f23f7755f58d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20120207133956.GA4932@quad>
-References: <20120207133956.GA4932@quad>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Fix double start/stop in x86_pmu_start()
-Git-Commit-ID: f39d47ff819ed52a2afbdbecbe35f23f7755f58d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 07 Feb 2012 11:44:12 -0800 (PST)
+	id S1756767Ab2BGTpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 14:45:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25950 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756184Ab2BGTpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 14:45:12 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: [PATCHv8 0/8] ftrace, perf: Adding support to use function trace
+Date: Tue,  7 Feb 2012 20:44:51 +0100
+Message-Id: <1328643899-8361-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+References: <1327776209-4883-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f39d47ff819ed52a2afbdbecbe35f23f7755f58d
-Gitweb:     http://git.kernel.org/tip/f39d47ff819ed52a2afbdbecbe35f23f7755f58d
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Tue, 7 Feb 2012 14:39:57 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 7 Feb 2012 16:58:56 +0100
+hi,
+here's another version of perf support for function trace
+with filter. 
 
-perf: Fix double start/stop in x86_pmu_start()
+attached patches:
+ - 1/8 ftrace: Change filter/notrace set functions to return exit code
+ - 2/8 ftrace: Add enable/disable ftrace_ops control interface
+ - 3/8 ftrace, perf: Add open/close tracepoint perf registration actions
+ - 4/8 ftrace, perf: Add add/del tracepoint perf registration actions
+ - 5/8 ftrace: Add FTRACE_ENTRY_REG macro to allow event registration
+ - 6/8 ftrace, perf: Add support to use function tracepoint in perf
+ - 7/8 ftrace: Allow to specify filter field type for ftrace events
+ - 8/8 ftrace, perf: Add filter support for function trace event
 
-The following patch fixes a bug introduced by the following
-commit:
+v8 changes:
+  1/8 - acked
+  2/8 - acked
+  3/8 - acked
+  4/8 - acked
+  5/8 - new patch - added FTRACE_ENTRY_REG macro
+  6/8 - using FTRACE_ENTRY_REG macro to define ftrace event
+  7/8 - adding filter parameter to FTRACE_ENTRY macro
+  8/8 - using only walk_pred_tree to check the filter
+        instead using different special filter_ops,
 
-        e050e3f0a71b ("perf: Fix broken interrupt rate throttling")
+v7 changes:
+  2/7 - using int instead of atomic_t for ftrace_ops::disable
+      - using this_cpu_ptr to touch ftrace_ops::disable
+      - renamed ftrace_ops:disable API
+          void ftrace_function_local_enable(struct ftrace_ops *ops)
+          void ftrace_function_local_disable(struct ftrace_ops *ops)
+          int  ftrace_function_local_disabled(struct ftrace_ops *ops)
 
-The patch caused the following warning to pop up depending on
-the sampling frequency adjustments:
+v6 changes:
+  2/7 - added comments to FTRACE_OPS_FL_* bits enum
+  5/7 - added more info to the change log regarding ftrace_ops enable/disable
+  7/7 - rebased to the latest filter changes
 
-  ------------[ cut here ]------------
-  WARNING: at arch/x86/kernel/cpu/perf_event.c:995 x86_pmu_start+0x79/0xd4()
+v5 changes:
+  7/7 - fixed to properly support ',' in filter expressions
 
-It was caused by the following call sequence:
+v4 changes:
+  2/7 - FL_GLOBAL_CONTROL changed to FL_GLOBAL_CONTROL_MASK
+      - changed WARN_ON_ONCE() to include the !preempt_count()
+      - changed this_cpu_ptr to per_cpu_ptr
 
-perf_adjust_freq_unthr_context.part() {
-     stop()
-     if (delta > 0) {
-          perf_adjust_period() {
-              if (period > 8*...) {
-                  stop()
-                  ...
-                  start()
-              }
-          }
-      }
-      start()
-}
+  ommited Fix possible NULL dereferencing in __ftrace_hash_rec_update
+  (2/8 in v3)
 
-Which caused a double start and a double stop, thus triggering
-the assert in x86_pmu_start().
+v3 changes:
+  3/8 - renamed __add/remove_ftrace_ops
+      - fixed preemtp_enable/recursion_clear order in ftrace_ops_control_func 
+      - renamed/commented API functions -  enable/disable_ftrace_function
+  
+  ommited graph tracer workarounf patch 10/10  
 
-The patch fixes the problem by avoiding the double calls. We
-pass a new argument to perf_adjust_period() to indicate whether
-or not the event is already stopped. We can't just remove the
-start/stop from that function because it's called from
-__perf_event_overflow where the event needs to be reloaded via a
-stop/start back-toback call.
+v2 changes:
+ 01/10 - keeping the old fix instead of adding hash_has_contents func
+         I'll send separating patchset for this
+ 02/10 - using different way to avoid the issue (3/9 in v1)
+ 03/10 - using the way proposed by Steven for controling ftrace_ops
+         (4/9 in v1)
+ 06/10 - added check ensuring the ftrace:function event could be used by
+         root only (7/9 in v1)
+ 08/10 - added more description (8/9 in v1)
+ 09/10 - changed '&&' operator to '||' which seems more suitable
+         in this case (9/9 in v1)
 
-The patch reintroduces the assertion in x86_pmu_start() which
-was removed by commit:
-
-	84f2b9b ("perf: Remove deprecated WARN_ON_ONCE()")
-
-In this second version, we've added calls to disable/enable PMU
-during unthrottling or frequency adjustment based on bug report
-of spurious NMI interrupts from Eric Dumazet.
-
-Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: markus@trippelsdorf.de
-Cc: paulus@samba.org
-Link: http://lkml.kernel.org/r/20120207133956.GA4932@quad
-[ Minor edits to the changelog and to the code ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+thanks,
+jirka
 ---
- arch/x86/kernel/cpu/perf_event.c |    3 +++
- kernel/events/core.c             |   19 ++++++++++++++-----
- 2 files changed, 17 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 2a30e5a..5adce10 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -986,6 +986,9 @@ static void x86_pmu_start(struct perf_event *event, int flags)
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	int idx = event->hw.idx;
- 
-+	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
-+		return;
-+
- 	if (WARN_ON_ONCE(idx == -1))
- 		return;
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ba36013..1b5c081 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2303,7 +2303,7 @@ do {					\
- static DEFINE_PER_CPU(int, perf_throttled_count);
- static DEFINE_PER_CPU(u64, perf_throttled_seq);
- 
--static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
-+static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count, bool disable)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 	s64 period, sample_period;
-@@ -2322,9 +2322,13 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
- 	hwc->sample_period = sample_period;
- 
- 	if (local64_read(&hwc->period_left) > 8*sample_period) {
--		event->pmu->stop(event, PERF_EF_UPDATE);
-+		if (disable)
-+			event->pmu->stop(event, PERF_EF_UPDATE);
-+
- 		local64_set(&hwc->period_left, 0);
--		event->pmu->start(event, PERF_EF_RELOAD);
-+
-+		if (disable)
-+			event->pmu->start(event, PERF_EF_RELOAD);
- 	}
- }
- 
-@@ -2350,6 +2354,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
- 		return;
- 
- 	raw_spin_lock(&ctx->lock);
-+	perf_pmu_disable(ctx->pmu);
- 
- 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
- 		if (event->state != PERF_EVENT_STATE_ACTIVE)
-@@ -2381,13 +2386,17 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
- 		/*
- 		 * restart the event
- 		 * reload only if value has changed
-+		 * we have stopped the event so tell that
-+		 * to perf_adjust_period() to avoid stopping it
-+		 * twice.
- 		 */
- 		if (delta > 0)
--			perf_adjust_period(event, period, delta);
-+			perf_adjust_period(event, period, delta, false);
- 
- 		event->pmu->start(event, delta > 0 ? PERF_EF_RELOAD : 0);
- 	}
- 
-+	perf_pmu_enable(ctx->pmu);
- 	raw_spin_unlock(&ctx->lock);
- }
- 
-@@ -4562,7 +4571,7 @@ static int __perf_event_overflow(struct perf_event *event,
- 		hwc->freq_time_stamp = now;
- 
- 		if (delta > 0 && delta < 2*TICK_NSEC)
--			perf_adjust_period(event, delta, hwc->last_period);
-+			perf_adjust_period(event, delta, hwc->last_period, true);
- 	}
- 
- 	/*
+ include/linux/ftrace.h             |   71 ++++++++++++-
+ include/linux/ftrace_event.h       |    9 ++-
+ include/linux/perf_event.h         |    3 +
+ kernel/trace/ftrace.c              |  132 +++++++++++++++++++++---
+ kernel/trace/trace.h               |   34 ++++--
+ kernel/trace/trace_entries.h       |   54 +++++++---
+ kernel/trace/trace_event_perf.c    |  206 ++++++++++++++++++++++++++++--------
+ kernel/trace/trace_events.c        |   12 ++-
+ kernel/trace/trace_events_filter.c |  160 +++++++++++++++++++++++++++-
+ kernel/trace/trace_export.c        |   64 ++++++++----
+ kernel/trace/trace_kprobe.c        |    8 ++-
+ kernel/trace/trace_syscalls.c      |   18 +++-
+ 12 files changed, 654 insertions(+), 117 deletions(-)
