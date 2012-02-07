@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2BGHwD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 02:52:03 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:30962 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189Ab2BGHwB convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Tue, 7 Feb 2012 02:52:01 -0500
-Message-Id: <4F30E62B02000078000717EB@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 07 Feb 2012 07:51:55 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>, <xen-devel@lists.xensource.com>,
-        "Dan Magenheimer" <dan.magenheimer@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/tmem: cleanup
-References: <4F2C06A00200007800071071@nat28.tlf.novell.com>
- <d86f0be9-1530-47bd-b3fd-8c251e563b25@default>
- <4F2F998202000078000714CD@nat28.tlf.novell.com>
- <e871af1b-8003-4d3d-8fde-ea40545ff9fe@default>
- <4F3012B602000078000716AB@nat28.tlf.novell.com>
- <20120206170224.GD23240@phenom.dumpdata.com>
-In-Reply-To: <20120206170224.GD23240@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755661Ab2BGHwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 02:52:44 -0500
+Received: from mail.mnsspb.ru ([84.204.75.2]:50960 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751349Ab2BGHwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 02:52:43 -0500
+Date: Tue, 7 Feb 2012 11:55:53 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: No /dev/root with devtmpfs?
+Message-ID: <20120207075553.GB8632@tugrik.mns.mnsspb.ru>
+References: <20120206111853.GA11506@tugrik.mns.mnsspb.ru>
+ <CAPXgP11N=8NULMH-o0Us0OuqYpP9sKe9uUKWzE35h1AiRP1Cjg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP11N=8NULMH-o0Us0OuqYpP9sKe9uUKWzE35h1AiRP1Cjg@mail.gmail.com>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.02.12 at 18:02, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Mon, Feb 06, 2012 at 04:49:42PM +0000, Jan Beulich wrote:
->> >>> On 06.02.12 at 17:37, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
->> >>  From: Jan Beulich [mailto:JBeulich@suse.com]
->> >> > tmem_enabled is used in xen/drivers/xen-selfballoon.c
->> >> 
->> >> Which can't be built as a module, and hence the symbol doesn't need
->> >> exporting. This patch (of course, I'm tempted to say) survived build
->> >> testing.
->> > 
->> > Yes, correct.  BUT... I think only the reason xen-selfballoon.c
->> > can't be built as a module is because the MM variable vm_committed_as
->> > (or an access function) is not exported.  Ideally xen-selfballoon.c
->> > probably should be a module but putting a core MM change in
->> > the critical path of a Xen-only-related enhancement seemed
->> > a recipe for sure failure.
->> 
->> No, this isn't the main reason (as you say further down, this could
->> easily be adjusted for) afaict. The main reason is that
->> register_xen_selfballooning() is being called from non-modular
->> code (xen-balloon.c), which could be made a module too, but in
->> turn has at least one reference that wouldn't be nice to become
->> an export (balloon_set_new_target()).
+On Mon, Feb 06, 2012 at 08:45:24PM +0100, Kay Sievers wrote:
+> On Mon, Feb 6, 2012 at 12:18, Kirill Smelkov <kirr@mns.spb.ru> wrote:
+> > Recently I've reworked my system not to use udev, but use devtmpfs
+> > instead and discovered there is no /dev/root symlink in devtmpfs case.
+> >
+> > My setup uses /dev/root early to know what is the boot device and then
+> > do some operations on it like checksumming, etc...
+> >
+> > Now when /dev/root is gone the best workaround I could come up with is
+> > to   grep /proc/partitions for '[hs]d[a-z]1'  but it's ugly and will
+> > break when there are several block devices attached.
+> >
+> > Is it somehow possible to add /dev/root to devtmpfs?
 > 
-> It would be nice if all of it could become modules. That way HVM
-> device driver domains could load the whole thing without having much
-> built-in code in the kernel.
+> No, devtmpfs has no business in knowing anything about the rootfs or
+> who mounted what ans where. I can not create such links.
 > 
-> Is it possible to do that?
+> The entire concept of /dev/root is flawed anyway, and nothing should
+> really depend on that.
+> 
+> Modern filesystems will not offer a direct relation to a single block
+> device, they allocate an superblock which has a major == 0, so there
+> can be by definition never such a link. Better get rid of all uses of
+> /dev/root, it will just fail in the future.
 
-As outlined above, it is possible, but I'm not certain it is a good idea
-to have balloon_set_new_target() exported. If you think that's
-acceptable, I can certainly put together a patch doing that (on top
-of the one here, and probably not immediately).
+Kay, thanks for explanation.
 
-Jan
-
+Though now I'm confused about how to know on what "place" root
+filesystem was mounted... To me the question makes sense, but you say
+with modern filesystems there by definition is no answer (or did I
+misunderstood you?) Strange...
