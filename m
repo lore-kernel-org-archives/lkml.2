@@ -1,59 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2BGOxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 09:53:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25358 "EHLO mx1.redhat.com"
+	id S1755260Ab2BGOxq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 09:53:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58245 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701Ab2BGOxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 09:53:12 -0500
-Date: Tue, 7 Feb 2012 12:52:21 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@elte.hu, robert.richter@amd.com,
-        ming.m.lin@intel.com, andi@firstfloor.org, asharma@fb.com,
-        ravitillo@lbl.gov, vweaver1@eecs.utk.edu, dsahern@gmail.com
-Subject: Re: [PATCH v5 16/18] perf: enable reading of perf.data files from
-	different ABI rev
-Message-ID: <20120207145220.GM6367@infradead.org>
-References: <1328187288-24395-1-git-send-email-eranian@google.com> <1328187288-24395-17-git-send-email-eranian@google.com> <20120206182208.GH6367@infradead.org> <4F30CCA6.4040001@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F30CCA6.4040001@linux.vnet.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754178Ab2BGOxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 09:53:44 -0500
+From: Igor Mammedov <imammedo@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, jacob.jun.pan@linux.intel.com, alan@linux.intel.com,
+        feng.tang@intel.com, konrad.wilk@oracle.com, avi@redhat.com,
+        glommer@redhat.com, johnstul@us.ibm.com, riel@redhat.com,
+        tj@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        akpm@linux-foundation.org
+Subject: [PATCH] Introduce x86_cpuinit.early_percpu_clock_init hook
+Date: Tue,  7 Feb 2012 15:52:44 +0100
+Message-Id: <1328626364-22591-1-git-send-email-imammedo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Feb 07, 2012 at 12:33:02PM +0530, Anshuman Khandual escreveu:
-> On Monday 06 February 2012 11:52 PM, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Feb 02, 2012 at 01:54:46PM +0100, Stephane Eranian escreveu:
-> >> This patch allows perf to process perf.data files generated
-> >> using an ABI that has a different perf_event_attr struct size, i.e.,
-> >> a different ABI version.
+When kvm guest uses kvmclock, it may hang on vcpu hot-plug.
+This is caused by an overflow in pvclock_get_nsec_offset,
 
-> > Anshuman, can I have your Acked-by or Reviewed-by since you spotted
-> > problems in this and your suggestions were taken into account? Is this
-> > OK now?
+    u64 delta = tsc - shadow->tsc_timestamp;
 
-> (1) PERF_SAMPLE_BRANCH_HV and related privilege level problems has been fixed. 
->     Verified various combinations of <branch_type>,[u,k,hv] <event>:[u,k,h].
->     Works well in all privilege level permutations.
-> 
-> (2) As Peter has mentioned 'has_branch_smpl()' bug in the ARM code would be taken
->     care.
-> 
-> (3) 'ref_size' problem in try_all_pipe_abis() has been fixed. All the patches 
->     independently compile successfully.
-> 
-> (4) Went through the entire patchset, looks good to me. 
-> 
-> Acked-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-> Tested-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+which in turn is caused by an undefined values from percpu
+hv_clock that hasn't been initialized yet.
+Uninitialized clock on being booted cpu is accessed from
+   start_secondary
+    -> smp_callin
+      ->  smp_store_cpu_info
+        -> identify_secondary_cpu
+          -> mtrr_ap_init
+            -> mtrr_restore
+              -> stop_machine_from_inactive_cpu
+                -> queue_stop_cpus_work
+                  ...
+                    -> sched_clock
+                      -> kvm_clock_read
+which is well before x86_cpuinit.setup_percpu_clockev call in
+start_secondary, where percpu clock is initialized.
 
-Thanks! But we'll now have to wait till Stephane addresses the points
-made by David :-)
+This patch introduces a hook that allows to setup/initialize
+per_cpu clock early and avoid overflow due to reading
+  - undefined values
+  - old values if cpu was offlined and then onlined again
 
-- Arnaldo
+Another possible early user of this clock source is ftrace that
+accesses it to get timestamps for ring buffer entries. So if
+mtrr_ap_init is moved from identify_secondary_cpu to past
+x86_cpuinit.setup_percpu_clockev in start_secondary, ftrace
+may cause the same overflow/hang on cpu hot-plug anyway.
+
+More complete description of the problem:
+  https://lkml.org/lkml/2012/2/2/101
+
+Credits to Marcelo Tosatti <mtosatti@redhat.com> for hook idea.
+
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+---
+ arch/x86/include/asm/x86_init.h |    2 ++
+ arch/x86/kernel/kvmclock.c      |    4 +---
+ arch/x86/kernel/smpboot.c       |    1 +
+ arch/x86/kernel/x86_init.c      |    1 +
+ 4 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 517d476..5d0afac 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -145,9 +145,11 @@ struct x86_init_ops {
+ /**
+  * struct x86_cpuinit_ops - platform specific cpu hotplug setups
+  * @setup_percpu_clockev:	set up the per cpu clock event device
++ * @early_percpu_clock_init:	early init of the per cpu clock event device
+  */
+ struct x86_cpuinit_ops {
+ 	void (*setup_percpu_clockev)(void);
++	void (*early_percpu_clock_init)(void);
+ 	void (*fixup_cpu_id)(struct cpuinfo_x86 *c, int node);
+ };
+ 
+diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+index 44842d7..ca4e735 100644
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -144,8 +144,6 @@ static void __cpuinit kvm_setup_secondary_clock(void)
+ 	 * we shouldn't fail.
+ 	 */
+ 	WARN_ON(kvm_register_clock("secondary cpu clock"));
+-	/* ok, done with our trickery, call native */
+-	setup_secondary_APIC_clock();
+ }
+ #endif
+ 
+@@ -194,7 +192,7 @@ void __init kvmclock_init(void)
+ 	x86_platform.get_wallclock = kvm_get_wallclock;
+ 	x86_platform.set_wallclock = kvm_set_wallclock;
+ #ifdef CONFIG_X86_LOCAL_APIC
+-	x86_cpuinit.setup_percpu_clockev =
++	x86_cpuinit.early_percpu_clock_init =
+ 		kvm_setup_secondary_clock;
+ #endif
+ 	machine_ops.shutdown  = kvm_shutdown;
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 66d250c..a05d6fd 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -255,6 +255,7 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 	 * most necessary things.
+ 	 */
+ 	cpu_init();
++	x86_cpuinit.early_percpu_clock_init();
+ 	preempt_disable();
+ 	smp_callin();
+ 
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 947a06c..6f2ec53 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -91,6 +91,7 @@ struct x86_init_ops x86_init __initdata = {
+ };
+ 
+ struct x86_cpuinit_ops x86_cpuinit __cpuinitdata = {
++	.early_percpu_clock_init	= x86_init_noop,
+ 	.setup_percpu_clockev		= setup_secondary_APIC_clock,
+ 	.fixup_cpu_id			= x86_default_fixup_cpu_id,
+ };
+-- 
+1.7.7.6
+
