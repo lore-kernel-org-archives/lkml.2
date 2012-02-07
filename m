@@ -1,43 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab2BGVS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 16:18:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53177 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756953Ab2BGVS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 16:18:27 -0500
-Date: Tue, 7 Feb 2012 19:15:46 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Anthony Liguori <aliguori@us.ibm.com>, KVM <kvm@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        X86 <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 1/1] kvm : vmx : Remove yield_on_hlt
-Message-ID: <20120207211546.GA23022@amt.cnet>
-References: <20120207174919.3848.99779.sendpatchset@oc5400248562.ibm.com>
+	id S1756977Ab2BGVTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 16:19:01 -0500
+Received: from mga10.intel.com ([192.55.52.92]:54778 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756695Ab2BGVS7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 16:18:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120207174919.3848.99779.sendpatchset@oc5400248562.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87zkcuh8iq.fsf@rustcorp.com.au>
+References: <cover.1328122362.git.dmitry.kasatkin@intel.com>
+	<alpine.LRH.2.00.1202061250400.16907@tundra.namei.org>
+	<CALLzPKZSWSp6r-5e1c1Z6qOH6C0DcOz=LHJ20Y468SQE6UU1ww@mail.gmail.com>
+	<87zkcuh8iq.fsf@rustcorp.com.au>
+Date: Tue, 7 Feb 2012 23:18:38 +0200
+Message-ID: <CALLzPKZRUTaOE8afXD1b=Kd6fOaisOpAW+XGJMi7uHdE0sEgFw@mail.gmail.com>
+Subject: Re: [RFC][PATCH v1 0/2] integrity: module integrity verification
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Rusty Russell <rusty@ozlabs.org>
+Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 11:19:20PM +0530, Raghavendra K T wrote:
->   yield_on_hlt was introduced for CPU bandwidth capping. now it is redundant
-> with CFS hardlimit.
-> 
-> yield_on_hlt also complicates the scenario in paravirtual environment, that
-> needs to trap halt. for e.g. paravirtualized ticket spinlocks.
-> 
-> Changelog:
-> Remove the support for yield_on_hlt.
-> 
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+On Tue, Feb 7, 2012 at 7:13 PM, Rusty Russell <rusty@ozlabs.org> wrote:
+> On Mon, 6 Feb 2012 08:59:00 +0200, "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
+>> On Mon, Feb 6, 2012 at 3:51 AM, James Morris <jmorris@namei.org> wrote:
+>> > On Wed, 1 Feb 2012, Dmitry Kasatkin wrote:
+>> >
+>> >> Hi,
+>> >>
+>> >> Here is another module verification patchset, which is based on the recently
+>> >> upstreamed digital signature support used by EVM and IMA-appraisal.
+>> >
+>> > You should cc: Rusty on any changes to the module code.
+>> >
+>>
+>> Hello,
+>>
+>> Mimi already has pointed that out.
+>> I have sent him an email with the link..
+>
+> Thanks.
+>
+> Using an external signature (via cmdline arguments) is simple, at
+> least.  Not sure what the userspace side of this looks like?
+>
 
-Applied, thanks.
+Hello,
 
+There are couple of patches for modprobe and insmod...
+
+You could see them on the top at:
+http://linux-ima.git.sourceforge.net/git/gitweb.cgi?p=linux-ima/module-init-tools.git;a=summary
+
+It first tries to read signature from xattr, then from file...
+"modprobe -v" will show 'ima='  parameter with signature.
+
+- Dmitry
+
+
+> Cheers,
+> Rusty.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
