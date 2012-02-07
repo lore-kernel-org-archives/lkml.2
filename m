@@ -1,97 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab2BGRnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 12:43:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55515 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563Ab2BGRnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 12:43:53 -0500
-Date: Tue, 7 Feb 2012 18:43:46 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Igor Mammedov <imammedo@redhat.com>
-cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, jacob.jun.pan@linux.intel.com,
-        alan@linux.intel.com, feng.tang@intel.com, konrad.wilk@oracle.com,
-        avi@redhat.com, glommer@redhat.com, johnstul@us.ibm.com,
-        riel@redhat.com, tj@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] Introduce x86_cpuinit.early_percpu_clock_init hook
-In-Reply-To: <1328626364-22591-1-git-send-email-imammedo@redhat.com>
-Message-ID: <alpine.LFD.2.02.1202071808340.2794@ionos>
-References: <1328626364-22591-1-git-send-email-imammedo@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756117Ab2BGRtB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 12:49:01 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:24114 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755260Ab2BGRs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 12:48:59 -0500
+X-IronPort-AV: E=Sophos;i="4.73,378,1325491200"; 
+   d="scan'208";a="623287367"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>
+CC: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "xemul@parallels.com" <xemul@parallels.com>,
+        "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 3/5] NFS: search for client session id in proper network
+ namespace
+Thread-Topic: [PATCH 3/5] NFS: search for client session id in proper
+ network namespace
+Thread-Index: AQHM3BtZgnaOlcRd+0mRCJwj4FE+5JYyLEEAgAAjJYA=
+Date: Tue, 7 Feb 2012 17:48:52 +0000
+Message-ID: <1328636931.4124.17.camel@lade.trondhjem.org>
+References: <20120126110955.8386.34551.stgit@localhost6.localdomain6>
+	 <20120126111149.8386.51043.stgit@localhost6.localdomain6>
+	 <4F314688.5050406@netapp.com>
+In-Reply-To: <4F314688.5050406@netapp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <1E04BB25172959408E01651C2C37D8E9@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-OriginalArrivalTime: 07 Feb 2012 17:48:53.0566 (UTC) FILETIME=[C1D9CDE0:01CCE5C0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q17Hn5Ja029798
 
-On Tue, 7 Feb 2012, Igor Mammedov wrote:
+On Tue, 2012-02-07 at 10:43 -0500, Bryan Schumaker wrote:
+> On 01/26/12 06:11, Stanislav Kinsbursky wrote:
+> 
+> > Network namespace is taken from request transport and passed as a part of
+> > cb_process_state structure.
+> > 
+> > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> > 
+> > ---
+> >  fs/nfs/callback.h      |    1 +
+> >  fs/nfs/callback_proc.c |    2 +-
+> >  fs/nfs/callback_xdr.c  |    1 +
+> >  fs/nfs/client.c        |    4 ++--
+> >  fs/nfs/internal.h      |    3 ++-
+> >  5 files changed, 7 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
+> > index c89d3b9..197e0d3 100644
+> > --- a/fs/nfs/callback.h
+> > +++ b/fs/nfs/callback.h
+> > @@ -39,6 +39,7 @@ struct cb_process_state {
+> >  	__be32			drc_status;
+> >  	struct nfs_client	*clp;
+> >  	int			slotid;
+> > +	struct net		*net;
+> >  };
+> >  
+> >  struct cb_compound_hdr_arg {
+> > diff --git a/fs/nfs/callback_proc.c b/fs/nfs/callback_proc.c
+> > index 0e6e63f..f71978d 100644
+> > --- a/fs/nfs/callback_proc.c
+> > +++ b/fs/nfs/callback_proc.c
+> > @@ -461,7 +461,7 @@ __be32 nfs4_callback_sequence(struct cb_sequenceargs *args,
+> >  	int i;
+> >  	__be32 status = htonl(NFS4ERR_BADSESSION);
+> >  
+> > -	clp = nfs4_find_client_sessionid(args->csa_addr, &args->csa_sessionid);
+> > +	clp = nfs4_find_client_sessionid(cps->net, args->csa_addr, &args->csa_sessionid);
+> >  	if (clp == NULL)
+> >  		goto out;
+> >  
+> > diff --git a/fs/nfs/callback_xdr.c b/fs/nfs/callback_xdr.c
+> > index f2be3e1e..8c2a969 100644
+> > --- a/fs/nfs/callback_xdr.c
+> > +++ b/fs/nfs/callback_xdr.c
+> > @@ -861,6 +861,7 @@ static __be32 nfs4_callback_compound(struct svc_rqst *rqstp, void *argp, void *r
+> >  		.drc_status = 0,
+> >  		.clp = NULL,
+> >  		.slotid = -1,
+> > +		.net = rqstp->rq_xprt->xpt_net,
+> >  	};
+> >  	unsigned int nops = 0;
+> >  
+> > diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+> > index 9e11d29..2328dcb 100644
+> > --- a/fs/nfs/client.c
+> > +++ b/fs/nfs/client.c
+> > @@ -1232,11 +1232,11 @@ nfs4_find_client_ident(struct net *net, int cb_ident)
+> >   * Returns NULL if no such client
+> >   */
+> >  struct nfs_client *
+> > -nfs4_find_client_sessionid(const struct sockaddr *addr,
+> > +nfs4_find_client_sessionid(struct net *net, const struct sockaddr *addr,
+> >  			   struct nfs4_sessionid *sid)
+> >  {
+> >  	struct nfs_client *clp;
+> > -	struct nfs_net *nn = net_generic(&init_net, nfs_net_id);
+> > +	struct nfs_net *nn = net_generic(net, nfs_net_id);
+> 
+> 
+> Hi,
+> 
+> You changed this function for the v4.1 case, but not for v4.0 (this is what I was trying to bisect earlier).  Without CONFIG_NFS_V4_1 set, I get this:
+> 
+>  make[1]: Nothing to be done for `all'.
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CHK     include/generated/compile.h
+>   CHK     kernel/config_data.h
+>   CC [M]  fs/nfs/client.o
+> fs/nfs/client.c:1265:1: error: conflicting types for 'nfs4_find_client_sessionid'
+> fs/nfs/internal.h:155:1: note: previous declaration of 'nfs4_find_client_sessionid' was here
+> make[2]: *** [fs/nfs/client.o] Error 1
+> make[1]: *** [fs/nfs] Error 2
+> make: *** [fs] Error 2
 
-> When kvm guest uses kvmclock, it may hang on vcpu hot-plug.
-> This is caused by an overflow in pvclock_get_nsec_offset,
-> 
->     u64 delta = tsc - shadow->tsc_timestamp;
-> 
-> which in turn is caused by an undefined values from percpu
-> hv_clock that hasn't been initialized yet.
-> Uninitialized clock on being booted cpu is accessed from
->    start_secondary
->     -> smp_callin
->       ->  smp_store_cpu_info
->         -> identify_secondary_cpu
->           -> mtrr_ap_init
->             -> mtrr_restore
->               -> stop_machine_from_inactive_cpu
->                 -> queue_stop_cpus_work
->                   ...
->                     -> sched_clock
->                       -> kvm_clock_read
-> which is well before x86_cpuinit.setup_percpu_clockev call in
-> start_secondary, where percpu clock is initialized.
-> 
-> This patch introduces a hook that allows to setup/initialize
-> per_cpu clock early and avoid overflow due to reading
->   - undefined values
->   - old values if cpu was offlined and then onlined again
-> 
-> Another possible early user of this clock source is ftrace that
-> accesses it to get timestamps for ring buffer entries. So if
-> mtrr_ap_init is moved from identify_secondary_cpu to past
-> x86_cpuinit.setup_percpu_clockev in start_secondary, ftrace
-> may cause the same overflow/hang on cpu hot-plug anyway.
-> 
-> More complete description of the problem:
->   https://lkml.org/lkml/2012/2/2/101
-> 
-> Credits to Marcelo Tosatti <mtosatti@redhat.com> for hook idea.
-> 
-> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-> ---
->  arch/x86/include/asm/x86_init.h |    2 ++
->  arch/x86/kernel/kvmclock.c      |    4 +---
->  arch/x86/kernel/smpboot.c       |    1 +
->  arch/x86/kernel/x86_init.c      |    1 +
->  4 files changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-> index 517d476..5d0afac 100644
-> --- a/arch/x86/include/asm/x86_init.h
-> +++ b/arch/x86/include/asm/x86_init.h
-> @@ -145,9 +145,11 @@ struct x86_init_ops {
->  /**
->   * struct x86_cpuinit_ops - platform specific cpu hotplug setups
->   * @setup_percpu_clockev:	set up the per cpu clock event device
-> + * @early_percpu_clock_init:	early init of the per cpu clock event device
+Thanks for tracking this down Bryan!
 
-You initialize the per cpu clock, not the per cpu clock event
-device. The latter is still initialized via setup_percpu_clockev().
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Otherwise 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
