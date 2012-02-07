@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab2BGNBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 08:01:46 -0500
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:39772 "EHLO
+	id S1756753Ab2BGNBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 08:01:53 -0500
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:49708 "EHLO
 	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756667Ab2BGNBo (ORCPT
+	by vger.kernel.org with ESMTP id S1756710Ab2BGNBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 08:01:44 -0500
+	Tue, 7 Feb 2012 08:01:50 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -16,9 +16,9 @@ To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
 Cc: Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 6/7] OMAP: omap4panda: Add fixed regulator for twl6040 needs
-Date: Tue,  7 Feb 2012 15:01:17 +0200
-Message-Id: <1328619678-26080-7-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 7/7] MFD: TWL6040: Add regulator support for VIO, V2V1 supplies
+Date: Tue,  7 Feb 2012 15:01:18 +0200
+Message-Id: <1328619678-26080-8-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1328619678-26080-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1328619678-26080-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,107 +26,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The twl6040 VIO power is connected to SMPS V1V8, the
-V2V1 power is coming from SMPS V2V1 of twl6030. These are fixed,
-always on regulators.
-Create fixed voltage regulators for these supplies.
+twl6040 has three power supply source:
+VBAT needs to be connected to VBAT, VIO, and V2V1.
+Add regulator support for the VIO, V2V1 supplies.
+Initially handle the two supply together with bulk commands.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- arch/arm/mach-omap2/board-omap4panda.c |   62 +++++++++++++++++++++++++++++++-
- 1 files changed, 61 insertions(+), 1 deletions(-)
+ drivers/mfd/twl6040-core.c  |   41 +++++++++++++++++++++++++++++++++++++----
+ include/linux/mfd/twl6040.h |    2 ++
+ 2 files changed, 39 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index da31a72..4d66c60 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -56,6 +56,10 @@
- #define HDMI_GPIO_HPD 60 /* Hot plug pin for HDMI */
- #define HDMI_GPIO_LS_OE 41 /* Level shifter for HDMI */
+diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+index ea00c69..15e4487 100644
+--- a/drivers/mfd/twl6040-core.c
++++ b/drivers/mfd/twl6040-core.c
+@@ -27,6 +27,7 @@
+ #include <linux/types.h>
+ #include <linux/slab.h>
+ #include <linux/kernel.h>
++#include <linux/err.h>
+ #include <linux/platform_device.h>
+ #include <linux/gpio.h>
+ #include <linux/delay.h>
+@@ -35,8 +36,10 @@
+ #include <linux/err.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/twl6040.h>
++#include <linux/regulator/consumer.h>
  
-+#define FIXED_REG_VWLAN_ID	0
-+#define FIXED_REG_V2V1_ID	1
-+#define FIXED_REG_V1V8_ID	2
+ #define VIBRACTRL_MEMBER(reg) ((reg == TWL6040_REG_VIBCTLL) ? 0 : 1)
++#define TWL6040_NUM_SUPPLIES	(2)
+ 
+ int twl6040_reg_read(struct twl6040 *twl6040, unsigned int reg)
+ {
+@@ -498,6 +501,14 @@ static int __devinit twl6040_probe(struct i2c_client *client,
+ 		goto err;
+ 	}
+ 
++	twl6040->supplies = devm_kzalloc(&client->dev,
++					 sizeof(struct regulator_bulk_data) *
++					 TWL6040_NUM_SUPPLIES, GFP_KERNEL);
++	if (!twl6040->supplies) {
++		ret = -ENOMEM;
++		goto err;
++	}
 +
- /* wl127x BT, FM, GPS connectivity chip */
- static int wl1271_gpios[] = {46, -1, -1};
- static struct platform_device wl1271_device = {
-@@ -116,10 +120,66 @@ static struct platform_device panda_abe_audio = {
- 	},
+ 	twl6040->regmap = regmap_init_i2c(client, &twl6040_regmap_config);
+ 	if (IS_ERR(twl6040->regmap)) {
+ 		ret = PTR_ERR(twl6040->regmap);
+@@ -506,6 +517,21 @@ static int __devinit twl6040_probe(struct i2c_client *client,
+ 
+ 	i2c_set_clientdata(client, twl6040);
+ 
++	twl6040->supplies[0].supply = "vio";
++	twl6040->supplies[1].supply = "v2v1";
++	ret = regulator_bulk_get(&client->dev, TWL6040_NUM_SUPPLIES,
++				 twl6040->supplies);
++	if (ret != 0) {
++		dev_err(&client->dev, "Failed to get supplies: %d\n", ret);
++		goto regulator_get_err;
++	}
++
++	ret = regulator_bulk_enable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
++	if (ret != 0) {
++		dev_err(&client->dev, "Failed to enable supplies: %d\n", ret);
++		goto power_err;
++	}
++
+ 	twl6040->dev = &client->dev;
+ 	twl6040->irq = client->irq;
+ 	twl6040->irq_base = pdata->irq_base;
+@@ -526,13 +552,13 @@ static int __devinit twl6040_probe(struct i2c_client *client,
+ 		ret = gpio_request_one(twl6040->audpwron, GPIOF_OUT_INIT_LOW,
+ 				       "audpwron");
+ 		if (ret)
+-			goto gpio1_err;
++			goto gpio_err;
+ 	}
+ 
+ 	/* codec interrupt */
+ 	ret = twl6040_irq_init(twl6040);
+ 	if (ret)
+-		goto gpio2_err;
++		goto irq_init_err;
+ 
+ 	ret = request_threaded_irq(twl6040->irq_base + TWL6040_IRQ_READY,
+ 				   NULL, twl6040_naudint_handler, 0,
+@@ -592,10 +618,14 @@ mfd_err:
+ 	free_irq(twl6040->irq_base + TWL6040_IRQ_READY, twl6040);
+ irq_err:
+ 	twl6040_irq_exit(twl6040);
+-gpio2_err:
++irq_init_err:
+ 	if (gpio_is_valid(twl6040->audpwron))
+ 		gpio_free(twl6040->audpwron);
+-gpio1_err:
++gpio_err:
++	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
++power_err:
++	regulator_bulk_free(TWL6040_NUM_SUPPLIES, twl6040->supplies);
++regulator_get_err:
+ 	i2c_set_clientdata(client, NULL);
+ 	regmap_exit(twl6040->regmap);
+ err:
+@@ -619,6 +649,9 @@ static int __devexit twl6040_remove(struct i2c_client *client)
+ 	i2c_set_clientdata(client, NULL);
+ 	regmap_exit(twl6040->regmap);
+ 
++	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
++	regulator_bulk_free(TWL6040_NUM_SUPPLIES, twl6040->supplies);
++
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
+index e3ff28d..f75d900 100644
+--- a/include/linux/mfd/twl6040.h
++++ b/include/linux/mfd/twl6040.h
+@@ -199,10 +199,12 @@ struct twl6040_platform_data {
  };
  
-+static struct regulator_consumer_supply panda_vdd_v2v1_supply[] = {
-+	REGULATOR_SUPPLY("v2v1", "1-004b"),
-+};
-+
-+static struct regulator_init_data panda_v2v1smps = {
-+	.constraints = {
-+		.always_on		= true,
-+	},
-+	.num_consumer_supplies	= ARRAY_SIZE(panda_vdd_v2v1_supply),
-+	.consumer_supplies	= panda_vdd_v2v1_supply,
-+};
-+
-+static struct fixed_voltage_config panda_v2v1_pdata = {
-+	.supply_name	= "VDD-V2V1",
-+	.microvolts	= 2100000,
-+	.init_data	= &panda_v2v1smps,
-+	.gpio		= -EINVAL,
-+};
-+
-+static struct platform_device panda_v2v1 = {
-+	.name		= "reg-fixed-voltage",
-+	.id		= FIXED_REG_V2V1_ID,
-+	.dev = {
-+		.platform_data = &panda_v2v1_pdata,
-+	},
-+};
-+
-+static struct regulator_consumer_supply panda_vio_v1v8_supply[] = {
-+	REGULATOR_SUPPLY("vio", "1-004b"),
-+};
-+
-+static struct regulator_init_data panda_v1v8smps = {
-+	.constraints = {
-+		.always_on		= true,
-+	},
-+	.num_consumer_supplies	= ARRAY_SIZE(panda_vio_v1v8_supply),
-+	.consumer_supplies	= panda_vio_v1v8_supply,
-+};
-+
-+static struct fixed_voltage_config panda_v1v8_pdata = {
-+	.supply_name	= "VIO-V1V8",
-+	.microvolts	= 1800000,
-+	.init_data	= &panda_v1v8smps,
-+	.gpio		= -EINVAL,
-+};
-+
-+static struct platform_device panda_v1v8 = {
-+	.name		= "reg-fixed-voltage",
-+	.id		= FIXED_REG_V1V8_ID,
-+	.dev = {
-+		.platform_data = &panda_v1v8_pdata,
-+	},
-+};
-+
- static struct platform_device *panda_devices[] __initdata = {
- 	&leds_gpio,
- 	&wl1271_device,
- 	&panda_abe_audio,
-+	&panda_v1v8,
-+	&panda_v2v1,
- };
+ struct regmap;
++struct regulator_bulk_data;
  
- static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
-@@ -218,7 +278,7 @@ static struct fixed_voltage_config panda_vwlan = {
- 
- static struct platform_device omap_vwlan_device = {
- 	.name		= "reg-fixed-voltage",
--	.id		= 1,
-+	.id		= FIXED_REG_VWLAN_ID,
- 	.dev = {
- 		.platform_data = &panda_vwlan,
- 	},
+ struct twl6040 {
+ 	struct device *dev;
+ 	struct regmap *regmap;
++	struct regulator_bulk_data *supplies; /* supplies for vio, v2v1 */
+ 	struct mutex mutex;
+ 	struct mutex io_mutex;
+ 	struct mutex irq_mutex;
 -- 
 1.7.8.4
 
