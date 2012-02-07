@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab2BGPon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 10:44:43 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:31443 "EHLO mx2.netapp.com"
+	id S1755117Ab2BGPuc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 10:50:32 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:39327 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab2BGPol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 10:44:41 -0500
-X-IronPort-AV: E=Sophos;i="4.73,377,1325491200"; 
-   d="scan'208";a="623246560"
-Message-ID: <4F3146E0.4040704@netapp.com>
-Date: Tue, 07 Feb 2012 10:44:32 -0500
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1751899Ab2BGPub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 10:50:31 -0500
+Message-ID: <4F314838.2060900@parallels.com>
+Date: Tue, 07 Feb 2012 19:50:16 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+To: Bryan Schumaker <bjschuma@netapp.com>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
         "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "xemul@parallels.com" <xemul@parallels.com>,
-        "neilb@suse.de" <neilb@suse.de>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
         "bfields@fieldses.org" <bfields@fieldses.org>,
         "davem@davemloft.net" <davem@davemloft.net>,
         "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 1/4] NFS: make nfs_client_list per net ns
-References: <20120123172605.29637.15682.stgit@localhost6.localdomain6>  <4F3143F4.3010502@netapp.com> <1328628888.4124.16.camel@lade.trondhjem.org>
-In-Reply-To: <1328628888.4124.16.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 3/5] NFS: search for client session id in proper network
+ namespace
+References: <20120126110955.8386.34551.stgit@localhost6.localdomain6> <20120126111149.8386.51043.stgit@localhost6.localdomain6> <4F314688.5050406@netapp.com>
+In-Reply-To: <4F314688.5050406@netapp.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/12 10:34, Myklebust, Trond wrote:
+07.02.2012 19:43, Bryan Schumaker пишет:
+>
+>
+> Hi,
+>
+> You changed this function for the v4.1 case, but not for v4.0 (this is what I was trying to bisect earlier).  Without CONFIG_NFS_V4_1 set, I get this:
+>
 
-> On Tue, 2012-02-07 at 10:32 -0500, Bryan Schumaker wrote:
->> I fixed up my bisect and identified this patch instead.  The problem I'm seeing is:
->>
->>   CC [M]  fs/nfs/delegation.o
->>   CC [M]  fs/nfs/idmap.o
->> fs/nfs/idmap.c: In function 'rpc_pipefs_event':
->> fs/nfs/idmap.c:535:9: error: implicit declaration of function 'net_generic' [-Werror=implicit-function-declaration]
->> fs/nfs/idmap.c:535:50: error: 'nfs_net_id' undeclared (first use in this function)
->> fs/nfs/idmap.c:535:50: note: each undeclared identifier is reported only once for each function it appears in
->> fs/nfs/idmap.c:540:82: error: dereferencing pointer to incomplete type
->> fs/nfs/idmap.c:540:224: error: dereferencing pointer to incomplete type
->> cc1: some warnings being treated as errors
->>
->> make[2]: *** [fs/nfs/idmap.o] Error 1
->> make[1]: *** [fs/nfs] Error 2
->> make: *** [fs] Error 2
->>
->> I think you need to add: #include "netns.h" to idmap.c.
->>
->> - Bryan
-> 
-> That should already be there in the 'devel' branch. See commit
-> 17347d03c008e2f504c33bb4905cdad0abc01319.
-> 
+Sorry. Thank for the catch.
+I'll send patch soon.
+
+>   make[1]: Nothing to be done for `all'.
+>    CHK     include/linux/version.h
+>    CHK     include/generated/utsrelease.h
+>    CALL    scripts/checksyscalls.sh
+>    CHK     include/generated/compile.h
+>    CHK     kernel/config_data.h
+>    CC [M]  fs/nfs/client.o
+> fs/nfs/client.c:1265:1: error: conflicting types for 'nfs4_find_client_sessionid'
+> fs/nfs/internal.h:155:1: note: previous declaration of 'nfs4_find_client_sessionid' was here
+> make[2]: *** [fs/nfs/client.o] Error 1
+> make[1]: *** [fs/nfs] Error 2
+> make: *** [fs] Error 2
+>
+> - Bryan
+>
+d
 
 
-Yes, but once I fixed this I was able to find the initial problem I was searching for (I have no idea how git led me to the wrong patch on my first attempt).
-
-- Bryan
-
+-- 
+Best regards,
+Stanislav Kinsbursky
