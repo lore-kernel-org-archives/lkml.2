@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab2BGBGk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 20:06:40 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:40213 "EHLO ogre.sisk.pl"
+	id S1756639Ab2BGBGj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 20:06:39 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:40228 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756603Ab2BGBGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 20:06:34 -0500
+	id S1756550Ab2BGBGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 20:06:36 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 8/8] PM / Sleep: Add user space interface for manipulating wakeup sources
-Date: Tue, 7 Feb 2012 02:07:31 +0100
+Subject: [RFC][PATCH 6/8] PM / Sleep: Implement opportunistic sleep
+Date: Tue, 7 Feb 2012 02:06:01 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
@@ -24,384 +24,463 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202070207.31527.rjw@sisk.pl>
+Message-Id: <201202070206.01541.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Android allows user space to manipulate wakelocks using two
-sysfs file located in /sys/power/, wake_lock and wake_unlock.
-Writing a wakelock name and optionally a timeout to the wake_lock
-file causes the wakelock whose name was written to be acquired (it
-is created before is necessary), optionally with the given timeout.
-Writing the name of a wakelock to wake_unlock causes that wakelock
-to be released.
+Introduce a mechanism by which the kernel can trigger global
+transitions to a sleep state chosen by user space if there are no
+active wakeup sources.
 
-Implement an analogous interface for user space using wakeup sources.
-Add the /sys/power/wake_lock and /sys/power/wake_unlock files
-allowing user space to create, activate and deactivate wakeup
-sources, such that writing a name and optionally a timeout to
-wake_lock causes the wakeup source of that name to be activated,
-optionally with the given timeout.  If that wakeup source doesn't
-exist, it will be created and then activated.  Writing a name to
-wake_unlock causes the wakeup source of that name, if there is one,
-to be deactivated.  Wakeup sources created with the help of
-wake_lock that haven't been used for more than 5 minutes are garbage
-collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
-wakeup sources created with the help of wake_lock present at a time.
-
-The data type used to track wakeup sources created by user space is
-called "struct wakelock" to indicate the origins of this feature.
+It consists of a new sysfs attribute, /sys/power/autosleep, that
+can be written one of the strings returned by reads from
+/sys/power/state, a freezable ordered workqueue and a work item
+carrying out the "suspend" operations.  If a string representing
+the system's sleep state is written to /sys/power/autosleep, the
+work item triggering transitions to that state is queued up and
+it requeues it self after every execution until user space writes
+"off" to /sys/power/autosleep.  That work item enables the detection
+of wakeup events using the functions already defined in
+drivers/base/power/wakeup.c (with one small modification) and calls
+either pm_suspend(), or hibernate() to put the system into a sleep
+state.  If a wakeup event is reported while the transition is in
+progress, it will abort the transition and the "system suspend" work
+item will be queued up again.
 
 ---
- drivers/base/power/wakeup.c |    1 
- kernel/power/Kconfig        |    8 +
+ drivers/base/power/wakeup.c |   38 ++++++++------
+ include/linux/suspend.h     |   13 ++++
+ kernel/power/Kconfig        |    8 +++
  kernel/power/Makefile       |    1 
- kernel/power/main.c         |   41 ++++++++
- kernel/power/power.h        |    9 +
- kernel/power/wakelock.c     |  218 ++++++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 278 insertions(+)
+ kernel/power/autosleep.c    |  115 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/power/main.c         |   93 +++++++++++++++++++++++++++++------
+ kernel/power/power.h        |   18 ++++++
+ 7 files changed, 254 insertions(+), 32 deletions(-)
 
-Index: linux/kernel/power/main.c
-===================================================================
---- linux.orig/kernel/power/main.c
-+++ linux/kernel/power/main.c
-@@ -415,6 +415,43 @@ static ssize_t autosleep_store(struct ko
- 
- power_attr(autosleep);
- #endif /* CONFIG_PM_AUTOSLEEP */
-+
-+#ifdef CONFIG_PM_WAKELOCKS
-+static ssize_t wake_lock_show(struct kobject *kobj,
-+			      struct kobj_attribute *attr,
-+			      char *buf)
-+{
-+	return pm_show_wakelocks(buf, true);
-+}
-+
-+static ssize_t wake_lock_store(struct kobject *kobj,
-+			       struct kobj_attribute *attr,
-+			       const char *buf, size_t n)
-+{
-+	int error = pm_wake_lock(buf);
-+	return error ? error : n;
-+}
-+
-+power_attr(wake_lock);
-+
-+static ssize_t wake_unlock_show(struct kobject *kobj,
-+				struct kobj_attribute *attr,
-+				char *buf)
-+{
-+	return pm_show_wakelocks(buf, false);
-+}
-+
-+static ssize_t wake_unlock_store(struct kobject *kobj,
-+				 struct kobj_attribute *attr,
-+				 const char *buf, size_t n)
-+{
-+	int error = pm_wake_unlock(buf);
-+	return error ? error : n;
-+}
-+
-+power_attr(wake_unlock);
-+
-+#endif /* CONFIG_PM_WAKELOCKS */
- #endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_PM_TRACE
-@@ -471,6 +508,10 @@ static struct attribute * g[] = {
- #ifdef CONFIG_PM_AUTOSLEEP
- 	&autosleep_attr.attr,
- #endif
-+#ifdef CONFIG_PM_WAKELOCKS
-+	&wake_lock_attr.attr,
-+	&wake_unlock_attr.attr,
-+#endif
- #ifdef CONFIG_PM_DEBUG
- 	&pm_test_attr.attr,
- #endif
-Index: linux/kernel/power/power.h
-===================================================================
---- linux.orig/kernel/power/power.h
-+++ linux/kernel/power/power.h
-@@ -287,3 +287,12 @@ static inline void pm_autosleep_unlock(v
- static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
- 
- #endif /* !CONFIG_PM_AUTOSLEEP */
-+
-+#ifdef CONFIG_PM_WAKELOCKS
-+
-+/* kernel/power/wakelock.c */
-+extern ssize_t pm_show_wakelocks(char *buf, bool show_active);
-+extern int pm_wake_lock(const char *buf);
-+extern int pm_wake_unlock(const char *buf);
-+
-+#endif /* !CONFIG_PM_WAKELOCKS */
-Index: linux/kernel/power/Kconfig
-===================================================================
---- linux.orig/kernel/power/Kconfig
-+++ linux/kernel/power/Kconfig
-@@ -111,6 +111,14 @@ config PM_AUTOSLEEP
- 	Allow the kernel to trigger a system transition into a global sleep
- 	state automatically whenever there are no active wakeup sources.
- 
-+config PM_WAKELOCKS
-+	bool "User space wakeup sources interface"
-+	depends on PM_SLEEP
-+	default n
-+	---help---
-+	Allow user space to create, activate and deactivate wakeup source
-+	objects with the help of a sysfs-based interface.
-+
- config PM_RUNTIME
- 	bool "Run-time PM core functionality"
- 	depends on !IA64_HP_SIM
-Index: linux/kernel/power/wakelock.c
-===================================================================
---- /dev/null
-+++ linux/kernel/power/wakelock.c
-@@ -0,0 +1,218 @@
-+/*
-+ * kernel/power/wakelock.c
-+ *
-+ * User space wakeup sources support.
-+ *
-+ * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
-+ *
-+ * This code is based on the analogous interface allowing user space to
-+ * manipulate wakelocks on Android.
-+ */
-+
-+#include <linux/ctype.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/hrtimer.h>
-+#include <linux/list.h>
-+#include <linux/rbtree.h>
-+#include <linux/slab.h>
-+
-+#define WL_NUMBER_LIMIT	100
-+#define WL_GC_COUNT_MAX	100
-+#define WL_GC_TIME_SEC	300
-+
-+static DEFINE_MUTEX(wakelocks_lock);
-+
-+struct wakelock {
-+	char			*name;
-+	struct rb_node		node;
-+	struct wakeup_source	ws;
-+	struct list_head	lru;
-+};
-+
-+static struct rb_root wakelocks_tree = RB_ROOT;
-+static LIST_HEAD(wakelocks_lru_list);
-+static unsigned int number_of_wakelocks;
-+static unsigned int wakelocks_gc_count;
-+
-+ssize_t pm_show_wakelocks(char *buf, bool show_active)
-+{
-+	struct rb_node *node;
-+	struct wakelock *wl;
-+	char *str = buf;
-+	char *end = buf + PAGE_SIZE;
-+
-+	mutex_lock(&wakelocks_lock);
-+
-+	for (node = rb_first(&wakelocks_tree); node; node = rb_next(node)) {
-+		bool active;
-+
-+		wl = rb_entry(node, struct wakelock, node);
-+		spin_lock_irq(&wl->ws.lock);
-+		active = wl->ws.active;
-+		spin_unlock_irq(&wl->ws.lock);
-+		if (active == show_active)
-+			str += scnprintf(str, end - str, "%s ", wl->name);
-+	}
-+	str += scnprintf(str, end - str, "\n");
-+
-+	mutex_unlock(&wakelocks_lock);
-+	return (str - buf);
-+}
-+
-+static struct wakelock *wakelock_lookup_add(const char *name, size_t len,
-+					    bool add_if_not_found)
-+{
-+	struct rb_node **node = &wakelocks_tree.rb_node;
-+	struct rb_node *parent = *node;
-+	struct wakelock *wl;
-+
-+	while (*node) {
-+		int diff;
-+
-+		wl = rb_entry(*node, struct wakelock, node);
-+		diff = strncmp(name, wl->name, len);
-+		if (diff == 0) {
-+			if (wl->name[len])
-+				diff = -1;
-+			else
-+				return wl;
-+		}
-+		if (diff < 0)
-+			node = &(*node)->rb_left;
-+		else
-+			node = &(*node)->rb_right;
-+
-+		parent = *node;
-+	}
-+	if (!add_if_not_found)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (number_of_wakelocks > WL_NUMBER_LIMIT)
-+		return ERR_PTR(-ENOSPC);
-+
-+	/* Not found, we have to add a new one. */
-+	wl = kzalloc(sizeof(*wl), GFP_KERNEL);
-+	if (!wl)
-+		return ERR_PTR(-ENOMEM);
-+
-+	wl->name = kstrndup(name, len, GFP_KERNEL);
-+	if (!wl->name) {
-+		kfree(wl);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	wl->ws.name = wl->name;
-+	wakeup_source_add(&wl->ws);
-+	rb_link_node(&wl->node, parent, node);
-+	rb_insert_color(&wl->node, &wakelocks_tree);
-+	list_add(&wl->lru, &wakelocks_lru_list);
-+	number_of_wakelocks++;
-+	return wl;
-+}
-+
-+int pm_wake_lock(const char *buf)
-+{
-+	const char *str = buf;
-+	struct wakelock *wl;
-+	u64 timeout_ns = 0;
-+	size_t len;
-+	int ret = 0;
-+
-+	while (*str && !isspace(*str))
-+		str++;
-+
-+	len = str - buf;
-+	if (!len)
-+		return -EINVAL;
-+
-+	if (*str && *str != '\n') {
-+		/* Find out if there's a valid timeout string appended. */
-+		ret = kstrtou64(skip_spaces(str), 10, &timeout_ns);
-+		if (ret)
-+			return -EINVAL;
-+	}
-+
-+	mutex_lock(&wakelocks_lock);
-+
-+	wl = wakelock_lookup_add(buf, len, true);
-+	if (IS_ERR(wl)) {
-+		ret = PTR_ERR(wl);
-+		goto out;
-+	}
-+	if (timeout_ns) {
-+		u64 timeout_ms = timeout_ns + NSEC_PER_MSEC - 1;
-+
-+		do_div(timeout_ms, NSEC_PER_MSEC);
-+		__pm_wakeup_event(&wl->ws, timeout_ms);
-+	} else {
-+		__pm_stay_awake(&wl->ws);
-+	}
-+
-+	list_move(&wl->lru, &wakelocks_lru_list);
-+
-+ out:
-+	mutex_unlock(&wakelocks_lock);
-+	return ret;
-+}
-+
-+static void wakelocks_gc(void)
-+{
-+	struct wakelock *wl, *aux;
-+	ktime_t now = ktime_get();
-+
-+	list_for_each_entry_safe_reverse(wl, aux, &wakelocks_lru_list, lru) {
-+		u64 idle_time_ns;
-+		bool active;
-+
-+		spin_lock_irq(&wl->ws.lock);
-+		idle_time_ns = ktime_to_ns(ktime_sub(now, wl->ws.last_time));
-+		active = wl->ws.active;
-+		spin_unlock_irq(&wl->ws.lock);
-+
-+		if (idle_time_ns < ((u64)WL_GC_TIME_SEC * NSEC_PER_SEC))
-+			break;
-+
-+		if (!active) {
-+			wakeup_source_remove(&wl->ws);
-+			rb_erase(&wl->node, &wakelocks_tree);
-+			list_del(&wl->lru);
-+			kfree(wl->name);
-+			kfree(wl);
-+			number_of_wakelocks--;
-+		}
-+	}
-+	wakelocks_gc_count = 0;
-+}
-+
-+int pm_wake_unlock(const char *buf)
-+{
-+	struct wakelock *wl;
-+	size_t len;
-+	int ret = 0;
-+
-+	len = strlen(buf);
-+	if (!len)
-+		return -EINVAL;
-+
-+	if (buf[len-1] == '\n')
-+		len--;
-+
-+	if (!len)
-+		return -EINVAL;
-+
-+	mutex_lock(&wakelocks_lock);
-+
-+	wl = wakelock_lookup_add(buf, len, false);
-+	if (IS_ERR(wl)) {
-+		ret = PTR_ERR(wl);
-+		goto out;
-+	}
-+	__pm_relax(&wl->ws);
-+	list_move(&wl->lru, &wakelocks_lru_list);
-+	if (++wakelocks_gc_count > WL_GC_COUNT_MAX)
-+		wakelocks_gc();
-+
-+ out:
-+	mutex_unlock(&wakelocks_lock);
-+	return ret;
-+}
 Index: linux/kernel/power/Makefile
 ===================================================================
 --- linux.orig/kernel/power/Makefile
 +++ linux/kernel/power/Makefile
-@@ -9,5 +9,6 @@ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend
+@@ -8,5 +8,6 @@ obj-$(CONFIG_SUSPEND)		+= suspend.o
+ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
  obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
  				   block_io.o
- obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
-+obj-$(CONFIG_PM_WAKELOCKS)	+= wakelock.o
++obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
  
  obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
+Index: linux/kernel/power/Kconfig
+===================================================================
+--- linux.orig/kernel/power/Kconfig
++++ linux/kernel/power/Kconfig
+@@ -103,6 +103,14 @@ config PM_SLEEP_SMP
+ 	select HOTPLUG
+ 	select HOTPLUG_CPU
+ 
++config PM_AUTOSLEEP
++	bool "Opportunistic sleep"
++	depends on PM_SLEEP
++	default n
++	---help---
++	Allow the kernel to trigger a system transition into a global sleep
++	state automatically whenever there are no active wakeup sources.
++
+ config PM_RUNTIME
+ 	bool "Run-time PM core functionality"
+ 	depends on !IA64_HP_SIM
+Index: linux/kernel/power/power.h
+===================================================================
+--- linux.orig/kernel/power/power.h
++++ linux/kernel/power/power.h
+@@ -269,3 +269,21 @@ static inline void suspend_thaw_processe
+ {
+ }
+ #endif
++
++#ifdef CONFIG_PM_AUTOSLEEP
++
++/* kernel/power/autosleep.c */
++extern int pm_autosleep_init(void);
++extern void pm_autosleep_lock(void);
++extern void pm_autosleep_unlock(void);
++extern suspend_state_t pm_autosleep_state(void);
++extern int pm_autosleep_set_state(suspend_state_t state);
++
++#else /* !CONFIG_PM_AUTOSLEEP */
++
++static inline int pm_autosleep_init(void) { return 0; }
++static inline void pm_autosleep_lock(void) {}
++static inline void pm_autosleep_unlock(void) {}
++static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
++
++#endif /* !CONFIG_PM_AUTOSLEEP */
+Index: linux/include/linux/suspend.h
+===================================================================
+--- linux.orig/include/linux/suspend.h
++++ linux/include/linux/suspend.h
+@@ -372,7 +372,7 @@ extern int unregister_pm_notifier(struct
+ extern bool events_check_enabled;
+ 
+ extern bool pm_wakeup_pending(void);
+-extern bool pm_get_wakeup_count(unsigned int *count);
++extern bool pm_get_wakeup_count(unsigned int *count, bool block);
+ extern bool pm_save_wakeup_count(unsigned int count);
+ 
+ static inline void lock_system_sleep(void)
+@@ -423,6 +423,17 @@ static inline void unlock_system_sleep(v
+ 
+ #endif /* !CONFIG_PM_SLEEP */
+ 
++#ifdef CONFIG_PM_AUTOSLEEP
++
++/* kernel/power/autosleep.c */
++void queue_up_suspend_work(void);
++
++#else /* !CONFIG_PM_AUTOSLEEP */
++
++static inline void queue_up_suspend_work(void) {}
++
++#endif /* !CONFIG_PM_AUTOSLEEP */
++
+ #ifdef CONFIG_ARCH_SAVE_PAGE_KEYS
+ /*
+  * The ARCH_SAVE_PAGE_KEYS functions can be used by an architecture
+Index: linux/kernel/power/autosleep.c
+===================================================================
+--- /dev/null
++++ linux/kernel/power/autosleep.c
+@@ -0,0 +1,115 @@
++/*
++ * kernel/power/autosleep.c
++ *
++ * Opportunistic sleep support.
++ *
++ * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
++ */
++
++#include <linux/device.h>
++#include <linux/mutex.h>
++#include <linux/pm_wakeup.h>
++
++#include "power.h"
++
++static struct workqueue_struct *autosleep_wq;
++static struct wakeup_source *autosleep_ws;
++
++static DEFINE_MUTEX(autosleep_lock);
++static DECLARE_COMPLETION(suspend_completion);
++
++static suspend_state_t autosleep_state;
++
++static void try_to_suspend(struct work_struct *work)
++{
++	unsigned int initial_count, final_count;
++
++	if (!pm_get_wakeup_count(&initial_count, true))
++		goto out;
++
++	if (!pm_save_wakeup_count(initial_count))
++		goto out;
++
++	mutex_lock(&autosleep_lock);
++	if (autosleep_state == PM_SUSPEND_ON) {
++		mutex_unlock(&autosleep_lock);
++		return;
++	}
++	INIT_COMPLETION(suspend_completion);
++	if (autosleep_state >= PM_SUSPEND_MAX)
++		hibernate();
++	else
++		pm_suspend(autosleep_state);
++
++	complete_all(&suspend_completion);
++	mutex_unlock(&autosleep_lock);
++
++	if (!pm_get_wakeup_count(&final_count, false))
++		goto out;
++
++	if (final_count == initial_count)
++		schedule_timeout(HZ / 2);
++
++ out:
++	queue_up_suspend_work();
++}
++
++static DECLARE_WORK(suspend_work, try_to_suspend);
++
++void queue_up_suspend_work(void)
++{
++	if (!work_pending(&suspend_work) && autosleep_state > PM_SUSPEND_ON)
++		queue_work(autosleep_wq, &suspend_work);
++}
++
++suspend_state_t pm_autosleep_state(void)
++{
++	return autosleep_state;
++}
++
++int pm_autosleep_set_state(suspend_state_t state)
++{
++#ifndef CONFIG_HIBERNATION
++	if (state >= PM_SUSPEND_MAX)
++		return -EINVAL;
++#endif
++	mutex_lock(&autosleep_lock);
++	__pm_stay_awake(autosleep_ws);
++	if (state == PM_SUSPEND_ON && autosleep_state != PM_SUSPEND_ON) {
++		autosleep_state = PM_SUSPEND_ON;
++		__pm_relax(autosleep_ws);
++		mutex_unlock(&autosleep_lock);
++		wait_for_completion(&suspend_completion);
++	} else if (state > PM_SUSPEND_ON) {
++		autosleep_state = state;
++		__pm_relax(autosleep_ws);
++		queue_up_suspend_work();
++		mutex_unlock(&autosleep_lock);
++	}
++	return 0;
++}
++
++void pm_autosleep_lock(void)
++{
++	mutex_lock(&autosleep_lock);
++}
++
++void pm_autosleep_unlock(void)
++{
++	mutex_unlock(&autosleep_lock);
++}
++
++int __init pm_autosleep_init(void)
++{
++	complete_all(&suspend_completion);
++	autosleep_ws = wakeup_source_register("main");
++	if (!autosleep_ws)
++		return -ENOMEM;
++
++	autosleep_wq = alloc_ordered_workqueue("autosleep", 0);
++	if (autosleep_wq)
++		return 0;
++
++	wakeup_source_unregister(autosleep_ws);
++	return -ENOMEM;
++}
+Index: linux/kernel/power/main.c
+===================================================================
+--- linux.orig/kernel/power/main.c
++++ linux/kernel/power/main.c
+@@ -269,8 +269,7 @@ static ssize_t state_show(struct kobject
+ 	return (s - buf);
+ }
+ 
+-static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
+-			   const char *buf, size_t n)
++static suspend_state_t decode_state(const char *buf, size_t n)
+ {
+ #ifdef CONFIG_SUSPEND
+ 	suspend_state_t state = PM_SUSPEND_STANDBY;
+@@ -278,29 +277,46 @@ static ssize_t state_store(struct kobjec
+ #endif
+ 	char *p;
+ 	int len;
+-	int error = -EINVAL;
+ 
+ 	p = memchr(buf, '\n', n);
+ 	len = p ? p - buf : n;
+ 
+-	/* First, check if we are requested to hibernate */
+-	if (len == 4 && !strncmp(buf, "disk", len)) {
+-		error = hibernate();
+-		goto Exit;
+-	}
++	/* Check hibernation first. */
++	if (len == 4 && !strncmp(buf, "disk", len))
++		return PM_SUSPEND_MAX;
+ 
+ #ifdef CONFIG_SUSPEND
+ 	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
+ 		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
+ 			break;
+ 	}
+-	if (state < PM_SUSPEND_MAX && *s) {
+-		error = enter_state(state);
+-		suspend_stats_update(error);
+-	}
++	if (state < PM_SUSPEND_MAX && *s)
++		return state;
+ #endif
+ 
+- Exit:
++	return PM_SUSPEND_ON;
++}
++
++static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
++			   const char *buf, size_t n)
++{
++	suspend_state_t state;
++	int error = -EINVAL;
++
++	pm_autosleep_lock();
++	if (pm_autosleep_state() > PM_SUSPEND_ON) {
++		error = -EBUSY;
++		goto out;
++	}
++
++	state = decode_state(buf, n);
++	if (state < PM_SUSPEND_MAX)
++		error = pm_suspend(state);
++	else if (state > PM_SUSPEND_ON)
++		error = hibernate();
++
++ out:
++	pm_autosleep_unlock();
+ 	return error ? error : n;
+ }
+ 
+@@ -341,7 +357,8 @@ static ssize_t wakeup_count_show(struct
+ {
+ 	unsigned int val;
+ 
+-	return pm_get_wakeup_count(&val) ? sprintf(buf, "%u\n", val) : -EINTR;
++	return pm_get_wakeup_count(&val, true) ?
++		sprintf(buf, "%u\n", val) : -EINTR;
+ }
+ 
+ static ssize_t wakeup_count_store(struct kobject *kobj,
+@@ -358,6 +375,46 @@ static ssize_t wakeup_count_store(struct
+ }
+ 
+ power_attr(wakeup_count);
++
++#ifdef CONFIG_PM_AUTOSLEEP
++static ssize_t autosleep_show(struct kobject *kobj,
++			      struct kobj_attribute *attr,
++			      char *buf)
++{
++	suspend_state_t state = pm_autosleep_state();
++
++	if (state == PM_SUSPEND_ON)
++		return sprintf(buf, "off\n");
++
++#ifdef CONFIG_SUSPEND
++	if (state < PM_SUSPEND_MAX)
++		return sprintf(buf, "%s\n", valid_state(state) ?
++						pm_states[state] : "error");
++#endif
++#ifdef CONFIG_HIBERNATION
++	return sprintf(buf, "disk\n");
++#else
++	return sprintf(buf, "error");
++#endif
++}
++
++static ssize_t autosleep_store(struct kobject *kobj,
++			       struct kobj_attribute *attr,
++			       const char *buf, size_t n)
++{
++	suspend_state_t state = decode_state(buf, n);
++	int error;
++
++	if (state == PM_SUSPEND_ON && strncmp(buf, "off", 3)
++	    && strncmp(buf, "off\n", 4))
++		return -EINVAL;
++
++	error = pm_autosleep_set_state(state);
++	return error ? error : n;
++}
++
++power_attr(autosleep);
++#endif /* CONFIG_PM_AUTOSLEEP */
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ #ifdef CONFIG_PM_TRACE
+@@ -411,6 +468,9 @@ static struct attribute * g[] = {
+ #ifdef CONFIG_PM_SLEEP
+ 	&pm_async_attr.attr,
+ 	&wakeup_count_attr.attr,
++#ifdef CONFIG_PM_AUTOSLEEP
++	&autosleep_attr.attr,
++#endif
+ #ifdef CONFIG_PM_DEBUG
+ 	&pm_test_attr.attr,
+ #endif
+@@ -446,7 +506,10 @@ static int __init pm_init(void)
+ 	power_kobj = kobject_create_and_add("power", NULL);
+ 	if (!power_kobj)
+ 		return -ENOMEM;
+-	return sysfs_create_group(power_kobj, &attr_group);
++	error = sysfs_create_group(power_kobj, &attr_group);
++	if (error)
++		return error;
++	return pm_autosleep_init();
+ }
+ 
+ core_initcall(pm_init);
 Index: linux/drivers/base/power/wakeup.c
 ===================================================================
 --- linux.orig/drivers/base/power/wakeup.c
 +++ linux/drivers/base/power/wakeup.c
-@@ -107,6 +107,7 @@ void wakeup_source_add(struct wakeup_sou
- 	spin_lock_init(&ws->lock);
- 	setup_timer(&ws->timer, pm_wakeup_timer_fn, (unsigned long)ws);
- 	ws->active = false;
-+	ws->last_time = ktime_get();
+@@ -458,8 +458,10 @@ static void wakeup_source_deactivate(str
+ 	atomic_add(MAX_IN_PROGRESS, &combined_event_count);
  
- 	spin_lock_irq(&events_lock);
- 	list_add_rcu(&ws->entry, &wakeup_sources);
+ 	split_counters(&cnt, &inpr);
+-	if (!inpr)
++	if (!inpr) {
+ 		wake_up_all(&wakeup_count_wait_queue);
++		queue_up_suspend_work();
++	}
+ }
+ 
+ /**
+@@ -610,29 +612,33 @@ bool pm_wakeup_pending(void)
+ /**
+  * pm_get_wakeup_count - Read the number of registered wakeup events.
+  * @count: Address to store the value at.
++ * @block: Whether or not to block.
+  *
+- * Store the number of registered wakeup events at the address in @count.  Block
+- * if the current number of wakeup events being processed is nonzero.
++ * Store the number of registered wakeup events at the address in @count.  If
++ * @block is set, block until the current number of wakeup events being
++ * processed is zero.
+  *
+- * Return 'false' if the wait for the number of wakeup events being processed to
+- * drop down to zero has been interrupted by a signal (and the current number
+- * of wakeup events being processed is still nonzero).  Otherwise return 'true'.
++ * Return 'false' if the current number of wakeup events being processed is
++ * nonzero.  Otherwise return 'true'.
+  */
+-bool pm_get_wakeup_count(unsigned int *count)
++bool pm_get_wakeup_count(unsigned int *count, bool block)
+ {
+ 	unsigned int cnt, inpr;
+-	DEFINE_WAIT(wait);
+ 
+-	for (;;) {
+-		prepare_to_wait(&wakeup_count_wait_queue, &wait,
+-				TASK_INTERRUPTIBLE);
+-		split_counters(&cnt, &inpr);
+-		if (inpr == 0 || signal_pending(current))
+-			break;
++	if (block) {
++		DEFINE_WAIT(wait);
+ 
+-		schedule();
++		for (;;) {
++			prepare_to_wait(&wakeup_count_wait_queue, &wait,
++					TASK_INTERRUPTIBLE);
++			split_counters(&cnt, &inpr);
++			if (inpr == 0 || signal_pending(current))
++				break;
++
++			schedule();
++		}
++		finish_wait(&wakeup_count_wait_queue, &wait);
+ 	}
+-	finish_wait(&wakeup_count_wait_queue, &wait);
+ 
+ 	split_counters(&cnt, &inpr);
+ 	*count = cnt;
+
