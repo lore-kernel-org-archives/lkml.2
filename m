@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab2BGJ6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 04:58:33 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36819 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab2BGJ6c (ORCPT
+	id S1756794Ab2BGKBL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 05:01:11 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:58105 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555Ab2BGKBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 04:58:32 -0500
-Message-ID: <4F30F5C4.6030003@suse.cz>
-Date: Tue, 07 Feb 2012 10:58:28 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Why are not processes HUPped when they open /dev/console?
-References: <4F207660.500@suse.cz> <20120125214522.7a49cf39@pyramind.ukuu.org.uk> <4F2151FD.4050101@suse.cz> <20120206192406.GB28687@atrey.karlin.mff.cuni.cz>
-In-Reply-To: <20120206192406.GB28687@atrey.karlin.mff.cuni.cz>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Feb 2012 05:01:09 -0500
+Message-ID: <20272.63074.235023.783459@ipc1.ka-ro>
+Date: Tue, 7 Feb 2012 11:01:06 +0100
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [BUG] genirq: Race condition in ONESHOT IRQ handler disabling
+ IRQ forever
+In-Reply-To: <20120207090305.GB32736@zhy>
+References: <20271.35831.227679.177366@ipc1.ka-ro>
+	<20120207090305.GB32736@zhy>
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2012 08:24 PM, Pavel Machek wrote:
->> On 01/25/2012 10:45 PM, Alan Cox wrote:
->>> On Wed, 25 Jan 2012 22:38:40 +0100
->>> Jiri Slaby <jslaby@suse.cz> wrote:
->>>
->>>> Hello,
->>>>
->>>> don't you remember by a chance the reason for this test in __tty_hangup:
->>>>   if (filp->f_op->write != tty_write)
->>>>
->>>> The logic there is not to HUP processes that have this tty open via
->>>> /dev/console.
->>>
->>> Because if you hang up the console the machine crashes ?
->>>
->>> At least that's what used to happen.
->>
->> It does not crash anymore. However the system (systemd more precisely)
->> is confused a bit (well, a huge). So I suppose the test has its meaning.
->>
->> The whole exercise was about how to fix the userspace issue introduced
->> by the added infinite timeout.
+Hi,
+
+> On Mon, Feb 06, 2012 at 09:14:47AM +0100, Lothar Waßmann wrote:
+> > Hi,
+> > 
+> > I already sent this to <linux-kernel@vger.kernel.org> on Feb. 1, 2012
+> > but did not get any response there. So resending to a wider audience
+> > with improved subject line:
+> > 
+> > there is a race condition in the threaded IRQ handler code for oneshot
+> > interrupts that may lead to disabling an IRQ indefinitely. IRQs are
+> > masked before calling the hard-irq handler and are unmasked only after
+> > the soft-irq handler has been run. Thus if the hard-irq handler
+> > returns IRQ_HANDLED instead of IRQ_WAKE_THREAD, meaning the soft-irq
+> > will not be called, the interrupt will remain masked forever.
+> > 
+> > This can happen due to a short pulse on the interrupt line, that
+> > triggers the interrupt logic, but goes undetected by the hard-irq
+> > handler. The problem can be reproduced with the TSC2007 touch
+> > controller driver that uses ONESHOT interrupts.
 > 
->> I think the proper solution here is just not to call vhangup in
->> userspace for the device which is /dev/console. It never worked anyway.
->> Because the HUP signal was never sent and it always timed out.
+> Isn't it the responsibility of the driver (say TSC2007)?
 > 
-> Perhaps the "infinite timeout" should be reverted, then? It sounds
-> like a regression...
+> In this case, TSC2007 should return IRQ_WAKE_THREAD IMHO.
+> 
+That would mean it had to return IRQ_WAKE_THREAD unconditionally
+making the return code useless.
+And it would cause an extra useless loop through the softirq
+handler.
 
-It *is* a regression in the shutdown path, yes. The point is that
-previously it silently proceeded and freed the structures. This was
-causing crashes. And it also misbehaved as it was supposed to wait for
-all to vanish.
 
-OTOH now it (possibly infinitely) waits for all of them. With the code
-as it stands now, I cannot think of any other easy way to fix that. Do
-what you have to. Revert, if you think occasional (nearly exceptional)
-crashes are better than the regression...
-
-thanks,
+Lothar Waßmann
 -- 
-js
-suse labs
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
