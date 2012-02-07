@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab2BGPRk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 10:17:40 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47866 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab2BGPRj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 10:17:39 -0500
-Message-ID: <4F31408F.80901@codemonkey.ws>
-Date: Tue, 07 Feb 2012 09:17:35 -0600
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	id S1755304Ab2BGPWq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 10:22:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14585 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608Ab2BGPWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 10:22:45 -0500
+Date: Tue, 7 Feb 2012 13:21:44 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
+        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
+        khandual@linux.vnet.ibm.com, dsahern@gmail.com
+Subject: Re: [PATCH v5 11/18] perf: add code to support
+	PERF_SAMPLE_BRANCH_STACK
+Message-ID: <20120207152144.GN6367@infradead.org>
+References: <1328187288-24395-1-git-send-email-eranian@google.com> <1328187288-24395-12-git-send-email-eranian@google.com> <20120206180657.GC6367@infradead.org> <CABPqkBSJj=TvD8W7YApLvawkKrmpdB0hvF8N6jd0fi8TvPEdVQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Rob Earhart <earhart@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-References: <4F2AB552.2070909@redhat.com>	<CAB9FdM9M2DWXBxxyG-ez_5igT61x5b7ptw+fKfgaqMBU_JS5aA@mail.gmail.com>	<4F2E80A7.5040908@redhat.com>	<CAB9FdM9pPJx8x4y=uvRFh-T4fKBR9xChocUVG_GfNGffTWtMNQ@mail.gmail.com>	<4F3025FB.1070802@codemonkey.ws> <4F31132F.3010100@redhat.com>
-In-Reply-To: <4F31132F.3010100@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBSJj=TvD8W7YApLvawkKrmpdB0hvF8N6jd0fi8TvPEdVQ@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 06:03 AM, Avi Kivity wrote:
-> On 02/06/2012 09:11 PM, Anthony Liguori wrote:
->>
->> I'm not so sure. ioeventfds and a future mmio-over-socketpair have to put the
->> kthread to sleep while it waits for the other end to process it. This is
->> effectively equivalent to a heavy weight exit. The difference in cost is
->> dropping to userspace which is really neglible these days (< 100 cycles).
->
-> On what machine did you measure these wonderful numbers?
+Em Tue, Feb 07, 2012 at 03:11:56PM +0100, Stephane Eranian escreveu:
+> On Mon, Feb 6, 2012 at 7:06 PM, Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> >> +++ b/tools/perf/util/annotate.c
+> >> @@ -64,7 +64,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
 
-A syscall is what I mean by "dropping to userspace", not the cost of a heavy 
-weight exit.  I think a heavy weight exit is still around a few thousand cycles.
+> >>       pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
 
-Any nehalem class or better processor should have a syscall cost of around that 
-unless I'm wildly mistaken.
+> >> -     if (addr >= sym->end)
+> >> +     if (addr >= sym->end || addr < sym->start)
 
->
-> But I agree a heavyweight exit is probably faster than a double context switch
-> on a remote core.
+> > This is not related to this, would be better to come in a separate patch
+> > with a proper explanation.
 
-I meant, if you already need to take a heavyweight exit (and you do to schedule 
-something else on the core), than the only additional cost is taking a syscall 
-return to userspace *first* before scheduling another process.  That overhead is 
-pretty low.
+> You mean in this patchset or separately?
 
-Regards,
+Either way it would be standalone, I'd pick it, but please write a
+commit message explaining why it is needed.
 
-Anthony Liguori
+Multiple people submitted this already but without a good commit message
+which I think may be papering over a bug.
 
->
->
-
+- Arnaldo
