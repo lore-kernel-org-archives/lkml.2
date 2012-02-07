@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab2BGLYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 06:24:01 -0500
-Received: from enyo.dsw2k3.info ([195.71.86.239]:52003 "EHLO enyo.dsw2k3.info"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754787Ab2BGLYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 06:24:00 -0500
-Date: Tue, 7 Feb 2012 12:23:45 +0100
-From: Matthias Schniedermeyer <ms@citd.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org
-Subject: Re: Linux 3.2.5
-Message-ID: <20120207112345.GA14427@citd.de>
-References: <20120206181622.GA28811@kroah.com>
- <20120207084037.GA6140@citd.de>
- <4F30FABF.4060409@ladisch.de>
- <20120207105835.GA12864@citd.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120207105835.GA12864@citd.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755736Ab2BGLYv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 06:24:51 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:51423 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609Ab2BGLYu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 06:24:50 -0500
+Message-ID: <1328613886.3443.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] perf: fix assertion failure in x86_pmu_start()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, markus@trippelsdorf.de, paulus@samba.org
+Date: Tue, 07 Feb 2012 12:24:46 +0100
+In-Reply-To: <CABPqkBRwjwG0i+J_Qzgm+khHRD+LiT60vMEQA3w1MtPq-FFKLw@mail.gmail.com>
+References: <20120206205354.GA31186@quad>
+	 <1328603689.2476.15.camel@edumazet-laptop> <20120207084156.GA15359@elte.hu>
+	 <1328610322.2232.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CABPqkBTL70n-e9TZo=QOZDk1J84Ye5wGrm6uz=VNu73nwwxhjw@mail.gmail.com>
+	 <1328610997.2232.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CABPqkBRwjwG0i+J_Qzgm+khHRD+LiT60vMEQA3w1MtPq-FFKLw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.02.2012 11:58, Matthias Schniedermeyer wrote:
-> On 07.02.2012 11:19, Clemens Ladisch wrote:
-> > Matthias Schniedermeyer wrote:
-> > > On 06.02.2012 10:16, Greg KH wrote:
-> > >> I'm announcing the release of the 3.2.5 kernel.
-> > >>
-> > >> It contains one PCI patch, it is up to you to decide to upgrade or not.
-> > >
-> > > This one makes my Soundblaster Live (alsa/emu10k1) silent.
-> > > It is detected, i can e.g. change the mixer, but i can't hear any sound.
-> > 
-> > Back in the PCI days, the Emu10k1 chip was known to be quite inefficient
-> > (many small transfers, and IIRC even latency timer bugs) and to be
-> > problematic when used with other high-bandwidth PCI chips like TV capture
-> > cards.
-> > 
-> > > There is a difference in syslog output regarding aspm, the emu10k1 line
-> > > is the same.
-> > 
-> > Your PCIe/PCI bridge (5:0.0, iTE IT8892) which handles the PCI bus is
-> > affected by the change.
-> > 
-> > I do not know if this is an actual hardware bug, or if the bridge is
-> > just too slow to wake up the PCIe link.
-> > 
-> > Please show the output of "lspci -v -s 5:0".
+Le mardi 07 février 2012 à 11:40 +0100, Stephane Eranian a écrit :
+> Eric,
 > 
-> With 3.2.4 running:
-> lspci -v -s 5:0
-> 05:00.0 PCI bridge: Integrated Technology Express, Inc. Device 8892 (rev 
-> 10) (prog-if 00 [Normal decode])
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=05, secondary=06, subordinate=06, sec-latency=32
->         I/O behind bridge: 0000c000-0000cfff
->         Memory behind bridge: fbe00000-fbefffff
->         Capabilities: <access denied>
+> How do you deal with that:
+> 
+> [    0.019998] Performance Events: PEBS fmt0+, Core2 events, Broken
+> BIOS detected, complain to your hardware vendor.
+> [    0.019998] [Firmware Bug]: the BIOS has corrupted hw-PMU resources
+> (MSR 186 is 43003c)
+> 
+> Your BIOS is using a counter to count cycles for power savings tricks.
+> That is conflicting
+> with perf_events.
 
-Ups. I did that with my user-account. Now with root:
-lspci -v -s 5:0
-05:00.0 PCI bridge: Integrated Technology Express, Inc. Device 8892 (rev 10) (prog-if 00 [Normal decode])
-        Flags: bus master, fast devsel, latency 0
-        Bus: primary=05, secondary=06, subordinate=06, sec-latency=32
-        I/O behind bridge: 0000c000-0000cfff
-        Memory behind bridge: fbe00000-fbefffff
-        Capabilities: [70] Express PCI/PCI-X Bridge, MSI 00
-        Capabilities: [90] Power Management version 2
-        Capabilities: [a0] Subsystem: Gammagraphx, Inc. (or missing ID) Device 0000
-        Capabilities: [100] Device Serial Number 00-00-00-00-00-00-00-00
+This was already discussed last year.
 
+https://lkml.org/lkml/2011/3/24/552
+
+Apparently all HP blades I have in my labs have the problem, whatever
+option is chosen in BIOS.
+
+On my machines, I set the BIOS to 'High performance', and cpus are on
+highest available frequencies.
 
 
-
-
-Bis denn
-
--- 
-Real Programmers consider "what you see is what you get" to be just as 
-bad a concept in Text Editors as it is in women. No, the Real Programmer
-wants a "you asked for it, you got it" text editor -- complicated, 
-cryptic, powerful, unforgiving, dangerous.
 
