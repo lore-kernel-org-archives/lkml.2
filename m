@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab2BGO45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 09:56:57 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51225 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2BGO4y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 09:56:54 -0500
-Date: Tue, 7 Feb 2012 15:56:52 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Austin Boyle <Austin.Boyle@aviatnet.com>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] rtc: ds1307: generalise ram size and offset
-Message-ID: <20120207145652.GH2539@pengutronix.de>
-References: <1326144071.3096.25.camel@pc786-ubu.gnet.global.vpn>
- <20120111110650.GC2605@pengutronix.de>
- <1326320516.3096.64.camel@pc786-ubu.gnet.global.vpn>
- <20120119194541.GA32483@pengutronix.de>
- <1328143057.3159.34.camel@pc786-ubu.gnet.global.vpn>
- <1328221704.3159.50.camel@pc786-ubu.gnet.global.vpn>
+	id S1754724Ab2BGO7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 09:59:42 -0500
+Received: from mga03.intel.com ([143.182.124.21]:20804 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751206Ab2BGO7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 09:59:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104136938"
+Date: Tue, 7 Feb 2012 06:55:53 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Richard Farina <sidhayn@gmail.com>, andiry.xu@amd.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: Question about error from xhci-hcd
+Message-ID: <20120207145553.GA5235@xanatos>
+References: <4F30BB0B.5060203@gmail.com>
+ <4F31275A.8000502@lwfinger.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="l06SQqiZYCi8rTKz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1328221704.3159.50.camel@pc786-ubu.gnet.global.vpn>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <4F31275A.8000502@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 07, 2012 at 07:30:02AM -0600, Larry Finger wrote:
+> On 02/06/2012 11:47 PM, Richard Farina wrote:
+> >I apologize but I am having the same issue reported in this thread in
+> >December
+> >
+> >[ 5077.573181] xhci_hcd 0000:0a:00.0: ERROR no room on ep ring
+> >
+> >I saw no resolution on this issue so I figured I'd step up and see if
+> >you needed an active tester who could reproduce the issue.
+> >
+> >I am running Gentoo with a 3.2.2 kernel.  I am able to run any kernel
+> >version you need, including random git trees and custom patches.  If you
+> >have not solved this yet, please allow me to be your test monkey. If you
+> >have solved this already then sorry for harming the signal to noise
+> >ratio, I could not a find a later message then the one below.
+> 
+> Are the "no room" messages triggered by rtl8192cu, or some other driver?
 
---l06SQqiZYCi8rTKz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+They can be caused by any USB driver that attempts to queue large
+transfers or many small transfers.
 
-> So if you have multiple RTCs, even of the same type, they would be in
-> rtc0, rtc1, rtc2
->=20
-> Since they each have their own nvram, does it matter if the size is
-> changed?
-
-Yes, because currently you pass a pointer to a static struct to the
-sysfs_bin_attribute. If you change the size of the static struct to
-another value, all other instances will get the new size, too, because
-they still use the pointer to it.
-
-You could just delete the size from the static struct, copy it over and
-add the correct size to the copy and pass the copy to create_bin_file().
-Or you initialize directly.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---l06SQqiZYCi8rTKz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk8xO7QACgkQD27XaX1/VRv4JQCgml96g6gR2pOCLvx3Bs5sAc1j
-GmoAoLIGNe9VaBs1C7Fh6/K7MR6XTpTI
-=VNhS
------END PGP SIGNATURE-----
-
---l06SQqiZYCi8rTKz--
+Sarah Sharp
