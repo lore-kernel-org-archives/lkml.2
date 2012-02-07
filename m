@@ -1,174 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab2BGFJL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 00:09:11 -0500
-Received: from mga03.intel.com ([143.182.124.21]:55591 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab2BGFJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 00:09:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="63968986"
-Subject: Re: [rfc PATCH]slub: per cpu partial statistics change
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <alpine.DEB.2.00.1202060858510.393@router.home>
-References: <1328256695.12669.24.camel@debian>
-	 <alpine.DEB.2.00.1202030920060.2420@router.home>
-	 <4F2C824E.8080501@intel.com>
-	 <alpine.DEB.2.00.1202060858510.393@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Feb 2012 13:06:05 +0800
-Message-ID: <1328591165.12669.168.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	id S1751625Ab2BGFNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 00:13:31 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49724 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab2BGFNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 00:13:30 -0500
+Date: Tue, 7 Feb 2012 09:13:27 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        kernel-team@android.com, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: android/ram_console: Don't build on arches w/o
+ ioremap
+Message-ID: <20120207051327.GA11737@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixes UML build:
 
-> Well the term releasing is unfortunate. per cpu partial pages can migrate
-> to and from the per node partial list and become per cpu slabs under
-> allocation.
+    CC      drivers/staging/android/ram_console.o
+  drivers/staging/android/ram_console.c: In function
+  'ram_console_driver_probe':
+  drivers/staging/android/ram_console.c:358:2: error: implicit declaration
+  of function 'ioremap' [-Werror=implicit-function-declaration]
+  cc1: some warnings being treated as errors
+  make[3]: *** [drivers/staging/android/ram_console.o] Error 1
 
-Yes, The word is really not good here. How about of CPU_PARTIAL_UNFREEZE
-since a unfreeze_cpu_partial() just called before ? 
-> 
-> > >> @@ -2465,9 +2466,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-> > >>  		 * If we just froze the page then put it onto the
-> > >>  		 * per cpu partial list.
-> > >>  		 */
-> > >> -		if (new.frozen && !was_frozen)
-> > >> +		if (new.frozen && !was_frozen) {
-> > >>  			put_cpu_partial(s, page, 1);
-> > >> -
-> > >> +			stat(s, CPU_PARTIAL_FREE);
-> > >
-> > > cpu partial list filled with a partial page created from a fully allocated
-> > > slab (which therefore was not on any list before).
-> >
-> >
-> > Yes, but the counting is not new here. It just moved out of
-> > put_cpu_partial().
-> 
-> Ok but then you also added different accounting in put_cpu_partial.
-
-Yes, I want to account the unfreeze_partials（） actions in
-put_cpu_partial（). The unfreezing accounting isn't conflict or repeat
-with the cpu_partial_free accounting, since they are different actions
-for the PCP. 
-
-According your above comments, how about the new patch with new
-accounting name? 
-------------
->From bd2b79297b4550035b0b0ec16dd0f3008a3a76dc Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Fri, 3 Feb 2012 23:34:56 +0800
-Subject: [PATCH] slub: per cpu partial statistics change
-
-This patch split the cpu_partial_free into 2 parts: cpu_partial_node, PCP refilling
-times from node partial; and same name cpu_partial_free, PCP refilling times in
-slab_free slow path. A new statistic 'cpu_partial_unfreeze' is added to get PCP
-unfreeze times. These info are useful when do PCP tunning.
-
-The slabinfo.c code is unchanged, since cpu_partial_node is not on slow path.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- include/linux/slub_def.h |    6 ++++--
- mm/slub.c                |   12 +++++++++---
- 2 files changed, 13 insertions(+), 5 deletions(-)
+ drivers/staging/android/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index a32bcfd..2549483 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -21,7 +21,7 @@ enum stat_item {
- 	FREE_FROZEN,		/* Freeing to frozen slab */
- 	FREE_ADD_PARTIAL,	/* Freeing moves slab to partial list */
- 	FREE_REMOVE_PARTIAL,	/* Freeing removes last object */
--	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from partial list */
-+	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from node partial list */
- 	ALLOC_SLAB,		/* Cpu slab acquired from page allocator */
- 	ALLOC_REFILL,		/* Refill cpu slab from slab freelist */
- 	ALLOC_NODE_MISMATCH,	/* Switching cpu slab */
-@@ -37,7 +37,9 @@ enum stat_item {
- 	CMPXCHG_DOUBLE_CPU_FAIL,/* Failure of this_cpu_cmpxchg_double */
- 	CMPXCHG_DOUBLE_FAIL,	/* Number of times that cmpxchg double did not match */
- 	CPU_PARTIAL_ALLOC,	/* Used cpu partial on alloc */
--	CPU_PARTIAL_FREE,	/* USed cpu partial on free */
-+	CPU_PARTIAL_FREE,	/* Refill cpu partial on free */
-+	CPU_PARTIAL_NODE,	/* Refill cpu partial from node partial */
-+	CPU_PARTIAL_UNFREEZE,	/* Unfreeze cpu partial */
- 	NR_SLUB_STAT_ITEMS };
+diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
+index becf711..2054ccb 100644
+--- a/drivers/staging/android/Kconfig
++++ b/drivers/staging/android/Kconfig
+@@ -27,6 +27,7 @@ config ANDROID_LOGGER
  
- struct kmem_cache_cpu {
-diff --git a/mm/slub.c b/mm/slub.c
-index 4907563..6ededd7 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1560,6 +1560,7 @@ static void *get_partial_node(struct kmem_cache *s,
- 		} else {
- 			page->freelist = t;
- 			available = put_cpu_partial(s, page, 0);
-+			stat(s, CPU_PARTIAL_NODE);
- 		}
- 		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
- 			break;
-@@ -1973,6 +1974,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 				local_irq_restore(flags);
- 				pobjects = 0;
- 				pages = 0;
-+				stat(s, CPU_PARTIAL_UNFREEZE);
- 			}
- 		}
+ config ANDROID_RAM_CONSOLE
+ 	bool "Android RAM buffer console"
++	depends on !S390 && !UML
+ 	default n
  
-@@ -1984,7 +1986,6 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 		page->next = oldpage;
- 
- 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
--	stat(s, CPU_PARTIAL_FREE);
- 	return pobjects;
- }
- 
-@@ -2465,9 +2466,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 		 * If we just froze the page then put it onto the
- 		 * per cpu partial list.
- 		 */
--		if (new.frozen && !was_frozen)
-+		if (new.frozen && !was_frozen) {
- 			put_cpu_partial(s, page, 1);
--
-+			stat(s, CPU_PARTIAL_FREE);
-+		}
- 		/*
- 		 * The list lock was not taken therefore no list
- 		 * activity can be necessary.
-@@ -5059,6 +5061,8 @@ STAT_ATTR(CMPXCHG_DOUBLE_CPU_FAIL, cmpxchg_double_cpu_fail);
- STAT_ATTR(CMPXCHG_DOUBLE_FAIL, cmpxchg_double_fail);
- STAT_ATTR(CPU_PARTIAL_ALLOC, cpu_partial_alloc);
- STAT_ATTR(CPU_PARTIAL_FREE, cpu_partial_free);
-+STAT_ATTR(CPU_PARTIAL_NODE, cpu_partial_node);
-+STAT_ATTR(CPU_PARTIAL_UNFREEZE, cpu_partial_unfreeze);
- #endif
- 
- static struct attribute *slab_attrs[] = {
-@@ -5124,6 +5128,8 @@ static struct attribute *slab_attrs[] = {
- 	&cmpxchg_double_cpu_fail_attr.attr,
- 	&cpu_partial_alloc_attr.attr,
- 	&cpu_partial_free_attr.attr,
-+	&cpu_partial_node_attr.attr,
-+	&cpu_partial_unfreeze_attr.attr,
- #endif
- #ifdef CONFIG_FAILSLAB
- 	&failslab_attr.attr,
+ config ANDROID_RAM_CONSOLE_ENABLE_VERBOSE
 -- 
-1.6.3.3
-
-
-
-
+1.7.7.6
