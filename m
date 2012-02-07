@@ -1,157 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab2BGEUJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 23:20:09 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58465
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755850Ab2BGEUH (ORCPT
+	id S1756328Ab2BGEf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 23:35:28 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:53471 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234Ab2BGEf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 23:20:07 -0500
-Date: Mon, 6 Feb 2012 23:19:58 -0500
-From: "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: "Luis R. Rodriguez" <mcgrof@frijolero.org>, hauke@hauke-m.de,
-        kernel-team@lists.ubuntu.com, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] compat: add compat kernel checker and downloader
-Message-ID: <20120207041958.GA32377@bombadil.infradead.org>
-References: <1328312594-31934-1-git-send-email-mcgrof@frijolero.org>
- <20120206160727.GA21048@tuxdriver.com>
+	Mon, 6 Feb 2012 23:35:27 -0500
+Message-ID: <4F30AA7E.3020803@oss.ntt.co.jp>
+Date: Tue, 07 Feb 2012 13:37:18 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120206160727.GA21048@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Liu Ping Fan <kernelfans@gmail.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        aliguori@us.ibm.com, gleb@redhat.com, mtosatti@redhat.com,
+        xiaoguangrong.eric@gmail.com, jan.kiszka@web.de
+Subject: Re: [PATCH v8] kvm: make vcpu life cycle separated from kvm instance
+References: <1328582057-31549-1-git-send-email-kernelfans@gmail.com>
+In-Reply-To: <1328582057-31549-1-git-send-email-kernelfans@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 11:07:28AM -0500, John W. Linville wrote:
-> On Fri, Feb 03, 2012 at 03:43:14PM -0800, Luis R. Rodriguez wrote:
-> > This adds get-compat-kernels, a utility that is intended
-> > to be Linux distribution agnostic that downloads and installs
-> > all kernel headers for all supported kernel releases of compat.
-> > You also have the option of specifying you want to also install
-> > the actual kernel image (get-compat-kernels -i).
-> > 
-> > We start off by adding support for Ubuntu on x86_64 as that
-> > is what a few of us maintaining compat and compat-wireless run.
-> > Just for kernel headers (default run of get-compat-kernels),
-> > you'll need currently 205 M of hard drive space.
-> > 
-> > Once done with running get-compat-kernels, you can then
-> > start running ckmake to verify your compat kernel changes
-> > won't bust compilation against any known supported kernel.
-> > 
-> > I'd like to start requiring runs against this script for
-> > patch submissions. Eventually we can try to add the same
-> > runs against compat-wireless so we can verify integrity
-> > against compilation for different kernel versions.
-> > 
-> > Support for different Linux distributios is welcomed.
-> > 
-> > Debug log goes out to ckmake.log
-> > 
-> > Example output:
-> > 
-> > mcgrof@tux ~/compat (git::master)$ ckmake
-> > Trying kernel                  3.3.0-030300rc2-generic  [OK]
-> > Trying kernel                     3.2.2-030202-generic  [OK]
-> > Trying kernel                    3.1.10-030110-generic  [OK]
-> > Trying kernel                    3.0.18-030018-generic  [OK]
-> > Trying kernel                  2.6.39-02063904-generic  [OK]
-> > Trying kernel                         2.6.38-8-generic  [OK]
-> > Trying kernel                        2.6.38-13-generic  [OK]
-> > Trying kernel                        2.6.38-12-generic  [OK]
-> > Trying kernel                        2.6.38-11-generic  [OK]
-> > Trying kernel                        2.6.38-10-generic  [OK]
-> > Trying kernel                  2.6.38-02063808-generic  [OK]
-> > Trying kernel                  2.6.37-02063706-generic  [OK]
-> > Trying kernel                  2.6.36-02063604-generic  [OK]
-> > Trying kernel                  2.6.35-02063512-generic  [OK]
-> > Trying kernel                  2.6.34-02063410-generic  [OK]
-> > Trying kernel                  2.6.33-02063305-generic  [OK]
-> > Trying kernel                  2.6.32-02063255-generic  [OK]
-> > Trying kernel                        2.6.31-22-generic  [OK]
-> > Trying kernel                  2.6.31-02063113-generic  [OK]
-> > Trying kernel                  2.6.30-02063010-generic  [OK]
-> > Trying kernel                  2.6.29-02062906-generic  [OK]
-> > Trying kernel                  2.6.28-02062810-generic  [OK]
-> > Trying kernel                    2.6.27-020627-generic  [OK]
-> > Trying kernel                    2.6.26-020626-generic  [OK]
-> > Trying kernel                    2.6.25-020625-generic  [OK]
-> > Trying kernel                    2.6.24-020624-generic  [OK]
-> > 
-> > Cc: kernel-team@lists.ubuntu.com
-> > Signed-off-by: Luis R. Rodriguez <mcgrof@frijolero.org>
+(2012/02/07 11:34), Liu Ping Fan wrote:
+
+>   static int kvm_vcpu_release(struct inode *inode, struct file *filp)
+
+Is this a hot path?
+If no, do you really need to pre-allocate the space for the next vcpus?
+
+>   {
+> +	int i;
+>   	struct kvm_vcpu *vcpu = filp->private_data;
+> +	struct kvm *kvm = vcpu->kvm;
+> +	struct kvm_vcpu *vcpus_next;
+> +	filp->private_data = NULL;
+> +
+> +	for (i = 0; i<  atomic_read(&kvm->online_vcpus); i++) {
+> +		if (vcpu == kvm->vcpus+i)
+> +			break;
+> +	}
+> +	mutex_lock(&kvm->lock);
+> +	vcpus_next =  kvm->vcpus_array +
+> +		((kvm->vcpus - kvm->vcpus_array) ? 0 : KVM_MAX_VCPUS);
+> +
+> +	memset(vcpus_next, 0, KVM_MAX_VCPUS*sizeof(struct kvm_vcpu *));
+> +	memcpy(vcpus_next, kvm->vcpus, i*sizeof(struct kvm_vcpu *));
+> +	memcpy(vcpus_next+i, kvm->vcpus+i+1,
+> +		(atomic_read(&kvm->online_vcpus)-i)*sizeof(struct kvm_vcpu *));
+> +	atomic_dec(&kvm->online_vcpus);
+> +	/* Removed vcpu can not be seen from vcpus[] */
+
+This comment is confusing.
+
+> +	rcu_assign_pointer(kvm->vcpus, vcpus_next);
+> +	mutex_unlock(&kvm->lock);
+> +
+> +	synchronize_rcu();
 > 
-> I'm not sure this makes any sense.  I thought the point of the compat
-> project was to support upstream kernels, not distro ones? 
+> -	kvm_put_kvm(vcpu->kvm);
+> +	/* vcpu is out of list,drop it safely */
 
-Absolutely but distributions also build kernels for us so if we're lazy
-we don't have to do anything but just install some sort of package.
-The get-compat-kernels takes advantage of this fact and lists a way
-to let us get all known supported kernels from Ubuntu's PPA repository
-that has mainline kernels. That is, these are kernels from mainline
-without any Ubuntu jazz on it.
+Ditto.
 
-> I'm not
-> even sure I know how to replicate the above process in Fedora, since
-> we would only have kernels available from a given release in each
-> release's repository.
+Do you mean something like
+"now that there is no reader of it we can safely free this" ?
 
-The Ubuntu PPA was special, it was put in place to help users tests
-kernel issues on a mainline kernel without any ubuntu jazz when
-there were concerns that perhaps the issues on bugzilla.kernel.org
-may have been cause by some of the deltas.
+(Please do not trust me:  I am not a native English speaker as you know.)
 
-The scripts can be explanded to use general kernels though:
-
-diff --git a/bin/ckmake b/bin/ckmake
-index 4d45fb9..3b49347 100755
---- a/bin/ckmake
-+++ b/bin/ckmake
-@@ -34,8 +34,11 @@ case $LSB_RED_ID in
- 	done
- 	;;
- *)
--	echo -e "Unsupported distribution"
--	exit
-+	for i in $(find /lib/modules/ -type d | sort -n -r); do
-+		if [[ -d $i/build/ && -f $i/build/Makefile ]]; then
-+			KLIBS="$KLIBS $i"
-+		fi
-+	done
- 	;;
- esac
- 
-diff --git a/bin/get-compat-kernels b/bin/get-compat-kernels
-index 07ac17b..9bb9f39 100755
---- a/bin/get-compat-kernels
-+++ b/bin/get-compat-kernels
-@@ -148,7 +148,14 @@ case $LSB_RED_ID in
- 	get_ubuntu_kernels
- 	;;
- *)
--	echo -e "Unsupported distribution"
--	exit
-+	echo -e "Using your available kernels. We recommend to have "
-+	echo -e "all supported asupported kernels listed on kernel.org."
-+	echo -e "Currently our target is to at least support all kernels "
-+	echo -e "in the range 2.6.27 - 3.3. You have:\n":
-+	for i in $(find /lib/modules/ -type d | sort -n -r); do
-+		if [[ -d $i/build/ && -f $i/build/Makefile ]]; then
-+			echo -e " * $(basename $i))"
-+		fi
-+	done
- 	;;
- esac
+> +	kvm_vcpu_destruct(vcpu);
+>   	return 0;
+>   }
 
 
-This could be improved to ensure that ckmake will not run for any
-case unless at least one kernel for each suppoted kernel release is
-present to test.
-
-Thoughts?
-
-  Luis
+	Takuya
