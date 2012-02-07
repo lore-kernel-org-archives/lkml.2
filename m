@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab2BFX5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 18:57:47 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21610 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694Ab2BFX5q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 18:57:46 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19ml4hzhexa1MeNTdJK/OKb
-Date: Mon, 6 Feb 2012 15:57:33 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "Sascha Hauer (s.hauer@pengutronix.de)" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: An extremely simplified pinctrl bindings proposal
-Message-ID: <20120206235733.GY1426@atomide.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF178E5D3160@HQMAIL01.nvidia.com>
- <CACRpkdahin4srDh7dphgvq306gjz7CGP=h4dVkUY+w0z0wpXRQ@mail.gmail.com>
- <4F2F6AE2.1040504@nvidia.com>
- <CACRpkdbtTPSoX1x4aBtNVGZ2Qex9t77D09V9JgON_jfShQdx6w@mail.gmail.com>
- <20120206190315.GU1426@atomide.com>
- <CACRpkdZthbejmTqRJAWHb8jU-p8LPT_+zj_CY1q0voMb4FKz2Q@mail.gmail.com>
- <20120206210456.GV1426@atomide.com>
- <CACRpkdYrbD3PpJ3wb69yb3Ya8SeZJnPpgJdtttjWTkS5xsD-4g@mail.gmail.com>
+	id S1756153Ab2BGAC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 19:02:59 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58226 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754155Ab2BGAC6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 19:02:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYrbD3PpJ3wb69yb3Ya8SeZJnPpgJdtttjWTkS5xsD-4g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <cover.1328563908.git.vjaquez@igalia.com>
+References: <cover.1328563908.git.vjaquez@igalia.com>
+Date: Tue, 7 Feb 2012 02:02:56 +0200
+Message-ID: <CAMP44s3a7C1JTvrFd8FQxthJYRa4EDEi9sw8Oz=wKcJ_Pfu6dg@mail.gmail.com>
+Subject: Re: [PATCH 0/4] staging: tidspbridge: remove desgin-by-contract macros
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: =?UTF-8?Q?V=C3=ADctor_Manuel_J=C3=A1quez_Leal?= 
+	<vjaquez@igalia.com>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [120206 14:44]:
-> On Mon, Feb 6, 2012 at 10:04 PM, Tony Lindgren <tony@atomide.com> wrote:
-> 
-> >> I actually had something like unnamed pins in the early patches
-> >> to register a bunch of anonymous pins ranges, so why not bring
-> >> it back in.
-> >
-> > Yeah it seems that the mux registers should be listed, it might
-> > require a little bit of thinking for cases where one register
-> > controls multiple pins. So maybe we need just a new entry for
-> > mux registers?
-> 
-> I'm not sure if I'm following completely, if this is inside the devicetree-based
-> driver file, would it work to just add a struct dentry * to the
-> pinctrl_desc where you put a per-driver file?
+2012/2/7 Víctor Manuel Jáquez Leal <vjaquez@igalia.com>:
+> These patches removes all the design-by-contract (DBC) macros in the
+> tidspbridge.
+>
+> Also it removes the config option CONFIG_TIDSPBRIDGE_DEBUG.
+>
+> The patches are applied above these submitted patches:
+> http://thread.gmane.org/gmane.linux.kernel/1246081
+>
+> The main reasons to remove these DBC macros are
+>
+> * The kernel in general doesn't follow the DBC approach
+>
+> * They only provide a needless verbosity, since they are available only
+>  when CONFIG_TIDSPBRIDGE_DEBUG is enabled. If they were useful they
+>  should be left for the dynamic debugging always. So, if they are not
+>  used, is dead code at the end, and should be removed.
+>
+> * Deleting them means less code to maintain
+>
+> As the Emperor Joseph II told to Mozart in the motion picture Amadeus:
+> "It's quality work. And there are simply too many notes, that's
+> all. Just cut a few and it will be perfect."
 
-I was thinking generic debufs entries for all drivers.
- 
-> Or maybe add extern void pinctrl_add_debugfs(struct dentry *) that adds
-> a new file to the existing per-driver directory through the core and then
-> have this add that file?
+The whole series is fine by me :)
 
-Sounds like you've thought it further than me already :)
+Even the warnings that don't depend on DEBUG have been neglected
+anyway =/ Will send some patches for a few of them soon.
 
-Maybe that's the way to go to solve the one register for
-multiple pins issue.
- 
-> Or did you mean that the core.c should be register-aware?
+Cheers.
 
-I was just thinking string name ignoring core.c, so that would
-be the pinctrl_add_debugfs() option then. Do you see problems
-with this approach?
-
-Regards,
-
-Tony
+-- 
+Felipe Contreras
