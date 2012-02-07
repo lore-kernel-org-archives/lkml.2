@@ -1,96 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab2BGTju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 14:39:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40815 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab2BGTjt (ORCPT
+	id S1756639Ab2BGTlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 14:41:10 -0500
+Received: from kamaji.grokhost.net ([87.117.218.43]:36688 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447Ab2BGTlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 14:39:49 -0500
-Date: Tue, 7 Feb 2012 11:39:23 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-9dac6a29e0ce0cd9dec497baa123e216b00b525d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com,
-        mingo@elte.hu
-In-Reply-To: <1328514285-26232-2-git-send-email-namhyung.kim@lge.com>
-References: <1328514285-26232-2-git-send-email-namhyung.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf stat: Align scaled output of cpu-clock
-Git-Commit-ID: 9dac6a29e0ce0cd9dec497baa123e216b00b525d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 7 Feb 2012 14:41:09 -0500
+Message-ID: <4F317E54.9060607@bootc.net>
+Date: Tue, 07 Feb 2012 19:41:08 +0000
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 07 Feb 2012 11:39:29 -0800 (PST)
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Clemens Ladisch <clemens@ladisch.de>
+Subject: Re: [RFC][PATCH] firewire: Add function to get speed from opaque
+ struct fw_request
+References: <1328566661-80768-1-git-send-email-bootc@bootc.net> <20120207191517.7b73978c@stein>
+In-Reply-To: <20120207191517.7b73978c@stein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9dac6a29e0ce0cd9dec497baa123e216b00b525d
-Gitweb:     http://git.kernel.org/tip/9dac6a29e0ce0cd9dec497baa123e216b00b525d
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 6 Feb 2012 16:44:45 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 6 Feb 2012 19:17:39 -0200
+On 07/02/2012 18:15, Stefan Richter wrote:
+> On Feb 06 Chris Boot wrote:
+>> [ Would something like the following be acceptable as an addition to the
+>> FireWire stack? This would be enough for me to get the speed of the
+>> request for my work on the SBP-2 target code. ]
+> [...]
+>> --- a/drivers/firewire/core-transaction.c
+>> +++ b/drivers/firewire/core-transaction.c
+>> @@ -820,6 +820,12 @@ void fw_send_response(struct fw_card *card,
+>>   }
+>>   EXPORT_SYMBOL(fw_send_response);
+>>
+>> +int fw_request_speed(struct fw_request *request)
+>> +{
+>> +	return request->response.speed;
+>> +}
+>> +EXPORT_SYMBOL(fw_request_speed);
+>> +
+>>   static void handle_exclusive_region_request(struct fw_card *card,
+>>   					    struct fw_packet *p,
+>>   					    struct fw_request *request,
+>> diff --git a/include/linux/firewire.h b/include/linux/firewire.h
+>> index 84ccf8e..eded4e4 100644
+>> --- a/include/linux/firewire.h
+>> +++ b/include/linux/firewire.h
+>> @@ -340,6 +340,7 @@ int fw_core_add_address_handler(struct fw_address_handler *handler,
+>>   void fw_core_remove_address_handler(struct fw_address_handler *handler);
+>>   void fw_send_response(struct fw_card *card,
+>>   		      struct fw_request *request, int rcode);
+>> +int fw_request_speed(struct fw_request *request);
+>>   void fw_send_request(struct fw_card *card, struct fw_transaction *t,
+>>   		     int tcode, int destination_id, int generation, int speed,
+>>   		     unsigned long long offset, void *payload, size_t length,
+>
+> Whenever you add a new exported function, please add a brief kerneldoc
+> comment right above its definition.  Can be a one-liner in this case.
+> Apart from this,
+>
+> Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+>
+> You can queue this via your SBP-2 target patch series (at which I haven't
+> looked yet), followed right away by a change to your driver which uses the
+> new symbol.  Or even better, fold these two changes into one.
 
-perf stat: Align scaled output of cpu-clock
+I'll add some kerneldoc to it before I make it part of my series, it 
+might as well be part of the same thing. Thanks for the ack!
 
-The output of cpu-clock event is controlled in nsec_printout(),
-but its alignment was broken:
+> Not sure if four more characters should be spent on the symbol's name
+> (fw_get_request_speed).  If you already thought about it and preferred
+> fw_request_speed, keep it that way.
 
- Performance counter stats for 'sleep 1':
+I did briefly consider it but I came up with 'fw_request_get_speed()' 
+and didn't like it. fw_get_request_speed() makes sense to me though so 
+I'll make the change before I send it out again.
 
-         6,038,774 instructions              #    0.00  insns per cycle
-               180 faults                    #    0.007 K/sec                   [99.95%]
-         1,282,201 branches                  #    0.053 M/sec                   [99.84%]
-      24126.221811 cpu-clock                 [99.62%]
-      24121.689540 task-clock                #   24.098 CPUs utilized           [99.52%]
+> There are at least two alternatives to your proposal:
+>
+>    - We could move the definition of struct fw_request from
+>      drivers/firewire/core-transaction.c to include/linux/firewire.h.
+>      That would make for a rather bad driver API though.
+>
+>    - We could expand the function type fw_address_callback_t() by a speed
+>      argument.  The other users of the API (firewire-core itself,
+>      firewire-sbp2, firewire-net, firedtv, snd-firewire-lib, and other
+>      as yet unmerged firewire sound drivers) and any other perceivable
+>      future user of the API would not care of that speed though.
+>
+> I.e. the proposed "get speed of request" helper seems better.
 
-       1.001001017 seconds time elapsed
+Great!
 
-This patch fixes this:
+Thanks,
+Chris
 
- Performance counter stats for 'sleep 1':
-
-        13,540,843 instructions              #    0.00  insns per cycle
-               180 faults                    #    0.007 K/sec                   [99.94%]
-         2,875,386 branches                  #    0.119 M/sec                   [99.82%]
-      24144.221137 cpu-clock                                                    [99.61%]
-      24133.515366 task-clock                #   24.109 CPUs utilized           [99.52%]
-
-       1.001020946 seconds time elapsed
-
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1328514285-26232-2-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-stat.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 32d930e..d14b37a 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -576,6 +576,8 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	if (perf_evsel__match(evsel, SOFTWARE, SW_TASK_CLOCK))
- 		fprintf(output, " # %8.3f CPUs utilized          ",
- 			avg / avg_stats(&walltime_nsecs_stats));
-+	else
-+		fprintf(output, "                                   ");
- }
- 
- /* used for get_ratio_color() */
+-- 
+Chris Boot
+bootc@bootc.net
