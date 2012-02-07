@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab2BGX21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 18:28:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35992 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533Ab2BGX20 (ORCPT
+	id S1757230Ab2BGXdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 18:33:13 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:40702 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757217Ab2BGXdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 18:28:26 -0500
-Date: Tue, 7 Feb 2012 15:28:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: rtc-linux@googlegroups.com
-Cc: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        Ivan Kuten <ivan.kuten@promwad.com>
-Subject: Re: [rtc-linux] [PATCH] RTC: Add driver for NXP PCF8523 RTC chip
-Message-Id: <20120207152815.6311c59a.akpm@linux-foundation.org>
-In-Reply-To: <1317815823-27297-1-git-send-email-yauhen.kharuzhy@promwad.com>
-References: <1317815823-27297-1-git-send-email-yauhen.kharuzhy@promwad.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Feb 2012 18:33:12 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        kexec-list <kexec@lists.infradead.org>
+Subject: Re: [PATCH] x86, kdump: No need to disable ioapic in crash path
+References: <1328206323-25580-1-git-send-email-dzickus@redhat.com>
+	<m1r4ycsts1.fsf@fess.ebiederm.org> <20120207215741.GD5650@redhat.com>
+	<20120207221924.GH6346@redhat.com>
+Date: Tue, 07 Feb 2012 15:35:59 -0800
+In-Reply-To: <20120207221924.GH6346@redhat.com> (Vivek Goyal's message of
+	"Tue, 7 Feb 2012 17:19:24 -0500")
+Message-ID: <m1r4y6i5cw.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX190KUVqAg81VCGsBREqS7DMj/a1HBbr/H0=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Oct 2011 14:57:03 +0300
-Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com> wrote:
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-> This driver is based on PCF8563 driver and supports only base functions
-> now: read/write date & time.
+> On Tue, Feb 07, 2012 at 04:57:41PM -0500, Don Zickus wrote:
+>> On Thu, Feb 02, 2012 at 03:24:46PM -0800, Eric W. Biederman wrote:
+>> > > Eric, brought up a point that because the boot code was restructured we may
+>> > > not need to disable the io apic any more in the crash path.  The original
+>> > > concern that led to the development of disable_IO_APIC, was that the TSC
+>> > > calibration on boot up relied on the PIT timer for reference.  Access
+>> > > to the PIT required 8259 interrupts to be working.  This wouldn't work
+>> > > if the ioapic needed to be configured.  So on panic path, the ioapic was
+>> > > reconfigured to use virtual wire mode to allow the 8259 to passthrough.
+>> > 
+>> > A small clarification originally it was the jiffies calibration that
+>> > would fail if we could cause the PIT to generate interrupts through the
+>> > 8259.  The boot would then hang at calibrating jiffies.
+>> 
+>> Ok.  Thanks!
+>
+> So now what has changed? Do we setup LAPIC and IOAPIC early enough to
+> receive PIT interrupts in regular mode (non-virtual wire mode) or
+> something else?
 
-This patch breaks my x86_64 allmodconfig build.
+Yes.  Part of the Moorstown work required that this be done because
+moorsetown did not support legacy mode.  Last I looked the code hadn't
+been generalized beyond Moorsetown but empirically it works now.
 
-drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_get_datetime':
-drivers/rtc/rtc-pcf8523.c:55: warning: unused variable 'pcf8523'
-drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_set_datetime':
-drivers/rtc/rtc-pcf8523.c:110: warning: unused variable 'pcf8523'
-drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_probe':
-drivers/rtc/rtc-pcf8523.c:179: error: invalid application of 'sizeof' to incomplete type 'struct pcf8523' 
-drivers/rtc/rtc-pcf8523.c:187: error: dereferencing pointer to incomplete type
-drivers/rtc/rtc-pcf8523.c:188: error: 'THIS_MODULE' undeclared (first use in this function)
-drivers/rtc/rtc-pcf8523.c:188: error: (Each undeclared identifier is reported only once
-drivers/rtc/rtc-pcf8523.c:188: error: for each function it appears in.)
-drivers/rtc/rtc-pcf8523.c:190: error: dereferencing pointer to incomplete type
-drivers/rtc/rtc-pcf8523.c:191: error: dereferencing pointer to incomplete type
-drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_remove':
-drivers/rtc/rtc-pcf8523.c:207: error: dereferencing pointer to incomplete type
-drivers/rtc/rtc-pcf8523.c:208: error: dereferencing pointer to incomplete type
-drivers/rtc/rtc-pcf8523.c: At top level:
-drivers/rtc/rtc-pcf8523.c:219: warning: data definition has no type or storage class
-drivers/rtc/rtc-pcf8523.c:219: warning: type defaults to 'int' in declaration of 'MODULE_DEVICE_TABLE'
-drivers/rtc/rtc-pcf8523.c:219: warning: parameter names (without types) in function declaration
-drivers/rtc/rtc-pcf8523.c: In function 'pcf8523_init':
-drivers/rtc/rtc-pcf8523.c:232: error: 'THIS_MODULE' undeclared (first use in this function)
-drivers/rtc/rtc-pcf8523.c: At top level:
-drivers/rtc/rtc-pcf8523.c:240: error: expected declaration specifiers or '...' before string constant
-drivers/rtc/rtc-pcf8523.c:240: warning: data definition has no type or storage class
-drivers/rtc/rtc-pcf8523.c:240: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-drivers/rtc/rtc-pcf8523.c:240: warning: function declaration isn't a prototype
-drivers/rtc/rtc-pcf8523.c:241: error: expected declaration specifiers or '...' before string constant
-drivers/rtc/rtc-pcf8523.c:241: warning: data definition has no type or storage class
-drivers/rtc/rtc-pcf8523.c:241: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-drivers/rtc/rtc-pcf8523.c:241: warning: function declaration isn't a prototype
-drivers/rtc/rtc-pcf8523.c:242: error: expected declaration specifiers or '...' before string constant
-drivers/rtc/rtc-pcf8523.c:242: warning: data definition has no type or storage class
-drivers/rtc/rtc-pcf8523.c:242: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-drivers/rtc/rtc-pcf8523.c:242: warning: function declaration isn't a prototype
-drivers/rtc/rtc-pcf8523.c:243: error: expected declaration specifiers or '...' before string constant
-drivers/rtc/rtc-pcf8523.c:243: warning: data definition has no type or storage class
-drivers/rtc/rtc-pcf8523.c:243: warning: type defaults to 'int' in declaration of 'MODULE_VERSION'
-drivers/rtc/rtc-pcf8523.c:243: warning: function declaration isn't a prototype
+Don as to what to test the only case I can think of that might be spooky
+is a screaming interrupt during the handover.  You might want to try
+playing with lkcdtm to try some of the more exotic crash scenarios.  But
+all I expect further testing might reveal are places where we are not
+as robust in initializing the hardware as we might be.  Things that
+might have been papered over by the ioapic shutdown.
 
+I think we are good to remove my ancient hack of disabling the ioapics,
+and putting the system into PIT during the crash kernel switchover.
+
+Eric
