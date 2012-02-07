@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2BHARM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 19:17:12 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59312 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756144Ab2BHARK convert rfc822-to-8bit (ORCPT
+	id S1757030Ab2BHATW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 19:19:22 -0500
+Received: from ozlabs.org ([203.10.76.45]:37085 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756365Ab2BHATV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 19:17:10 -0500
-Date: Wed, 8 Feb 2012 00:17:24 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Adam Jackson <ajax@redhat.com>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 1/2] char/mem: Add /dev/io (v2)
-Message-ID: <20120208001724.7e5c7be4@pyramind.ukuu.org.uk>
-In-Reply-To: <1328657985-13942-1-git-send-email-ajax@redhat.com>
-References: <1328623901-20628-1-git-send-email-ajax@redhat.com>
-	<1328657985-13942-1-git-send-email-ajax@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 7 Feb 2012 19:19:21 -0500
+From: Rusty Russell <rusty@ozlabs.org>
+To: "Kasatkin\, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        David Howells <dhowells@redhat.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Jon Masters <jcm@redhat.com>
+Subject: Re: [RFC][PATCH v1 0/2] integrity: module integrity verification
+In-Reply-To: <CALLzPKZRUTaOE8afXD1b=Kd6fOaisOpAW+XGJMi7uHdE0sEgFw@mail.gmail.com>
+References: <cover.1328122362.git.dmitry.kasatkin@intel.com> <alpine.LRH.2.00.1202061250400.16907@tundra.namei.org> <CALLzPKZSWSp6r-5e1c1Z6qOH6C0DcOz=LHJ20Y468SQE6UU1ww@mail.gmail.com> <87zkcuh8iq.fsf@rustcorp.com.au> <CALLzPKZRUTaOE8afXD1b=Kd6fOaisOpAW+XGJMi7uHdE0sEgFw@mail.gmail.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Wed, 08 Feb 2012 10:09:11 +1030
+Message-ID: <87bopagqn4.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  7 Feb 2012 18:39:45 -0500
-Adam Jackson <ajax@redhat.com> wrote:
+On Tue, 7 Feb 2012 23:18:38 +0200, "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
+> On Tue, Feb 7, 2012 at 7:13 PM, Rusty Russell <rusty@ozlabs.org> wrote:
+> > On Mon, 6 Feb 2012 08:59:00 +0200, "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
+> >> On Mon, Feb 6, 2012 at 3:51 AM, James Morris <jmorris@namei.org> wrote:
+> >> > On Wed, 1 Feb 2012, Dmitry Kasatkin wrote:
+> >> >
+> >> >> Hi,
+> >> >>
+> >> >> Here is another module verification patchset, which is based on the recently
+> >> >> upstreamed digital signature support used by EVM and IMA-appraisal.
+> >> >
+> >> > You should cc: Rusty on any changes to the module code.
+> >> >
+> >>
+> >> Hello,
+> >>
+> >> Mimi already has pointed that out.
+> >> I have sent him an email with the link..
+> >
+> > Thanks.
+> >
+> > Using an external signature (via cmdline arguments) is simple, at
+> > least.  Not sure what the userspace side of this looks like?
+> >
+> 
+> Hello,
+> 
+> There are couple of patches for modprobe and insmod...
+> 
+> You could see them on the top at:
+> http://linux-ima.git.sourceforge.net/git/gitweb.cgi?p=linux-ima/module-init-tools.git;a=summary
+> 
+> It first tries to read signature from xattr, then from file...
+> "modprobe -v" will show 'ima='  parameter with signature.
+> 
+> - Dmitry
 
-> This is like /dev/port except not broken.  /dev/port will translate all
-> read/write into inb/outb streams, which is wrong since hardware can and
-> does care about cycle size.  /dev/io will only allow 1, 2, or 4 byte
-> access, and will translate that into the appropriate bus cycle size.
+The problem is that distributions tend to have two variants of modules:
+stripped and unstripped.  Thus you may want to support multiple
+signatures, any *one* of which may match.
 
->From a security perspective /dev/[k][mem is a dumb bit of ancient Unix
-history we'd dearly like to kill off. /dev/port is a similar early PC
-unixism that wants to go the same way. /dev/io just adds another horror
-to the pile.
+I've cc'd the module-init-tools and libkmod maintainers for their
+comments, too.
 
-Please do the decent thing, stop using /dev/mem and /dev/port for
-anything. If you need to access an I/O device make it properly visible
-via the kernel only for the ports and in a manner that is safe.
-
-Alan
+Cheers,
+Rusty.
