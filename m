@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab2BGUaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 15:30:17 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:36694 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756439Ab2BGUaQ (ORCPT
+	id S1756864Ab2BGUb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 15:31:27 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:11749 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756050Ab2BGUb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 15:30:16 -0500
-Date: Tue, 07 Feb 2012 15:29:05 -0500 (EST)
-Message-Id: <20120207.152905.1412072387367320828.davem@davemloft.net>
-To: geert@linux-m68k.org
-Cc: netdev@pradeepdalvi.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: [PATCH v5 3/5] netdev: ethernet dev_alloc_skb to
- netdev_alloc_skb
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAMuHMdXFz5zEWUkrJjNvOqkgt-n2uKc3wzD9H5NKKz1LT4BpOw@mail.gmail.com>
-References: <cf736034e7bd407297e2ea9fbf247fb410eb7b39.1328445742.git.netdev@pradeepdalvi.com>
-	<ef62da964e8660dfdf2a25cd643631bb15914ecf.1328445742.git.netdev@pradeepdalvi.com>
-	<CAMuHMdXFz5zEWUkrJjNvOqkgt-n2uKc3wzD9H5NKKz1LT4BpOw@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 7 Feb 2012 15:31:26 -0500
+Date: Tue, 7 Feb 2012 21:31:13 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: guenter.roeck@ericsson.com
+Cc: Aaron Sierra <asierra@xes-inc.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>
+Subject: Re: [PATCH 1/3 v2] mfd: Add LPC driver for Intel ICH chipsets
+Message-ID: <20120207213113.5eba9613@endymion.delvare>
+In-Reply-To: <1328645717.2261.286.camel@groeck-laptop>
+References: <19991da0-d4ad-4a62-9ce0-6b7c8d5b7c24@zimbra>
+	<1328645717.2261.286.camel@groeck-laptop>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 07 Feb 2012 12:29:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Tue, 7 Feb 2012 21:04:07 +0100
+On Tue, 7 Feb 2012 12:15:17 -0800, Guenter Roeck wrote:
+> Hi Aaron,
+> 
+> On Tue, 2012-02-07 at 14:56 -0500, Aaron Sierra wrote:
+> > This driver currently creates resources for use by a forthcoming ICH
+> > chipset GPIO driver. It could be expanded to created the resources for
+> > converting the esb2rom (mtd) and iTCO_wdt (wdt), and potentially more,
+> > drivers to use the mfd model.
+> > 
+> > Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> 
+> Not sure how to handle this since some of the code is from me ....
+> usually one doesn't add other people's Signed-off unless both are in the
+> commit chain. Comments, anyone ?
 
-> drivers/net/ethernet/natsemi/sonic.c:425: error: too few arguments to
-> function 'netdev_alloc_skb'
+If the code is co-written and you both agree with what the code
+contributed by the other (in terms of Developer's Certificate of
+Origin) then it's IMHO perfectly fine to have two Signed-off-by in the
+submission.
 
-I just wrote and committed the following fix, which took less effort
-than your report most likely :-)
+At any rate it is much better to do that that to commit a known-broken
+patch and have the second contributor fix it afterward.
 
---------------------
-sonice: Fix build due to botched netdev_alloc_skb() conversion.
-
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/ethernet/natsemi/sonic.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/ethernet/natsemi/sonic.c b/drivers/net/ethernet/natsemi/sonic.c
-index 0452e296..46795e4 100644
---- a/drivers/net/ethernet/natsemi/sonic.c
-+++ b/drivers/net/ethernet/natsemi/sonic.c
-@@ -422,7 +422,7 @@ static void sonic_rx(struct net_device *dev)
- 		status = sonic_rda_get(dev, entry, SONIC_RD_STATUS);
- 		if (status & SONIC_RCR_PRX) {
- 			/* Malloc up new buffer. */
--			new_skb = netdev_alloc_skb(SONIC_RBSIZE + 2);
-+			new_skb = netdev_alloc_skb(dev, SONIC_RBSIZE + 2);
- 			if (new_skb == NULL) {
- 				printk(KERN_ERR "%s: Memory squeeze, dropping packet.\n", dev->name);
- 				lp->stats.rx_dropped++;
 -- 
-1.7.7.6
-
+Jean Delvare
