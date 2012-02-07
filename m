@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab2BGTlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 14:41:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40851 "EHLO
+	id S1756780Ab2BGTmC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 14:42:02 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40858 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756604Ab2BGTll (ORCPT
+	with ESMTP id S1755833Ab2BGTmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 14:41:41 -0500
-Date: Tue, 7 Feb 2012 11:40:08 -0800
-From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-7931d493051ea9b09e4fddee2dc40b2eb88d62b9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        jbeulich@suse.com, jeremy@goop.org, akpm@linux-foundation.org,
-        JBeulich@suse.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        jbeulich@suse.com, jeremy@goop.org, akpm@linux-foundation.org,
-        JBeulich@suse.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4F2C06020200007800071066@nat28.tlf.novell.com>
-References: <4F2C06020200007800071066@nat28.tlf.novell.com>
+	Tue, 7 Feb 2012 14:42:00 -0500
+Date: Tue, 7 Feb 2012 11:41:44 -0800
+From: tip-bot for Michael D Labriola <michael.d.labriola@gmail.com>
+Message-ID: <tip-lv3aliubas2l3aenq8v3uklk@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, michael.d.labriola@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, michael.d.labriola@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86/spinlocks: Eliminate TICKET_MASK
-Git-Commit-ID: 7931d493051ea9b09e4fddee2dc40b2eb88d62b9
+Subject: [tip:x86/boot] x86/reboot:
+  Reduce to a single DMI table for reboot quirks
+Git-Commit-ID: 57b165948fe0e1cca78bca1fe1e1ae9a38baedd2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,72 +28,262 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 07 Feb 2012 11:40:15 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 07 Feb 2012 11:41:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7931d493051ea9b09e4fddee2dc40b2eb88d62b9
-Gitweb:     http://git.kernel.org/tip/7931d493051ea9b09e4fddee2dc40b2eb88d62b9
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Fri, 3 Feb 2012 15:06:26 +0000
+Commit-ID:  57b165948fe0e1cca78bca1fe1e1ae9a38baedd2
+Gitweb:     http://git.kernel.org/tip/57b165948fe0e1cca78bca1fe1e1ae9a38baedd2
+Author:     Michael D Labriola <michael.d.labriola@gmail.com>
+AuthorDate: Wed, 1 Feb 2012 10:05:00 -0500
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 7 Feb 2012 10:09:54 +0100
+CommitDate: Tue, 7 Feb 2012 11:34:11 +0100
 
-x86/spinlocks: Eliminate TICKET_MASK
+x86/reboot: Reduce to a single DMI table for reboot quirks
 
-The definition of it being questionable already (unnecessarily
-including a cast), and it being used in a single place that can
-be written shorter without it, remove this #define.
+This commit reduces the X86_32 reboot_dmi_table and the X86_64
+pci_reboot_dmi_table into a single table with a single set of
+functions (e.g., only 1 call to core_initcall).
 
-Along the same lines, simplify __ticket_spin_is_locked()'s main
-expression, which was the more convoluted way because of needs
-that went away with the recent type changes by Jeremy.
+The table entries that use set_bios_reboot are grouped together
+inside a #define CONFIG_X86_32 block.
 
-This is pure cleanup, no functional change intended.
+Note that there's a single entry that uses set_kbd_reboot, which
+used to be available only on X86_32.  This commit moves that
+entry outside the X86_32 block because it seems it never should
+have been in there.  There's multiple places in reboot.c that
+assume KBD is valid regardless of X86_32/X86_64.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/4F2C06020200007800071066@nat28.tlf.novell.com
+Signed-off-by: Michael D Labriola <michael.d.labriola@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Link: http://lkml.kernel.org/n/tip-lv3aliubas2l3aenq8v3uklk@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/spinlock.h       |    4 ++--
- arch/x86/include/asm/spinlock_types.h |    1 -
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/kernel/reboot.c |  176 ++++++++++++++++++++++------------------------
+ 1 files changed, 83 insertions(+), 93 deletions(-)
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index a82c2bf..76bfa2c 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -88,14 +88,14 @@ static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
- {
- 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return !!(tmp.tail ^ tmp.head);
-+	return tmp.tail != tmp.head;
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index d840e69..e739737 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -150,6 +150,80 @@ static int __init set_bios_reboot(const struct dmi_system_id *d)
+ 	return 0;
  }
  
- static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
++extern const unsigned char machine_real_restart_asm[];
++extern const u64 machine_real_restart_gdt[3];
++
++void machine_real_restart(unsigned int type)
++{
++	void *restart_va;
++	unsigned long restart_pa;
++	void (*restart_lowmem)(unsigned int);
++	u64 *lowmem_gdt;
++
++	local_irq_disable();
++
++	/* Write zero to CMOS register number 0x0f, which the BIOS POST
++	   routine will recognize as telling it to do a proper reboot.  (Well
++	   that's what this book in front of me says -- it may only apply to
++	   the Phoenix BIOS though, it's not clear).  At the same time,
++	   disable NMIs by setting the top bit in the CMOS address register,
++	   as we're about to do peculiar things to the CPU.  I'm not sure if
++	   `outb_p' is needed instead of just `outb'.  Use it to be on the
++	   safe side.  (Yes, CMOS_WRITE does outb_p's. -  Paul G.)
++	 */
++	spin_lock(&rtc_lock);
++	CMOS_WRITE(0x00, 0x8f);
++	spin_unlock(&rtc_lock);
++
++	/*
++	 * Switch back to the initial page table.
++	 */
++	load_cr3(initial_page_table);
++
++	/* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
++	   this on booting to tell it to "Bypass memory test (also warm
++	   boot)".  This seems like a fairly standard thing that gets set by
++	   REBOOT.COM programs, and the previous reset routine did this
++	   too. */
++	*((unsigned short *)0x472) = reboot_mode;
++
++	/* Patch the GDT in the low memory trampoline */
++	lowmem_gdt = TRAMPOLINE_SYM(machine_real_restart_gdt);
++
++	restart_va = TRAMPOLINE_SYM(machine_real_restart_asm);
++	restart_pa = virt_to_phys(restart_va);
++	restart_lowmem = (void (*)(unsigned int))restart_pa;
++
++	/* GDT[0]: GDT self-pointer */
++	lowmem_gdt[0] =
++		(u64)(sizeof(machine_real_restart_gdt) - 1) +
++		((u64)virt_to_phys(lowmem_gdt) << 16);
++	/* GDT[1]: 64K real mode code segment */
++	lowmem_gdt[1] =
++		GDT_ENTRY(0x009b, restart_pa, 0xffff);
++
++	/* Jump to the identity-mapped low memory code */
++	restart_lowmem(type);
++}
++#ifdef CONFIG_APM_MODULE
++EXPORT_SYMBOL(machine_real_restart);
++#endif
++
++#endif /* CONFIG_X86_32 */
++
++/*
++ * Some Apple MacBook and MacBookPro's needs reboot=p to be able to reboot
++ */
++static int __init set_pci_reboot(const struct dmi_system_id *d)
++{
++	if (reboot_type != BOOT_CF9) {
++		reboot_type = BOOT_CF9;
++		printk(KERN_INFO "%s series board detected. "
++		       "Selecting PCI-method for reboots.\n", d->ident);
++	}
++	return 0;
++}
++
+ static int __init set_kbd_reboot(const struct dmi_system_id *d)
  {
- 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
-+	return (__ticket_t)(tmp.tail - tmp.head) > 1;
+ 	if (reboot_type != BOOT_KBD) {
+@@ -159,7 +233,11 @@ static int __init set_kbd_reboot(const struct dmi_system_id *d)
+ 	return 0;
  }
  
- #ifndef CONFIG_PARAVIRT_SPINLOCKS
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index 8ebd5df..ad0ad07 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -16,7 +16,6 @@ typedef u32 __ticketpair_t;
- #endif
++/* This is a single dmi_table handling all reboot quirks.  Note that
++ * REBOOT_BIOS is only available for 32bit
++ */
+ static struct dmi_system_id __initdata reboot_dmi_table[] = {
++#ifdef CONFIG_X86_32
+ 	{	/* Handle problems with rebooting on Dell E520's */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell E520",
+@@ -309,6 +387,8 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
+ 		},
+ 	},
++#endif /* CONFIG_X86_32 */
++
+ 	{ /* Handle reboot issue on Acer Aspire one */
+ 		.callback = set_kbd_reboot,
+ 		.ident = "Acer Aspire One A110",
+@@ -317,96 +397,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "AOA110"),
+ 		},
+ 	},
+-	{ }
+-};
+-
+-static int __init reboot_init(void)
+-{
+-	/* Only do the DMI check if reboot_type hasn't been overridden
+-	 * on the command line
+-	 */
+-	if (reboot_default) {
+-		dmi_check_system(reboot_dmi_table);
+-	}
+-	return 0;
+-}
+-core_initcall(reboot_init);
+-
+-extern const unsigned char machine_real_restart_asm[];
+-extern const u64 machine_real_restart_gdt[3];
+-
+-void machine_real_restart(unsigned int type)
+-{
+-	void *restart_va;
+-	unsigned long restart_pa;
+-	void (*restart_lowmem)(unsigned int);
+-	u64 *lowmem_gdt;
+-
+-	local_irq_disable();
+-
+-	/* Write zero to CMOS register number 0x0f, which the BIOS POST
+-	   routine will recognize as telling it to do a proper reboot.  (Well
+-	   that's what this book in front of me says -- it may only apply to
+-	   the Phoenix BIOS though, it's not clear).  At the same time,
+-	   disable NMIs by setting the top bit in the CMOS address register,
+-	   as we're about to do peculiar things to the CPU.  I'm not sure if
+-	   `outb_p' is needed instead of just `outb'.  Use it to be on the
+-	   safe side.  (Yes, CMOS_WRITE does outb_p's. -  Paul G.)
+-	 */
+-	spin_lock(&rtc_lock);
+-	CMOS_WRITE(0x00, 0x8f);
+-	spin_unlock(&rtc_lock);
+-
+-	/*
+-	 * Switch back to the initial page table.
+-	 */
+-	load_cr3(initial_page_table);
+-
+-	/* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
+-	   this on booting to tell it to "Bypass memory test (also warm
+-	   boot)".  This seems like a fairly standard thing that gets set by
+-	   REBOOT.COM programs, and the previous reset routine did this
+-	   too. */
+-	*((unsigned short *)0x472) = reboot_mode;
+-
+-	/* Patch the GDT in the low memory trampoline */
+-	lowmem_gdt = TRAMPOLINE_SYM(machine_real_restart_gdt);
+-
+-	restart_va = TRAMPOLINE_SYM(machine_real_restart_asm);
+-	restart_pa = virt_to_phys(restart_va);
+-	restart_lowmem = (void (*)(unsigned int))restart_pa;
+-
+-	/* GDT[0]: GDT self-pointer */
+-	lowmem_gdt[0] =
+-		(u64)(sizeof(machine_real_restart_gdt) - 1) +
+-		((u64)virt_to_phys(lowmem_gdt) << 16);
+-	/* GDT[1]: 64K real mode code segment */
+-	lowmem_gdt[1] =
+-		GDT_ENTRY(0x009b, restart_pa, 0xffff);
+-
+-	/* Jump to the identity-mapped low memory code */
+-	restart_lowmem(type);
+-}
+-#ifdef CONFIG_APM_MODULE
+-EXPORT_SYMBOL(machine_real_restart);
+-#endif
+-
+-#endif /* CONFIG_X86_32 */
+-
+-/*
+- * Some Apple MacBook and MacBookPro's needs reboot=p to be able to reboot
+- */
+-static int __init set_pci_reboot(const struct dmi_system_id *d)
+-{
+-	if (reboot_type != BOOT_CF9) {
+-		reboot_type = BOOT_CF9;
+-		printk(KERN_INFO "%s series board detected. "
+-		       "Selecting PCI-method for reboots.\n", d->ident);
+-	}
+-	return 0;
+-}
+-
+-static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
+ 	{	/* Handle problems with rebooting on Apple MacBook5 */
+ 		.callback = set_pci_reboot,
+ 		.ident = "Apple MacBook5",
+@@ -474,17 +464,17 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
+ 	{ }
+ };
  
- #define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
--#define TICKET_MASK	((__ticket_t)((1 << TICKET_SHIFT) - 1))
+-static int __init pci_reboot_init(void)
++static int __init reboot_init(void)
+ {
+ 	/* Only do the DMI check if reboot_type hasn't been overridden
+ 	 * on the command line
+ 	 */
+ 	if (reboot_default) {
+-		dmi_check_system(pci_reboot_dmi_table);
++		dmi_check_system(reboot_dmi_table);
+ 	}
+ 	return 0;
+ }
+-core_initcall(pci_reboot_init);
++core_initcall(reboot_init);
  
- typedef struct arch_spinlock {
- 	union {
+ static inline void kb_wait(void)
+ {
