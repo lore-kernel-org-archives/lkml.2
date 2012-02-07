@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab2BGVPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 16:15:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8682 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756581Ab2BGVPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 16:15:13 -0500
-Message-ID: <4F31945B.5000304@redhat.com>
-Date: Tue, 07 Feb 2012 21:15:07 +0000
-From: Pedro Alves <palves@redhat.com>
+	id S1756942Ab2BGVST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 16:18:19 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42099 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066Ab2BGVSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 16:18:17 -0500
+Message-ID: <4F319514.7030604@gmail.com>
+Date: Tue, 07 Feb 2012 14:18:12 -0700
+From: David Ahern <dsahern@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@parallels.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
-References: <1328267483-3225342-1-git-send-email-avagin@openvz.org> <20120203162519.GB805@google.com> <4F2C0F13.70709@parallels.com> <20120203165132.GA5636@redhat.com> <4F31848A.9070406@redhat.com> <20120207205639.GJ27437@moon>
-In-Reply-To: <20120207205639.GJ27437@moon>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf: allow command to attach local data to thread/evsel structs
+References: <4F316964.2050900@gmail.com> <20120207201052.GE2172@infradead.org>
+In-Reply-To: <20120207201052.GE2172@infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 08:56 PM, Cyrill Gorcunov wrote:
-> On Tue, Feb 07, 2012 at 08:07:38PM +0000, Pedro Alves wrote:
->> On 02/03/2012 04:51 PM, Oleg Nesterov wrote:
->>> On 02/03, Pavel Emelyanov wrote:
->>
->>>> Because there's no need for current to get this value of himself, but can
->>>> be useful for e.g. gdb.
->>>
->>> OK, perhaps this makes sense, I do not know.
->>>
->>> Jan, Pedro, do you think gdb can use PTRACE_GET_TID_ADDRESS (returns
->>> tracee->clear_child_tid) ?
->>
->> Off hand, I'm not picturing a use.  But that may well just mean I'm lacking
->> imagination.  Andrew, Pavel, did you have a particular idea in mind when you
->> said it may be useful for debugging a multithreading program / gdb?
->>
+
+
+On 02/07/2012 01:10 PM, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Feb 07, 2012 at 11:11:48AM -0700, David Ahern escreveu:
+>> This is an API I have been using for some 'local' commands that process
+>> perf events. It allows the commands to attach data to events and threads
+>> and avoid local caching and lookups.
 > 
-> Might not we set up hw watchpoint on this address and get interrupt
-> before pthread-join will find it? (To be fair I'm not sure if such
-> trick will work, didn't test ;)
+> In the kernel proper we try to get away with this pattern using
+> container_of where possible.
+> 
+> Here tho the structures are created in library functions.
 
-For a debugger wanting to know when a pthread_join was about to return?
-Might be simpler to put a breakpoint (or stap probe, or some such) inside
-pthread_join.
+exactly.
 
-It's the kernel that writes to this address, so I've no
-idea if the watchpoint trap ends up visible on userspace.  Which thread
-would it be reported to, given that this is cleared when the child
-is gone, I have no idea either.
+> 
+> The symbol library has this symbol_conf.priv_size + symbol__priv() to do
+> what you want while avoiding two allocs + one pointer in a core
+> structure.
 
--- 
-Pedro Alves
+Ok. Interesting. Somewhat of a hidden allocation. Symbols can't come and
+go like threads.
+
+> 
+> I think we either use {thread_conf,evsel_conf} for global configuration
+> options for these two core data structures or we just provide some
+> optional, per perf_tool allocator.
+
+Meaning conf's that parallel symbol_conf -- allocated and 'owned' by the
+perf library but exported for the user to set values. In this case
+handlers are needed for allocation and free as instances come and go?
+e.g., thread__new invokes thread_conf.allocator if defined and
+thread__priv returns a pointer to private data.
+
+> 
+> Yeah, that sounds extreme, but hey, this is a profiler, we ought to eat
+> our own dog food, right?
+
+um, as a library to be used by other commands libperf.so is an event
+collector and processor; profiler is just one use.
+
+> 
+> - Arnaldo
+> 
+> P.S.: Are your tools too specific or are they upstreamable?
+
+Too specific.
+
+One uses context-switch SW events to dump a time history of what task is
+running on what processor, how long it ran and how long between
+schedulings. The other uses a custom SW event to track futex's. In both
+cases the solutions are constrained by an older kernel with limited
+trace support - and too much effort to backport it.
+
+Key points are that in processing events I want to track data that is
+task specific (e.g., last scheduled out) and event specific (e.g., time
+last seen by cpu).
+
+David
