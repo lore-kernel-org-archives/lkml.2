@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab2BGA0Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 19:26:25 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:2829 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab2BGA0Y (ORCPT
+	id S1756433Ab2BGA0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 19:26:35 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:46304 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756353Ab2BGA0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 19:26:24 -0500
-Message-ID: <4F306FAF.7020500@cavium.com>
-Date: Mon, 06 Feb 2012 16:26:23 -0800
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Mon, 6 Feb 2012 19:26:33 -0500
+X-Sasl-enc: cKV/IE1jFS+DERC8+acaXMbFHTcvhsacnBKHVU3KyCUj 1328574392
+Date: Mon, 6 Feb 2012 16:15:58 -0800
+From: Greg KH <greg@kroah.com>
+To: Adam Jackson <ajax@redhat.com>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de
+Subject: Re: [PATCH] char/mem: Make /dev/port less obviously broken (v0)
+Message-ID: <20120207001558.GA30840@kroah.com>
+References: <1328569322-19165-1-git-send-email-ajax@redhat.com>
 MIME-Version: 1.0
-To: Venkatesh Pallipadi <venki@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-References: <1328560933-3037-1-git-send-email-venki@google.com>
-In-Reply-To: <1328560933-3037-1-git-send-email-venki@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Feb 2012 00:26:23.0797 (UTC) FILETIME=[1F487E50:01CCE52F]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328569322-19165-1-git-send-email-ajax@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2012 12:42 PM, Venkatesh Pallipadi wrote:
-[...]
-> index 5bed94e..6a56cb0 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -170,6 +170,11 @@ config GENERIC_TIME_VSYSCALL
->   	bool
->   	default X86_64
->
-> +config AVOID_IPI_ON_IDLE
-> +	bool
-> +	depends on X86_64
-> +	default X86_64
-> +
+On Mon, Feb 06, 2012 at 06:02:02PM -0500, Adam Jackson wrote:
+> Did you know /dev/port turns all reads and writes into a stream of inb
+> and outb?  Turns out hardware really does care about I/O cycle size
+> though, and if you're trying to do an outl four outb's is very much not
+> the same thing.
+> 
+> However, someone somewhere probably built some code and hardware that
+> relies on that behaviour.  Plus, userspace needs to be able to tell
+> whether the kernel will do the right thing, and fall back to raw port
+> access if not.  So add an ioctl to request new 'strict' semantics, which
+> allows only exactly 1/2/4 byte cycles and translates them into the
+> corresponding I/O cycle size.  This matches the behaviour of sysfs's
+> resourceN files for I/O BARs.
 
-Can you get rid of this part...
+Who would use this new ioctl?  And if it's been working ok until now,
+why is it needed?
 
->   config ARCH_HAS_CPU_RELAX
->   	def_bool y
->
-[...]
-> diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
-> index f50e7fb..340c4e9 100644
-> --- a/arch/x86/kernel/acpi/cstate.c
-> +++ b/arch/x86/kernel/acpi/cstate.c
-> @@ -161,6 +161,14 @@ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
->    */
->   void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
->   {
-> +#ifdef CONFIG_AVOID_IPI_ON_IDLE
+If you want something "new" like this, why not just create /dev/ioport
+or something like that to always use the proper alignment and not need
+an ioctl at all?
 
+thanks,
 
-... and change all of these to #ifdef CONFIG_64BIT
-
-> +	int oldval, cpu = smp_processor_id();
-> +
-.
-.
-.
-
-Thanks,
-David Daney
+greg k-h
