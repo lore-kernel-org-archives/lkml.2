@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab2BGSZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 13:25:20 -0500
-Received: from 8bytes.org ([88.198.83.132]:48337 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756157Ab2BGSZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 13:25:19 -0500
-Date: Tue, 7 Feb 2012 19:25:15 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU fixes for v3.3-rc2
-Message-ID: <20120207182514.GA2866@8bytes.org>
+	id S1756188Ab2BGS0G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 13:26:06 -0500
+Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:39953 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753706Ab2BGS0E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 13:26:04 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120207001818.GB30840@kroah.com>
+References: <1326878467-17766-1-git-send-email-amit.kachhap@linaro.org>
+	<20120206165658.GA28687@atrey.karlin.mff.cuni.cz>
+	<20120206170348.GA19749@kroah.com>
+	<CAK44p22FWxiXyBA1zbiuO0cbDScTSMRSV9pFDDMxXsc43ebGpw@mail.gmail.com>
+	<20120207001818.GB30840@kroah.com>
+Date: Tue, 7 Feb 2012 10:26:02 -0800
+Message-ID: <CAK44p23TPO2r=4vuziGo9Ua42fqVNtQjGMWD8R00mDs7o_vzwg@mail.gmail.com>
+Subject: Re: [linux-pm] [RFC PATCH] thermal: Add support to report cooling
+ statistics achieved by cooling devices
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Greg KH <greg@kroah.com>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        rob.lee@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 6 February 2012 16:18, Greg KH <greg@kroah.com> wrote:
+> On Mon, Feb 06, 2012 at 03:16:17PM -0800, Amit Kachhap wrote:
+>> On 6 February 2012 09:03, Greg KH <greg@kroah.com> wrote:
+>> > On Mon, Feb 06, 2012 at 05:56:58PM +0100, Pavel Machek wrote:
+>> >> Hi!
+>> >>
+>> >> > Add a sysfs node code to report effective cooling of all cooling devices
+>> >> > attached to each trip points of a thermal zone. The cooling data reported
+>> >> > will be absolute if the higher temperature trip points are arranged first
+>> >> > otherwise the cooling stats is the cumulative effect of the earlier
+>> >> > invoked cooling handlers.
+>> >> >
+>> >> > The basic assumption is that cooling devices will bring down the temperature
+>> >> > in a symmetric manner and those statistics can be stored back and used for
+>> >> > further tuning of the system.
+>> >>
+>> >> /sys fs should be one-value-per-file, talk to gregkh.
+>> >
+>> > That's correct.
+>> >
+>> > Why not use debugfs for this instead?
+>> >
+>> > thanks,
+>> >
+>> > greg k-h
+>>
+>> Thanks Greg/Pavel for looking into the patch.
+>> Basically I checked the places where single sysfs entry is showing
+>> more then 1 output. And
+>> 1) /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state
+>> 2) /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table
+>> are the places where the output is more than 1 value.
+>
+> Yes, those are two known-bad files, whose files will change soon and
+> move to debugfs.
+>
+> Just because you found 2, instead of the thousands of other properly
+> formatted files, does not mean you are allowed to create something like
+> this.
+>
+>> Anyway I can enclose this sysfs inside CONFIG_THERMAL_COOLING_STATS macro.
+>
+> No, you can not create it at all in sysfs, if you really need such a
+> large single file, use debugfs instead, that is what it is there for.
+>
+> Again, one-value-per-file is the sysfs rule, and has been for a decade
+> now, please don't think this is a new thing.
+>
+> greg k-h
 
---M9NhX3UHpAaciwkO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Linus,
-
-The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
-
-  Linux 3.3-rc2 (2012-01-31 13:31:54 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git iommu/fixes
-
-Joerg Roedel (2):
-      iommu/amd: Work around broken IVRS tables
-      iommu/msm: Fix error handling in msm_iommu_unmap()
-
- drivers/iommu/amd_iommu.c |    3 +++
- drivers/iommu/msm_iommu.c |    7 +------
- 2 files changed, 4 insertions(+), 6 deletions(-)
-
-One patch fixes an bug in the ARM/MSM IOMMU code which returned sucess
-in the unmap function even when an error occured and the other patch
-adds a workaround into the AMD IOMMU driver to better handle broken IVRS
-ACPI tables (this patch fixes the case when a device is not listed in
-the table but actually translated by the iommu).
-The commit-id to pull on my local machine is:
-
-	05df1f3c2afaef5672627f2b7095f0d4c4dbc3a0
-
-Please pull.
-
-Thanks,
-
-	Joerg
-
-
---M9NhX3UHpAaciwkO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPMWyKAAoJECvwRC2XARrj5AMQANZMEwUBU7+fL1sNL0U51WFf
-u/doJqfXlsV1okXAOqOqF+LNycsfwjoyZL0MMqmRXkc8hxRfLrKUSQd8GuzSbLqH
-yTldHxrwTeegrkqakUNj0OMoDjn2SItdDrwDdgk7QMDGfrNXHY3NnQ55i0feENiZ
-XFLoBekcbfuAKEFn7BjPUYc/ZKxqQEGB6/580s5QtJhzFHUG89HK5hQHQngPZOlp
-2u5UjgddOnLj+CKNlIfxv+3Mfbn/hJJWZEt0sfsm4NWjOBwYxEeYxQozw5XUGlZX
-Fx1AB9dNM51omHk15zTG5xyOZC9PXRD21Q53smEEZkMAxFp935IbLZFM89ncgrzM
-wjdDXN9r9FnhVVf0ywHMSx85Z50UR/vLLaLTYXjuKbQkGPMQOEhgu5eAr6rMVMb1
-oiuW7X6W9fHRNv5l+oPU8pY/7RwBj+7h4gin2RdxVaTJoW4pGmLsdMxV9Wv6sbJo
-Ir4egkRflTV/gzsglVKdd7sd2db6BBwK9ipEgkvzfxsR036FCTlQ8eyMWKQ8VrrX
-QgCiOjzGOWHJVhsAWcrVag3nrDkorQCvg8BPcvy8bNZhU4Il3MAOliYk1Z0cNCW8
-6mvQBD6CuMz7BNd6tVnMIuztQ9dJPLD7kxok4xqA8a9JdKi/NXA3MOxX+OOUQXEb
-4erP/s/OnwT4RU6/o6HL
-=NYj8
------END PGP SIGNATURE-----
-
---M9NhX3UHpAaciwkO--
+Ok I will follow one-value-per-file rule for sysfs file. Thanks
