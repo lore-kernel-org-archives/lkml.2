@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab2BGNII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 08:08:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47151 "EHLO
+	id S1756746Ab2BGNIx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 08:08:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40850 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756239Ab2BGNIG (ORCPT
+	with ESMTP id S1756126Ab2BGNIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 08:08:06 -0500
-Message-ID: <4F312230.7020507@gmail.com>
-Date: Tue, 07 Feb 2012 21:08:00 +0800
+	Tue, 7 Feb 2012 08:08:50 -0500
+Message-ID: <4F31225C.1020703@gmail.com>
+Date: Tue, 07 Feb 2012 21:08:44 +0800
 From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
@@ -18,8 +18,7 @@ CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Stefan Hajnoczi <stefanha@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3 2/3] KVM: x86: add tracepoints to trace mmio begin and
- complete
+Subject: [PATCH v3 3/3] KVM: perf: kvm events analysis tool
 References: <4F3121DE.7020502@linux.vnet.ibm.com>
 In-Reply-To: <4F3121DE.7020502@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
@@ -28,143 +27,1055 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'perf kvm-events' will use kvm_exit and kvm_mmio(read...) to calculate
-mmio read emulated time for the old kernel, in order to trace mmio read
-event more exactly, we add kvm_mmio_begin to trace the time when mmio read
-begins
+Add 'perf kvm-events' support to analyze kvm vmexit/mmio/ioport smartly
 
-Also, add kvm_mmio_done to trace the time when mmio/pio is completed
+Usage:
+
+- trace kvm events:
+	perf kvm-events record, or, if other tracepoints are also
+	interesting, we can append the events like this:
+	perf kvm-events record -e timer:*
+
+- show the result:
+	perf kvm-events report
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/x86.c         |   21 ++++++++++++++-------
- include/trace/events/kvm.h |   37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 51 insertions(+), 7 deletions(-)
+ tools/perf/Documentation/perf-kvm-events.txt |   56 ++
+ tools/perf/Makefile                          |    1 +
+ tools/perf/builtin-kvm-events.c              |  911 ++++++++++++++++++++++++++
+ tools/perf/builtin.h                         |    1 +
+ tools/perf/command-list.txt                  |    1 +
+ tools/perf/perf.c                            |    1 +
+ 6 files changed, 971 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/Documentation/perf-kvm-events.txt
+ create mode 100644 tools/perf/builtin-kvm-events.c
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 2bd77a3..6750978 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3766,9 +3766,12 @@ mmio:
- 	/*
- 	 * Is this MMIO handled locally?
- 	 */
-+	trace_kvm_mmio_begin(vcpu->vcpu_id, write, gpa);
- 	handled = ops->read_write_mmio(vcpu, gpa, bytes, val);
--	if (handled == bytes)
-+	if (handled == bytes) {
-+		trace_kvm_mmio_done(vcpu->vcpu_id);
- 		return X86EMUL_CONTINUE;
-+	}
+diff --git a/tools/perf/Documentation/perf-kvm-events.txt b/tools/perf/Documentation/perf-kvm-events.txt
+new file mode 100644
+index 0000000..d46789a
+--- /dev/null
++++ b/tools/perf/Documentation/perf-kvm-events.txt
+@@ -0,0 +1,56 @@
++perf-kvm-events(1)
++============
++
++NAME
++----
++perf-kvm-events - Analyze kvm events
++
++SYNOPSIS
++--------
++[verse]
++'perf kvm-events' {record|report}
++
++DESCRIPTION
++-----------
++You can analyze some crucial kvm events and statistics with this
++'perf kvm-events' command. Currently, vmexit, mmio and ioport events
++are supported.
++
++  'perf kvm-events record <command>' records kvm events(vmexit,
++  mmio and ioport) and the events between start and end <command>.
++  And this command produces the file "perf.data" which contains
++  tracing results of kvm events.
++
++  'perf kvm-events report' reports statistical data which includes
++  events handled time, samples, and so on.
++
++COMMON OPTIONS
++--------------
++
++-i::
++--input=<file>::
++        Input file name. (default: perf.data unless stdin is a fifo)
++
++-v::
++--verbose::
++        Be more verbose (show symbol address, etc).
++
++-D::
++--dump-raw-trace::
++        Dump raw trace in ASCII.
++
++REPORT OPTIONS
++--------------
++--vcpu=<value>::
++	analyze events which occures on this vcpu
++
++--events=<value>::
++	events to be analyzed. Possible values: vmexit, mmio, ioport.
++-k::
++--key=<value>::
++        Sorting key. Possible values: sample(default, sort by samples number),
++time(sort by average time).
++
++SEE ALSO
++--------
++linkperf:perf[1]
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index ac86d67..ee43451 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -382,6 +382,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-probe.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-kmem.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
++BUILTIN_OBJS += $(OUTPUT)builtin-kvm-events.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-test.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
 
- 	gpa += handled;
- 	bytes -= handled;
-@@ -3934,6 +3937,7 @@ static int emulator_pio_in_out(struct kvm_vcpu *vcpu, int size,
- 	vcpu->arch.pio.size = size;
-
- 	if (!kernel_pio(vcpu, vcpu->arch.pio_data)) {
-+		trace_kvm_mmio_done(vcpu->vcpu_id);
- 		vcpu->arch.pio.count = 0;
- 		return 1;
- 	}
-@@ -4544,9 +4548,7 @@ restart:
- 		inject_emulated_exception(vcpu);
- 		r = EMULATE_DONE;
- 	} else if (vcpu->arch.pio.count) {
--		if (!vcpu->arch.pio.in)
--			vcpu->arch.pio.count = 0;
--		else
-+		if (vcpu->arch.pio.in)
- 			writeback = false;
- 		r = EMULATE_DO_MMIO;
- 	} else if (vcpu->mmio_needed) {
-@@ -4577,8 +4579,6 @@ int kvm_fast_pio_out(struct kvm_vcpu *vcpu, int size, unsigned short port)
- 	unsigned long val = kvm_register_read(vcpu, VCPU_REGS_RAX);
- 	int ret = emulator_pio_out_emulated(&vcpu->arch.emulate_ctxt,
- 					    size, port, &val, 1);
--	/* do not return to emulator after return from userspace */
--	vcpu->arch.pio.count = 0;
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(kvm_fast_pio_out);
-@@ -5407,6 +5407,11 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
- 	if (!(vcpu->arch.pio.count || vcpu->mmio_needed))
- 		return 1;
-
-+	if (vcpu->arch.pio.count && !vcpu->arch.pio.in) {
-+		vcpu->arch.pio.count = 0;
-+		goto exit;
+diff --git a/tools/perf/builtin-kvm-events.c b/tools/perf/builtin-kvm-events.c
+new file mode 100644
+index 0000000..8388c54
+--- /dev/null
++++ b/tools/perf/builtin-kvm-events.c
+@@ -0,0 +1,911 @@
++#include "builtin.h"
++#include "perf.h"
++#include "util/util.h"
++#include "util/cache.h"
++#include "util/symbol.h"
++#include "util/thread.h"
++#include "util/header.h"
++#include "util/parse-options.h"
++#include "util/trace-event.h"
++#include "util/debug.h"
++#include "util/debugfs.h"
++#include "util/session.h"
++#include "util/tool.h"
++
++#include <math.h>
++
++#include <linux/kvm.h>
++
++#include "../../arch/x86/include/asm/svm.h"
++#include "../../arch/x86/include/asm/vmx.h"
++#include "../../arch/x86/include/asm/kvm_host.h"
++
++struct event_key {
++	#define INVALID_KEY	(~0ULL)
++	u64 key;
++	int info;
++};
++
++struct kvm_events_ops {
++	bool (*is_begin_event)(struct event *event, void *data,
++			       struct event_key *key);
++	bool (*is_end_event)(struct event *event, void *data,
++			     struct event_key *key);
++	void (*decode_key)(struct event_key *key, char decode[20]);
++	const char *name;
++};
++
++static void exit_event_get_key(struct event *event, void *data,
++			       struct event_key *key)
++{
++	key->info = 0;
++	key->key = raw_field_value(event, "exit_reason", data);
++}
++
++static bool kvm_exit_event(struct event *event)
++{
++	return !strcmp(event->name, "kvm_exit");
++}
++
++static bool exit_event_begin(struct event *event, void *data,
++			     struct event_key *key)
++{
++	if (kvm_exit_event(event)) {
++		exit_event_get_key(event, data, key);
++		return true;
 +	}
 +
- 	if (vcpu->mmio_needed) {
- 		vcpu->mmio_needed = 0;
- 		if (!vcpu->mmio_is_write)
-@@ -5423,7 +5428,7 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
- 			return 0;
- 		}
- 		if (vcpu->mmio_is_write)
--			return 1;
++	return false;
++}
++
++static bool kvm_entry_event(struct event *event)
++{
++	return !strcmp(event->name, "kvm_entry");
++}
++
++static bool exit_event_end(struct event *event, void *data __unused,
++			   struct event_key *key __unused)
++{
++	return kvm_entry_event(event);
++}
++
++struct exit_reasons_table {
++	unsigned long exit_code;
++	const char *reason;
++};
++
++struct exit_reasons_table vmx_exit_reasons[] = {
++	VMX_EXIT_REASONS
++};
++
++struct exit_reasons_table svm_exit_reasons[] = {
++	SVM_EXIT_REASONS
++};
++
++static int get_cpu_isa(void)
++{
++	FILE *f;
++	char line[512], vendor[64];
++	int ret;
++
++	f = fopen("/proc/cpuinfo", "r");
++	if (!f)
++		die("/proc/cpuinfo does not exist.\n");
++
++	while (fgets(line, sizeof(line), f))
++		if (sscanf(line, "vendor_id	: %s", vendor) > 0) {
++			if (strstr(vendor, "Intel"))
++				ret = 1;
++			else if (strstr(vendor, "AMD"))
++				ret = 0;
++			else
++				break;
 +			goto exit;
- 		vcpu->mmio_read_completed = 1;
- 	}
- 	vcpu->srcu_idx = srcu_read_lock(&vcpu->kvm->srcu);
-@@ -5431,6 +5436,8 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
- 	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
- 	if (r != EMULATE_DONE)
- 		return 0;
++		}
++
++	die("CPU vendor is unknown.\n");
 +exit:
-+	trace_kvm_mmio_done(vcpu->vcpu_id);
- 	return 1;
- }
++	fclose(f);
++	return ret;
++}
++
++static const char *get_exit_reason(u64 exit_code)
++{
++	static int isa = -1;
++	int table_size = ARRAY_SIZE(svm_exit_reasons);
++	struct exit_reasons_table *table = svm_exit_reasons;
++
++	/*
++	 * Do not use 'isa' recorded in kvm_exit tracepoint since it is not
++	 * traced in the old kernel.
++	 */
++	if (isa < 0)
++		isa = get_cpu_isa();
++
++	if (isa == 1) {
++		table = vmx_exit_reasons;
++		table_size = ARRAY_SIZE(vmx_exit_reasons);
++	}
++
++	while (table_size--) {
++		if (table->exit_code == exit_code)
++			return table->reason;
++		table++;
++	}
++
++	die("unknown kvm exit code:%ld on %s\n", exit_code,
++						isa ? "VMX" : "SVM");
++}
++
++static void exit_event_decode_key(struct event_key *key, char decode[20])
++{
++	const char *exit_reason = get_exit_reason(key->key);
++
++	snprintf(decode, 20, "%s", exit_reason);
++}
++
++static struct kvm_events_ops exit_events = {
++	.is_begin_event = exit_event_begin,
++	.is_end_event = exit_event_end,
++	.decode_key = exit_event_decode_key,
++	.name = "VM-EXIT"
++};
++
++/*
++ * For the old kernel, we treat:
++ * the time of MMIO write: kvm_mmio(KVM_TRACE_MMIO_WRITE...) -> kvm_entry
++ * the time of MMIO read: kvm_exit -> kvm_mmio(KVM_TRACE_MMIO_READ...).
++ *
++ * For the new kernel, we use kvm_mmio_begin and kvm_mmio_done to make
++ * things better.
++ */
++static void mmio_event_get_key(struct event *event, void *data,
++				struct event_key *key)
++{
++	key->key = raw_field_value(event, "gpa", data);
++	key->info = raw_field_value(event, "type", data);
++}
++
++#define KVM_TRACE_MMIO_READ_UNSATISFIED 0
++#define KVM_TRACE_MMIO_READ 1
++#define KVM_TRACE_MMIO_WRITE 2
++
++static bool kvm_mmio_done_event(struct event *event)
++{
++	return !strcmp(event->name, "kvm_mmio_done");
++}
++
++static bool mmio_event_begin(struct event *event, void *data,
++			     struct event_key *key)
++{
++	/* MMIO read begin in old kernel. */
++	if (kvm_exit_event(event))
++		return true;
++
++	/* MMIO write begin in old kernel. */
++	if (!strcmp(event->name, "kvm_mmio") &&
++	      raw_field_value(event, "type", data) == KVM_TRACE_MMIO_WRITE) {
++		mmio_event_get_key(event, data, key);
++		return true;
++	}
++
++	/* MMIO read/write begin in new kernel. */
++	if (!strcmp(event->name, "kvm_mmio_begin")) {
++		mmio_event_get_key(event, data, key);
++		return true;
++	}
++
++	return false;
++}
++
++static bool mmio_event_end(struct event *event,  void *data,
++			   struct event_key *key)
++{
++	/* MMIO write end in old kernel. */
++	if (kvm_entry_event(event))
++		return true;
++
++	/* MMIO read end in the old kernel.*/
++	if (!strcmp(event->name, "kvm_mmio") &&
++	      raw_field_value(event, "type", data) == KVM_TRACE_MMIO_READ) {
++		mmio_event_get_key(event, data, key);
++		return true;
++	}
++
++	/* MMIO read/write end event in the new kernel.*/
++	return kvm_mmio_done_event(event);
++}
++
++static void mmio_event_decode_key(struct event_key *key, char decode[20])
++{
++	snprintf(decode, 20, "%#lx:%s", key->key,
++			      key->info == KVM_TRACE_MMIO_WRITE ? "W" : "R");
++}
++
++static struct kvm_events_ops mmio_events = {
++	.is_begin_event = mmio_event_begin,
++	.is_end_event = mmio_event_end,
++	.decode_key = mmio_event_decode_key,
++	.name = "MMIO Access"
++};
++
++/*
++ * For the old kernel, the time of emulation pio access is from kvm_pio to
++ * kvm_entry. In the new kernel, the end time is indicated by kvm_mmio_done.
++ */
++static void ioport_event_get_key(struct event *event, void *data,
++				 struct event_key *key)
++{
++	key->key = raw_field_value(event, "port", data);
++	key->info = raw_field_value(event, "rw", data);
++}
++
++static bool ioport_event_begin(struct event *event, void *data,
++			       struct event_key *key)
++{
++	if (!strcmp(event->name, "kvm_pio")) {
++		ioport_event_get_key(event, data, key);
++		return true;
++	}
++
++	return false;
++}
++
++static bool ioport_event_end(struct event *event, void *data __unused,
++			     struct event_key *key __unused)
++{
++	if (kvm_entry_event(event))
++		return true;
++
++	return kvm_mmio_done_event(event);
++}
++
++static void ioport_event_decode_key(struct event_key *key, char decode[20])
++{
++	snprintf(decode, 20, "%#lx:%s", key->key, key->info ? "POUT" : "PIN");
++}
++
++static struct kvm_events_ops ioport_events = {
++	.is_begin_event = ioport_event_begin,
++	.is_end_event = ioport_event_end,
++	.decode_key = ioport_event_decode_key,
++	.name = "IO Port Access"
++};
++
++static const char *report_event = "vmexit";
++struct kvm_events_ops *events_ops;
++
++static void register_kvm_events_ops(void)
++{
++	if (!strcmp(report_event, "vmexit"))
++		events_ops = &exit_events;
++	else if (!strcmp(report_event, "mmio"))
++		events_ops = &mmio_events;
++	else if (!strcmp(report_event, "ioport"))
++		events_ops = &ioport_events;
++	else
++		die("Unknown report event:%s\n", report_event);
++}
++
++struct event_stats {
++	u64 count;
++	u64 time;
++
++	/* used to calculate stddev. */
++	double mean;
++	double M2;
++};
++
++struct kvm_event {
++	struct list_head hash_entry;
++	struct rb_node rb;
++
++	struct event_key key;
++
++	struct event_stats total;
++	struct event_stats vcpu[0]; /* max vcpus */
++};
++
++struct {
++	u64 start_time;
++	struct kvm_event *last_event;
++} *vcpu_event_record;
++
++#define EVENTS_BITS			12
++#define EVENTS_CACHE_SIZE	(1UL << EVENTS_BITS)
++
++static int kvm_max_vcpus;
++static u64 total_time;
++static u64 total_count;
++static struct list_head kvm_events_cache[EVENTS_CACHE_SIZE];
++
++#ifndef KVM_CAP_MAX_VCPUS
++#define KVM_CAP_MAX_VCPUS 66
++#endif
++
++static int kvm_max_cpus(void)
++{
++	int kvm_fd, ret;
++
++	kvm_fd = open("/dev/kvm", O_RDWR);
++	if (kvm_fd < 0)
++		die("KVM is not available.\n");
++
++	ret = ioctl(kvm_fd, KVM_CHECK_EXTENSION, KVM_CAP_MAX_VCPUS);
++
++	if (ret <= 0)
++		ret = ioctl(kvm_fd, KVM_CHECK_EXTENSION, KVM_CAP_NR_VCPUS);
++
++	if (ret <= 0)
++		die("inquiry max vcpu fail.\n");
++
++	return ret;
++}
++
++static void init_kvm_event_record(void)
++{
++	int i;
++
++	kvm_max_vcpus = kvm_max_cpus();
++
++	vcpu_event_record = zalloc(sizeof(*vcpu_event_record) * kvm_max_vcpus);
++	if (!vcpu_event_record)
++		die("zalloc.\n");
++
++	for (i = 0; i < (int)EVENTS_CACHE_SIZE; i++)
++		INIT_LIST_HEAD(&kvm_events_cache[i]);
++}
++
++static int kvm_events_hash_fn(u64 key)
++{
++	return key & (EVENTS_CACHE_SIZE - 1);
++}
++
++static struct kvm_event *kvm_alloc_init_event(struct event_key *key)
++{
++	struct kvm_event *event;
++
++	event = zalloc(sizeof(*event) +
++		       sizeof(struct event_stats) * kvm_max_vcpus);
++
++	if (!event)
++		die("Not enough memory\n");
++
++	event->key = *key;
++	return event;
++}
++
++static struct kvm_event *find_create_kvm_event(struct event_key *key)
++{
++	struct kvm_event *event;
++	struct list_head *head;
++
++	BUG_ON(key->key == INVALID_KEY);
++
++	head = &kvm_events_cache[kvm_events_hash_fn(key->key)];
++	list_for_each_entry(event, head, hash_entry)
++		if (event->key.key == key->key && event->key.info == key->info)
++			return event;
++
++	event = kvm_alloc_init_event(key);
++	list_add(&event->hash_entry, head);
++	return event;
++}
++
++#define VCPU_ID_BITS			6
++#define VCPU_ID_CACHE_SIZE	(1UL << VCPU_ID_BITS)
++
++struct kvm_tid_vcpu_id {
++	struct list_head hash_entry;
++
++	u32 tid;
++	int vcpu_id;
++};
++
++static struct list_head kvm_vcpu_id_cache[VCPU_ID_CACHE_SIZE];
++
++static int kvm_tid_hash_fn(u32 tid)
++{
++	return tid & (VCPU_ID_CACHE_SIZE - 1);
++}
++
++static int get_vcpu_id(u32 tid)
++{
++	struct list_head *head;
++	struct kvm_tid_vcpu_id *tid2pid;
++
++	head = &kvm_vcpu_id_cache[kvm_tid_hash_fn(tid)];
++	list_for_each_entry(tid2pid, head, hash_entry)
++		if (tid2pid->tid == tid)
++			return tid2pid->vcpu_id;
++
++	return -1;
++}
++
++static int get_record_vcpu_id(struct event *event, u32 tid, void *data)
++{
++	struct list_head *head;
++	struct kvm_tid_vcpu_id *tid2pid;
++	int vcpu_id;
++
++	vcpu_id = get_vcpu_id(tid);
++	if (vcpu_id >= 0)
++		return vcpu_id;
++
++	/* Only kvm_entry records vcpu id. */
++	if (!kvm_entry_event(event))
++		return -1;
++
++	head = &kvm_vcpu_id_cache[kvm_tid_hash_fn(tid)];
++
++	tid2pid = zalloc(sizeof(*tid2pid));
++	if (!tid2pid)
++		die("Not enough memory\n");
++
++	tid2pid->tid = tid;
++	vcpu_id = tid2pid->vcpu_id = raw_field_value(event, "vcpu_id", data);
++	list_add(&tid2pid->hash_entry, head);
++
++	return vcpu_id;
++}
++
++static void init_kvm_tid_to_pid(void)
++{
++	int i;
++
++	for (i = 0; i < (int)VCPU_ID_CACHE_SIZE; i++)
++		INIT_LIST_HEAD(&kvm_vcpu_id_cache[i]);
++}
++
++static void handle_begin_event(struct event_key *key, int vcpu_id,
++			       u64 timestamp)
++{
++	struct kvm_event *event = NULL;
++
++	if (key->key != INVALID_KEY)
++		event = find_create_kvm_event(key);
++
++	vcpu_event_record[vcpu_id].last_event = event;
++	vcpu_event_record[vcpu_id].start_time = timestamp;
++}
++
++static void update_event_stats(struct event_stats *stats, u64 time_diff)
++{
++	double delta;
++
++	stats->count++;
++	stats->time += time_diff;
++
++	delta = time_diff - stats->mean;
++	stats->mean += delta / stats->count;
++	stats->M2 += delta*(time_diff - stats->mean);
++}
++
++static double event_stats_stddev(int vcpu_id, struct kvm_event *event)
++{
++	struct event_stats *stats = &event->total;
++	double variance, variance_mean, stddev;
++
++	if (vcpu_id != -1)
++		stats = &event->vcpu[vcpu_id];
++
++	BUG_ON(!stats->count);
++
++	variance = stats->M2 / (stats->count - 1);
++	variance_mean = variance / stats->count;
++	stddev = sqrt(variance_mean);
++
++	return stddev * 100 / stats->mean;
++}
++
++static void update_kvm_event(struct kvm_event *event, int vcpu_id,
++			     u64 time_diff)
++{
++	update_event_stats(&event->total, time_diff);
++	update_event_stats(&event->vcpu[vcpu_id], time_diff);
++}
++
++static void handle_end_event(struct event_key *key, int vcpu_id, u64 timestamp)
++{
++	struct kvm_event *event;
++	u64 time_begin, time_diff;
++
++	event = vcpu_event_record[vcpu_id].last_event;
++	time_begin = vcpu_event_record[vcpu_id].start_time;
++
++	/* The begin event is not caught. */
++	if (!time_begin)
++		return;
++
++	/* Both begin and end events did not get the key. */
++	if (!event && key->key == INVALID_KEY)
++		return;
++
++	if (!event)
++		event = find_create_kvm_event(key);
++
++	vcpu_event_record[vcpu_id].last_event = NULL;
++	vcpu_event_record[vcpu_id].start_time = 0;
++
++	BUG_ON(timestamp < time_begin);
++
++	time_diff = timestamp - time_begin;
++	update_kvm_event(event, vcpu_id, time_diff);
++}
++
++static void handle_kvm_event(struct event *event, void *data, u64 timestamp,
++			     u32 tid)
++{
++	struct event_key key = {.key = INVALID_KEY};
++	int vcpu_id = get_record_vcpu_id(event, tid, data);
++
++	if (vcpu_id < 0)
++		return;
++
++	if (events_ops->is_begin_event(event, data, &key))
++		return handle_begin_event(&key, vcpu_id, timestamp);
++
++	if (events_ops->is_end_event(event, data, &key))
++		return handle_end_event(&key, vcpu_id, timestamp);
++}
++
++typedef int (*key_cmp_fun)(struct kvm_event*, struct kvm_event*, int);
++struct kvm_event_key {
++	const char *name;
++	key_cmp_fun key;
++};
++
++static int trace_vcpu = -1;
++#define GET_EVENT_KEY(member)		\
++static u64 get_event_ ##member(struct kvm_event *event, int vcpu)	\
++{									\
++	if (vcpu == -1)							\
++		return event->total.member;				\
++									\
++	return event->vcpu[vcpu].member;				\
++}
++
++#define COMPARE_EVENT_KEY(member)					\
++GET_EVENT_KEY(member)							\
++static int compare_kvm_event_ ## member(struct kvm_event *one,		\
++					struct kvm_event *two, int vcpu)\
++{									\
++	return get_event_ ##member(one, vcpu) >				\
++				get_event_ ##member(two, vcpu);		\
++}
++
++GET_EVENT_KEY(time);
++COMPARE_EVENT_KEY(count);
++COMPARE_EVENT_KEY(mean);
++
++#define DEF_SORT_NAME_KEY(name, compare_key)	\
++	{ #name, compare_kvm_event_ ## compare_key }
++
++static struct kvm_event_key keys[] = {
++	DEF_SORT_NAME_KEY(sample, count),
++	DEF_SORT_NAME_KEY(time, mean),
++	{ NULL, NULL }
++};
++
++static const char *sort_key = "sample";
++static key_cmp_fun compare;
++
++static void select_key(void)
++{
++	int i;
++
++	for (i = 0; keys[i].name; i++) {
++		if (!strcmp(keys[i].name, sort_key)) {
++			compare = keys[i].key;
++			return;
++		}
++	}
++
++	die("Unknown compare key:%s\n", sort_key);
++}
++
++static struct rb_root result;
++static void insert_to_result(struct kvm_event *event, key_cmp_fun bigger,
++			     int vcpu)
++{
++	struct rb_node **rb = &result.rb_node;
++	struct rb_node *parent = NULL;
++	struct kvm_event *p;
++
++	while (*rb) {
++		p = container_of(*rb, struct kvm_event, rb);
++		parent = *rb;
++
++		if (bigger(event, p, vcpu))
++			rb = &(*rb)->rb_left;
++		else
++			rb = &(*rb)->rb_right;
++	}
++
++	rb_link_node(&event->rb, parent, rb);
++	rb_insert_color(&event->rb, &result);
++}
++
++static void update_total_count(struct kvm_event *event, int vcpu)
++{
++	total_count += get_event_count(event, vcpu);
++	total_time += get_event_time(event, vcpu);
++}
++
++static bool event_is_valid(struct kvm_event *event, int vcpu)
++{
++	return get_event_count(event, vcpu);
++}
++
++static void sort_result(int vcpu)
++{
++	unsigned int i;
++	struct kvm_event *event;
++
++	for (i = 0; i < EVENTS_CACHE_SIZE; i++)
++		list_for_each_entry(event, &kvm_events_cache[i], hash_entry)
++			if (event_is_valid(event, vcpu)) {
++				update_total_count(event, vcpu);
++				insert_to_result(event, compare, vcpu);
++			}
++}
++
++/* returns left most element of result, and erase it */
++static struct kvm_event *pop_from_result(void)
++{
++	struct rb_node *node = result.rb_node;
++
++	if (!node)
++		return NULL;
++
++	while (node->rb_left)
++		node = node->rb_left;
++
++	rb_erase(node, &result);
++	return container_of(node, struct kvm_event, rb);
++}
++
++static void print_vcpu_info(int vcpu)
++{
++	pr_info("Analyze events for ");
++
++	if (vcpu == -1)
++		pr_info("all VCPUs:\n\n");
++	else
++		pr_info("VCPU %d:\n\n", vcpu);
++}
++
++static void print_result(int vcpu)
++{
++	char decode[20];
++	struct kvm_event *event;
++
++	pr_info("\n\n");
++	print_vcpu_info(vcpu);
++	pr_info("%20s ", events_ops->name);
++	pr_info("%10s ", "Samples");
++	pr_info("%9s ", "Samples%");
++
++	pr_info("%9s ", "Time%");
++	pr_info("%16s ", "Avg time");
++	pr_info("\n\n");
++
++	while ((event = pop_from_result())) {
++		u64 ecount, etime;
++
++		ecount = get_event_count(event, vcpu);
++		etime = get_event_time(event, vcpu);
++
++		events_ops->decode_key(&event->key, decode);
++		pr_info("%20s ", decode);
++		pr_info("%10lu ", ecount);
++		pr_info("%8.2f%% ", (double)ecount / total_count * 100);
++		pr_info("%8.2f%% ", (double)etime / total_time * 100);
++		pr_info("%9.2fus ( +-%7.2f%% )", (double)etime / ecount/1e3,
++			event_stats_stddev(trace_vcpu, event));
++		pr_info("\n");
++	}
++
++	pr_info("\nTotal Samples:%ld, Total events handled time:%.2fus.\n\n",
++		total_count, total_time / 1e3);
++}
++
++static void process_raw_event(void *data, int __unused cpu, u64 timestamp,
++			      u32 tid)
++{
++	struct event *event;
++	int type;
++
++	type = trace_parse_common_type(data);
++	event = trace_find_event(type);
++
++	return handle_kvm_event(event, data, timestamp, tid);
++}
++
++static int process_sample_event(struct perf_tool *tool __used,
++				union perf_event *event,
++				struct perf_sample *sample,
++				struct perf_evsel *evsel __used,
++				struct machine *machine)
++{
++	struct thread *thread = machine__findnew_thread(machine, sample->tid);
++
++	if (thread == NULL) {
++		pr_debug("problem processing %d event, skipping it.\n",
++			event->header.type);
++		return -1;
++	}
++
++	process_raw_event(sample->raw_data, sample->cpu, sample->time,
++			  sample->tid);
++
++	return 0;
++}
++
++static struct perf_tool eops = {
++	.sample			= process_sample_event,
++	.comm			= perf_event__process_comm,
++	.ordered_samples	= true,
++};
++
++static char const *input_name = "perf.data";
++
++static int read_events(void)
++{
++	struct perf_session *session;
++
++	session = perf_session__new(input_name, O_RDONLY, 0, false, &eops);
++	if (!session)
++		die("Initializing perf session failed\n");
++
++	if (!perf_session__has_traces(session, "kvm record"))
++		return -1;
++
++	return perf_session__process_events(session, &eops);
++}
++
++static void verify_vcpu(int vcpu)
++{
++	if (vcpu != -1 && (vcpu > kvm_max_vcpus || vcpu < 0))
++		die("Unknown vcpu:%d.\n", vcpu);
++
++}
++
++static int kvm_events_report(int vcpu)
++{
++	init_kvm_event_record();
++	init_kvm_tid_to_pid();
++	verify_vcpu(vcpu);
++	select_key();
++	register_kvm_events_ops();
++	setup_pager();
++	read_events();
++	sort_result(vcpu);
++	print_result(vcpu);
++	return 0;
++}
++
++static const char * const record_args[] = {
++	"record",
++	"-a",
++	"-R",
++	"-f",
++	"-m", "1024",
++	"-c", "1",
++	"-e", "kvm:kvm_entry",
++	"-e", "kvm:kvm_exit",
++	"-e", "kvm:kvm_mmio",
++	"-e", "kvm:kvm_pio",
++};
++
++static const char * const new_event[] = {
++	"kvm_mmio_begin",
++	"kvm_mmio_done"
++};
++
++static bool kvm_events_exist(const char *event)
++{
++	char evt_path[MAXPATHLEN];
++	int fd;
++
++	snprintf(evt_path, MAXPATHLEN, "%s/kvm/%s/id", tracing_events_path,
++		 event);
++
++	fd = open(evt_path, O_RDONLY);
++
++	if (fd < 0)
++		return false;
++
++	close(fd);
++
++	return true;
++}
++
++static int kvm_events_record(int argc, const char **argv)
++{
++	unsigned int rec_argc, i, j;
++	const char **rec_argv;
++
++	rec_argc = ARRAY_SIZE(record_args) + argc - 1;
++	rec_argc += ARRAY_SIZE(new_event) * 2;
++	rec_argv = calloc(rec_argc + 1, sizeof(char *));
++
++	if (rec_argv == NULL)
++		return -ENOMEM;
++
++	for (i = 0; i < ARRAY_SIZE(record_args); i++)
++		rec_argv[i] = strdup(record_args[i]);
++
++	for (j = 0; j < ARRAY_SIZE(new_event); j++)
++		if (kvm_events_exist(new_event[j])) {
++			char event[256];
++
++			sprintf(event, "kvm:%s", new_event[j]);
++
++			rec_argv[i++] = strdup("-e");
++			rec_argv[i++] = strdup(event);
++		}
++
++	for (j = 1; j < (unsigned int)argc; j++, i++)
++		rec_argv[i] = argv[j];
++
++	return cmd_record(i, rec_argv, NULL);
++}
++
++static const char * const kvm_events_report_usage[] = {
++	"perf kvm events report [<options>]",
++	NULL
++};
++
++static const struct option kvm_events_report_options[] = {
++	OPT_STRING(0, "event", &report_event, "reprot event",
++		    "event for reporting: vmexit, mmio, ioport"),
++	OPT_INTEGER(0, "vcpu", &trace_vcpu,
++		    "vcpu id to report"),
++	OPT_STRING('k', "key", &sort_key, "sort-key",
++		    "key for sorting: sample(sort by samples number)"
++		    " time (sort by avg time)"),
++	OPT_END()
++};
++
++static const char * const kvm_events_usage[] = {
++	"perf kvm events [<options>] {record|report}",
++	NULL
++};
++
++static const struct option kvm_events_options[] = {
++	OPT_STRING('i', "input", &input_name, "file", "input file name"),
++	OPT_INCR('v', "verbose", &verbose,
++		 "be more verbose (show symbol address, etc)"),
++	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
++		 "dump raw trace in ASCII"),
++	OPT_END()
++};
++
++int cmd_kvm_events(int argc, const char **argv, const char *prefix __used)
++{
++	argc = parse_options(argc, argv, kvm_events_options, kvm_events_usage,
++			     PARSE_OPT_STOP_AT_NON_OPTION);
++	if (!argc)
++		usage_with_options(kvm_events_usage, kvm_events_options);
++
++	symbol__init();
++
++	if (!strncmp(argv[0], "rec", 3))
++		return kvm_events_record(argc, argv);
++
++	if (!strncmp(argv[0], "report", 6)) {
++		if (argc) {
++			argc = parse_options(argc, argv,
++					     kvm_events_report_options,
++					     kvm_events_report_usage, 0);
++			if (argc)
++				usage_with_options(kvm_events_report_usage,
++						   kvm_events_report_options);
++		}
++		return kvm_events_report(trace_vcpu);
++	}
++
++	usage_with_options(kvm_events_usage, kvm_events_options);
++	return 0;
++}
+diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
+index b382bd5..fb19e3d 100644
+--- a/tools/perf/builtin.h
++++ b/tools/perf/builtin.h
+@@ -33,6 +33,7 @@ extern int cmd_probe(int argc, const char **argv, const char *prefix);
+ extern int cmd_kmem(int argc, const char **argv, const char *prefix);
+ extern int cmd_lock(int argc, const char **argv, const char *prefix);
+ extern int cmd_kvm(int argc, const char **argv, const char *prefix);
++extern int cmd_kvm_events(int argc, const char **argv, const char *prefix);
+ extern int cmd_test(int argc, const char **argv, const char *prefix);
+ extern int cmd_inject(int argc, const char **argv, const char *prefix);
 
-diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
-index 46e3cd8..16c8a6d 100644
---- a/include/trace/events/kvm.h
-+++ b/include/trace/events/kvm.h
-@@ -174,6 +174,43 @@ TRACE_EVENT(kvm_mmio,
- 		  __entry->len, __entry->gpa, __entry->val)
- );
-
-+TRACE_EVENT(kvm_mmio_begin,
-+	TP_PROTO(unsigned int vcpu_id, bool rw, u64 gpa),
-+	TP_ARGS(vcpu_id, rw, gpa),
-+
-+	TP_STRUCT__entry(
-+		__field(unsigned int, vcpu_id)
-+		__field(int, type)
-+		__field(u64, gpa)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vcpu_id = vcpu_id;
-+		__entry->type = rw ? KVM_TRACE_MMIO_WRITE :
-+				      KVM_TRACE_MMIO_READ;
-+		__entry->gpa = gpa;
-+	),
-+
-+	TP_printk("vcpu %u mmio %s gpa 0x%llx", __entry->vcpu_id,
-+		  __print_symbolic(__entry->type, kvm_trace_symbol_mmio),
-+		  __entry->gpa)
-+);
-+
-+TRACE_EVENT(kvm_mmio_done,
-+	TP_PROTO(unsigned int vcpu_id),
-+	TP_ARGS(vcpu_id),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	vcpu_id		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vcpu_id = vcpu_id;
-+	),
-+
-+	TP_printk("vcpu %u", __entry->vcpu_id)
-+);
-+
- #define kvm_fpu_load_symbol	\
- 	{0, "unload"},		\
- 	{1, "load"}
+diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
+index d695fe4..c5e97d8 100644
+--- a/tools/perf/command-list.txt
++++ b/tools/perf/command-list.txt
+@@ -22,4 +22,5 @@ perf-probe			mainporcelain common
+ perf-kmem			mainporcelain common
+ perf-lock			mainporcelain common
+ perf-kvm			mainporcelain common
++perf-kvm-events			mainporcelain common
+ perf-test			mainporcelain common
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 2b2e225..ab85ea5 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -317,6 +317,7 @@ static void handle_internal_command(int argc, const char **argv)
+ 		{ "kmem",	cmd_kmem,	0 },
+ 		{ "lock",	cmd_lock,	0 },
+ 		{ "kvm",	cmd_kvm,	0 },
++		{ "kvm-events", cmd_kvm_events, 0},
+ 		{ "test",	cmd_test,	0 },
+ 		{ "inject",	cmd_inject,	0 },
+ 	};
 -- 
 1.7.7.6
 
