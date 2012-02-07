@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab2BGKEy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 05:04:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49621 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753662Ab2BGKEx convert rfc822-to-8bit (ORCPT
+	id S1755482Ab2BGKGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 05:06:05 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63493 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755289Ab2BGKGC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 05:04:53 -0500
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <1328597934.6802.6.camel@concordia>
-Date: Tue, 7 Feb 2012 11:04:44 +0100
-Cc: Scott Wood <scottwood@freescale.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Eric Northup <digitaleric@google.com>, Avi Kivity <avi@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>
+	Tue, 7 Feb 2012 05:06:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120207075553.GB8632@tugrik.mns.mnsspb.ru>
+References: <20120206111853.GA11506@tugrik.mns.mnsspb.ru> <CAPXgP11N=8NULMH-o0Us0OuqYpP9sKe9uUKWzE35h1AiRP1Cjg@mail.gmail.com>
+ <20120207075553.GB8632@tugrik.mns.mnsspb.ru>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 7 Feb 2012 11:05:42 +0100
+Message-ID: <CAPXgP10K0umgZco-T37nBsbnKznb6oP4e_k82af7sdvpPNeQJQ@mail.gmail.com>
+Subject: Re: No /dev/root with devtmpfs?
+To: Kirill Smelkov <kirr@mns.spb.ru>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <F1B17875-23E2-4965-BE05-6A3858995D21@suse.de>
-References: <4F2AB552.2070909@redhat.com> <CAG7+5M0s_F93G3dPrRQaFMVv_hPzpd-wYEPApJUDGhh3vJuy-A@mail.gmail.com> <4F2C6517.3040203@codemonkey.ws> <4F302E0D.20302@freescale.com> <1328597934.6802.6.camel@concordia>
-To: michael@ellerman.id.au
-X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 7, 2012 at 08:55, Kirill Smelkov <kirr@mns.spb.ru> wrote:
+> On Mon, Feb 06, 2012 at 08:45:24PM +0100, Kay Sievers wrote:
+>> On Mon, Feb 6, 2012 at 12:18, Kirill Smelkov <kirr@mns.spb.ru> wrote:
+>> > Recently I've reworked my system not to use udev, but use devtmpfs
+>> > instead and discovered there is no /dev/root symlink in devtmpfs case.
+>> >
+>> > My setup uses /dev/root early to know what is the boot device and then
+>> > do some operations on it like checksumming, etc...
+>> >
+>> > Now when /dev/root is gone the best workaround I could come up with is
+>> > to   grep /proc/partitions for '[hs]d[a-z]1'  but it's ugly and will
+>> > break when there are several block devices attached.
+>> >
+>> > Is it somehow possible to add /dev/root to devtmpfs?
+>>
+>> No, devtmpfs has no business in knowing anything about the rootfs or
+>> who mounted what ans where. I can not create such links.
+>>
+>> The entire concept of /dev/root is flawed anyway, and nothing should
+>> really depend on that.
+>>
+>> Modern filesystems will not offer a direct relation to a single block
+>> device, they allocate an superblock which has a major == 0, so there
+>> can be by definition never such a link. Better get rid of all uses of
+>> /dev/root, it will just fail in the future.
+>
+> Kay, thanks for explanation.
+>
+> Though now I'm confused about how to know on what "place" root
+> filesystem was mounted... To me the question makes sense, but you say
+> with modern filesystems there by definition is no answer (or did I
+> misunderstood you?) Strange...
 
-On 07.02.2012, at 07:58, Michael Ellerman wrote:
+The root filesystem will still be mounted at /, but you can not
+identify by a device. Check the difference between:
+  $ mountpoint -d /
+  8:1
+which is a classic ext4 sda1 device behind "/".
 
-> On Mon, 2012-02-06 at 13:46 -0600, Scott Wood wrote:
->> On 02/03/2012 04:52 PM, Anthony Liguori wrote:
->>> On 02/03/2012 12:07 PM, Eric Northup wrote:
->>>> On Thu, Feb 2, 2012 at 8:09 AM, Avi Kivity<avi@redhat.com>  wrote:
->>>> [...]
->>>>> 
->>>>> Moving to syscalls avoids these problems, but introduces new ones:
->>>>> 
->>>>> - adding new syscalls is generally frowned upon, and kvm will need
->>>>> several
->>>>> - syscalls into modules are harder and rarer than into core kernel code
->>>>> - will need to add a vcpu pointer to task_struct, and a kvm pointer to
->>>>> mm_struct
->>>> - Lost a good place to put access control (permissions on /dev/kvm)
->>>> for which user-mode processes can use KVM.
->>>> 
->>>> How would the ability to use sys_kvm_* be regulated?
->>> 
->>> Why should it be regulated?
->>> 
->>> It's not a finite or privileged resource.
->> 
->> You're exposing a large, complex kernel subsystem that does very
->> low-level things with the hardware.  It's a potential source of exploits
->> (from bugs in KVM or in hardware).  I can see people wanting to be
->> selective with access because of that.
-> 
-> Exactly.
-> 
-> In a perfect world I'd agree with Anthony, but in reality I think
-> sysadmins are quite happy that they can prevent some users from using
-> KVM.
-> 
-> You could presumably achieve something similar with capabilities or
-> whatever, but a node in /dev is much simpler.
+With 'btrfs' it will just look like 'tmpfs' looks today:
+  $ mountpoint -d /dev/shm
+  0:17
 
-Well, you could still keep the /dev/kvm node and then have syscalls operate on the fd.
+and while the 'btrfs' file system is surely backed by a
+disk/partition, just like ext4 is, there can still never be a symlink
+to the disk device.
 
-But again, I don't see the problem with the ioctl interface. It's nice, extensible and works great for us.
+Tools need to work without in the future without having a /dev/root symlink
 
-
-Alex
-
+Kay
