@@ -1,88 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab2BGGX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 01:23:59 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37469 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755079Ab2BGGX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 01:23:57 -0500
-Date: Tue, 7 Feb 2012 10:23:53 +0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, kernel-team@android.com,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 2/6] oom: Get rid of sparse warnings
-Message-ID: <20120207062353.GA24687@oksana.dev.rtsoft.ru>
-References: <20120203163056.GA4190@redhat.com>
- <20120206162935.GB5117@oksana.dev.rtsoft.ru>
- <CAHGf_=oVQQRdfNYm0gOwzjxbUqPB5jMdsibLATCrt718-sMm7w@mail.gmail.com>
- <20120207042026.GA25524@oksana.dev.rtsoft.ru>
- <CAHGf_=rW-EJvj-hsKgEGw4F4uAKMv-U-iG6aROzw2rN4tXPFFQ@mail.gmail.com>
+	id S1756107Ab2BGGb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 01:31:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751187Ab2BGGb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 01:31:26 -0500
+Date: Tue, 7 Feb 2012 08:31:24 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v2] KVM: Fix assigned device MSI-X entry setting leak
+Message-ID: <20120207063124.GB23369@redhat.com>
+References: <20120130210346.22952.5215.stgit@bling.home>
+ <20120131191120.GC3601@redhat.com>
+ <1328564789.3074.145.camel@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHGf_=rW-EJvj-hsKgEGw4F4uAKMv-U-iG6aROzw2rN4tXPFFQ@mail.gmail.com>
+In-Reply-To: <1328564789.3074.145.camel@bling.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 12:38:58AM -0500, KOSAKI Motohiro wrote:
-> >> task struct only have allock_lock, not alloc_loc.
-> >
-> > Funnily, but sparse does not care. :-) __release(foo) will work as
-> > well. Seems like sparse counts locking balance globally.
-> >
-> > This is now fixed in the patch down below, thanks for catching.
-> >
-> >> Moreover we don't release
-> >> the lock in this code path. Seems odd.
-> >
-> > Indeed. That's exactly what sparse seeing is as well. We exit
-> > without releasing the lock, which is bad (in sparse' eyes). So
-> > we lie to sparse, telling it that we do release, so it shut ups.
+On Mon, Feb 06, 2012 at 02:46:29PM -0700, Alex Williamson wrote:
+> On Tue, 2012-01-31 at 21:11 +0200, Michael S. Tsirkin wrote:
+> > On Mon, Jan 30, 2012 at 02:05:54PM -0700, Alex Williamson wrote:
+> > > We need to prioritize our matching when setting MSI-X vector
+> > > entries.  Unused entries should only be used if we don't find
+> > > an exact match or else we risk duplicating entries.  This was
+> > > causing an ENOSPC return when trying to mask and unmask MSI-X
+> > > vectors based on guest MSI-X table updates.
+> > > 
+> > > The new KVM_CAP_DEVICE_MSIX_MASK extension indicates the
+> > > presence of this fix.
+> > > 
+> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > ---
+> > > 
+> > > v2: Add capability indicating MSIX_MASKing now works.
+> > > 
+> > > The faulting sequence went something like:
+> > > 
+> > > Start:
+> > > [0] entry 0, vector A
+> > > [1] entry 1, vector B
+> > > [2] entry 2, vector C
+> > > 
+> > > Set entry 1 to 0:
+> > > [0] entry 0, vector A
+> > > [1] entry 1->1, vector B->0
+> > > [2] entry 2, vector C
+> > > 
+> > > Set entry 2 to 0:
+> > > [0] entry 0, vector A
+> > > [1] entry 1->2, vector 0->0 <- incorrectly matched
+> > > [2] entry 2, vector C
+> > > 
+> > > Set entry 2 to C:
+> > > [0] entry 0, vector A
+> > > [1] entry 2->2, vector 0->C <- incorrectly matched again
+> > > [2] entry 2, vector C
+> > > 
+> > > Set entry 1 to B:
+> > > [0] entry 0, vector A
+> > > [1] entry 2, vector C
+> > > [2] entry 2, vector C
+> > > -ENOSPC
+> > > 
+> > >  Documentation/virtual/kvm/api.txt |    5 +++--
+> > >  arch/x86/kvm/x86.c                |    1 +
+> > >  include/linux/kvm.h               |    1 +
+> > >  virt/kvm/assigned-dev.c           |   21 ++++++++++++++-------
+> > >  4 files changed, 19 insertions(+), 9 deletions(-)
+> > 
+> > I don't object to fixing this bug. But I don't think
+> > we need a capability for this. Here's why:
+> > 
+> > setting an entry to zero is not really matching
+> > what devices need, since that would lose interrupts.
+> > What devices need is mask entries to disable them,
+> > then unmask and get an interrupt if it was delayed.
+> > 
+> > So, if we are going to add a new capability, how about
+> > sticking a mask bit in the padding instead?
 > 
-> Hmmm....
+> I'll take a look.  Are you suggesting then that we'd note the masked
+> interrupt was deferred and inject when unmasked?
 > 
-> To be honest, I really dislike any lie annotation. Why? It is very
-> fragile and easily
-> become broken from unrelated but near line changes. Please consider to
-> enhance sparse at first.
+> > As was shown in the past this can even improve performance since we can
+> > propagate the mask bit back to the host device.
+> 
+> I'm dubious whether there's actually a use case that benefits from
+> pushing the mask down to hardware.  The typical mask case is a temporary
+> mask to update the vector data/address then unmask.  We're actually
+> accelerating that by not pushing it down to hardware.  Are there real
+> world drivers that enable a vector and then mask it for an extended
+> period of time?
 
-I somewhat doubt that it is possible to "enhance it". We keep the
-lock held conditionaly, so we need too place the hint in the
-code itself. I believe the best we can do would be something like
-this:
+I don't know. Shen Yang at some point said:
+"We have also reproduced the issue on some large scale benchmark on the guest with
+"newer kernel like 2.6.30 on Xen, under very high interrupt rate, due to some
+"interrupt rate limitation mechanism in kernel.
 
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index 4a24354..61d91f2 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -14,6 +14,7 @@
- # define __releases(x)	__attribute__((context(x,1,0)))
- # define __acquire(x)	__context__(x,1)
- # define __release(x)	__context__(x,-1)
-+# define __ret_with_lock(x)	__context__(x,-1)
- # define __cond_lock(x,c)	((c) ? ({ __acquire(x); 1; }) : 0)
- # define __percpu	__attribute__((noderef, address_space(3)))
- #ifdef CONFIG_SPARSE_RCU_POINTER
-@@ -37,6 +38,7 @@ extern void __chk_io_ptr(const volatile void __iomem *);
- # define __releases(x)
- # define __acquire(x) (void)0
- # define __release(x) (void)0
-+# define __ret_with_lock(x)
- # define __cond_lock(x,c) (c)
- # define __percpu
- # define __rcu
+And these patches did push the interrupts down - but not to hardware,
+masking interrupt as pending in kernel only sets a bit, it is only
+pushed down when we next get an interrupt while vector is masked.
 
-And then use it instead of __release().
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+> Thanks,
+> 
+> Alex
