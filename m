@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab2BGQQN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 11:16:13 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35991 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab2BGQQK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 11:16:10 -0500
-From: Franck Bui-Huu <fbuihuu@gmail.com>
-To: linux@dominikbrodowski.net
-Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>
-Subject: [PATCH 2/2] cpupower tools: add install target to the debug tools' makefiles
-Date: Tue,  7 Feb 2012 17:15:57 +0100
-Message-Id: <1328631357-18463-2-git-send-email-fbuihuu@gmail.com>
-X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <1328631357-18463-1-git-send-email-fbuihuu@gmail.com>
-References: <1328631357-18463-1-git-send-email-fbuihuu@gmail.com>
+	id S1756015Ab2BGQTD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 11:19:03 -0500
+Received: from david.siemens.de ([192.35.17.14]:34273 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab2BGQTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 11:19:02 -0500
+Message-ID: <4F314EEE.8080401@siemens.com>
+Date: Tue, 07 Feb 2012 17:18:54 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Anthony Liguori <anthony@codemonkey.ws>, Rob Earhart <earhart@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+References: <4F2AB552.2070909@redhat.com>	<CAB9FdM9M2DWXBxxyG-ez_5igT61x5b7ptw+fKfgaqMBU_JS5aA@mail.gmail.com>	<4F2E80A7.5040908@redhat.com>	<CAB9FdM9pPJx8x4y=uvRFh-T4fKBR9xChocUVG_GfNGffTWtMNQ@mail.gmail.com>	<4F3025FB.1070802@codemonkey.ws> <4F31132F.3010100@redhat.com> <4F31408F.80901@codemonkey.ws> <4F314B2A.4000709@redhat.com>
+In-Reply-To: <4F314B2A.4000709@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
----
- tools/power/cpupower/debug/i386/Makefile   |   14 +++++++++++++-
- tools/power/cpupower/debug/x86_64/Makefile |   12 +++++++++++-
- 2 files changed, 24 insertions(+), 2 deletions(-)
+On 2012-02-07 17:02, Avi Kivity wrote:
+> On 02/07/2012 05:17 PM, Anthony Liguori wrote:
+>> On 02/07/2012 06:03 AM, Avi Kivity wrote:
+>>> On 02/06/2012 09:11 PM, Anthony Liguori wrote:
+>>>>
+>>>> I'm not so sure. ioeventfds and a future mmio-over-socketpair have
+>>>> to put the
+>>>> kthread to sleep while it waits for the other end to process it.
+>>>> This is
+>>>> effectively equivalent to a heavy weight exit. The difference in
+>>>> cost is
+>>>> dropping to userspace which is really neglible these days (< 100
+>>>> cycles).
+>>>
+>>> On what machine did you measure these wonderful numbers?
+>>
+>> A syscall is what I mean by "dropping to userspace", not the cost of a
+>> heavy weight exit. 
+> 
+> Ah.  But then ioeventfd has that as well, unless the other end is in the
+> kernel too.
+> 
+>> I think a heavy weight exit is still around a few thousand cycles.
+>>
+>> Any nehalem class or better processor should have a syscall cost of
+>> around that unless I'm wildly mistaken.
+>>
+> 
+> That's what I remember too.
+> 
+>>>
+>>> But I agree a heavyweight exit is probably faster than a double
+>>> context switch
+>>> on a remote core.
+>>
+>> I meant, if you already need to take a heavyweight exit (and you do to
+>> schedule something else on the core), than the only additional cost is
+>> taking a syscall return to userspace *first* before scheduling another
+>> process.  That overhead is pretty low.
+> 
+> Yeah.
+> 
 
-diff --git a/tools/power/cpupower/debug/i386/Makefile b/tools/power/cpupower/debug/i386/Makefile
-index 626478b..3ba158f 100644
---- a/tools/power/cpupower/debug/i386/Makefile
-+++ b/tools/power/cpupower/debug/i386/Makefile
-@@ -3,6 +3,11 @@ ifeq ("$(origin O)", "command line")
- 	OUTPUT := $(O)/
- endif
- 
-+DESTDIR =
-+bindir  = /usr/bin
-+
-+INSTALL = /usr/bin/install
-+
- 
- default: all
- 
-@@ -23,4 +28,11 @@ all: $(OUTPUT)centrino-decode $(OUTPUT)dump_psb $(OUTPUT)intel_gsic $(OUTPUT)pow
- clean:
- 	rm -rf $(OUTPUT){centrino-decode,dump_psb,intel_gsic,powernow-k8-decode}
- 
--.PHONY: all default clean
-+install:
-+	$(INSTALL) -d $(DESTDIR)${bindir}
-+	$(INSTALL) $(OUTPUT)centrino-decode $(DESTDIR)${bindir}
-+	$(INSTALL) $(OUTPUT)powernow-k8-decode $(DESTDIR)${bindir}
-+	$(INSTALL) $(OUTPUT)dump_psb $(DESTDIR)${bindir}
-+	$(INSTALL) $(OUTPUT)intel_gsic $(DESTDIR)${bindir}
-+
-+.PHONY: all default clean install
-diff --git a/tools/power/cpupower/debug/x86_64/Makefile b/tools/power/cpupower/debug/x86_64/Makefile
-index 8e26d67..1c52145 100644
---- a/tools/power/cpupower/debug/x86_64/Makefile
-+++ b/tools/power/cpupower/debug/x86_64/Makefile
-@@ -3,6 +3,11 @@ ifeq ("$(origin O)", "command line")
- 	OUTPUT := $(O)/
- endif
- 
-+DESTDIR =
-+bindir  = /usr/bin
-+
-+INSTALL = /usr/bin/install
-+
- 
- default: all
- 
-@@ -17,4 +22,9 @@ all: $(OUTPUT)centrino-decode $(OUTPUT)powernow-k8-decode
- clean:
- 	rm -rf $(OUTPUT)centrino-decode $(OUTPUT)powernow-k8-decode
- 
--.PHONY: all default clean
-+install:
-+	$(INSTALL) -d $(DESTDIR)${bindir}
-+	$(INSTALL) $(OUTPUT)centrino-decode $(DESTDIR)${bindir}
-+	$(INSTALL) $(OUTPUT)powernow-k8-decode $(DESTDIR)${bindir}
-+
-+.PHONY: all default clean install
+Isn't there another level in between just scheduling and full syscall
+return if the user return notifier has some real work to do?
+
+Jan
+
 -- 
-1.7.7.4
-
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
