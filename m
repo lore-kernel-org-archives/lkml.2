@@ -1,72 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2BGKG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 05:06:56 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:48754 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754284Ab2BGKGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 05:06:54 -0500
-X-WSS-ID: 0LZ0PFD-0A-4LG-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Axel Lin" <axel.lin@gmail.com>
-cc: "Shreshtha Kumar Sahu" <shreshthakumar.sahu@stericsson.com>,
-        "Richard Purdie" <rpurdie@rpsys.net>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 7 Feb 2012 02:06:33 -0800
-Subject: RE: [PATCH RFC] leds: lm3530: Fix setting pltfm->als_vmax
-Thread-Topic: [PATCH RFC] leds: lm3530: Fix setting pltfm->als_vmax
-Thread-Index: AczlYPuA/SuEVtp/QCKnghWd9Vn+zQAHM+ZQ
-Message-ID: <B567DBAB974C0544994013492B949F8E3812ED4697@EXMAIL03.scwf.nsc.com>
-References: <1328595786.5274.6.camel@phoenix>
-In-Reply-To: <1328595786.5274.6.camel@phoenix>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
+	id S1755607Ab2BGKHZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 05:07:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37682 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754284Ab2BGKHV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 05:07:21 -0500
 MIME-Version: 1.0
-X-WSS-ID: 632E28211LS10200292-02-01
-Content-Type: text/plain;
- charset=utf-8
+In-Reply-To: <4F30D4F6.1040802@bootc.net>
+References: <4E4BD560.4010806@bootc.net> <4E4D3B88.30003@ladisch.de>
+ <4F29978A.3010707@redhat.com> <20120201224156.0773ebc6@stein>
+ <4F2A55B9.4040005@panasas.com> <4F2A60DC.9030007@ladisch.de>
+ <4F2FD1F4.9050702@bootc.net> <4F2FE705.3070509@ladisch.de>
+ <4F2FE8DA.70502@bootc.net> <20120206212628.6880c506@stein>
+ <5C167A1D-2203-4F1C-B538-E99DD87E7E42@bootc.net> <CAGRGNgWf0epcam-jpCzMCSqefCKDSm892mw-X49FrcoRO0QYrQ@mail.gmail.com>
+ <476E7976-738A-4202-9FC4-FA5B060EA95F@bootc.net> <4F30D4F6.1040802@bootc.net>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Tue, 7 Feb 2012 21:06:57 +1100
+Message-ID: <CAGRGNgXj37g6Q5W+hwkBjQHh3a8to+2Vq5Yx_omC8p9bdZrdBw@mail.gmail.com>
+Subject: Re: FireWire/SBP2 Target mode
+To: Chris Boot <bootc@bootc.net>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Clemens Ladisch <clemens@ladisch.de>, target-devel@vger.kernel.org,
+        linux1394-devel@lists.sourceforge.net,
+        Boaz Harrosh <bharrosh@panasas.com>, Andy Grover <agrover@redhat.com>,
+        linux-scsi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q17A72Lk026963
 
+Hi,
 
-> -----Original Message-----
-> From: Axel Lin [mailto:axel.lin@gmail.com]
-> Sent: Tuesday, February 07, 2012 3:23 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: Shreshtha Kumar Sahu; Kim, Milo; Richard Purdie; Andrew Morton
-> Subject: [PATCH RFC] leds: lm3530: Fix setting pltfm->als_vmax
-> 
-> In current code, pltfm->als_vmin is set to LM3530_ALS_WINDOW_mV and
-> pltfm->als_vmax is 0. This looks does not make sense.
-> I think what we want here is setting pltfm->als_vmax to
-> LM3530_ALS_WINDOW_mV.
-> 
-> Both als_vmin and als_vmax local variables will be set to pltfm-
-> >als_vmin and
-> pltfm->als_vmax by a few lines latter.
-> Thus also remove a redundant assignment for als_vmin and als_vmax in
-> this patch.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Tue, Feb 7, 2012 at 18:38, Chris Boot <bootc@bootc.net> wrote:
+> On 06/02/2012 23:09, Chris Boot wrote:
+>>
+>>
+>> On 6 Feb 2012, at 23:00, Julian Calaby wrote:
+>>
+>>> Hi,
+>>>
+>>> On Tue, Feb 7, 2012 at 09:28, Chris Boot<bootc@bootc.net>  wrote:
+>>>>
+>>>> On 6 Feb 2012, at 20:26, Stefan Richter wrote:
+>>>>
+>>>>> On Feb 06 Chris Boot wrote:
+>>>>>>
+>>>>>> On 06/02/2012 14:43, Clemens Ladisch wrote:
+>>>>>>>
+>>>>>>> Chris Boot wrote:
+>>>>>>>>
+>>>>>>>> You can pull the code from:
+>>>>>>>> git://github.com/bootc/Linux-SBP-2-Target.git
+>>>>>>>
+>>>>>>>
+>>>>>>> The TODO file says:
+>>>>>>>>
+>>>>>>>> * Update Juju so we can get the speed in the fw_address_handler
+>>>>>>>> callback
+>>>>>>>
+>>>>>>>
+>>>>>>> What is the speed needed for?
+>>>>>>
+>>>>>>
+>>>>>> "The speed at which the block write request to the MANAGEMENT_AGENT
+>>>>>> register is received shall determine the speed used by the target for
+>>>>>> all subsequent requests to read the initiator’s configuration ROM,
+>>>>>> fetch
+>>>>>> ORB’s from initiator memory or store status at the initiator’s
+>>>>>> status_FIFO. Command block ORB’s separately specify the speed for
+>>>>>> requests addressed to the data buffer or page table."
+>>>>>>
+>>>>>> (T10/1155D Revision 4 page 53/54)
+>>>>>
+>>>>>
+>>>>> I guess it is not too hard to add this to the AR-req handler.  On the
+>>>>> other hand, I see little reason to follow the SBP-2 spec to the letter
+>>>>> here.  The target driver could just use the maximum speed that the core
+>>>>> figured out.  On the other hand, this requires of course
+>>>>>  - the target to wait for core to finish scanning an initiator,
+>>>>>  - the core to offer an API to look up an fw_device by a
+>>>>>    card--generation--nodeID tuple.
+>>>>>
+>>>>> The intention of the spec is IMO clearly to enable target
+>>>>> implementations
+>>>>> that do not need to implement topology scanning.  I have a hard time to
+>>>>> think of a valid scenario where an initiator needs to be able to steer
+>>>>> a
+>>>>> target towards a lower wire speed than what the participating links and
+>>>>> PHYs actually support.
+>>>>
+>>>>
+>>>> The only thing stopping me from getting the speed is the fact that
+>>>> struct fw_request is opaque. The value is easily available from
+>>>> request->response.speed and I kind of do that already in a very hackish way.
+>>>> I've sent a separate patch which adds a function that can be used to access
+>>>> that one value.
+>>>>
+>>>> Waiting until the bus scan is complete isn't actually that great as I
+>>>> see the first LOGIN requests often before the fw_node is seen at all. I'd
+>>>> have to turn away the requester and hope they try again. I'm fairly sure my
+>>>> little tweak in my patch is a simple enough solution.
+>>>
+>>>
+>>> Stupid question: Could you use a completion queue or something
+>>> equivalent to wait until you have seen the fw_node, *then* process the
+>>> LOGIN request?
+>>
+>>
+>> The fw_address_handler callback is called in interrupt context, and I
+>> can't sleep from within there. As far as I'm aware I must call
+>> fw_send_response() from within the callback and can't defer that until I've
+>> scheduled something on a work queue. Please correct me if I'm wrong though,
+>> as that might be useful anyway.
+>
+>
+> Hmm sorry I've thought about this overnight and clearly I was talking
+> rubbish. Yes, I need to reply in the fw_address_handler but all I tend to do
+> in there is schedule a task to the the main part of the work anyway. As most
+> of the operations require fetching an ORB from the initiator I have to do
+> this from user context.
+>
+> So it's possible I could do this by waiting in my scheduled work function
+> until the fw_node is available and get the speed from that - but that seems
+> like an inordinate amount of work when I can follow the standard and do it
+> really easily by pulling it out of the fw_request.
 
-This patch makes sense and fixes wrong range of the ALS input voltage.
-It works well on the real board.
-Thanks.
+Fair enough, I assumed that there might have been some reason why you
+wouldn't have it at that point, not just convention getting in the
+way.
 
-Acked-and-tested-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+Thanks,
 
-BTW, I'd suggest that 'pltfm' is replaced with 'pdata' if below patch has been updated.
-[PATCH v4 5/5] leds-lm3530: replace pltfm with pdata.
+-- 
+Julian Calaby
 
-Best Regards,
-Milo -
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
