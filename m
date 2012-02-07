@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab2BGKZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 05:25:28 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43025 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752090Ab2BGKZ0 (ORCPT
+	id S1754414Ab2BGKZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 05:25:27 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:65482 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab2BGKZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Feb 2012 05:25:26 -0500
-MIME-Version: 1.0
-Date: Tue, 7 Feb 2012 15:55:25 +0530
-Message-ID: <CADa7JjUbuY0qKiVdpS5VJk+5z5reZjBs0zcMCZ4SKnMSLai+pA@mail.gmail.com>
-Subject: CPU processing time between using TCP and UDP
-From: Srinidhi M <srinidhi.m26@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <1328610322.2232.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] perf: fix assertion failure in x86_pmu_start()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, markus@trippelsdorf.de, paulus@samba.org
+Date: Tue, 07 Feb 2012 11:25:22 +0100
+In-Reply-To: <20120207084156.GA15359@elte.hu>
+References: <20120206205354.GA31186@quad>
+	 <1328603689.2476.15.camel@edumazet-laptop> <20120207084156.GA15359@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Le mardi 07 février 2012 à 09:41 +0100, Ingo Molnar a écrit :
 
-We have an application which uses the TCP/UDP packets. The packet
-processing time between application and session layers is same for TCP
-as well as UDP. However, there is a packet processing time difference
-after sending it to layer 4 either TCP or UDP. Generally, we are
-calling the socket() API for transmitting the packet. We are seeing
-the difference in Linux Network Stack.
+> Were these messages introduced by:
+> 
+>  e050e3f0a71b: perf: Fix broken interrupt rate throttling
+> 
+> as well?
+> 
+> In any case I'm holding off on applying the patch before this is 
+> resolved.
 
-Could you please let me know, which module in TCP/IP is consuming more
-time than UDP? How can we reduce packet processing time when sending
-through TCP stack? Please let me know your thoughts.
+Reverting e050e3f0a71b solves all my problems, no more warnings.
 
-Please let me know, the appropriate mailing list name for this type of
-questions.
+$ perf record -a -g hackbench 10 thread 4000
+Running with 10*40 (== 400) tasks.
+Time: 13.181
+[ perf record: Woken up 59 times to write data ]
+[ perf record: Captured and wrote 16.874 MB perf.data (~737228 samples)
+]
 
-Thanks in advance.
+$ perf record -a -g hackbench 10 thread 4000
+Running with 10*40 (== 400) tasks.
+Time: 13.124
+[ perf record: Woken up 61 times to write data ]
+[ perf record: Captured and wrote 16.533 MB perf.data (~722349 samples)
+]
 
-Regards,
-Srinidhi M.
+
