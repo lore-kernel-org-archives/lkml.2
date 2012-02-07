@@ -1,129 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab2BGCZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Feb 2012 21:25:07 -0500
-Received: from mga02.intel.com ([134.134.136.20]:52567 "EHLO mga02.intel.com"
+	id S1755573Ab2BGCbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Feb 2012 21:31:06 -0500
+Received: from home.keithp.com ([63.227.221.253]:50660 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755211Ab2BGCZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Feb 2012 21:25:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="107146062"
-Subject: [patch] x86, tsc: reduce the TSC sync check time for core-siblings
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Jack Steiner <steiner@sgi.com>, venki@google.com
-Date: Mon, 06 Feb 2012 18:32:20 -0800
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1328581940.29790.20.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1755433Ab2BGCbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Feb 2012 21:31:05 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Lubos Kolouch <lubos.kolouch@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: i915 wakes from suspend to RAM with blank screen after commit cd9dde44f47501394b9f0715b6a36a92aa74c0d0
+In-Reply-To: <4F286DA1.6060404@canonical.com>
+References: <jfe47e$5dn$1@dough.gmane.org> <86mx9gkjlv.fsf@sumi.keithp.com> <20120121184453.GA2698@nbgentoo> <86hazokcb7.fsf@sumi.keithp.com> <20120122102912.GA2123@nbgentoo> <867h0j83vx.fsf@sumi.keithp.com> <20120123063313.GA2113@nbgentoo> <86vcnyc3t3.fsf@sumi.keithp.com> <20120127101403.GA2213@nbgentoo.nlcz.cz> <86liot9dod.fsf@sumi.keithp.com> <4F286DA1.6060404@canonical.com>
+User-Agent: Notmuch/0.11 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 06 Feb 2012 18:31:00 -0800
+Message-ID: <86k43z9xy3.fsf@sumi.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For each logical CPU that is coming online, we spend 20msec for checking
-the TSC synchronization. And as this is done sequentially for each logical CPU
-boot, this time gets added up depending on the number of logical CPU's
-supported by the platform.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Minimize this by using the socket topology information.
+On Tue, 31 Jan 2012 17:39:29 -0500, Joseph Salisbury <joseph.salisbury@cano=
+nical.com> wrote:
 
-If the target CPU coming online doesn't have any of its core-siblings
-online, a timeout of 20msec will be used for the TSC-warp measurement
-loop. Otherwise a smaller timeout of 2msec will be used, as we have some
-information about this socket already (and this information grows as we
-have more and more logical-siblings in that socket).
+> Do you plan on submitting a request to have these patches go in to the=20
+> 3.2 stable kernel as well?
 
-Ideally we should be able to skip the TSC sync check on the other
-core-siblings, if the first logical CPU in a socket passed the sync test.
-But as the TSC is per-logical CPU and can potentially be modified wrongly
-by the bios before the OS boot, TSC sync test for smaller duration should
-be able to catch such errors. Also this will catch the condition where all the
-cores in the socket doesn't get reset at the same time.
+I've marked them as Cc: stable@vger.kernel.org
 
-For example, with this modification, time spent in TSC sync checks on a
-4 socket 10-core with HT system gets reduced from 1580msec to 212msec.
+=2D-=20
+keith.packard@intel.com
 
-Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/kernel/tsc_sync.c |   29 ++++++++++++++++++++++++-----
- 1 files changed, 24 insertions(+), 5 deletions(-)
+--=-=-=
+Content-Type: application/pgp-signature
 
-diff --git a/arch/x86/kernel/tsc_sync.c b/arch/x86/kernel/tsc_sync.c
-index 9eba29b..cbf0b0f 100644
---- a/arch/x86/kernel/tsc_sync.c
-+++ b/arch/x86/kernel/tsc_sync.c
-@@ -42,7 +42,7 @@ static __cpuinitdata int nr_warps;
- /*
-  * TSC-warp measurement loop running on both CPUs:
-  */
--static __cpuinit void check_tsc_warp(void)
-+static __cpuinit void check_tsc_warp(unsigned int timeout)
- {
- 	cycles_t start, now, prev, end;
- 	int i;
-@@ -51,9 +51,9 @@ static __cpuinit void check_tsc_warp(void)
- 	start = get_cycles();
- 	rdtsc_barrier();
- 	/*
--	 * The measurement runs for 20 msecs:
-+	 * The measurement runs for 'timeout' msecs:
- 	 */
--	end = start + tsc_khz * 20ULL;
-+	end = start + (cycles_t) tsc_khz * timeout;
- 	now = start;
- 
- 	for (i = 0; ; i++) {
-@@ -99,6 +99,25 @@ static __cpuinit void check_tsc_warp(void)
- }
- 
- /*
-+ * If the target CPU coming online doesn't have any of its core-siblings
-+ * online, a timeout of 20msec will be used for the TSC-warp measurement
-+ * loop. Otherwise a smaller timeout of 2msec will be used, as we have some
-+ * information about this socket already (and this information grows as we
-+ * have more and more logical-siblings in that socket).
-+ *
-+ * Ideally we should be able to skip the TSC sync check on the other
-+ * core-siblings, if the first logical CPU in a socket passed the sync test.
-+ * But as the TSC is per-logical CPU and can potentially be modified wrongly
-+ * by the bios, TSC sync test for smaller duration should be able
-+ * to catch such errors. Also this will catch the condition where all the
-+ * cores in the socket doesn't get reset at the same time.
-+ */
-+static inline unsigned int loop_timeout(int cpu)
-+{
-+	return (cpumask_weight(cpu_core_mask(cpu)) > 1) ? 2 : 20;
-+}
-+
-+/*
-  * Source CPU calls into this - it waits for the freshly booted
-  * target CPU to arrive and then starts the measurement:
-  */
-@@ -135,7 +154,7 @@ void __cpuinit check_tsc_sync_source(int cpu)
- 	 */
- 	atomic_inc(&start_count);
- 
--	check_tsc_warp();
-+	check_tsc_warp(loop_timeout(cpu));
- 
- 	while (atomic_read(&stop_count) != cpus-1)
- 		cpu_relax();
-@@ -183,7 +202,7 @@ void __cpuinit check_tsc_sync_target(void)
- 	while (atomic_read(&start_count) != cpus)
- 		cpu_relax();
- 
--	check_tsc_warp();
-+	check_tsc_warp(loop_timeout(smp_processor_id()));
- 
- 	/*
- 	 * Ok, we are done:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-
+iQIVAwUBTzCM5DYtFsjWk68qAQhQ0A//XI2d1Omw8s9KgmTmXAE4pjlsx3fZzb8e
+cfy1Zm4RkUiGt/phK8VqDzWo4pYmEyQizlB2AWdXNc9NCe96mYgZ1zOutfwJ1USb
+J1P3irZqMU1Dm32ZkNeSSKy39XRGSFJ6k9H3vz8H1n8v1sS1vDdbmL1AOMBSZYqU
+dkGsGfB/p0adEganE2Ykn/dc5oYKjOtEA3OaWWvAWEsNpOyhtcIchWoaLn3yRzt3
+IJsqqGghInPTOJp43QlYxfs+VlvzNydfC+DllxDnRerZiYlkcF0aHfjlrVf2C+6w
+q2D/3aFcCGaTgZl6IoJyKuHjpfnfgyWw4kb0XapChD2/y8LUhiqwSevuyY6CGOn2
+CzcF2RtBejLxUusStLvS+ujT0M2HrQPkaiJ+eMIFydSkU0TmMcGY9olpwlmom6op
+DQQ7lwcOuiX6TfdgJWpVb/BXW1UDHfyesm33VfFJeE9uj+eddoRkt7YQms0/7LFf
+hqcnFuOPS9YhTgzKXXkENgqXt8Im8njR2/uB9UV+GGDefcUVKZ0TZbAGLRKmO2H/
+Ip7BhKxU6Q58Va5wxRZ36Rr1A2GQb+3Nk09ST/fONZLzj0z2FZk1KyR2Zou5TZxH
+TxyeuhkqQxYyAM74RkUZL1/T8+AIB1Rlq0c1kbsWVX1GORW7gLKoWNYFJXJZcED9
+f+khNZ9zx28=
+=mpEi
+-----END PGP SIGNATURE-----
+--=-=-=--
