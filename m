@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab2BGXRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 18:17:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39511 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753992Ab2BGXRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 18:17:32 -0500
-Date: Tue, 7 Feb 2012 17:19:24 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        kexec-list <kexec@lists.infradead.org>
-Subject: Re: [PATCH] x86, kdump: No need to disable ioapic in crash path
-Message-ID: <20120207221924.GH6346@redhat.com>
-References: <1328206323-25580-1-git-send-email-dzickus@redhat.com>
- <m1r4ycsts1.fsf@fess.ebiederm.org>
- <20120207215741.GD5650@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120207215741.GD5650@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757208Ab2BGXW7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 18:22:59 -0500
+Received: from zep00a03.dent.med.uni-muenchen.de ([138.246.161.8]:36606 "HELO
+	md.dent.med.uni-muenchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757141Ab2BGXW6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 18:22:58 -0500
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Feb 2012 18:22:58 EST
+Date: 8 Feb 2012 00:16:15 +0100
+Message-ID: <20120207231615.11358.qmail@md.dent.med.uni-muenchen.de>
+From: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
+To: jack@suse.cz
+CC: linux-kernel@vger.kernel.org
+In-reply-to: <20120207225246.GA18832@quack.suse.cz> (message from Jan Kara on
+	Tue, 7 Feb 2012 23:52:46 +0100)
+Subject: Re: Soft lockup problem
+References: <20120207215737.10744.qmail@md.dent.med.uni-muenchen.de> <20120207225246.GA18832@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 04:57:41PM -0500, Don Zickus wrote:
-> On Thu, Feb 02, 2012 at 03:24:46PM -0800, Eric W. Biederman wrote:
-> > > Eric, brought up a point that because the boot code was restructured we may
-> > > not need to disable the io apic any more in the crash path.  The original
-> > > concern that led to the development of disable_IO_APIC, was that the TSC
-> > > calibration on boot up relied on the PIT timer for reference.  Access
-> > > to the PIT required 8259 interrupts to be working.  This wouldn't work
-> > > if the ioapic needed to be configured.  So on panic path, the ioapic was
-> > > reconfigured to use virtual wire mode to allow the 8259 to passthrough.
-> > 
-> > A small clarification originally it was the jiffies calibration that
-> > would fail if we could cause the PIT to generate interrupts through the
-> > 8259.  The boot would then hang at calibrating jiffies.
-> 
-> Ok.  Thanks!
+Thanks for your response.
 
-So now what has changed? Do we setup LAPIC and IOAPIC early enough to
-receive PIT interrupts in regular mode (non-virtual wire mode) or
-something else?
+> From: Jan Kara <jack@suse.cz>
 
-Thanks
-Vivek
+>   Hmm, then this isn't really a deadlock (at least in your case) but only a
+> rather unresponsive system.
+
+Well, like the subject says this is a "soft lockup"..
+When it happened the first time the system actually recovered
+after some hours.
+But like Gerard said, there is no apparent ground for this
+unresponsiveness, there are tons of memory free and no swapping.
+
+> Looking at the backtraces you provided I don't
+> see anything really suspicious. Only maybe fsnotify_mark process - do you
+> use fsnotify?
+
+I have configured CONFIG_FSNOTIFY=y indeed but don't think I'm using it
+from userspace..
+
+Regards,
+Wolfram.
