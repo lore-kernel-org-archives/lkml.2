@@ -1,134 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2BGPLf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 10:11:35 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63574 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab2BGPKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 10:10:50 -0500
-X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=SEpPaoqGAvwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=VnNF1IyMAAAA:8 a=UPm3pfgAAAAA:8 a=meVymXHHAAAA:8 a=wv91tmdJEZCA7l7znooA:9 a=_Pu3XhDJXVXLl6GBpEQA:7 a=jEp0ucaQiEUA:10 a=mOio7EKfaG4A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120207151049.164032464@goodmis.org>
-User-Agent: quilt/0.50-1
-Date: Tue, 07 Feb 2012 09:56:54 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Kevin Hilman <khilman@ti.com>, Josh Triplett <josh@joshtriplett.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH 1/3][RFC] tracing/rcu: Add trace_##name##__rcuidle() static tracepoint for
- inside rcu_idle_exit() sections
-References: <20120207145653.829892056@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-rcu-Add-trace_-name-__rcuidle-static-tracepo.patch
+	id S1755825Ab2BGPLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 10:11:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755502Ab2BGPLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 10:11:33 -0500
+Message-ID: <1328627490.3074.202.camel@bling.home>
+Subject: Re: [PATCH v2] KVM: Fix assigned device MSI-X entry setting leak
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Tue, 07 Feb 2012 08:11:30 -0700
+In-Reply-To: <20120207063124.GB23369@redhat.com>
+References: <20120130210346.22952.5215.stgit@bling.home>
+	 <20120131191120.GC3601@redhat.com> <1328564789.3074.145.camel@bling.home>
+	 <20120207063124.GB23369@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+On Tue, 2012-02-07 at 08:31 +0200, Michael S. Tsirkin wrote:
+> On Mon, Feb 06, 2012 at 02:46:29PM -0700, Alex Williamson wrote:
+> > On Tue, 2012-01-31 at 21:11 +0200, Michael S. Tsirkin wrote:
+> > > On Mon, Jan 30, 2012 at 02:05:54PM -0700, Alex Williamson wrote:
+> > > > We need to prioritize our matching when setting MSI-X vector
+> > > > entries.  Unused entries should only be used if we don't find
+> > > > an exact match or else we risk duplicating entries.  This was
+> > > > causing an ENOSPC return when trying to mask and unmask MSI-X
+> > > > vectors based on guest MSI-X table updates.
+> > > > 
+> > > > The new KVM_CAP_DEVICE_MSIX_MASK extension indicates the
+> > > > presence of this fix.
+> > > > 
+> > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > ---
+> > > > 
+> > > > v2: Add capability indicating MSIX_MASKing now works.
+> > > > 
+> > > > The faulting sequence went something like:
+> > > > 
+> > > > Start:
+> > > > [0] entry 0, vector A
+> > > > [1] entry 1, vector B
+> > > > [2] entry 2, vector C
+> > > > 
+> > > > Set entry 1 to 0:
+> > > > [0] entry 0, vector A
+> > > > [1] entry 1->1, vector B->0
+> > > > [2] entry 2, vector C
+> > > > 
+> > > > Set entry 2 to 0:
+> > > > [0] entry 0, vector A
+> > > > [1] entry 1->2, vector 0->0 <- incorrectly matched
+> > > > [2] entry 2, vector C
+> > > > 
+> > > > Set entry 2 to C:
+> > > > [0] entry 0, vector A
+> > > > [1] entry 2->2, vector 0->C <- incorrectly matched again
+> > > > [2] entry 2, vector C
+> > > > 
+> > > > Set entry 1 to B:
+> > > > [0] entry 0, vector A
+> > > > [1] entry 2, vector C
+> > > > [2] entry 2, vector C
+> > > > -ENOSPC
+> > > > 
+> > > >  Documentation/virtual/kvm/api.txt |    5 +++--
+> > > >  arch/x86/kvm/x86.c                |    1 +
+> > > >  include/linux/kvm.h               |    1 +
+> > > >  virt/kvm/assigned-dev.c           |   21 ++++++++++++++-------
+> > > >  4 files changed, 19 insertions(+), 9 deletions(-)
+> > > 
+> > > I don't object to fixing this bug. But I don't think
+> > > we need a capability for this. Here's why:
+> > > 
+> > > setting an entry to zero is not really matching
+> > > what devices need, since that would lose interrupts.
+> > > What devices need is mask entries to disable them,
+> > > then unmask and get an interrupt if it was delayed.
+> > > 
+> > > So, if we are going to add a new capability, how about
+> > > sticking a mask bit in the padding instead?
+> > 
+> > I'll take a look.  Are you suggesting then that we'd note the masked
+> > interrupt was deferred and inject when unmasked?
+> > 
+> > > As was shown in the past this can even improve performance since we can
+> > > propagate the mask bit back to the host device.
+> > 
+> > I'm dubious whether there's actually a use case that benefits from
+> > pushing the mask down to hardware.  The typical mask case is a temporary
+> > mask to update the vector data/address then unmask.  We're actually
+> > accelerating that by not pushing it down to hardware.  Are there real
+> > world drivers that enable a vector and then mask it for an extended
+> > period of time?
+> 
+> I don't know. Shen Yang at some point said:
+> "We have also reproduced the issue on some large scale benchmark on the guest with
+> "newer kernel like 2.6.30 on Xen, under very high interrupt rate, due to some
+> "interrupt rate limitation mechanism in kernel.
+> 
+> And these patches did push the interrupts down - but not to hardware,
+> masking interrupt as pending in kernel only sets a bit, it is only
+> pushed down when we next get an interrupt while vector is masked.
 
-Added is a new static inline function that lets *any* tracepoint be used
-inside a rcu_idle_exit() section. And this also solves the problem where
-the same tracepoint may be used inside a rcu_idle_exit() section as well
-as outside of one.
+I thought the high rate masking was on older guests, but in any case a
+reasonable first step is emulated masking in kvm so that we can
+re-inject on unmask and not lose interrupts.  That can either lead to
+lazy hardware masking with no additional change to the API or if someone
+takes the reigns on MSI-X table acceleration, we can head in that
+direction.  The MSI-X table interaction I see on an average sized guest
+with an assigned 82576 PF certainly isn't calling out for more
+acceleration, but 10G devices and beyond could behave differently.
+Thanks,
 
-I added a new tracepoint function with a "_rcuidle" extension. All
-tracepoints can be used with either the normal "trace_foobar()"
-function, or the "trace_foobar_rcuidle()" function when inside a
-rcu_idle_exit() section.
-
-All tracepoints defined by TRACE_EVENT() or any of the derivatives
-will have a "_rcuidle()" function also defined. When a tracepoint is
-used within an rcu_idle_exit() section, the "_rcuidle()" version must
-be used. This denotes that the tracepoint is within rcu_idle_exit()
-and it allows the rcu read locks within the tracepoint to still
-be valid, as this version takes us out of rcu_idle_exit().
-
-Another nice aspect about this patch is that "static inline"s are not
-compiled into text when not used. So only the tracepoints that actually
-use the _rcuidle() version will have them defined in the actual text
-that is booted.
-
-Link: http://lkml.kernel.org/r/1328563113.2200.39.camel@gandalf.stny.rr.com>
-
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/tracepoint.h |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index df0a779..00d073a 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -114,7 +114,7 @@ static inline void tracepoint_synchronize_unregister(void)
-  * as "(void *, void)". The DECLARE_TRACE_NOARGS() will pass in just
-  * "void *data", where as the DECLARE_TRACE() will pass in "void *data, proto".
-  */
--#define __DO_TRACE(tp, proto, args, cond)				\
-+#define __DO_TRACE(tp, proto, args, cond, prercu, postrcu)		\
- 	do {								\
- 		struct tracepoint_func *it_func_ptr;			\
- 		void *it_func;						\
-@@ -122,6 +122,7 @@ static inline void tracepoint_synchronize_unregister(void)
- 									\
- 		if (!(cond))						\
- 			return;						\
-+		prercu;							\
- 		rcu_read_lock_sched_notrace();				\
- 		it_func_ptr = rcu_dereference_sched((tp)->funcs);	\
- 		if (it_func_ptr) {					\
-@@ -132,6 +133,7 @@ static inline void tracepoint_synchronize_unregister(void)
- 			} while ((++it_func_ptr)->func);		\
- 		}							\
- 		rcu_read_unlock_sched_notrace();			\
-+		postrcu;						\
- 	} while (0)
- 
- /*
-@@ -139,7 +141,7 @@ static inline void tracepoint_synchronize_unregister(void)
-  * not add unwanted padding between the beginning of the section and the
-  * structure. Force alignment to the same alignment as the section start.
-  */
--#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
-+#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
- 	extern struct tracepoint __tracepoint_##name;			\
- 	static inline void trace_##name(proto)				\
- 	{								\
-@@ -147,7 +149,17 @@ static inline void tracepoint_synchronize_unregister(void)
- 			__DO_TRACE(&__tracepoint_##name,		\
- 				TP_PROTO(data_proto),			\
- 				TP_ARGS(data_args),			\
--				TP_CONDITION(cond));			\
-+				TP_CONDITION(cond),,);			\
-+	}								\
-+	static inline void trace_##name##_rcuidle(proto)		\
-+	{								\
-+		if (static_branch(&__tracepoint_##name.key))		\
-+			__DO_TRACE(&__tracepoint_##name,		\
-+				TP_PROTO(data_proto),			\
-+				TP_ARGS(data_args),			\
-+				TP_CONDITION(cond),			\
-+				rcu_idle_exit(),			\
-+				rcu_idle_enter());			\
- 	}								\
- 	static inline int						\
- 	register_trace_##name(void (*probe)(data_proto), void *data)	\
-@@ -190,7 +202,7 @@ static inline void tracepoint_synchronize_unregister(void)
- 	EXPORT_SYMBOL(__tracepoint_##name)
- 
- #else /* !CONFIG_TRACEPOINTS */
--#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args)	\
-+#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
- 	static inline void trace_##name(proto)				\
- 	{ }								\
- 	static inline int						\
--- 
-1.7.8.3
-
+Alex
 
