@@ -1,136 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab2BGLqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 06:46:24 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:39921 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab2BGLqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 06:46:22 -0500
-Message-ID: <fc2e8d9f8394165e8f4acc1a2f10ffdd.squirrel@webmail.greenhost.nl>
-In-Reply-To: <20120118171210.GB16835@redhat.com>
-References: <CAObL_7E1gtDF8Bjb9vmFFkVFmxWbx4DrgGU0QPJEd6KXgS7U8A@mail.gmail.com>
-    <20120117170512.GB17070@redhat.com>
-    <CAObL_7EA-Z8yBbr1+-VW0v8k1okdcMfjRe5LgWo8YL5uvOkXbQ@mail.gmail.com>
-    <49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
-    <20120118015013.GR11715@one.firstfloor.org>
-    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
-    <20120118022217.GS11715@one.firstfloor.org>
-    <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
-    <CAMnK33UzmQ-PdgAovmX9Q9JB5gKxw0mmLt0TZwK7xnWPWCqUzA@mail.gmail.com>
-    <20120118170006.GA16835@redhat.com>
-    <20120118171210.GB16835@redhat.com>
-Date: Tue, 7 Feb 2012 12:45:53 +0100
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!? [was: Re:
- [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF]
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Oleg Nesterov" <oleg@redhat.com>
-Cc: "Chris Evans" <scarybeasts@gmail.com>, "Andi Kleen" <andi@firstfloor.org>,
-        "Jamie Lokier" <jamie@shareable.org>,
-        "Andrew Lutomirski" <luto@mit.edu>, "Will Drewry" <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        "Roland McGrath" <mcgrathr@chromium.org>
-User-Agent: SquirrelMail/1.4.22
+	id S1755968Ab2BGLsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 06:48:24 -0500
+Received: from enyo.dsw2k3.info ([195.71.86.239]:46803 "EHLO enyo.dsw2k3.info"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755641Ab2BGLsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 06:48:23 -0500
+Date: Tue, 7 Feb 2012 12:48:06 +0100
+From: Matthias Schniedermeyer <ms@citd.de>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org
+Subject: Re: Linux 3.2.5
+Message-ID: <20120207114806.GA15323@citd.de>
+References: <20120206181622.GA28811@kroah.com>
+ <20120207084037.GA6140@citd.de>
+ <4F30FABF.4060409@ladisch.de>
+ <20120207105835.GA12864@citd.de>
+ <4F310DBC.1040501@ladisch.de>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 1.4
-X-Scan-Signature: 98cd051f671ee36aeaf0d6c34a549736
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F310DBC.1040501@ladisch.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, January 18, 2012 18:12, Oleg Nesterov wrote:
-> On 01/18, Oleg Nesterov wrote:
->>
->> On 01/17, Chris Evans wrote:
->> >
->> > 1) Tracee is compromised; executes fork() which is syscall that isn't allowed
->> > 2) Tracee traps
->> > 2b) Tracee could take a SIGKILL here
->> > 3) Tracer looks at registers; bad syscall
->> > 3b) Or tracee could take a SIGKILL here
->> > 4) The only way to stop the bad syscall from executing is to rewrite
->> > orig_eax (PTRACE_CONT + SIGKILL only kills the process after the
->> > syscall has finished)
->> > 5) Disaster: the tracee took a SIGKILL so any attempt to address it by
->> > pid (such as PTRACE_SETREGS) fails.
->> > 6) Syscall fork() executes; possible unsupervised process now running
->> > since the tracer wasn't expecting the fork() to be allowed.
->>
->> As for fork() in particular, it can't succeed after SIGKILL.
->>
->> But I agree, probably it makes sense to change ptrace_stop() to check
->> fatal_signal_pending() and do do_group_exit(SIGKILL) after it sleeps
->> in TASK_TRACED. Or we can change tracehook_report_syscall_entry()
->>
->> 	-	return 0;
->> 	+	return !fatal_signal_pending();
->>
->> (no, I do not literally mean the change above)
->>
->> Not only for security. The current behaviour sometime confuses the
->> users. Debugger sends SIGKILL to the tracee and assumes it should
->> die asap, but the tracee exits only after syscall.
->
-> Something like the patch below.
->
-> Oleg.
->
-> --- x/include/linux/tracehook.h
-> +++ x/include/linux/tracehook.h
-> @@ -54,12 +54,12 @@ struct linux_binprm;
->  /*
->   * ptrace report for syscall entry and exit looks identical.
->   */
-> -static inline void ptrace_report_syscall(struct pt_regs *regs)
-> +static inline int ptrace_report_syscall(struct pt_regs *regs)
->  {
->  	int ptrace = current->ptrace;
->
->  	if (!(ptrace & PT_PTRACED))
-> -		return;
-> +		return 0;
->
->  	ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
->
-> @@ -72,6 +72,8 @@ static inline void ptrace_report_syscall
->  		send_sig(current->exit_code, current, 1);
->  		current->exit_code = 0;
->  	}
-> +
-> +	return fatal_signal_pending(current);
->  }
->
->  /**
-> @@ -96,8 +98,7 @@ static inline void ptrace_report_syscall
->  static inline __must_check int tracehook_report_syscall_entry(
->  	struct pt_regs *regs)
->  {
-> -	ptrace_report_syscall(regs);
-> -	return 0;
-> +	return ptrace_report_syscall(regs);
->  }
->
+On 07.02.2012 12:40, Clemens Ladisch wrote:
+> Matthias Schniedermeyer wrote:
+> > On 07.02.2012 11:19, Clemens Ladisch wrote:
+> >> Matthias Schniedermeyer wrote:
+> >>> pci 0000:05:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
+> >>
+> >> Please try that kernel parameter.
+> >
+> > I don't want/need ASPM, disabled is fine with me.
+> 
+> In your case, it appears that sound requires ASPM.
 
-Tested-by: Indan Zupancic <indan@nul.nu>
+OK. I will try that later today.
 
-Tested on 32-bit x86. It behaves as expected, please apply.
+But i'm not hopeful because in syslog it says:
+ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
+...
+ACPI _OSC control for PCIe not granted, disabling ASPM
 
-Greetings,
+So if ACPI doesn't want to relinquish control of ASPM, how is Linux 
+supposed to enable it?
 
-Indan
 
+
+
+
+Bis denn
+
+-- 
+Real Programmers consider "what you see is what you get" to be just as 
+bad a concept in Text Editors as it is in women. No, the Real Programmer
+wants a "you asked for it, you got it" text editor -- complicated, 
+cryptic, powerful, unforgiving, dangerous.
 
