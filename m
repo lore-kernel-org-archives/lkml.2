@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab2BGXW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 18:22:59 -0500
-Received: from zep00a03.dent.med.uni-muenchen.de ([138.246.161.8]:36606 "HELO
-	md.dent.med.uni-muenchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757141Ab2BGXW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 18:22:58 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Feb 2012 18:22:58 EST
-Date: 8 Feb 2012 00:16:15 +0100
-Message-ID: <20120207231615.11358.qmail@md.dent.med.uni-muenchen.de>
-From: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
-To: jack@suse.cz
-CC: linux-kernel@vger.kernel.org
-In-reply-to: <20120207225246.GA18832@quack.suse.cz> (message from Jan Kara on
-	Tue, 7 Feb 2012 23:52:46 +0100)
-Subject: Re: Soft lockup problem
-References: <20120207215737.10744.qmail@md.dent.med.uni-muenchen.de> <20120207225246.GA18832@quack.suse.cz>
+	id S1757213Ab2BGX0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 18:26:07 -0500
+Received: from xes-mad.com ([216.165.139.218]:4318 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756602Ab2BGX0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 18:26:06 -0500
+Date: Tue, 07 Feb 2012 17:25:52 -0600 (CST)
+From: Aaron Sierra <asierra@xes-inc.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: guenter roeck <guenter.roeck@ericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>, Peter Tyser <ptyser@xes-inc.com>
+Subject: Re: [PATCH 2/3 v2] gpio: Add support for Intel ICHx/3100/Series[56] GPIO
+Message-ID: <7e927131-d885-4dfd-8c29-4807ae5766b8@zimbra>
+In-Reply-To: <20120207230741.17220c09@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.52.0.65]
+X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC15 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your response.
+> > +static int ichx_write_bit(int reg, unsigned nr, int val, int
+> > verify)
+> > +{
+> > +	unsigned long flags;
+> > +	u32 data, tmp;
+> > +	int reg_nr = nr / 32;
+> > +	int bit = nr & 0x1f;
+> > +	int ret = 0;
+> > +
+> > +	spin_lock_irqsave(&ichx_priv.lock, flags);
+> > +
+> > +	data = ICHX_READ(ichx_regs[reg][reg_nr], ichx_priv.gpio_base);
+> > +	data = (data & ~(1 << bit)) | (val << bit);
+> 
+> I posted a fix for this function last Sunday:
+> 
+> Subject: [PATCH] gpio-ich: Fix setting GPIO value
+> Date: Sun, 5 Feb 2012 21:44:44 +0100
+> 
+> Please apply it, otherwise your driver doesn't implement the gpio
+> driver API properly and code running on top of it (consumer drivers)
+> may fail.
+> 
 
-> From: Jan Kara <jack@suse.cz>
+Jean,
+Thanks for the reminder and for the patch. I have applied it to my tree.
 
->   Hmm, then this isn't really a deadlock (at least in your case) but only a
-> rather unresponsive system.
+-Aaron
 
-Well, like the subject says this is a "soft lockup"..
-When it happened the first time the system actually recovered
-after some hours.
-But like Gerard said, there is no apparent ground for this
-unresponsiveness, there are tons of memory free and no swapping.
-
-> Looking at the backtraces you provided I don't
-> see anything really suspicious. Only maybe fsnotify_mark process - do you
-> use fsnotify?
-
-I have configured CONFIG_FSNOTIFY=y indeed but don't think I'm using it
-from userspace..
-
-Regards,
-Wolfram.
+> > +	ICHX_WRITE(data, ichx_regs[reg][reg_nr], ichx_priv.gpio_base);
+> > +	tmp = ICHX_READ(ichx_regs[reg][reg_nr], ichx_priv.gpio_base);
+> > +	if (verify && (data != tmp))
+> > +		ret = -EPERM;
+> > +
+> > +	spin_unlock_irqrestore(&ichx_priv.lock, flags);
+> > +
+> > +	return ret;
+> > +}
+> 
+> --
+> Jean Delvare
+> 
