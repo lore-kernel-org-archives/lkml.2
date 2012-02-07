@@ -1,126 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab2BGS56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 13:57:58 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:52533 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756533Ab2BGS54 (ORCPT
+	id S1756591Ab2BGS6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 13:58:16 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:41793 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756461Ab2BGS6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 13:57:56 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 4/4] CPU hotplug,
- cpusets: Differentiate the CPU online and CPU offline callbacks
-To: paul@paulmenage.org, a.p.zijlstra@chello.nl, mingo@elte.hu, rjw@sisk.pl,
-        tj@kernel.org
-Cc: frank.rowand@am.sony.com, pjt@google.com, tglx@linutronix.de,
-        lizf@cn.fujitsu.com, prashanth@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Wed, 08 Feb 2012 00:27:36 +0530
-Message-ID: <20120207185717.7482.45388.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
-References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 7 Feb 2012 13:58:14 -0500
+Subject: [GIT PULL] target: pending updates for v3.3-rc3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Feb 2012 10:58:04 -0800
+Message-ID: <1328641084.2904.90.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12020718-5816-0000-0000-0000013321A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call scan_cpusets_during_cpu_online() upon CPU online events and
-call scan_for_empty_cpusets() upon CPU offline events.
+Hi Linus,
 
-Reported-by: Prashanth K. Nageshappa <prashanth@linux.vnet.ibm.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: stable@vger.kernel.org
----
+The following series contains pending target bug-fixes and cleanups for
+v3.3-rc3 that have been addressed the past weeks in lio-core.git.
 
- include/linux/cpuset.h |    4 ++--
- kernel/cpuset.c        |    9 +++++++--
- kernel/sched/core.c    |   12 ++++++++++--
- 3 files changed, 19 insertions(+), 6 deletions(-)
+Some of the highlights include:
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index e9eaec5..acfe484 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -20,7 +20,7 @@ extern int number_of_cpusets;	/* How many cpusets are defined in system? */
- 
- extern int cpuset_init(void);
- extern void cpuset_init_smp(void);
--extern void cpuset_update_active_cpus(void);
-+extern void cpuset_update_active_cpus(bool cpu_online);
- extern void cpuset_cpus_allowed(struct task_struct *p, struct cpumask *mask);
- extern int cpuset_cpus_allowed_fallback(struct task_struct *p);
- extern nodemask_t cpuset_mems_allowed(struct task_struct *p);
-@@ -133,7 +133,7 @@ static inline void set_mems_allowed(nodemask_t nodemask)
- static inline int cpuset_init(void) { return 0; }
- static inline void cpuset_init_smp(void) {}
- 
--static inline void cpuset_update_active_cpus(void)
-+static inline void cpuset_update_active_cpus(bool cpu_online)
- {
- 	partition_sched_domains(1, NULL, NULL);
- }
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index c56e705..d863df5 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2223,8 +2223,10 @@ static void scan_for_empty_cpusets(struct cpuset *root)
-  *
-  * Called within get_online_cpus().  Needs to call cgroup_lock()
-  * before calling generate_sched_domains().
-+ *
-+ * @cpu_online: whether this is a CPU online event or a CPU offline event.
-  */
--void cpuset_update_active_cpus(void)
-+void cpuset_update_active_cpus(bool cpu_online)
- {
- 	struct sched_domain_attr *attr;
- 	cpumask_var_t *doms;
-@@ -2234,7 +2236,10 @@ void cpuset_update_active_cpus(void)
- 	mutex_lock(&callback_mutex);
- 	cpumask_copy(top_cpuset.cpus_allowed, cpu_active_mask);
- 	mutex_unlock(&callback_mutex);
--	scan_for_empty_cpusets(&top_cpuset);
-+	if (cpu_online)
-+		scan_cpusets_during_cpu_online(&top_cpuset);
-+	else
-+		scan_for_empty_cpusets(&top_cpuset);
- 	ndoms = generate_sched_domains(&doms, &attr);
- 	cgroup_unlock();
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5255c9d..d4dd9ef 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6732,7 +6732,11 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
--		cpuset_update_active_cpus();
-+		/*
-+		 * The 'true' value indicates that we are calling the function
-+		 * due to a CPU online operation in progress.
-+		 */
-+		cpuset_update_active_cpus(true);
- 		return NOTIFY_OK;
- 	default:
- 		return NOTIFY_DONE;
-@@ -6744,7 +6748,11 @@ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
- {
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_DOWN_PREPARE:
--		cpuset_update_active_cpus();
-+		/*
-+		 * The 'false' value indicates that we are calling the function
-+		 * due to a CPU offline operation in progress.
-+		 */
-+		cpuset_update_active_cpus(false);
- 		return NOTIFY_OK;
- 	default:
- 		return NOTIFY_DONE;
+- Fix handling for control CDBs with data greater than PAGE_SIZE (andy)
+- Use IP_FREEBIND for iscsi-target to address network portal creation
+  issues with systemd (dax)
+- Allow PERSISTENT RESERVE IN for non-reservation holder (marco)
+- Fix iblock se_dev_attrib.unmap_granularity (marco)
+- Fix unsupported WRITE_SAME sense payload handling (martin)
+- Add workaround for zero-length control CDB handling (nab)
+- Fix discovery with INADDR_ANY and IN6ADDR_ANY_INIT (nab)
+- Fix target_submit_cmd() exception handling (nab)
+- Return correct ASC for unimplemented VPD pages (roland)
+- Don't zero pages used for data buffers (roland)
+- Fix return code of core_tpg_.*_lun (sebastian)
+
+Please go ahead and pull from:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git 3.3-rc-fixes
+
+Thanks!
+
+--nab
+
+Andy Grover (2):
+  target: Allow control CDBs with data > 1 page
+  target: Change target_submit_cmd() to return void
+
+Christoph Hellwig (2):
+  target: don't allocate bio headroom in iblock
+  iblock: fix handling of large requests
+
+Dan Carpenter (2):
+  iscsi-target: make one-bit bitfields unsigned
+  target: handle empty string writes in sysfs
+
+Dax Kelson (1):
+  iscsi: use IP_FREEBIND socket option
+
+Jesper Juhl (1):
+  iscsi-target: Fix up a few assignments
+
+Marco Sanvido (3):
+  target: Use correct preempted registration sense code
+  target: Allow PERSISTENT RESERVE IN for non-reservation holder
+  target: Fix iblock se_dev_attrib.unmap_granularity
+
+Martin Svec (1):
+  target: Fix unsupported WRITE_SAME sense payload
+
+Nicholas Bellinger (5):
+  target: Add workaround for zero-length control CDB handling
+  iscsi-target: Fix reject release handling in iscsit_free_cmd()
+  iscsi-target: Fix double list_add with iscsit_alloc_buffs reject
+  iscsi-target: Fix discovery with INADDR_ANY and IN6ADDR_ANY_INIT
+  target: Fix target_submit_cmd() exception handling
+
+Roland Dreier (3):
+  target: Correct sense key for INVALID FIELD IN {PARAMETER LIST,CDB}
+  target: Return correct ASC for unimplemented VPD pages
+  target: Fail INQUIRY commands with EVPD==0 but PAGE CODE!=0
+
+Sebastian Andrzej Siewior (4):
+  target: avoid multiple outputs in scsi_dump_inquiry()
+  target: use save/restore lock primitive in core_dec_lacl_count()
+  target: fix return code of core_tpg_.*_lun
+  target: accept REQUEST_SENSE with 18bytes
+
+Stephen Rothwell (1):
+  iscsi_target: in_aton needs linux/inet.h
+
+roland@purestorage.com (1):
+  target: Don't zero pages used for data buffers
+
+ drivers/target/iscsi/iscsi_target.c          |   39 +++++++-
+ drivers/target/iscsi/iscsi_target_configfs.c |    1 +
+ drivers/target/iscsi/iscsi_target_core.h     |    6 +-
+ drivers/target/iscsi/iscsi_target_erl1.c     |    4 +-
+ drivers/target/iscsi/iscsi_target_login.c    |   39 +++++++-
+ drivers/target/iscsi/iscsi_target_util.c     |   11 +++
+ drivers/target/target_core_alua.c            |    8 +-
+ drivers/target/target_core_cdb.c             |   51 ++++++-----
+ drivers/target/target_core_configfs.c        |   12 ++-
+ drivers/target/target_core_device.c          |   28 +++---
+ drivers/target/target_core_fabric_configfs.c |    4 +-
+ drivers/target/target_core_iblock.c          |   11 ++-
+ drivers/target/target_core_internal.h        |    2 +-
+ drivers/target/target_core_pr.c              |   43 +++++-----
+ drivers/target/target_core_pscsi.c           |    4 +-
+ drivers/target/target_core_tpg.c             |    3 +-
+ drivers/target/target_core_transport.c       |  124 +++++++++++++++++---------
+ drivers/target/tcm_fc/tfc_cmd.c              |    9 +--
+ include/target/target_core_backend.h         |    4 +-
+ include/target/target_core_base.h            |    1 +
+ include/target/target_core_fabric.h          |    2 +-
+ 21 files changed, 266 insertions(+), 140 deletions(-)
+
+-- 
+
 
