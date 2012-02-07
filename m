@@ -1,84 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab2BGTTr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 14:19:47 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59105 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752447Ab2BGTTq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 14:19:46 -0500
-Date: Tue, 7 Feb 2012 19:19:43 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH v3] ASoC: da7210: Add support for PLL and SRM
-Message-ID: <20120207191943.GB15929@opensource.wolfsonmicro.com>
-References: <1328095529.15257.7.camel@matrix>
- <20120201115035.GC5648@opensource.wolfsonmicro.com>
- <1328621149.26721.18.camel@matrix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
-Content-Disposition: inline
-In-Reply-To: <1328621149.26721.18.camel@matrix>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756693Ab2BGTUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 14:20:12 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:52788 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752447Ab2BGTUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 14:20:09 -0500
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Feb 2012 14:20:09 EST
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Subject: [RESUBMIT][PATCH v2 1/4] ARM: OMAP1: ams-delta: set up regulator over modem reset GPIO pin
+Date: Tue,  7 Feb 2012 20:11:17 +0100
+Message-Id: <1328641879-18884-2-git-send-email-jkrzyszt@tis.icnet.pl>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1328641879-18884-1-git-send-email-jkrzyszt@tis.icnet.pl>
+References: <1328641879-18884-1-git-send-email-jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Amstrad Delta on-board latch2 bit named MODEM_NRESET, now available
+as a GPIO pin AMS_DELTA_GPIO_PIN_NMODEM_RESET, is used to power up/down
+(bring into/out of a reset state) two distinct on-board devices
+simultaneously: the modem, and the voice codec. As a consequence, that
+bit is, or can be, manipulated concurrently by two drivers, or their
+platform provided hooks.
 
---UlVJffcvxoiEqYs2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Instead of updating those drivers to use the gpiolib API as a new method
+of controlling the MODEM_NRESET pin state, like it was done to other
+drivers accessing latch2 pins, and still being vulnerable to potential
+concurrency conflicts, or trying to solve that sharing issue with a
+custom piece of code, set up a fixed regulator device on top of that
+GPIO pin, with the intention of updating both drivers to manipulate that
+regulator, not the GPIO pin directly.
 
-On Tue, Feb 07, 2012 at 06:55:49PM +0530, Ashish Chavan wrote:
-> On Wed, 2012-02-01 at 11:50 +0000, Mark Brown wrote:
-> > On Wed, Feb 01, 2012 at 04:55:29PM +0530, Ashish Chavan wrote:
+Before the ASoC driver is updated and the modem platform data expanded
+with a power management callback for switching its power, the
+ams_delta_latch_write() function, which still provides the old API for
+accessing latch2 functionality from not updated drivers, is modified to
+toggle the regulator instead of the MODEM_NRESET GPIO pin.  A helper
+function provided for balancing the regulator enable/disable operations,
+together with the consumer data needed for tracking the regulator state,
+will be removed once the drivers are updated.
 
-> > You need checks elsewhere to make sure that the user doesn't try to
-> > reconfigure master/slave while the PLL is active.
+Depends on patch series "ARM: OMAP1: ams-delta: replace custom I/O with
+GPIO".
 
-> AFAIK master/slave configuration is static(depending on the board
-> configuration) and done via set_fmt() from hw_params() of platform
-> driver. Can you please point me to an example where dynamic/runtime
-> setting of I2S master/slave mode is supported?
+Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Tony Lindgren <tony@atomide.com>
+---
+Changes against initial version:
+* rename consumer setup elements to match their final, modem only
+  related purpose,
+* initialize the regulator pointer and mutex before first use, then
+  omit testing that pointer against NULL value.
 
-The most common case is things like bluetooth SCO connections where if
-there's a baseband you want to clock from the baseband but if there's no
-baseband (eg, for VoIP calls) you can't do that.  Some devices also need
-to change audio interface configuration depening on things like the
-number of channels.
+ arch/arm/mach-omap1/Kconfig           |    2 +
+ arch/arm/mach-omap1/board-ams-delta.c |  104 +++++++++++++++++++++++++++++++--
+ 2 files changed, 100 insertions(+), 6 deletions(-)
 
-Even without any dynamic reconfiguration you also have cases where the
-sequence people use to power things up is to set the clocking and then
-configure the audio interface format - even if the audio interface
-format is always the same you'll still get it being reconfigured the
-first time you start up.
+diff --git a/arch/arm/mach-omap1/Kconfig b/arch/arm/mach-omap1/Kconfig
+index 5b1edba..4b6a774 100644
+--- a/arch/arm/mach-omap1/Kconfig
++++ b/arch/arm/mach-omap1/Kconfig
+@@ -157,6 +157,8 @@ config MACH_AMS_DELTA
+ 	select FIQ
+ 	select GPIO_GENERIC_PLATFORM
+ 	select LEDS_GPIO_REGISTER
++	select REGULATOR
++	select REGULATOR_FIXED_VOLTAGE
+ 	help
+ 	  Support for the Amstrad E3 (codename Delta) videophone. Say Y here
+ 	  if you have such a device.
+diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
+index 87b1303..43dcbda 100644
+--- a/arch/arm/mach-omap1/board-ams-delta.c
++++ b/arch/arm/mach-omap1/board-ams-delta.c
+@@ -18,7 +18,11 @@
+ #include <linux/input.h>
+ #include <linux/interrupt.h>
+ #include <linux/leds.h>
++#include <linux/mutex.h>
+ #include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++#include <linux/regulator/fixed.h>
++#include <linux/regulator/machine.h>
+ #include <linux/serial_8250.h>
+ #include <linux/export.h>
+ 
+@@ -237,11 +241,6 @@ static struct gpio latch_gpios[] __initconst = {
+ 		.label	= "scard_cmdvcc",
+ 	},
+ 	{
+-		.gpio	= AMS_DELTA_GPIO_PIN_MODEM_NRESET,
+-		.flags	= GPIOF_OUT_INIT_LOW,
+-		.label	= "modem_nreset",
+-	},
+-	{
+ 		.gpio	= AMS_DELTA_GPIO_PIN_MODEM_CODEC,
+ 		.flags	= GPIOF_OUT_INIT_LOW,
+ 		.label	= "modem_codec",
+@@ -258,6 +257,71 @@ static struct gpio latch_gpios[] __initconst = {
+ 	},
+ };
+ 
++static struct regulator_consumer_supply modem_nreset_consumers[] __initconst = {
++	REGULATOR_SUPPLY("RESET#", "serial8250.1"),
++	REGULATOR_SUPPLY("POR", "cx20442-codec"),
++};
++
++static struct regulator_init_data modem_nreset_data __initconst = {
++	.constraints		= {
++		.valid_ops_mask		= REGULATOR_CHANGE_STATUS,
++		.boot_on		= 1,
++	},
++	.num_consumer_supplies	= ARRAY_SIZE(modem_nreset_consumers),
++	.consumer_supplies	= modem_nreset_consumers,
++};
++
++static struct fixed_voltage_config modem_nreset_config __initconst = {
++	.supply_name		= "modem_nreset",
++	.microvolts		= 3300000,
++	.gpio			= AMS_DELTA_GPIO_PIN_MODEM_NRESET,
++	.startup_delay		= 25000,
++	.enable_high		= 1,
++	.enabled_at_boot	= 1,
++	.init_data		= &modem_nreset_data,
++};
++
++static struct platform_device modem_nreset_device = {
++	.name	= "reg-fixed-voltage",
++	.id	= -1,
++	.dev	= {
++		.platform_data	= &modem_nreset_config,
++	},
++};
++
++struct modem_private_data {
++	struct regulator *regulator;
++	struct {
++		struct mutex lock;
++		bool enabled;
++	} consumer;
++};
++
++static int regulator_toggle(struct modem_private_data *priv, bool enable)
++{
++	int err = 0;
++
++	mutex_lock(&priv->consumer.lock);
++	if (IS_ERR(priv->regulator)) {
++		err = PTR_ERR(priv->regulator);
++	} else if (enable) {
++		if (!priv->consumer.enabled) {
++			err = regulator_enable(priv->regulator);
++			priv->consumer.enabled = true;
++		}
++	} else {
++		if (priv->consumer.enabled) {
++			err = regulator_disable(priv->regulator);
++			priv->consumer.enabled = false;
++		}
++	}
++	mutex_unlock(&priv->consumer.lock);
++
++	return err;
++}
++
++static struct modem_private_data modem_priv;
++
+ void ams_delta_latch_write(int base, int ngpio, u16 mask, u16 value)
+ {
+ 	int bit = 0;
+@@ -266,7 +330,10 @@ void ams_delta_latch_write(int base, int ngpio, u16 mask, u16 value)
+ 	for (; bit < ngpio; bit++, bitpos = bitpos << 1) {
+ 		if (!(mask & bitpos))
+ 			continue;
+-		gpio_set_value(base + bit, (value & bitpos) != 0);
++		else if (base + bit == AMS_DELTA_GPIO_PIN_MODEM_NRESET)
++			regulator_toggle(&modem_priv, (value & bitpos) != 0);
++		else
++			gpio_set_value(base + bit, (value & bitpos) != 0);
+ 	}
+ }
+ EXPORT_SYMBOL(ams_delta_latch_write);
+@@ -496,6 +563,12 @@ static int __init late_init(void)
+ 
+ 	platform_add_devices(late_devices, ARRAY_SIZE(late_devices));
+ 
++	err = platform_device_register(&modem_nreset_device);
++	if (err) {
++		pr_err("Couldn't register the modem regulator device\n");
++		return err;
++	}
++
+ 	omap_cfg_reg(M14_1510_GPIO2);
+ 	ams_delta_modem_ports[0].irq =
+ 			gpio_to_irq(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
+@@ -507,6 +580,10 @@ static int __init late_init(void)
+ 	}
+ 	gpio_direction_input(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
+ 
++	/* Initialize the modem_nreset regulator consumer before use */
++	mutex_init(&modem_priv.consumer.lock);
++	modem_priv.regulator = ERR_PTR(-ENODEV);
++
+ 	ams_delta_latch2_write(
+ 		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC,
+ 		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC);
+@@ -514,8 +591,23 @@ static int __init late_init(void)
+ 	err = platform_device_register(&ams_delta_modem_device);
+ 	if (err)
+ 		goto gpio_free;
++
++	/*
++	 * Once the modem device is registered, the modem_nreset
++	 * regulator can be requested on behalf of that device.
++	 * The regulator is used via ams_delta_latch_write()
++	 * by the modem and ASoC drivers until updated.
++	 */
++	modem_priv.regulator = regulator_get(&ams_delta_modem_device.dev,
++			"RESET#");
++	if (IS_ERR(modem_priv.regulator)) {
++		err = PTR_ERR(modem_priv.regulator);
++		goto unregister;
++	}
+ 	return 0;
+ 
++unregister:
++	platform_device_unregister(&ams_delta_modem_device);
+ gpio_free:
+ 	gpio_free(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
+ 	return err;
+-- 
+1.7.3.4
 
---UlVJffcvxoiEqYs2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPMXiiAAoJEBus8iNuMP3dQrEP/20OGAlYAdFVLyBpuu8iVKXv
-Zo/vmFo7SlV8cAT/dKryMz76blwwcmznkEhOxjkSrt2CjQqVuY8PmOxXNEDwTbjz
-6Z69YRpmPt5fvGmFzGKIypIDL4YTG2hQm9vsHk8HMMStaU1ZhfGkqHvaPu2COTAu
-zc2oJQlRuX+BlfsI5T5KVAibhJK7+9cbybMjfm8zlK/+Ykwyo4j5tSzleV5yDCq3
-HcyQQHZGOXVbfexsb2avtWOih2Yg6KFzJRghtyHYhksFqtwk1rfvfeXzUpieBGVL
-FQ+LnprhX0Hx0MvzvIi72BpJspgMPZk26wrXKdP4Vjc6HwHAtCey2srzjLbo9lUr
-3LMm4bq1crN/dyPUfBwMVeYnhLpu8ABodzZCYhXCBw7jrkAJJlaLNUt5DLFlVkHA
-VCHo6TGf4OIoGA8pPEFYGLjEwReO56G9kHHA69tkZg8RhHuhAjI/NXZm60BOdQgt
-qw5UuEHqr7Up9KyGBPEoptRXR6oH/otqSy6pc8FsmgkP8TArPrlh6GJwxEucx1ab
-uP87qhIH5BpPFhw5iEPOF0Zrfiv+u5vNh0SuebMgncnGJfwAQcBidEN/4wuMA27g
-stCJyQI6BiUmRYmscX9W4ZFrIFExF9e+ZvwkBCq9V5kqJz0whVGGejVimUDmmz9T
-8p9he/GvZ/94HVCnBmZX
-=ZxcQ
------END PGP SIGNATURE-----
-
---UlVJffcvxoiEqYs2--
