@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab2BHFKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 00:10:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44007 "EHLO mail.zytor.com"
+	id S1751621Ab2BHFKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 00:10:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44008 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab2BHFJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750959Ab2BHFJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Feb 2012 00:09:41 -0500
 From: "H. Peter Anvin" <hpa@zytor.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 02/21] posix_types: Make it possible to override __kernel_fsid_t
-Date: Tue,  7 Feb 2012 21:08:46 -0800
-Message-Id: <1328677745-20121-3-git-send-email-hpa@zytor.com>
+        "H. Peter Anvin" <hpa@zytor.com>, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Subject: [PATCH 06/21] cris: Use generic posix_types.h
+Date: Tue,  7 Feb 2012 21:08:50 -0800
+Message-Id: <1328677745-20121-7-git-send-email-hpa@zytor.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1328677745-20121-1-git-send-email-hpa@zytor.com>
 References: <1328677745-20121-1-git-send-email-hpa@zytor.com>
@@ -22,43 +23,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@zytor.com>
 
-__kernel_fsid_t has members of type "long" on at least one
-architecture (MIPS32), so make it possible to override the definition.
+Change the cris architecture to use <asm-generic/posix_types.h>.
 
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
 ---
- include/asm-generic/posix_types.h |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+ arch/cris/include/asm/posix_types.h |   50 +++++++----------------------------
+ 1 files changed, 10 insertions(+), 40 deletions(-)
 
-diff --git a/include/asm-generic/posix_types.h b/include/asm-generic/posix_types.h
-index ac83f6b..ac21760 100644
---- a/include/asm-generic/posix_types.h
-+++ b/include/asm-generic/posix_types.h
-@@ -73,6 +73,12 @@ typedef long		__kernel_ptrdiff_t;
- #endif
- #endif
- 
-+#ifndef __kernel_fsid_t
-+typedef struct {
-+	int	val[2];
-+} __kernel_fsid_t;
-+#endif
-+
- /*
-  * anything below here should be completely generic
+diff --git a/arch/cris/include/asm/posix_types.h b/arch/cris/include/asm/posix_types.h
+index ce3fb25..72b3cd6 100644
+--- a/arch/cris/include/asm/posix_types.h
++++ b/arch/cris/include/asm/posix_types.h
+@@ -12,55 +12,25 @@
+  * assume GCC is being used.
   */
-@@ -86,10 +92,6 @@ typedef char *		__kernel_caddr_t;
- typedef unsigned short	__kernel_uid16_t;
- typedef unsigned short	__kernel_gid16_t;
  
+-typedef unsigned long	__kernel_ino_t;
+ typedef unsigned short	__kernel_mode_t;
++#define __kernel_mode_t __kernel_mode_t
++
+ typedef unsigned short	__kernel_nlink_t;
+-typedef long		__kernel_off_t;
+-typedef int		__kernel_pid_t;
++#define __kernel_nlink_t __kernel_nlink_t
++
+ typedef unsigned short  __kernel_ipc_pid_t;
++#define __kernel_ipc_pid_t __kernel_ipc_pid_t
++
+ typedef unsigned short	__kernel_uid_t;
+ typedef unsigned short	__kernel_gid_t;
++#define __kernel_uid_t __kernel_uid_t
++
+ typedef __SIZE_TYPE__	__kernel_size_t;
+ typedef long		__kernel_ssize_t;
+ typedef int		__kernel_ptrdiff_t;
+-typedef long		__kernel_time_t;
+-typedef long            __kernel_suseconds_t;
+-typedef long		__kernel_clock_t;
+-typedef int		__kernel_timer_t;
+-typedef int		__kernel_clockid_t;
+-typedef int		__kernel_daddr_t;
+-typedef char *		__kernel_caddr_t;
+-typedef unsigned short  __kernel_uid16_t;
+-typedef unsigned short  __kernel_gid16_t;
+-typedef unsigned int    __kernel_uid32_t;
+-typedef unsigned int    __kernel_gid32_t;
++#define __kernel_size_t __kernel_size_t
+ 
+-typedef unsigned short  __kernel_old_uid_t;
+-typedef unsigned short  __kernel_old_gid_t;
+ typedef unsigned short	__kernel_old_dev_t;
+-
+-#ifdef __GNUC__
+-typedef long long	__kernel_loff_t;
+-#endif
+-
 -typedef struct {
 -	int	val[2];
 -} __kernel_fsid_t;
 -
- #ifdef __KERNEL__
+-#ifdef __KERNEL__
+-
+-#undef	__FD_SET
+-#define __FD_SET(fd,fdsetp) set_bit(fd, (void *)(fdsetp))
+-
+-#undef	__FD_CLR
+-#define __FD_CLR(fd,fdsetp) clear_bit(fd, (void *)(fdsetp))
+-
+-#undef	__FD_ISSET
+-#define __FD_ISSET(fd,fdsetp) test_bit(fd, (void *)(fdsetp))
+-
+-#undef	__FD_ZERO
+-#define __FD_ZERO(fdsetp) memset((void *)(fdsetp), 0, __FDSET_LONGS << 2)
+-
+-#endif /* __KERNEL__ */
++#define __kernel_old_dev_t __kernel_old_dev_t
  
- #undef __FD_SET
+ #endif /* __ARCH_CRIS_POSIX_TYPES_H */
 -- 
 1.7.6.5
 
