@@ -1,71 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab2BHU2B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 15:28:01 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:48579 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752188Ab2BHU17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 15:27:59 -0500
-Date: Wed, 8 Feb 2012 12:27:56 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ML netdev <netdev@vger.kernel.org>
-Subject: Re: network regression: cannot rename netdev twice
-Message-ID: <20120208122756.46aa408c@nehalam.linuxnetplumber.net>
-In-Reply-To: <10120.1328731572@turing-police.cc.vt.edu>
-References: <4F27120A.4040106@suse.cz>
-	<CAPXgP12Sr2KzGJ9RA13QBOCkctb-z3O4+1uHOjANgMDDv2pxaQ@mail.gmail.com>
-	<4F27C54F.1010107@suse.cz>
-	<CAPXgP11=U_Y3LvJB2LRnXQ53y1WQQTqc0j1c7iva6ZXvF97wEw@mail.gmail.com>
-	<20120204021457.GA25386@khazad-dum.debian.net>
-	<CAPXgP12yZ74679JNwRB-pDfnjOBaxMzL2=krSDK31jM1mjXfuA@mail.gmail.com>
-	<20120208020038.GE13296@khazad-dum.debian.net>
-	<CAPXgP12ExDub9ML0=DcWRwyQP23GXDJ75jiNnw+BTXY17tEa8Q@mail.gmail.com>
-	<14373.1328683324@turing-police.cc.vt.edu>
-	<CAPXgP10-W+yeHJMENzWi7FBkYOaXw6ccMMMT=K9X2bf_Tigitw@mail.gmail.com>
-	<10120.1328731572@turing-police.cc.vt.edu>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+	id S1753824Ab2BHU3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 15:29:32 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:47412 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab2BHU3b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 15:29:31 -0500
+Date: Wed, 08 Feb 2012 15:29:22 -0500 (EST)
+Message-Id: <20120208.152922.1178278237689629891.davem@davemloft.net>
+To: standby24x7@gmail.com
+Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] [trivial] stmmac: Fix typo in stmmac_pci.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1328702901-2157-1-git-send-email-standby24x7@gmail.com>
+References: <1328702901-2157-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/GXzE5UXHspP=x9b8FrXgrl_"; protocol="application/pgp-signature"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 08 Feb 2012 12:29:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/GXzE5UXHspP=x9b8FrXgrl_
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Masanari Iida <standby24x7@gmail.com>
+Date: Wed,  8 Feb 2012 21:08:21 +0900
 
-Our customers would prefer network device names of the form
-"Ethernet0/0" or "ge-0/0/0" (but I said no...)
+> Correct spelling "regiser" to "register" in
+> drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-
---Sig_/GXzE5UXHspP=x9b8FrXgrl_
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPMtrMAAoJEICnf2CVzeR+JGEQAMh4NVGXbgoK39Was8sRF/uh
-/BQSqu8xO8BWi8yRikMVN4qfKy/JVRT6rVNuOySh/VOhn5SVfkegvSjt/VleaR26
-ayB/B9APrRO/00zFZpAFgKfO5UMvq3/HWER5MIXyv+Ts40jxPw6yfNYJHzFq+8XU
-OZ+tPdXyY7ZDvg0WVCgDcAUF/KyccgC2ToYHV//Bg48djF7G81eJH5jQQY75EeZR
-5+9++aBRg8vuc+m1t+mEfmRtogNMIQa3X5GwQNlVwptV70xzo7hqG4BdDia2MD/U
-a06X2T0szlzFmrhNB4gZZZCdhpT9DR1hNMarXYUDpEOxm+Ay20eUamHLjcHMTMIC
-oufEU2WaoDQKvYNneB7QwVwyWtXmmZrGIC82lejHOpYlymQiU16pYTmSRbXDTQib
-qGdfbNlr3QlxlgDOufes55oKnBj2lm7qKbUHyDRJGuhtMUcLXBF6lLZF8RpbSySg
-gzLQuJBS1HsiUjySNnENfOhb5oxS++70kHHXdnT/oAL+Ep21ik/whkiKXFKIo7dw
-V32DHWbpA/3oKAhBGEpJ0bRr1xUwra/JRUNivWiEjm81VLKa1i57Qr9h11DOo7RZ
-MmScxSEhgwlOiJiGxS5nwCiOV1azR2En5th6oxf/FZwOrfk16Fp8ZtxbOrLS6m6c
-2AH6WF/ZIZ5pHTjSCSkK
-=5hKt
------END PGP SIGNATURE-----
-
---Sig_/GXzE5UXHspP=x9b8FrXgrl_--
+Applied.
