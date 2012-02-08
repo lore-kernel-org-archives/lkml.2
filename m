@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab2BHObx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 09:31:53 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54333 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab2BHObv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 09:31:51 -0500
+	id S1754440Ab2BHOcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 09:32:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34671 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753663Ab2BHOcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 09:32:15 -0500
+Date: Wed, 8 Feb 2012 15:32:13 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-kernel@vger.kernel.org, Raymund Will <rw@suse.de>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH] [IA64] disable interrupts when exiting from
+ ia64_mca_cmc_int_handler()
+Message-ID: <alpine.LNX.2.00.1202081530510.24127@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Wed, 8 Feb 2012 15:31:50 +0100
-Message-ID: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
-Subject: drivers/net/phy/phy.c issue
-From: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
-To: afleming@freescale.com, macro@linux-mips.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+SAL specification mandates that ia64_mca_log_sal_error_record() gets 
+called with interrupts enabled, and that's why ia64_mca_cmc_int_handler() 
+is enabling them. It however forgets to re-disable them when exiting, 
+which triggers WARN_ON() in generic IRQ handler.
 
-I found an issue with drivers/net/phy/phy.c
-As I could not identify a maintainer for this file I decided to mail
-it to the above addressees.
-Apologies upfront if it is inappropriate.
+Disable the interrupts again before exiting. This is analogous to 
+a3967685745 ("[IA64] disable interrupts at end of 
+ia64_mca_cpe_int_handler()").
 
-The issue:
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ arch/ia64/kernel/mca.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-My network interface was configured as 10Mbit, full duplex, autonegotiate off.
-If the cable is unplugged after 10 seconds or so the interface drops
-to half duplex and the message:
-Trying 10/HALF
-is printed. This message comes (if I am correct from the function
-phy_force_reduction in drivers/net/phy/phy.c
-
-Maybe this is still ok, however if I reconnect my network cable the
-interface remains configured as 10 Mbit, half duplex.
-I had expected/assumed that it would go back to 10 Mbit, full duplex.
-
-If I try the same with a 1Gbit full duplex link with autonegotiate on,
-the link also drops to half duplex whenever the cable is
-disconnected. However reconnecting the cable then brings the interface
-back to full duplex again.
-
-Not sure what is wrong (if the interface should not be dropped to half
-or get back to full) and even less an idea how to fix it,
-but wanted to report it anyway, in the hope someone can shed a light
-on this and/or fix it.
-
-Best regards, Frans.
-
-PS: I'm not on lkml (way too much mails for me), so please keep me on Cc
+diff --git a/arch/ia64/kernel/mca.c b/arch/ia64/kernel/mca.c
+index 84fb405..8192009 100644
+--- a/arch/ia64/kernel/mca.c
++++ b/arch/ia64/kernel/mca.c
+@@ -1447,6 +1447,8 @@ out:
+ 	/* Get the CMC error record and log it */
+ 	ia64_mca_log_sal_error_record(SAL_INFO_TYPE_CMC);
+ 
++	local_irq_disable();
++
+ 	return IRQ_HANDLED;
+ }
+ 
+-- 
+Jiri Kosina
+SUSE Labs
