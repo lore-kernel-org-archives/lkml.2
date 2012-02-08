@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757882Ab2BHXvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 18:51:52 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49921 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757700Ab2BHXvv convert rfc822-to-8bit (ORCPT
+	id S1757891Ab2BHXyP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 18:54:15 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:42788 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757796Ab2BHXyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 18:51:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <1328734113-3608-1-git-send-email-prarit@redhat.com>
-References: <1328734113-3608-1-git-send-email-prarit@redhat.com>
-Date: Wed, 8 Feb 2012 15:51:50 -0800
-X-Google-Sender-Auth: js4LsQNTQ4mnA-Cj_Bs81lZp6E0
-Message-ID: <CAE9FiQUbVVwN8s+fT84bOvz0xo93Pp9G58RecKYbyNKyXiEAKA@mail.gmail.com>
-Subject: Re: [PATCH] Use NUMA node cpu mask in irq affinity
-From: Yinghai Lu <yinghai@kernel.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 8 Feb 2012 18:54:12 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: David Howells <dhowells@redhat.com>
+Cc: jmorris@namei.org, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-api@vger.kernel.org,
+        libc-alpha@sourceware.org
+Subject: Re: [PATCH 1/2] Define ENOAUTHSERVICE to indicate "Authentication service unavailable"
+In-Reply-To: Your message of "Wed, 08 Feb 2012 12:29:05 GMT."
+             <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
+From: Valdis.Kletnieks@vt.edu
+References: <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1328745230_2846P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 08 Feb 2012 18:53:50 -0500
+Message-ID: <22934.1328745230@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020204.4F330B0F.0038,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 8, 2012 at 12:48 PM, Prarit Bhargava <prarit@redhat.com> wrote:
-> The irq affinity files (/proc/irq/.../smp_affinity) contain a mask that is used
-> to "pin" an irq to a set of cpus.  On boot this set is currently all cpus.
-> This can be incorrect as ACPI SRAT may tell us that a specific device or
-> bus is attached to a particular node and it's cpus.
->
-> When setting up the irq affinity we should take into account the NUMA node
-> cpu mask by and'ing it into the irq's affinity mask.
->
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Acked-by: Neil Horman <nhorman@tuxdriver.com>
-> ---
->  kernel/irq/manage.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index a9a9dbe..2fb3469 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -301,6 +301,8 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
->        }
->
->        cpumask_and(mask, cpu_online_mask, set);
-> +       if (desc->irq_data.node != -1)
-> +               cpumask_and(mask, mask, cpumask_of_node(desc->irq_data.node));
->        ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
->        switch (ret) {
->        case IRQ_SET_MASK_OK:
-> --
+--==_Exmh_1328745230_2846P
+Content-Type: text/plain; charset=us-ascii
 
-How about all cpus on that node get offlined?
+On Wed, 08 Feb 2012 12:29:05 GMT, David Howells said:
 
-Yinghai
+> +#define	ENOAUTHSERVICE	139	/* Authentication service not available */
+>
+>  #define EHWPOISON	139	/* Memory page has hardware error */
+
+Was this an intentional overload of 139 (and so on for other archs)?
+Just checking - I'm sure if it goes in like this, we'll see a patch to "fix" the
+collision for 3.16.0 or so... ;)
+
+--==_Exmh_1328745230_2846P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBTzMLDgdmEQWDXROgAQLo8w/9GSAkuhd+TKRP7GBY/vtnzb8/kyvEnJ5M
+kXAsV/k12ZKsyRo+qat0scVkIIVR+siFVQMBMAOE4r4Y14CGYMInhrpsNLa0vhqK
+GdS5+GNIAbHj8PBJSYxxHffiQisePTTbAppzW68to/jRe3eYcWQdlJgcjdOMYSKJ
+TxLJi7R36FNZAMW5C6VjrEZcWym+LOizeSuX0a4hGMkWbo1D6YO/bsqI0703fhh3
++q3n6KLZahVNZQ4zNDtIuznUgm/SEWnz5kyZF+Lj0pCxCC/00Qtl0d47YGQ8Bfcr
+6v+v2loI96oHJypLbPOoovwqpPV5YUoiaLS+aKFyEcMb+Soa8kSpPSkb+lkQZ/eK
+FTkdLuRFQ4cK9Dk1mqFa94x7XsVv6FfXt4NUKuWSm2cqEzUbdEbmXsdwT69oMcYV
+aYd//3xYcjtcwDi+lovc7THYIj2UJYtZVxIeZpitxISMdAJ+gZEYzmgDKF+O4IDj
+DYdnO8PVMfdosULrhP5GpYtjYJ0vL/HSNXSkGtJ/OWIlBIBFl2yXtOpzkjqndtBE
+WBmmfQHvSNjYU5Ab/udNYNoT4+rEKkkBLTtbWwFvgNPiiE5PLYLrUrdyqz4Y6KAb
+B9OkVk4AWq0UlCeNCl2onHKdsT61rfImD8wygJyJ2oau7TWw4itQE2LV/pLQY68T
+HrD/BwmIDcY=
+=h9rq
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1328745230_2846P--
+
