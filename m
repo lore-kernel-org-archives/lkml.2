@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab2BHWG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 17:06:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38825 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab2BHWG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 17:06:57 -0500
-From: Matt Porter <matt@ohporter.com>
-To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] omap: board-omap3evm: add required smsc911x regulators
-Date: Wed,  8 Feb 2012 17:06:21 -0500
-Message-Id: <1328738812-26755-1-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1756850Ab2BHWLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 17:11:25 -0500
+Received: from nm13.bullet.mail.ird.yahoo.com ([77.238.189.66]:45474 "HELO
+	nm13.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755866Ab2BHWLY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 17:11:24 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 723081.91647.bm@omp1015.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.fr;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=pOeZXfxYgqd7vfb2AkXWUT5fasPy06eCFEbpfijaSv/ArdVIbYBCJ42RdlDCPpBNhC5EvBej8hzpmg2MTDZwJCHSTN/rGcg7QePknLf4Gte7tqKGLs4obv9tTHMTA40tTNqY9K7wtPHMzzq6LR5KooZP8N1hcJ2tSDbvVQ1upy8=;
+X-YMail-OSG: e.yHbrcVM1mt2N_MYF5VmM8ndN6RTCUKAzY5kXGfPtBMQai
+ wYOQc_rKfDvEK48nLhkPNGJCXfWjImG0UJJxGUZJqVwk.7UormKzYYlrkbm5
+ 4eqGimTwvfpiY8SnNI44RpsYGbATzvuiGPoP8.bwkPIIRsyiPS66JD.Z92wK
+ XPTLHQ3VuS_LEnVBR1hjmhyjw3QZXffTUWnS7ZHDkf4RHIyC4Bi60vvZKXA2
+ fa8hmOiyUiuE.rcKfscI2MXreroGNekM_Tc3PcgvmVQ_Cv5eUMhgH81rcR2b
+ eMEmW8NiuVKbpet1RJwlqjM.MEksdgRoD9UAkvvoNsp6CUIyjq398ceGirWo
+ sj.YlWFHR5PnpueDz3ZiN6VCQvf.0BUXvUDW_2nJiWt0MbDWaT_h1EVlUzsD
+ .0styROg68lGRYiciwFNWHjhyQqye1LGab_x9MNN83nT4maXAdVe4pftr_5J
+ 4VMvfnAdVra80QcvHaHNBKVR1auAiNP0szSq.1szbAKrA9pi9qn9qEaiAtXj
+ lVYriCOPHC0zrNvDrrDk4pp_R9_6hQXy9_9Q6wO7QOWfusgvAbD5R7BwfLQ-
+ -
+X-Mailer: YahooMailWebService/0.8.116.338427
+Message-ID: <1328739082.22121.YahooMailNeo@web171408.mail.ir2.yahoo.com>
+Date: Wed, 8 Feb 2012 22:11:22 +0000 (GMT)
+From: Etienne Lorrain <etienne_lorrain@yahoo.fr>
+Reply-To: Etienne Lorrain <etienne_lorrain@yahoo.fr>
+Subject: [announce] Gujin GPL bootloader version 2.8.5
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes smsc911x support on omap3evm that has been broken since
-the smsc911x driver was updated to require the existence of vdd33a
-and vddvario supplies.
+There is a new version v2.8.5 of the GPL Gujin boot/linux loader at http://gujin.org (i.e. sourceforge)
+with bug fixes and improvements, and Debian/Ubuntu/Fedora packages in 32 and 64 bits for easy
+installation on i386/amd64 PC.
 
-Signed-off-by: Matt Porter <mporter@ti.com>
----
- arch/arm/mach-omap2/board-omap3evm.c |   46 +++++++++++++++++++++++++++++++++-
- 1 files changed, 45 insertions(+), 1 deletions(-)
+This version contains quite a lot of bug fixes, changelog is:
+- Fix (error loading file 0x3401) loading kernel on highly fragmented ext2 partitions
+- Fix a bug when /boot/gujin.ebios created not contiguous
+ (hdparm --fibmap /boot/gujin.ebios), and enable uninstalling those not contigous
+ files (happens on highly fragmented 1024 bytes/block ext2 partitions)
+- Fix a problem when MBR has 0x29 signature but invalid bytes/sectors
+- Fix a bug where /boot directories were not probed on FAT (directory entries contains
+ null size on FAT)
+- Behaves better when partitions do not have a label, use PBR label or Gujin "part n"
+- no more compile with "-funsigned-char", fix bugs about mixed sector sizes in iso images
+(loading kernel on 512 bytes/sector FAT filesystem written on a CDROM/DVDRAM)
+- add "relro" linker
+flags for the installer
+- Re-enable PCI I/O space of PCI IDEs if disabled by BIOS (when BIOS finds no disk)
+- fix possible problem with BIOS disk nb_heads=256
+- add docs for changing Linux parameter by Shift-Fn or Shift-mouse, and
+ Control-Break behaviour
+- add probing for /sys/block/sr[0-9] for "gujin --report-signature"
+- update to support PCI BIOS v3.0+ which is not fully backward compatible,
+ and use VirtualBox bug.
+- Fix to handle older HP BIOS bugs
+- update GPG signature, add new encryption/signature subkeys
 
-diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
-index 003fe34..ca63dda 100644
---- a/arch/arm/mach-omap2/board-omap3evm.c
-+++ b/arch/arm/mach-omap2/board-omap3evm.c
-@@ -433,9 +433,10 @@ static struct twl4030_keypad_data omap3evm_kp_data = {
- /* ads7846 on SPI */
- static struct regulator_consumer_supply omap3evm_vio_supply[] = {
- 	REGULATOR_SUPPLY("vcc", "spi1.0"),
-+	REGULATOR_SUPPLY("vddvario", "smsc911x.0"),
- };
- 
--/* VIO for ads7846 */
-+/* VIO for ads7846, smsc911x, etc. */
- static struct regulator_init_data omap3evm_vio = {
- 	.constraints = {
- 		.min_uV			= 1800000,
-@@ -450,6 +451,47 @@ static struct regulator_init_data omap3evm_vio = {
- 	.consumer_supplies	= omap3evm_vio_supply,
- };
- 
-+/* OSK_3V3 for DVI, smsc911x, and expansion peripherals */
-+static struct regulator_consumer_supply omap3evm_osk_3v3_supply[] = {
-+	REGULATOR_SUPPLY("vdd33a", "smsc911x.0"),
-+};
-+
-+static struct regulator_init_data omap3evm_osk_3v3 = {
-+	.constraints = {
-+		.min_uV			= 3300000,
-+		.max_uV			= 3300000,
-+		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-+					| REGULATOR_MODE_STANDBY,
-+		.valid_ops_mask		= REGULATOR_CHANGE_MODE
-+					| REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies	= ARRAY_SIZE(omap3evm_osk_3v3_supply),
-+	.consumer_supplies	= omap3evm_osk_3v3_supply,
-+};
-+
-+/*
-+ * TWL4030 GPIO15 can control this regulator, but it is treated
-+ * as always on since it is pulled down, enabling this regulator
-+ * by default.
-+ */
-+static struct fixed_voltage_config omap3evm_osk_regulator_data = {
-+	.supply_name		= "osk_3v3",
-+	.microvolts		= 3300000, /* 3.30V */
-+	.gpio			= -EINVAL,
-+	.startup_delay		= 0,
-+	.enable_high		= 0,
-+	.enabled_at_boot	= 1,
-+	.init_data		= &omap3evm_osk_3v3,
-+};
-+
-+static struct platform_device omap3evm_osk_regulator = {
-+	.name		= "reg-fixed-voltage",
-+	.id		= 0,
-+	.dev = {
-+		.platform_data	= &omap3evm_osk_regulator_data,
-+	},
-+};
-+
- #ifdef CONFIG_WL12XX_PLATFORM_DATA
- 
- #define OMAP3EVM_WLAN_PMENA_GPIO	(150)
-@@ -631,6 +673,8 @@ static void __init omap3_evm_init(void)
- 
- 	omap3_evm_i2c_init();
- 
-+	platform_device_register(&omap3evm_osk_regulator);
-+
- 	omap_display_init(&omap3_evm_dss_data);
- 
- 	omap_serial_init();
--- 
-1.7.5.4
+Downloads at: http://sourceforge.net/projects/gujin/files/
 
+Have fun,
+Etienne. 
