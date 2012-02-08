@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab2BGXwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 18:52:41 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:40168 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869Ab2BGXwj (ORCPT
+	id S1756965Ab2BHAHY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 19:07:24 -0500
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:41266 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756661Ab2BHAHW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 18:52:39 -0500
-Date: Wed, 8 Feb 2012 10:52:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the sound-asoc tree
-Message-Id: <20120208105228.a3b2ceeaba1a63e5df9dfbbc@canb.auug.org.au>
-In-Reply-To: <20120203105123.GB3151@opensource.wolfsonmicro.com>
-References: <20120203125902.558e273c84b339957869f281@canb.auug.org.au>
-	<20120203105123.GB3151@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__8_Feb_2012_10_52_28_+1100_z681Py=ybApKpNKc"
+	Tue, 7 Feb 2012 19:07:22 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Apple Message framework v1257)
+Subject: Direct i/o changes break all non-GPL file systems
+From: Anton Altaparmakov <anton@tuxera.com>
+Date: Wed, 8 Feb 2012 00:07:15 +0000
+Cc: Szabolcs Szakacsits <szaka@tuxera.com>,
+        =?iso-8859-1?Q?Janne_Kalliom=E4ki?= <janne@tuxera.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <92291682-5422-4AE2-9608-97775603E7FD@tuxera.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__8_Feb_2012_10_52_28_+1100_z681Py=ybApKpNKc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus, Andrew, Christoph,
 
-Hi Mark,
+With kernel 3.1, Christoph removed i_alloc_sem and replaced it with calls (namely inode_dio_wait() and inode_dio_done()) which are EXPORT_SYMBOL_GPL() thus they cannot be used by non-GPL file systems and further inode_dio_wait() was pushed from notify_change() into the file system ->setattr() method but no non-GPL file system can make this call.
 
-On Fri, 3 Feb 2012 10:51:24 +0000 Mark Brown <broonie@opensource.wolfsonmic=
-ro.com> wrote:
->
-> On Fri, Feb 03, 2012 at 12:59:02PM +1100, Stephen Rothwell wrote:
->=20
-> > I fixed it up (I think - see below) and can carry the fix as necessary.
->=20
-> That's the correct fix, thanks.  I'll resolve this in my tree once
-> Linus' tree has merged the conflicting stuff.
+That means non-GPL file systems cannot exist any more unless they do not use any VFS functionality related to reading/writing as far as I can tell or at least as long as they want to implement direct i/o.
 
-So, you have redone the merge (it was commit 05960268bcef and is now
-6127dd802637) and still left the conflict tags in
-sound/soc/codecs/wm5100.c ...
+What are commercial file systems meant to do now?
 
-:-(
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+For example Tuxera exFAT uses the generic write code which means that read/write use the generic direct_IO functions however Tuxera exFAT's setattr() method cannot call inode_dio_wait() and there are places where exfat_truncate() is called directly with i_alloc_sem held and now this needs to be replaced with calls to inode_dio_wait() but we cannot do that as the function is GPL only.
 
---Signature=_Wed__8_Feb_2012_10_52_28_+1100_z681Py=ybApKpNKc
-Content-Type: application/pgp-signature
+Previously when APIs have been changed that were accessible to non-GPL modules it was made sure those APIs remained that way but this does not appear to be the case here.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Do all non-GPL file systems now really have to re-implement the entire read-write code paths for themselves for the sake of two GPL only exports in the direct i/o code?  That seems a bit harsh!
 
-iQIcBAEBCAAGBQJPMbk8AAoJEECxmPOUX5FEdkYP/j3KhAbVP6Is+lmht4+1krWw
-KhMmr+xRuyBq6bjU6SK6KvKtzm5yjjpKKbVJtfXMxKetMned8FojXtLzfLyVy0ld
-o8TaFVZWydqfvkRQfL2649JBRFUdt1KATXaxDOL3kEndhR6/jVAkbtJ+GFjY040A
-sYDNEEvHcXnDvlPPm1eWQYiKBqvuV8uUthm7wZs5LgpjCEBh0ni5KpdqOFTv1ay7
-4FBlV3mbpkRSsp2wgmyQz8tTeRw73v/w7upCYOEBgsK+kum9IgyL+CrL8CMw45zf
-zPTNYGNgkEND2vlE+Ff1uA+buJfMmyR4RqtWbT3eOe9M9af5cbTB/LmJiszxH5NV
-nIsPBj1HV96upyG/qZ/478LpswZSg0gp4/VoLFGnxzb1E4hKkZa3Wib+6vvKdcxA
-FEW7GItY5Iwh/OkXgzW7zHyVbqi8Ds3sV+cb7AAmBI2WGz6vkcYm7TZPwSFvB4CV
-Cm4YgkHD3WuvVpni0lMPO5PRAZdPPbotA3+Sfy3yQzRyjEM+n3eCHPjZH8mnzoiT
-afzTRCzribKTkNeF5lDwocdTz7Qfxw5fVXIWBy2x7eTIK9eT2rl6HVaZkFC193qN
-ZZSONFZkkVk6g8ZqUcxCqGAviXp1BN7zb6TlvveUn+z1TgaRxF9X986jG23XnOuE
-ITWSbkx/4MYpG8lyTbpV
-=8KDO
------END PGP SIGNATURE-----
+Have I missed something?  If not would you accept a patch to change the two needed GPL only symbols into EXPORT_SYMBOL() ones?
 
---Signature=_Wed__8_Feb_2012_10_52_28_+1100_z681Py=ybApKpNKc--
+Thanks a lot in advance!
+
+Best regards,
+
+	Anton
+-- 
+Anton Altaparmakov <anton at tuxera.com> (replace at with @)
+Senior Kernel Developer, Tuxera Inc., http://www.tuxera.com/
+Linux NTFS maintainer, http://www.linux-ntfs.org/
+
