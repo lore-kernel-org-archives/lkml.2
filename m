@@ -1,62 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab2BHOWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 09:22:54 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:50407
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750956Ab2BHOWx (ORCPT
+	id S1753859Ab2BHO0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 09:26:41 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56428 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab2BHO0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 09:22:53 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-mm@kvack.org
-Cc: standby24x7@gmail.com, linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH] [trivial] mm: Fix typo in unevictable-lru.txt
-Date: Wed,  8 Feb 2012 23:22:21 +0900
-Message-Id: <1328710941-3349-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Wed, 8 Feb 2012 09:26:40 -0500
+Message-ID: <4F32861C.5020907@gmail.com>
+Date: Wed, 08 Feb 2012 07:26:36 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Xiao Guangrong <xiaoguangrong.eric@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 3/3] KVM: perf: kvm events analysis tool
+References: <4F3121DE.7020502@linux.vnet.ibm.com> <4F31225C.1020703@gmail.com> <4F316596.3060509@gmail.com> <4F3212CA.4080208@linux.vnet.ibm.com>
+In-Reply-To: <4F3212CA.4080208@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "semphore" to "semaphore" in
-Documentation/vm/unevictable-lru.txt
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- Documentation/vm/unevictable-lru.txt |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/vm/unevictable-lru.txt b/Documentation/vm/unevictable-lru.txt
-index 97bae3c..609d1a3 100644
---- a/Documentation/vm/unevictable-lru.txt
-+++ b/Documentation/vm/unevictable-lru.txt
-@@ -538,7 +538,7 @@ different reverse map mechanisms.
-      process because mlocked pages are migratable.  However, for reclaim, if
-      the page is mapped into a VM_LOCKED VMA, the scan stops.
- 
--     try_to_unmap_anon() attempts to acquire in read mode the mmap semphore of
-+     try_to_unmap_anon() attempts to acquire in read mode the mmap semaphore of
-      the mm_struct to which the VMA belongs.  If this is successful, it will
-      mlock the page via mlock_vma_page() - we wouldn't have gotten to
-      try_to_unmap_anon() if the page were already mlocked - and will return
-@@ -623,7 +623,7 @@ mapped file pages with an additional argument specifing unlock versus unmap
- processing.  Again, these functions walk the respective reverse maps looking
- for VM_LOCKED VMAs.  When such a VMA is found for anonymous pages and file
- pages mapped in linear VMAs, as in the try_to_unmap() case, the functions
--attempt to acquire the associated mmap semphore, mlock the page via
-+attempt to acquire the associated mmap semaphore, mlock the page via
- mlock_vma_page() and return SWAP_MLOCK.  This effectively undoes the
- pre-clearing of the page's PG_mlocked done by munlock_vma_page.
- 
-@@ -641,7 +641,7 @@ with it - the usual fallback position.
- Note that try_to_munlock()'s reverse map walk must visit every VMA in a page's
- reverse map to determine that a page is NOT mapped into any VM_LOCKED VMA.
- However, the scan can terminate when it encounters a VM_LOCKED VMA and can
--successfully acquire the VMA's mmap semphore for read and mlock the page.
-+successfully acquire the VMA's mmap semaphore for read and mlock the page.
- Although try_to_munlock() might be called a great many times when munlocking a
- large region or tearing down a large address space that has been mlocked via
- mlockall(), overall this is a fairly rare event.
--- 
-1.7.6.5
+On 02/07/2012 11:14 PM, Xiao Guangrong wrote:
+> On 02/08/2012 01:55 AM, David Ahern wrote:
+> 
+>> On 02/07/2012 06:08 AM, Xiao Guangrong wrote:
+>>> Add 'perf kvm-events' support to analyze kvm vmexit/mmio/ioport smartly
+>>
+>> example output?
+>>
+> 
+> 
+> You can find a example output at this website:
+> 	http://lwn.net/Articles/479069/
+> 
+> [ Sorry, i did not put it into changlog in the v3 ]
 
+Right, I meant add an example output to the changelog.
+
+> 
+>>> +--------
+>>> +[verse]
+>>> +'perf kvm-events' {record|report}
+>>
+>> command name is very generic -- kvm-events; but command focus is rather
+>> narrow -- I/O events.
+>>
+> 
+> 
+> It is not only analysing IO events but also for other events(like vmexit,
+> and other events will be added). I prefer to kvm-events :)
+
+Same. kvm-events should be the name of the command. But from the
+admittedly not thorough review of the code it seemed to be expecting I/O
+(and entry/exit tracepoints as a part of that) and not easily amendable
+to add new tracepoints.
+
+---8<---
+
+>>> +
+>>> +	vcpu_event_record = zalloc(sizeof(*vcpu_event_record) * kvm_max_vcpus);
+>>> +	if (!vcpu_event_record)
+>>> +		die("zalloc.\n");
+>>> +
+>>> +	for (i = 0; i < (int)EVENTS_CACHE_SIZE; i++)
+>>> +		INIT_LIST_HEAD(&kvm_events_cache[i]);
+>>> +}
+>>
+>> Really, the caches could be tied to thread structs, and then you don't
+>> need a max vcpu style allocation. more below.
+>>
+> 
+> 
+> Hmm, this cache is used to cache "event struct", this is the common resources
+> for all vcpus.
+
+But consecutive events that are analyzed together happen in the context
+of a thread -- the vcpu task.
+
+---8<---
+
+>>> +static int kvm_events_report(int vcpu)
+>>> +{
+>>> +	init_kvm_event_record();
+>>> +	init_kvm_tid_to_pid();
+>>> +	verify_vcpu(vcpu);
+>>> +	select_key();
+>>> +	register_kvm_events_ops();
+>>> +	setup_pager();
+>>
+>> I believe setup_pager is handled by perf.c
+>>
+> 
+> 
+> Hmm, i did not find it, could you please tell me where is it?
+> And, setup_pager is also used in other tools such 'perf sched',
+> 'perf lock'...
+> 
+
+run_builtin() --> commit_pager_choice() --> setup_pager()
+
+It could be that the other commands need to be updated.
+
+---8<---
+
+>>> +	if (!strncmp(argv[0], "rec", 3))
+>>> +		return kvm_events_record(argc, argv);
+>>> +
+>>> +	if (!strncmp(argv[0], "report", 6)) {
+>>
+>> exact match for 'report'?
+>>
+> 
+> 
+> It is the style in other tools, what is your suggestion?
+
+Right, I see that. builtin-lock should be fixed.
+
+rec is ok for record; is report123 ok for report? if not that string
+should be an exact match.
+
+David
