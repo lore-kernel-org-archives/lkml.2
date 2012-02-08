@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2BHJgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 04:36:53 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55858 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab2BHJgr convert rfc822-to-8bit (ORCPT
+	id S1753773Ab2BHJkx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 04:40:53 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46456 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2BHJkv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 04:36:47 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org, "Gilad Ben-Yossef" <gilad@benyossef.com>
-Cc: "Christoph Lameter" <cl@linux.com>, "Chris Metcalf" <cmetcalf@tilera.com>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>, linux-mm@kvack.org,
-        "Pekka Enberg" <penberg@kernel.org>, "Matt Mackall" <mpm@selenic.com>,
-        "Sasha Levin" <levinsasha928@gmail.com>,
-        "Rik van Riel" <riel@redhat.com>, "Andi Kleen" <andi@firstfloor.org>,
-        "Mel Gorman" <mel@csn.ul.ie>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Alexander Viro" <viro@zeniv.linux.org.uk>,
-        "Avi Kivity" <avi@redhat.com>,
-        "Kosaki Motohiro" <kosaki.motohiro@gmail.com>,
-        "Milton Miller" <miltonm@bga.com>
-Subject: Re: [PATCH v8 0/8] Reduce cross CPU IPI interference
-References: <1328448800-15794-1-git-send-email-gilad@benyossef.com>
-Date: Wed, 08 Feb 2012 10:36:42 +0100
+	Wed, 8 Feb 2012 04:40:51 -0500
 MIME-Version: 1.0
+In-Reply-To: <20120207171707.GA24443@linux.vnet.ibm.com>
+References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
+ <20120202141851.5967.68000.sendpatchset@srdronam.in.ibm.com> <20120207171707.GA24443@linux.vnet.ibm.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Wed, 8 Feb 2012 10:40:30 +0100
+Message-ID: <CAK1hOcOd3hd31vZYw1yAVGK=gMV=vQotL1mRZkVgM=7M8mbMyw@mail.gmail.com>
+Subject: Re: [PATCH v10 3.3-rc2 1/9] uprobes: Install and remove breakpoints.
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v9cszgo23l0zgt@mpn-glaptop>
-In-Reply-To: <1328448800-15794-1-git-send-email-gilad@benyossef.com>
-User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 05 Feb 2012 14:33:20 +0100, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
-> This patch set, inspired by discussions with Peter Zijlstra and Frederic
-> Weisbecker when testing the nohz task patch set, is a first stab at trying
-> to explore doing this by locating the places where such global IPI calls
-> are being made and turning the global IPI into an IPI for a specific group
-> of CPUs.  The purpose of the patch set is to get feedback if this is the
-> right way to go for dealing with this issue and indeed, if the issue is
-> even worth dealing with at all. Based on the feedback from this patch set
-> I plan to offer further patches that address similar issue in other code
-> paths.
->
-> The patch creates an on_each_cpu_mask and on_each_cpu_cond infrastructure
-> API (the former derived from existing arch specific versions in Tile and
-> Arm) and uses them to turn several global IPI invocation to per CPU
-> group invocations.
+On Tue, Feb 7, 2012 at 6:17 PM, Srikar Dronamraju
+<srikar@linux.vnet.ibm.com> wrote:
+> Changelog: (Since v10): Add code to clear REX.B prefix pointed out by Denys Vlasenko
+> and fix suggested by Masami Hiramatsu.
+...
+> + † † † /*
+> + † † † †* Point cursor at the modrm byte. †The next 4 bytes are the
+> + † † † †* displacement. †Beyond the displacement, for some instructions,
+> + † † † †* is the immediate operand.
+> + † † † †*/
+> + † † † cursor = uprobe->insn + insn_offset_modrm(insn);
+> + † † † insn_get_length(insn);
+> + † † † if (insn->rex_prefix.nbytes)
+> + † † † † † † † *cursor &= 0xfe; † † † †/* Clearing REX.B bit */
 
-> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Chris Metcalf <cmetcalf@tilera.com>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: linux-mm@kvack.org
-> CC: Pekka Enberg <penberg@kernel.org>
-> CC: Matt Mackall <mpm@selenic.com>
-> CC: Sasha Levin <levinsasha928@gmail.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Andi Kleen <andi@firstfloor.org>
-> CC: Mel Gorman <mel@csn.ul.ie>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Alexander Viro <viro@zeniv.linux.org.uk>
-> CC: Avi Kivity <avi@redhat.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
+It looks like cursor points to mod/reg/rm byte, not rex byte.
+Comment above says it too. You seem to be clearing a bit
+in a wrong byte. I think it should be
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-
-for patches form 1 to 4 and 7.  The other two (5 and 6) look good but
-I don't know enough about slub and fs to feel confident acking.
-
-> CC: Kosaki Motohiro <kosaki.motohiro@gmail.com>
-> CC: Milton Miller <miltonm@bga.com>
+        /* Clear REX.b bit (extension of MODRM.rm field):
+         * we want to encode rax/rcx, not r8/r9.
+         */
+        if (insn->rex_prefix.nbytes)
+                insn->rex_prefix.bytes[0] &= 0xfe;
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Micha≈Ç ‚Äúmina86‚Äù Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+vda
