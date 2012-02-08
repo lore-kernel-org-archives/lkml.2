@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab2BHRbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 12:31:39 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:55797 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab2BHRbg convert rfc822-to-8bit (ORCPT
+	id S1756134Ab2BHRc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 12:32:26 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55791 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964Ab2BHRcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 12:31:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6BwznWf3rq4J2Ao+rrgR4yWqQ0mQGygkd2KmBuA1OD8g@mail.gmail.com>
-References: <1328425088-6562-1-git-send-email-yinghai@kernel.org>
-	<1328425088-6562-10-git-send-email-yinghai@kernel.org>
-	<CAErSpo6BwznWf3rq4J2Ao+rrgR4yWqQ0mQGygkd2KmBuA1OD8g@mail.gmail.com>
-Date: Wed, 8 Feb 2012 09:31:35 -0800
-X-Google-Sender-Auth: fYcgZN0epygOc2H69_EqO6j02CU
-Message-ID: <CAE9FiQVnJ2PpBSUoRZeEy2p44xv3mHVYRgn9tKzr1yeXmwMYbA@mail.gmail.com>
-Subject: Re: [PATCH 09/24] PCI, powerpc: Register busn_res for root buses
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 8 Feb 2012 12:32:24 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH] cdrom: move shared static to cdrom_device_info
+Date: Wed,  8 Feb 2012 18:32:08 +0100
+Message-Id: <1328722329-22728-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 8, 2012 at 7:58 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sat, Feb 4, 2012 at 10:57 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: linuxppc-dev@lists.ozlabs.org
->> ---
->>  arch/powerpc/kernel/pci-common.c |    7 ++++++-
->>  1 files changed, 6 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
->> index cce98d7..501f29b 100644
->> --- a/arch/powerpc/kernel/pci-common.c
->> +++ b/arch/powerpc/kernel/pci-common.c
->> @@ -1732,6 +1732,8 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
->>        bus->secondary = hose->first_busno;
->>        hose->bus = bus;
->>
->> +       pci_bus_insert_busn_res(bus, hose->first_busno, hose->last_busno);
->> +
->>        /* Get probe mode and perform scan */
->>        mode = PCI_PROBE_NORMAL;
->>        if (node && ppc_md.pci_probe_mode)
->> @@ -1742,8 +1744,11 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
->>                of_scan_bus(node, bus);
->>        }
->>
->> -       if (mode == PCI_PROBE_NORMAL)
->> +       if (mode == PCI_PROBE_NORMAL) {
->> +               pci_bus_update_busn_res_end(bus, 255);
->>                hose->last_busno = bus->subordinate = pci_scan_child_bus(bus);
->> +               pci_bus_update_busn_res_end(bus, bus->subordinate);
->> +       }
->
-> The only architecture-specific thing here is discovering the range of
-> bus numbers below a host bridge.  The architecture should not have to
-> mess around with pci_bus_update_busn_res_end() like this.  It should
-> be able to say "here's my bus number range" (and of course the PCI
-> core can default to 0-255 if the arch doesn't supply a range) and the
-> core should take care of the rest.
+The keeplocked variable in the cdrom driver is shared across multiple
+drives, but set in per-device ioctls.  Move it to the per-device struct,
+avoiding that the setting on one drive affects the driver's behavior
+when closing another.
 
-during the pci_scan_child_bus,  child bus busn_res will be inserted
-under parent bus busn_res.
+[ Impact: limit udev's confusion to one drive when a CD burning program
+  unlocks the CD door at the end of burning. ]
 
-So need to make sure parent busn_res.end is bigger enough.
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+	Would this be acceptable for 3.3?
 
+ drivers/cdrom/cdrom.c |   12 +++++-------
+ include/linux/cdrom.h |    3 ++-
+ 2 files changed, 7 insertions(+), 8 deletions(-)
 
-Yinghai
+diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+index 129af31..bed4d06 100644
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -286,8 +286,6 @@
+ 
+ /* used to tell the module to turn on full debugging messages */
+ static int debug;
+-/* used to keep tray locked at all times */
+-static int keeplocked;
+ /* default compatibility mode */
+ static int autoclose=1;
+ static int autoeject;
+@@ -1204,7 +1202,7 @@ void cdrom_release(struct cdrom_device_info *cdi, fmode_t mode)
+ 		cdinfo(CD_CLOSE, "Use count for \"/dev/%s\" now zero\n", cdi->name);
+ 		cdrom_dvd_rw_close_write(cdi);
+ 
+-		if ((cdo->capability & CDC_LOCK) && !keeplocked) {
++		if ((cdo->capability & CDC_LOCK) && !cdi->keeplocked) {
+ 			cdinfo(CD_CLOSE, "Unlocking door!\n");
+ 			cdo->lock_door(cdi, 0);
+ 		}
+@@ -1371,7 +1369,7 @@ static int cdrom_select_disc(struct cdrom_device_info *cdi, int slot)
+ 	curslot = info->hdr.curslot;
+ 	kfree(info);
+ 
+-	if (cdi->use_count > 1 || keeplocked) {
++	if (cdi->use_count > 1 || cdi->keeplocked) {
+ 		if (slot == CDSL_CURRENT) {
+ 	    		return curslot;
+ 		} else {
+@@ -2295,7 +2293,7 @@ static int cdrom_ioctl_eject(struct cdrom_device_info *cdi)
+ 
+ 	if (!CDROM_CAN(CDC_OPEN_TRAY))
+ 		return -ENOSYS;
+-	if (cdi->use_count != 1 || keeplocked)
++	if (cdi->use_count != 1 || cdi->keeplocked)
+ 		return -EBUSY;
+ 	if (CDROM_CAN(CDC_LOCK)) {
+ 		int ret = cdi->ops->lock_door(cdi, 0);
+@@ -2322,7 +2320,7 @@ static int cdrom_ioctl_eject_sw(struct cdrom_device_info *cdi,
+ 
+ 	if (!CDROM_CAN(CDC_OPEN_TRAY))
+ 		return -ENOSYS;
+-	if (keeplocked)
++	if (cdi->keeplocked)
+ 		return -EBUSY;
+ 
+ 	cdi->options &= ~(CDO_AUTO_CLOSE | CDO_AUTO_EJECT);
+@@ -2453,7 +2451,7 @@ static int cdrom_ioctl_lock_door(struct cdrom_device_info *cdi,
+ 	if (!CDROM_CAN(CDC_LOCK))
+ 		return -EDRIVE_CANT_DO_THIS;
+ 
+-	keeplocked = arg ? 1 : 0;
++	cdi->keeplocked = arg ? 1 : 0;
+ 
+ 	/*
+ 	 * Don't unlock the door on multiple opens by default, but allow
+diff --git a/include/linux/cdrom.h b/include/linux/cdrom.h
+index 35eae4b..7c48029 100644
+--- a/include/linux/cdrom.h
++++ b/include/linux/cdrom.h
+@@ -952,7 +952,8 @@ struct cdrom_device_info {
+     	char name[20];                  /* name of the device type */
+ /* per-device flags */
+         __u8 sanyo_slot		: 2;	/* Sanyo 3 CD changer support */
+-        __u8 reserved		: 6;	/* not used yet */
++        __u8 keeplocked		: 1;	/* CDROM_LOCKDOOR status */
++        __u8 reserved		: 5;	/* not used yet */
+ 	int cdda_method;		/* see flags */
+ 	__u8 last_sense;
+ 	__u8 media_written;		/* dirty flag, DVD+RW bookkeeping */
+-- 
+1.7.7.6
+
