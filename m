@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab2BHPIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 10:08:04 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:43629 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755318Ab2BHPHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 10:07:53 -0500
-Date: Wed, 8 Feb 2012 10:07:51 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-cc: Alex Shi <alex.shi@intel.com>, Greg KH <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <andiry.xu@amd.com>,
-        <linux-kernel@vger.kernel.org>, Oliver Neukum <oneukum@suse.de>,
-        Takashi Iwai <tiwai@suse.de>, <trenn@suse.de>,
-        <linux-pci@vger.kernel.org>, Michal Marek <MMarek@suse.com>
-Subject: Re: [PATCH] usb: enable pci MSI/MSIX in usb core
-In-Reply-To: <20120207221317.GA6103@xanatos>
-Message-ID: <Pine.LNX.4.44L0.1202081006470.1697-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755748Ab2BHPHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 10:07:52 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:56095 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755318Ab2BHPHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 10:07:49 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: avi@redhat.com
+Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
+        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4 V13] Add flag to indicate that a vm was stopped by the host
+Date: Wed,  8 Feb 2012 10:07:43 -0500
+Message-Id: <1328713666-11424-2-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1328713666-11424-1-git-send-email-emunson@mgebm.net>
+References: <1328713666-11424-1-git-send-email-emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Feb 2012, Sarah Sharp wrote:
+This flag will be used to check if the vm was stopped by the host when a soft
+lockup was detected.  The host will set the flag when it stops the guest.  On
+resume, the guest will check this flag if a soft lockup is detected and skip
+issuing the warning.
 
-> Alan, is the hc_driver structure (xhci_pci_hc_driver) shared across all
-> xHCI PCI hosts in the system?
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+Cc: mingo@redhat.com
+Cc: hpa@zytor.com
+Cc: ryanh@linux.vnet.ibm.com
+Cc: aliguori@us.ibm.com
+Cc: mtosatti@redhat.com
+Cc: kvm@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/x86/include/asm/pvclock-abi.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Maybe this isn't relevant to the discussion any more...  but yes, it 
-is.
-
-Alan Stern
+diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
+index 35f2d19..6167fd7 100644
+--- a/arch/x86/include/asm/pvclock-abi.h
++++ b/arch/x86/include/asm/pvclock-abi.h
+@@ -40,5 +40,6 @@ struct pvclock_wall_clock {
+ } __attribute__((__packed__));
+ 
+ #define PVCLOCK_TSC_STABLE_BIT	(1 << 0)
++#define PVCLOCK_GUEST_STOPPED	(1 << 1)
+ #endif /* __ASSEMBLY__ */
+ #endif /* _ASM_X86_PVCLOCK_ABI_H */
+-- 
+1.7.5.4
 
