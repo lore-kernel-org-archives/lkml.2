@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234Ab2BHQh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 11:37:27 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:57965 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755839Ab2BHQh0 (ORCPT
+	id S1757308Ab2BHQjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 11:39:08 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33398 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755839Ab2BHQjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 11:37:26 -0500
-Date: Wed, 8 Feb 2012 16:37:20 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, seiji.aguchi@hds.com, dzickus@redhat.com
-Subject: Re: [PATCH] kmsg_dump: Don't run on non-error paths by default
-Message-ID: <20120208163720.GB3322@srcf.ucam.org>
-References: <1328717646-17121-1-git-send-email-mjg@redhat.com>
- <20120208163007.GA19323@redhat.com>
+	Wed, 8 Feb 2012 11:39:06 -0500
+Date: Wed, 8 Feb 2012 17:38:34 +0100
+From: Dongsu Park <advance38@gmail.com>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: tools/virtio: Compile errors
+Message-ID: <20120208163834.GA26089@gmail.com>
+References: <20120208160405.GA1587@gmail.com>
+ <CAHdPZaOLfia_jgT3piNmDT_5SmYsRfNkF3p3wT98iW7b61462Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120208163007.GA19323@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHdPZaOLfia_jgT3piNmDT_5SmYsRfNkF3p3wT98iW7b61462Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 11:30:07AM -0500, Vivek Goyal wrote:
+On 08.02.2012 11:11, devendra.aaru wrote:
+> On Wed, Feb 8, 2012 at 11:04 AM, Dongsu Park <advance38@gmail.com> wrote:
+> > Hi,
+> >
+> > there are compile problems under tools/virtio.
+> > If I simply run make,
+> >
+> > ~/linuxsrc/linux-3.2/tools/virtio $ make
+> > gcc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
+> > -fno-strict-overflow  -MMD   -c -o virtio_ring.o
+> > ../../drivers/virtio/virtio_ring.c
+> > ../../drivers/virtio/virtio_ring.c:24:26: fatal error: linux/module.h:
+> > No such file or directory
+> > compilation terminated.
+> > make: *** [virtio_ring.o] Error 1
+> >
+> compile with make mod.
 
-> > +	if (reason > KMSG_DUMP_PANIC && !always_kmsg_dump)
-> > +		return;
-> 
-> Did you mean reason > KMSG_DUMP_OOPS to enable oops logging by default?
+Yes, I know "make mod" is already working.
+I'm also able to load the kernel module vhost_test.ko. That's fine.
 
-Bah. Yes, I think my test system was set to panic on oops so I didn't 
-catch that.
+But "make test" isn't still working.
+How can I build virtio_test, the userspace test program?
 
-> Given the fact that not everybody likes kmsg_dump() and it is not known
-> how stable it with various backends, will it make sense to keep it disabled
-> by default and provide a knob to enable it (instead of always_kmsg_dump).
+Dongsu
 
-I think logging panics and oopses by default is a useful feature. It may 
-be desirable to have a mechanism to disable it if some other way of 
-handling that (serial console, kdump) is available.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> > Of course that's supposed to be a simple error in CFLAGS in Makefile,
+> > so I tried it again modifying CFLAGS, from "-I ../../usr/include" to
+> > "-I ../../include". But this time it's another compile error.
+> >
+> > ~/linuxsrc/linux-3.2/tools/virtio $ make
+> > gcc -g -O2 -Wall -I. -I ../../include/ -Wno-pointer-sign
+> > -fno-strict-overflow  -MMD   -c -o virtio_ring.o
+> > ../../drivers/virtio/virtio_ring.c
+> > In file included from ./linux/virtio.h:11:0,
+> >                 from ../../drivers/virtio/virtio_ring.c:19:
+> > ../../include/linux/types.h:13:2: warning: #warning "Attempt to use
+> > kernel headers from user space, see
+> > http://kernelnewbies.org/KernelHeaders"
+> > In file included from ../../include/linux/module.h:9:0,
+> >                 from ../../drivers/virtio/virtio_ring.c:24:
+> > ../../include/linux/list.h:24:42: warning: ‘struct list_head’ declared
+> > inside parameter list
+> > ../../include/linux/list.h:24:42: warning: its scope is only this
+> > definition or declaration, which is probably not what you want
+> > ../../include/linux/list.h: In function ‘INIT_LIST_HEAD’:
+> > ../../include/linux/list.h:26:6: error: dereferencing pointer to
+> > incomplete type
+> > ../../include/linux/list.h:27:6: error: dereferencing pointer to
+> > incomplete type
+> > ../../include/linux/list.h: At top level:
+> > ../../include/linux/list.h:39:17: warning: ‘struct list_head’ declared
+> > inside parameter list
+> >
+> > ...<snip>...
+> >
+> > I tried again to fix it further, without success.
+> > Has anyone succeeded compiling tools/virtio?
+> >
+> > By the way, my system is Ubuntu 11.10 with Kernel 3.2.
+> >
+> > Cheers,
+> > Dongsu
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
