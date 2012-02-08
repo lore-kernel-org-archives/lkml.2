@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092Ab2BHOjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 09:39:06 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48569 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283Ab2BHOjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 09:39:02 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 2/2] commit 203b4da511d52cc98c720cab67745f23e42232e4
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 08 Feb 2012 14:52:47 +0000
-Message-ID: <20120208145246.10900.2594.stgit@bob.linux.org.uk>
-In-Reply-To: <20120208145226.10900.49460.stgit@bob.linux.org.uk>
-References: <20120208145226.10900.49460.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1754884Ab2BHOpM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 09:45:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36430 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753487Ab2BHOpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 09:45:10 -0500
+Date: Wed, 8 Feb 2012 14:45:06 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 02/15] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20120208144506.GI5938@suse.de>
+References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
+ <1328568978-17553-3-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1202071025050.30652@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1202071025050.30652@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+On Tue, Feb 07, 2012 at 10:27:56AM -0600, Christoph Lameter wrote:
+> On Mon, 6 Feb 2012, Mel Gorman wrote:
+> 
+> > Pages allocated from the reserve are returned with page->pfmemalloc
+> > set and it is up to the caller to determine how the page should be
+> > protected.  SLAB restricts access to any page with page->pfmemalloc set
+> 
+> pfmemalloc sounds like a page flag. If you would use one then the
+> preservation of the flag by copying it elsewhere may not be necessary and
+> the patches would be less invasive.
 
-v4l/atomisp: treat atomisp as real pci device
+Using a page flag would simplify parts of the patch. The catch of course
+is that it requires a page flag which are in tight supply and I do not
+want to tie this to being 32-bit unnecessarily.
 
-    ATOMISP on Medfield is a real PCI device which should be handled differently
-    than the fake PCI devices on south complex. PCI type 1 access is used for
-    accessing config space this also has other impact such as PM D3 delay. There
-    shouldn't be any need for reading base address from IUNIT via msg bus.
+> Also you would not need to extend
+> and modify many of the structures.
+> 
+ 
+Lets see;
 
-    Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-    Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
+o struct page size would be unaffected
+o struct kmem_cache_cpu could be left alone even though it's a small saving
+o struct slab also be left alone
+o struct array_cache could be left alone although I would point out that
+  it would make no difference in size as touched is changed to a bool to
+  fit pfmemalloc in
+o It would still be necessary to do the object pointer tricks in slab.c
+  to avoid doing an excessive number of page lookups which is where much
+  of the complexity is
+o The virt_to_slab could be replaced by looking up the page flag instead
+  and avoiding a level of indirection that would be pleasing
+  to an int and placed with struct kmem_cache
 
- arch/x86/pci/mrst.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+I agree that parts of the patch would be simplier although the
+complexity of storing pfmemalloc within the obj pointer would probably
+remain. However, the downside of requiring a page flag is very high. In
+the event we increase the number of page flags - great, I'll use one but
+right now I do not think the use of page flag is justified.
 
-
-diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-index 89e5548..c5e81a4 100644
---- a/arch/x86/pci/mrst.c
-+++ b/arch/x86/pci/mrst.c
-@@ -148,7 +148,9 @@ static bool type1_access_ok(unsigned int bus, unsigned int devfn, int reg)
- 	 */
- 	if (reg >= 0x100 || reg == PCI_STATUS || reg == PCI_HEADER_TYPE)
- 		return 0;
--	if (bus == 0 && (devfn == PCI_DEVFN(2, 0) || devfn == PCI_DEVFN(0, 0)))
-+	if (bus == 0 && (devfn == PCI_DEVFN(2, 0)
-+				|| devfn == PCI_DEVFN(0, 0)
-+				|| devfn == PCI_DEVFN(3, 0)))
- 		return 1;
- 	return 0; /* langwell on others */
- }
-
+-- 
+Mel Gorman
+SUSE Labs
