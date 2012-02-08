@@ -1,209 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab2BHVdj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:33:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14416 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757349Ab2BHVRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:17:11 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 02/17] CacheFiles: Downgrade the requirements passed to the
- allocator
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
-        linux-nfs@vger.kernel.org
-Date: Wed, 08 Feb 2012 21:17:01 +0000
-Message-ID: <20120208211701.15607.85808.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
-References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756838Ab2BHVRD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:17:03 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:56665 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750863Ab2BHVRA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:17:00 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Po-Yu Chuang <ratbert@faraday-tech.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Thomas Faber <thfabba@gmx.de>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH 26/50] faraday: use dev_hw_addr_random() instead of random_ether_addr()
+Date: Wed,  8 Feb 2012 22:10:33 +0100
+Message-Id: <1328735457-29986-27-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328735820;9faa2d57;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Downgrade the requirements passed to the allocator in the gfp flags parameter.
-FS-Cache/CacheFiles can handle OOM conditions simply by aborting the attempt to
-store an object or a page in the cache.
+Use dev_hw_addr_random() instead of calling random_ether_addr()
+to set addr_assign_type correctly to NET_ADDR_RANDOM.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
+ drivers/net/ethernet/faraday/ftgmac100.c |    2 +-
+ drivers/net/ethernet/faraday/ftmac100.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
- fs/cachefiles/interface.c |    8 ++++----
- fs/cachefiles/internal.h  |    2 ++
- fs/cachefiles/key.c       |    2 +-
- fs/cachefiles/rdwr.c      |   18 ++++++++++--------
- fs/cachefiles/xattr.c     |    2 +-
- fs/fscache/page.c         |    2 +-
- 6 files changed, 19 insertions(+), 15 deletions(-)
-
-diff --git a/fs/cachefiles/interface.c b/fs/cachefiles/interface.c
-index 67bef6d..9bff0f8 100644
---- a/fs/cachefiles/interface.c
-+++ b/fs/cachefiles/interface.c
-@@ -41,12 +41,12 @@ static struct fscache_object *cachefiles_alloc_object(
+diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
+index 47f85c3..4842659 100644
+--- a/drivers/net/ethernet/faraday/ftgmac100.c
++++ b/drivers/net/ethernet/faraday/ftgmac100.c
+@@ -1289,7 +1289,7 @@ static int ftgmac100_probe(struct platform_device *pdev)
+ 	netdev_info(netdev, "irq %d, mapped at %p\n", priv->irq, priv->base);
  
- 	_enter("{%s},%p,", cache->cache.identifier, cookie);
- 
--	lookup_data = kmalloc(sizeof(*lookup_data), GFP_KERNEL);
-+	lookup_data = kmalloc(sizeof(*lookup_data), cachefiles_gfp);
- 	if (!lookup_data)
- 		goto nomem_lookup_data;
- 
- 	/* create a new object record and a temporary leaf image */
--	object = kmem_cache_alloc(cachefiles_object_jar, GFP_KERNEL);
-+	object = kmem_cache_alloc(cachefiles_object_jar, cachefiles_gfp);
- 	if (!object)
- 		goto nomem_object;
- 
-@@ -63,7 +63,7 @@ static struct fscache_object *cachefiles_alloc_object(
- 	 * - stick the length on the front and leave space on the back for the
- 	 *   encoder
- 	 */
--	buffer = kmalloc((2 + 512) + 3, GFP_KERNEL);
-+	buffer = kmalloc((2 + 512) + 3, cachefiles_gfp);
- 	if (!buffer)
- 		goto nomem_buffer;
- 
-@@ -219,7 +219,7 @@ static void cachefiles_update_object(struct fscache_object *_object)
- 		return;
+ 	if (!is_valid_ether_addr(netdev->dev_addr)) {
+-		random_ether_addr(netdev->dev_addr);
++		dev_hw_addr_random(netdev, netdev->dev_addr);
+ 		netdev_info(netdev, "generated random MAC address %pM\n",
+ 			    netdev->dev_addr);
  	}
+diff --git a/drivers/net/ethernet/faraday/ftmac100.c b/drivers/net/ethernet/faraday/ftmac100.c
+index bb336a0..1561010 100644
+--- a/drivers/net/ethernet/faraday/ftmac100.c
++++ b/drivers/net/ethernet/faraday/ftmac100.c
+@@ -1133,7 +1133,7 @@ static int ftmac100_probe(struct platform_device *pdev)
+ 	netdev_info(netdev, "irq %d, mapped at %p\n", priv->irq, priv->base);
  
--	auxdata = kmalloc(2 + 512 + 3, GFP_KERNEL);
-+	auxdata = kmalloc(2 + 512 + 3, cachefiles_gfp);
- 	if (!auxdata) {
- 		_leave(" [nomem]");
- 		return;
-diff --git a/fs/cachefiles/internal.h b/fs/cachefiles/internal.h
-index bd6bc1b..4938251 100644
---- a/fs/cachefiles/internal.h
-+++ b/fs/cachefiles/internal.h
-@@ -23,6 +23,8 @@ extern unsigned cachefiles_debug;
- #define CACHEFILES_DEBUG_KLEAVE	2
- #define CACHEFILES_DEBUG_KDEBUG	4
- 
-+#define cachefiles_gfp (__GFP_WAIT | __GFP_NORETRY | __GFP_NOMEMALLOC)
-+
- /*
-  * node records
-  */
-diff --git a/fs/cachefiles/key.c b/fs/cachefiles/key.c
-index 81b8b2b..33b58c6 100644
---- a/fs/cachefiles/key.c
-+++ b/fs/cachefiles/key.c
-@@ -78,7 +78,7 @@ char *cachefiles_cook_key(const u8 *raw, int keylen, uint8_t type)
- 
- 	_debug("max: %d", max);
- 
--	key = kmalloc(max, GFP_KERNEL);
-+	key = kmalloc(max, cachefiles_gfp);
- 	if (!key)
- 		return NULL;
- 
-diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
-index 0186fc1..26a6f52 100644
---- a/fs/cachefiles/rdwr.c
-+++ b/fs/cachefiles/rdwr.c
-@@ -238,7 +238,7 @@ static int cachefiles_read_backing_file_one(struct cachefiles_object *object,
- 	_debug("read back %p{%lu,%d}",
- 	       netpage, netpage->index, page_count(netpage));
- 
--	monitor = kzalloc(sizeof(*monitor), GFP_KERNEL);
-+	monitor = kzalloc(sizeof(*monitor), cachefiles_gfp);
- 	if (!monitor)
- 		goto nomem;
- 
-@@ -257,13 +257,14 @@ static int cachefiles_read_backing_file_one(struct cachefiles_object *object,
- 			goto backing_page_already_present;
- 
- 		if (!newpage) {
--			newpage = page_cache_alloc_cold(bmapping);
-+			newpage = __page_cache_alloc(cachefiles_gfp |
-+						     __GFP_COLD);
- 			if (!newpage)
- 				goto nomem_monitor;
- 		}
- 
- 		ret = add_to_page_cache(newpage, bmapping,
--					netpage->index, GFP_KERNEL);
-+					netpage->index, cachefiles_gfp);
- 		if (ret == 0)
- 			goto installed_new_backing_page;
- 		if (ret != -EEXIST)
-@@ -481,7 +482,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
- 		       netpage, netpage->index, page_count(netpage));
- 
- 		if (!monitor) {
--			monitor = kzalloc(sizeof(*monitor), GFP_KERNEL);
-+			monitor = kzalloc(sizeof(*monitor), cachefiles_gfp);
- 			if (!monitor)
- 				goto nomem;
- 
-@@ -496,13 +497,14 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
- 				goto backing_page_already_present;
- 
- 			if (!newpage) {
--				newpage = page_cache_alloc_cold(bmapping);
-+				newpage = __page_cache_alloc(cachefiles_gfp |
-+							     __GFP_COLD);
- 				if (!newpage)
- 					goto nomem;
- 			}
- 
- 			ret = add_to_page_cache(newpage, bmapping,
--						netpage->index, GFP_KERNEL);
-+						netpage->index, cachefiles_gfp);
- 			if (ret == 0)
- 				goto installed_new_backing_page;
- 			if (ret != -EEXIST)
-@@ -532,7 +534,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
- 		_debug("- monitor add");
- 
- 		ret = add_to_page_cache(netpage, op->mapping, netpage->index,
--					GFP_KERNEL);
-+					cachefiles_gfp);
- 		if (ret < 0) {
- 			if (ret == -EEXIST) {
- 				page_cache_release(netpage);
-@@ -608,7 +610,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
- 		_debug("- uptodate");
- 
- 		ret = add_to_page_cache(netpage, op->mapping, netpage->index,
--					GFP_KERNEL);
-+					cachefiles_gfp);
- 		if (ret < 0) {
- 			if (ret == -EEXIST) {
- 				page_cache_release(netpage);
-diff --git a/fs/cachefiles/xattr.c b/fs/cachefiles/xattr.c
-index e18b183..73b4628 100644
---- a/fs/cachefiles/xattr.c
-+++ b/fs/cachefiles/xattr.c
-@@ -174,7 +174,7 @@ int cachefiles_check_object_xattr(struct cachefiles_object *object,
- 	ASSERT(dentry);
- 	ASSERT(dentry->d_inode);
- 
--	auxbuf = kmalloc(sizeof(struct cachefiles_xattr) + 512, GFP_KERNEL);
-+	auxbuf = kmalloc(sizeof(struct cachefiles_xattr) + 512, cachefiles_gfp);
- 	if (!auxbuf) {
- 		_leave(" = -ENOMEM");
- 		return -ENOMEM;
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index d7c663c..248a12e 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -759,7 +759,7 @@ int __fscache_write_page(struct fscache_cookie *cookie,
- 
- 	fscache_stat(&fscache_n_stores);
- 
--	op = kzalloc(sizeof(*op), GFP_NOIO);
-+	op = kzalloc(sizeof(*op), GFP_NOIO | __GFP_NOMEMALLOC | __GFP_NORETRY);
- 	if (!op)
- 		goto nomem;
- 
+ 	if (!is_valid_ether_addr(netdev->dev_addr)) {
+-		random_ether_addr(netdev->dev_addr);
++		dev_hw_addr_random(netdev, netdev->dev_addr);
+ 		netdev_info(netdev, "generated random MAC address %pM\n",
+ 			    netdev->dev_addr);
+ 	}
+-- 
+1.7.7.3
 
