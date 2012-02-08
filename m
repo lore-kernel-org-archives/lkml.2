@@ -1,141 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab2BHA70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 19:59:26 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55924 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757055Ab2BHA6x (ORCPT
+	id S1757081Ab2BHBHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 20:07:22 -0500
+Received: from charybdis-ext.suse.de ([195.135.221.2]:63878 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754189Ab2BHBHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 19:58:53 -0500
-X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=qiy_2t3VepQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=57_12kv_sXm3N-Y1ro0A:9 a=kUEh2ZV3-Vyq7Ha0mV0A:7 a=jeBq3FmKZ4MA:10 a=mi2msZ0VNv4bjI7o:21 a=wQroxmh-k31YJUUm:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120208005849.862925283@goodmis.org>
-User-Agent: quilt/0.50-1
-Date: Tue, 07 Feb 2012 19:56:13 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Andi Kleen <ak@linux.intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Luis Goncalves <lgoncalv@redhat.com>, stable-rt@vger.kernel.org
-Subject: [PATCH RT 1/2 v5] x86: Do not disable preemption in int3 on 32bit
-References: <20120208005612.852040607@goodmis.org>
-Content-Disposition: inline; filename=fix-rt-int3-x86_32-3.2-rt.patch
+	Tue, 7 Feb 2012 20:07:20 -0500
+Message-ID: <4F31CAC0.3010905@suse.com>
+Date: Tue, 07 Feb 2012 17:07:12 -0800
+From: Lee Duncan <lduncan@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
+MIME-Version: 1.0
+To: linux-scsi@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] SCSI, st: modify tape driver to allow writing immediate filemarks
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preemption must be disabled before enabling interrupts in do_trap
-on x86_64 because the stack in use for int3 and debug is a per CPU
-stack set by th IST. But 32bit does not have an IST and the stack
-still belongs to the current task and there is no problem in scheduling
-out the task.
+Add an st module option st_nowait_eof which defaults to 0. Setting this
+option to 1 tells the st driver not to wait when writing a filemark, which
+can result in much faster times on streaming tape drives.
 
-Keep preemption enabled on X86_32 when enabling interrupts for
-do_trap().
+Legacy applications cannot take advantage of the newer MTWEOFI ioctl, so this
+patch gives such applications the ability to write an immediate EOF using the
+normal MTWEOF ioctl if they set st_nowait_eof=1.
 
-The name of the function is changed from preempt_conditional_sti/cli()
-to conditional_sti/cli_ist(), to annotate that this function is used
-when the stack is on the IST.
+Reference: https://bugzilla.novell.com/show_bug.cgi?id=688996
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Lee Duncan <lduncan@suse.com>
+--- 
+ drivers/scsi/st.c |   18 +++++++++++++++---
+ drivers/scsi/st.h |    1 +
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
-Index: linux-rt.git/arch/x86/kernel/traps.c
-===================================================================
---- linux-rt.git.orig/arch/x86/kernel/traps.c
-+++ linux-rt.git/arch/x86/kernel/traps.c
-@@ -87,9 +87,21 @@ static inline void conditional_sti(struc
- 		local_irq_enable();
- }
+diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
+index 9b28f39..1dd617a 100644
+--- a/drivers/scsi/st.c
++++ b/drivers/scsi/st.c
+@@ -81,6 +81,7 @@ static int max_sg_segs;
+ static int try_direct_io = TRY_DIRECT_IO;
+ static int try_rdio = 1;
+ static int try_wdio = 1;
++static int st_nowait_eof = 0;
  
--static inline void preempt_conditional_sti(struct pt_regs *regs)
-+static inline void conditional_sti_ist(struct pt_regs *regs)
- {
-+#ifdef CONFIG_X86_64
-+	/*
-+	 * X86_64 uses a per CPU stack on the IST for certain traps
-+	 * like int3. The task can not be preempted when using one
-+	 * of these stacks, thus preemption must be disabled, otherwise
-+	 * the stack can be corrupted if the task is scheduled out,
-+	 * and another task comes in and uses this stack.
-+	 *
-+	 * On x86_32 the task keeps its own stack and it is OK if the
-+	 * task schedules out.
-+	 */
- 	inc_preempt_count();
-+#endif
- 	if (regs->flags & X86_EFLAGS_IF)
- 		local_irq_enable();
- }
-@@ -100,11 +112,13 @@ static inline void conditional_cli(struc
- 		local_irq_disable();
- }
+ static int st_dev_max;
+ static int st_nr_dev;
+@@ -103,6 +104,8 @@ module_param_named(max_sg_segs, max_sg_segs, int, 0);
+ MODULE_PARM_DESC(max_sg_segs, "Maximum number of scatter/gather segments to use (256)");
+ module_param_named(try_direct_io, try_direct_io, int, 0);
+ MODULE_PARM_DESC(try_direct_io, "Try direct I/O between user buffer and tape drive (1)");
++module_param_named(st_nowait_eof, st_nowait_eof, int, 0);
++MODULE_PARM_DESC(st_nowait_eof, "Do not wait when writing EOF (filemark) (0)");
  
--static inline void preempt_conditional_cli(struct pt_regs *regs)
-+static inline void conditional_cli_ist(struct pt_regs *regs)
- {
- 	if (regs->flags & X86_EFLAGS_IF)
- 		local_irq_disable();
-+#ifdef CONFIG_X86_64
- 	dec_preempt_count();
-+#endif
- }
- 
- static void __kprobes
-@@ -222,9 +236,9 @@ dotraplinkage void do_stack_segment(stru
- 	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
- 			12, SIGBUS) == NOTIFY_STOP)
- 		return;
--	preempt_conditional_sti(regs);
-+	conditional_sti_ist(regs);
- 	do_trap(12, SIGBUS, "stack segment", regs, error_code, NULL);
--	preempt_conditional_cli(regs);
-+	conditional_cli_ist(regs);
- }
- 
- dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
-@@ -316,9 +330,9 @@ dotraplinkage void __kprobes do_int3(str
- 		return;
- #endif
- 
--	preempt_conditional_sti(regs);
-+	conditional_sti_ist(regs);
- 	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
--	preempt_conditional_cli(regs);
-+	conditional_cli_ist(regs);
- }
- 
- #ifdef CONFIG_X86_64
-@@ -412,12 +426,12 @@ dotraplinkage void __kprobes do_debug(st
- 		return;
- 
- 	/* It's safe to allow irq's after DR6 has been saved */
--	preempt_conditional_sti(regs);
-+	conditional_sti_ist(regs);
- 
- 	if (regs->flags & X86_VM_MASK) {
- 		handle_vm86_trap((struct kernel_vm86_regs *) regs,
- 				error_code, 1);
--		preempt_conditional_cli(regs);
-+		conditional_cli_ist(regs);
- 		return;
+ /* Extra parameters for testing */
+ module_param_named(try_rdio, try_rdio, int, 0);
+@@ -1106,6 +1109,11 @@ static int check_tape(struct scsi_tape *STp, struct file *filp)
+                                     STp->drv_buffer));
+ 		}
+ 		STp->drv_write_prot = ((STp->buffer)->b_data[2] & 0x80) != 0;
++		if (!STp->drv_buffer && STp->immediate_filemark) {
++			printk(KERN_WARNING "%s: non-buffered tape: "
++			    "disabling writing immediate filemarks", name);
++			STp->immediate_filemark = 0;
++		}
  	}
+ 	st_release_request(SRpnt);
+ 	SRpnt = NULL;
+@@ -1306,6 +1314,8 @@ static int st_flush(struct file *filp, fl_owner_t id)
  
-@@ -436,7 +450,7 @@ dotraplinkage void __kprobes do_debug(st
- 	si_code = get_si_code(tsk->thread.debugreg6);
- 	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS) || user_icebp)
- 		send_sigtrap(tsk, regs, error_code, si_code);
--	preempt_conditional_cli(regs);
-+	conditional_cli_ist(regs);
+ 		memset(cmd, 0, MAX_COMMAND_SIZE);
+ 		cmd[0] = WRITE_FILEMARKS;
++		if (STp->immediate_filemark)
++			cmd[1] = 1;
+ 		cmd[4] = 1 + STp->two_fm;
  
- 	return;
- }
-
+ 		SRpnt = st_do_scsi(NULL, STp, cmd, 0, DMA_NONE,
+@@ -2172,8 +2182,8 @@ static void st_log_options(struct scsi_tape * STp, struct st_modedef * STm, char
+ 		       name, STm->defaults_for_writes, STp->omit_blklims, STp->can_partitions,
+ 		       STp->scsi2_logical);
+ 		printk(KERN_INFO
+-		       "%s:    sysv: %d nowait: %d sili: %d\n", name, STm->sysv, STp->immediate,
+-			STp->sili);
++		       "%s:    sysv: %d nowait: %d sili: %d nowait_filemark: %d\n",
++		       name, STm->sysv, STp->immediate, STp->sili, STp->immediate_filemark);
+ 		printk(KERN_INFO "%s:    debugging: %d\n",
+ 		       name, debugging);
+ 	}
+@@ -2705,7 +2715,8 @@ static int st_int_ioctl(struct scsi_tape *STp, unsigned int cmd_in, unsigned lon
+ 		cmd[0] = WRITE_FILEMARKS;
+ 		if (cmd_in == MTWSM)
+ 			cmd[1] = 2;
+-		if (cmd_in == MTWEOFI)
++		if (cmd_in == MTWEOFI ||
++		    (cmd_in == MTWEOF && STp->immediate_filemark))
+ 			cmd[1] |= 1;
+ 		cmd[2] = (arg >> 16);
+ 		cmd[3] = (arg >> 8);
+@@ -4084,6 +4095,7 @@ static int st_probe(struct device *dev)
+ 	tpnt->scsi2_logical = ST_SCSI2LOGICAL;
+ 	tpnt->sili = ST_SILI;
+ 	tpnt->immediate = ST_NOWAIT;
++	tpnt->immediate_filemark = st_nowait_eof;
+ 	tpnt->default_drvbuffer = 0xff;		/* No forced buffering */
+ 	tpnt->partition = 0;
+ 	tpnt->new_partition = 0;
+diff --git a/drivers/scsi/st.h b/drivers/scsi/st.h
+index f91a67c..24f97f1 100644
+--- a/drivers/scsi/st.h
++++ b/drivers/scsi/st.h
+@@ -120,6 +120,7 @@ struct scsi_tape {
+ 	unsigned char c_algo;			/* compression algorithm */
+ 	unsigned char pos_unknown;			/* after reset position unknown */
+ 	unsigned char sili;			/* use SILI when reading in variable b mode */
++	unsigned char immediate_filemark;	/* set immediate bit when writing filemark */
+ 	int tape_type;
+ 	int long_timeout;	/* timeout for commands known to take long time */
+ 
