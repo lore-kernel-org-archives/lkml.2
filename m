@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124Ab2BHSHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 13:07:24 -0500
-Received: from plane.gmane.org ([80.91.229.3]:40577 "EHLO plane.gmane.org"
+	id S1755922Ab2BHSK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 13:10:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49051 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754422Ab2BHSHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 13:07:23 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: walt <w41ter@gmail.com>
-Subject: Re: [patch]block: fix ioc locking warning
-Date: Wed, 08 Feb 2012 10:07:05 -0800
-Message-ID: <jgudka$pbj$1@dough.gmane.org>
-References: <1328514611.21268.66.camel@sli10-conroe>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: adsl-69-234-183-100.dsl.irvnca.pacbell.net
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20120129 Thunderbird/10.0
-In-Reply-To: <1328514611.21268.66.camel@sli10-conroe>
+	id S1753642Ab2BHSK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 13:10:28 -0500
+Date: Wed, 8 Feb 2012 13:10:15 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Subject: Re: 3.3-rc2 snd_pcm lockdep backtrace
+Message-ID: <20120208181014.GA6188@zod.bos.redhat.com>
+References: <20120206145621.GA4771@zod.bos.redhat.com>
+ <201202081854.08668.maciej.rutecki@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201202081854.08668.maciej.rutecki@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2012 11:50 PM, Shaohua Li wrote:
+On Wed, Feb 08, 2012 at 06:54:08PM +0100, Maciej Rutecki wrote:
+> On poniedziałek, 6 lutego 2012 o 15:56:22 Josh Boyer wrote:
+> 
+> I created a Bugzilla entry at 
+> https://bugzilla.kernel.org/show_bug.cgi?id=42746
+> for your bug report, please add your address to the CC list in there, thanks!
 
-> diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-> index 27a06e0..7490b6d 100644
-> --- a/block/blk-ioc.c
-> +++ b/block/blk-ioc.c
-> @@ -204,7 +204,9 @@ void put_io_context(struct io_context *ioc, struct request_queue *locked_q)
->   				spin_unlock(last_q->queue_lock);
->   			last_q = NULL;
->
-> -			if (!spin_trylock(this_q->queue_lock))
-> +			/* spin_trylock() always successes in UP case */
-> +			if (this_q != locked_q&&
-> +			    !spin_trylock(this_q->queue_lock))
->   				break;
->   			last_q = this_q;
->   			continue;
+Er... why exactly?
 
-I can see from the rest of this thread that your patch fixes a multitude
-of different backtraces, including (most importantly :) mine, thanks:
+I mean, great I don't really mind at all that a bugzilla.kernel.org bug
+was opened, but
 
-http://marc.info/?l=linux-kernel&m=132804761925018&w=2
+1) there's already a bug opened in the RH bugzilla for this
+2) I've already emailed the upstream developers and list about it
+3) ALSA actually has it's own bug tool
 
+so unless the ALSA devs are going to do something with that particular
+bug I don't see a huge amount of value.
 
+As an aside, I'm basically an intermediary here.  The original reporter
+in the RHT bug should probably add their email to CC.
 
+josh
