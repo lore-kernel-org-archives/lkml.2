@@ -1,77 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab2BHUA3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 15:00:29 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56336 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434Ab2BHUA2 (ORCPT
+	id S1757397Ab2BHUAq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 15:00:46 -0500
+Received: from wobosm01.netvigator.com ([218.102.32.144]:59496 "EHLO
+	wobosm01.netvigator.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755304Ab2BHUAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 15:00:28 -0500
+	Wed, 8 Feb 2012 15:00:43 -0500
+Date: Thu, 9 Feb 2012 03:55:35 +0800 (HKT)
+From: PRIVATE MAIL <elainekc@netvigator.com>
+Reply-To: privatepot5@live.co.uk
+Message-ID: <241223052.401063.1328730935950.JavaMail.root@yzbmbs10>
+Subject: Greetings
 MIME-Version: 1.0
-In-Reply-To: <1328729420.2261.329.camel@groeck-laptop>
-References: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
-	<1328729420.2261.329.camel@groeck-laptop>
-Date: Wed, 8 Feb 2012 21:00:27 +0100
-Message-ID: <CACW_hTbLd3kbuwJy9U2ZGDi3ypD-+KsecjYhku7jwQgFPaRqhg@mail.gmail.com>
-Subject: Re: drivers/net/phy/phy.c issue
-From: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
-To: guenter.roeck@ericsson.com
-Cc: netdev@vger.kernel.org, "afleming@freescale.com" <afleming@freescale.com>,
-        "macro@linux-mips.org" <macro@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.12.63]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Win)/6.0.8_GA_2661)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/8 Guenter Roeck <guenter.roeck@ericsson.com>:
-> Copying netdev.
->
-> On Wed, 2012-02-08 at 09:31 -0500, Frans Meulenbroeks wrote:
->> Hi
->>
->> I found an issue with drivers/net/phy/phy.c
->> As I could not identify a maintainer for this file I decided to mail
->> it to the above addressees.
->> Apologies upfront if it is inappropriate.
->>
->> The issue:
->>
->> My network interface was configured as 10Mbit, full duplex, autonegotiate off.
->> If the cable is unplugged after 10 seconds or so the interface drops
->> to half duplex and the message:
->> Trying 10/HALF
->> is printed. This message comes (if I am correct from the function
->> phy_force_reduction in drivers/net/phy/phy.c
->>
->> Maybe this is still ok, however if I reconnect my network cable the
->> interface remains configured as 10 Mbit, half duplex.
->> I had expected/assumed that it would go back to 10 Mbit, full duplex.
->>
->> If I try the same with a 1Gbit full duplex link with autonegotiate on,
->> the link also drops to half duplex whenever the cable is
->> disconnected. However reconnecting the cable then brings the interface
->> back to full duplex again.
->>
->> Not sure what is wrong (if the interface should not be dropped to half
->> or get back to full) and even less an idea how to fix it,
->> but wanted to report it anyway, in the hope someone can shed a light
->> on this and/or fix it.
->>
-> What is your kernel version ? No idea if it makes a difference, but I
-> strongly suspect people will need to know.
 
-Oops, sorry for the incomplete info.
-This was detected in 2.6.38, but the current git head of phy.c differs
-only on a few places that (at least according to my judgement) are not
-related.
-Apologies, but I cannot test on a git head kernel.
 
-And wrt the question of Andy in the subsequent reply.
+Good-day.
 
-Hw is a Freescale MPC8313. This is a Gianfar. Is that the info you wanted?
+This is a personal email directed to you for your consideration alone, I request that it remain and be treated as such only. Please bear with me for now and do not ask my name. I am a banker with HSBC in the Malta. I have an interesting business proposal for you that will be of immense benefit to both of us. Although this may be hard for you to believe, we stand to gain 7.2 million USD between us in a matter of days. Please grant me the benefit of doubt and hear me out. I need you to signify your interest by replying to this email.
 
-BTW what is the desired behaviour? Should I drop to half duplex? Or
-should I get back to full if I reconnect.
+Most importantly, I will need you to promise to keep whatever you learn from me between us even if you decide not to go along with me. I will make more details available to you on receipt of a positive response from you. Do contact me only at my private emailaddress:privatepot5@live.co.uk
 
-Best regards, Frans
+
+Warm regard from Malta.
+
