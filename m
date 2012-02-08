@@ -1,56 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab2BHC6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 21:58:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44111 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235Ab2BHC6h (ORCPT
+	id S1755470Ab2BHDD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 22:03:59 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:64885 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab2BHDD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 21:58:37 -0500
+	Tue, 7 Feb 2012 22:03:58 -0500
+Date: Wed, 8 Feb 2012 09:52:51 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Naresh Bhat <nareshgbhat@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: x86_64 arch+SMP ON+linux-2.6.32.46+E1000+KGDBOE = Timed out.
+ Ignoring packet error, continuing...
+Message-ID: <20120208015251.GA4927@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <CAJXQGfJkmTZHDVPP_Rw7W3j8nmxXTN_OLUxjzCt-UOLGx61CZQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAB=NE6URWAgUgF+6bOsRBeeXnQ4VjYf1tWuUkkvMviCLOCxeqA@mail.gmail.com>
-References: <1328312594-31934-1-git-send-email-mcgrof@frijolero.org>
- <20120206160727.GA21048@tuxdriver.com> <20120207041958.GA32377@bombadil.infradead.org>
- <CAB=NE6VS79S4R6wQddQCqPfoYPyRbPzSdAYN2Mxfi-4G_sfCvg@mail.gmail.com>
- <CAB=NE6Wv3PEJj5zKfK2o869ntxuU3V+Nv2dgKX1eDtk3zQ04dA@mail.gmail.com> <CAB=NE6URWAgUgF+6bOsRBeeXnQ4VjYf1tWuUkkvMviCLOCxeqA@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Tue, 7 Feb 2012 18:58:17 -0800
-X-Google-Sender-Auth: 5kpkK1dHYDZZju8rP9bN8aatLcc
-Message-ID: <CAB=NE6UNHufTggg0ka-+q7ri_X6ENx4nO5DfMCAxxrKLrERPWg@mail.gmail.com>
-Subject: Re: [PATCH] compat: add compat kernel checker and downloader
-To: "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-        Andy Whitcroft <apw@canonical.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>, hauke@hauke-m.de,
-        kernel-team@lists.ubuntu.com, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAJXQGfJkmTZHDVPP_Rw7W3j8nmxXTN_OLUxjzCt-UOLGx61CZQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 7, 2012 at 6:55 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
-> On Tue, Feb 7, 2012 at 5:19 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
->> On Mon, Feb 6, 2012 at 8:56 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
->>> Come to think of it.. we could bastardize Ubuntu's PPA packages for
->>> mainline kernels, translate the deb packages into tar files and some
->>> sort of grub-update or whatever scrip to run in the end? That still
->>> seems like a lot of work.
->>>
->>> The current option allows us to use either distro kernels or whatever
->>> you have installed.. not sure how else to improve this. Didn't we have
->>> some sort of distro agnostic package crap? Maybe?
->>
->> Or -- Andy -- any chance we can get some of the deb contents unpacked
->> into a distro-agostic tarball of some sort that we can use ? I ask
->> given that you guys already host the sources and all that.
->
-> Just to not waste anyone's time it seems pkgadd from IRC has a
-> distro-agnostic dpkg -x type of solution in the works, that could use
-> these same debs.
->
-> http://paste.debian.net/155521/
+On Tue, Feb 07, 2012 at 09:38:49PM +0530, Naresh Bhat wrote:
+> Hi,
+> 
+> I am trying KGDBOE on the following kernel
 
-Disclaimer: (no error handling)
+Is KGDBOE supported by upstream? Actually I don't find it
+in the source tree.
 
-02:57 < pkgadd> and no support for different compression methods that
-gzip for now (Debian is using xz for >= 3.2 kernel packages)
+Thanks,
+Yong
+
+> 
+> Kernel    -   linux-2.6.32.46 (With SMP set)
+> Hardware -  x86 64bit machine (Intel Nehlaum)
+> Ethernet   - E1000 driver is used
+> 
+> But I am getting the following error
+> 
+> ........
+> ............
+> .................
+> Breakpoint 2, sys_sync () at fs/sync.c:130
+> 130        wakeup_flusher_threads(0);
+> (gdb) s
+> wakeup_flusher_threads (nr_pages=0) at fs/fs-writeback.c:1005
+> 1005    {
+> (gdb) s
+> 
+> Ignoring packet error, continuing...
+> Ignoring packet error, continuing...
+> Ignoring packet error, continuing...
+> 
+> 
+> Detailed logs with debug set :
+> -----------------------------------------
+> 
+> ...................
+> ................................
+> .......................................
+> Sending packet: $z0,ffffffff810ad687,1#66...Ack
+> Packet received: OK
+> target_remove_breakpoint (0x810ad687, xxx) = 0
+> target_terminal_ours ()
+> kgdb_register_io_module (new_kgdb_io_ops=0xffffffff81a9d5b0) at
+> kernel/kgdb.c:1778
+> 1778    }
+> (gdb) n
+> Sending packet: $Z0,ffffffff810ad687,1#46...Ack
+> Packet received: OK
+> target_insert_breakpoint (0x810ad687, xxx) = 0
+> target_terminal_inferior ()
+> Sending packet: $s#73...Ack
+> target_resume (-1, step, 0)
+> Packet received: T05thread:0000000000000001;
+> target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+> Sending packet: $g#67...Ack
+> Packet received:
+> 0000000000000000b0d5a981ffffffffffffffff00000000ffffffff0000000086020000000000004602000000000000b07e0b2f0088ffffa87e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005cda0a81ffffffff820300001000000018000000
+> target_fetch_registers (rip) = 5cda0a81ffffffff 0xffffffff810ada5c -2129995172
+> target_stopped_by_watchpoint () = 0
+> target_terminal_inferior ()
+> Sending packet: $s#73...Ack
+> target_resume (-1, step, 0)
+> Packet received: T05thread:0000000000000001;
+> target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+> Sending packet: $g#67...Ack
+> Packet received:
+> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000b07e0b2f0088ffffb07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005dda0a81ffffffff820300001000000018000000
+> target_fetch_registers (rip) = 5dda0a81ffffffff 0xffffffff810ada5d -2129995171
+> target_stopped_by_watchpoint () = 0
+> target_terminal_inferior ()
+> Sending packet: $s#73...Ack
+> target_resume (-1, step, 0)
+> Packet received: T05thread:0000000000000001;
+> target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+> Sending packet: $g#67...Ack
+> Packet received:
+> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffb87e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005eda0a81ffffffff820300001000000018000000
+> target_fetch_registers (rip) = 5eda0a81ffffffff 0xffffffff810ada5e -2129995170
+> target_stopped_by_watchpoint () = 0
+> target_terminal_inferior ()
+> Sending packet: $s#73...Ack
+> target_resume (-1, step, 0)
+> Packet received: T05thread:0000000000000001;
+> target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+> Sending packet: $g#67...Ack
+> Packet received:
+> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffc07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b061030000000000180d3e81ffffffff820300001000000018000000
+> target_fetch_registers (rip) = 180d3e81ffffffff 0xffffffff813e0d18 -2126639848
+> target_stopped_by_watchpoint () = 0
+> target_terminal_ours_for_output ()
+> Sending packet: $mffffffff813e0d18,1#f8...Ack
+> Packet received: 85
+> remote:target_xfer_partial (2, (null), 0xbfe00edb, 0x0,
+> 0xffffffff813e0d18, 1) = 1, bytes = 85
+> Sending packet: $mffffffff813e0d18,1#f8...Ack
+> Packet received: 85
+> remote:target_xfer_partial (2, (null), 0xbfe00edb, 0x0,
+> 0xffffffff813e0d18, 1) = 1, bytes = 85
+> Sending packet: $mffff88002f0b7ec0,40#be...Ack
+> Packet received:
+> e07e0b2f0088ffff510d3e81ffffffff0800000000000000380d3e81ffffffff107f0b2f0088ffff5fa00081ffffffff107f0b2f0088ffffb0bcb881ffffffff
+> remote:target_xfer_partial (3, (null), 0xa944050, 0x0,
+> 0xffff88002f0b7ec0, 64) = 64, bytes =
+>  e0 7e 0b 2f 00 88 ff ff 51 0d 3e 81 ff ff ff ff ...
+> remote:target_xfer_partial (4, (null), 0xa944030, 0x0,
+> 0xffff88002f0b7ec8, 8) = 8, bytes =
+>  51 0d 3e 81 ff ff ff ff
+> remote:target_xfer_partial (4, (null), 0xa944030, 0x0,
+> 0xffff88002f0b7ec0, 8) = 8, bytes =
+>  e0 7e 0b 2f 00 88 ff ff
+> target_terminal_inferior ()
+> Sending packet: $s#73...Ack
+> target_resume (-1, step, 0)
+> Packet received: T05thread:0000000000000001;
+> target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+> Sending packet: $g#67...Ack
+> Packet received:
+> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffc07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000001a0d3e81ffffffff460300001000000018000000
+> target_fetch_registers (rip) = 1a0d3e81ffffffff 0xffffffff813e0d1a -2126639846
+> target_stopped_by_watchpoint () = 0
+> target_terminal_inferior ()
+> Sending packet: $s#73...Ack
+> target_resume (-1, step, 0)
+> Packet received: T05thread:0000000000000001;
+> target_wait (-1, status) = 42000,   status->kind = stopped, signal = SIGTRAP
+> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+> Sending packet: $g#67...Sending packet: $g#67...Sending packet:
+> $g#67...Sending packet: $g#67...Timed out.
+> Timed out.
+> Timed out.
+> Ignoring packet error, continuing...
+> Bad register packet; fetching a new packet
+> Timed out.
+> Timed out.
+> Timed out.
+> Ignoring packet error, continuing...
+> Bad register packet; fetching a new packet
+> Timed out.
+> Timed out.
+> Timed out.
+> Ignoring packet error, continuing...
+> Bad register packet; fetching a new packet
+> Timed out.
+> ..........................
+> .................................
+> 
+> 
+> Please help me to identify any available patch in kernel.org or any
+> guidance to fix the above error.  I will really appreciate your help
+> on this.
+> 
+> 
+> -- Thanks and Regards
+> "For things to change, we must change"
+> -Naresh Bhat
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Only stand for myself
