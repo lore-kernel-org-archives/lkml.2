@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab2BHBJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 20:09:45 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:37912 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754189Ab2BHBJn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 20:09:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F31B789.9020509@samsung.com>
-References: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
-	<m2pqdr2tyq.fsf@bob.laptop.org>
-	<CAAJw_Zv4Hk_kfc33xsVcdi-0_C6tsf_FD3sUx1JPDX_fZZMzeQ@mail.gmail.com>
-	<4F30E19B.9020503@intel.com>
-	<CAAJw_Zth+QM8OhMEWweBBek8QNW_9CseHSDuB-LCGrvwuqfV2A@mail.gmail.com>
-	<4F310529.4020101@intel.com>
-	<CAAJw_ZsHwdvXuw+edXUfyGOSMOu5oUw3zX8nUryxJJiiZXzXKQ@mail.gmail.com>
-	<CAAJw_Zup7Wg7FO95Z63e_sniu21gyzdCjcBNgsS0aw6MguDwLw@mail.gmail.com>
-	<CAAJw_Zv6HkLLqEzNKRCfQ7EbMNEVe_hzbW+mHOnDAWLidOhMBQ@mail.gmail.com>
-	<CAAJw_Zs7aET=vdy033bzuHwW==uS8AW78NSvD2L_hjU+Mzp-_w@mail.gmail.com>
-	<4F31B789.9020509@samsung.com>
-Date: Wed, 8 Feb 2012 09:09:43 +0800
-Message-ID: <CAAJw_ZtnWYxGCm5Vm5CQ1GBLc=GU7AGiQKe_-9LJsbMW+YG-GQ@mail.gmail.com>
-Subject: Re: mmc sdhci mmcblk0: error -110 sending status command, retrying
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Philip Rakity <prakity@marvell.com>, Chris Ball <cjb@laptop.org>,
-        Pierre Ossman <pierre@ossman.eu>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, arindam.nath@amd.com,
-        zhangfei.gao@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756984Ab2BHBP1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 20:15:27 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:35047 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754899Ab2BHBPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 20:15:25 -0500
+Message-ID: <1328663723.27428.2.camel@joe2Laptop>
+Subject: Re: [PATCH] SCSI, st: modify tape driver to allow writing immediate
+ filemarks
+From: Joe Perches <joe@perches.com>
+To: Lee Duncan <lduncan@suse.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 07 Feb 2012 17:15:23 -0800
+In-Reply-To: <4F31CAC0.3010905@suse.com>
+References: <4F31CAC0.3010905@suse.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 8, 2012 at 7:45 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> On 02/08/2012 03:33 AM, Jeff Chua wrote:
+On Tue, 2012-02-07 at 17:07 -0800, Lee Duncan wrote:
+> Add an st module option st_nowait_eof which defaults to 0. Setting this
+> option to 1 tells the st driver not to wait when writing a filemark, which
+> can result in much faster times on streaming tape drives.
 
-I tried a Class6 8GB and after a few inserts, it could read without
-errors. The Class10 seems to be more sensitive to speed.
+trivial comments:
 
-Jeff
+> diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
+[]
+> @@ -81,6 +81,7 @@ static int max_sg_segs;
+>  static int try_direct_io = TRY_DIRECT_IO;
+>  static int try_rdio = 1;
+>  static int try_wdio = 1;
+> +static int st_nowait_eof = 0;
+
+Could be bool.
+
+> @@ -1106,6 +1109,11 @@ static int check_tape(struct scsi_tape *STp, struct file *filp)
+>                                      STp->drv_buffer));
+>  		}
+>  		STp->drv_write_prot = ((STp->buffer)->b_data[2] & 0x80) != 0;
+> +		if (!STp->drv_buffer && STp->immediate_filemark) {
+> +			printk(KERN_WARNING "%s: non-buffered tape: "
+> +			    "disabling writing immediate filemarks", name);
+
+Needs terminating "\n" and it's better to coalesce the
+format and ignore 80 char lines to make arbitrary greps
+a bit easier.
+
+> diff --git a/drivers/scsi/st.h b/drivers/scsi/st.h
+[]
+> @@ -120,6 +120,7 @@ struct scsi_tape {
+>  	unsigned char c_algo;			/* compression algorithm */
+>  	unsigned char pos_unknown;			/* after reset position unknown */
+>  	unsigned char sili;			/* use SILI when reading in variable b mode */
+> +	unsigned char immediate_filemark;	/* set immediate bit when writing filemark */
+
+could be bool
+
+
