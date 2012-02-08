@@ -1,158 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab2BHCFB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 21:05:01 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44538 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754513Ab2BHCFA convert rfc822-to-8bit (ORCPT
+	id S1756752Ab2BHCLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 21:11:45 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:45280 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab2BHCLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 21:05:00 -0500
+	Tue, 7 Feb 2012 21:11:44 -0500
+Message-ID: <4F31D9B2.5090501@linux.vnet.ibm.com>
+Date: Wed, 08 Feb 2012 10:10:58 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <20120203140428.GG5796@csn.ul.ie>
-References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
- <1328271538-14502-12-git-send-email-m.szyprowski@samsung.com> <20120203140428.GG5796@csn.ul.ie>
-From: sandeep patil <psandeep.s@gmail.com>
-Date: Tue, 7 Feb 2012 18:04:18 -0800
-Message-ID: <CA+K6fF49BQiNer=7Di+gCU_EX4E41q-teXJJUBjEd2xc12-j4w@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 11/15] mm: trigger page reclaim in
- alloc_contig_range() to stabilize watermarks
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rob Clark <rob.clark@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] sched: Avoid unnecessary work in reweight_entity
+References: <4F2F9F6C.1090608@linux.vnet.ibm.com> <4F3089F9.6010609@linux.vnet.ibm.com> <4F308E25.7060101@linux.vnet.ibm.com>
+In-Reply-To: <4F308E25.7060101@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+x-cbid: 12020802-2000-0000-0000-00000655EC1A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 3, 2012 at 6:04 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Fri, Feb 03, 2012 at 01:18:54PM +0100, Marek Szyprowski wrote:
->
-> Nothing prevents two or more processes updating the wmarks at the same
-> time which is racy and unpredictable. Today it is not much of a problem
-> but CMA makes this path hotter than it was and you may see weirdness
-> if two processes are updating zonelists at the same time. Swap-over-NFS
-> actually starts with a patch that serialises setup_per_zone_wmarks()
->
-> You also potentially have a BIG problem here if this happens
->
-> min_free_kbytes = 32768
-> Process a: min_free_kbytes  += 65536
-> Process a: start direct reclaim
-> echo 16374 > /proc/sys/vm/min_free_kbytes
-> Process a: exit direct_reclaim
-> Process a: min_free_kbytes -= 65536
->
-> min_free_kbytes now wraps negative and the machine hangs.
->
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-There's another problem I am facing with zone watermarks and CMA.
+In original code, using account_entity_dequeue and account_entity_enqueue
+as a pair will do some work unnecessary, such like remove node from list
+and add it back again immediately.
 
-Test details:
-Memory  : 480 MB of total memory, 128 MB CMA region
-Test case : around 600 MB of file transfer over USB RNDIS onto target
-System Load : ftpd with console running on target.
-No one is doing CMA allocations except for the DMA allocations done by the
-drivers.
+And because there are no really enqueue and dequeue happen here, it is not
+suitable to use account_entity_dequeue and account_entity_enqueue here.
 
-Result : After about 300MB transfer, I start getting GFP_ATOMIC
-allocation failures.
-This only happens if CMA region is reserved.
+This patch combine the work of them in order to save time.
 
-Here's the free_list before I start the test
+v2:
+	Add more description and revise wrong code.
 
-Free pages count per migrate type at order       0      1      2
-3      4      5      6      7      8      9     10
-Node    0, zone   Normal, type    Unmovable      2      9      6
-7      3      3      3      4      2      1      0
-Node    0, zone   Normal, type  Reclaimable     31      4      1
-2      1      1      0      1      1      0      0
-Node    0, zone   Normal, type      Movable     22     20     23
-14      3      4      4      3      1      0     70
-Node    0, zone   Normal, type      Reserve      0      0      0
-0      0      0      0      0      0      0      1
-Node    0, zone   Normal, type          CMA      2      0      0
-2      1      1      1      1      1      1     34
-Node    0, zone   Normal, type      Isolate      0      0      0
-0      0      0      0      0      0      0      0
+v3:
+	Mark add_cfs_task_weight and sub_add_cfs_task_weight as inline. 
 
-and here's what I get when I print the same when allocation fails.
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ kernel/sched/fair.c  |   34 +++++++++++++++++++++++++---------
+ kernel/sched/sched.h |    8 ++++++++
+ 2 files changed, 33 insertions(+), 9 deletions(-)
 
-Normal: Free pages count per migrate type at order       0      1
-2      3      4      5      6      7      8      9     10
-[  401.887634]                    zone   Normal, type    Unmovable
- 0      0      0      0      0      0      0      0      0      0
-0
-[  401.901916]                    zone   Normal, type  Reclaimable
- 0      0      0      0      0      0      0      0      0      0
-0
-[  401.916229]                    zone   Normal, type      Movable
- 0      0      0      0      0      0      0      0      0      0
-0
-[  401.930541]                    zone   Normal, type      Reserve
- 0      0      0      0      0      0      0      0      0      0
-0
-[  401.944824]                    zone   Normal, type          CMA
-6582   6580   2380      0      0      0      0      0      0      0
-  0
-[  401.961486]                    zone   Normal, type      Isolate
- 0      0      0      0      0      0      0      0      0      0
-0
-
-Total memory available is way above the zone watermarks. So, we ended
-up starving
-UNMOVABLE/RECLAIMABLE atomic allocations that cannot fallback on CMA region.
-
-I know the CMA region is big, but I think reducing the region size
-will only delay the problem.
-it walso on't recover as long as most of the CMA region pages get
-allocated and the zone
-watermark is hit
-
-To check my theory, I changed __zone_watermark_ok() to ignore free CMA pages
-With this change, the transfer succeeds w/o any failures.
-
-The patch does make things slow of course. Ideally, I would have liked
-to do this only if
-the watermark is being checked for non-Movable allocations, but I couldn't find
-an easy way to do that.
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 371a79f..b672d97 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1580,6 +1580,21 @@ static bool __zone_watermark_ok(struct zone *z,
-int order, unsigned long mark,
- 		if (free_pages <= min)
- 			return false;
- 	}
-+
-+#ifdef CONFIG_CMA
-+	/* If cma is enabled, ignore free pages from MIGRATE_CMA list
-+	 * for watermark checks
-+	 */
-+	for (o = order; o < MAX_ORDER; o++) {
-+		struct list_head *curr;
-+		list_for_each(curr, &z->free_area[o].free_list[MIGRATE_CMA]) {
-+			free_pages -= (1 << o);
-+			if (free_pages <= min)
-+				return false;
-+		}
-+	}
-+#endif
-+
- 	return true;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7c6414f..8726750 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -777,16 +777,28 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+  */
+ 
+ #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+-static void
++static inline void
+ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+ {
+ 	cfs_rq->task_weight += weight;
  }
++
++static inline void
++sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
++{
++	cfs_rq->task_weight -= sub;
++	cfs_rq->task_weight += add;
++}
+ #else
+ static inline void
+ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+ {
+ }
++
++static inline void
++sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
++{
++}
+ #endif
+ 
+ static void
+@@ -938,20 +950,24 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
+ {
+ }
+ # endif /* CONFIG_SMP */
++
+ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+ 			    unsigned long weight)
+ {
++	/* commit outstanding execution time */
++	if (cfs_rq->curr == se)
++		update_curr(cfs_rq);
++
+ 	if (se->on_rq) {
+-		/* commit outstanding execution time */
+-		if (cfs_rq->curr == se)
+-			update_curr(cfs_rq);
+-		account_entity_dequeue(cfs_rq, se);
++		update_load_sub_add(&cfs_rq->load, se->load.weight, weight);
++		if (!parent_entity(se)) {
++			update_load_sub_add(&rq_of(cfs_rq)->load, se->load.weight, weight);
++		}
++		if (entity_is_task(se)) {
++			sub_add_cfs_task_weight(cfs_rq, se->load.weight, weight);
++		}
+ 	}
+-
+ 	update_load_set(&se->load, weight);
+-
+-	if (se->on_rq)
+-		account_entity_enqueue(cfs_rq, se);
+ }
+ 
+ static void update_cfs_shares(struct cfs_rq *cfs_rq)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 98c0c26..ec4430f 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -779,6 +779,14 @@ static inline void update_load_sub(struct load_weight *lw, unsigned long dec)
+ 	lw->inv_weight = 0;
+ }
+ 
++static inline void update_load_sub_add(struct load_weight *lw, unsigned long dec,
++					unsigned long inc)
++{
++	lw->weight -= dec;
++	lw->weight += inc;
++	lw->inv_weight = 0;
++}
++
+ static inline void update_load_set(struct load_weight *lw, unsigned long w)
+ {
+ 	lw->weight = w;
+-- 
+1.7.4.1
 
-Sandeep
