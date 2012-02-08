@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab2BHLIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 06:08:12 -0500
-Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:47215 "EHLO
-	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755332Ab2BHLIK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 06:08:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F32539D.8030402@linux.vnet.ibm.com>
-References: <4F3243D4.4080907@linux.vnet.ibm.com>
-	<CABPqkBR+okFaa2s1AbMHAgkBbW4QSwOceLuYvqE=6PQOvzksiw@mail.gmail.com>
-	<4F32539D.8030402@linux.vnet.ibm.com>
-Date: Wed, 8 Feb 2012 12:08:08 +0100
-Message-ID: <CABPqkBTsqqs5sFyP61ZNfJxE2m3dGTjOXJqdHN5gi3en+PXnzw@mail.gmail.com>
-Subject: Re: Use case for PERF_COUNT_HW_REF_CPU_CYCLES generic PMU event
-From: Stephane Eranian <eranian@google.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
+	id S1757027Ab2BHLJW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 06:09:22 -0500
+Received: from ns.pmeerw.net ([87.118.82.44]:34190 "EHLO pmeerw.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756794Ab2BHLJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 06:09:20 -0500
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: linux-kernel@vger.kernel.org
+Cc: davem@davemloft.net, steve.glendinning@smsc.com,
+        Peter Meerwald <p.meerwald@bct-electronic.com>
+Subject: [PATCH 1/2] smsc95xx: add module parameter to turn off NIC status leds
+Date: Wed,  8 Feb 2012 12:08:51 +0100
+Message-Id: <1328699332-9024-1-git-send-email-pmeerw@pmeerw.net>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 8, 2012 at 11:51 AM, Anshuman Khandual
-<khandual@linux.vnet.ibm.com> wrote:
-> On Wednesday 08 February 2012 03:21 PM, Stephane Eranian wrote:
->> On Wed, Feb 8, 2012 at 10:43 AM, Anshuman Khandual
->> <khandual@linux.vnet.ibm.com> wrote:
->>> Hello Stephane,
->>>
->>> I was going through the following discussion where we added the
->>> new HW generic event PERF_COUNT_HW_REF_CPU_CYCLES.
->>>
->>> https://lkml.org/lkml/2011/12/10/103
->>>
->>> (Sorry, for asking this question bit late)
->>>
->>> I am trying to understand the use case for this. Would this new event
->>> help us in generating (during a perf session) a CPU frequency invariant
->>> time metric against which we would plot our other perf event's measurements ?
->>> CPU frequency independent time measurement is it's primary purpose ? or we were
->>> finding a way to expose the fixed counter 2 which was not getting used before
->>> for not having an event encoding. I guess this would help us in finding equivalent
->>> PMU events or mechanisms in other architecture / platforms.
->>>
->> The goal was to expose a cycle event that is not subject to frequency scaling
->> nor turbo boost of any sort. An event that could be used to correlate with time.
->
->> An event that could also be used to compute idle time by comparing its value
->> with wall-clock time.
->
-> Why kernel computed idle time is not sufficient ? How much accuracy would it
-> improve in using PMU event computed idle time over kernel computed idle time.
->
-I was just listing the what you could do with the event. I have not
-yet tried to measure
-idle with ref-cycles.
+From: Peter Meerwald <p.meerwald@bct-electronic.com>
 
->
->>
->> The fact that on Intel X86 this event is on fixed counter 2 is an
->> implementation
->> detail.
->>
->>> --
->>> Anshuman Khandual
->>> Linux Technology Centre
->>> IBM Systems and Technology Group
->>>
->>
->
+add module parameter to allow to turn off NIC status leds (link, 
+speed, activity); blinking LEDs are annoying outside the server room :)
+
+default behaviour is not changed, tested on beagleboard-xm
+
+Signed-off-by: Peter Meerwald <p.meerwald@bct-electronic.com>
+
+---
+ drivers/net/usb/smsc95xx.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
+index d45520e..b7b2326 100644
+--- a/drivers/net/usb/smsc95xx.c
++++ b/drivers/net/usb/smsc95xx.c
+@@ -63,6 +63,10 @@ static bool turbo_mode = true;
+ module_param(turbo_mode, bool, 0644);
+ MODULE_PARM_DESC(turbo_mode, "Enable multiple frames per Rx transaction");
+ 
++static bool leds_off = false;
++module_param(leds_off, bool, 0644);
++MODULE_PARM_DESC(leds_off, "Turn off NIC LEDs");
++
+ static int smsc95xx_read_reg(struct usbnet *dev, u32 index, u32 *data)
+ {
+ 	u32 *buf = kmalloc(4, GFP_KERNEL);
+@@ -894,8 +898,11 @@ static int smsc95xx_reset(struct usbnet *dev)
+ 	netif_dbg(dev, ifup, dev->net, "ID_REV = 0x%08x\n", read_buf);
+ 
+ 	/* Configure GPIO pins as LED outputs */
+-	write_buf = LED_GPIO_CFG_SPD_LED | LED_GPIO_CFG_LNK_LED |
+-		LED_GPIO_CFG_FDX_LED;
++	if (!leds_off)
++		write_buf = LED_GPIO_CFG_SPD_LED | LED_GPIO_CFG_LNK_LED |
++			LED_GPIO_CFG_FDX_LED;
++	else
++		write_buf = 0;
+ 	ret = smsc95xx_write_reg(dev, LED_GPIO_CFG, write_buf);
+ 	if (ret < 0) {
+ 		netdev_warn(dev->net, "Failed to write LED_GPIO_CFG register, ret=%d\n",
+-- 
+1.7.4.1
+
