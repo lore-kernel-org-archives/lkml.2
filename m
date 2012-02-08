@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab2BHNhe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 08:37:34 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:46261 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756163Ab2BHNhb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 08:37:31 -0500
-In-Reply-To: <4F313526.2050907@redhat.com>
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com> <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com> <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com> <4F313526.2050907@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: BORNTRAE@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        mst@redhat.com, rusty@rustcorp.com.au
+	id S1757152Ab2BHNlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 08:41:52 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:38574 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756163Ab2BHNlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 08:41:51 -0500
+Message-ID: <4F327B99.7020602@gmail.com>
+Date: Wed, 08 Feb 2012 17:41:45 +0400
+From: Andrew Vagin <avagin@gmail.com>
+Reply-To: avagin@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-X-KeepSent: 36197712:1A42EB9E-C125799E:0049E3C2;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>
-From: Christian Hoff <christian.hoff@de.ibm.com>
-Date: Wed, 8 Feb 2012 14:37:16 +0100
-X-MIMETrack: S/MIME Sign by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
- 10, 2010) at 08/02/2012 14:37:21,
-	Serialize by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
- 10, 2010) at 08/02/2012 14:37:21,
-	Serialize complete at 08/02/2012 14:37:21,
-	S/MIME Sign failed at 08/02/2012 14:37:21: The cryptographic key was not
- found,
-	Serialize by Router on D06MC042/06/M/IBM(Release 8.5.2FP3|July 10, 2011) at
- 08/02/2012 14:37:20,
-	Serialize complete at 08/02/2012 14:37:20
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12020813-5024-0000-0000-000001A391BD
+To: Pedro Alves <palves@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@parallels.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
+References: <1328267483-3225342-1-git-send-email-avagin@openvz.org> <20120203162519.GB805@google.com> <4F2C0F13.70709@parallels.com> <20120203165132.GA5636@redhat.com> <4F31848A.9070406@redhat.com>
+In-Reply-To: <4F31848A.9070406@redhat.com>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini wrote:
-> Christian Hoff wrote:
-> > Instead the format has some disadvantages:
-> > - It uses up 8 bytes where 3 bytes would be sufficient in order to 
-store
-> > both the target ID and LUN number information
-> > - The format limits us to 255 target IDs. I agree that the LUN limit 
-is
-> > probably more a theoretical and not a practical one, but 255 target 
-IDs
-> > could become a limitation in the future.
->
-> It also provides better upwards-compatibility in case the limitations 
-> are actually hit.  If I had used "uint8_t target; uint16_t lun;" an 
-> extension would require a feature bit and a new struct.  With 8-bytes, 
-> you can just expand the definition.  That pretty much sums it up.
+Hi All,
+> Off hand, I'm not picturing a use.  But that may well just mean I'm lacking
+> imagination.  Andrew, Pavel, did you have a particular idea in mind when you
+> said it may be useful for debugging a multithreading program / gdb?
+For example:
 
-Ok, fair enough. This addresses my question.
+pthread_join() waits on a futex (child_tid_address), but a thread is 
+dead already.
 
-Again, I have already done much testing with virtio-scsi and can confirm 
-that the code is working flawlessly. In my opinion, virtio-scsi is a 
-worthwhile addition to virtio-block and should be considered for inclusion 
-into mainline kernel code.
+Where is the problem? At first I would want to check, that 
+pthread_join() uses the correct address of the futex. The simple way is 
+to connect to this process via gdb
+and get it.
 
-Mit freundlichen Grüßen / Kind regards
+I want to say, that when you have trouble with child_tid_address, you 
+may want to get it.
+If the code is your, you may get it via prctl, but if it's not, what 
+will you do?
 
-Christian Hoff
+Yes, we have lived without this for a long time, so I can assume that 
+all what I tell is useless.
 
-Student - Applied Computer Science
+But one more reason why I want to add this in ptrace.
+I want use this functionality to dump a process state.
+Now we do a few actions in a context of the process which we want to 
+dump. A parasite code is injected for that. This way is dangerous, 
+because it may affect a target process (It may occur due to a bug in 
+parasite). We use this way, because we want to add minimum functionality 
+in the kernel. Our current goal is to make a full functional prototype 
+and when everyone will understand that this project works and it's 
+usefull, we will do improvements. And I hope in future we will save 
+state of processes without parasite.
 
+For this reason I avoid adding new actions in a parasite code, but 
+prctl() can be executed only from parasite code.
 
-Phone:
-49-16098976-950
- IBM Deutschland
+If after all you are not sure that this functionality should be in 
+ptrace, I will add it in prctl, it's not a problem.
 
-E-Mail:
-christian.hoff@de.ibm.com
- Am Fichtenberg 1
-
-
- 71083 Herrenberg
-
-
- Germany
-
-
-IBM Deutschland GmbH / Vorsitzender des Aufsichtsrats: Martin Jetter
-Geschäftsführung: Martina Koederitz (Vorsitzende), Reinhard Reschke, 
-Dieter Scholz, Gregor Pillen, Joachim Heel, Christian Noll
-Sitz der Gesellschaft: Ehningen / Registergericht: Amtsgericht Stuttgart, 
-HRB 14562 / WEEE-Reg.-Nr. DE 99369940 
-
+Thanks.
