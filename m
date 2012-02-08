@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab2BHOb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 09:31:27 -0500
-Received: from 124-248-200-44.sunnyvision.com ([124.248.200.44]:46734 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754291Ab2BHObZ (ORCPT
+	id S1754541Ab2BHObx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 09:31:53 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54333 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab2BHObv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 09:31:25 -0500
-X-Greylist: delayed 2080 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Feb 2012 09:31:25 EST
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 81DC053FA1
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 8D3BC4FAF3
-Message-ID: <2uC0OUjWUv8rI@party.seed.net.tw>
-From: boris@dedicatedserver.com.hk
-Subject: Run Your Dedicated Server with Sufficient IP
-X-Mailer: xxg2XRK3Yj2eXmSJzbkMI7EMSnjq
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Wed,  8 Feb 2012 21:50:54 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 8 Feb 2012 09:31:51 -0500
+MIME-Version: 1.0
+Date: Wed, 8 Feb 2012 15:31:50 +0100
+Message-ID: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
+Subject: drivers/net/phy/phy.c issue
+From: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
+To: afleming@freescale.com, macro@linux-mips.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q18EVam7003047
 
-With servers located off-site, enterprises can devote all their bandwidth resources to company email communication, file transfer, networked applications, and other Internet needs.
-Our dedicated server plan include:
+Hi
 
-o    7/24/365 Support via Helpdesk
-o    Plesk Panel
-o    IPV4 / IPV6
-o    Unlimited FTP accounts
-o    Unlimited Email Accounts
-o    Unlimited datatransfer bandwidth
-o    PHP 5
-o    Spam Assassin
-o    Allow multi-domain hosting
-o    Daily/Weekly Backup
- 
-For more details, please send email to boris@dedicatedserver.com.hk
- 
-Best Regards,
-Boris Lam
-Senior Sales Executive
-Dedicated Server Hong Kong
-Mobile: (852)9408 8762
+I found an issue with drivers/net/phy/phy.c
+As I could not identify a maintainer for this file I decided to mail
+it to the above addressees.
+Apologies upfront if it is inappropriate.
 
+The issue:
 
+My network interface was configured as 10Mbit, full duplex, autonegotiate off.
+If the cable is unplugged after 10 seconds or so the interface drops
+to half duplex and the message:
+Trying 10/HALF
+is printed. This message comes (if I am correct from the function
+phy_force_reduction in drivers/net/phy/phy.c
+
+Maybe this is still ok, however if I reconnect my network cable the
+interface remains configured as 10 Mbit, half duplex.
+I had expected/assumed that it would go back to 10 Mbit, full duplex.
+
+If I try the same with a 1Gbit full duplex link with autonegotiate on,
+the link also drops to half duplex whenever the cable is
+disconnected. However reconnecting the cable then brings the interface
+back to full duplex again.
+
+Not sure what is wrong (if the interface should not be dropped to half
+or get back to full) and even less an idea how to fix it,
+but wanted to report it anyway, in the hope someone can shed a light
+on this and/or fix it.
+
+Best regards, Frans.
+
+PS: I'm not on lkml (way too much mails for me), so please keep me on Cc
