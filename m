@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab2BHU6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 15:58:01 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:37737 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752906Ab2BHU6A (ORCPT
+	id S1755332Ab2BHVBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:01:41 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61219 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821Ab2BHVBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 15:58:00 -0500
-Message-ID: <4F32E1D2.4010809@vflare.org>
-Date: Wed, 08 Feb 2012 15:57:54 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 8 Feb 2012 16:01:40 -0500
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
-References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com> <1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com> <4F21A5AF.6010605@linux.vnet.ibm.com> <4F300D41.5050105@linux.vnet.ibm.com> <4F32A55E.8010401@linux.vnet.ibm.com> <4F32B6A4.8030702@vflare.org> <4F32BEDC.6030502@linux.vnet.ibm.com>
-In-Reply-To: <4F32BEDC.6030502@linux.vnet.ibm.com>
+X-Originating-IP: [93.172.244.225]
+In-Reply-To: <20120131200945.GD22611@ponder.secretlab.ca>
+References: <1328028762-28352-1-git-send-email-ohad@wizery.com> <20120131200945.GD22611@ponder.secretlab.ca>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 8 Feb 2012 23:01:19 +0200
+Message-ID: <CAK=WgbaHE4poc7jxhqc9EEYtbpRqDoC87jMGpS6=OJNZJfe9Qg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] remoteproc: bail out if firmware has different endianess
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Grosen <mgrosen@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2012 01:28 PM, Dave Hansen wrote:
+On Tue, Jan 31, 2012 at 10:09 PM, Grant Likely
+<grant.likely@secretlab.ca> wrote:
+> On Tue, Jan 31, 2012 at 06:52:41PM +0200, Ohad Ben-Cohen wrote:
+>> At this point we don't support remote processors that have
+>> a different endianess than the host.
+>>
+>> Look out for these unsupported scenarios, and bail out if
+>> encountered.
+>>
+>> Reported-by: Grant Likely <grant.likely@secretlab.ca>
+>> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+>> Cc: Mark Grosen <mgrosen@ti.com>
+>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-> On 02/08/2012 09:53 AM, Nitin Gupta wrote:
->> vmap() is not just slower but also does memory allocations at various
->> places. Under memory pressure, this may cause failure in reading a
->> stored object just because we failed to map it. Also, it allocates VA
->> region each time its called which is a real big waste when we can simply
->> pre-allocate 2 * PAGE_SIZE'ed VA regions (per-cpu).
-> 
-> Yeah, vmap() is a bit heavy-handed.  I'm just loathe to go mucking
-> around in the low-level pagetables too much.  Just seems like there'll
-> be a ton of pitfalls, like arch-specific TLB flushing, and it _seems_
-> like one of the existing kernel mechanisms should work.
-> 
-> I guess if you've exhaustively explored all of the existing kernel
-> mapping mechanisms and found none of them to work, and none of them to
-> be in any way suitably adaptable to your use, you should go ahead and
-> roll your own.  I guess you do at least use alloc_vm_area().  What made
-> map_vm_area() unsuitable for your needs?  If you're remapping, you
-> should at least be guaranteed not to have to allocate pte pages.
-> 
-
-
-map_vm_area() needs 'struct vm_struct' parameter but for mapping kernel
-allocated pages within kernel, what should we pass here?  I think we can
-instead use map_kernel_range_noflush() -- surprisingly
-unmap_kernel_range_noflush() is exported but this one is not.
-
-Nitin
-
+Thanks, applied both patches to remoteproc's for-next.
