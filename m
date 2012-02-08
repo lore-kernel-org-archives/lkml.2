@@ -1,118 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab2BHTwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 14:52:40 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:4897 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757281Ab2BHTwj (ORCPT
+	id S1757368Ab2BHUA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 15:00:29 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56336 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434Ab2BHUA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 14:52:39 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZ3B7I-02-5O3-02
-X-M-MSG: 
-Date: Wed, 8 Feb 2012 20:52:29 +0100
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: <linux-kernel@vger.kernel.org>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>
-Subject: [PATCH] x86/amd: Fix L1i and L2 cache sharing information for AMD
- family 15h processors
-Message-ID: <20120208195229.GA17523@alberich.amd.com>
+	Wed, 8 Feb 2012 15:00:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1328729420.2261.329.camel@groeck-laptop>
+References: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
+	<1328729420.2261.329.camel@groeck-laptop>
+Date: Wed, 8 Feb 2012 21:00:27 +0100
+Message-ID: <CACW_hTbLd3kbuwJy9U2ZGDi3ypD-+KsecjYhku7jwQgFPaRqhg@mail.gmail.com>
+Subject: Re: drivers/net/phy/phy.c issue
+From: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
+To: guenter.roeck@ericsson.com
+Cc: netdev@vger.kernel.org, "afleming@freescale.com" <afleming@freescale.com>,
+        "macro@linux-mips.org" <macro@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/2/8 Guenter Roeck <guenter.roeck@ericsson.com>:
+> Copying netdev.
+>
+> On Wed, 2012-02-08 at 09:31 -0500, Frans Meulenbroeks wrote:
+>> Hi
+>>
+>> I found an issue with drivers/net/phy/phy.c
+>> As I could not identify a maintainer for this file I decided to mail
+>> it to the above addressees.
+>> Apologies upfront if it is inappropriate.
+>>
+>> The issue:
+>>
+>> My network interface was configured as 10Mbit, full duplex, autonegotiate off.
+>> If the cable is unplugged after 10 seconds or so the interface drops
+>> to half duplex and the message:
+>> Trying 10/HALF
+>> is printed. This message comes (if I am correct from the function
+>> phy_force_reduction in drivers/net/phy/phy.c
+>>
+>> Maybe this is still ok, however if I reconnect my network cable the
+>> interface remains configured as 10 Mbit, half duplex.
+>> I had expected/assumed that it would go back to 10 Mbit, full duplex.
+>>
+>> If I try the same with a 1Gbit full duplex link with autonegotiate on,
+>> the link also drops to half duplex whenever the cable is
+>> disconnected. However reconnecting the cable then brings the interface
+>> back to full duplex again.
+>>
+>> Not sure what is wrong (if the interface should not be dropped to half
+>> or get back to full) and even less an idea how to fix it,
+>> but wanted to report it anyway, in the hope someone can shed a light
+>> on this and/or fix it.
+>>
+> What is your kernel version ? No idea if it makes a difference, but I
+> strongly suspect people will need to know.
 
-For L1 instruction cache and L2 cache the shared CPU information
-is wrong. On current AMD family 15h CPUs those caches are shared
-between both cores of a compute unit.
+Oops, sorry for the incomplete info.
+This was detected in 2.6.38, but the current git head of phy.c differs
+only on a few places that (at least according to my judgement) are not
+related.
+Apologies, but I cannot test on a git head kernel.
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=42607
+And wrt the question of Andy in the subsequent reply.
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |   45 +++++++++++++++++++++++++++-----
- 1 files changed, 38 insertions(+), 7 deletions(-)
+Hw is a Freescale MPC8313. This is a Gianfar. Is that the info you wanted?
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 6b45e5e..8e58fdb 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -725,14 +725,16 @@ static DEFINE_PER_CPU(struct _cpuid4_info *, ici_cpuid4_info);
- #define CPUID4_INFO_IDX(x, y)	(&((per_cpu(ici_cpuid4_info, x))[y]))
- 
- #ifdef CONFIG_SMP
--static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
-+
-+static int __cpuinit cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
- {
--	struct _cpuid4_info	*this_leaf, *sibling_leaf;
--	unsigned long num_threads_sharing;
--	int index_msb, i, sibling;
-+	struct _cpuid4_info *this_leaf;
-+	int ret, i, sibling;
- 	struct cpuinfo_x86 *c = &cpu_data(cpu);
- 
--	if ((index == 3) && (c->x86_vendor == X86_VENDOR_AMD)) {
-+	ret = 0;
-+	if (index == 3) {
-+		ret = 1;
- 		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
- 			if (!per_cpu(ici_cpuid4_info, i))
- 				continue;
-@@ -740,11 +742,40 @@ static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
- 			for_each_cpu(sibling, cpu_llc_shared_mask(cpu)) {
- 				if (!cpu_online(sibling))
- 					continue;
--				set_bit(sibling, this_leaf->shared_cpu_map);
-+				set_bit(sibling,
-+					this_leaf->shared_cpu_map);
-+			}
-+		}
-+	} else if ((c->x86 == 0x15) && ((index == 1) || (index == 2))) {
-+		ret = 1;
-+		for_each_cpu(i, cpu_sibling_mask(cpu)) {
-+			if (!per_cpu(ici_cpuid4_info, i))
-+				continue;
-+			this_leaf = CPUID4_INFO_IDX(i, index);
-+			for_each_cpu(sibling, cpu_sibling_mask(cpu)) {
-+				if (!cpu_online(sibling))
-+					continue;
-+				set_bit(sibling,
-+					this_leaf->shared_cpu_map);
- 			}
- 		}
--		return;
- 	}
-+
-+	return ret;
-+}
-+
-+static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
-+{
-+	struct _cpuid4_info	*this_leaf, *sibling_leaf;
-+	unsigned long num_threads_sharing;
-+	int index_msb, i;
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+
-+	if (c->x86_vendor == X86_VENDOR_AMD) {
-+		if (cache_shared_amd_cpu_map_setup(cpu, index))
-+		    return;
-+	}
-+
- 	this_leaf = CPUID4_INFO_IDX(cpu, index);
- 	num_threads_sharing = 1 + this_leaf->base.eax.split.num_threads_sharing;
- 
--- 
-1.7.8.3
+BTW what is the desired behaviour? Should I drop to half duplex? Or
+should I get back to full if I reconnect.
 
-
-
+Best regards, Frans
