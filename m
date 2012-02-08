@@ -1,175 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab2BHQIN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 11:08:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48819 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757210Ab2BHQIM (ORCPT
+	id S1757323Ab2BHQIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 11:08:42 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59874 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757224Ab2BHQIk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 11:08:12 -0500
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
-        Venki Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Dmitry Antipov <dmitry.antipov@linaro.org>
-Subject: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and ARM
-Date: Wed,  8 Feb 2012 08:08:38 -0800
-Message-Id: <1328717318-23284-1-git-send-email-dmitry.antipov@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+	Wed, 8 Feb 2012 11:08:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <1328425088-6562-7-git-send-email-yinghai@kernel.org>
+References: <1328425088-6562-1-git-send-email-yinghai@kernel.org> <1328425088-6562-7-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 8 Feb 2012 08:08:19 -0800
+Message-ID: <CAErSpo4cd2TR4207RUk53B+jDK_DONduo8pU8EWWOgdGeg7CeQ@mail.gmail.com>
+Subject: Re: [PATCH 06/24] PCI: Add busn_res tracking in core
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
-ARM, move "noirqtime=" option to common debugging code.
-For a bit of backward compatibility, X86-specific option
-"tsc=noirqtime" is preserved, but issues a warning.
+On Sat, Feb 4, 2012 at 10:57 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> update pci_scan_root_bus, and pci_scan_bus to insert root bus busn into
+> iobusn_resource tree.
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/probe.c  |   30 ++++++++++++++++++++++++++----
+>  drivers/pci/remove.c |    1 +
+>  include/linux/pci.h  |    4 ++++
+>  3 files changed, 31 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index fabf9d0..cdd6e83 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1667,8 +1667,9 @@ void pci_bus_release_busn_res(struct pci_bus *b)
+>                        res, ret ? "can not be" : "is");
+>  }
+>
+> -struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+> -               struct pci_ops *ops, void *sysdata, struct list_head *resources)
+> +struct pci_bus * __devinit pci_scan_root_bus_max(struct device *parent, int bus,
+> +               int bus_max, struct pci_ops *ops, void *sysdata,
+> +               struct list_head *resources)
+>  {
+>        struct pci_bus *b;
+>
+> @@ -1676,10 +1677,26 @@ struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+>        if (!b)
+>                return NULL;
+>
+> +       pci_bus_insert_busn_res(b, bus, bus_max);
+>        b->subordinate = pci_scan_child_bus(b);
+>        pci_bus_add_devices(b);
+>        return b;
+>  }
+> +EXPORT_SYMBOL(pci_scan_root_bus_max);
+> +
+> +struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+> +               struct pci_ops *ops, void *sysdata,
+> +               struct list_head *resources)
+> +{
+> +       struct pci_bus *b;
+> +
+> +       b = pci_scan_root_bus_max(parent, bus, 255, ops, sysdata, resources);
+> +
+> +       if (b)
+> +               pci_bus_update_busn_res_end(b, b->subordinate);
+> +
+> +       return b;
+> +}
+>  EXPORT_SYMBOL(pci_scan_root_bus);
+>
+>  /* Deprecated; use pci_scan_root_bus() instead */
+> @@ -1692,9 +1709,11 @@ struct pci_bus * __devinit pci_scan_bus_parented(struct device *parent,
+>        pci_add_resource(&resources, &ioport_resource);
+>        pci_add_resource(&resources, &iomem_resource);
+>        b = pci_create_root_bus(parent, bus, ops, sysdata, &resources);
+> -       if (b)
+> +       if (b) {
+> +               pci_bus_insert_busn_res(b, bus, 255);
+>                b->subordinate = pci_scan_child_bus(b);
+> -       else
+> +               pci_bus_update_busn_res_end(b, b->subordinate);
+> +       } else
+>                pci_free_resource_list(&resources);
+>        return b;
+>  }
+> @@ -1710,7 +1729,10 @@ struct pci_bus * __devinit pci_scan_bus(int bus, struct pci_ops *ops,
+>        pci_add_resource(&resources, &iomem_resource);
+>        b = pci_create_root_bus(NULL, bus, ops, sysdata, &resources);
+>        if (b) {
+> +               pci_bus_insert_busn_res(b, bus, 255);
+>                b->subordinate = pci_scan_child_bus(b);
+> +               pci_bus_update_busn_res_end(b, b->subordinate);
+> +
+>                pci_bus_add_devices(b);
+>        } else {
+>                pci_free_resource_list(&resources);
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index 82f8ae5..5b679d2 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -68,6 +68,7 @@ void pci_remove_bus(struct pci_bus *pci_bus)
+>
+>        down_write(&pci_bus_sem);
+>        list_del(&pci_bus->node);
+> +       pci_bus_release_busn_res(pci_bus);
+>        up_write(&pci_bus_sem);
+>        if (!pci_bus->is_added)
+>                return;
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 3da935c..d5b6786 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -668,6 +668,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  void pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
+>  void pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
+>  void pci_bus_release_busn_res(struct pci_bus *b);
+> +struct pci_bus * __devinit pci_scan_root_bus_max(struct device *parent, int bus,
+> +                                            int busmax, struct pci_ops *ops,
+> +                                            void *sysdata,
+> +                                            struct list_head *resources);
+>  struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+>                                             struct pci_ops *ops, void *sysdata,
+>                                             struct list_head *resources);
 
-Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Suggested-by: Venki Pallipadi <venki@google.com>
-Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
----
- arch/arm/kernel/sched_clock.c |    3 +++
- arch/x86/Kconfig              |   11 -----------
- arch/x86/kernel/tsc.c         |    7 ++++---
- include/linux/sched.h         |    2 ++
- lib/Kconfig.debug             |   12 ++++++++++++
- lib/Makefile                  |    2 ++
- lib/irqtime.c                 |   12 ++++++++++++
- 7 files changed, 35 insertions(+), 14 deletions(-)
- create mode 100644 lib/irqtime.c
+Now we have both pci_bus_insert_busn_res() and
+pci_scan_root_bus_max().  Why do we need both?  I think it's too much
+of a burden on architectures to expect them to understand both.
 
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index 5416c7c..961bd2d 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -144,6 +144,9 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
- 	 */
- 	cd.epoch_ns = 0;
- 
-+	if (!no_sched_irq_time)
-+		enable_sched_clock_irqtime();
-+
- 	pr_debug("Registered %pF as sched_clock source\n", read);
- }
- 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bed94e..4759676 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -805,17 +805,6 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
--config IRQ_TIME_ACCOUNTING
--	bool "Fine granularity task level IRQ time accounting"
--	default n
--	---help---
--	  Select this option to enable fine granularity task irq time
--	  accounting. This is done by reading a timestamp on each
--	  transitions between softirq and hardirq state, so there can be a
--	  small performance impact.
--
--	  If in doubt, say N here.
--
- source "kernel/Kconfig.preempt"
- 
- config X86_UP_APIC
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index a62c201..70510a3 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -103,14 +103,15 @@ int __init notsc_setup(char *str)
- 
- __setup("notsc", notsc_setup);
- 
--static int no_sched_irq_time;
--
- static int __init tsc_setup(char *str)
- {
- 	if (!strcmp(str, "reliable"))
- 		tsc_clocksource_reliable = 1;
--	if (!strncmp(str, "noirqtime", 9))
-+	if (!strncmp(str, "noirqtime", 9)) {
-+		printk(KERN_WARNING "tsc: tsc=noirqtime is "
-+		       "obsolete, use noirqtime instead\n");
- 		no_sched_irq_time = 1;
-+	}
- 	return 1;
- }
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7d379a6..b3575b5 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1966,9 +1966,11 @@ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
-  * The reason for this explicit opt-in is not to have perf penalty with
-  * slow sched_clocks.
-  */
-+extern int no_sched_irq_time;
- extern void enable_sched_clock_irqtime(void);
- extern void disable_sched_clock_irqtime(void);
- #else
-+#define no_sched_irq_time 1
- static inline void enable_sched_clock_irqtime(void) {}
- static inline void disable_sched_clock_irqtime(void) {}
- #endif
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 8745ac7..236e814 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -299,6 +299,18 @@ config SCHEDSTATS
- 	  application, you can say N to avoid the very slight overhead
- 	  this adds.
- 
-+config IRQ_TIME_ACCOUNTING
-+	bool "Fine granularity task level IRQ time accounting"
-+	depends on X86 || ARM
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task irq time
-+	  accounting. This is done by reading a timestamp on each
-+	  transitions between softirq and hardirq state, so there can be a
-+	  small performance impact.
-+
-+	  If in doubt, say N here.
-+
- config TIMER_STATS
- 	bool "Collect kernel timers statistics"
- 	depends on DEBUG_KERNEL && PROC_FS
-diff --git a/lib/Makefile b/lib/Makefile
-index 18515f0..44d67d4 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -49,6 +49,8 @@ obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
- obj-$(CONFIG_DEBUG_LIST) += list_debug.o
- obj-$(CONFIG_DEBUG_OBJECTS) += debugobjects.o
- 
-+obj-$(CONFIG_IRQ_TIME_ACCOUNTING) += irqtime.o
-+
- ifneq ($(CONFIG_HAVE_DEC_LOCK),y)
-   lib-y += dec_and_lock.o
- endif
-diff --git a/lib/irqtime.c b/lib/irqtime.c
-new file mode 100644
-index 0000000..10d440d
---- /dev/null
-+++ b/lib/irqtime.c
-@@ -0,0 +1,12 @@
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+
-+int no_sched_irq_time;
-+
-+static int __init irqtime_setup(char *str)
-+{
-+	no_sched_irq_time = 1;
-+	return 1;
-+}
-+
-+__setup("noirqtime", irqtime_setup);
--- 
-1.7.7.6
+Maybe some sample pseudo-code using both interfaces would help me
+understand what you expect a typical architecture to do.
 
+Bjorn
