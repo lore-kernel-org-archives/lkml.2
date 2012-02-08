@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab2BHAjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 19:39:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757237Ab2BHAi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 19:38:59 -0500
-Message-ID: <4F31C417.30502@redhat.com>
-Date: Tue, 07 Feb 2012 19:38:47 -0500
-From: Adam Jackson <ajax@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1757225Ab2BHAlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 19:41:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41928 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab2BHAll convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 19:41:41 -0500
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 1/2] char/mem: Add /dev/io (v2)
-References: <1328623901-20628-1-git-send-email-ajax@redhat.com> <1328657985-13942-1-git-send-email-ajax@redhat.com> <20120208001724.7e5c7be4@pyramind.ukuu.org.uk>
-In-Reply-To: <20120208001724.7e5c7be4@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120207095746.GH15359@elte.hu>
+References: <1328209817-18913-1-git-send-email-bp@alien8.de>
+	<20120202193702.GA9502@elliptictech.com>
+	<20120202202427.GA2234@x1.osrc.amd.com>
+	<20120203191801.GA2846@x1.osrc.amd.com>
+	<20120207095746.GH15359@elte.hu>
+Date: Tue, 7 Feb 2012 20:41:40 -0400
+Message-ID: <CAELBVzCrMmrw8gRRQ4K9SyVWjjqk5DxuX+7=vQoyzNO0M7qRkg@mail.gmail.com>
+Subject: Re: MCE, AMD: Hide smp-only code around CONFIG_SMP
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@alien8.de>, Nick Bowler <nbowler@elliptictech.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/7/12 7:17 PM, Alan Cox wrote:
-> On Tue,  7 Feb 2012 18:39:45 -0500
-> Adam Jackson<ajax@redhat.com>  wrote:
+On 7 February 2012 05:57, Ingo Molnar <mingo@elte.hu> wrote:
 >
->> This is like /dev/port except not broken.  /dev/port will translate all
->> read/write into inb/outb streams, which is wrong since hardware can and
->> does care about cycle size.  /dev/io will only allow 1, 2, or 4 byte
->> access, and will translate that into the appropriate bus cycle size.
+> * Borislav Petkov <bp@alien8.de> wrote:
 >
-> From a security perspective /dev/[k][mem is a dumb bit of ancient Unix
-> history we'd dearly like to kill off. /dev/port is a similar early PC
-> unixism that wants to go the same way. /dev/io just adds another horror
-> to the pile.
+>> On Thu, Feb 02, 2012 at 09:24:28PM +0100, Borislav Petkov wrote:
+>> > > Is this feature truly irrelevant on UP systems?  I ask because I've
+>> > > always enabled this option on my UP AMD systems in the past...
+>> >
+>> > No, you're right. Thanks for the suggestion. Scratch that version, I'll
+>> > think of a better fix.
+>>
+>> Ok, I think I got it, pls take a look and scream if something's amiss.
+>>
+>> @Randy: it builds fine with your randconfig and with mine default one;
+>> I'd appreciate if you could run it too, just in case.
+>>
+>> Thanks.
+>>
+>> --
+>> From: Borislav Petkov <bp@alien8.de>
+>> Date: Fri, 3 Feb 2012 18:07:54 +0100
+>> Subject: [PATCH] MCE, AMD: Hide smp-only code around CONFIG_SMP
+>>
+>> 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
+>> 'struct cpuinfo_x86'") removed a bunch of CONFIG_SMP ifdefs around code
+>> touching struct cpuinfo_x86 members but also caused the following build
+>> error with Randy's randconfigs:
+>>
+>> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to `cpu_llc_shared_map'
+>>
+>> Restore the #ifdef in threshold_create_bank() which creates symlinks on
+>> the non-BSP CPUs.
+>>
 >
-> Please do the decent thing, stop using /dev/mem and /dev/port for
-> anything. If you need to access an I/O device make it properly visible
-> via the kernel only for the ports and in a manner that is safe.
+> Could we please just define an obvious cpu_llc_shared_mask on UP
+> (one bit long and set to 1) and not reintroduce the ugly
+> #ifdef CONFIG_SMP?
+>
 
-Yeah, I'll be sure to do that right as soon as I can stop supporting the 
-vesa driver.  Until that time I don't really have any choice but to 
-expose the whole of I/O port space, since I have no idea what the video 
-BIOS is going to touch.
+I ran into this when I was working on the original patch, and I
+thought I had solved all of the issues like this.  Unfortunately not.
 
-I don't disagree with wanting to limit access to these services, but 
-/dev/io is at least somewhat containable, whereas iopl is insane.
+The problem is that there doesn't seem to be a great place to define
+this (along with a few other functions like this) on UP.  We have
+<linux/smp.h> including <asm/smp.h> in the CONFIG_SMP case, but no
+arch-specific defs for UP.  Would it be crazy to have <linux/smp.h>
+include a new <asm/up.h> for !CONFIG_SMP?
 
-- ajax
+I am willing to prepare the patch, if someone can tell me where to
+define cpu_llc_shared_mask for UP?
 
+Thanks,
+
+-- 
+Kevin Winchester
