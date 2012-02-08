@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756415Ab2BHPiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 10:38:09 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34839 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755424Ab2BHPiH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 10:38:07 -0500
-Date: Wed, 8 Feb 2012 16:38:01 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Dave Young <dyoung@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        xiyou.wangcong@gmail.com, penberg@kernel.org, fengguang.wu@intel.com
-Subject: Re: [PATCH] selftests: Launch individual selftests from the main
- Makefile
-Message-ID: <20120208153759.GD25473@somewhere.redhat.com>
-References: <20120205081555.GA2249@darkstar.redhat.com>
- <20120206155340.b9075240.akpm@linux-foundation.org>
- <20120208034055.GA23894@somewhere.redhat.com>
- <alpine.DEB.2.00.1202080843250.29839@router.home>
+	id S1756564Ab2BHPiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 10:38:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24456 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753238Ab2BHPiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 10:38:51 -0500
+Date: Wed, 8 Feb 2012 16:32:16 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 3/6] staging: android/lowmemorykiller: Don't grab
+	tasklist_lock
+Message-ID: <20120208153216.GB15782@redhat.com>
+References: <20120203163056.GA4190@redhat.com> <20120206162941.GC5117@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1202080843250.29839@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120206162941.GC5117@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 08:45:35AM -0600, Christoph Lameter wrote:
-> Note that slub also has an embedded selftest (see function
-> resiliency_test). That code could be separated out and put with the
-> selftests that you are creating now.
+On 02/06, Anton Vorontsov wrote:
+>
+> Grabbing tasklist_lock has its disadvantages, i.e. it blocks
+> process creation and destruction. If there are lots of processes,
+> blocking doesn't sound as a great idea.
+>
+> For LMK, it is sufficient to surround tasks list traverse with
+> rcu_read_{,un}lock().
+>
+> From now on using force_sig() is not safe, as it can race with an
+> already exiting task, so we use send_sig() now. As a downside, it
+> won't kill PID namespace init processes, but that's not what we
+> want anyway.
 
-That would be nice. As long as it's in userspace and it runs validation
-tests, it's pretty welcome.
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
 
-It's deemed to test expected behaviour with deterministic tests. stress tests
-probably don't fit well there although it should be no problem if they are short.
-
-
-> I also have a series of in kernel benchmarks for the page allocation, vm
-> statistics and slab allocators that could be useful to included somewhere.
-> 
-> All this code runs in the kernel context.
-> 
-> For the in kernel benchmarks I am creating modules that fail to load but
-> first run the tests.
-
-Hmm, benchmarks tend to require some user analysis, I'm not sure if a batch of
-validation tests is the right place for them. But loading modules is probably
-not a problem.
