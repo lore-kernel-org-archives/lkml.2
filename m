@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708Ab2BHVUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:20:54 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:34123 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757683Ab2BHVUv (ORCPT
+	id S932162Ab2BHV2B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:28:01 -0500
+Received: from smtp-out002.kontent.com ([81.88.40.216]:39673 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757713Ab2BHV17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:20:51 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Roger Luethi <rl@hellgate.ch>
-Cc: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
+	Wed, 8 Feb 2012 16:27:59 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Subject: Re: [PATCH 37/50] usbnet: set addr_assign_type if random_ether_addr() used
+Date: Wed, 8 Feb 2012 22:30:19 +0100
+User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Danny Kukawka <dkukawka@suse.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 25/50] via-rhine: use dev_hw_addr_random() instead of random_ether_addr()
-Date: Wed,  8 Feb 2012 22:10:32 +0100
-Message-Id: <1328735457-29986-26-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328736051;d5456e88;
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <1328735457-29986-38-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1328735457-29986-38-git-send-email-danny.kukawka@bisect.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202082230.19936.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_hw_addr_random() instead of calling random_ether_addr()
-to set addr_assign_type correctly to NET_ADDR_RANDOM.
+Am Mittwoch, 8. Februar 2012, 22:10:44 schrieb Danny Kukawka:
+> Set addr_assign_type correctly to NET_ADDR_RANDOM in case
+> a random MAC address was generated and assigned to the netdevice.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  drivers/net/usb/usbnet.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+> index fae0fbd..7bd07d7 100644
+> --- a/drivers/net/usb/usbnet.c
+> +++ b/drivers/net/usb/usbnet.c
+> @@ -1365,6 +1365,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
+>  	dev->net = net;
+>  	strcpy (net->name, "usb%d");
+>  	memcpy (net->dev_addr, node_id, sizeof node_id);
+> +	net->addr_assign_type |= NET_ADDR_RANDOM;
+>  
+>  	/* rx and tx sides can use different message sizes;
+>  	 * bind() should set rx_urb_size in that case.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/net/ethernet/via/via-rhine.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Don't you set the flag too early here? By that time we don't know
+whether the device provides a real MAC, do we?
 
-diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
-index 10b18eb..eda0711 100644
---- a/drivers/net/ethernet/via/via-rhine.c
-+++ b/drivers/net/ethernet/via/via-rhine.c
-@@ -984,7 +984,7 @@ static int __devinit rhine_init_one(struct pci_dev *pdev,
- 	if (!is_valid_ether_addr(dev->dev_addr)) {
- 		/* Report it and use a random ethernet address instead */
- 		netdev_err(dev, "Invalid MAC address: %pM\n", dev->dev_addr);
--		random_ether_addr(dev->dev_addr);
-+		dev_hw_addr_random(dev, dev->dev_addr);
- 		netdev_info(dev, "Using random MAC address: %pM\n",
- 			    dev->dev_addr);
- 	}
--- 
-1.7.7.3
-
+	Regards
+		Oliver
