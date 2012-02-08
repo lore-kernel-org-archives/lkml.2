@@ -1,71 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab2BHV3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:29:46 -0500
-Received: from mail.solarflare.com ([216.237.3.220]:20866 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756889Ab2BHV3o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:29:44 -0500
-Message-ID: <1328736580.2627.9.camel@bwh-desktop>
-Subject: Re: [PATCH 23/50] efx: use dev_hw_addr_random() instead of
- random_ether_addr()
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Danny Kukawka <danny.kukawka@bisect.de>
-CC: "David S. Miller" <davem@davemloft.net>, Danny Kukawka <dkukawka@suse.de>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>
-Date: Wed, 8 Feb 2012 21:29:40 +0000
-In-Reply-To: <1328735457-29986-24-git-send-email-danny.kukawka@bisect.de>
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-	 <1328735457-29986-24-git-send-email-danny.kukawka@bisect.de>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1757545Ab2BHVS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:18:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23215 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756092Ab2BHVSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:18:23 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 09/17] CacheFiles: Implement invalidation
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
+        linux-nfs@vger.kernel.org
+Date: Wed, 08 Feb 2012 21:18:13 +0000
+Message-ID: <20120208211813.15607.14339.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
+References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18696.005
-X-TM-AS-Result: No--7.892100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-08 at 22:10 +0100, Danny Kukawka wrote:
-> Use dev_hw_addr_random() instead of calling random_ether_addr()
-> to set addr_assign_type correctly to NET_ADDR_RANDOM.
-> 
-> Reset the state to NET_ADDR_PERM as soon as the MAC get
-> changed via .ndo_set_mac_address.
-> 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-> ---
->  drivers/net/ethernet/sfc/efx.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
-> index e43702f..cce339a 100644
-> --- a/drivers/net/ethernet/sfc/efx.c
-> +++ b/drivers/net/ethernet/sfc/efx.c
-> @@ -940,7 +940,7 @@ static int efx_probe_port(struct efx_nic *efx)
->  			rc = -EINVAL;
->  			goto err;
->  		}
-> -		random_ether_addr(efx->net_dev->dev_addr);
-> +		dev_hw_addr_random(efx->net_dev, efx->net_dev->dev_addr);
->  		netif_info(efx, probe, efx->net_dev,
->  			   "using locally-generated MAC %pM\n",
->  			   efx->net_dev->dev_addr);
-[...]
+Implement invalidation for CacheFiles.  This is in two parts:
 
-This code no longer exists in net-next.
+ (1) Provide an invalidation method (which just truncates the backing file).
 
-Ben.
+ (2) Abort attempts to copy anything read from the backing file whilst
+     invalidation is in progress.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Question: CacheFiles uses truncation in a couple of places.  It has been using
+notify_change() rather than sys_truncate() or something similar.  This means
+it bypasses a bunch of checks and suchlike that it possibly should be making
+(security, file locking, lease breaking, vfsmount write).  Should it be using
+vfs_truncate() as added by a preceding patch or should it use notify_write()
+and assume that anyone poking around in the cache files on disk gets
+everything they deserve?
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/cachefiles/interface.c |   49 +++++++++++++++++++++++++++++++++++++++++++++
+ fs/cachefiles/rdwr.c      |    5 ++++-
+ 2 files changed, 53 insertions(+), 1 deletions(-)
+
+diff --git a/fs/cachefiles/interface.c b/fs/cachefiles/interface.c
+index 9bff0f8..7a9d574 100644
+--- a/fs/cachefiles/interface.c
++++ b/fs/cachefiles/interface.c
+@@ -441,6 +441,54 @@ truncate_failed:
+ }
+ 
+ /*
++ * Invalidate an object
++ */
++static void cachefiles_invalidate_object(struct fscache_operation *op)
++{
++	struct cachefiles_object *object;
++	struct cachefiles_cache *cache;
++	const struct cred *saved_cred;
++	struct path path;
++	uint64_t ni_size;
++	int ret;
++
++	object = container_of(op->object, struct cachefiles_object, fscache);
++	cache = container_of(object->fscache.cache,
++			     struct cachefiles_cache, cache);
++
++	op->object->cookie->def->get_attr(op->object->cookie->netfs_data,
++					  &ni_size);
++
++	_enter("{OBJ%x},[%llu]",
++	       op->object->debug_id, (unsigned long long)ni_size);
++
++	if (object->backer) {
++		ASSERT(S_ISREG(object->backer->d_inode->i_mode));
++
++		fscache_set_store_limit(&object->fscache, ni_size);
++
++		path.dentry = object->backer;
++		path.mnt = cache->mnt;
++
++		cachefiles_begin_secure(cache, &saved_cred);
++		ret = vfs_truncate(&path, 0);
++		if (ret == 0)
++			ret = vfs_truncate(&path, ni_size);
++		cachefiles_end_secure(cache, saved_cred);
++
++		if (ret != 0) {
++			fscache_set_store_limit(&object->fscache, 0);
++			if (ret == -EIO)
++				cachefiles_io_error_obj(object,
++							"Invalidate failed");
++		}
++	}
++
++	fscache_op_complete(op);
++	_leave("");
++}
++
++/*
+  * dissociate a cache from all the pages it was backing
+  */
+ static void cachefiles_dissociate_pages(struct fscache_cache *cache)
+@@ -455,6 +503,7 @@ const struct fscache_cache_ops cachefiles_cache_ops = {
+ 	.lookup_complete	= cachefiles_lookup_complete,
+ 	.grab_object		= cachefiles_grab_object,
+ 	.update_object		= cachefiles_update_object,
++	.invalidate_object	= cachefiles_invalidate_object,
+ 	.drop_object		= cachefiles_drop_object,
+ 	.put_object		= cachefiles_put_object,
+ 	.sync_cache		= cachefiles_sync_cache,
+diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+index 31cda81..f437e97 100644
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -174,7 +174,10 @@ static void cachefiles_read_copier(struct fscache_operation *_op)
+ 		_debug("- copy {%lu}", monitor->back_page->index);
+ 
+ 	recheck:
+-		if (PageUptodate(monitor->back_page)) {
++		if (test_bit(FSCACHE_COOKIE_INVALIDATING,
++			     &object->fscache.cookie->flags)) {
++			error = -ESTALE;
++		} else if (PageUptodate(monitor->back_page)) {
+ 			copy_highpage(monitor->netfs_page, monitor->back_page);
+ 			fscache_mark_page_cached(monitor->op,
+ 						 monitor->netfs_page);
 
