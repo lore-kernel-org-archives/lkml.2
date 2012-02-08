@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab2BHNTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 08:19:04 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37884 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757018Ab2BHNTC (ORCPT
+	id S932173Ab2BHNVb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 08:21:31 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37333 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757048Ab2BHNVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 08:19:02 -0500
-Date: Wed, 8 Feb 2012 13:18:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
-        Venki Pallipadi <venki@google.com>, linaro-dev@lists.linaro.org,
-        patches@linaro.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86
-	and ARM
-Message-ID: <20120208131833.GK889@n2100.arm.linux.org.uk>
-References: <1328705314-20978-1-git-send-email-dmitry.antipov@linaro.org>
+	Wed, 8 Feb 2012 08:21:30 -0500
+Message-ID: <4F3276D6.3060507@monstr.eu>
+Date: Wed, 08 Feb 2012 14:21:26 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328705314-20978-1-git-send-email-dmitry.antipov@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.arm.linux.org.uk
+Subject: Re: CMA on arm from zero address
+References: <4F326A4E.1030106@monstr.eu> <20120208130807.GJ889@n2100.arm.linux.org.uk>
+In-Reply-To: <20120208130807.GJ889@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 04:48:34AM -0800, Dmitry Antipov wrote:
-> Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
-> ARM, move "noirqtime=" option to common debugging code.
-> For a bit of backward compatibility, "tsc=noirqtime"
-> is preserved, but issues a warning.
+Hi Russell,
+
+Russell King - ARM Linux wrote:
+> On Wed, Feb 08, 2012 at 01:27:58PM +0100, Michal Simek wrote:
+>> Hi,
+>>
+>> I would like to setup CMA space at the beginning of ram because
+>> I want to use remoteproc to run code on the second cpu which has to
+>> use addresses 0x0 - 32MB.
+>>
+>> I have changed textofs in arch/arm/Makefile but there is not possible
+>> to setup all values which I would like to use.
 > 
-> Suggested-by: Venki Pallipadi <venki@google.com>
-> Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
-> ---
->  arch/arm/kernel/sched_clock.c |    3 +++
->  arch/x86/Kconfig              |   11 -----------
->  arch/x86/kernel/tsc.c         |    7 ++++---
->  include/linux/sched.h         |    2 ++
->  lib/Kconfig.debug             |   12 ++++++++++++
->  lib/Makefile                  |    2 ++
->  lib/irqtime.c                 |   12 ++++++++++++
->  7 files changed, 35 insertions(+), 14 deletions(-)
->  create mode 100644 lib/irqtime.c
-> 
-> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-> index 5416c7c..56d2a9d 100644
-> --- a/arch/arm/kernel/sched_clock.c
-> +++ b/arch/arm/kernel/sched_clock.c
-> @@ -162,5 +162,8 @@ void __init sched_clock_postinit(void)
->  	if (read_sched_clock == jiffy_sched_clock_read)
->  		setup_sched_clock(jiffy_sched_clock_read, 32, HZ);
->  
-> +	if (!no_sched_irq_time)
-> +		enable_sched_clock_irqtime();
+> What a broken setup.  Placing the kernel outside of the 16MB window
+> effectively prevents you from using modules.  Why do people come up
+> with stupid things like this.  Please stop.  Put such things at the
+> end of RAM instead and save the rest of the ARM community from this
+> madness.
 
-Why are you placing this here?  sched_clock is available from the point
-that it's registered, which should be before the first sched_clock()
-call.
+First of all I have found how to do it (by CONFIG_PHYS_OFFSET) so the problem is in QEMU.
+Currently experimenting how to convince CMA to allocate that memory for my purpose.
 
-> +config IRQ_TIME_ACCOUNTING
-> +	bool "Fine granularity task level IRQ time accounting"
-> +	depends on (X86 || (ARM && HAVE_SCHED_CLOCK))
+That idea doesn't come from me!
+The reason is that we want to run Linux on the first ARM core and the second cpu
+will run any other RTOS. Linux remaps vectors to 0xffff0000 and the second
+core has to use them at 0x0 address.
+RTOS runs in real mode that's why I need to use ram at 0x0 address.
 
-Even though it's not bad here, please get out of the habbit of throwing
-unnecessary parens into the mix.  It can make stuff more difficult to
-read and therefore confirm correctness.  (I've spent many a time
-rewriting if() statements because of paren overuse.)
+Michal
 
-This could have been written:
-
-	depends on X86 || (ARM && HAVE_SCHED_CLOCK)
-
-However, ARM will always have HAVE_SCHED_CLOCK after the next merge window,
-so this can become a much simpler:
-
-	depends on X86 || ARM
-
-Apart from these two points, the rest of the patch looks fine to me but
-the ultimate decision about its acceptability is up to other people.
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
