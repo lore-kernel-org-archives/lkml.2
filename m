@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab2BHIfW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 03:35:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54412 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756035Ab2BHIfV (ORCPT
+	id S1756613Ab2BHIqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 03:46:07 -0500
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:53542 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756388Ab2BHIqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 03:35:21 -0500
-Message-ID: <4F323388.7040902@kernel.dk>
-Date: Wed, 08 Feb 2012 09:34:16 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	Wed, 8 Feb 2012 03:46:06 -0500
+X-SENDER-IP: [85.230.170.239]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnuYANY1Mk9V5qrvPGdsb2JhbABEiVSlEXsZAQEBATc0gXIBAQU6HBMBDxAIAw4KLhQlChoTh3+5LhOLBDcCAgkFDAcGAQQBAQkEFAcEDwMDAYJ1AgsDBBoEAoEJAgoCBIJXYwSVK4VojHc
+X-IronPort-AV: E=Sophos;i="4.73,383,1325458800"; 
+   d="scan'208";a="265295020"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 8 Feb 2012 09:47:38 +0100
+To: Matthew Garrett <mjg@redhat.com>
+Cc: hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] hfsplus: Add an ioctl to bless files
+Message-ID: <20120208084738.GA2143@polaris.bitmath.org>
+References: <20120206174943.GA14225@infradead.org>
+ <1328559280-29111-1-git-send-email-mjg@redhat.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: integer overflows in kernel/relay.c
-References: <20120207141155.GA16184@elgon.mountain>
-In-Reply-To: <20120207141155.GA16184@elgon.mountain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328559280-29111-1-git-send-email-mjg@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 03:11 PM, Dan Carpenter wrote:
-> My static checker is warning about integer overflows in kernel/relay.c
+On Mon, Feb 06, 2012 at 03:14:40PM -0500, Matthew Garrett wrote:
+> Making an hfsplus partition bootable requires the ability to "bless" a
+> file by putting its inode number in the volume header. Doing this from
+> userspace on a mounted filesystem is impractical since the kernel will
+> write back the original values on unmount. Add an ioctl to allow userspace
+> to update the volume header information based on the target file.
 > 
-> relay_create_buf()
->    170  
->    171          buf->padding = kmalloc(chan->n_subbufs * sizeof(size_t *), GFP_KERNEL);
->                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> This can only overflow on 32bit systems.
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> ---
 
-Correct
+Works nicely, great stuff.
 
->    172          if (!buf->padding)
->    173                  goto free_buf;
->    174  
-> 
-> relay_open()
->    582          chan->version = RELAYFS_CHANNEL_VERSION;
->    583          chan->n_subbufs = n_subbufs;
->    584          chan->subbuf_size = subbuf_size;
->    585          chan->alloc_size = FIX_SIZE(subbuf_size * n_subbufs);
->                                             ^^^^^^^^^^^^^^^^^^^^^^^
->    586          chan->parent = parent;
-> 
-> These come from the user in blk_trace_setup() and they aren't capped.
-> I'm not sure what the maximum size to use is.
+    Tested-by: Henrik Rydberg <rydberg@euromail.se>
 
-They are both u32 types, so can overflow on 32-bit as well. By default,
-blktrace is using 4 for n_subbufs and 512k for subbuf_size, but they are
-configurable. As a fix, I would suggest just checking if the products
-overflow, and if they do, return an error. That's better than imposing
-some hard limits. In reality, only a malicious users would trigger
-these.
-
--- 
-Jens Axboe
-
+Thanks,
+Henrik
