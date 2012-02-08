@@ -1,204 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab2BHX5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 18:57:39 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51069 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab2BHX5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 18:57:38 -0500
-MIME-Version: 1.0
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-To: Venki Pallipadi <venki@google.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Dmitry Antipov <dmitry.antipov@linaro.org>
-Subject: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and ARM
-Date: Wed,  8 Feb 2012 15:58:36 -0800
-Message-Id: <1328745516-14205-1-git-send-email-dmitry.antipov@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S932185Ab2BHX5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 18:57:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38116 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932116Ab2BHX5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 18:57:51 -0500
+Date: Thu, 9 Feb 2012 10:57:36 +1100
+From: NeilBrown <neilb@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <greg@linuxfoundation.org>,
+        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
+Message-ID: <20120209105736.027b1e0a@notabene.brown>
+In-Reply-To: <201202070200.55505.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/cgsBaSz_YWyaUquX7TZlKi3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
-ARM, move "noirqtime=" option to common debugging code.
-For a bit of backward compatibility, X86-specific option
-"tsc=noirqtime" is preserved, but issues a warning.
+--Sig_/cgsBaSz_YWyaUquX7TZlKi3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Suggested-by: Venki Pallipadi <venki@google.com>
-Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
----
- Documentation/kernel-parameters.txt |    9 +++++----
- arch/arm/kernel/sched_clock.c       |    3 +++
- arch/x86/Kconfig                    |   11 -----------
- arch/x86/kernel/tsc.c               |    7 ++++---
- include/linux/sched.h               |    2 ++
- lib/Kconfig.debug                   |   12 ++++++++++++
- lib/Makefile                        |    2 ++
- lib/irqtime.c                       |   12 ++++++++++++
- 8 files changed, 40 insertions(+), 18 deletions(-)
- create mode 100644 lib/irqtime.c
+On Tue, 7 Feb 2012 02:00:55 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 033d4e6..b64a13f 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1719,6 +1719,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 	noautogroup	Disable scheduler automatic task group creation.
- 
-+	noirqtime	[X86,ARM] Used to run time disable IRQ_TIME_ACCOUNTING,
-+			should give a negligible performance improvement.			
-+
- 	nobats		[PPC] Do not use BATs for mapping kernel lowmem
- 			on "Classic" PPC cores.
- 
-@@ -2636,10 +2639,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			as the stability checks done at bootup.	Used to enable
- 			high-resolution timer mode on older hardware, and in
- 			virtualized environment.
--			[x86] noirqtime: Do not use TSC to do irq accounting.
--			Used to run time disable IRQ_TIME_ACCOUNTING on any
--			platforms where RDTSC is slow and this accounting
--			can add overhead.
-+			[x86] noirqtime: obsoleted by "noirqtime" generic option,
-+			see it's documentation for details.
- 
- 	turbografx.map[2|3]=	[HW,JOY]
- 			TurboGraFX parallel port interface
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index 5416c7c..961bd2d 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -144,6 +144,9 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
- 	 */
- 	cd.epoch_ns = 0;
- 
-+	if (!no_sched_irq_time)
-+		enable_sched_clock_irqtime();
-+
- 	pr_debug("Registered %pF as sched_clock source\n", read);
- }
- 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bed94e..4759676 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -805,17 +805,6 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
--config IRQ_TIME_ACCOUNTING
--	bool "Fine granularity task level IRQ time accounting"
--	default n
--	---help---
--	  Select this option to enable fine granularity task irq time
--	  accounting. This is done by reading a timestamp on each
--	  transitions between softirq and hardirq state, so there can be a
--	  small performance impact.
--
--	  If in doubt, say N here.
--
- source "kernel/Kconfig.preempt"
- 
- config X86_UP_APIC
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index a62c201..70510a3 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -103,14 +103,15 @@ int __init notsc_setup(char *str)
- 
- __setup("notsc", notsc_setup);
- 
--static int no_sched_irq_time;
--
- static int __init tsc_setup(char *str)
- {
- 	if (!strcmp(str, "reliable"))
- 		tsc_clocksource_reliable = 1;
--	if (!strncmp(str, "noirqtime", 9))
-+	if (!strncmp(str, "noirqtime", 9)) {
-+		printk(KERN_WARNING "tsc: tsc=noirqtime is "
-+		       "obsolete, use noirqtime instead\n");
- 		no_sched_irq_time = 1;
-+	}
- 	return 1;
- }
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7d379a6..b3575b5 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1966,9 +1966,11 @@ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
-  * The reason for this explicit opt-in is not to have perf penalty with
-  * slow sched_clocks.
-  */
-+extern int no_sched_irq_time;
- extern void enable_sched_clock_irqtime(void);
- extern void disable_sched_clock_irqtime(void);
- #else
-+#define no_sched_irq_time 1
- static inline void enable_sched_clock_irqtime(void) {}
- static inline void disable_sched_clock_irqtime(void) {}
- #endif
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 8745ac7..236e814 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -299,6 +299,18 @@ config SCHEDSTATS
- 	  application, you can say N to avoid the very slight overhead
- 	  this adds.
- 
-+config IRQ_TIME_ACCOUNTING
-+	bool "Fine granularity task level IRQ time accounting"
-+	depends on X86 || ARM
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task irq time
-+	  accounting. This is done by reading a timestamp on each
-+	  transitions between softirq and hardirq state, so there can be a
-+	  small performance impact.
-+
-+	  If in doubt, say N here.
-+
- config TIMER_STATS
- 	bool "Collect kernel timers statistics"
- 	depends on DEBUG_KERNEL && PROC_FS
-diff --git a/lib/Makefile b/lib/Makefile
-index 18515f0..44d67d4 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -49,6 +49,8 @@ obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
- obj-$(CONFIG_DEBUG_LIST) += list_debug.o
- obj-$(CONFIG_DEBUG_OBJECTS) += debugobjects.o
- 
-+obj-$(CONFIG_IRQ_TIME_ACCOUNTING) += irqtime.o
-+
- ifneq ($(CONFIG_HAVE_DEC_LOCK),y)
-   lib-y += dec_and_lock.o
- endif
-diff --git a/lib/irqtime.c b/lib/irqtime.c
-new file mode 100644
-index 0000000..10d440d
---- /dev/null
-+++ b/lib/irqtime.c
-@@ -0,0 +1,12 @@
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+
-+int no_sched_irq_time;
-+
-+static int __init irqtime_setup(char *str)
-+{
-+	no_sched_irq_time = 1;
-+	return 1;
-+}
-+
-+__setup("noirqtime", irqtime_setup);
--- 
-1.7.7.6
 
+> All in all, it's not as much code as I thought it would be and it seems t=
+o be
+> relatively simple (which rises the question why the Android people didn't
+> even _try_ to do something like this instead of slapping the "real" wakel=
+ocks
+> onto the kernel FWIW).  IMHO it doesn't add anything really new to the ke=
+rnel,
+> except for the user space interfaces that should be maintainable.  At lea=
+st I
+> think I should be able to maintain them. :-)
+>=20
+> All of the above has been tested very briefly on my test-bed Mackerel boa=
+rd
+> and it quite obviously requires more thorough testing, but first I need t=
+o know
+> if it makes sense to spend any more time on it.
+>=20
+> IOW, I need to know your opinions!
+
+I've got opinions!!!
+
+I'll try to avoid the obvious bike-shedding about interface design...
+
+The key point I want to make is that doing this in the kernel has one very
+import difference to doing it in userspace (which, as you know, I prefer)
+which may not be obvious to everyone at first sight.  So I will try to make=
+ it
+apparent.
+
+In the user-space solution that we have previously discussed, it is only
+necessary for the kernel to hold a wakeup_source active until the event is
+*visible* to user-space.  So a low level driver can queue e.g. an input eve=
+nt
+and then deactivate their wakeup_source.  The event can remain in the input
+queue without any wakeup_source being active and there is no risk of going =
+to
+sleep inappropriately.
+This is because - in the user-space approach - user-space must effectively
+poll every source of interesting wakeup events between the last wakeup_sour=
+ce
+being deactivate and the next attempt to suspend.  This poll will notice the
+event sitting in a queue so that a well-written user-space will not go to
+sleep but will read the event.
+(Note that this 'poll-of-every-device' need not be expensive.  It can be a
+single 'poll' or 'select' or even 'read' on a pollfd).
+
+In the kernel based approach that you have presented this is not the case.
+As the kernel will initiate suspend the moment the last wakeup_source is
+released (with no polling of other queues), there must be an unbroken chain=
+ of
+wakeup_sources from the initial interrupt all the way up to the user.
+In particular, any subsystem (such as 'input') must hold a wakeup_source
+active as long as any designated 'wakeup event' is in any of its queues.
+This means that the subsystem must be able to differentiate wakeup events
+from non-wakeup events.
+This might be easy (maybe "all events are wakeup events" or "all events on
+this queue are wakeup events") but it is not obvious to me that that is the
+case.
+
+To summarise: for this solution to be effective it also requires that
+ 1/ every subsystem that carries wakeup events must know about wakeup_sourc=
+es
+    and must activate/deactivate them as events are queued/dequeued.
+ 2/ these subsystems must be able to differentiate between wakeup events and
+    non-wakeup events, and this must be a configurable decision.
+
+Currently, understanding wakeup events is restricted to:
+ - drivers that are capable of configuring wakeup
+ - user-space which cares about wakeup
+The proposed solution adds:
+ - intermediate subsystems which might queue wakeup events
+
+I think that is a significant addition to make and not one to be made
+lightly.  It might end up adding more code than you thought it would be :-)
+
+Thanks for the opportunity to comment,
+NeilBrown
+
+--Sig_/cgsBaSz_YWyaUquX7TZlKi3
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTzML8Dnsnt1WYoG5AQIP8BAAucjwS8cZCEp5k/Cm8OrDuRwhu3570c4E
+M/xpMXp5Mpav8GX4HFsEL46A8pHFlc78JGjFwS0bEGzLMbRwd1ggC5Y996Y2rNWx
+wGntXM4X6K4Gdp//pyYRJboEjAWy36UQf0nFeJ8jttCJTNacrwlS1DIfQc9K/DVa
+hazjXSzS3FNthnLcW9/4R0xFFBC8zVmhjWzHuyAiih2v2Q2h3Ygy5ThCKvIroQe7
+gBEkZx0ZYj/8ftD3lwNBpoGcO8aaLTGCBmTqZ1ZGdr5LGPSEvMYgpVCSIJbCPiTH
+ZMx48WhVNdvFHW6FiUzoblPK+I6m3MNn93Qlmq0l5TUwWDvTooGDaNNi770yqYIY
+X5KjZdj7tk8Tx5gH59H0Jr14xmgatgnSNRsC+NzeUDne/pQoF9eRlRu+QLZva8yk
+LQb68loNFSCSPHoYaMuVg79u0MKSmT2hz5zV841/zXAoOLpmskORFvulotOPg2My
+H++SuaHBPCzg2So/F1+8q77a44sqVKrTZzlUNc9+C3bz0KRqQnKHIppshGVM8rbp
+WzjHpsSmdN1GgG4dC+LDkMgb7x7pDyfuUmv4dO6/HH7+JYNjJzkBgBVnSWBV7p+D
+Z8idRJkZsQXHwjxtZnKeQ1X3KJecDHR4yKU3UqdMw6wzDjoEDpk8k+AcjnqNmEEn
+a6FEmzWNcOA=
+=yR4L
+-----END PGP SIGNATURE-----
+
+--Sig_/cgsBaSz_YWyaUquX7TZlKi3--
