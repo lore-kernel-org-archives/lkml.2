@@ -1,125 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab2BHCYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 21:24:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45640 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756649Ab2BHCYF (ORCPT
+	id S1757249Ab2BHC2r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 21:28:47 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:39115
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755249Ab2BHC2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 21:24:05 -0500
+	Tue, 7 Feb 2012 21:28:46 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2fh668h839h93fh)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F31DDC7.1050107@am.sony.com>
+Date: Tue, 7 Feb 2012 18:28:23 -0800
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
-References: <1328578047.1724.17.camel@dave-Dell-System-XPS-L502X>
-	<CAMQu2gwfo5JXAqQaLUNs7C7J3TUhEO2zOcyD0Rk-D_O61Yrfag@mail.gmail.com>
-	<CAMsRxfLNBbQO5XF+EHJqNsnW+s=ay3mjSV5dh=sxdwzktUu03g@mail.gmail.com>
-	<CAMQu2gzfNAwtf1c6jrTZpfGMSqBgBrQKmFTeCFzbvMh9ESBDUg@mail.gmail.com>
-	<CAMsRxfKR1ODH56BtcUT5Dv6qOVEYGVheEcW9ugXsZmLKok==bg@mail.gmail.com>
-	<CAMQu2gwWt6oQPjxc1YHgOoxVkHdck_q78Xf==7ncwRj0_uS-JQ@mail.gmail.com>
-	<CAMQu2gyCPtbNfBa5V8ve2JORN+sDeAY+hvR0g0_9U354JgcuiA@mail.gmail.com>
-	<CAMsRxfJVEgVJoHcaPQbMg5mwz=tZUce4oibDUxtnevSF8bGY9g@mail.gmail.com>
-	<CAMQu2gxVUqDF2HkPD=QeX0N_tUd=9FTd+T+1LHCR0tsCgQxC8Q@mail.gmail.com>
-	<CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
-Date: Wed, 8 Feb 2012 10:24:00 +0800
-Message-ID: <CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
-Subject: Re: oprofile and ARM A9 hardware counter
-From: Ming Lei <ming.lei@canonical.com>
-To: eranian@gmail.com
-Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        David Long <dave.long@linaro.org>, b-cousson@ti.com, mans@mansr.com,
-        will.deacon@arm.com, linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>,
+        linux-embedded <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        Andrew Morton <akpm@osdl.org>
+Subject: [PATCH 2/5] logger: simplify and optimize get_entry_len
+References: <4F31DC31.6040303@am.sony.com>
+In-Reply-To: <4F31DC31.6040303@am.sony.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Make this code slightly easier to read, and eliminate calls
+to sub-routines.  Some of these were previously optimized away
+by the compiler, but one memcpy was not.
 
-CC lkml and perf guys, since looks it is related with perf core.
+Signed-off-by: Tim Bird <tim.bird@am.sony.com>
+---
+ drivers/staging/android/logger.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-On Tue, Feb 7, 2012 at 7:59 PM, stephane eranian <eranian@googlemail.com> wrote:
-> An easier way to verify we're getting the right number of samples is
-> to use perf top:
->
-> $ taskset -c 1 noploop 1000 &
-> $ sudo perf top
->
-> You'll see around 850 irqs/sec, should be closer to 1000.
-> But if I drop the rate to 100Hz, then it works:
->
-> $ sudo perf top -F 100
->
-> That leads me to believe there is too much overhead somewhere.
-> Could be in perf_event itself.
-
-Looks like the issue is caused by perf_event itself, but nothing to do
-with much overhead
-somewhere.
-
-On OMAP4, HZ is 128, and perf_rotate_context may set a new sample period(~8ms),
-which is much longer than 1ms in 1000HZ freq mode, so less sample events are
-observed. X86 isn't affected since its HZ is 1000.
-
-With patch[1], about 10000 sample events can be generated after running
-'perf record -e cycles  ./noploop 10' and 'perf report -D | tail -20'
-on panda board.
-
-I am not sure if patch[1] is a right fix, but it can verify the problem.
-
-thanks,
---
-Ming Lei
-
-[1], fix adjusting frequency in perf_rotate_context
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 32b48c8..db4faf2 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2300,14 +2300,12 @@ do {					\
- 	return div64_u64(dividend, divisor);
- }
-
--static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
-+static void perf_adjust_period(struct perf_event *event, u64 period, u64 count)
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index 92456d7..92cfd94 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -93,19 +93,23 @@ static inline struct logger_log *file_get_log(struct file *file)
+  * get_entry_len - Grabs the length of the payload of the next entry starting
+  * from 'off'.
+  *
++ * An entry length is 2 bytes (16 bits) in host endian order.
++ * In the log, the length does not include the size of the log entry structure.
++ * This function returns the size including the log entry structure.
++ *
+  * Caller needs to hold log->mutex.
+  */
+ static __u32 get_entry_len(struct logger_log *log, size_t off)
  {
- 	struct hw_perf_event *hwc = &event->hw;
--	s64 period, sample_period;
-+	s64 sample_period;
- 	s64 delta;
+ 	__u16 val;
 
--	period = perf_calculate_period(event, nsec, count);
--
- 	delta = (s64)(period - hwc->sample_period);
- 	delta = (delta + 7) / 8; /* low pass filter */
-
-@@ -2363,8 +2361,13 @@ static void perf_ctx_adjust_freq(struct
-perf_event_context *ctx, u64 period)
- 		delta = now - hwc->freq_count_stamp;
- 		hwc->freq_count_stamp = now;
-
--		if (delta > 0)
-+		if (delta > 0) {
-+			period = perf_calculate_period(event, period, delta);
-+
-+			if (period > 4*hwc->sample_period)
-+				period = hwc->sample_period;
- 			perf_adjust_period(event, period, delta);
-+		}
- 	}
- }
-
-@@ -4533,8 +4536,10 @@ static int __perf_event_overflow(struct
-perf_event *event,
-
- 		hwc->freq_time_stamp = now;
-
--		if (delta > 0 && delta < 2*TICK_NSEC)
-+		if (delta > 0 && delta < 2*TICK_NSEC) {
-+			delta = perf_calculate_period(event, delta, hwc->last_period);
- 			perf_adjust_period(event, delta, hwc->last_period);
-+		}
+-	switch (log->size - off) {
+-	case 1:
+-		memcpy(&val, log->buffer + off, 1);
+-		memcpy(((char *) &val) + 1, log->buffer, 1);
+-		break;
+-	default:
+-		memcpy(&val, log->buffer + off, 2);
++	if (unlikely(log->size - off == 1)) {
++		/* at end of buffer, handle wrap */
++		((unsigned char *)&val)[0] = log->buffer[off];
++		((unsigned char *)&val)[1] = log->buffer[0];
++	} else {
++		((unsigned char *)&val)[0] = log->buffer[off];
++		((unsigned char *)&val)[1] = log->buffer[off+1];
  	}
 
- 	/*
+ 	return sizeof(struct logger_entry) + val;
+-- 
+1.7.2.3
+
