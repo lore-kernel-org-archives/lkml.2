@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab2BHLD1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 06:03:27 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:55799 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756861Ab2BHLDY (ORCPT
+	id S1756868Ab2BHLIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 06:08:12 -0500
+Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:47215 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755332Ab2BHLIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 06:03:24 -0500
-Date: Wed, 8 Feb 2012 13:03:18 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Luciano Coelho <coelho@ti.com>
-Cc: tony@atomide.com, linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tero Kristo <t-kristo@ti.com>
-Subject: Re: [PATCH 3.3] OMAP4: PRM: fix build breakage when CONFIG_OF is not
- defined
-Message-ID: <20120208110318.GC16334@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1328698752-18756-1-git-send-email-coelho@ti.com>
+	Wed, 8 Feb 2012 06:08:10 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R+My9LyyhiUvIEro"
-Content-Disposition: inline
-In-Reply-To: <1328698752-18756-1-git-send-email-coelho@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F32539D.8030402@linux.vnet.ibm.com>
+References: <4F3243D4.4080907@linux.vnet.ibm.com>
+	<CABPqkBR+okFaa2s1AbMHAgkBbW4QSwOceLuYvqE=6PQOvzksiw@mail.gmail.com>
+	<4F32539D.8030402@linux.vnet.ibm.com>
+Date: Wed, 8 Feb 2012 12:08:08 +0100
+Message-ID: <CABPqkBTsqqs5sFyP61ZNfJxE2m3dGTjOXJqdHN5gi3en+PXnzw@mail.gmail.com>
+Subject: Re: Use case for PERF_COUNT_HW_REF_CPU_CYCLES generic PMU event
+From: Stephane Eranian <eranian@google.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 8, 2012 at 11:51 AM, Anshuman Khandual
+<khandual@linux.vnet.ibm.com> wrote:
+> On Wednesday 08 February 2012 03:21 PM, Stephane Eranian wrote:
+>> On Wed, Feb 8, 2012 at 10:43 AM, Anshuman Khandual
+>> <khandual@linux.vnet.ibm.com> wrote:
+>>> Hello Stephane,
+>>>
+>>> I was going through the following discussion where we added the
+>>> new HW generic event PERF_COUNT_HW_REF_CPU_CYCLES.
+>>>
+>>> https://lkml.org/lkml/2011/12/10/103
+>>>
+>>> (Sorry, for asking this question bit late)
+>>>
+>>> I am trying to understand the use case for this. Would this new event
+>>> help us in generating (during a perf session) a CPU frequency invariant
+>>> time metric against which we would plot our other perf event's measurements ?
+>>> CPU frequency independent time measurement is it's primary purpose ? or we were
+>>> finding a way to expose the fixed counter 2 which was not getting used before
+>>> for not having an event encoding. I guess this would help us in finding equivalent
+>>> PMU events or mechanisms in other architecture / platforms.
+>>>
+>> The goal was to expose a cycle event that is not subject to frequency scaling
+>> nor turbo boost of any sort. An event that could be used to correlate with time.
+>
+>> An event that could also be used to compute idle time by comparing its value
+>> with wall-clock time.
+>
+> Why kernel computed idle time is not sufficient ? How much accuracy would it
+> improve in using PMU event computed idle time over kernel computed idle time.
+>
+I was just listing the what you could do with the event. I have not
+yet tried to measure
+idle with ref-cycles.
 
---R+My9LyyhiUvIEro
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Feb 08, 2012 at 12:59:12PM +0200, Luciano Coelho wrote:
-> Since 3.3-rc1, prm44xx.c build breaks if CONFIG_OF is not set:
->=20
-> arch/arm/mach-omap2/prm44xx.c:41: error: 'OMAP44XX_IRQ_PRCM' undeclared h=
-ere (not in a function)
-> make[1]: *** [arch/arm/mach-omap2/prm44xx.o] Error 1
->=20
-> This is because of a missing include, which is added indirectly if
-> CONFIG_OF is defined.  This problem was introduced in commit
-> 2f31b51659c2d8315ea2888ba5b93076febe672b
-
-same as previous patch. Abbreviated commit and commit subject.
-
-> Cc: Tero Kristo <t-kristo@ti.com>
-> Signed-off-by: Luciano Coelho <coelho@ti.com>
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-
-> ---
->  arch/arm/mach-omap2/prm44xx.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->=20
-> diff --git a/arch/arm/mach-omap2/prm44xx.c b/arch/arm/mach-omap2/prm44xx.c
-> index 33dd655..f2e06ad 100644
-> --- a/arch/arm/mach-omap2/prm44xx.c
-> +++ b/arch/arm/mach-omap2/prm44xx.c
-> @@ -20,6 +20,7 @@
->  #include "common.h"
->  #include <plat/cpu.h>
->  #include <plat/prcm.h>
-> +#include <plat/irqs.h>
-> =20
->  #include "vp.h"
->  #include "prm44xx.h"
-> --=20
-> 1.7.5.4
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
---=20
-balbi
-
---R+My9LyyhiUvIEro
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPMlZ2AAoJEIaOsuA1yqRE+nwP/j+ZK2fHlDPcVJocqYtNObln
-CUFW0swuFshJ8PGfsNvyll3Tif6KfZtj8XHDGIBks8ZM0SGjkXMjhU5TvMJ+Gy95
-j5iZWiq7lKlE+SKbcCnHfKgyQtE27jYtjr7vCwZLHInR8xRvJ04XgIw2nuOEBtOt
-9z95MfEV+FtHWLY6qWUF3/vuMnPLS9aOLjMQ618eC7s7ywBFJL8JhTEh7H8xjGyS
-T8vibZkHNtSEFCqjgOxPOq8wi3kNIDDaXH9r+ZfuazqydKgYogJ+BMY2sDixekOM
-mK7uoHrTvsYm3SM/WOTo5/4OGAt9Ij6u9NFoN8TaGNyfYdz7E6u/Oadecyh6uqix
-ytTuZU3vYDzpKpsGEDNkXzuPJHb8giu4cjMW5wgYyepSWwLHPxpCieEsh3+uTsAg
-TqR4tE7Dl5/xgOpbhVL4Dq7MMhR7tfmBQj5tJPJ8f11uv6/RAzGlExjDCNYv/pCw
-3I7AYlbtTkB+j34UZhE0pcldu7aggJBj95zz3eIsJswgudFGyQ7Sa334r7tdF8An
-Dp239u7KiOPc8i6NDPLPULu5F9RgEjtxpyzkIm3fXL0hm7LCeCogcLgz1WX5/ly9
-2BJB1eABq7IFmg7Y/mwQXW/0YvzGfYfCa5xN3oSdhxP1u6r8ZxMIyRa7y9nQO+JS
-tWBqBtGHH3voCLwOjeBg
-=1zJ1
------END PGP SIGNATURE-----
-
---R+My9LyyhiUvIEro--
+>
+>>
+>> The fact that on Intel X86 this event is on fixed counter 2 is an
+>> implementation
+>> detail.
+>>
+>>> --
+>>> Anshuman Khandual
+>>> Linux Technology Centre
+>>> IBM Systems and Technology Group
+>>>
+>>
+>
