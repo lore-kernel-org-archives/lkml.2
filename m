@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab2BHAfl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 19:35:41 -0500
-Received: from mga03.intel.com ([143.182.124.21]:49081 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756841Ab2BHAfj convert rfc822-to-8bit (ORCPT
+	id S1757135Ab2BHAi2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 19:38:28 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:52587 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab2BHAi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 19:35:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="64243020"
-From: "Heasley, Seth" <seth.heasley@intel.com>
-To: David Henningsson <david.henningsson@canonical.com>
-CC: Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "perex@perex.cz" <perex@perex.cz>,
-        "Ralston, James D" <james.d.ralston@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCH 1/6] hda_intel: Add Lynx Point HD Audio
- Controller DeviceIDs
-Thread-Topic: [alsa-devel] [PATCH 1/6] hda_intel: Add Lynx Point HD Audio
- Controller DeviceIDs
-Thread-Index: AQHM2i6+Xo5tJV2DbkS/GNVTnMZPn5Yby5cAgAACngCAFNe14IAA1AMAgADEgjA=
-Date: Wed, 8 Feb 2012 00:35:33 +0000
-Message-ID: <DEC3922D1904474A8862C7BFF516EA9A37FB7D68@ORSMSX101.amr.corp.intel.com>
-References: <201201231624.31275.seth.heasley@intel.com>
- <4F1E7DC0.5060208@canonical.com> <s5h7h0h2znx.wl%tiwai@suse.de>
- <DEC3922D1904474A8862C7BFF516EA9A37FB3863@ORSMSX101.amr.corp.intel.com>
- <4F30ADB6.1000109@canonical.com>
-In-Reply-To: <4F30ADB6.1000109@canonical.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Feb 2012 19:38:27 -0500
+Date: Tue, 7 Feb 2012 19:35:37 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: kobject (ffff88003ffbb4b8): tried to init an initialized object,
+ something is seriously wrong.
+Message-ID: <20120208003537.GA18258@phenom.dumpdata.com>
+References: <20120203205953.GA2897@phenom.dumpdata.com>
+ <20120203213949.GC8196@kroah.com>
+ <20120203214235.GA10549@kroah.com>
+ <20120206182040.GA1862@phenom.dumpdata.com>
+ <20120206182956.GA13819@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206182956.GA13819@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F31C401.002B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I'm also in favor of not rocking the boat, but I'm curious what
->changing this would entail, and what would be the advantage or rationale
->for making the change?
->
->Reading the LPIB register, and reading the DMA position buffer, are two
->different methods of reading the current playback (or recording)
->position, i e which sample is currently being played back.
->
->The problem is that some chipsets prefer one method over the other, i e,
->only one of the methods work reliably. And if the other method only
->breaks occasionally, this can be quite difficult to detect and track
->down - we will have users complaining about their audio sometimes either
->sounding distorted, maybe not working at all, or just once in a while
->glitches. All of these symptoms can have many causes, so deducing that
->to a broken playback position is time consuming. That's why I think it's
->worth the extra question, to get it right from the start.
->
->So...thanks in advance for looking it up for us? :-)
+On Mon, Feb 06, 2012 at 10:29:56AM -0800, Greg KH wrote:
+> On Mon, Feb 06, 2012 at 01:20:40PM -0500, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Feb 03, 2012 at 01:42:35PM -0800, Greg KH wrote:
+> > > On Fri, Feb 03, 2012 at 01:39:49PM -0800, Greg KH wrote:
+> > > > On Fri, Feb 03, 2012 at 03:59:53PM -0500, Konrad Rzeszutek Wilk wrote:
+> > > > > Hey Greg,
+> > > > > 
+> > > > > With or without your previous patch (the one that added an cpu_device_release
+> > > > > function) I am getting this in 3.3-rc2.  I did not get this in 3.2.
+> > > > > 
+> > > > > I added some extra printks to make sure that the handle_vcpu_hotplug_event
+> > > > > code actually did call 'arch_unregister_cpu' which is certainly looks
+> > > > > to be doing.
+> > > > > 
+> > > > > I hadn't done a bisection yet, but was wondering if this is related
+> > > > > to the previous issues with the sysdev. Or kobject getting more observant.
+> > > > 
+> > > > No, it's related to the previous issue, let me knock up a patch to fix
+> > > > this as well...
+> > > 
+> > > Does this patch solve the problem for you?
+> > 
+> > Yeah, no warnings. But neither is the CPU coming back up :-(
+> 
+> Very wierd.
 
-I'm inquiring about it, but I can say that it seems to work just fine using the DMA position buffer.
+Found the culprit and have a patch for it. But it does not affect baremetal and
+it was in the drivers/xen/cpu_hotplug.c code - so 
 
--Seth
+> 
+> > Thought that might be related to something else  - let me double check
+> > with 3.2 whether there are some race-conditions that I might be hitting.
+> 
+> Ok, I'll wait to queue this up until you get back to me.
 
-
+.. you can go ahead and queue it up with my Tested-by tag. Thanks!
