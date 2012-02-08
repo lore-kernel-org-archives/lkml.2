@@ -1,60 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab2BHVWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:22:23 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:34338 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932226Ab2BHVWQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:22:16 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        e1000-devel@lists.sourceforge.net
-Subject: [PATCH 36/50] igbvf: reset netdevice addr_assign_type if changed from random
-Date: Wed,  8 Feb 2012 22:10:43 +0100
-Message-Id: <1328735457-29986-37-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328736136;5385fcff;
+	id S1757764Ab2BHVXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:23:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60479 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757314Ab2BHVX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:23:28 -0500
+Date: Wed, 8 Feb 2012 21:23:23 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 02/15] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20120208212323.GM5938@suse.de>
+References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
+ <1328568978-17553-3-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1202071025050.30652@router.home>
+ <20120208144506.GI5938@suse.de>
+ <alpine.DEB.2.00.1202080907320.30248@router.home>
+ <20120208163421.GL5938@suse.de>
+ <alpine.DEB.2.00.1202081338210.32060@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1202081338210.32060@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reset the state of addr_assign_type to NET_ADDR_PERM as soon as
-the MAC get changed via .ndo_set_mac_address.
+On Wed, Feb 08, 2012 at 01:49:05PM -0600, Christoph Lameter wrote:
+> On Wed, 8 Feb 2012, Mel Gorman wrote:
+> 
+> > Ok, I looked into what is necessary to replace these with checking a page
+> > flag and the cost shifts quite a bit and ends up being more expensive.
+> 
+> That is only true if you go the slab route.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/net/ethernet/intel/igbvf/netdev.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Well, yes but both slab and slub have to be supported. I see no reason
+why I would choose to make this a slab-only or slub-only feature. Slob is
+not supported because it's not expected that a platform using slob is also
+going to use network-based swap.
 
-diff --git a/drivers/net/ethernet/intel/igbvf/netdev.c b/drivers/net/ethernet/intel/igbvf/netdev.c
-index a4b20c8..af652bf 100644
---- a/drivers/net/ethernet/intel/igbvf/netdev.c
-+++ b/drivers/net/ethernet/intel/igbvf/netdev.c
-@@ -1695,6 +1695,8 @@ static int igbvf_set_mac(struct net_device *netdev, void *p)
- 		return -EADDRNOTAVAIL;
- 
- 	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
-+	if (netdev->addr_assign_type & NET_ADDR_RANDOM)
-+		netdev->addr_assign_type ^= NET_ADDR_RANDOM;
- 
- 	return 0;
- }
+> Slab suffers from not having
+> the page struct pointer readily available. The changes are likely already
+> impacting slab performance without the virt_to_page patch.
+> 
+
+The performance impact only comes into play when swap is on a network
+device and pfmemalloc reserves are in use. The rest of the time the check
+on ac avoids all the cost and there is a micro-optimisation later to avoid
+calling a function (patch 12).
+
+> > In slub, it's sufficient to check kmem_cache_cpu to know whether the
+> > objects in the list are pfmemalloc or not.
+> 
+> We try to minimize the size of kmem_cache_cpu. The page pointer is readily
+> available. We just removed the node field from kmem_cache_cpu because it
+> was less expensive to get the node number from the struct page field.
+> 
+> The same is certainly true for a PFMEMALLOC flag.
+> 
+
+Ok, are you asking that I use the page flag for slub and leave kmem_cache_cpu
+alone in the slub case? I can certainly check it out if that's what you
+are asking for.
+
+> > Yeah, you're right on the button there. I did my checking assuming that
+> > PG_active+PG_slab were safe to use. The following is an untested patch that
+> > I probably got details wrong in but it illustrates where virt_to_page()
+> > starts cropping up.
+> 
+> Yes you need to come up with a way to not use virt_to_page otherwise slab
+> performance is significantly impacted.
+
+I did come up with a way: the necessary information is in ac and slabp
+on slab :/ . There are not exactly many ways that the information can
+be recorded.
+
+> On NUMA we are already doing a page struct lookup on free in slab.
+> If you would save the page struct pointer
+> there and reuse it then you would not have an issue at least on free.
+> 
+
+That information is only available on NUMA and only when there is more than
+one node. Having cache_free_alien return the page for passing to ac_put_obj()
+would also be ugly. The biggest downfall by far is that single-node machines
+incur the cost of virt_to_page() where they did not have to before. This
+is not a solution and it is not better than the current simply check on
+a struct field.
+
+> You still would need to determine which "struct slab" pointer is in use
+> which will also require similar lookups in varous places.
+> 
+> Transfer of the pfmemalloc flags (guess you must have a pfmemalloc
+> field in struct slab then) in slab is best be done when allocating and
+> freeing a slab page from the page allocator.
+> 
+
+The page->pfmemalloc is already been transferred to the slab in
+cache_grow.
+
+> I think its rather trivial to add the support you want in a non intrusive
+> way to slub. Slab would require some more thought and discussion.
+> 
+
+I'm slightly confused by this sentence. Support for slub is already in the
+patch and as you say, it's fairly straight-forward. Supporting a page flag
+and leaving kmem_cache_cpu alone may also be easier as kmem_cache_cpu->page
+can be used instead of a kmem_cache_cpu->pfmemalloc field.
+
 -- 
-1.7.7.3
-
+Mel Gorman
+SUSE Labs
