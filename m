@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab2BHRP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 12:15:56 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:20666 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754336Ab2BHRPx convert rfc822-to-8bit (ORCPT
+	id S1753077Ab2BHRTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 12:19:18 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59937 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab2BHRTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 12:15:53 -0500
-MIME-Version: 1.0
-Message-ID: <409797c4-a6e7-493d-9681-4166a9473ab8@default>
-Date: Wed, 8 Feb 2012 09:15:36 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Nitin Gupta <ngupta@vflare.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: RE: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
-References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com>
- <4F21A5AF.6010605@linux.vnet.ibm.com> <4F300D41.5050105@linux.vnet.ibm.com>
- <4F32A55E.8010401@linux.vnet.ibm.com>
-In-Reply-To: <4F32A55E.8010401@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090206.4F32ADC0.0004,ss=1,re=0.000,fgs=0
+	Wed, 8 Feb 2012 12:19:16 -0500
+Date: Wed, 8 Feb 2012 17:20:37 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Alexander Graf <agraf@suse.de>, Avi Kivity <avi@redhat.com>,
+        qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+Message-ID: <20120208172037.615a1fdd@pyramind.ukuu.org.uk>
+In-Reply-To: <4F3141E4.8080902@codemonkey.ws>
+References: <4F2AB552.2070909@redhat.com>
+	<4F2B41D6.8020603@codemonkey.ws>
+	<51470503-DEE0-478D-8D01-020834AF6E8C@suse.de>
+	<4F3117E5.6000105@redhat.com>
+	<EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de>
+	<4F31241C.70404@redhat.com>
+	<BE675ED2-9384-4B91-9A30-098C2915A227@suse.de>
+	<4F3141E4.8080902@codemonkey.ws>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dave Hansen [mailto:dave@linux.vnet.ibm.com]
-> Subject: Re: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
+> >    register_pio_hook_ptr_r(PIO_IDE, SIZE_BYTE,&s->cmd[0]);
+> >    for (i = 1; i<  7; i++) {
+> >      register_pio_hook_ptr_r(PIO_IDE + i, SIZE_BYTE,&s->cmd[i]);
+> >      register_pio_hook_ptr_w(PIO_IDE + i, SIZE_BYTE,&s->cmd[i]);
+> >    }
 > 
-> On 02/06/2012 09:26 AM, Seth Jennings wrote:
-> > On 01/26/2012 01:12 PM, Dave Hansen wrote:
-> >> void *kmap_atomic_prot(struct page *page, pgprot_t prot)
-> >> {
-> >> ...
-> >>         type = kmap_atomic_idx_push();
-> >>         idx = type + KM_TYPE_NR*smp_processor_id();
-> >>         vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
-> >>
-> >> I think if you do a get_cpu()/put_cpu() or just a preempt_disable()
-> >> across the operations you'll be guaranteed to get two contiguous addresses.
-> >
-> > I'm not quite following here.  kmap_atomic() only does this for highmem pages.
-> > For normal pages (all pages for 64-bit), it doesn't do any mapping at all.  It
-> > just returns the virtual address of the page since it is in the kernel's address
-> > space.
-> >
-> > For this design, the pages _must_ be mapped, even if the pages are directly
-> > reachable in the address space, because they must be virtually contiguous.
-> 
-> I guess you could use vmap() for that.  It's just going to be slower
-> than kmap_atomic().  I'm really not sure it's worth all the trouble to
-> avoid order-1 allocations, though.
+> You can't easily serialize updates to that address with the kernel since two 
+> threads are likely going to be accessing it at the same time.  That either means 
+> an expensive sync operation or a reliance on atomic instructions.
 
-Seth, Nitin, please correct me if I am wrong, but...
+Who cares
 
-Dave, your comment makes me wonder if maybe you might be missing
-the key value of the new allocator.  The zsmalloc allocator can grab
-any random* page "A" with X unused bytes at the END of the page,
-and any random page "B" with Y unused bytes at the BEGINNING of the page
-and "coalesce" them to store any byte sequence with a length** Z
-not exceeding X+Y.  Presumably this markedly increases
-the density of compressed-pages-stored-per-physical-page***.  I don't 
-see how allowing order-1 allocations helps here but if I am missing
-something clever, please explain further.
+If your API is right this isn't a problem (and for IDE the guess that it
+won't happen you will win 99.999% of the time).
 
-(If anyone missed Jonathan Corbet's nice lwn.net article, see:
-https://lwn.net/Articles/477067/ )
+In fact IDE you can do even better in many cases because you'll get a
+single rep outsw you can trap and shortcut.
 
-* Not really ANY random page, just any random page that has been
-  previously get_free_page'd by the allocator and hasn't been
-  free'd yet.
-** X, Y and Z are all rounded to a multiple of 16 so there
-  is still some internal fragmentation cost.
-*** Would be interesting to see some random and real workload data
-  comparing density for zsmalloc and xvmalloc.  And also zbud
-  too as a goal is to replace zbud with zsmalloc too.
+> But not all architectures offer non-word sized atomic instructions so it gets 
+> fairly nasty in practice.
+
+Thats their problem. We don't screwup the fast paths because some
+hardware vendor screwed up that bit of their implementation. That's
+*their* problem not everyone elses.
+
+So on x86 IDE should be about 10 outb traps that can be predicted, a rep
+outsw which can be shortcut and a completion set of inb/inw ops that can
+be predicted.
+
+You should hit userspace about once per IDE operation. Fix the hot paths
+with good design and the noise doesn't matter.
+
+Alan
