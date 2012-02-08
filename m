@@ -1,64 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab2BHVRD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:17:03 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:56665 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750863Ab2BHVRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:17:00 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Po-Yu Chuang <ratbert@faraday-tech.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Thomas Faber <thfabba@gmx.de>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH 26/50] faraday: use dev_hw_addr_random() instead of random_ether_addr()
-Date: Wed,  8 Feb 2012 22:10:33 +0100
-Message-Id: <1328735457-29986-27-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328735820;9faa2d57;
+	id S1757414Ab2BHVeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:34:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23698 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756610Ab2BHVRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:17:01 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 01/17] CacheFiles: Fix the marking of cached pages
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
+        linux-nfs@vger.kernel.org
+Date: Wed, 08 Feb 2012 21:16:50 +0000
+Message-ID: <20120208211650.15607.85025.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
+References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_hw_addr_random() instead of calling random_ether_addr()
-to set addr_assign_type correctly to NET_ADDR_RANDOM.
+Under some circumstances CacheFiles defers the marking of pages with PG_fscache
+so that it can take advantage of pagevecs to reduce the number of calls to
+fscache_mark_pages_cached() and the netfs's hook to keep track of this.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+There are, however, two problems with this:
+
+ (1) It can lead to the PG_fscache mark being applied _after_ the page is set
+     PG_uptodate and unlocked (by the call to fscache_end_io()).
+
+ (2) CacheFiles's ref on the page is dropped immediately following
+     fscache_end_io() - and so may not still be held when the mark is applied.
+     This can lead to the page being passed back to the allocator before the
+     mark is applied.
+
+Fix this by, where appropriate, marking the page before calling
+fscache_end_io() and releasing the page.  This means that we can't take
+advantage of pagevecs and have to make a separate call for each page to the
+marking routines.
+
+The symptoms of this are Bad Page state errors cropping up under memory
+pressure, for example:
+
+BUG: Bad page state in process tar  pfn:002da
+page:ffffea0000009fb0 count:0 mapcount:0 mapping:          (null) index:0x1447
+page flags: 0x1000(private_2)
+Pid: 4574, comm: tar Tainted: G        W   3.1.0-rc4-fsdevel+ #1064
+Call Trace:
+ [<ffffffff8109583c>] ? dump_page+0xb9/0xbe
+ [<ffffffff81095916>] bad_page+0xd5/0xea
+ [<ffffffff81095d82>] get_page_from_freelist+0x35b/0x46a
+ [<ffffffff810961f3>] __alloc_pages_nodemask+0x362/0x662
+ [<ffffffff810989da>] __do_page_cache_readahead+0x13a/0x267
+ [<ffffffff81098942>] ? __do_page_cache_readahead+0xa2/0x267
+ [<ffffffff81098d7b>] ra_submit+0x1c/0x20
+ [<ffffffff8109900a>] ondemand_readahead+0x28b/0x29a
+ [<ffffffff81098ee2>] ? ondemand_readahead+0x163/0x29a
+ [<ffffffff810990ce>] page_cache_sync_readahead+0x38/0x3a
+ [<ffffffff81091d8a>] generic_file_aio_read+0x2ab/0x67e
+ [<ffffffffa008cfbe>] nfs_file_read+0xa4/0xc9 [nfs]
+ [<ffffffff810c22c4>] do_sync_read+0xba/0xfa
+ [<ffffffff81177a47>] ? security_file_permission+0x7b/0x84
+ [<ffffffff810c25dd>] ? rw_verify_area+0xab/0xc8
+ [<ffffffff810c29a4>] vfs_read+0xaa/0x13a
+ [<ffffffff810c2a79>] sys_read+0x45/0x6c
+ [<ffffffff813ac37b>] system_call_fastpath+0x16/0x1b
+
+As can be seen, PG_private_2 (== PG_fscache) is set in the page flags.
+
+Instrumenting fscache_mark_pages_cached() to verify whether page->mapping was
+set appropriately showed that sometimes it wasn't.  This led to the discovery
+that sometimes the page has apparently been reclaimed by the time the marker
+got to see it.
+
+Reported-by: M. Stevens <m@tippett.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
 ---
- drivers/net/ethernet/faraday/ftgmac100.c |    2 +-
- drivers/net/ethernet/faraday/ftmac100.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
-index 47f85c3..4842659 100644
---- a/drivers/net/ethernet/faraday/ftgmac100.c
-+++ b/drivers/net/ethernet/faraday/ftgmac100.c
-@@ -1289,7 +1289,7 @@ static int ftgmac100_probe(struct platform_device *pdev)
- 	netdev_info(netdev, "irq %d, mapped at %p\n", priv->irq, priv->base);
+ fs/cachefiles/rdwr.c          |   34 ++++++++----------------
+ fs/fscache/page.c             |   59 +++++++++++++++++++++++++----------------
+ include/linux/fscache-cache.h |    3 ++
+ include/linux/fscache.h       |   12 ++++----
+ 4 files changed, 56 insertions(+), 52 deletions(-)
+
+diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+index 0e3c092..0186fc1 100644
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -176,9 +176,8 @@ static void cachefiles_read_copier(struct fscache_operation *_op)
+ 	recheck:
+ 		if (PageUptodate(monitor->back_page)) {
+ 			copy_highpage(monitor->netfs_page, monitor->back_page);
+-
+-			pagevec_add(&pagevec, monitor->netfs_page);
+-			fscache_mark_pages_cached(monitor->op, &pagevec);
++			fscache_mark_page_cached(monitor->op,
++						 monitor->netfs_page);
+ 			error = 0;
+ 		} else if (!PageError(monitor->back_page)) {
+ 			/* the page has probably been truncated */
+@@ -335,8 +334,7 @@ backing_page_already_present:
+ backing_page_already_uptodate:
+ 	_debug("- uptodate");
  
- 	if (!is_valid_ether_addr(netdev->dev_addr)) {
--		random_ether_addr(netdev->dev_addr);
-+		dev_hw_addr_random(netdev, netdev->dev_addr);
- 		netdev_info(netdev, "generated random MAC address %pM\n",
- 			    netdev->dev_addr);
- 	}
-diff --git a/drivers/net/ethernet/faraday/ftmac100.c b/drivers/net/ethernet/faraday/ftmac100.c
-index bb336a0..1561010 100644
---- a/drivers/net/ethernet/faraday/ftmac100.c
-+++ b/drivers/net/ethernet/faraday/ftmac100.c
-@@ -1133,7 +1133,7 @@ static int ftmac100_probe(struct platform_device *pdev)
- 	netdev_info(netdev, "irq %d, mapped at %p\n", priv->irq, priv->base);
+-	pagevec_add(pagevec, netpage);
+-	fscache_mark_pages_cached(op, pagevec);
++	fscache_mark_page_cached(op, netpage);
  
- 	if (!is_valid_ether_addr(netdev->dev_addr)) {
--		random_ether_addr(netdev->dev_addr);
-+		dev_hw_addr_random(netdev, netdev->dev_addr);
- 		netdev_info(netdev, "generated random MAC address %pM\n",
- 			    netdev->dev_addr);
+ 	copy_highpage(netpage, backpage);
+ 	fscache_end_io(op, netpage, 0);
+@@ -448,8 +446,7 @@ int cachefiles_read_or_alloc_page(struct fscache_retrieval *op,
+ 						       &pagevec);
+ 	} else if (cachefiles_has_space(cache, 0, 1) == 0) {
+ 		/* there's space in the cache we can use */
+-		pagevec_add(&pagevec, page);
+-		fscache_mark_pages_cached(op, &pagevec);
++		fscache_mark_page_cached(op, page);
+ 		ret = -ENODATA;
+ 	} else {
+ 		ret = -ENOBUFS;
+@@ -465,8 +462,7 @@ int cachefiles_read_or_alloc_page(struct fscache_retrieval *op,
+  */
+ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 					struct fscache_retrieval *op,
+-					struct list_head *list,
+-					struct pagevec *mark_pvec)
++					struct list_head *list)
+ {
+ 	struct cachefiles_one_read *monitor = NULL;
+ 	struct address_space *bmapping = object->backer->d_inode->i_mapping;
+@@ -626,13 +622,13 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 		page_cache_release(backpage);
+ 		backpage = NULL;
+ 
+-		if (!pagevec_add(mark_pvec, netpage))
+-			fscache_mark_pages_cached(op, mark_pvec);
++		fscache_mark_page_cached(op, netpage);
+ 
+ 		page_cache_get(netpage);
+ 		if (!pagevec_add(&lru_pvec, netpage))
+ 			__pagevec_lru_add_file(&lru_pvec);
+ 
++		/* the netpage is unlocked and marked up to date here */
+ 		fscache_end_io(op, netpage, 0);
+ 		page_cache_release(netpage);
+ 		netpage = NULL;
+@@ -775,15 +771,11 @@ int cachefiles_read_or_alloc_pages(struct fscache_retrieval *op,
+ 	/* submit the apparently valid pages to the backing fs to be read from
+ 	 * disk */
+ 	if (nrbackpages > 0) {
+-		ret2 = cachefiles_read_backing_file(object, op, &backpages,
+-						    &pagevec);
++		ret2 = cachefiles_read_backing_file(object, op, &backpages);
+ 		if (ret2 == -ENOMEM || ret2 == -EINTR)
+ 			ret = ret2;
  	}
--- 
-1.7.7.3
+ 
+-	if (pagevec_count(&pagevec) > 0)
+-		fscache_mark_pages_cached(op, &pagevec);
+-
+ 	_leave(" = %d [nr=%u%s]",
+ 	       ret, *nr_pages, list_empty(pages) ? " empty" : "");
+ 	return ret;
+@@ -806,7 +798,6 @@ int cachefiles_allocate_page(struct fscache_retrieval *op,
+ {
+ 	struct cachefiles_object *object;
+ 	struct cachefiles_cache *cache;
+-	struct pagevec pagevec;
+ 	int ret;
+ 
+ 	object = container_of(op->op.object,
+@@ -817,13 +808,10 @@ int cachefiles_allocate_page(struct fscache_retrieval *op,
+ 	_enter("%p,{%lx},", object, page->index);
+ 
+ 	ret = cachefiles_has_space(cache, 0, 1);
+-	if (ret == 0) {
+-		pagevec_init(&pagevec, 0);
+-		pagevec_add(&pagevec, page);
+-		fscache_mark_pages_cached(op, &pagevec);
+-	} else {
++	if (ret == 0)
++		fscache_mark_page_cached(op, page);
++	else
+ 		ret = -ENOBUFS;
+-	}
+ 
+ 	_leave(" = %d", ret);
+ 	return ret;
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index 3f7a59b..d7c663c 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -915,6 +915,40 @@ done:
+ EXPORT_SYMBOL(__fscache_uncache_page);
+ 
+ /**
++ * fscache_mark_page_cached - Mark a page as being cached
++ * @op: The retrieval op pages are being marked for
++ * @page: The page to be marked
++ *
++ * Mark a netfs page as being cached.  After this is called, the netfs
++ * must call fscache_uncache_page() to remove the mark.
++ */
++void fscache_mark_page_cached(struct fscache_retrieval *op, struct page *page)
++{
++	struct fscache_cookie *cookie = op->op.object->cookie;
++
++#ifdef CONFIG_FSCACHE_STATS
++	atomic_inc(&fscache_n_marks);
++#endif
++
++	_debug("- mark %p{%lx}", page, page->index);
++	if (TestSetPageFsCache(page)) {
++		static bool once_only;
++		if (!once_only) {
++			once_only = true;
++			printk(KERN_WARNING "FS-Cache:"
++			       " Cookie type %s marked page %lx"
++			       " multiple times\n",
++			       cookie->def->name, page->index);
++		}
++	}
++
++	if (cookie->def->mark_page_cached)
++		cookie->def->mark_page_cached(cookie->netfs_data,
++					      op->mapping, page);
++}
++EXPORT_SYMBOL(fscache_mark_page_cached);
++
++/**
+  * fscache_mark_pages_cached - Mark pages as being cached
+  * @op: The retrieval op pages are being marked for
+  * @pagevec: The pages to be marked
+@@ -925,32 +959,11 @@ EXPORT_SYMBOL(__fscache_uncache_page);
+ void fscache_mark_pages_cached(struct fscache_retrieval *op,
+ 			       struct pagevec *pagevec)
+ {
+-	struct fscache_cookie *cookie = op->op.object->cookie;
+ 	unsigned long loop;
+ 
+-#ifdef CONFIG_FSCACHE_STATS
+-	atomic_add(pagevec->nr, &fscache_n_marks);
+-#endif
+-
+-	for (loop = 0; loop < pagevec->nr; loop++) {
+-		struct page *page = pagevec->pages[loop];
+-
+-		_debug("- mark %p{%lx}", page, page->index);
+-		if (TestSetPageFsCache(page)) {
+-			static bool once_only;
+-			if (!once_only) {
+-				once_only = true;
+-				printk(KERN_WARNING "FS-Cache:"
+-				       " Cookie type %s marked page %lx"
+-				       " multiple times\n",
+-				       cookie->def->name, page->index);
+-			}
+-		}
+-	}
++	for (loop = 0; loop < pagevec->nr; loop++)
++		fscache_mark_page_cached(op, pagevec->pages[loop]);
+ 
+-	if (cookie->def->mark_pages_cached)
+-		cookie->def->mark_pages_cached(cookie->netfs_data,
+-					       op->mapping, pagevec);
+ 	pagevec_reinit(pagevec);
+ }
+ EXPORT_SYMBOL(fscache_mark_pages_cached);
+diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
+index ce31408..9879183 100644
+--- a/include/linux/fscache-cache.h
++++ b/include/linux/fscache-cache.h
+@@ -504,6 +504,9 @@ extern void fscache_withdraw_cache(struct fscache_cache *cache);
+ 
+ extern void fscache_io_error(struct fscache_cache *cache);
+ 
++extern void fscache_mark_page_cached(struct fscache_retrieval *op,
++				     struct page *page);
++
+ extern void fscache_mark_pages_cached(struct fscache_retrieval *op,
+ 				      struct pagevec *pagevec);
+ 
+diff --git a/include/linux/fscache.h b/include/linux/fscache.h
+index 9ec20de..f4b6353 100644
+--- a/include/linux/fscache.h
++++ b/include/linux/fscache.h
+@@ -135,14 +135,14 @@ struct fscache_cookie_def {
+ 	 */
+ 	void (*put_context)(void *cookie_netfs_data, void *context);
+ 
+-	/* indicate pages that now have cache metadata retained
+-	 * - this function should mark the specified pages as now being cached
+-	 * - the pages will have been marked with PG_fscache before this is
++	/* indicate page that now have cache metadata retained
++	 * - this function should mark the specified page as now being cached
++	 * - the page will have been marked with PG_fscache before this is
+ 	 *   called, so this is optional
+ 	 */
+-	void (*mark_pages_cached)(void *cookie_netfs_data,
+-				  struct address_space *mapping,
+-				  struct pagevec *cached_pvec);
++	void (*mark_page_cached)(void *cookie_netfs_data,
++				 struct address_space *mapping,
++				 struct page *page);
+ 
+ 	/* indicate the cookie is no longer cached
+ 	 * - this function is called when the backing store currently caching
 
