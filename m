@@ -1,58 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab2BHKkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 05:40:08 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751750Ab2BHKkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 05:40:06 -0500
-Message-ID: <4F325103.4000908@nod.at>
-Date: Wed, 08 Feb 2012 11:40:03 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
-MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        jengelh@medozas.de, rostedt@goodmis.org
-Subject: Re: [PATCH 4/4] Netfilter: xt_LOG: Implement ring buffer support
-References: <1328400892-22409-1-git-send-email-richard@nod.at> <1328400892-22409-7-git-send-email-richard@nod.at> <20120208102914.GA32092@1984>
-In-Reply-To: <20120208102914.GA32092@1984>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756695Ab2BHKsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 05:48:07 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11083 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab2BHKsE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 05:48:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 08 Feb 2012 02:48:03 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: sameo@linux.intel.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        jedu@slimlogic.co.uk, gg@slimlogic.co.uk, linux-kernel@vger.kernel.org
+Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V1 1/2] mfd: tps65910: use regmap for device register access.
+Date: Wed,  8 Feb 2012 16:16:24 +0530
+Message-Id: <1328697985-22504-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.02.2012 11:29, Pablo Neira Ayuso wrote:
-> On Sun, Feb 05, 2012 at 01:14:52AM +0100, Richard Weinberger wrote:
->> This patch introduces NETFILTER_XT_TARGET_LOG_RING.
->> It allows logging into various ring buffers which are
->> represented as pipe-like files in /proc/net/netfilter/xt_LOG_ring/.
->>
->> Signed-off-by: Richard Weinberger<richard@nod.at>
->> ---
->>   include/linux/netfilter/xt_LOG.h    |   13 +-
->>   include/net/netfilter/nf_log.h      |    1 +
->>   include/net/netfilter/xt_log_ring.h |   24 +
->>   net/netfilter/Kconfig               |   13 +
->>   net/netfilter/Makefile              |    2 +
->>   net/netfilter/xt_LOG.c              |  921 -----------------------------
->>   net/netfilter/xt_LOG_core.c         | 1108 +++++++++++++++++++++++++++++++++++
->>   net/netfilter/xt_LOG_ring.c         |  430 ++++++++++++++
->
-> Can you avoid this rename and splitting LOG into two files? I prefer
-> having everything into the same file xt_LOG.c.
+Using regmap apis for accessing the device register.
+using the RBTREE caching mechanims for caching registers.
+Also provided apis for enabling register cache from
+different sub devices of ts65910.
 
-Sure, I'll merge it into one file.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+This patch is towards the performance improvements in the 
+voltage change.
 
-I made the split to keep xt_LOG_core.c clean.
-99% of xt_LOG_ring.c has nothing to do with netfilter and is just
-ring_buffer and proc stuff.
+ drivers/mfd/Kconfig          |    1 +
+ drivers/mfd/tps65910.c       |  136 +++++++++++++++++++-----------------------
+ include/linux/mfd/tps65910.h |    3 +
+ 3 files changed, 65 insertions(+), 75 deletions(-)
 
-> Apart from that, this looks fine to me.
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index cd13e9f..0e066cd 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -162,6 +162,7 @@ config MFD_TPS65910
+ 	depends on I2C=y && GPIOLIB
+ 	select MFD_CORE
+ 	select GPIO_TPS65910
++	select REGMAP_I2C
+ 	help
+ 	  if you say yes here you get support for the TPS65910 series of
+ 	  Power Management chips.
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index 01cf501..1f2b004 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -16,10 +16,12 @@
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/init.h>
++#include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
+ #include <linux/gpio.h>
+ #include <linux/mfd/core.h>
++#include <linux/regmap.h>
+ #include <linux/mfd/tps65910.h>
+ 
+ static struct mfd_cell tps65910s[] = {
+@@ -34,103 +36,76 @@ static struct mfd_cell tps65910s[] = {
+ 	},
+ };
+ 
++static bool is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	struct tps65910 *tps65910 = dev_get_drvdata(dev);
++	return test_bit(reg, tps65910->cache_reg) ? false : true;
++}
++
++static bool regmap_volatile_range(struct tps65910 *tps65910,
++			unsigned int reg, unsigned int bytes)
++{
++	unsigned int i;
++	for (i = 0; i < bytes; i++)
++		if (!is_volatile_reg(tps65910->dev, reg + i))
++			return false;
++	return true;
++}
+ 
+ static int tps65910_i2c_read(struct tps65910 *tps65910, u8 reg,
+ 				  int bytes, void *dest)
+ {
+-	struct i2c_client *i2c = tps65910->i2c_client;
+-	struct i2c_msg xfer[2];
+-	int ret;
+-
+-	/* Write register */
+-	xfer[0].addr = i2c->addr;
+-	xfer[0].flags = 0;
+-	xfer[0].len = 1;
+-	xfer[0].buf = &reg;
+-
+-	/* Read data */
+-	xfer[1].addr = i2c->addr;
+-	xfer[1].flags = I2C_M_RD;
+-	xfer[1].len = bytes;
+-	xfer[1].buf = dest;
+-
+-	ret = i2c_transfer(i2c->adapter, xfer, 2);
+-	if (ret == 2)
+-		ret = 0;
+-	else if (ret >= 0)
+-		ret = -EIO;
+-
+-	return ret;
++	return regmap_bulk_read(tps65910->regmap, reg, dest, bytes);
+ }
+ 
+ static int tps65910_i2c_write(struct tps65910 *tps65910, u8 reg,
+-				   int bytes, void *src)
++				  int bytes, void *src)
+ {
+-	struct i2c_client *i2c = tps65910->i2c_client;
+-	/* we add 1 byte for device register */
+-	u8 msg[TPS65910_MAX_REGISTER + 1];
++	int i;
+ 	int ret;
+-
+-	if (bytes > TPS65910_MAX_REGISTER)
+-		return -EINVAL;
+-
+-	msg[0] = reg;
+-	memcpy(&msg[1], src, bytes);
+-
+-	ret = i2c_master_send(i2c, msg, bytes + 1);
+-	if (ret < 0)
+-		return ret;
+-	if (ret != bytes + 1)
+-		return -EIO;
++	unsigned char *wbuf = src;
++	unsigned int ival;
++
++	if (regmap_volatile_range(tps65910, reg, bytes))
++		return regmap_raw_write(tps65910->regmap, reg, src, bytes);
++
++	/* If any of register is non-volatile then use byte-wise transfer */
++	for (i = 0; i < bytes; ++i) {
++		ival = (unsigned int) (*wbuf++);
++		ret = regmap_write(tps65910->regmap, reg, ival);
++		if (ret < 0)
++			return ret;
++	}
+ 	return 0;
+ }
+ 
+ int tps65910_set_bits(struct tps65910 *tps65910, u8 reg, u8 mask)
+ {
+-	u8 data;
+-	int err;
+-
+-	mutex_lock(&tps65910->io_mutex);
+-	err = tps65910_i2c_read(tps65910, reg, 1, &data);
+-	if (err) {
+-		dev_err(tps65910->dev, "read from reg %x failed\n", reg);
+-		goto out;
+-	}
+-
+-	data |= mask;
+-	err = tps65910_i2c_write(tps65910, reg, 1, &data);
+-	if (err)
+-		dev_err(tps65910->dev, "write to reg %x failed\n", reg);
+-
+-out:
+-	mutex_unlock(&tps65910->io_mutex);
+-	return err;
++	return regmap_update_bits(tps65910->regmap, reg, mask, mask);
+ }
+ EXPORT_SYMBOL_GPL(tps65910_set_bits);
+ 
+ int tps65910_clear_bits(struct tps65910 *tps65910, u8 reg, u8 mask)
+ {
+-	u8 data;
+-	int err;
+-
+-	mutex_lock(&tps65910->io_mutex);
+-	err = tps65910_i2c_read(tps65910, reg, 1, &data);
+-	if (err) {
+-		dev_err(tps65910->dev, "read from reg %x failed\n", reg);
+-		goto out;
+-	}
+-
+-	data &= ~mask;
+-	err = tps65910_i2c_write(tps65910, reg, 1, &data);
+-	if (err)
+-		dev_err(tps65910->dev, "write to reg %x failed\n", reg);
+-
+-out:
+-	mutex_unlock(&tps65910->io_mutex);
+-	return err;
++	return regmap_update_bits(tps65910->regmap, reg, mask, 0);
+ }
+ EXPORT_SYMBOL_GPL(tps65910_clear_bits);
+ 
++void tps65910_enable_reg_cache(struct tps65910 *tps65910, int reg)
++{
++	set_bit(reg, tps65910->cache_reg);
++}
++EXPORT_SYMBOL_GPL(tps65910_enable_reg_cache);
++
++static const struct regmap_config rc5t583_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.volatile_reg = is_volatile_reg,
++	.max_register = TPS65910_MAX_REGISTER,
++	.num_reg_defaults_raw = TPS65910_MAX_REGISTER,
++	.cache_type = REGCACHE_RBTREE,
++};
++
+ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+@@ -161,6 +136,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	tps65910->write = tps65910_i2c_write;
+ 	mutex_init(&tps65910->io_mutex);
+ 
++	tps65910->regmap = regmap_init_i2c(i2c, &rc5t583_regmap_config);
++	if (IS_ERR(tps65910->regmap)) {
++		ret = PTR_ERR(tps65910->regmap);
++		dev_err(&i2c->dev, "regmap initialization failed: %d\n", ret);
++		goto regmap_err;
++	}
++
+ 	ret = mfd_add_devices(tps65910->dev, -1,
+ 			      tps65910s, ARRAY_SIZE(tps65910s),
+ 			      NULL, 0);
+@@ -178,6 +160,9 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	return ret;
+ 
+ err:
++	mfd_remove_devices(tps65910->dev);
++	regmap_exit(tps65910->regmap);
++regmap_err:
+ 	kfree(tps65910);
+ 	kfree(init_data);
+ 	return ret;
+@@ -189,6 +174,7 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
+ 
+ 	tps65910_irq_exit(tps65910);
+ 	mfd_remove_devices(tps65910->dev);
++	regmap_exit(tps65910->regmap);
+ 	kfree(tps65910);
+ 
+ 	return 0;
+diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+index 5c76b96..6c68e2e 100644
+--- a/include/linux/mfd/tps65910.h
++++ b/include/linux/mfd/tps65910.h
+@@ -805,6 +805,7 @@ struct tps65910_board {
+ struct tps65910 {
+ 	struct device *dev;
+ 	struct i2c_client *i2c_client;
++	struct regmap *regmap;
+ 	struct mutex io_mutex;
+ 	unsigned int id;
+ 	int (*read)(struct tps65910 *tps65910, u8 reg, int size, void *dest);
+@@ -824,6 +825,7 @@ struct tps65910 {
+ 	int irq_base;
+ 	int irq_num;
+ 	u32 irq_mask;
++	unsigned long cache_reg[BITS_TO_LONGS(TPS65910_MAX_REGISTER)];
+ };
+ 
+ struct tps65910_platform_data {
+@@ -837,6 +839,7 @@ void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base);
+ int tps65910_irq_init(struct tps65910 *tps65910, int irq,
+ 		struct tps65910_platform_data *pdata);
+ int tps65910_irq_exit(struct tps65910 *tps65910);
++void tps65910_enable_reg_cache(struct tps65910 *tps65910, int reg);
+ 
+ static inline int tps65910_chip_id(struct tps65910 *tps65910)
+ {
+-- 
+1.7.1.1
 
-:-)
-
-Thanks,
-//richard
