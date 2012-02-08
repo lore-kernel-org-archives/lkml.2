@@ -1,80 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab2BHTtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 14:49:12 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:20814 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932119Ab2BHTtJ (ORCPT
+	id S1757338Ab2BHTwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 14:52:40 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:4897 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757281Ab2BHTwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 14:49:09 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: FkE.aIkVM1lMQwVGmGt7lUdw0h_tQ6k7xqmYvOL2kbV7n_g
- u.B_CpIdBQPksRmXgRRbB9BN.NhZDe.k9_MlI14qgFMyvA_dg4sK17.C9SpM
- pREOMxVUmFoAC7.3SSjy5FSQbp6bq2t1R9oD78L7ws2sFNHF4todsZgkn2pp
- vf8C2tGwcmZX1.56BVXPMg.wZuRyB0KOeY_LYSbs4vIAsEQ7QcjhzsRK_M2Q
- wx8frzqaSRi00VOaYo7FP5uGOBaJ0cuRJmUklpv9.KOl7ndmYBrF1VUxyOjL
- L8VhGfsmYQOTsCbi_tMrWSvIiOzUtUbqyGfRUakgrqwLYsjLDtX4PqNyZctx
- pTOB60piqtRmQwc.jhZhW0cPatFYso22DhaPNJwLtIXwn7UO.gd7onXKtM7I
- uXlmRLTFGvVjI33EqxGOd0f5kRUui0PPcOfx4
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 8 Feb 2012 13:49:05 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 02/15] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-In-Reply-To: <20120208163421.GL5938@suse.de>
-Message-ID: <alpine.DEB.2.00.1202081338210.32060@router.home>
-References: <1328568978-17553-1-git-send-email-mgorman@suse.de> <1328568978-17553-3-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1202071025050.30652@router.home> <20120208144506.GI5938@suse.de> <alpine.DEB.2.00.1202080907320.30248@router.home>
- <20120208163421.GL5938@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 8 Feb 2012 14:52:39 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LZ3B7I-02-5O3-02
+X-M-MSG: 
+Date: Wed, 8 Feb 2012 20:52:29 +0100
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: <linux-kernel@vger.kernel.org>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>
+Subject: [PATCH] x86/amd: Fix L1i and L2 cache sharing information for AMD
+ family 15h processors
+Message-ID: <20120208195229.GA17523@alberich.amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Feb 2012, Mel Gorman wrote:
 
-> Ok, I looked into what is necessary to replace these with checking a page
-> flag and the cost shifts quite a bit and ends up being more expensive.
+For L1 instruction cache and L2 cache the shared CPU information
+is wrong. On current AMD family 15h CPUs those caches are shared
+between both cores of a compute unit.
 
-That is only true if you go the slab route. Slab suffers from not having
-the page struct pointer readily available. The changes are likely already
-impacting slab performance without the virt_to_page patch.
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=42607
 
-> In slub, it's sufficient to check kmem_cache_cpu to know whether the
-> objects in the list are pfmemalloc or not.
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/kernel/cpu/intel_cacheinfo.c |   45 +++++++++++++++++++++++++++-----
+ 1 files changed, 38 insertions(+), 7 deletions(-)
 
-We try to minimize the size of kmem_cache_cpu. The page pointer is readily
-available. We just removed the node field from kmem_cache_cpu because it
-was less expensive to get the node number from the struct page field.
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index 6b45e5e..8e58fdb 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -725,14 +725,16 @@ static DEFINE_PER_CPU(struct _cpuid4_info *, ici_cpuid4_info);
+ #define CPUID4_INFO_IDX(x, y)	(&((per_cpu(ici_cpuid4_info, x))[y]))
+ 
+ #ifdef CONFIG_SMP
+-static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
++
++static int __cpuinit cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
+ {
+-	struct _cpuid4_info	*this_leaf, *sibling_leaf;
+-	unsigned long num_threads_sharing;
+-	int index_msb, i, sibling;
++	struct _cpuid4_info *this_leaf;
++	int ret, i, sibling;
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+ 
+-	if ((index == 3) && (c->x86_vendor == X86_VENDOR_AMD)) {
++	ret = 0;
++	if (index == 3) {
++		ret = 1;
+ 		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
+ 			if (!per_cpu(ici_cpuid4_info, i))
+ 				continue;
+@@ -740,11 +742,40 @@ static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
+ 			for_each_cpu(sibling, cpu_llc_shared_mask(cpu)) {
+ 				if (!cpu_online(sibling))
+ 					continue;
+-				set_bit(sibling, this_leaf->shared_cpu_map);
++				set_bit(sibling,
++					this_leaf->shared_cpu_map);
++			}
++		}
++	} else if ((c->x86 == 0x15) && ((index == 1) || (index == 2))) {
++		ret = 1;
++		for_each_cpu(i, cpu_sibling_mask(cpu)) {
++			if (!per_cpu(ici_cpuid4_info, i))
++				continue;
++			this_leaf = CPUID4_INFO_IDX(i, index);
++			for_each_cpu(sibling, cpu_sibling_mask(cpu)) {
++				if (!cpu_online(sibling))
++					continue;
++				set_bit(sibling,
++					this_leaf->shared_cpu_map);
+ 			}
+ 		}
+-		return;
+ 	}
++
++	return ret;
++}
++
++static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
++{
++	struct _cpuid4_info	*this_leaf, *sibling_leaf;
++	unsigned long num_threads_sharing;
++	int index_msb, i;
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++
++	if (c->x86_vendor == X86_VENDOR_AMD) {
++		if (cache_shared_amd_cpu_map_setup(cpu, index))
++		    return;
++	}
++
+ 	this_leaf = CPUID4_INFO_IDX(cpu, index);
+ 	num_threads_sharing = 1 + this_leaf->base.eax.split.num_threads_sharing;
+ 
+-- 
+1.7.8.3
 
-The same is certainly true for a PFMEMALLOC flag.
 
-> Yeah, you're right on the button there. I did my checking assuming that
-> PG_active+PG_slab were safe to use. The following is an untested patch that
-> I probably got details wrong in but it illustrates where virt_to_page()
-> starts cropping up.
-
-Yes you need to come up with a way to not use virt_to_page otherwise slab
-performance is significantly impacted. On NUMA we are already doing a page
-struct lookup on free in slab. If you would save the page struct pointer
-there and reuse it then you would not have an issue at least on free.
-
-You still would need to determine which "struct slab" pointer is in use
-which will also require similar lookups in varous places.
-
-Transfer of the pfmemalloc flags (guess you must have a pfmemalloc
-field in struct slab then) in slab is best be done when allocating and
-freeing a slab page from the page allocator.
-
-I think its rather trivial to add the support you want in a non intrusive
-way to slub. Slab would require some more thought and discussion.
 
