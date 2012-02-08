@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131Ab2BHAcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 19:32:35 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:60874 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756811Ab2BHAce convert rfc822-to-8bit (ORCPT
+	id S1757155Ab2BHAfl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 19:35:41 -0500
+Received: from mga03.intel.com ([143.182.124.21]:49081 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756841Ab2BHAfj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 19:32:34 -0500
-X-WSS-ID: 0LZ1TI5-0A-D9U-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-cc: "Linus Walleij" <linus.walleij@linaro.org>,
-        "shreshthakumar.sahu@stericsson.com" 
-	<shreshthakumar.sahu@stericsson.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+	Tue, 7 Feb 2012 19:35:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="64243020"
+From: "Heasley, Seth" <seth.heasley@intel.com>
+To: David Henningsson <david.henningsson@canonical.com>
+CC: Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "perex@perex.cz" <perex@perex.cz>,
+        "Ralston, James D" <james.d.ralston@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 7 Feb 2012 16:32:14 -0800
-Subject: RE: [PATCH v4 3/5] leds-lm3530: support pwm input mode
-Thread-Topic: [PATCH v4 3/5] leds-lm3530: support pwm input mode
-Thread-Index: Aczl64wipsYf2GpET5Ob/QO3QDjgiwACsHng
-Message-ID: <B567DBAB974C0544994013492B949F8E3812ED49C6@EXMAIL03.scwf.nsc.com>
-References: <B567DBAB974C0544994013492B949F8E3812ED44A8@EXMAIL03.scwf.nsc.com>
- <20120207145458.6397d04c.akpm@linux-foundation.org>
-In-Reply-To: <20120207145458.6397d04c.akpm@linux-foundation.org>
-Accept-Language: ko-KR, en-US
+Subject: RE: [alsa-devel] [PATCH 1/6] hda_intel: Add Lynx Point HD Audio
+ Controller DeviceIDs
+Thread-Topic: [alsa-devel] [PATCH 1/6] hda_intel: Add Lynx Point HD Audio
+ Controller DeviceIDs
+Thread-Index: AQHM2i6+Xo5tJV2DbkS/GNVTnMZPn5Yby5cAgAACngCAFNe14IAA1AMAgADEgjA=
+Date: Wed, 8 Feb 2012 00:35:33 +0000
+Message-ID: <DEC3922D1904474A8862C7BFF516EA9A37FB7D68@ORSMSX101.amr.corp.intel.com>
+References: <201201231624.31275.seth.heasley@intel.com>
+ <4F1E7DC0.5060208@canonical.com> <s5h7h0h2znx.wl%tiwai@suse.de>
+ <DEC3922D1904474A8862C7BFF516EA9A37FB3863@ORSMSX101.amr.corp.intel.com>
+ <4F30ADB6.1000109@canonical.com>
+In-Reply-To: <4F30ADB6.1000109@canonical.com>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
-MIME-Version: 1.0
-X-WSS-ID: 632F1D181LS10220414-01-01
-Content-Type: text/plain;
- charset=us-ascii
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>> I'm also in favor of not rocking the boat, but I'm curious what
+>changing this would entail, and what would be the advantage or rationale
+>for making the change?
+>
+>Reading the LPIB register, and reading the DMA position buffer, are two
+>different methods of reading the current playback (or recording)
+>position, i e which sample is currently being played back.
+>
+>The problem is that some chipsets prefer one method over the other, i e,
+>only one of the methods work reliably. And if the other method only
+>breaks occasionally, this can be quite difficult to detect and track
+>down - we will have users complaining about their audio sometimes either
+>sounding distorted, maybe not working at all, or just once in a while
+>glitches. All of these symptoms can have many causes, so deducing that
+>to a broken playback position is time consuming. That's why I think it's
+>worth the extra question, to get it right from the start.
+>
+>So...thanks in advance for looking it up for us? :-)
 
-> -----Original Message-----
-> From: Andrew Morton [mailto:akpm@linux-foundation.org]
-> Sent: Wednesday, February 08, 2012 7:55 AM
-> To: Kim, Milo
-> Cc: Linus Walleij; shreshthakumar.sahu@stericsson.com;
-> rpurdie@rpsys.net; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v4 3/5] leds-lm3530: support pwm input mode
-> 
-> On Mon, 6 Feb 2012 21:14:21 -0800
-> "Kim, Milo" <Milo.Kim@ti.com> wrote:
-> 
-> > * add 'struct lm3530_pwm_data' in the platform data
-> >   The pwm data is the platform specific functions which generate the
-> pwm.
-> >   The pwm data is only valid when brightness is pwm input mode.
-> >   Functions should be implemented by the pwm driver.
-> >   pwm_set_intensity() : set duty of pwm.
-> >   pwm_get_intensity() : get current the brightness.
-> >
-> > * brightness control by pwm
-> >   If the control mode is pwm, then brightness is changed by the duty
-> of pwm.
-> >   So pwm platform function should be called in
-> lm3530_brightness_set().
-> >
-> > * do not update brightness register when pwm input mode
-> >   In pwm input mode, brightness register is not used.
-> >   If any value is updated in this register, then the led will be off.
-> >
-> > * when input mode is changed, set duty of pwm to 0 if unnecessary.
-> >
-> > * patch base version : kernel 3.2.4
-> >
-> >
-> > ...
-> >
-> > @@ -327,14 +344,11 @@ static ssize_t lm3530_mode_set(struct device
-> *dev, struct device_attribute
-> >  		return -EINVAL;
-> >  	}
-> >
-> > -	if (mode == LM3530_BL_MODE_MANUAL)
-> > -		drvdata->mode = LM3530_BL_MODE_MANUAL;
-> > -	else if (mode == LM3530_BL_MODE_ALS)
-> > -		drvdata->mode = LM3530_BL_MODE_ALS;
-> > -	else if (mode == LM3530_BL_MODE_PWM) {
-> > -		dev_err(dev, "PWM mode not supported\n");
-> > -		return -EINVAL;
-> > -	}
-> > +	drvdata->mode = mode;
-> > +
-> > +	/* set pwm to low if unnecessary */
-> > +	if (mode != LM3530_BL_MODE_PWM && pwm->pwm_set_intensity)
-> > +		pwm->pwm_set_intensity(0, max_brightness);
-> 
-> lm3530_mode_set() has no local variable "pwm" and has no local variable
-> "brightness".
+I'm inquiring about it, but I can say that it seems to work just fine using the DMA position buffer.
 
-Local variable "pwm" was added in this patch.
-[PATCH v4 3/5] leds-lm3530: support pwm input mode
+-Seth
 
-@@ -255,6 +265,9 @@ static void lm3530_brightness_set(struct
- 	int err;
- 	struct lm3530_data *drvdata =
- 	    container_of(led_cdev, struct lm3530_data, led_dev);
-+	struct lm3530_platform_data *pdata = drvdata->pdata;
-+	struct lm3530_pwm_data *pwm = &pdata->pwm_data;
-+	u8 max_brightness = led_cdev->max_brightness;
-
-And I can see the same code in your mm tree mail.
-
-> 
-> I see now that you prepared the patches against 3.2.4, which might
-> contribute to this problem, but I don't see how the patches could work
-> in 3.2 either.  Perhaps 3.2.4 is significantly different from 3.2.
-> 
-
-For the leds-lm3530 driver, there is no difference between 3.2 and 3.2.4.
-I'm curious what happened to the patch. Can I have any message from your working tree ?
-
-Thanks & BR
-Milo -
 
