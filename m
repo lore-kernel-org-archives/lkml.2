@@ -1,66 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568Ab2BHXKv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 18:10:51 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36860 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730Ab2BHXKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 18:10:49 -0500
-Date: Wed, 8 Feb 2012 15:10:17 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Roland Dreier <roland@kernel.org>
-cc: linux-rdma@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages()
- parameters
-In-Reply-To: <alpine.LSU.2.00.1202071225250.2024@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1202081446110.1320@eggly.anvils>
-References: <1327557574-6125-1-git-send-email-roland@kernel.org> <alpine.LSU.2.00.1201261133230.1369@eggly.anvils> <CAG4TOxNEV2VY9wOE86p9RnKGqpruB32ci9Wq3yBt8O2zc7f05w@mail.gmail.com> <alpine.LSU.2.00.1201271458130.3402@eggly.anvils>
- <CAL1RGDXqguZ2QKV=yjLXtk2n_Ag4Nf3CW+kF2BFQFR4ySTNaRA@mail.gmail.com> <alpine.LSU.2.00.1201301217530.4505@eggly.anvils> <CAL1RGDVSBb1DVsfvuz=ijRZX06crsqQfKoXWJ+6FO4xi3aYyTg@mail.gmail.com> <alpine.LSU.2.00.1202071225250.2024@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757593Ab2BHXLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 18:11:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35667 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757524Ab2BHXLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 18:11:13 -0500
+Date: Thu, 9 Feb 2012 10:10:54 +1100
+From: NeilBrown <neilb@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <greg@linuxfoundation.org>,
+        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 4/8] PM / Sleep: Use wait queue to signal "no wakeup
+ events in progress"
+Message-ID: <20120209101054.2b2cb2ab@notabene.brown>
+In-Reply-To: <201202070204.19615.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+	<201202070204.19615.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/tzrD3Gx9mQjY3GVMpBCjsYM"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Feb 2012, Hugh Dickins wrote:
-> On Mon, 6 Feb 2012, Roland Dreier wrote:
-> > Which I think explains why the code is the way it is.  But clearly
-> > we could do better if we had a better way of telling GUP our real
-> > intentions -- ie the FOLL_READONLY_COW flag.
-> 
-> You've persuaded me.  Yes, you have been using force because that was
-> the only tool available at the time, to get close to the sensible
-> behaviour you are now asking for.
-> 
-> > 
-> > > Can you, for example, enforce the permissions set up by the user?
-> > > I mean, if they do the ibv_reg_mr() on a private readonly area,
-> > > so __get_user_pages with the FOLL_APPROPRIATELY flag will fault
-> > > in ZERO_PAGEs, can you enforce that RDMA will never spray data
-> > > into those pages?
-> > 
-> > Yes, the access flags passed into ibv_reg_mr() are enforced by
-> > the RDMA hardware, so if no write access is request, no write
-> > access is possible.
-> 
-> Okay, if you enforce the agreed permissions in hardware, that's fine.
+--Sig_/tzrD3Gx9mQjY3GVMpBCjsYM
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-A doubt assaulted me overnight: sorry, I'm back to not understanding.
+On Tue, 7 Feb 2012 02:04:19 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-What are these access flags passed into ibv_reg_mr() that are enforced?
-What relation do they bear to what you will pass to __get_user_pages()?
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>=20
+> The current wakeup source deactivation code doesn't do anything when
+> the counter of wakeup events in progress goes down to zero, which
+> requires pm_get_wakeup_count() to poll that counter periodically.
+> Although this reduces the average time it takes to deactivate a
+> wakeup source, it also may lead to a substantial amount of unnecessary
+> polling if there are extended periods of wakeup activity.  Thus it
+> seems reasonable to use a wait queue for signaling the "no wakeup
+> events in progress" condition and remove the polling.
+>=20
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/base/power/wakeup.c |   18 ++++++++++++++----
+>  1 file changed, 14 insertions(+), 4 deletions(-)
+>=20
+> Index: linux/drivers/base/power/wakeup.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux.orig/drivers/base/power/wakeup.c
+> +++ linux/drivers/base/power/wakeup.c
+> @@ -17,8 +17,6 @@
+> =20
+>  #include "power.h"
+> =20
+> -#define TIMEOUT		100
+> -
+>  /*
+>   * If set, the suspend/hibernate code will abort transitions to a sleep =
+state
+>   * if wakeup events are registered during or immediately before the tran=
+sition.
+> @@ -52,6 +50,8 @@ static void pm_wakeup_timer_fn(unsigned
+> =20
+>  static LIST_HEAD(wakeup_sources);
+> =20
+> +static DECLARE_WAIT_QUEUE_HEAD(wakeup_count_wait_queue);
+> +
+>  /**
+>   * wakeup_source_create - Create a struct wakeup_source object.
+>   * @name: Name of the new wakeup source.
+> @@ -84,7 +84,7 @@ void wakeup_source_destroy(struct wakeup
+>  	while (ws->active) {
+>  		spin_unlock_irq(&ws->lock);
+> =20
+> -		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
+> +		schedule_timeout_interruptible(msecs_to_jiffies(100));
+> =20
+>  		spin_lock_irq(&ws->lock);
+>  	}
+> @@ -411,6 +411,7 @@ EXPORT_SYMBOL_GPL(pm_stay_awake);
+>   */
+>  static void wakeup_source_deactivate(struct wakeup_source *ws)
+>  {
+> +	unsigned int cnt, inpr;
+>  	ktime_t duration;
+>  	ktime_t now;
+> =20
+> @@ -444,6 +445,10 @@ static void wakeup_source_deactivate(str
+>  	 * couter of wakeup events in progress simultaneously.
+>  	 */
+>  	atomic_add(MAX_IN_PROGRESS, &combined_event_count);
+> +
+> +	split_counters(&cnt, &inpr);
+> +	if (!inpr)
+> +		wake_up_all(&wakeup_count_wait_queue);
+>  }
 
-You are asking for a FOLL_FOLLOW ("follow permissions of the vma") flag,
-which automatically works for read-write access to a VM_READ|VM_WRITE vma,
-but read-only access to a VM_READ-only vma, without you having to know
-which permission applies to which range of memory in the area specified.
+Would it be worth making this:
 
-But you don't need that new flag to set up read-only access, and if you
-use that new flag to set up read-write access to an area which happens to
-contain VM_READ-only ranges, you have set it up to write into ZERO_PAGEs.
+     if (!inpr && waitqueue_active(&wakeup_count_wait_queue))
+		wake_up_all(&wakeup_count_wait_queue);
 
-?Hugh?
+??
+It would often save a spinlock.
+
+Also was there a reason you used wake_up_all().  That is only really needed
+were EXCLUSIVE waits are happening, and there aren't any of those.
+
+Thanks,
+NeilBrown
+
+
+> =20
+>  /**
+> @@ -624,14 +629,19 @@ bool pm_wakeup_pending(void)
+>  bool pm_get_wakeup_count(unsigned int *count)
+>  {
+>  	unsigned int cnt, inpr;
+> +	DEFINE_WAIT(wait);
+> =20
+>  	for (;;) {
+> +		prepare_to_wait(&wakeup_count_wait_queue, &wait,
+> +				TASK_INTERRUPTIBLE);
+>  		split_counters(&cnt, &inpr);
+>  		if (inpr =3D=3D 0 || signal_pending(current))
+>  			break;
+>  		pm_wakeup_update_hit_counts();
+> -		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
+> +
+> +		schedule();
+>  	}
+> +	finish_wait(&wakeup_count_wait_queue, &wait);
+> =20
+>  	split_counters(&cnt, &inpr);
+>  	*count =3D cnt;
+
+
+--Sig_/tzrD3Gx9mQjY3GVMpBCjsYM
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTzMA/znsnt1WYoG5AQLzXg/5AcrK9XyQo3ESXCPHG0U2Z0LNqsryPP2j
+PVt1zLJwND9UlfY8fBzklOfjRfdAuqALcDDmqIpty6j1zrLmidmnfDcXm+I+cxD9
+cN3qhC2DnHAumonNQNfvlm8+a+98zFdZD8PUodmKxj0f7QmtaoydSbK58bB9LVH1
+tSImlyR+dL1uRshAjsCofwmpukrTaNisZBv2pp7vbYgzyxqPQjciKtwD1+UvjeQB
+gx0G8ZRvM8WJj/adZWGIGmzzQn2X/E+jTWjIyX+rFDl9VShzj3LViYqooVQhuodq
+Q7ekFOSQrabTvMPbGrxwgIWZPyuznR9/ul5zmah0Y7rxQtWMAUJ9vUFSPYp2rkHo
+c2ld9Xzv+HEAIq6JfAn07h8b4+cn1KdGTx6zhiUrGTLreuIzbs1L4/HuLrvd/zMN
+ZbnGI0eVt6rNA6c/rfv0cbQ5irwuQt3HvXRmOib8tf5coQRxcyBRWavwREe0FBwM
+g9KU7wPN2Pi93/mwBIacSDrRduDjym9UjjARteB9vdXTsmWFWh+R0EKc3GJqlmyA
+tO83reF8vhmruebE34qkmKEyZs/OVzSNXK/TVT7hHE3k7XyxV6VMRVCsTox9pmOD
+YERmyu++c8G7WgA4WMygdD2yo0XCbYPPRfaMMA0Iu9RN1ktycbL2orUMWYZzh7d6
+lBDuxme4lOo=
+=Puz7
+-----END PGP SIGNATURE-----
+
+--Sig_/tzrD3Gx9mQjY3GVMpBCjsYM--
