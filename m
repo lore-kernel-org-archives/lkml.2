@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab2BHVCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:02:36 -0500
-Received: from tservice.net.ru ([195.178.208.66]:37582 "EHLO tservice.net.ru"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751175Ab2BHVCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:02:35 -0500
-Date: Wed, 8 Feb 2012 23:57:27 +0300
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: pohmelfs: call for inclusion
-Message-ID: <20120208205727.GB27135@ioremap.net>
-References: <20120208193413.GA22215@ioremap.net>
- <20120208201008.GA5578@kroah.com>
- <20120208201254.GD22215@ioremap.net>
- <20120208202612.GA6198@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120208202612.GA6198@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756004Ab2BHVIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:08:30 -0500
+Received: from mail.tpi.com ([70.99.223.143]:3689 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754889Ab2BHVI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:08:28 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: Larry.Finger@lwfinger.net
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] rtlwifi: rtl8192se firmware load can overflow target buffer
+Date: Wed,  8 Feb 2012 14:08:10 -0700
+Message-Id: <1328735291-33220-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 12:26:12PM -0800, Greg KH (gregkh@linuxfoundation.org) wrote:
-> I need a signed-off-by: for any patch :)
-> 
-> Care to resend me just the remove patch, with the proper changelog and
-> signed-off-by: so that I can queue it up?
+The firmware file size check does not use the
+correct limit.
 
-Done
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: John W. Linville <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/net/wireless/rtlwifi/rtl8192se/fw.h |    3 ++-
+ drivers/net/wireless/rtlwifi/rtl8192se/sw.c |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
+index babe85d..5c377fc 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
+@@ -30,6 +30,7 @@
+ #define __REALTEK_FIRMWARE92S_H__
+ 
+ #define RTL8190_MAX_FIRMWARE_CODE_SIZE		64000
++#define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE	164000
+ #define RTL8190_CPU_START_OFFSET		0x80
+ /* Firmware Local buffer size. 64k */
+ #define	MAX_FIRMWARE_CODE_SIZE			0xFF00
+@@ -217,7 +218,7 @@ struct rt_firmware {
+ 	u8 fw_emem[RTL8190_MAX_FIRMWARE_CODE_SIZE];
+ 	u32 fw_imem_len;
+ 	u32 fw_emem_len;
+-	u8 sz_fw_tmpbuffer[164000];
++	u8 sz_fw_tmpbuffer[RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE];
+ 	u32 sz_fw_tmpbufferlen;
+ 	u16 cmdpacket_fragthresold;
+ };
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+index ca38dd9..155da0a 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+@@ -105,7 +105,7 @@ static void rtl92se_fw_cb(const struct firmware *firmware, void *context)
+ 		rtlpriv->max_fw_size = 0;
+ 		return;
+ 	}
+-	if (firmware->size > rtlpriv->max_fw_size) {
++	if (firmware->size >= RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 "Firmware is too big!\n");
+ 		release_firmware(firmware);
 -- 
-	Evgeniy Polyakov
+1.7.9
+
