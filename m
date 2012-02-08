@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab2BHSE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 13:04:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25102 "EHLO mx1.redhat.com"
+	id S1757124Ab2BHSHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 13:07:24 -0500
+Received: from plane.gmane.org ([80.91.229.3]:40577 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab2BHSEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 13:04:25 -0500
-Message-ID: <4F32B924.8080407@redhat.com>
-Date: Wed, 08 Feb 2012 18:04:20 +0000
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
-References: <1328267483-3225342-1-git-send-email-avagin@openvz.org> <20120203162519.GB805@google.com> <4F2C0F13.70709@parallels.com> <20120203165132.GA5636@redhat.com> <4F31848A.9070406@redhat.com> <20120207205639.GJ27437@moon> <4F31945B.5000304@redhat.com> <20120207215121.GB29773@moon> <4F326AF7.3060203@redhat.com> <20120208173103.GA20853@redhat.com>
-In-Reply-To: <20120208173103.GA20853@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754422Ab2BHSHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 13:07:23 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: walt <w41ter@gmail.com>
+Subject: Re: [patch]block: fix ioc locking warning
+Date: Wed, 08 Feb 2012 10:07:05 -0800
+Message-ID: <jgudka$pbj$1@dough.gmane.org>
+References: <1328514611.21268.66.camel@sli10-conroe>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: adsl-69-234-183-100.dsl.irvnca.pacbell.net
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20120129 Thunderbird/10.0
+In-Reply-To: <1328514611.21268.66.camel@sli10-conroe>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2012 05:31 PM, Oleg Nesterov wrote:
-> On 02/08, Pedro Alves wrote:
->>
->> I just tried it.  This is &pthread->tid in glibc/libpthread, so with debug
->> info it's easy to figure out where to set the watchpoint manually with gdb
->> without asking the kernel.  Doesn't work.  ptrace doesn't show any trap
->> for the kernel writes.
-> 
-> The tracee simply can't report this trap. it is already dead ;) and
-> hw breakpoint (used by ptrace) is "pinned" to the thread.
+On 02/05/2012 11:50 PM, Shaohua Li wrote:
 
-Right, as I said.  :-)  I saw that a watchpoint trap isn't reported either
-for the CLONE_CHILD_SETTID case (that is, within clone, when the kernel
-writes the tid to the memory address passed in to the clone syscall).
-I wouldn't have been surprised to see the trap in userspace in either
-the parent or the child, though I'm not really surprised to not
-see it either.
+> diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+> index 27a06e0..7490b6d 100644
+> --- a/block/blk-ioc.c
+> +++ b/block/blk-ioc.c
+> @@ -204,7 +204,9 @@ void put_io_context(struct io_context *ioc, struct request_queue *locked_q)
+>   				spin_unlock(last_q->queue_lock);
+>   			last_q = NULL;
+>
+> -			if (!spin_trylock(this_q->queue_lock))
+> +			/* spin_trylock() always successes in UP case */
+> +			if (this_q != locked_q&&
+> +			    !spin_trylock(this_q->queue_lock))
+>   				break;
+>   			last_q = this_q;
+>   			continue;
 
--- 
-Pedro Alves
+I can see from the rest of this thread that your patch fixes a multitude
+of different backtraces, including (most importantly :) mine, thanks:
+
+http://marc.info/?l=linux-kernel&m=132804761925018&w=2
+
+
+
