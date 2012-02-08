@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2BHTJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 14:09:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753362Ab2BHTJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 14:09:21 -0500
-Date: Wed, 8 Feb 2012 20:02:50 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pedro Alves <palves@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
-Message-ID: <20120208190250.GA23163@redhat.com>
-References: <20120203162519.GB805@google.com> <4F2C0F13.70709@parallels.com> <20120203165132.GA5636@redhat.com> <4F31848A.9070406@redhat.com> <20120207205639.GJ27437@moon> <4F31945B.5000304@redhat.com> <20120207215121.GB29773@moon> <4F326AF7.3060203@redhat.com> <20120208173103.GA20853@redhat.com> <4F32B924.8080407@redhat.com>
+	id S1755825Ab2BHTJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 14:09:52 -0500
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:55108 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751621Ab2BHTJv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 14:09:51 -0500
+From: Philip Rakity <prakity@marvell.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+CC: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Pierre Ossman <pierre@ossman.eu>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "arindam.nath@amd.com" <arindam.nath@amd.com>,
+        "zhangfei.gao@gmail.com" <zhangfei.gao@gmail.com>
+Date: Wed, 8 Feb 2012 11:09:26 -0800
+Subject: Re: mmc sdhci mmcblk0: error -110 sending status command, retrying
+Thread-Topic: mmc sdhci mmcblk0: error -110 sending status command, retrying
+Thread-Index: AczmlS1uyIXhI8u5R9abUCeSTeOkHg==
+Message-ID: <15D4F59C-7AFA-456E-8A5F-9E11EE9B9717@marvell.com>
+References: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
+ <m2pqdr2tyq.fsf@bob.laptop.org>
+ <CAAJw_Zv4Hk_kfc33xsVcdi-0_C6tsf_FD3sUx1JPDX_fZZMzeQ@mail.gmail.com>
+ <4F30E19B.9020503@intel.com>
+ <CAAJw_Zth+QM8OhMEWweBBek8QNW_9CseHSDuB-LCGrvwuqfV2A@mail.gmail.com>
+ <4F310529.4020101@intel.com>
+ <CAAJw_ZsHwdvXuw+edXUfyGOSMOu5oUw3zX8nUryxJJiiZXzXKQ@mail.gmail.com>
+ <CAAJw_Zup7Wg7FO95Z63e_sniu21gyzdCjcBNgsS0aw6MguDwLw@mail.gmail.com>
+ <CAAJw_Zv6HkLLqEzNKRCfQ7EbMNEVe_hzbW+mHOnDAWLidOhMBQ@mail.gmail.com>
+ <CAAJw_Zs7aET=vdy033bzuHwW==uS8AW78NSvD2L_hjU+Mzp-_w@mail.gmail.com>
+ <4F31B789.9020509@samsung.com>
+ <CAAJw_ZtnWYxGCm5Vm5CQ1GBLc=GU7AGiQKe_-9LJsbMW+YG-GQ@mail.gmail.com>
+In-Reply-To: <CAAJw_ZtnWYxGCm5Vm5CQ1GBLc=GU7AGiQKe_-9LJsbMW+YG-GQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F32B924.8080407@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08, Pedro Alves wrote:
->
-> On 02/08/2012 05:31 PM, Oleg Nesterov wrote:
-> > On 02/08, Pedro Alves wrote:
-> >>
-> >> I just tried it.  This is &pthread->tid in glibc/libpthread, so with debug
-> >> info it's easy to figure out where to set the watchpoint manually with gdb
-> >> without asking the kernel.  Doesn't work.  ptrace doesn't show any trap
-> >> for the kernel writes.
-> >
-> > The tracee simply can't report this trap. it is already dead ;) and
-> > hw breakpoint (used by ptrace) is "pinned" to the thread.
->
-> Right, as I said.  :-)  I saw that a watchpoint trap isn't reported either
-> for the CLONE_CHILD_SETTID case (that is, within clone, when the kernel
-> writes the tid to the memory address passed in to the clone syscall).
-
-Yes. But in this case the new thread has no bps even if it is auto-
-attached.
-
-IOW, I think that hw bp can detect the write from the kernel space,
-but I didn't check.
-
-> I wouldn't have been surprised to see the trap in userspace in either
-> the parent
-
-It would be just wrong. Please note that it is child, not parent, who
-does the write.
 
 
+Jeff,
 
+I think the sdhci.c clock setting code was changed a while ago.   Maybe revert that mod and see what happens.
 
-If only I understood why do we need CLONE_CHILD_SETTID... at least
-I certainly do not understand why glibc translates fork() into
-clone(CLONE_CHILD_SETTID) on my system. The child write into its
-memory, the parent can't see this change. IIRC, initially
-CLONE_CHILD_SETTID wrote child->pid into the parent's memory, and
-even before the child was actually created.
+The card is a 24MHz which is rather slow so I would be surprised if that was it. 
+The other option is the force enable the High Speed bit in the  controller (used when speed is 25MHz or faster).  Will give the system more time (in theory) to work.  
 
-Oleg.
+Philip
+
+On Feb 7, 2012, at 5:09 PM, Jeff Chua wrote:
+
+> On Wed, Feb 8, 2012 at 7:45 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>> On 02/08/2012 03:33 AM, Jeff Chua wrote:
+> 
+> I tried a Class6 8GB and after a few inserts, it could read without
+> errors. The Class10 seems to be more sensitive to speed.
+> 
+> Jeff
 
