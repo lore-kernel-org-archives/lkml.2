@@ -1,139 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab2BHVSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:18:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16208 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756092Ab2BHVSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:18:12 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 08/17] VFS: Make more complete truncate operation available to
- CacheFiles
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
-        linux-nfs@vger.kernel.org
-Date: Wed, 08 Feb 2012 21:18:03 +0000
-Message-ID: <20120208211802.15607.46621.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
-References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1757562Ab2BHVS3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:18:29 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:33978 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757543Ab2BHVS1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:18:27 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 14/50] ethoc: set addr_assign_type if random_ether_addr() used
+Date: Wed,  8 Feb 2012 22:10:21 +0100
+Message-Id: <1328735457-29986-15-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328735907;156ca4fc;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make a more complete truncate operation available to CacheFiles (including
-security checks and suchlike) so that it can use this to clear invalidated
-cache files.
+Set addr_assign_type correctly to NET_ADDR_RANDOM in case
+a random MAC address was generated and assigned to the netdevice.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Reset the state to NET_ADDR_PERM as soon as the MAC get
+changed via .ndo_set_mac_address.
+
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
+ drivers/net/ethernet/ethoc.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
- fs/open.c          |   50 +++++++++++++++++++++++++++-----------------------
- include/linux/fs.h |    1 +
- 2 files changed, 28 insertions(+), 23 deletions(-)
-
-diff --git a/fs/open.c b/fs/open.c
-index 77becc0..7535620 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -61,33 +61,22 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
- 	return ret;
+diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
+index 60f0e78..4f21471 100644
+--- a/drivers/net/ethernet/ethoc.c
++++ b/drivers/net/ethernet/ethoc.c
+@@ -780,6 +780,10 @@ static int ethoc_set_mac_address(struct net_device *dev, void *addr)
+ 				     (mac[4] <<  8) | (mac[5] <<  0));
+ 	ethoc_write(priv, MAC_ADDR1, (mac[0] <<  8) | (mac[1] <<  0));
+ 
++	/* if device marked as NET_ADDR_RANDOM, reset it to NET_ADDR_PERM */
++	if (dev->addr_assign_type & NET_ADDR_RANDOM)
++		dev->addr_assign_type ^= NET_ADDR_RANDOM;
++
+ 	return 0;
  }
  
--static long do_sys_truncate(const char __user *pathname, loff_t length)
-+long vfs_truncate(struct path *path, loff_t length)
- {
--	struct path path;
- 	struct inode *inode;
--	int error;
--
--	error = -EINVAL;
--	if (length < 0)	/* sorry, but loff_t says... */
--		goto out;
-+	long error;
+@@ -909,6 +913,7 @@ static int __devinit ethoc_probe(struct platform_device *pdev)
+ 	unsigned int phy;
+ 	int num_bd;
+ 	int ret = 0;
++	bool random_mac = false;
  
--	error = user_path(pathname, &path);
--	if (error)
--		goto out;
--	inode = path.dentry->d_inode;
-+	inode = path->dentry->d_inode;
+ 	/* allocate networking device */
+ 	netdev = alloc_etherdev(sizeof(struct ethoc));
+@@ -1050,10 +1055,14 @@ static int __devinit ethoc_probe(struct platform_device *pdev)
  
- 	/* For directories it's -EISDIR, for other non-regulars - -EINVAL */
--	error = -EISDIR;
- 	if (S_ISDIR(inode->i_mode))
--		goto dput_and_out;
--
--	error = -EINVAL;
-+		return -EISDIR;
- 	if (!S_ISREG(inode->i_mode))
--		goto dput_and_out;
-+		return -EINVAL;
- 
--	error = mnt_want_write(path.mnt);
-+	error = mnt_want_write(path->mnt);
- 	if (error)
--		goto dput_and_out;
-+		goto out;
- 
- 	error = inode_permission(inode, MAY_WRITE);
- 	if (error)
-@@ -111,19 +100,34 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
- 
- 	error = locks_verify_truncate(inode, NULL, length);
- 	if (!error)
--		error = security_path_truncate(&path);
-+		error = security_path_truncate(path);
- 	if (!error)
--		error = do_truncate(path.dentry, length, 0, NULL);
-+		error = do_truncate(path->dentry, length, 0, NULL);
- 
- put_write_and_out:
- 	put_write_access(inode);
- mnt_drop_write_and_out:
--	mnt_drop_write(path.mnt);
--dput_and_out:
--	path_put(&path);
-+	mnt_drop_write(path->mnt);
- out:
- 	return error;
- }
-+EXPORT_SYMBOL_GPL(vfs_truncate);
-+
-+static long do_sys_truncate(const char __user *pathname, loff_t length)
-+{
-+	struct path path;
-+	int error;
-+
-+	if (length < 0)	/* sorry, but loff_t says... */
-+		return -EINVAL;
-+
-+	error = user_path(pathname, &path);
-+	if (!error) {
-+		error = vfs_truncate(&path, length);
-+		path_put(&path);
+ 	/* Check the MAC again for validity, if it still isn't choose and
+ 	 * program a random one. */
+-	if (!is_valid_ether_addr(netdev->dev_addr))
++	if (!is_valid_ether_addr(netdev->dev_addr)) {
+ 		random_ether_addr(netdev->dev_addr);
++		random_mac = true;
 +	}
-+	return error;
-+}
  
- SYSCALL_DEFINE2(truncate, const char __user *, path, long, length)
- {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 386da09..79449e4 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2014,6 +2014,7 @@ static inline int break_lease(struct inode *inode, unsigned int mode)
+ 	ethoc_set_mac_address(netdev, netdev->dev_addr);
++	if (random_mac)
++		netdev->addr_assign_type |= NET_ADDR_RANDOM;
  
- /* fs/open.c */
- 
-+extern long vfs_truncate(struct path *, loff_t);
- extern int do_truncate(struct dentry *, loff_t start, unsigned int time_attrs,
- 		       struct file *filp);
- extern int do_fallocate(struct file *file, int mode, loff_t offset,
+ 	/* register MII bus */
+ 	priv->mdio = mdiobus_alloc();
+-- 
+1.7.7.3
 
