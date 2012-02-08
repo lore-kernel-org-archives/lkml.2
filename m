@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab2BHQph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 11:45:37 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49775 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756058Ab2BHQpg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 11:45:36 -0500
-From: Henrique Camargo <henrique@henriquecamargo.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-media@vger.kernel.org, g.liakhovetski@gmx.de,
-        matti.j.aaltonen@nokia.com, laurent.pinchart@ideasonboard.com,
-        mchehab@infradead.org, Henrique Camargo <henrique@henriquecamargo.com>,
-        Diogo Luvizon <diogoluvizon@gmail.com>
-Subject: [PATCH] media: davinci: added module.h to resolve unresolved macros
-Date: Wed,  8 Feb 2012 14:44:30 -0200
-Message-Id: <1328719470-30571-1-git-send-email-henrique@henriquecamargo.com>
-X-Mailer: git-send-email 1.7.8.3
+	id S1757383Ab2BHQrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 11:47:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680Ab2BHQrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 11:47:35 -0500
+Date: Wed, 8 Feb 2012 18:47:36 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Dongsu Park <advance38@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: tools/virtio: Compile errors
+Message-ID: <20120208164736.GA31066@redhat.com>
+References: <20120208160405.GA1587@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120208160405.GA1587@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Included module.h explicitly to resolve the macros THIS_MODULE and 
-MODULE_LICENSE. This avoids compilations errors as those defines were not 
-declared.
+On Wed, Feb 08, 2012 at 05:04:05PM +0100, Dongsu Park wrote:
+> Hi,
+> 
+> there are compile problems under tools/virtio.
+> If I simply run make,
+> 
+> ~/linuxsrc/linux-3.2/tools/virtio $ make
+> gcc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
+> -fno-strict-overflow  -MMD   -c -o virtio_ring.o
+> ../../drivers/virtio/virtio_ring.c
+> ../../drivers/virtio/virtio_ring.c:24:26: fatal error: linux/module.h:
+> No such file or directory
+> compilation terminated.
+> make: *** [virtio_ring.o] Error 1
 
-Signed-off-by: Henrique Camargo <henrique@henriquecamargo.com>
-Signed-off-by: Diogo Luvizon <diogoluvizon@gmail.com>
----
- drivers/media/video/davinci/isif.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/media/video/davinci/isif.c b/drivers/media/video/davinci/isif.c
-index 1e63852..5278fe7 100644
---- a/drivers/media/video/davinci/isif.c
-+++ b/drivers/media/video/davinci/isif.c
-@@ -34,6 +34,7 @@
- #include <linux/videodev2.h>
- #include <linux/clk.h>
- #include <linux/err.h>
-+#include <linux/module.h>
- 
- #include <mach/mux.h>
- 
--- 
-1.7.8.3
+> By the way, my system is Ubuntu 11.10 with Kernel 3.2.
+> 
+> Cheers,
+> Dongsu
 
+This patch is missing - I'll put it upstream.
+
+--->
+
+tools/virtio: add module.h stub
+
+make it build with linux 3.2
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+diff --git a/tools/virtio/linux/module.h b/tools/virtio/linux/module.h
+new file mode 100644
+index 0000000..96868eb
+--- /dev/null
++++ b/tools/virtio/linux/module.h
+@@ -0,0 +1,3 @@
++#ifndef LINUX_MODULE_H
++#define LINUX_MODULE_H
++#endif
