@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab2BHLD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 06:03:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3009 "EHLO mx1.redhat.com"
+	id S1756929Ab2BHLDg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 06:03:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20014 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756130Ab2BHLDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 06:03:23 -0500
+	id S1756807Ab2BHLDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 06:03:34 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 3/9] KEYS: Move the key config into security/keys/Kconfig
+Subject: [PATCH 4/9] KEYS: Reorganise keys Makefile
 To: steved@redhat.com, jmorris@namei.org
 Cc: keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 08 Feb 2012 11:03:16 +0000
-Message-ID: <20120208110316.4050.7280.stgit@warthog.procyon.org.uk>
+Date: Wed, 08 Feb 2012 11:03:27 +0000
+Message-ID: <20120208110327.4050.11227.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120208110254.4050.8856.stgit@warthog.procyon.org.uk>
 References: <20120208110254.4050.8856.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -27,172 +27,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the key config into security/keys/Kconfig as there are going to be a lot
-of key-related options.
+Reorganise the keys directory Makefile to put all the core bits together and
+the type-specific bits after.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 Acked-by: Mimi Zohar <zohar@us.ibm.com>
 ---
 
- security/Kconfig      |   68 +----------------------------------------------
- security/keys/Kconfig |   71 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 72 insertions(+), 67 deletions(-)
- create mode 100644 security/keys/Kconfig
+ security/keys/Makefile |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/security/Kconfig b/security/Kconfig
-index 51bd5a0..1c5a7a4 100644
---- a/security/Kconfig
-+++ b/security/Kconfig
-@@ -4,73 +4,7 @@
+diff --git a/security/keys/Makefile b/security/keys/Makefile
+index a56f1ff..504aaa0 100644
+--- a/security/keys/Makefile
++++ b/security/keys/Makefile
+@@ -2,6 +2,9 @@
+ # Makefile for key management
+ #
  
- menu "Security options"
- 
--config KEYS
--	bool "Enable access key retention support"
--	help
--	  This option provides support for retaining authentication tokens and
--	  access keys in the kernel.
--
--	  It also includes provision of methods by which such keys might be
--	  associated with a process so that network filesystems, encryption
--	  support and the like can find them.
--
--	  Furthermore, a special type of key is available that acts as keyring:
--	  a searchable sequence of keys. Each process is equipped with access
--	  to five standard keyrings: UID-specific, GID-specific, session,
--	  process and thread.
--
--	  If you are unsure as to whether this is required, answer N.
--
--config TRUSTED_KEYS
--	tristate "TRUSTED KEYS"
--	depends on KEYS && TCG_TPM
--	select CRYPTO
--	select CRYPTO_HMAC
--	select CRYPTO_SHA1
--	help
--	  This option provides support for creating, sealing, and unsealing
--	  keys in the kernel. Trusted keys are random number symmetric keys,
--	  generated and RSA-sealed by the TPM. The TPM only unseals the keys,
--	  if the boot PCRs and other criteria match.  Userspace will only ever
--	  see encrypted blobs.
--
--	  If you are unsure as to whether this is required, answer N.
--
--config ENCRYPTED_KEYS
--	tristate "ENCRYPTED KEYS"
--	depends on KEYS
--	select CRYPTO
--	select CRYPTO_HMAC
--	select CRYPTO_AES
--	select CRYPTO_CBC
--	select CRYPTO_SHA256
--	select CRYPTO_RNG
--	help
--	  This option provides support for create/encrypting/decrypting keys
--	  in the kernel.  Encrypted keys are kernel generated random numbers,
--	  which are encrypted/decrypted with a 'master' symmetric key. The
--	  'master' key can be either a trusted-key or user-key type.
--	  Userspace only ever sees/stores encrypted blobs.
--
--	  If you are unsure as to whether this is required, answer N.
--
--config KEYS_DEBUG_PROC_KEYS
--	bool "Enable the /proc/keys file by which keys may be viewed"
--	depends on KEYS
--	help
--	  This option turns on support for the /proc/keys file - through which
--	  can be listed all the keys on the system that are viewable by the
--	  reading process.
--
--	  The only keys included in the list are those that grant View
--	  permission to the reading process whether or not it possesses them.
--	  Note that LSM security checks are still performed, and may further
--	  filter out keys that the current process is not authorised to view.
--
--	  Only key attributes are listed here; key payloads are not included in
--	  the resulting table.
--
--	  If you are unsure as to whether this is required, answer N.
-+source security/keys/Kconfig
- 
- config SECURITY_DMESG_RESTRICT
- 	bool "Restrict unprivileged access to the kernel syslog"
-diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-new file mode 100644
-index 0000000..a90d6d3
---- /dev/null
-+++ b/security/keys/Kconfig
-@@ -0,0 +1,71 @@
 +#
-+# Key management configuration
++# Core
 +#
+ obj-y := \
+ 	gc.o \
+ 	key.o \
+@@ -12,9 +15,12 @@ obj-y := \
+ 	request_key.o \
+ 	request_key_auth.o \
+ 	user_defined.o
+-
+-obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
+-obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
+ obj-$(CONFIG_KEYS_COMPAT) += compat.o
+ obj-$(CONFIG_PROC_FS) += proc.o
+ obj-$(CONFIG_SYSCTL) += sysctl.o
 +
-+config KEYS
-+	bool "Enable access key retention support"
-+	help
-+	  This option provides support for retaining authentication tokens and
-+	  access keys in the kernel.
-+
-+	  It also includes provision of methods by which such keys might be
-+	  associated with a process so that network filesystems, encryption
-+	  support and the like can find them.
-+
-+	  Furthermore, a special type of key is available that acts as keyring:
-+	  a searchable sequence of keys. Each process is equipped with access
-+	  to five standard keyrings: UID-specific, GID-specific, session,
-+	  process and thread.
-+
-+	  If you are unsure as to whether this is required, answer N.
-+
-+config TRUSTED_KEYS
-+	tristate "TRUSTED KEYS"
-+	depends on KEYS && TCG_TPM
-+	select CRYPTO
-+	select CRYPTO_HMAC
-+	select CRYPTO_SHA1
-+	help
-+	  This option provides support for creating, sealing, and unsealing
-+	  keys in the kernel. Trusted keys are random number symmetric keys,
-+	  generated and RSA-sealed by the TPM. The TPM only unseals the keys,
-+	  if the boot PCRs and other criteria match.  Userspace will only ever
-+	  see encrypted blobs.
-+
-+	  If you are unsure as to whether this is required, answer N.
-+
-+config ENCRYPTED_KEYS
-+	tristate "ENCRYPTED KEYS"
-+	depends on KEYS
-+	select CRYPTO
-+	select CRYPTO_HMAC
-+	select CRYPTO_AES
-+	select CRYPTO_CBC
-+	select CRYPTO_SHA256
-+	select CRYPTO_RNG
-+	help
-+	  This option provides support for create/encrypting/decrypting keys
-+	  in the kernel.  Encrypted keys are kernel generated random numbers,
-+	  which are encrypted/decrypted with a 'master' symmetric key. The
-+	  'master' key can be either a trusted-key or user-key type.
-+	  Userspace only ever sees/stores encrypted blobs.
-+
-+	  If you are unsure as to whether this is required, answer N.
-+
-+config KEYS_DEBUG_PROC_KEYS
-+	bool "Enable the /proc/keys file by which keys may be viewed"
-+	depends on KEYS
-+	help
-+	  This option turns on support for the /proc/keys file - through which
-+	  can be listed all the keys on the system that are viewable by the
-+	  reading process.
-+
-+	  The only keys included in the list are those that grant View
-+	  permission to the reading process whether or not it possesses them.
-+	  Note that LSM security checks are still performed, and may further
-+	  filter out keys that the current process is not authorised to view.
-+
-+	  Only key attributes are listed here; key payloads are not included in
-+	  the resulting table.
-+
-+	  If you are unsure as to whether this is required, answer N.
++#
++# Key types
++#
++obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
++obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
 
