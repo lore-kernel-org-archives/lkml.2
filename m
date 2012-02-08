@@ -1,120 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750706Ab2BHFCu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 00:02:50 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:37217 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702Ab2BHFCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 00:02:49 -0500
-Date: Wed, 8 Feb 2012 13:01:19 +0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9] PCI: Fix cardbus bridge resources as optional size
- handling
-Message-ID: <20120208050119.GE8930@ram-ThinkPad-T61>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
- <1328424908-6385-5-git-send-email-yinghai@kernel.org>
- <20120208043517.GD8930@ram-ThinkPad-T61>
- <CAE9FiQUdRLmc-_hHWtaz=8QZiu4Ma6ZY7zavByJnwMDTBQLtzg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQUdRLmc-_hHWtaz=8QZiu4Ma6ZY7zavByJnwMDTBQLtzg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020805-1780-0000-0000-000002F6499B
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000246; HX=3.00000182; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00111890; UDB=6.00027688; UTC=2012-02-08
- 05:02:44
+	id S1750921Ab2BHFJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 00:09:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43995 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716Ab2BHFJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 00:09:38 -0500
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH 09/21] ia64: Use generic posix_types.h
+Date: Tue,  7 Feb 2012 21:08:53 -0800
+Message-Id: <1328677745-20121-10-git-send-email-hpa@zytor.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1328677745-20121-1-git-send-email-hpa@zytor.com>
+References: <1328677745-20121-1-git-send-email-hpa@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 08:48:36PM -0800, Yinghai Lu wrote:
-> On Tue, Feb 7, 2012 at 8:35 PM, Ram Pai <linuxram@us.ibm.com> wrote:
-> > On Sat, Feb 04, 2012 at 10:55:03PM -0800, Yinghai Lu wrote:
-> >> We should not set the requested size to -2.
-> >>
-> >> that will confuse the resource list sorting with align when SIZEALIGN is used.
-> >>
-> >> Change to STARTALIGN and pass align from start.
-> >>
-> >> We are safe to do that just as we do that regular pci bridge.
-> >>
-> >> In the long run, we should just treat cardbus like regular pci bridge.
-> >>
-> >> Also fix when realloc is not passed, should keep the requested size.
-> >>
-> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> >> ---
-> >>  drivers/pci/setup-bus.c |   63 ++++++++++++++++++++++++++--------------------
-> >>  1 files changed, 36 insertions(+), 27 deletions(-)
-> >>
-> >> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-> >> index d5897c3..3b3932a 100644
-> >> --- a/drivers/pci/setup-bus.c
-> >> +++ b/drivers/pci/setup-bus.c
-> >> @@ -898,21 +898,30 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-..snip
+Change the ia64 architecture to use <asm-generic/posix_types.h>.
 
-> >> -             b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
-> >> -             if (realloc_head)
-> >> -                     add_to_list(realloc_head, bridge, b_res+3, pci_cardbus_mem_size, 0 /* dont care */);
-> >
-> > The b_res_3_size has to be reduced to half here.
-> > Otherwise it will try allocate 2*pci_cardbus_mem_size to the BAR3..
-> >
-> >                b_res_3_size = pci_cardbus_mem_size;
-> >
-> >
-> >> -     } else {
-> >> -             b_res[3].start = 0;
-> >> -             b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
-> >> -             if (realloc_head)
-> >> -                     add_to_list(realloc_head, bridge, b_res+3, pci_cardbus_mem_size * 2, 0 /* dont care */);
-> >> +             /* reduce that to half */
-> >> +             b_res_3_size = pci_cardbus_mem_size;
-> >
-> > b_res3_3_size should not be updated here, since BAR3 has to be allocated 2*pci_cardbus_mem_size
-> > resource.
-> >
-> 
-> looks like you did not read the patch correctly
-> 
-> that else {} get removed already in this patch
-> 
-> please check segment after patch...
-> 	/*
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/ia64/include/asm/posix_types.h |  121 +----------------------------------
+ 1 files changed, 3 insertions(+), 118 deletions(-)
 
-..snip..
-> 	 * If we have prefetchable memory support, allocate
-> 	 * two regions.  Otherwise, allocate one region of
-> 	 * twice the size.
-> 	 */
-> 	if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM0) {
-> 		b_res[2].start = pci_cardbus_mem_size;
-> 		b_res[2].end = b_res[2].start + pci_cardbus_mem_size - 1;
-> 		b_res[2].flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH |
-> 				  IORESOURCE_STARTALIGN;
-> 		if (realloc_head) {
-> 			b_res[2].end -= pci_cardbus_mem_size;
-> 			add_to_list(realloc_head, bridge, b_res+2,
-> 				 pci_cardbus_mem_size, pci_cardbus_mem_size);
-> 		}
-> 
-> 		/* reduce that to half */
-> 		b_res_3_size = pci_cardbus_mem_size;
-> 	}
-
-ACK. Ok. got it. This looks correct.
-RP
+diff --git a/arch/ia64/include/asm/posix_types.h b/arch/ia64/include/asm/posix_types.h
+index 1788556..7323ab9 100644
+--- a/arch/ia64/include/asm/posix_types.h
++++ b/arch/ia64/include/asm/posix_types.h
+@@ -1,126 +1,11 @@
+ #ifndef _ASM_IA64_POSIX_TYPES_H
+ #define _ASM_IA64_POSIX_TYPES_H
+ 
+-/*
+- * This file is generally used by user-level software, so you need to
+- * be a little careful about namespace pollution etc.  Also, we cannot
+- * assume GCC is being used.
+- *
+- * Based on <asm-alpha/posix_types.h>.
+- *
+- * Modified 1998-2000, 2003
+- *	David Mosberger-Tang <davidm@hpl.hp.com>, Hewlett-Packard Co
+- */
+-
+-typedef unsigned long	__kernel_ino_t;
+-typedef unsigned int	__kernel_mode_t;
+ typedef unsigned int	__kernel_nlink_t;
+-typedef long		__kernel_off_t;
+-typedef long long	__kernel_loff_t;
+-typedef int		__kernel_pid_t;
+-typedef int		__kernel_ipc_pid_t;
+-typedef unsigned int	__kernel_uid_t;
+-typedef unsigned int	__kernel_gid_t;
+-typedef unsigned long	__kernel_size_t;
+-typedef long		__kernel_ssize_t;
+-typedef long		__kernel_ptrdiff_t;
+-typedef long		__kernel_time_t;
+-typedef long		__kernel_suseconds_t;
+-typedef long		__kernel_clock_t;
+-typedef int		__kernel_timer_t;
+-typedef int		__kernel_clockid_t;
+-typedef int		__kernel_daddr_t;
+-typedef char *		__kernel_caddr_t;
+-typedef unsigned long	__kernel_sigset_t;	/* at least 32 bits */
+-typedef unsigned short	__kernel_uid16_t;
+-typedef unsigned short	__kernel_gid16_t;
+-
+-typedef struct {
+-	int	val[2];
+-} __kernel_fsid_t;
+-
+-typedef __kernel_uid_t __kernel_old_uid_t;
+-typedef __kernel_gid_t __kernel_old_gid_t;
+-typedef __kernel_uid_t __kernel_uid32_t;
+-typedef __kernel_gid_t __kernel_gid32_t;
+-
+-typedef unsigned int	__kernel_old_dev_t;
+-
+-# ifdef __KERNEL__
+-
+-#  ifndef __GNUC__
+-
+-#define	__FD_SET(d, set)	((set)->fds_bits[__FDELT(d)] |= __FDMASK(d))
+-#define	__FD_CLR(d, set)	((set)->fds_bits[__FDELT(d)] &= ~__FDMASK(d))
+-#define	__FD_ISSET(d, set)	(((set)->fds_bits[__FDELT(d)] & __FDMASK(d)) != 0)
+-#define	__FD_ZERO(set)	\
+-  ((void) memset ((void *) (set), 0, sizeof (__kernel_fd_set)))
++#define __kernel_nlink_t __kernel_nlink_t
+ 
+-#  else /* !__GNUC__ */
+-
+-/* With GNU C, use inline functions instead so args are evaluated only once: */
+-
+-#undef __FD_SET
+-static __inline__ void __FD_SET(unsigned long fd, __kernel_fd_set *fdsetp)
+-{
+-	unsigned long _tmp = fd / __NFDBITS;
+-	unsigned long _rem = fd % __NFDBITS;
+-	fdsetp->fds_bits[_tmp] |= (1UL<<_rem);
+-}
+-
+-#undef __FD_CLR
+-static __inline__ void __FD_CLR(unsigned long fd, __kernel_fd_set *fdsetp)
+-{
+-	unsigned long _tmp = fd / __NFDBITS;
+-	unsigned long _rem = fd % __NFDBITS;
+-	fdsetp->fds_bits[_tmp] &= ~(1UL<<_rem);
+-}
+-
+-#undef __FD_ISSET
+-static __inline__ int __FD_ISSET(unsigned long fd, const __kernel_fd_set *p)
+-{ 
+-	unsigned long _tmp = fd / __NFDBITS;
+-	unsigned long _rem = fd % __NFDBITS;
+-	return (p->fds_bits[_tmp] & (1UL<<_rem)) != 0;
+-}
+-
+-/*
+- * This will unroll the loop for the normal constant case (8 ints,
+- * for a 256-bit fd_set)
+- */
+-#undef __FD_ZERO
+-static __inline__ void __FD_ZERO(__kernel_fd_set *p)
+-{
+-	unsigned long *tmp = p->fds_bits;
+-	int i;
+-
+-	if (__builtin_constant_p(__FDSET_LONGS)) {
+-		switch (__FDSET_LONGS) {
+-		      case 16:
+-			tmp[ 0] = 0; tmp[ 1] = 0; tmp[ 2] = 0; tmp[ 3] = 0;
+-			tmp[ 4] = 0; tmp[ 5] = 0; tmp[ 6] = 0; tmp[ 7] = 0;
+-			tmp[ 8] = 0; tmp[ 9] = 0; tmp[10] = 0; tmp[11] = 0;
+-			tmp[12] = 0; tmp[13] = 0; tmp[14] = 0; tmp[15] = 0;
+-			return;
+-
+-		      case 8:
+-			tmp[ 0] = 0; tmp[ 1] = 0; tmp[ 2] = 0; tmp[ 3] = 0;
+-			tmp[ 4] = 0; tmp[ 5] = 0; tmp[ 6] = 0; tmp[ 7] = 0;
+-			return;
++typedef unsigned long	__kernel_sigset_t;	/* at least 32 bits */
+ 
+-		      case 4:
+-			tmp[ 0] = 0; tmp[ 1] = 0; tmp[ 2] = 0; tmp[ 3] = 0;
+-			return;
+-		}
+-	}
+-	i = __FDSET_LONGS;
+-	while (i) {
+-		i--;
+-		*tmp = 0;
+-		tmp++;
+-	}
+-}
++#include <asm-generic/posix_types.h>
+ 
+-#  endif /* !__GNUC__ */
+-# endif /* __KERNEL__ */
+ #endif /* _ASM_IA64_POSIX_TYPES_H */
+-- 
+1.7.6.5
 
