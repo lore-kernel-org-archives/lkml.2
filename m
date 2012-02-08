@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab2BHKEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 05:04:23 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60171 "EHLO
+	id S1755608Ab2BHKFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 05:05:52 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61138 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab2BHKEV (ORCPT
+	with ESMTP id S1753867Ab2BHKFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 05:04:21 -0500
-From: Pradeep A Dalvi <netdev@pradeepdalvi.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Pradeep A Dalvi <netdev@pradeepdalvi.com>
-Subject: [PATCH net-next] mace: Fix build for mace due to netdev_alloc_skb
-Date: Wed,  8 Feb 2012 15:33:15 +0530
-Message-Id: <1328695395-2565-1-git-send-email-netdev@pradeepdalvi.com>
-X-Mailer: git-send-email 1.7.5.4
+	Wed, 8 Feb 2012 05:05:51 -0500
+From: Geunsik Lim <geunsik.lim@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ftrace: sched_switch plugin is deprecated.
+Date: Wed,  8 Feb 2012 19:05:36 +0900
+Message-Id: <1328695537-15081-1-git-send-email-geunsik.lim@gmail.com>
+X-Mailer: git-send-email 1.7.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refs:
-1. pmac32_defconfig
-http://kisskb.ellerman.id.au/kisskb/buildresult/5583746/
-2. ppc6xx_defconfig
-http://kisskb.ellerman.id.au/kisskb/buildresult/5584116/
+From: Geunsik Lim <geunsik.lim@samsung.com>
 
-Confirmed any such occurances from all failed defconfigs &
-in net-next sources with
-grep -nrs "netdev_alloc_skb" drivers/net/ethernet/ | grep -v ","
+Actually, sched_switch function tracer is merged into wakeup/wakeup_rt
+Update 'mini-HOWTO' for ftrace(Kernel function tracer).
+If we want to trace "sched:sched_switch" to trace sched_switch func,
+We may utilize event option.(e.g: trace-cmd list -e | grep sched)
+This patch is based on Linux-3.3.rc2-SMP-PREEMPT
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Pradeep A Dalvi <netdev@pradeepdalvi.com>
+Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
 ---
- drivers/net/ethernet/apple/mace.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/trace/trace.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/apple/mace.c b/drivers/net/ethernet/apple/mace.c
-index 0699846..e1df4b7 100644
---- a/drivers/net/ethernet/apple/mace.c
-+++ b/drivers/net/ethernet/apple/mace.c
-@@ -956,7 +956,7 @@ static irqreturn_t mace_rxdma_intr(int irq, void *dev_id)
- 	cp = mp->rx_cmds + i;
- 	skb = mp->rx_bufs[i];
- 	if (!skb) {
--	    skb = netdev_alloc_skb(RX_BUFLEN + 2);
-+	    skb = netdev_alloc_skb(dev, RX_BUFLEN + 2);
- 	    if (skb) {
- 		skb_reserve(skb, 2);
- 		mp->rx_bufs[i] = skb;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a3f1bc5..10d5503 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2764,12 +2764,12 @@ static const char readme_msg[] =
+ 	"tracing mini-HOWTO:\n\n"
+ 	"# mount -t debugfs nodev /sys/kernel/debug\n\n"
+ 	"# cat /sys/kernel/debug/tracing/available_tracers\n"
+-	"wakeup preemptirqsoff preemptoff irqsoff function sched_switch nop\n\n"
++	"wakeup wakeup_rt preemptirqsoff preemptoff irqsoff function nop\n\n"
+ 	"# cat /sys/kernel/debug/tracing/current_tracer\n"
+ 	"nop\n"
+-	"# echo sched_switch > /sys/kernel/debug/tracing/current_tracer\n"
++	"# echo wakeup > /sys/kernel/debug/tracing/current_tracer\n"
+ 	"# cat /sys/kernel/debug/tracing/current_tracer\n"
+-	"sched_switch\n"
++	"wakeup\n"
+ 	"# cat /sys/kernel/debug/tracing/trace_options\n"
+ 	"noprint-parent nosym-offset nosym-addr noverbose\n"
+ 	"# echo print-parent > /sys/kernel/debug/tracing/trace_options\n"
+-- 
+1.7.8.1
+
