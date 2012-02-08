@@ -1,44 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab2BHUYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 15:24:18 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:47348 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2BHUYC (ORCPT
+	id S1753964Ab2BHUYe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 15:24:34 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:54421 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab2BHUYb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 15:24:02 -0500
-Date: Wed, 08 Feb 2012 15:23:58 -0500 (EST)
-Message-Id: <20120208.152358.916104383646981710.davem@davemloft.net>
-To: netdev@pradeepdalvi.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] mace: Fix build for mace due to
- netdev_alloc_skb
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1328695395-2565-1-git-send-email-netdev@pradeepdalvi.com>
-References: <1328695395-2565-1-git-send-email-netdev@pradeepdalvi.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 08 Feb 2012 12:24:00 -0800 (PST)
+	Wed, 8 Feb 2012 15:24:31 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Matthew Garrett <mjg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "dzickus@redhat.com" <dzickus@redhat.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+Date: Wed, 8 Feb 2012 15:24:27 -0500
+Subject: RE: [PATCH] kmsg_dump: Don't run on non-error paths by default
+Thread-Topic: [PATCH] kmsg_dump: Don't run on non-error paths by default
+Thread-Index: AczmfLtegkfkAG8LSzuvfQiENX9I+QAIrQhA
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DAC650D07@USINDEVS01.corp.hds.com>
+References: <1328717646-17121-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <1328717646-17121-1-git-send-email-mjg@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1202080206
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pradeep A Dalvi <netdev@pradeepdalvi.com>
-Date: Wed,  8 Feb 2012 15:33:15 +0530
+This patch, introducing tunable parameter, is reasonable to me.
 
-> Refs:
-> 1. pmac32_defconfig
-> http://kisskb.ellerman.id.au/kisskb/buildresult/5583746/
-> 2. ppc6xx_defconfig
-> http://kisskb.ellerman.id.au/kisskb/buildresult/5584116/
-> 
-> Confirmed any such occurances from all failed defconfigs &
-> in net-next sources with
-> grep -nrs "netdev_alloc_skb" drivers/net/ethernet/ | grep -v ","
-> 
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Pradeep A Dalvi <netdev@pradeepdalvi.com>
+Acked-by: Seiji Aguchi <seiji.aguchi.hds.com>
 
-Applied.
+-----Original Message-----
+From: Matthew Garrett [mailto:mjg@redhat.com] 
+Sent: Wednesday, February 08, 2012 11:14 AM
+To: linux-kernel@vger.kernel.org
+Cc: Seiji Aguchi; dzickus@redhat.com; vgoyal@redhat.com; Matthew Garrett
+Subject: [PATCH] kmsg_dump: Don't run on non-error paths by default
+
+Since 04c6862c055fb687c90d9652f32c11a063df15cf kmsg_dump() gets run on normal paths including poweroff and reboot. This is less than ideal given pstore implementations that can only represent single backtraces, since a reboot may overwrite a stored oops before it's been picked up by userspace.
+In addition, some pstore backends may have low performance and provide a significant delay in reboot as a result.
+
+This patch adds a printk.always_kmsg_dump kernel parameter (which can also be changed from userspace). Without it, the code will only be run on failure paths rather than on normal paths. The option can be enabled in environments where there's a desire to attempt to audit whether or not a reboot was cleanly requested or not.
+
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ include/linux/kmsg_dump.h |    9 +++++++--
+ kernel/printk.c           |    6 ++++++
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/kmsg_dump.h b/include/linux/kmsg_dump.h index fee6631..35f7237 100644
+--- a/include/linux/kmsg_dump.h
++++ b/include/linux/kmsg_dump.h
+@@ -15,13 +15,18 @@
+ #include <linux/errno.h>
+ #include <linux/list.h>
+ 
++/*
++ * Keep this list arranged in rough order of priority. Anything listed 
++after
++ * KMSG_DUMP_OOPS will not be logged by default unless 
++printk.always_kmsg_dump
++ * is passed to the kernel.
++ */
+ enum kmsg_dump_reason {
+-	KMSG_DUMP_OOPS,
+ 	KMSG_DUMP_PANIC,
++	KMSG_DUMP_OOPS,
++	KMSG_DUMP_EMERG,
+ 	KMSG_DUMP_RESTART,
+ 	KMSG_DUMP_HALT,
+ 	KMSG_DUMP_POWEROFF,
+-	KMSG_DUMP_EMERG,
+ };
+ 
+ /**
+diff --git a/kernel/printk.c b/kernel/printk.c index 13c0a11..e7d07f5 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -702,6 +702,9 @@ static bool printk_time = 0;  #endif  module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
+ 
++static bool always_kmsg_dump;
++module_param_named(always_kmsg_dump, always_kmsg_dump, bool, S_IRUGO | 
++S_IWUSR);
++
+ /* Check if we have any console registered that can be called early in boot. */  static int have_callable_console(void)  { @@ -1732,6 +1735,9 @@ void kmsg_dump(enum kmsg_dump_reason reason)
+ 	unsigned long l1, l2;
+ 	unsigned long flags;
+ 
++	if (reason > KMSG_DUMP_PANIC && !always_kmsg_dump)
++		return;
++
+ 	/* Theoretically, the log could move on after we do this, but
+ 	   there's not a lot we can do about that. The new messages
+ 	   will overwrite the start of what we dump. */
+--
+1.7.7.6
+
