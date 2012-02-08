@@ -1,79 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab2BHA2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 19:28:31 -0500
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:43565 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757258Ab2BHA22 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 19:28:28 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: Direct i/o changes break all non-GPL file systems
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <anton@tuxera.com>
-In-Reply-To: <20120208001519.501b6fea@pyramind.ukuu.org.uk>
-Date: Wed, 8 Feb 2012 00:28:20 +0000
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Szabolcs Szakacsits <szaka@tuxera.com>,
-        =?iso-8859-1?Q?Janne_Kalliom=E4ki?= <janne@tuxera.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <673AFC57-2B73-49AC-962E-CAB1DE775B2C@tuxera.com>
-References: <92291682-5422-4AE2-9608-97775603E7FD@tuxera.com> <20120208001519.501b6fea@pyramind.ukuu.org.uk>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-X-Mailer: Apple Mail (2.1257)
+	id S1757030Ab2BHAaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 19:30:23 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:44403 "EHLO smtp.polymtl.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756370Ab2BHAaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 19:30:21 -0500
+X-Greylist: delayed 629 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Feb 2012 19:30:21 EST
+Message-ID: <1328660390.4f31bfa6e8f4b@www.imp.polymtl.ca>
+Date: Tue, 07 Feb 2012 19:19:50 -0500
+From: Naveen Goswamy <naveen.goswamy@polymtl.ca>
+To: linux-kernel@vger.kernel.org
+Subject: Kernel crashing on eject SD card
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.2.3
+X-Originating-IP: 76.10.162.66
+X-Poly-FromMTA: (imp-4-4.polymtl.ca [132.207.4.79]) at Wed,  8 Feb 2012 00:19:51 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
-
-I don't really want to get into this discussion due to the likelihood of people using it as an excuse to start a flamewar which we can really do without.
-
-Linus has previously stated that he is happy for binary kernel modules to exist and I believe that a kernel module calling EXPORT_SYMBOL() functions is the equivalent of a user space program executing system calls.  I do not believe this has even been decided in court so let us please not start a flamewar on the subject!  I am sure both points of view have their merits but unless they are tested in court there is no point in wasting everyones time discussing the subject to death.  That has been done many times before ad nauseum.
-
-Can we please let this sort of debate be and just focus on the question whether this breakage for non-GPL modules was intentional or accidental and if the latter whether the author, namely Christoph, would be willing to reconsider his choice and allow the symbols to become generically exported, in which case we can return to the state we had before by exporting the two symbols to all modules.
-
-Thank you (and apologise for top posting).
-
-Best regards,
-
-	Anton
-
-On 8 Feb 2012, at 00:15, Alan Cox wrote:
-
-> On Wed, 8 Feb 2012 00:07:15 +0000
-> Anton Altaparmakov <anton@tuxera.com> wrote:
-> 
->> Hi Linus, Andrew, Christoph,
->> 
->> With kernel 3.1, Christoph removed i_alloc_sem and replaced it with calls (namely inode_dio_wait() and inode_dio_done()) which are EXPORT_SYMBOL_GPL() thus they cannot be used by non-GPL file systems and further inode_dio_wait() was pushed from notify_change() into the file system ->setattr() method but no non-GPL file system can make this call.
-> 
-> I'm advised by my lawyer that when this occurs that I should always
-> inform the other party the following
-> 
-> "For a Linux kernel containing any code I own the code is under the GNU
-> public license v2 (in some cases or later), I have never given permission
-> for that code to be used as part of a combined or derivative work which
-> contains binary chunks. I have never said that modules are somehow
-> magically outside the GPL and I am doubtful that in most cases a work
-> containing binary modules for a Linux kernel is compatible with the
-> licensing, although I accept there may be some cases that it is."
-> 
-> 
-> 
-> So unless your code is remarkably non-derivative I don't see that
-> anything has changed.
+The details are here:
 
 
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
+https://bugs.gentoo.org/show_bug.cgi?id=402433
 
+Any ideas?  Is this a known issue?
+
+Thanks,
+
+Naveen
