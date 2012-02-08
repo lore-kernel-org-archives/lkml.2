@@ -1,159 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab2BHEsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 23:48:05 -0500
-Received: from mga11.intel.com ([192.55.52.93]:31495 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752447Ab2BHEsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 23:48:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="122337464"
-Subject: Re: [rfc PATCH]slub: per cpu partial statistics change
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <alpine.DEB.2.00.1202070910320.29500@router.home>
-References: <1328256695.12669.24.camel@debian>
-	 <alpine.DEB.2.00.1202030920060.2420@router.home>
-	 <4F2C824E.8080501@intel.com>
-	 <alpine.DEB.2.00.1202060858510.393@router.home>
-	 <1328591165.12669.168.camel@debian>
-	 <alpine.DEB.2.00.1202070910320.29500@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Feb 2012 12:44:50 +0800
-Message-ID: <1328676290.12669.431.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1750706Ab2BHFCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 00:02:50 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:37217 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702Ab2BHFCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 00:02:49 -0500
+Date: Wed, 8 Feb 2012 13:01:19 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] PCI: Fix cardbus bridge resources as optional size
+ handling
+Message-ID: <20120208050119.GE8930@ram-ThinkPad-T61>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
+ <1328424908-6385-5-git-send-email-yinghai@kernel.org>
+ <20120208043517.GD8930@ram-ThinkPad-T61>
+ <CAE9FiQUdRLmc-_hHWtaz=8QZiu4Ma6ZY7zavByJnwMDTBQLtzg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQUdRLmc-_hHWtaz=8QZiu4Ma6ZY7zavByJnwMDTBQLtzg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020805-1780-0000-0000-000002F6499B
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000246; HX=3.00000182; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00111890; UDB=6.00027688; UTC=2012-02-08
+ 05:02:44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-07 at 09:12 -0600, Christoph Lameter wrote:
-> On Tue, 7 Feb 2012, Alex,Shi wrote:
+On Tue, Feb 07, 2012 at 08:48:36PM -0800, Yinghai Lu wrote:
+> On Tue, Feb 7, 2012 at 8:35 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+> > On Sat, Feb 04, 2012 at 10:55:03PM -0800, Yinghai Lu wrote:
+> >> We should not set the requested size to -2.
+> >>
+> >> that will confuse the resource list sorting with align when SIZEALIGN is used.
+> >>
+> >> Change to STARTALIGN and pass align from start.
+> >>
+> >> We are safe to do that just as we do that regular pci bridge.
+> >>
+> >> In the long run, we should just treat cardbus like regular pci bridge.
+> >>
+> >> Also fix when realloc is not passed, should keep the requested size.
+> >>
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >> ---
+> >>  drivers/pci/setup-bus.c |   63 ++++++++++++++++++++++++++--------------------
+> >>  1 files changed, 36 insertions(+), 27 deletions(-)
+> >>
+> >> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> >> index d5897c3..3b3932a 100644
+> >> --- a/drivers/pci/setup-bus.c
+> >> +++ b/drivers/pci/setup-bus.c
+> >> @@ -898,21 +898,30 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+
+..snip
+
+> >> -             b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
+> >> -             if (realloc_head)
+> >> -                     add_to_list(realloc_head, bridge, b_res+3, pci_cardbus_mem_size, 0 /* dont care */);
+> >
+> > The b_res_3_size has to be reduced to half here.
+> > Otherwise it will try allocate 2*pci_cardbus_mem_size to the BAR3..
+> >
+> >                b_res_3_size = pci_cardbus_mem_size;
+> >
+> >
+> >> -     } else {
+> >> -             b_res[3].start = 0;
+> >> -             b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
+> >> -             if (realloc_head)
+> >> -                     add_to_list(realloc_head, bridge, b_res+3, pci_cardbus_mem_size * 2, 0 /* dont care */);
+> >> +             /* reduce that to half */
+> >> +             b_res_3_size = pci_cardbus_mem_size;
+> >
+> > b_res3_3_size should not be updated here, since BAR3 has to be allocated 2*pci_cardbus_mem_size
+> > resource.
+> >
 > 
-> > Yes, I want to account the unfreeze_partialsï¼ˆï¼‰ actions in
-> > put_cpu_partialï¼ˆ). The unfreezing accounting isn't conflict or repeat
-> > with the cpu_partial_free accounting, since they are different actions
-> > for the PCP.
+> looks like you did not read the patch correctly
 > 
-> Well what is happening here is that the whole per cpu partial list is
-> moved back to the per node partial list.
+> that else {} get removed already in this patch
 > 
-> CPU_PARTIAL_DRAIN_TO_NODE_PARTIAL ?
+> please check segment after patch...
+> 	/*
+
+..snip..
+> 	 * If we have prefetchable memory support, allocate
+> 	 * two regions.  Otherwise, allocate one region of
+> 	 * twice the size.
+> 	 */
+> 	if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM0) {
+> 		b_res[2].start = pci_cardbus_mem_size;
+> 		b_res[2].end = b_res[2].start + pci_cardbus_mem_size - 1;
+> 		b_res[2].flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH |
+> 				  IORESOURCE_STARTALIGN;
+> 		if (realloc_head) {
+> 			b_res[2].end -= pci_cardbus_mem_size;
+> 			add_to_list(realloc_head, bridge, b_res+2,
+> 				 pci_cardbus_mem_size, pci_cardbus_mem_size);
+> 		}
 > 
-> A bit long I think. CPU_PARTIAL_DRAIN?
+> 		/* reduce that to half */
+> 		b_res_3_size = pci_cardbus_mem_size;
+> 	}
 
-Yes. it is more meaningful. :) 
-Patch change here. 
-
-----------------
->From af88a7b0134d3eea82a4cf9985026852e50f5343 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Fri, 3 Feb 2012 23:34:56 +0800
-Subject: [PATCH] slub: per cpu partial statistics change
-
-This patch split the cpu_partial_free into 2 parts: cpu_partial_node, PCP refilling
-times from node partial; and same name cpu_partial_free, PCP refilling times in
-slab_free slow path. A new statistic 'cpu_partial_drain' is added to get PCP
-drain to node partial times. These info are useful when do PCP tunning.
-
-The slabinfo.c code is unchanged, since cpu_partial_node is not on slow path.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- include/linux/slub_def.h |    6 ++++--
- mm/slub.c                |   12 +++++++++---
- 2 files changed, 13 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index a32bcfd..6388a66 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -21,7 +21,7 @@ enum stat_item {
- 	FREE_FROZEN,		/* Freeing to frozen slab */
- 	FREE_ADD_PARTIAL,	/* Freeing moves slab to partial list */
- 	FREE_REMOVE_PARTIAL,	/* Freeing removes last object */
--	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from partial list */
-+	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from node partial list */
- 	ALLOC_SLAB,		/* Cpu slab acquired from page allocator */
- 	ALLOC_REFILL,		/* Refill cpu slab from slab freelist */
- 	ALLOC_NODE_MISMATCH,	/* Switching cpu slab */
-@@ -37,7 +37,9 @@ enum stat_item {
- 	CMPXCHG_DOUBLE_CPU_FAIL,/* Failure of this_cpu_cmpxchg_double */
- 	CMPXCHG_DOUBLE_FAIL,	/* Number of times that cmpxchg double did not match */
- 	CPU_PARTIAL_ALLOC,	/* Used cpu partial on alloc */
--	CPU_PARTIAL_FREE,	/* USed cpu partial on free */
-+	CPU_PARTIAL_FREE,	/* Refill cpu partial on free */
-+	CPU_PARTIAL_NODE,	/* Refill cpu partial from node partial */
-+	CPU_PARTIAL_DRAIN,	/* Drain cpu partial to node partial */
- 	NR_SLUB_STAT_ITEMS };
- 
- struct kmem_cache_cpu {
-diff --git a/mm/slub.c b/mm/slub.c
-index 4907563..4e71a0a 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1560,6 +1560,7 @@ static void *get_partial_node(struct kmem_cache *s,
- 		} else {
- 			page->freelist = t;
- 			available = put_cpu_partial(s, page, 0);
-+			stat(s, CPU_PARTIAL_NODE);
- 		}
- 		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
- 			break;
-@@ -1973,6 +1974,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 				local_irq_restore(flags);
- 				pobjects = 0;
- 				pages = 0;
-+				stat(s, CPU_PARTIAL_DRAIN);
- 			}
- 		}
- 
-@@ -1984,7 +1986,6 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 		page->next = oldpage;
- 
- 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
--	stat(s, CPU_PARTIAL_FREE);
- 	return pobjects;
- }
- 
-@@ -2465,9 +2466,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 		 * If we just froze the page then put it onto the
- 		 * per cpu partial list.
- 		 */
--		if (new.frozen && !was_frozen)
-+		if (new.frozen && !was_frozen) {
- 			put_cpu_partial(s, page, 1);
--
-+			stat(s, CPU_PARTIAL_FREE);
-+		}
- 		/*
- 		 * The list lock was not taken therefore no list
- 		 * activity can be necessary.
-@@ -5059,6 +5061,8 @@ STAT_ATTR(CMPXCHG_DOUBLE_CPU_FAIL, cmpxchg_double_cpu_fail);
- STAT_ATTR(CMPXCHG_DOUBLE_FAIL, cmpxchg_double_fail);
- STAT_ATTR(CPU_PARTIAL_ALLOC, cpu_partial_alloc);
- STAT_ATTR(CPU_PARTIAL_FREE, cpu_partial_free);
-+STAT_ATTR(CPU_PARTIAL_NODE, cpu_partial_node);
-+STAT_ATTR(CPU_PARTIAL_DRAIN, cpu_partial_drain);
- #endif
- 
- static struct attribute *slab_attrs[] = {
-@@ -5124,6 +5128,8 @@ static struct attribute *slab_attrs[] = {
- 	&cmpxchg_double_cpu_fail_attr.attr,
- 	&cpu_partial_alloc_attr.attr,
- 	&cpu_partial_free_attr.attr,
-+	&cpu_partial_node_attr.attr,
-+	&cpu_partial_drain_attr.attr,
- #endif
- #ifdef CONFIG_FAILSLAB
- 	&failslab_attr.attr,
--- 
-1.6.3.3
-
-
+ACK. Ok. got it. This looks correct.
+RP
 
