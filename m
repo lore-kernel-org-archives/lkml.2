@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab2BHVTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:19:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65034 "EHLO mx1.redhat.com"
+	id S1757604Ab2BHVS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:18:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12289 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757611Ab2BHVTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:19:03 -0500
+	id S1756163Ab2BHVSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:18:53 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 13/17] FS-Cache: Initialise the object event mask with the
- calculated mask
+Subject: [PATCH 12/17] FS-Cache: Convert the object event ID #defines into an
+ enum
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
         linux-nfs@vger.kernel.org
-Date: Wed, 08 Feb 2012 21:18:53 +0000
-Message-ID: <20120208211853.15607.44641.stgit@warthog.procyon.org.uk>
+Date: Wed, 08 Feb 2012 21:18:44 +0000
+Message-ID: <20120208211844.15607.77232.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
 References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,27 +28,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialise the object event mask with the calculated mask rather than unmasking
-undefined events also.
+Convert the fscache_object event IDs from #defines into an enum.  Also add an
+extra label to the enum to carry the event count and redefine the event mask
+in terms of that.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/fscache/object.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ include/linux/fscache-cache.h |   26 +++++++++++++++++---------
+ 1 files changed, 17 insertions(+), 9 deletions(-)
 
-diff --git a/fs/fscache/object.c b/fs/fscache/object.c
-index 80b5491..2ef8a08 100644
---- a/fs/fscache/object.c
-+++ b/fs/fscache/object.c
-@@ -114,7 +114,8 @@ static void fscache_object_state_machine(struct fscache_object *object)
- 		/* wait for the parent object to become ready */
- 	case FSCACHE_OBJECT_INIT:
- 		object->event_mask =
--			ULONG_MAX & ~(1 << FSCACHE_OBJECT_EV_CLEARED);
-+			FSCACHE_OBJECT_EVENTS_MASK &
-+			~(1 << FSCACHE_OBJECT_EV_CLEARED);
- 		fscache_initialise_object(object);
- 		goto done;
+diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
+index 1e454ad..73e68c8 100644
+--- a/include/linux/fscache-cache.h
++++ b/include/linux/fscache-cache.h
+@@ -338,6 +338,23 @@ struct fscache_cookie {
+ extern struct fscache_cookie fscache_fsdef_index;
  
+ /*
++ * Event list for fscache_object::{event_mask,events}
++ */
++enum {
++	FSCACHE_OBJECT_EV_REQUEUE,	/* T if object should be requeued */
++	FSCACHE_OBJECT_EV_UPDATE,	/* T if object should be updated */
++	FSCACHE_OBJECT_EV_INVALIDATE,	/* T if cache requested object invalidation */
++	FSCACHE_OBJECT_EV_CLEARED,	/* T if accessors all gone */
++	FSCACHE_OBJECT_EV_ERROR,	/* T if fatal error occurred during processing */
++	FSCACHE_OBJECT_EV_RELEASE,	/* T if netfs requested object release */
++	FSCACHE_OBJECT_EV_RETIRE,	/* T if netfs requested object retirement */
++	FSCACHE_OBJECT_EV_WITHDRAW,	/* T if cache requested object withdrawal */
++	NR_FSCACHE_OBJECT_EVENTS
++};
++
++#define FSCACHE_OBJECT_EVENTS_MASK ((1UL << NR_FSCACHE_OBJECT_EVENTS) - 1)
++
++/*
+  * on-disk cache file or index handle
+  */
+ struct fscache_object {
+@@ -376,15 +393,6 @@ struct fscache_object {
+ 	unsigned long		event_mask;	/* events this object is interested in */
+ 	unsigned long		events;		/* events to be processed by this object
+ 						 * (order is important - using fls) */
+-#define FSCACHE_OBJECT_EV_REQUEUE	0	/* T if object should be requeued */
+-#define FSCACHE_OBJECT_EV_UPDATE	1	/* T if object should be updated */
+-#define FSCACHE_OBJECT_EV_CLEARED	2	/* T if accessors all gone */
+-#define FSCACHE_OBJECT_EV_ERROR		3	/* T if fatal error occurred during processing */
+-#define FSCACHE_OBJECT_EV_RELEASE	4	/* T if netfs requested object release */
+-#define FSCACHE_OBJECT_EV_RETIRE	5	/* T if netfs requested object retirement */
+-#define FSCACHE_OBJECT_EV_WITHDRAW	6	/* T if cache requested object withdrawal */
+-#define FSCACHE_OBJECT_EV_INVALIDATE	7	/* T if cache requested object invalidation */
+-#define FSCACHE_OBJECT_EVENTS_MASK	0xff	/* mask of all events*/
+ 
+ 	unsigned long		flags;
+ #define FSCACHE_OBJECT_LOCK		0	/* T if object is busy being processed */
 
