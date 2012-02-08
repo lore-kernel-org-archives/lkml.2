@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab2BHT1X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 14:27:23 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64610 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab2BHT1V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 14:27:21 -0500
+	id S1757123Ab2BHTcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 14:32:09 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:52938 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756873Ab2BHTcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 14:32:08 -0500
+Message-ID: <1328729420.2261.329.camel@groeck-laptop>
+Subject: Re: drivers/net/phy/phy.c issue
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>, netdev@vger.kernel.org
+CC: "afleming@freescale.com" <afleming@freescale.com>,
+        "macro@linux-mips.org" <macro@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 8 Feb 2012 11:30:20 -0800
+In-Reply-To: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
+References: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-In-Reply-To: <op.v9cr9sqm3l0zgt@mpn-glaptop>
-References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
- <1328271538-14502-12-git-send-email-m.szyprowski@samsung.com>
- <20120203140428.GG5796@csn.ul.ie> <CA+K6fF49BQiNer=7Di+gCU_EX4E41q-teXJJUBjEd2xc12-j4w@mail.gmail.com>
- <op.v9cr9sqm3l0zgt@mpn-glaptop>
-From: sandeep patil <psandeep.s@gmail.com>
-Date: Wed, 8 Feb 2012 11:26:40 -0800
-Message-ID: <CA+K6fF7naDkPOK8Dv1gg-4RdrrCC5OTx498nFLxg==PPHz-q6g@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 11/15] mm: trigger page reclaim in
- alloc_contig_range() to stabilize watermarks
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rob Clark <rob.clark@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/8 Michal Nazarewicz <mina86@mina86.com>:
-> On Wed, 08 Feb 2012 03:04:18 +0100, sandeep patil <psandeep.s@gmail.com>
-> wrote:
->>
->> There's another problem I am facing with zone watermarks and CMA.
->>
->> Test details:
->> Memory  : 480 MB of total memory, 128 MB CMA region
->> Test case : around 600 MB of file transfer over USB RNDIS onto target
->> System Load : ftpd with console running on target.
->> No one is doing CMA allocations except for the DMA allocations done by the
->> drivers.
->>
->> Result : After about 300MB transfer, I start getting GFP_ATOMIC
->> allocation failures.  This only happens if CMA region is reserved.
->> Total memory available is way above the zone watermarks. So, we ended
->> up starving
->> UNMOVABLE/RECLAIMABLE atomic allocations that cannot fallback on CMA
->> region.
->
->
-> This looks like something Mel warned me about.  I don't really have a good
-> solution for that yet. ;/
+Copying netdev.
 
-What if we have NR_FREE_CMA_PAGES in vmstat and use them to calculate
-__zone_watermark_ok()?
-However, it still doesn't solve the problem when we DON'T want to use
-NR_FREE_CMA_PAGES in case of MOVABLE allocations.
+On Wed, 2012-02-08 at 09:31 -0500, Frans Meulenbroeks wrote:
+> Hi
+> 
+> I found an issue with drivers/net/phy/phy.c
+> As I could not identify a maintainer for this file I decided to mail
+> it to the above addressees.
+> Apologies upfront if it is inappropriate.
+> 
+> The issue:
+> 
+> My network interface was configured as 10Mbit, full duplex, autonegotiate off.
+> If the cable is unplugged after 10 seconds or so the interface drops
+> to half duplex and the message:
+> Trying 10/HALF
+> is printed. This message comes (if I am correct from the function
+> phy_force_reduction in drivers/net/phy/phy.c
+> 
+> Maybe this is still ok, however if I reconnect my network cable the
+> interface remains configured as 10 Mbit, half duplex.
+> I had expected/assumed that it would go back to 10 Mbit, full duplex.
+> 
+> If I try the same with a 1Gbit full duplex link with autonegotiate on,
+> the link also drops to half duplex whenever the cable is
+> disconnected. However reconnecting the cable then brings the interface
+> back to full duplex again.
+> 
+> Not sure what is wrong (if the interface should not be dropped to half
+> or get back to full) and even less an idea how to fix it,
+> but wanted to report it anyway, in the hope someone can shed a light
+> on this and/or fix it.
+> 
+What is your kernel version ? No idea if it makes a difference, but I
+strongly suspect people will need to know.
+
+Guenter
+
+> Best regards, Frans.
+> 
+> PS: I'm not on lkml (way too much mails for me), so please keep me on Cc
 
 
-Sandeep
