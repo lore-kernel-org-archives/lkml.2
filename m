@@ -1,122 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab2BHQHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 11:07:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60128 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757193Ab2BHQHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 11:07:08 -0500
-Date: Wed, 8 Feb 2012 16:59:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Fixes for common mistakes w/ for_each_process and
-	task->mm
-Message-ID: <20120208155946.GA17177@redhat.com>
-References: <20120207064809.GA29061@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120207064809.GA29061@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757301Ab2BHQIN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 11:08:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48819 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab2BHQIM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 11:08:12 -0500
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
+        Venki Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Dmitry Antipov <dmitry.antipov@linaro.org>
+Subject: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and ARM
+Date: Wed,  8 Feb 2012 08:08:38 -0800
+Message-Id: <1328717318-23284-1-git-send-email-dmitry.antipov@linaro.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07, Anton Vorontsov wrote:
->
-> For sysrq case I kept the force_sig() usage, this is because in sysrq
-> case I belive we do want to kill PID namespace init processes.
+Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
+ARM, move "noirqtime=" option to common debugging code.
+For a bit of backward compatibility, X86-specific option
+"tsc=noirqtime" is preserved, but issues a warning.
 
-Agreed,
+Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Suggested-by: Venki Pallipadi <venki@google.com>
+Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
+---
+ arch/arm/kernel/sched_clock.c |    3 +++
+ arch/x86/Kconfig              |   11 -----------
+ arch/x86/kernel/tsc.c         |    7 ++++---
+ include/linux/sched.h         |    2 ++
+ lib/Kconfig.debug             |   12 ++++++++++++
+ lib/Makefile                  |    2 ++
+ lib/irqtime.c                 |   12 ++++++++++++
+ 7 files changed, 35 insertions(+), 14 deletions(-)
+ create mode 100644 lib/irqtime.c
 
-> If using
-> force_sig() is still a bad idea, I guess we should fix it somehow
-> else.
-
-Yes, I think it is simply wrong here. And I think that force_*
-should not take the "struct task_struct *" argument, it should be
-used for synchronous signals only.
-
-I am thinking about the patch below. With this patch send_sig_all()
-can use send_sig_info(SEND_SIG_FORCED). And probably send_sig_all()
-doesn't need tasklist in this case.
-
-I'll recheck this but I need to disappear until Friday, sorry.
-
-Oleg.
-
-
---- x/kernel/signal.c
-+++ x/kernel/signal.c
-@@ -58,21 +58,20 @@ static int sig_handler_ignored(void __us
- 		(handler == SIG_DFL && sig_kernel_ignore(sig));
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index 5416c7c..961bd2d 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -144,6 +144,9 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
+ 	 */
+ 	cd.epoch_ns = 0;
+ 
++	if (!no_sched_irq_time)
++		enable_sched_clock_irqtime();
++
+ 	pr_debug("Registered %pF as sched_clock source\n", read);
  }
  
--static int sig_task_ignored(struct task_struct *t, int sig,
--		int from_ancestor_ns)
-+static int sig_task_ignored(struct task_struct *t, int sig, bool force)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5bed94e..4759676 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -805,17 +805,6 @@ config SCHED_MC
+ 	  making when dealing with multi-core CPU chips at a cost of slightly
+ 	  increased overhead in some places. If unsure say N here.
+ 
+-config IRQ_TIME_ACCOUNTING
+-	bool "Fine granularity task level IRQ time accounting"
+-	default n
+-	---help---
+-	  Select this option to enable fine granularity task irq time
+-	  accounting. This is done by reading a timestamp on each
+-	  transitions between softirq and hardirq state, so there can be a
+-	  small performance impact.
+-
+-	  If in doubt, say N here.
+-
+ source "kernel/Kconfig.preempt"
+ 
+ config X86_UP_APIC
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index a62c201..70510a3 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -103,14 +103,15 @@ int __init notsc_setup(char *str)
+ 
+ __setup("notsc", notsc_setup);
+ 
+-static int no_sched_irq_time;
+-
+ static int __init tsc_setup(char *str)
  {
- 	void __user *handler;
- 
- 	handler = sig_handler(t, sig);
- 
- 	if (unlikely(t->signal->flags & SIGNAL_UNKILLABLE) &&
--			handler == SIG_DFL && !from_ancestor_ns)
-+			handler == SIG_DFL && !force)
- 		return 1;
- 
- 	return sig_handler_ignored(handler, sig);
+ 	if (!strcmp(str, "reliable"))
+ 		tsc_clocksource_reliable = 1;
+-	if (!strncmp(str, "noirqtime", 9))
++	if (!strncmp(str, "noirqtime", 9)) {
++		printk(KERN_WARNING "tsc: tsc=noirqtime is "
++		       "obsolete, use noirqtime instead\n");
+ 		no_sched_irq_time = 1;
++	}
+ 	return 1;
  }
  
--static int sig_ignored(struct task_struct *t, int sig, int from_ancestor_ns)
-+static int sig_ignored(struct task_struct *t, int sig, bool force)
- {
- 	/*
- 	 * Blocked signals are never ignored, since the
-@@ -82,7 +81,7 @@ static int sig_ignored(struct task_struc
- 	if (sigismember(&t->blocked, sig) || sigismember(&t->real_blocked, sig))
- 		return 0;
- 
--	if (!sig_task_ignored(t, sig, from_ancestor_ns))
-+	if (!sig_task_ignored(t, sig, force))
- 		return 0;
- 
- 	/*
-@@ -855,7 +854,7 @@ static void ptrace_trap_notify(struct ta
-  * Returns true if the signal should be actually delivered, otherwise
-  * it should be dropped.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7d379a6..b3575b5 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1966,9 +1966,11 @@ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
+  * The reason for this explicit opt-in is not to have perf penalty with
+  * slow sched_clocks.
   */
--static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
-+static int prepare_signal(int sig, struct task_struct *p, bool force)
- {
- 	struct signal_struct *signal = p->signal;
- 	struct task_struct *t;
-@@ -915,7 +914,7 @@ static int prepare_signal(int sig, struc
- 		}
- 	}
++extern int no_sched_irq_time;
+ extern void enable_sched_clock_irqtime(void);
+ extern void disable_sched_clock_irqtime(void);
+ #else
++#define no_sched_irq_time 1
+ static inline void enable_sched_clock_irqtime(void) {}
+ static inline void disable_sched_clock_irqtime(void) {}
+ #endif
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 8745ac7..236e814 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -299,6 +299,18 @@ config SCHEDSTATS
+ 	  application, you can say N to avoid the very slight overhead
+ 	  this adds.
  
--	return !sig_ignored(p, sig, from_ancestor_ns);
-+	return !sig_ignored(p, sig, force);
- }
++config IRQ_TIME_ACCOUNTING
++	bool "Fine granularity task level IRQ time accounting"
++	depends on X86 || ARM
++	default n
++	---help---
++	  Select this option to enable fine granularity task irq time
++	  accounting. This is done by reading a timestamp on each
++	  transitions between softirq and hardirq state, so there can be a
++	  small performance impact.
++
++	  If in doubt, say N here.
++
+ config TIMER_STATS
+ 	bool "Collect kernel timers statistics"
+ 	depends on DEBUG_KERNEL && PROC_FS
+diff --git a/lib/Makefile b/lib/Makefile
+index 18515f0..44d67d4 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -49,6 +49,8 @@ obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
+ obj-$(CONFIG_DEBUG_LIST) += list_debug.o
+ obj-$(CONFIG_DEBUG_OBJECTS) += debugobjects.o
  
- /*
-@@ -1059,7 +1058,8 @@ static int __send_signal(int sig, struct
- 
- 	assert_spin_locked(&t->sighand->siglock);
- 
--	if (!prepare_signal(sig, t, from_ancestor_ns))
-+	if (!prepare_signal(sig, t,
-+			from_ancestor_ns || (info == SEND_SIG_FORCED)))
- 		return 0;
- 
- 	pending = group ? &t->signal->shared_pending : &t->pending;
++obj-$(CONFIG_IRQ_TIME_ACCOUNTING) += irqtime.o
++
+ ifneq ($(CONFIG_HAVE_DEC_LOCK),y)
+   lib-y += dec_and_lock.o
+ endif
+diff --git a/lib/irqtime.c b/lib/irqtime.c
+new file mode 100644
+index 0000000..10d440d
+--- /dev/null
++++ b/lib/irqtime.c
+@@ -0,0 +1,12 @@
++#include <linux/kernel.h>
++#include <linux/sched.h>
++
++int no_sched_irq_time;
++
++static int __init irqtime_setup(char *str)
++{
++	no_sched_irq_time = 1;
++	return 1;
++}
++
++__setup("noirqtime", irqtime_setup);
+-- 
+1.7.7.6
 
