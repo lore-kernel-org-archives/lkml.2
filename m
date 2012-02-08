@@ -1,131 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab2BHMeV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 07:34:21 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65002 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756737Ab2BHMeT convert rfc822-to-8bit (ORCPT
+	id S932094Ab2BHMjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 07:39:32 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:33216
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932069Ab2BHMja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 07:34:19 -0500
+	Wed, 8 Feb 2012 07:39:30 -0500
+X-IronPort-AV: E=Sophos;i="4.73,383,1325458800"; 
+   d="scan'208";a="130570940"
+Date: Wed, 8 Feb 2012 13:39:29 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Dong Aisheng <dongas86@gmail.com>
+cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [alsa-devel] [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add missing
+ iounmap
+In-Reply-To: <CAA+hA=Qu0z15vkskBOZdnEMqxmOV5Dk-gmA1ZJtJtuY0e=MRFA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1202081339040.1833@localhost6.localdomain6>
+References: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr> <7FE21149F4667147B645348EC605788508FBDB@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1201241828480.1779@localhost6.localdomain6> <20120124202203.GD1135@opensource.wolfsonmicro.com>
+ <alpine.DEB.2.02.1201242144580.1998@hadrien> <20120126110506.GB2611@pengutronix.de> <alpine.DEB.2.02.1201261220460.1851@localhost6.localdomain6> <20120126112242.GA9401@opensource.wolfsonmicro.com> <alpine.DEB.2.02.1201280801230.2045@hadrien>
+ <20120206162017.GM3070@opensource.wolfsonmicro.com> <CAA+hA=Qu0z15vkskBOZdnEMqxmOV5Dk-gmA1ZJtJtuY0e=MRFA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120208115244.GA24959@sig21.net>
-References: <201202041109.53003.toralf.foerster@gmx.de>
-	<201202051107.26634.toralf.foerster@gmx.de>
-	<CAJd=RBCvvVgWqfSkoEaWVG=2mwKhyXarDOthHt9uwOb2fuDE9g@mail.gmail.com>
-	<201202080956.18727.toralf.foerster@gmx.de>
-	<20120208115244.GA24959@sig21.net>
-Date: Wed, 8 Feb 2012 20:34:14 +0800
-Message-ID: <CAJd=RBDbYA4xZRikGtHJvKESdiSE-B4OucZ6vQ+tHCi+hG2+aw@mail.gmail.com>
-Subject: Re: swap storm since kernel 3.2.x
-From: Hillf Danton <dhillf@gmail.com>
-To: Johannes Stezenbach <js@sig21.net>
-Cc: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1673869226-1328704770=:1833"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/8 Johannes Stezenbach <js@sig21.net>:
-> On Wed, Feb 08, 2012 at 09:56:15AM +0100, Toralf Förster wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-1673869226-1328704770=:1833
+Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
+
+On Wed, 8 Feb 2012, Dong Aisheng wrote:
+
+> On Tue, Feb 7, 2012 at 12:20 AM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+>> On Sat, Jan 28, 2012 at 08:03:34AM +0100, Julia Lawall wrote:
 >>
->> From what I can tell is this:
->> If the system is under heavy I/O load and hasn't too much free RAM (git pull,
->> svn update and RAM consuming BOINC applications) then kernel 3.0.20 handle
->> this somehow while 3.2.x run into a swap storm like.
+>>> patch against
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
+>>
+>> Hrm, I know there had been some debate about what to generate against
+>> but this now once again fails to apply against for-3.4... �No idea
+>> what's going on there and I didn't investigate the conflicts, sorry.
+>>
+>> I had been waiting in the vauge hope that some of the mxs maintainers
+>> would review.
+>>
+> I also failed to apply it against for-3.4.
+> It seemed the conflicts are a lot.
 >
-> FWIW, I also saw heavy swapping with 3.2.2 with the
-> CONFIG_DEBUG_OBJECTS issue reported here:
-> http://lkml.org/lkml/2012/1/30/227
+> Hi Julia,
 >
-> But the thing is that even though SUnreclaim was
-> huge there was still 1G MemFree and it swapped heavily
-> on idle system when just switching between e.g. Firefox and gvim.
+> Can you regenerate the patch based on Mark's for-3.4 branch?
 >
-> Today I'm running 3.2.4 with CONFIG_DEBUG_OBJECTS disabled
-> (but otherwise the same config) and it doesn't swap even
-> after a fair amount of I/O:
+> BTW, i wonder if this patch's title should be changed a bit
+> since what this patch does is not adding missing iounmap anymore.
+> Maybe like: ASoC: mxs-saif: convert to use devm_kmalloc and its friends.
 
-Hah, looks not related to kswapd directly;)
+Yes, thanks for the suggestions.  I will do both shortly (today or 
+tomorrow).
 
->
-> MemTotal:        3940088 kB
-> MemFree:         1024920 kB
-> Buffers:          293328 kB
-> Cached:           447796 kB
-> SwapCached:           24 kB
-> Active:           847136 kB
-> Inactive:         567200 kB
-> Active(anon):     478736 kB
-> Inactive(anon):   246744 kB
-> Active(file):     368400 kB
-> Inactive(file):   320456 kB
-> Unevictable:           0 kB
-> Mlocked:               0 kB
-> SwapTotal:       3903484 kB
-> SwapFree:        3903196 kB
-> Dirty:                16 kB
-> Writeback:             0 kB
-> AnonPages:        673192 kB
-> Mapped:            40956 kB
-> Shmem:             52268 kB
-> Slab:            1434188 kB
-> SReclaimable:    1367388 kB
-> SUnreclaim:        66800 kB
-> KernelStack:        1600 kB
-> PageTables:         4880 kB
-> NFS_Unstable:          0 kB
-> Bounce:                0 kB
-> WritebackTmp:          0 kB
-> CommitLimit:     5873528 kB
-> Committed_AS:    1744916 kB
-> VmallocTotal:   34359738367 kB
-> VmallocUsed:      348116 kB
-> VmallocChunk:   34359362739 kB
-> DirectMap4k:       12288 kB
-> DirectMap2M:     4098048 kB
->
->  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
->  586182 353006  60%    1.74K  32595       18   1043040K ext3_inode_cache
->  289062 170979  59%    0.58K  10706       27    171296K dentry
->  247266 107729  43%    0.42K  13737       18    109896K buffer_head
->
->
-And I want to ask kswapd to do less work, the attached diff is
-based on 3.2.5, mind to test it with CONFIG_DEBUG_OBJECTS enabled?
-
-Thanks
-Hillf
-
---- a/mm/vmscan.c	Wed Feb  8 20:10:14 2012
-+++ b/mm/vmscan.c	Wed Feb  8 20:15:22 2012
-@@ -2113,8 +2113,11 @@ restart:
- 		 * with multiple processes reclaiming pages, the total
- 		 * freeing target can get unreasonably large.
- 		 */
--		if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
-+		if (nr_reclaimed >= nr_to_reclaim) {
-+			nr_to_reclaim = 0;
- 			break;
-+		}
-+		nr_to_reclaim -= nr_reclaimed;
- 	}
- 	blk_finish_plug(&plug);
- 	sc->nr_reclaimed += nr_reclaimed;
-@@ -2683,12 +2686,12 @@ static unsigned long balance_pgdat(pg_da
- 		 * we want to put equal scanning pressure on each zone.
- 		 */
- 		.nr_to_reclaim = ULONG_MAX,
--		.order = order,
- 		.target_mem_cgroup = NULL,
- 	};
- 	struct shrink_control shrink = {
- 		.gfp_mask = sc.gfp_mask,
- 	};
-+	sc.order = order = 0;
- loop_again:
- 	total_scanned = 0;
- 	sc.nr_reclaimed = 0;
---
+julia
+--8323328-1673869226-1328704770=:1833--
