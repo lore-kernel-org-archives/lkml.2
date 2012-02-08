@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab2BHWg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 17:36:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46902 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab2BHWgZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 17:36:25 -0500
-Date: Wed, 8 Feb 2012 14:36:24 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Austin Boyle <Austin.Boyle@Aviatnet.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, <rtc-linux@googlegroups.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] rtc: ds1307: generalise ram size and offset
-Message-Id: <20120208143624.592303f5.akpm@linux-foundation.org>
-In-Reply-To: <1328739796.3117.77.camel@pc786-ubu.gnet.global.vpn>
-References: <1326144071.3096.25.camel@pc786-ubu.gnet.global.vpn>
-	<20120111110650.GC2605@pengutronix.de>
-	<1326320516.3096.64.camel@pc786-ubu.gnet.global.vpn>
-	<20120119194541.GA32483@pengutronix.de>
-	<1328143057.3159.34.camel@pc786-ubu.gnet.global.vpn>
-	<1328221704.3159.50.camel@pc786-ubu.gnet.global.vpn>
-	<20120207145652.GH2539@pengutronix.de>
-	<1328739796.3117.77.camel@pc786-ubu.gnet.global.vpn>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757281Ab2BHWtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 17:49:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7306 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753338Ab2BHWtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 17:49:02 -0500
+Date: Wed, 8 Feb 2012 17:48:37 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>, Chen Gong <gong.chen@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "'ak@linux.intel.com'" <ak@linux.intel.com>,
+        "'hughd@chromium.org'" <hughd@chromium.org>,
+        "'mingo@elte.hu'" <mingo@elte.hu>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
+ smp_send_stop()
+Message-ID: <20120208224837.GB5650@redhat.com>
+References: <20120111172544.GS5650@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28FD61F@ORSMSX104.amr.corp.intel.com>
+ <32727E9A83EE9A42A1F0906295A3A77B2C78F49973@USINDEVS01.corp.hds.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2DA7B65F2A@USINDEVS01.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F0275EE@ORSMSX104.amr.corp.intel.com>
+ <20120203171809.GL5650@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F02B380@ORSMSX104.amr.corp.intel.com>
+ <20120203225740.GO5650@redhat.com>
+ <20120208201940.GZ5650@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F038F46@ORSMSX104.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F038F46@ORSMSX104.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Feb 2012 11:23:16 +1300
-Austin Boyle <Austin.Boyle@Aviatnet.com> wrote:
+On Wed, Feb 08, 2012 at 09:28:37PM +0000, Luck, Tony wrote:
+> > If I put together a patch to address this would you be willing to let
+> > Seiji move the kmsg_dump to below smp_send_stop()?
+> 
+> I'd "Ack" it ... not my decision whether to apply it.
 
-> this patch is based on Wolfram Sang's tree:
-> git://git.pengutronix.de/git/wsa/linux-2.6.git ds1307
+Sure, I understand. But I figured your objection is holding it up to. ;-)
 
-Wolfram, that tree appears not to be in linux-next?  If so, please
-let's get it in there.
+Let me put together a patch for that change.
 
-Meanwhile I dropped the old version of this patch and won't (can't)
-apply v4.
-
+Cheers,
+Don
