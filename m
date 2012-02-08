@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab2BHBo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 20:44:56 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63034 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757285Ab2BHBoz (ORCPT
+	id S1757237Ab2BHBvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 20:51:21 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38634 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756414Ab2BHBvT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 20:44:55 -0500
-Date: Wed, 8 Feb 2012 05:44:52 +0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Dave Jones <davej@redhat.com>, Russell King <linux@arm.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nicolas Pitre <nico@fluxnic.net>, Mike Chan <mike@android.com>,
-        Todd Poynor <toddpoynor@google.com>, cpufreq@vger.kernel.org,
-        kernel-team@android.com, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] ARM: Move leds idle start/stop calls to sched idle
- notifiers
-Message-ID: <20120208014452.GD459@panacea>
-References: <20120208013959.GA24535@panacea>
+	Tue, 7 Feb 2012 20:51:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120208013959.GA24535@panacea>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F31D03B.9040707@openvz.org>
+References: <20120207074905.29797.60353.stgit@zurg> <CA+55aFy3NZ2sWX0CNVd9FnPSx0mUKSe0XzDWpDsNfU21p6ebHQ@mail.gmail.com>
+ <4F31D03B.9040707@openvz.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 7 Feb 2012 17:50:59 -0800
+X-Google-Sender-Auth: iQqrPLGLAbPwiCIWiVqcz8YzPMg
+Message-ID: <CA+55aFx24n-W4-wTtrfbt9PNvVd7n+SvThnO6OQ74uW4yNrGxw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] radix-tree: iterating general cleanup
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Todd Poynor <toddpoynor@google.com>
+On Tue, Feb 7, 2012 at 5:30 PM, Konstantin Khlebnikov
+<khlebnikov@openvz.org> wrote:
+>
+> If do not count comments here actually is negative line count change.
 
-Signed-off-by: Todd Poynor <toddpoynor@google.com>
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- arch/arm/kernel/leds.c    |   25 ++++++++++++++++++++++++-
- arch/arm/kernel/process.c |    3 ---
- 2 files changed, 24 insertions(+), 4 deletions(-)
+Ok, fair enough.
 
-diff --git a/arch/arm/kernel/leds.c b/arch/arm/kernel/leds.c
-index 1911dae..fbc30d4 100644
---- a/arch/arm/kernel/leds.c
-+++ b/arch/arm/kernel/leds.c
-@@ -9,6 +9,8 @@
-  */
- #include <linux/export.h>
- #include <linux/init.h>
-+#include <linux/sched.h>
-+#include <linux/notifier.h>
- #include <linux/device.h>
- #include <linux/syscore_ops.h>
- #include <linux/string.h>
-@@ -103,6 +105,25 @@ static struct syscore_ops leds_syscore_ops = {
- 	.resume		= leds_resume,
- };
- 
-+static int leds_idle_notifier(struct notifier_block *nb, unsigned long val,
-+			      void *data)
-+{
-+	switch (val) {
-+	case SCHED_IDLE_START:
-+		leds_event(led_idle_start);
-+		break;
-+	case SCHED_IDLE_END:
-+		leds_event(led_idle_end);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct notifier_block leds_idle_nb = {
-+	.notifier_call = leds_idle_notifier,
-+};
-+
- static int __init leds_init(void)
- {
- 	int ret;
-@@ -111,8 +132,10 @@ static int __init leds_init(void)
- 		ret = device_register(&leds_device);
- 	if (ret == 0)
- 		ret = device_create_file(&leds_device, &dev_attr_event);
--	if (ret == 0)
-+	if (ret == 0) {
- 		register_syscore_ops(&leds_syscore_ops);
-+		sched_idle_notifier_register(&leds_idle_nb);
-+	}
- 	return ret;
- }
- 
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index f2bac2d..f4b53aa 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -33,7 +33,6 @@
- #include <linux/cpuidle.h>
- 
- #include <asm/cacheflush.h>
--#include <asm/leds.h>
- #include <asm/processor.h>
- #include <asm/system.h>
- #include <asm/thread_notify.h>
-@@ -207,7 +206,6 @@ void cpu_idle(void)
- 	/* endless idle loop with no priority at all */
- 	while (1) {
- 		sched_idle_enter();
--		leds_event(led_idle_start);
- 		while (!need_resched()) {
- #ifdef CONFIG_HOTPLUG_CPU
- 			if (cpu_is_offline(smp_processor_id()))
-@@ -235,7 +233,6 @@ void cpu_idle(void)
- 				local_irq_enable();
- 			}
- 		}
--		leds_event(led_idle_end);
- 		sched_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
--- 
-1.7.7.6
+> And if drop (almost) unused radix_tree_gang_lookup_tag_slot() and
+> radix_tree_gang_lookup_slot() total bloat-o-meter score becomes negative
+> too.
+
+Good.
+
+> There also some simple bit-hacks: find-next-bit instead of dumb loops in
+> tagged-lookup.
+>
+> Here some benchmark results: there is radix-tree with 1024 slots, I fill and
+> tag every <step> slot,
+> and run lookup for all slots with radix_tree_gang_lookup() and
+> radix_tree_gang_lookup_tag() in the loop.
+> old/new rows -- nsec per iteration over whole tree.
+>
+> tagged-lookup
+> step    1       2       3       4       5       6       7       8       9       10      11      12      13      14      15      16
+> old     7035    5248    4742    4308    4217    4133    4030    3920    4038    3933    3914    3796    3851    3755    3819    3582
+> new     3578    2617    1899    1426    1220    1058    936     822     845     749     695     679     648     575     591     509
+>
+> so, new tagged-lookup always faster, especially for sparse trees.
+
+Do you have any benchmarks when it's actually used by higher levels,
+though? I guess that will involve find_get_pages(), and we don't have
+all that any of them, but it would be lovely to see some real load
+(even if it is limited to one of the filesystems that uses this)
+numbers too..
+
+> New normal lookup works faster for dense trees, on sparse trees it slower.
+
+I think that should be the common case, so that may be fine. Again, it
+would be nice to see numbers that are for something else than just the
+lookup - an actual use of it in some real context.
+
+Anyway, the patches themselves looked fine to me, modulo the fact that
+I wasn't all that happy with the new __find_next_bit, and I think it's
+better to not expose it in a generic header file. But I would really
+like to see more "real" numbers for the series
+
+Thanks,
+
+                   Linus
