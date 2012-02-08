@@ -1,66 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887Ab2BHRxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 12:53:44 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:65046 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab2BHRxn (ORCPT
+	id S1756942Ab2BHRyP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 12:54:15 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41961 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231Ab2BHRyN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 12:53:43 -0500
-Message-ID: <4F32B6A4.8030702@vflare.org>
-Date: Wed, 08 Feb 2012 12:53:40 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 8 Feb 2012 12:54:13 -0500
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Josh Boyer <jwboyer@redhat.com>
+Subject: Re: 3.3-rc2 snd_pcm lockdep backtrace
+Date: Wed, 8 Feb 2012 18:54:08 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc2; KDE/4.6.5; x86_64; ; )
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+References: <20120206145621.GA4771@zod.bos.redhat.com>
+In-Reply-To: <20120206145621.GA4771@zod.bos.redhat.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
-References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com> <1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com> <4F21A5AF.6010605@linux.vnet.ibm.com> <4F300D41.5050105@linux.vnet.ibm.com> <4F32A55E.8010401@linux.vnet.ibm.com>
-In-Reply-To: <4F32A55E.8010401@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201202081854.08668.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2012 11:39 AM, Dave Hansen wrote:
-
-> On 02/06/2012 09:26 AM, Seth Jennings wrote:
->> On 01/26/2012 01:12 PM, Dave Hansen wrote:
->>> void *kmap_atomic_prot(struct page *page, pgprot_t prot)
->>> {
->>> ...
->>>         type = kmap_atomic_idx_push();
->>>         idx = type + KM_TYPE_NR*smp_processor_id();
->>>         vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
->>>
->>> I think if you do a get_cpu()/put_cpu() or just a preempt_disable()
->>> across the operations you'll be guaranteed to get two contiguous addresses.
->>
->> I'm not quite following here.  kmap_atomic() only does this for highmem pages.
->> For normal pages (all pages for 64-bit), it doesn't do any mapping at all.  It
->> just returns the virtual address of the page since it is in the kernel's address
->> space.
->>
->> For this design, the pages _must_ be mapped, even if the pages are directly
->> reachable in the address space, because they must be virtually contiguous.
+On poniedziałek, 6 lutego 2012 o 15:56:22 Josh Boyer wrote:
+> Hi All,
 > 
-> I guess you could use vmap() for that.  It's just going to be slower
-> than kmap_atomic().  I'm really not sure it's worth all the trouble to
-> avoid order-1 allocations, though.
+> We've had a report[1] of a lockdep backtrace from the snd_pcm driver.  I
+> was wondering if anyone had hit this already or had some decent ideas on
+> what the issue might be.
+> 
+> josh
+> 
+> [1] https://bugzilla.redhat.com/show_bug.cgi?id=787319
+> 
+> backtrace:
+> :[ INFO: possible recursive locking detected ]
+> :3.3.0-0.rc2.git2.1.fc17.x86_64 #1 Not tainted
+> :---------------------------------------------
+> :
+> :pulseaudio/954 is trying to acquire lock:
+> : (&(&substream->self_group.lock)->rlock/1){......}, at:
+> : [<ffffffffa00d9093>]
+> 
+> snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+> 
+> :but task is already holding lock:
+> : (&(&substream->self_group.lock)->rlock/1){......}, at:
+> : [<ffffffffa00d9093>]
+> 
+> snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+> 
+> :other info that might help us debug this:
+> : Possible unsafe locking scenario:
+> :       CPU0
+> :       ----
+> :  
+> :  lock(&(&substream->self_group.lock)->rlock/1);
+> :  lock(&(&substream->self_group.lock)->rlock/1);
+> : 
+> : *** DEADLOCK ***
+> : May be due to missing lock nesting notation
+> :
+> :4 locks held by pulseaudio/954:
+> : #0:  (snd_pcm_link_rwlock){......}, at: [<ffffffffa00d9e62>]
+> 
+> snd_pcm_drop+0x62/0x110 [snd_pcm]
+> 
+> : #1:  (&(&substream->self_group.lock)->rlock){......}, at:
+> [<ffffffffa00d9e6a>] snd_pcm_drop+0x6a/0x110 [snd_pcm]
+> 
+> : #2:  (&(&substream->group->lock)->rlock){......}, at:
+> : [<ffffffffa00d93ce>]
+> 
+> snd_pcm_action+0x3e/0xb0 [snd_pcm]
+> 
+> : #3:  (&(&substream->self_group.lock)->rlock/1){......}, at:
+> [<ffffffffa00d9093>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+> 
+> :stack backtrace:
+> :Pid: 954, comm: pulseaudio Not tainted 3.3.0-0.rc2.git2.1.fc17.x86_64 #1
+> :
+> :Call Trace:
+> : [<ffffffff810cb7ec>] __lock_acquire+0x160c/0x1ad0
+> : [<ffffffff810ca4f6>] ? __lock_acquire+0x316/0x1ad0
+> : [<ffffffff81020f99>] ? sched_clock+0x9/0x10
+> : [<ffffffff810a24a5>] ? sched_clock_local+0x25/0xa0
+> : [<ffffffff810cc381>] lock_acquire+0xa1/0x1e0
+> : [<ffffffffa00d9093>] ? snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+> : [<ffffffff8169cca4>] _raw_spin_lock_nested+0x44/0x80
+> : [<ffffffffa00d9093>] ? snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+> : [<ffffffffa00d9093>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+> : [<ffffffffa00d9401>] snd_pcm_action+0x71/0xb0 [snd_pcm]
+> : [<ffffffffa00d945a>] snd_pcm_stop+0x1a/0x20 [snd_pcm]
+> : [<ffffffffa00d9e84>] snd_pcm_drop+0x84/0x110 [snd_pcm]
+> : [<ffffffffa00dbba8>] snd_pcm_common_ioctl1+0x4a8/0xbe0 [snd_pcm]
+> : [<ffffffffa00dc650>] snd_pcm_playback_ioctl1+0x60/0x2d0 [snd_pcm]
+> : [<ffffffff812c1481>] ? file_has_perm+0xe1/0xf0
+> : [<ffffffffa00dc8f4>] snd_pcm_playback_ioctl+0x34/0x40 [snd_pcm]
+> : [<ffffffff811cf8d9>] do_vfs_ioctl+0x99/0x5a0
+> : [<ffffffff811cfe79>] sys_ioctl+0x99/0xa0
+> : [<ffffffff816a63e9>] system_call_fastpath+0x16/0x1b
 > 
 
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=42746
+for your bug report, please add your address to the CC list in there, thanks!
 
-vmap() is not just slower but also does memory allocations at various
-places. Under memory pressure, this may cause failure in reading a
-stored object just because we failed to map it. Also, it allocates VA
-region each time its called which is a real big waste when we can simply
-pre-allocate 2 * PAGE_SIZE'ed VA regions (per-cpu).
-
-Thanks,
-Nitin
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
