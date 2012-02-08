@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab2BHLDg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 06:03:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20014 "EHLO mx1.redhat.com"
+	id S1756958Ab2BHLDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 06:03:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64694 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756807Ab2BHLDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 06:03:34 -0500
+	id S1756940Ab2BHLDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 06:03:45 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 4/9] KEYS: Reorganise keys Makefile
+Subject: [PATCH 5/9] KEYS: Announce key type (un)registration
 To: steved@redhat.com, jmorris@namei.org
 Cc: keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 08 Feb 2012 11:03:27 +0000
-Message-ID: <20120208110327.4050.11227.stgit@warthog.procyon.org.uk>
+Date: Wed, 08 Feb 2012 11:03:38 +0000
+Message-ID: <20120208110338.4050.92429.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120208110254.4050.8856.stgit@warthog.procyon.org.uk>
 References: <20120208110254.4050.8856.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -27,44 +27,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorganise the keys directory Makefile to put all the core bits together and
-the type-specific bits after.
+Announce the (un)registration of a key type in the core key code rather than
+in the callers.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 Acked-by: Mimi Zohar <zohar@us.ibm.com>
 ---
 
- security/keys/Makefile |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ net/dns_resolver/dns_key.c |    5 -----
+ security/keys/key.c        |    3 +++
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index a56f1ff..504aaa0 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -2,6 +2,9 @@
- # Makefile for key management
- #
+diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+index c73bba3..14b2c3d 100644
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -249,9 +249,6 @@ static int __init init_dns_resolver(void)
+ 	struct key *keyring;
+ 	int ret;
  
-+#
-+# Core
-+#
- obj-y := \
- 	gc.o \
- 	key.o \
-@@ -12,9 +15,12 @@ obj-y := \
- 	request_key.o \
- 	request_key_auth.o \
- 	user_defined.o
+-	printk(KERN_NOTICE "Registering the %s key type\n",
+-	       key_type_dns_resolver.name);
 -
--obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
--obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
- obj-$(CONFIG_KEYS_COMPAT) += compat.o
- obj-$(CONFIG_PROC_FS) += proc.o
- obj-$(CONFIG_SYSCTL) += sysctl.o
+ 	/* create an override credential set with a special thread keyring in
+ 	 * which DNS requests are cached
+ 	 *
+@@ -301,8 +298,6 @@ static void __exit exit_dns_resolver(void)
+ 	key_revoke(dns_resolver_cache->thread_keyring);
+ 	unregister_key_type(&key_type_dns_resolver);
+ 	put_cred(dns_resolver_cache);
+-	printk(KERN_NOTICE "Unregistered %s key type\n",
+-	       key_type_dns_resolver.name);
+ }
+ 
+ module_init(init_dns_resolver)
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 7ada801..9173253 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -960,6 +960,8 @@ int register_key_type(struct key_type *ktype)
+ 
+ 	/* store the type */
+ 	list_add(&ktype->link, &key_types_list);
 +
-+#
-+# Key types
-+#
-+obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
-+obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
++	pr_notice("Key type %s registered\n", ktype->name);
+ 	ret = 0;
+ 
+ out:
+@@ -982,6 +984,7 @@ void unregister_key_type(struct key_type *ktype)
+ 	list_del_init(&ktype->link);
+ 	downgrade_write(&key_types_sem);
+ 	key_gc_keytype(ktype);
++	pr_notice("Key type %s unregistered\n", ktype->name);
+ 	up_read(&key_types_sem);
+ }
+ EXPORT_SYMBOL(unregister_key_type);
 
