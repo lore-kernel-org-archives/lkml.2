@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab2BHLJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 06:09:22 -0500
-Received: from ns.pmeerw.net ([87.118.82.44]:34189 "EHLO pmeerw.net"
+	id S1756966Ab2BHLLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 06:11:51 -0500
+Received: from mga03.intel.com ([143.182.124.21]:6993 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755332Ab2BHLJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 06:09:20 -0500
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: linux-kernel@vger.kernel.org
-Cc: davem@davemloft.net, steve.glendinning@smsc.com,
-        Peter Meerwald <p.meerwald@bct-electronic.com>
-Subject: [PATCH 2/2] smsc95xx: allow to re-use MAC address already programmed
-Date: Wed,  8 Feb 2012 12:08:52 +0100
-Message-Id: <1328699332-9024-2-git-send-email-pmeerw@pmeerw.net>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1328699332-9024-1-git-send-email-pmeerw@pmeerw.net>
-References: <1328699332-9024-1-git-send-email-pmeerw@pmeerw.net>
+	id S1756794Ab2BHLLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 06:11:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104458051"
+Date: Wed, 8 Feb 2012 19:01:44 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Li Shaohua <shaohua.li@intel.com>
+Subject: [PATCH] block: remove plugging at buffered write time
+Message-ID: <20120208110143.GA5550@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Meerwald <p.meerwald@bct-electronic.com>
+Buffered write(2) is not directly tied to IO, so it's not suitable to
+handle plug in generic_file_aio_write().
 
-patch adds a module parameter which allows to keep the MAC address already 
-set (e.g. by the boot loader) if it is valid (otherwise the MAC address is read 
-from an optional EEPROM or randomly generated)
+Also remove the redundant plug calls around ->direct_IO(), since we now
+do unplugging in the lower layer do_blockdev_direct_IO().
 
-tested on beagleboard-xm
-
-Signed-off-by: Peter Meerwald <p.meerwald@bct-electronic.com>
-
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Li Shaohua <shaohua.li@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- drivers/net/usb/smsc95xx.c |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+ fs/direct-io.c |    4 ++++
+ mm/filemap.c   |    7 -------
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-index b7b2326..5545a60 100644
---- a/drivers/net/usb/smsc95xx.c
-+++ b/drivers/net/usb/smsc95xx.c
-@@ -67,6 +67,10 @@ static bool leds_off = false;
- module_param(leds_off, bool, 0644);
- MODULE_PARM_DESC(leds_off, "Turn off NIC LEDs");
- 
-+static bool keep_mac = false;
-+module_param(keep_mac, bool, 0644);
-+MODULE_PARM_DESC(keep_mac, "Keep MAC address set by boot loader if available");
-+
- static int smsc95xx_read_reg(struct usbnet *dev, u32 index, u32 *data)
+--- linux-next.orig/mm/filemap.c	2012-02-08 18:51:50.000000000 +0800
++++ linux-next/mm/filemap.c	2012-02-08 18:52:19.000000000 +0800
+@@ -1421,12 +1421,8 @@ generic_file_aio_read(struct kiocb *iocb
+ 			retval = filemap_write_and_wait_range(mapping, pos,
+ 					pos + iov_length(iov, nr_segs) - 1);
+ 			if (!retval) {
+-				struct blk_plug plug;
+-
+-				blk_start_plug(&plug);
+ 				retval = mapping->a_ops->direct_IO(READ, iocb,
+ 							iov, pos, nr_segs);
+-				blk_finish_plug(&plug);
+ 			}
+ 			if (retval > 0) {
+ 				*ppos = pos + retval;
+@@ -2610,13 +2606,11 @@ ssize_t generic_file_aio_write(struct ki
  {
- 	u32 *buf = kmalloc(4, GFP_KERNEL);
-@@ -607,6 +611,21 @@ static int smsc95xx_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
+-	struct blk_plug plug;
+ 	ssize_t ret;
  
- static void smsc95xx_init_mac_address(struct usbnet *dev)
- {
-+	if (keep_mac) {
-+		u32 addr_lo, addr_hi;
-+		int ret = smsc95xx_read_reg(dev, ADDRL, &addr_lo);
-+		if (ret < 0) {
-+			netdev_warn(dev->net, "Failed to read ADDRL: %d\n", ret);
-+		}
-+		ret = smsc95xx_read_reg(dev, ADDRH, &addr_hi);
+ 	BUG_ON(iocb->ki_pos != pos);
+ 
+ 	mutex_lock(&inode->i_mutex);
+-	blk_start_plug(&plug);
+ 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+ 	mutex_unlock(&inode->i_mutex);
+ 
+@@ -2627,7 +2621,6 @@ ssize_t generic_file_aio_write(struct ki
+ 		if (err < 0 && ret > 0)
+ 			ret = err;
+ 	}
+-	blk_finish_plug(&plug);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(generic_file_aio_write);
+--- linux-next.orig/fs/direct-io.c	2012-02-08 18:51:37.000000000 +0800
++++ linux-next/fs/direct-io.c	2012-02-08 18:52:19.000000000 +0800
+@@ -1106,6 +1106,7 @@ do_blockdev_direct_IO(int rw, struct kio
+ 	unsigned long user_addr;
+ 	size_t bytes;
+ 	struct buffer_head map_bh = { 0, };
++	struct blk_plug plug;
+ 
+ 	if (rw & WRITE)
+ 		rw = WRITE_ODIRECT;
+@@ -1221,6 +1222,8 @@ do_blockdev_direct_IO(int rw, struct kio
+ 				PAGE_SIZE - user_addr / PAGE_SIZE);
+ 	}
+ 
++	blk_start_plug(&plug);
 +
-+		if (is_valid_ether_addr(dev->net->dev_addr)) {
-+			/* MAC values are valid so use them */
-+			netif_dbg(dev, ifup, dev->net, "MAC address already configured\n");
-+			return;
-+		}
-+	}
-+
- 	/* try reading mac address from EEPROM */
- 	if (smsc95xx_read_eeprom(dev, EEPROM_MAC_OFFSET, ETH_ALEN,
- 			dev->net->dev_addr) == 0) {
--- 
-1.7.4.1
-
+ 	for (seg = 0; seg < nr_segs; seg++) {
+ 		user_addr = (unsigned long)iov[seg].iov_base;
+ 		sdio.size += bytes = iov[seg].iov_len;
+@@ -1314,6 +1317,7 @@ do_blockdev_direct_IO(int rw, struct kio
+ 	} else
+ 		BUG_ON(retval != -EIOCBQUEUED);
+ 
++	blk_finish_plug(&plug);
+ out:
+ 	return retval;
+ }
