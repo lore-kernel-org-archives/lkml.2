@@ -1,88 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab2BHVRm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:17:42 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:56720 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756150Ab2BHVRj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:17:39 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christian Benvenuti <benve@cisco.com>,
-        Roopa Prabhu <roprabhu@cisco.com>, David Wang <dwang2@cisco.com>
-Subject: [PATCH 50/50] use dev_hw_addr_random() instead of random_ether_addr()
-Date: Wed,  8 Feb 2012 22:10:57 +0100
-Message-Id: <1328735457-29986-51-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328735859;fa74df84;
+	id S1757485Ab2BHVc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:32:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13261 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756936Ab2BHVRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:17:41 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 05/17] FS-Cache: Make cookie relinquishment wait for
+ outstanding reads
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
+        linux-nfs@vger.kernel.org
+Date: Wed, 08 Feb 2012 21:17:31 +0000
+Message-ID: <20120208211731.15607.87865.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
+References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_hw_addr_random() instead of calling random_ether_addr()
-to set addr_assign_type correctly to NET_ADDR_RANDOM.
+Make fscache_relinquish_cookie() log a warning and wait if there are any
+outstanding reads left on the cookie it was given.
 
-Reset the state to NET_ADDR_PERM as soon as the MAC get
-changed via .ndo_set_mac_address.
-
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- drivers/net/ethernet/cisco/enic/enic_main.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/cisco/enic/enic_main.c b/drivers/net/ethernet/cisco/enic/enic_main.c
-index ab3f67f..3e7cb54 100644
---- a/drivers/net/ethernet/cisco/enic/enic_main.c
-+++ b/drivers/net/ethernet/cisco/enic/enic_main.c
-@@ -865,6 +865,8 @@ static int enic_set_mac_addr(struct net_device *netdev, char *addr)
- 	}
+ fs/fscache/cookie.c           |   18 ++++++++++++++----
+ fs/fscache/operation.c        |   10 ++++++++--
+ include/linux/fscache-cache.h |    1 +
+ 3 files changed, 23 insertions(+), 6 deletions(-)
+
+diff --git a/fs/fscache/cookie.c b/fs/fscache/cookie.c
+index 0666996..66be9ec 100644
+--- a/fs/fscache/cookie.c
++++ b/fs/fscache/cookie.c
+@@ -442,22 +442,32 @@ void __fscache_relinquish_cookie(struct fscache_cookie *cookie, int retire)
  
- 	memcpy(netdev->dev_addr, addr, netdev->addr_len);
-+	if (netdev->addr_assign_type & NET_ADDR_RANDOM)
-+		netdev->addr_assign_type ^= NET_ADDR_RANDOM;
+ 	event = retire ? FSCACHE_OBJECT_EV_RETIRE : FSCACHE_OBJECT_EV_RELEASE;
  
- 	return 0;
- }
-@@ -1119,7 +1121,7 @@ static int enic_set_vf_port(struct net_device *netdev, int vf,
- 		memcpy(pp->mac_addr, prev_pp.vf_mac, ETH_ALEN);
++try_again:
+ 	spin_lock(&cookie->lock);
  
- 	if (vf == PORT_SELF_VF && is_zero_ether_addr(netdev->dev_addr))
--		random_ether_addr(netdev->dev_addr);
-+		dev_hw_addr_random(netdev, netdev->dev_addr);
+ 	/* break links with all the active objects */
+ 	while (!hlist_empty(&cookie->backing_objects)) {
++		int n_reads;
+ 		object = hlist_entry(cookie->backing_objects.first,
+ 				     struct fscache_object,
+ 				     cookie_link);
  
- 	err = enic_process_set_pp_request(enic, vf, &prev_pp, &restore_pp);
- 	if (err) {
-@@ -2272,6 +2274,7 @@ static int __devinit enic_probe(struct pci_dev *pdev,
- 	int err;
- #ifdef CONFIG_PCI_IOV
- 	int pos = 0;
-+	bool random_mac = false;
- #endif
- 	int num_pps = 1;
+ 		_debug("RELEASE OBJ%x", object->debug_id);
  
-@@ -2467,11 +2470,17 @@ static int __devinit enic_probe(struct pci_dev *pdev,
- 	(void)enic_change_mtu(netdev, enic->port_mtu);
+-		if (atomic_read(&object->n_reads)) {
++		set_bit(FSCACHE_COOKIE_WAITING_ON_READS, &cookie->flags);
++		n_reads = atomic_read(&object->n_reads);
++		if (n_reads) {
++			int n_ops = object->n_ops;
++			int n_in_progress = object->n_in_progress;
+ 			spin_unlock(&cookie->lock);
+ 			printk(KERN_ERR "FS-Cache:"
+-			       " Cookie '%s' still has %d outstanding reads\n",
+-			       cookie->def->name, atomic_read(&object->n_reads));
+-			BUG();
++			       " Cookie '%s' still has %d outstanding reads (%d,%d)\n",
++			       cookie->def->name,
++			       n_reads, n_ops, n_in_progress);
++			wait_on_bit(&cookie->flags, FSCACHE_COOKIE_WAITING_ON_READS,
++				    fscache_wait_bit, TASK_UNINTERRUPTIBLE);
++			printk("Wait finished\n");
++			goto try_again;
+ 		}
  
- #ifdef CONFIG_PCI_IOV
--	if (enic_is_sriov_vf(enic) && is_zero_ether_addr(enic->mac_addr))
-+	if (enic_is_sriov_vf(enic) && is_zero_ether_addr(enic->mac_addr)) {
- 		random_ether_addr(enic->mac_addr);
-+		random_mac = true;
+ 		/* detach each cache object from the object cookie */
+diff --git a/fs/fscache/operation.c b/fs/fscache/operation.c
+index 30afdfa..c857ab8 100644
+--- a/fs/fscache/operation.c
++++ b/fs/fscache/operation.c
+@@ -340,8 +340,14 @@ void fscache_put_operation(struct fscache_operation *op)
+ 
+ 	object = op->object;
+ 
+-	if (test_bit(FSCACHE_OP_DEC_READ_CNT, &op->flags))
+-		atomic_dec(&object->n_reads);
++	if (test_bit(FSCACHE_OP_DEC_READ_CNT, &op->flags)) {
++		if (atomic_dec_and_test(&object->n_reads)) {
++			clear_bit(FSCACHE_COOKIE_WAITING_ON_READS,
++				  &object->cookie->flags);
++			wake_up_bit(&object->cookie->flags,
++				    FSCACHE_COOKIE_WAITING_ON_READS);
++		}
 +	}
- #endif
  
- 	err = enic_set_mac_addr(netdev, enic->mac_addr);
-+#ifdef CONFIG_PCI_IOV
-+	if (random_mac)
-+		netdev->addr_assign_type |= NET_ADDR_RANDOM;
-+#endif
- 	if (err) {
- 		dev_err(dev, "Invalid MAC address, aborting\n");
- 		goto err_out_dev_deinit;
--- 
-1.7.7.3
+ 	/* now... we may get called with the object spinlock held, so we
+ 	 * complete the cleanup here only if we can immediately acquire the
+diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
+index 9879183..e3d6d93 100644
+--- a/include/linux/fscache-cache.h
++++ b/include/linux/fscache-cache.h
+@@ -301,6 +301,7 @@ struct fscache_cookie {
+ #define FSCACHE_COOKIE_PENDING_FILL	3	/* T if pending initial fill on object */
+ #define FSCACHE_COOKIE_FILLING		4	/* T if filling object incrementally */
+ #define FSCACHE_COOKIE_UNAVAILABLE	5	/* T if cookie is unavailable (error, etc) */
++#define FSCACHE_COOKIE_WAITING_ON_READS	6	/* T if cookie is waiting on reads */
+ };
+ 
+ extern struct fscache_cookie fscache_fsdef_index;
 
