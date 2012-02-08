@@ -1,45 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab2BHM2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 07:28:04 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:59079 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756396Ab2BHM2C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 07:28:02 -0500
-Message-ID: <4F326A4E.1030106@monstr.eu>
-Date: Wed, 08 Feb 2012 13:27:58 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1756961Ab2BHM3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 07:29:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24582 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756396Ab2BHM3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 07:29:30 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/2] Define ENOAUTHSERVICE to indicate "Authentication service
+ unavailable"
+To: jmorris@namei.org
+Cc: keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-api@vger.kernel.org,
+        libc-alpha@sourceware.org
+Date: Wed, 08 Feb 2012 12:29:05 +0000
+Message-ID: <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.arm.linux.org.uk
-Subject: CMA on arm from zero address
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+As the kernel has or will have filesystems (and possibly other services) that
+want to obtain authentication tokens and/or encryption data on demand (via
+GSSAPI for example), it would seem useful to provide an additional error code
+to indicate a problem with the lookup, rather than overloading some other error
+code.
 
-I would like to setup CMA space at the beginning of ram because
-I want to use remoteproc to run code on the second cpu which has to use addresses 0x0 - 32MB.
+We already have EKEYREJECTED, EKEYREVOKED and EKEYEXPIRED to indicate problems
+with a token that we already have, but what if the authentication server just
+isn't available?
 
-I have changed textofs in arch/arm/Makefile but there is not possible to setup
-all values which I would like to use. What is the reason for this limitation?
+Define ENOAUTHSERVICE to indicate "Authentication service unavailable".  This
+can be used to indicate, for example, that an attempt was made by request_key()
+to retrieve a key, but the authentication server (e.g. a KDC) it is supposed to
+contact didn't answer or that it couldn't determine the location of a suitable
+server.
 
-Marek: Have you tried to prototype this configuration with cma?
+One way this can be used is that the user of a network filesystem can get a TGT
+from the KDC and stash it in their session keyring, then the filesystem can
+attempt to automatically get a ticket for accessing the filesystem - but if the
+server is uncontactable then the ticket can be negatively instantiated with
+KEYCTL_REJECT, giving the error to be handed to future requests as
+ENOAUTHSERVICE and a small timeout so that the key will expire from the cache
+and allow a retry after a short while to prevent thrashing.
 
-Thanks,
-Michal
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+ arch/alpha/include/asm/errno.h  |    1 +
+ arch/mips/include/asm/errno.h   |    1 +
+ arch/parisc/include/asm/errno.h |    1 +
+ arch/sparc/include/asm/errno.h  |    1 +
+ include/asm-generic/errno.h     |    1 +
+ 5 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/arch/alpha/include/asm/errno.h b/arch/alpha/include/asm/errno.h
+index e5f29ca..5edc21e 100644
+--- a/arch/alpha/include/asm/errno.h
++++ b/arch/alpha/include/asm/errno.h
+@@ -121,6 +121,7 @@
+ #define	ENOTRECOVERABLE	137	/* State not recoverable */
+ 
+ #define	ERFKILL		138	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	139	/* Authentication service not available */
+ 
+ #define EHWPOISON	139	/* Memory page has hardware error */
+ 
+diff --git a/arch/mips/include/asm/errno.h b/arch/mips/include/asm/errno.h
+index 6dcd358..9e0b83f 100644
+--- a/arch/mips/include/asm/errno.h
++++ b/arch/mips/include/asm/errno.h
+@@ -120,6 +120,7 @@
+ #define	ENOTRECOVERABLE	166	/* State not recoverable */
+ 
+ #define	ERFKILL		167	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	168	/* Authentication service not available */
+ 
+ #define EHWPOISON	168	/* Memory page has hardware error */
+ 
+diff --git a/arch/parisc/include/asm/errno.h b/arch/parisc/include/asm/errno.h
+index 135ad60..c4598b6 100644
+--- a/arch/parisc/include/asm/errno.h
++++ b/arch/parisc/include/asm/errno.h
+@@ -121,6 +121,7 @@
+ #define ENOTRECOVERABLE	255	/* State not recoverable */
+ 
+ #define	ERFKILL		256	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	257	/* Authentication service not available */
+ 
+ #define EHWPOISON	257	/* Memory page has hardware error */
+ 
+diff --git a/arch/sparc/include/asm/errno.h b/arch/sparc/include/asm/errno.h
+index c351aba..ab4f9f5 100644
+--- a/arch/sparc/include/asm/errno.h
++++ b/arch/sparc/include/asm/errno.h
+@@ -111,6 +111,7 @@
+ #define	ENOTRECOVERABLE	133	/* State not recoverable */
+ 
+ #define	ERFKILL		134	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	135	/* Authentication service not available */
+ 
+ #define EHWPOISON	135	/* Memory page has hardware error */
+ 
+diff --git a/include/asm-generic/errno.h b/include/asm-generic/errno.h
+index a1331ce..52325ca 100644
+--- a/include/asm-generic/errno.h
++++ b/include/asm-generic/errno.h
+@@ -107,6 +107,7 @@
+ #define	ENOTRECOVERABLE	131	/* State not recoverable */
+ 
+ #define ERFKILL		132	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	133	/* Authentication service not available */
+ 
+ #define EHWPOISON	133	/* Memory page has hardware error */
+ 
+
