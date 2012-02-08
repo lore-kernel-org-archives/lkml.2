@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab2BHRyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 12:54:15 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41961 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab2BHRyN convert rfc822-to-8bit (ORCPT
+	id S1756960Ab2BHR5B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 12:57:01 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56468 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964Ab2BHR47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 12:54:13 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Josh Boyer <jwboyer@redhat.com>
-Subject: Re: 3.3-rc2 snd_pcm lockdep backtrace
-Date: Wed, 8 Feb 2012 18:54:08 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc2; KDE/4.6.5; x86_64; ; )
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org
-References: <20120206145621.GA4771@zod.bos.redhat.com>
-In-Reply-To: <20120206145621.GA4771@zod.bos.redhat.com>
+	Wed, 8 Feb 2012 12:56:59 -0500
+Message-ID: <4F32B776.6070007@gmail.com>
+Date: Wed, 08 Feb 2012 12:57:10 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202081854.08668.maciej.rutecki@gmail.com>
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+CC: Jamie Lokier <jamie@shareable.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [RESEND][PATCH] Mark thread stack correctly in proc/<pid>/maps
+References: <20120116163106.GC7180@jl-vm1.vm.bytemark.co.uk> <1326776095-2629-1-git-send-email-siddhesh.poyarekar@gmail.com> <CAAHN_R2g9zaujw30+zLf91AGDHNqE6HDc8Z4yJbrzgJcJYFkXg@mail.gmail.com> <4F2B02BC.8010308@gmail.com> <CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com> <CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com> <CAAHN_R0+ExGcdpLM7KwC_KsPOemVOiRrmyWcowiu5_cWW3BPLQ@mail.gmail.com> <CAAHN_R0N=3J4=VqvDsGB=_2Ln9yKBjOevW2=_UAMBK1pGepqvA@mail.gmail.com>
+In-Reply-To: <CAAHN_R0N=3J4=VqvDsGB=_2Ln9yKBjOevW2=_UAMBK1pGepqvA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziałek, 6 lutego 2012 o 15:56:22 Josh Boyer wrote:
-> Hi All,
-> 
-> We've had a report[1] of a lockdep backtrace from the snd_pcm driver.  I
-> was wondering if anyone had hit this already or had some decent ideas on
-> what the issue might be.
-> 
-> josh
-> 
-> [1] https://bugzilla.redhat.com/show_bug.cgi?id=787319
-> 
-> backtrace:
-> :[ INFO: possible recursive locking detected ]
-> :3.3.0-0.rc2.git2.1.fc17.x86_64 #1 Not tainted
-> :---------------------------------------------
-> :
-> :pulseaudio/954 is trying to acquire lock:
-> : (&(&substream->self_group.lock)->rlock/1){......}, at:
-> : [<ffffffffa00d9093>]
-> 
-> snd_pcm_action_group+0xa3/0x240 [snd_pcm]
-> 
-> :but task is already holding lock:
-> : (&(&substream->self_group.lock)->rlock/1){......}, at:
-> : [<ffffffffa00d9093>]
-> 
-> snd_pcm_action_group+0xa3/0x240 [snd_pcm]
-> 
-> :other info that might help us debug this:
-> : Possible unsafe locking scenario:
-> :       CPU0
-> :       ----
-> :  
-> :  lock(&(&substream->self_group.lock)->rlock/1);
-> :  lock(&(&substream->self_group.lock)->rlock/1);
-> : 
-> : *** DEADLOCK ***
-> : May be due to missing lock nesting notation
-> :
-> :4 locks held by pulseaudio/954:
-> : #0:  (snd_pcm_link_rwlock){......}, at: [<ffffffffa00d9e62>]
-> 
-> snd_pcm_drop+0x62/0x110 [snd_pcm]
-> 
-> : #1:  (&(&substream->self_group.lock)->rlock){......}, at:
-> [<ffffffffa00d9e6a>] snd_pcm_drop+0x6a/0x110 [snd_pcm]
-> 
-> : #2:  (&(&substream->group->lock)->rlock){......}, at:
-> : [<ffffffffa00d93ce>]
-> 
-> snd_pcm_action+0x3e/0xb0 [snd_pcm]
-> 
-> : #3:  (&(&substream->self_group.lock)->rlock/1){......}, at:
-> [<ffffffffa00d9093>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
-> 
-> :stack backtrace:
-> :Pid: 954, comm: pulseaudio Not tainted 3.3.0-0.rc2.git2.1.fc17.x86_64 #1
-> :
-> :Call Trace:
-> : [<ffffffff810cb7ec>] __lock_acquire+0x160c/0x1ad0
-> : [<ffffffff810ca4f6>] ? __lock_acquire+0x316/0x1ad0
-> : [<ffffffff81020f99>] ? sched_clock+0x9/0x10
-> : [<ffffffff810a24a5>] ? sched_clock_local+0x25/0xa0
-> : [<ffffffff810cc381>] lock_acquire+0xa1/0x1e0
-> : [<ffffffffa00d9093>] ? snd_pcm_action_group+0xa3/0x240 [snd_pcm]
-> : [<ffffffff8169cca4>] _raw_spin_lock_nested+0x44/0x80
-> : [<ffffffffa00d9093>] ? snd_pcm_action_group+0xa3/0x240 [snd_pcm]
-> : [<ffffffffa00d9093>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
-> : [<ffffffffa00d9401>] snd_pcm_action+0x71/0xb0 [snd_pcm]
-> : [<ffffffffa00d945a>] snd_pcm_stop+0x1a/0x20 [snd_pcm]
-> : [<ffffffffa00d9e84>] snd_pcm_drop+0x84/0x110 [snd_pcm]
-> : [<ffffffffa00dbba8>] snd_pcm_common_ioctl1+0x4a8/0xbe0 [snd_pcm]
-> : [<ffffffffa00dc650>] snd_pcm_playback_ioctl1+0x60/0x2d0 [snd_pcm]
-> : [<ffffffff812c1481>] ? file_has_perm+0xe1/0xf0
-> : [<ffffffffa00dc8f4>] snd_pcm_playback_ioctl+0x34/0x40 [snd_pcm]
-> : [<ffffffff811cf8d9>] do_vfs_ioctl+0x99/0x5a0
-> : [<ffffffff811cfe79>] sys_ioctl+0x99/0xa0
-> : [<ffffffff816a63e9>] system_call_fastpath+0x16/0x1b
-> 
+(2/7/12 11:00 PM), Siddhesh Poyarekar wrote:
+> On Sat, Feb 4, 2012 at 12:04 AM, Siddhesh Poyarekar
+> <siddhesh.poyarekar@gmail.com>  wrote:
+>> On Fri, Feb 3, 2012 at 1:31 PM, KOSAKI Motohiro
+>> <kosaki.motohiro@gmail.com>  wrote:
+>>> The fact is, now process stack and pthread stack clearly behave
+>>> different dance. libc don't expect pthread stack grow automatically.
+>>> So, your patch will break userland. Just only change display thing.
+> <snip>
+>> I have also dropped an email on the libc-alpha list here to solicit
+>> comments from libc maintainers on this:
+>>
+>> http://sourceware.org/ml/libc-alpha/2012-02/msg00036.html
+>>
+>
+> Kosaki-san, your suggestion of adding an extra flag seems like the
+> right way to go about this based on the discussion on libc-alpha,
+> specifically, your point about pthread_getattr_np() -- it may not be a
+> standard, but it's a breakage anyway. However, looking at the vm_flags
+> options in mm.h, it looks like the entire 32-bit space has been
+> exhausted for the flag value. The vm_flags is an unsigned long, so it
+> ought to take 8 bytes on a 64-bit system, but 32-bit systems will be
+> left behind.
+>
+> So there are two options for this:
+>
+> 1) make vm_flags 64-bit for all arches. This will cause ABI breakage
+> on 32-bit systems, so any external drivers will have to be rebuilt
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=42746
-for your bug report, please add your address to the CC list in there, thanks!
+Several month ago, Linus NAKed this way.
 
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+
+> 2) Implement this patch for 64-bit only by defining the new flag only
+> for 64-bit. 32-bit systems behave as is
+
+No. That's bad than status quo. Enduser may get inconsistent and bad user
+experience.
+
+Now, we are using some bit saving hack. example,
+
+1) use ifdef
+
+#ifndef CONFIG_TRANSPARENT_HUGEPAGE
+#define VM_MAPPED_COPY 0x01000000      /* T if mapped copy of data (nommu mmap) */
+#else
+#define VM_HUGEPAGE    0x01000000      /* MADV_HUGEPAGE marked this vma */
+#endif
+
+2) use bit combination
+
+#define VM_STACK_INCOMPLETE_SETUP      (VM_RAND_READ | VM_SEQ_READ)
+
+
+Maybe you can take a similar way. And of course, you can ban some useless flag
+bits.
+
+thanks.
+
+> Which of these would be better? I prefer the latter because it looks
+> like the path of least breakage.
+>
+
