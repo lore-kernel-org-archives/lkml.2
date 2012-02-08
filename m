@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271Ab2BHVe6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:34:58 -0500
-Received: from gate.crashing.org ([63.228.1.57]:37615 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab2BHVe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:34:56 -0500
-Message-ID: <1328736834.2903.33.camel@pasglop>
-Subject: Re: [PATCH RFC 0/4] Scheduler idle notifiers and users
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, Russell King <linux@arm.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nicolas Pitre <nico@fluxnic.net>, Mike Chan <mike@android.com>,
-        Todd Poynor <toddpoynor@google.com>, cpufreq@vger.kernel.org,
-        kernel-team@android.com, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arjan Van De Ven <arjan@infradead.org>
-Date: Thu, 09 Feb 2012 08:33:54 +1100
-In-Reply-To: <20120208202314.GA28290@redhat.com>
-References: <20120208013959.GA24535@panacea>
-	 <1328670355.2482.68.camel@laptop> <20120208202314.GA28290@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757390Ab2BHVfj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:35:39 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:57642 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755839Ab2BHVfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:35:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAJZOPZJtXGq36Hx5BQAc2Q7znErJ-Uaiqs-DaJQ=jCSy49uTiQ@mail.gmail.com>
+References: <1311923731.7845.25.camel@edumazet-laptop> <1328181135.2279.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CAG4TOxMVmEe3KiDuaO6ZWq0vNchi1Mrf=mr2RSNJY2oXX0hD+Q@mail.gmail.com> <CAJZOPZJtXGq36Hx5BQAc2Q7znErJ-Uaiqs-DaJQ=jCSy49uTiQ@mail.gmail.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Wed, 8 Feb 2012 13:35:16 -0800
+X-Google-Sender-Auth: Cgoa0Th0qDzHx6dYqpIuU0IImnE
+Message-ID: <CAG4TOxPwcdw+CwyczAVXBqovpECVj8ad+RsraqmchuQdM2bCXw@mail.gmail.com>
+Subject: Re: [PATCH] IB/ehca: use kthread_create_on_node
+To: Or Gerlitz <or.gerlitz@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Sean Hefty <sean.hefty@intel.com>,
+        linux-rdma@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-08 at 15:23 -0500, Dave Jones wrote:
-> I think the biggest mistake we ever made with cpufreq was making it
-> so configurable. If we redesign it, just say no to plugin governors,
-> and
-> yes to a lot fewer sysfs knobs.
-> 
-> So, provide mechanism to kill off all the governors, and there's a
-> migration path from what we have now to something that just works
-> in a lot more cases, while remaining configurable enough for the
-> corner-cases.
+On Wed, Feb 8, 2012 at 1:26 PM, Or Gerlitz <or.gerlitz@gmail.com> wrote:
+> I noted that you typically use the for-next branch of the infiniband
+> tree for fixes during
+> the 1 < kernN-rc < (say) 6 time and for features during (kernN-rc > 6)
+> till kern(N+1)-rc1
+>
+> This means that the window of time when features are actually accepted
+> into your tree is kind of very limited. Would it be possible to
+> maintain two branches: for-next and (say) rc-fixes, such that
+> practically patches are reviewed/accepted to for-next at almost all
+> times?
+>
+> BTW I see that networking and scsi maintainers use two trees
+> (net/net-next) and (scsi-misc/scsi-rc-fixes), maybe it would be eaiser
+> for you go this way?
 
-On the other hand, the need for schedulable contxts may not necessarily
-go away.
+It's not really an issue of not having a tree to put things into.  It's
+more that the window when I actually review major things is not
+as big as perhaps it should be.
 
-If you look beyond x86, there's several issues that get into the
-picture. i2c clock chips & power control chips are slow (the i2c bus
-itself is). You don't want to spin for hundreds of microsecs while you
-do those transactions.
+So I generally try to get fixes in expeditiously because they're
+easy to deal with, whereas I only dedicate time to merging bigger
+things when I feel the pressure of the impending merge window.
 
-I have seen many cases where the clock control can be done quite
-quickly, but on the other hand, the voltage control takes dozens of ms
-to reach the target value & stabilize.
+I do usually have some small patches that are fine for the next window
+but which I have only marked "to apply" in my mailbox, which it
+might be a good idea to apply sooner so they get more -next tree
+coverage.
 
-That could be done asynchronously .. as long as the scheduler doesn't
-constantly hammer it with change requests.
-
-Cheers,
-Ben.
-
-
+ - R.
