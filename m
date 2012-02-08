@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2BHLyD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 06:54:03 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:50347
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756372Ab2BHLyB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 06:54:01 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: peter.ujfalusi@ti.com
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] twl4030: Fix typo in twl4030.c
-Date: Wed,  8 Feb 2012 20:53:34 +0900
-Message-Id: <1328702014-1956-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1756794Ab2BHMEq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 07:04:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756372Ab2BHMEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 07:04:45 -0500
+Date: Wed, 8 Feb 2012 12:57:54 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Andi Kleen <ak@linux.intel.com>, Clark Williams <williams@redhat.com>,
+        Luis Goncalves <lgoncalv@redhat.com>
+Subject: Re: [PATCH RT 0/2 v5] preempt-rt/x86: Handle sending signals from
+	do_trap() by gdb
+Message-ID: <20120208115754.GA30029@redhat.com>
+References: <20120208005612.852040607@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120208005612.852040607@goodmis.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "memroy" to "memory" in
-sound/soc/codecs/twl4030.c
+On 02/07, Steven Rostedt wrote:
+>
+> Oleg, please take a look at the modifications I made to your patch,
+> and if you are fine with it, please ack it.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- sound/soc/codecs/twl4030.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yes, I believe the modifications are fine.
 
-diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-index 3039ba2..d7eee0d 100644
---- a/sound/soc/codecs/twl4030.c
-+++ b/sound/soc/codecs/twl4030.c
-@@ -2221,7 +2221,7 @@ static int twl4030_soc_probe(struct snd_soc_codec *codec)
- 
- 	twl4030 = kzalloc(sizeof(struct twl4030_priv), GFP_KERNEL);
- 	if (twl4030 == NULL) {
--		printk("Can not allocate memroy\n");
-+		printk("Can not allocate memory\n");
- 		return -ENOMEM;
- 	}
- 	snd_soc_codec_set_drvdata(codec, twl4030);
--- 
-1.7.6.5
+Thanks Steven!
+
+Oleg.
 
