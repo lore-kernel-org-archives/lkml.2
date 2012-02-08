@@ -1,125 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab2BHChr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 21:37:47 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47128 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757336Ab2BHChp (ORCPT
+	id S1757340Ab2BHC4C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 21:56:02 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52587 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756990Ab2BHC4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 21:37:45 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 2/2] cgroup: Walk task list under tasklist_lock in cgroup_enable_task_cg_list
-Date: Wed,  8 Feb 2012 03:37:27 +0100
-Message-Id: <1328668647-24125-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
-References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
+	Tue, 7 Feb 2012 21:56:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAB=NE6Wv3PEJj5zKfK2o869ntxuU3V+Nv2dgKX1eDtk3zQ04dA@mail.gmail.com>
+References: <1328312594-31934-1-git-send-email-mcgrof@frijolero.org>
+ <20120206160727.GA21048@tuxdriver.com> <20120207041958.GA32377@bombadil.infradead.org>
+ <CAB=NE6VS79S4R6wQddQCqPfoYPyRbPzSdAYN2Mxfi-4G_sfCvg@mail.gmail.com> <CAB=NE6Wv3PEJj5zKfK2o869ntxuU3V+Nv2dgKX1eDtk3zQ04dA@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Tue, 7 Feb 2012 18:55:40 -0800
+X-Google-Sender-Auth: pwpUpJnOsUGQugZ0w-Cn-xePL7c
+Message-ID: <CAB=NE6URWAgUgF+6bOsRBeeXnQ4VjYf1tWuUkkvMviCLOCxeqA@mail.gmail.com>
+Subject: Re: [PATCH] compat: add compat kernel checker and downloader
+To: "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+        Andy Whitcroft <apw@canonical.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, hauke@hauke-m.de,
+        kernel-team@lists.ubuntu.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Walking through the tasklist in cgroup_enable_task_cg_list() inside
-an RCU read side critical section is not enough because:
+On Tue, Feb 7, 2012 at 5:19 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
+> On Mon, Feb 6, 2012 at 8:56 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
+>> Come to think of it.. we could bastardize Ubuntu's PPA packages for
+>> mainline kernels, translate the deb packages into tar files and some
+>> sort of grub-update or whatever scrip to run in the end? That still
+>> seems like a lot of work.
+>>
+>> The current option allows us to use either distro kernels or whatever
+>> you have installed.. not sure how else to improve this. Didn't we have
+>> some sort of distro agnostic package crap? Maybe?
+>
+> Or -- Andy -- any chance we can get some of the deb contents unpacked
+> into a distro-agostic tarball of some sort that we can use ? I ask
+> given that you guys already host the sources and all that.
 
-- RCU is not (yet) safe against while_each_thread()
+Just to not waste anyone's time it seems pkgadd from IRC has a
+distro-agnostic dpkg -x type of solution in the works, that could use
+these same debs.
 
-- If we use only RCU, a forking task that has passed cgroup_post_fork()
-  without seeing use_task_css_set_links == 1 is not guaranteed to have
-  its child immediately visible in the tasklist if we walk through it
-  remotely with RCU. In this case it will be missing in its css_set's
-  task list.
+http://paste.debian.net/155521/
 
-Thus we need to traverse the list (unfortunately) under the
-tasklist_lock. It makes us safe against while_each_thread() and also
-make sure we see all forked task that have been added to the tasklist.
-
-As a secondary effect, reading and writing use_task_css_set_links are
-now well ordered against tasklist traversing and modification. The new
-layout is:
-
-CPU 0                                      CPU 1
-
-use_task_css_set_links = 1                write_lock(tasklist_lock)
-read_lock(tasklist_lock)                  add task to tasklist
-do_each_thread() {                        write_unlock(tasklist_lock)
-	add thread to css set links       if (use_task_css_set_links)
-} while_each_thread()                         add thread to css set links
-read_unlock(tasklist_lock)
-
-If CPU 0 traverse the list after the task has been added to the tasklist
-then it is correctly added to the css set links. OTOH if CPU 0 traverse
-the tasklist before the new task had the opportunity to be added to the
-tasklist because it was too early in the fork process, then CPU 1
-catches up and add the task to the css set links after it added the task
-to the tasklist. The right value of use_task_css_set_links is guaranteed
-to be visible from CPU 1 due to the LOCK/UNLOCK implicit barrier properties:
-the read_unlock on CPU 0 makes the write on use_task_css_set_links happening
-and the write_lock on CPU 1 make the read of use_task_css_set_links that comes
-afterward to return the correct value.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/cgroup.c |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 6e4eb43..c6877fe 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2707,6 +2707,14 @@ static void cgroup_enable_task_cg_lists(void)
- 	struct task_struct *p, *g;
- 	write_lock(&css_set_lock);
- 	use_task_css_set_links = 1;
-+	/*
-+	 * We need tasklist_lock because RCU is not safe against
-+	 * while_each_thread(). Besides, a forking task that has passed
-+	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
-+	 * is not guaranteed to have its child immediately visible in the
-+	 * tasklist if we walk through it with RCU.
-+	 */
-+	read_lock(&tasklist_lock);
- 	do_each_thread(g, p) {
- 		task_lock(p);
- 		/*
-@@ -2718,6 +2726,7 @@ static void cgroup_enable_task_cg_lists(void)
- 			list_add(&p->cg_list, &p->cgroups->tasks);
- 		task_unlock(p);
- 	} while_each_thread(g, p);
-+	read_unlock(&tasklist_lock);
- 	write_unlock(&css_set_lock);
- }
- 
-@@ -4522,6 +4531,17 @@ void cgroup_fork_callbacks(struct task_struct *child)
-  */
- void cgroup_post_fork(struct task_struct *child)
- {
-+	/*
-+	 * use_task_css_set_links is set to 1 before we walk the tasklist
-+	 * under the tasklist_lock and we read it here after we added the child
-+	 * to the tasklist under the tasklist_lock as well. If the child wasn't
-+	 * yet in the tasklist when we walked through it from
-+	 * cgroup_enable_task_cg_lists(), then use_task_css_set_links value
-+	 * should be visible now due to the paired locking and barriers implied
-+	 * by LOCK/UNLOCK: it is written before the tasklist_lock unlock
-+	 * in cgroup_enable_task_cg_lists() and read here after the tasklist_lock
-+	 * lock on fork.
-+	 */
- 	if (use_task_css_set_links) {
- 		write_lock(&css_set_lock);
- 		if (list_empty(&child->cg_list)) {
--- 
-1.7.5.4
-
+  Luis
