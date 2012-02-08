@@ -1,55 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab2BHMrW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 07:47:22 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:43050 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932111Ab2BHMrU (ORCPT
+	id S932151Ab2BHMrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 07:47:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39381 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111Ab2BHMrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 07:47:20 -0500
-Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed
- address is invalid"
-From: Matt Fleming <matt@console-pimps.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1326708966.3629.31.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com>
-	 <867h22jwj1.fsf@sumi.keithp.com> <4EE575E3.7090206@zytor.com>
-	 <8639cqjvyn.fsf@sumi.keithp.com>
-	 <1323684083.3669.15.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <86sjkpiw8i.fsf@sumi.keithp.com>
-	 <1323962963.314.14.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1326705757.3629.18.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20120116093133.GB15333@elte.hu>
-	 <1326707367.3629.26.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20120116095529.GA838@elte.hu>
-	 <1326708966.3629.31.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Feb 2012 12:46:49 +0000
-Message-ID: <1328705209.3718.1.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Feb 2012 07:47:33 -0500
+MIME-Version: 1.0
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+To: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>
+Cc: Venki Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Dmitry Antipov <dmitry.antipov@linaro.org>
+Subject: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and ARM
+Date: Wed,  8 Feb 2012 04:48:34 -0800
+Message-Id: <1328705314-20978-1-git-send-email-dmitry.antipov@linaro.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-16 at 10:16 +0000, Matt Fleming wrote:
-> On Mon, 2012-01-16 at 10:55 +0100, Ingo Molnar wrote:
-> > Does your new patch apply cleanly on top of the revert? If not 
-> > then please send an updated one, so that we can investigate its 
-> > effects.
-> 
-> Good point, it doesn't apply cleanly. Here's an updated version rebased
-> against Linus' tree.
+Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
+ARM, move "noirqtime=" option to common debugging code.
+For a bit of backward compatibility, "tsc=noirqtime"
+is preserved, but issues a warning.
 
-Ping? Keith, have you had chance to test this patch yet?
+Suggested-by: Venki Pallipadi <venki@google.com>
+Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
+---
+ arch/arm/kernel/sched_clock.c |    3 +++
+ arch/x86/Kconfig              |   11 -----------
+ arch/x86/kernel/tsc.c         |    7 ++++---
+ include/linux/sched.h         |    2 ++
+ lib/Kconfig.debug             |   12 ++++++++++++
+ lib/Makefile                  |    2 ++
+ lib/irqtime.c                 |   12 ++++++++++++
+ 7 files changed, 35 insertions(+), 14 deletions(-)
+ create mode 100644 lib/irqtime.c
 
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index 5416c7c..56d2a9d 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -162,5 +162,8 @@ void __init sched_clock_postinit(void)
+ 	if (read_sched_clock == jiffy_sched_clock_read)
+ 		setup_sched_clock(jiffy_sched_clock_read, 32, HZ);
+ 
++	if (!no_sched_irq_time)
++		enable_sched_clock_irqtime();
++
+ 	sched_clock_poll(sched_clock_timer.data);
+ }
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5bed94e..4759676 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -805,17 +805,6 @@ config SCHED_MC
+ 	  making when dealing with multi-core CPU chips at a cost of slightly
+ 	  increased overhead in some places. If unsure say N here.
+ 
+-config IRQ_TIME_ACCOUNTING
+-	bool "Fine granularity task level IRQ time accounting"
+-	default n
+-	---help---
+-	  Select this option to enable fine granularity task irq time
+-	  accounting. This is done by reading a timestamp on each
+-	  transitions between softirq and hardirq state, so there can be a
+-	  small performance impact.
+-
+-	  If in doubt, say N here.
+-
+ source "kernel/Kconfig.preempt"
+ 
+ config X86_UP_APIC
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index a62c201..70510a3 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -103,14 +103,15 @@ int __init notsc_setup(char *str)
+ 
+ __setup("notsc", notsc_setup);
+ 
+-static int no_sched_irq_time;
+-
+ static int __init tsc_setup(char *str)
+ {
+ 	if (!strcmp(str, "reliable"))
+ 		tsc_clocksource_reliable = 1;
+-	if (!strncmp(str, "noirqtime", 9))
++	if (!strncmp(str, "noirqtime", 9)) {
++		printk(KERN_WARNING "tsc: tsc=noirqtime is "
++		       "obsolete, use noirqtime instead\n");
+ 		no_sched_irq_time = 1;
++	}
+ 	return 1;
+ }
+ 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7d379a6..b3575b5 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1966,9 +1966,11 @@ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
+  * The reason for this explicit opt-in is not to have perf penalty with
+  * slow sched_clocks.
+  */
++extern int no_sched_irq_time;
+ extern void enable_sched_clock_irqtime(void);
+ extern void disable_sched_clock_irqtime(void);
+ #else
++#define no_sched_irq_time 1
+ static inline void enable_sched_clock_irqtime(void) {}
+ static inline void disable_sched_clock_irqtime(void) {}
+ #endif
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 8745ac7..48be210 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -299,6 +299,18 @@ config SCHEDSTATS
+ 	  application, you can say N to avoid the very slight overhead
+ 	  this adds.
+ 
++config IRQ_TIME_ACCOUNTING
++	bool "Fine granularity task level IRQ time accounting"
++	depends on (X86 || (ARM && HAVE_SCHED_CLOCK))
++	default n
++	---help---
++	  Select this option to enable fine granularity task irq time
++	  accounting. This is done by reading a timestamp on each
++	  transitions between softirq and hardirq state, so there can be a
++	  small performance impact.
++
++	  If in doubt, say N here.
++
+ config TIMER_STATS
+ 	bool "Collect kernel timers statistics"
+ 	depends on DEBUG_KERNEL && PROC_FS
+diff --git a/lib/Makefile b/lib/Makefile
+index 18515f0..44d67d4 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -49,6 +49,8 @@ obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
+ obj-$(CONFIG_DEBUG_LIST) += list_debug.o
+ obj-$(CONFIG_DEBUG_OBJECTS) += debugobjects.o
+ 
++obj-$(CONFIG_IRQ_TIME_ACCOUNTING) += irqtime.o
++
+ ifneq ($(CONFIG_HAVE_DEC_LOCK),y)
+   lib-y += dec_and_lock.o
+ endif
+diff --git a/lib/irqtime.c b/lib/irqtime.c
+new file mode 100644
+index 0000000..10d440d
+--- /dev/null
++++ b/lib/irqtime.c
+@@ -0,0 +1,12 @@
++#include <linux/kernel.h>
++#include <linux/sched.h>
++
++int no_sched_irq_time;
++
++static int __init irqtime_setup(char *str)
++{
++	no_sched_irq_time = 1;
++	return 1;
++}
++
++__setup("noirqtime", irqtime_setup);
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.7.6
 
