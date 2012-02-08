@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab2BHW6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 17:58:25 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43888 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754828Ab2BHW6X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 17:58:23 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [PATCH 01/50] eth: reset addr_assign_type if eth_mac_addr() called
-Date: Wed, 8 Feb 2012 23:57:28 +0100
-User-Agent: KMail/1.9.10
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <1328735457-29986-2-git-send-email-danny.kukawka@bisect.de> <20120208145004.171e4d54@nehalam.linuxnetplumber.net>
-In-Reply-To: <20120208145004.171e4d54@nehalam.linuxnetplumber.net>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	id S1757537Ab2BHW63 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 17:58:29 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:40976 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754828Ab2BHW60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 17:58:26 -0500
+Date: Wed, 8 Feb 2012 14:58:23 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: "David S. Miller" <davem@davemloft.net>, Danny Kukawka <dkukawka@suse.de>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 00/50] set addr_assign_type to NET_ADDR_RANDOM if 
+ a random mac address get assigned to a netdevice
+Message-ID: <20120208145823.75f386c5@nehalam.linuxnetplumber.net>
+In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201202082357.28972.danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328741903;0d226a78;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mittwoch, 8. Februar 2012, Stephen Hemminger wrote:
-> On Wed,  8 Feb 2012 22:10:08 +0100
->
-> Danny Kukawka <danny.kukawka@bisect.de> wrote:
-> > +	if (dev->addr_assign_type & NET_ADDR_RANDOM)
-> > +		dev->addr_assign_type ^= NET_ADDR_RANDOM;
->
-> Why not just avoid the conditional, or better yet use bitops?
->
-> 	dev->addr_assign_type &= ~NET_ADDR_RANDOM;
+On Wed,  8 Feb 2012 22:10:07 +0100
+Danny Kukawka <danny.kukawka@bisect.de> wrote:
 
-Okay, If I have comments on the other patches back, I will send new versions 
-which avoid the if. Thanks for the hint.
+> The information if a device has a random MAC address is exported
+> to the userspace via /sys/class/net/*/addr_assign_type, which
+> export net_device->addr_assign_type.
+> 
+> Currently only a few driver really use dev_hw_addr_random() to
+> set addr_assign_type correctly to NET_ADDR_RANDOM.
+> 
+> This patch change the drivers which set random addresses to
+> change also addr_assign_type to NET_ADDR_RANDOM.
+> 
+> To reflect if the MAC was changed from userspace via SIOCSIFHWADDR,
+> which means it's no longer a random address set by the kernel,
+> this patch remove NET_ADDR_RANDOM from addr_assign_type in this
+> case.
+> 
+> With this patch tools from userspace can now detect devices with
+> random MAC addresses and change them to persistent addresses if
+> needed (as e.g. in case of smsc95xx on PandaBoard).
+> 
+> Maybe it makes sense to introduce a new state for addr_assign_type
+> to reflect the fact, that the MAC address was changed via a ioctl
+> from user space, e.g, with NET_ADDR_USERSPACE ?
+> 
 
-Danny
+
+This reminds me that passing dev->dev_addr to dev_hw_addr_rrandom is redundant
+for all the instances you showed, so why is it ia parameter.
+
+Also it should BUG() if address length is not 6 (ETH_ALEN).
 
