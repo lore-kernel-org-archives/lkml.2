@@ -1,206 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751175Ab2BHJGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 04:06:52 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:32797 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab2BHJGs (ORCPT
+	id S1751294Ab2BHJLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 04:11:14 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:44116 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab2BHJLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 04:06:48 -0500
-Message-ID: <4F323B21.7080003@oss.ntt.co.jp>
-Date: Wed, 08 Feb 2012 18:06:41 +0900
-From: =?UTF-8?B?RmVybmFuZG8gTHVpcyBWw6F6cXVleiBDYW8=?= 
-	<fernando@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>, dzickus@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] watchdog: update documentation
-Content-Type: multipart/mixed;
- boundary="------------020403030801050906090304"
+	Wed, 8 Feb 2012 04:11:09 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+        Norbert Preining <preining@logic.at>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, jeff@garzik.org,
+        "stern@rowland.harvard.edu >> Alan Stern" <stern@rowland.harvard.edu>,
+        linux-ide@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jian Peng <jipeng2005@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>
+Subject: Re: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume, COMRESET failed
+In-Reply-To: Your message of "Mon, 06 Feb 2012 11:20:45 PST."
+             <CAN8TOE9SM1X_rQCScE8hCZYrWVY9K-B_TM+Vvzx3tZQ2LoGxXw@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20120203052452.GC24563@gamma.logic.tuwien.ac.at> <1328247269.15079.26.camel@minggr> <20120203054319.GA25510@gamma.logic.tuwien.ac.at> <1328257660.15079.30.camel@minggr> <20120206004608.GA9413@gamma.logic.tuwien.ac.at> <1328492218.15079.38.camel@minggr> <20120206024052.GI9413@gamma.logic.tuwien.ac.at> <1328496591.15079.40.camel@minggr> <20120206031528.GA16093@gamma.logic.tuwien.ac.at> <1328503376.15079.55.camel@minggr> <20120206161943.GA3926@google.com>
+            <CAN8TOE9SM1X_rQCScE8hCZYrWVY9K-B_TM+Vvzx3tZQ2LoGxXw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1328692235_3347P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 08 Feb 2012 04:10:35 -0500
+Message-ID: <29912.1328692235@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4F323C11.00B6,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020403030801050906090304
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+--==_Exmh_1328692235_3347P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-The soft and hard lockup detectors are now built on top of the hrtimer
-and perf subsystems. Update the documentation accordingly.
+On Mon, 06 Feb 2012 11:20:45 PST, Brian Norris said:
 
---------------020403030801050906090304
-Content-Type: text/x-patch;
- name="lockup-watchdogs.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="lockup-watchdogs.patch"
+> (3) Debug Norbert's hardware problems.
 
-Subject: [PATCH] watchdog: update documentation
+It's not just Norbert - my Dell Latitude E6500 trips over this as well (d=
+idn't
+we go through this same song-and-dance *before* with this same exact
+patch?  Yes we did, back in May 2011:
 
-From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+http://lkml.indiana.edu/hypermail/linux/kernel/1105.1/02970.html
 
-The soft and hard lockup detectors are now built on top of the hrtimer
-and perf subsystems. Update the documentation accordingly.
+Somebody hand me a stake and mallet to pount through the heart of this
+patch so it *stays* dead already.. Geez.. ;)
 
-Signed-off-by: Fernando Luis Vazquez Cao<fernando@oss.ntt.co.jp>
----
+Norbert's box has this:
+00:1f.2 SATA controller: Intel Corporation 82801IBM/IEM (ICH9M/ICH9M-E) 4=
+ port SATA Controller =5BAHCI mode=5D (rev 03) (prog-if 01 =5BAH
+CI 1.0=5D)
 
-diff -urNp linux-3.2.5-orig/Documentation/lockup-watchdogs.txt linux-3.2.5/Documentation/lockup-watchdogs.txt
---- linux-3.2.5-orig/Documentation/lockup-watchdogs.txt	1970-01-01 09:00:00.000000000 +0900
-+++ linux-3.2.5/Documentation/lockup-watchdogs.txt	2012-02-08 17:48:35.219915509 +0900
-@@ -0,0 +1,64 @@
-+===============================================================
-+Softlockup detector and hardlockup detector (aka nmi_watchdog)
-+===============================================================
-+
-+The Linux kernel can act as a watchdog to detect both soft and hard
-+lockups.
-+
-+A 'softlockup' is defined as a bug that causes the kernel to loop in
-+kernel mode for more than 20 seconds (see "Implementation details"
-+below for details), without giving other tasks a chance to run. The
-+current stack trace is displayed upon detection and, by default, the
-+system will stay locked up. Alternatively, the kernel can be
-+configured to panic; a sysctl, "kernel.softlockup_panic", a kernel
-+parameter, "softlockup_panic" (see
-+"Documentation/kernel-parameters.txt" for details), and a compile
-+option, "BOOTPARAM_HARDLOCKUP_PANIC", are provided for this.
-+
-+A 'hardlockup' is defined as a bug that causes the CPU to loop in
-+kernel mode for more than 10 seconds (see "Implementation details"
-+below for details), without letting other interrupts have a chance to
-+run.  Similarly to the softlockup case, the current stack trace is
-+displayed upon detection and the system will stay locked up unless the
-+default behavior is changed, which can be done through a compile time
-+knob, "BOOTPARAM_HARDLOCKUP_PANIC", and a kernel parameter,
-+"nmi_watchdog" (see "Documentation/kernel-parameters.txt" for
-+details).
-+
-+The panic option can be used in combination with panic_timeout (this
-+timeout is set through the confusingly named "kernel.panic" sysctl),
-+to cause the system to reboot automatically after a specified amount
-+of time.
-+
-+=== Implementation details ===
-+
-+The soft and hard lockup detectors are built on top of the hrtimer and
-+perf subsystems, respectively. A direct consequence of this is that,
-+in principle, they should work in any architecture where these
-+subsystems are present.
-+
-+An periodic hrtimer runs to generate interrupts and kick the watchdog
-+task. An NMI perf event is generated every "watchdog_thresh"
-+(compile-time initialized to 10 and configurable through sysctl of the
-+same name) seconds to check for hardlockups. If any CPU in the system
-+does not receive any hrtimer interrupt during that time the
-+'hardlockup detector' (the handler for the NMI perf event) will
-+generate a kernel warning or call panic, depending on the
-+configuration.
-+
-+The watchdog task is a high priority kernel thread that updates a
-+timestamp every time it is scheduled. If that timestamp is not updated
-+for 2*watchdog_thresh seconds (the softlockup threshold) the
-+'softlockup detector' (coded inside the hrtimer callback function)
-+will dump useful debug information to the system log, after which it
-+will call panic if it was instructed to do so or resume execution of
-+other kernel code.
-+
-+The period of the hrtimer is 2*watchdog_thresh/5, which means it has
-+two or three chances two generate an interrupt before the hardware
-+detector kicks in.
-+
-+As explained above, a kernel knob is provided that allows
-+administrators to configure the period of the hrtimer and the perf
-+event. The right value for a particular environment is a trade-off
-+between fast response to lockups and detection overhead.
-diff -urNp linux-3.2.5-orig/Documentation/nmi_watchdog.txt linux-3.2.5/Documentation/nmi_watchdog.txt
---- linux-3.2.5-orig/Documentation/nmi_watchdog.txt	2012-01-05 08:55:44.000000000 +0900
-+++ linux-3.2.5/Documentation/nmi_watchdog.txt	1970-01-01 09:00:00.000000000 +0900
-@@ -1,83 +0,0 @@
--
--[NMI watchdog is available for x86 and x86-64 architectures]
--
--Is your system locking up unpredictably? No keyboard activity, just
--a frustrating complete hard lockup? Do you want to help us debugging
--such lockups? If all yes then this document is definitely for you.
--
--On many x86/x86-64 type hardware there is a feature that enables
--us to generate 'watchdog NMI interrupts'.  (NMI: Non Maskable Interrupt
--which get executed even if the system is otherwise locked up hard).
--This can be used to debug hard kernel lockups.  By executing periodic
--NMI interrupts, the kernel can monitor whether any CPU has locked up,
--and print out debugging messages if so.
--
--In order to use the NMI watchdog, you need to have APIC support in your
--kernel. For SMP kernels, APIC support gets compiled in automatically. For
--UP, enable either CONFIG_X86_UP_APIC (Processor type and features -> Local
--APIC support on uniprocessors) or CONFIG_X86_UP_IOAPIC (Processor type and
--features -> IO-APIC support on uniprocessors) in your kernel config.
--CONFIG_X86_UP_APIC is for uniprocessor machines without an IO-APIC.
--CONFIG_X86_UP_IOAPIC is for uniprocessor with an IO-APIC. [Note: certain
--kernel debugging options, such as Kernel Stack Meter or Kernel Tracer,
--may implicitly disable the NMI watchdog.]
--
--For x86-64, the needed APIC is always compiled in.
--
--Using local APIC (nmi_watchdog=2) needs the first performance register, so
--you can't use it for other purposes (such as high precision performance
--profiling.) However, at least oprofile and the perfctr driver disable the
--local APIC NMI watchdog automatically.
--
--To actually enable the NMI watchdog, use the 'nmi_watchdog=N' boot
--parameter.  Eg. the relevant lilo.conf entry:
--
--        append="nmi_watchdog=1"
--
--For SMP machines and UP machines with an IO-APIC use nmi_watchdog=1.
--For UP machines without an IO-APIC use nmi_watchdog=2, this only works
--for some processor types.  If in doubt, boot with nmi_watchdog=1 and
--check the NMI count in /proc/interrupts; if the count is zero then
--reboot with nmi_watchdog=2 and check the NMI count.  If it is still
--zero then log a problem, you probably have a processor that needs to be
--added to the nmi code.
--
--A 'lockup' is the following scenario: if any CPU in the system does not
--execute the period local timer interrupt for more than 5 seconds, then
--the NMI handler generates an oops and kills the process. This
--'controlled crash' (and the resulting kernel messages) can be used to
--debug the lockup. Thus whenever the lockup happens, wait 5 seconds and
--the oops will show up automatically. If the kernel produces no messages
--then the system has crashed so hard (eg. hardware-wise) that either it
--cannot even accept NMI interrupts, or the crash has made the kernel
--unable to print messages.
--
--Be aware that when using local APIC, the frequency of NMI interrupts
--it generates, depends on the system load. The local APIC NMI watchdog,
--lacking a better source, uses the "cycles unhalted" event. As you may
--guess it doesn't tick when the CPU is in the halted state (which happens
--when the system is idle), but if your system locks up on anything but the
--"hlt" processor instruction, the watchdog will trigger very soon as the
--"cycles unhalted" event will happen every clock tick. If it locks up on
--"hlt", then you are out of luck -- the event will not happen at all and the
--watchdog won't trigger. This is a shortcoming of the local APIC watchdog
---- unfortunately there is no "clock ticks" event that would work all the
--time. The I/O APIC watchdog is driven externally and has no such shortcoming.
--But its NMI frequency is much higher, resulting in a more significant hit
--to the overall system performance.
--
--On x86 nmi_watchdog is disabled by default so you have to enable it with
--a boot time parameter.
--
--It's possible to disable the NMI watchdog in run-time by writing "0" to
--/proc/sys/kernel/nmi_watchdog. Writing "1" to the same file will re-enable
--the NMI watchdog. Notice that you still need to use "nmi_watchdog=" parameter
--at boot time.
--
--NOTE: In kernels prior to 2.4.2-ac18 the NMI-oopser is enabled unconditionally
--on x86 SMP boxes.
--
--[ feel free to send bug reports, suggestions and patches to
--  Ingo Molnar <mingo@redhat.com> or the Linux SMP mailing
--  list at <linux-smp@vger.kernel.org> ]
--
+While mine apparentlyh has a different PCI ID:
+lspci -nn -v -s 00:1f.2
+00:1f.2 RAID bus controller =5B0104=5D: Intel Corporation Mobile 82801 SA=
+TA RAID Controller =5B8086:282a=5D (rev 03)
+        Subsystem: Dell Device =5B1028:024f=5D
+        Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 45
+        I/O ports at 6e70 =5Bsize=3D8=5D
+        I/O ports at 6e78 =5Bsize=3D4=5D
+        I/O ports at 6e80 =5Bsize=3D8=5D
+        I/O ports at 6e88 =5Bsize=3D4=5D
+        I/O ports at 6ea0 =5Bsize=3D32=5D
+        Memory at fed1c800 (32-bit, non-prefetchable) =5Bsize=3D2K=5D
+        Capabilities: =5B80=5D MSI: Enable+ Count=3D1/16 Maskable- 64bit-=
 
---------------020403030801050906090304--
+        Capabilities: =5B70=5D Power Management version 3
+        Capabilities: =5Ba8=5D SATA HBA v1.0
+        Capabilities: =5Bb0=5D PCI Advanced Features
+        Kernel driver in use: ahci
+
+
+
+from dmesg:
+=5B    1.295050=5D ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)=
+
+=5B    1.296037=5D ata1.00: ATA-8: WDC WD1600BJKT-75F4T0, 11.01A11, max U=
+DMA/133
+=5B    1.296041=5D ata1.00: 312581808 sectors, multi 0: LBA48 NCQ (depth =
+31/32), AA
+=5B    1.297051=5D ata1.00: configured for UDMA/133
+=5B    1.297773=5D scsi 0:0:0:0: Direct-Access     ATA      WDC WD1600BJK=
+T-7 11.0 PQ: 0 ANSI: 5
+=5B    1.298623=5D sd 0:0:0:0: =5Bsda=5D 312581808 512-byte logical block=
+s: (160 GB/149 GiB)
+=5B    1.298811=5D sd 0:0:0:0: =5Bsda=5D Write Protect is off
+=5B    1.298816=5D sd 0:0:0:0: =5Bsda=5D Mode Sense: 00 3a 00 00
+=5B    1.298891=5D sd 0:0:0:0: =5Bsda=5D Write cache: enabled, read cache=
+: enabled, doesn't support DPO or FUA
+=5B    1.329096=5D  sda: sda1 sda2
+=5B    1.330321=5D sd 0:0:0:0: =5Bsda=5D Attached SCSI disk
+=5B    6.652045=5D ata2: link is slow to respond, please be patient (read=
+y=3D0)
+=5B   11.344043=5D ata2: COMRESET failed (errno=3D-16)
+=5B   11.649049=5D ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)=
+
+=5B   11.650654=5D ata2.00: ATAPI: MATSHITA DVD+/-RW UJ892, 1.01, max UDM=
+A/100
+=5B   11.653036=5D ata2.00: configured for UDMA/100
+=5B   11.656392=5D scsi 1:0:0:0: CD-ROM            MATSHITA DVD+-RW UJ892=
+    1.01 PQ: 0 ANSI: 5
+=5B   11.659202=5D sr0: scsi3-mmc drive: 24x/24x writer dvd-ram cd/rw xa/=
+form2 cdda tray
+=5B   11.659206=5D cdrom: Uniform CD-ROM driver Revision: 3.20
+=5B   11.659794=5D sr 1:0:0:0: Attached scsi CD-ROM sr0
+=5B   11.965047=5D ata5: SATA link down (SStatus 0 SControl 300)
+=5B   12.270047=5D ata6: SATA link down (SStatus 0 SControl 300)
+
+
+
+
+--==_Exmh_1328692235_3347P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBTzI8CwdmEQWDXROgAQLLkA//fbMpIXk6w+Into3XlloLN4AMP5I7Y9+H
+OsbHC29bEXtWjZkwzIkslrS1B1BcoHDl5E/Ql0Dyyeh+zMgpHVEv3dZCnqABRgUa
+OPezfSLMOT4RL31o6emoyoK77kRLuutYQprvprg812xMEQKVDL0y919Dv9ya0HeC
+nvRJPerKv/APIZfmS7HWGipUGGv0DfLls3png/uoVNSp/7n20i/7/eoXf6lQSkN2
+YIQNLvNukhsip8Bu1ApT/RGyl2d8npWzr3bkMjPPEkkiaGlTZJhSNXFvW0nSd3ki
+EoZEHT5zuMj366ic/soLa8CN/tNMgejgP8OuaJtyLkQSz+vXXMcIXhxbDu0k/iYJ
+P067ImOf+qtIW9UMCNb7YheWWOn2xJxU582Oj3dfq3qOdpGRZtzrMID/NzhH0zDj
+YMzyzanVQgd3YUDK34wtSWjIpk/JsWsm8T06qLnxmn6HditAVzOWWwiEY1n53JpR
+rSNviTr+IoIqKIg0TdhSAf3tJdIO5u73AtETkCWfORdcrmF1+/D+u0rhtP5UucCa
+yCQ+VDEl42EAtNufmUNBNGk14JBOCWoQgxoo2bcW9JBmZFpksLjYYYOCysu26ZLJ
+RqpUHT87bMe4wtG/Fz7KkgZ3iGyZ0lRbaBAJC5+ukvOlf2XroFUax6/HY5C3YQ+B
+7D/kxc9SzeU=
+=iH04
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1328692235_3347P--
+
