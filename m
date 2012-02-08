@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab2BHVc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:32:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13261 "EHLO mx1.redhat.com"
+	id S1757465Ab2BHVdj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:33:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14416 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756936Ab2BHVRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:17:41 -0500
+	id S1757349Ab2BHVRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:17:11 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 05/17] FS-Cache: Make cookie relinquishment wait for
- outstanding reads
+Subject: [PATCH 02/17] CacheFiles: Downgrade the requirements passed to the
+ allocator
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
         linux-nfs@vger.kernel.org
-Date: Wed, 08 Feb 2012 21:17:31 +0000
-Message-ID: <20120208211731.15607.87865.stgit@warthog.procyon.org.uk>
+Date: Wed, 08 Feb 2012 21:17:01 +0000
+Message-ID: <20120208211701.15607.85808.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
 References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,89 +28,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make fscache_relinquish_cookie() log a warning and wait if there are any
-outstanding reads left on the cookie it was given.
+Downgrade the requirements passed to the allocator in the gfp flags parameter.
+FS-Cache/CacheFiles can handle OOM conditions simply by aborting the attempt to
+store an object or a page in the cache.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/fscache/cookie.c           |   18 ++++++++++++++----
- fs/fscache/operation.c        |   10 ++++++++--
- include/linux/fscache-cache.h |    1 +
- 3 files changed, 23 insertions(+), 6 deletions(-)
+ fs/cachefiles/interface.c |    8 ++++----
+ fs/cachefiles/internal.h  |    2 ++
+ fs/cachefiles/key.c       |    2 +-
+ fs/cachefiles/rdwr.c      |   18 ++++++++++--------
+ fs/cachefiles/xattr.c     |    2 +-
+ fs/fscache/page.c         |    2 +-
+ 6 files changed, 19 insertions(+), 15 deletions(-)
 
-diff --git a/fs/fscache/cookie.c b/fs/fscache/cookie.c
-index 0666996..66be9ec 100644
---- a/fs/fscache/cookie.c
-+++ b/fs/fscache/cookie.c
-@@ -442,22 +442,32 @@ void __fscache_relinquish_cookie(struct fscache_cookie *cookie, int retire)
+diff --git a/fs/cachefiles/interface.c b/fs/cachefiles/interface.c
+index 67bef6d..9bff0f8 100644
+--- a/fs/cachefiles/interface.c
++++ b/fs/cachefiles/interface.c
+@@ -41,12 +41,12 @@ static struct fscache_object *cachefiles_alloc_object(
  
- 	event = retire ? FSCACHE_OBJECT_EV_RETIRE : FSCACHE_OBJECT_EV_RELEASE;
+ 	_enter("{%s},%p,", cache->cache.identifier, cookie);
  
-+try_again:
- 	spin_lock(&cookie->lock);
+-	lookup_data = kmalloc(sizeof(*lookup_data), GFP_KERNEL);
++	lookup_data = kmalloc(sizeof(*lookup_data), cachefiles_gfp);
+ 	if (!lookup_data)
+ 		goto nomem_lookup_data;
  
- 	/* break links with all the active objects */
- 	while (!hlist_empty(&cookie->backing_objects)) {
-+		int n_reads;
- 		object = hlist_entry(cookie->backing_objects.first,
- 				     struct fscache_object,
- 				     cookie_link);
+ 	/* create a new object record and a temporary leaf image */
+-	object = kmem_cache_alloc(cachefiles_object_jar, GFP_KERNEL);
++	object = kmem_cache_alloc(cachefiles_object_jar, cachefiles_gfp);
+ 	if (!object)
+ 		goto nomem_object;
  
- 		_debug("RELEASE OBJ%x", object->debug_id);
+@@ -63,7 +63,7 @@ static struct fscache_object *cachefiles_alloc_object(
+ 	 * - stick the length on the front and leave space on the back for the
+ 	 *   encoder
+ 	 */
+-	buffer = kmalloc((2 + 512) + 3, GFP_KERNEL);
++	buffer = kmalloc((2 + 512) + 3, cachefiles_gfp);
+ 	if (!buffer)
+ 		goto nomem_buffer;
  
--		if (atomic_read(&object->n_reads)) {
-+		set_bit(FSCACHE_COOKIE_WAITING_ON_READS, &cookie->flags);
-+		n_reads = atomic_read(&object->n_reads);
-+		if (n_reads) {
-+			int n_ops = object->n_ops;
-+			int n_in_progress = object->n_in_progress;
- 			spin_unlock(&cookie->lock);
- 			printk(KERN_ERR "FS-Cache:"
--			       " Cookie '%s' still has %d outstanding reads\n",
--			       cookie->def->name, atomic_read(&object->n_reads));
--			BUG();
-+			       " Cookie '%s' still has %d outstanding reads (%d,%d)\n",
-+			       cookie->def->name,
-+			       n_reads, n_ops, n_in_progress);
-+			wait_on_bit(&cookie->flags, FSCACHE_COOKIE_WAITING_ON_READS,
-+				    fscache_wait_bit, TASK_UNINTERRUPTIBLE);
-+			printk("Wait finished\n");
-+			goto try_again;
+@@ -219,7 +219,7 @@ static void cachefiles_update_object(struct fscache_object *_object)
+ 		return;
+ 	}
+ 
+-	auxdata = kmalloc(2 + 512 + 3, GFP_KERNEL);
++	auxdata = kmalloc(2 + 512 + 3, cachefiles_gfp);
+ 	if (!auxdata) {
+ 		_leave(" [nomem]");
+ 		return;
+diff --git a/fs/cachefiles/internal.h b/fs/cachefiles/internal.h
+index bd6bc1b..4938251 100644
+--- a/fs/cachefiles/internal.h
++++ b/fs/cachefiles/internal.h
+@@ -23,6 +23,8 @@ extern unsigned cachefiles_debug;
+ #define CACHEFILES_DEBUG_KLEAVE	2
+ #define CACHEFILES_DEBUG_KDEBUG	4
+ 
++#define cachefiles_gfp (__GFP_WAIT | __GFP_NORETRY | __GFP_NOMEMALLOC)
++
+ /*
+  * node records
+  */
+diff --git a/fs/cachefiles/key.c b/fs/cachefiles/key.c
+index 81b8b2b..33b58c6 100644
+--- a/fs/cachefiles/key.c
++++ b/fs/cachefiles/key.c
+@@ -78,7 +78,7 @@ char *cachefiles_cook_key(const u8 *raw, int keylen, uint8_t type)
+ 
+ 	_debug("max: %d", max);
+ 
+-	key = kmalloc(max, GFP_KERNEL);
++	key = kmalloc(max, cachefiles_gfp);
+ 	if (!key)
+ 		return NULL;
+ 
+diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+index 0186fc1..26a6f52 100644
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -238,7 +238,7 @@ static int cachefiles_read_backing_file_one(struct cachefiles_object *object,
+ 	_debug("read back %p{%lu,%d}",
+ 	       netpage, netpage->index, page_count(netpage));
+ 
+-	monitor = kzalloc(sizeof(*monitor), GFP_KERNEL);
++	monitor = kzalloc(sizeof(*monitor), cachefiles_gfp);
+ 	if (!monitor)
+ 		goto nomem;
+ 
+@@ -257,13 +257,14 @@ static int cachefiles_read_backing_file_one(struct cachefiles_object *object,
+ 			goto backing_page_already_present;
+ 
+ 		if (!newpage) {
+-			newpage = page_cache_alloc_cold(bmapping);
++			newpage = __page_cache_alloc(cachefiles_gfp |
++						     __GFP_COLD);
+ 			if (!newpage)
+ 				goto nomem_monitor;
  		}
  
- 		/* detach each cache object from the object cookie */
-diff --git a/fs/fscache/operation.c b/fs/fscache/operation.c
-index 30afdfa..c857ab8 100644
---- a/fs/fscache/operation.c
-+++ b/fs/fscache/operation.c
-@@ -340,8 +340,14 @@ void fscache_put_operation(struct fscache_operation *op)
+ 		ret = add_to_page_cache(newpage, bmapping,
+-					netpage->index, GFP_KERNEL);
++					netpage->index, cachefiles_gfp);
+ 		if (ret == 0)
+ 			goto installed_new_backing_page;
+ 		if (ret != -EEXIST)
+@@ -481,7 +482,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 		       netpage, netpage->index, page_count(netpage));
  
- 	object = op->object;
+ 		if (!monitor) {
+-			monitor = kzalloc(sizeof(*monitor), GFP_KERNEL);
++			monitor = kzalloc(sizeof(*monitor), cachefiles_gfp);
+ 			if (!monitor)
+ 				goto nomem;
  
--	if (test_bit(FSCACHE_OP_DEC_READ_CNT, &op->flags))
--		atomic_dec(&object->n_reads);
-+	if (test_bit(FSCACHE_OP_DEC_READ_CNT, &op->flags)) {
-+		if (atomic_dec_and_test(&object->n_reads)) {
-+			clear_bit(FSCACHE_COOKIE_WAITING_ON_READS,
-+				  &object->cookie->flags);
-+			wake_up_bit(&object->cookie->flags,
-+				    FSCACHE_COOKIE_WAITING_ON_READS);
-+		}
-+	}
+@@ -496,13 +497,14 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 				goto backing_page_already_present;
  
- 	/* now... we may get called with the object spinlock held, so we
- 	 * complete the cleanup here only if we can immediately acquire the
-diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
-index 9879183..e3d6d93 100644
---- a/include/linux/fscache-cache.h
-+++ b/include/linux/fscache-cache.h
-@@ -301,6 +301,7 @@ struct fscache_cookie {
- #define FSCACHE_COOKIE_PENDING_FILL	3	/* T if pending initial fill on object */
- #define FSCACHE_COOKIE_FILLING		4	/* T if filling object incrementally */
- #define FSCACHE_COOKIE_UNAVAILABLE	5	/* T if cookie is unavailable (error, etc) */
-+#define FSCACHE_COOKIE_WAITING_ON_READS	6	/* T if cookie is waiting on reads */
- };
+ 			if (!newpage) {
+-				newpage = page_cache_alloc_cold(bmapping);
++				newpage = __page_cache_alloc(cachefiles_gfp |
++							     __GFP_COLD);
+ 				if (!newpage)
+ 					goto nomem;
+ 			}
  
- extern struct fscache_cookie fscache_fsdef_index;
+ 			ret = add_to_page_cache(newpage, bmapping,
+-						netpage->index, GFP_KERNEL);
++						netpage->index, cachefiles_gfp);
+ 			if (ret == 0)
+ 				goto installed_new_backing_page;
+ 			if (ret != -EEXIST)
+@@ -532,7 +534,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 		_debug("- monitor add");
+ 
+ 		ret = add_to_page_cache(netpage, op->mapping, netpage->index,
+-					GFP_KERNEL);
++					cachefiles_gfp);
+ 		if (ret < 0) {
+ 			if (ret == -EEXIST) {
+ 				page_cache_release(netpage);
+@@ -608,7 +610,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 		_debug("- uptodate");
+ 
+ 		ret = add_to_page_cache(netpage, op->mapping, netpage->index,
+-					GFP_KERNEL);
++					cachefiles_gfp);
+ 		if (ret < 0) {
+ 			if (ret == -EEXIST) {
+ 				page_cache_release(netpage);
+diff --git a/fs/cachefiles/xattr.c b/fs/cachefiles/xattr.c
+index e18b183..73b4628 100644
+--- a/fs/cachefiles/xattr.c
++++ b/fs/cachefiles/xattr.c
+@@ -174,7 +174,7 @@ int cachefiles_check_object_xattr(struct cachefiles_object *object,
+ 	ASSERT(dentry);
+ 	ASSERT(dentry->d_inode);
+ 
+-	auxbuf = kmalloc(sizeof(struct cachefiles_xattr) + 512, GFP_KERNEL);
++	auxbuf = kmalloc(sizeof(struct cachefiles_xattr) + 512, cachefiles_gfp);
+ 	if (!auxbuf) {
+ 		_leave(" = -ENOMEM");
+ 		return -ENOMEM;
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index d7c663c..248a12e 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -759,7 +759,7 @@ int __fscache_write_page(struct fscache_cookie *cookie,
+ 
+ 	fscache_stat(&fscache_n_stores);
+ 
+-	op = kzalloc(sizeof(*op), GFP_NOIO);
++	op = kzalloc(sizeof(*op), GFP_NOIO | __GFP_NOMEMALLOC | __GFP_NORETRY);
+ 	if (!op)
+ 		goto nomem;
+ 
 
