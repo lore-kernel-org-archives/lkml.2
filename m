@@ -1,72 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757235Ab2BHCAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 21:00:44 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:35639 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756410Ab2BHCAm (ORCPT
+	id S1756890Ab2BHCFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 21:05:01 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44538 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab2BHCFA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 21:00:42 -0500
-X-Sasl-enc: ks73IP3U3ZUcFskOKyACw1kj/Fp4bLrWlJKFWXQGAHrp 1328666441
-Date: Wed, 8 Feb 2012 00:00:38 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        ML netdev <netdev@vger.kernel.org>
-Subject: Re: network regression: cannot rename netdev twice
-Message-ID: <20120208020038.GE13296@khazad-dum.debian.net>
-References: <4F27120A.4040106@suse.cz>
- <CAPXgP12Sr2KzGJ9RA13QBOCkctb-z3O4+1uHOjANgMDDv2pxaQ@mail.gmail.com>
- <4F27C54F.1010107@suse.cz>
- <CAPXgP11=U_Y3LvJB2LRnXQ53y1WQQTqc0j1c7iva6ZXvF97wEw@mail.gmail.com>
- <20120204021457.GA25386@khazad-dum.debian.net>
- <CAPXgP12yZ74679JNwRB-pDfnjOBaxMzL2=krSDK31jM1mjXfuA@mail.gmail.com>
+	Tue, 7 Feb 2012 21:05:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPXgP12yZ74679JNwRB-pDfnjOBaxMzL2=krSDK31jM1mjXfuA@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120203140428.GG5796@csn.ul.ie>
+References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
+ <1328271538-14502-12-git-send-email-m.szyprowski@samsung.com> <20120203140428.GG5796@csn.ul.ie>
+From: sandeep patil <psandeep.s@gmail.com>
+Date: Tue, 7 Feb 2012 18:04:18 -0800
+Message-ID: <CA+K6fF49BQiNer=7Di+gCU_EX4E41q-teXJJUBjEd2xc12-j4w@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 11/15] mm: trigger page reclaim in
+ alloc_contig_range() to stabilize watermarks
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rob Clark <rob.clark@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Feb 2012, Kay Sievers wrote:
-> On Sat, Feb 4, 2012 at 03:14, Henrique de Moraes Holschuh
-> <hmh@hmh.eng.br> wrote:
-> > Is it possible to configure the kernel to use something other than "eth#" as
-> > its initial namespace for netif names?  Or is there some other way to get
-> > eth1 to be what you need eth1 to be during userland boot?
-> 
-> I don't think there is a sane way to do that. Someone could add a
-> kernel command line parameter to switch ethX in the kernel to
-> something else, and create custom udev rules which match on device
-> properties and apply configured names which are ethX again. But for
-> all that, there will be no generally available support in common base
-> system tools, and we absolutely do not recommend anybody doing that.
+On Fri, Feb 3, 2012 at 6:04 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> On Fri, Feb 03, 2012 at 01:18:54PM +0100, Marek Szyprowski wrote:
+>
+> Nothing prevents two or more processes updating the wmarks at the same
+> time which is racy and unpredictable. Today it is not much of a problem
+> but CMA makes this path hotter than it was and you may see weirdness
+> if two processes are updating zonelists at the same time. Swap-over-NFS
+> actually starts with a patch that serialises setup_per_zone_wmarks()
+>
+> You also potentially have a BIG problem here if this happens
+>
+> min_free_kbytes = 32768
+> Process a: min_free_kbytes  += 65536
+> Process a: start direct reclaim
+> echo 16374 > /proc/sys/vm/min_free_kbytes
+> Process a: exit direct_reclaim
+> Process a: min_free_kbytes -= 65536
+>
+> min_free_kbytes now wraps negative and the machine hangs.
+>
 
-What sort of impact analysis on userspace was done about this change?
+There's another problem I am facing with zone watermarks and CMA.
 
-Nobody in his right mind would go back to the dark ages of uncontrolled
-ifnames.  You're effectively forcing everybody with a clue away from the
-eth# namespace.
+Test details:
+Memory  : 480 MB of total memory, 128 MB CMA region
+Test case : around 600 MB of file transfer over USB RNDIS onto target
+System Load : ftpd with console running on target.
+No one is doing CMA allocations except for the DMA allocations done by the
+drivers.
 
-Just to be very clear: the impact of this is the need to change the
-interface names on potentially millions of lines of firewall rules and
-scripts out there, as well as tracking down stuff (mostly scripts) that
-special-cases the eth prefix.
+Result : After about 300MB transfer, I start getting GFP_ATOMIC
+allocation failures.
+This only happens if CMA region is reserved.
 
-Is there a really good reason why we cannot have a way to move the
-kernel away from the eth# namespace at boot (through a kernel parameter,
-maybe with the default namespace set at compile time), AND keep the
-"common base system tools" support to assign ifname based on MAC
-addresses that we have right now?
+Here's the free_list before I start the test
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Free pages count per migrate type at order       0      1      2
+3      4      5      6      7      8      9     10
+Node    0, zone   Normal, type    Unmovable      2      9      6
+7      3      3      3      4      2      1      0
+Node    0, zone   Normal, type  Reclaimable     31      4      1
+2      1      1      0      1      1      0      0
+Node    0, zone   Normal, type      Movable     22     20     23
+14      3      4      4      3      1      0     70
+Node    0, zone   Normal, type      Reserve      0      0      0
+0      0      0      0      0      0      0      1
+Node    0, zone   Normal, type          CMA      2      0      0
+2      1      1      1      1      1      1     34
+Node    0, zone   Normal, type      Isolate      0      0      0
+0      0      0      0      0      0      0      0
+
+and here's what I get when I print the same when allocation fails.
+
+Normal: Free pages count per migrate type at order       0      1
+2      3      4      5      6      7      8      9     10
+[  401.887634]                    zone   Normal, type    Unmovable
+ 0      0      0      0      0      0      0      0      0      0
+0
+[  401.901916]                    zone   Normal, type  Reclaimable
+ 0      0      0      0      0      0      0      0      0      0
+0
+[  401.916229]                    zone   Normal, type      Movable
+ 0      0      0      0      0      0      0      0      0      0
+0
+[  401.930541]                    zone   Normal, type      Reserve
+ 0      0      0      0      0      0      0      0      0      0
+0
+[  401.944824]                    zone   Normal, type          CMA
+6582   6580   2380      0      0      0      0      0      0      0
+  0
+[  401.961486]                    zone   Normal, type      Isolate
+ 0      0      0      0      0      0      0      0      0      0
+0
+
+Total memory available is way above the zone watermarks. So, we ended
+up starving
+UNMOVABLE/RECLAIMABLE atomic allocations that cannot fallback on CMA region.
+
+I know the CMA region is big, but I think reducing the region size
+will only delay the problem.
+it walso on't recover as long as most of the CMA region pages get
+allocated and the zone
+watermark is hit
+
+To check my theory, I changed __zone_watermark_ok() to ignore free CMA pages
+With this change, the transfer succeeds w/o any failures.
+
+The patch does make things slow of course. Ideally, I would have liked
+to do this only if
+the watermark is being checked for non-Movable allocations, but I couldn't find
+an easy way to do that.
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 371a79f..b672d97 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1580,6 +1580,21 @@ static bool __zone_watermark_ok(struct zone *z,
+int order, unsigned long mark,
+ 		if (free_pages <= min)
+ 			return false;
+ 	}
++
++#ifdef CONFIG_CMA
++	/* If cma is enabled, ignore free pages from MIGRATE_CMA list
++	 * for watermark checks
++	 */
++	for (o = order; o < MAX_ORDER; o++) {
++		struct list_head *curr;
++		list_for_each(curr, &z->free_area[o].free_list[MIGRATE_CMA]) {
++			free_pages -= (1 << o);
++			if (free_pages <= min)
++				return false;
++		}
++	}
++#endif
++
+ 	return true;
+ }
+
+Sandeep
