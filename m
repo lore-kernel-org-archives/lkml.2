@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab2BHCho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 21:37:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49165 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757322Ab2BHChm (ORCPT
+	id S1757349Ab2BHChr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 21:37:47 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47128 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757336Ab2BHChp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 21:37:42 -0500
+	Tue, 7 Feb 2012 21:37:45 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] cgroup: Remove wrong comment on cgroup_enable_task_cg_list()
-Date: Wed,  8 Feb 2012 03:37:26 +0100
-Message-Id: <1328668647-24125-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/2] cgroup: Walk task list under tasklist_lock in cgroup_enable_task_cg_list
+Date: Wed,  8 Feb 2012 03:37:27 +0100
+Message-Id: <1328668647-24125-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
 References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
@@ -25,10 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the stale comment about RCU protection. Many callers
-(all of them?) of cgroup_enable_task_cg_list() don't seem
-to be in an RCU read side critical section. Besides, RCU is
-not helpful to protect against while_each_thread().
+Walking through the tasklist in cgroup_enable_task_cg_list() inside
+an RCU read side critical section is not enough because:
+
+- RCU is not (yet) safe against while_each_thread()
+
+- If we use only RCU, a forking task that has passed cgroup_post_fork()
+  without seeing use_task_css_set_links == 1 is not guaranteed to have
+  its child immediately visible in the tasklist if we walk through it
+  remotely with RCU. In this case it will be missing in its css_set's
+  task list.
+
+Thus we need to traverse the list (unfortunately) under the
+tasklist_lock. It makes us safe against while_each_thread() and also
+make sure we see all forked task that have been added to the tasklist.
+
+As a secondary effect, reading and writing use_task_css_set_links are
+now well ordered against tasklist traversing and modification. The new
+layout is:
+
+CPU 0                                      CPU 1
+
+use_task_css_set_links = 1                write_lock(tasklist_lock)
+read_lock(tasklist_lock)                  add task to tasklist
+do_each_thread() {                        write_unlock(tasklist_lock)
+	add thread to css set links       if (use_task_css_set_links)
+} while_each_thread()                         add thread to css set links
+read_unlock(tasklist_lock)
+
+If CPU 0 traverse the list after the task has been added to the tasklist
+then it is correctly added to the css set links. OTOH if CPU 0 traverse
+the tasklist before the new task had the opportunity to be added to the
+tasklist because it was too early in the fork process, then CPU 1
+catches up and add the task to the css set links after it added the task
+to the tasklist. The right value of use_task_css_set_links is guaranteed
+to be visible from CPU 1 due to the LOCK/UNLOCK implicit barrier properties:
+the read_unlock on CPU 0 makes the write on use_task_css_set_links happening
+and the write_lock on CPU 1 make the read of use_task_css_set_links that comes
+afterward to return the correct value.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Tejun Heo <tj@kernel.org>
@@ -38,23 +72,54 @@ Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/cgroup.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ kernel/cgroup.c |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 865d89a..6e4eb43 100644
+index 6e4eb43..c6877fe 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -2701,9 +2701,6 @@ static void cgroup_advance_iter(struct cgroup *cgrp,
-  * using their cgroups capability, we don't maintain the lists running
-  * through each css_set to its tasks until we see the list actually
-  * used - in other words after the first call to cgroup_iter_start().
-- *
-- * The tasklist_lock is not held here, as do_each_thread() and
-- * while_each_thread() are protected by RCU.
+@@ -2707,6 +2707,14 @@ static void cgroup_enable_task_cg_lists(void)
+ 	struct task_struct *p, *g;
+ 	write_lock(&css_set_lock);
+ 	use_task_css_set_links = 1;
++	/*
++	 * We need tasklist_lock because RCU is not safe against
++	 * while_each_thread(). Besides, a forking task that has passed
++	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
++	 * is not guaranteed to have its child immediately visible in the
++	 * tasklist if we walk through it with RCU.
++	 */
++	read_lock(&tasklist_lock);
+ 	do_each_thread(g, p) {
+ 		task_lock(p);
+ 		/*
+@@ -2718,6 +2726,7 @@ static void cgroup_enable_task_cg_lists(void)
+ 			list_add(&p->cg_list, &p->cgroups->tasks);
+ 		task_unlock(p);
+ 	} while_each_thread(g, p);
++	read_unlock(&tasklist_lock);
+ 	write_unlock(&css_set_lock);
+ }
+ 
+@@ -4522,6 +4531,17 @@ void cgroup_fork_callbacks(struct task_struct *child)
   */
- static void cgroup_enable_task_cg_lists(void)
+ void cgroup_post_fork(struct task_struct *child)
  {
++	/*
++	 * use_task_css_set_links is set to 1 before we walk the tasklist
++	 * under the tasklist_lock and we read it here after we added the child
++	 * to the tasklist under the tasklist_lock as well. If the child wasn't
++	 * yet in the tasklist when we walked through it from
++	 * cgroup_enable_task_cg_lists(), then use_task_css_set_links value
++	 * should be visible now due to the paired locking and barriers implied
++	 * by LOCK/UNLOCK: it is written before the tasklist_lock unlock
++	 * in cgroup_enable_task_cg_lists() and read here after the tasklist_lock
++	 * lock on fork.
++	 */
+ 	if (use_task_css_set_links) {
+ 		write_lock(&css_set_lock);
+ 		if (list_empty(&child->cg_list)) {
 -- 
 1.7.5.4
 
