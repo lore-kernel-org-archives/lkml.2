@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab2BHPxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 10:53:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18379 "EHLO mx1.redhat.com"
+	id S1757263Ab2BHPxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 10:53:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49291 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757177Ab2BHPwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757178Ab2BHPwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Feb 2012 10:52:51 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
@@ -16,83 +16,85 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 5/6] introduce pmd_to_pte_t()
-Date: Wed,  8 Feb 2012 10:51:41 -0500
-Message-Id: <1328716302-16871-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 4/6] pagemap: document KPF_THP and make page-types aware of it
+Date: Wed,  8 Feb 2012 10:51:40 -0500
+Message-Id: <1328716302-16871-5-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Casting pmd into pte_t to handle thp is strongly architecture dependent.
-This patch introduces a new function to separate this dependency from
-independent part.
+page-types, which is a common user of pagemap, gets aware of thp
+with this patch. This helps system admins and kernel hackers know
+about how thp works.
+Here is a sample output of page-types over a thp:
+
+  $ page-types -p <pid> --raw --list
+
+  voffset offset  len     flags
+  ...
+  7f9d40200       3f8400  1       ___U_lA____Ma_bH______t____________
+  7f9d40201       3f8401  1ff     ________________T_____t____________
+
+               flags      page-count       MB  symbolic-flags                     long-symbolic-flags
+  0x0000000000410000             511        1  ________________T_____t____________        compound_tail,thp
+  0x000000000040d868               1        0  ___U_lA____Ma_bH______t____________        uptodate,lru,active,mmap,anonymous,swapbacked,compound_head,thp
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Changes since v4:
-  - Rename thp_ptep_get() to pmd_to_pte_t()
+Changes since v1:
+  - fix misused word
 ---
- arch/x86/include/asm/pgtable.h |    5 +++++
- fs/proc/task_mmu.c             |    4 ++--
- include/asm-generic/pgtable.h  |    4 ++++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ Documentation/vm/page-types.c |    2 ++
+ Documentation/vm/pagemap.txt  |    4 ++++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git 3.3-rc2.orig/arch/x86/include/asm/pgtable.h 3.3-rc2/arch/x86/include/asm/pgtable.h
-index 49afb3f..0058358 100644
---- 3.3-rc2.orig/arch/x86/include/asm/pgtable.h
-+++ 3.3-rc2/arch/x86/include/asm/pgtable.h
-@@ -165,6 +165,11 @@ static inline int has_transparent_hugepage(void)
- {
- 	return cpu_has_pse;
- }
-+/* Caller must confirm that a given pmd points to a hugepage. */
-+static inline pte_t pmd_to_pte_t(pmd_t *pmd)
-+{
-+	return *(pte_t *)pmd;
-+}
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+diff --git 3.3-rc2.orig/Documentation/vm/page-types.c 3.3-rc2/Documentation/vm/page-types.c
+index 7445caa..0b13f02 100644
+--- 3.3-rc2.orig/Documentation/vm/page-types.c
++++ 3.3-rc2/Documentation/vm/page-types.c
+@@ -98,6 +98,7 @@
+ #define KPF_HWPOISON		19
+ #define KPF_NOPAGE		20
+ #define KPF_KSM			21
++#define KPF_THP			22
  
- static inline pte_t pte_set_flags(pte_t pte, pteval_t set)
-diff --git 3.3-rc2.orig/fs/proc/task_mmu.c 3.3-rc2/fs/proc/task_mmu.c
-index 9ff102a..de94384 100644
---- 3.3-rc2.orig/fs/proc/task_mmu.c
-+++ 3.3-rc2/fs/proc/task_mmu.c
-@@ -395,7 +395,7 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	spinlock_t *ptl;
+ /* [32-] kernel hacking assistances */
+ #define KPF_RESERVED		32
+@@ -147,6 +148,7 @@ static const char *page_flag_names[] = {
+ 	[KPF_HWPOISON]		= "X:hwpoison",
+ 	[KPF_NOPAGE]		= "n:nopage",
+ 	[KPF_KSM]		= "x:ksm",
++	[KPF_THP]		= "t:thp",
  
- 	if (pmd_trans_huge_lock(pmd, vma)) {
--		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_PMD_SIZE, walk);
-+		smaps_pte_entry(pmd_to_pte_t(pmd), addr, HPAGE_PMD_SIZE, walk);
- 		spin_unlock(&walk->mm->page_table_lock);
- 		mss->anonymous_thp += HPAGE_PMD_SIZE;
- 		return 0;
-@@ -967,7 +967,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
- 	md = walk->private;
+ 	[KPF_RESERVED]		= "r:reserved",
+ 	[KPF_MLOCKED]		= "m:mlocked",
+diff --git 3.3-rc2.orig/Documentation/vm/pagemap.txt 3.3-rc2/Documentation/vm/pagemap.txt
+index df09b96..4600cbe 100644
+--- 3.3-rc2.orig/Documentation/vm/pagemap.txt
++++ 3.3-rc2/Documentation/vm/pagemap.txt
+@@ -60,6 +60,7 @@ There are three components to pagemap:
+     19. HWPOISON
+     20. NOPAGE
+     21. KSM
++    22. THP
  
- 	if (pmd_trans_huge_lock(pmd, md->vma)) {
--		pte_t huge_pte = *(pte_t *)pmd;
-+		pte_t huge_pte = pmd_to_pte_t(pmd);
- 		struct page *page;
+ Short descriptions to the page flags:
  
- 		page = can_gather_numa_stats(huge_pte, md->vma, addr);
-diff --git 3.3-rc2.orig/include/asm-generic/pgtable.h 3.3-rc2/include/asm-generic/pgtable.h
-index 76bff2b..45160c7 100644
---- 3.3-rc2.orig/include/asm-generic/pgtable.h
-+++ 3.3-rc2/include/asm-generic/pgtable.h
-@@ -434,6 +434,10 @@ static inline int pmd_trans_splitting(pmd_t pmd)
- {
- 	return 0;
- }
-+static inline pte_t pmd_to_pte_t(pmd_t *pmd)
-+{
-+	return 0;
-+}
- #ifndef __HAVE_ARCH_PMD_WRITE
- static inline int pmd_write(pmd_t pmd)
- {
+@@ -97,6 +98,9 @@ Short descriptions to the page flags:
+ 21. KSM
+     identical memory pages dynamically shared between one or more processes
+ 
++22. THP
++    contiguous pages which construct transparent hugepages
++
+     [IO related page flags]
+  1. ERROR     IO error occurred
+  3. UPTODATE  page has up-to-date data
 -- 
 1.7.7.6
 
