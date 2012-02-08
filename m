@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab2BHGvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 01:51:38 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:43246 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755470Ab2BHGvh (ORCPT
+	id S1753261Ab2BHHJe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 02:09:34 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43471 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab2BHHJb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 01:51:37 -0500
-Date: Wed, 8 Feb 2012 14:51:15 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-Message-ID: <20120208065115.GA19691@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1328560933-3037-1-git-send-email-venki@google.com>
+	Wed, 8 Feb 2012 02:09:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1328560933-3037-1-git-send-email-venki@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <20120207182926.GD1043@quack.suse.cz>
+References: <1328536531-19034-1-git-send-email-jack@suse.cz>
+	<4F2FF4EC.1000104@linux.vnet.ibm.com>
+	<20120206164732.GH6890@quack.suse.cz>
+	<20120206131717.c4346f72.akpm@linux-foundation.org>
+	<20120206222517.GD24840@quack.suse.cz>
+	<CAOtvUMcWOfkn401qEUgBMV=R-vCbWG3sus6=yV9kQjRhheXV4A@mail.gmail.com>
+	<20120207182926.GD1043@quack.suse.cz>
+Date: Wed, 8 Feb 2012 09:09:30 +0200
+Message-ID: <CAOtvUMet_L9s5+jYF=_kb_N86dNmC6G1rhLQ7JzNfWC0J9UcSw@mail.gmail.com>
+Subject: Re: [PATCH] vfs: Avoid IPI storm due to bh LRU invalidation
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        hare@suse.de, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 12:42:13PM -0800, Venkatesh Pallipadi wrote:
-> smp_call_function_single and ttwu_queue_remote sends unconditional IPI
-> to target CPU. However, if the target CPU is in mwait based idle, we can
-> do IPI-less wakeups using the magical powers of monitor-mwait.
-> Doing this has certain advantages:
+On Tue, Feb 7, 2012 at 8:29 PM, Jan Kara <jack@suse.cz> wrote:
+> On Tue 07-02-12 18:25:18, Gilad Ben-Yossef wrote:
+>> On Tue, Feb 7, 2012 at 12:25 AM, Jan Kara <jack@suse.cz> wrote:
+...
+>> I think its worth a shot since the mutex just delays the IPIs instead
+>> of canceling them
+>> altogether.
+>  Well, mutex will just delay callers but the sequence logic behind the
+> mutex will reduce number of IPIs a lot - all waiters for mutex will be
+> satisfied by a single signalling of all CPUs while previously they would
+> each do the signalling.
 
-Actually I'm trying to do the similar thing on MIPS.
+Oh, you are right. I've missed that part completely. Note to self: never try to
+read LKML email on your smartphone...
 
-The difference is that I want task_is_polling() to do something. The basic
-idea is:
+Gilad
 
-> +			if (ipi_pending()) {
-> +				clear_ipi_pending();
-> +				local_bh_disable();
-> +				local_irq_disable();
-> +				generic_smp_call_function_single_interrupt();
-> +				scheduler_wakeup_self_check();
-> +				local_irq_enable();
-> +				local_bh_enable();
 
-I let cpu_idle() check if there is anything to do as your above code.
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
 
-And task_is_polling() handle the others with below patch:
----
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5255c9d..09f633d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -527,15 +527,16 @@ void resched_task(struct task_struct *p)
- 		smp_send_reschedule(cpu);
- }
- 
--void resched_cpu(int cpu)
-+int resched_cpu(int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
- 	unsigned long flags;
- 
- 	if (!raw_spin_trylock_irqsave(&rq->lock, flags))
--		return;
-+		return 0;
- 	resched_task(cpu_curr(cpu));
- 	raw_spin_unlock_irqrestore(&rq->lock, flags);
-+	return 1;
- }
- 
- #ifdef CONFIG_NO_HZ
-@@ -1484,7 +1485,8 @@ void scheduler_ipi(void)
- 
- static void ttwu_queue_remote(struct task_struct *p, int cpu)
- {
--	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
-+	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list) &&
-+						!resched_cpu(cpu))
- 		smp_send_reschedule(cpu);
- }
- 
-Thought?
-
-Thanks,
-Yong
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
