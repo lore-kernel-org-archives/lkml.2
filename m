@@ -1,35 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397Ab2BHUAq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 15:00:46 -0500
-Received: from wobosm01.netvigator.com ([218.102.32.144]:59496 "EHLO
-	wobosm01.netvigator.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755304Ab2BHUAn (ORCPT
+	id S932121Ab2BHUBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 15:01:41 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:58128 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756474Ab2BHUBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 15:00:43 -0500
-Date: Thu, 9 Feb 2012 03:55:35 +0800 (HKT)
-From: PRIVATE MAIL <elainekc@netvigator.com>
-Reply-To: privatepot5@live.co.uk
-Message-ID: <241223052.401063.1328730935950.JavaMail.root@yzbmbs10>
-Subject: Greetings
+	Wed, 8 Feb 2012 15:01:39 -0500
+Date: Wed, 8 Feb 2012 14:57:44 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: "Devendra.Naga" <devendra.aaru@gmail.com>, Larry.Finger@lwfinger.net,
+        chaoming_li@realsil.com.cn, paul.gortmaker@windriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtlwifi/rtl8192c: in _rtl92c_phy_calculate_bit_shift
+ remove comparing bitmask against 1
+Message-ID: <20120208195744.GD2929@tuxdriver.com>
+References: <1327993863-6810-1-git-send-email-devendra.aaru@gmail.com>
+ <1327995440.1804.16.camel@joe2Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.12.63]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Win)/6.0.8_GA_2661)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327995440.1804.16.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 30, 2012 at 11:37:20PM -0800, Joe Perches wrote:
+> On Tue, 2012-01-31 at 02:11 -0500, Devendra.Naga wrote:
+> > From: "Devendra.Naga" <devendra.aaru@gmail.com>
+> []
+> > diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
+> []
+> > @@ -177,7 +177,7 @@ u32 _rtl92c_phy_calculate_bit_shift(u32 bitmask)
+> >  	u32 i;
+> >  
+> >  	for (i = 0; i <= 31; i++) {
+> > -		if (((bitmask >> i) & 0x1) == 1)
+> > +		if ((bitmask >> i) & 0x1)
+> >  			break;
+> >  	}
+> >  	return i;
+> 
+> Perhaps this is simpler and faster:
+> 
+> {
+> 	u32 rtn = (u32)ffs((int)bitmask);
+> 	if (rtn)
+> 		return rtn - 1;
+> 	return 32;
+> }
 
+Are you planning to revise your patch based on Joe's suggestion?
 
-Good-day.
-
-This is a personal email directed to you for your consideration alone, I request that it remain and be treated as such only. Please bear with me for now and do not ask my name. I am a banker with HSBC in the Malta. I have an interesting business proposal for you that will be of immense benefit to both of us. Although this may be hard for you to believe, we stand to gain 7.2 million USD between us in a matter of days. Please grant me the benefit of doubt and hear me out. I need you to signify your interest by replying to this email.
-
-Most importantly, I will need you to promise to keep whatever you learn from me between us even if you decide not to go along with me. I will make more details available to you on receipt of a positive response from you. Do contact me only at my private emailaddress:privatepot5@live.co.uk
-
-
-Warm regard from Malta.
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
