@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab2BHJ1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 04:27:19 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:36661 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab2BHJ1Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 04:27:16 -0500
-Date: Wed, 8 Feb 2012 12:25:04 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rodolfo Giometti <giometti@enneenne.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] pps: checking for NULL instead of IS_ERR()
-Message-ID: <20120208092504.GD6554@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4F323F79.004C,ss=1,re=0.000,fgs=0
+	id S1753428Ab2BHJan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 04:30:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15159 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab2BHJal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 04:30:41 -0500
+Message-ID: <1328693418.2442.18.camel@cr0>
+Subject: Re: linux-next: manual merge of the kmap_atomic tree with the  tree
+From: Cong Wang <amwang@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Date: Wed, 08 Feb 2012 17:30:18 +0800
+In-Reply-To: <20120208151057.5ad413a05fbbb393b4a00109@canb.auug.org.au>
+References: <20120208151057.5ad413a05fbbb393b4a00109@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-class_create() never returns NULLs only ERR_PTRs.
+On Wed, 2012-02-08 at 15:10 +1100, Stephen Rothwell wrote:
+> Hi Cong,
+> 
+> Today's linux-next merge of the kmap_atomic tree got a conflict in
+> drivers/net/ethernet/intel/e1000e/netdev.c between commit 0e15df490eef
+> ("e1000e: minor whitespace and indentation cleanup") from the net-next
+> tree and commit 2b4ba510a572 ("net: remove the second argument of k
+> [un]map_atomic()") from the kmap_atomic tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Hi, Stephen,
 
-diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index 2baadd2..98fbe62 100644
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -369,9 +369,9 @@ static int __init pps_init(void)
- 	int err;
- 
- 	pps_class = class_create(THIS_MODULE, "pps");
--	if (!pps_class) {
-+	if (IS_ERR(pps_class)) {
- 		pr_err("failed to allocate class\n");
--		return -ENOMEM;
-+		return PTR_ERR(pps_class);
- 	}
- 	pps_class->dev_attrs = pps_attrs;
- 
+Looks good, thanks!
+
+
