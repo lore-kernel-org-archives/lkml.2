@@ -1,34 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab2BHTcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 14:32:09 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:52938 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756873Ab2BHTcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 14:32:08 -0500
-Message-ID: <1328729420.2261.329.camel@groeck-laptop>
+	id S1757087Ab2BHTe5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 14:34:57 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:10865 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755922Ab2BHTe4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 14:34:56 -0500
+X-SpamScore: -13
+X-BigFish: VS-13(zz9371I146fK1432N98dKzz1202hzzz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 Subject: Re: drivers/net/phy/phy.c issue
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>, netdev@vger.kernel.org
-CC: "afleming@freescale.com" <afleming@freescale.com>,
-        "macro@linux-mips.org" <macro@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 8 Feb 2012 11:30:20 -0800
+MIME-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=US-ASCII
+From: Andy Fleming <afleming@freescale.com>
 In-Reply-To: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
+Date: Wed, 8 Feb 2012 13:34:49 -0600
+CC: <macro@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-ID: <7FDEBF4E-1566-4ADE-9B31-BE7497754F61@freescale.com>
 References: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
-Organization: Ericsson
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
+To: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
+X-Mailer: Apple Mail (2.1251.1)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copying netdev.
 
-On Wed, 2012-02-08 at 09:31 -0500, Frans Meulenbroeks wrote:
+On Feb 8, 2012, at 8:31 AM, Frans Meulenbroeks wrote:
+
 > Hi
 > 
 > I found an issue with drivers/net/phy/phy.c
@@ -58,14 +59,7 @@ On Wed, 2012-02-08 at 09:31 -0500, Frans Meulenbroeks wrote:
 > or get back to full) and even less an idea how to fix it,
 > but wanted to report it anyway, in the hope someone can shed a light
 > on this and/or fix it.
-> 
-What is your kernel version ? No idea if it makes a difference, but I
-strongly suspect people will need to know.
 
-Guenter
-
-> Best regards, Frans.
-> 
-> PS: I'm not on lkml (way too much mails for me), so please keep me on Cc
+What PHY are you using?
 
 
