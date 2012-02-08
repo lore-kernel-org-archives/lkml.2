@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab2BHVYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:24:49 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:34240 "EHLO
+	id S1757802Ab2BHVVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:21:08 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:34171 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932177Ab2BHVVp (ORCPT
+	by vger.kernel.org with ESMTP id S1757710Ab2BHVVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:21:45 -0500
+	Wed, 8 Feb 2012 16:21:05 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Danny Kukawka <dkukawka@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+To: Florian Fainelli <florian@openwrt.org>
+Cc: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 37/50] usbnet: set addr_assign_type if random_ether_addr() used
-Date: Wed,  8 Feb 2012 22:10:44 +0100
-Message-Id: <1328735457-29986-38-git-send-email-danny.kukawka@bisect.de>
+Subject: [PATCH 22/50] r6040: use dev_hw_addr_random() instead of random_ether_addr()
+Date: Wed,  8 Feb 2012 22:10:29 +0100
+Message-Id: <1328735457-29986-23-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
 References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328736105;5e03e3f8;
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328736065;d285b248;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set addr_assign_type correctly to NET_ADDR_RANDOM in case
-a random MAC address was generated and assigned to the netdevice.
+Use dev_hw_addr_random() instead of calling random_ether_addr()
+to set addr_assign_type correctly to NET_ADDR_RANDOM.
 
 Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- drivers/net/usb/usbnet.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/net/ethernet/rdc/r6040.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index fae0fbd..7bd07d7 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -1365,6 +1365,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
- 	dev->net = net;
- 	strcpy (net->name, "usb%d");
- 	memcpy (net->dev_addr, node_id, sizeof node_id);
-+	net->addr_assign_type |= NET_ADDR_RANDOM;
+diff --git a/drivers/net/ethernet/rdc/r6040.c b/drivers/net/ethernet/rdc/r6040.c
+index cb0eca8..dba0a6a 100644
+--- a/drivers/net/ethernet/rdc/r6040.c
++++ b/drivers/net/ethernet/rdc/r6040.c
+@@ -1152,7 +1152,7 @@ static int __devinit r6040_init_one(struct pci_dev *pdev,
+ 	if (!(adrp[0] || adrp[1] || adrp[2])) {
+ 		netdev_warn(dev, "MAC address not initialized, "
+ 					"generating random\n");
+-		random_ether_addr(dev->dev_addr);
++		dev_hw_addr_random(dev, dev->dev_addr);
+ 	}
  
- 	/* rx and tx sides can use different message sizes;
- 	 * bind() should set rx_urb_size in that case.
+ 	/* Link new device into r6040_root_dev */
 -- 
 1.7.7.3
 
