@@ -1,104 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab2BHEAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 23:00:47 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59079 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720Ab2BHEAj convert rfc822-to-8bit (ORCPT
+	id S1756100Ab2BHELN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 23:11:13 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:34421 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab2BHELL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 23:00:39 -0500
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: Michael Williamson <michael.williamson@criticallink.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: RE: [PATCH v3 3/3] arm:davinci: move NAND and NOR devices as aemif
- MFD slaves
-Thread-Topic: [PATCH v3 3/3] arm:davinci: move NAND and NOR devices as aemif
- MFD slaves
-Thread-Index: AQHM5a1r+/D1oImEDU6E/C9RIZs36JYxSEKAgAEW7XA=
-Date: Wed, 8 Feb 2012 04:00:13 +0000
-Message-ID: <A73F36158E33644199EB82C5EC81C7BC31761D77@DBDE01.ent.ti.com>
-References: <1328627513-30134-1-git-send-email-prakash.pm@ti.com>
- <1328627513-30134-4-git-send-email-prakash.pm@ti.com>
- <4F31552D.9060505@criticallink.com>
-In-Reply-To: <4F31552D.9060505@criticallink.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 7 Feb 2012 23:11:11 -0500
+Date: Wed, 8 Feb 2012 15:10:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: linux-next: manual merge of the kmap_atomic tree with the  tree
+Message-Id: <20120208151057.5ad413a05fbbb393b4a00109@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__8_Feb_2012_15_10_57_+1100_D/o8y.tTWtjeLgzd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+--Signature=_Wed__8_Feb_2012_15_10_57_+1100_D/o8y.tTWtjeLgzd
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Feb 07, 2012 at 22:15:33, Michael Williamson wrote:
-> Hello Prakash,
-> 
-> On 2/7/2012 10:11 AM, Manjunathappa, Prakash wrote:
-> 
-> > NAND and NOR device are made as aemif device slaves, hence all DaVinci
-> > board NAND/NOR device registration achieved via aemif MFD driver.
-> >
-> > Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-> > ---
-> > Since v2:
-> > Make changes for all DaVinci boards in single patch.
-> 
-> 
-> 
-> [...]
-> 
-> > diff --git a/arch/arm/mach-davinci/board-mityomapl138.c b/arch/arm/mach-davinci/board-mityomapl138.c
-> > index 672d820..bb29b7a 100644
-> > --- a/arch/arm/mach-davinci/board-mityomapl138.c
-> > +++ b/arch/arm/mach-davinci/board-mityomapl138.c
-> > @@ -19,6 +19,7 @@
-> >  #include <linux/etherdevice.h>
-> >  #include <linux/spi/spi.h>
-> >  #include <linux/spi/flash.h>
-> > +#include <linux/mfd/davinci_aemif.h>
-> >  
-> >  #include <asm/io.h>
-> >  #include <asm/mach-types.h>
-> > @@ -414,18 +415,35 @@ static struct resource mityomapl138_nandflash_resource[] = {
-> >  	},
-> >  };
-> >  
-> > -static struct platform_device mityomapl138_nandflash_device = {
-> > -	.name		= "davinci_nand",
-> > -	.id		= 1,
-> > -	.dev		= {
-> > -		.platform_data	= &mityomapl138_nandflash_data,
-> > +static struct platform_device mityomapl138_emif_devices[] __initdata = {
-> > +	{
-> > +		.name		= "davinci_nand",
-> > +		.id		= 0,
-> 
-> 
-> 
-> Pretty sure this still needs to be a 1.  The nand is on chip select 3,
-> EMA_CS3, which I believe is the same as the da850 EVM.
+Hi Cong,
 
-Yes I could not test on this board. I will make id as 1.
+Today's linux-next merge of the kmap_atomic tree got a conflict in
+drivers/net/ethernet/intel/e1000e/netdev.c between commit 0e15df490eef
+("e1000e: minor whitespace and indentation cleanup") from the net-next
+tree and commit 2b4ba510a572 ("net: remove the second argument of k
+[un]map_atomic()") from the kmap_atomic tree.
 
-Thanks,
-Prakash
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> -Mike
-> 
-> 
-> 
+diff --cc drivers/net/ethernet/intel/e1000e/netdev.c
+index 293a760,7a1ea1d..0000000
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@@ -1267,49 -1253,43 +1267,48 @@@ static bool e1000_clean_rx_irq_ps(struc
+  		skb_put(skb, length);
+ =20
+  		{
+ -		/*
+ -		 * this looks ugly, but it seems compiler issues make it
+ -		 * more efficient than reusing j
+ -		 */
+ -		int l1 =3D le16_to_cpu(rx_desc->wb.upper.length[0]);
+ -
+ -		/*
+ -		 * page alloc/put takes too long and effects small packet
+ -		 * throughput, so unsplit small packets and save the alloc/put
+ -		 * only valid in softirq (napi) context to call kmap_*
+ -		 */
+ -		if (l1 && (l1 <=3D copybreak) &&
+ -		    ((length + l1) <=3D adapter->rx_ps_bsize0)) {
+ -			u8 *vaddr;
+ -
+ -			ps_page =3D &buffer_info->ps_pages[0];
+ +			/*
+ +			 * this looks ugly, but it seems compiler issues make
+ +			 * it more efficient than reusing j
+ +			 */
+ +			int l1 =3D le16_to_cpu(rx_desc->wb.upper.length[0]);
+ =20
+  			/*
+ -			 * there is no documentation about how to call
+ -			 * kmap_atomic, so we can't hold the mapping
+ -			 * very long
+ +			 * page alloc/put takes too long and effects small
+ +			 * packet throughput, so unsplit small packets and
+ +			 * save the alloc/put only valid in softirq (napi)
+ +			 * context to call kmap_*
+  			 */
+ -			dma_sync_single_for_cpu(&pdev->dev, ps_page->dma,
+ -						PAGE_SIZE, DMA_FROM_DEVICE);
+ -			vaddr =3D kmap_atomic(ps_page->page);
+ -			memcpy(skb_tail_pointer(skb), vaddr, l1);
+ -			kunmap_atomic(vaddr);
+ -			dma_sync_single_for_device(&pdev->dev, ps_page->dma,
+ -						   PAGE_SIZE, DMA_FROM_DEVICE);
+ -
+ -			/* remove the CRC */
+ -			if (!(adapter->flags2 & FLAG2_CRC_STRIPPING))
+ -				l1 -=3D 4;
+ -
+ -			skb_put(skb, l1);
+ -			goto copydone;
+ -		} /* if */
+ +			if (l1 && (l1 <=3D copybreak) &&
+ +			    ((length + l1) <=3D adapter->rx_ps_bsize0)) {
+ +				u8 *vaddr;
+ +
+ +				ps_page =3D &buffer_info->ps_pages[0];
+ +
+ +				/*
+ +				 * there is no documentation about how to call
+ +				 * kmap_atomic, so we can't hold the mapping
+ +				 * very long
+ +				 */
+ +				dma_sync_single_for_cpu(&pdev->dev,
+ +							ps_page->dma,
+ +							PAGE_SIZE,
+ +							DMA_FROM_DEVICE);
+- 				vaddr =3D kmap_atomic(ps_page->page,
+- 						    KM_SKB_DATA_SOFTIRQ);
+++				vaddr =3D kmap_atomic(ps_page->page);
+ +				memcpy(skb_tail_pointer(skb), vaddr, l1);
+- 				kunmap_atomic(vaddr, KM_SKB_DATA_SOFTIRQ);
+++				kunmap_atomic(vaddr);
+ +				dma_sync_single_for_device(&pdev->dev,
+ +							   ps_page->dma,
+ +							   PAGE_SIZE,
+ +							   DMA_FROM_DEVICE);
+ +
+ +				/* remove the CRC */
+ +				if (!(adapter->flags2 & FLAG2_CRC_STRIPPING))
+ +					l1 -=3D 4;
+ +
+ +				skb_put(skb, l1);
+ +				goto copydone;
+ +			} /* if */
+  		}
+ =20
+  		for (j =3D 0; j < PS_PAGE_BUFFERS; j++) {
 
+--Signature=_Wed__8_Feb_2012_15_10_57_+1100_D/o8y.tTWtjeLgzd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPMfXRAAoJEECxmPOUX5FE7V0P/3+l9mxPaG2NmlFZxvoD0Xoi
+Es7KBAPRujQ8krJs0uwauCnuCSvPdjqXFa+1fI6CmRBvRHUq6MUv/964ORLMrpzx
+yi+US/RhvirI7Zvx6CaRFr3Z7vG1CmNZfB6vLY0QhnitVxg1utjqw7URPSK54oEk
+HPHJc0cJtYxb5roFaQPfpp9zlZ6xx0xkombL4cssQ/9zFEgKg4mXvsVMZBLpE5RY
+mwM+3EdFMneNXzFNcCjm3fOVdZMcrsuaDiHjRE5vVtMoo3/gt3FSIpi/IOReF1IL
+61dqZVp5mvBHjDDS3w/rcwiF81FMJ1WpmS/LNfF03E9gPr7MYP2kw9UsanYXcF2l
+faAES8IdNS/QzDuqzyzrmqcFuHnalJ26tkMcTebpbHeoUS4/0PH1W4dgLFA6CGCr
+TZrd2X0KEDe4SYaE1pyxkI3mO/Ea7B+Me9IAYnTzPHhWs9Ub+e0Qt8EcpWUWTo10
+IJtFOmh4GyAcL54+q8lXrD0QxioCMw8L9e9FR/RNWpzy+2gMUo8Q9s4xioM5zhUi
+TobS2ZxAI5KI93x8ooMLFNwkd974gj0crqm+OTWLU7mLfBa957k6/nqz7jupA5Og
+PunPMavwm/nbr5HnlgKIH6A+zl75TS5yE9oDNJc9VYsaXzFxtIlDqKFNhDTLIVH3
+kq877kfNl7ywKEOjqIuy
+=szrf
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__8_Feb_2012_15_10_57_+1100_D/o8y.tTWtjeLgzd--
