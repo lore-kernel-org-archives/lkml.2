@@ -1,114 +1,649 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab2BHQcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 11:32:46 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:50585 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754067Ab2BHQco (ORCPT
+	id S932120Ab2BHQdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 11:33:04 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37630 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756793Ab2BHQdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 11:32:44 -0500
-Date: Wed, 8 Feb 2012 11:32:23 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Sudden kernel panic with skge in 3.3-rc2
-Message-ID: <20120208163223.GA873@elliptictech.com>
-References: <20120202192115.GA8480@elliptictech.com>
- <20120202124529.3e274223@s6510.linuxnetplumber.net>
- <20120203192832.GA19248@elliptictech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120203192832.GA19248@elliptictech.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 8 Feb 2012 11:33:00 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
+        tglx@linutronix.de, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf tools: Allow multiple threads or processes in record, stat, top
+Date: Wed,  8 Feb 2012 09:32:52 -0700
+Message-Id: <1328718772-16688-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-03 14:28 -0500, Nick Bowler wrote:
-> On 2012-02-02 12:45 -0800, Stephen Hemminger wrote:
-> > On Thu, 2 Feb 2012 14:21:15 -0500
-> > Nick Bowler <nbowler@elliptictech.com> wrote:
-> > > I just saw this panic on 3.3-rc2 with skge.  I don't know whether it's
-> > > reproducible yet -- the machine crashed while I was not actively using
-> > > it.  We've had this type of card for a few years and I've never seen this
-> > > before so it may be a regression, but admittedly we don't use them all
-> > > that often.
-> [...]
-> > 
-> > Try reverting this commit, it seems problematic
-> > commit d0249e44432aa0ffcf710b64449b8eaa3722547e
-> > Author: stephen hemminger <shemminger@vyatta.com>
-> > Date:   Thu Jan 19 14:37:18 2012 +0000
-> > 
-> >     skge: check for PCI dma mapping errors
-> 
-> Thanks for the pointer, I'll try that.  Unfortunately some other stuff
-> has come up so I probably won't be able to test it until next week.
+Allow a user to collect events for multiple threads or processes
+using a comma separated list.
 
-Just to confirm: I can reliably reproduce the crash and reverting that
-commit fixes it.
+e.g., collect data on a VM and its vhost thread:
+  perf top -p 21483,21485
+  perf stat -p 21483,21485 -ddd
+  perf record -p 21483,21485
 
-For reference, I captured the full trace over serial console:
+or monitoring vcpu threads
+  perf top -t 21488,21489
+  perf stat -t 21488,21489 -ddd
+  perf record -t 21488,21489
 
-  skge 0000:03:01.0: eth1: enabling interface
-  ADDRCONF(NETDEV_UP): eth1: link is not ready
-  skge 0000:03:01.0: eth1: Link is up at 1000 Mbps, full duplex, flow control none
-  ADDRCONF(NETDEV_CHANGE): eth1: link becomes ready
-  device eth1 entered promiscuous mode
-  BUG: unable to handle kernel NULL pointer dereference at           (null)
-  IP: [<ffffffffa001826e>] skge_poll+0x367/0x5cd [skge]
-  PGD 0 
-  Oops: 0000 [#1] PREEMPT SMP 
-  CPU 0 
-  Modules linked in: nfs lockd auth_rpcgss nfs_acl sunrpc autofs4 acpi_cpufreq mperf deflate zlib_deflate ctr aes_x86_64 aes_generic des_generic cbc sha512_generic sha256_generic sha1_ssse3 sha1_generic md5 hmac crypto_null af_key ipv6 loop snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_pcm snd_seq snd_timer snd_seq_device snd soundcore skge snd_page_alloc sky2 evdev i2c_i801
-  
-  Pid: 10, comm: kworker/0:1 Not tainted 3.3.0-rc2+ #10 LENOVO 0841A5U/LENOVO
-  RIP: 0010:[<ffffffffa001826e>]  [<ffffffffa001826e>] skge_poll+0x367/0x5cd [skge]
-  RSP: 0018:ffff88007f403e00  EFLAGS: 00010246
-  RAX: ffff880079e3bc40 RBX: ffff88007baf3600 RCX: 0000000000000046
-  RDX: ffff88007bddaf00 RSI: 0000000000000000 RDI: ffff880079e3bc40
-  RBP: ffff88007f403e70 R08: 0000000000000300 R09: ffffffff812d7e11
-  R10: ffff880079eb7200 R11: ffff88007baf3600 R12: ffff88007baf3000
-  R13: ffff88007ae98208 R14: ffff880079eb7200 R15: 0000000000000046
-  FS:  0000000000000000(0000) GS:ffff88007f400000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 0000000000000000 CR3: 000000007ae4d000 CR4: 00000000000406f0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process kworker/0:1 (pid: 10, threadinfo ffff88007bca8000, task ffff88007c87c260)
-  Stack:
-   ffff88007c870600 ffff88007f403e18 ffff88007c870600 897488007f403e58
-   0000004600000040 ffff88007baf3600 0046000000000001 ffff88007baf3610
-   0000000000000000 ffff88007baf3610 ffff88007f411380 0000000000000000
-  Call Trace:
-   <IRQ> 
-   [<ffffffff812e432c>] net_rx_action+0xaa/0x1c0
-   [<ffffffff8102fe91>] __do_softirq+0x7e/0x125
-   [<ffffffff8135ecb7>] ? _raw_spin_unlock+0x26/0x31
-   [<ffffffff8136092c>] call_softirq+0x1c/0x30
-   [<ffffffff8100411b>] do_softirq+0x33/0x68
-   [<ffffffff8102fc7f>] irq_exit+0x3f/0xb9
-   [<ffffffff81003a20>] do_IRQ+0x97/0xae
-   [<ffffffff8135f02b>] common_interrupt+0x6b/0x6b
-   <EOI> 
-   [<ffffffff8135ed02>] ? _raw_spin_unlock_irq+0xd/0x32
-   [<ffffffff8103ea56>] worker_thread+0x24b/0x255
-   [<ffffffff8103e80b>] ? manage_workers+0x190/0x190
-   [<ffffffff81041f31>] kthread+0x84/0x8c
-   [<ffffffff81360834>] kernel_thread_helper+0x4/0x10
-   [<ffffffff81041ead>] ? kthread_freezable_should_stop+0x6b/0x6b
-   [<ffffffff81360830>] ? gs_change+0xb/0xb
-  Code: 48 8b 40 30 48 85 c0 74 0a b9 02 00 00 00 4c 89 fa ff d0 49 8b 86 d0 00 00 00 49 8b 55 10 8b 4d b4 48 89 c7 48 8b b2 d0 00 00 00 <f3> a4 31 ff 48 8b 03 49 8b 75 18 48 8b 40 08 48 85 c0 74 13 48 
-  RIP  [<ffffffffa001826e>] skge_poll+0x367/0x5cd [skge]
-   RSP <ffff88007f403e00>
-  CR2: 0000000000000000
-  ---[ end trace 13c07164f6f205a2 ]---
-  Kernel panic - not syncing: Fatal exception in interrupt
-  panic occurred, switching back to text console
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/Documentation/perf-record.txt |    4 +-
+ tools/perf/Documentation/perf-stat.txt   |    4 +-
+ tools/perf/Documentation/perf-top.txt    |    4 +-
+ tools/perf/builtin-record.c              |   10 +-
+ tools/perf/builtin-stat.c                |   31 +++---
+ tools/perf/builtin-test.c                |    2 -
+ tools/perf/builtin-top.c                 |   12 +--
+ tools/perf/perf.h                        |    4 +-
+ tools/perf/util/evlist.c                 |   10 +-
+ tools/perf/util/evlist.h                 |    4 +-
+ tools/perf/util/evsel.c                  |    2 +-
+ tools/perf/util/thread_map.c             |  152 ++++++++++++++++++++++++++++++
+ tools/perf/util/thread_map.h             |    4 +
+ tools/perf/util/top.c                    |   10 +-
+ tools/perf/util/top.h                    |    2 +-
+ tools/perf/util/usage.c                  |    6 +-
+ tools/perf/util/util.h                   |    2 +-
+ 17 files changed, 207 insertions(+), 56 deletions(-)
 
-Cheers,
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index ff9a66e..a5766b4 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -52,11 +52,11 @@ OPTIONS
+ 
+ -p::
+ --pid=::
+-	Record events on existing process ID.
++	Record events on existing process ID (comma separated list).
+ 
+ -t::
+ --tid=::
+-        Record events on existing thread ID.
++        Record events on existing thread ID (comma separated list).
+ 
+ -u::
+ --uid=::
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 8966b9a..2fa173b 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -35,11 +35,11 @@ OPTIONS
+         child tasks do not inherit counters
+ -p::
+ --pid=<pid>::
+-        stat events on existing process id
++        stat events on existing process id (comma separated list)
+ 
+ -t::
+ --tid=<tid>::
+-        stat events on existing thread id
++        stat events on existing thread id (comma separated list)
+ 
+ 
+ -a::
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index ab1454e..4a5680c 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -72,11 +72,11 @@ Default is to monitor all CPUS.
+ 
+ -p <pid>::
+ --pid=<pid>::
+-	Profile events on existing Process ID.
++	Profile events on existing Process ID (comma separated list).
+ 
+ -t <tid>::
+ --tid=<tid>::
+-        Profile events on existing thread ID.
++        Profile events on existing thread ID (comma separated list).
+ 
+ -u::
+ --uid=::
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f8d9a54..3291c34 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -645,8 +645,6 @@ static const char * const record_usage[] = {
+  */
+ static struct perf_record record = {
+ 	.opts = {
+-		.target_pid	     = -1,
+-		.target_tid	     = -1,
+ 		.mmap_pages	     = UINT_MAX,
+ 		.user_freq	     = UINT_MAX,
+ 		.user_interval	     = ULLONG_MAX,
+@@ -670,9 +668,9 @@ const struct option record_options[] = {
+ 		     parse_events_option),
+ 	OPT_CALLBACK(0, "filter", &record.evlist, "filter",
+ 		     "event filter", parse_filter),
+-	OPT_INTEGER('p', "pid", &record.opts.target_pid,
++	OPT_STRING('p', "pid", &record.opts.target_pid, "pid",
+ 		    "record events on existing process id"),
+-	OPT_INTEGER('t', "tid", &record.opts.target_tid,
++	OPT_STRING('t', "tid", &record.opts.target_tid, "tid",
+ 		    "record events on existing thread id"),
+ 	OPT_INTEGER('r', "realtime", &record.realtime_prio,
+ 		    "collect data with this RT SCHED_FIFO priority"),
+@@ -739,7 +737,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 
+ 	argc = parse_options(argc, argv, record_options, record_usage,
+ 			    PARSE_OPT_STOP_AT_NON_OPTION);
+-	if (!argc && rec->opts.target_pid == -1 && rec->opts.target_tid == -1 &&
++	if (!argc && !rec->opts.target_pid && !rec->opts.target_tid &&
+ 		!rec->opts.system_wide && !rec->opts.cpu_list && !rec->uid_str)
+ 		usage_with_options(record_usage, record_options);
+ 
+@@ -785,7 +783,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 	if (rec->uid_str != NULL && rec->opts.uid == UINT_MAX - 1)
+ 		goto out_free_fd;
+ 
+-	if (rec->opts.target_pid != -1)
++	if (rec->opts.target_pid)
+ 		rec->opts.target_tid = rec->opts.target_pid;
+ 
+ 	if (perf_evlist__create_maps(evsel_list, rec->opts.target_pid,
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index d14b37a..ea40e4e 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -182,8 +182,8 @@ static int			run_count			=  1;
+ static bool			no_inherit			= false;
+ static bool			scale				=  true;
+ static bool			no_aggr				= false;
+-static pid_t			target_pid			= -1;
+-static pid_t			target_tid			= -1;
++static const char		*target_pid;
++static const char		*target_tid;
+ static pid_t			child_pid			= -1;
+ static bool			null_run			=  false;
+ static int			detailed_run			=  0;
+@@ -296,7 +296,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ 	if (system_wide)
+ 		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+ 						group, group_fd);
+-	if (target_pid == -1 && target_tid == -1) {
++	if (!target_pid && !target_tid) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+@@ -446,7 +446,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 			exit(-1);
+ 		}
+ 
+-		if (target_tid == -1 && target_pid == -1 && !system_wide)
++		if (!target_tid && !target_pid && !system_wide)
+ 			evsel_list->threads->map[0] = child_pid;
+ 
+ 		/*
+@@ -968,14 +968,14 @@ static void print_stat(int argc, const char **argv)
+ 	if (!csv_output) {
+ 		fprintf(output, "\n");
+ 		fprintf(output, " Performance counter stats for ");
+-		if(target_pid == -1 && target_tid == -1) {
++		if (!target_pid && !target_tid) {
+ 			fprintf(output, "\'%s", argv[0]);
+ 			for (i = 1; i < argc; i++)
+ 				fprintf(output, " %s", argv[i]);
+-		} else if (target_pid != -1)
+-			fprintf(output, "process id \'%d", target_pid);
++		} else if (target_pid)
++			fprintf(output, "process id \'%s", target_pid);
+ 		else
+-			fprintf(output, "thread id \'%d", target_tid);
++			fprintf(output, "thread id \'%s", target_tid);
+ 
+ 		fprintf(output, "\'");
+ 		if (run_count > 1)
+@@ -1049,10 +1049,10 @@ static const struct option options[] = {
+ 		     "event filter", parse_filter),
+ 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
+ 		    "child tasks do not inherit counters"),
+-	OPT_INTEGER('p', "pid", &target_pid,
+-		    "stat events on existing process id"),
+-	OPT_INTEGER('t', "tid", &target_tid,
+-		    "stat events on existing thread id"),
++	OPT_STRING('p', "pid", &target_pid, "pid",
++		   "stat events on existing process id"),
++	OPT_STRING('t', "tid", &target_tid, "tid",
++		   "stat events on existing thread id"),
+ 	OPT_BOOLEAN('a', "all-cpus", &system_wide,
+ 		    "system-wide collection from all CPUs"),
+ 	OPT_BOOLEAN('g', "group", &group,
+@@ -1190,7 +1190,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	} else if (big_num_opt == 0) /* User passed --no-big-num */
+ 		big_num = false;
+ 
+-	if (!argc && target_pid == -1 && target_tid == -1)
++	if (!argc && !target_pid && !target_tid)
+ 		usage_with_options(stat_usage, options);
+ 	if (run_count <= 0)
+ 		usage_with_options(stat_usage, options);
+@@ -1206,10 +1206,11 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	if (add_default_attributes())
+ 		goto out;
+ 
+-	if (target_pid != -1)
++	if (target_pid)
+ 		target_tid = target_pid;
+ 
+-	evsel_list->threads = thread_map__new(target_pid, target_tid, UINT_MAX);
++	evsel_list->threads = thread_map__new_str(target_pid,
++						  target_tid, UINT_MAX);
+ 	if (evsel_list->threads == NULL) {
+ 		pr_err("Problems finding threads of monitor\n");
+ 		usage_with_options(stat_usage, options);
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 70c4eb2..0f15195 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1010,8 +1010,6 @@ realloc:
+ static int test__PERF_RECORD(void)
+ {
+ 	struct perf_record_opts opts = {
+-		.target_pid = -1,
+-		.target_tid = -1,
+ 		.no_delay   = true,
+ 		.freq	    = 10,
+ 		.mmap_pages = 256,
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index d869b21..94d55cb 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -965,7 +965,7 @@ static int __cmd_top(struct perf_top *top)
+ 	if (ret)
+ 		goto out_delete;
+ 
+-	if (top->target_tid != -1 || top->uid != UINT_MAX)
++	if (top->target_tid || top->uid != UINT_MAX)
+ 		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
+ 						  perf_event__process,
+ 						  &top->session->host_machine);
+@@ -1103,8 +1103,6 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 	struct perf_top top = {
+ 		.count_filter	     = 5,
+ 		.delay_secs	     = 2,
+-		.target_pid	     = -1,
+-		.target_tid	     = -1,
+ 		.uid		     = UINT_MAX,
+ 		.freq		     = 1000, /* 1 KHz */
+ 		.sample_id_all_avail = true,
+@@ -1118,9 +1116,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 		     parse_events_option),
+ 	OPT_INTEGER('c', "count", &top.default_interval,
+ 		    "event period to sample"),
+-	OPT_INTEGER('p', "pid", &top.target_pid,
++	OPT_STRING('p', "pid", &top.target_pid, "pid",
+ 		    "profile events on existing process id"),
+-	OPT_INTEGER('t', "tid", &top.target_tid,
++	OPT_STRING('t', "tid", &top.target_tid, "tid",
+ 		    "profile events on existing thread id"),
+ 	OPT_BOOLEAN('a', "all-cpus", &top.system_wide,
+ 			    "system-wide collection from all CPUs"),
+@@ -1210,13 +1208,13 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 		goto out_delete_evlist;
+ 
+ 	/* CPU and PID are mutually exclusive */
+-	if (top.target_tid > 0 && top.cpu_list) {
++	if (top.target_tid && top.cpu_list) {
+ 		printf("WARNING: PID switch overriding CPU\n");
+ 		sleep(1);
+ 		top.cpu_list = NULL;
+ 	}
+ 
+-	if (top.target_pid != -1)
++	if (top.target_pid)
+ 		top.target_tid = top.target_pid;
+ 
+ 	if (perf_evlist__create_maps(top.evlist, top.target_pid,
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 92af168..deb17db 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -186,8 +186,8 @@ extern const char perf_version_string[];
+ void pthread__unblock_sigwinch(void);
+ 
+ struct perf_record_opts {
+-	pid_t	     target_pid;
+-	pid_t	     target_tid;
++	const char   *target_pid;
++	const char   *target_tid;
+ 	uid_t	     uid;
+ 	bool	     call_graph;
+ 	bool	     group;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index a57a8cf..5c61dc5 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -593,15 +593,15 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
+ }
+ 
+-int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
+-			     pid_t target_tid, uid_t uid, const char *cpu_list)
++int perf_evlist__create_maps(struct perf_evlist *evlist, const char *target_pid,
++			     const char *target_tid, uid_t uid, const char *cpu_list)
+ {
+-	evlist->threads = thread_map__new(target_pid, target_tid, uid);
++	evlist->threads = thread_map__new_str(target_pid, target_tid, uid);
+ 
+ 	if (evlist->threads == NULL)
+ 		return -1;
+ 
+-	if (uid != UINT_MAX || (cpu_list == NULL && target_tid != -1))
++	if (uid != UINT_MAX || (cpu_list == NULL && target_tid))
+ 		evlist->cpus = cpu_map__dummy_new();
+ 	else
+ 		evlist->cpus = cpu_map__new(cpu_list);
+@@ -820,7 +820,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 		exit(-1);
+ 	}
+ 
+-	if (!opts->system_wide && opts->target_tid == -1 && opts->target_pid == -1)
++	if (!opts->system_wide && !opts->target_tid && !opts->target_pid)
+ 		evlist->threads->map[0] = evlist->workload.pid;
+ 
+ 	close(child_ready_pipe[1]);
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 1b4282b..21f1c9e 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -106,8 +106,8 @@ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
+ 	evlist->threads	= threads;
+ }
+ 
+-int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
+-			     pid_t tid, uid_t uid, const char *cpu_list);
++int perf_evlist__create_maps(struct perf_evlist *evlist, const char *target_pid,
++			     const char *tid, uid_t uid, const char *cpu_list);
+ void perf_evlist__delete_maps(struct perf_evlist *evlist);
+ int perf_evlist__set_filters(struct perf_evlist *evlist);
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 9a11f9e..f910f50 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -130,7 +130,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+ 	attr->mmap = track;
+ 	attr->comm = track;
+ 
+-	if (opts->target_pid == -1 && opts->target_tid == -1 && !opts->system_wide) {
++	if (!opts->target_pid && !opts->target_tid && !opts->system_wide) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+index 3d4b6c5..e793c16 100644
+--- a/tools/perf/util/thread_map.c
++++ b/tools/perf/util/thread_map.c
+@@ -6,7 +6,10 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#include <ctype.h>
++#include <string.h>
+ #include "thread_map.h"
++#include "debug.h"
+ 
+ /* Skip "." and ".." directories */
+ static int filter(const struct dirent *dir)
+@@ -152,6 +155,155 @@ struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid)
+ 	return thread_map__new_by_tid(tid);
+ }
+ 
++
++static pid_t get_next_task_id(char **str)
++{
++	char *p, *pend;
++	pid_t ret = -1;
++	bool adv_pend = false;
++
++	pend = p = *str;
++
++	/* empty strings */
++	if (*pend == '\0')
++		return -1;
++
++	/* only expecting digits separated by commas */
++	while (isdigit(*pend))
++		++pend;
++
++	if (*pend == ',') {
++		*pend = '\0';
++		adv_pend = true;
++		/* catch strings ending in a comma - like '1234,' */
++		if (*(pend+1) == '\0') {
++			ui__error("task id strings should not end in a comma\n");
++			goto out;
++		}
++	}
++
++	/* only convert if all characters are valid */
++	if (*pend == '\0') {
++		ret = atoi(p);
++		if (adv_pend)
++			pend++;
++		*str = pend;
++	}
++
++out:
++	return ret;
++}
++
++static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
++{
++	struct thread_map *threads = NULL;
++	char name[256];
++	int items, total_tasks = 0;
++	struct dirent **namelist = NULL;
++	int i, j = 0;
++	char *ostr, *str;
++	pid_t pid;
++
++	ostr = strdup(pid_str);
++	if (!ostr)
++		return NULL;
++	str = ostr;
++
++	while (*str) {
++		pid = get_next_task_id(&str);
++		if (pid < 0) {
++			free(threads);
++			threads = NULL;
++			break;
++		}
++
++		sprintf(name, "/proc/%d/task", pid);
++		items = scandir(name, &namelist, filter, NULL);
++		if (items <= 0)
++			break;
++
++		total_tasks += items;
++		if (threads)
++			threads = realloc(threads,
++					  sizeof(*threads) + sizeof(pid_t)*total_tasks);
++		else
++			threads = malloc(sizeof(*threads) + sizeof(pid_t)*items);
++
++		if (threads) {
++			for (i = 0; i < items; i++)
++				threads->map[j++] = atoi(namelist[i]->d_name);
++			threads->nr = total_tasks;
++		}
++
++		for (i = 0; i < items; i++)
++			free(namelist[i]);
++		free(namelist);
++
++		if (!threads)
++			break;
++	}
++
++	free(ostr);
++
++	return threads;
++}
++
++static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
++{
++	struct thread_map *threads = NULL;
++	char *str;
++	int ntasks = 0;
++	pid_t tid;
++
++	/* perf-stat expects threads to be generated even if tid not given */
++	if (!tid_str) {
++		threads = malloc(sizeof(*threads) + sizeof(pid_t));
++		threads->map[1] = -1;
++		threads->nr	= 1;
++		return threads;
++	}
++
++	str = strdup(tid_str);
++	if (!str)
++		return NULL;
++
++	while (*str) {
++		tid = get_next_task_id(&str);
++		if (tid < 0) {
++			free(threads);
++			threads = NULL;
++			break;
++		}
++
++		ntasks++;
++		if (threads)
++			threads = realloc(threads,
++					  sizeof(*threads) + sizeof(pid_t) * ntasks);
++		else
++			threads = malloc(sizeof(*threads) + sizeof(pid_t));
++
++		if (threads == NULL)
++			break;
++
++		threads->map[ntasks-1] = tid;
++		threads->nr	= ntasks;
++	}
++
++	return threads;
++}
++
++struct thread_map *thread_map__new_str(const char *pid, const char *tid,
++				       uid_t uid)
++{
++	if (pid)
++		return thread_map__new_by_pid_str(pid);
++
++	if (!tid && uid != UINT_MAX)
++		return thread_map__new_by_uid(uid);
++
++	return thread_map__new_by_tid_str(tid);
++}
++
+ void thread_map__delete(struct thread_map *threads)
+ {
+ 	free(threads);
+diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
+index c75ddba..7da80f1 100644
+--- a/tools/perf/util/thread_map.h
++++ b/tools/perf/util/thread_map.h
+@@ -13,6 +13,10 @@ struct thread_map *thread_map__new_by_pid(pid_t pid);
+ struct thread_map *thread_map__new_by_tid(pid_t tid);
+ struct thread_map *thread_map__new_by_uid(uid_t uid);
+ struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid);
++
++struct thread_map *thread_map__new_str(const char *pid,
++		const char *tid, uid_t uid);
++
+ void thread_map__delete(struct thread_map *threads);
+ 
+ size_t thread_map__fprintf(struct thread_map *threads, FILE *fp);
+diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
+index e4370ca..09fe579 100644
+--- a/tools/perf/util/top.c
++++ b/tools/perf/util/top.c
+@@ -69,11 +69,11 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ 
+ 	ret += SNPRINTF(bf + ret, size - ret, "], ");
+ 
+-	if (top->target_pid != -1)
+-		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %d",
++	if (top->target_pid)
++		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %s",
+ 				top->target_pid);
+-	else if (top->target_tid != -1)
+-		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %d",
++	else if (top->target_tid)
++		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %s",
+ 				top->target_tid);
+ 	else if (top->uid_str != NULL)
+ 		ret += SNPRINTF(bf + ret, size - ret, " (uid: %s",
+@@ -85,7 +85,7 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ 		ret += SNPRINTF(bf + ret, size - ret, ", CPU%s: %s)",
+ 				top->evlist->cpus->nr > 1 ? "s" : "", top->cpu_list);
+ 	else {
+-		if (top->target_tid != -1)
++		if (top->target_tid)
+ 			ret += SNPRINTF(bf + ret, size - ret, ")");
+ 		else
+ 			ret += SNPRINTF(bf + ret, size - ret, ", %d CPU%s)",
+diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+index def3e53..49eb848 100644
+--- a/tools/perf/util/top.h
++++ b/tools/perf/util/top.h
+@@ -23,7 +23,7 @@ struct perf_top {
+ 	u64		   guest_us_samples, guest_kernel_samples;
+ 	int		   print_entries, count_filter, delay_secs;
+ 	int		   freq;
+-	pid_t		   target_pid, target_tid;
++	const char	   *target_pid, *target_tid;
+ 	uid_t		   uid;
+ 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
+ 	bool		   system_wide;
+diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
+index d0c0139..1240bd6 100644
+--- a/tools/perf/util/usage.c
++++ b/tools/perf/util/usage.c
+@@ -83,7 +83,7 @@ void warning(const char *warn, ...)
+ 	va_end(params);
+ }
+ 
+-uid_t parse_target_uid(const char *str, pid_t tid, pid_t pid)
++uid_t parse_target_uid(const char *str, const char *tid, const char *pid)
+ {
+ 	struct passwd pwd, *result;
+ 	char buf[1024];
+@@ -91,8 +91,8 @@ uid_t parse_target_uid(const char *str, pid_t tid, pid_t pid)
+ 	if (str == NULL)
+ 		return UINT_MAX;
+ 
+-	/* CPU and PID are mutually exclusive */
+-	if (tid > 0 || pid > 0) {
++	/* UUID and PID are mutually exclusive */
++	if (tid || pid) {
+ 		ui__warning("PID/TID switch overriding UID\n");
+ 		sleep(1);
+ 		return UINT_MAX;
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 232d17e..7917b09 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -245,7 +245,7 @@ struct perf_event_attr;
+ 
+ void event_attr_init(struct perf_event_attr *attr);
+ 
+-uid_t parse_target_uid(const char *str, pid_t tid, pid_t pid);
++uid_t parse_target_uid(const char *str, const char *tid, const char *pid);
+ 
+ #define _STR(x) #x
+ #define STR(x) _STR(x)
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+1.7.7.6
 
