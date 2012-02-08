@@ -1,222 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab2BHHPs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 02:15:48 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52243 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab2BHHPr (ORCPT
+	id S1756150Ab2BHHQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 02:16:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36106 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2BHHQI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 02:15:47 -0500
-Date: Tue, 7 Feb 2012 23:15:40 -0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>, b-cousson@ti.com
-Subject: Re: [PATCH v4 2/4] irq: add irq_domain support to generic-chip
-Message-ID: <20120208071539.GB28996@r65073-Latitude-D630>
-References: <1328308512-22594-1-git-send-email-robherring2@gmail.com>
- <1328308512-22594-3-git-send-email-robherring2@gmail.com>
- <20120204140759.GA19899@S2101-09.ap.freescale.net>
- <4F30AEA0.8040605@gmail.com>
+	Wed, 8 Feb 2012 02:16:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F30AEA0.8040605@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120208015251.GA4927@zhy>
+References: <CAJXQGfJkmTZHDVPP_Rw7W3j8nmxXTN_OLUxjzCt-UOLGx61CZQ@mail.gmail.com>
+	<20120208015251.GA4927@zhy>
+Date: Wed, 8 Feb 2012 12:46:04 +0530
+Message-ID: <CAJXQGfKRkSOSo12Daimias-VHxvgjZDH4rJi0XZAd3o9-9eCfg@mail.gmail.com>
+Subject: Re: x86_64 arch+SMP ON+linux-2.6.32.46+E1000+KGDBOE = Timed out.
+ Ignoring packet error, continuing...
+From: Naresh Bhat <nareshgbhat@gmail.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 10:54:56PM -0600, Rob Herring wrote:
-...
-> I've pushed a v5 branch. Can you please test it out on mx51.
-> 
-Unfortunately, it still does not work.  The following are the changes
-I made to get it work for both non-dt and dt boot.
+Hi Yong,
 
-Since you do not have hardware to test, I would suggest you leave the
-tzic changes to me.  I would post a series to migrate tzic and gpio-mxc
-shortly after your series becomes stable, and you can fold it into your
-series if it looks good to you then.
+Yes, I know they have removed the KGDBOE support. I have forward
+ported the patch to linux-2.6.32.46 kernel. I was just trying to
+understand this issue belongs to which of the category ?
 
-BTW, the arch/arm/mach-mx5 folder has been merged into mach-imx since
-3.3-rc2.  The following changes are based on a merging of your branch
-into 3.3-rc2.
+1. Is there any issue with Ethernet driver E1000 issue ?
+2. Is it belongs to KGDB ?
+3. Is there any kernel SMP hang issue for x86 64bit architecture which
+is fixed in upstream kernel ?
+4. None of the above and something else is broken ?
 
----8<-----
-diff --git a/arch/arm/boot/dts/imx51.dtsi b/arch/arm/boot/dts/imx51.dtsi
-index 6663986..a5fda43 100644
---- a/arch/arm/boot/dts/imx51.dtsi
-+++ b/arch/arm/boot/dts/imx51.dtsi
-@@ -171,6 +171,12 @@
- 				status = "disabled";
- 			};
- 
-+			gpt@73fa0000 {
-+				compatible = "fsl,imx51-gpt", "fsl,gpt";
-+				reg = <0x73fa0000 0x4000>;
-+				interrupts = <39>;
-+			};
-+
- 			uart1: uart@73fbc000 {
- 				compatible = "fsl,imx51-uart", "fsl,imx21-uart";
- 				reg = <0x73fbc000 0x4000>;
-diff --git a/arch/arm/mach-imx/clock-mx51-mx53.c b/arch/arm/mach-imx/clock-mx51-mx53.c
-index 0847050..4f2dc66 100644
---- a/arch/arm/mach-imx/clock-mx51-mx53.c
-+++ b/arch/arm/mach-imx/clock-mx51-mx53.c
-@@ -16,6 +16,7 @@
- #include <linux/io.h>
- #include <linux/clkdev.h>
- #include <linux/of.h>
-+#include <linux/of_irq.h>
- 
- #include <asm/div64.h>
- 
-@@ -1555,10 +1556,12 @@ static void clk_tree_init(void)
- 	__raw_writel(reg, MXC_CCM_CBCDR);
- }
- 
-+static int get_timer_irq(void);
-+
- int __init mx51_clocks_init(unsigned long ckil, unsigned long osc,
- 			unsigned long ckih1, unsigned long ckih2)
- {
--	int i;
-+	int i, gpt_irq;
- 
- 	external_low_reference = ckil;
- 	external_high_reference = ckih1;
-@@ -1592,6 +1595,9 @@ int __init mx51_clocks_init(unsigned long ckil, unsigned long osc,
- 	clk_set_rate(&esdhc2_clk, 166250000);
- 
- 	/* System timer */
-+	gpt_irq = get_timer_irq();
-+	if (!gpt_irq)
-+		gpt_irq = MX51_INT_GPT;
- 	mxc_timer_init(&gpt_clk, MX51_IO_ADDRESS(MX51_GPT1_BASE_ADDR),
- 		MX51_INT_GPT);
- 	return 0;
-@@ -1600,7 +1606,7 @@ int __init mx51_clocks_init(unsigned long ckil, unsigned long osc,
- int __init mx53_clocks_init(unsigned long ckil, unsigned long osc,
- 			unsigned long ckih1, unsigned long ckih2)
- {
--	int i;
-+	int i, gpt_irq;
- 
- 	external_low_reference = ckil;
- 	external_high_reference = ckih1;
-@@ -1629,8 +1635,11 @@ int __init mx53_clocks_init(unsigned long ckil, unsigned long osc,
- 	clk_set_rate(&esdhc3_mx53_clk, 200000000);
- 
- 	/* System timer */
-+	gpt_irq = get_timer_irq();
-+	if (!gpt_irq)
-+		gpt_irq = MX53_INT_GPT;
- 	mxc_timer_init(&gpt_clk, MX53_IO_ADDRESS(MX53_GPT1_BASE_ADDR),
--		MX53_INT_GPT);
-+		gpt_irq);
- 	return 0;
- }
- 
-@@ -1672,4 +1681,15 @@ int __init mx53_clocks_init_dt(void)
- 	clk_get_freq_dt(&ckil, &osc, &ckih1, &ckih2);
- 	return mx53_clocks_init(ckil, osc, ckih1, ckih2);
- }
-+
-+static inline int get_timer_irq(void)
-+{
-+	return irq_of_parse_and_map(
-+			of_find_compatible_node(NULL, NULL, "fsl,gpt"), 0);
-+}
-+#else
-+static inline int get_timer_irq(void)
-+{
-+	return 0;
-+}
- #endif
-diff --git a/arch/arm/mach-imx/imx51-dt.c b/arch/arm/mach-imx/imx51-dt.c
-index cc4bb16..98eb415 100644
---- a/arch/arm/mach-imx/imx51-dt.c
-+++ b/arch/arm/mach-imx/imx51-dt.c
-@@ -12,6 +12,7 @@
- 
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
-+#include <linux/of_address.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <asm/mach/arch.h>
-diff --git a/arch/arm/plat-mxc/tzic.c b/arch/arm/plat-mxc/tzic.c
-index 1962188..def0090 100644
---- a/arch/arm/plat-mxc/tzic.c
-+++ b/arch/arm/plat-mxc/tzic.c
-@@ -167,7 +167,9 @@ void __init tzic_init_irq(void __iomem *irqbase)
- 
- 	/* all IRQ no FIQ Warning :: No selection */
- 
--	irq_setup_generic_chip_domain("tzic", NULL, 1, 0, tzic_base,
-+	irq_setup_generic_chip_domain("tzic",
-+				      of_find_compatible_node(NULL, NULL, "fsl,tzic"),
-+				      1, 0, tzic_base,
- 				      handle_level_irq, TZIC_NUM_IRQS, 0,
- 				      IRQ_NOREQUEST, 0,
- 				      tzic_init_gc, &tzic_extra_irq);
-diff --git a/include/linux/of.h b/include/linux/of.h
-index a75a831..92cf6ad 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -281,6 +281,14 @@ static inline struct property *of_find_property(const struct device_node *np,
- 	return NULL;
- }
- 
-+static inline struct device_node *of_find_compatible_node(
-+						struct device_node *from,
-+						const char *type,
-+						const char *compat)
-+{
-+	return NULL;
-+}
-+
- static inline int of_property_read_u32_array(const struct device_node *np,
- 					     const char *propname,
- 					     u32 *out_values, size_t sz)
-diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index fed1cf7..c9e7a58 100644
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -291,7 +291,7 @@ static int irq_gc_irq_domain_map(struct irq_domain *d, unsigned int irq,
- 
- static const struct irq_domain_ops irq_gc_irq_domain_ops = {
- 	.map = irq_gc_irq_domain_map,
--	.xlate = irq_domain_xlate_twocell,
-+	.xlate = irq_domain_xlate_onetwocell,
- };
- 
- /*
-@@ -344,13 +344,6 @@ int irq_setup_generic_chip_domain(const char *name, struct device_node *node,
- 		gc_init_cb(gc[i]);
- 
- 		irq_setup_generic_chip(gc[i], 0, flags, clr, set);
--		if (node)
--			continue;
--
--		/* Additional setup for legacy domains */
--		for (hwirq = 0; hwirq < 32; irq_base++, hwirq++)
--			irq_get_irq_data(irq_base)->hwirq =
--				gc[i]->hwirq_base + hwirq;
- 	}
- 
- 	if (node)
----->8----
+Is there any available patch ? any guidance to fix the error in E1000
+driver.  I will really appreciate your help.
 
-> Grant, is there some reason a legacy domain cannot setup the
-> irq_data.hwirq itself? No other code should be setting this up.
-> 
-I'm not sure this is true, since it works for my non-dt case with your
-'Addtional setup ...' code above removed.
+Thanks and Regards
+-Naresh Bhat
 
--- 
-Regards,
-Shawn
+On 2/8/12, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> On Tue, Feb 07, 2012 at 09:38:49PM +0530, Naresh Bhat wrote:
+>> Hi,
+>>
+>> I am trying KGDBOE on the following kernel
+>
+> Is KGDBOE supported by upstream? Actually I don't find it
+> in the source tree.
+>
+> Thanks,
+> Yong
+>
+>>
+>> Kernel    -   linux-2.6.32.46 (With SMP set)
+>> Hardware -  x86 64bit machine (Intel Nehlaum)
+>> Ethernet   - E1000 driver is used
+>>
+>> But I am getting the following error
+>>
+>> ........
+>> ............
+>> .................
+>> Breakpoint 2, sys_sync () at fs/sync.c:130
+>> 130        wakeup_flusher_threads(0);
+>> (gdb) s
+>> wakeup_flusher_threads (nr_pages=0) at fs/fs-writeback.c:1005
+>> 1005    {
+>> (gdb) s
+>>
+>> Ignoring packet error, continuing...
+>> Ignoring packet error, continuing...
+>> Ignoring packet error, continuing...
+>>
+>>
+>> Detailed logs with debug set :
+>> -----------------------------------------
+>>
+>> ...................
+>> ................................
+>> .......................................
+>> Sending packet: $z0,ffffffff810ad687,1#66...Ack
+>> Packet received: OK
+>> target_remove_breakpoint (0x810ad687, xxx) = 0
+>> target_terminal_ours ()
+>> kgdb_register_io_module (new_kgdb_io_ops=0xffffffff81a9d5b0) at
+>> kernel/kgdb.c:1778
+>> 1778    }
+>> (gdb) n
+>> Sending packet: $Z0,ffffffff810ad687,1#46...Ack
+>> Packet received: OK
+>> target_insert_breakpoint (0x810ad687, xxx) = 0
+>> target_terminal_inferior ()
+>> Sending packet: $s#73...Ack
+>> target_resume (-1, step, 0)
+>> Packet received: T05thread:0000000000000001;
+>> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
+>> SIGTRAP
+>> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+>> Sending packet: $g#67...Ack
+>> Packet received:
+>> 0000000000000000b0d5a981ffffffffffffffff00000000ffffffff0000000086020000000000004602000000000000b07e0b2f0088ffffa87e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005cda0a81ffffffff820300001000000018000000
+>> target_fetch_registers (rip) = 5cda0a81ffffffff 0xffffffff810ada5c
+>> -2129995172
+>> target_stopped_by_watchpoint () = 0
+>> target_terminal_inferior ()
+>> Sending packet: $s#73...Ack
+>> target_resume (-1, step, 0)
+>> Packet received: T05thread:0000000000000001;
+>> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
+>> SIGTRAP
+>> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+>> Sending packet: $g#67...Ack
+>> Packet received:
+>> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000b07e0b2f0088ffffb07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005dda0a81ffffffff820300001000000018000000
+>> target_fetch_registers (rip) = 5dda0a81ffffffff 0xffffffff810ada5d
+>> -2129995171
+>> target_stopped_by_watchpoint () = 0
+>> target_terminal_inferior ()
+>> Sending packet: $s#73...Ack
+>> target_resume (-1, step, 0)
+>> Packet received: T05thread:0000000000000001;
+>> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
+>> SIGTRAP
+>> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+>> Sending packet: $g#67...Ack
+>> Packet received:
+>> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffb87e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005eda0a81ffffffff820300001000000018000000
+>> target_fetch_registers (rip) = 5eda0a81ffffffff 0xffffffff810ada5e
+>> -2129995170
+>> target_stopped_by_watchpoint () = 0
+>> target_terminal_inferior ()
+>> Sending packet: $s#73...Ack
+>> target_resume (-1, step, 0)
+>> Packet received: T05thread:0000000000000001;
+>> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
+>> SIGTRAP
+>> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+>> Sending packet: $g#67...Ack
+>> Packet received:
+>> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffc07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b061030000000000180d3e81ffffffff820300001000000018000000
+>> target_fetch_registers (rip) = 180d3e81ffffffff 0xffffffff813e0d18
+>> -2126639848
+>> target_stopped_by_watchpoint () = 0
+>> target_terminal_ours_for_output ()
+>> Sending packet: $mffffffff813e0d18,1#f8...Ack
+>> Packet received: 85
+>> remote:target_xfer_partial (2, (null), 0xbfe00edb, 0x0,
+>> 0xffffffff813e0d18, 1) = 1, bytes = 85
+>> Sending packet: $mffffffff813e0d18,1#f8...Ack
+>> Packet received: 85
+>> remote:target_xfer_partial (2, (null), 0xbfe00edb, 0x0,
+>> 0xffffffff813e0d18, 1) = 1, bytes = 85
+>> Sending packet: $mffff88002f0b7ec0,40#be...Ack
+>> Packet received:
+>> e07e0b2f0088ffff510d3e81ffffffff0800000000000000380d3e81ffffffff107f0b2f0088ffff5fa00081ffffffff107f0b2f0088ffffb0bcb881ffffffff
+>> remote:target_xfer_partial (3, (null), 0xa944050, 0x0,
+>> 0xffff88002f0b7ec0, 64) = 64, bytes =
+>>  e0 7e 0b 2f 00 88 ff ff 51 0d 3e 81 ff ff ff ff ...
+>> remote:target_xfer_partial (4, (null), 0xa944030, 0x0,
+>> 0xffff88002f0b7ec8, 8) = 8, bytes =
+>>  51 0d 3e 81 ff ff ff ff
+>> remote:target_xfer_partial (4, (null), 0xa944030, 0x0,
+>> 0xffff88002f0b7ec0, 8) = 8, bytes =
+>>  e0 7e 0b 2f 00 88 ff ff
+>> target_terminal_inferior ()
+>> Sending packet: $s#73...Ack
+>> target_resume (-1, step, 0)
+>> Packet received: T05thread:0000000000000001;
+>> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
+>> SIGTRAP
+>> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+>> Sending packet: $g#67...Ack
+>> Packet received:
+>> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffc07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000001a0d3e81ffffffff460300001000000018000000
+>> target_fetch_registers (rip) = 1a0d3e81ffffffff 0xffffffff813e0d1a
+>> -2126639846
+>> target_stopped_by_watchpoint () = 0
+>> target_terminal_inferior ()
+>> Sending packet: $s#73...Ack
+>> target_resume (-1, step, 0)
+>> Packet received: T05thread:0000000000000001;
+>> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
+>> SIGTRAP
+>> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
+>> Sending packet: $g#67...Sending packet: $g#67...Sending packet:
+>> $g#67...Sending packet: $g#67...Timed out.
+>> Timed out.
+>> Timed out.
+>> Ignoring packet error, continuing...
+>> Bad register packet; fetching a new packet
+>> Timed out.
+>> Timed out.
+>> Timed out.
+>> Ignoring packet error, continuing...
+>> Bad register packet; fetching a new packet
+>> Timed out.
+>> Timed out.
+>> Timed out.
+>> Ignoring packet error, continuing...
+>> Bad register packet; fetching a new packet
+>> Timed out.
+>> ..........................
+>> .................................
+>>
+>>
+>> Please help me to identify any available patch in kernel.org or any
+>> guidance to fix the above error.  I will really appreciate your help
+>> on this.
+>>
+>>
+>> -- Thanks and Regards
+>> "For things to change, we must change"
+>> -Naresh Bhat
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> --
+> Only stand for myself
+>
