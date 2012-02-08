@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179Ab2BHNJp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 08:09:45 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:65248 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118Ab2BHNJn (ORCPT
+	id S932170Ab2BHNTE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 08:19:04 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37884 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757018Ab2BHNTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 08:09:43 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com, w.sang@pengutronix.de,
-        akpm@linux-foundation.org, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [RESEND PATCH v2 2/2] rtc: Rename CONFIG_RTC_MXC to CONFIG_RTC_DRV_MXC
-Date: Wed,  8 Feb 2012 11:09:30 -0200
-Message-Id: <1328706570-1869-2-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1323693187-3466-1-git-send-email-fabio.estevam@freescale.com>
-References: <1323693187-3466-1-git-send-email-fabio.estevam@freescale.com>
+	Wed, 8 Feb 2012 08:19:02 -0500
+Date: Wed, 8 Feb 2012 13:18:33 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
+        Venki Pallipadi <venki@google.com>, linaro-dev@lists.linaro.org,
+        patches@linaro.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86
+	and ARM
+Message-ID: <20120208131833.GK889@n2100.arm.linux.org.uk>
+References: <1328705314-20978-1-git-send-email-dmitry.antipov@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328705314-20978-1-git-send-email-dmitry.antipov@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to keep consistency with other rtc drivers,rename CONFIG_RTC_MXC
-to CONFIG_RTC_DRV_MXC.
+On Wed, Feb 08, 2012 at 04:48:34AM -0800, Dmitry Antipov wrote:
+> Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
+> ARM, move "noirqtime=" option to common debugging code.
+> For a bit of backward compatibility, "tsc=noirqtime"
+> is preserved, but issues a warning.
+> 
+> Suggested-by: Venki Pallipadi <venki@google.com>
+> Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
+> ---
+>  arch/arm/kernel/sched_clock.c |    3 +++
+>  arch/x86/Kconfig              |   11 -----------
+>  arch/x86/kernel/tsc.c         |    7 ++++---
+>  include/linux/sched.h         |    2 ++
+>  lib/Kconfig.debug             |   12 ++++++++++++
+>  lib/Makefile                  |    2 ++
+>  lib/irqtime.c                 |   12 ++++++++++++
+>  7 files changed, 35 insertions(+), 14 deletions(-)
+>  create mode 100644 lib/irqtime.c
+> 
+> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+> index 5416c7c..56d2a9d 100644
+> --- a/arch/arm/kernel/sched_clock.c
+> +++ b/arch/arm/kernel/sched_clock.c
+> @@ -162,5 +162,8 @@ void __init sched_clock_postinit(void)
+>  	if (read_sched_clock == jiffy_sched_clock_read)
+>  		setup_sched_clock(jiffy_sched_clock_read, 32, HZ);
+>  
+> +	if (!no_sched_irq_time)
+> +		enable_sched_clock_irqtime();
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
----
- arch/arm/configs/imx_v4_v5_defconfig |    2 +-
- arch/arm/configs/mx3_defconfig       |    2 +-
- arch/arm/configs/mx5_defconfig       |    2 +-
- drivers/rtc/Kconfig                  |    2 +-
- drivers/rtc/Makefile                 |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+Why are you placing this here?  sched_clock is available from the point
+that it's registered, which should be before the first sched_clock()
+call.
 
-diff --git a/arch/arm/configs/imx_v4_v5_defconfig b/arch/arm/configs/imx_v4_v5_defconfig
-index 11a4192..bb22ead 100644
---- a/arch/arm/configs/imx_v4_v5_defconfig
-+++ b/arch/arm/configs/imx_v4_v5_defconfig
-@@ -149,7 +149,7 @@ CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_PCF8563=y
- CONFIG_RTC_DRV_IMXDI=y
--CONFIG_RTC_MXC=y
-+CONFIG_RTC_DRV_MXC=y
- CONFIG_DMADEVICES=y
- CONFIG_IMX_SDMA=y
- CONFIG_IMX_DMA=y
-diff --git a/arch/arm/configs/mx3_defconfig b/arch/arm/configs/mx3_defconfig
-index cb0717f..b69bd64 100644
---- a/arch/arm/configs/mx3_defconfig
-+++ b/arch/arm/configs/mx3_defconfig
-@@ -128,7 +128,7 @@ CONFIG_USB_ULPI=y
- CONFIG_MMC=y
- CONFIG_MMC_MXC=y
- CONFIG_RTC_CLASS=y
--CONFIG_RTC_MXC=y
-+CONFIG_RTC_DRV_MXC=y
- CONFIG_DMADEVICES=y
- # CONFIG_DNOTIFY is not set
- CONFIG_TMPFS=y
-diff --git a/arch/arm/configs/mx5_defconfig b/arch/arm/configs/mx5_defconfig
-index d0d8dfe..fb17fd9 100644
---- a/arch/arm/configs/mx5_defconfig
-+++ b/arch/arm/configs/mx5_defconfig
-@@ -132,7 +132,7 @@ CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_INTF_DEV_UIE_EMUL=y
--CONFIG_RTC_MXC=y
-+CONFIG_RTC_DRV_MXC=y
- CONFIG_EXT2_FS=y
- CONFIG_EXT2_FS_XATTR=y
- CONFIG_EXT2_FS_POSIX_ACL=y
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index a5ed7cc..5a8efee 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1059,7 +1059,7 @@ config RTC_DRV_PUV3
- 	  This drive can also be built as a module. If so, the module
- 	  will be called rtc-puv3.
- 
--config RTC_MXC
-+config RTC_DRV_MXC
- 	tristate "Freescale MXC Real Time Clock"
- 	depends on ARCH_MXC
- 	depends on RTC_CLASS
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 6e69823..1e1d26e 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -59,7 +59,7 @@ obj-$(CONFIG_RTC_DRV_M41T94)	+= rtc-m41t94.o
- obj-$(CONFIG_RTC_DRV_M48T35)	+= rtc-m48t35.o
- obj-$(CONFIG_RTC_DRV_M48T59)	+= rtc-m48t59.o
- obj-$(CONFIG_RTC_DRV_M48T86)	+= rtc-m48t86.o
--obj-$(CONFIG_RTC_MXC)		+= rtc-mxc.o
-+obj-$(CONFIG_RTC_DRV_MXC)	+= rtc-mxc.o
- obj-$(CONFIG_RTC_DRV_MAX6900)	+= rtc-max6900.o
- obj-$(CONFIG_RTC_DRV_MAX8925)	+= rtc-max8925.o
- obj-$(CONFIG_RTC_DRV_MAX8998)	+= rtc-max8998.o
--- 
-1.7.1
+> +config IRQ_TIME_ACCOUNTING
+> +	bool "Fine granularity task level IRQ time accounting"
+> +	depends on (X86 || (ARM && HAVE_SCHED_CLOCK))
 
+Even though it's not bad here, please get out of the habbit of throwing
+unnecessary parens into the mix.  It can make stuff more difficult to
+read and therefore confirm correctness.  (I've spent many a time
+rewriting if() statements because of paren overuse.)
+
+This could have been written:
+
+	depends on X86 || (ARM && HAVE_SCHED_CLOCK)
+
+However, ARM will always have HAVE_SCHED_CLOCK after the next merge window,
+so this can become a much simpler:
+
+	depends on X86 || ARM
+
+Apart from these two points, the rest of the patch looks fine to me but
+the ultimate decision about its acceptability is up to other people.
