@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab2BHBP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 20:15:27 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:35047 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754899Ab2BHBPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 20:15:25 -0500
-Message-ID: <1328663723.27428.2.camel@joe2Laptop>
-Subject: Re: [PATCH] SCSI, st: modify tape driver to allow writing immediate
- filemarks
-From: Joe Perches <joe@perches.com>
-To: Lee Duncan <lduncan@suse.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 07 Feb 2012 17:15:23 -0800
-In-Reply-To: <4F31CAC0.3010905@suse.com>
-References: <4F31CAC0.3010905@suse.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757259Ab2BHBUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 20:20:14 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:37820 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756522Ab2BHBUM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 20:20:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAB=NE6VS79S4R6wQddQCqPfoYPyRbPzSdAYN2Mxfi-4G_sfCvg@mail.gmail.com>
+References: <1328312594-31934-1-git-send-email-mcgrof@frijolero.org>
+ <20120206160727.GA21048@tuxdriver.com> <20120207041958.GA32377@bombadil.infradead.org>
+ <CAB=NE6VS79S4R6wQddQCqPfoYPyRbPzSdAYN2Mxfi-4G_sfCvg@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Tue, 7 Feb 2012 17:19:52 -0800
+X-Google-Sender-Auth: cySR65RePuE8sjijcPuv7KQgD_E
+Message-ID: <CAB=NE6Wv3PEJj5zKfK2o869ntxuU3V+Nv2dgKX1eDtk3zQ04dA@mail.gmail.com>
+Subject: Re: [PATCH] compat: add compat kernel checker and downloader
+To: "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+        Andy Whitcroft <apw@canonical.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, hauke@hauke-m.de,
+        kernel-team@lists.ubuntu.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-07 at 17:07 -0800, Lee Duncan wrote:
-> Add an st module option st_nowait_eof which defaults to 0. Setting this
-> option to 1 tells the st driver not to wait when writing a filemark, which
-> can result in much faster times on streaming tape drives.
+On Mon, Feb 6, 2012 at 8:56 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
+> Come to think of it.. we could bastardize Ubuntu's PPA packages for
+> mainline kernels, translate the deb packages into tar files and some
+> sort of grub-update or whatever scrip to run in the end? That still
+> seems like a lot of work.
+>
+> The current option allows us to use either distro kernels or whatever
+> you have installed.. not sure how else to improve this. Didn't we have
+> some sort of distro agnostic package crap? Maybe?
 
-trivial comments:
+Or -- Andy -- any chance we can get some of the deb contents unpacked
+into a distro-agostic tarball of some sort that we can use ? I ask
+given that you guys already host the sources and all that.
 
-> diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-[]
-> @@ -81,6 +81,7 @@ static int max_sg_segs;
->  static int try_direct_io = TRY_DIRECT_IO;
->  static int try_rdio = 1;
->  static int try_wdio = 1;
-> +static int st_nowait_eof = 0;
-
-Could be bool.
-
-> @@ -1106,6 +1109,11 @@ static int check_tape(struct scsi_tape *STp, struct file *filp)
->                                      STp->drv_buffer));
->  		}
->  		STp->drv_write_prot = ((STp->buffer)->b_data[2] & 0x80) != 0;
-> +		if (!STp->drv_buffer && STp->immediate_filemark) {
-> +			printk(KERN_WARNING "%s: non-buffered tape: "
-> +			    "disabling writing immediate filemarks", name);
-
-Needs terminating "\n" and it's better to coalesce the
-format and ignore 80 char lines to make arbitrary greps
-a bit easier.
-
-> diff --git a/drivers/scsi/st.h b/drivers/scsi/st.h
-[]
-> @@ -120,6 +120,7 @@ struct scsi_tape {
->  	unsigned char c_algo;			/* compression algorithm */
->  	unsigned char pos_unknown;			/* after reset position unknown */
->  	unsigned char sili;			/* use SILI when reading in variable b mode */
-> +	unsigned char immediate_filemark;	/* set immediate bit when writing filemark */
-
-could be bool
-
-
+  Luis
