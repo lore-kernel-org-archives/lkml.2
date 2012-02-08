@@ -1,649 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2BHQdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 11:33:04 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37630 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756793Ab2BHQdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 11:33:00 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
-        tglx@linutronix.de, David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf tools: Allow multiple threads or processes in record, stat, top
-Date: Wed,  8 Feb 2012 09:32:52 -0700
-Message-Id: <1328718772-16688-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1756564Ab2BHQe2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 11:34:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44387 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754489Ab2BHQe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 11:34:27 -0500
+Date: Wed, 8 Feb 2012 16:34:21 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 02/15] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20120208163421.GL5938@suse.de>
+References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
+ <1328568978-17553-3-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.00.1202071025050.30652@router.home>
+ <20120208144506.GI5938@suse.de>
+ <alpine.DEB.2.00.1202080907320.30248@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1202080907320.30248@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow a user to collect events for multiple threads or processes
-using a comma separated list.
+On Wed, Feb 08, 2012 at 09:14:32AM -0600, Christoph Lameter wrote:
+> On Wed, 8 Feb 2012, Mel Gorman wrote:
+> 
+> > o struct kmem_cache_cpu could be left alone even though it's a small saving
+> 
+> Its multiplied by the number of caches and by the number of
+> processors.
+> 
+> > o struct slab also be left alone
+> > o struct array_cache could be left alone although I would point out that
+> >   it would make no difference in size as touched is changed to a bool to
+> >   fit pfmemalloc in
+> 
+> Both of these are performance critical structures in slab.
+> 
 
-e.g., collect data on a VM and its vhost thread:
-  perf top -p 21483,21485
-  perf stat -p 21483,21485 -ddd
-  perf record -p 21483,21485
+Ok, I looked into what is necessary to replace these with checking a page
+flag and the cost shifts quite a bit and ends up being more expensive.
 
-or monitoring vcpu threads
-  perf top -t 21488,21489
-  perf stat -t 21488,21489 -ddd
-  perf record -t 21488,21489
+Right now, I use array_cache to record if there are any pfmemalloc
+objects in the free list at all. If there are not, no expensive checks
+are made. For example, in __ac_put_obj(), I check ac->pfmemalloc to see
+if an expensive check is required. Using a page flag, the same check
+requires a lookup with virt_to_page(). This in turns uses a
+pfn_to_page() which depending on the memory model can be very expensive.
+No matter what, it's more expensive than a simple check and this is in
+the slab free path.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/Documentation/perf-record.txt |    4 +-
- tools/perf/Documentation/perf-stat.txt   |    4 +-
- tools/perf/Documentation/perf-top.txt    |    4 +-
- tools/perf/builtin-record.c              |   10 +-
- tools/perf/builtin-stat.c                |   31 +++---
- tools/perf/builtin-test.c                |    2 -
- tools/perf/builtin-top.c                 |   12 +--
- tools/perf/perf.h                        |    4 +-
- tools/perf/util/evlist.c                 |   10 +-
- tools/perf/util/evlist.h                 |    4 +-
- tools/perf/util/evsel.c                  |    2 +-
- tools/perf/util/thread_map.c             |  152 ++++++++++++++++++++++++++++++
- tools/perf/util/thread_map.h             |    4 +
- tools/perf/util/top.c                    |   10 +-
- tools/perf/util/top.h                    |    2 +-
- tools/perf/util/usage.c                  |    6 +-
- tools/perf/util/util.h                   |    2 +-
- 17 files changed, 207 insertions(+), 56 deletions(-)
+It is more complicated in check_ac_pfmemalloc() too although the performance
+impact is less because it is a slow path. If ac->pfmemalloc is false,
+the check of each slabp can be avoided. Without it, all the slabps must
+be checked unconditionally and each slabp that is checked must call
+virt_to_page().
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index ff9a66e..a5766b4 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -52,11 +52,11 @@ OPTIONS
+Overall, the memory savings of moving to a page flag are miniscule but
+the performance cost is far higher because of the use of virt_to_page().
+
+> > o It would still be necessary to do the object pointer tricks in slab.c
+> 
+> These trick are not done for slub. It seems that they are not necessary?
+> 
+
+In slub, it's sufficient to check kmem_cache_cpu to know whether the
+objects in the list are pfmemalloc or not.
+
+> > remain. However, the downside of requiring a page flag is very high. In
+> > the event we increase the number of page flags - great, I'll use one but
+> > right now I do not think the use of page flag is justified.
+> 
+> On 64 bit I think there is not much of an issue with another page flag.
+> 
+
+There isn't, but on 32 bit there is.
+
+> Also consider that the slab allocators do not make full use of the other
+> page flags. We could overload one of the existing flags. I removed
+> slubs use of them last year. PG_active could be overloaded I think.
+> 
+
+Yeah, you're right on the button there. I did my checking assuming that
+PG_active+PG_slab were safe to use. The following is an untested patch that
+I probably got details wrong in but it illustrates where virt_to_page()
+starts cropping up.
+
+It was a good idea and thanks for thinking of it but unfortunately the
+implementation would be more expensive than what I have currently.
+
+
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index e90a673..108f3ce 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -432,6 +432,35 @@ static inline int PageTransCompound(struct page *page)
+ }
+ #endif
  
- -p::
- --pid=::
--	Record events on existing process ID.
-+	Record events on existing process ID (comma separated list).
- 
- -t::
- --tid=::
--        Record events on existing thread ID.
-+        Record events on existing thread ID (comma separated list).
- 
- -u::
- --uid=::
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 8966b9a..2fa173b 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -35,11 +35,11 @@ OPTIONS
-         child tasks do not inherit counters
- -p::
- --pid=<pid>::
--        stat events on existing process id
-+        stat events on existing process id (comma separated list)
- 
- -t::
- --tid=<tid>::
--        stat events on existing thread id
-+        stat events on existing thread id (comma separated list)
- 
- 
- -a::
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index ab1454e..4a5680c 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -72,11 +72,11 @@ Default is to monitor all CPUS.
- 
- -p <pid>::
- --pid=<pid>::
--	Profile events on existing Process ID.
-+	Profile events on existing Process ID (comma separated list).
- 
- -t <tid>::
- --tid=<tid>::
--        Profile events on existing thread ID.
-+        Profile events on existing thread ID (comma separated list).
- 
- -u::
- --uid=::
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f8d9a54..3291c34 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -645,8 +645,6 @@ static const char * const record_usage[] = {
-  */
- static struct perf_record record = {
- 	.opts = {
--		.target_pid	     = -1,
--		.target_tid	     = -1,
- 		.mmap_pages	     = UINT_MAX,
- 		.user_freq	     = UINT_MAX,
- 		.user_interval	     = ULLONG_MAX,
-@@ -670,9 +668,9 @@ const struct option record_options[] = {
- 		     parse_events_option),
- 	OPT_CALLBACK(0, "filter", &record.evlist, "filter",
- 		     "event filter", parse_filter),
--	OPT_INTEGER('p', "pid", &record.opts.target_pid,
-+	OPT_STRING('p', "pid", &record.opts.target_pid, "pid",
- 		    "record events on existing process id"),
--	OPT_INTEGER('t', "tid", &record.opts.target_tid,
-+	OPT_STRING('t', "tid", &record.opts.target_tid, "tid",
- 		    "record events on existing thread id"),
- 	OPT_INTEGER('r', "realtime", &record.realtime_prio,
- 		    "collect data with this RT SCHED_FIFO priority"),
-@@ -739,7 +737,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 
- 	argc = parse_options(argc, argv, record_options, record_usage,
- 			    PARSE_OPT_STOP_AT_NON_OPTION);
--	if (!argc && rec->opts.target_pid == -1 && rec->opts.target_tid == -1 &&
-+	if (!argc && !rec->opts.target_pid && !rec->opts.target_tid &&
- 		!rec->opts.system_wide && !rec->opts.cpu_list && !rec->uid_str)
- 		usage_with_options(record_usage, record_options);
- 
-@@ -785,7 +783,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 	if (rec->uid_str != NULL && rec->opts.uid == UINT_MAX - 1)
- 		goto out_free_fd;
- 
--	if (rec->opts.target_pid != -1)
-+	if (rec->opts.target_pid)
- 		rec->opts.target_tid = rec->opts.target_pid;
- 
- 	if (perf_evlist__create_maps(evsel_list, rec->opts.target_pid,
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index d14b37a..ea40e4e 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -182,8 +182,8 @@ static int			run_count			=  1;
- static bool			no_inherit			= false;
- static bool			scale				=  true;
- static bool			no_aggr				= false;
--static pid_t			target_pid			= -1;
--static pid_t			target_tid			= -1;
-+static const char		*target_pid;
-+static const char		*target_tid;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
-@@ -296,7 +296,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
- 	if (system_wide)
- 		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
- 						group, group_fd);
--	if (target_pid == -1 && target_tid == -1) {
-+	if (!target_pid && !target_tid) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
-@@ -446,7 +446,7 @@ static int run_perf_stat(int argc __used, const char **argv)
- 			exit(-1);
- 		}
- 
--		if (target_tid == -1 && target_pid == -1 && !system_wide)
-+		if (!target_tid && !target_pid && !system_wide)
- 			evsel_list->threads->map[0] = child_pid;
- 
- 		/*
-@@ -968,14 +968,14 @@ static void print_stat(int argc, const char **argv)
- 	if (!csv_output) {
- 		fprintf(output, "\n");
- 		fprintf(output, " Performance counter stats for ");
--		if(target_pid == -1 && target_tid == -1) {
-+		if (!target_pid && !target_tid) {
- 			fprintf(output, "\'%s", argv[0]);
- 			for (i = 1; i < argc; i++)
- 				fprintf(output, " %s", argv[i]);
--		} else if (target_pid != -1)
--			fprintf(output, "process id \'%d", target_pid);
-+		} else if (target_pid)
-+			fprintf(output, "process id \'%s", target_pid);
- 		else
--			fprintf(output, "thread id \'%d", target_tid);
-+			fprintf(output, "thread id \'%s", target_tid);
- 
- 		fprintf(output, "\'");
- 		if (run_count > 1)
-@@ -1049,10 +1049,10 @@ static const struct option options[] = {
- 		     "event filter", parse_filter),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
- 		    "child tasks do not inherit counters"),
--	OPT_INTEGER('p', "pid", &target_pid,
--		    "stat events on existing process id"),
--	OPT_INTEGER('t', "tid", &target_tid,
--		    "stat events on existing thread id"),
-+	OPT_STRING('p', "pid", &target_pid, "pid",
-+		   "stat events on existing process id"),
-+	OPT_STRING('t', "tid", &target_tid, "tid",
-+		   "stat events on existing thread id"),
- 	OPT_BOOLEAN('a', "all-cpus", &system_wide,
- 		    "system-wide collection from all CPUs"),
- 	OPT_BOOLEAN('g', "group", &group,
-@@ -1190,7 +1190,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	} else if (big_num_opt == 0) /* User passed --no-big-num */
- 		big_num = false;
- 
--	if (!argc && target_pid == -1 && target_tid == -1)
-+	if (!argc && !target_pid && !target_tid)
- 		usage_with_options(stat_usage, options);
- 	if (run_count <= 0)
- 		usage_with_options(stat_usage, options);
-@@ -1206,10 +1206,11 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	if (add_default_attributes())
- 		goto out;
- 
--	if (target_pid != -1)
-+	if (target_pid)
- 		target_tid = target_pid;
- 
--	evsel_list->threads = thread_map__new(target_pid, target_tid, UINT_MAX);
-+	evsel_list->threads = thread_map__new_str(target_pid,
-+						  target_tid, UINT_MAX);
- 	if (evsel_list->threads == NULL) {
- 		pr_err("Problems finding threads of monitor\n");
- 		usage_with_options(stat_usage, options);
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 70c4eb2..0f15195 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -1010,8 +1010,6 @@ realloc:
- static int test__PERF_RECORD(void)
- {
- 	struct perf_record_opts opts = {
--		.target_pid = -1,
--		.target_tid = -1,
- 		.no_delay   = true,
- 		.freq	    = 10,
- 		.mmap_pages = 256,
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index d869b21..94d55cb 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -965,7 +965,7 @@ static int __cmd_top(struct perf_top *top)
- 	if (ret)
- 		goto out_delete;
- 
--	if (top->target_tid != -1 || top->uid != UINT_MAX)
-+	if (top->target_tid || top->uid != UINT_MAX)
- 		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
- 						  perf_event__process,
- 						  &top->session->host_machine);
-@@ -1103,8 +1103,6 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 	struct perf_top top = {
- 		.count_filter	     = 5,
- 		.delay_secs	     = 2,
--		.target_pid	     = -1,
--		.target_tid	     = -1,
- 		.uid		     = UINT_MAX,
- 		.freq		     = 1000, /* 1 KHz */
- 		.sample_id_all_avail = true,
-@@ -1118,9 +1116,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 		     parse_events_option),
- 	OPT_INTEGER('c', "count", &top.default_interval,
- 		    "event period to sample"),
--	OPT_INTEGER('p', "pid", &top.target_pid,
-+	OPT_STRING('p', "pid", &top.target_pid, "pid",
- 		    "profile events on existing process id"),
--	OPT_INTEGER('t', "tid", &top.target_tid,
-+	OPT_STRING('t', "tid", &top.target_tid, "tid",
- 		    "profile events on existing thread id"),
- 	OPT_BOOLEAN('a', "all-cpus", &top.system_wide,
- 			    "system-wide collection from all CPUs"),
-@@ -1210,13 +1208,13 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 		goto out_delete_evlist;
- 
- 	/* CPU and PID are mutually exclusive */
--	if (top.target_tid > 0 && top.cpu_list) {
-+	if (top.target_tid && top.cpu_list) {
- 		printf("WARNING: PID switch overriding CPU\n");
- 		sleep(1);
- 		top.cpu_list = NULL;
- 	}
- 
--	if (top.target_pid != -1)
-+	if (top.target_pid)
- 		top.target_tid = top.target_pid;
- 
- 	if (perf_evlist__create_maps(top.evlist, top.target_pid,
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 92af168..deb17db 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -186,8 +186,8 @@ extern const char perf_version_string[];
- void pthread__unblock_sigwinch(void);
- 
- struct perf_record_opts {
--	pid_t	     target_pid;
--	pid_t	     target_tid;
-+	const char   *target_pid;
-+	const char   *target_tid;
- 	uid_t	     uid;
- 	bool	     call_graph;
- 	bool	     group;
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index a57a8cf..5c61dc5 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -593,15 +593,15 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
++#ifdef CONFIG_NFS_SWAP
++static inline int PageSlabPfmemalloc(struct page *page)
++{
++	VM_BUG_ON(!PageSlab(page));
++	return PageActive(page);
++}
++
++static inline void SetPageSlabPfmemalloc(struct page *page)
++{
++	VM_BUG_ON(!PageSlab(page));
++	SetPageActive(page);
++}
++
++static inline void ClearPageSlabPfmemalloc(struct page *page)
++{
++	VM_BUG_ON(!PageSlab(page));
++	ClearPageActive(page);
++}
++#else
++static inline int PageSlabPfmemalloc(struct page *page)
++{
++	return 0;
++}
++
++static inline void SetPageSlabPfmemalloc(struct page *page)
++{
++}
++#endif
++
+ #ifdef CONFIG_MMU
+ #define __PG_MLOCKED		(1 << PG_mlocked)
+ #else
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index 1d9ae40..a32bcfd 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -46,7 +46,6 @@ struct kmem_cache_cpu {
+ 	struct page *page;	/* The slab from which we are allocating */
+ 	struct page *partial;	/* Partially allocated frozen slabs */
+ 	int node;		/* The node of the page (or -1 for debug) */
+-	bool pfmemalloc;	/* Slab page had pfmemalloc set */
+ #ifdef CONFIG_SLUB_STATS
+ 	unsigned stat[NR_SLUB_STAT_ITEMS];
+ #endif
+diff --git a/mm/slab.c b/mm/slab.c
+index 268cd96..3012186 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -233,7 +233,6 @@ struct slab {
+ 			unsigned int inuse;	/* num of objs active in slab */
+ 			kmem_bufctl_t free;
+ 			unsigned short nodeid;
+-			bool pfmemalloc;	/* Slab had pfmemalloc set */
+ 		};
+ 		struct slab_rcu __slab_cover_slab_rcu;
+ 	};
+@@ -255,8 +254,7 @@ struct array_cache {
+ 	unsigned int avail;
+ 	unsigned int limit;
+ 	unsigned int batchcount;
+-	bool touched;
+-	bool pfmemalloc;
++	unsigned int touched;
+ 	spinlock_t lock;
+ 	void *entry[];	/*
+ 			 * Must have this definition in here for the proper
+@@ -978,6 +976,13 @@ static struct array_cache *alloc_arraycache(int node, int entries,
+ 	return nc;
  }
  
--int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
--			     pid_t target_tid, uid_t uid, const char *cpu_list)
-+int perf_evlist__create_maps(struct perf_evlist *evlist, const char *target_pid,
-+			     const char *target_tid, uid_t uid, const char *cpu_list)
++static inline bool is_slab_pfmemalloc(struct slab *slabp)
++{
++	struct page *page = virt_to_page(slabp->s_mem);
++
++	return PageSlabPfmemalloc(page);
++}
++
+ /* Clears ac->pfmemalloc if no slabs have pfmalloc set */
+ static void check_ac_pfmemalloc(struct kmem_cache *cachep,
+ 						struct array_cache *ac)
+@@ -985,22 +990,18 @@ static void check_ac_pfmemalloc(struct kmem_cache *cachep,
+ 	struct kmem_list3 *l3 = cachep->nodelists[numa_mem_id()];
+ 	struct slab *slabp;
+ 
+-	if (!ac->pfmemalloc)
+-		return;
+-
+ 	list_for_each_entry(slabp, &l3->slabs_full, list)
+-		if (slabp->pfmemalloc)
++		if (is_slab_pfmemalloc(slabp))
+ 			return;
+ 
+ 	list_for_each_entry(slabp, &l3->slabs_partial, list)
+-		if (slabp->pfmemalloc)
++		if (is_slab_pfmemalloc(slabp))
+ 			return;
+ 
+ 	list_for_each_entry(slabp, &l3->slabs_free, list)
+-		if (slabp->pfmemalloc)
++		if (is_slab_pfmemalloc(slabp))
+ 			return;
+ 
+-	ac->pfmemalloc = false;
+ }
+ 
+ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+@@ -1036,7 +1037,7 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 		l3 = cachep->nodelists[numa_mem_id()];
+ 		if (!list_empty(&l3->slabs_free) && force_refill) {
+ 			struct slab *slabp = virt_to_slab(objp);
+-			slabp->pfmemalloc = false;
++			ClearPageSlabPfmemalloc(virt_to_page(slabp->s_mem));
+ 			clear_obj_pfmemalloc(&objp);
+ 			check_ac_pfmemalloc(cachep, ac);
+ 			return objp;
+@@ -1066,15 +1067,11 @@ static inline void *ac_get_obj(struct kmem_cache *cachep,
+ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 								void *objp)
  {
--	evlist->threads = thread_map__new(target_pid, target_tid, uid);
-+	evlist->threads = thread_map__new_str(target_pid, target_tid, uid);
+-	struct slab *slabp;
++	struct page *page = virt_to_page(objp);
  
- 	if (evlist->threads == NULL)
- 		return -1;
+ 	/* If there are pfmemalloc slabs, check if the object is part of one */
+-	if (unlikely(ac->pfmemalloc)) {
+-		slabp = virt_to_slab(objp);
+-
+-		if (slabp->pfmemalloc)
+-			set_obj_pfmemalloc(&objp);
+-	}
++	if (PageSlabPfmemalloc(page))
++		set_obj_pfmemalloc(&objp);
  
--	if (uid != UINT_MAX || (cpu_list == NULL && target_tid != -1))
-+	if (uid != UINT_MAX || (cpu_list == NULL && target_tid))
- 		evlist->cpus = cpu_map__dummy_new();
+ 	return objp;
+ }
+@@ -1906,9 +1903,13 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid,
  	else
- 		evlist->cpus = cpu_map__new(cpu_list);
-@@ -820,7 +820,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
- 		exit(-1);
- 	}
+ 		add_zone_page_state(page_zone(page),
+ 			NR_SLAB_UNRECLAIMABLE, nr_pages);
+-	for (i = 0; i < nr_pages; i++)
++	for (i = 0; i < nr_pages; i++) {
+ 		__SetPageSlab(page + i);
  
--	if (!opts->system_wide && opts->target_tid == -1 && opts->target_pid == -1)
-+	if (!opts->system_wide && !opts->target_tid && !opts->target_pid)
- 		evlist->threads->map[0] = evlist->workload.pid;
++		if (*pfmemalloc)
++			SetPageSlabPfmemalloc(page);
++	}
++
+ 	if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
+ 		kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
  
- 	close(child_ready_pipe[1]);
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 1b4282b..21f1c9e 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -106,8 +106,8 @@ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
- 	evlist->threads	= threads;
+@@ -2888,7 +2889,6 @@ static struct slab *alloc_slabmgmt(struct kmem_cache *cachep, void *objp,
+ 	slabp->s_mem = objp + colour_off;
+ 	slabp->nodeid = nodeid;
+ 	slabp->free = 0;
+-	slabp->pfmemalloc = false;
+ 	return slabp;
  }
  
--int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
--			     pid_t tid, uid_t uid, const char *cpu_list);
-+int perf_evlist__create_maps(struct perf_evlist *evlist, const char *target_pid,
-+			     const char *tid, uid_t uid, const char *cpu_list);
- void perf_evlist__delete_maps(struct perf_evlist *evlist);
- int perf_evlist__set_filters(struct perf_evlist *evlist);
+@@ -3074,13 +3074,6 @@ static int cache_grow(struct kmem_cache *cachep,
+ 	if (!slabp)
+ 		goto opps1;
  
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 9a11f9e..f910f50 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -130,7 +130,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
- 	attr->mmap = track;
- 	attr->comm = track;
+-	/* Record if ALLOC_NO_WATERMARKS was set when allocating the slab */
+-	if (pfmemalloc) {
+-		struct array_cache *ac = cpu_cache_get(cachep);
+-		slabp->pfmemalloc = true;
+-		ac->pfmemalloc = true;
+-	}
+-
+ 	slab_map_pages(cachep, slabp, objp);
  
--	if (opts->target_pid == -1 && opts->target_tid == -1 && !opts->system_wide) {
-+	if (!opts->target_pid && !opts->target_tid && !opts->system_wide) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
-diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
-index 3d4b6c5..e793c16 100644
---- a/tools/perf/util/thread_map.c
-+++ b/tools/perf/util/thread_map.c
-@@ -6,7 +6,10 @@
- #include <sys/types.h>
- #include <sys/stat.h>
- #include <unistd.h>
-+#include <ctype.h>
-+#include <string.h>
- #include "thread_map.h"
-+#include "debug.h"
- 
- /* Skip "." and ".." directories */
- static int filter(const struct dirent *dir)
-@@ -152,6 +155,155 @@ struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid)
- 	return thread_map__new_by_tid(tid);
- }
- 
-+
-+static pid_t get_next_task_id(char **str)
-+{
-+	char *p, *pend;
-+	pid_t ret = -1;
-+	bool adv_pend = false;
-+
-+	pend = p = *str;
-+
-+	/* empty strings */
-+	if (*pend == '\0')
-+		return -1;
-+
-+	/* only expecting digits separated by commas */
-+	while (isdigit(*pend))
-+		++pend;
-+
-+	if (*pend == ',') {
-+		*pend = '\0';
-+		adv_pend = true;
-+		/* catch strings ending in a comma - like '1234,' */
-+		if (*(pend+1) == '\0') {
-+			ui__error("task id strings should not end in a comma\n");
-+			goto out;
-+		}
-+	}
-+
-+	/* only convert if all characters are valid */
-+	if (*pend == '\0') {
-+		ret = atoi(p);
-+		if (adv_pend)
-+			pend++;
-+		*str = pend;
-+	}
-+
-+out:
-+	return ret;
-+}
-+
-+static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
-+{
-+	struct thread_map *threads = NULL;
-+	char name[256];
-+	int items, total_tasks = 0;
-+	struct dirent **namelist = NULL;
-+	int i, j = 0;
-+	char *ostr, *str;
-+	pid_t pid;
-+
-+	ostr = strdup(pid_str);
-+	if (!ostr)
-+		return NULL;
-+	str = ostr;
-+
-+	while (*str) {
-+		pid = get_next_task_id(&str);
-+		if (pid < 0) {
-+			free(threads);
-+			threads = NULL;
-+			break;
-+		}
-+
-+		sprintf(name, "/proc/%d/task", pid);
-+		items = scandir(name, &namelist, filter, NULL);
-+		if (items <= 0)
-+			break;
-+
-+		total_tasks += items;
-+		if (threads)
-+			threads = realloc(threads,
-+					  sizeof(*threads) + sizeof(pid_t)*total_tasks);
-+		else
-+			threads = malloc(sizeof(*threads) + sizeof(pid_t)*items);
-+
-+		if (threads) {
-+			for (i = 0; i < items; i++)
-+				threads->map[j++] = atoi(namelist[i]->d_name);
-+			threads->nr = total_tasks;
-+		}
-+
-+		for (i = 0; i < items; i++)
-+			free(namelist[i]);
-+		free(namelist);
-+
-+		if (!threads)
-+			break;
-+	}
-+
-+	free(ostr);
-+
-+	return threads;
-+}
-+
-+static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
-+{
-+	struct thread_map *threads = NULL;
-+	char *str;
-+	int ntasks = 0;
-+	pid_t tid;
-+
-+	/* perf-stat expects threads to be generated even if tid not given */
-+	if (!tid_str) {
-+		threads = malloc(sizeof(*threads) + sizeof(pid_t));
-+		threads->map[1] = -1;
-+		threads->nr	= 1;
-+		return threads;
-+	}
-+
-+	str = strdup(tid_str);
-+	if (!str)
-+		return NULL;
-+
-+	while (*str) {
-+		tid = get_next_task_id(&str);
-+		if (tid < 0) {
-+			free(threads);
-+			threads = NULL;
-+			break;
-+		}
-+
-+		ntasks++;
-+		if (threads)
-+			threads = realloc(threads,
-+					  sizeof(*threads) + sizeof(pid_t) * ntasks);
-+		else
-+			threads = malloc(sizeof(*threads) + sizeof(pid_t));
-+
-+		if (threads == NULL)
-+			break;
-+
-+		threads->map[ntasks-1] = tid;
-+		threads->nr	= ntasks;
-+	}
-+
-+	return threads;
-+}
-+
-+struct thread_map *thread_map__new_str(const char *pid, const char *tid,
-+				       uid_t uid)
-+{
-+	if (pid)
-+		return thread_map__new_by_pid_str(pid);
-+
-+	if (!tid && uid != UINT_MAX)
-+		return thread_map__new_by_uid(uid);
-+
-+	return thread_map__new_by_tid_str(tid);
-+}
-+
- void thread_map__delete(struct thread_map *threads)
- {
- 	free(threads);
-diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
-index c75ddba..7da80f1 100644
---- a/tools/perf/util/thread_map.h
-+++ b/tools/perf/util/thread_map.h
-@@ -13,6 +13,10 @@ struct thread_map *thread_map__new_by_pid(pid_t pid);
- struct thread_map *thread_map__new_by_tid(pid_t tid);
- struct thread_map *thread_map__new_by_uid(uid_t uid);
- struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid);
-+
-+struct thread_map *thread_map__new_str(const char *pid,
-+		const char *tid, uid_t uid);
-+
- void thread_map__delete(struct thread_map *threads);
- 
- size_t thread_map__fprintf(struct thread_map *threads, FILE *fp);
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index e4370ca..09fe579 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -69,11 +69,11 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
- 
- 	ret += SNPRINTF(bf + ret, size - ret, "], ");
- 
--	if (top->target_pid != -1)
--		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %d",
-+	if (top->target_pid)
-+		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %s",
- 				top->target_pid);
--	else if (top->target_tid != -1)
--		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %d",
-+	else if (top->target_tid)
-+		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %s",
- 				top->target_tid);
- 	else if (top->uid_str != NULL)
- 		ret += SNPRINTF(bf + ret, size - ret, " (uid: %s",
-@@ -85,7 +85,7 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
- 		ret += SNPRINTF(bf + ret, size - ret, ", CPU%s: %s)",
- 				top->evlist->cpus->nr > 1 ? "s" : "", top->cpu_list);
- 	else {
--		if (top->target_tid != -1)
-+		if (top->target_tid)
- 			ret += SNPRINTF(bf + ret, size - ret, ")");
- 		else
- 			ret += SNPRINTF(bf + ret, size - ret, ", %d CPU%s)",
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index def3e53..49eb848 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -23,7 +23,7 @@ struct perf_top {
- 	u64		   guest_us_samples, guest_kernel_samples;
- 	int		   print_entries, count_filter, delay_secs;
- 	int		   freq;
--	pid_t		   target_pid, target_tid;
-+	const char	   *target_pid, *target_tid;
- 	uid_t		   uid;
- 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
- 	bool		   system_wide;
-diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
-index d0c0139..1240bd6 100644
---- a/tools/perf/util/usage.c
-+++ b/tools/perf/util/usage.c
-@@ -83,7 +83,7 @@ void warning(const char *warn, ...)
- 	va_end(params);
- }
- 
--uid_t parse_target_uid(const char *str, pid_t tid, pid_t pid)
-+uid_t parse_target_uid(const char *str, const char *tid, const char *pid)
- {
- 	struct passwd pwd, *result;
- 	char buf[1024];
-@@ -91,8 +91,8 @@ uid_t parse_target_uid(const char *str, pid_t tid, pid_t pid)
- 	if (str == NULL)
- 		return UINT_MAX;
- 
--	/* CPU and PID are mutually exclusive */
--	if (tid > 0 || pid > 0) {
-+	/* UUID and PID are mutually exclusive */
-+	if (tid || pid) {
- 		ui__warning("PID/TID switch overriding UID\n");
- 		sleep(1);
- 		return UINT_MAX;
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 232d17e..7917b09 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -245,7 +245,7 @@ struct perf_event_attr;
- 
- void event_attr_init(struct perf_event_attr *attr);
- 
--uid_t parse_target_uid(const char *str, pid_t tid, pid_t pid);
-+uid_t parse_target_uid(const char *str, const char *tid, const char *pid);
- 
- #define _STR(x) #x
- #define STR(x) _STR(x)
--- 
-1.7.7.6
-
+ 	cache_init_objs(cachep, slabp);
