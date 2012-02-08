@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab2BHVLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:11:20 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:36457 "EHLO
+	id S1756693Ab2BHVLS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:11:18 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:36453 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755790Ab2BHVLP (ORCPT
+	by vger.kernel.org with ESMTP id S1755572Ab2BHVLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Feb 2012 16:11:15 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 01/50] eth: reset addr_assign_type if eth_mac_addr() called
-Date: Wed,  8 Feb 2012 22:10:08 +0100
-Message-Id: <1328735457-29986-2-git-send-email-danny.kukawka@bisect.de>
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 09/50] Cadence MACB: use dev_hw_addr_random() instead of random_ether_addr()
+Date: Wed,  8 Feb 2012 22:10:16 +0100
+Message-Id: <1328735457-29986-10-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
 References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
@@ -22,32 +22,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If eth_mac_addr() get called, usually if SIOCSIFHWADDR was
-used to change the MAC of a ethernet device, reset the
-addr_assign_type to NET_ADDR_PERM if the state was
-NET_ADDR_RANDOM before. Reset the state since the MAC is
-no longer random at least not from the kernel side.
+Use dev_hw_addr_random() instead of calling random_ether_addr()
+to set addr_assign_type correctly to NET_ADDR_RANDOM.
 
 Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- net/ethernet/eth.c |    4 ++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/net/ethernet/cadence/macb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
-index a246836..9d68142 100644
---- a/net/ethernet/eth.c
-+++ b/net/ethernet/eth.c
-@@ -288,6 +288,10 @@ int eth_mac_addr(struct net_device *dev, void *p)
- 	if (!is_valid_ether_addr(addr->sa_data))
- 		return -EADDRNOTAVAIL;
- 	memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
-+	/* if device marked as NET_ADDR_RANDOM, reset it */
-+	if (dev->addr_assign_type & NET_ADDR_RANDOM)
-+		dev->addr_assign_type ^= NET_ADDR_RANDOM;
-+
- 	return 0;
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index 2320068..3ee8d79 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -87,7 +87,7 @@ static void __init macb_get_hwaddr(struct macb *bp)
+ 		memcpy(bp->dev->dev_addr, addr, sizeof(addr));
+ 	} else {
+ 		netdev_info(bp->dev, "invalid hw address, using random\n");
+-		random_ether_addr(bp->dev->dev_addr);
++		dev_hw_addr_random(bp->dev, bp->dev->dev_addr);
+ 	}
  }
- EXPORT_SYMBOL(eth_mac_addr);
+ 
 -- 
 1.7.7.3
 
