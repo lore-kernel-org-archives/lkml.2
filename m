@@ -1,176 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2BHMly (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 07:41:54 -0500
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:35348 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932090Ab2BHMlw (ORCPT
+	id S932129Ab2BHMnB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 07:43:01 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43434 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab2BHMnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 07:41:52 -0500
-Date: Wed, 8 Feb 2012 14:41:48 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Possible circular locking dependency (3.3-rc2)
-Message-ID: <20120208124147.GF16334@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
+	Wed, 8 Feb 2012 07:43:00 -0500
+Date: Wed, 8 Feb 2012 16:42:54 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Pedro Alves <palves@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@parallels.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
+Message-ID: <20120208124254.GD7009@moon>
+References: <1328267483-3225342-1-git-send-email-avagin@openvz.org>
+ <20120203162519.GB805@google.com>
+ <4F2C0F13.70709@parallels.com>
+ <20120203165132.GA5636@redhat.com>
+ <4F31848A.9070406@redhat.com>
+ <20120207205639.GJ27437@moon>
+ <4F31945B.5000304@redhat.com>
+ <20120207215121.GB29773@moon>
+ <4F326AF7.3060203@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jkO+KyKz7TfD21mV"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4F326AF7.3060203@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 08, 2012 at 12:30:47PM +0000, Pedro Alves wrote:
+> > 
+> > Yes, could be, but it means you have to install pthread debug libs, right?
+> > (have no idea actually since I personally use debug printing instead of
+> >  breakpoints).
+> 
+> Not really more than what we need today.  Just some exported function name
+> in the elf symbol tables.  Assuming a the program is using clear_child_tid
+> address for pthread_join as glibc is may not be a good idea.  It's doing
+> things at the wrong layer.  Also, hardware watchpoints are a scarse
+> resource.
 
---jkO+KyKz7TfD21mV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's pretty precious resource still incredibly useful. ok, i see
+what you mean, thanks.
 
-Hi guys,
+> 
+> >> It's the kernel that writes to this address, so I've no
+> >> idea if the watchpoint trap ends up visible on userspace. Which thread
+> >> would it be reported to, given that this is cleared when the child
+> >> is gone, I have no idea either.
+> > 
+> > Yeah, need some help from someone who wrote hw-breakpoints support in
+> > kernel (i don't remember the details).
+> 
+> I just tried it.  This is &pthread->tid in glibc/libpthread, so with debug
+> info it's easy to figure out where to set the watchpoint manually with gdb
+> without asking the kernel.  Doesn't work.  ptrace doesn't show any trap
+> for the kernel writes.
+>
 
-I have just triggered the folllowing:
+Thanks for info. 
 
-[   84.860321] =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D
-[   84.860321] [ INFO: possible circular locking dependency detected ]
-[   84.860321] 3.3.0-rc2-00026-ge4e8a39 #474 Not tainted
-[   84.860321] -------------------------------------------------------
-[   84.860321] bash/949 is trying to acquire lock:
-[   84.860321]  (sysfs_lock){+.+.+.}, at: [<c0275358>] gpio_value_store+0x2=
-4/0xcc
-[   84.860321]=20
-[   84.860321] but task is already holding lock:
-[   84.860321]  (s_active#22){++++.+}, at: [<c016996c>] sysfs_write_file+0x=
-dc/0x184
-[   84.911468]=20
-[   84.911468] which lock already depends on the new lock.
-[   84.911468]=20
-[   84.920043]=20
-[   84.920043] the existing dependency chain (in reverse order) is:
-[   84.920043]=20
-[   84.927886] -> #1 (s_active#22){++++.+}:
-[   84.927886]        [<c008f640>] check_prevs_add+0xdc/0x150
-[   84.927886]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
-[   84.927886]        [<c0090cdc>] __lock_acquire+0x49c/0x980
-[   84.951660]        [<c0091838>] lock_acquire+0x98/0x100
-[   84.951660]        [<c016a8e8>] sysfs_deactivate+0xb0/0x100
-[   84.962982]        [<c016b1b4>] sysfs_addrm_finish+0x2c/0x6c
-[   84.962982]        [<c016b8bc>] sysfs_remove_dir+0x84/0x98
-[   84.962982]        [<c02590d8>] kobject_del+0x10/0x78
-[   84.974670]        [<c02c29e8>] device_del+0x140/0x170
-[   84.974670]        [<c02c2a24>] device_unregister+0xc/0x18
-[   84.985382]        [<c0276894>] gpio_unexport+0xbc/0xdc
-[   84.985382]        [<c02768c8>] gpio_free+0x14/0xfc
-[   85.001708]        [<c0276a28>] unexport_store+0x78/0x8c
-[   85.001708]        [<c02c5af8>] class_attr_store+0x18/0x24
-[   85.007293]        [<c0169990>] sysfs_write_file+0x100/0x184
-[   85.018981]        [<c0109d48>] vfs_write+0xb4/0x148
-[   85.018981]        [<c0109fd0>] sys_write+0x40/0x70
-[   85.018981]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
-[   85.035003]=20
-[   85.035003] -> #0 (sysfs_lock){+.+.+.}:
-[   85.035003]        [<c008f54c>] check_prev_add+0x680/0x698
-[   85.035003]        [<c008f640>] check_prevs_add+0xdc/0x150
-[   85.052093]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
-[   85.052093]        [<c0090cdc>] __lock_acquire+0x49c/0x980
-[   85.052093]        [<c0091838>] lock_acquire+0x98/0x100
-[   85.069885]        [<c047e280>] mutex_lock_nested+0x3c/0x2f4
-[   85.069885]        [<c0275358>] gpio_value_store+0x24/0xcc
-[   85.069885]        [<c02c18dc>] dev_attr_store+0x18/0x24
-[   85.087158]        [<c0169990>] sysfs_write_file+0x100/0x184
-[   85.087158]        [<c0109d48>] vfs_write+0xb4/0x148
-[   85.098297]        [<c0109fd0>] sys_write+0x40/0x70
-[   85.098297]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
-[   85.109069]=20
-[   85.109069] other info that might help us debug this:
-[   85.109069]=20
-[   85.117462]  Possible unsafe locking scenario:
-[   85.117462]=20
-[   85.117462]        CPU0                    CPU1
-[   85.128417]        ----                    ----
-[   85.128417]   lock(s_active#22);
-[   85.128417]                                lock(sysfs_lock);
-[   85.128417]                                lock(s_active#22);
-[   85.142486]   lock(sysfs_lock);
-[   85.151794]=20
-[   85.151794]  *** DEADLOCK ***
-[   85.151794]=20
-[   85.151794] 2 locks held by bash/949:
-[   85.158020]  #0:  (&buffer->mutex){+.+.+.}, at: [<c01698b8>] sysfs_write=
-_file+0x28/0x184
-[   85.170349]  #1:  (s_active#22){++++.+}, at: [<c016996c>] sysfs_write_fi=
-le+0xdc/0x184
-[   85.170349]=20
-[   85.178588] stack backtrace:
-[   85.178588] [<c001b824>] (unwind_backtrace+0x0/0xf0) from [<c008de64>] (=
-print_circular_bug+0x100/0x114)
-[   85.193023] [<c008de64>] (print_circular_bug+0x100/0x114) from [<c008f54=
-c>] (check_prev_add+0x680/0x698)
-[   85.193023] [<c008f54c>] (check_prev_add+0x680/0x698) from [<c008f640>] =
-(check_prevs_add+0xdc/0x150)
-[   85.212524] [<c008f640>] (check_prevs_add+0xdc/0x150) from [<c008fc18>] =
-(validate_chain.clone.24+0x564/0x694)
-[   85.212524] [<c008fc18>] (validate_chain.clone.24+0x564/0x694) from [<c0=
-090cdc>] (__lock_acquire+0x49c/0x980)
-[   85.233306] [<c0090cdc>] (__lock_acquire+0x49c/0x980) from [<c0091838>] =
-(lock_acquire+0x98/0x100)
-[   85.233306] [<c0091838>] (lock_acquire+0x98/0x100) from [<c047e280>] (mu=
-tex_lock_nested+0x3c/0x2f4)
-[   85.242614] [<c047e280>] (mutex_lock_nested+0x3c/0x2f4) from [<c0275358>=
-] (gpio_value_store+0x24/0xcc)
-[   85.261840] [<c0275358>] (gpio_value_store+0x24/0xcc) from [<c02c18dc>] =
-(dev_attr_store+0x18/0x24)
-[   85.261840] [<c02c18dc>] (dev_attr_store+0x18/0x24) from [<c0169990>] (s=
-ysfs_write_file+0x100/0x184)
-[   85.271240] [<c0169990>] (sysfs_write_file+0x100/0x184) from [<c0109d48>=
-] (vfs_write+0xb4/0x148)
-[   85.290008] [<c0109d48>] (vfs_write+0xb4/0x148) from [<c0109fd0>] (sys_w=
-rite+0x40/0x70)
-[   85.298400] [<c0109fd0>] (sys_write+0x40/0x70) from [<c0013cc0>] (ret_fa=
-st_syscall+0x0/0x3c)
--bash: echo: write error: Operation not permitted
-
-the way to trigger is:
-
-
-root@legolas:~# cd /sys/class/gpio/
-root@legolas:/sys/class/gpio# echo 2 > export=20
-root@legolas:/sys/class/gpio# echo 2 > unexport=20
-root@legolas:/sys/class/gpio# echo 2 > export=20
-root@legolas:/sys/class/gpio# cd gpio2/
-root@legolas:/sys/class/gpio/gpio2# echo 1 > value=20
-
---=20
-balbi
-
---jkO+KyKz7TfD21mV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPMm2LAAoJEIaOsuA1yqREBxEQALAkioSegidvj3IaG0JBtkv1
-bGaOKGWNPxJJpL2IDJDCI3KliNEt7t9VB/ACaqXBbMauhdWmEkiBnh/ZFjzdUnu/
-0z0pmFa4yE4KTYor8DPvzvutR6k+O38KaMPzjR6O0woEP1Y7j8ORQJNKnouJIgh7
-zXUjxDZ+WRh7xhdE6ctlZLV2DSZ6/aYpaAYGBwUWT/OUMXk1kA4LV+DBa26I6sgR
-CiO0I4bl8fYLde4pCzKNLQGJFhhAVhsPp+mNLfpiYTrkZjTni9iQVDFllNYDofrL
-4cuoRq+O36Gq1+17bskPQrhfr8n6pKpbI0EqfQAATw99vmU+wg0ZZDIhyxnlTEf3
-cLiq7JfxWs4UhS2WkigBPROkToPP/UU6wcFu1saRIilVdNhxtLJNzhMFHoDfn4t/
-ocpYaNt6hG+k4YIdJzFCODNZtrpMf2MwfblO8zDatgfCAqhvCZDJ7UQ02t8FbXNJ
-r/ro1FGjWvvqG62ELOYkhm8BAAlC1KnjmtFxamXFttZdTu7L1UqwUvkOFwYxwntz
-dSQX6mZbWxCP/EzrNWVrBi0wtQlr/cRwd0cLC2TGoRYQSvl27sqhgumalbbbPP7r
-8Di/fEMWZLemJJOWlf1QtX6FV6tp4RyfEeyukSg9NOr2F2/mhVry9ddFclHm06CX
-SHrniaynpSr+sXn60Ehr
-=4NF/
------END PGP SIGNATURE-----
-
---jkO+KyKz7TfD21mV--
+	Cyrill
