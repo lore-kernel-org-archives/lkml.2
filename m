@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab2BHJV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 04:21:26 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34318 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab2BHJVX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 04:21:23 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Mel Gorman" <mel@csn.ul.ie>, "sandeep patil" <psandeep.s@gmail.com>
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Ohad Ben-Cohen" <ohad@wizery.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Rob Clark" <rob.clark@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [Linaro-mm-sig] [PATCH 11/15] mm: trigger page reclaim in
- alloc_contig_range() to stabilize watermarks
-References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
- <1328271538-14502-12-git-send-email-m.szyprowski@samsung.com>
- <20120203140428.GG5796@csn.ul.ie>
- <CA+K6fF49BQiNer=7Di+gCU_EX4E41q-teXJJUBjEd2xc12-j4w@mail.gmail.com>
-Date: Wed, 08 Feb 2012 10:21:18 +0100
+	id S1751827Ab2BHJXg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 04:23:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38066 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750872Ab2BHJXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 04:23:33 -0500
+Date: Wed, 8 Feb 2012 10:23:31 +0100
+From: Jan Kara <jack@suse.cz>
+To: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
+Cc: jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: Soft lockup problem
+Message-ID: <20120208092331.GA24625@quack.suse.cz>
+References: <20120207215737.10744.qmail@md.dent.med.uni-muenchen.de>
+ <20120207225246.GA18832@quack.suse.cz>
+ <20120207231615.11358.qmail@md.dent.med.uni-muenchen.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v9cr9sqm3l0zgt@mpn-glaptop>
-In-Reply-To: <CA+K6fF49BQiNer=7Di+gCU_EX4E41q-teXJJUBjEd2xc12-j4w@mail.gmail.com>
-User-Agent: Opera Mail/11.61 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120207231615.11358.qmail@md.dent.med.uni-muenchen.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Feb 2012 03:04:18 +0100, sandeep patil <psandeep.s@gmail.com> wrote:
-> There's another problem I am facing with zone watermarks and CMA.
->
-> Test details:
-> Memory  : 480 MB of total memory, 128 MB CMA region
-> Test case : around 600 MB of file transfer over USB RNDIS onto target
-> System Load : ftpd with console running on target.
-> No one is doing CMA allocations except for the DMA allocations done by the
-> drivers.
->
-> Result : After about 300MB transfer, I start getting GFP_ATOMIC
-> allocation failures.  This only happens if CMA region is reserved.
+On Wed 08-02-12 00:16:15, Wolfram Gloger wrote:
+> Thanks for your response.
+> 
+> > From: Jan Kara <jack@suse.cz>
+> 
+> >   Hmm, then this isn't really a deadlock (at least in your case) but only a
+> > rather unresponsive system.
+> 
+> Well, like the subject says this is a "soft lockup"..
+  We differ in terminology a bit but that's not really important when I
+know what you mean :)
 
-[...]
+> When it happened the first time the system actually recovered
+> after some hours.
+> But like Gerard said, there is no apparent ground for this
+> unresponsiveness, there are tons of memory free and no swapping.
+  Yeah, interesting. There are no processes waiting for IO either so I'm
+puzzled what causes you problems.
+ 
+> > Looking at the backtraces you provided I don't
+> > see anything really suspicious. Only maybe fsnotify_mark process - do you
+> > use fsnotify?
+> 
+> I have configured CONFIG_FSNOTIFY=y indeed but don't think I'm using it
+> from userspace..
+  Well, apparently something uses it because fsnotify_mark thread is just
+in the process of destroying some mark. Maybe you could run with
+CONFIG_FSNOTIFY=n just to rule out some problems there...
 
-> Total memory available is way above the zone watermarks. So, we ended
-> up starving
-> UNMOVABLE/RECLAIMABLE atomic allocations that cannot fallback on CMA region.
-
-This looks like something Mel warned me about.  I don't really have a good
-solution for that yet. ;/
-
+								Honza
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
