@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab2BHDXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 22:23:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37779 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab2BHDW5 (ORCPT
+	id S1755825Ab2BHDXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 22:23:40 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:29727
+	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755332Ab2BHDXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 22:22:57 -0500
-Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
- related to cpusets
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: paul@paulmenage.org, mingo@elte.hu, rjw@sisk.pl, tj@kernel.org,
-        frank.rowand@am.sony.com, pjt@google.com, tglx@linutronix.de,
-        lizf@cn.fujitsu.com, prashanth@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-In-Reply-To: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
-References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Feb 2012 04:22:15 +0100
-Message-ID: <1328671335.2482.72.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Tue, 7 Feb 2012 22:23:25 -0500
+X-SpamScore: -10
+X-BigFish: VPS-10(zzbb2dI1432N98dKzz1202hzz8275bhz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F31EA7D.2010706@am.sony.com>
+Date: Tue, 7 Feb 2012 19:22:37 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Tim Bird <tim.bird@am.sony.com>
+CC: Greg KH <gregkh@suse.de>, linux-embedded <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        Andrew Morton <akpm@osdl.org>
+Subject: Re: [PATCH 1/5] logger: Change logger_offset() from macro to function
+References: <4F31DC31.6040303@am.sony.com>
+In-Reply-To: <4F31DC31.6040303@am.sony.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-08 at 00:25 +0530, Srivatsa S. Bhat wrote:
-> There is a very long standing issue related to how cpusets handle CPU
-> hotplug events. The problem is that when a CPU goes offline, it is removed
-> from all cpusets. However, when that CPU comes back online, it is added
-> *only* to the root cpuset. Which means, any task attached to a cpuset lower
-> in the hierarchy will have one CPU less in its cpuset, though it had this
-> CPU in its cpuset before the CPU went offline.
-
-Yeah so? That's known behaviour..
-
-> The issue gets enormously aggravated in the case of suspend/resume.
-
-Why does suspend resume does this anyway? hotunplug is terribly
-expensive, surely not doing it would make suspend ever so much faster?
-
->  During
-> suspend, all non-boot CPUs are taken offline. Which means, all those CPUs
-> get removed from all the cpusets. When the system resumes, all CPUs are
-> brought back online; however, the newly onlined CPUs get added only to the
-> root cpuset - and all other cpusets have cpuset.cpus = 0 (boot cpu alone)!
-> This means, (as is obvious), all those tasks attached to non-root cpusets
-> will be constrained to run only on one single cpu!
+On 02/07/12 18:21, Tim Bird wrote:
+> Convert to function and add log as a parameter, rather than relying
+> on log in the context of the macro.
 > 
-> So, imagine the amount of performance degradation after suspend/resume!!
+> Signed-off-by: Tim Bird <tim.bird@am.sony.com>
+> ---
+>  drivers/staging/android/logger.c |   16 ++++++++++------
+>  1 files changed, 10 insertions(+), 6 deletions(-)
 > 
-> In particular, libvirt is one of the active users of cpusets. And apparently,
-> people hit this problem long ago:
-> https://bugzilla.redhat.com/show_bug.cgi?id=714271
+> diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+> index ffc2d04..92456d7 100644
+> --- a/drivers/staging/android/logger.c
+> +++ b/drivers/staging/android/logger.c
+> @@ -60,7 +60,11 @@ struct logger_reader {
+>  };
 > 
-> But unfortunately this never got resolved since people probably thought that
-> the bug was in libvirt... and all this time the kernel was the culprit!
+>  /* logger_offset - returns index 'n' into the log via (optimized) modulus */
+> -#define logger_offset(n)	((n) & (log->size - 1))
+> +size_t logger_offset(struct logger_log *log, size_t n)
+> +{
+> +	return n & (log->size-1);
 
-/me boggles, why do you use cpusets on a system small enough to suspend,
-and I'm so not going to ask about libvirt because I know I'll just get
-sad.
+        return n & (log->size - 1);
+> +}
+> +
 
-
+Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
 
