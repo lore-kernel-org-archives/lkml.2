@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab2BHPtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 10:49:17 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:32937 "EHLO bear.ext.ti.com"
+	id S1757257Ab2BHPwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 10:52:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28476 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755558Ab2BHPtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 10:49:15 -0500
-Message-ID: <4F329953.9010608@ti.com>
-Date: Wed, 8 Feb 2012 16:48:35 +0100
-From: "Cousson, Benoit" <b-cousson@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>, <balbi@ti.com>,
-        <linux-i2c@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
-        <khali@linux-fr.org>, <ben-linux@fluff.org>, <w.sang@pengutronix.de>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH] I2C: OMAP: fix build breakage when CONFIG_OF is not set
-References: <1328698612-18661-1-git-send-email-coelho@ti.com>  <20120208105957.GB16334@legolas.emea.dhcp.ti.com>  <1328699077.20197.51.camel@cumari>  <CAM=Q2cvZWdUk-v4-EWUJzAf4br-4+tO2s3qS_dn4KhHp+mm2+g@mail.gmail.com> <1328700319.20197.54.camel@cumari>
-In-Reply-To: <1328700319.20197.54.camel@cumari>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757103Ab2BHPwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 10:52:54 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 0/6 v5] pagemap handles transparent hugepage
+Date: Wed,  8 Feb 2012 10:51:36 -0500
+Message-Id: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luca,
+Hi,
 
-On 2/8/2012 12:25 PM, Luciano Coelho wrote:
-> On Wed, 2012-02-08 at 16:42 +0530, Shubhrajyoti Datta wrote:
->> On Wed, Feb 8, 2012 at 4:34 PM, Luciano Coelho<coelho@ti.com>  wrote:
->>> On Wed, 2012-02-08 at 12:59 +0200, Felipe Balbi wrote:
->>>> On Wed, Feb 08, 2012 at 12:56:52PM +0200, Luciano Coelho wrote:
->>>>> Since commit 6145197be6cc0583fa1a2f4ec1079d366137061e, building
->>>>
->>>> we generally like to see the commit subject here too. And adding the
->>>> abbreviated commit instead of the full sha1, wouldn't hurt either ;-)
->>>
->>> Ok, different practices. :)
->>
->> However  there was already a discurssion.
->> Anyways thanks for the patch.
->> http://permalink.gmane.org/gmane.linux.ports.arm.omap/69796
->>
->>
->>>
->>> I'll send v2.
->> I think there was already a fix for this.
->>
->> http://www.spinics.net/lists/linux-omap/msg63151.html
->>
->> Anyways thanks for the patch.
->
-> Ah, okay.  Thanks for the info, I hadn't seen these.
+In this version, I applied the feedbacks about the return value of
+__pmd_trans_huge_lock() and renaming newly added components.
+I hope these patches go into mainline.
 
-Yeah, it looks like the OMAP fixes missed -rc2, but Tony sent the pull 
-request [1].
+Naoya Horiguchi (6):
+  pagemap: avoid splitting thp when reading /proc/pid/pagemap
+  thp: optimize away unnecessary page table locking
+  pagemap: export KPF_THP
+  pagemap: document KPF_THP and make page-types aware of it
+  introduce pmd_to_pte_t()
+  pagemap: introduce data structure for pagemap entry
 
-Regards,
-Benoit
+ Documentation/vm/page-types.c     |    2 +
+ Documentation/vm/pagemap.txt      |    4 +
+ arch/x86/include/asm/pgtable.h    |    5 ++
+ fs/proc/page.c                    |    2 +
+ fs/proc/task_mmu.c                |  138 ++++++++++++++++++++++---------------
+ include/asm-generic/pgtable.h     |    4 +
+ include/linux/huge_mm.h           |   17 +++++
+ include/linux/kernel-page-flags.h |    1 +
+ mm/huge_memory.c                  |  122 +++++++++++++++-----------------
+ mm/mremap.c                       |    2 -
+ 10 files changed, 174 insertions(+), 123 deletions(-)
 
-[1] http://www.spinics.net/lists/linux-omap/msg63564.html
+Thanks,
+Naoya
