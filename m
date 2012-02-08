@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab2BHATW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 19:19:22 -0500
-Received: from ozlabs.org ([203.10.76.45]:37085 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756365Ab2BHATV convert rfc822-to-8bit (ORCPT
+	id S1757079Ab2BHATi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 19:19:38 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:41521 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756984Ab2BHATh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 19:19:21 -0500
-From: Rusty Russell <rusty@ozlabs.org>
-To: "Kasatkin\, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
-        David Howells <dhowells@redhat.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Jon Masters <jcm@redhat.com>
-Subject: Re: [RFC][PATCH v1 0/2] integrity: module integrity verification
-In-Reply-To: <CALLzPKZRUTaOE8afXD1b=Kd6fOaisOpAW+XGJMi7uHdE0sEgFw@mail.gmail.com>
-References: <cover.1328122362.git.dmitry.kasatkin@intel.com> <alpine.LRH.2.00.1202061250400.16907@tundra.namei.org> <CALLzPKZSWSp6r-5e1c1Z6qOH6C0DcOz=LHJ20Y468SQE6UU1ww@mail.gmail.com> <87zkcuh8iq.fsf@rustcorp.com.au> <CALLzPKZRUTaOE8afXD1b=Kd6fOaisOpAW+XGJMi7uHdE0sEgFw@mail.gmail.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 08 Feb 2012 10:09:11 +1030
-Message-ID: <87bopagqn4.fsf@rustcorp.com.au>
+	Tue, 7 Feb 2012 19:19:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <20120207164735.GH21292@google.com>
+References: <20120206163721.GF30752@redhat.com>
+	<20120206164428.GA21292@google.com>
+	<CA+55aFx6BR_ZUHd8d64btu-LzsPHo3Ot_d1-5jJytjQUqvvaiQ@mail.gmail.com>
+	<20120206172706.GB21292@google.com>
+	<4F303506.9000201@kernel.dk>
+	<20120206215451.GD21292@google.com>
+	<4F30C96F.1000905@kernel.dk>
+	<20120207162253.GG21292@google.com>
+	<4F315113.5010804@kernel.dk>
+	<CA+55aFxcjE4FsUVoarc+8OTi4OkqtgBmHq500=qaCeTqqWnqoA@mail.gmail.com>
+	<20120207164735.GH21292@google.com>
+Date: Wed, 8 Feb 2012 08:19:36 +0800
+X-Google-Sender-Auth: YYLEjvBBEnyspkUHI1ldAr3Br-4
+Message-ID: <CANejiEXUZpPzyrTmD-P-MWD-XDmvDoB9UAjDbnrzTEiAw6nsgQ@mail.gmail.com>
+Subject: Re: [PATCH] block: strip out locking optimization in put_io_context()
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Feb 2012 23:18:38 +0200, "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
-> On Tue, Feb 7, 2012 at 7:13 PM, Rusty Russell <rusty@ozlabs.org> wrote:
-> > On Mon, 6 Feb 2012 08:59:00 +0200, "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com> wrote:
-> >> On Mon, Feb 6, 2012 at 3:51 AM, James Morris <jmorris@namei.org> wrote:
-> >> > On Wed, 1 Feb 2012, Dmitry Kasatkin wrote:
-> >> >
-> >> >> Hi,
-> >> >>
-> >> >> Here is another module verification patchset, which is based on the recently
-> >> >> upstreamed digital signature support used by EVM and IMA-appraisal.
-> >> >
-> >> > You should cc: Rusty on any changes to the module code.
-> >> >
-> >>
-> >> Hello,
-> >>
-> >> Mimi already has pointed that out.
-> >> I have sent him an email with the link..
-> >
-> > Thanks.
-> >
-> > Using an external signature (via cmdline arguments) is simple, at
-> > least. Â Not sure what the userspace side of this looks like?
-> >
-> 
+2012/2/8 Tejun Heo <tj@kernel.org>:
 > Hello,
-> 
-> There are couple of patches for modprobe and insmod...
-> 
-> You could see them on the top at:
-> http://linux-ima.git.sourceforge.net/git/gitweb.cgi?p=linux-ima/module-init-tools.git;a=summary
-> 
-> It first tries to read signature from xattr, then from file...
-> "modprobe -v" will show 'ima='  parameter with signature.
-> 
-> - Dmitry
+>
+> On Tue, Feb 07, 2012 at 08:33:15AM -0800, Linus Torvalds wrote:
+>> Yeah, please just get rid of the crazy code. Maybe *that* fixes the
+>> regression too, who knows?
+>>
+>> For all we know, the "fast case" is what causes extra locking only to
+>> then fail and not even be a fast-path.
+>
+> Yeah, I was about to ask Shaohua to test the version w/o optimization.
+> With heavily loaded request_queue, trylock failure could be frequent,
+> which I wasn't testing.
+>
+> Shaohua, can you please test the version w/o optimization?  Also, can
+> you please give a bit more details on the setup?  Are there multiple
+> swap devices?  Is it SSD or rotating disk?
+the test adds mem=4G in a 2 sockets 16 CPU machine.
+just make several copy of kernel source in tmpfs (so there is swap
+depending on your
+memory size) and run kernel build in the kernel source in the meaning time.
+there is only one swap device which is a rotating disk.
 
-The problem is that distributions tend to have two variants of modules:
-stripped and unstripped.  Thus you may want to support multiple
-signatures, any *one* of which may match.
+I'll test both patches soon.
 
-I've cc'd the module-init-tools and libkmod maintainers for their
-comments, too.
-
-Cheers,
-Rusty.
+Thanks,
+Shaohua
