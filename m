@@ -1,187 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab2BHVTs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:19:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31495 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754658Ab2BHVTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:19:45 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 17/17] NFS: nfs_migrate_page() does not wait for FS-Cache to
- finish with a page
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
-        linux-nfs@vger.kernel.org
-Date: Wed, 08 Feb 2012 21:19:35 +0000
-Message-ID: <20120208211935.15607.16821.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
-References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756975Ab2BHVUX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:20:23 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:34072 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752074Ab2BHVUU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:20:20 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Wan ZongShun <mcuos.com@gmail.com>
+Subject: [PATCH 13/50] dnet: use dev_hw_addr_random() instead of random_ether_addr()
+Date: Wed,  8 Feb 2012 22:10:20 +0100
+Message-Id: <1328735457-29986-14-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328736020;449fdb0b;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nfs_migrate_page() does not wait for FS-Cache to finish with a page, probably
-leading to the following bad-page-state:
+Use dev_hw_addr_random() instead of calling random_ether_addr()
+to set addr_assign_type correctly to NET_ADDR_RANDOM.
 
- BUG: Bad page state in process python-bin  pfn:17d39b
- page:ffffea00053649e8 flags:004000000000100c count:0 mapcount:0 mapping:(null)
-index:38686 (Tainted: G    B      ---------------- )
- Pid: 31053, comm: python-bin Tainted: G    B      ----------------
-2.6.32-71.24.1.el6.x86_64 #1
- Call Trace:
- [<ffffffff8111bfe7>] bad_page+0x107/0x160
- [<ffffffff8111ee69>] free_hot_cold_page+0x1c9/0x220
- [<ffffffff8111ef19>] __pagevec_free+0x59/0xb0
- [<ffffffff8104b988>] ? flush_tlb_others_ipi+0x128/0x130
- [<ffffffff8112230c>] release_pages+0x21c/0x250
- [<ffffffff8115b92a>] ? remove_migration_pte+0x28a/0x2b0
- [<ffffffff8115f3f8>] ? mem_cgroup_get_reclaim_stat_from_page+0x18/0x70
- [<ffffffff81122687>] ____pagevec_lru_add+0x167/0x180
- [<ffffffff811226f8>] __lru_cache_add+0x58/0x70
- [<ffffffff81122731>] lru_cache_add_lru+0x21/0x40
- [<ffffffff81123f49>] putback_lru_page+0x69/0x100
- [<ffffffff8115c0bd>] migrate_pages+0x13d/0x5d0
- [<ffffffff81122687>] ? ____pagevec_lru_add+0x167/0x180
- [<ffffffff81152ab0>] ? compaction_alloc+0x0/0x370
- [<ffffffff8115255c>] compact_zone+0x4cc/0x600
- [<ffffffff8111cfac>] ? get_page_from_freelist+0x15c/0x820
- [<ffffffff810672f4>] ? check_preempt_wakeup+0x1c4/0x3c0
- [<ffffffff8115290e>] compact_zone_order+0x7e/0xb0
- [<ffffffff81152a49>] try_to_compact_pages+0x109/0x170
- [<ffffffff8111e94d>] __alloc_pages_nodemask+0x5ed/0x850
- [<ffffffff814c9136>] ? thread_return+0x4e/0x778
- [<ffffffff81150d43>] alloc_pages_vma+0x93/0x150
- [<ffffffff81167ea5>] do_huge_pmd_anonymous_page+0x135/0x340
- [<ffffffff814cb6f6>] ? rwsem_down_read_failed+0x26/0x30
- [<ffffffff81136755>] handle_mm_fault+0x245/0x2b0
- [<ffffffff814ce383>] do_page_fault+0x123/0x3a0
- [<ffffffff814cbdf5>] page_fault+0x25/0x30
-
-nfs_migrate_page() calls nfs_fscache_release_page() which doesn't actually wait
-- even if __GFP_WAIT is set.  The reason that doesn't wait is that
-fscache_maybe_release_page() might deadlock the allocator as the work threads
-writing to the cache may all end up sleeping on memory allocation.
-
-However, I wonder if that is actually a problem.  There are a number of things
-I can do to deal with this:
-
- (1) Make nfs_migrate_page() wait.
-
- (2) Make fscache_maybe_release_page() honour the __GFP_WAIT flag.
-
- (3) Set a timeout around the wait.
-
- (4) Make nfs_migrate_page() return an error if the page is still busy.
-
-For the moment, I'll select (2) and (4).
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
+ drivers/net/ethernet/dnet.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- fs/fscache/internal.h |    1 +
- fs/fscache/page.c     |   19 ++++++++++++++-----
- fs/fscache/stats.c    |    6 ++++--
- fs/nfs/write.c        |    4 +++-
- 4 files changed, 22 insertions(+), 8 deletions(-)
-
-diff --git a/fs/fscache/internal.h b/fs/fscache/internal.h
-index dcb3e1d..88a48cc 100644
---- a/fs/fscache/internal.h
-+++ b/fs/fscache/internal.h
-@@ -200,6 +200,7 @@ extern atomic_t fscache_n_store_vmscan_not_storing;
- extern atomic_t fscache_n_store_vmscan_gone;
- extern atomic_t fscache_n_store_vmscan_busy;
- extern atomic_t fscache_n_store_vmscan_cancelled;
-+extern atomic_t fscache_n_store_vmscan_wait;
+diff --git a/drivers/net/ethernet/dnet.c b/drivers/net/ethernet/dnet.c
+index 925c9ba..9f88165 100644
+--- a/drivers/net/ethernet/dnet.c
++++ b/drivers/net/ethernet/dnet.c
+@@ -897,7 +897,7 @@ static int __devinit dnet_probe(struct platform_device *pdev)
  
- extern atomic_t fscache_n_marks;
- extern atomic_t fscache_n_uncaches;
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 4dbbca1..f9b2fb3 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -56,6 +56,7 @@ bool __fscache_maybe_release_page(struct fscache_cookie *cookie,
+ 	if (!is_valid_ether_addr(dev->dev_addr)) {
+ 		/* choose a random ethernet address */
+-		random_ether_addr(dev->dev_addr);
++		dev_hw_addr_random(dev, dev->dev_addr);
+ 		__dnet_set_hwaddr(bp);
+ 	}
  
- 	_enter("%p,%p,%x", cookie, page, gfp);
- 
-+try_again:
- 	rcu_read_lock();
- 	val = radix_tree_lookup(&cookie->stores, page->index);
- 	if (!val) {
-@@ -104,11 +105,19 @@ bool __fscache_maybe_release_page(struct fscache_cookie *cookie,
- 	return true;
- 
- page_busy:
--	/* we might want to wait here, but that could deadlock the allocator as
--	 * the work threads writing to the cache may all end up sleeping
--	 * on memory allocation */
--	fscache_stat(&fscache_n_store_vmscan_busy);
--	return false;
-+	/* We will wait here if we're allowed to, but that could deadlock the
-+	 * allocator as the work threads writing to the cache may all end up
-+	 * sleeping on memory allocation, so we may need to impose a timeout
-+	 * too. */
-+	if (!(gfp & __GFP_WAIT)) {
-+		fscache_stat(&fscache_n_store_vmscan_busy);
-+		return false;
-+	}
-+
-+	fscache_stat(&fscache_n_store_vmscan_wait);
-+	__fscache_wait_on_page_write(cookie, page);
-+	gfp &= ~__GFP_WAIT;
-+	goto try_again;
- }
- EXPORT_SYMBOL(__fscache_maybe_release_page);
- 
-diff --git a/fs/fscache/stats.c b/fs/fscache/stats.c
-index 51cdaee..8179e8b 100644
---- a/fs/fscache/stats.c
-+++ b/fs/fscache/stats.c
-@@ -69,6 +69,7 @@ atomic_t fscache_n_store_vmscan_not_storing;
- atomic_t fscache_n_store_vmscan_gone;
- atomic_t fscache_n_store_vmscan_busy;
- atomic_t fscache_n_store_vmscan_cancelled;
-+atomic_t fscache_n_store_vmscan_wait;
- 
- atomic_t fscache_n_marks;
- atomic_t fscache_n_uncaches;
-@@ -232,11 +233,12 @@ static int fscache_stats_show(struct seq_file *m, void *v)
- 		   atomic_read(&fscache_n_store_radix_deletes),
- 		   atomic_read(&fscache_n_store_pages_over_limit));
- 
--	seq_printf(m, "VmScan : nos=%u gon=%u bsy=%u can=%u\n",
-+	seq_printf(m, "VmScan : nos=%u gon=%u bsy=%u can=%u wt=%u\n",
- 		   atomic_read(&fscache_n_store_vmscan_not_storing),
- 		   atomic_read(&fscache_n_store_vmscan_gone),
- 		   atomic_read(&fscache_n_store_vmscan_busy),
--		   atomic_read(&fscache_n_store_vmscan_cancelled));
-+		   atomic_read(&fscache_n_store_vmscan_cancelled),
-+		   atomic_read(&fscache_n_store_vmscan_wait));
- 
- 	seq_printf(m, "Ops    : pend=%u run=%u enq=%u can=%u rej=%u\n",
- 		   atomic_read(&fscache_n_op_pend),
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index 834f0fe..5fbee48 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1701,7 +1701,9 @@ int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
- 	if (PagePrivate(page))
- 		return -EBUSY;
- 
--	nfs_fscache_release_page(page, GFP_KERNEL);
-+	ret = -EBUSY;
-+	if (!nfs_fscache_release_page(page, GFP_KERNEL))
-+		goto out;
- 
- 	return migrate_page(mapping, newpage, page, mode);
- }
+-- 
+1.7.7.3
 
