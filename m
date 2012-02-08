@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab2BHPwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 10:52:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52997 "EHLO mx1.redhat.com"
+	id S1757249Ab2BHPx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 10:53:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58991 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755558Ab2BHPwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 10:52:51 -0500
+	id S1757198Ab2BHPww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 10:52:52 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -16,59 +16,195 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 3/6] pagemap: export KPF_THP
-Date: Wed,  8 Feb 2012 10:51:39 -0500
-Message-Id: <1328716302-16871-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 6/6] pagemap: introduce data structure for pagemap entry
+Date: Wed,  8 Feb 2012 10:51:42 -0500
+Message-Id: <1328716302-16871-7-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag shows that a given pages is a subpage of transparent hugepage.
-It helps us debug and test kernel by showing physical address of thp.
+Currently a local variable of pagemap entry in pagemap_pte_range()
+is named pfn and typed with u64, but it's not correct (pfn should
+be unsigned long.)
+This patch introduces special type for pagemap entry and replace
+code with it.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 
-Changes since v2:
-  - replace if with else-if not to set KPF_THP for hugetlbfs page
-
-Changes since v1:
-  - remove unnecessary ifdefs
-  - fix confusing patch description
+Changes since v4:
+  - Rename pme_t to pagemap_entry_t
 ---
- fs/proc/page.c                    |    2 ++
- include/linux/kernel-page-flags.h |    1 +
- 2 files changed, 3 insertions(+), 0 deletions(-)
+ fs/proc/task_mmu.c |   69 ++++++++++++++++++++++++++++-----------------------
+ 1 files changed, 38 insertions(+), 31 deletions(-)
 
-diff --git 3.3-rc2.orig/fs/proc/page.c 3.3-rc2/fs/proc/page.c
-index 6d8e6a9..7fcd0d6 100644
---- 3.3-rc2.orig/fs/proc/page.c
-+++ 3.3-rc2/fs/proc/page.c
-@@ -115,6 +115,8 @@ u64 stable_page_flags(struct page *page)
- 		u |= 1 << KPF_COMPOUND_TAIL;
- 	if (PageHuge(page))
- 		u |= 1 << KPF_HUGE;
-+	else if (PageTransCompound(page))
-+		u |= 1 << KPF_THP;
+diff --git 3.3-rc2.orig/fs/proc/task_mmu.c 3.3-rc2/fs/proc/task_mmu.c
+index de94384..7810281 100644
+--- 3.3-rc2.orig/fs/proc/task_mmu.c
++++ 3.3-rc2/fs/proc/task_mmu.c
+@@ -589,9 +589,13 @@ const struct file_operations proc_clear_refs_operations = {
+ 	.llseek		= noop_llseek,
+ };
  
++typedef struct {
++	u64 pme;
++} pagemap_entry_t;
++
+ struct pagemapread {
+ 	int pos, len;
+-	u64 *buffer;
++	pagemap_entry_t *buffer;
+ };
+ 
+ #define PAGEMAP_WALK_SIZE	(PMD_SIZE)
+@@ -614,10 +618,15 @@ struct pagemapread {
+ #define PM_NOT_PRESENT      PM_PSHIFT(PAGE_SHIFT)
+ #define PM_END_OF_BUFFER    1
+ 
+-static int add_to_pagemap(unsigned long addr, u64 pfn,
++static inline pagemap_entry_t make_pme(u64 val)
++{
++	return (pagemap_entry_t) { .pme = val };
++}
++
++static int add_to_pagemap(unsigned long addr, pagemap_entry_t *pme,
+ 			  struct pagemapread *pm)
+ {
+-	pm->buffer[pm->pos++] = pfn;
++	pm->buffer[pm->pos++] = *pme;
+ 	if (pm->pos >= pm->len)
+ 		return PM_END_OF_BUFFER;
+ 	return 0;
+@@ -629,8 +638,10 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
+ 	struct pagemapread *pm = walk->private;
+ 	unsigned long addr;
+ 	int err = 0;
++	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
++
+ 	for (addr = start; addr < end; addr += PAGE_SIZE) {
+-		err = add_to_pagemap(addr, PM_NOT_PRESENT, pm);
++		err = add_to_pagemap(addr, &pme, pm);
+ 		if (err)
+ 			break;
+ 	}
+@@ -643,36 +654,33 @@ static u64 swap_pte_to_pagemap_entry(pte_t pte)
+ 	return swp_type(e) | (swp_offset(e) << MAX_SWAPFILES_SHIFT);
+ }
+ 
+-static u64 pte_to_pagemap_entry(pte_t pte)
++static void pte_to_pagemap_entry(pagemap_entry_t *pme, pte_t pte)
+ {
+-	u64 pme = 0;
+ 	if (is_swap_pte(pte))
+-		pme = PM_PFRAME(swap_pte_to_pagemap_entry(pte))
+-			| PM_PSHIFT(PAGE_SHIFT) | PM_SWAP;
++		*pme = make_pme(PM_PFRAME(swap_pte_to_pagemap_entry(pte))
++				| PM_PSHIFT(PAGE_SHIFT) | PM_SWAP);
+ 	else if (pte_present(pte))
+-		pme = PM_PFRAME(pte_pfn(pte))
+-			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+-	return pme;
++		*pme = make_pme(PM_PFRAME(pte_pfn(pte))
++				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
+ }
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-static u64 thp_pmd_to_pagemap_entry(pmd_t pmd, int offset)
++static void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
++					pmd_t pmd, int offset)
+ {
+-	u64 pme = 0;
  	/*
- 	 * Caveats on high order pages: page->_count will only be set
-diff --git 3.3-rc2.orig/include/linux/kernel-page-flags.h 3.3-rc2/include/linux/kernel-page-flags.h
-index bd92a89..26a6571 100644
---- 3.3-rc2.orig/include/linux/kernel-page-flags.h
-+++ 3.3-rc2/include/linux/kernel-page-flags.h
-@@ -30,6 +30,7 @@
- #define KPF_NOPAGE		20
+ 	 * Currently pmd for thp is always present because thp can not be
+ 	 * swapped-out, migrated, or HWPOISONed (split in such cases instead.)
+ 	 * This if-check is just to prepare for future implementation.
+ 	 */
+ 	if (pmd_present(pmd))
+-		pme = PM_PFRAME(pmd_pfn(pmd) + offset)
+-			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+-	return pme;
++		*pme = make_pme(PM_PFRAME(pmd_pfn(pmd) + offset)
++				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
+ }
+ #else
+-static inline u64 thp_pmd_to_pagemap_entry(pmd_t pmd, int offset)
++static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
++						pmd_t pmd, int offset)
+ {
+-	return 0;
+ }
+ #endif
  
- #define KPF_KSM			21
-+#define KPF_THP			22
+@@ -683,7 +691,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	struct pagemapread *pm = walk->private;
+ 	pte_t *pte;
+ 	int err = 0;
+-	u64 pfn = PM_NOT_PRESENT;
++	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
  
- /* kernel hacking assistances
-  * WARNING: subject to change, never rely on them!
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+@@ -692,8 +700,8 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 		for (; addr != end; addr += PAGE_SIZE) {
+ 			unsigned long offset = (addr & ~PAGEMAP_WALK_MASK)
+ 				>> PAGE_SHIFT;
+-			pfn = thp_pmd_to_pagemap_entry(*pmd, offset);
+-			err = add_to_pagemap(addr, pfn, pm);
++			thp_pmd_to_pagemap_entry(&pme, *pmd, offset);
++			err = add_to_pagemap(addr, &pme, pm);
+ 			if (err)
+ 				break;
+ 		}
+@@ -712,11 +720,11 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 		if (vma && (vma->vm_start <= addr) &&
+ 		    !is_vm_hugetlb_page(vma)) {
+ 			pte = pte_offset_map(pmd, addr);
+-			pfn = pte_to_pagemap_entry(*pte);
++			pte_to_pagemap_entry(&pme, *pte);
+ 			/* unmap before userspace copy */
+ 			pte_unmap(pte);
+ 		}
+-		err = add_to_pagemap(addr, pfn, pm);
++		err = add_to_pagemap(addr, &pme, pm);
+ 		if (err)
+ 			return err;
+ 	}
+@@ -727,13 +735,12 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ }
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
+-static u64 huge_pte_to_pagemap_entry(pte_t pte, int offset)
++static void huge_pte_to_pagemap_entry(pagemap_entry_t *pme,
++					pte_t pte, int offset)
+ {
+-	u64 pme = 0;
+ 	if (pte_present(pte))
+-		pme = PM_PFRAME(pte_pfn(pte) + offset)
+-			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+-	return pme;
++		*pme = make_pme(PM_PFRAME(pte_pfn(pte) + offset)
++				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
+ }
+ 
+ /* This function walks within one hugetlb entry in the single call */
+@@ -743,12 +750,12 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+ {
+ 	struct pagemapread *pm = walk->private;
+ 	int err = 0;
+-	u64 pfn;
++	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
+ 
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
+-		pfn = huge_pte_to_pagemap_entry(*pte, offset);
+-		err = add_to_pagemap(addr, pfn, pm);
++		huge_pte_to_pagemap_entry(&pme, *pte, offset);
++		err = add_to_pagemap(addr, &pme, pm);
+ 		if (err)
+ 			return err;
+ 	}
 -- 
 1.7.7.6
 
