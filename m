@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab2BHQOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 11:14:41 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:48793 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753535Ab2BHQOk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 11:14:40 -0500
+	id S1757338Ab2BHQPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 11:15:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56635 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753535Ab2BHQPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 11:15:17 -0500
+Date: Wed, 8 Feb 2012 17:08:08 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] arm: Fix possible race on task->mm
+Message-ID: <20120208160808.GB17177@redhat.com>
+References: <20120207064809.GA29061@oksana.dev.rtsoft.ru> <20120207065004.GC1496@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwc+VvFyv3TJgZ+wZVz738sWA+csi3_u5AeZG4AiXn82g@mail.gmail.com>
-References: <CA+55aFwc+VvFyv3TJgZ+wZVz738sWA+csi3_u5AeZG4AiXn82g@mail.gmail.com>
-Date: Thu, 9 Feb 2012 01:14:39 +0900
-Message-ID: <CAMO-S2i8Z7q2NQN4WDwvwjrNAoe2uFKhFcfpLb4gRHoZtiynzQ@mail.gmail.com>
-Subject: Re: [PATCH] asm-generic: architecture independent readq/writeq for
- 32bit environment
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Roland Dreier <roland@purestorage.com>,
-        Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Len Brown <lenb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>, linux-kernel@vger.kernel.org,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>, mingo@elte.hu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120207065004.GC1496@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 7, 2012 at 12:56, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 02/07, Anton Vorontsov wrote:
 >
-> On Feb 6, 2012 6:47 PM, "Hitoshi Mitake" <h.mitake@gmail.com> wrote:
->>
->>  All of them are endian aware
+> Checking for task->mm is dangerous as ->mm might disappear (exit_mm()
+> assigns NULL under task_lock(), so tasklist lock is not enough).
 >
-> I think that part is wrong.
->
-> Pci is little-endian, so readl and writel are always already little-endian.
-> Trying to make readq be endian-aware is wrong.
+> We can't use get_task_mm()/mmput() pair as mmput() might sleep,
 
-Is every memory area which can be read/written by read[wl]/write[wl]
-always little-endian?
+Yes, but
 
-If so, of course I have to eliminate the big-endian version.
-But I'm not sure about this point because the new readq/writeq is
-in asm-generic which is used by every archs, so I'd like to ask you about it.
+> so let's take the task lock while we care about its mm.
 
->
->                           Linus
->
-> On Feb 6, 2012 6:47 PM, "Hitoshi Mitake" <h.mitake@gmail.com> wrote:
+it seems that this needs find_lock_task_mm() too ?
 
+the same for the rest patches in this series.
 
+Oleg.
 
--- 
-Hitoshi Mitake
-h.mitake@gmail.com
