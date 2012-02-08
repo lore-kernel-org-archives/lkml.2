@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab2BHBer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 20:34:47 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:53739 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756613Ab2BHBeq (ORCPT
+	id S1756968Ab2BHBkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 20:40:07 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37934 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756394Ab2BHBkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 20:34:46 -0500
-X-Sasl-enc: LnMqSEij9bo8aP5h8Mij/OF69bZD2ofcBhFnBSUm7HFz 1328664885
-Date: Tue, 7 Feb 2012 17:34:38 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: kobject (ffff88003ffbb4b8): tried to init an initialized object,
- something is seriously wrong.
-Message-ID: <20120208013438.GA11844@kroah.com>
-References: <20120203205953.GA2897@phenom.dumpdata.com>
- <20120203213949.GC8196@kroah.com>
- <20120203214235.GA10549@kroah.com>
- <20120206182040.GA1862@phenom.dumpdata.com>
- <20120206182956.GA13819@kroah.com>
- <20120208003537.GA18258@phenom.dumpdata.com>
+	Tue, 7 Feb 2012 20:40:04 -0500
+Date: Wed, 8 Feb 2012 05:39:59 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dave Jones <davej@redhat.com>, Russell King <linux@arm.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Nicolas Pitre <nico@fluxnic.net>, Mike Chan <mike@android.com>,
+        Todd Poynor <toddpoynor@google.com>, cpufreq@vger.kernel.org,
+        kernel-team@android.com, linaro-kernel@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC 0/4] Scheduler idle notifiers and users
+Message-ID: <20120208013959.GA24535@panacea>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120208003537.GA18258@phenom.dumpdata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 07:35:37PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Mon, Feb 06, 2012 at 10:29:56AM -0800, Greg KH wrote:
-> > On Mon, Feb 06, 2012 at 01:20:40PM -0500, Konrad Rzeszutek Wilk wrote:
-> > > On Fri, Feb 03, 2012 at 01:42:35PM -0800, Greg KH wrote:
-> > > > On Fri, Feb 03, 2012 at 01:39:49PM -0800, Greg KH wrote:
-> > > > > On Fri, Feb 03, 2012 at 03:59:53PM -0500, Konrad Rzeszutek Wilk wrote:
-> > > > > > Hey Greg,
-> > > > > > 
-> > > > > > With or without your previous patch (the one that added an cpu_device_release
-> > > > > > function) I am getting this in 3.3-rc2.  I did not get this in 3.2.
-> > > > > > 
-> > > > > > I added some extra printks to make sure that the handle_vcpu_hotplug_event
-> > > > > > code actually did call 'arch_unregister_cpu' which is certainly looks
-> > > > > > to be doing.
-> > > > > > 
-> > > > > > I hadn't done a bisection yet, but was wondering if this is related
-> > > > > > to the previous issues with the sysdev. Or kobject getting more observant.
-> > > > > 
-> > > > > No, it's related to the previous issue, let me knock up a patch to fix
-> > > > > this as well...
-> > > > 
-> > > > Does this patch solve the problem for you?
-> > > 
-> > > Yeah, no warnings. But neither is the CPU coming back up :-(
-> > 
-> > Very wierd.
-> 
-> Found the culprit and have a patch for it. But it does not affect baremetal and
-> it was in the drivers/xen/cpu_hotplug.c code - so 
-> 
-> > 
-> > > Thought that might be related to something else  - let me double check
-> > > with 3.2 whether there are some race-conditions that I might be hitting.
-> > 
-> > Ok, I'll wait to queue this up until you get back to me.
-> 
-> .. you can go ahead and queue it up with my Tested-by tag. Thanks!
+Hi all,
 
-Great, will do.
+For some drivers we need to know when scheduler is idling. The most
+straightforward way is to gracefully hook into the idle loop.
+
+On x86 there are "CPU idle" notifiers in the inner idle loop, but
+scheduler idle notifiers are different. These notifiers do not run on
+every invocation/exit from cpuidle, instead they used to notify about
+scheduler state changes, not HW states.
+
+In other words, CPU idle notifiers work inside while(!need_resched())
+loop (nested into idle loop), while scheduler idle notifier work
+outside of the loop.
+
+The first two patches consolidate scheduler idle entry/exit
+points, and converts architectures to this new API.
+
+The third patch is a new cpufreq governor, the commit message
+briefly describes it.
+
+The fourth patch is another user of the notifiers, a trivial one.
+
+Thanks,
+
+p.s. For the reference, the old discussion about CPU/PM idle
+     notifiers: http://lkml.org/lkml/2011/6/27/391 
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
