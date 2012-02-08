@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab2BHPZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 10:25:16 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36376 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab2BHPZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 10:25:15 -0500
-Date: Wed, 8 Feb 2012 15:24:57 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
-        Venki Pallipadi <venki@google.com>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86
-	and ARM
-Message-ID: <20120208152457.GN889@n2100.arm.linux.org.uk>
-References: <1328705314-20978-1-git-send-email-dmitry.antipov@linaro.org> <20120208131833.GK889@n2100.arm.linux.org.uk> <4F32918E.9000905@linaro.org>
+	id S1755907Ab2BHP0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 10:26:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39908 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754553Ab2BHP0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 10:26:49 -0500
+Date: Wed, 8 Feb 2012 15:26:46 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 00/15] Swap-over-NBD without deadlocking V8
+Message-ID: <20120208152645.GK5938@suse.de>
+References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
+ <CAJd=RBAvvzK=TXwDaEjq2t+uEuP2PSi6zaUj7EW4UbL_AUsJAg@mail.gmail.com>
+ <20120207132745.GH5938@suse.de>
+ <CAJd=RBDYMKRVSKVp3dAhTCtu_wNDyayCObVA7q6G=fbkKpmZUw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4F32918E.9000905@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAJd=RBDYMKRVSKVp3dAhTCtu_wNDyayCObVA7q6G=fbkKpmZUw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 07:15:26AM -0800, Dmitry Antipov wrote:
-> On 02/08/2012 05:18 AM, Russell King - ARM Linux wrote:
->> Why are you placing this here?  sched_clock is available from the point
->> that it's registered, which should be before the first sched_clock()
->> call.
->
-> This is just because I'm thinking about:
->
-> if (read_sched_clock == jiffy_sched_clock_read)
->         setup_sched_clock(jiffy_sched_clock_read, 32, HZ);
-> else if (!no_sched_irq_time)
-> 	enable_sched_clock_irqtime();
->
-> I suppose that "fine granularity task irq time accounting"
-> makes no sense if sched_clock() granularity is poor.
+On Wed, Feb 08, 2012 at 08:51:11PM +0800, Hillf Danton wrote:
+> On Tue, Feb 7, 2012 at 9:27 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > On Tue, Feb 07, 2012 at 08:45:18PM +0800, Hillf Danton wrote:
+> >> If it is feasible to bypass hang by tuning min_mem_kbytes,
+> >
+> > No. Increasing or descreasing min_free_kbytes changes the timing but it
+> > will still hang.
+> >
+> >> things may
+> >> become simpler if NICs are also tagged.
+> >
+> > That would mean making changes to every driver and they do not necessarily
+> > know what higher level protocol like TCP they are transmitting. How is
+> > that simpler? What is the benefit?
+> >
+> The benefit is to avoid allocating sock buffer in softirq by recycling,
+> then the changes in VM core maybe less.
+> 
 
-Let me put it a different way - is there a reason not to do this in
-setup_sched_clock() so that it becomes available as soon as sched_clock()
-has been initialized by a platform?
+The VM is responsible for swapping. It's reasonable that the core
+VM has responsibility for it without trying to shove complexity into
+drivers or elsewhere unnecessarily. I see some benefit in following on
+by recycling some skbs and only allocating from softirq if no recycled
+skbs are available.  That potentially improves performance but I do not
+recycling as a replacement.
+
+-- 
+Mel Gorman
+SUSE Labs
