@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab2BHQPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 11:15:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56635 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535Ab2BHQPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 11:15:17 -0500
-Date: Wed, 8 Feb 2012 17:08:08 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] arm: Fix possible race on task->mm
-Message-ID: <20120208160808.GB17177@redhat.com>
-References: <20120207064809.GA29061@oksana.dev.rtsoft.ru> <20120207065004.GC1496@oksana.dev.rtsoft.ru>
+	id S1757361Ab2BHQP1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 11:15:27 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:64152 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab2BHQPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 11:15:25 -0500
+X-Greylist: delayed 1589 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Feb 2012 11:15:24 EST
+Date: Wed, 8 Feb 2012 15:48:51 +0000 (UTC)
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: David Howells <dhowells@redhat.com>
+cc: jmorris@namei.org, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-api@vger.kernel.org,
+        libc-alpha@sourceware.org
+Subject: Re: [PATCH 1/2] Define ENOAUTHSERVICE to indicate "Authentication
+ service unavailable"
+In-Reply-To: <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
+Message-ID: <Pine.LNX.4.64.1202081546240.8820@digraph.polyomino.org.uk>
+References: <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120207065004.GC1496@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginalArrivalTime: 08 Feb 2012 15:48:53.0461 (UTC) FILETIME=[28AAB850:01CCE679]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07, Anton Vorontsov wrote:
->
-> Checking for task->mm is dangerous as ->mm might disappear (exit_mm()
-> assigns NULL under task_lock(), so tasklist lock is not enough).
->
-> We can't use get_task_mm()/mmput() pair as mmput() might sleep,
+On Wed, 8 Feb 2012, David Howells wrote:
 
-Yes, but
+>  #define ERFKILL		132	/* Operation not possible due to RF-kill */
+> +#define	ENOAUTHSERVICE	133	/* Authentication service not available */
+>  
+>  #define EHWPOISON	133	/* Memory page has hardware error */
 
-> so let's take the task lock while we care about its mm.
+Defining the new error to have the same value as EHWPOISON seems rather 
+odd....
 
-it seems that this needs find_lock_task_mm() too ?
-
-the same for the rest patches in this series.
-
-Oleg.
-
+-- 
+Joseph S. Myers
+joseph@codesourcery.com
