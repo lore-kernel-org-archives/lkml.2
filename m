@@ -1,44 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab2BHOK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 09:10:58 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:50395
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751591Ab2BHOK5 (ORCPT
+	id S1753283Ab2BHONc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 09:13:32 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:58111 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab2BHONb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 09:10:57 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-mm@kvack.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] mm: Fix typo in cleancache.txt
-Date: Wed,  8 Feb 2012 23:10:14 +0900
-Message-Id: <1328710214-3185-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Wed, 8 Feb 2012 09:13:31 -0500
+Date: Wed, 8 Feb 2012 09:12:59 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: Alan Cox <alan@linux.intel.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] serial: relocate remaining serial drivers from tty/ to
+ tty/serial/
+Message-ID: <20120208141258.GA3223@windriver.com>
+References: <1325707287-31038-1-git-send-email-paul.gortmaker@windriver.com>
+ <4F04BFA8.9010100@windriver.com>
+ <20120104220332.GA22985@suse.de>
+ <201201042327.33739.arnd@arndb.de>
+ <20120105054240.GA9093@merkur.ravnborg.org>
+ <20120105124505.73c88f2c@bob.linux.org.uk>
+ <20120105232142.GA10870@windriver.com>
+ <4F324ECB.7040102@gmail.com>
+ <4F324F4B.3090500@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4F324F4B.3090500@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "implementatation" to "implementation" in
-Documentation/vm/cleancache.txt
+[Re: [PATCH] serial: relocate remaining serial drivers from tty/ to tty/serial/] On 08/02/2012 (Wed 11:32) Jiri Slaby wrote:
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> 
+> Hmm, these cannot be built now :(. Why did you move them?
+> 
+> It looks like they should be moved back.
+
+Once again, sorry for the brown paper bag moment.  :(
+
+Greg, can you ensure this gets applied at your earliest convenience?
+
+Thanks a lot.
+Paul.
+
 ---
- Documentation/vm/cleancache.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/vm/cleancache.txt b/Documentation/vm/cleancache.txt
-index f726717..142fbb0 100644
---- a/Documentation/vm/cleancache.txt
-+++ b/Documentation/vm/cleancache.txt
-@@ -93,7 +93,7 @@ failed_gets	- number of gets that failed
- puts		- number of puts attempted (all "succeed")
- invalidates	- number of invalidates attempted
- 
--A backend implementatation may provide additional metrics.
-+A backend implementation may provide additional metrics.
- 
- FAQ
- 
+>From 309293f382ce9beef6d8a0fd8b3cedc9900f66e1 Mon Sep 17 00:00:00 2001
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 8 Feb 2012 09:05:42 -0500
+Subject: [PATCH] m32r: relocate drivers back out of 8250 dir
+
+Commit 9bef3d4197379a995fa80f81950bbbf8d32e9e8b
+
+	"serial: group all the 8250 related code together"
+
+inadvertently swept up the m32r driver in the move, because
+it had comments mentioning 8250 registers within it.  However
+these are only there by nature of the driver being based off
+the 8250 source code -- the hardware itself does not actually
+have any relation to the original 8250 style UARTs.
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/tty/serial/{8250 => }/m32r_sio.c     |    0
+ drivers/tty/serial/{8250 => }/m32r_sio.h     |    0
+ drivers/tty/serial/{8250 => }/m32r_sio_reg.h |    0
+ 3 files changed, 0 insertions(+), 0 deletions(-)
+ rename drivers/tty/serial/{8250 => }/m32r_sio.c (100%)
+ rename drivers/tty/serial/{8250 => }/m32r_sio.h (100%)
+ rename drivers/tty/serial/{8250 => }/m32r_sio_reg.h (100%)
+
+diff --git a/drivers/tty/serial/8250/m32r_sio.c b/drivers/tty/serial/m32r_sio.c
+similarity index 100%
+rename from drivers/tty/serial/8250/m32r_sio.c
+rename to drivers/tty/serial/m32r_sio.c
+diff --git a/drivers/tty/serial/8250/m32r_sio.h b/drivers/tty/serial/m32r_sio.h
+similarity index 100%
+rename from drivers/tty/serial/8250/m32r_sio.h
+rename to drivers/tty/serial/m32r_sio.h
+diff --git a/drivers/tty/serial/8250/m32r_sio_reg.h b/drivers/tty/serial/m32r_sio_reg.h
+similarity index 100%
+rename from drivers/tty/serial/8250/m32r_sio_reg.h
+rename to drivers/tty/serial/m32r_sio_reg.h
 -- 
-1.7.6.5
+1.7.9
 
