@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab2BHTYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 14:24:45 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58346 "EHLO
+	id S1757040Ab2BHTYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 14:24:46 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58342 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755839Ab2BHTYl (ORCPT
+	with ESMTP id S1755434Ab2BHTYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Feb 2012 14:24:41 -0500
 From: Marc Kleine-Budde <mkl@blackshift.org>
 To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <mkl@blackshift.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH 2/2] mtd: ixp4xx: oops in ixp4xx_flash_probe
-Date: Wed,  8 Feb 2012 20:24:29 +0100
-Message-Id: <1328729069-21308-3-git-send-email-mkl@blackshift.org>
+Cc: linux-arm-kernel@lists.infradead.org, Imre Kaloz <kaloz@openwrt.org>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 1/2] ARM: ixp4xx: fix compilation, add gpiolib support
+Date: Wed,  8 Feb 2012 20:24:28 +0100
+Message-Id: <1328729069-21308-2-git-send-email-mkl@blackshift.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1328729069-21308-1-git-send-email-mkl@blackshift.org>
 References: <1328729069-21308-1-git-send-email-mkl@blackshift.org>
@@ -25,108 +26,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit "c797533 mtd: abstract last MTD partition parser argument" the
-third argument of "mtd_device_parse_register()" changed from start address
-of the MTD device to a pointer to a struct.
+From: Imre Kaloz <kaloz@openwrt.org>
 
-The "ixp4xx_flash_probe()" function was not converted properly, causing
-this oops during boot:
+The problem was introduced with commit:
+"eb9ae7f gpio: fix build error in include/asm-generic/gpio.h"
 
-Searching for RedBoot partition table in IXP4XX-Flash.0 at offset 0x7e0000
-Unable to handle kernel paging request at virtual address 50000000
-pgd = c0004000
-[50000000] *pgd=00000000
-Internal error: Oops: f5 [#1]
-CPU: 0    Not tainted  (3.2.5-00002-gc809cb2 #4)
-PC is at parse_redboot_partitions+0x400/0x5b0
-LR is at parse_redboot_partitions+0x3e0/0x5b0
-pc : [<c01642ec>]    lr : [<c01642cc>]    psr: 20000013
-sp : c0829de4  ip : c0829de4  fp : c0829e3c
-r10: c180d000  r9 : 00000000  r8 : 00000008
-r7 : 00000200  r6 : 50000000  r5 : 00000000  r4 : c0888c00
-r3 : c0944400  r2 : 00000000  r1 : c02c6060  r0 : 00000007
-Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 000039ff  Table: 00004000  DAC: 00000017
-Process swapper (pid: 1, stack limit = 0xc0828260)
-Stack: (0xc0829de4 to 0xc082a000)
-9de0:          c0829e0c c182d000 c0179a08 c0944400 00000048 00000000 00000000
-9e00: 00020000 c0829e70 c180d000 00020000 00000000 00000000 c028ba40 c028ba18
-9e20: c028be88 50000000 c024b250 c0888c00 c0829e6c c0829e40 c0162f58 c0163ef8
-9e40: c0829e70 00000000 00000000 c0888c00 00000000 00000000 00000000 00000000
-9e60: c0829e90 c0829e70 c015ffac c0162ed8 c09418a0 c09418a0 c027cc28 c027cedc
-9e80: 00000000 c0829eb4 c0829e94 c017a464 c015ff90 00000000 c027cc30 c02a2568
-9ea0: c027cc30 c028be48 c0829ec4 c0829eb8 c01338c4 c017a318 c0829ee8 c0829ec8
-9ec0: c01323b4 c01338b4 c027cc30 c028be48 c027cc64 00000000 00000000 c0829f04
-9ee0: c0829eec c013254c c0132338 c028be48 c0829f08 c01324b8 c0829f2c c0829f08
-9f00: c0131ba0 c01324c4 c08240f8 c083fbd0 c028be48 c028a4ac c0941840 00000000
-9f20: c0829f3c c0829f30 c0132218 c0131b40 c0829f68 c0829f40 c01314c0 c0132204
-9f40: c0236120 c02765cc c028be48 c026d95c 00000013 00000000 00000000 c0829f88
-9f60: c0829f6c c0132b90 c013134c c02765cc 00000000 c026d95c 00000013 c0829f98
-9f80: c0829f8c c0133d28 c0132b1c c0829fa8 c0829f9c c026d970 c0133ce8 c0829fdc
-9fa0: c0829fac c025d270 c026d968 c028271c c0023c94 00000013 c02765cc c02766bc
-9fc0: c0023c94 00000013 00000000 00000000 c0829ff4 c0829fe0 c025d400 c025d1d8
-9fe0: 00000000 c025d380 00000000 c0829ff8 c0023c94 c025d38c 62737507 6f74735f
-Backtrace:
-[<c0163eec>] (parse_redboot_partitions+0x0/0x5b0) from [<c0162f58>] (parse_mtd_partitions+0x8c/0xdc)
-[<c0162ecc>] (parse_mtd_partitions+0x0/0xdc) from [<c015ffac>] (mtd_device_parse_register+0x28/0xc8)
-[<c015ff84>] (mtd_device_parse_register+0x0/0xc8) from [<c017a464>] (ixp4xx_flash_probe+0x158/0x1dc)
- r7:00000000 r6:c027cedc r5:c027cc28 r4:c09418a0
-[<c017a30c>] (ixp4xx_flash_probe+0x0/0x1dc) from [<c01338c4>] (platform_drv_probe+0x1c/0x20)
- r7:c028be48 r6:c027cc30 r5:c02a2568 r4:c027cc30
-[<c01338a8>] (platform_drv_probe+0x0/0x20) from [<c01323b4>] (driver_probe_device+0x88/0x18c)
-[<c013232c>] (driver_probe_device+0x0/0x18c) from [<c013254c>] (__driver_attach+0x94/0x98)
- r8:00000000 r7:00000000 r6:c027cc64 r5:c028be48 r4:c027cc30
-[<c01324b8>] (__driver_attach+0x0/0x98) from [<c0131ba0>] (bus_for_each_dev+0x6c/0x94)
- r6:c01324b8 r5:c0829f08 r4:c028be48
-[<c0131b34>] (bus_for_each_dev+0x0/0x94) from [<c0132218>] (driver_attach+0x20/0x28)
- r7:00000000 r6:c0941840 r5:c028a4ac r4:c028be48
-[<c01321f8>] (driver_attach+0x0/0x28) from [<c01314c0>] (bus_add_driver+0x180/0x25c)
-[<c0131340>] (bus_add_driver+0x0/0x25c) from [<c0132b90>] (driver_register+0x80/0x13c)
-[<c0132b10>] (driver_register+0x0/0x13c) from [<c0133d28>] (platform_driver_register+0x4c/0x60)
- r7:00000013 r6:c026d95c r5:00000000 r4:c02765cc
-[<c0133cdc>] (platform_driver_register+0x0/0x60) from [<c026d970>] (ixp4xx_flash_init+0x14/0x1c)
-[<c026d95c>] (ixp4xx_flash_init+0x0/0x1c) from [<c025d270>] (do_one_initcall+0xa4/0x17c)
-[<c025d1cc>] (do_one_initcall+0x0/0x17c) from [<c025d400>] (kernel_init+0x80/0x124)
- r9:00000000 r8:00000000 r7:00000013 r6:c0023c94 r5:c02766bc
-r4:c02765cc
-[<c025d380>] (kernel_init+0x0/0x124) from [<c0023c94>] (do_exit+0x0/0x694)
- r5:c025d380 r4:00000000
-Code: 0a000028 e3560000 e583a000 0a00001f (e5962000)
----[ end trace bf1eac11c431d0ba ]---
+This patch adds gpiolib support for the IXP4xx platform, which fixes the
+compilation of several ixp4xx platforms, e.g.:
 
-This patch fixes the problem by filling the needed information into a
-"struct mtd_part_parser_data" and passing it to
-"mtd_device_parse_register()".
+In file included from arch/arm/mach-ixp4xx/include/mach/gpio.h:72,
+                 from /home/frogger/projects/server/linux/arch/arm/include/asm/gpio.h:9,
+                 from include/linux/gpio.h:30,
+                 from arch/arm/mach-ixp4xx/nslu2-setup.c:19:
+include/asm-generic/gpio.h: In function 'gpio_get_value_cansleep':
+include/asm-generic/gpio.h:218: error: implicit declaration of function '__gpio_get_value'
+include/asm-generic/gpio.h: In function 'gpio_set_value_cansleep':
+include/asm-generic/gpio.h:224: error: implicit declaration of function '__gpio_set_value'
 
-Cc: linux-mtd@lists.infradead.org
-Signed-off-by: Marc Kleine-Budde <mkl@blackshift.org>
+Cc: Krzysztof Halasa <khc@pm.waw.pl>
+Signed-off-by: Imre Kaloz <kaloz@openwrt.org>
+[mkl: fix codingstyle; improve description]
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 ---
- drivers/mtd/maps/ixp4xx.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ arch/arm/Kconfig                         |    2 +-
+ arch/arm/mach-ixp4xx/common.c            |   44 ++++++++++++++++++++++++++++++
+ arch/arm/mach-ixp4xx/include/mach/gpio.h |   44 +++++++++---------------------
+ 3 files changed, 58 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/mtd/maps/ixp4xx.c b/drivers/mtd/maps/ixp4xx.c
-index 8b54101..e864fc6 100644
---- a/drivers/mtd/maps/ixp4xx.c
-+++ b/drivers/mtd/maps/ixp4xx.c
-@@ -182,6 +182,9 @@ static int ixp4xx_flash_probe(struct platform_device *dev)
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a48aecc..56106e9 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -528,7 +528,7 @@ config ARCH_IXP4XX
+ 	depends on MMU
+ 	select CLKSRC_MMIO
+ 	select CPU_XSCALE
+-	select GENERIC_GPIO
++	select ARCH_REQUIRE_GPIOLIB
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_SCHED_CLOCK
+ 	select MIGHT_HAVE_PCI
+diff --git a/arch/arm/mach-ixp4xx/common.c b/arch/arm/mach-ixp4xx/common.c
+index 3841ab4..963f752 100644
+--- a/arch/arm/mach-ixp4xx/common.c
++++ b/arch/arm/mach-ixp4xx/common.c
+@@ -36,6 +36,7 @@
+ #include <asm/page.h>
+ #include <asm/irq.h>
+ #include <asm/sched_clock.h>
++#include <asm/gpio.h>
+ 
+ #include <asm/mach/map.h>
+ #include <asm/mach/irq.h>
+@@ -375,12 +376,55 @@ static struct platform_device *ixp46x_devices[] __initdata = {
+ unsigned long ixp4xx_exp_bus_size;
+ EXPORT_SYMBOL(ixp4xx_exp_bus_size);
+ 
++static int ixp4xx_gpio_direction_input(struct gpio_chip *chip, unsigned gpio)
++{
++	gpio_line_config(gpio, IXP4XX_GPIO_IN);
++
++	return 0;
++}
++
++static int ixp4xx_gpio_direction_output(struct gpio_chip *chip, unsigned gpio,
++					int level)
++{
++	gpio_line_set(gpio, level);
++	gpio_line_config(gpio, IXP4XX_GPIO_OUT);
++
++	return 0;
++}
++
++static int ixp4xx_gpio_get_value(struct gpio_chip *chip, unsigned gpio)
++{
++	int value;
++
++	gpio_line_get(gpio, &value);
++
++	return value;
++}
++
++static void ixp4xx_gpio_set_value(struct gpio_chip *chip, unsigned gpio,
++				  int value)
++{
++	gpio_line_set(gpio, value);
++}
++
++static struct gpio_chip ixp4xx_gpio_chip = {
++	.label			= "IXP4XX_GPIO_CHIP",
++	.direction_input	= ixp4xx_gpio_direction_input,
++	.direction_output	= ixp4xx_gpio_direction_output,
++	.get			= ixp4xx_gpio_get_value,
++	.set			= ixp4xx_gpio_set_value,
++	.base			= 0,
++	.ngpio			= 16,
++};
++
+ void __init ixp4xx_sys_init(void)
  {
- 	struct flash_platform_data *plat = dev->dev.platform_data;
- 	struct ixp4xx_flash_info *info;
-+	struct mtd_part_parser_data ppdata = {
-+		.origin = dev->resource->start,
-+	};
- 	int err = -1;
+ 	ixp4xx_exp_bus_size = SZ_16M;
  
- 	if (!plat)
-@@ -247,7 +250,7 @@ static int ixp4xx_flash_probe(struct platform_device *dev)
- 	/* Use the fast version */
- 	info->map.write = ixp4xx_write16;
+ 	platform_add_devices(ixp4xx_devices, ARRAY_SIZE(ixp4xx_devices));
  
--	err = mtd_device_parse_register(info->mtd, probes, dev->resource->start,
-+	err = mtd_device_parse_register(info->mtd, probes, &ppdata,
- 			plat->parts, plat->nr_parts);
- 	if (err) {
- 		printk(KERN_ERR "Could not parse partitions\n");
++	gpiochip_add(&ixp4xx_gpio_chip);
++
+ 	if (cpu_is_ixp46x()) {
+ 		int region;
+ 
+diff --git a/arch/arm/mach-ixp4xx/include/mach/gpio.h b/arch/arm/mach-ixp4xx/include/mach/gpio.h
+index 83d6b4e..093dfad 100644
+--- a/arch/arm/mach-ixp4xx/include/mach/gpio.h
++++ b/arch/arm/mach-ixp4xx/include/mach/gpio.h
+@@ -27,49 +27,31 @@
+ 
+ #include <linux/kernel.h>
+ #include <mach/hardware.h>
++#include <asm-generic/gpio.h>			/* cansleep wrappers */
+ 
+ #define __ARM_GPIOLIB_COMPLEX
+ 
+-static inline int gpio_request(unsigned gpio, const char *label)
+-{
+-	return 0;
+-}
+-
+-static inline void gpio_free(unsigned gpio)
+-{
+-	might_sleep();
+-
+-	return;
+-}
+-
+-static inline int gpio_direction_input(unsigned gpio)
+-{
+-	gpio_line_config(gpio, IXP4XX_GPIO_IN);
+-	return 0;
+-}
+-
+-static inline int gpio_direction_output(unsigned gpio, int level)
+-{
+-	gpio_line_set(gpio, level);
+-	gpio_line_config(gpio, IXP4XX_GPIO_OUT);
+-	return 0;
+-}
++#define NR_BUILTIN_GPIO 16
+ 
+ static inline int gpio_get_value(unsigned gpio)
+ {
+-	int value;
+-
+-	gpio_line_get(gpio, &value);
+-
+-	return value;
++	if (gpio < NR_BUILTIN_GPIO) {
++		int value;
++		gpio_line_get(gpio, &value);
++		return value;
++	} else
++		return __gpio_get_value(gpio);
+ }
+ 
+ static inline void gpio_set_value(unsigned gpio, int value)
+ {
+-	gpio_line_set(gpio, value);
++	if (gpio < NR_BUILTIN_GPIO)
++		gpio_line_set(gpio, value);
++	else
++		__gpio_set_value(gpio, value);
+ }
+ 
+-#include <asm-generic/gpio.h>			/* cansleep wrappers */
++#define gpio_cansleep __gpio_cansleep
+ 
+ extern int gpio_to_irq(int gpio);
+ #define gpio_to_irq gpio_to_irq
 -- 
 1.7.4.1
 
