@@ -1,226 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab2BHHQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 02:16:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36106 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab2BHHQI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 02:16:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120208015251.GA4927@zhy>
-References: <CAJXQGfJkmTZHDVPP_Rw7W3j8nmxXTN_OLUxjzCt-UOLGx61CZQ@mail.gmail.com>
-	<20120208015251.GA4927@zhy>
-Date: Wed, 8 Feb 2012 12:46:04 +0530
-Message-ID: <CAJXQGfKRkSOSo12Daimias-VHxvgjZDH4rJi0XZAd3o9-9eCfg@mail.gmail.com>
-Subject: Re: x86_64 arch+SMP ON+linux-2.6.32.46+E1000+KGDBOE = Timed out.
- Ignoring packet error, continuing...
-From: Naresh Bhat <nareshgbhat@gmail.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
+	id S1754275Ab2BHHcx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 02:32:53 -0500
+Received: from mail.mnsspb.ru ([84.204.75.2]:55444 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748Ab2BHHcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 02:32:52 -0500
+Date: Wed, 8 Feb 2012 11:35:59 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Kay Sievers <kay.sievers@vrfy.org>
 Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Subject: Re: No /dev/root with devtmpfs?
+Message-ID: <20120208073559.GA3163@tugrik.mns.mnsspb.ru>
+References: <20120206111853.GA11506@tugrik.mns.mnsspb.ru>
+ <CAPXgP11N=8NULMH-o0Us0OuqYpP9sKe9uUKWzE35h1AiRP1Cjg@mail.gmail.com>
+ <20120207075553.GB8632@tugrik.mns.mnsspb.ru>
+ <CAPXgP10K0umgZco-T37nBsbnKznb6oP4e_k82af7sdvpPNeQJQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP10K0umgZco-T37nBsbnKznb6oP4e_k82af7sdvpPNeQJQ@mail.gmail.com>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yong,
+On Tue, Feb 07, 2012 at 11:05:42AM +0100, Kay Sievers wrote:
+> On Tue, Feb 7, 2012 at 08:55, Kirill Smelkov <kirr@mns.spb.ru> wrote:
+> > On Mon, Feb 06, 2012 at 08:45:24PM +0100, Kay Sievers wrote:
+> >> On Mon, Feb 6, 2012 at 12:18, Kirill Smelkov <kirr@mns.spb.ru> wrote:
+> >> > Recently I've reworked my system not to use udev, but use devtmpfs
+> >> > instead and discovered there is no /dev/root symlink in devtmpfs case.
+> >> >
+> >> > My setup uses /dev/root early to know what is the boot device and then
+> >> > do some operations on it like checksumming, etc...
+> >> >
+> >> > Now when /dev/root is gone the best workaround I could come up with is
+> >> > to   grep /proc/partitions for '[hs]d[a-z]1'  but it's ugly and will
+> >> > break when there are several block devices attached.
+> >> >
+> >> > Is it somehow possible to add /dev/root to devtmpfs?
+> >>
+> >> No, devtmpfs has no business in knowing anything about the rootfs or
+> >> who mounted what ans where. I can not create such links.
+> >>
+> >> The entire concept of /dev/root is flawed anyway, and nothing should
+> >> really depend on that.
+> >>
+> >> Modern filesystems will not offer a direct relation to a single block
+> >> device, they allocate an superblock which has a major == 0, so there
+> >> can be by definition never such a link. Better get rid of all uses of
+> >> /dev/root, it will just fail in the future.
+> >
+> > Kay, thanks for explanation.
+> >
+> > Though now I'm confused about how to know on what "place" root
+> > filesystem was mounted... To me the question makes sense, but you say
+> > with modern filesystems there by definition is no answer (or did I
+> > misunderstood you?) Strange...
+> 
+> The root filesystem will still be mounted at /, but you can not
+> identify by a device. Check the difference between:
+>   $ mountpoint -d /
+>   8:1
+> which is a classic ext4 sda1 device behind "/".
+> 
+> With 'btrfs' it will just look like 'tmpfs' looks today:
+>   $ mountpoint -d /dev/shm
+>   0:17
+> 
+> and while the 'btrfs' file system is surely backed by a
+> disk/partition, just like ext4 is, there can still never be a symlink
+> to the disk device.
 
-Yes, I know they have removed the KGDBOE support. I have forward
-ported the patch to linux-2.6.32.46 kernel. I was just trying to
-understand this issue belongs to which of the category ?
+Kay, thanks again for explanation.
 
-1. Is there any issue with Ethernet driver E1000 issue ?
-2. Is it belongs to KGDB ?
-3. Is there any kernel SMP hang issue for x86 64bit architecture which
-is fixed in upstream kernel ?
-4. None of the above and something else is broken ?
+I understand that in case filesystems allocate major 0 there could not
+be a well-defined /dev/root, but I don't understand the rationale for
+doing so.
 
-Is there any available patch ? any guidance to fix the error in E1000
-driver.  I will really appreciate your help.
+Maybe allocating major=0 is a good thing, but look at it this way:
 
-Thanks and Regards
--Naresh Bhat
+"On what disk/partition was / mounted?" is a well-defined question for
+cases when backing store is local hdd, so there should be well-defined
+answer.
 
-On 2/8/12, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Tue, Feb 07, 2012 at 09:38:49PM +0530, Naresh Bhat wrote:
->> Hi,
->>
->> I am trying KGDBOE on the following kernel
->
-> Is KGDBOE supported by upstream? Actually I don't find it
-> in the source tree.
->
-> Thanks,
-> Yong
->
->>
->> Kernel    -   linux-2.6.32.46 (With SMP set)
->> Hardware -  x86 64bit machine (Intel Nehlaum)
->> Ethernet   - E1000 driver is used
->>
->> But I am getting the following error
->>
->> ........
->> ............
->> .................
->> Breakpoint 2, sys_sync () at fs/sync.c:130
->> 130        wakeup_flusher_threads(0);
->> (gdb) s
->> wakeup_flusher_threads (nr_pages=0) at fs/fs-writeback.c:1005
->> 1005    {
->> (gdb) s
->>
->> Ignoring packet error, continuing...
->> Ignoring packet error, continuing...
->> Ignoring packet error, continuing...
->>
->>
->> Detailed logs with debug set :
->> -----------------------------------------
->>
->> ...................
->> ................................
->> .......................................
->> Sending packet: $z0,ffffffff810ad687,1#66...Ack
->> Packet received: OK
->> target_remove_breakpoint (0x810ad687, xxx) = 0
->> target_terminal_ours ()
->> kgdb_register_io_module (new_kgdb_io_ops=0xffffffff81a9d5b0) at
->> kernel/kgdb.c:1778
->> 1778    }
->> (gdb) n
->> Sending packet: $Z0,ffffffff810ad687,1#46...Ack
->> Packet received: OK
->> target_insert_breakpoint (0x810ad687, xxx) = 0
->> target_terminal_inferior ()
->> Sending packet: $s#73...Ack
->> target_resume (-1, step, 0)
->> Packet received: T05thread:0000000000000001;
->> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
->> SIGTRAP
->> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
->> Sending packet: $g#67...Ack
->> Packet received:
->> 0000000000000000b0d5a981ffffffffffffffff00000000ffffffff0000000086020000000000004602000000000000b07e0b2f0088ffffa87e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005cda0a81ffffffff820300001000000018000000
->> target_fetch_registers (rip) = 5cda0a81ffffffff 0xffffffff810ada5c
->> -2129995172
->> target_stopped_by_watchpoint () = 0
->> target_terminal_inferior ()
->> Sending packet: $s#73...Ack
->> target_resume (-1, step, 0)
->> Packet received: T05thread:0000000000000001;
->> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
->> SIGTRAP
->> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
->> Sending packet: $g#67...Ack
->> Packet received:
->> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000b07e0b2f0088ffffb07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005dda0a81ffffffff820300001000000018000000
->> target_fetch_registers (rip) = 5dda0a81ffffffff 0xffffffff810ada5d
->> -2129995171
->> target_stopped_by_watchpoint () = 0
->> target_terminal_inferior ()
->> Sending packet: $s#73...Ack
->> target_resume (-1, step, 0)
->> Packet received: T05thread:0000000000000001;
->> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
->> SIGTRAP
->> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
->> Sending packet: $g#67...Ack
->> Packet received:
->> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffb87e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000005eda0a81ffffffff820300001000000018000000
->> target_fetch_registers (rip) = 5eda0a81ffffffff 0xffffffff810ada5e
->> -2129995170
->> target_stopped_by_watchpoint () = 0
->> target_terminal_inferior ()
->> Sending packet: $s#73...Ack
->> target_resume (-1, step, 0)
->> Packet received: T05thread:0000000000000001;
->> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
->> SIGTRAP
->> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
->> Sending packet: $g#67...Ack
->> Packet received:
->> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffc07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b061030000000000180d3e81ffffffff820300001000000018000000
->> target_fetch_registers (rip) = 180d3e81ffffffff 0xffffffff813e0d18
->> -2126639848
->> target_stopped_by_watchpoint () = 0
->> target_terminal_ours_for_output ()
->> Sending packet: $mffffffff813e0d18,1#f8...Ack
->> Packet received: 85
->> remote:target_xfer_partial (2, (null), 0xbfe00edb, 0x0,
->> 0xffffffff813e0d18, 1) = 1, bytes = 85
->> Sending packet: $mffffffff813e0d18,1#f8...Ack
->> Packet received: 85
->> remote:target_xfer_partial (2, (null), 0xbfe00edb, 0x0,
->> 0xffffffff813e0d18, 1) = 1, bytes = 85
->> Sending packet: $mffff88002f0b7ec0,40#be...Ack
->> Packet received:
->> e07e0b2f0088ffff510d3e81ffffffff0800000000000000380d3e81ffffffff107f0b2f0088ffff5fa00081ffffffff107f0b2f0088ffffb0bcb881ffffffff
->> remote:target_xfer_partial (3, (null), 0xa944050, 0x0,
->> 0xffff88002f0b7ec0, 64) = 64, bytes =
->>  e0 7e 0b 2f 00 88 ff ff 51 0d 3e 81 ff ff ff ff ...
->> remote:target_xfer_partial (4, (null), 0xa944030, 0x0,
->> 0xffff88002f0b7ec8, 8) = 8, bytes =
->>  51 0d 3e 81 ff ff ff ff
->> remote:target_xfer_partial (4, (null), 0xa944030, 0x0,
->> 0xffff88002f0b7ec0, 8) = 8, bytes =
->>  e0 7e 0b 2f 00 88 ff ff
->> target_terminal_inferior ()
->> Sending packet: $s#73...Ack
->> target_resume (-1, step, 0)
->> Packet received: T05thread:0000000000000001;
->> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
->> SIGTRAP
->> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
->> Sending packet: $g#67...Ack
->> Packet received:
->> 00000000000000000000000000000000ffffffff00000000ffffffff0000000086020000000000004602000000000000c07e0b2f0088ffffc07e0b2f0088ffff000000000000000058f8b081ffffffff507d0b2f0088ffff18b20681ffffffff000000000000000008000000000000000800000000000000b0610300000000001a0d3e81ffffffff460300001000000018000000
->> target_fetch_registers (rip) = 1a0d3e81ffffffff 0xffffffff813e0d1a
->> -2126639846
->> target_stopped_by_watchpoint () = 0
->> target_terminal_inferior ()
->> Sending packet: $s#73...Ack
->> target_resume (-1, step, 0)
->> Packet received: T05thread:0000000000000001;
->> target_wait (-1, status) = 42000,   status->kind = stopped, signal =
->> SIGTRAP
->> target_thread_architecture (Thread 1) = 0xa2e45c0 [i386:x86-64]
->> Sending packet: $g#67...Sending packet: $g#67...Sending packet:
->> $g#67...Sending packet: $g#67...Timed out.
->> Timed out.
->> Timed out.
->> Ignoring packet error, continuing...
->> Bad register packet; fetching a new packet
->> Timed out.
->> Timed out.
->> Timed out.
->> Ignoring packet error, continuing...
->> Bad register packet; fetching a new packet
->> Timed out.
->> Timed out.
->> Timed out.
->> Ignoring packet error, continuing...
->> Bad register packet; fetching a new packet
->> Timed out.
->> ..........................
->> .................................
->>
->>
->> Please help me to identify any available patch in kernel.org or any
->> guidance to fix the above error.  I will really appreciate your help
->> on this.
->>
->>
->> -- Thanks and Regards
->> "For things to change, we must change"
->> -Naresh Bhat
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> Only stand for myself
->
+Previously it was /dev/root, but if /dev/root is not good there should be
+some other way for getting the answer. With ext2 I've switched to
+`mountpoint -d /` and then grepping major/minor in /proc/partitions, but
+with major=0 case I suspect this won't work.
+
+
+My use case is to check md5 sum of mbr + bootloader area +
+root-partition early right after the boot, to verify whether software is
+not corrupt, and for doing so it was useful to know / -> root-partition
+-> whole block device. It's not tivo, just checking for medium damage. (I
+understand this would be better done in the early bootloader but that
+part is out of my control)
+
+
+
+Sorry for maybe repeating myself and thanks again,
+Kirill
