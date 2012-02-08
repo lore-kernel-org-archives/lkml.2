@@ -1,54 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab2BHMli (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 07:41:38 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:48990 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932085Ab2BHMlh convert rfc822-to-8bit (ORCPT
+	id S932122Ab2BHMly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 07:41:54 -0500
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:35348 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932090Ab2BHMlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 07:41:37 -0500
-From: "Hadli, Manjunath" <manjunath.hadli@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "Girdwood, Liam" <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RESEND PATCH] davinci: CQ93VC: remove machine specific header
-	file inclusion from codec driver
-Thread-Topic: [RESEND PATCH] davinci: CQ93VC: remove machine specific header
-	file inclusion from codec driver
-Thread-Index: AQHMz8hZtO8ihD6Xyky64ge+IUf4m5YzHRPQ
-Date: Wed, 8 Feb 2012 12:41:14 +0000
-Message-ID: <E99FAA59F8D8D34D8A118DD37F7C8F753174E3EC@DBDE01.ent.ti.com>
-References: <1326194863-31194-1-git-send-email-manjunath.hadli@ti.com>
- <20120110184741.GG7164@opensource.wolfsonmicro.com>
-In-Reply-To: <20120110184741.GG7164@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.181.178]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 8 Feb 2012 07:41:52 -0500
+Date: Wed, 8 Feb 2012 14:41:48 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Possible circular locking dependency (3.3-rc2)
+Message-ID: <20120208124147.GF16334@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jkO+KyKz7TfD21mV"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
 
-On Wed, Jan 11, 2012 at 00:17:41, Mark Brown wrote:
-> On Tue, Jan 10, 2012 at 04:57:43PM +0530, Manjunath Hadli wrote:
-> > remove unnecessary inclusion of machine specific header file 
-> > mach/dm365.h from cq93vc.c voice codec driver which comes in the way 
-> > of platform code consolidation.
-> 
-> Applied but please do try to use a subject line appropriate for the subsystem you're contributing to.
-I still can't find this patch in the mainline, any issues?
+--jkO+KyKz7TfD21mV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
---Manju
-> 
+Hi guys,
 
+I have just triggered the folllowing:
+
+[   84.860321] =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D
+[   84.860321] [ INFO: possible circular locking dependency detected ]
+[   84.860321] 3.3.0-rc2-00026-ge4e8a39 #474 Not tainted
+[   84.860321] -------------------------------------------------------
+[   84.860321] bash/949 is trying to acquire lock:
+[   84.860321]  (sysfs_lock){+.+.+.}, at: [<c0275358>] gpio_value_store+0x2=
+4/0xcc
+[   84.860321]=20
+[   84.860321] but task is already holding lock:
+[   84.860321]  (s_active#22){++++.+}, at: [<c016996c>] sysfs_write_file+0x=
+dc/0x184
+[   84.911468]=20
+[   84.911468] which lock already depends on the new lock.
+[   84.911468]=20
+[   84.920043]=20
+[   84.920043] the existing dependency chain (in reverse order) is:
+[   84.920043]=20
+[   84.927886] -> #1 (s_active#22){++++.+}:
+[   84.927886]        [<c008f640>] check_prevs_add+0xdc/0x150
+[   84.927886]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
+[   84.927886]        [<c0090cdc>] __lock_acquire+0x49c/0x980
+[   84.951660]        [<c0091838>] lock_acquire+0x98/0x100
+[   84.951660]        [<c016a8e8>] sysfs_deactivate+0xb0/0x100
+[   84.962982]        [<c016b1b4>] sysfs_addrm_finish+0x2c/0x6c
+[   84.962982]        [<c016b8bc>] sysfs_remove_dir+0x84/0x98
+[   84.962982]        [<c02590d8>] kobject_del+0x10/0x78
+[   84.974670]        [<c02c29e8>] device_del+0x140/0x170
+[   84.974670]        [<c02c2a24>] device_unregister+0xc/0x18
+[   84.985382]        [<c0276894>] gpio_unexport+0xbc/0xdc
+[   84.985382]        [<c02768c8>] gpio_free+0x14/0xfc
+[   85.001708]        [<c0276a28>] unexport_store+0x78/0x8c
+[   85.001708]        [<c02c5af8>] class_attr_store+0x18/0x24
+[   85.007293]        [<c0169990>] sysfs_write_file+0x100/0x184
+[   85.018981]        [<c0109d48>] vfs_write+0xb4/0x148
+[   85.018981]        [<c0109fd0>] sys_write+0x40/0x70
+[   85.018981]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
+[   85.035003]=20
+[   85.035003] -> #0 (sysfs_lock){+.+.+.}:
+[   85.035003]        [<c008f54c>] check_prev_add+0x680/0x698
+[   85.035003]        [<c008f640>] check_prevs_add+0xdc/0x150
+[   85.052093]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
+[   85.052093]        [<c0090cdc>] __lock_acquire+0x49c/0x980
+[   85.052093]        [<c0091838>] lock_acquire+0x98/0x100
+[   85.069885]        [<c047e280>] mutex_lock_nested+0x3c/0x2f4
+[   85.069885]        [<c0275358>] gpio_value_store+0x24/0xcc
+[   85.069885]        [<c02c18dc>] dev_attr_store+0x18/0x24
+[   85.087158]        [<c0169990>] sysfs_write_file+0x100/0x184
+[   85.087158]        [<c0109d48>] vfs_write+0xb4/0x148
+[   85.098297]        [<c0109fd0>] sys_write+0x40/0x70
+[   85.098297]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
+[   85.109069]=20
+[   85.109069] other info that might help us debug this:
+[   85.109069]=20
+[   85.117462]  Possible unsafe locking scenario:
+[   85.117462]=20
+[   85.117462]        CPU0                    CPU1
+[   85.128417]        ----                    ----
+[   85.128417]   lock(s_active#22);
+[   85.128417]                                lock(sysfs_lock);
+[   85.128417]                                lock(s_active#22);
+[   85.142486]   lock(sysfs_lock);
+[   85.151794]=20
+[   85.151794]  *** DEADLOCK ***
+[   85.151794]=20
+[   85.151794] 2 locks held by bash/949:
+[   85.158020]  #0:  (&buffer->mutex){+.+.+.}, at: [<c01698b8>] sysfs_write=
+_file+0x28/0x184
+[   85.170349]  #1:  (s_active#22){++++.+}, at: [<c016996c>] sysfs_write_fi=
+le+0xdc/0x184
+[   85.170349]=20
+[   85.178588] stack backtrace:
+[   85.178588] [<c001b824>] (unwind_backtrace+0x0/0xf0) from [<c008de64>] (=
+print_circular_bug+0x100/0x114)
+[   85.193023] [<c008de64>] (print_circular_bug+0x100/0x114) from [<c008f54=
+c>] (check_prev_add+0x680/0x698)
+[   85.193023] [<c008f54c>] (check_prev_add+0x680/0x698) from [<c008f640>] =
+(check_prevs_add+0xdc/0x150)
+[   85.212524] [<c008f640>] (check_prevs_add+0xdc/0x150) from [<c008fc18>] =
+(validate_chain.clone.24+0x564/0x694)
+[   85.212524] [<c008fc18>] (validate_chain.clone.24+0x564/0x694) from [<c0=
+090cdc>] (__lock_acquire+0x49c/0x980)
+[   85.233306] [<c0090cdc>] (__lock_acquire+0x49c/0x980) from [<c0091838>] =
+(lock_acquire+0x98/0x100)
+[   85.233306] [<c0091838>] (lock_acquire+0x98/0x100) from [<c047e280>] (mu=
+tex_lock_nested+0x3c/0x2f4)
+[   85.242614] [<c047e280>] (mutex_lock_nested+0x3c/0x2f4) from [<c0275358>=
+] (gpio_value_store+0x24/0xcc)
+[   85.261840] [<c0275358>] (gpio_value_store+0x24/0xcc) from [<c02c18dc>] =
+(dev_attr_store+0x18/0x24)
+[   85.261840] [<c02c18dc>] (dev_attr_store+0x18/0x24) from [<c0169990>] (s=
+ysfs_write_file+0x100/0x184)
+[   85.271240] [<c0169990>] (sysfs_write_file+0x100/0x184) from [<c0109d48>=
+] (vfs_write+0xb4/0x148)
+[   85.290008] [<c0109d48>] (vfs_write+0xb4/0x148) from [<c0109fd0>] (sys_w=
+rite+0x40/0x70)
+[   85.298400] [<c0109fd0>] (sys_write+0x40/0x70) from [<c0013cc0>] (ret_fa=
+st_syscall+0x0/0x3c)
+-bash: echo: write error: Operation not permitted
+
+the way to trigger is:
+
+
+root@legolas:~# cd /sys/class/gpio/
+root@legolas:/sys/class/gpio# echo 2 > export=20
+root@legolas:/sys/class/gpio# echo 2 > unexport=20
+root@legolas:/sys/class/gpio# echo 2 > export=20
+root@legolas:/sys/class/gpio# cd gpio2/
+root@legolas:/sys/class/gpio/gpio2# echo 1 > value=20
+
+--=20
+balbi
+
+--jkO+KyKz7TfD21mV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPMm2LAAoJEIaOsuA1yqREBxEQALAkioSegidvj3IaG0JBtkv1
+bGaOKGWNPxJJpL2IDJDCI3KliNEt7t9VB/ACaqXBbMauhdWmEkiBnh/ZFjzdUnu/
+0z0pmFa4yE4KTYor8DPvzvutR6k+O38KaMPzjR6O0woEP1Y7j8ORQJNKnouJIgh7
+zXUjxDZ+WRh7xhdE6ctlZLV2DSZ6/aYpaAYGBwUWT/OUMXk1kA4LV+DBa26I6sgR
+CiO0I4bl8fYLde4pCzKNLQGJFhhAVhsPp+mNLfpiYTrkZjTni9iQVDFllNYDofrL
+4cuoRq+O36Gq1+17bskPQrhfr8n6pKpbI0EqfQAATw99vmU+wg0ZZDIhyxnlTEf3
+cLiq7JfxWs4UhS2WkigBPROkToPP/UU6wcFu1saRIilVdNhxtLJNzhMFHoDfn4t/
+ocpYaNt6hG+k4YIdJzFCODNZtrpMf2MwfblO8zDatgfCAqhvCZDJ7UQ02t8FbXNJ
+r/ro1FGjWvvqG62ELOYkhm8BAAlC1KnjmtFxamXFttZdTu7L1UqwUvkOFwYxwntz
+dSQX6mZbWxCP/EzrNWVrBi0wtQlr/cRwd0cLC2TGoRYQSvl27sqhgumalbbbPP7r
+8Di/fEMWZLemJJOWlf1QtX6FV6tp4RyfEeyukSg9NOr2F2/mhVry9ddFclHm06CX
+SHrniaynpSr+sXn60Ehr
+=4NF/
+-----END PGP SIGNATURE-----
+
+--jkO+KyKz7TfD21mV--
