@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab2BHD6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 22:58:23 -0500
-Received: from mga14.intel.com ([143.182.124.37]:30631 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754575Ab2BHD6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 22:58:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104353560"
-Date: Wed, 8 Feb 2012 11:48:16 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "stable@kernel.org" <stable@kernel.org>
-Cc: Keith Packard <keithp@keithp.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3.2-stable] drm/i915: fix ELD writing for SandyBridge
-Message-ID: <20120208034816.GA23374@localhost>
+	id S1756103Ab2BHEAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 23:00:40 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35158 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab2BHEAh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 23:00:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAAHN_R0+ExGcdpLM7KwC_KsPOemVOiRrmyWcowiu5_cWW3BPLQ@mail.gmail.com>
+References: <20120116163106.GC7180@jl-vm1.vm.bytemark.co.uk>
+	<1326776095-2629-1-git-send-email-siddhesh.poyarekar@gmail.com>
+	<CAAHN_R2g9zaujw30+zLf91AGDHNqE6HDc8Z4yJbrzgJcJYFkXg@mail.gmail.com>
+	<4F2B02BC.8010308@gmail.com>
+	<CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com>
+	<CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com>
+	<CAAHN_R0+ExGcdpLM7KwC_KsPOemVOiRrmyWcowiu5_cWW3BPLQ@mail.gmail.com>
+Date: Wed, 8 Feb 2012 09:30:36 +0530
+Message-ID: <CAAHN_R0N=3J4=VqvDsGB=_2Ln9yKBjOevW2=_UAMBK1pGepqvA@mail.gmail.com>
+Subject: Re: [RESEND][PATCH] Mark thread stack correctly in proc/<pid>/maps
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Jamie Lokier <jamie@shareable.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit b3f33cbf7ace8fc149993ee35e0d0fd57f41d6d8 upstream.
+On Sat, Feb 4, 2012 at 12:04 AM, Siddhesh Poyarekar
+<siddhesh.poyarekar@gmail.com> wrote:
+> On Fri, Feb 3, 2012 at 1:31 PM, KOSAKI Motohiro
+> <kosaki.motohiro@gmail.com> wrote:
+>> The fact is, now process stack and pthread stack clearly behave
+>> different dance. libc don't expect pthread stack grow automatically.
+>> So, your patch will break userland. Just only change display thing.
+<snip>
+> I have also dropped an email on the libc-alpha list here to solicit
+> comments from libc maintainers on this:
+>
+> http://sourceware.org/ml/libc-alpha/2012-02/msg00036.html
+>
 
-SandyBridge should be using the same register addresses as IvyBridge.
+Kosaki-san, your suggestion of adding an extra flag seems like the
+right way to go about this based on the discussion on libc-alpha,
+specifically, your point about pthread_getattr_np() -- it may not be a
+standard, but it's a breakage anyway. However, looking at the vm_flags
+options in mm.h, it looks like the entire 32-bit space has been
+exhausted for the flag value. The vm_flags is an unsigned long, so it
+ought to take 8 bytes on a 64-bit system, but 32-bit systems will be
+left behind.
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/intel_display.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+So there are two options for this:
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index d809b03..8a61b81 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -5876,14 +5876,14 @@ static void ironlake_write_eld(struct drm_connector *connector,
- 	int aud_cntl_st;
- 	int aud_cntrl_st2;
- 
--	if (IS_IVYBRIDGE(connector->dev)) {
--		hdmiw_hdmiedid = GEN7_HDMIW_HDMIEDID_A;
--		aud_cntl_st = GEN7_AUD_CNTRL_ST_A;
--		aud_cntrl_st2 = GEN7_AUD_CNTRL_ST2;
--	} else {
-+	if (HAS_PCH_IBX(connector->dev)) {
- 		hdmiw_hdmiedid = GEN5_HDMIW_HDMIEDID_A;
- 		aud_cntl_st = GEN5_AUD_CNTL_ST_A;
- 		aud_cntrl_st2 = GEN5_AUD_CNTL_ST2;
-+	} else {
-+		hdmiw_hdmiedid = GEN7_HDMIW_HDMIEDID_A;
-+		aud_cntl_st = GEN7_AUD_CNTRL_ST_A;
-+		aud_cntrl_st2 = GEN7_AUD_CNTRL_ST2;
- 	}
- 
- 	i = to_intel_crtc(crtc)->pipe;
+1) make vm_flags 64-bit for all arches. This will cause ABI breakage
+on 32-bit systems, so any external drivers will have to be rebuilt
+2) Implement this patch for 64-bit only by defining the new flag only
+for 64-bit. 32-bit systems behave as is
+
+Which of these would be better? I prefer the latter because it looks
+like the path of least breakage.
+
 -- 
-1.7.7.3
-
+Siddhesh Poyarekar
+http://siddhesh.in
