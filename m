@@ -1,187 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab2BHWuh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 17:50:37 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:46884 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757401Ab2BHWuf convert rfc822-to-8bit (ORCPT
+	id S1757435Ab2BHWwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 17:52:30 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:56189 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145Ab2BHWw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 17:50:35 -0500
+	Wed, 8 Feb 2012 17:52:29 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Don Zickus <dzickus@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        kexec-list <kexec@lists.infradead.org>
+Subject: Re: [PATCH] x86, kdump: No need to disable ioapic in crash path
+References: <1328206323-25580-1-git-send-email-dzickus@redhat.com>
+	<m1r4ycsts1.fsf@fess.ebiederm.org> <20120207215741.GD5650@redhat.com>
+	<20120207221924.GH6346@redhat.com> <m1r4y6i5cw.fsf@fess.ebiederm.org>
+	<20120208201145.GX5650@redhat.com>
+Date: Wed, 08 Feb 2012 14:55:14 -0800
+In-Reply-To: <20120208201145.GX5650@redhat.com> (Don Zickus's message of "Wed,
+	8 Feb 2012 15:11:45 -0500")
+Message-ID: <m1sjilc4vh.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1328717318-23284-1-git-send-email-dmitry.antipov@linaro.org>
-References: <1328717318-23284-1-git-send-email-dmitry.antipov@linaro.org>
-Date: Wed, 8 Feb 2012 14:50:34 -0800
-Message-ID: <CABeCy1YsLKc14uLGzxRC95Q7v-r2Qkx6Ohzcf4rYUVv4sYfrYg@mail.gmail.com>
-Subject: Re: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and ARM
-From: Venki Pallipadi <venki@google.com>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19ukrf1yAd8bUUQHkB6fv6IR15QrlxwIkc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 8, 2012 at 8:08 AM, Dmitry Antipov
-<dmitry.antipov@linaro.org> wrote:
-> Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
-> ARM, move "noirqtime=" option to common debugging code.
-> For a bit of backward compatibility, X86-specific option
-> "tsc=noirqtime" is preserved, but issues a warning.
->
-> Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Suggested-by: Venki Pallipadi <venki@google.com>
-> Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
-> ---
->  arch/arm/kernel/sched_clock.c |    3 +++
->  arch/x86/Kconfig              |   11 -----------
->  arch/x86/kernel/tsc.c         |    7 ++++---
->  include/linux/sched.h         |    2 ++
->  lib/Kconfig.debug             |   12 ++++++++++++
->  lib/Makefile                  |    2 ++
->  lib/irqtime.c                 |   12 ++++++++++++
->  7 files changed, 35 insertions(+), 14 deletions(-)
->  create mode 100644 lib/irqtime.c
->
-> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-> index 5416c7c..961bd2d 100644
-> --- a/arch/arm/kernel/sched_clock.c
-> +++ b/arch/arm/kernel/sched_clock.c
-> @@ -144,6 +144,9 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
->         */
->        cd.epoch_ns = 0;
->
-> +       if (!no_sched_irq_time)
-> +               enable_sched_clock_irqtime();
-> +
->        pr_debug("Registered %pF as sched_clock source\n", read);
->  }
->
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 5bed94e..4759676 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -805,17 +805,6 @@ config SCHED_MC
->          making when dealing with multi-core CPU chips at a cost of slightly
->          increased overhead in some places. If unsure say N here.
->
-> -config IRQ_TIME_ACCOUNTING
-> -       bool "Fine granularity task level IRQ time accounting"
-> -       default n
-> -       ---help---
-> -         Select this option to enable fine granularity task irq time
-> -         accounting. This is done by reading a timestamp on each
-> -         transitions between softirq and hardirq state, so there can be a
-> -         small performance impact.
-> -
-> -         If in doubt, say N here.
-> -
->  source "kernel/Kconfig.preempt"
->
->  config X86_UP_APIC
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index a62c201..70510a3 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -103,14 +103,15 @@ int __init notsc_setup(char *str)
->
->  __setup("notsc", notsc_setup);
->
-> -static int no_sched_irq_time;
-> -
->  static int __init tsc_setup(char *str)
->  {
->        if (!strcmp(str, "reliable"))
->                tsc_clocksource_reliable = 1;
-> -       if (!strncmp(str, "noirqtime", 9))
-> +       if (!strncmp(str, "noirqtime", 9)) {
-> +               printk(KERN_WARNING "tsc: tsc=noirqtime is "
-> +                      "obsolete, use noirqtime instead\n");
->                no_sched_irq_time = 1;
-> +       }
->        return 1;
->  }
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 7d379a6..b3575b5 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1966,9 +1966,11 @@ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
->  * The reason for this explicit opt-in is not to have perf penalty with
->  * slow sched_clocks.
->  */
-> +extern int no_sched_irq_time;
->  extern void enable_sched_clock_irqtime(void);
->  extern void disable_sched_clock_irqtime(void);
->  #else
-> +#define no_sched_irq_time 1
->  static inline void enable_sched_clock_irqtime(void) {}
->  static inline void disable_sched_clock_irqtime(void) {}
->  #endif
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 8745ac7..236e814 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -299,6 +299,18 @@ config SCHEDSTATS
->          application, you can say N to avoid the very slight overhead
->          this adds.
->
-> +config IRQ_TIME_ACCOUNTING
-> +       bool "Fine granularity task level IRQ time accounting"
-> +       depends on X86 || ARM
-> +       default n
-> +       ---help---
-> +         Select this option to enable fine granularity task irq time
-> +         accounting. This is done by reading a timestamp on each
-> +         transitions between softirq and hardirq state, so there can be a
-> +         small performance impact.
-> +
-> +         If in doubt, say N here.
-> +
->  config TIMER_STATS
->        bool "Collect kernel timers statistics"
->        depends on DEBUG_KERNEL && PROC_FS
-> diff --git a/lib/Makefile b/lib/Makefile
-> index 18515f0..44d67d4 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -49,6 +49,8 @@ obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
->  obj-$(CONFIG_DEBUG_LIST) += list_debug.o
->  obj-$(CONFIG_DEBUG_OBJECTS) += debugobjects.o
->
-> +obj-$(CONFIG_IRQ_TIME_ACCOUNTING) += irqtime.o
-> +
->  ifneq ($(CONFIG_HAVE_DEC_LOCK),y)
->   lib-y += dec_and_lock.o
->  endif
-> diff --git a/lib/irqtime.c b/lib/irqtime.c
-> new file mode 100644
-> index 0000000..10d440d
-> --- /dev/null
-> +++ b/lib/irqtime.c
-> @@ -0,0 +1,12 @@
-> +#include <linux/kernel.h>
-> +#include <linux/sched.h>
-> +
-> +int no_sched_irq_time;
-> +
-> +static int __init irqtime_setup(char *str)
-> +{
-> +       no_sched_irq_time = 1;
-> +       return 1;
-> +}
-> +
-> +__setup("noirqtime", irqtime_setup);
-> --
+Don Zickus <dzickus@redhat.com> writes:
 
-One more nit-pick. We need corresponding change in
-Documentation/kernel-parameters.txt to  deprecate tsc=irqtime and add
-this new param.
-
-> 1.7.7.6
+> On Tue, Feb 07, 2012 at 03:35:59PM -0800, Eric W. Biederman wrote:
+>> Vivek Goyal <vgoyal@redhat.com> writes:
+>> 
+>> > On Tue, Feb 07, 2012 at 04:57:41PM -0500, Don Zickus wrote:
+>> >> On Thu, Feb 02, 2012 at 03:24:46PM -0800, Eric W. Biederman wrote:
+>> >> > > Eric, brought up a point that because the boot code was restructured we may
+>> >> > > not need to disable the io apic any more in the crash path.  The original
+>> >> > > concern that led to the development of disable_IO_APIC, was that the TSC
+>> >> > > calibration on boot up relied on the PIT timer for reference.  Access
+>> >> > > to the PIT required 8259 interrupts to be working.  This wouldn't work
+>> >> > > if the ioapic needed to be configured.  So on panic path, the ioapic was
+>> >> > > reconfigured to use virtual wire mode to allow the 8259 to passthrough.
+>> >> > 
+>> >> > A small clarification originally it was the jiffies calibration that
+>> >> > would fail if we could cause the PIT to generate interrupts through the
+>> >> > 8259.  The boot would then hang at calibrating jiffies.
+>> >> 
+>> >> Ok.  Thanks!
+>> >
+>> > So now what has changed? Do we setup LAPIC and IOAPIC early enough to
+>> > receive PIT interrupts in regular mode (non-virtual wire mode) or
+>> > something else?
+>> 
+>> Yes.  Part of the Moorstown work required that this be done because
+>> moorsetown did not support legacy mode.  Last I looked the code hadn't
+>> been generalized beyond Moorsetown but empirically it works now.
+>> 
+>> Don as to what to test the only case I can think of that might be spooky
+>> is a screaming interrupt during the handover.  You might want to try
+>> playing with lkcdtm to try some of the more exotic crash scenarios.  But
+>> all I expect further testing might reveal are places where we are not
+>> as robust in initializing the hardware as we might be.  Things that
+>> might have been papered over by the ioapic shutdown.
 >
+> I ran lkdtm by panic'ing in the interrupt handle thus leaving device
+> interrupt un-ack'd and the apic might have been un-ack'd too (jprobes
+> hooked in at do_IRQ).  3 out 3 times the second kernel came up on my core2
+> quad.
+
+That sounds like more than enough basic testing for me.  Document your
+testing in a patch description and let's get the unnecessary local apic
+and ioapic stomping removed from the kexec on panic path.
+
+There were bugs.  We deleted the code that had them.  The bugs are gone
+and there are no new problems goes over very well in my book.
+
+Eric
+
