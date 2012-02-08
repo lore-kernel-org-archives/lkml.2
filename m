@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2BHDt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 22:49:58 -0500
-Received: from mga14.intel.com ([143.182.124.37]:58836 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753935Ab2BHDt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 22:49:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104351762"
-Date: Wed, 8 Feb 2012 11:39:50 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "stable@kernel.org" <stable@kernel.org>
-Cc: Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ext4: do not reference pa_inode from group_pa
-Message-ID: <20120208033950.GA20491@localhost>
+	id S1755937Ab2BHDuh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 22:50:37 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56840 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab2BHDuf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Feb 2012 22:50:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120208020038.GE13296@khazad-dum.debian.net>
+References: <4F27120A.4040106@suse.cz> <CAPXgP12Sr2KzGJ9RA13QBOCkctb-z3O4+1uHOjANgMDDv2pxaQ@mail.gmail.com>
+ <4F27C54F.1010107@suse.cz> <CAPXgP11=U_Y3LvJB2LRnXQ53y1WQQTqc0j1c7iva6ZXvF97wEw@mail.gmail.com>
+ <20120204021457.GA25386@khazad-dum.debian.net> <CAPXgP12yZ74679JNwRB-pDfnjOBaxMzL2=krSDK31jM1mjXfuA@mail.gmail.com>
+ <20120208020038.GE13296@khazad-dum.debian.net>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 8 Feb 2012 04:50:15 +0100
+Message-ID: <CAPXgP12ExDub9ML0=DcWRwyQP23GXDJ75jiNnw+BTXY17tEa8Q@mail.gmail.com>
+Subject: Re: network regression: cannot rename netdev twice
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Jiri Slaby <jslaby@suse.cz>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        ML netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 60e07cf515e541ea3e13b888d273c9b19a2ad9dd upstream.
+On Wed, Feb 8, 2012 at 03:00, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+> On Mon, 06 Feb 2012, Kay Sievers wrote:
+>> On Sat, Feb 4, 2012 at 03:14, Henrique de Moraes Holschuh
+>> <hmh@hmh.eng.br> wrote:
+>> > Is it possible to configure the kernel to use something other than "eth#" as
+>> > its initial namespace for netif names?  Or is there some other way to get
+>> > eth1 to be what you need eth1 to be during userland boot?
+>>
+>> I don't think there is a sane way to do that. Someone could add a
+>> kernel command line parameter to switch ethX in the kernel to
+>> something else, and create custom udev rules which match on device
+>> properties and apply configured names which are ethX again. But for
+>> all that, there will be no generally available support in common base
+>> system tools, and we absolutely do not recommend anybody doing that.
+>
+> What sort of impact analysis on userspace was done about this change?
 
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+None. It will just not be supported for new setups. Existing ones will
+do what they always did.
 
-pa_inode in group_pa is set NULL in ext4_mb_new_group_pa, so
-pa_inode should be not referenced.
+> Nobody in his right mind would go back to the dark ages of uncontrolled
+> ifnames.  You're effectively forcing everybody with a clue away from the
+> eth# namespace.
 
-Reported-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
----
- fs/ext4/mballoc.c           |    2 +-
- include/trace/events/ext4.h |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Yes. It's a game we have lost and we will not win in the future. I
+gave up, and I warn everybody who think it's simple to manage.
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index e2d8be8..cb990b2 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3671,7 +3671,7 @@ ext4_mb_release_group_pa(struct ext4_buddy *e4b,
- 	ext4_group_t group;
- 	ext4_grpblk_t bit;
- 
--	trace_ext4_mb_release_group_pa(pa);
-+	trace_ext4_mb_release_group_pa(sb, pa);
- 	BUG_ON(pa->pa_deleted == 0);
- 	ext4_get_group_no_and_offset(sb, pa->pa_pstart, &group, &bit);
- 	BUG_ON(group != e4b->bd_group && pa->pa_len != 0);
-diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-index 748ff7c..319538b 100644
---- a/include/trace/events/ext4.h
-+++ b/include/trace/events/ext4.h
-@@ -573,9 +573,9 @@ TRACE_EVENT(ext4_mb_release_inode_pa,
- );
- 
- TRACE_EVENT(ext4_mb_release_group_pa,
--	TP_PROTO(struct ext4_prealloc_space *pa),
-+	TP_PROTO(struct super_block *sb, struct ext4_prealloc_space *pa),
- 
--	TP_ARGS(pa),
-+	TP_ARGS(sb, pa),
- 
- 	TP_STRUCT__entry(
- 		__field(	dev_t,	dev			)
-@@ -585,7 +585,7 @@ TRACE_EVENT(ext4_mb_release_group_pa,
- 	),
- 
- 	TP_fast_assign(
--		__entry->dev		= pa->pa_inode->i_sb->s_dev;
-+		__entry->dev		= sb->s_dev;
- 		__entry->pa_pstart	= pa->pa_pstart;
- 		__entry->pa_len		= pa->pa_len;
- 	),
--- 
-1.7.7.3
+> Just to be very clear: the impact of this is the need to change the
+> interface names on potentially millions of lines of firewall rules and
+> scripts out there, as well as tracking down stuff (mostly scripts) that
+> special-cases the eth prefix.
 
+Yeah, and for good, ethX is a pretty much random kernel name, and I
+personally will no longer work on conceptually broken infrastructure
+that can never deliver what it seems to promise. In the longer run,
+tools need to be fixed to automatically handle changing names, or not
+care about the names at all, or names need to be explicitly set up
+outside the ethX namespace to be predictable.
+
+After years of working in that area I will stop to work on these hacks
+to promise stable ethX names. It was just wrong, like enumerations
+always are in hotplug setups.
+
+> Is there a really good reason why we cannot have a way to move the
+> kernel away from the eth# namespace at boot (through a kernel parameter,
+> maybe with the default namespace set at compile time),
+
+Could work, but I don't think it is worth. Simple enumeration, and
+automatic persistent on-disk device name reservation in a flat
+number-range is just a very flawed concept. I'm not interested in
+working on that, but that surely should not stop anybody from trying
+and providing tools that can do that.
+
+> AND keep the
+> "common base system tools" support to assign ifname based on MAC
+> addresses that we have right now?
+
+Not provided by udev's default setup, which did persistent name
+reservation in the device hotplug path. It is already disabled and
+will be entirely removed from the source tree some day. Other tools
+can still try to provide that. But I declare that model as officially
+failed and udev will not even try anything like that anymore.
+
+People who need predictable interface names should just manually
+configure custom/descriptive names, or names which are reliably
+derived from the hardware, like firmware-provided names or the pci
+slot number.
+
+Kay
