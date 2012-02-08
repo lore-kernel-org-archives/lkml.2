@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab2BHRCl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 12:02:41 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:28314
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757278Ab2BHRCj (ORCPT
+	id S1757408Ab2BHRLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 12:11:36 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60302 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756995Ab2BHRLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 12:02:39 -0500
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4F32AAA7.2040203@freescale.com>
-Date: Wed, 8 Feb 2012 11:02:31 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: qemu-devel <qemu-devel@nongnu.org>,
+	Wed, 8 Feb 2012 12:11:35 -0500
+Date: Wed, 8 Feb 2012 17:12:49 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+        qemu-devel <qemu-devel@nongnu.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Eric Northup <digitaleric@google.com>, KVM list <kvm@vger.kernel.org>,
         Avi Kivity <avi@redhat.com>
 Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-References: <4F2AB552.2070909@redhat.com>	<CAG7+5M0s_F93G3dPrRQaFMVv_hPzpd-wYEPApJUDGhh3vJuy-A@mail.gmail.com>	<4F2C6517.3040203@codemonkey.ws> <4F302E0D.20302@freescale.com> <4F3118EA.7040302@codemonkey.ws>
-In-Reply-To: <4F3118EA.7040302@codemonkey.ws>
-Content-Type: text/plain; charset="ISO-8859-1"
+Message-ID: <20120208171249.1b1eb5d0@pyramind.ukuu.org.uk>
+In-Reply-To: <4F32AAA7.2040203@freescale.com>
+References: <4F2AB552.2070909@redhat.com>
+	<CAG7+5M0s_F93G3dPrRQaFMVv_hPzpd-wYEPApJUDGhh3vJuy-A@mail.gmail.com>
+	<4F2C6517.3040203@codemonkey.ws>
+	<4F302E0D.20302@freescale.com>
+	<4F3118EA.7040302@codemonkey.ws>
+	<4F32AAA7.2040203@freescale.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 06:28 AM, Anthony Liguori wrote:
-> On 02/06/2012 01:46 PM, Scott Wood wrote:
->> On 02/03/2012 04:52 PM, Anthony Liguori wrote:
->>> On 02/03/2012 12:07 PM, Eric Northup wrote:
->>>> How would the ability to use sys_kvm_* be regulated?
->>>
->>> Why should it be regulated?
->>>
->>> It's not a finite or privileged resource.
->>
->> You're exposing a large, complex kernel subsystem that does very
->> low-level things with the hardware.
-> 
-> As does the rest of the kernel.
+> If the fd overhead really is a problem, perhaps the fd could be retained
+> for setup operations, and omitted only on calls that require a vcpu to
+> have been already set up on the current thread?
 
-Just because other parts of the kernel made this mistake (e.g.
-networking) doesn't mean that KVM should as well.
+Quite frankly I'd like to have an fd because it means you've got a
+meaningful way of ensuring that id reuse problems go away. You open a
+given id and keep a handle to it, if the id gets reused then your handle
+will be tied to the old one so you can fail the requests.
 
-> If you want finer grain access control, that's exactly why we have
-> things like LSM and SELinux.  You can add the appropriate LSM hooks into
-> the KVM infrastructure and setup default SELinux policies appropriately.
+Without an fd it's near impossible to get this right. The Unix/Linux
+model is open an object, use it, close it. I see no reason not to do that.
 
-Needing to use such bandaids is more complicated (or at least less
-familiar to many) than setting permissions on a filesystem object.
+Also the LSM hooks apply to file objects mostly, so its a natural fit on
+top *IF* you choose to use them.
 
->> And sometimes it is a finite resource.  I don't know how x86 does it,
->> but on at least some powerpc hardware we have a finite, relatively small
->> number of hardware partition IDs.
-> 
-> But presumably this is per-core, right?
+Finally you can pass file handles around between processes - do that any
+other way 8)
 
-Not currently.
-
-I can't speak for the IBM stuff, but our hardware is desgined with the
-idea that a partition has a permanent system-wide LPID (partition ID).
-We *may* be able to do dynamic LPID on e500mc, but it is likely to be a
-problem in the future with things like LPID-based direct-to-guest
-interrupt delivery.  There's also a question of prioritizing effort --
-there's enough other stuff that needs work first.
-
-> And they're recycled, right? 
-
-Not currently (other than when a guest is destroyed, of course).
-
-What are the advantages of getting rid of the file descriptor that
-warrant this?  What is performance sensitive enough than an fd lookup is
-unacceptable but the other overhead of going out to qemu is fine?
-
-Is that fd lookup any heavier than "appropriate LSM hooks"?
-
-If the fd overhead really is a problem, perhaps the fd could be retained
-for setup operations, and omitted only on calls that require a vcpu to
-have been already set up on the current thread?
-
--Scott
-
+Alan
