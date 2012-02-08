@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab2BHFKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 00:10:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44035 "EHLO mail.zytor.com"
+	id S1756573Ab2BHFKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 00:10:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44037 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab2BHFJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751199Ab2BHFJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Feb 2012 00:09:51 -0500
 From: "H. Peter Anvin" <hpa@zytor.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 19/21] x86: Use generic posix_types.h
-Date: Tue,  7 Feb 2012 21:09:03 -0800
-Message-Id: <1328677745-20121-20-git-send-email-hpa@zytor.com>
+        "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Subject: [PATCH 13/21] mn10300: Use generic posix_types.h
+Date: Tue,  7 Feb 2012 21:08:57 -0800
+Message-Id: <1328677745-20121-14-git-send-email-hpa@zytor.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1328677745-20121-1-git-send-email-hpa@zytor.com>
 References: <1328677745-20121-1-git-send-email-hpa@zytor.com>
@@ -23,21 +23,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@zytor.com>
 
-Change the x86 architecture to use <asm-generic/posix_types.h>.
+Change the mn10300 architecture to use <asm-generic/posix_types.h>.
 
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
 ---
- arch/x86/include/asm/posix_types_32.h |   75 +++--------------------
- arch/x86/include/asm/posix_types_64.h |  106 +--------------------------------
- 2 files changed, 12 insertions(+), 169 deletions(-)
+ arch/mn10300/include/asm/posix_types.h |  111 +++----------------------------
+ 1 files changed, 11 insertions(+), 100 deletions(-)
 
-diff --git a/arch/x86/include/asm/posix_types_32.h b/arch/x86/include/asm/posix_types_32.h
-index f7d9adf..99f262e 100644
---- a/arch/x86/include/asm/posix_types_32.h
-+++ b/arch/x86/include/asm/posix_types_32.h
-@@ -7,79 +7,22 @@
+diff --git a/arch/mn10300/include/asm/posix_types.h b/arch/mn10300/include/asm/posix_types.h
+index 56ffbc1..ab50618 100644
+--- a/arch/mn10300/include/asm/posix_types.h
++++ b/arch/mn10300/include/asm/posix_types.h
+@@ -17,14 +17,19 @@
   * assume GCC is being used.
   */
  
@@ -55,9 +54,15 @@ index f7d9adf..99f262e 100644
 +
  typedef unsigned short	__kernel_uid_t;
  typedef unsigned short	__kernel_gid_t;
--typedef unsigned int	__kernel_size_t;
--typedef int		__kernel_ssize_t;
--typedef int		__kernel_ptrdiff_t;
++#define __kernel_uid_t __kernel_uid_t
++
+ #if __GNUC__ == 4
+ typedef unsigned int	__kernel_size_t;
+ typedef signed int	__kernel_ssize_t;
+@@ -33,105 +38,11 @@ typedef unsigned long	__kernel_size_t;
+ typedef signed long	__kernel_ssize_t;
+ #endif
+ typedef int		__kernel_ptrdiff_t;
 -typedef long		__kernel_time_t;
 -typedef long		__kernel_suseconds_t;
 -typedef long		__kernel_clock_t;
@@ -69,7 +74,7 @@ index f7d9adf..99f262e 100644
 -typedef unsigned short	__kernel_gid16_t;
 -typedef unsigned int	__kernel_uid32_t;
 -typedef unsigned int	__kernel_gid32_t;
-+#define __kernel_uid_t __kernel_uid_t
++#define __kernel_size_t __kernel_size_t
  
 -typedef unsigned short	__kernel_old_uid_t;
 -typedef unsigned short	__kernel_old_gid_t;
@@ -81,172 +86,88 @@ index f7d9adf..99f262e 100644
 -#endif
 -
 -typedef struct {
+-#if defined(__KERNEL__) || defined(__USE_ALL)
 -	int	val[2];
+-#else /* !defined(__KERNEL__) && !defined(__USE_ALL) */
+-	int	__val[2];
+-#endif /* !defined(__KERNEL__) && !defined(__USE_ALL) */
 -} __kernel_fsid_t;
 -
--#if defined(__KERNEL__)
+-#if defined(__KERNEL__) || !defined(__GLIBC__) || (__GLIBC__ < 2)
 -
 -#undef	__FD_SET
--#define __FD_SET(fd,fdsetp)					\
--	asm volatile("btsl %1,%0":				\
--		     "+m" (*(__kernel_fd_set *)(fdsetp))	\
--		     : "r" ((int)(fd)))
+-static inline void __FD_SET(unsigned long __fd, __kernel_fd_set *__fdsetp)
+-{
+-	unsigned long __tmp = __fd / __NFDBITS;
+-	unsigned long __rem = __fd % __NFDBITS;
+-	__fdsetp->fds_bits[__tmp] |= (1UL<<__rem);
+-}
 -
 -#undef	__FD_CLR
--#define __FD_CLR(fd,fdsetp)					\
--	asm volatile("btrl %1,%0":				\
--		     "+m" (*(__kernel_fd_set *)(fdsetp))	\
--		     : "r" ((int) (fd)))
+-static inline void __FD_CLR(unsigned long __fd, __kernel_fd_set *__fdsetp)
+-{
+-	unsigned long __tmp = __fd / __NFDBITS;
+-	unsigned long __rem = __fd % __NFDBITS;
+-	__fdsetp->fds_bits[__tmp] &= ~(1UL<<__rem);
+-}
+-
 -
 -#undef	__FD_ISSET
--#define __FD_ISSET(fd,fdsetp)					\
--	(__extension__						\
--	 ({							\
--	 unsigned char __result;				\
--	 asm volatile("btl %1,%2 ; setb %0"			\
--		      : "=q" (__result)				\
--		      : "r" ((int)(fd)),			\
--			"m" (*(__kernel_fd_set *)(fdsetp)));	\
--	 __result;						\
--}))
--
--#undef	__FD_ZERO
--#define __FD_ZERO(fdsetp)					\
--do {								\
--	int __d0, __d1;						\
--	asm volatile("cld ; rep ; stosl"			\
--		     : "=m" (*(__kernel_fd_set *)(fdsetp)),	\
--		       "=&c" (__d0), "=&D" (__d1)		\
--		     : "a" (0), "1" (__FDSET_LONGS),		\
--		       "2" ((__kernel_fd_set *)(fdsetp))	\
--		     : "memory");				\
--} while (0)
--
--#endif /* defined(__KERNEL__) */
-+#include <asm-generic/posix_types.h>
- 
- #endif /* _ASM_X86_POSIX_TYPES_32_H */
-diff --git a/arch/x86/include/asm/posix_types_64.h b/arch/x86/include/asm/posix_types_64.h
-index eb8d2d9..cba0c1e 100644
---- a/arch/x86/include/asm/posix_types_64.h
-+++ b/arch/x86/include/asm/posix_types_64.h
-@@ -7,113 +7,13 @@
-  * assume GCC is being used.
-  */
- 
--typedef unsigned long	__kernel_ino_t;
--typedef unsigned int	__kernel_mode_t;
--typedef unsigned long	__kernel_nlink_t;
--typedef long		__kernel_off_t;
--typedef int		__kernel_pid_t;
--typedef int		__kernel_ipc_pid_t;
--typedef unsigned int	__kernel_uid_t;
--typedef unsigned int	__kernel_gid_t;
--typedef unsigned long	__kernel_size_t;
--typedef long		__kernel_ssize_t;
--typedef long		__kernel_ptrdiff_t;
--typedef long		__kernel_time_t;
--typedef long		__kernel_suseconds_t;
--typedef long		__kernel_clock_t;
--typedef int		__kernel_timer_t;
--typedef int		__kernel_clockid_t;
--typedef int		__kernel_daddr_t;
--typedef char *		__kernel_caddr_t;
--typedef unsigned short	__kernel_uid16_t;
--typedef unsigned short	__kernel_gid16_t;
--
--#ifdef __GNUC__
--typedef long long	__kernel_loff_t;
--#endif
--
--typedef struct {
--	int	val[2];
--} __kernel_fsid_t;
--
- typedef unsigned short __kernel_old_uid_t;
- typedef unsigned short __kernel_old_gid_t;
--typedef __kernel_uid_t __kernel_uid32_t;
--typedef __kernel_gid_t __kernel_gid32_t;
-+#define __kernel_old_uid_t __kernel_old_uid_t
- 
- typedef unsigned long	__kernel_old_dev_t;
-+#define __kernel_old_dev_t __kernel_old_dev_t
- 
--#ifdef __KERNEL__
--
--#undef __FD_SET
--static inline void __FD_SET(unsigned long fd, __kernel_fd_set *fdsetp)
+-static inline int __FD_ISSET(unsigned long __fd, const __kernel_fd_set *__p)
 -{
--	unsigned long _tmp = fd / __NFDBITS;
--	unsigned long _rem = fd % __NFDBITS;
--	fdsetp->fds_bits[_tmp] |= (1UL<<_rem);
--}
--
--#undef __FD_CLR
--static inline void __FD_CLR(unsigned long fd, __kernel_fd_set *fdsetp)
--{
--	unsigned long _tmp = fd / __NFDBITS;
--	unsigned long _rem = fd % __NFDBITS;
--	fdsetp->fds_bits[_tmp] &= ~(1UL<<_rem);
--}
--
--#undef __FD_ISSET
--static inline int __FD_ISSET(unsigned long fd, __const__ __kernel_fd_set *p)
--{
--	unsigned long _tmp = fd / __NFDBITS;
--	unsigned long _rem = fd % __NFDBITS;
--	return (p->fds_bits[_tmp] & (1UL<<_rem)) != 0;
+-	unsigned long __tmp = __fd / __NFDBITS;
+-	unsigned long __rem = __fd % __NFDBITS;
+-	return (__p->fds_bits[__tmp] & (1UL<<__rem)) != 0;
 -}
 -
 -/*
-- * This will unroll the loop for the normal constant cases (8 or 32 longs,
-- * for 256 and 1024-bit fd_sets respectively)
+- * This will unroll the loop for the normal constant case (8 ints,
+- * for a 256-bit fd_set)
 - */
--#undef __FD_ZERO
--static inline void __FD_ZERO(__kernel_fd_set *p)
+-#undef	__FD_ZERO
+-static inline void __FD_ZERO(__kernel_fd_set *__p)
 -{
--	unsigned long *tmp = p->fds_bits;
--	int i;
+-	unsigned long *__tmp = __p->fds_bits;
+-	int __i;
 -
 -	if (__builtin_constant_p(__FDSET_LONGS)) {
 -		switch (__FDSET_LONGS) {
--		case 32:
--			tmp[ 0] = 0; tmp[ 1] = 0; tmp[ 2] = 0; tmp[ 3] = 0;
--			tmp[ 4] = 0; tmp[ 5] = 0; tmp[ 6] = 0; tmp[ 7] = 0;
--			tmp[ 8] = 0; tmp[ 9] = 0; tmp[10] = 0; tmp[11] = 0;
--			tmp[12] = 0; tmp[13] = 0; tmp[14] = 0; tmp[15] = 0;
--			tmp[16] = 0; tmp[17] = 0; tmp[18] = 0; tmp[19] = 0;
--			tmp[20] = 0; tmp[21] = 0; tmp[22] = 0; tmp[23] = 0;
--			tmp[24] = 0; tmp[25] = 0; tmp[26] = 0; tmp[27] = 0;
--			tmp[28] = 0; tmp[29] = 0; tmp[30] = 0; tmp[31] = 0;
--			return;
 -		case 16:
--			tmp[ 0] = 0; tmp[ 1] = 0; tmp[ 2] = 0; tmp[ 3] = 0;
--			tmp[ 4] = 0; tmp[ 5] = 0; tmp[ 6] = 0; tmp[ 7] = 0;
--			tmp[ 8] = 0; tmp[ 9] = 0; tmp[10] = 0; tmp[11] = 0;
--			tmp[12] = 0; tmp[13] = 0; tmp[14] = 0; tmp[15] = 0;
+-			__tmp[ 0] = 0; __tmp[ 1] = 0;
+-			__tmp[ 2] = 0; __tmp[ 3] = 0;
+-			__tmp[ 4] = 0; __tmp[ 5] = 0;
+-			__tmp[ 6] = 0; __tmp[ 7] = 0;
+-			__tmp[ 8] = 0; __tmp[ 9] = 0;
+-			__tmp[10] = 0; __tmp[11] = 0;
+-			__tmp[12] = 0; __tmp[13] = 0;
+-			__tmp[14] = 0; __tmp[15] = 0;
 -			return;
+-
 -		case 8:
--			tmp[ 0] = 0; tmp[ 1] = 0; tmp[ 2] = 0; tmp[ 3] = 0;
--			tmp[ 4] = 0; tmp[ 5] = 0; tmp[ 6] = 0; tmp[ 7] = 0;
+-			__tmp[ 0] = 0; __tmp[ 1] = 0;
+-			__tmp[ 2] = 0; __tmp[ 3] = 0;
+-			__tmp[ 4] = 0; __tmp[ 5] = 0;
+-			__tmp[ 6] = 0; __tmp[ 7] = 0;
 -			return;
+-
 -		case 4:
--			tmp[ 0] = 0; tmp[ 1] = 0; tmp[ 2] = 0; tmp[ 3] = 0;
+-			__tmp[ 0] = 0; __tmp[ 1] = 0;
+-			__tmp[ 2] = 0; __tmp[ 3] = 0;
 -			return;
 -		}
 -	}
--	i = __FDSET_LONGS;
--	while (i) {
--		i--;
--		*tmp = 0;
--		tmp++;
+-	__i = __FDSET_LONGS;
+-	while (__i) {
+-		__i--;
+-		*__tmp = 0;
+-		__tmp++;
 -	}
 -}
 -
--#endif /* defined(__KERNEL__) */
+-#endif /* defined(__KERNEL__) || !defined(__GLIBC__) || (__GLIBC__ < 2) */
 +#include <asm-generic/posix_types.h>
  
- #endif /* _ASM_X86_POSIX_TYPES_64_H */
+ #endif /* _ASM_POSIX_TYPES_H */
 -- 
 1.7.6.5
 
