@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab2BHUyW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 15:54:22 -0500
-Received: from proxima.lp0.eu ([81.2.80.65]:55440 "EHLO proxima.lp0.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183Ab2BHUyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 15:54:20 -0500
-Message-ID: <4F32E0F8.4080203@simon.arlott.org.uk>
-Date: Wed, 08 Feb 2012 20:54:16 +0000
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110823 Thunderbird/5.0
+	id S1755461Ab2BHU6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 15:58:01 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37737 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab2BHU6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 15:58:00 -0500
+Message-ID: <4F32E1D2.4010809@vflare.org>
+Date: Wed, 08 Feb 2012 15:57:54 -0500
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: bsg_unregister_queue attempts to remove "bsg" sysfs link that doesn't
- exist
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
+References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com> <1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com> <4F21A5AF.6010605@linux.vnet.ibm.com> <4F300D41.5050105@linux.vnet.ibm.com> <4F32A55E.8010401@linux.vnet.ibm.com> <4F32B6A4.8030702@vflare.org> <4F32BEDC.6030502@linux.vnet.ibm.com>
+In-Reply-To: <4F32BEDC.6030502@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I unplugged two hard drives and this happened:
-[168525.975223] mptbase: ioc0: LogInfo(0x31110d00): Originator={PL}, Code={Reset}, SubCode(0x0d00) cb_idx mptbase_reply
-[168527.976303] mptbase: ioc0: LogInfo(0x31110d00): Originator={PL}, Code={Reset}, SubCode(0x0d00) cb_idx mptbase_reply
-[168530.879028]  end_device-8:2: mptsas: ioc0: removing sata device: fw_channel 0, fw_id 13, phy 7,sas_addr 0xde5c3f3bbc9bae8f
-[168530.879034]  phy-8:7: mptsas: ioc0: delete phy 7, phy-obj (0xffff88027582b800)
-[168530.879045]  port-8:2: mptsas: ioc0: delete port 2, sas_addr (0xde5c3f3bbc9bae8f)
-[168530.879525] sd 8:0:2:0: [sdh] Synchronizing SCSI cache
-[168530.879581] sd 8:0:2:0: [sdh]  Result: hostbyte=DID_NO_CONNECT driverbyte=DRIVER_OK
-[168530.879651] scsi target8:0:2: mptsas: ioc0: delete device: fw_channel 0, fw_id 13, phy 7, sas_addr 0xde5c3f3bbc9bae8f
-[168530.879706] ------------[ cut here ]------------
-[168530.879715] WARNING: at fs/sysfs/inode.c:323 sysfs_hash_and_remove+0x9c/0xb0()
-[168530.879717] Hardware name: empty
-[168530.879719] sysfs: can not remove 'bsg', no directory
-[168530.879721] Modules linked in: zaurus cdc_ether usbnet bnep rfcomm bridge stp fuse ext4 jbd2 nf_conntrack_ipv6 ipt_REJECT iptable_filter nf_defrag_ipv6 xt_state ip6t_REJECT iptable_mangle xt_tcpudp iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_dscp xt_string xt_owner xt_NFQUEUE xt_multiport xt_mark xt_iprange xt_hashlimit xt_conntrack xt_connmark nf_conntrack ip6_tables ip_tables x_tables btusb bluetooth crc16
-[168530.879757] Pid: 1578, comm: kworker/u:7 Tainted: G       A     3.3.0-rc2+ #00119-gd8e94fc-dirty
-[168530.879761] Call Trace:
-[168530.879770]  [<ffffffff8103a29a>] warn_slowpath_common+0x7a/0xb0
-[168530.879774]  [<ffffffff8103a371>] warn_slowpath_fmt+0x41/0x50
-[168530.879778]  [<ffffffff81154fbc>] sysfs_hash_and_remove+0x9c/0xb0
-[168530.879782]  [<ffffffff81157a01>] sysfs_remove_link+0x21/0x30
-[168530.879788]  [<ffffffff81274bb7>] bsg_unregister_queue+0x47/0xa0
-[168530.879795]  [<ffffffff813fdc20>] sas_rphy_free+0xa0/0xd0
-[168530.879798]  [<ffffffff813fe9e9>] sas_rphy_delete+0x19/0x20
-[168530.879801]  [<ffffffff813fea15>] sas_port_delete+0x25/0x130
-[168530.879806]  [<ffffffff814581c3>] mptsas_del_end_device+0x183/0x1c0
-[168530.879810]  [<ffffffff8145aedc>] mptsas_hotplug_work+0x1ec/0x6a0
-[168530.879816]  [<ffffffff810698e5>] ? idle_balance+0xf5/0x150
-[168530.879820]  [<ffffffff81061779>] ? finish_task_switch+0x49/0xd0
-[168530.879824]  [<ffffffff8145c183>] mptsas_firmware_event_work+0xa63/0xca0
-[168530.879829]  [<ffffffff81046cf7>] ? lock_timer_base+0x37/0x70
-[168530.879832]  [<ffffffff8145b720>] ? mptsas_send_ir2_event+0x110/0x110
-[168530.879836]  [<ffffffff8104fd67>] process_one_work+0x117/0x3c0
-[168530.879839]  [<ffffffff81050382>] worker_thread+0x172/0x3e0
-[168530.879844]  [<ffffffff8105e651>] ? __wake_up_common+0x51/0x80
-[168530.879847]  [<ffffffff81050210>] ? manage_workers+0x200/0x200
-[168530.879852]  [<ffffffff81056796>] kthread+0x96/0xa0
-[168530.879858]  [<ffffffff816d01d4>] kernel_thread_helper+0x4/0x10
-[168530.879862]  [<ffffffff81056700>] ? kthread_freezable_should_stop+0x60/0x60
-[168530.879866]  [<ffffffff816d01d0>] ? gs_change+0xb/0xb
-[168530.879869] ---[ end trace b116d5a791652b31 ]---
-[168532.879048]  end_device-8:1: mptsas: ioc0: removing sata device: fw_channel 0, fw_id 12, phy 6,sas_addr 0xde5c3f3cc395aa8e
-[168532.879054]  phy-8:6: mptsas: ioc0: delete phy 6, phy-obj (0xffff88027582b000)
-[168532.879065]  port-8:1: mptsas: ioc0: delete port 1, sas_addr (0xde5c3f3cc395aa8e)
-[168532.879580] sd 8:0:1:0: [sdg] Synchronizing SCSI cache
-[168532.879692] sd 8:0:1:0: [sdg]  Result: hostbyte=DID_NO_CONNECT driverbyte=DRIVER_OK
-[168532.879877] scsi target8:0:1: mptsas: ioc0: delete device: fw_channel 0, fw_id 12, phy 6, sas_addr 0xde5c3f3cc395aa8e
-[168532.879999] ------------[ cut here ]------------
-[168532.880033] WARNING: at fs/sysfs/inode.c:323 sysfs_hash_and_remove+0x9c/0xb0()
-[168532.880038] Hardware name: empty
-[168532.880042] sysfs: can not remove 'bsg', no directory
-[168532.880045] Modules linked in: zaurus cdc_ether usbnet bnep rfcomm bridge stp fuse ext4 jbd2 nf_conntrack_ipv6 ipt_REJECT iptable_filter nf_defrag_ipv6 xt_state ip6t_REJECT iptable_mangle xt_tcpudp iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_dscp xt_string xt_owner xt_NFQUEUE xt_multiport xt_mark xt_iprange xt_hashlimit xt_conntrack xt_connmark nf_conntrack ip6_tables ip_tables x_tables btusb bluetooth crc16
-[168532.880108] Pid: 1578, comm: kworker/u:7 Tainted: G       AW    3.3.0-rc2+ #00119-gd8e94fc-dirty
-[168532.880115] Call Trace:
-[168532.880128]  [<ffffffff8103a29a>] warn_slowpath_common+0x7a/0xb0
-[168532.880136]  [<ffffffff8103a371>] warn_slowpath_fmt+0x41/0x50
-[168532.880143]  [<ffffffff81154fbc>] sysfs_hash_and_remove+0x9c/0xb0
-[168532.880152]  [<ffffffff81157a01>] sysfs_remove_link+0x21/0x30
-[168532.880160]  [<ffffffff81274bb7>] bsg_unregister_queue+0x47/0xa0
-[168532.880171]  [<ffffffff813fdc20>] sas_rphy_free+0xa0/0xd0
-[168532.880177]  [<ffffffff813fe9e9>] sas_rphy_delete+0x19/0x20
-[168532.880183]  [<ffffffff813fea15>] sas_port_delete+0x25/0x130
-[168532.880192]  [<ffffffff814581c3>] mptsas_del_end_device+0x183/0x1c0
-[168532.880218]  [<ffffffff8145aedc>] mptsas_hotplug_work+0x1ec/0x6a0
-[168532.880227]  [<ffffffff810698e5>] ? idle_balance+0xf5/0x150
-[168532.880234]  [<ffffffff81061779>] ? finish_task_switch+0x49/0xd0
-[168532.880241]  [<ffffffff8145c183>] mptsas_firmware_event_work+0xa63/0xca0
-[168532.880250]  [<ffffffff81046cf7>] ? lock_timer_base+0x37/0x70
-[168532.880256]  [<ffffffff8145b720>] ? mptsas_send_ir2_event+0x110/0x110
-[168532.880264]  [<ffffffff8104fd67>] process_one_work+0x117/0x3c0
-[168532.880270]  [<ffffffff81050382>] worker_thread+0x172/0x3e0
-[168532.880279]  [<ffffffff8105e651>] ? __wake_up_common+0x51/0x80
-[168532.880285]  [<ffffffff81050210>] ? manage_workers+0x200/0x200
-[168532.880293]  [<ffffffff81056796>] kthread+0x96/0xa0
-[168532.880303]  [<ffffffff816d01d4>] kernel_thread_helper+0x4/0x10
-[168532.880316]  [<ffffffff81056700>] ? kthread_freezable_should_stop+0x60/0x60
-[168532.880329]  [<ffffffff816d01d0>] ? gs_change+0xb/0xb
-[168532.880336] ---[ end trace b116d5a791652b32 ]---
+On 02/08/2012 01:28 PM, Dave Hansen wrote:
 
--- 
-Simon Arlott
+> On 02/08/2012 09:53 AM, Nitin Gupta wrote:
+>> vmap() is not just slower but also does memory allocations at various
+>> places. Under memory pressure, this may cause failure in reading a
+>> stored object just because we failed to map it. Also, it allocates VA
+>> region each time its called which is a real big waste when we can simply
+>> pre-allocate 2 * PAGE_SIZE'ed VA regions (per-cpu).
+> 
+> Yeah, vmap() is a bit heavy-handed.  I'm just loathe to go mucking
+> around in the low-level pagetables too much.  Just seems like there'll
+> be a ton of pitfalls, like arch-specific TLB flushing, and it _seems_
+> like one of the existing kernel mechanisms should work.
+> 
+> I guess if you've exhaustively explored all of the existing kernel
+> mapping mechanisms and found none of them to work, and none of them to
+> be in any way suitably adaptable to your use, you should go ahead and
+> roll your own.  I guess you do at least use alloc_vm_area().  What made
+> map_vm_area() unsuitable for your needs?  If you're remapping, you
+> should at least be guaranteed not to have to allocate pte pages.
+> 
+
+
+map_vm_area() needs 'struct vm_struct' parameter but for mapping kernel
+allocated pages within kernel, what should we pass here?  I think we can
+instead use map_kernel_range_noflush() -- surprisingly
+unmap_kernel_range_noflush() is exported but this one is not.
+
+Nitin
+
