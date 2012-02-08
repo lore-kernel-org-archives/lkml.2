@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab2BHEAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Feb 2012 23:00:40 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35158 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935Ab2BHEAh (ORCPT
+	id S1756193Ab2BHEAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Feb 2012 23:00:47 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59079 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755720Ab2BHEAj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Feb 2012 23:00:37 -0500
+	Tue, 7 Feb 2012 23:00:39 -0500
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: Michael Williamson <michael.williamson@criticallink.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: RE: [PATCH v3 3/3] arm:davinci: move NAND and NOR devices as aemif
+ MFD slaves
+Thread-Topic: [PATCH v3 3/3] arm:davinci: move NAND and NOR devices as aemif
+ MFD slaves
+Thread-Index: AQHM5a1r+/D1oImEDU6E/C9RIZs36JYxSEKAgAEW7XA=
+Date: Wed, 8 Feb 2012 04:00:13 +0000
+Message-ID: <A73F36158E33644199EB82C5EC81C7BC31761D77@DBDE01.ent.ti.com>
+References: <1328627513-30134-1-git-send-email-prakash.pm@ti.com>
+ <1328627513-30134-4-git-send-email-prakash.pm@ti.com>
+ <4F31552D.9060505@criticallink.com>
+In-Reply-To: <4F31552D.9060505@criticallink.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAAHN_R0+ExGcdpLM7KwC_KsPOemVOiRrmyWcowiu5_cWW3BPLQ@mail.gmail.com>
-References: <20120116163106.GC7180@jl-vm1.vm.bytemark.co.uk>
-	<1326776095-2629-1-git-send-email-siddhesh.poyarekar@gmail.com>
-	<CAAHN_R2g9zaujw30+zLf91AGDHNqE6HDc8Z4yJbrzgJcJYFkXg@mail.gmail.com>
-	<4F2B02BC.8010308@gmail.com>
-	<CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com>
-	<CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com>
-	<CAAHN_R0+ExGcdpLM7KwC_KsPOemVOiRrmyWcowiu5_cWW3BPLQ@mail.gmail.com>
-Date: Wed, 8 Feb 2012 09:30:36 +0530
-Message-ID: <CAAHN_R0N=3J4=VqvDsGB=_2Ln9yKBjOevW2=_UAMBK1pGepqvA@mail.gmail.com>
-Subject: Re: [RESEND][PATCH] Mark thread stack correctly in proc/<pid>/maps
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Jamie Lokier <jamie@shareable.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 4, 2012 at 12:04 AM, Siddhesh Poyarekar
-<siddhesh.poyarekar@gmail.com> wrote:
-> On Fri, Feb 3, 2012 at 1:31 PM, KOSAKI Motohiro
-> <kosaki.motohiro@gmail.com> wrote:
->> The fact is, now process stack and pthread stack clearly behave
->> different dance. libc don't expect pthread stack grow automatically.
->> So, your patch will break userland. Just only change display thing.
-<snip>
-> I have also dropped an email on the libc-alpha list here to solicit
-> comments from libc maintainers on this:
->
-> http://sourceware.org/ml/libc-alpha/2012-02/msg00036.html
->
+Hi Mike,
 
-Kosaki-san, your suggestion of adding an extra flag seems like the
-right way to go about this based on the discussion on libc-alpha,
-specifically, your point about pthread_getattr_np() -- it may not be a
-standard, but it's a breakage anyway. However, looking at the vm_flags
-options in mm.h, it looks like the entire 32-bit space has been
-exhausted for the flag value. The vm_flags is an unsigned long, so it
-ought to take 8 bytes on a 64-bit system, but 32-bit systems will be
-left behind.
+On Tue, Feb 07, 2012 at 22:15:33, Michael Williamson wrote:
+> Hello Prakash,
+> 
+> On 2/7/2012 10:11 AM, Manjunathappa, Prakash wrote:
+> 
+> > NAND and NOR device are made as aemif device slaves, hence all DaVinci
+> > board NAND/NOR device registration achieved via aemif MFD driver.
+> >
+> > Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+> > ---
+> > Since v2:
+> > Make changes for all DaVinci boards in single patch.
+> 
+> 
+> 
+> [...]
+> 
+> > diff --git a/arch/arm/mach-davinci/board-mityomapl138.c b/arch/arm/mach-davinci/board-mityomapl138.c
+> > index 672d820..bb29b7a 100644
+> > --- a/arch/arm/mach-davinci/board-mityomapl138.c
+> > +++ b/arch/arm/mach-davinci/board-mityomapl138.c
+> > @@ -19,6 +19,7 @@
+> >  #include <linux/etherdevice.h>
+> >  #include <linux/spi/spi.h>
+> >  #include <linux/spi/flash.h>
+> > +#include <linux/mfd/davinci_aemif.h>
+> >  
+> >  #include <asm/io.h>
+> >  #include <asm/mach-types.h>
+> > @@ -414,18 +415,35 @@ static struct resource mityomapl138_nandflash_resource[] = {
+> >  	},
+> >  };
+> >  
+> > -static struct platform_device mityomapl138_nandflash_device = {
+> > -	.name		= "davinci_nand",
+> > -	.id		= 1,
+> > -	.dev		= {
+> > -		.platform_data	= &mityomapl138_nandflash_data,
+> > +static struct platform_device mityomapl138_emif_devices[] __initdata = {
+> > +	{
+> > +		.name		= "davinci_nand",
+> > +		.id		= 0,
+> 
+> 
+> 
+> Pretty sure this still needs to be a 1.  The nand is on chip select 3,
+> EMA_CS3, which I believe is the same as the da850 EVM.
 
-So there are two options for this:
+Yes I could not test on this board. I will make id as 1.
 
-1) make vm_flags 64-bit for all arches. This will cause ABI breakage
-on 32-bit systems, so any external drivers will have to be rebuilt
-2) Implement this patch for 64-bit only by defining the new flag only
-for 64-bit. 32-bit systems behave as is
+Thanks,
+Prakash
 
-Which of these would be better? I prefer the latter because it looks
-like the path of least breakage.
+> 
+> -Mike
+> 
+> 
+> 
 
--- 
-Siddhesh Poyarekar
-http://siddhesh.in
