@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab2BHVTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:19:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47928 "EHLO mx1.redhat.com"
+	id S1757426Ab2BHVTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:19:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31495 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab2BHVTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:19:35 -0500
+	id S1754658Ab2BHVTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:19:45 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 16/17] FS-Cache: Exclusive op submission can BUG if there's
- been an I/O error
+Subject: [PATCH 17/17] NFS: nfs_migrate_page() does not wait for FS-Cache to
+ finish with a page
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
         linux-nfs@vger.kernel.org
-Date: Wed, 08 Feb 2012 21:19:24 +0000
-Message-ID: <20120208211924.15607.96271.stgit@warthog.procyon.org.uk>
+Date: Wed, 08 Feb 2012 21:19:35 +0000
+Message-ID: <20120208211935.15607.16821.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
 References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,192 +28,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function to submit an exclusive op (fscache_submit_exclusive_op()) can BUG
-if there's been an I/O error because it may see the parent cache object in an
-unexpected state.  It should only BUG if there hasn't been an I/O error.
+nfs_migrate_page() does not wait for FS-Cache to finish with a page, probably
+leading to the following bad-page-state:
 
-In this case the problem was produced by remounting the cache partition to be
-R/O.  The EROFS state was detected and the cache was aborted, but not
-everything handled the aborting correctly.
+ BUG: Bad page state in process python-bin  pfn:17d39b
+ page:ffffea00053649e8 flags:004000000000100c count:0 mapcount:0 mapping:(null)
+index:38686 (Tainted: G    B      ---------------- )
+ Pid: 31053, comm: python-bin Tainted: G    B      ----------------
+2.6.32-71.24.1.el6.x86_64 #1
+ Call Trace:
+ [<ffffffff8111bfe7>] bad_page+0x107/0x160
+ [<ffffffff8111ee69>] free_hot_cold_page+0x1c9/0x220
+ [<ffffffff8111ef19>] __pagevec_free+0x59/0xb0
+ [<ffffffff8104b988>] ? flush_tlb_others_ipi+0x128/0x130
+ [<ffffffff8112230c>] release_pages+0x21c/0x250
+ [<ffffffff8115b92a>] ? remove_migration_pte+0x28a/0x2b0
+ [<ffffffff8115f3f8>] ? mem_cgroup_get_reclaim_stat_from_page+0x18/0x70
+ [<ffffffff81122687>] ____pagevec_lru_add+0x167/0x180
+ [<ffffffff811226f8>] __lru_cache_add+0x58/0x70
+ [<ffffffff81122731>] lru_cache_add_lru+0x21/0x40
+ [<ffffffff81123f49>] putback_lru_page+0x69/0x100
+ [<ffffffff8115c0bd>] migrate_pages+0x13d/0x5d0
+ [<ffffffff81122687>] ? ____pagevec_lru_add+0x167/0x180
+ [<ffffffff81152ab0>] ? compaction_alloc+0x0/0x370
+ [<ffffffff8115255c>] compact_zone+0x4cc/0x600
+ [<ffffffff8111cfac>] ? get_page_from_freelist+0x15c/0x820
+ [<ffffffff810672f4>] ? check_preempt_wakeup+0x1c4/0x3c0
+ [<ffffffff8115290e>] compact_zone_order+0x7e/0xb0
+ [<ffffffff81152a49>] try_to_compact_pages+0x109/0x170
+ [<ffffffff8111e94d>] __alloc_pages_nodemask+0x5ed/0x850
+ [<ffffffff814c9136>] ? thread_return+0x4e/0x778
+ [<ffffffff81150d43>] alloc_pages_vma+0x93/0x150
+ [<ffffffff81167ea5>] do_huge_pmd_anonymous_page+0x135/0x340
+ [<ffffffff814cb6f6>] ? rwsem_down_read_failed+0x26/0x30
+ [<ffffffff81136755>] handle_mm_fault+0x245/0x2b0
+ [<ffffffff814ce383>] do_page_fault+0x123/0x3a0
+ [<ffffffff814cbdf5>] page_fault+0x25/0x30
 
-SysRq : Emergency Remount R/O
-EXT4-fs (sda6): re-mounted. Opts: (null)
-Emergency Remount complete
-CacheFiles: I/O Error: Failed to update xattr with error -30
-FS-Cache: Cache cachefiles stopped due to I/O error
-------------[ cut here ]------------
-kernel BUG at fs/fscache/operation.c:128!
-invalid opcode: 0000 [#1] SMP 
-CPU 0 
-Modules linked in: cachefiles nfs fscache auth_rpcgss nfs_acl lockd sunrpc
+nfs_migrate_page() calls nfs_fscache_release_page() which doesn't actually wait
+- even if __GFP_WAIT is set.  The reason that doesn't wait is that
+fscache_maybe_release_page() might deadlock the allocator as the work threads
+writing to the cache may all end up sleeping on memory allocation.
 
-Pid: 6612, comm: kworker/u:2 Not tainted 3.1.0-rc8-fsdevel+ #1093                  /DG965RY
-RIP: 0010:[<ffffffffa00739c0>]  [<ffffffffa00739c0>] fscache_submit_exclusive_op+0x2ad/0x2c2 [fscache]
-RSP: 0018:ffff880000853d40  EFLAGS: 00010206
-RAX: ffff880038ac72a8 RBX: ffff8800181f2260 RCX: ffffffff81f2b2b0
-RDX: 0000000000000001 RSI: ffffffff8179a478 RDI: ffff8800181f2280
-RBP: ffff880000853d60 R08: 0000000000000002 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000001 R12: ffff880038ac7268
-R13: ffff8800181f2280 R14: ffff88003a359190 R15: 000000010122b162
-FS:  0000000000000000(0000) GS:ffff88003bc00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00000034cc4a77f0 CR3: 0000000010e96000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process kworker/u:2 (pid: 6612, threadinfo ffff880000852000, task ffff880014c3c040)
-Stack:
- ffff8800181f2260 ffff8800181f2310 ffff880038ac7268 ffff8800181f2260
- ffff880000853dc0 ffffffffa0072375 ffff880037ecfe00 ffff88003a359198
- ffff880000853dc0 0000000000000246 0000000000000000 ffff88000a91d308
-Call Trace:
- [<ffffffffa0072375>] fscache_object_work_func+0x792/0xe65 [fscache]
- [<ffffffff81047e44>] process_one_work+0x1eb/0x37f
- [<ffffffff81047de6>] ? process_one_work+0x18d/0x37f
- [<ffffffffa0071be3>] ? fscache_enqueue_dependents+0xd8/0xd8 [fscache]
- [<ffffffff810482e4>] worker_thread+0x15a/0x21a
- [<ffffffff8104818a>] ? rescuer_thread+0x188/0x188
- [<ffffffff8104bf96>] kthread+0x7f/0x87
- [<ffffffff813ad6f4>] kernel_thread_helper+0x4/0x10
- [<ffffffff81026b98>] ? finish_task_switch+0x45/0xc0
- [<ffffffff813abd1d>] ? retint_restore_args+0xe/0xe
- [<ffffffff8104bf17>] ? __init_kthread_worker+0x53/0x53
- [<ffffffff813ad6f0>] ? gs_change+0xb/0xb
+However, I wonder if that is actually a problem.  There are a number of things
+I can do to deal with this:
 
+ (1) Make nfs_migrate_page() wait.
+
+ (2) Make fscache_maybe_release_page() honour the __GFP_WAIT flag.
+
+ (3) Set a timeout around the wait.
+
+ (4) Make nfs_migrate_page() return an error if the page is still busy.
+
+For the moment, I'll select (2) and (4).
 
 Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
 ---
 
- fs/fscache/internal.h  |    1 +
- fs/fscache/object.c    |   23 +++++++++++++++++------
- fs/fscache/operation.c |   13 ++++++++++---
- 3 files changed, 28 insertions(+), 9 deletions(-)
+ fs/fscache/internal.h |    1 +
+ fs/fscache/page.c     |   19 ++++++++++++++-----
+ fs/fscache/stats.c    |    6 ++++--
+ fs/nfs/write.c        |    4 +++-
+ 4 files changed, 22 insertions(+), 8 deletions(-)
 
 diff --git a/fs/fscache/internal.h b/fs/fscache/internal.h
-index c811793..dcb3e1d 100644
+index dcb3e1d..88a48cc 100644
 --- a/fs/fscache/internal.h
 +++ b/fs/fscache/internal.h
-@@ -288,6 +288,7 @@ extern const struct file_operations fscache_stats_fops;
- static inline void fscache_raise_event(struct fscache_object *object,
- 				       unsigned event)
- {
-+	BUG_ON(event >= NR_FSCACHE_OBJECT_EVENTS);
- 	if (!test_and_set_bit(event, &object->events) &&
- 	    test_bit(event, &object->event_mask))
- 		fscache_enqueue_object(object);
-diff --git a/fs/fscache/object.c b/fs/fscache/object.c
-index 2ef8a08..2c512cb 100644
---- a/fs/fscache/object.c
-+++ b/fs/fscache/object.c
-@@ -103,6 +103,7 @@ static void fscache_object_state_machine(struct fscache_object *object)
- {
- 	enum fscache_object_state new_state;
- 	struct fscache_cookie *cookie;
-+	int event;
+@@ -200,6 +200,7 @@ extern atomic_t fscache_n_store_vmscan_not_storing;
+ extern atomic_t fscache_n_store_vmscan_gone;
+ extern atomic_t fscache_n_store_vmscan_busy;
+ extern atomic_t fscache_n_store_vmscan_cancelled;
++extern atomic_t fscache_n_store_vmscan_wait;
  
- 	ASSERT(object != NULL);
+ extern atomic_t fscache_n_marks;
+ extern atomic_t fscache_n_uncaches;
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index 4dbbca1..f9b2fb3 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -56,6 +56,7 @@ bool __fscache_maybe_release_page(struct fscache_cookie *cookie,
  
-@@ -275,7 +276,8 @@ static void fscache_object_state_machine(struct fscache_object *object)
+ 	_enter("%p,%p,%x", cookie, page, gfp);
  
- 	/* determine the transition from a lookup state */
- lookup_transit:
--	switch (fls(object->events & object->event_mask) - 1) {
-+	event = fls(object->events & object->event_mask) - 1;
-+	switch (event) {
- 	case FSCACHE_OBJECT_EV_WITHDRAW:
- 	case FSCACHE_OBJECT_EV_RETIRE:
- 	case FSCACHE_OBJECT_EV_RELEASE:
-@@ -292,7 +294,8 @@ lookup_transit:
++try_again:
+ 	rcu_read_lock();
+ 	val = radix_tree_lookup(&cookie->stores, page->index);
+ 	if (!val) {
+@@ -104,11 +105,19 @@ bool __fscache_maybe_release_page(struct fscache_cookie *cookie,
+ 	return true;
  
- 	/* determine the transition from an active state */
- active_transit:
--	switch (fls(object->events & object->event_mask) - 1) {
-+	event = fls(object->events & object->event_mask) - 1;
-+	switch (event) {
- 	case FSCACHE_OBJECT_EV_WITHDRAW:
- 	case FSCACHE_OBJECT_EV_RETIRE:
- 	case FSCACHE_OBJECT_EV_RELEASE:
-@@ -314,7 +317,8 @@ active_transit:
- 
- 	/* determine the transition from a terminal state */
- terminal_transit:
--	switch (fls(object->events & object->event_mask) - 1) {
-+	event = fls(object->events & object->event_mask) - 1;
-+	switch (event) {
- 	case FSCACHE_OBJECT_EV_WITHDRAW:
- 		new_state = FSCACHE_OBJECT_WITHDRAWING;
- 		goto change_state;
-@@ -347,8 +351,8 @@ done:
- 
- unsupported_event:
- 	printk(KERN_ERR "FS-Cache:"
--	       " Unsupported event %lx [mask %lx] in state %s\n",
--	       object->events, object->event_mask,
-+	       " Unsupported event %d [%lx/%lx] in state %s\n",
-+	       event, object->events, object->event_mask,
- 	       fscache_object_states[object->state]);
- 	BUG();
- }
-@@ -945,7 +949,7 @@ static void fscache_invalidate_object(struct fscache_object *object)
- 
- 	spin_lock(&cookie->lock);
- 	if (fscache_submit_exclusive_op(object, op) < 0)
--		BUG();
-+		goto submit_op_failed;
- 	spin_unlock(&cookie->lock);
- 	fscache_put_operation(op);
- 
-@@ -960,4 +964,11 @@ static void fscache_invalidate_object(struct fscache_object *object)
- 	 */
- 	fscache_invalidation_complete(cookie);
- 	_leave("");
-+	return;
+ page_busy:
+-	/* we might want to wait here, but that could deadlock the allocator as
+-	 * the work threads writing to the cache may all end up sleeping
+-	 * on memory allocation */
+-	fscache_stat(&fscache_n_store_vmscan_busy);
+-	return false;
++	/* We will wait here if we're allowed to, but that could deadlock the
++	 * allocator as the work threads writing to the cache may all end up
++	 * sleeping on memory allocation, so we may need to impose a timeout
++	 * too. */
++	if (!(gfp & __GFP_WAIT)) {
++		fscache_stat(&fscache_n_store_vmscan_busy);
++		return false;
++	}
 +
-+submit_op_failed:
-+	spin_unlock(&cookie->lock);
-+	kfree(op);
-+	fscache_raise_event(object, FSCACHE_OBJECT_EV_ERROR);
-+	_leave(" [EIO]");
++	fscache_stat(&fscache_n_store_vmscan_wait);
++	__fscache_wait_on_page_write(cookie, page);
++	gfp &= ~__GFP_WAIT;
++	goto try_again;
  }
-diff --git a/fs/fscache/operation.c b/fs/fscache/operation.c
-index c58dbe6..9e6b7d2 100644
---- a/fs/fscache/operation.c
-+++ b/fs/fscache/operation.c
-@@ -84,6 +84,8 @@ static void fscache_run_op(struct fscache_object *object,
- int fscache_submit_exclusive_op(struct fscache_object *object,
- 				struct fscache_operation *op)
- {
-+	int ret;
-+
- 	_enter("{OBJ%x OP%x},", object->debug_id, op->debug_id);
+ EXPORT_SYMBOL(__fscache_maybe_release_page);
  
- 	ASSERTCMP(op->state, ==, FSCACHE_OP_ST_INITIALISED);
-@@ -116,6 +118,7 @@ int fscache_submit_exclusive_op(struct fscache_object *object,
+diff --git a/fs/fscache/stats.c b/fs/fscache/stats.c
+index 51cdaee..8179e8b 100644
+--- a/fs/fscache/stats.c
++++ b/fs/fscache/stats.c
+@@ -69,6 +69,7 @@ atomic_t fscache_n_store_vmscan_not_storing;
+ atomic_t fscache_n_store_vmscan_gone;
+ atomic_t fscache_n_store_vmscan_busy;
+ atomic_t fscache_n_store_vmscan_cancelled;
++atomic_t fscache_n_store_vmscan_wait;
  
- 		/* need to issue a new write op after this */
- 		clear_bit(FSCACHE_OBJECT_PENDING_WRITE, &object->flags);
-+		ret = 0;
- 	} else if (object->state == FSCACHE_OBJECT_CREATING) {
- 		op->object = object;
- 		object->n_ops++;
-@@ -123,13 +126,17 @@ int fscache_submit_exclusive_op(struct fscache_object *object,
- 		atomic_inc(&op->usage);
- 		list_add_tail(&op->pend_link, &object->pending_ops);
- 		fscache_stat(&fscache_n_op_pend);
-+		ret = 0;
- 	} else {
--		/* not allowed to submit ops in any other state */
--		BUG();
-+		/* If we're in any other state, there must have been an I/O
-+		 * error of some nature.
-+		 */
-+		ASSERT(test_bit(FSCACHE_IOERROR, &object->cache->flags));
-+		ret = -EIO;
- 	}
+ atomic_t fscache_n_marks;
+ atomic_t fscache_n_uncaches;
+@@ -232,11 +233,12 @@ static int fscache_stats_show(struct seq_file *m, void *v)
+ 		   atomic_read(&fscache_n_store_radix_deletes),
+ 		   atomic_read(&fscache_n_store_pages_over_limit));
  
- 	spin_unlock(&object->lock);
--	return 0;
-+	return ret;
+-	seq_printf(m, "VmScan : nos=%u gon=%u bsy=%u can=%u\n",
++	seq_printf(m, "VmScan : nos=%u gon=%u bsy=%u can=%u wt=%u\n",
+ 		   atomic_read(&fscache_n_store_vmscan_not_storing),
+ 		   atomic_read(&fscache_n_store_vmscan_gone),
+ 		   atomic_read(&fscache_n_store_vmscan_busy),
+-		   atomic_read(&fscache_n_store_vmscan_cancelled));
++		   atomic_read(&fscache_n_store_vmscan_cancelled),
++		   atomic_read(&fscache_n_store_vmscan_wait));
+ 
+ 	seq_printf(m, "Ops    : pend=%u run=%u enq=%u can=%u rej=%u\n",
+ 		   atomic_read(&fscache_n_op_pend),
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 834f0fe..5fbee48 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1701,7 +1701,9 @@ int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
+ 	if (PagePrivate(page))
+ 		return -EBUSY;
+ 
+-	nfs_fscache_release_page(page, GFP_KERNEL);
++	ret = -EBUSY;
++	if (!nfs_fscache_release_page(page, GFP_KERNEL))
++		goto out;
+ 
+ 	return migrate_page(mapping, newpage, page, mode);
  }
- 
- /*
 
