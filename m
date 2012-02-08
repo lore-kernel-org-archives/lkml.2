@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab2BHPxr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 10:53:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757178Ab2BHPwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 10:52:51 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 4/6] pagemap: document KPF_THP and make page-types aware of it
-Date: Wed,  8 Feb 2012 10:51:40 -0500
-Message-Id: <1328716302-16871-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1757278Ab2BHPy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 10:54:27 -0500
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:34716 "HELO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757128Ab2BHPyY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 10:54:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F329953.9010608@ti.com>
+References: <1328698612-18661-1-git-send-email-coelho@ti.com>
+	<20120208105957.GB16334@legolas.emea.dhcp.ti.com>
+	<1328699077.20197.51.camel@cumari>
+	<CAM=Q2cvZWdUk-v4-EWUJzAf4br-4+tO2s3qS_dn4KhHp+mm2+g@mail.gmail.com>
+	<1328700319.20197.54.camel@cumari>
+	<4F329953.9010608@ti.com>
+Date: Wed, 8 Feb 2012 17:54:23 +0200
+Message-ID: <CAKd1q9owoor5aShGb=LpDvkzmQvKASb8R9HPZtcyhvsY4+OqHg@mail.gmail.com>
+Subject: Re: [PATCH] I2C: OMAP: fix build breakage when CONFIG_OF is not set
+From: "Coelho, Luciano" <coelho@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>, balbi@ti.com,
+        linux-i2c@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-page-types, which is a common user of pagemap, gets aware of thp
-with this patch. This helps system admins and kernel hackers know
-about how thp works.
-Here is a sample output of page-types over a thp:
+Hi Benoit,
 
-  $ page-types -p <pid> --raw --list
+Ok, thanks. Good to know that the fixes are already queued.
 
-  voffset offset  len     flags
-  ...
-  7f9d40200       3f8400  1       ___U_lA____Ma_bH______t____________
-  7f9d40201       3f8401  1ff     ________________T_____t____________
+On 2/8/12, Cousson, Benoit <b-cousson@ti.com> wrote:
+> Hi Luca,
+>
+> On 2/8/2012 12:25 PM, Luciano Coelho wrote:
+>> On Wed, 2012-02-08 at 16:42 +0530, Shubhrajyoti Datta wrote:
+>>> On Wed, Feb 8, 2012 at 4:34 PM, Luciano Coelho<coelho@ti.com>  wrote:
+>>>> On Wed, 2012-02-08 at 12:59 +0200, Felipe Balbi wrote:
+>>>>> On Wed, Feb 08, 2012 at 12:56:52PM +0200, Luciano Coelho wrote:
+>>>>>> Since commit 6145197be6cc0583fa1a2f4ec1079d366137061e, building
+>>>>>
+>>>>> we generally like to see the commit subject here too. And adding the
+>>>>> abbreviated commit instead of the full sha1, wouldn't hurt either ;-)
+>>>>
+>>>> Ok, different practices. :)
+>>>
+>>> However  there was already a discurssion.
+>>> Anyways thanks for the patch.
+>>> http://permalink.gmane.org/gmane.linux.ports.arm.omap/69796
+>>>
+>>>
+>>>>
+>>>> I'll send v2.
+>>> I think there was already a fix for this.
+>>>
+>>> http://www.spinics.net/lists/linux-omap/msg63151.html
+>>>
+>>> Anyways thanks for the patch.
+>>
+>> Ah, okay.  Thanks for the info, I hadn't seen these.
+>
+> Yeah, it looks like the OMAP fixes missed -rc2, but Tony sent the pull
+> request [1].
+>
+> Regards,
+> Benoit
+>
+> [1] http://www.spinics.net/lists/linux-omap/msg63564.html
+>
 
-               flags      page-count       MB  symbolic-flags                     long-symbolic-flags
-  0x0000000000410000             511        1  ________________T_____t____________        compound_tail,thp
-  0x000000000040d868               1        0  ___U_lA____Ma_bH______t____________        uptodate,lru,active,mmap,anonymous,swapbacked,compound_head,thp
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-Changes since v1:
-  - fix misused word
----
- Documentation/vm/page-types.c |    2 ++
- Documentation/vm/pagemap.txt  |    4 ++++
- 2 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git 3.3-rc2.orig/Documentation/vm/page-types.c 3.3-rc2/Documentation/vm/page-types.c
-index 7445caa..0b13f02 100644
---- 3.3-rc2.orig/Documentation/vm/page-types.c
-+++ 3.3-rc2/Documentation/vm/page-types.c
-@@ -98,6 +98,7 @@
- #define KPF_HWPOISON		19
- #define KPF_NOPAGE		20
- #define KPF_KSM			21
-+#define KPF_THP			22
- 
- /* [32-] kernel hacking assistances */
- #define KPF_RESERVED		32
-@@ -147,6 +148,7 @@ static const char *page_flag_names[] = {
- 	[KPF_HWPOISON]		= "X:hwpoison",
- 	[KPF_NOPAGE]		= "n:nopage",
- 	[KPF_KSM]		= "x:ksm",
-+	[KPF_THP]		= "t:thp",
- 
- 	[KPF_RESERVED]		= "r:reserved",
- 	[KPF_MLOCKED]		= "m:mlocked",
-diff --git 3.3-rc2.orig/Documentation/vm/pagemap.txt 3.3-rc2/Documentation/vm/pagemap.txt
-index df09b96..4600cbe 100644
---- 3.3-rc2.orig/Documentation/vm/pagemap.txt
-+++ 3.3-rc2/Documentation/vm/pagemap.txt
-@@ -60,6 +60,7 @@ There are three components to pagemap:
-     19. HWPOISON
-     20. NOPAGE
-     21. KSM
-+    22. THP
- 
- Short descriptions to the page flags:
- 
-@@ -97,6 +98,9 @@ Short descriptions to the page flags:
- 21. KSM
-     identical memory pages dynamically shared between one or more processes
- 
-+22. THP
-+    contiguous pages which construct transparent hugepages
-+
-     [IO related page flags]
-  1. ERROR     IO error occurred
-  3. UPTODATE  page has up-to-date data
 -- 
-1.7.7.6
-
+Cheers,
+Luca.
