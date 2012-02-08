@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab2BHVSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 16:18:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24132 "EHLO mx1.redhat.com"
+	id S1757590Ab2BHVSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 16:18:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756625Ab2BHVSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 16:18:33 -0500
+	id S1756163Ab2BHVSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 16:18:44 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 10/17] NFS: Use FS-Cache invalidation
+Subject: [PATCH 11/17] CacheFiles: Add missing retrieval completions
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
         linux-nfs@vger.kernel.org
-Date: Wed, 08 Feb 2012 21:18:23 +0000
-Message-ID: <20120208211823.15607.62905.stgit@warthog.procyon.org.uk>
+Date: Wed, 08 Feb 2012 21:18:33 +0000
+Message-ID: <20120208211833.15607.67455.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
 References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -27,205 +27,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new FS-Cache invalidation facility from NFS to deal with foreign
-changes being detected on the server rather than attempting to retire the old
-cookie and get a new one.
+CacheFiles is missing some calls to fscache_retrieval_complete() in the error
+handling/collision paths of its reader functions.
 
-The problem with the old method was that NFS did not wait for all outstanding
-storage and retrieval ops on the cache to complete.  There was no automatic
-wait between the calls to ->readpages() and calls to invalidate_inode_pages2()
-as the latter can only wait on locked pages that have been added to the
-pagecache (which they haven't yet on entry to ->readpages()).
+This can be seen by the following assertion tripping in fscache_put_operation()
+whereby the operation being destroyed is still in the in-progress state and has
+not been cancelled or completed:
 
-This was leading to oopses like the one below when an outstanding read got cut
-off from its cookie by a premature release.
+FS-Cache: Assertion failed
+3 == 5 is false
+------------[ cut here ]------------
+kernel BUG at fs/fscache/operation.c:408!
+invalid opcode: 0000 [#1] SMP
+CPU 2
+Modules linked in: xfs ioatdma dca loop joydev evdev
+psmouse dcdbas pcspkr serio_raw i5000_edac edac_core i5k_amb shpchp
+pci_hotplug sg sr_mod]
 
-BUG: unable to handle kernel NULL pointer dereference at 00000000000000a8
-IP: [<ffffffffa0075118>] __fscache_read_or_alloc_pages+0x1dd/0x315 [fscache]
-PGD 15889067 PUD 15890067 PMD 0
-Oops: 0000 [#1] SMP
-CPU 0
-Modules linked in: cachefiles nfs fscache auth_rpcgss nfs_acl lockd sunrpc
-
-Pid: 4544, comm: tar Not tainted 3.1.0-rc4-fsdevel+ #1064                  /DG965RY
-RIP: 0010:[<ffffffffa0075118>]  [<ffffffffa0075118>] __fscache_read_or_alloc_pages+0x1dd/0x315 [fscache]
-RSP: 0018:ffff8800158799e8  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: ffff8800070d41e0 RCX: ffff8800083dc1b0
-RDX: 0000000000000000 RSI: ffff880015879960 RDI: ffff88003e627b90
-RBP: ffff880015879a28 R08: 0000000000000002 R09: 0000000000000002
-R10: 0000000000000001 R11: ffff880015879950 R12: ffff880015879aa4
-R13: 0000000000000000 R14: ffff8800083dc158 R15: ffff880015879be8
-FS:  00007f671e9d87c0(0000) GS:ffff88003bc00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00000000000000a8 CR3: 000000001587f000 CR4: 00000000000006f0
+Pid: 8062, comm: httpd Not tainted 3.1.0-rc8 #1 Dell Inc. PowerEdge 1950/0DT097
+RIP: 0010:[<ffffffff81197b24>]  [<ffffffff81197b24>] fscache_put_operation+0x304/0x330
+RSP: 0018:ffff880062f739d8  EFLAGS: 00010296
+RAX: 0000000000000025 RBX: ffff8800c5122e84 RCX: ffffffff81ddf040
+RDX: 00000000ffffffff RSI: 0000000000000082 RDI: ffffffff81ddef30
+RBP: ffff880062f739f8 R08: 0000000000000005 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000003 R12: ffff8800c5122e40
+R13: ffff880037a2cd20 R14: ffff880087c7a058 R15: ffff880087c7a000
+FS:  00007f63dcf636e0(0000) GS:ffff88022fc80000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f0c0a91f000 CR3: 0000000062ec2000 CR4: 00000000000006e0
 DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
 DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process tar (pid: 4544, threadinfo ffff880015878000, task ffff880015875040)
+Process httpd (pid: 8062, threadinfo ffff880062f72000, task ffff880087e58000)
 Stack:
- ffffffffa00b1759 ffff8800070dc158 ffff8800000213da ffff88002a286508
- ffff880015879aa4 ffff880015879be8 0000000000000001 ffff88002a2866e8
- ffff880015879a88 ffffffffa00b20be 00000000000200da ffff880015875040
+ ffff880062f73bf8 0000000000000000 ffff880062f73bf8 ffff880037a2cd20
+ ffff880062f73a68 ffffffff8119aa7e ffff88006540e000 ffff880062f73ad4
+ ffff88008e9a4308 ffff880037a2cd20 ffff880062f73a48 ffff8800c5122e40
 Call Trace:
- [<ffffffffa00b1759>] ? nfs_fscache_wait_bit+0xd/0xd [nfs]
- [<ffffffffa00b20be>] __nfs_readpages_from_fscache+0x7e/0x13f [nfs]
- [<ffffffff81095fe7>] ? __alloc_pages_nodemask+0x156/0x662
- [<ffffffffa0098763>] nfs_readpages+0xee/0x187 [nfs]
- [<ffffffff81098a5e>] __do_page_cache_readahead+0x1be/0x267
- [<ffffffff81098942>] ? __do_page_cache_readahead+0xa2/0x267
- [<ffffffff81098d7b>] ra_submit+0x1c/0x20
- [<ffffffff8109900a>] ondemand_readahead+0x28b/0x29a
- [<ffffffff810990ce>] page_cache_sync_readahead+0x38/0x3a
- [<ffffffff81091d8a>] generic_file_aio_read+0x2ab/0x67e
- [<ffffffffa008cfbe>] nfs_file_read+0xa4/0xc9 [nfs]
- [<ffffffff810c22c4>] do_sync_read+0xba/0xfa
- [<ffffffff810a62c9>] ? might_fault+0x4e/0x9e
- [<ffffffff81177a47>] ? security_file_permission+0x7b/0x84
- [<ffffffff810c25dd>] ? rw_verify_area+0xab/0xc8
- [<ffffffff810c29a4>] vfs_read+0xaa/0x13a
- [<ffffffff810c2a79>] sys_read+0x45/0x6c
- [<ffffffff813ac37b>] system_call_fastpath+0x16/0x1b
+ [<ffffffff8119aa7e>] __fscache_read_or_alloc_pages+0x1fe/0x530
+ [<ffffffff81250780>] __nfs_readpages_from_fscache+0x70/0x1c0
+ [<ffffffff8123142a>] nfs_readpages+0xca/0x1e0
+ [<ffffffff815f3c06>] ? rpc_do_put_task+0x36/0x50
+ [<ffffffff8122755b>] ? alloc_nfs_open_context+0x4b/0x110
+ [<ffffffff815ecd1a>] ? rpc_call_sync+0x5a/0x70
+ [<ffffffff810e7e9a>] __do_page_cache_readahead+0x1ca/0x270
+ [<ffffffff810e7f61>] ra_submit+0x21/0x30
+ [<ffffffff810e818d>] ondemand_readahead+0x11d/0x250
+ [<ffffffff810e83b6>] page_cache_sync_readahead+0x36/0x60
+ [<ffffffff810dffa4>] generic_file_aio_read+0x454/0x770
+ [<ffffffff81224ce1>] nfs_file_read+0xe1/0x130
+ [<ffffffff81121bd9>] do_sync_read+0xd9/0x120
+ [<ffffffff8114088f>] ? mntput+0x1f/0x40
+ [<ffffffff811238cb>] ? fput+0x1cb/0x260
+ [<ffffffff81122938>] vfs_read+0xc8/0x180
+ [<ffffffff81122af5>] sys_read+0x55/0x90
 
 Reported-by: Mark Moseley <moseleymark@gmail.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/nfs/fscache.h  |   20 +++++++++++++++++++-
- fs/nfs/inode.c    |   20 ++++++++++++++++----
- fs/nfs/nfs4proc.c |    2 ++
- 3 files changed, 37 insertions(+), 5 deletions(-)
+ fs/cachefiles/rdwr.c |   14 ++++++++++----
+ fs/fscache/page.c    |    2 ++
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfs/fscache.h b/fs/nfs/fscache.h
-index b9c572d..851fee1 100644
---- a/fs/nfs/fscache.h
-+++ b/fs/nfs/fscache.h
-@@ -155,6 +155,22 @@ static inline void nfs_readpage_to_fscache(struct inode *inode,
- }
+diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+index f437e97..e6d35e9 100644
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -361,8 +361,10 @@ out:
  
- /*
-+ * Invalidate the contents of fscache for this inode.  This will not sleep.
-+ */
-+static inline void nfs_fscache_invalidate(struct inode *inode)
-+{
-+	fscache_invalidate(NFS_I(inode)->fscache);
-+}
-+
-+/*
-+ * Wait for an object to finish being invalidated.
-+ */
-+static inline void nfs_fscache_wait_on_invalidate(struct inode *inode)
-+{
-+	fscache_wait_on_invalidate(NFS_I(inode)->fscache);
-+}
-+
-+/*
-  * indicate the client caching state as readable text
-  */
- static inline const char *nfs_server_fscache_state(struct nfs_server *server)
-@@ -164,7 +180,6 @@ static inline const char *nfs_server_fscache_state(struct nfs_server *server)
- 	return "no ";
- }
- 
--
- #else /* CONFIG_NFS_FSCACHE */
- static inline int nfs_fscache_register(void) { return 0; }
- static inline void nfs_fscache_unregister(void) {}
-@@ -213,6 +228,9 @@ static inline int nfs_readpages_from_fscache(struct nfs_open_context *ctx,
- static inline void nfs_readpage_to_fscache(struct inode *inode,
- 					   struct page *page, int sync) {}
- 
-+
-+static inline void nfs_fscache_invalidate(struct inode *inode) {}
-+
- static inline const char *nfs_server_fscache_state(struct nfs_server *server)
- {
- 	return "no ";
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index f649fba..54383e9 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -152,10 +152,12 @@ static void nfs_zap_caches_locked(struct inode *inode)
- 	nfsi->attrtimeo_timestamp = jiffies;
- 
- 	memset(NFS_COOKIEVERF(inode), 0, sizeof(NFS_COOKIEVERF(inode)));
--	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode))
-+	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)) {
- 		nfsi->cache_validity |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL|NFS_INO_REVAL_PAGECACHE;
--	else
-+		nfs_fscache_invalidate(inode);
-+	} else {
- 		nfsi->cache_validity |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL|NFS_INO_REVAL_PAGECACHE;
+ read_error:
+ 	_debug("read error %d", ret);
+-	if (ret == -ENOMEM)
++	if (ret == -ENOMEM) {
++		fscache_retrieval_complete(op, 1);
+ 		goto out;
 +	}
- }
+ io_error:
+ 	cachefiles_io_error_obj(object, "Page read error on backing file");
+ 	fscache_retrieval_complete(op, 1);
+@@ -551,6 +553,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 		if (ret < 0) {
+ 			if (ret == -EEXIST) {
+ 				page_cache_release(netpage);
++				fscache_retrieval_complete(op, 1);
+ 				continue;
+ 			}
+ 			goto nomem;
+@@ -627,6 +630,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 		if (ret < 0) {
+ 			if (ret == -EEXIST) {
+ 				page_cache_release(netpage);
++				fscache_retrieval_complete(op, 1);
+ 				continue;
+ 			}
+ 			goto nomem;
+@@ -645,9 +649,9 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
  
- void nfs_zap_caches(struct inode *inode)
-@@ -170,6 +172,7 @@ void nfs_zap_mapping(struct inode *inode, struct address_space *mapping)
- 	if (mapping->nrpages != 0) {
- 		spin_lock(&inode->i_lock);
- 		NFS_I(inode)->cache_validity |= NFS_INO_INVALID_DATA;
-+		nfs_fscache_invalidate(inode);
- 		spin_unlock(&inode->i_lock);
+ 		/* the netpage is unlocked and marked up to date here */
+ 		fscache_end_io(op, netpage, 0);
+-		fscache_retrieval_complete(op, 1);
+ 		page_cache_release(netpage);
+ 		netpage = NULL;
++		fscache_retrieval_complete(op, 1);
+ 		continue;
  	}
+ 
+@@ -682,15 +686,17 @@ out:
+ nomem:
+ 	_debug("nomem");
+ 	ret = -ENOMEM;
+-	goto out;
++	goto record_page_complete;
+ 
+ read_error:
+ 	_debug("read error %d", ret);
+ 	if (ret == -ENOMEM)
+-		goto out;
++		goto record_page_complete;
+ io_error:
+ 	cachefiles_io_error_obj(object, "Page read error on backing file");
+ 	ret = -ENOBUFS;
++record_page_complete:
++	fscache_retrieval_complete(op, 1);
+ 	goto out;
  }
-@@ -862,7 +865,7 @@ static int nfs_invalidate_mapping(struct inode *inode, struct address_space *map
- 		memset(nfsi->cookieverf, 0, sizeof(nfsi->cookieverf));
- 	spin_unlock(&inode->i_lock);
- 	nfs_inc_stats(inode, NFSIOS_DATAINVALIDATE);
--	nfs_fscache_reset_inode_cookie(inode);
-+	nfs_fscache_wait_on_invalidate(inode);
- 	dfprintk(PAGECACHE, "NFS: (%s/%Ld) data cache invalidated\n",
- 			inode->i_sb->s_id, (long long)NFS_FILEID(inode));
- 	return 0;
-@@ -927,6 +930,10 @@ static unsigned long nfs_wcc_update_inode(struct inode *inode, struct nfs_fattr
- 		i_size_write(inode, nfs_size_to_loff_t(fattr->size));
- 		ret |= NFS_INO_INVALID_ATTR;
+ 
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index 7bf9d25..4dbbca1 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -329,6 +329,8 @@ check_if_dead:
+ 		return -ENOBUFS;
  	}
-+
-+	if (nfsi->cache_validity & NFS_INO_INVALID_DATA)
-+		nfs_fscache_invalidate(inode);
-+
- 	return ret;
- }
- 
-@@ -1108,8 +1115,10 @@ static int nfs_post_op_update_inode_locked(struct inode *inode, struct nfs_fattr
- 	struct nfs_inode *nfsi = NFS_I(inode);
- 
- 	nfsi->cache_validity |= NFS_INO_INVALID_ATTR|NFS_INO_REVAL_PAGECACHE;
--	if (S_ISDIR(inode->i_mode))
-+	if (S_ISDIR(inode->i_mode)) {
- 		nfsi->cache_validity |= NFS_INO_INVALID_DATA;
-+		nfs_fscache_invalidate(inode);
-+	}
- 	if ((fattr->valid & NFS_ATTR_FATTR) == 0)
- 		return 0;
- 	return nfs_refresh_inode_locked(inode, fattr);
-@@ -1401,6 +1410,9 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 			(save_cache_validity & NFS_INO_REVAL_FORCED))
- 		nfsi->cache_validity |= invalid;
- 
-+	if (invalid & NFS_INO_INVALID_DATA)
-+		nfs_fscache_invalidate(inode);
-+
- 	return 0;
-  out_changed:
- 	/*
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index f0c849c..2b98a35 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -64,6 +64,7 @@
- #include "iostat.h"
- #include "callback.h"
- #include "pnfs.h"
-+#include "fscache.h"
- 
- #define NFSDBG_FACILITY		NFSDBG_PROC
- 
-@@ -753,6 +754,7 @@ static void update_changeattr(struct inode *dir, struct nfs4_change_info *cinfo)
- 	if (!cinfo->atomic || cinfo->before != dir->i_version)
- 		nfs_force_lookup_revalidate(dir);
- 	dir->i_version = cinfo->after;
-+	nfs_fscache_invalidate(dir);
- 	spin_unlock(&dir->i_lock);
- }
- 
+ 	if (unlikely(fscache_object_is_dead(object))) {
++		pr_err("%s() = -ENOBUFS [obj dead %d]", __func__, op->op.state);
++		fscache_cancel_op(&op->op);
+ 		fscache_stat(stat_object_dead);
+ 		return -ENOBUFS;
+ 	}
 
