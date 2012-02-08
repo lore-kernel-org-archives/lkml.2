@@ -1,171 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab2BHXLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 18:11:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35667 "EHLO mx2.suse.de"
+	id S1757584Ab2BHXRA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 18:17:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27872 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757524Ab2BHXLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 18:11:13 -0500
-Date: Thu, 9 Feb 2012 10:10:54 +1100
-From: NeilBrown <neilb@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <greg@linuxfoundation.org>,
-        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 4/8] PM / Sleep: Use wait queue to signal "no wakeup
- events in progress"
-Message-ID: <20120209101054.2b2cb2ab@notabene.brown>
-In-Reply-To: <201202070204.19615.rjw@sisk.pl>
-References: <201202070200.55505.rjw@sisk.pl>
-	<201202070204.19615.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/tzrD3Gx9mQjY3GVMpBCjsYM"; protocol="application/pgp-signature"
+	id S1757198Ab2BHXQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 18:16:58 -0500
+Message-ID: <4F33025D.2040301@redhat.com>
+Date: Wed, 08 Feb 2012 18:16:45 -0500
+From: Adam Jackson <ajax@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/2] char/mem: Add /dev/io (v2)
+References: <1328623901-20628-1-git-send-email-ajax@redhat.com> <1328657985-13942-1-git-send-email-ajax@redhat.com> <20120208001724.7e5c7be4@pyramind.ukuu.org.uk> <4F31C417.30502@redhat.com> <20120208092611.49ada8c5@pyramind.ukuu.org.uk> <4F3280C7.1030401@redhat.com> <20120208143238.0003287e@pyramind.ukuu.org.uk>
+In-Reply-To: <20120208143238.0003287e@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/tzrD3Gx9mQjY3GVMpBCjsYM
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 2/8/12 9:32 AM, Alan Cox wrote:
 
-On Tue, 7 Feb 2012 02:04:19 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+>> iopl does not have identical security semantics to ioperm.  iopl lets my
+>
+> I didn't mention ioperm. I said /dev/ports
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->=20
-> The current wakeup source deactivation code doesn't do anything when
-> the counter of wakeup events in progress goes down to zero, which
-> requires pm_get_wakeup_count() to poll that counter periodically.
-> Although this reduces the average time it takes to deactivate a
-> wakeup source, it also may lead to a substantial amount of unnecessary
-> polling if there are extended periods of wakeup activity.  Thus it
-> seems reasonable to use a wait queue for signaling the "no wakeup
-> events in progress" condition and remove the polling.
->=20
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/base/power/wakeup.c |   18 ++++++++++++++----
->  1 file changed, 14 insertions(+), 4 deletions(-)
->=20
-> Index: linux/drivers/base/power/wakeup.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux.orig/drivers/base/power/wakeup.c
-> +++ linux/drivers/base/power/wakeup.c
-> @@ -17,8 +17,6 @@
-> =20
->  #include "power.h"
-> =20
-> -#define TIMEOUT		100
-> -
->  /*
->   * If set, the suspend/hibernate code will abort transitions to a sleep =
-state
->   * if wakeup events are registered during or immediately before the tran=
-sition.
-> @@ -52,6 +50,8 @@ static void pm_wakeup_timer_fn(unsigned
-> =20
->  static LIST_HEAD(wakeup_sources);
-> =20
-> +static DECLARE_WAIT_QUEUE_HEAD(wakeup_count_wait_queue);
-> +
->  /**
->   * wakeup_source_create - Create a struct wakeup_source object.
->   * @name: Name of the new wakeup source.
-> @@ -84,7 +84,7 @@ void wakeup_source_destroy(struct wakeup
->  	while (ws->active) {
->  		spin_unlock_irq(&ws->lock);
-> =20
-> -		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
-> +		schedule_timeout_interruptible(msecs_to_jiffies(100));
-> =20
->  		spin_lock_irq(&ws->lock);
->  	}
-> @@ -411,6 +411,7 @@ EXPORT_SYMBOL_GPL(pm_stay_awake);
->   */
->  static void wakeup_source_deactivate(struct wakeup_source *ws)
->  {
-> +	unsigned int cnt, inpr;
->  	ktime_t duration;
->  	ktime_t now;
-> =20
-> @@ -444,6 +445,10 @@ static void wakeup_source_deactivate(str
->  	 * couter of wakeup events in progress simultaneously.
->  	 */
->  	atomic_add(MAX_IN_PROGRESS, &combined_event_count);
-> +
-> +	split_counters(&cnt, &inpr);
-> +	if (!inpr)
-> +		wake_up_all(&wakeup_count_wait_queue);
->  }
+This was a typo on my part.  /dev/port was intended.
 
-Would it be worth making this:
+>> X server disable interrupts.  /dev/io would not, and would let me add a
+>
+> Yes it would - you can issue I/O accesses to the interrupt controller. So
+> let me repeat that - the two are the same thing and equally insane.
 
-     if (!inpr && waitqueue_active(&wakeup_count_wait_queue))
-		wake_up_all(&wakeup_count_wait_queue);
+Way to cut out the bit about volunteering to write the filter (which we 
+could probably just steal whole from ACPI).
 
-??
-It would often save a spinlock.
+Besides, as noted (and cut), you need CAP_SYS_RAWIO anyway.
 
-Also was there a reason you used wake_up_all().  That is only really needed
-were EXCLUSIVE waits are happening, and there aren't any of those.
+>> Your definition of "faster" is spurious.  VBE calls are not a
+>
+> You are not the only user of iopl, and they are faster. You may not
+> *care* about the speed difference but the fact is they are faster.
 
-Thanks,
-NeilBrown
+So people continuing to use iopl will continue to be faster for their 
+use case.  X can switch off of it and be faster for its use case, in 
+which context switch overhead is infinitely more important than modeset 
+taking another hundred micros.
 
+>> performance path and system call overhead is negligible compared to I/O
+>> serialization.  If anything /dev/io can be _faster_ in the mainline case
+>> because we'll no longer need to handle the ioperm bitmask on every
+>> context switch.
+>
+> See before - I never mentioned ioperm.
 
-> =20
->  /**
-> @@ -624,14 +629,19 @@ bool pm_wakeup_pending(void)
->  bool pm_get_wakeup_count(unsigned int *count)
->  {
->  	unsigned int cnt, inpr;
-> +	DEFINE_WAIT(wait);
-> =20
->  	for (;;) {
-> +		prepare_to_wait(&wakeup_count_wait_queue, &wait,
-> +				TASK_INTERRUPTIBLE);
->  		split_counters(&cnt, &inpr);
->  		if (inpr =3D=3D 0 || signal_pending(current))
->  			break;
->  		pm_wakeup_update_hit_counts();
-> -		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
-> +
-> +		schedule();
->  	}
-> +	finish_wait(&wakeup_count_wait_queue, &wait);
-> =20
->  	split_counters(&cnt, &inpr);
->  	*count =3D cnt;
+X is using ioperm to explicity disable access to some ports.
 
+>> The current patch set results in a net gain of zero kernel interfaces,
+>> once /dev/port is put down in a year.  I will admit that the current
+>
+> People will be shipping code using it for years.
 
---Sig_/tzrD3Gx9mQjY3GVMpBCjsYM
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+You know, one of us is going to need to cite their sources here.  Thanks 
+for shutting down codesearch, google.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+>> /dev/port is probably not a meaningfully used API, seeing how it's been
+>> broken since literally kernel 0.10.  But it's there and enabled by
+>> default.  I would like it to work, please.
+>
+> So why hasn't it changed - because nobody has had a problem with it.
 
-iQIVAwUBTzMA/znsnt1WYoG5AQLzXg/5AcrK9XyQo3ESXCPHG0U2Z0LNqsryPP2j
-PVt1zLJwND9UlfY8fBzklOfjRfdAuqALcDDmqIpty6j1zrLmidmnfDcXm+I+cxD9
-cN3qhC2DnHAumonNQNfvlm8+a+98zFdZD8PUodmKxj0f7QmtaoydSbK58bB9LVH1
-tSImlyR+dL1uRshAjsCofwmpukrTaNisZBv2pp7vbYgzyxqPQjciKtwD1+UvjeQB
-gx0G8ZRvM8WJj/adZWGIGmzzQn2X/E+jTWjIyX+rFDl9VShzj3LViYqooVQhuodq
-Q7ekFOSQrabTvMPbGrxwgIWZPyuznR9/ul5zmah0Y7rxQtWMAUJ9vUFSPYp2rkHo
-c2ld9Xzv+HEAIq6JfAn07h8b4+cn1KdGTx6zhiUrGTLreuIzbs1L4/HuLrvd/zMN
-ZbnGI0eVt6rNA6c/rfv0cbQ5irwuQt3HvXRmOib8tf5coQRxcyBRWavwREe0FBwM
-g9KU7wPN2Pi93/mwBIacSDrRduDjym9UjjARteB9vdXTsmWFWh+R0EKc3GJqlmyA
-tO83reF8vhmruebE34qkmKEyZs/OVzSNXK/TVT7hHE3k7XyxV6VMRVCsTox9pmOD
-YERmyu++c8G7WgA4WMygdD2yo0XCbYPPRfaMMA0Iu9RN1ktycbL2orUMWYZzh7d6
-lBDuxme4lOo=
-=Puz7
------END PGP SIGNATURE-----
+And now that I have a problem with it, I'm being told that I don't have 
+a problem with it.
 
---Sig_/tzrD3Gx9mQjY3GVMpBCjsYM--
+Charming.
+
+>> Invoking architecture-specificity is spurious.  Competent architectures
+>> have a usable framebuffer interface from the firmware, so vesa never
+>> comes up.
+>
+> Exactly - so they don't need another port interface.
+
+Except to support the case of booting vesa cards on non-x86.  A thing X 
+can actually do, you know.
+
+> iopl is functionally equivalent to your io port code. It's already in the
+> kernel, it already works and it's already maintained.
+>
+> To be useful a port interface really needs to aware of hotplug, device
+> mappings and the like. For VESA that's going to be pretty horrible both
+> because of the uncontrolled nature of the interface and because of the
+> vga "magic" both for ports and routing.
+>
+> An interface where you could do something like
+>
+> 	open a port channel
+> 	bind device X to port channel  (imports its I/O ranges)
+> 	bind portrange A-B to port channel (for nasties like the vga
+> 				ports)
+>
+> read/write in 1/2/4/(8 ?) byte chunks meaningfully
+>
+> 	close
+
+This isn't sufficient.  VBIOS can call SBIOS.  SBIOS can poke any port 
+on the mainboard it wants.  There's no knowing a priori which ports on a 
+channel I would need to bind, a rather bright fellow named Turing made a 
+pretty good point about this once.
+
+Yes, I have seen this in the wild.
+
+More to the point I'm not concerned about hotplug here _at_ _all_.  If 
+you want hotplug at this level you write a kernel driver.  If you _want_ 
+me to write a kernel driver for vesa that pretends to be 
+hotplug-compatible guess I can try, but the idea of an 8086 emulator in 
+the kernel hasn't gone down well before.
+
+> and which properly handled device hotplug - ie if you bind to device X, X
+> is unplugged then the next read/write errors, or at least the address
+> space is not freed until it isn't in the port range space.
+>
+> Now that would be an improvement, but it seems to be a fair amount of
+> work.
+
+To solve a problem no one is having, or is going to have.  And which 
+wouldn't be sufficient for vesa regardless, short of the range of bound 
+ports being 0 to 65535.
+
+Whereas I've written something simple and supportable that does solve a 
+problem I am currently having.  Something that _precisely_ matches the 
+semantics of sysfs' legacy_io file API, a thing I have to use anyway for 
+multi-domain machines.  Something that doesn't pretend VESA hotplug is a 
+thing you can do because hey, guess what, it isn't.
+
+Whatever.  I can continue to do this badly in userspace, or we could 
+take some very small changes to make it slightly better, or we could do 
+some enormous overengineered thing to fail to solve a non-problem.  Me, 
+I like simple and incremental.  I guess that doesn't count for much.
+
+- ajax
