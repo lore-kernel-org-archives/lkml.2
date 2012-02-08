@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab2BHQP1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 11:15:27 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:64152 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab2BHQPZ (ORCPT
+	id S1755748Ab2BHQUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 11:20:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40617 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab2BHQUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 11:15:25 -0500
-X-Greylist: delayed 1589 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Feb 2012 11:15:24 EST
-Date: Wed, 8 Feb 2012 15:48:51 +0000 (UTC)
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: David Howells <dhowells@redhat.com>
-cc: jmorris@namei.org, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-api@vger.kernel.org,
-        libc-alpha@sourceware.org
-Subject: Re: [PATCH 1/2] Define ENOAUTHSERVICE to indicate "Authentication
- service unavailable"
-In-Reply-To: <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
-Message-ID: <Pine.LNX.4.64.1202081546240.8820@digraph.polyomino.org.uk>
-References: <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-OriginalArrivalTime: 08 Feb 2012 15:48:53.0461 (UTC) FILETIME=[28AAB850:01CCE679]
+	Wed, 8 Feb 2012 11:20:52 -0500
+From: Federico Vaga <federico.vaga@gmail.com>
+To: grant.likely@secretlab.ca, trivial@kernel.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: rubini@gnudd.com, giancarlo.asnaghi@st.com,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [PATCH] trivial: spi-pl022.c: fix a wrong kerneldoc comment
+Date: Wed,  8 Feb 2012 17:23:33 +0100
+Message-Id: <1328718213-17375-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Feb 2012, David Howells wrote:
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+---
+ drivers/spi/spi-pl022.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
->  #define ERFKILL		132	/* Operation not possible due to RF-kill */
-> +#define	ENOAUTHSERVICE	133	/* Authentication service not available */
->  
->  #define EHWPOISON	133	/* Memory page has hardware error */
-
-Defining the new error to have the same value as EHWPOISON seems rather 
-odd....
-
+diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+index 2f9cb43..286572d 100644
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@ -1495,7 +1495,7 @@ out:
+ 
+ /**
+  * pump_messages - Workqueue function which processes spi message queue
+- * @data: pointer to private data of SSP driver
++ * @work: pointer to the pump_messages work structure within pl022 structure
+  *
+  * This function checks if there is any spi message in the queue that
+  * needs processing and delegate control to appropriate function
 -- 
-Joseph S. Myers
-joseph@codesourcery.com
+1.7.7.6
+
