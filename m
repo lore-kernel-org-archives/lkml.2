@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab2BHLLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 06:11:51 -0500
-Received: from mga03.intel.com ([143.182.124.21]:6993 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756794Ab2BHLLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 06:11:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104458051"
-Date: Wed, 8 Feb 2012 19:01:44 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Li Shaohua <shaohua.li@intel.com>
-Subject: [PATCH] block: remove plugging at buffered write time
-Message-ID: <20120208110143.GA5550@localhost>
+	id S1757109Ab2BHLNB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 06:13:01 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54486 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756881Ab2BHLM7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 06:12:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1328699077.20197.51.camel@cumari>
+References: <1328698612-18661-1-git-send-email-coelho@ti.com>
+	<20120208105957.GB16334@legolas.emea.dhcp.ti.com>
+	<1328699077.20197.51.camel@cumari>
+Date: Wed, 8 Feb 2012 16:42:56 +0530
+Message-ID: <CAM=Q2cvZWdUk-v4-EWUJzAf4br-4+tO2s3qS_dn4KhHp+mm2+g@mail.gmail.com>
+Subject: Re: [PATCH] I2C: OMAP: fix build breakage when CONFIG_OF is not set
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: Luciano Coelho <coelho@ti.com>
+Cc: balbi@ti.com, linux-i2c@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
+        Benoit Cousson <b-cousson@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Buffered write(2) is not directly tied to IO, so it's not suitable to
-handle plug in generic_file_aio_write().
+On Wed, Feb 8, 2012 at 4:34 PM, Luciano Coelho <coelho@ti.com> wrote:
+> On Wed, 2012-02-08 at 12:59 +0200, Felipe Balbi wrote:
+>> On Wed, Feb 08, 2012 at 12:56:52PM +0200, Luciano Coelho wrote:
+>> > Since commit 6145197be6cc0583fa1a2f4ec1079d366137061e, building
+>>
+>> we generally like to see the commit subject here too. And adding the
+>> abbreviated commit instead of the full sha1, wouldn't hurt either ;-)
+>
+> Ok, different practices. :)
 
-Also remove the redundant plug calls around ->direct_IO(), since we now
-do unplugging in the lower layer do_blockdev_direct_IO().
+However  there was already a discurssion.
+Anyways thanks for the patch.
+http://permalink.gmane.org/gmane.linux.ports.arm.omap/69796
 
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Li Shaohua <shaohua.li@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/direct-io.c |    4 ++++
- mm/filemap.c   |    7 -------
- 2 files changed, 4 insertions(+), 7 deletions(-)
 
---- linux-next.orig/mm/filemap.c	2012-02-08 18:51:50.000000000 +0800
-+++ linux-next/mm/filemap.c	2012-02-08 18:52:19.000000000 +0800
-@@ -1421,12 +1421,8 @@ generic_file_aio_read(struct kiocb *iocb
- 			retval = filemap_write_and_wait_range(mapping, pos,
- 					pos + iov_length(iov, nr_segs) - 1);
- 			if (!retval) {
--				struct blk_plug plug;
--
--				blk_start_plug(&plug);
- 				retval = mapping->a_ops->direct_IO(READ, iocb,
- 							iov, pos, nr_segs);
--				blk_finish_plug(&plug);
- 			}
- 			if (retval > 0) {
- 				*ppos = pos + retval;
-@@ -2610,13 +2606,11 @@ ssize_t generic_file_aio_write(struct ki
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
--	struct blk_plug plug;
- 	ssize_t ret;
- 
- 	BUG_ON(iocb->ki_pos != pos);
- 
- 	mutex_lock(&inode->i_mutex);
--	blk_start_plug(&plug);
- 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
- 	mutex_unlock(&inode->i_mutex);
- 
-@@ -2627,7 +2621,6 @@ ssize_t generic_file_aio_write(struct ki
- 		if (err < 0 && ret > 0)
- 			ret = err;
- 	}
--	blk_finish_plug(&plug);
- 	return ret;
- }
- EXPORT_SYMBOL(generic_file_aio_write);
---- linux-next.orig/fs/direct-io.c	2012-02-08 18:51:37.000000000 +0800
-+++ linux-next/fs/direct-io.c	2012-02-08 18:52:19.000000000 +0800
-@@ -1106,6 +1106,7 @@ do_blockdev_direct_IO(int rw, struct kio
- 	unsigned long user_addr;
- 	size_t bytes;
- 	struct buffer_head map_bh = { 0, };
-+	struct blk_plug plug;
- 
- 	if (rw & WRITE)
- 		rw = WRITE_ODIRECT;
-@@ -1221,6 +1222,8 @@ do_blockdev_direct_IO(int rw, struct kio
- 				PAGE_SIZE - user_addr / PAGE_SIZE);
- 	}
- 
-+	blk_start_plug(&plug);
-+
- 	for (seg = 0; seg < nr_segs; seg++) {
- 		user_addr = (unsigned long)iov[seg].iov_base;
- 		sdio.size += bytes = iov[seg].iov_len;
-@@ -1314,6 +1317,7 @@ do_blockdev_direct_IO(int rw, struct kio
- 	} else
- 		BUG_ON(retval != -EIOCBQUEUED);
- 
-+	blk_finish_plug(&plug);
- out:
- 	return retval;
- }
+>
+> I'll send v2.
+I think there was already a fix for this.
+
+http://www.spinics.net/lists/linux-omap/msg63151.html
+
+Anyways thanks for the patch.
+
+>
+>
+>> > i2c_omap.c breaks if CONFIG_OF is not set:
+>> >
+>> > drivers/i2c/busses/i2c-omap.c: In function 'omap_i2c_probe':
+>> > drivers/i2c/busses/i2c-omap.c:1021: error: 'omap_i2c_of_match' undeclared (first use in this function)
+>> > drivers/i2c/busses/i2c-omap.c:1021: error: (Each undeclared identifier is reported only once
+>> > drivers/i2c/busses/i2c-omap.c:1021: error: for each function it appears in.)
+>> >
+>> > This is because the definition of omap_i2c_of_match is #ifdef'd on
+>> > CONFIG_OF, but the usage of it is not.
+>> >
+>> > Since the places where omap_ic2_of_match are prepared to get NULL
+>> > pointers if CONFIG_OF is not defined, we can simply define it to NULL.
+>> >
+>> > Cc: Benoit Cousson <b-cousson@ti.com>
+>> > Signed-off-by: Luciano Coelho <coelho@ti.com>
+>>
+>> after fixing the commit log, you can add:
+>>
+>> Reviewed-by: Felipe Balbi <balbi@ti.com>
+>>
+>> if you want.
+>
+> Thanks for your quick review!
+>
+> --
+> Cheers,
+> Luca.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
