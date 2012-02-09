@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab2BII1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:27:08 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:39397 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744Ab2BII1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:27:06 -0500
-Date: Thu, 9 Feb 2012 13:44:51 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH v10 3.3-rc2 1/9] uprobes: Install and remove
- breakpoints.
-Message-ID: <20120209081451.GC16600@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
- <20120202141851.5967.68000.sendpatchset@srdronam.in.ibm.com>
- <20120207171707.GA24443@linux.vnet.ibm.com>
- <CAK1hOcOd3hd31vZYw1yAVGK=gMV=vQotL1mRZkVgM=7M8mbMyw@mail.gmail.com>
- <4F3320E5.1050707@hitachi.com>
- <20120209063745.GB16600@linux.vnet.ibm.com>
- <20120209075357.GD18387@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120209075357.GD18387@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020908-5930-0000-0000-000004EDF6AC
+	id S1756590Ab2BIIcz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:32:55 -0500
+Received: from webbox1416.server-home.net ([77.236.96.61]:33586 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751429Ab2BIIcy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 03:32:54 -0500
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH] i2c-eg20t: Rework pch_i2c_wait_for_bus_idle to reduce wait time
+Date: Thu,  9 Feb 2012 09:32:46 +0100
+Message-Id: <1328776366-6881-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar <mingo@elte.hu> [2012-02-09 08:53:57]:
+If you insert several i2c transfers, the driver might start the next one
+while the STOP bit of the previous transfer is still on the bus, marking
+the bus as busy.
+pch_i2c_wait_for_bus_idle does an msleep(20) delaying the next transfer
+by >=20ms. Reduce wait time by actively waiting 5 us once, then using
+usleep_range.
 
-> 
-> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
-> 
-> > 	/* Clear REX.b bit (extension of MODRM.rm field):
-> > 	 * we want to encode rax/rcx, not r8/r9.
-> > 	 */
-> 
-> Small stylistic nit, just saw this chunk fly by - the proper 
-> comment style is like this one:
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+---
+ drivers/i2c/busses/i2c-eg20t.c |   35 ++++++++++++++++++++++-------------
+ 1 files changed, 22 insertions(+), 13 deletions(-)
 
-Okay, Will correct that in the patch that I send.
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index ca88776..6987e73 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -271,30 +271,39 @@ static inline bool ktime_lt(const ktime_t cmp1, const ktime_t cmp2)
+ /**
+  * pch_i2c_wait_for_bus_idle() - check the status of bus.
+  * @adap:	Pointer to struct i2c_algo_pch_data.
+- * @timeout:	waiting time counter (us).
++ * @timeout:	waiting time counter (ms).
+  */
+ static s32 pch_i2c_wait_for_bus_idle(struct i2c_algo_pch_data *adap,
+ 				     s32 timeout)
+ {
+ 	void __iomem *p = adap->pch_base_address;
+-	ktime_t ns_val;
++	int schedule = 0;
++	unsigned long end = jiffies + msecs_to_jiffies(timeout);
+ 
+ 	if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
+ 		return 0;
+ 
+-	/* MAX timeout value is timeout*1000*1000nsec */
+-	ns_val = ktime_add_ns(ktime_get(), timeout*1000*1000);
+-	do {
+-		msleep(20);
+-		if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
+-			return 0;
+-	} while (ktime_lt(ktime_get(), ns_val));
++	while (ioread32(p + PCH_I2CSR) & I2CMBB_BIT) {
++		if (time_after(jiffies, end)) {
++			pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
++			pch_err(adap, "%s: Timeout Error.return%d\n",
++					__func__, -ETIME);
++			pch_i2c_init(adap);
++
++			return -ETIME;
++		}
+ 
+-	pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
+-	pch_err(adap, "%s: Timeout Error.return%d\n", __func__, -ETIME);
+-	pch_i2c_init(adap);
++		if (!schedule)
++			/* Retry after some usecs */
++			udelay(5);
++		else
++			/* Wait a bit more without consuming CPU */
++			usleep_range(20, 1000);
++
++		schedule = 1;
++	}
+ 
+-	return -ETIME;
++	return 0;
+ }
+ 
+ /**
+-- 
+1.7.3.4
 
