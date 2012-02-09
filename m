@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab2BILGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 06:06:34 -0500
-Received: from lebrac.rtp-net.org ([88.191.135.105]:58518 "EHLO
-	lebrac.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab2BILGd (ORCPT
+	id S1753251Ab2BILPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 06:15:04 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:14359
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751961Ab2BILPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 06:06:33 -0500
-X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Feb 2012 06:06:33 EST
-From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: Marc Kleine-Budde <mkl@blackshift.org>, Imre Kaloz <kaloz@openwrt.org>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>
-Subject: Re: [PATCH 1/2] ARM: ixp4xx: fix compilation, add gpiolib support
-Organization: RtpNet
-References: <1328729069-21308-1-git-send-email-mkl@blackshift.org>
-	<1328729069-21308-2-git-send-email-mkl@blackshift.org>
-	<20275.35898.120590.54388@pilspetsen.it.uu.se>
-Date: Thu, 09 Feb 2012 11:57:17 +0100
-In-Reply-To: <20275.35898.120590.54388@pilspetsen.it.uu.se> (Mikael
-	Pettersson's message of "Thu, 9 Feb 2012 10:04:58 +0100")
-Message-ID: <87fweki8aa.fsf@lebrac.rtp-net.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 9 Feb 2012 06:15:02 -0500
+X-SpamScore: -19
+X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4R8275bhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LZ4HWT-02-2NJ-02
+X-M-MSG: 
+Date: Thu, 9 Feb 2012 12:14:51 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Jason Wang <jasowang@redhat.com>
+Subject: Re: perf: record segfaults for cycles event when collecting data on
+ a VM
+Message-ID: <20120209111451.GM22598@amd.com>
+References: <4F32A907.6030505@gmail.com>
+ <20120208174434.GI22598@amd.com>
+ <4F32B680.3090502@gmail.com>
+ <20120208175709.GK22598@amd.com>
+ <20120209073024.GA18010@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120209073024.GA18010@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mikael Pettersson <mikpe@it.uu.se> writes:
+On Thu, Feb 09, 2012 at 08:30:24AM +0100, Ingo Molnar wrote:
+> 
+> * Joerg Roedel <joerg.roedel@amd.com> wrote:
+> 
+> > > which makes sense. It forces 
+> > > perf_session__find_machine_for_cpumode() to return the host 
+> > > machine always.
+> > 
+> > Great, thanks. I will send two patches tomorrow to fix Jason's 
+> > problem and change the default for perf_guest.
+> 
+> Well, if the crash is fixed then the the default can stay, 
+> right?
 
-> Marc Kleine-Budde writes:
->  > From: Imre Kaloz <kaloz@openwrt.org>
->  > 
->  > The problem was introduced with commit:
->  > "eb9ae7f gpio: fix build error in include/asm-generic/gpio.h"
->  > 
->  > This patch adds gpiolib support for the IXP4xx platform, which fixes the
->  > compilation of several ixp4xx platforms, e.g.:
->  > 
->  > In file included from arch/arm/mach-ixp4xx/include/mach/gpio.h:72,
->  >                  from /home/frogger/projects/server/linux/arch/arm/include/asm/gpio.h:9,
->  >                  from include/linux/gpio.h:30,
->  >                  from arch/arm/mach-ixp4xx/nslu2-setup.c:19:
->  > include/asm-generic/gpio.h: In function 'gpio_get_value_cansleep':
->  > include/asm-generic/gpio.h:218: error: implicit declaration of function '__gpio_get_value'
->  > include/asm-generic/gpio.h: In function 'gpio_set_value_cansleep':
->  > include/asm-generic/gpio.h:224: error: implicit declaration of function '__gpio_set_value'
->
-> This fix is needed for 3.2 too, right?  I got the same errors when
-> updating my (out-of-tree) ixp4xx/ds101 platform support to the 3.2 kernel
-> a few days ago.
+David's crash is fixed by changing the default back to its original
+value :)
 
-fwiw, it's even needed for 3.1. We've added it in the debian kernel when it
-was sent to the linux-arm-kernel ml and it was for 3.1.
+> Generally we should treat all input data in a perf.data or even 
+> the bits we get in the ring-buffer as external data that has to 
+> be checked carefully, with no assumptions made about data.
 
-Arnaud
+Well, there are two options:
+
+	1) Make sure machine == NULL does not happen. Changing the
+	   default of perf_guest back to false does exactly this for
+	   David's problem.
+	2) Make sure that a machine == NULL pointer is never
+	   dereferenced
+
+I was going to fix it with option 1. Do you suggest option 2 is better?
+
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
