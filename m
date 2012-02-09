@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab2BIJju (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 04:39:50 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60942 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab2BIJjr (ORCPT
+	id S1757588Ab2BIJkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 04:40:25 -0500
+Received: from mga10.intel.com ([192.55.52.92]:9069 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751268Ab2BIJkX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 04:39:47 -0500
-Date: Thu, 9 Feb 2012 13:35:04 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Colin Walters <walters@verbum.org>, linux-kernel@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jamie Lokier <jamie@shareable.org>, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH v3 4/4] Allow unprivileged chroot when safe
-Message-ID: <20120209093504.GA19507@albatros>
-References: <cover.1327858005.git.luto@amacapital.net>
- <0e2f0f54e19bff53a3739ecfddb4ffa9a6dbde4d.1327858005.git.luto@amacapital.net>
- <1327960736.5355.5.camel@lenny>
- <1327961884.5882.11.camel@gandalf.stny.rr.com>
- <CABqD9habGczrDUxGUWpRQ1=bREjCx-6rPeYArnGXe76fW3K2zw@mail.gmail.com>
- <CALCETrX6xRCvkHBz0TKVxffgOFRfvnb7ZbmyiN3zruwgBXjhKw@mail.gmail.com>
+	Thu, 9 Feb 2012 04:40:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrX6xRCvkHBz0TKVxffgOFRfvnb7ZbmyiN3zruwgBXjhKw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CALLzPKZcr8fZ9-VXqLHN=H69+GOnp48CjZX+xxmBBksbmJsLxw@mail.gmail.com>
+References: <1327961644-6886-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<1327961644-6886-6-git-send-email-zohar@linux.vnet.ibm.com>
+	<CACLa4ptFgmCL7Z4e-YO9XJ_zkr=kOHSJ7cA8u3DPvVc-2LBfRw@mail.gmail.com>
+	<CALLzPKZcr8fZ9-VXqLHN=H69+GOnp48CjZX+xxmBBksbmJsLxw@mail.gmail.com>
+Date: Thu, 9 Feb 2012 11:40:22 +0200
+Message-ID: <CALLzPKYnpAjgQ+LWJpKVkPkcwR5zs-uiLX2DMwiARNW8DtX0Ow@mail.gmail.com>
+Subject: Re: [RFC][PATCH v1 5/9] ima: allocating iint improvements
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, David Safford <safford@watson.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 14:51 -0800, Andy Lutomirski wrote:
-> That's neat!  CLONE_NEWPID might be safe with no_new_privs, too.
-> Unprivileged CLONE_NEWPID would also be a nice, straightforward way to
-> start up a process hierarchy and then reliably kill the whole thing
-> when you're done with it.
+On Wed, Feb 1, 2012 at 8:46 PM, Kasatkin, Dmitry
+<dmitry.kasatkin@intel.com> wrote:
+> On Wed, Feb 1, 2012 at 6:58 PM, Eric Paris <eparis@parisplace.org> wrote:
+>> On Mon, Jan 30, 2012 at 5:14 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>>> From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+>>>
+>>
+>>>  static struct rb_root integrity_iint_tree = RB_ROOT;
+>>> -static DEFINE_SPINLOCK(integrity_iint_lock);
+>>> +static DEFINE_RWLOCK(integrity_iint_lock);
+>>>  static struct kmem_cache *iint_cache __read_mostly;
+>>
+>> Has any profiling been done here?   rwlocks have been shown to
+>> actually be slower on multi processor systems in a number of cases due
+>> to the cache line bouncing required.  I believe the current kernel
+>> logic is that if you have a short critical section and you can't show
+>> profile data the rwlocks are better, just stick with a spinlock.
+>
+> No, I have not done any profiling.
+> My assumption was that rwlocks are better when there many readers.
+> If what you say is true then rwlocks are useless...
+> With big sections it is necessary to use rw semaphores.
+>
 
-It worth checking whether creating HUGE number or pid namespaces is
-able to lock down the system for a significant period of time.  E.g.
-triggering thousands of pid_ns enumeration under a spinlock.
+Hello,
 
-The same with every "enable this privileged feature to unprivileged
-users under certain circumstances" step.
+I and Mimi made performance measurements with rwlocks and spinlocks.
+We used kernel compilation with multiple jobs as a test,
+because it reads and creates lots of files..
 
-Thanks,
+In all cases rwlocks implementation performed better than spinlocks,
+but very insignificantly. For example with total compilation time
+around 6 minutes, with rwlocks time was 1 - 3 seconds shorter... But
+always like that.
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+So as conclusion I can make, that usage of rwlocks is justified...
+
+Thanks for bringing this up...
+
+> - Dmitry
