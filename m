@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab2BIMSh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 07:18:37 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:51220 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757333Ab2BIMSe convert rfc822-to-8bit (ORCPT
+	id S1757487Ab2BIMTc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 07:19:32 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:57653 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756035Ab2BIMTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 07:18:34 -0500
-In-Reply-To: <4F3390FB.80107@redhat.com>
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com> <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com> <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com> <4F313526.2050907@redhat.com> <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com> <4F3390FB.80107@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: BORNTRAE@linux.vnet.ibm.com, James Bottomley <JBottomley@parallels.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, mst@redhat.com, rusty@rustcorp.com.au
+	Thu, 9 Feb 2012 07:19:30 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: David Miller <davem@davemloft.net>
+Subject: Re: [RFC][PATCH 00/50] set addr_assign_type to NET_ADDR_RANDOM if a random mac address get assigned to a netdevice
+Date: Thu, 9 Feb 2012 13:18:35 +0100
+User-Agent: KMail/1.9.10
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <20120208.182942.1223790992368933837.davem@davemloft.net>
+In-Reply-To: <20120208.182942.1223790992368933837.davem@davemloft.net>
 MIME-Version: 1.0
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-X-KeepSent: DF7B0B80:B44589BA-C125799F:00410C52;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OFDF7B0B80.B44589BA-ONC125799F.00410C52-C125799F.00439AD0@de.ibm.com>
-From: Christian Hoff <christian.hoff@de.ibm.com>
-Date: Thu, 9 Feb 2012 13:18:21 +0100
-X-MIMETrack: S/MIME Sign by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
- 10, 2010) at 09/02/2012 13:18:25,
-	Serialize by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
- 10, 2010) at 09/02/2012 13:18:25,
-	Serialize complete at 09/02/2012 13:18:25,
-	S/MIME Sign failed at 09/02/2012 13:18:25: The cryptographic key was not
- found,
-	Serialize by Router on D06MC042/06/M/IBM(Release 8.5.2FP3|July 10, 2011) at
- 09/02/2012 13:18:23,
-	Serialize complete at 09/02/2012 13:18:23
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12020912-4966-0000-0000-000001687E54
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201202091318.36264.danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328789970;749a665b;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini wrote:
-> James, will you include virtio-scsi in 3.4?
+On Donnerstag, 9. Februar 2012, David Miller wrote:
+> 50 patches is way too many patches to submit and expect people
+> to review at one time.
+>
+> You must do one of two things:
+>
+> 1) Condense the series down to a smaller number of more managable
+>    patches.  Perhaps combine all the completely trivial conversion
+>    cases into one single patch, and post the non-trivial cases
+>    seperately.
+>
+> 2) Only submit a few of these changes at a time, not all at once.
+>
+> It's your choice, but what you did here is unacceptable.
 
-The key arguments from my side for inclusion of virtio-scsi are:
-- Support for SCSI multipathing, which can optionally be done on the host 
-operating system.
-- We can now use other SCSI(non-block) devices and make them accessible to 
-the guest. For example we were able to virtualize a SCSI FCP tape using 
-virtio-scsi. One of the biggest constraints of virtio-block is that it is 
-limited to block devices, while virtio-scsi presents you with a more 
-generic solution.
+Could you at least comment on these points from the cover letter, before I 
+change/update the patches?
 
-So I consider virtio-scsi to be the cleaner approach to do virtualization 
-of SCSI commands. This is supported by the fact that virtio-block has a 
-maintenance problem and has to change its protocol from time to time to 
-support new features introduced by a new version of the SCSI standard.
+- Should NET_ADDR_RANDOM get reset (to NET_ADDR_PERM) if the MAC address
+  get changed via SIOCSIFHWADDR/.ndo_set_mac_address and was random before?
+- Would it make sense to add a new state (e.g. NET_ADDR_USERSPACE)
+  if the net address get changed via SIOCSIFHWADDR/.ndo_set_mac_address 
+  from userspace?
 
-So please consider including virtio-scsi into the mainline kernel tree. 
-This is good and conceptually clean code, and it has proven to work very 
-well in our internal testing.
+Thanks,
 
-Mit freundlichen Grüßen / Kind regards
-
-Christian Hoff
-
-Student - Applied Computer Science
-
-
-Phone:
-49-16098976-950
- IBM Deutschland
-
-E-Mail:
-christian.hoff@de.ibm.com
- Am Fichtenberg 1
-
-
- 71083 Herrenberg
-
-
- Germany
-
-
-IBM Deutschland GmbH / Vorsitzender des Aufsichtsrats: Martin Jetter
-Geschäftsführung: Martina Koederitz (Vorsitzende), Reinhard Reschke, 
-Dieter Scholz, Gregor Pillen, Joachim Heel, Christian Noll
-Sitz der Gesellschaft: Ehningen / Registergericht: Amtsgericht Stuttgart, 
-HRB 14562 / WEEE-Reg.-Nr. DE 99369940 
-
+Danny
