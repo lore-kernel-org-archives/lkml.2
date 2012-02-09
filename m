@@ -1,164 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab2BICTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 21:19:14 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:47688 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab2BICTN (ORCPT
+	id S1757340Ab2BICVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 21:21:12 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59211 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab2BICVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 21:19:13 -0500
-Date: Thu, 9 Feb 2012 10:18:55 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Venki Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+	Wed, 8 Feb 2012 21:21:11 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 9 Feb 2012 11:19:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-Message-ID: <20120209021855.GA26152@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1328560933-3037-1-git-send-email-venki@google.com>
- <20120208065115.GA19691@zhy>
- <CABeCy1bAB6PSAUabk8zO8oh_sLVo3sOPVrr_kSovLdmOOtkfTg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CABeCy1bAB6PSAUabk8zO8oh_sLVo3sOPVrr_kSovLdmOOtkfTg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
+Message-Id: <20120209111950.b3e626d1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1328716302-16871-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1328716302-16871-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 03:28:45PM -0800, Venki Pallipadi wrote:
-> On Tue, Feb 7, 2012 at 10:51 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> > On Mon, Feb 06, 2012 at 12:42:13PM -0800, Venkatesh Pallipadi wrote:
-> >> smp_call_function_single and ttwu_queue_remote sends unconditional IPI
-> >> to target CPU. However, if the target CPU is in mwait based idle, we can
-> >> do IPI-less wakeups using the magical powers of monitor-mwait.
-> >> Doing this has certain advantages:
-> >
-> > Actually I'm trying to do the similar thing on MIPS.
-> >
-> > The difference is that I want task_is_polling() to do something. The basic
-> > idea is:
-> >
-> >> + ? ? ? ? ? ? ? ? ? ? if (ipi_pending()) {
-> >> + ? ? ? ? ? ? ? ? ? ? ? ? ? ? clear_ipi_pending();
-> >> + ? ? ? ? ? ? ? ? ? ? ? ? ? ? local_bh_disable();
-> >> + ? ? ? ? ? ? ? ? ? ? ? ? ? ? local_irq_disable();
-> >> + ? ? ? ? ? ? ? ? ? ? ? ? ? ? generic_smp_call_function_single_interrupt();
-> >> + ? ? ? ? ? ? ? ? ? ? ? ? ? ? scheduler_wakeup_self_check();
-> >> + ? ? ? ? ? ? ? ? ? ? ? ? ? ? local_irq_enable();
-> >> + ? ? ? ? ? ? ? ? ? ? ? ? ? ? local_bh_enable();
-> >
-> > I let cpu_idle() check if there is anything to do as your above code.
-> >
-> > And task_is_polling() handle the others with below patch:
-> > ---
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index 5255c9d..09f633d 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -527,15 +527,16 @@ void resched_task(struct task_struct *p)
-> > ? ? ? ? ? ? ? ?smp_send_reschedule(cpu);
-> > ?}
-> >
-> > -void resched_cpu(int cpu)
-> > +int resched_cpu(int cpu)
-> > ?{
-> > ? ? ? ?struct rq *rq = cpu_rq(cpu);
-> > ? ? ? ?unsigned long flags;
-> >
-> > ? ? ? ?if (!raw_spin_trylock_irqsave(&rq->lock, flags))
-> > - ? ? ? ? ? ? ? return;
-> > + ? ? ? ? ? ? ? return 0;
-> > ? ? ? ?resched_task(cpu_curr(cpu));
-> > ? ? ? ?raw_spin_unlock_irqrestore(&rq->lock, flags);
-> > + ? ? ? return 1;
-> > ?}
+On Wed,  8 Feb 2012 10:51:38 -0500
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+
+> Currently when we check if we can handle thp as it is or we need to
+> split it into regular sized pages, we hold page table lock prior to
+> check whether a given pmd is mapping thp or not. Because of this,
+> when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
+> To remove it, this patch introduces a optimized check function and
+> replace several similar logics with it.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: David Rientjes <rientjes@google.com>
 > 
 
-I assume we are talking about 'return from idle' but seems I don't
-make it clear.
+I prefer 'bool' for return type..but seems much better.
 
-> Two points -
-> rq->lock: I tried something similar first. One hurdle with checking
-> task_is_polling() is that you need rq->lock to check it. And adding
-> lock+unlock (without wait) in wakeup path ended up being no net gain
-> compared to IPI. And when we actually end up spinning on that lock,
-> thats going to add overhead in the common path. That is the reason I
-> switched to atomic compare exchange and moving any wait onto the
-> target CPU coming out of idle.
+Thank you. I think this clean up is very good.
 
-I see. But actually we will not spinning on that lock because we
-use 'trylock' in resched_cpu(). And you are right there is indeed a
-little overhead (resched_task()) if we hold the lock but it can be
-tolerated IMHO.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-BTW, mind showing you test case thus we can collect some common data?
 
-> 
-> resched_task: ttwu_queue_remote() does not imply that the remote CPU
-> will do a resched. Today there is a IPI and IPI handler calls onto
-> check_preempt_wakeup() and if the current task has higher precedence
-> than the waking up task, then there will be just an activation of new
-> task and no resched. Using resched_task above breaks
-> check_preempt_wakeup() and always calls a resched on remote CPU after
-> the IPI, which would be change in behavior.
-
-Yeah, if the remote cpu is not idle, mine will change the behavior; but
-if the remote cpu is idle, it will always rescheduled, right?
-
-So maybe we could introduce resched_idle_cpu() to make things more clear:
-
-int resched_idle_cpu(int cpu) 
-{
-        struct rq *rq = cpu_rq(cpu);
-        unsigned long flags;
-        int ret = 0; 
-
-        if (!raw_spin_trylock_irqsave(&rq->lock, flags))
-                goto out; 
-        if (!idle_cpu(cpu))
-                goto out_unlock;
-        resched_task(cpu_curr(cpu));
-                ret = 1; 
-out_unlock:
-        raw_spin_unlock_irqrestore(&rq->lock, flags);
-out:
-        return ret; 
-}
-
-Thanks,
-Yong
-
-> 
-> Thanks,
-> Venki
-> 
-> >
-> > ?#ifdef CONFIG_NO_HZ
-> > @@ -1484,7 +1485,8 @@ void scheduler_ipi(void)
-> >
-> > ?static void ttwu_queue_remote(struct task_struct *p, int cpu)
-> > ?{
-> > - ? ? ? if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
-> > + ? ? ? if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list) &&
-> > + ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? !resched_cpu(cpu))
-> > ? ? ? ? ? ? ? ?smp_send_reschedule(cpu);
-> > ?}
-> >
-> > Thought?
-> >
-> > Thanks,
-> > Yong
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Only stand for myself
