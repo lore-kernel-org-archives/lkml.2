@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab2BHX6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 18:58:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52827 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab2BHX6A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 18:58:00 -0500
-Date: Thu, 9 Feb 2012 00:57:55 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, xiyou.wangcong@gmail.com, penberg@kernel.org,
-        fengguang.wu@intel.com, cl@linux.com
-Subject: Re: [PATCH] selftests: Launch individual selftests from the main
- Makefile
-Message-ID: <20120208235752.GE25473@somewhere.redhat.com>
-References: <20120205081555.GA2249@darkstar.redhat.com>
- <20120206155340.b9075240.akpm@linux-foundation.org>
- <20120208034055.GA23894@somewhere.redhat.com>
- <20120208152022.1016434f.akpm@linux-foundation.org>
+	id S1757894Ab2BIACF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 19:02:05 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:43624 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757706Ab2BIACD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 19:02:03 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: NeilBrown <neilb@suse.de>
+Subject: Re: [PATCH 4/8] PM / Sleep: Use wait queue to signal "no wakeup events in progress"
+Date: Thu, 9 Feb 2012 01:05:46 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <greg@linuxfoundation.org>,
+        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201202070200.55505.rjw@sisk.pl> <201202070204.19615.rjw@sisk.pl> <20120209101054.2b2cb2ab@notabene.brown>
+In-Reply-To: <20120209101054.2b2cb2ab@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120208152022.1016434f.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202090105.47171.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 03:20:22PM -0800, Andrew Morton wrote:
-> On Wed, 8 Feb 2012 04:40:59 +0100
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On Thursday, February 09, 2012, NeilBrown wrote:
+> On Tue, 7 Feb 2012 02:04:19 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > 
-> > Drop the run_tests script and launch the selftests by calling
-> > "make run_tests" from the selftests top directory instead. This
-> > delegates to the Makefile on each selftest directory where it
-> > is decided how to launch the local test.
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
 > > 
-> > This drops the need to add each selftest directory on the
-> > now removed "run_tests" top script.
+> > The current wakeup source deactivation code doesn't do anything when
+> > the counter of wakeup events in progress goes down to zero, which
+> > requires pm_get_wakeup_count() to poll that counter periodically.
+> > Although this reduces the average time it takes to deactivate a
+> > wakeup source, it also may lead to a substantial amount of unnecessary
+> > polling if there are extended periods of wakeup activity.  Thus it
+> > seems reasonable to use a wait queue for signaling the "no wakeup
+> > events in progress" condition and remove the polling.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  drivers/base/power/wakeup.c |   18 ++++++++++++++----
+> >  1 file changed, 14 insertions(+), 4 deletions(-)
+> > 
+> > Index: linux/drivers/base/power/wakeup.c
+> > ===================================================================
+> > --- linux.orig/drivers/base/power/wakeup.c
+> > +++ linux/drivers/base/power/wakeup.c
+> > @@ -17,8 +17,6 @@
+> >  
+> >  #include "power.h"
+> >  
+> > -#define TIMEOUT		100
+> > -
+> >  /*
+> >   * If set, the suspend/hibernate code will abort transitions to a sleep state
+> >   * if wakeup events are registered during or immediately before the transition.
+> > @@ -52,6 +50,8 @@ static void pm_wakeup_timer_fn(unsigned
+> >  
+> >  static LIST_HEAD(wakeup_sources);
+> >  
+> > +static DECLARE_WAIT_QUEUE_HEAD(wakeup_count_wait_queue);
+> > +
+> >  /**
+> >   * wakeup_source_create - Create a struct wakeup_source object.
+> >   * @name: Name of the new wakeup source.
+> > @@ -84,7 +84,7 @@ void wakeup_source_destroy(struct wakeup
+> >  	while (ws->active) {
+> >  		spin_unlock_irq(&ws->lock);
+> >  
+> > -		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
+> > +		schedule_timeout_interruptible(msecs_to_jiffies(100));
+> >  
+> >  		spin_lock_irq(&ws->lock);
+> >  	}
+> > @@ -411,6 +411,7 @@ EXPORT_SYMBOL_GPL(pm_stay_awake);
+> >   */
+> >  static void wakeup_source_deactivate(struct wakeup_source *ws)
+> >  {
+> > +	unsigned int cnt, inpr;
+> >  	ktime_t duration;
+> >  	ktime_t now;
+> >  
+> > @@ -444,6 +445,10 @@ static void wakeup_source_deactivate(str
+> >  	 * couter of wakeup events in progress simultaneously.
+> >  	 */
+> >  	atomic_add(MAX_IN_PROGRESS, &combined_event_count);
+> > +
+> > +	split_counters(&cnt, &inpr);
+> > +	if (!inpr)
+> > +		wake_up_all(&wakeup_count_wait_queue);
+> >  }
 > 
-> Looks good.
+> Would it be worth making this:
 > 
-> I did
+>      if (!inpr && waitqueue_active(&wakeup_count_wait_queue))
+> 		wake_up_all(&wakeup_count_wait_queue);
 > 
-> 	cd tools/testing/selftests
-> 	make run_tests
-> 
-> and it didn't work.  This?
-> 
-> 
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: selftests/Makefile: make `run_tests' depend on `all'
-> 
-> So a "make run_tests" will build the tests before trying to run them.
-> 
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  tools/testing/selftests/Makefile |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff -puN tools/testing/selftests/Makefile~a tools/testing/selftests/Makefile
-> --- a/tools/testing/selftests/Makefile~a
-> +++ a/tools/testing/selftests/Makefile
-> @@ -5,7 +5,7 @@ all:
->  		make -C $$TARGET; \
->  	done;
->  
-> -run_tests:
-> +run_tests: all
->  	for TARGET in $(TARGETS); do \
->  		make -C $$TARGET run_tests; \
->  	done;
+> ??
+> It would often save a spinlock.
 
-Yeah that's good. Thanks!
+Yes, good point. :-)
+
+> Also was there a reason you used wake_up_all().  That is only really needed
+> were EXCLUSIVE waits are happening, and there aren't any of those.
+
+Right, I think wake_up() should be fine too.
+
+Thanks,
+Rafael
