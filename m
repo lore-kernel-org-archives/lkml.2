@@ -1,127 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758663Ab2BIXqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 18:46:39 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64094 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758437Ab2BIXqh (ORCPT
+	id S1758518Ab2BIXsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 18:48:24 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37267 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757903Ab2BIXsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 18:46:37 -0500
+	Thu, 9 Feb 2012 18:48:23 -0500
+Date: Thu, 9 Feb 2012 18:48:19 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: David Miller <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
+Subject: Re: 8250 move broke the build on sparc
+Message-ID: <20120209234818.GA814@windriver.com>
+References: <20120209.163009.1594369939327153054.davem@davemloft.net>
+ <4F344A85.4070005@windriver.com>
+ <20120209.174817.1772850235758472350.davem@davemloft.net>
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 9 Feb 2012 15:46:17 -0800
-X-Google-Sender-Auth: h1433j6AcQwpeqf0wewywYYAjck
-Message-ID: <CA+55aFyXyfYd+_NJ8kLYz-bk7Qt0SLHu4t7RN1PCQptt75RGXQ@mail.gmail.com>
-Subject: Hmm.. WARN_ON_ONCE(cpuc->enabled)
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120209.174817.1772850235758472350.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, so I get the appended on my Core i5 when I did a "perf record -f
--e cycles:pp make -j" on the kernel build.
+[Re: 8250 move broke the build on sparc] On 09/02/2012 (Thu 17:48) David Miller wrote:
 
-What's up, guys? I haven't tried that particular perf run in a while,
-so it might have been going on for quite some time.
+> From: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Date: Thu, 9 Feb 2012 17:36:53 -0500
+> 
+> > It only uses suncore.h for sunserial_register_minors (and unreg).
+> > Would you like it better if I killed all ifdefs and the include
+> > and used an incantation of weak instead?  Might be cleaner....
+> 
+> It's the "../" that's ugly, not the include and usage itself.
+> 
+> If it's now going to be included from multiple dirs, we should
+> probably move it to include/linux/sunserialcore.h or similar.
 
-                             Linus
+Thanks for the suggestion, I wasn't thinking in that direction.
 
+I'm pretty sure the ifdef SPARC around the include in 8250.c 
+could be tossed, but with my luck lately, I figured it would be
+best to just leave it exactly as it was.
+
+Paul.
+--
+
+>From 1b0bc62a6583e319f8b764ac34f799b916656590 Mon Sep 17 00:00:00 2001
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 9 Feb 2012 18:09:35 -0500
+Subject: [PATCH] sparc: rename drivers/tty/serial/suncore.h ->
+ include/linux/sunserialcore.h
+
+There are multiple users of this file from different source
+paths now, and rather than have ../ paths in include statements,
+just move the file to the linux header dir.
+
+Suggested-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
 
- WARNING: at arch/x86/kernel/cpu/perf_event_intel_ds.c:442
-intel_pmu_pebs_enable+0x89/0xa0()
- Hardware name: System Product Name
- Pid: 12994, comm: perf Not tainted 3.3.0-rc3-00001-g690d137f448d #34
- Call Trace:
-  <IRQ>  [<ffffffff8102f205>] warn_slowpath_common+0x75/0xb0
-  [<ffffffff8105c1d4>] ? load_balance+0xc4/0x860
-  [<ffffffff8102f305>] warn_slowpath_null+0x15/0x20
-  [<ffffffff81013f59>] intel_pmu_pebs_enable+0x89/0xa0
-  [<ffffffff81014614>] intel_pmu_enable_event+0xf4/0x190
-  [<ffffffff81010f33>] x86_pmu_start+0x83/0x110
-  [<ffffffff81098336>] perf_adjust_freq_unthr_context+0x106/0x170
-  [<ffffffff810985a0>] perf_event_task_tick+0x200/0x2c0
-  [<ffffffff8106a5d0>] ? tick_nohz_handler+0xf0/0xf0
-  [<ffffffff81055856>] scheduler_tick+0xc6/0x100
-  [<ffffffff8103b649>] update_process_times+0x69/0x80
-  [<ffffffff8106a62f>] tick_sched_timer+0x5f/0xb0
-  [<ffffffff8104dcd5>] __run_hrtimer.clone.31+0x55/0x110
-  [<ffffffff8104e6ff>] hrtimer_interrupt+0xdf/0x210
-  [<ffffffff8101c744>] smp_apic_timer_interrupt+0x64/0xa0
-  [<ffffffff816a264b>] apic_timer_interrupt+0x6b/0x70
-  <EOI>  [<ffffffff8109d8df>] ? find_get_page+0x6f/0xc0
-  [<ffffffff8128c114>] ? avtab_search_node+0x74/0x90
-  [<ffffffff810a8b23>] ? mark_page_accessed+0x43/0x50
-  [<ffffffff8129744d>] cond_compute_av+0x2d/0xd0
-  [<ffffffff81293922>] context_struct_compute_av+0x1f2/0x420
-  [<ffffffff8110834f>] ? __getblk+0x1f/0x280
-  [<ffffffff81294265>] security_compute_av+0xf5/0x2c0
-  [<ffffffff8127eeec>] avc_has_perm_noaudit+0xfc/0x3a0
-  [<ffffffff811058ec>] ? ll_rw_block+0x2c/0xb0
-  [<ffffffff8127f1d6>] avc_has_perm_flags+0x46/0xa0
-  [<ffffffff81284801>] inode_has_perm.clone.39+0x21/0x30
-  [<ffffffff8128525a>] selinux_inode_permission+0xaa/0x100
-  [<ffffffff8127cc97>] security_inode_permission+0x17/0x20
-  [<ffffffff810e4280>] inode_permission+0x40/0xd0
-  [<ffffffff810e566f>] link_path_walk+0x6f/0x8f0
-  [<ffffffff810e7807>] path_openat+0xb7/0x430
-  [<ffffffff810e7bc4>] do_filp_open+0x44/0xa0
-  [<ffffffff810b15ee>] ? kmemdup+0x3e/0x50
-  [<ffffffff8128245a>] ? selinux_cred_prepare+0x1a/0x40
-  [<ffffffff810df7dd>] open_exec+0x2d/0xf0
-  [<ffffffff810e08d1>] do_execve_common.clone.36+0x1f1/0x430
-  [<ffffffff810e0b26>] do_execve+0x16/0x20
-  [<ffffffff8100aba5>] sys_execve+0x45/0x70
-  [<ffffffff816a1fec>] stub_execve+0x6c/0xc0
- ---[ end trace 55816fcc72df1997 ]---
- ------------[ cut here ]------------
- WARNING: at arch/x86/kernel/cpu/perf_event_intel_lbr.c:75
-intel_pmu_lbr_enable+0x92/0xa0()
- Hardware name: System Product Name
- Pid: 12994, comm: perf Tainted: G        W    3.3.0-rc3-00001-g690d137f448d #34
- Call Trace:
-  <IRQ>  [<ffffffff8102f205>] warn_slowpath_common+0x75/0xb0
-  [<ffffffff8102f305>] warn_slowpath_null+0x15/0x20
-  [<ffffffff81012e32>] intel_pmu_lbr_enable+0x92/0xa0
-  [<ffffffff81013f38>] intel_pmu_pebs_enable+0x68/0xa0
-  [<ffffffff81014614>] intel_pmu_enable_event+0xf4/0x190
-  [<ffffffff81010f33>] x86_pmu_start+0x83/0x110
-  [<ffffffff81098336>] perf_adjust_freq_unthr_context+0x106/0x170
-  [<ffffffff810985a0>] perf_event_task_tick+0x200/0x2c0
-  [<ffffffff8106a5d0>] ? tick_nohz_handler+0xf0/0xf0
-  [<ffffffff81055856>] scheduler_tick+0xc6/0x100
-  [<ffffffff8103b649>] update_process_times+0x69/0x80
-  [<ffffffff8106a62f>] tick_sched_timer+0x5f/0xb0
-  [<ffffffff8104dcd5>] __run_hrtimer.clone.31+0x55/0x110
-  [<ffffffff8104e6ff>] hrtimer_interrupt+0xdf/0x210
-  [<ffffffff8101c744>] smp_apic_timer_interrupt+0x64/0xa0
-  [<ffffffff816a264b>] apic_timer_interrupt+0x6b/0x70
-  <EOI>  [<ffffffff8109d8df>] ? find_get_page+0x6f/0xc0
-  [<ffffffff8128c114>] ? avtab_search_node+0x74/0x90
-  [<ffffffff810a8b23>] ? mark_page_accessed+0x43/0x50
-  [<ffffffff8129744d>] cond_compute_av+0x2d/0xd0
-  [<ffffffff81293922>] context_struct_compute_av+0x1f2/0x420
-  [<ffffffff8110834f>] ? __getblk+0x1f/0x280
-  [<ffffffff81294265>] security_compute_av+0xf5/0x2c0
-  [<ffffffff8127eeec>] avc_has_perm_noaudit+0xfc/0x3a0
-  [<ffffffff811058ec>] ? ll_rw_block+0x2c/0xb0
-  [<ffffffff8127f1d6>] avc_has_perm_flags+0x46/0xa0
-  [<ffffffff81284801>] inode_has_perm.clone.39+0x21/0x30
-  [<ffffffff8128525a>] selinux_inode_permission+0xaa/0x100
-  [<ffffffff8127cc97>] security_inode_permission+0x17/0x20
-  [<ffffffff810e4280>] inode_permission+0x40/0xd0
-  [<ffffffff810e566f>] link_path_walk+0x6f/0x8f0
-  [<ffffffff810e7807>] path_openat+0xb7/0x430
-  [<ffffffff810e7bc4>] do_filp_open+0x44/0xa0
-  [<ffffffff810b15ee>] ? kmemdup+0x3e/0x50
-  [<ffffffff8128245a>] ? selinux_cred_prepare+0x1a/0x40
-  [<ffffffff810df7dd>] open_exec+0x2d/0xf0
-  [<ffffffff810e08d1>] do_execve_common.clone.36+0x1f1/0x430
-  [<ffffffff810e0b26>] do_execve+0x16/0x20
-  [<ffffffff8100aba5>] sys_execve+0x45/0x70
-  [<ffffffff816a1fec>] stub_execve+0x6c/0xc0
- ---[ end trace 55816fcc72df1998 ]---
+[To bring the ../ patch in scope, this commit is based on the tag
+ 'tty-3.3-rc3' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty
+ Build tested on sparc32/64 defconfigs, but with 8250 and 8250_CONSOLE=y ]
+
+ MAINTAINERS                                        |    2 +-
+ drivers/tty/serial/8250/8250.c                     |    7 +++----
+ drivers/tty/serial/suncore.c                       |    2 +-
+ drivers/tty/serial/sunhv.c                         |    3 +--
+ drivers/tty/serial/sunsab.c                        |    2 +-
+ drivers/tty/serial/sunsu.c                         |    3 +--
+ drivers/tty/serial/sunzilog.c                      |    2 +-
+ .../suncore.h => include/linux/sunserialcore.h     |    2 +-
+ 8 files changed, 10 insertions(+), 13 deletions(-)
+ rename drivers/tty/serial/suncore.h => include/linux/sunserialcore.h (98%)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index a1fce9a..97f1c1b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6187,8 +6187,8 @@ L:	sparclinux@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-2.6.git
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-next-2.6.git
+ S:	Maintained
++F:	include/linux/sunserialcore.h
+ F:	drivers/tty/serial/suncore.c
+-F:	drivers/tty/serial/suncore.h
+ F:	drivers/tty/serial/sunhv.c
+ F:	drivers/tty/serial/sunsab.c
+ F:	drivers/tty/serial/sunsab.h
+diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+index 9b7336f..f0219b0 100644
+--- a/drivers/tty/serial/8250/8250.c
++++ b/drivers/tty/serial/8250/8250.c
+@@ -38,16 +38,15 @@
+ #include <linux/nmi.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#ifdef CONFIG_SPARC
++#include <linux/sunserialcore.h>
++#endif
+ 
+ #include <asm/io.h>
+ #include <asm/irq.h>
+ 
+ #include "8250.h"
+ 
+-#ifdef CONFIG_SPARC
+-#include "../suncore.h"
+-#endif
+-
+ /*
+  * Configuration:
+  *   share_irqs - whether we pass IRQF_SHARED to request_irq().  This option
+diff --git a/drivers/tty/serial/suncore.c b/drivers/tty/serial/suncore.c
+index 6381a02..6e4ac8d 100644
+--- a/drivers/tty/serial/suncore.c
++++ b/drivers/tty/serial/suncore.c
+@@ -17,11 +17,11 @@
+ #include <linux/errno.h>
+ #include <linux/string.h>
+ #include <linux/serial_core.h>
++#include <linux/sunserialcore.h>
+ #include <linux/init.h>
+ 
+ #include <asm/prom.h>
+ 
+-#include "suncore.h"
+ 
+ static int sunserial_current_minor = 64;
+ 
+diff --git a/drivers/tty/serial/sunhv.c b/drivers/tty/serial/sunhv.c
+index c0b7246..3ba5d28 100644
+--- a/drivers/tty/serial/sunhv.c
++++ b/drivers/tty/serial/sunhv.c
+@@ -29,8 +29,7 @@
+ #endif
+ 
+ #include <linux/serial_core.h>
+-
+-#include "suncore.h"
++#include <linux/sunserialcore.h>
+ 
+ #define CON_BREAK	((long)-1)
+ #define CON_HUP		((long)-2)
+diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
+index b5fa2a5..62dacd0 100644
+--- a/drivers/tty/serial/sunsab.c
++++ b/drivers/tty/serial/sunsab.c
+@@ -43,8 +43,8 @@
+ #endif
+ 
+ #include <linux/serial_core.h>
++#include <linux/sunserialcore.h>
+ 
+-#include "suncore.h"
+ #include "sunsab.h"
+ 
+ struct uart_sunsab_port {
+diff --git a/drivers/tty/serial/sunsu.c b/drivers/tty/serial/sunsu.c
+index ad0f8f5..d3ca6da 100644
+--- a/drivers/tty/serial/sunsu.c
++++ b/drivers/tty/serial/sunsu.c
+@@ -47,8 +47,7 @@
+ #endif
+ 
+ #include <linux/serial_core.h>
+-
+-#include "suncore.h"
++#include <linux/sunserialcore.h>
+ 
+ /* We are on a NS PC87303 clocked with 24.0 MHz, which results
+  * in a UART clock of 1.8462 MHz.
+diff --git a/drivers/tty/serial/sunzilog.c b/drivers/tty/serial/sunzilog.c
+index 8e916e7..f845339 100644
+--- a/drivers/tty/serial/sunzilog.c
++++ b/drivers/tty/serial/sunzilog.c
+@@ -43,8 +43,8 @@
+ #endif
+ 
+ #include <linux/serial_core.h>
++#include <linux/sunserialcore.h>
+ 
+-#include "suncore.h"
+ #include "sunzilog.h"
+ 
+ /* On 32-bit sparcs we need to delay after register accesses
+diff --git a/drivers/tty/serial/suncore.h b/include/linux/sunserialcore.h
+similarity index 98%
+rename from drivers/tty/serial/suncore.h
+rename to include/linux/sunserialcore.h
+index db20579..68e7430 100644
+--- a/drivers/tty/serial/suncore.h
++++ b/include/linux/sunserialcore.h
+@@ -1,4 +1,4 @@
+-/* suncore.h
++/* sunserialcore.h
+  *
+  * Generic SUN serial/kbd/ms layer.  Based entirely
+  * upon drivers/sbus/char/sunserial.h which is:
+-- 
+1.7.9
+
