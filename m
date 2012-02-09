@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435Ab2BIIhG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:37:06 -0500
+	id S1757479Ab2BIIhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:37:13 -0500
 Received: from mail-ey0-f174.google.com ([209.85.215.174]:54261 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757167Ab2BIIhB (ORCPT
+	with ESMTP id S1757167Ab2BIIhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:37:01 -0500
+	Thu, 9 Feb 2012 03:37:09 -0500
 MIME-Version: 1.0
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>, Christoph Lameter <cl@linux.com>,
         Chris Metcalf <cmetcalf@tilera.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
         Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: [PATCH v9 4/8] smp: add func to IPI cpus based on parameter func
-Date: Thu,  9 Feb 2012 10:36:21 +0200
-Message-Id: <1328776585-22518-5-git-send-email-gilad@benyossef.com>
+        Milton Miller <miltonm@bga.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v9 6/8] fs: only send IPI to invalidate LRU BH when needed
+Date: Thu,  9 Feb 2012 10:36:23 +0200
+Message-Id: <1328776585-22518-7-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1328776585-22518-1-git-send-email-gilad@benyossef.com>
 References: <1328776585-22518-1-git-send-email-gilad@benyossef.com>
@@ -33,26 +34,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the on_each_cpu_cond() function that wraps on_each_cpu_mask()
-and calculates the cpumask of cpus to IPI by calling a function supplied
-as a parameter in order to determine whether to IPI each specific cpu.
+In several code paths, such as when unmounting a file system (but
+not only) we send an IPI to ask each cpu to invalidate its local
+LRU BHs.
 
-The function works around allocation failure of cpumask variable in
-CONFIG_CPUMASK_OFFSTACK=y by itereating over cpus sending an IPI a
-time via smp_call_function_single().
+For multi-cores systems that have many cpus that may not have
+any LRU BH because they are idle or because they have not performed
+any file system accesses since last invalidation (e.g. CPU crunching
+on high perfomance computing nodes that write results to shared
+memory or only using filesystems that do not use the bh layer.)
+This can lead to loss of performance each time someone switches
+the KVM (the virtual keyboard and screen type, not the hypervisor)
+if it has a USB storage stuck in.
 
-The function is useful since it allows to seperate the specific
-code that decided in each case whether to IPI a specific cpu for
-a specific request from the common boilerplate code of handling
-creating the mask, handling failures etc.
+This patch attempts to only send an IPI to cpus that have LRU BH.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Christoph Lameter <cl@linux.com>
 CC: Chris Metcalf <cmetcalf@tilera.com>
-CC: Christoph Lameter <cl@linux-foundation.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Russell King <linux@arm.linux.org.uk>
 CC: linux-mm@kvack.org
@@ -61,129 +61,48 @@ CC: Matt Mackall <mpm@selenic.com>
 CC: Sasha Levin <levinsasha928@gmail.com>
 CC: Rik van Riel <riel@redhat.com>
 CC: Andi Kleen <andi@firstfloor.org>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Alexander Viro <viro@zeniv.linux.org.uk>
 CC: linux-fsdevel@vger.kernel.org
 CC: Avi Kivity <avi@redhat.com>
+CC: Michal Nazarewicz <mina86@mina86.com>
 CC: Kosaki Motohiro <kosaki.motohiro@gmail.com>
 CC: Milton Miller <miltonm@bga.com>
+CC: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- include/linux/smp.h |   25 ++++++++++++++++++++
- kernel/smp.c        |   62 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 87 insertions(+), 0 deletions(-)
+ fs/buffer.c |   15 ++++++++++++++-
+ 1 files changed, 14 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index d0adb78..46e2267 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -109,6 +109,15 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
- 		void *info, bool wait);
- 
- /*
-+ * Call a function on each processor for which the supplied function
-+ * cond_func returns a positive value. This may include the local
-+ * processor.
-+ */
-+void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
-+		smp_call_func_t func, void *info, bool wait,
-+		gfp_t gfp_flags);
-+
-+/*
-  * Mark the boot cpu "online" so that it can call console drivers in
-  * printk() and can access its per-cpu storage.
-  */
-@@ -153,6 +162,22 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
- 			local_irq_enable();		\
- 		}					\
- 	} while (0)
-+/*
-+ * Preemption is disabled here to make sure the
-+ * cond_func is called under the same condtions in UP
-+ * and SMP.
-+ */
-+#define on_each_cpu_cond(cond_func, func, info, wait, gfp_flags) \
-+	do {
-+		void *__info = (info);			\
-+		preempt_disable();			\
-+		if ((cond_func)(0, __info)) {		\
-+			local_irq_disable();		\
-+			(func)(__info);			\
-+			local_irq_enable();		\
-+		}					\
-+		preempt_enable();			\
-+	} while (0)
- 
- static inline void smp_send_reschedule(int cpu) { }
- #define num_booting_cpus()			1
-diff --git a/kernel/smp.c b/kernel/smp.c
-index a081e6c..893e588 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -730,3 +730,65 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
- 	put_cpu();
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 1a30db7..baa075e 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1384,10 +1384,23 @@ static void invalidate_bh_lru(void *arg)
+ 	}
+ 	put_cpu_var(bh_lrus);
  }
- EXPORT_SYMBOL(on_each_cpu_mask);
 +
-+/*
-+ * on_each_cpu_cond(): Call a function on each processor for which
-+ * the supplied function cond_func returns true, optionally waiting
-+ * for all the required CPUs to finish. This may include the local
-+ * processor.
-+ * @cond_func:	A callback function that is passed a cpu id and
-+ *		the the info parameter. The function is called
-+ *		with preemption disabled. The function should
-+ *		return a blooean value indicating whether to IPI
-+ *		the specified CPU.
-+ * @func:	The function to run on all applicable CPUs.
-+ *		This must be fast and non-blocking.
-+ * @info:	An arbitrary pointer to pass to both functions.
-+ * @wait:	If true, wait (atomically) until function has
-+ *		completed on other CPUs.
-+ * @gfp_flags:	GFP flags to use when allocating the cpumask
-+ *		used internally by the function.
-+ *
-+ * The function might sleep if the GFP flags indicates a non
-+ * atomic allocation is allowed.
-+ *
-+ * Preemption is disabled to protect against CPU going offline but not
-+ * online. CPUs going online during the call will not be seen or sent
-+ * an IPI.
-+ *
-+ * You must not call this function with disabled interrupts or
-+ * from a hardware interrupt handler or from a bottom half handler.
-+ */
-+void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
-+			smp_call_func_t func, void *info, bool wait,
-+			gfp_t gfp_flags)
++static bool has_bh_in_lru(int cpu, void *dummy)
 +{
-+	cpumask_var_t cpus;
-+	int cpu, ret;
-+
-+	might_sleep_if(gfp_flags & __GFP_WAIT);
-+
-+	if (likely(zalloc_cpumask_var(&cpus, (gfp_flags|__GFP_NOWARN)))) {
-+		preempt_disable();
-+		for_each_online_cpu(cpu)
-+			if (cond_func(cpu, info))
-+				cpumask_set_cpu(cpu, cpus);
-+		on_each_cpu_mask(cpus, func, info, wait);
-+		preempt_enable();
-+		free_cpumask_var(cpus);
-+	} else {
-+		/*
-+		 * No free cpumask, bother. No matter, we'll
-+		 * just have to IPI them one by one.
-+		 */
-+		preempt_disable();
-+		for_each_online_cpu(cpu)
-+			if (cond_func(cpu, info)) {
-+				ret = smp_call_function_single(cpu, func,
-+								info, wait);
-+				WARN_ON_ONCE(!ret);
-+			}
-+		preempt_enable();
++	struct bh_lru *b = per_cpu_ptr(&bh_lrus, cpu);
++	int i;
+ 	
++	for (i = 0; i < BH_LRU_SIZE; i++) {
++		if (b->bhs[i])
++			return 1;
 +	}
++
++	return 0;
 +}
-+EXPORT_SYMBOL(on_each_cpu_cond);
++
+ void invalidate_bh_lrus(void)
+ {
+-	on_each_cpu(invalidate_bh_lru, NULL, 1);
++	on_each_cpu_cond(has_bh_in_lru, invalidate_bh_lru, NULL, 1, GFP_KERNEL);
+ }
+ EXPORT_SYMBOL_GPL(invalidate_bh_lrus);
+ 
 -- 
 1.7.0.4
 
