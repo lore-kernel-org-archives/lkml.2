@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab2BIG3d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 01:29:33 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:63023 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752548Ab2BIG3a convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 01:29:30 -0500
+	id S1754246Ab2BIGlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 01:41:21 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51429 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752136Ab2BIGlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 01:41:19 -0500
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: <linux-fbdev@vger.kernel.org>
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Subject: [PATCH v2] video:da8xx-fb: calculate pixel clock period for the panel
+Date: Thu, 9 Feb 2012 11:54:06 +0530
+Message-ID: <1328768646-25169-1-git-send-email-prakash.pm@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-In-Reply-To: <20120209151413.0dfec71771dd156843c0f4fa@canb.auug.org.au>
-References: <20120209151413.0dfec71771dd156843c0f4fa@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 8 Feb 2012 22:29:10 -0800
-X-Google-Sender-Auth: MG2SOtIG6QZAHUa6JbtzMOVwuWQ
-Message-ID: <CACxGe6sskg2t0QtOgWCKvYFdqWbsM4Cbdt05ZaNCLzrdNd6iLQ@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the irqdomain tree with the arm tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 8, 2012 at 8:14 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Grant,
->
-> Today's linux-next merge of the irqdomain tree got a conflict in
-> arch/arm/common/gic.c between commit c11907f588d6 ("ARM: 7318/1: gic:
-> refactor irq_start assignment") from the arm tree and commit 7da5a66bbf1f
-> ("irq_domain: Remove 'new' irq_domain in favour of the ppc one") from the
-> irqdomain tree.
->
-> I fixed it up (see below) and can carry the fix as necessary.
+Patch calculates pixel clock period in pico seconds and updates
+the same in variable screen information structure. fbset utility
+uses this information.
 
-Thanks Stephen.
+Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+---
+Since v1:
+Fixed the spelling mistake.
 
-The context fixup looks correct to me.  I'll test the current
-linux-next tree when I get a chance (I'm at a conference at the
-moment).
+ drivers/video/da8xx-fb.c |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
 
-
-g.
-
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->
-> diff --cc arch/arm/common/gic.c
-> index ca6b5dd,8cf934c..0000000
-> --- a/arch/arm/common/gic.c
-> +++ b/arch/arm/common/gic.c
-> @@@ -348,12 -344,15 +345,11 @@@ void __init gic_cascade_irq(unsigned in
->
->  static void __init gic_dist_init(struct gic_chip_data *gic)
->  {
-> -       unsigned int i, irq;
-> +       unsigned int i;
->        u32 cpumask;
->        unsigned int gic_irqs = gic->gic_irqs;
-> -       struct irq_domain *domain = &gic->domain;
->        void __iomem *base = gic_data_dist_base(gic);
->  -      u32 cpu = 0;
->  -
->  -#ifdef CONFIG_SMP
->  -      cpu = cpu_logical_map(smp_processor_id());
->  -#endif
->  +      u32 cpu = cpu_logical_map(smp_processor_id());
->
->        cpumask = 1 << cpu;
->        cpumask |= cpumask << 8;
-> @@@ -694,12 -689,13 +686,12 @@@ void __init gic_init_bases(unsigned in
->         * For primary GICs, skip over SGIs.
->         * For secondary GICs, skip over PPIs, too.
->         */
->  -      hwirq_base = 32;
->  -      if (gic_nr == 0) {
->  -              if ((irq_start & 31) > 0) {
->  -                      hwirq_base = 16;
->  -                      if (irq_start != -1)
->  -                              irq_start = (irq_start & ~31) + 16;
->  -              }
->  +      if (gic_nr == 0 && (irq_start & 31) > 0) {
-> -               domain->hwirq_base = 16;
-> ++              hwirq_base = 16;
->  +              if (irq_start != -1)
->  +                      irq_start = (irq_start & ~31) + 16;
->  +      } else {
-> -               domain->hwirq_base = 32;
-> ++              hwirq_base = 32;
->        }
->
->        /*
-
-
-
+diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+index f360d62..882dd67 100644
+--- a/drivers/video/da8xx-fb.c
++++ b/drivers/video/da8xx-fb.c
+@@ -32,6 +32,7 @@
+ #include <linux/console.h>
+ #include <linux/slab.h>
+ #include <video/da8xx-fb.h>
++#include <asm/div64.h>
+ 
+ #define DRIVER_NAME "da8xx_lcdc"
+ 
+@@ -174,7 +175,6 @@ static struct fb_var_screeninfo da8xx_fb_var __devinitdata = {
+ 	.activate = 0,
+ 	.height = -1,
+ 	.width = -1,
+-	.pixclock = 46666,	/* 46us - AUO display */
+ 	.accel_flags = 0,
+ 	.left_margin = LEFT_MARGIN,
+ 	.right_margin = RIGHT_MARGIN,
+@@ -1048,6 +1048,22 @@ static struct fb_ops da8xx_fb_ops = {
+ 	.fb_blank = cfb_blank,
+ };
+ 
++/* Calculate and return pixel clock period in pico seconds */
++static unsigned int da8xxfb_pixel_clk_period(struct da8xx_fb_par *par)
++{
++	unsigned int lcd_clk, div;
++	unsigned int configured_pix_clk;
++	unsigned long long pix_clk_period_picosec = 1000000000000ULL;
++
++	lcd_clk = clk_get_rate(par->lcdc_clk);
++	div = lcd_clk / par->pxl_clk;
++	configured_pix_clk = (lcd_clk / div);
++
++	do_div(pix_clk_period_picosec, configured_pix_clk);
++
++	return pix_clk_period_picosec;
++}
++
+ static int __devinit fb_probe(struct platform_device *device)
+ {
+ 	struct da8xx_lcdc_platform_data *fb_pdata =
+@@ -1209,6 +1225,7 @@ static int __devinit fb_probe(struct platform_device *device)
+ 
+ 	da8xx_fb_var.hsync_len = lcdc_info->hsw;
+ 	da8xx_fb_var.vsync_len = lcdc_info->vsw;
++	da8xx_fb_var.pixclock = da8xxfb_pixel_clk_period(par);
+ 
+ 	/* Initialize fbinfo */
+ 	da8xx_fb_info->flags = FBINFO_FLAG_DEFAULT;
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+1.7.1
+
