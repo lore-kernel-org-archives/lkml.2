@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757904Ab2BIADr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 19:03:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47805 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834Ab2BIADq (ORCPT
+	id S1757921Ab2BIAOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 19:14:30 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:49531 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757679Ab2BIAO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 19:03:46 -0500
-Date: Wed, 8 Feb 2012 16:03:44 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Michal Nazarewicz" <mina86@mina86.com>
-Cc: linux-kernel@vger.kernel.org, "Gilad Ben-Yossef" <gilad@benyossef.com>,
-        "Chris Metcalf" <cmetcalf@tilera.com>,
-        "Christoph Lameter" <cl@linux-foundation.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Russell King" <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        "Pekka Enberg" <penberg@kernel.org>, "Matt Mackall" <mpm@selenic.com>,
-        "Sasha Levin" <levinsasha928@gmail.com>,
-        "Rik van Riel" <riel@redhat.com>, "Andi Kleen" <andi@firstfloor.org>,
-        "Alexander Viro" <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, "Avi Kivity" <avi@redhat.com>,
-        "Kosaki Motohiro" <kosaki.motohiro@gmail.com>,
-        "Milton Miller" <miltonm@bga.com>
-Subject: Re: [PATCH v8 4/8] smp: add func to IPI cpus based on parameter
- func
-Message-Id: <20120208160344.88d187e5.akpm@linux-foundation.org>
-In-Reply-To: <op.v9csppvv3l0zgt@mpn-glaptop>
-References: <1328448800-15794-1-git-send-email-gilad@benyossef.com>
-	<1328449722-15959-3-git-send-email-gilad@benyossef.com>
-	<op.v9csppvv3l0zgt@mpn-glaptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 8 Feb 2012 19:14:29 -0500
+Date: Wed, 08 Feb 2012 19:13:12 -0500 (EST)
+Message-Id: <20120208.191312.797325617283169736.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-02-08
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120208203702.GE2929@tuxdriver.com>
+References: <20120208203702.GE2929@tuxdriver.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 08 Feb 2012 16:13:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Feb 2012 10:30:51 +0100
-"Michal Nazarewicz" <mina86@mina86.com> wrote:
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 8 Feb 2012 15:37:02 -0500
 
-> >  	} while (0)
-> > +/*
-> > + * Preemption is disabled here to make sure the
-> > + * cond_func is called under the same condtions in UP
-> > + * and SMP.
-> > + */
-> > +#define on_each_cpu_cond(cond_func, func, info, wait, gfp_flags) \
-> > +	do {						\
+> This is a batch of fixes intended for 3.3.
 > 
-> How about:
+> Included is a fix for an association failure bug with mwifiex, and a fix
+> for a NULL pointer deref in that same driver.  There is also an ath9k
+> fix for a WEP-related regression, and another ath9k fix for an RTS/CTS
+> timeout regression.  A third ath9k fix address an oops during driver
+> initialization.  Also included is a zd1211rw fix for an issue where the
+> firmware would corrupt the duration_id setting and cause devices to be
+> unable to connect to zd1211rw-based APs.  A fix from me to reduce some
+> log spam from ath9k rounds-out the bunch.
 > 
-> 		void *__info = (info);
-> 
-> as to avoid double execution.
+> Please let me know if there are problems!
 
-Yup.  How does this look?
-
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: smp-add-func-to-ipi-cpus-based-on-parameter-func-update-fix
-
-- avoid double-evaluation of `info' (per Michal)
-- parenthesise evaluation of `cond_func'
-
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- include/linux/smp.h |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
---- a/include/linux/smp.h~smp-add-func-to-ipi-cpus-based-on-parameter-func-update-fix
-+++ a/include/linux/smp.h
-@@ -168,10 +168,11 @@ static inline int up_smp_call_function(s
-  */
- #define on_each_cpu_cond(cond_func, func, info, wait, gfp_flags)\
- 	do {							\
-+		void *__info = (info);				\
- 		preempt_disable();				\
--		if (cond_func(0, info)) {			\
-+		if ((cond_func)(0, __info)) {			\
- 			local_irq_disable();			\
--			(func)(info);				\
-+			(func)(__info);				\
- 			local_irq_enable();			\
- 		}						\
- 		preempt_enable();				\
-_
-
+Pulled, thanks John.
