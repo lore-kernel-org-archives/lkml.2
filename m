@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab2BISBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 13:01:49 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:42560 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753239Ab2BISBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 13:01:46 -0500
-Subject: [PATCH 0/5] IPC: checkpoint/restore in userspace enhancements
-To: akpm@linux-foundation.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: jmorris@namei.org, linux-kernel@vger.kernel.org, criu@openvz.org,
-        linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
-        eparis@parisplace.org, sds@tycho.nsa.gov
-Date: Thu, 09 Feb 2012 22:01:16 +0400
-Message-ID: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1758144Ab2BISGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 13:06:43 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44967
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757894Ab2BISGl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 13:06:41 -0500
+Date: Thu, 9 Feb 2012 13:06:35 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Li Shaohua <shaohua.li@intel.com>
+Subject: Re: [PATCH] block: remove plugging at buffered write time
+Message-ID: <20120209180635.GA18902@infradead.org>
+References: <20120208110143.GA5550@localhost>
+ <20120208232719.GD7479@dastard>
+ <20120209080224.GA28465@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120209080224.GA28465@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set aimed to provide additional functionality for all IPC objects,
-which is required for migration these objects by user-space checkpoint/restore
-utils.
-The main problem here was impossibility to set up object id. This patch set
-solves the problem in two steps:
-1) Makes it possible to create new object (shared memory, semaphores set or
-messages queue) with ID, equal to passed key.
-2) Makes it possible to change existent object key.
-
-The following series consists of:
-
----
-
-Stanislav Kinsbursky (5):
-      ipc: "use key as id" functionality for resource get system call introduced
-      ipc: segment key change helper introduced
-      ipc: add new SHM_SET command for sys_shmctl() call
-      ipc: add new MSG_SET command for sys_msgctl() call
-      ipc: add new SEM_SET command for sys_semctl() call
+On Thu, Feb 09, 2012 at 04:02:24PM +0800, Wu Fengguang wrote:
+> On Thu, Feb 09, 2012 at 10:27:19AM +1100, Dave Chinner wrote:
+> > On Wed, Feb 08, 2012 at 07:01:44PM +0800, Wu Fengguang wrote:
+> > > Buffered write(2) is not directly tied to IO, so it's not suitable to
+> > > handle plug in generic_file_aio_write().
+> > 
+> > But generic_sync_write() does issue IO for O_SYNC writes, so unless
+> > there is plugging at a lower layer in the writeback code then it
+> > appears to me that plugging is still necessary (at least inside the
+> > sync branch)....
+> 
+> Good catch! It looks that generic_write_sync() eventually calls into
+> vfs_fsync_range() which further calls ->fsync(). We may add plugging
+> around it:
 
 
- include/linux/ipc.h        |    1 +
- include/linux/msg.h        |    1 +
- include/linux/sem.h        |    1 +
- include/linux/shm.h        |    1 +
- ipc/compat.c               |    9 +++++++
- ipc/msg.c                  |   14 +++++++++-
- ipc/sem.c                  |   11 +++++++-
- ipc/shm.c                  |   14 +++++++++-
- ipc/util.c                 |   59 +++++++++++++++++++++++++++++++++++++++++---
- ipc/util.h                 |    3 ++
- security/selinux/hooks.c   |    3 ++
- security/smack/smack_lsm.c |    3 ++
- 12 files changed, 110 insertions(+), 10 deletions(-)
+NAK, please keep the plugging down in the fs, or the libraries used but
+not common VFS code.
 
