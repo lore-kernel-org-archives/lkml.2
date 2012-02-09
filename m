@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2BIG3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 01:29:23 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49200 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab2BIG3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 01:29:21 -0500
+	id S1755430Ab2BIG3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 01:29:33 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:63023 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752548Ab2BIG3a convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 01:29:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <201201241537.17194.tim01@iss.tu-darmstadt.de>
-References: <201201241537.17194.tim01@iss.tu-darmstadt.de>
-Date: Thu, 9 Feb 2012 00:29:15 -0600
-Message-ID: <CAKWjMd66rTzM7AipQZsu-c0jDSNw_=CFHnN1Mms4WQp_4aaFWA@mail.gmail.com>
-Subject: Re: newbie: phy platform interrupt config
-From: Andy Fleming <afleming@gmail.com>
-To: Tim Sander <tim01@iss.tu-darmstadt.de>
-Cc: netdev@vger.kernel.org, Andy Fleming <afleming@freescale.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Decotigny <decot@google.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20120209151413.0dfec71771dd156843c0f4fa@canb.auug.org.au>
+References: <20120209151413.0dfec71771dd156843c0f4fa@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 8 Feb 2012 22:29:10 -0800
+X-Google-Sender-Auth: MG2SOtIG6QZAHUa6JbtzMOVwuWQ
+Message-ID: <CACxGe6sskg2t0QtOgWCKvYFdqWbsM4Cbdt05ZaNCLzrdNd6iLQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the irqdomain tree with the arm tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 24, 2012 at 8:37 AM, Tim Sander <tim01@iss.tu-darmstadt.de> wrote:
-> Hi
+On Wed, Feb 8, 2012 at 8:14 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
 >
-> I would like to set the interrupt for the phy on the i.mx35 pcm43 in the file
-> arch/arm/mach-imx/mach-pcm043.c. Unfortunatly i didn't find a way to specify
-> it. So i want to set the field (struct phy_device*)->irq.
+> Today's linux-next merge of the irqdomain tree got a conflict in
+> arch/arm/common/gic.c between commit c11907f588d6 ("ARM: 7318/1: gic:
+> refactor irq_start assignment") from the arm tree and commit 7da5a66bbf1f
+> ("irq_domain: Remove 'new' irq_domain in favour of the ppc one") from the
+> irqdomain tree.
 >
-> What i managed so far is to request the gpio for the interrupt:
-> #define IMX_PHY_IRQ IMX_GPIO_NR(2,7)
-> gpio_request(IMX_PHY_IRQ, "FEC PHY irq");
-> gpio_direction_input(IMX_PHY_IRQ);
->
-> Now i guess the result of "gpio_to_irq(IMX_PHY_IRQ)" should go into some kind
-> of argument to imx35_add_fec(pdata) which is a macro
-> imx_add_fec(&imx35_fec_data, pdata).
-> pdata is of type (?) struct fec_platform_data which contains phy_interface_t
-> and unsigned char array. So i don't see a way to set the phy interrupt there.
->
-> I tried search for a driver which set the phy irq but i didn't find any and
-> setting the phy in the phy_fixup function is also not working since the
-> interrupt seems not get registered when opening the device.
->
-> So how do i set the phy interrupt line in the platform file?
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Look in drivers/of/of_mdio.c.
+Thanks Stephen.
 
-It's the job of the mdio driver to set the IRQs for the device. I
-don't honestly know why I designed it that way. I suspect it's because
-the MDIO controller's driver is the entity most likely to communicate
-directly with the platform code.
+The context fixup looks correct to me.  I'll test the current
+linux-next tree when I get a chance (I'm at a conference at the
+moment).
 
-So wherever you set up your mdio bus, set the IRQs for all the PHYs on
-the bus there.
 
-Andy
+g.
+
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc arch/arm/common/gic.c
+> index ca6b5dd,8cf934c..0000000
+> --- a/arch/arm/common/gic.c
+> +++ b/arch/arm/common/gic.c
+> @@@ -348,12 -344,15 +345,11 @@@ void __init gic_cascade_irq(unsigned in
+>
+>  static void __init gic_dist_init(struct gic_chip_data *gic)
+>  {
+> -       unsigned int i, irq;
+> +       unsigned int i;
+>        u32 cpumask;
+>        unsigned int gic_irqs = gic->gic_irqs;
+> -       struct irq_domain *domain = &gic->domain;
+>        void __iomem *base = gic_data_dist_base(gic);
+>  -      u32 cpu = 0;
+>  -
+>  -#ifdef CONFIG_SMP
+>  -      cpu = cpu_logical_map(smp_processor_id());
+>  -#endif
+>  +      u32 cpu = cpu_logical_map(smp_processor_id());
+>
+>        cpumask = 1 << cpu;
+>        cpumask |= cpumask << 8;
+> @@@ -694,12 -689,13 +686,12 @@@ void __init gic_init_bases(unsigned in
+>         * For primary GICs, skip over SGIs.
+>         * For secondary GICs, skip over PPIs, too.
+>         */
+>  -      hwirq_base = 32;
+>  -      if (gic_nr == 0) {
+>  -              if ((irq_start & 31) > 0) {
+>  -                      hwirq_base = 16;
+>  -                      if (irq_start != -1)
+>  -                              irq_start = (irq_start & ~31) + 16;
+>  -              }
+>  +      if (gic_nr == 0 && (irq_start & 31) > 0) {
+> -               domain->hwirq_base = 16;
+> ++              hwirq_base = 16;
+>  +              if (irq_start != -1)
+>  +                      irq_start = (irq_start & ~31) + 16;
+>  +      } else {
+> -               domain->hwirq_base = 32;
+> ++              hwirq_base = 32;
+>        }
+>
+>        /*
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
