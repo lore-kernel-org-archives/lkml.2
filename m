@@ -1,36 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab2BISvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 13:51:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758190Ab2BISvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 13:51:04 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+55aFwxTe6+zng6OnK_oHBxwLsX+Z7wD45d=XLTGSL+6aoh9g@mail.gmail.com>
-References: <CA+55aFwxTe6+zng6OnK_oHBxwLsX+Z7wD45d=XLTGSL+6aoh9g@mail.gmail.com> <20120209154819.32070.93358.stgit@warthog.procyon.org.uk> <1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <CA+55aFxHdFa4otDWJg4f+8sKEP3MBZqKBQCnH0Q8LXYtpdt1EA@mail.gmail.com> <CA+55aFyw1n=Bz3vi73RD5R13HyWLaVyPZc_z5rR7nGPzvs-BOw@mail.gmail.com> <7095.1328809567@redhat.com> <CA+55aFw5z85wuU8xJ_YFp0QB653yAGPOqeGXhJLbdj9ogpHqOA@mail.gmail.com> <8689.1328810841@redhat.com> 
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
-        adobriyan@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Reduce the number of expensive division instructions done by _parse_integer()
-Date: Thu, 09 Feb 2012 18:50:56 +0000
-Message-ID: <21276.1328813456@redhat.com>
+	id S1758278Ab2BIS4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 13:56:46 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56243 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757937Ab2BIS4p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 13:56:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120209175114.GA5525@otto.nzcorp.net>
+References: <20120208143741.GB28486@otto.nzcorp.net>
+	<20120208205628.GA18909@alberich.amd.com>
+	<20120209124355.GA20902@otto.nzcorp.net>
+	<20120209132825.GB8830@elte.hu>
+	<20120209134920.GA25934@otto.nzcorp.net>
+	<CAE9FiQUiMBUh9xSKoLj_1ZPXY3wTehB6i1V_mPmx7rs5XqMZTw@mail.gmail.com>
+	<20120209175114.GA5525@otto.nzcorp.net>
+Date: Thu, 9 Feb 2012 10:56:44 -0800
+X-Google-Sender-Auth: RnLh2FpRe0-GMGYpe2vFtkjq2j4
+Message-ID: <CAE9FiQUc5Xzvt94sS5HBmQ9E1hyB7GRozP2-xgZk=9y4AUOk9g@mail.gmail.com>
+Subject: Re: Memory issues with Opteron 6220
+From: Yinghai Lu <yinghai@kernel.org>
+To: aowi@novozymes.com, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "JK (Jesper Agerbo Krogh)" <JK@novozymes.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Thu, Feb 9, 2012 at 9:51 AM, Anders Ossowicki <aowi@novozymes.com> wrote:
+> On Thu, Feb 09, 2012 at 05:11:04PM +0100, Yinghai Lu wrote:
+>> mtrr setting has some problem too.
+>>
+>> [    3.098277] mtrr: your CPUs had inconsistent fixed MTRR settings
+>> [ 3.100001] mtrr: probably your BIOS does not setup all CPUs.
+>> [    3.110000] mtrr: corrected configuration.
+>>
+>> can you boot with "debug ignore_loglevel show_msr=16" ?
+>
+> Yep, right here:
+> http://dev.exherbo.org/~arkanoid/atlas-dmesg-3.2.5-20120209-mtrr.txt
+>
 
-> > Do you want me to attach my patch description to your patch, or do you
-> > want to do that?
-> 
-> I'll commit it as yours and with your commentary, my changes were
-> purely cosmetic and just made the x86-64 inner loop look better.
+Too bad, print_cpu_info() calling for AP get removed by some commit.
 
-Thanks!
+now we can not print initial AP register anymore.
 
-David
+Yinghai
