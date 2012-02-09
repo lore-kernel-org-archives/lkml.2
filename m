@@ -1,191 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab2BITta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 14:49:30 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43844 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754479Ab2BITt2 (ORCPT
+	id S1758190Ab2BITyE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 14:54:04 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:39988 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754479Ab2BITyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 14:49:28 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        e1000-devel@lists.sourceforge.net,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: [PATCH 2/2] rename dev_hw_addr_random and remove redundant second
-Date: Thu,  9 Feb 2012 20:48:54 +0100
-Message-Id: <1328816934-11508-3-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1328816934-11508-1-git-send-email-danny.kukawka@bisect.de>
-References: <1328816934-11508-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328816968;53a409b9;
+	Thu, 9 Feb 2012 14:54:02 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: oXn23rkVM1kAtU2mVukO1BSjIS.zdZaNpogL9oy2LuYsLJb
+ Kr05v5NEYagM6jcu4pxHcvB9dkOAQpWPbyrJLNacABbdRtEw6c6FFTzPYRgn
+ 4l.Fgi6jNnr7FJDUi_zBaYAEEzvUo4IRRMDnotP2T98aiKnZygXskTOtXIiy
+ JcUdsYPswd5kOFKvArvK.po.gCz0L5cBGDPvyYkEbR.EjFF61JdagIUR9D0R
+ GLHLHPXjbgGz84Rot_Q4pd3r3Zaiz5zzFaDezC6tOrfH7Pdq4AT9axmvwQN9
+ mtn9Pm1YTCJ77FeR22bCsFDe.ndw3iN3T_vULOwPmCzde2dJu0SmAJ3l9pyl
+ WVzBqBXRTUbQAtLVecAz6lE8RGFoiuc65d7v0LgihzOhxNA3nvUnsHSME.VU
+ lB8a9_3kc7yeLQYWtfd6mEBSNFV9Skn9KS_kk
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 9 Feb 2012 13:53:58 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 02/15] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+In-Reply-To: <20120209125018.GN5938@suse.de>
+Message-ID: <alpine.DEB.2.00.1202091345540.4413@router.home>
+References: <1328568978-17553-1-git-send-email-mgorman@suse.de> <1328568978-17553-3-git-send-email-mgorman@suse.de> <alpine.DEB.2.00.1202071025050.30652@router.home> <20120208144506.GI5938@suse.de> <alpine.DEB.2.00.1202080907320.30248@router.home>
+ <20120208163421.GL5938@suse.de> <alpine.DEB.2.00.1202081338210.32060@router.home> <20120208212323.GM5938@suse.de> <alpine.DEB.2.00.1202081557540.5970@router.home> <20120209125018.GN5938@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Renamed dev_hw_addr_random to eth_hw_addr_random() to reflect that
-this function only assign a random ethernet address (MAC). Removed
-the second parameter (u8 *hwaddr), it's redundant since the also
-given net_device already contains net_device->dev_addr.
-Set it directly.
+On Thu, 9 Feb 2012, Mel Gorman wrote:
 
-Adapt igbvf and ixgbevf to the changed function.
+> Ok, I am working on a solution that does not affect any of the existing
+> slab structures. Between that and the fact we check if there are any
+> memalloc_socks after patch 12, the impact for normal systems is an additional
+> branch in ac_get_obj() and ac_put_obj()
 
-Small fix for ixgbevf_probe(): if ixgbevf_sw_init() fails
-(which means the device got no dev_addr) handle the error and
-jump to err_sw_init as already done by igbvf in similar case.
+That sounds good in particular since some other things came up again,
+sigh. Have not had time to see if an alternate approach works.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/net/ethernet/intel/igbvf/netdev.c         |   11 +++++---
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |   28 ++++++++++++--------
- include/linux/etherdevice.h                       |   13 +++++----
- 3 files changed, 31 insertions(+), 21 deletions(-)
+> > We have been down this road too many times. Logic is added to critical
+> > paths and memory structures grow. This is not free. And for NBD swap
+> > support? Pretty exotic use case.
+> >
+>
+> NFS support is the real target. NBD is the logical starting point and
+> NFS needs the same support.
 
-diff --git a/drivers/net/ethernet/intel/igbvf/netdev.c b/drivers/net/ethernet/intel/igbvf/netdev.c
-index a4b20c8..14d42f9 100644
---- a/drivers/net/ethernet/intel/igbvf/netdev.c
-+++ b/drivers/net/ethernet/intel/igbvf/netdev.c
-@@ -2695,18 +2695,19 @@ static int __devinit igbvf_probe(struct pci_dev *pdev,
- 		dev_info(&pdev->dev,
- 			 "PF still in reset state, assigning new address."
- 			 " Is the PF interface up?\n");
--		dev_hw_addr_random(adapter->netdev, hw->mac.addr);
-+		eth_hw_addr_random(netdev);
-+		memcpy(adapter->hw.mac.addr, netdev->dev_addr,
-+			netdev->addr_len);
- 	} else {
- 		err = hw->mac.ops.read_mac_addr(hw);
- 		if (err) {
- 			dev_err(&pdev->dev, "Error reading MAC address\n");
- 			goto err_hw_init;
- 		}
-+		memcpy(netdev->dev_addr, adapter->hw.mac.addr,
-+			netdev->addr_len);
- 	}
- 
--	memcpy(netdev->dev_addr, adapter->hw.mac.addr, netdev->addr_len);
--	memcpy(netdev->perm_addr, adapter->hw.mac.addr, netdev->addr_len);
--
- 	if (!is_valid_ether_addr(netdev->perm_addr)) {
- 		dev_err(&pdev->dev, "Invalid MAC Address: %pM\n",
- 		        netdev->dev_addr);
-@@ -2714,6 +2715,8 @@ static int __devinit igbvf_probe(struct pci_dev *pdev,
- 		goto err_hw_init;
- 	}
- 
-+	memcpy(netdev->perm_addr, adapter->hw.mac.addr, netdev->addr_len);
-+
- 	setup_timer(&adapter->watchdog_timer, &igbvf_watchdog,
- 	            (unsigned long) adapter);
- 
-diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-index bed411b..0daf7fd 100644
---- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-+++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-@@ -2195,13 +2195,17 @@ static int __devinit ixgbevf_sw_init(struct ixgbevf_adapter *adapter)
- 	if (err) {
- 		dev_info(&pdev->dev,
- 		         "PF still in reset state, assigning new address\n");
--		dev_hw_addr_random(adapter->netdev, hw->mac.addr);
-+		eth_hw_addr_random(adapter->netdev);
-+		memcpy(adapter->hw.mac.addr, adapter->netdev->dev_addr,
-+			adapter->netdev->addr_len);
- 	} else {
- 		err = hw->mac.ops.init_hw(hw);
- 		if (err) {
- 			pr_err("init_shared_code failed: %d\n", err);
- 			goto out;
- 		}
-+		memcpy(adapter->netdev->dev_addr, adapter->hw.mac.addr,
-+			adapter->netdev->addr_len);
- 	}
- 
- 	/* Enable dynamic interrupt throttling rates */
-@@ -2220,6 +2224,7 @@ static int __devinit ixgbevf_sw_init(struct ixgbevf_adapter *adapter)
- 	adapter->flags |= IXGBE_FLAG_RX_CSUM_ENABLED;
- 
- 	set_bit(__IXGBEVF_DOWN, &adapter->state);
-+	return 0;
- 
- out:
- 	return err;
-@@ -3394,6 +3399,17 @@ static int __devinit ixgbevf_probe(struct pci_dev *pdev,
- 
- 	/* setup the private structure */
- 	err = ixgbevf_sw_init(adapter);
-+	if (err)
-+		goto err_sw_init;
-+
-+	/* The HW MAC address was set and/or determined in sw_init */
-+	memcpy(netdev->perm_addr, adapter->hw.mac.addr, netdev->addr_len);
-+
-+	if (!is_valid_ether_addr(netdev->dev_addr)) {
-+		pr_err("invalid MAC address\n");
-+		err = -EIO;
-+		goto err_sw_init;
-+	}
- 
- 	netdev->hw_features = NETIF_F_SG |
- 			   NETIF_F_IP_CSUM |
-@@ -3418,16 +3434,6 @@ static int __devinit ixgbevf_probe(struct pci_dev *pdev,
- 
- 	netdev->priv_flags |= IFF_UNICAST_FLT;
- 
--	/* The HW MAC address was set and/or determined in sw_init */
--	memcpy(netdev->dev_addr, adapter->hw.mac.addr, netdev->addr_len);
--	memcpy(netdev->perm_addr, adapter->hw.mac.addr, netdev->addr_len);
--
--	if (!is_valid_ether_addr(netdev->dev_addr)) {
--		pr_err("invalid MAC address\n");
--		err = -EIO;
--		goto err_sw_init;
--	}
--
- 	init_timer(&adapter->watchdog_timer);
- 	adapter->watchdog_timer.function = ixgbevf_watchdog;
- 	adapter->watchdog_timer.data = (unsigned long)adapter;
-diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
-index 05955cf..8a18358 100644
---- a/include/linux/etherdevice.h
-+++ b/include/linux/etherdevice.h
-@@ -140,17 +140,18 @@ static inline void random_ether_addr(u8 *addr)
- }
- 
- /**
-- * dev_hw_addr_random - Create random MAC and set device flag
-+ * eth_hw_addr_random - Generate software assigned random Ethernet and
-+ * set device flag
-  * @dev: pointer to net_device structure
-- * @hwaddr: Pointer to a six-byte array containing the Ethernet address
-  *
-- * Generate random MAC to be used by a device and set addr_assign_type
-- * so the state can be read by sysfs and be used by udev.
-+ * Generate a random Ethernet address (MAC) to be used by a net device
-+ * and set addr_assign_type so the state can be read by sysfs and be
-+ * used by userspace.
-  */
--static inline void dev_hw_addr_random(struct net_device *dev, u8 *hwaddr)
-+static inline void eth_hw_addr_random(struct net_device *dev)
- {
- 	dev->addr_assign_type |= NET_ADDR_RANDOM;
--	random_ether_addr(hwaddr);
-+	random_ether_addr(dev->dev_addr);
- }
- 
- /**
--- 
-1.7.7.3
+But this is already a pretty strange use case on multiple levels. Swap is
+really detrimental to performance. Its a kind of emergency outlet that
+gets worse with every new step that increases the differential in
+performance between disk and memory. On top of that you want to add
+special code in various subsystems to also do that over the network.
+Sigh. I think we agreed a while back that we want to limit the amount of
+I/O triggered from reclaim paths? AFAICT many filesystems do not support
+writeout from reclaim anymore because of all the issues that arise at that
+level.
 
+We have numerous other mechanisms that can compress swap etc and provide
+ways to work around the problem without I/O which has always be
+troublesome and these fixes are likely only to work in a very limited
+way causing a lot of maintenance effort because (given the exotic
+nature) it is highly likely that there are cornercases that only will be
+triggered in rare cases.
