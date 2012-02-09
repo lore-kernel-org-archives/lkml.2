@@ -1,30 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523Ab2BIIhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:37:20 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:56611 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757167Ab2BIIhR (ORCPT
+	id S1757503Ab2BIIiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:38:23 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54261 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756556Ab2BIIhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:37:17 -0500
+	Thu, 9 Feb 2012 03:37:05 -0500
 MIME-Version: 1.0
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>, Christoph Lameter <cl@linux.com>,
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
         Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
         Michal Nazarewicz <mina86@mina86.com>,
         Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v9 8/8] mm: add vmstat counters for tracking PCP drains
-Date: Thu,  9 Feb 2012 10:36:25 +0200
-Message-Id: <1328776585-22518-9-git-send-email-gilad@benyossef.com>
+        Milton Miller <miltonm@bga.com>
+Subject: [PATCH v9 5/8] slub: only IPI CPUs that have per cpu obj to flush
+Date: Thu,  9 Feb 2012 10:36:22 +0200
+Message-Id: <1328776585-22518-6-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1328776585-22518-1-git-send-email-gilad@benyossef.com>
 References: <1328776585-22518-1-git-send-email-gilad@benyossef.com>
@@ -32,21 +34,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces two new vmstat counters for testing purposes:
-pcp_global_drain that counts the number of times a per-cpu pages
-global drain was requested and pcp_global_ipi_saved that counts
-the number of times the number of CPUs with per-cpu pages in any
-zone were less then 1/2 of the number of online CPUs.
+flush_all() is called for each kmem_cahce_destroy(). So every cache
+being destroyed dynamically ends up sending an IPI to each CPU in the
+system, regardless if the cache has ever been used there.
 
-The patch purpose is to show the usefulness of only sending an IPI
-asking to drain per-cpu pages to CPUs that actually have them
-instead of a blind global IPI. It is not inteded to be merged.
+For example, if you close the Infinband ipath driver char device file,
+the close file ops calls kmem_cache_destroy(). So running some
+infiniband config tool on one a single CPU dedicated to system tasks
+might interrupt the rest of the 127 CPUs dedicated to some CPU
+intensive or latency sensitive task.
+
+I suspect there is a good chance that every line in the output of "git
+grep kmem_cache_destroy linux/ | grep '\->'" has a similar scenario.
+
+This patch attempts to rectify this issue by sending an IPI to flush
+the per cpu objects back to the free lists only to CPUs that seem to
+have such objects.
+
+The check which CPU to IPI is racy but we don't care since asking a
+CPU without per cpu objects to flush does no damage and as far as I
+can tell the flush_all by itself is racy against allocs on remote
+CPUs anyway, so if you required the flush_all to be determinstic, you
+had to arrange for locking regardless.
+
+Without this patch the following artificial test case:
+
+$ cd /sys/kernel/slab
+$ for DIR in *; do cat $DIR/alloc_calls > /dev/null; done
+
+produces 166 IPIs on an cpuset isolated CPU. With it it produces none.
+
+The code path of memory allocation failure for CPUMASK_OFFSTACK=y
+config was tested using fault injection framework.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Acked-by: Christoph Lameter <cl@linux.com>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Christoph Lameter <cl@linux.com>
+CC: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 CC: Chris Metcalf <cmetcalf@tilera.com>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>
 CC: linux-mm@kvack.org
 CC: Pekka Enberg <penberg@kernel.org>
 CC: Matt Mackall <mpm@selenic.com>
@@ -56,58 +83,38 @@ CC: Andi Kleen <andi@firstfloor.org>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: linux-fsdevel@vger.kernel.org
 CC: Avi Kivity <avi@redhat.com>
 CC: Michal Nazarewicz <mina86@mina86.com>
 CC: Kosaki Motohiro <kosaki.motohiro@gmail.com>
 CC: Milton Miller <miltonm@bga.com>
-CC: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- include/linux/vm_event_item.h |    1 +
- mm/page_alloc.c               |    5 +++++
- mm/vmstat.c                   |    2 ++
- 3 files changed, 8 insertions(+), 0 deletions(-)
+ mm/slub.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 03b90cd..3657f6f 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -58,6 +58,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		THP_COLLAPSE_ALLOC_FAILED,
- 		THP_SPLIT,
- #endif
-+		PCP_GLOBAL_DRAIN, PCP_GLOBAL_IPI_SAVED,
- 		NR_VM_EVENT_ITEMS
- };
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 3a2fc84..cdcaf50 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1202,6 +1202,11 @@ void drain_all_pages(void)
- 			cpumask_clear_cpu(cpu, &cpus_with_pcps);
- 	}
- 	on_each_cpu_mask(&cpus_with_pcps, drain_local_pages, NULL, 1);
-+
-+	count_vm_event(PCP_GLOBAL_DRAIN);
-+	if (cpumask_weight(&cpus_with_pcps) <
-+	   (cpumask_weight(cpu_online_mask) / 2))
-+		count_vm_event(PCP_GLOBAL_IPI_SAVED);
+diff --git a/mm/slub.c b/mm/slub.c
+index 4907563..3d75f89 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2018,9 +2018,17 @@ static void flush_cpu_slab(void *d)
+ 	__flush_cpu_slab(s, smp_processor_id());
  }
  
- #ifdef CONFIG_HIBERNATION
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index f600557..3ee5f99 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -786,6 +786,8 @@ const char * const vmstat_text[] = {
- 	"thp_collapse_alloc_failed",
- 	"thp_split",
- #endif
-+	"pcp_global_drain",
-+	"pcp_global_ipi_saved"
++static bool has_cpu_slab(int cpu, void *info)
++{
++	struct kmem_cache *s = info;
++	struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
++
++	return !!(c->page);
++}
++
+ static void flush_all(struct kmem_cache *s)
+ {
+-	on_each_cpu(flush_cpu_slab, s, 1);
++	on_each_cpu_cond(has_cpu_slab, flush_cpu_slab, s, 1, GFP_ATOMIC);
+ }
  
- #endif /* CONFIG_VM_EVENTS_COUNTERS */
- };
+ /*
 -- 
 1.7.0.4
 
